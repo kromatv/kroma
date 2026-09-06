@@ -5,7 +5,7 @@ import { act, StrictMode } from 'react';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { configureRemote } from '#ui/lib/focus-remote';
-import { layout, onScreen } from '#ui/testing';
+import { layout, onScreen, wearsRing } from '#ui/testing';
 import { VirtualGrid } from './virtual-grid';
 
 beforeAll(() => configureRemote());
@@ -25,7 +25,7 @@ function press(key: string) {
 
 function ringed(): string[] {
   return [...document.querySelectorAll<HTMLElement>('[role="button"]')]
-    .filter((el) => el.style.boxShadow !== '')
+    .filter((el) => wearsRing(el))
     .map((el) => el.getAttribute('aria-label') ?? '');
 }
 

@@ -75,7 +75,7 @@ export function PinCard() {
   };
 
   return (
-    <Surface elevated pad="none" p={22} radius="lg" border="border">
+    <Surface elevated pad="none" p={22} radius="xl" border="border">
       <Row gap={14} mb={16}>
         <IconWell name="lock" size="sm" tone="accent" />
         <Box minW={0}>

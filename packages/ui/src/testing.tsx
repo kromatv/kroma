@@ -15,6 +15,7 @@
 
 import { act, type ReactElement } from 'react';
 import type { LayoutChangeEvent, LayoutRectangle } from 'react-native';
+import { webDocument } from './lib/dom';
 import { FocusScope } from './lib/focus-scope';
 import { I18nProvider } from './services/i18n';
 
@@ -23,6 +24,39 @@ import { I18nProvider } from './services/i18n';
  * these: `autoFocus` is honoured or ignored on the strength of that one flag
  * (see lib/focus-entry), and no rendered output shows it. */
 export { focusSettled, markFocusSettled } from './lib/focus-entry';
+
+const kebab = (property: string) => property.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+
+function declaredByClass(el: Element, property: string): string | null {
+  const classes = [...el.classList].map((name) => `.${name}`);
+  const doc = webDocument();
+  if (classes.length === 0 || !doc) return null;
+  let found: string | null = null;
+  for (const sheet of doc.styleSheets) {
+    for (const rule of sheet.cssRules) {
+      if (!(rule instanceof CSSStyleRule) || !classes.includes(rule.selectorText)) continue;
+      const value = rule.style.getPropertyValue(property);
+      if (value) found = value;
+    }
+  }
+  return found;
+}
+
+/** What an element declares for `property`, inline or through the classes its
+ * styles compiled to, as written: a control paints with classes, so `el.style`
+ * reads nothing of it, and jsdom's computed style drops `z-index` and every
+ * `var()`. Null when nothing declares it. */
+export function declared(el: Element, property: string): string | null {
+  const name = kebab(property);
+  const inline = (el as HTMLElement).style?.getPropertyValue(name);
+  return inline || declaredByClass(el, name);
+}
+
+/** Whether an element wears the focus ring: the outline the kit draws around
+ * the control that has the focus (see tokens/effects). */
+export function wearsRing(el: Element | null | undefined): boolean {
+  return el instanceof HTMLElement && declared(el, 'outline-style') === 'solid';
+}
 
 /** Wrap a tree in the same navigator and locale a real screen runs inside.
  * English, because an assertion reads better against the words in the test. */

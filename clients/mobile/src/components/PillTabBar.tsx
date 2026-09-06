@@ -6,16 +6,20 @@ import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CastMiniBar } from '#mobile/components/cast/CastMiniBar';
 
+const GLYPH = 24;
+
 export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTabBarProps>) {
   const insets = useSafeAreaInsets();
   return (
-    <Box pointerEvents="box-none" style={[s.dock, { bottom: Math.max(insets.bottom, 12) + 8 }]}>
+    <Box pointerEvents="box-none" style={[s.dock, { bottom: insets.bottom + 8 }]}>
       {/* Renders nothing when not casting. */}
       <CastMiniBar />
       {/* Unclipped wrapper: the pill itself clips the blur. */}
       <Box style={s.shadow}>
         <NavPill.Root
           size="sm"
+          tone="neutral"
+          labels="none"
           // Null is the slide ending - nothing to feel there.
           onPreview={(label) => {
             if (label !== null) void Haptics.selectionAsync();
@@ -38,7 +42,7 @@ export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTa
               <NavPill.Item
                 key={route.key}
                 // Handed the item's current ink so the colour travels with the lens.
-                icon={(ink) => options.tabBarIcon?.({ focused, color: ink, size: 22 })}
+                icon={(ink) => options.tabBarIcon?.({ focused, color: ink, size: GLYPH })}
                 label={label}
                 active={focused}
                 onPress={onPress}
@@ -52,8 +56,9 @@ export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTa
 }
 
 const s = styles({
-  dock: { absolute: true, right: 0, left: 0, align: 'center' },
+  dock: { absolute: true, right: 0, left: 0, px: 12, align: 'center' },
   shadow: {
+    self: 'stretch',
     radius: 999,
     shadowColor: 'black',
     shadowOpacity: 0.35,

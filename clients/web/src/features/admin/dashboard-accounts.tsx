@@ -43,7 +43,6 @@ export function useAccountOptions(): FilterOption<AccountFilter>[] {
           src={resolveImageUrl(apiBase(), user.avatarUrl)}
           size={MARK}
           circle
-          shadow={false}
         />
       ),
     })),

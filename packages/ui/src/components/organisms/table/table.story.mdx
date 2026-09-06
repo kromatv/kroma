@@ -94,10 +94,10 @@ A row that GOES somewhere is the link itself, and its cells are written inside i
 
 The whole heading is the control, so it is one D-pad stop with a hit area the size of the cell, and the arrow and the rank are faces inside it rather than targets of their own. On the browser targets it carries `aria-sort`, which a screen reader announces in its own language. React Native has no sort claim and no reader on those platforms reads one, so the rank is drawn rather than only announced, which also puts it in the heading's accessible name on both.
 
-<Scene name="Columns that hold, then scroll">
+<Scene name="Columns that hold">
   The same four columns at two widths. State, Added and Size state a `width` and keep it to the pixel; Title takes what is left and stops at its `min` of 160 rather than squeezing to nothing. Size sits at the end of its cell, where a number is read against the ones above it. Added names `from: 'md'` and is gone below that breakpoint, which follows the WINDOW rather than this canvas, so narrow the browser to watch it leave the header and every row at once.
 
-  The second table is narrower than those columns will shrink to, so it scrolls sideways. Drag it. The floor is the sum of every DRAWN column's `width` or `min`, which is why a column that dropped out below its breakpoint does not hold the table open, and why a table declaring no columns has no floor and no scroller. Without one, the last column is simply cut off by the frame, which is the bug this replaces.
+  The second table is narrower than those columns want: a table never scrolls sideways, so a `flex` column shrinks to its `min` and truncates what it holds, and a column that cannot fit a narrow screen says `from: 'md'` and leaves rather than pushing the last column out of the frame.
 
   {story.take(({ variant }) => (
     <Box gap={24}>
@@ -233,7 +233,7 @@ The whole heading is the control, so it is one D-pad stop with a hit area the si
 - Order the rows yourself, in the same render that reports the sort. The table draws the sort; it never applies one.
 - Declare `columns` wherever a column has to hold its width: without one, a cell is as wide as its share of the row and nothing else.
 - Name a `column` only where sorting by it means something: one without a name is not a control and takes no stop.
-- Give a `flex` column a `min`, so a long title stops shrinking rather than squeezing to nothing. It is also what the table refuses to scroll narrower than.
+- Give a `flex` column a `min`, so a long title stops shrinking rather than squeezing to nothing.
 </Do>
 
 <Dont>

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { onScreen } from '@kroma/ui/testing';
+import { declared, onScreen } from '@kroma/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -27,13 +27,13 @@ describe('SearchKeyboard', () => {
     setKeyboardLayoutPref('qwerty');
     show(<SearchKeyboard value="" onValueChange={vi.fn()} />);
     // A key wears no ring, so the grid's first letter is the one focus scales.
-    expect(screen.getByLabelText('Q').style.transform).toContain('scale(1.08)');
-    expect(screen.getByLabelText('A').style.transform).not.toContain('scale(1.08)');
+    expect(declared(screen.getByLabelText('Q'), 'transform') ?? '').toContain('scale(1.08)');
+    expect(declared(screen.getByLabelText('A'), 'transform') ?? '').not.toContain('scale(1.08)');
   });
 
   it('opens on A once the device is back on the alphabetical grid', () => {
     show(<SearchKeyboard value="" onValueChange={vi.fn()} />);
-    expect(screen.getByLabelText('A').style.transform).toContain('scale(1.08)');
+    expect(declared(screen.getByLabelText('A'), 'transform') ?? '').toContain('scale(1.08)');
   });
 
   it('sizes its keys for across the room, not for arm’s length', () => {

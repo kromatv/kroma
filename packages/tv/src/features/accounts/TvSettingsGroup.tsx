@@ -3,6 +3,7 @@ import { Box, Hint, Text, useFocusNav } from '@kroma/ui/kit';
 import { useNav, useParams } from '#tv/app/router';
 import { SETTINGS_GROUPS } from '#tv/app/settings/registry';
 import { AuthScreen } from '#tv/shared/ui';
+import { weight } from '#tv/shared/ui/weight';
 import { SettingsRows } from './SettingsRows';
 
 /**
@@ -33,7 +34,7 @@ export function TvSettingsGroup() {
         gap={4}
         mt={28}
         color="text/40"
-        textStyle={{ fontWeight: '500' }}
+        textStyle={weight.medium}
       />
     </AuthScreen>
   );

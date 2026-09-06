@@ -11,8 +11,8 @@ import {
   CheckboxFace,
   color,
   Focusable,
-  gradient,
   IconButton,
+  styles,
   sv,
   Text,
   WatchedBadge,
@@ -20,24 +20,28 @@ import {
 import { IconPlayerPlayFilled } from '@tabler/icons-react';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
 import { kromaClient } from '#web/shared/lib/api';
+import { wash } from '#web/shared/lib/art-styles';
 import { Image } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 const ROW_GAP = { base: 12, md: 20 } as const;
 const STILL_W = { base: 128, md: 200 } as const;
-const BOLD = { fontWeight: '700' } as const;
-const DIMMED = { opacity: 0.6 } as const;
-const PLAY_FROST = backdropBlur(2);
-const PLAY_LIFT = { ...PLAY_FROST, transform: [{ scale: 1.1 }] } as const;
-
-const STILL_SCRIM = gradient(`linear-gradient(170deg, ${color('black/5')}, ${color('black/45')})`);
+const s = styles({
+  bold: { fontWeight: '700' },
+  dimmed: { opacity: 0.6 },
+  frost: backdropBlur(2),
+  lift: { ...backdropBlur(2), transform: [{ scale: 1.1 }] },
+  scrim: {
+    backgroundImage: `linear-gradient(170deg, ${color('black/5')}, ${color('black/45')})`,
+  },
+});
 
 const episodeRow = sv({
   base: {
     row: true,
     align: 'center',
     gap: ROW_GAP,
-    radius: 'lg',
+    radius: 'xl',
     p: 14,
     bg: 'white/2.5',
     border: 'white/5',
@@ -88,19 +92,12 @@ export function EpisodeRow({
             center
             overflow="hidden"
             radius="md"
-            style={gradient(`linear-gradient(135deg, ${g1}, ${g2})`)}
+            style={wash(g1, g2, 135)}
           >
-            <Image src={still} fit="cover" fill style={watched ? DIMMED : undefined} />
-            <Box fill style={STILL_SCRIM} />
+            <Image src={still} fit="cover" fill style={watched ? s.dimmed : undefined} />
+            <Box fill style={s.scrim} />
             {watched ? <WatchedBadge size={28} /> : null}
-            <Box
-              w={44}
-              h={44}
-              center
-              radius="circle"
-              bg="bg/50"
-              style={hovered ? PLAY_LIFT : PLAY_FROST}
-            >
+            <Box w={44} h={44} center radius="circle" bg="bg/50" style={hovered ? s.lift : s.frost}>
               <IconPlayerPlayFilled size={18} color={color('white')} />
             </Box>
             {progress != null && !watched ? (
@@ -112,7 +109,7 @@ export function EpisodeRow({
 
           <Box minW={0} flex>
             <Box row align="center" gap={10} mb={6}>
-              <Text variant="label" lines={1} color={watched ? 'white/55' : 'text'} style={BOLD}>
+              <Text variant="label" lines={1} color={watched ? 'white/55' : 'text'} style={s.bold}>
                 {`${episode.episode}. ${episode.episodeTitle ?? episode.title}`}
               </Text>
               {runtime ? (
@@ -157,7 +154,7 @@ const missingRow = sv({
     row: true,
     align: 'center',
     gap: ROW_GAP,
-    radius: 'lg',
+    radius: 'xl',
     p: 14,
     bg: 'white/1.5',
     border: 'white/5',
@@ -188,10 +185,10 @@ export function MissingEpisodeRow({
   const label = t('content.episodeN', { n: episode });
   if (pending) {
     return (
-      <Box row align="center" gap={ROW_GAP} radius="lg" p={14} bg="white/1.5" border="white/5">
+      <Box row align="center" gap={ROW_GAP} radius="xl" p={14} bg="white/1.5" border="white/5">
         <MissingStill episode={episode} />
         <Box minW={0} flex>
-          <Text variant="label" lines={1} color="white/70" style={BOLD}>
+          <Text variant="label" lines={1} color="white/70" style={s.bold}>
             {label}
           </Text>
         </Box>
@@ -210,7 +207,7 @@ export function MissingEpisodeRow({
     >
       <MissingStill episode={episode} />
       <Box minW={0} flex>
-        <Text variant="label" lines={1} color={selected ? 'text' : 'white/70'} style={BOLD}>
+        <Text variant="label" lines={1} color={selected ? 'text' : 'white/70'} style={s.bold}>
           {label}
         </Text>
       </Box>
@@ -222,7 +219,7 @@ export function MissingEpisodeRow({
 function MissingStill({ episode }: Readonly<{ episode: number }>) {
   return (
     <Box w={STILL_W} aspect={16 / 9} shrink={0} center radius="md" bg="white/4">
-      <Text variant="label" color="white/35" style={BOLD}>
+      <Text variant="label" color="white/35" style={s.bold}>
         {String(episode)}
       </Text>
     </Box>

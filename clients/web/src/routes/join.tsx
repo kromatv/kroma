@@ -1,6 +1,6 @@
 import { InviteToken } from '@kroma/client/accounts';
 import { useT } from '@kroma/ui';
-import { Box, Button, Logo, Text } from '@kroma/ui/kit';
+import { Box, Button, classes, Logo, styles, Text } from '@kroma/ui/kit';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
@@ -73,7 +73,7 @@ function JoinPage() {
   }
 
   return (
-    <main style={{ ...SCREEN, background: PAGE_RADIAL }}>
+    <main className={classes(s.screen)}>
       {/* Auto margins (not justify-center) so a form taller than a small phone
           viewport scrolls instead of clipping its top. */}
       <Box w="100%" align="center" m="auto">
@@ -98,7 +98,7 @@ function JoinPage() {
               e.preventDefault();
               void submit();
             }}
-            style={FORM}
+            className={classes(s.form)}
           >
             <Text variant="heading" accessibilityRole="header">
               {t('auth.joinKroma')}
@@ -126,22 +126,24 @@ function JoinPage() {
   );
 }
 
-const SCREEN = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 100,
-  display: 'flex',
-  flexDirection: 'column',
-  overflowY: 'auto',
-  paddingInline: 24,
-  paddingBlock: 48,
-} as const;
-
-const FORM = {
-  display: 'flex',
-  width: '100%',
-  maxWidth: 380,
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: 20,
-} as const;
+const s = styles({
+  screen: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 100,
+    display: 'flex',
+    flexDirection: 'column',
+    overflowY: 'auto',
+    paddingInline: 24,
+    paddingBlock: 48,
+    backgroundImage: PAGE_RADIAL,
+  },
+  form: {
+    display: 'flex',
+    width: '100%',
+    maxWidth: 380,
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 20,
+  },
+});

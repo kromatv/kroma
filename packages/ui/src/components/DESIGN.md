@@ -377,7 +377,11 @@ equivalent. Three channels, in order:
 
 1. **The recipe.** `sv` paints `_hover`/`_focus`/`_press`/`_disabled`. The
    component computes the state; the recipe paints it. This covers almost
-   everything and costs nothing.
+   everything and costs nothing. A value that changes with the state can be
+   stated in place instead of in a layer: `bg: { base: 'accent', hover:
+   'accentHover' }` is the same declaration as `bg: 'accent', _hover: { bg:
+   'accentHover' }`, and where both forms name one property the `_state` layer
+   wins. Either form compiles to the same classes.
 2. **Render-prop-with-state**, for a caller who must render *differently* rather
    than paint differently: `children` as a function of a state object.
 3. **An exported context hook**, for a subtree several levels below the part, where

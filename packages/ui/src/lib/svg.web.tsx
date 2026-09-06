@@ -7,6 +7,8 @@
 // wrappers are pass-throughs rather than translations.
 
 import type { SVGProps } from 'react';
+import { sharedStyle, styles } from '#ui/core';
+import { classes } from '#ui/lib/classed';
 
 type El<T> = (props: SVGProps<T>) => React.ReactElement;
 
@@ -29,6 +31,11 @@ export const G: El<SVGGElement> = (props) => <g {...props} />;
  * react-native-svg parses it, and the browser simply is an SVG parser. The
  * markup is app-generated from a trusted server URL plus a server-issued code,
  * never user input. */
+
+const s = styles({ box: { display: 'flex' } });
+
+const sizeOf = (width?: number | string, height?: number | string) =>
+  sharedStyle(`svg:${width}:${height}`, { width, height });
 export function SvgXml({
   xml,
   width,
@@ -37,7 +44,7 @@ export function SvgXml({
   if (!xml) return null;
   return (
     <div
-      style={{ width, height, display: 'flex' }}
+      className={classes(s.box, sizeOf(width, height))}
       // biome-ignore lint/security/noDangerouslySetInnerHtml: app-generated QR SVG built by qrcode-generator from a trusted server URL + server-issued code, never user input.
       dangerouslySetInnerHTML={{ __html: xml }}
     />

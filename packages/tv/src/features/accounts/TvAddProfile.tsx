@@ -7,6 +7,7 @@ import { useNav } from '#tv/app/router';
 import { useServersHealth } from '#tv/app/useServersHealth';
 import { ActionRow, ServerRow, ServerRowSkeleton } from '#tv/features/accounts/ServerRow';
 import { AuthScreen, hostOf } from '#tv/shared/ui';
+import { weight } from '#tv/shared/ui/weight';
 
 interface Entry {
   url: string;
@@ -119,7 +120,7 @@ export function TvAddProfile() {
           justify="center"
           mt={28}
           color="text/40"
-          textStyle={{ fontWeight: '500' }}
+          textStyle={weight.medium}
         />
       </Box>
     </AuthScreen>

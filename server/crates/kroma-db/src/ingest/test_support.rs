@@ -95,6 +95,7 @@ pub(super) fn meta(tmdb: u64, title: &str) -> Metadata {
         genres: vec!["Science Fiction".into()],
         tmdb_genre_ids: vec![878],
         rating: Some(8.0),
+        certification: Some("PG-13".into()),
         poster_url: Some("/api/images/p.webp".into()),
         backdrop_url: None,
         logo_url: None,

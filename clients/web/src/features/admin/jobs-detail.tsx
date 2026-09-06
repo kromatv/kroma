@@ -6,15 +6,15 @@
 import type { JobKey, JobLog, JobRun, JobRunId } from '@kroma/client/jobs';
 import type { MessageKey } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Box, type ColorValue, Divider, ListRow, Row, Text } from '@kroma/ui/kit';
-import { type CSSProperties, useState } from 'react';
+import { Box, type ColorValue, classes, Divider, ListRow, Row, styles, Text } from '@kroma/ui/kit';
+import { useState } from 'react';
 import { clock, dur, rel } from '#web/features/admin/jobs-format';
 import { usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
 // A pane that scrolls: `overflow-y` and a capped height have no React Native
 // spelling, so the pane stays a real element.
-const PANE: CSSProperties = { maxHeight: 320, overflowY: 'auto' };
+const s = styles({ pane: { maxHeight: 320, overflowY: 'auto' } });
 
 export function JobDetailPanel({ jobKey }: Readonly<{ jobKey: JobKey }>) {
   const t = useT();
@@ -36,7 +36,7 @@ export function JobDetailPanel({ jobKey }: Readonly<{ jobKey: JobKey }>) {
       <Divider />
       <Box row={{ base: false, md: true }}>
         <Box w={{ base: '100%', md: 270 }} shrink={0} bg="surface1">
-          <div style={PANE}>
+          <div className={classes(s.pane)}>
             <Box p={10}>
               {runs.length === 0 ? (
                 <Text variant="meta" color="textDim" textAlign="center" px={8} py={24}>
@@ -58,7 +58,7 @@ export function JobDetailPanel({ jobKey }: Readonly<{ jobKey: JobKey }>) {
           </div>
         </Box>
         <Box flex minW={0} bg="bg">
-          <div style={PANE}>
+          <div className={classes(s.pane)}>
             <Box p={14} gap={2}>
               {logs.length === 0 ? (
                 <Text variant="meta" color="textDim">

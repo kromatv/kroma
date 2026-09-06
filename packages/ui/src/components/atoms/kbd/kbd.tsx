@@ -35,7 +35,7 @@ function Kbd({ children, style }: Readonly<KbdProps>) {
 }
 
 const s = styles({
-  cap: { border: 'border', shadow: 'card' },
+  cap: { border: 'border' },
   // The kit's mono is a system stack rather than a served family, so a keycap
   // is the platform's own monospace wherever it is drawn.
   ink: { font: 'mono', fontSize: 10.5, lineHeight: 14 },

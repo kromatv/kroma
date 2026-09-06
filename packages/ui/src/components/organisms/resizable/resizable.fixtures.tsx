@@ -15,7 +15,7 @@ export // Every pane reports its own share, which is the fastest way to see what
 function Pane({ name, hint, children }: Readonly<PaneProps>) {
   const panel = useResizablePanel();
   return (
-    <Box flex p={14} gap={4} bg="surface1" radius="md">
+    <Box flex p={14} gap={4} bg="surface1" radius="xl">
       <Box row align="center" gap={8}>
         <Text variant="overline" color="accent">
           {name}

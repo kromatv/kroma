@@ -7,7 +7,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
-import { type CornerValue, onPaper, radiusValue, styles } from '#ui/core';
+import { type CornerValue, onPaper, radiusValue, sharedStyle, styles } from '#ui/core';
 import { backdropBlur } from '#ui/lib/css';
 import { WEB } from '#ui/lib/platform';
 import { mergeSlotProps } from '#ui/lib/slot';
@@ -29,6 +29,8 @@ let PlatformFrost: ComponentType<FrostBackdropProps> | null = null;
  * module scope, before the first render. Generic over the component's own
  * props, since `ComponentType` is invariant in `P` and naming the props
  * directly would reject <BlurView> over tints the kit never passes. */
+
+const cornerStyle = (corner: number) => sharedStyle(`frost:corner:${corner}`, { radius: corner });
 function registerFrost<P extends FrostBackdropProps>(component: ComponentType<P>): void {
   PlatformFrost = component as ComponentType<FrostBackdropProps>;
 }
@@ -106,7 +108,10 @@ function coatOf(surface: StyleProp<ViewStyle>, options: FrostOptions): FrostCoat
   if (WEB) {
     const cached = webCoats.get(amount);
     if (cached) return cached;
-    const coat: FrostCoat = { style: backdropBlur(amount) as ViewStyle, layer: null };
+    const coat: FrostCoat = {
+      style: sharedStyle(`frost:${amount}`, backdropBlur(amount) as never) as ViewStyle,
+      layer: null,
+    };
     webCoats.set(amount, coat);
     return coat;
   }
@@ -119,7 +124,7 @@ function coatOf(surface: StyleProp<ViewStyle>, options: FrostOptions): FrostCoat
         // expo-blur's 0-100 scale: about four steps to the CSS pixel.
         intensity={Math.min(100, amount * 4)}
         tint={tint ?? (onPaper() ? 'light' : 'dark')}
-        style={[s.fill, s.clip, typeof corner === 'number' ? { borderRadius: corner } : null]}
+        style={[s.fill, s.clip, typeof corner === 'number' ? cornerStyle(corner) : null]}
       />
     ),
   };

@@ -6,7 +6,7 @@ import { ScrollView, type StyleProp, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
 import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
-import { styles } from '#ui/core';
+import { sharedStyle, styles } from '#ui/core';
 import { useTDefault } from '#ui/services/i18n';
 
 interface Shell {
@@ -29,6 +29,13 @@ interface DrawerBandProps {
 }
 
 /** The pinned top of the sheet: it stays put while the panel scrolls under it. */
+
+const bandOf = (pad: number) =>
+  sharedStyle(`drawer:band:${pad}`, {
+    paddingHorizontal: pad,
+    paddingVertical: BAND_Y,
+    flexGrow: 1,
+  });
 function Header({ children, style }: Readonly<DrawerBandProps>) {
   const { pad } = useShell();
   return (
@@ -49,7 +56,7 @@ function Panel({ children, style }: Readonly<DrawerBandProps>) {
       style={[s.panel, style]}
       // Grows to the sheet's height so a short body can still pin something to
       // its bottom edge with `mt="auto"`, as the navigation sheets do.
-      contentContainerStyle={{ paddingHorizontal: pad, paddingVertical: BAND_Y, flexGrow: 1 }}
+      contentContainerStyle={bandOf(pad)}
     >
       {children}
     </ScrollView>

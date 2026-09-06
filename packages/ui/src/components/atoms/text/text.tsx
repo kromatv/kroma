@@ -64,12 +64,13 @@ function sizeFix(variant: TypeRole, style: StyleProp<TextStyle>): TextStyle | nu
   const spec = activeTheme().typeSpec[variant];
   if (typeof size !== 'number' || size === spec.size) return null;
   const em = 'em' in spec ? spec.em : undefined;
-  return {
-    ...(flat.lineHeight === undefined ? { lineHeight: Math.round(size * spec.ratio) } : null),
-    ...(flat.letterSpacing === undefined && em !== undefined
-      ? { letterSpacing: Math.round(size * em * 100) / 100 }
-      : null),
-  };
+  const fixLine = flat.lineHeight === undefined;
+  const fixTracking = flat.letterSpacing === undefined && em !== undefined;
+  if (!fixLine && !fixTracking) return null;
+  return sharedStyle(`txt:fix:${variant}:${size}:${fixLine ? 'l' : ''}${fixTracking ? 's' : ''}`, {
+    ...(fixLine ? { lineHeight: Math.round(size * spec.ratio) } : null),
+    ...(fixTracking ? { letterSpacing: Math.round(size * (em as number) * 100) / 100 } : null),
+  });
 }
 
 function Text({

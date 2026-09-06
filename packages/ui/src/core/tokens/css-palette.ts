@@ -1,10 +1,10 @@
 // One file keyed on Platform.OS, not a `.ts`/`.web.ts` pair: the native half is
 // `null`, a legal value, so a misresolved import would fail silently.
 
+import { type ColorToken, colors, splitAlpha } from '#ui/core/tokens/colors';
+import { cssVar } from '#ui/core/tokens/css-var';
+import { type ShadowToken, shadow } from '#ui/core/tokens/effects';
 import { WEB } from '#ui/lib/platform';
-import { type ColorToken, colors, splitAlpha } from './colors';
-import { cssVar } from './css-var';
-import { type ShadowToken, shadow } from './effects';
 
 // An engine below M49 has no custom properties at all, so a token written as
 // `var(--kroma-…)` resolves to nothing there and the colour is simply lost. For
@@ -13,7 +13,9 @@ import { type ShadowToken, shadow } from './effects';
 const CASCADE =
   WEB && (globalThis as { __KROMA_DEEP_TIER__?: boolean }).__KROMA_DEEP_TIER__ !== true;
 
-const vars = <K extends string>(
+/** A token group read back through the cascade: every value a `var()` of the
+ *  property `name` gives its key. */
+export const customProperties = <K extends string>(
   group: Record<K, string>,
   name: (key: string) => string,
 ): Readonly<Record<K, string>> =>
@@ -26,11 +28,11 @@ const vars = <K extends string>(
  * browser repaints on `[data-theme]` alone, React Native moves the theme store.
  */
 export const CSS_COLORS: Readonly<Record<ColorToken, string>> | null = CASCADE
-  ? vars(colors, cssVar)
+  ? customProperties(colors, cssVar)
   : null;
 
 export const CSS_SHADOWS: Readonly<Record<ShadowToken, string>> | null = CASCADE
-  ? vars(shadow, (k) => `--shadow-${k}`)
+  ? customProperties(shadow, (k) => `--shadow-${k}`)
   : null;
 
 /**

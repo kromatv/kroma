@@ -94,7 +94,7 @@ function Hint({ children }: Readonly<{ children: ReactNode }>) {
 function Detail({ children }: Readonly<{ children: ReactNode }>) {
   useShape('Detail');
   return (
-    <Box bg="surface1" border="border" radius="md" px={14} py={10} maxW={420}>
+    <Box bg="surface1" border="border" radius="xl" px={14} py={10} maxW={420}>
       <Text variant="meta" color="textDim" style={s.centred}>
         {children}
       </Text>

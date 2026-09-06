@@ -1,7 +1,7 @@
 import { hasPermission } from '@kroma/client/accounts';
 import type { MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, color, Drawer, Logo, Row, Text, useBreakpoint } from '@kroma/ui/kit';
+import { Box, classes, Drawer, Logo, Row, styles, Text, useBreakpoint } from '@kroma/ui/kit';
 import {
   IconAlertTriangle,
   IconBookmark,
@@ -18,8 +18,8 @@ import {
   type TablerIcon,
 } from '@tabler/icons-react';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { type CSSProperties, useEffect, useState } from 'react';
-import { ScrollView, type ViewStyle } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ScrollView } from 'react-native';
 import { UserChip, VersionInfo } from '#web/features/catalog/sidebar-account';
 import { useModuleNav } from '#web/modules/ModuleHostProvider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
@@ -33,48 +33,47 @@ import { SIDE_NAV_FRAME, SIDE_NAV_GUTTER } from '#web/shared/ui/side-nav-style';
 
 // `position: sticky`, `100vh`, `overflow-y` and `env()` have no React Native
 // spelling, so the shell's own frames stay CSS around kit content.
-const SIDEBAR: CSSProperties = {
-  position: 'sticky',
-  top: 0,
-  height: '100vh',
-  display: 'flex',
-  flexDirection: 'column',
-  borderRightWidth: 1,
-  borderRightStyle: 'solid',
-  borderRightColor: 'var(--kroma-border)',
-  background: 'var(--kroma-bg)',
-};
-
-const TOPBAR: CSSProperties = {
-  position: 'sticky',
-  top: 0,
-  zIndex: 40,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  borderBottomWidth: 1,
-  borderBottomStyle: 'solid',
-  borderBottomColor: 'var(--kroma-border)',
-  background: 'color-mix(in srgb, var(--kroma-bg) 95%, transparent)',
-  paddingLeft: 16,
-  paddingRight: 16,
-  paddingBottom: 10,
-  paddingTop: 'max(0.625rem, env(safe-area-inset-top))',
-  backdropFilter: 'blur(8px)',
-  WebkitBackdropFilter: 'blur(8px)',
-};
+const s = styles({
+  sidebar: {
+    position: 'sticky',
+    top: 0,
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    borderWidth: 0,
+    borderRightWidth: 1,
+    borderStyle: 'solid',
+    borderRightColor: 'var(--kroma-border)',
+    backgroundColor: 'var(--kroma-bg)',
+  },
+  topbar: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 40,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 0,
+    borderBottomWidth: 1,
+    borderStyle: 'solid',
+    borderBottomColor: 'var(--kroma-border)',
+    backgroundColor: 'color-mix(in srgb, var(--kroma-bg) 95%, transparent)',
+    px: 16,
+    pb: 10,
+    paddingTop: 'max(0.625rem, env(safe-area-inset-top))',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+  },
+  drawerHead: {
+    px: SIDE_NAV_GUTTER,
+    paddingTop: 'max(1.75rem, env(safe-area-inset-top))',
+    pb: 8,
+  },
+  logoLink: { display: 'block', color: 'inherit', textDecorationLine: 'none' },
+  navFill: { bg: 'bg' },
+});
 
 // `env()` has no React Native spelling, so the sheet's own insets stay CSS.
-const DRAWER_HEAD = {
-  paddingLeft: SIDE_NAV_GUTTER,
-  paddingRight: SIDE_NAV_GUTTER,
-  paddingTop: 'max(1.75rem, env(safe-area-inset-top))',
-  paddingBottom: 8,
-} as unknown as ViewStyle;
-
-const LOGO_LINK: CSSProperties = { display: 'block', color: 'inherit', textDecoration: 'none' };
-
-const NAV_FILL = { backgroundColor: color('bg') } as const;
 
 const NAV: { labelKey: MessageKey; to: RoutePath; icon: TablerIcon; exact?: boolean }[] = [
   { labelKey: 'nav.home', to: '/', icon: IconHome, exact: true },
@@ -89,7 +88,7 @@ export function Sidebar() {
   const step = useBreakpoint();
   if (step !== 'lg' && step !== 'tv') return null;
   return (
-    <aside style={SIDEBAR}>
+    <aside className={classes(s.sidebar)}>
       <SideNav.Header>
         <Logo size={24} />
       </SideNav.Header>
@@ -151,10 +150,10 @@ export function MobileTopbar() {
   useEffect(() => setOpen(false), [pathname]);
   if (step === 'lg' || step === 'tv') return null;
   return (
-    <header style={TOPBAR}>
+    <header className={classes(s.topbar)}>
       <Box row align="center" gap={8}>
         <NavMenuButton open={open} onPress={() => setOpen(true)} />
-        <Link to="/" aria-label="KROMA" style={LOGO_LINK}>
+        <Link to="/" aria-label="KROMA" className={classes(s.logoLink)}>
           <Logo size={20} />
         </Link>
         <Drawer.Root
@@ -165,9 +164,9 @@ export function MobileTopbar() {
           width="xs"
           fullBelow={640}
           pad={0}
-          panelStyle={NAV_FILL}
+          panelStyle={s.navFill}
         >
-          <Drawer.Header style={DRAWER_HEAD}>
+          <Drawer.Header style={s.drawerHead}>
             <Row between>
               <Box px={8} pb={8}>
                 <Logo size={24} />

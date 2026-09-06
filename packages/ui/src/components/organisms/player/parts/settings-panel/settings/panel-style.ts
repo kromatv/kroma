@@ -16,7 +16,7 @@
 import type { ViewStyle } from 'react-native';
 import { styles } from '#ui/core';
 
-const ROW_BASE = { w: '100%', row: true, align: 'center', radius: 'lg', px: 22, py: 18 } as const;
+const ROW_BASE = { w: '100%', row: true, align: 'center', radius: 'xl', px: 22, py: 18 } as const;
 
 export const panel = styles({
   panelList: { gap: 10 },
@@ -29,7 +29,7 @@ export const panel = styles({
   menuLabel: { text: 'strongTv', color: 'text' },
   menuValue: { text: 'metaTv', mt: 2, color: 'text/50' },
 
-  valueRow: { radius: 'lg', px: 22, py: 16 },
+  valueRow: { radius: 'xl', px: 22, py: 16 },
   valueRowOn: { bg: 'tint/8', ring: 'focusLift', z: 1 },
   valueLabel: { text: 'sectionTv', color: 'text' },
 

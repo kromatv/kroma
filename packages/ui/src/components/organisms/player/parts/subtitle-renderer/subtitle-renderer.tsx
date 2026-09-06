@@ -1,5 +1,4 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import {
@@ -8,6 +7,7 @@ import {
   subtitleWindowStyle,
 } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
+import { style } from '#ui/core';
 
 /** A parsed WebVTT cue at absolute playback seconds. */
 interface Cue {
@@ -20,7 +20,7 @@ const TAG = /<[^<>]*>/g;
 
 const MAX_VTT_BYTES = 8 * 1024 * 1024;
 
-const NO_POINTER: ViewStyle = { pointerEvents: 'none' };
+const NO_POINTER = style({ pointerEvents: 'none' });
 
 /** Strip VTT inline markup UNTIL STABLE, not in one pass: removing the inner tag
  * of `<<i>>` leaves `<>` behind, so a single sweep can put the very markup this

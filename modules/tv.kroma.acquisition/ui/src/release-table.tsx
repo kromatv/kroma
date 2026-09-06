@@ -4,7 +4,7 @@
 // request drawer used to show.
 
 import type { IndexerReport, ScoredReleaseView } from '@kroma/client/requests';
-import { TABULAR, Table, useT } from '@kroma/module-sdk';
+import { TABULAR, Table, type TableColumn, useT } from '@kroma/module-sdk';
 import { Box, Chip, Divider, EmptyState, Icon, Row, SegmentGroup, Text } from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
 import { IndexerReportStrip } from './indexer-report';
@@ -17,7 +17,14 @@ import {
   targetLabel,
 } from './release-sort';
 
-const COLUMNS = 'minmax(0,1fr) 150px 92px 84px 74px 44px';
+const COLUMNS: TableColumn[] = [
+  {},
+  { width: 150, from: 'md' },
+  { width: 92, from: 'md' },
+  { width: 84, from: 'md' },
+  { width: 74 },
+  { width: 44 },
+];
 
 const SORTS: ReleaseSort[] = ['score', 'size', 'seeders', 'date'];
 
@@ -99,9 +106,9 @@ export function ReleaseTable({
         <Table.Root columns={COLUMNS}>
           <Table.Header>
             <Table.Column>{t('requests.colRelease')}</Table.Column>
-            <Table.Column wide>{t('requests.colIndexer')}</Table.Column>
-            <Table.Column wide>{t('requests.colSize')}</Table.Column>
-            <Table.Column wide>{t('requests.colSeeders')}</Table.Column>
+            <Table.Column>{t('requests.colIndexer')}</Table.Column>
+            <Table.Column>{t('requests.colSize')}</Table.Column>
+            <Table.Column>{t('requests.colSeeders')}</Table.Column>
             <Table.Column>{t('requests.colScore')}</Table.Column>
             <Table.Cell />
           </Table.Header>

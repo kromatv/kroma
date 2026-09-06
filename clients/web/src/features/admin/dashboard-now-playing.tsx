@@ -1,5 +1,5 @@
 import type { PlaybackSession } from '@kroma/client/admin';
-import { posterGradient, resolveImageUrl } from '@kroma/core';
+import { resolveImageUrl } from '@kroma/core';
 import type { Translate } from '@kroma/i18n';
 import { TABULAR } from '@kroma/module-sdk';
 import { useFormat, useT } from '@kroma/ui';
@@ -22,6 +22,7 @@ import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { PillDot } from '#web/features/admin/pill';
 import { apiBase, kromaClient } from '#web/shared/lib/api';
+import { posterScrim } from '#web/shared/lib/art-styles';
 import { useAuth } from '#web/shared/lib/auth';
 import { useStoryboard } from '#web/shared/lib/use-storyboard';
 import { Image } from '#web/shared/ui';
@@ -39,16 +40,8 @@ function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
   const poster = kromaClient().media.artwork.posterUrl(s.itemId);
 
   return (
-    <Box
-      w={THUMB_W}
-      aspect={16 / 9}
-      shrink={0}
-      self="flex-start"
-      radius="xs"
-      overflow="hidden"
-      shadow="card"
-    >
-      <div style={{ position: 'absolute', inset: 0, background: posterGradient(s.title) }} />
+    <Box w={THUMB_W} aspect={16 / 9} shrink={0} self="flex-start" radius="xs" overflow="hidden">
+      <Box fill style={posterScrim(s.title)} />
       {posterFailed ? null : (
         <Image src={poster} fit="cover" fill onError={() => setPosterFailed(true)} />
       )}
@@ -112,7 +105,7 @@ export function NowPlayingCard({
   const sub = subtitleOf(s, t);
 
   return (
-    <Surface elevated pad="none" radius={16} border="border" row gap={18} px={20} py={18}>
+    <Surface elevated pad="none" border="border" row gap={18} px={20} py={18}>
       <NowPlayingThumb s={s} />
 
       <Box flex minW={0} gap={12}>
@@ -168,7 +161,7 @@ export function NowPlayingCard({
         <Row wrap gapX={26} gapY={10}>
           <DataField.Root size="sm">
             <DataField.Label>{t('admin.statPlayback')}</DataField.Label>
-            <Row self="flex-start" radius={4} px={9} py={3} bg={pipe.bg}>
+            <Row self="flex-start" radius="xs" px={9} py={3} bg={pipe.bg}>
               <Text variant="meta" color={pipe.ink}>
                 {pipe.label}
               </Text>
@@ -200,7 +193,7 @@ export function NowPlayingCard({
           </DataField.Root>
           <DataField.Root size="sm">
             <DataField.Label>{t('admin.statNetwork')}</DataField.Label>
-            <Row self="flex-start" radius={4} px={9} py={3} bg={lan ? 'success/12' : 'info/12'}>
+            <Row self="flex-start" radius="xs" px={9} py={3} bg={lan ? 'success/12' : 'info/12'}>
               <Text variant="meta" color={lan ? 'success' : 'info'}>
                 {s.network} · {s.ip}
               </Text>

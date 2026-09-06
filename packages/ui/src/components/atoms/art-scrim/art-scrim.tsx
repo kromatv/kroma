@@ -25,7 +25,7 @@ const POSTER_SCRIM = [
   `${color('black/0')} 78%)`,
 ].join(' ');
 
-const RAMP = { soft: gradient(CARD_SCRIM), deep: gradient(POSTER_SCRIM) } as const;
+const ramp = styles({ soft: gradient(CARD_SCRIM), deep: gradient(POSTER_SCRIM) });
 
 interface ArtScrimProps {
   /** How far up the dark reaches. `soft` leaves the artwork alone until the
@@ -38,7 +38,7 @@ interface ArtScrimProps {
 }
 
 function ArtScrim({ variant = 'soft', radius = 0 }: Readonly<ArtScrimProps>) {
-  return <Box radius={radius} style={[s.layer, RAMP[variant]]} />;
+  return <Box radius={radius} style={[s.layer, ramp[variant]]} />;
 }
 
 const s = styles({ layer: { fill: true, pointerEvents: 'none' } });

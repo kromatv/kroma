@@ -35,7 +35,7 @@ import {
   IconVolHigh,
   IconVolLow,
 } from '#ui/components/organisms/player/parts/icons';
-import { styles, sv } from '#ui/core';
+import { sharedStyle, styles, sv } from '#ui/core';
 import { a11yValue } from '#ui/lib/a11y';
 import { suppressSelection } from '#ui/lib/drag-select';
 import { useFocusVisible } from '#ui/lib/focus-visible';
@@ -73,6 +73,14 @@ export interface ControlClusterProps {
 
 // Controlled focus (state-driven, not platform/navigator focus; see
 // ../lib/virtual-focus.ts): `focused` is ALWAYS passed explicitly.
+
+const railOf = (height: number, width: number, paddingRight: number) =>
+  sharedStyle(`volume:rail:${height}:${width}:${paddingRight}`, {
+    height,
+    width,
+    justifyContent: 'center',
+    paddingRight,
+  });
 function Circle({
   id,
   diameter,
@@ -369,12 +377,7 @@ function VolumeControl({
         accessibilityRole="adjustable"
         accessibilityLabel={label}
         {...a11yValue({ min: 0, max: 100, now: percent, text: `${percent}%` })}
-        style={{
-          height: size,
-          width: px(VOLUME_RAIL),
-          justifyContent: 'center',
-          paddingRight: px(20),
-        }}
+        style={railOf(size, px(VOLUME_RAIL), px(20))}
       >
         <Box
           ref={trackRef}
@@ -405,7 +408,6 @@ function VolumeControl({
             radius="pill"
             bg="#FFFFFF"
             style={[
-              s.thumb,
               // Half its own size, so the handle stays centred on the level at
               // whatever scale the row is drawn.
               {
@@ -421,7 +423,6 @@ function VolumeControl({
 }
 
 const s = styles({
-  thumb: { boxShadow: '0 1px 4px rgba(0, 0, 0, 0.5)' },
   inert: { pointerEvents: 'none' },
 });
 

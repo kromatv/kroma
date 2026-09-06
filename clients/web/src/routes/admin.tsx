@@ -1,11 +1,12 @@
 import { hasPermission } from '@kroma/client/accounts';
 import { useT } from '@kroma/ui';
-import { Box, Text } from '@kroma/ui/kit';
+import { Box, classes, Text } from '@kroma/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { GateLoading } from '#web/features/accounts/auth-gate';
 import { AdminLayout } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 import { useRequireAuth } from '#web/shared/lib/require-auth';
+import { page } from '#web/shared/ui';
 
 // Any management capability unlocks the console; pages further gate their writes.
 export const Route = createFileRoute('/admin')({
@@ -28,7 +29,7 @@ function AdminRoute() {
 
   if (!allowed) {
     return (
-      <main style={SCREEN}>
+      <main className={classes(page.screen)}>
         <Box flex center px={24}>
           <Text variant="body" color="textMuted">
             {t('admin.noAdminAccess')}
@@ -44,5 +45,3 @@ function AdminRoute() {
     </AdminLayout>
   );
 }
-
-const SCREEN = { minHeight: '100vh', display: 'flex' } as const;

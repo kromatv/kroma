@@ -155,7 +155,6 @@ const SOURCES = [
   '../src/core/tokens/effects.ts',
   '../src/core/tokens/layout.ts',
   '../src/core/tokens/typography.ts',
-  '../src/styles/admin-table.ts',
   '../src/styles/motion.ts',
   '../src/styles/page.ts',
   '../src/styles/reset.ts',

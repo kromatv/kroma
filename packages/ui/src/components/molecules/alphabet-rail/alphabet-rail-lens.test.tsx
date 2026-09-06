@@ -2,6 +2,7 @@
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { declared } from '#ui/testing';
 import { AlphabetRail } from './alphabet-rail';
 import { PAD, ROW_W } from './alphabet-rail-context';
 import { Bubble, Lens, lensFor } from './alphabet-rail-lens';
@@ -23,7 +24,7 @@ function lens(box: LensBox | null, chase = false) {
 function travelMs(chase: boolean) {
   const view = lens(lensFor([0, 0], ROW_H), chase);
   view.move(lensFor([4, 4], ROW_H));
-  return Number.parseFloat(view.node.style.transitionDuration);
+  return Number.parseFloat(declared(view.node, 'transition-duration') ?? '');
 }
 
 describe('lensFor', () => {
@@ -45,7 +46,7 @@ describe('lensFor', () => {
 describe('the lens on the web', () => {
   it('takes its first box without travelling to it', () => {
     const { node } = lens(lensFor([0, 0], ROW_H));
-    expect(node.style.transitionProperty).toBe('opacity');
+    expect(declared(node, 'transition-property')).toBe('opacity');
     expect(node.style.opacity).toBe('1');
   });
 
@@ -53,7 +54,7 @@ describe('the lens on the web', () => {
     const { node, move } = lens(lensFor([0, 0], ROW_H));
     const next = lensFor([3, 5], ROW_H);
     move(next);
-    expect(node.style.transitionProperty).toBe('left, top, width, height, opacity');
+    expect(declared(node, 'transition-property')).toBe('left, top, width, height, opacity');
     expect(node.style.top).toBe(`${next.y}px`);
     expect(node.style.height).toBe(`${next.height}px`);
   });
@@ -81,8 +82,8 @@ describe('the bubble', () => {
     const { container } = render(<Bubble letter="B" y={120} />);
     const node = container.firstElementChild as HTMLElement;
     const px = (value: string) => Number.parseFloat(value);
-    expect(node.style.top).toBe(`${120 - px(node.style.height) / 2}px`);
-    expect(px(node.style.right)).toBeGreaterThan(ROW_W + PAD * 2);
+    expect(node.style.top).toBe(`${120 - px(declared(node, 'height') ?? '') / 2}px`);
+    expect(px(declared(node, 'right') ?? '')).toBeGreaterThan(ROW_W + PAD * 2);
   });
 
   it('echoes the letter under a scrubbing finger, and goes when the finger lifts', () => {

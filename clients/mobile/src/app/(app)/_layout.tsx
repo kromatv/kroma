@@ -1,6 +1,6 @@
 import { color } from '@kroma/ui/kit';
 import { Redirect, Stack } from 'expo-router';
-import { isTablet } from '#mobile/lib/layout';
+import { PLAYER_ORIENTATION, UPRIGHT } from '#mobile/lib/orientation';
 import { useSession } from '#mobile/lib/session';
 
 /** Everything behind the auth gate: tabs, detail pages, the player. */
@@ -13,7 +13,7 @@ export default function AppLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: color('bg') },
-        orientation: isTablet ? 'default' : 'portrait',
+        orientation: UPRIGHT,
       }}
     >
       <Stack.Screen
@@ -25,7 +25,7 @@ export default function AppLayout() {
           presentation: 'fullScreenModal',
           // Per-screen orientation rotates during the transition rather than as a
           // post-mount flip.
-          orientation: isTablet ? 'default' : 'landscape',
+          orientation: PLAYER_ORIENTATION,
         }}
       />
     </Stack>

@@ -3,7 +3,7 @@
 // off the JS thread on every platform.
 
 import { Animated } from 'react-native';
-import { color as ink, radiusValue, useTheme } from '#ui/core';
+import { sharedStyle, styles } from '#ui/core';
 import { a11yState } from '#ui/lib/a11y';
 import { useLoop } from '#ui/lib/loop';
 
@@ -21,8 +21,17 @@ interface SpinnerProps {
 
 const SPIN_MS = 900;
 
+// Three faint quadrants leave one visible arc: the spinner is the turn.
+const s = styles({ ring: { radius: 'circle', borderColor: 'tint/14' } });
+
+const turnOf = (size: number, arc: number, top: string) =>
+  sharedStyle(`spinner:${size}:${arc}:${top}`, {
+    w: size,
+    h: size,
+    borderWidth: arc,
+    borderTopColor: top,
+  });
 function Spinner({ size = 28, thickness, color, label }: Readonly<SpinnerProps>) {
-  const theme = useTheme();
   const spin = useLoop('spin', SPIN_MS);
   const arc = thickness ?? Math.max(2, Math.round(size / 10));
 
@@ -31,18 +40,7 @@ function Spinner({ size = 28, thickness, color, label }: Readonly<SpinnerProps>)
       accessibilityRole="progressbar"
       accessibilityLabel={label}
       {...a11yState({ busy: true })}
-      style={[
-        {
-          width: size,
-          height: size,
-          borderRadius: radiusValue('circle'),
-          borderWidth: arc,
-          // Three faint quadrants leave one visible arc: the spinner is the turn.
-          borderColor: ink('tint/14'),
-          borderTopColor: color ? ink(color) : theme.colors.accent,
-        },
-        spin,
-      ]}
+      style={[s.ring, turnOf(size, arc, color ?? 'accent'), spin]}
     />
   );
 }

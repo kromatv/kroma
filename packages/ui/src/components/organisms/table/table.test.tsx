@@ -424,36 +424,14 @@ describe('a row the caller reorders', () => {
 
 const grid = () => screen.getByRole('table') as HTMLElement;
 
-const scroller = () => grid().parentElement?.parentElement as HTMLElement;
-
 describe('a table wider than the room it is given', () => {
-  it('scrolls sideways rather than clipping, and will not shrink past its columns', () => {
-    pinDesignWidth(1200);
-    render(<Declared />);
-
-    expect(getComputedStyle(scroller()).overflowX).toBe('auto');
-    expect(getComputedStyle(grid()).minWidth).toBe('436px');
-  });
-
-  it('leaves a dropped column out of the width it refuses to shrink past', () => {
-    pinDesignWidth(480);
-    render(<Declared />);
-
-    expect(getComputedStyle(grid()).minWidth).toBe('308px');
-  });
-
-  it('keeps the rows directly under the table, with the scroller outside it', () => {
+  it('never scrolls sideways: the frame is the table, and a flex column shrinks to its minimum', () => {
     pinDesignWidth(1200);
     render(<Declared />);
 
     expect(grid().firstElementChild?.getAttribute('role')).toBe('rowgroup');
-    expect(scroller().getAttribute('role')).toBeNull();
-  });
-
-  it('is not wrapped in a scroller at all when nothing can overflow', () => {
-    render(<Grid />);
-
-    expect(getComputedStyle(scroller()).overflowX).not.toBe('auto');
+    expect(getComputedStyle(grid().parentElement as Element).overflowX).not.toBe('auto');
+    expect(getComputedStyle(grid()).minWidth).toBe('0px');
   });
 });
 

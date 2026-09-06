@@ -13,9 +13,10 @@
 // the third tile lands on the third tile of the next row, not on whichever one
 // that row last held.
 
-import { Children, type ReactNode, useCallback, useMemo, useState } from 'react';
+import { Children, type ReactNode, useCallback, useState } from 'react';
 import type { LayoutChangeEvent, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { sharedStyle } from '#ui/core';
 import { FocusLiftView } from '#ui/lib/focus-lift';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
 import { FocusLine } from '#ui/lib/focus-scroll';
@@ -65,12 +66,11 @@ function Grid({ min, columns, width, gap = 24, rowGap, children }: Readonly<Grid
     setMeasured((current) => (current === next ? current : next));
   }, []);
 
-  const style = useMemo(() => ({ gap: rowGap ?? gap }), [gap, rowGap]);
-  const line = useMemo<ViewStyle>(() => ({ flexDirection: 'row', gap }), [gap]);
-  const cell = useMemo<ViewStyle>(
-    () => ({ width: cellWidth(room, count, gap) }),
-    [room, count, gap],
-  );
+  const style = sharedStyle(`grid:gap:${rowGap ?? gap}`, { gap: rowGap ?? gap });
+  const line = sharedStyle(`grid:line:${gap}`, { flexDirection: 'row', gap });
+  const cell = sharedStyle(`grid:cell:${cellWidth(room, count, gap)}`, {
+    width: cellWidth(room, count, gap),
+  });
   return (
     <Box onLayout={onLayout}>
       <FocusColumn grid style={style}>

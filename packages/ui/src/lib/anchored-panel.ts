@@ -4,6 +4,7 @@
 
 import { type RefObject, useEffect, useLayoutEffect, useState } from 'react';
 import { Dimensions } from 'react-native';
+import { styles } from '#ui/core';
 import {
   type AnchorPlacement,
   type AnchorRect,
@@ -22,16 +23,14 @@ const OVERLAY = (WEB ? 'fixed' : 'absolute') as 'absolute';
 
 /** The click-away layer. Above the app's sticky chrome (headers ride z-40),
  *  or a tap meant to dismiss lands on the header instead. */
-export const PANEL_BACKDROP = {
-  position: OVERLAY,
-  top: 0,
-  right: 0,
-  bottom: 0,
-  left: 0,
-  zIndex: 99,
-} as const;
+const s = styles({
+  backdrop: { position: OVERLAY, top: 0, right: 0, bottom: 0, left: 0, zIndex: 99 },
+  shell: { position: OVERLAY, zIndex: 100 },
+});
 
-export const PANEL_SHELL = { position: OVERLAY, zIndex: 100 } as const;
+export const PANEL_BACKDROP = s.backdrop;
+
+export const PANEL_SHELL = s.shell;
 
 interface AnchorHandle {
   focus?: () => void;

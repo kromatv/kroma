@@ -37,8 +37,8 @@ function PerfChart({ frames }: Readonly<{ frames: readonly number[] }>) {
     <Box style={s.chart}>
       {/* The budgets, drawn behind the bars: a chart of frame times without
           them is a shape with nothing to be good or bad against. */}
-      <Box style={[s.rule, { bottom: (BUDGET_MS / CEILING_MS) * HEIGHT }]} />
-      <Box style={[s.rule, { bottom: ((BUDGET_MS * 2) / CEILING_MS) * HEIGHT }]} />
+      <Box style={[s.rule, s.budget]} />
+      <Box style={[s.rule, s.budgetTwice]} />
       <Box row style={s.bars}>
         {shown.map((ms, i) => (
           <Box
@@ -61,6 +61,8 @@ function PerfChart({ frames }: Readonly<{ frames: readonly number[] }>) {
 }
 
 const s = styles({
+  budget: { bottom: (BUDGET_MS / CEILING_MS) * HEIGHT },
+  budgetTwice: { bottom: ((BUDGET_MS * 2) / CEILING_MS) * HEIGHT },
   chart: { h: HEIGHT, justify: 'flex-end', mt: 6 },
   bars: { h: HEIGHT, align: 'flex-end', gap: 1 },
   bar: { w: 3, radius: 1 },

@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { ViewStyle } from 'react-native';
+import { sharedStyle, style } from '#ui/core';
 import { BREAKPOINTS, type BreakpointName } from '#ui/core/tokens';
 
 interface TableColumn {
@@ -23,7 +24,6 @@ interface TableGrid {
   columns: readonly TableColumn[];
   boxes: readonly ViewStyle[];
   step: number;
-  minWidth: number;
 }
 
 const GridContext = createContext<TableGrid | null>(null);
@@ -34,18 +34,22 @@ function useTableGrid(): TableGrid | null {
 
 const NO_COLUMNS: readonly TableColumn[] = [];
 
-const FILL: ViewStyle = { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 };
+const FILL = style({ flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 });
 
 function columnBox(column: TableColumn): ViewStyle {
   if (column.width !== undefined) {
-    return { width: column.width, flexGrow: 0, flexShrink: 0 };
+    return sharedStyle(`table:column:${column.width}`, {
+      width: column.width,
+      flexGrow: 0,
+      flexShrink: 0,
+    });
   }
-  return {
+  return sharedStyle(`table:column:${column.flex ?? 1}:${column.min ?? 0}`, {
     flexGrow: column.flex ?? 1,
     flexShrink: 1,
     flexBasis: 0,
     minWidth: column.min ?? 0,
-  };
+  });
 }
 
 function stepOf(name: BreakpointName): number {
@@ -64,22 +68,5 @@ function drawn(column: TableColumn | undefined, step: number): boolean {
   return !column?.from || step >= stepOf(column.from);
 }
 
-function minWidthOf(columns: readonly TableColumn[], step: number): number {
-  let total = 0;
-  for (const column of columns) {
-    if (drawn(column, step)) total += column.width ?? column.min ?? 0;
-  }
-  return total;
-}
-
 export type { TableColumn, TableGrid };
-export {
-  breakpointMask,
-  columnBox,
-  drawn,
-  FILL,
-  GridContext,
-  minWidthOf,
-  NO_COLUMNS,
-  useTableGrid,
-};
+export { breakpointMask, columnBox, drawn, FILL, GridContext, NO_COLUMNS, useTableGrid };

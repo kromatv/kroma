@@ -1,9 +1,10 @@
 import { useT } from '@kroma/ui';
-import { Box, Button, Icon, OtpField, Text } from '@kroma/ui/kit';
+import { Box, Button, classes, Icon, OtpField, styles, Text } from '@kroma/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { NearbyTvs } from '#web/features/accounts/nearby-tvs';
 import { useAuth } from '#web/shared/lib/auth';
+import { page } from '#web/shared/ui';
 
 // The approver side of pairing: the TVs waiting on this network are one tap
 // each, and under them the code a TV shows for everything that road cannot
@@ -39,9 +40,9 @@ function ConnectPage() {
   }
 
   return (
-    <main style={SCREEN}>
+    <main className={classes(page.screen)}>
       <Box flex center px={24} py={64}>
-        <Box w="100%" maxW={420} radius="xl" border="border" bg="surface1" p={32} shadow="card">
+        <Box w="100%" maxW={420} radius="xl" border="border" bg="surface1" p={32}>
           <Text variant="subheading" accessibilityRole="header" textAlign="center" mb={8}>
             {t('connect.title')}
           </Text>
@@ -55,7 +56,7 @@ function ConnectPage() {
           </Text>
 
           {status === 'ok' ? (
-            <Box radius="lg" border="success/40" bg="success/10" px={16} py={24}>
+            <Box radius="xl" border="success/40" bg="success/10" px={16} py={24}>
               <Box center mb={4}>
                 <Icon name="check" size={38} thickness={2.4} color="success" />
               </Box>
@@ -72,7 +73,7 @@ function ConnectPage() {
                 e.preventDefault();
                 void submit();
               }}
-              style={FORM}
+              className={classes(s.form)}
             >
               <OtpField.Root
                 maxLength={4}
@@ -107,10 +108,6 @@ function ConnectPage() {
   );
 }
 
-const SCREEN = { minHeight: '100vh', display: 'flex' } as const;
-const FORM = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: 16,
-} as const;
+const s = styles({
+  form: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 },
+});

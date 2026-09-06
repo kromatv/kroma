@@ -12,6 +12,7 @@ import {
   Spinner,
   StatusDot,
   shade,
+  style,
   styles,
   Text,
 } from '@kroma/ui/kit';
@@ -29,6 +30,8 @@ const SCRIM = `linear-gradient(180deg, ${shade(0.72)}, ${shade(0.25)} 45%, trans
 
 /** The shared 10-foot top bar. Omitting `active` highlights nothing, which is
  * what deep screens (detail / person) want. */
+
+const AVATAR = style({ radius: 11 });
 export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
   const nav = useNav();
   const t = useT();
@@ -113,7 +116,7 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
               onPress={() => nav.go('profileMenu')}
               label={user.username}
               focusScale={1.08}
-              style={{ borderRadius: 11 }}
+              style={AVATAR}
             >
               <Avatar
                 name={user.username}
@@ -137,7 +140,7 @@ function ConnectionStatus({ online, label }: Readonly<{ online: boolean; label: 
       <Box absolute>
         <Spinner size={34} thickness={2} color="danger/80" />
       </Box>
-      <Box w={28} h={28} center radius="pill" bg="danger" style={s.offlineBadge}>
+      <Box w={28} h={28} center radius="pill" bg="danger">
         <Icon name="wifi-off" size={16} thickness={2.2} color="white" />
       </Box>
     </Box>
@@ -150,5 +153,4 @@ const s = styles({
     fontVariant: ['tabular-nums'],
     textShadow: '0 1px 4px rgba(0, 0, 0, 0.6)',
   },
-  offlineBadge: { boxShadow: '0 2px 8px rgba(0, 0, 0, 0.6)' },
 });

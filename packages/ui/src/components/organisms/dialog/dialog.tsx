@@ -143,9 +143,8 @@ function DialogSurface({
         maxW="100%"
         maxH="100%"
         bg="surface2"
-        radius="2xl"
+        radius="xl"
         border="borderStrong"
-        shadow="pop"
         overflow="hidden"
         dataSet={FOCUS_SCOPE}
         role="dialog"

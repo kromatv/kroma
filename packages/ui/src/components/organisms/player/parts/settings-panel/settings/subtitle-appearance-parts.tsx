@@ -5,7 +5,7 @@ import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { SUB_COLORS } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
-import { styles, useTheme } from '#ui/core';
+import { sharedStyle, styles, useTheme } from '#ui/core';
 import { a11yState } from '#ui/lib/a11y';
 import { useT } from '#ui/services/i18n';
 import { panel, rowStyle } from './panel-style';
@@ -16,6 +16,10 @@ import { panel, rowStyle } from './panel-style';
  * boolean draws the ring, never CSS :hover.
  */
 
+const swatchRing = (selected: boolean, accent: string) =>
+  sharedStyle(`swatch:ring:${selected}:${accent}`, {
+    boxShadow: selected ? `0 0 0 2px ${accent}` : '0 0 0 1px rgba(255, 255, 255, 0.2)',
+  });
 export function AppearanceRow({
   index,
   label,
@@ -72,7 +76,7 @@ function Arrow({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Text style={[s.arrow, { opacity: dim ? 0.4 : 1 }]} color="accentText">
+      <Text style={[s.arrow, dim ? s.dim : s.full]} color="accentText">
         {glyph}
       </Text>
     </Pressable>
@@ -158,15 +162,7 @@ function Swatch({
       accessibilityLabel={value}
       {...a11yState({ selected })}
     >
-      <Box
-        w={32}
-        h={32}
-        radius="pill"
-        bg={value}
-        style={{
-          boxShadow: selected ? `0 0 0 2px ${accent}` : '0 0 0 1px rgba(255, 255, 255, 0.2)',
-        }}
-      />
+      <Box w={32} h={32} radius="pill" bg={value} style={swatchRing(selected, accent)} />
     </Pressable>
   );
 }
@@ -183,6 +179,8 @@ export function Meter({ value }: Readonly<{ value: number }>) {
 }
 
 const s = styles({
+  dim: { opacity: 0.4 },
+  full: { opacity: 1 },
   arrow: { px: 4, text: 'strongTv' },
   meterValue: {
     minW: 52,

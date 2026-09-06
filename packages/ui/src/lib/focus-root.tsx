@@ -14,6 +14,7 @@
 import { NavigatorRoot, NavigatorView } from '@kroma/spatial-nav/react';
 import type { ReactNode } from 'react';
 import { Pressable, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import { style } from '#ui/core';
 import { useRemoteHostProps } from './focus-remote';
 import { flat } from './nav-style';
 
@@ -83,5 +84,5 @@ export function FocusRoot({
   );
 }
 
-const FILL = { flex: 1 } as const;
+const FILL = style({ flex: true });
 const KEY_HOST = StyleSheet.absoluteFill;

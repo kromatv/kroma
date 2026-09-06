@@ -7,9 +7,19 @@
 import { apiErrorText } from '@kroma/client';
 import { ItemId, ShowId } from '@kroma/client/media';
 import { useT } from '@kroma/ui';
-import { Box, Button, Callout, Field, IconButton, Spinner, Text } from '@kroma/ui/kit';
+import {
+  Box,
+  Button,
+  Callout,
+  classes,
+  Field,
+  IconButton,
+  Spinner,
+  styles,
+  Text,
+} from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { type CSSProperties, useState } from 'react';
+import { useState } from 'react';
 import { createCallable } from 'react-call';
 import {
   FOOTER_RULE,
@@ -25,8 +35,10 @@ import { MODAL_SCRIM } from '#web/shared/ui';
 type Kind = 'movie' | 'show';
 
 const PANEL = modalPanel(1024);
-const SEARCH_FORM: CSSProperties = { display: 'flex', flexShrink: 0, gap: 8 };
-const SEARCH_BOX: CSSProperties = { width: 220, maxWidth: '42vw' };
+const s = styles({
+  form: { display: 'flex', flexShrink: 0, gap: 8 },
+  box: { width: 220, maxWidth: '42vw' },
+});
 
 // Open with `await RematchDialog.call({ kind, id, title })`. Resolves `true`
 // once a correction is queued, `false` on dismiss. Mounted by `CatalogModalHosts`.
@@ -76,10 +88,10 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
           aria-label={t('common.close')}
           tabIndex={-1}
           onClick={() => call.end(false)}
-          style={MODAL_SCRIM}
+          className={classes(MODAL_SCRIM)}
         />
-        <div style={MODAL_LAYER}>
-          <section style={PANEL}>
+        <div className={classes(MODAL_LAYER)}>
+          <section className={classes(...PANEL)}>
             <Box row align="flex-start" between gap={16} px={28} py={20} style={HEADER_RULE}>
               <Box minW={0}>
                 <Text variant="overline" color="white/40">
@@ -97,13 +109,13 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
                 ) : null}
               </Box>
               <form
-                style={SEARCH_FORM}
+                className={classes(s.form)}
                 onSubmit={(e) => {
                   e.preventDefault();
                   setSubmitted(query.trim() || undefined);
                 }}
               >
-                <div style={SEARCH_BOX}>
+                <div className={classes(s.box)}>
                   <Field.Root label={t('rematch.searchPlaceholder')} hideLabel>
                     <Field.Input
                       type="search"
@@ -132,7 +144,7 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
               </form>
             </Box>
 
-            <div style={MODAL_BODY}>
+            <div className={classes(MODAL_BODY)}>
               {error ? (
                 <Callout.Root tone="danger">
                   <Callout.Title>{error}</Callout.Title>

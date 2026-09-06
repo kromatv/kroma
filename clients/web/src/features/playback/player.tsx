@@ -7,7 +7,7 @@ import {
   useT,
   WEB_FLAGS,
 } from '@kroma/ui';
-import { Box, Button, backdropBlur, Icon, Text } from '@kroma/ui/kit';
+import { Box, Button, backdropBlur, classes, Icon, styles, Text } from '@kroma/ui/kit';
 import type { Ref } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import type { View } from 'react-native';
@@ -22,7 +22,7 @@ import { castPicker } from '#web/shared/ui/cast-picker';
 
 const PREVIEW_W = 176;
 
-const FROST = backdropBlur(4);
+const s = styles({ frost: backdropBlur(4), inheritCorner: { borderRadius: 'inherit' } });
 
 /** Adapts the web engine to the shared unified `<Player>`; layers on web-only
  *  concerns (resume prompt, admin-stop overlay, session heartbeat). */
@@ -106,14 +106,12 @@ export function Player({
     : null;
 
   const surface = (
-    // borderRadius stays inline so the video clips itself to the shrink-card
-    // radius even if the arbitrary-property class isn't generated.
     <video
       key={`${pb.anchor}:${pb.audioIndex}`}
       ref={videoRef}
       playsInline
       crossOrigin="anonymous"
-      style={{ borderRadius: 'inherit' }}
+      className={classes(s.inheritCorner)}
     >
       {/* Empty track satisfies the captions requirement; SubtitleRenderer renders cues out-of-band. */}
       <track kind="captions" />
@@ -154,7 +152,7 @@ export function Player({
       <UnifiedPlayer.Media>{surface}</UnifiedPlayer.Media>
       {terminated ? (
         <UnifiedPlayer.Panel>
-          <Box fill z={80} center gap={20} px={32} bg="black/85" style={FROST}>
+          <Box fill z={80} center gap={20} px={32} bg="black/85" style={s.frost}>
             <Icon name="player-stop-filled" size={52} color="danger" />
             <Text variant="body" color="white/80" maxW={460} textAlign="center">
               {terminated}

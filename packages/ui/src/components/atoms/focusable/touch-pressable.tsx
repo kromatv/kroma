@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { usePressScale } from '#ui/lib/focus-transition';
 import { UNFOCUSABLE } from '#ui/lib/focus-types';
+import { WEB } from '#ui/lib/platform';
 import { type PressScale, useFlatPress } from '#ui/lib/press-dip';
 import { linkProps, platformRole } from './focusable-a11y';
 import type { A11yState, FocusRole, WebKeys } from './focusable-types';
@@ -122,7 +123,7 @@ function TouchPressable({
 }>) {
   const dip = usePressDip();
   return (
-    <AnimatedPressable
+    <Host
       ref={boxRef}
       {...(unfocusable ? (UNFOCUSABLE as object) : (webKeys ?? null))}
       accessibilityRole={platformRole(role)}
@@ -142,10 +143,17 @@ function TouchPressable({
       style={[...base, dip.pressed ? pressedStyle : null, dip.style]}
     >
       {children(dip.pressed)}
-    </AnimatedPressable>
+    </Host>
   );
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// The browser's dip is a CSS transition on a registered style, so the plain
+// Pressable keeps the style array and every layer paints as a class. An
+// animated component flattens the array into one object per render, which the
+// browser can only paint inline; native needs that, since its dip is an
+// Animated value.
+const Host: typeof Pressable = WEB ? Pressable : (AnimatedPressable as unknown as typeof Pressable);
 
 export { Painted, TouchPressable, TV_HAS_POINTER };

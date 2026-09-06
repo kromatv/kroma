@@ -13,7 +13,6 @@ import {
 } from '../src/core/tokens/effects.ts';
 import { gutter, radius, rhythm, space } from '../src/core/tokens/layout.ts';
 import { fonts, SELF_HOSTED, tracking, typeSpec } from '../src/core/tokens/typography.ts';
-import { ADMIN_TABLE } from '../src/styles/admin-table.ts';
 import { MOTION } from '../src/styles/motion.ts';
 import { PAGE } from '../src/styles/page.ts';
 import { RESET } from '../src/styles/reset.ts';
@@ -204,7 +203,7 @@ export const resetCss = () => sheetCss(RESET);
  *  scrollbars and the admin table grid. Taken alone by a target that brings its
  *  own reset - a Tailwind app has preflight, and two unlayered resets would
  *  fight. */
-export const pageCss = () => sheetCss([...PAGE, ...ADMIN_TABLE]);
+export const pageCss = () => sheetCss(PAGE);
 
 /** The reset and page furniture a browser target wants. A TV shell takes the
  *  reset alone, so this is not in the `tokens` half every target shares. */

@@ -25,18 +25,20 @@ import {
   NavPillContext,
   type NavPillLabels,
   type NavPillSize,
+  type NavPillTone,
   type SlideTarget,
   useNavPill,
 } from './nav-pill-context';
 import { Item } from './nav-pill-item';
 import { Lens } from './nav-pill-lens';
 
-// The capsule's padding IS the room a focused item's ring needs, plus a hairline
-// of capsule left showing outside it: an item sits this far in from the edge, so
-// its ring lands INSIDE the capsule rather than being shaved off by the rounded
-// clip the frost needs, or sitting exactly on the capsule's own edge, where two
-// concentric lines a couple of pixels apart read as a drawing mistake.
-const PAD = RING_ROOM;
+// At tv the capsule's padding IS the room a focused item's ring needs, plus a
+// hairline of capsule left showing outside it: an item sits this far in from the
+// edge, so its ring lands INSIDE the capsule rather than being shaved off by the
+// rounded clip the frost needs, or sitting exactly on the capsule's own edge,
+// where two concentric lines a couple of pixels apart read as a drawing mistake.
+const HAIRLINE = 6;
+const PAD = { tv: RING_ROOM, sm: HAIRLINE } as const;
 
 // Inside the slop a touch is a tap and belongs to the item's own pressable.
 const SLIDE_SLOP = 8;
@@ -63,6 +65,9 @@ interface NavPillRootProps {
   /** Names the tab strip: what the tabs are tabs OF. */
   label?: string;
   size?: NavPillSize;
+  /** The lens's fill, amber by default; the item under it keeps its amber ink
+   *  either way. */
+  tone?: NavPillTone;
   /** Which items show their label. Container policy, not an item's: it has to
    *  be the same answer for every item or the capsule's geometry jumps as the
    *  lens travels. Defaults to the size's own. */
@@ -93,6 +98,7 @@ function sort(children: ReactNode): Sorted {
 function Root({
   label,
   size = 'tv',
+  tone = 'accent',
   labels,
   slide = true,
   onPreview,
@@ -229,15 +235,16 @@ function Root({
         accessibilityLabel={label}
         row
         align="center"
-        gap={size === 'sm' ? 2 : 4}
-        p={PAD}
+        self={size === 'sm' ? 'stretch' : undefined}
+        gap={size === 'sm' ? 0 : 4}
+        p={PAD[size]}
         radius="pill"
         border="borderStrong"
         bg={at.backdrop.length > 0 ? BACKDROP_FILL : PILL_FILL}
         style={[HAND, style]}
       >
         {at.backdrop}
-        <Lens rect={hover?.rect ?? lens?.rect ?? null} chase={hover !== null} />
+        <Lens rect={hover?.rect ?? lens?.rect ?? null} chase={hover !== null} tone={tone} />
         {at.items}
       </Box>
     </NavPillContext.Provider>
@@ -264,5 +271,5 @@ function Root({
 const NavPill = { Root, Item, Backdrop };
 
 export type { NavPillIcon, NavPillItemProps } from './nav-pill-item';
-export type { NavPillLabels, NavPillRootProps, NavPillSize };
+export type { NavPillLabels, NavPillRootProps, NavPillSize, NavPillTone };
 export { NavPill };

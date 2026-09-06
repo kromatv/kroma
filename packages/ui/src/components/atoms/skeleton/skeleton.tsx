@@ -2,7 +2,7 @@
 // keyframe in a browser, never a per-frame JS callback per skeleton.
 
 import { Animated, type StyleProp, View, type ViewStyle } from 'react-native';
-import { type BoxStyleProps, boxStyle, radiusValue, styles, useTheme } from '#ui/core';
+import { type BoxStyleProps, radiusValue, sharedStyle, style, styles, useTheme } from '#ui/core';
 import { motion, type TypeRole, type TypeSpec } from '#ui/core/tokens';
 import { useLoop } from '#ui/lib/loop';
 
@@ -30,6 +30,15 @@ const GLYPH = 0.7;
 // The last line of a paragraph rarely runs to the margin.
 const LAST_LINE = '60%';
 
+const LAST = style({ width: LAST_LINE });
+
+const boxOf = (box: BoxStyleProps) => sharedStyle(`skeleton:box:${JSON.stringify(box)}`, box);
+
+const rhythmOf = (leading: number) =>
+  sharedStyle(`skeleton:leading:${leading}`, { gap: leading, py: leading / 2 });
+
+const barOf = (height: number) => sharedStyle(`skeleton:bar:${height}`, { height });
+
 // An avatar, which is what a circular placeholder almost always stands in for.
 const CIRCLE = 40;
 
@@ -37,7 +46,7 @@ const s = styles({
   wash: { bg: 'wash' },
   line: { bg: 'wash', radius: 'pill' },
   block: { radius: 'sm' },
-  poster: { aspect: 2 / 3, radius: 'lg' },
+  poster: { aspect: 2 / 3, radius: 'xl' },
   still: { aspect: 16 / 9, radius: 'xl' },
 });
 
@@ -57,18 +66,12 @@ function Skeleton({
     return (
       // Half a leading top and bottom, so `lines` lines occupy exactly the
       // height the real text will and nothing shifts when it arrives.
-      <Animated.View
-        style={[{ gap: leading, paddingVertical: leading / 2 }, boxStyle(box), style, pulse]}
-      >
+      <Animated.View style={[rhythmOf(leading), boxOf(box), style, pulse]}>
         {Array.from({ length: lines }, (_, i) => (
           <View
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder lines
             key={i}
-            style={[
-              s.line,
-              { height: bar },
-              lines > 1 && i === lines - 1 ? { width: LAST_LINE } : null,
-            ]}
+            style={[s.line, barOf(bar), lines > 1 && i === lines - 1 ? LAST : null]}
           />
         ))}
       </Animated.View>
@@ -80,7 +83,7 @@ function Skeleton({
       ? { width: size, height: size, borderRadius: radiusValue('circle', size) }
       : s[shape];
 
-  return <Animated.View style={[s.wash, shaped, boxStyle(box), style, pulse]} />;
+  return <Animated.View style={[s.wash, shaped, boxOf(box), style, pulse]} />;
 }
 
 function textRhythm(spec: TypeSpec): { bar: number; leading: number } {

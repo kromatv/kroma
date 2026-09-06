@@ -1,45 +1,47 @@
-// Netflix-style billboard: a tall rounded artwork card bleeding into the page
-// background, with the title, a genre line and Play / My list actions.
-
 import type { SectionItem } from '@kroma/client/media';
-import { genreLabels, sizedImageUrl } from '@kroma/core';
-import { Box, Button, styles, Text } from '@kroma/ui/kit';
+import { sizedImageUrl } from '@kroma/core';
+import { ArtScrim, Box, Button, Icon, Progress, styles, Text } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { featuredMetaLine } from '#mobile/lib/featured';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters, useIsWide } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
-import { radius, shades, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 import { FadeImage } from './FadeImage';
 
-export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
+const HEIGHT_SHARE = 0.6;
+const BACKDROP_RATIO = 0.56;
+const POSTER_RATIO = 1.42;
+
+export function HeroBillboard({
+  entry,
+  progress,
+}: Readonly<{ entry: SectionItem; progress?: number | null }>) {
   const t = useT();
   const client = useClient();
   const router = useRouter();
   const { play: playNow } = usePlay();
   const { width, height } = useWindowDimensions();
+  const wideWindow = useIsWide();
   const gutters = useGutters();
   const queryClient = useQueryClient();
 
   const media = entry.type === 'movie' ? entry.item : entry.show;
   const id = media.id;
   const title = media.metadata?.title ?? media.title;
-  const genres = genreLabels(t, media.metadata).slice(0, 3);
   const detailRoute = entry.type === 'movie' ? `/item/${id}` : `/show/${id}`;
-  // Narrow portrait windows get the tall poster card; wide or landscape ones
-  // get a backdrop (a landscape phone is wide but short; a poster would tower past it).
-  const wide = useIsWide();
-  const backdrop = wide || width > height;
   const poster =
     entry.type === 'movie'
       ? client.media.artwork.posterFor(entry.item)
       : client.media.artwork.showPosterFor(entry.show);
-  const art = backdrop
-    ? (sizedImageUrl(client.media.artwork.backdropFor(media), 1600) ?? sizedImageUrl(poster, 1600))
-    : (sizedImageUrl(poster, 780) ?? sizedImageUrl(client.media.artwork.backdropFor(media), 780));
+  const backdrop = client.media.artwork.backdropFor(media);
+  const landscape = backdrop !== null || wideWindow || width > height;
+  const art = landscape
+    ? (sizedImageUrl(backdrop, 1600) ?? sizedImageUrl(poster, 1600))
+    : sizedImageUrl(poster, 780);
 
   const myListQuery = client.query.playback.myList();
   const myList = useQuery(myListQuery);
@@ -56,44 +58,58 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
     else router.push(detailRoute as never);
   };
 
-  // Both variants cap against the window HEIGHT so the billboard never
-  // outgrows the viewport (landscape phones are ~390pt tall).
-  const w = Math.min(width - gutters.left - gutters.right, backdrop ? 820 : 480);
-  const h = backdrop
-    ? Math.min(Math.round(w * 0.52), Math.round(height * 0.5))
-    : Math.min(Math.round(w * 1.42), Math.round(height * 0.72));
-  const ground = shades();
+  const w = Math.min(width - gutters.left - gutters.right, landscape ? 820 : 480);
+  const h = Math.min(
+    Math.round(w * (landscape ? BACKDROP_RATIO : POSTER_RATIO)),
+    Math.round(height * HEIGHT_SHARE),
+  );
+  const meta = featuredMetaLine(t, entry);
 
   return (
     <Box style={[s.wrap, { width: w, height: h }]}>
       <Pressable onPress={() => router.push(detailRoute as never)} style={StyleSheet.absoluteFill}>
         <FadeImage uri={art} seed={id} radius={radius.xl} style={StyleSheet.absoluteFill} />
-        <LinearGradient
-          colors={[ground.transparent, ground.transparent, ground.mid, ground.full]}
-          locations={[0, 0.55, 0.78, 1]}
-          style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
-        />
+        <ArtScrim variant="deep" radius={radius.xl} />
       </Pressable>
       <Box style={s.content} pointerEvents="box-none">
         <Text lines={2} style={s.title}>
           {title}
         </Text>
-        {genres.length > 0 ? (
-          <Text lines={1} style={s.genres}>
-            {genres.join('  ·  ')}
+        {meta ? (
+          <Text lines={1} style={s.meta}>
+            {meta}
           </Text>
         ) : null}
         <Box style={s.buttons}>
-          <Button icon="player-play-filled" label={t('player.play')} style={s.cta} onPress={play} />
           <Button
-            variant="outline"
-            active={inList}
-            icon={inList ? 'bookmark-filled' : 'bookmark'}
-            label={t('nav.myList')}
-            style={s.cta}
-            onPress={() => toggleList.mutate()}
+            icon="player-play-filled"
+            label={progress ? t('player.resume') : t('player.play')}
+            style={s.play}
+            onPress={play}
           />
+          <Pressable
+            onPress={() => toggleList.mutate()}
+            style={({ pressed }) => [s.listAction, pressed && s.listActionPressed]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: inList }}
+            accessibilityLabel={inList ? t('content.inList') : t('nav.myList')}
+          >
+            <Icon
+              name={inList ? 'bookmark-filled' : 'bookmark'}
+              size={24}
+              thickness={2.2}
+              color={inList ? 'accentText' : 'text'}
+            />
+            <Text lines={1} style={[s.listLabel, inList && s.listLabelActive]}>
+              {inList ? t('content.inList') : t('nav.myList')}
+            </Text>
+          </Pressable>
         </Box>
+        {progress ? (
+          <Box style={s.progress}>
+            <Progress value={progress} thickness={3} />
+          </Box>
+        ) : null}
       </Box>
     </Box>
   );
@@ -117,7 +133,12 @@ const s = styles({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 10,
   },
-  genres: { ...type.caption, color: 'text' },
-  buttons: { row: true, self: 'center', gap: 10, w: '100%', maxW: 480, mt: 6 },
-  cta: { flex: true },
+  meta: { ...type.caption, color: 'text' },
+  buttons: { row: true, align: 'center', self: 'center', gap: 14, w: '100%', maxW: 480, mt: 6 },
+  play: { flex: true },
+  listAction: { align: 'center', gap: 3, minW: 64, py: 4 },
+  listActionPressed: { opacity: 0.7 },
+  listLabel: { ...type.small, color: 'textMuted' },
+  listLabelActive: { color: 'accentText' },
+  progress: { w: '100%', maxW: 480, mt: 2 },
 });

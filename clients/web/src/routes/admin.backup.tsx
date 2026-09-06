@@ -1,10 +1,11 @@
 import { useT } from '@kroma/ui';
-import { Box, Button, Icon, Section, Surface, Text } from '@kroma/ui/kit';
+import { Box, Button, classes, Icon, Section, Surface, styles, Text } from '@kroma/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { ExportModal, ImportModal, isEncryptedFile } from '#web/features/admin/backup-modals';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 
+const s = styles({ hidden: { display: 'none' } });
 export const Route = createFileRoute('/admin/backup')({
   component: BackupPage,
 });
@@ -35,7 +36,6 @@ function BackupPage() {
       <Surface
         elevated
         pad="none"
-        radius={16}
         border="border"
         row
         align="flex-start"
@@ -83,7 +83,7 @@ function BackupPage() {
                 ref={fileRef}
                 type="file"
                 accept=".zip,.kroma,.json,application/zip,application/json"
-                style={{ display: 'none' }}
+                className={classes(s.hidden)}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) void onFilePicked(file);
@@ -115,7 +115,6 @@ function ActionRow({ desc, action }: Readonly<{ desc: string; action: React.Reac
     <Surface
       elevated
       pad="none"
-      radius={16}
       border="border"
       row
       align="center"

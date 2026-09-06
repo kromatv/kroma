@@ -1,9 +1,12 @@
 // Resolving a shorthand bag into React Native longhands: which keys of a prop
 // bag are shorthands at all, and what one declaration becomes at a breakpoint.
 // The vocabulary those rules are written in is `shorthands.ts`.
+//
+// Pure: the breakpoint is an argument, never read from a store, so the same
+// resolver serves a render and a build.
 
 import type { ViewStyle } from 'react-native';
-import { breakpointBits, breakpointIndex, valueAt } from '#ui/core/breakpoint';
+import { breakpointBits, valueAt } from '#ui/core/breakpoint-cascade';
 import {
   BOX_STYLE_PROPS,
   type BoxStyleProps,
@@ -104,43 +107,35 @@ function applyShorthands(
   out: Record<string, unknown>,
   p: Readonly<BoxStyleProps>,
   index: number,
-): number {
-  let at = index;
+): void {
   for (const key of RULE_KEYS) {
     const raw = (p as Record<string, unknown>)[key];
     if (raw === undefined) continue;
-    if (!isPerBreakpoint(raw)) {
-      applyRule(out, RULES[key], raw);
-      continue;
-    }
-    if (at < 0) at = breakpointIndex();
-    const value = valueAt(raw, at);
+    const value = flatAt(raw, index);
     if (value !== undefined) applyRule(out, RULES[key], value);
   }
-  return at;
 }
 
 function applyCircleRadius(
   out: Record<string, unknown>,
   p: Readonly<BoxStyleProps>,
-  at: number,
+  index: number,
 ): void {
-  if (flatAt(p.radius, at) !== 'circle') return;
+  if (flatAt(p.radius, index) !== 'circle') return;
   // A disc is half of ITSELF, so a stated side beats the clamped fallback.
-  const height = flatAt(p.h, at);
-  const stated = typeof height === 'number' ? height : flatAt(p.w, at);
+  const height = flatAt(p.h, index);
+  const stated = typeof height === 'number' ? height : flatAt(p.w, index);
   out.borderRadius = radiusValue('circle', typeof stated === 'number' ? stated : undefined);
 }
 
 /**
- * Resolves a prop bag into React Native longhands at a breakpoint, defaulting to
- * the active one. A bag stating nothing per breakpoint never walks a cascade and
- * resolves exactly as it did before there was an axis at all.
+ * Resolves a prop bag into React Native longhands at a breakpoint. A bag
+ * stating nothing per breakpoint resolves the same at every index.
  */
-export function boxStyle(p: Readonly<BoxStyleProps>, index?: number): ViewStyle {
+export function boxStyle(p: Readonly<BoxStyleProps>, index: number): ViewStyle {
   const out: Record<string, unknown> = {};
-  const at = applyShorthands(out, p, index ?? -1);
-  if (p.radius !== undefined) applyCircleRadius(out, p, at < 0 ? breakpointIndex() : at);
+  applyShorthands(out, p, index);
+  if (p.radius !== undefined) applyCircleRadius(out, p, index);
   return out as ViewStyle;
 }
 

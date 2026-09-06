@@ -3,6 +3,7 @@
 import { cleanup, render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { declared } from '#ui/testing';
 import { Progress } from './progress';
 
 afterEach(cleanup);
@@ -55,14 +56,14 @@ describe('<Progress>', () => {
   it('breathes the track while it waits, and the fill still says where it stopped', () => {
     const [wash, played] = layers(<Progress value={0.25} waiting />);
 
-    expect(wash?.firstElementChild?.className).toMatch(/r-animationKeyframes-/);
+    expect(declared(wash?.firstElementChild as Element, 'animation-name')).toBeTruthy();
     expect(played?.style.right).toBe('75%');
   });
 
   it('breathes nothing once the data is flowing again', () => {
     const [played, ...rest] = layers(<Progress value={0.25} />);
 
-    expect(played?.className).not.toMatch(/r-animationKeyframes-/);
+    expect(declared(played as Element, 'animation-name')).toBeNull();
     expect(rest).toHaveLength(0);
   });
 

@@ -3,10 +3,10 @@
 // crossing several rows, so no row can draw it.
 
 import { useEffect, useRef, useState } from 'react';
-import { Animated, type ViewStyle } from 'react-native';
+import { Animated } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
+import { sharedStyle, styles } from '#ui/core';
 import { ease } from '#ui/lib/ease';
 import { WEB } from '#ui/lib/platform';
 import { PAD, ROW_W } from './alphabet-rail-context';
@@ -24,6 +24,13 @@ interface LensBox {
 
 // Single short row: the lens tightens to a true circle; any taller stretch
 // fills the rail's width as a stadium.
+
+const motionOf = (entering: boolean, chase: boolean) =>
+  sharedStyle(`alphabet:lens:${entering}:${chase}`, {
+    transitionProperty: entering ? 'opacity' : 'left, top, width, height, opacity',
+    transitionDuration: `${chase ? CHASE_MS : TRAVEL_MS}ms`,
+    transitionTimingFunction: ease.spring.css,
+  });
 function lensFor(lit: [number, number], rowH: number): LensBox {
   const height = (lit[1] - lit[0] + 1) * rowH;
   const width = Math.min(ROW_W, height);
@@ -57,18 +64,16 @@ function WebLens({ box, chase }: Readonly<{ box: LensBox | null; chase: boolean 
       absolute
       radius="pill"
       bg="accent"
-      style={
+      style={[
+        motionOf(entering, chase),
         {
           left: shown.x,
           top: shown.y,
           width: shown.width,
           height: shown.height,
           opacity: box ? 1 : 0,
-          transitionProperty: entering ? 'opacity' : 'left, top, width, height, opacity',
-          transitionDuration: `${chase ? CHASE_MS : TRAVEL_MS}ms`,
-          transitionTimingFunction: ease.spring.css,
-        } as ViewStyle
-      }
+        },
+      ]}
     />
   );
 }
@@ -136,13 +141,8 @@ function Bubble({ letter, y }: Readonly<{ letter: string; y: number }>) {
       align="center"
       justify="center"
       bg="accent"
-      radius="2xl"
-      style={{
-        right: ROW_W + PAD * 2 + 18,
-        top: y - BUBBLE / 2,
-        width: BUBBLE,
-        height: BUBBLE,
-      }}
+      radius="xl"
+      style={[s.bubble, { top: y - BUBBLE / 2 }]}
     >
       <Text selectable={false} variant="subheadingTv" color="accentInk">
         {letter}
@@ -152,6 +152,7 @@ function Bubble({ letter, y }: Readonly<{ letter: string; y: number }>) {
 }
 
 const s = styles({
+  bubble: { right: ROW_W + PAD * 2 + 18, w: BUBBLE, h: BUBBLE },
   lens: { absolute: true, radius: 'pill', bg: 'accent' },
 });
 

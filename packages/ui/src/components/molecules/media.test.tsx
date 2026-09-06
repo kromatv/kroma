@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cellWidth } from '#ui/components/atoms/grid';
 import { radius } from '#ui/core/tokens';
 import { clearPressGuard } from '#ui/lib/press-guard';
-import { onScreen } from '#ui/testing';
+import { declared, onScreen } from '#ui/testing';
 import { MediaCard, tintGradient } from './media-card';
 import { PosterCard } from './poster-card';
 
@@ -47,7 +47,7 @@ describe('MediaCard', () => {
 
   it('scales to 1.06 on focus, the rail tile treatment', () => {
     render(<MediaCard title="Dune" art={null} tint={TINT} autoFocus />);
-    expect(tile('Dune').style.transform).toContain('scale(1.06)');
+    expect(declared(tile('Dune'), 'transform') ?? '').toContain('scale(1.06)');
   });
 
   it('shows the overline and title, and clamps a long title', () => {
@@ -78,8 +78,8 @@ describe('PosterCard', () => {
     render(<PosterCard title="Arrival" art={null} tint={TINT} autoFocus />);
     const el = tile('Arrival');
     expect(css(el).width).toBe('100%');
-    expect(css(el).borderTopLeftRadius).toBe(`${radius.lg}px`);
-    expect(el.style.transform).toContain('scale(1.05)');
+    expect(css(el).borderTopLeftRadius).toBe(`${radius.xl}px`);
+    expect(declared(el, 'transform') ?? '').toContain('scale(1.05)');
   });
 });
 

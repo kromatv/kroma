@@ -6,15 +6,16 @@ import {
   Badge,
   Box,
   Button,
+  classes,
   color,
   Ground,
-  gradient,
   type HostElement,
   IconButton,
+  styles,
   Text,
   useBreakpoint,
 } from '@kroma/ui/kit';
-import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import {
   DirectorsLine,
   HeroFields,
@@ -24,6 +25,7 @@ import {
 } from '#web/features/catalog/detail-hero-parts';
 import { HeroBackdrop } from '#web/features/catalog/hero-backdrop';
 import type { QualityTone } from '#web/features/catalog/media-labels';
+import { wash } from '#web/shared/lib/art-styles';
 import { Image } from '#web/shared/ui';
 import { CastButton } from '#web/shared/ui/cast-button';
 
@@ -38,41 +40,37 @@ export {
   subString,
 } from '#web/features/catalog/media-labels';
 
-const HERO_FRAME: CSSProperties = { position: 'relative', minHeight: '62vh' };
-
-const GUTTER: CSSProperties = {
-  paddingLeft: 'var(--gutter-web)',
-  paddingRight: 'var(--gutter-web)',
-};
-
-// A column, stated: this is an element rather than a <Box> because `textShadow`
-// has no React Native spelling, and a plain block leaves react-native-web's
-// <Text> at its own `display: inline`. Three of them in a row then run together
-// as one paragraph with their margins dropped, which is what put the director,
-// the tagline and the overview on the same line.
-const HERO_TEXT: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  flex: 1,
-  maxWidth: 680,
-  textShadow: `0 1px 3px ${color('black/50')}, 0 2px 16px ${color('black/55')}`,
-};
-
-const HERO_TITLE: CSSProperties = {
-  textShadow: [
-    `0 0 2px ${color('black/55')}`,
-    `0 2px 8px ${color('black/55')}`,
-    `0 8px 30px ${color('black/60')}`,
-  ].join(', '),
-};
+// The text column is an element rather than a <Box>, and a flex column at
+// that: a plain block leaves react-native-web's <Text> at its own `display:
+// inline`, and three of them in a row then run together as one paragraph with
+// their margins dropped, which is what put the director, the tagline and the
+// overview on the same line.
+const s = styles({
+  frame: { position: 'relative', minHeight: '62vh' },
+  gutter: { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' },
+  text: {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: true,
+    maxWidth: 680,
+    textShadow: `0 1px 3px ${color('black/50')}, 0 2px 16px ${color('black/55')}`,
+  },
+  title: {
+    textShadow: [
+      `0 0 2px ${color('black/55')}`,
+      `0 2px 8px ${color('black/55')}`,
+      `0 8px 30px ${color('black/60')}`,
+    ].join(', '),
+  },
+  noCaps: { textTransform: 'none' },
+  italic: { fontStyle: 'italic' },
+});
 
 const CORNER_LEFT = { base: 16, md: 32 } as const;
 const CORNER_TOP = { base: 16, md: 26 } as const;
 const HERO_GAP = { base: 24, md: 40 } as const;
 const HERO_PAD_TOP = { base: 48, md: 90 } as const;
 const POSTER_W = { base: 192, lg: 240 } as const;
-const NO_CAPS = { textTransform: 'none' } as const;
-const ITALIC = { fontStyle: 'italic' } as const;
 
 export interface DetailHeroProps {
   art: { id: string; backdrop: string | null; poster: string };
@@ -149,7 +147,7 @@ export function DetailHero({
   }, [playable, t]);
 
   return (
-    <div style={HERO_FRAME}>
+    <div className={classes(s.frame)}>
       <HeroBackdrop backdrop={art.backdrop} gradient={heroGradient} />
 
       <Box absolute z={3} left={CORNER_LEFT} top={CORNER_TOP}>
@@ -162,7 +160,7 @@ export function DetailHero({
 
       <ThemeToggle theme={theme} />
 
-      <div style={GUTTER}>
+      <div className={classes(s.gutter)}>
         <Box row wrap align="flex-end" gap={HERO_GAP} pb={36} pt={HERO_PAD_TOP}>
           {wide ? (
             <Box
@@ -170,19 +168,18 @@ export function DetailHero({
               aspect={2 / 3}
               shrink={0}
               overflow="hidden"
-              radius="lg"
-              shadow="hero"
-              style={gradient(`linear-gradient(158deg, ${c1}, ${c2})`)}
+              radius="xl"
+              style={wash(c1, c2)}
             >
               <Image src={art.poster} fit="cover" fill />
             </Box>
           ) : null}
 
-          <div style={HERO_TEXT}>
-            <Text variant="overline" color="accent" mb={12} style={NO_CAPS}>
+          <div className={classes(s.text)}>
+            <Text variant="overline" color="accent" mb={12} style={s.noCaps}>
               {overline}
             </Text>
-            <h1 style={HERO_TITLE}>
+            <h1 className={classes(s.title)}>
               <Text variant="h1" mb={16}>
                 {title}
               </Text>
@@ -211,7 +208,7 @@ export function DetailHero({
             <DirectorsLine directors={directors} />
 
             {tagline ? (
-              <Text variant="meta" color="white/50" mb={12} style={ITALIC}>
+              <Text variant="meta" color="white/50" mb={12} style={s.italic}>
                 {tagline}
               </Text>
             ) : null}

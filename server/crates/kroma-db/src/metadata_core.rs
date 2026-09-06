@@ -28,6 +28,7 @@ pub struct MetaCore {
     pub tvdb_id: Option<u64>,
     pub release_date: Option<String>,
     pub rating: Option<f32>,
+    pub certification: Option<String>,
     pub poster_url: Option<String>,
     pub backdrop_url: Option<String>,
     pub logo_url: Option<String>,
@@ -37,8 +38,8 @@ pub struct MetaCore {
 }
 
 // Column list for core SELECTs keeps [`row_to_core`] index-stable.
-const CORE_COLS: &str = "tmdb_id,imdb_id,tvdb_id,release_date,rating,poster_url,backdrop_url,\
-     logo_url,cast_json,crew_json,tmdb_genre_ids";
+const CORE_COLS: &str = "tmdb_id,imdb_id,tvdb_id,release_date,rating,certification,poster_url,\
+     backdrop_url,logo_url,cast_json,crew_json,tmdb_genre_ids";
 
 /// Upsert one subject's invariant core. Character names are stripped from `cast`
 /// before storing they are language-variant and belong in `translations`.
@@ -65,12 +66,13 @@ pub(crate) fn write_core(conn: &Connection, kind: &str, id: &str, core: &MetaCor
         serde_json::to_string(&core.tmdb_genre_ids).unwrap_or_else(|_| "[]".into());
     conn.execute(
         "INSERT INTO metadata_core \
-            (subject_kind,subject_id,tmdb_id,imdb_id,tvdb_id,release_date,rating,\
+            (subject_kind,subject_id,tmdb_id,imdb_id,tvdb_id,release_date,rating,certification,\
              poster_url,backdrop_url,logo_url,cast_json,crew_json,tmdb_genre_ids,updated_at) \
-         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14) \
+         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15) \
          ON CONFLICT(subject_kind,subject_id) DO UPDATE SET \
              tmdb_id=excluded.tmdb_id, imdb_id=excluded.imdb_id, tvdb_id=excluded.tvdb_id, \
              release_date=excluded.release_date, rating=excluded.rating, \
+             certification=excluded.certification, \
              poster_url=excluded.poster_url, backdrop_url=excluded.backdrop_url, \
              logo_url=excluded.logo_url, cast_json=excluded.cast_json, \
              crew_json=excluded.crew_json, tmdb_genre_ids=excluded.tmdb_genre_ids, \
@@ -83,6 +85,7 @@ pub(crate) fn write_core(conn: &Connection, kind: &str, id: &str, core: &MetaCor
             core.tvdb_id.map(|v| v as i64),
             core.release_date,
             core.rating,
+            core.certification,
             core.poster_url,
             core.backdrop_url,
             core.logo_url,
@@ -133,18 +136,19 @@ fn row_to_core(r: &Row) -> rusqlite::Result<MetaCore> {
 
 // Row mapper starting at column `base` (so callers can prepend `subject_id`).
 fn row_to_core_offset(r: &Row, base: usize) -> rusqlite::Result<MetaCore> {
-    let cast_json: String = r.get(base + 8)?;
-    let crew_json: String = r.get(base + 9)?;
-    let genre_ids_json: String = r.get(base + 10)?;
+    let cast_json: String = r.get(base + 9)?;
+    let crew_json: String = r.get(base + 10)?;
+    let genre_ids_json: String = r.get(base + 11)?;
     Ok(MetaCore {
         tmdb_id: r.get::<_, Option<i64>>(base)?.map(|v| v as u64),
         imdb_id: r.get(base + 1)?,
         tvdb_id: r.get::<_, Option<i64>>(base + 2)?.map(|v| v as u64),
         release_date: r.get(base + 3)?,
         rating: r.get(base + 4)?,
-        poster_url: r.get(base + 5)?,
-        backdrop_url: r.get(base + 6)?,
-        logo_url: r.get(base + 7)?,
+        certification: r.get(base + 5)?,
+        poster_url: r.get(base + 6)?,
+        backdrop_url: r.get(base + 7)?,
+        logo_url: r.get(base + 8)?,
         cast: serde_json::from_str(&cast_json).unwrap_or_default(),
         crew: serde_json::from_str(&crew_json).unwrap_or_default(),
         tmdb_genre_ids: serde_json::from_str(&genre_ids_json).unwrap_or_default(),
@@ -178,6 +182,7 @@ mod tests {
             tvdb_id: Some(42),
             release_date: Some("1999-03-31".into()),
             rating: Some(8.7),
+            certification: Some("R".into()),
             poster_url: Some("/api/images/p.webp".into()),
             backdrop_url: Some("/api/images/b.webp".into()),
             logo_url: None,
@@ -228,6 +233,37 @@ mod tests {
         assert!(got.rating.is_none());
 
         assert!(get_core(&p, ITEM, "missing").unwrap().is_none());
+    }
+
+    #[test]
+    fn the_age_rating_survives_a_round_trip() {
+        let p = pool();
+
+        set_core(&p, ITEM, "m1", &sample_core()).unwrap();
+
+        assert_eq!(
+            get_core(&p, ITEM, "m1").unwrap().unwrap().certification,
+            Some("R".to_string())
+        );
+    }
+
+    #[test]
+    fn a_row_stored_before_the_age_rating_reads_as_having_none() {
+        let p = pool();
+        p.get()
+            .unwrap()
+            .execute(
+                "INSERT INTO metadata_core (subject_kind,subject_id,tmdb_id,updated_at) \
+                 VALUES ('item','old',603,0)",
+                [],
+            )
+            .unwrap();
+
+        assert!(get_core(&p, ITEM, "old")
+            .unwrap()
+            .unwrap()
+            .certification
+            .is_none());
     }
 
     #[test]

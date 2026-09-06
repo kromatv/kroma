@@ -2,8 +2,17 @@
 // kit's <Badge>, whose tones are the palette's own semantic steps; these carry a
 // hue the page already holds (a pipeline stage, a report category).
 
-import { type ColorValue, color, Row, Text, type TypeRole } from '@kroma/ui/kit';
-import type { CSSProperties, ReactNode } from 'react';
+import {
+  Box,
+  type ColorValue,
+  color,
+  Row,
+  sharedStyle,
+  styles,
+  Text,
+  type TypeRole,
+} from '@kroma/ui/kit';
+import type { ReactNode } from 'react';
 
 const PAD: Partial<Record<TypeRole, { px: number; py: number }>> = {
   overline: { px: 8, py: 3 },
@@ -34,10 +43,22 @@ export function Pill({ ink, bg, variant = 'meta', leading, children }: Readonly<
   );
 }
 
-// A React Native view cannot carry a CSS animation, so a dot that breathes is a
-// real element rather than a <Box>.
-const DOT: CSSProperties = { borderRadius: '50%', flex: '0 0 auto' };
-const BREATHE = 'kroma-breathe 2s ease-in-out infinite';
+const s = styles({
+  dot: { radius: 'circle', flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
+  breathe: {
+    animationKeyframes: 'kroma-breathe',
+    animationDuration: '2s',
+    animationTimingFunction: 'ease-in-out',
+    animationIterationCount: 'infinite',
+  },
+});
+
+const dotOf = (size: number, tone: ColorValue) =>
+  sharedStyle(`pill:dot:${size}:${tone}`, {
+    width: size,
+    height: size,
+    backgroundColor: color(tone),
+  });
 
 interface PillDotProps {
   tone: ColorValue;
@@ -48,15 +69,5 @@ interface PillDotProps {
 
 /** The dot a status pill leads with. */
 export function PillDot({ tone, size = 6, pulse }: Readonly<PillDotProps>) {
-  return (
-    <span
-      style={{
-        ...DOT,
-        width: size,
-        height: size,
-        background: color(tone),
-        animation: pulse ? BREATHE : undefined,
-      }}
-    />
-  );
+  return <Box style={[s.dot, dotOf(size, tone), pulse ? s.breathe : null]} />;
 }

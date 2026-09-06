@@ -555,6 +555,8 @@ pub(crate) const SCHEMA: &str = "
         tvdb_id      INTEGER,
         release_date TEXT,
         rating       REAL,
+        -- The provider's own spelling of the age rating, e.g. 'PG-13' | 'TV-MA' | '12'.
+        certification TEXT,
         poster_url   TEXT,
         backdrop_url TEXT,
         logo_url     TEXT,

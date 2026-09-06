@@ -14,7 +14,7 @@
 import type { Notification, NotificationId } from '@kroma/client/notifications';
 import { type NotificationRun, sizedImageUrl, type Translate } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Badge, Box, Icon, IconButton, ListRow, Text } from '@kroma/ui/kit';
+import { Badge, Box, classes, Icon, IconButton, ListRow, styles, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { notificationLink } from '#web/features/notifications/notification-link';
@@ -80,7 +80,7 @@ export function NotificationEntry({
           expanded={folded ? open : undefined}
           onPress={() => (folded ? setOpen(!open) : go(head))}
           chevron={false}
-          style={ROW_PAD}
+          style={s.rowPad}
         >
           <NotificationCard
             event={head.event}
@@ -98,7 +98,10 @@ export function NotificationEntry({
               ) : null
             }
             time={
-              <time dateTime={new Date(head.createdAt).toISOString()} style={TABULAR}>
+              <time
+                dateTime={new Date(head.createdAt).toISOString()}
+                className={classes(s.tabular)}
+              >
                 {standalone(head.createdAt)}
               </time>
             }
@@ -148,11 +151,11 @@ function ReadToggle({
 
 // Room at the right for the toggle laid over the row, so a long title ellipses
 // before it reaches the button rather than running under it.
-const ROW_PAD = { paddingLeft: 8, paddingRight: 46 } as const;
-
-const TABULAR = { fontVariantNumeric: 'tabular-nums' } as const;
-
-const OCCURRENCE_PAD = { paddingLeft: 30, paddingTop: 4, paddingBottom: 4 } as const;
+const s = styles({
+  rowPad: { pl: 8, pr: 46 },
+  tabular: { fontVariantNumeric: 'tabular-nums' },
+  occurrencePad: { pl: 30, pt: 4, pb: 4 },
+});
 
 function Occurrences({
   items,
@@ -162,7 +165,7 @@ function Occurrences({
   return (
     <Box pb={4}>
       {items.map((one) => (
-        <ListRow.Root key={one.id} size="sm" onPress={() => onOpen(one)} style={OCCURRENCE_PAD}>
+        <ListRow.Root key={one.id} size="sm" onPress={() => onOpen(one)} style={s.occurrencePad}>
           <ListRow.Label>{exact(one.createdAt)}</ListRow.Label>
         </ListRow.Root>
       ))}

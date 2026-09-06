@@ -1,6 +1,7 @@
 // The native half of the video surface; see PlayerSurface.web.tsx for the other.
 
 import { type SurfaceRadius, useSurfaceRadius } from '@kroma/ui';
+import { style } from '@kroma/ui/kit';
 import { VideoView } from 'expo-video';
 import type { ReactNode } from 'react';
 import { Animated, StyleSheet } from 'react-native';
@@ -9,6 +10,7 @@ import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
 import type { VlcEngine } from '#tv/features/playback/player/vlcEngine';
 import { getVlcPlane } from '#tv/features/playback/player/vlcPlane';
 
+const CLIP = style({ overflow: 'hidden' });
 export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: string }>): ReactNode {
   // <VideoView> is backed by an AVPlayerLayer, which a rounded ancestor does
   // NOT clip; only clipping its own wrapper rounds the picture.
@@ -20,7 +22,7 @@ export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: str
   const player = engine?.videoPlayer ?? null;
   if (!player) return null;
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden' }]}>
+    <Animated.View style={[StyleSheet.absoluteFill, CLIP, { borderRadius: radius }]}>
       <VideoView
         // expo-video binds its AVPlayer at mount: a swapped player needs a new view.
         key={pb.surfaceNonce}
@@ -56,7 +58,7 @@ function VlcSurface({
   const engine = current?.kind === 'vlc' ? (current as VlcEngine) : null;
   if (!Plane || !engine) return null;
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden' }]}>
+    <Animated.View style={[StyleSheet.absoluteFill, CLIP, { borderRadius: radius }]}>
       <Plane
         sourceUri={engine.source.uri}
         startMs={engine.source.startMs}

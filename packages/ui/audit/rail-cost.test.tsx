@@ -4,7 +4,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Rail } from '#ui/components/organisms/rail';
 import { configureRemote } from '#ui/lib/focus-remote';
-import { layout, measuring, onScreen } from '#ui/testing';
+import { layout, measuring, onScreen, wearsRing } from '#ui/testing';
 
 beforeAll(() => configureRemote());
 afterEach(cleanup);
@@ -35,8 +35,8 @@ function mountedTiles(root: Element): number {
 }
 
 function lit(root: Element): string | null {
-  const ringed = [...root.querySelectorAll<HTMLElement>('[aria-label^="Title "]')].find(
-    (tile) => tile.style.boxShadow !== '',
+  const ringed = [...root.querySelectorAll<HTMLElement>('[aria-label^="Title "]')].find((tile) =>
+    wearsRing(tile),
   );
   return ringed?.getAttribute('aria-label') ?? null;
 }

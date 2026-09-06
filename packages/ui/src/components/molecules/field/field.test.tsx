@@ -7,7 +7,7 @@ import { Button } from '#ui/components/atoms/button';
 import { ButtonGroup } from '#ui/components/molecules/button-group';
 import { Select } from '#ui/components/molecules/select';
 import { setEntryDefaults } from '#ui/lib/field-shell';
-import { onScreen } from '#ui/testing';
+import { declared, onScreen } from '#ui/testing';
 import { Field } from './field';
 
 // The browser half of the kit: a shell with a real keyboard says so once.
@@ -182,7 +182,7 @@ describe('a field welded into a <ButtonGroup>', () => {
 
   const raisedAncestor = (entry: HTMLElement) => {
     let at: HTMLElement | null = entry;
-    while (at && !at.className.includes('r-zIndex')) at = at.parentElement;
+    while (at && !(Number(declared(at, 'z-index')) > 0)) at = at.parentElement;
     return at;
   };
 

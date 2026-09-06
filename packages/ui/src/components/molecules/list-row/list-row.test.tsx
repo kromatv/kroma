@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { CONTROL } from '#ui/lib/field-shell';
-import { onScreen } from '#ui/testing';
+import { declared, onScreen } from '#ui/testing';
 import { ListRow } from './list-row';
 
 function Anchor({ to, ...host }: Readonly<Record<string, unknown>>) {
@@ -122,9 +122,9 @@ describe('ListRow', () => {
         </ListRow.Root>
       </>,
     );
-    expect(getComputedStyle(rowOf(container, 'Petite')).minHeight).toBe(`${CONTROL.sm.height}px`);
-    expect(getComputedStyle(rowOf(container, 'Moyenne')).minHeight).toBe(`${CONTROL.md.height}px`);
-    expect(getComputedStyle(rowOf(container, 'Télé')).minHeight).toBe(`${CONTROL.tv.height}px`);
+    expect(declared(rowOf(container, 'Petite'), 'minHeight')).toBe(`${CONTROL.sm.height}px`);
+    expect(declared(rowOf(container, 'Moyenne'), 'minHeight')).toBe(`${CONTROL.md.height}px`);
+    expect(declared(rowOf(container, 'Télé'), 'minHeight')).toBe(`${CONTROL.tv.height}px`);
   });
 
   it('is one focus stop, whatever the parts hold', () => {
@@ -230,9 +230,7 @@ describe('ListRow', () => {
       </>,
     );
     const [plain, picked] = [rowOf(container, 'Hier'), rowOf(container, "Aujourd'hui")];
-    expect(getComputedStyle(picked).backgroundColor).not.toBe(
-      getComputedStyle(plain).backgroundColor,
-    );
+    expect(declared(picked, 'backgroundColor')).not.toBe(declared(plain, 'backgroundColor'));
   });
 
   it('lets a long tail truncate only when the tail says it may', () => {
@@ -266,14 +264,14 @@ describe('ListRow', () => {
     expect(tail(fixed, 'on').flexShrink).toBe('0');
     expect(tail(supple, 'a very long value indeed').flexShrink).toBe('1');
   });
-  it('lifts a row that stands on artwork', () => {
+  it('casts no shadow on artwork: nothing in the kit floats', () => {
     const { container } = render(
       <ListRow.Root>
         <ListRow.Label>Sur l'affiche</ListRow.Label>
       </ListRow.Root>,
     );
 
-    expect(getComputedStyle(rowOf(container, "Sur l'affiche")).boxShadow).toBeTruthy();
+    expect(declared(rowOf(container, "Sur l'affiche"), 'boxShadow')).toBeNull();
   });
 
   it('drops the lift on a surface, and keeps the row its own object', () => {
@@ -299,7 +297,7 @@ describe('ListRow', () => {
     );
 
     expect(
-      Number(rowOf(container, 'Sur la carte').style.outlineOffset.replace('px', '')),
+      Number((declared(rowOf(container, 'Sur la carte'), 'outlineOffset') ?? '').replace('px', '')),
     ).toBeGreaterThan(0);
   });
 });
@@ -339,11 +337,11 @@ describe('a ListRow that delegates its host to a link', () => {
       </ListRow.Root>,
     );
     const row = rowOf(container, 'Reglages');
-    const resting = row.style.backgroundColor;
+    const resting = declared(row, 'background-color');
 
     fireEvent.pointerEnter(row);
 
-    expect(row.style.backgroundColor).not.toBe(resting);
+    expect(declared(row, 'background-color')).not.toBe(resting);
   });
 
   it('draws the disclosure chevron a row that goes somewhere draws', () => {

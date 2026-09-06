@@ -8,11 +8,11 @@ import {
   Avatar,
   Box,
   Button,
-  color,
   Drawer,
   type HostElement,
   IconButton,
   Row,
+  styles,
   Text,
 } from '@kroma/ui/kit';
 import { useState } from 'react';
@@ -20,8 +20,6 @@ import { createCallable } from 'react-call';
 import { Pill } from '#web/features/admin/pill';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
 import { RouteLink } from '#web/shared/ui/route-link';
-
-const FLEX_1 = { flex: 1 } as const;
 
 function ficheLink(report: Report): HostElement | null {
   if (report.subjectKind === 'movie') {
@@ -102,7 +100,7 @@ export const ReportDrawer = createCallable<
       open={!call.ended}
       onClose={close}
       title={report.subjectTitle}
-      panelStyle={DRAWER_FILL}
+      panelStyle={s.drawerFill}
     >
       <Drawer.Header>
         <Identity report={report} />
@@ -113,8 +111,8 @@ export const ReportDrawer = createCallable<
           <Text variant="overline" color="textDim" mb={12}>
             {t('reports.reportedBy')}
           </Text>
-          <Row gap={12} px={16} py={14} radius="lg" bg="surface1" border="tint/7">
-            <Avatar name={report.reportedByName ?? '?'} size={34} circle shadow={false} />
+          <Row gap={12} px={16} py={14} radius="xl" bg="surface1" border="tint/7">
+            <Avatar name={report.reportedByName ?? '?'} size={34} circle />
             <Box minW={0}>
               <Text variant="label" lines={1}>
                 {report.reportedByName ?? t('reports.unknownUser')}
@@ -130,7 +128,7 @@ export const ReportDrawer = createCallable<
           </Row>
 
           {report.message ? (
-            <Box mt={16} px={16} py={14} radius="lg" bg="surface1" border="tint/7">
+            <Box mt={16} px={16} py={14} radius="xl" bg="surface1" border="tint/7">
               <Text variant="meta" color="textMuted">
                 {report.message}
               </Text>
@@ -167,7 +165,7 @@ export const ReportDrawer = createCallable<
                   label={t('reports.actionResolve')}
                   onPress={() => run(onResolve, 'resolved')}
                   loading={busy}
-                  style={FLEX_1}
+                  style={s.flex1}
                 />
                 <Button
                   variant="glass"
@@ -175,7 +173,7 @@ export const ReportDrawer = createCallable<
                   label={t('reports.actionDismiss')}
                   onPress={() => run(onDismiss, 'dismissed')}
                   disabled={busy}
-                  style={FLEX_1}
+                  style={s.flex1}
                 />
               </>
             ) : (
@@ -185,7 +183,7 @@ export const ReportDrawer = createCallable<
                 label={t('reports.actionReopen')}
                 onPress={() => run(onReopen, 'open')}
                 disabled={busy}
-                style={FLEX_1}
+                style={s.flex1}
               />
             )}
             <IconButton
@@ -202,4 +200,4 @@ export const ReportDrawer = createCallable<
   );
 }, 400);
 
-const DRAWER_FILL = { backgroundColor: color('bg') } as const;
+const s = styles({ drawerFill: { bg: 'bg' }, flex1: { flex: true } });

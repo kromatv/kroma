@@ -7,9 +7,9 @@
 import type { PersonDetail } from '@kroma/client/media';
 import { personFacts } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Box, color, DataField, ExpandableText, Text } from '@kroma/ui/kit';
+import { Box, DataField, ExpandableText, styles, Text } from '@kroma/ui/kit';
 
-const RULE = { borderBottomWidth: 1, borderBottomColor: color('border') } as const;
+const s = styles({ rule: { borderBottomWidth: 1, borderBottomColor: 'border' } });
 
 export function PersonProfile({ detail }: Readonly<{ detail: PersonDetail | null }>) {
   const t = useT();
@@ -21,7 +21,7 @@ export function PersonProfile({ detail }: Readonly<{ detail: PersonDetail | null
 
   return (
     <section>
-      <Box gap={20} mb={36} pb={28} style={RULE}>
+      <Box gap={20} mb={36} pb={28} style={s.rule}>
         {facts.length ? (
           <Box row wrap gapX={40} gapY={16}>
             {facts.map((f) => (

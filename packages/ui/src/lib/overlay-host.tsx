@@ -19,8 +19,8 @@ import {
   useId,
   useState,
 } from 'react';
-import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { style } from '#ui/core';
 
 /** Puts `node` in the host's layer under `id`, or takes it out with `null`. */
 type Mount = (id: string, node: ReactNode | null) => void;
@@ -68,7 +68,7 @@ export function OverlayHost({ children }: Readonly<{ children: ReactNode }>) {
 
 const EMPTY: ReadonlyMap<string, ReactNode> = new Map();
 
-const PASS_THROUGH: ViewStyle = { pointerEvents: 'box-none' };
+const PASS_THROUGH = style({ pointerEvents: 'box-none' });
 
 /**
  * Is there a host above this? Answerable before the node exists, which is what

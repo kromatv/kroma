@@ -1,3 +1,4 @@
+import { registered } from '@kroma/ui/kit';
 import { createLink, type LinkProps } from '@tanstack/react-router';
 import { View, type ViewProps } from 'react-native';
 
@@ -8,8 +9,10 @@ import { View, type ViewProps } from 'react-native';
  * Everything the router computes rides through to react-native-web, which is
  * what turns `href` into an anchor.
  */
-const RouteLink = createLink(function RouteAnchor(props: Readonly<ViewProps>) {
-  return <View {...props} />;
+// The router spreads the style it is handed into its own, so the object that
+// arrives here is registered by nothing; registered again, it paints as classes.
+const RouteLink = createLink(function RouteAnchor({ style, ...props }: Readonly<ViewProps>) {
+  return <View {...props} style={registered(style as never)} />;
 });
 
 /** A path this app's router knows, for a nav table that names its destinations

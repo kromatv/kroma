@@ -190,8 +190,8 @@ const s = styles({
   scrim: { bg: 'overlay' },
   scrimActive: { pointerEvents: 'auto' },
   scrimInert: { pointerEvents: 'none' },
-  panelRight: { borderLeftWidth: 1, borderColor: 'borderStrong', shadow: 'pop', h: '100%' },
-  panelLeft: { borderRightWidth: 1, borderColor: 'borderStrong', shadow: 'pop', h: '100%' },
+  panelRight: { borderLeftWidth: 1, borderColor: 'borderStrong', h: '100%' },
+  panelLeft: { borderRightWidth: 1, borderColor: 'borderStrong', h: '100%' },
 });
 
 /**

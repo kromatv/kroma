@@ -11,8 +11,8 @@
 // vocabulary reaches.
 
 import type { TextStyle } from 'react-native';
-import { type ColorToken, colors, lightColors, withAlpha } from './tokens/colors';
-import { CSS_COLORS, CSS_SHADOWS } from './tokens/css-palette';
+import { type ColorToken, colors, lightColors, withAlpha } from '#ui/core/tokens/colors';
+import { CSS_COLORS, CSS_SHADOWS } from '#ui/core/tokens/css-palette';
 import {
   lightShadow,
   motion,
@@ -23,8 +23,8 @@ import {
   standoffEdge,
   standoffInside,
   WASH_ALPHA,
-} from './tokens/effects';
-import { gutter, type RadiusToken, radius, rhythm, space } from './tokens/layout';
+} from '#ui/core/tokens/effects';
+import { gutter, type RadiusToken, radius, rhythm, space } from '#ui/core/tokens/layout';
 import {
   type FontToken,
   fonts,
@@ -33,7 +33,7 @@ import {
   toType,
   tracking,
   typeSpec,
-} from './tokens/typography';
+} from '#ui/core/tokens/typography';
 
 /** The token modules author values `as const`; a theme's slots take any value
  *  of the same shape, not only the KROMA literal. */

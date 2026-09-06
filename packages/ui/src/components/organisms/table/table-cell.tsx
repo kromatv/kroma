@@ -5,7 +5,7 @@ import { styles } from '#ui/core';
 import { space } from '#ui/core/tokens';
 import { drawn, FILL, useTableGrid } from './table-columns';
 import { useTable } from './table-context';
-import { useTableSort } from './table-sort';
+import { sortPlace, useTableSort } from './table-sort';
 import { SortCell } from './table-sort-cell';
 
 interface TableCellProps {
@@ -22,10 +22,13 @@ function Cell({ children }: Readonly<TableCellProps>) {
   if (!drawn(column, grid?.step ?? 0)) return null;
   const pad = variant === 'framed' ? s.cell : s.cellPlain;
   const sortsBy = head && sorting ? column?.column : undefined;
+  const sorted =
+    sortsBy !== undefined && sorting !== null && sortPlace(sorting.columns, sortsBy) !== null;
   const box = grid?.boxes[at] ?? FILL;
+  const headInk = sorted ? 'accent' : 'textDim';
   const body =
     typeof children === 'string' ? (
-      <Text variant={head ? 'label' : 'body'} color={head ? 'text' : 'textMuted'}>
+      <Text variant={head ? 'overline' : 'body'} color={head ? headInk : 'textMuted'} lines={1}>
         {children}
       </Text>
     ) : (
@@ -49,8 +52,8 @@ function Cell({ children }: Readonly<TableCellProps>) {
 }
 
 const s = styles({
-  cell: { px: space[3], py: space[2] },
-  cellPlain: { py: space[3] },
+  cell: { px: space[3], py: space[2], justify: 'center' },
+  cellPlain: { py: space[3], justify: 'center' },
   end: { align: 'flex-end' },
 });
 

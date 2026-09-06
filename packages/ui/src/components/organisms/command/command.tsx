@@ -132,10 +132,9 @@ function Root({
           mx={MARGIN}
           mt={96}
           bg="surface2"
-          radius="lg"
+          radius="xl"
           border="borderStrong"
           borderWidth={1}
-          shadow="pop"
           overflow="hidden"
         >
           {children}

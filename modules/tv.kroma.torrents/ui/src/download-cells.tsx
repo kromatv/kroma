@@ -9,27 +9,41 @@ import {
   Badge,
   Box,
   type ColorValue,
+  classes,
   color,
   Icon,
   Img,
   Progress,
   Row,
+  sharedStyle,
   styles,
   Text,
   Tooltip,
 } from '@kroma/ui/kit';
-import type { CSSProperties } from 'react';
 import type { DownloadView } from './schemas';
 
 const POSTER_WIDTH = 34;
 const POSTER_HEIGHT = 50;
 
-const STATUS_DOT: CSSProperties = { width: 6, height: 6, borderRadius: '50%', flex: '0 0 auto' };
-const BREATHE = 'kroma-breathe 2s ease-in-out infinite';
-const TRACKER_LINK: CSSProperties = { display: 'inline-flex', flex: '0 0 auto' };
+const chip = styles({
+  dot: { w: 6, h: 6, radius: 'circle', flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
+  breathe: {
+    animationKeyframes: 'kroma-breathe',
+    animationDuration: '2s',
+    animationTimingFunction: 'ease-in-out',
+    animationIterationCount: 'infinite',
+  },
+});
 
+const washOf = (ink: string) =>
+  sharedStyle(`download:wash:${ink}`, {
+    backgroundColor: `color-mix(in srgb, ${ink} 13%, transparent)`,
+  });
+
+const dotOf = (ink: string) => sharedStyle(`download:dot:${ink}`, { backgroundColor: ink });
 const s = styles({
   tabular: { fontVariant: ['tabular-nums'] },
+  trackerLink: { display: 'inline-flex', flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
 });
 
 function targetPill(dl: DownloadView): string | null {
@@ -87,7 +101,7 @@ export function RowTitleCell({ dl }: Readonly<{ dl: DownloadView }>) {
               target="_blank"
               rel="noreferrer"
               title={t('downloads.viewOnTracker')}
-              style={TRACKER_LINK}
+              className={classes(s.trackerLink)}
             >
               <Icon name="external-link" size={12} thickness={2} color="glyph" />
             </a>
@@ -224,15 +238,8 @@ export function RowStatusCell({
   const ink = color(tone);
   return (
     <Box gap={4}>
-      <Row
-        self="flex-start"
-        gap={6}
-        px={10}
-        py={4}
-        radius="pill"
-        style={{ backgroundColor: `color-mix(in srgb, ${ink} 13%, transparent)` }}
-      >
-        <span style={{ ...STATUS_DOT, background: ink, animation: active ? BREATHE : undefined }} />
+      <Row self="flex-start" gap={6} px={10} py={4} radius="pill" style={washOf(ink)}>
+        <Box style={[chip.dot, dotOf(ink), active ? chip.breathe : null]} />
         <Text variant="meta" color={tone}>
           {t(`downloads.st.${status}` as MessageKey)}
         </Text>

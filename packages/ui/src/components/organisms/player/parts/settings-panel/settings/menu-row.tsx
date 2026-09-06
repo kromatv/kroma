@@ -5,7 +5,7 @@ import { Icon } from '#ui/components/atoms/icon';
 import { SwitchFace } from '#ui/components/atoms/switch';
 import { Text } from '#ui/components/atoms/text';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
-import { styles } from '#ui/core';
+import { style, styles } from '#ui/core';
 import { a11yState } from '#ui/lib/a11y';
 import { panel, rowStyle } from './panel-style';
 
@@ -20,6 +20,8 @@ import { panel, rowStyle } from './panel-style';
  * focus engine, so the row must render the `focused` prop it is given rather
  * than track focus itself.
  */
+
+const MIN_W = style({ minWidth: 0 });
 export function MenuRow({
   icon,
   label,
@@ -54,7 +56,7 @@ export function MenuRow({
       style={[...rowStyle(panel.menuRow, panel.rowOn, focused), style]}
     >
       {icon}
-      <Box flex style={{ minWidth: 0 }}>
+      <Box flex style={MIN_W}>
         <Text style={panel.menuLabel}>{label}</Text>
         {!toggle && value != null ? <Text style={panel.menuValue}>{value}</Text> : null}
       </Box>

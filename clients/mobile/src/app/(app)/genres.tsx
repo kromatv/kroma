@@ -1,5 +1,5 @@
-// Genres: tiles built from the library's own metadata, each showing the best
-// unused backdrop for that genre over its hue gradient (same helpers as TV).
+// Genres: the library's own genres as artwork tiles, most common first, on the
+// same tile the web and the television draw.
 
 import type { MediaItem, Show } from '@kroma/client/media';
 import {
@@ -8,35 +8,42 @@ import {
   genreLabel,
   genreSegment,
   genreShowcases,
-  sizedImageUrl,
+  genreTint,
 } from '@kroma/core';
-import { Box, styles, Text } from '@kroma/ui/kit';
+import {
+  CategoryTile,
+  cellWidth,
+  columnsFor,
+  Grid,
+  genreIcon,
+  Icon,
+  styles,
+  tintGradient,
+} from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FadeImage } from '#mobile/components/FadeImage';
+import { useMemo } from 'react';
+import { ScrollView, useWindowDimensions } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
-import { Loading, Screen } from '#mobile/components/ui';
+import { EmptyState, Loading, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
+import { useGutters } from '#mobile/lib/layout';
 import { useClient } from '#mobile/lib/session';
-import { groundShade, radius, spacing, type } from '#mobile/lib/theme';
+import { spacing } from '#mobile/lib/theme';
 
-interface GenreTileModel {
-  slug: string;
-  name: string;
-  count: number;
-  art: string | null;
-  gradient: [string, string];
-}
+const GAP = 12;
+// The web's cell: a share of the window, held between a phone's pair of
+// columns and a desktop's cap.
+const CELL_SHARE = 0.22;
+const CELL_MIN = 160;
+const CELL_MAX = 304;
 
 export default function Genres() {
   const t = useT();
   const client = useClient();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
+  const gutters = useGutters();
 
   const catalogue = useQuery({
     queryKey: ['genreCatalogue'],
@@ -47,75 +54,50 @@ export default function Genres() {
     },
   });
 
+  const items = catalogue.data;
+  const genres = useMemo(() => collectGenres(items ?? []), [items]);
+  const showcases = useMemo(() => genreShowcases(items ?? []), [items]);
+  const room = width - gutters.left - gutters.right;
+  const min = Math.round(Math.min(Math.max(width * CELL_SHARE, CELL_MIN), CELL_MAX));
+  const cellW = cellWidth(room, columnsFor(room, min, GAP), GAP);
+
   if (catalogue.isPending) return <Loading label={t('common.loading')} />;
-
-  const items = catalogue.data ?? [];
-  const showcases = genreShowcases(items);
-  const tiles: GenreTileModel[] = collectGenres(items).map((g) => {
-    const showcase = showcases.get(g.slug);
-    return {
-      slug: g.slug,
-      name: genreLabel(t, g.name),
-      count: g.count,
-      art: sizedImageUrl(client.media.artwork.resolve(showcase?.metadata?.backdropUrl), 480),
-      gradient: genreColors(g.slug),
-    };
-  });
-
-  // The surrounding <Screen> already consumed the horizontal safe-area insets
-  // (landscape notch), so the tile math works on what is left of the window.
-  const usable = width - insets.left - insets.right;
-  const cols = usable >= 700 ? 3 : 2;
-  const tileW = Math.floor((usable - spacing.md * 2 - 12 * (cols - 1)) / cols);
 
   return (
     <Screen padded={false}>
       <PageHeader title={t('nav.genres')} />
-      <FlatList
-        key={cols}
-        data={tiles}
-        numColumns={cols}
-        keyExtractor={(g) => g.slug}
-        columnWrapperStyle={{ gap: 12 }}
-        contentContainerStyle={s.grid}
-        renderItem={({ item: tile }) => (
-          <Pressable
-            onPress={() => router.push(`/genre/${genreSegment(tile.slug)}` as never)}
-            style={({ pressed }) => [
-              { width: tileW, height: tileW * 0.62, opacity: pressed ? 0.8 : 1 },
-            ]}
-          >
-            <Box style={s.tile}>
-              <LinearGradient colors={tile.gradient} style={StyleSheet.absoluteFill} />
-              {tile.art ? (
-                <FadeImage uri={tile.art} seed={tile.slug} style={StyleSheet.absoluteFill} />
-              ) : null}
-              <LinearGradient
-                colors={[groundShade(0), groundShade(0), groundShade(0.85)]}
-                locations={[0, 0.45, 1]}
-                style={StyleSheet.absoluteFill}
-              />
-              <Box style={s.tileCountPill}>
-                <Text style={s.tileCountText}>{tile.count}</Text>
-              </Box>
-              <Box style={s.tileText}>
-                <Text lines={1} style={s.tileName}>
-                  {tile.name}
-                </Text>
-              </Box>
-            </Box>
-          </Pressable>
-        )}
-      />
+      {genres.length === 0 ? (
+        <EmptyState
+          icon={<Icon name="category" size={34} thickness={1.8} color="textMuted" />}
+          title={t('genres.empty')}
+        />
+      ) : (
+        <ScrollView contentContainerStyle={[s.content, gutters.style]}>
+          <Grid min={min} gap={GAP} width={room}>
+            {genres.map((g) => {
+              const pick = showcases.get(g.slug);
+              return (
+                <CategoryTile
+                  key={g.slug}
+                  size="md"
+                  aspect={3 / 2}
+                  label={genreLabel(t, g.name)}
+                  icon={genreIcon(g.slug)}
+                  meta={t('person.titleCount', { count: g.count })}
+                  art={pick ? client.media.artwork.backdropFor(pick, cellW) : null}
+                  background={tintGradient(genreColors(g.slug))}
+                  wash={genreTint(g.slug)}
+                  onPress={() => router.push(`/genre/${genreSegment(g.slug)}` as never)}
+                />
+              );
+            })}
+          </Grid>
+        </ScrollView>
+      )}
     </Screen>
   );
 }
 
 const s = styles({
-  grid: { gap: 12, px: spacing.md, pb: spacing.xl },
-  tile: { flex: true, bg: 'surface1', radius: radius.lg, overflow: 'hidden' },
-  tileText: { absolute: true, right: 12, bottom: 10, left: 12 },
-  tileName: { ...type.section, shrink: 1, fontSize: 16, fontWeight: '800' },
-  tileCountPill: { absolute: true, top: 8, right: 8, px: 8, py: 2, bg: 'bg/60', radius: 999 },
-  tileCountText: { ...type.small, color: 'text' },
+  content: { pt: spacing.sm, pb: spacing.xl },
 });

@@ -1,8 +1,8 @@
 import type { Section } from '@kroma/client/media';
 import { genreLabels, metaLine, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Badge, Box, Button, gradient, Row, Text } from '@kroma/ui/kit';
-import { type CSSProperties, memo } from 'react';
+import { Badge, Box, Button, classes, Row, styles, Text } from '@kroma/ui/kit';
+import { memo } from 'react';
 import { VirtualTileGrid } from '#web/features/catalog/virtual-tile-grid';
 import type { MovieView, ShowView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
@@ -38,39 +38,41 @@ export function SectionHeading({ children }: Readonly<{ children: string }>) {
 // Bled to the content edges (cancels the page gutter) and faded into the rails
 // below. The gutter is a fluid CSS custom property, which no style number can
 // carry, so the frame stays a plain element.
-const HERO: CSSProperties = {
-  position: 'relative',
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'flex-end',
-  overflow: 'hidden',
-  marginLeft: 'calc(var(--gutter-web) * -1)',
-  marginRight: 'calc(var(--gutter-web) * -1)',
-  marginTop: -36,
-  marginBottom: 32,
-  minHeight: 'clamp(200px, 52vw, 460px)',
-  paddingLeft: 'var(--gutter-web)',
-  paddingRight: 'var(--gutter-web)',
-  paddingTop: 'clamp(40px, 5vw, 64px)',
-  paddingBottom: 40,
-};
-
-const HERO_BREATHE: CSSProperties = {
-  position: 'absolute',
-  inset: 0,
-  pointerEvents: 'none',
-  animation: 'kroma-breathe 7s var(--ease-out) infinite',
-  background:
-    'radial-gradient(58% 68% at 72% 32%, color-mix(in srgb, var(--kroma-accent-wash) 16%, transparent), transparent 62%)',
-};
-
-const HERO_SCRIM = gradient(
-  [
-    'linear-gradient(90deg, var(--kroma-bg) 6%,',
-    'color-mix(in srgb, var(--kroma-bg) 35%, transparent) 42%, transparent 64%),',
-    'linear-gradient(0deg, var(--kroma-bg) 2%, transparent 46%)',
-  ].join(' '),
-);
+const s = styles({
+  hero: {
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+    marginLeft: 'calc(var(--gutter-web) * -1)',
+    marginRight: 'calc(var(--gutter-web) * -1)',
+    mt: -36,
+    mb: 32,
+    minHeight: 'clamp(200px, 52vw, 460px)',
+    paddingLeft: 'var(--gutter-web)',
+    paddingRight: 'var(--gutter-web)',
+    paddingTop: 'clamp(40px, 5vw, 64px)',
+    pb: 40,
+  },
+  breathe: {
+    fill: true,
+    pointerEvents: 'none',
+    animationKeyframes: 'kroma-breathe',
+    animationDuration: '7s',
+    animationTimingFunction: 'var(--ease-out)',
+    animationIterationCount: 'infinite',
+    backgroundImage:
+      'radial-gradient(58% 68% at 72% 32%, color-mix(in srgb, var(--kroma-accent-wash) 16%, transparent), transparent 62%)',
+  },
+  scrim: {
+    backgroundImage: [
+      'linear-gradient(90deg, var(--kroma-bg) 6%,',
+      'color-mix(in srgb, var(--kroma-bg) 35%, transparent) 42%, transparent 64%),',
+      'linear-gradient(0deg, var(--kroma-bg) 2%, transparent 46%)',
+    ].join(' '),
+  },
+});
 
 /** Full-bleed featured banner TMDB backdrop as cinematic art, bled to the
  * content edges (cancels the page gutter) and faded into the rails below. */
@@ -89,10 +91,10 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
           .join(' · ');
 
   return (
-    <div style={HERO}>
+    <div className={classes(s.hero)}>
       <Image src={media.backdrop} fit="cover" position="center 18%" background={gradient} fill />
-      <div style={HERO_BREATHE} />
-      <Box fill pointerEvents="none" style={HERO_SCRIM} />
+      <Box style={s.breathe} />
+      <Box fill pointerEvents="none" style={s.scrim} />
 
       <Box maxW={680}>
         <Text variant="overline" color="accent" mb={14}>

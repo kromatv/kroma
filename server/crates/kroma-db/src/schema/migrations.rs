@@ -257,4 +257,5 @@ pub(crate) const MIGRATIONS: &[&str] = &[
     "CREATE TABLE IF NOT EXISTS reset_requests (\
         user_id     TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,\
         created_at  TEXT NOT NULL)",
+    "ALTER TABLE metadata_core ADD COLUMN certification TEXT",
 ];

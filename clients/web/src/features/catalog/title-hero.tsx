@@ -142,6 +142,7 @@ function metaLine(t: ReturnType<typeof useT>, view: TitleView): string {
     return [
       view.year ? String(view.year) : null,
       formatRuntime(view.playable.durationMs),
+      view.playable.metadata?.certification,
       langName(t, view.playable.audio?.language),
     ]
       .filter(Boolean)

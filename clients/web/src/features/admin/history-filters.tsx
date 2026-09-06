@@ -104,7 +104,6 @@ export function HistoryFilters({
               src={resolveImageUrl(apiBase(), user.avatarUrl)}
               size={MARK}
               circle
-              shadow={false}
             />
           ),
         }))}

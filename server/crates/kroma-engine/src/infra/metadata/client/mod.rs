@@ -1,6 +1,7 @@
 //! TMDB HTTP client: search for the best match, fetch its details + external
 //! IDs / credits / images via `curl`, and map the JSON into a [`Metadata`].
 
+mod certification;
 mod details;
 mod details_json;
 mod lookup;
@@ -80,6 +81,12 @@ impl Target {
     }
     fn web_kind(self) -> &'static str {
         self.detail_path()
+    }
+    fn certification_append(self) -> &'static str {
+        match self {
+            Target::Movie => "release_dates",
+            Target::Tv => "content_ratings",
+        }
     }
 }
 

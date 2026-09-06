@@ -46,26 +46,26 @@ function ReportRow({ report, onOpen }: Readonly<{ report: Report; onOpen: () => 
         </Text>
       </Table.Cell>
 
-      <Table.Cell wide>
+      <Table.Cell>
         <Pill ink={cat.color} bg={soft(cat.color)} variant="overline">
           {t(cat.labelKey)}
         </Pill>
       </Table.Cell>
 
-      <Table.Cell wide row gap={10}>
-        <Avatar name={report.reportedByName ?? '?'} size={26} circle shadow={false} />
+      <Table.Cell row gap={10}>
+        <Avatar name={report.reportedByName ?? '?'} size={26} circle />
         <Text variant="meta" color="textMuted" lines={1}>
           {report.reportedByName ?? t('reports.unknownUser')}
         </Text>
       </Table.Cell>
 
-      <Table.Cell wide>
+      <Table.Cell>
         <Text variant="meta" color="textDim" style={TABULAR}>
           {new Date(report.createdAt).toLocaleDateString()}
         </Text>
       </Table.Cell>
 
-      <Table.Cell wide>
+      <Table.Cell>
         <Pill ink={st.color} bg={soft(st.color)} leading={<PillDot tone={st.color} />}>
           {t(st.labelKey)}
         </Pill>
@@ -205,13 +205,21 @@ export function ReportsQueuePage() {
         ))}
       </Row>
 
-      <Table.Root columns="minmax(0,1fr) 128px 150px 96px 116px">
+      <Table.Root
+        columns={[
+          {},
+          { width: 128, from: 'md' },
+          { width: 150, from: 'md' },
+          { width: 96, from: 'md' },
+          { width: 116, from: 'md' },
+        ]}
+      >
         <Table.Header>
           <Table.Column>{t('reports.colTitle')}</Table.Column>
-          <Table.Column wide>{t('reports.colCategory')}</Table.Column>
-          <Table.Column wide>{t('reports.colReporter')}</Table.Column>
-          <Table.Column wide>{t('reports.colDate')}</Table.Column>
-          <Table.Column wide>{t('reports.colStatus')}</Table.Column>
+          <Table.Column>{t('reports.colCategory')}</Table.Column>
+          <Table.Column>{t('reports.colReporter')}</Table.Column>
+          <Table.Column>{t('reports.colDate')}</Table.Column>
+          <Table.Column>{t('reports.colStatus')}</Table.Column>
         </Table.Header>
 
         {rows.map((r) => (

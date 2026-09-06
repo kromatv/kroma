@@ -11,23 +11,18 @@ import { useT } from '@kroma/ui';
 import {
   Box,
   Chip,
-  color,
+  classes,
   genreIcon,
   Row,
   ringRoomBlock,
   ringRoomInline,
   Select,
   SORT_ICON,
+  sharedStyle,
+  styles,
   useBreakpoint,
 } from '@kroma/ui/kit';
-import {
-  type CSSProperties,
-  type RefObject,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 
 import { PAGE_GUTTER } from '#web/shared/ui/page';
 
@@ -44,52 +39,66 @@ const DOCK_TOP = 'calc(max(0.625rem, env(safe-area-inset-top)) + 2.75rem)';
 
 // `position: sticky` and `env()` have no React Native spelling, so the bar's own
 // box stays CSS; everything it contains is the kit's.
-const BAR: CSSProperties = {
-  position: 'sticky',
-  zIndex: 30,
-  marginTop: 24,
-  marginBottom: 24,
-  paddingTop: 10,
-  paddingBottom: 10,
-  borderBottomWidth: 1,
-  borderBottomStyle: 'solid',
-  borderBottomColor: 'transparent',
-  transition: 'background-color .3s, border-color .3s, box-shadow .3s',
-};
+const barStyle = styles({
+  root: {
+    position: 'sticky',
+    zIndex: 30,
+    mt: 24,
+    mb: 24,
+    pt: 10,
+    pb: 10,
+    borderBottomWidth: 1,
+    borderBottomStyle: 'solid',
+    borderBottomColor: 'transparent',
+    transition: 'background-color .3s, border-color .3s, box-shadow .3s',
+  },
+  stuck: {
+    borderBottomColor: 'white/6',
+    backgroundColor: 'color-mix(in srgb, var(--kroma-bg) 72%, transparent)',
+    backdropFilter: 'blur(24px)',
+    WebkitBackdropFilter: 'blur(24px)',
+  },
+});
 
-const BAR_STUCK: CSSProperties = {
-  ...BAR,
-  borderBottomColor: color('white/6'),
-  background: 'color-mix(in srgb, var(--kroma-bg) 72%, transparent)',
-  backdropFilter: 'blur(24px)',
-  WebkitBackdropFilter: 'blur(24px)',
-  boxShadow: `0 16px 32px -20px ${color('black/85')}`,
-};
+const barGeometry = (gutter: number, top: number | string) =>
+  sharedStyle(`bar:${gutter}:${top}`, {
+    marginLeft: -gutter,
+    marginRight: -gutter,
+    paddingLeft: gutter,
+    paddingRight: gutter,
+    top,
+  });
 
 // `scrollbar-width` only; the legacy `::-webkit-scrollbar` rule it used to pair
 // with needs a stylesheet, which an inline style has no way to reach.
-const STRIP: CSSProperties = {
-  display: 'flex',
-  minWidth: 0,
-  flex: 1,
-  gap: 8,
-  overflowX: 'auto',
-  // A scrolling box cannot let a focus ring out: `overflow-x: auto` forces the
-  // cross axis away from `visible`, and `clip` is coerced to `hidden` there.
-  ...ringRoomBlock(),
-  ...ringRoomInline(),
-  scrollbarWidth: 'none',
-};
+const stripStyle = styles({
+  root: {
+    display: 'flex',
+    minWidth: 0,
+    flex: true,
+    gap: 8,
+    overflowX: 'auto',
+    // A scrolling box cannot let a focus ring out: `overflow-x: auto` forces the
+    // cross axis away from `visible`, and `clip` is coerced to `hidden` there.
+    ...ringRoomBlock(),
+    ...ringRoomInline(),
+    scrollbarWidth: 'none',
+  },
+});
+
+const fadeOf = (mask: string | undefined) =>
+  mask ? sharedStyle(`strip:${mask}`, { maskImage: mask, WebkitMaskImage: mask }) : null;
 
 // The "no genre picked" sentinel: Select treats '' as nothing-picked.
 const ALL_GENRES = '*';
 
 // Roomier than the kit's sm chip: these are the page's primary filter, not a
 // tag row.
-const CHIP_PAD = { paddingVertical: 8, paddingHorizontal: 18 } as const;
-
-const GENRE_TRIGGER = { flexShrink: 0, minWidth: 150 } as const;
-const SORT_TRIGGER = { flexShrink: 0, minWidth: 196 } as const;
+const s = styles({
+  chip: { py: 8, px: 18 },
+  genre: { shrink: 0, minW: 150 },
+  sort: { shrink: 0, minW: 196 },
+});
 
 /** True once a `position: sticky` element has docked at its `top` offset. */
 function useStuck(bar: RefObject<HTMLDivElement | null>): boolean {
@@ -207,27 +216,20 @@ export function BrowseBar({
   return (
     <div
       ref={bar}
-      style={{
-        ...(stuck ? BAR_STUCK : BAR),
-        marginLeft: -gutter,
-        marginRight: -gutter,
-        paddingLeft: gutter,
-        paddingRight: gutter,
-        top: wide ? 0 : DOCK_TOP,
-      }}
+      className={classes(
+        barStyle.root,
+        stuck ? barStyle.stuck : null,
+        barGeometry(gutter, wide ? 0 : DOCK_TOP),
+      )}
     >
       <Row gap={12}>
         {genres.length > 0 ? (
-          <div
-            ref={strip}
-            onScroll={update}
-            style={{ ...STRIP, maskImage: mask, WebkitMaskImage: mask }}
-          >
+          <div ref={strip} onScroll={update} className={classes(stripStyle.root, fadeOf(mask))}>
             <Chip
               active={!genre}
               variant="subtle"
               label={t('browse.allGenres')}
-              style={CHIP_PAD}
+              style={s.chip}
               onPress={() => onGenre(undefined)}
             />
             {inline.map((g) => (
@@ -237,7 +239,7 @@ export function BrowseBar({
                 variant="subtle"
                 icon={genreIcon(g.slug)}
                 label={genreLabel(t, g.name)}
-                style={CHIP_PAD}
+                style={s.chip}
                 onPress={() => onGenre(g.slug === active ? undefined : genreSegment(g.slug))}
               />
             ))}
@@ -252,7 +254,7 @@ export function BrowseBar({
             value={active ? genreSegment(active) : ALL_GENRES}
             onValueChange={(v) => onGenre(v === ALL_GENRES ? undefined : v)}
           >
-            <Select.Trigger size="sm" style={GENRE_TRIGGER} />
+            <Select.Trigger size="sm" style={s.genre} />
             <Select.Item value={ALL_GENRES} label={t('browse.allGenres')} />
             {genres.map((g) => (
               <Select.Item
@@ -270,7 +272,7 @@ export function BrowseBar({
           value={sort}
           onValueChange={(v) => onSort(v as SortMode)}
         >
-          <Select.Trigger size="sm" style={SORT_TRIGGER} />
+          <Select.Trigger size="sm" style={s.sort} />
           {SORT_MODES.map((mode) => (
             <Select.Item
               key={mode}

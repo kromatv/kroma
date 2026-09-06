@@ -8,7 +8,7 @@ import { Animated, Pressable, type ViewStyle } from 'react-native';
 import { Icon } from '#ui/components/atoms/icon';
 import { FOCUS_BLEED } from '#ui/components/organisms/virtual/clip';
 import { EASE_NATIVE, FADE, SETTLE_MS } from '#ui/components/organisms/virtual/strip-motion';
-import { styles } from '#ui/core';
+import { sharedStyle, styles } from '#ui/core';
 import { SHADE, shade } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';
 import { WEB } from '#ui/lib/platform';
@@ -20,6 +20,8 @@ const EDGE_INSET = 8;
 
 /** Fade length scales with row width, clamped to EDGE_MIN..EDGE_MAX so it reads
  *  correctly at both TV and narrow (e.g. workbench) widths. */
+
+const widthOf = (width: number) => sharedStyle(`rail-edge:width:${width}`, { width });
 export function edgeWidth(row: number): number {
   if (row <= 0) return EDGE_MIN;
   return Math.round(Math.min(EDGE_MAX, Math.max(EDGE_MIN, row * EDGE_SHARE)));
@@ -48,15 +50,9 @@ function scrim(start: boolean, fade: number): string {
 
 // `RailEdge` isn't memoised and mounts twice, so recomputing on every D-pad
 // scroll would remap the curve needlessly.
-const scrims = new Map<string, ViewStyle>();
 
 function scrimStyle(start: boolean, fade: number): ViewStyle {
-  const key = `${start}:${fade}`;
-  const hit = scrims.get(key);
-  if (hit) return hit;
-  const style = gradient(scrim(start, fade)) as ViewStyle;
-  scrims.set(key, style);
-  return style;
+  return sharedStyle(`rail-edge:scrim:${start}:${fade}`, gradient(scrim(start, fade)));
 }
 
 /** One end of the row: the fade over the row's last tiles, plus the pointer's
@@ -88,16 +84,18 @@ export function RailEdge({
       useNativeDriver: true,
     }).start();
   }, [shown, fade]);
+  const webOpacity = shown ? s.shown : s.hidden;
+  const webFade = WEB ? webOpacity : { opacity: fade };
   return (
     <Animated.View
       style={[
         s.edge,
         shown && arrow ? s.passThrough : s.inert,
-        { width: width + FOCUS_BLEED },
+        widthOf(width + FOCUS_BLEED),
         start ? s.edgeStart : s.edgeEnd,
         scrimStyle(start, width),
-        WEB ? ({ opacity: shown ? 1 : 0 } as ViewStyle) : { opacity: fade },
-        WEB ? (FADE as ViewStyle) : null,
+        webFade,
+        WEB ? FADE : null,
       ]}
     >
       <Pressable
@@ -109,8 +107,8 @@ export function RailEdge({
         onPress={onPress}
         style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
           s.arrow,
-          { opacity: arrow ? 1 : 0 } as ViewStyle,
-          FADE as ViewStyle,
+          arrow ? s.shown : s.hidden,
+          FADE,
           hovered ? s.arrowHover : null,
           pressed ? s.arrowPressed : null,
         ]}
@@ -122,6 +120,8 @@ export function RailEdge({
 }
 
 const s = styles({
+  shown: { opacity: 1 },
+  hidden: { opacity: 0 },
   // Sized to the row's own height, not the clip's, so the scrim doesn't bleed
   // into the title above the rail.
   edge: { absolute: true, top: 0, bottom: 0, justify: 'center', z: 2 },
@@ -138,7 +138,6 @@ const s = styles({
     center: true,
     bg: 'tint/12',
     border: 'borderStrong',
-    shadow: 'card',
   },
   arrowHover: { bg: 'tint/20' },
   arrowPressed: { bg: 'tint/28', transform: [{ scale: 0.94 }] },

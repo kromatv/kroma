@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FocusScope } from '#ui/lib/focus-scope';
+import { declared } from '#ui/testing';
 import { SearchKeyboard } from './search-keyboard';
 import { UrlKeyboard } from './url-keyboard';
 
@@ -10,7 +11,7 @@ afterEach(cleanup);
 
 function blurLayers(container: HTMLElement): Element[] {
   return [...container.querySelectorAll('*')].filter((el) =>
-    /blur/.test((el as HTMLElement).style.backdropFilter),
+    /blur/.test(declared(el, 'backdropFilter') ?? ''),
   );
 }
 
@@ -43,8 +44,8 @@ describe('SearchKeyboard', () => {
       </FocusScope>,
     );
     // A key wears no ring (see ./key), so the entry is the one the focus scales.
-    expect(screen.getByLabelText('Q').style.transform).toContain('scale(1.08)');
-    expect(screen.getByLabelText('1').style.transform).not.toContain('scale(1.08)');
+    expect(declared(screen.getByLabelText('Q'), 'transform') ?? '').toContain('scale(1.08)');
+    expect(declared(screen.getByLabelText('1'), 'transform') ?? '').not.toContain('scale(1.08)');
   });
 
   it('appends a lowercase letter', () => {

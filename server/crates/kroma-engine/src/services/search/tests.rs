@@ -13,6 +13,7 @@ fn meta(title: &str, overview: &str, genres: &[&str], cast: &[&str]) -> Metadata
         genres: genres.iter().map(ToString::to_string).collect(),
         tmdb_genre_ids: Vec::new(),
         rating: None,
+        certification: None,
         poster_url: None,
         backdrop_url: None,
         logo_url: None,

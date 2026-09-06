@@ -51,7 +51,6 @@ const addTileVariants = svFor<{
       // borrowing the control fill is what keeps this tile in the same family
       // as the field and the keys rather than inventing a third surface.
       bg: CONTROL.md.bg,
-      shadow: 'card',
       _hover: { borderColor: 'accent' },
       _focus: { borderColor: 'accent' },
     },

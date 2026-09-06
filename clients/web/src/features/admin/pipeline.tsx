@@ -1,7 +1,7 @@
 import type { ElementRow } from '@kroma/client/pipeline';
 import { Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Box, Button, Callout, color, EmptyState, Row } from '@kroma/ui/kit';
+import { Box, Button, Callout, EmptyState, Row, styles } from '@kroma/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 import { pipelineActions, usePipelineReloadEvents } from '#web/features/admin/pipeline-actions';
 import { PipelineDrawer } from '#web/features/admin/pipeline-drawer';
@@ -20,10 +20,7 @@ import { useAuth } from '#web/shared/lib/auth';
 
 const PER_PAGE = 30;
 
-const RESUME_FILL = {
-  backgroundColor: color('success/14'),
-  borderColor: color('success/40'),
-} as const;
+const s = styles({ resumeFill: { bg: 'success/14', borderColor: 'success/40' } });
 
 export function PipelinePage() {
   const t = useT();
@@ -128,7 +125,7 @@ export function PipelinePage() {
                 icon={paused ? 'player-play' : 'player-pause'}
                 label={t(paused ? 'pipeline.resume' : 'pipeline.pause')}
                 onPress={togglePause}
-                style={paused ? RESUME_FILL : null}
+                style={paused ? s.resumeFill : null}
               />
             ) : null}
             <ConsoleSearch
@@ -162,11 +159,13 @@ export function PipelinePage() {
         onPick={(facet, value) => pick(facet === 'status' ? setStatus : setKind)(value)}
       />
 
-      <Table.Root columns="minmax(0,1fr) 150px 132px 46px">
+      <Table.Root
+        columns={[{}, { width: 150, from: 'md' }, { width: 132, from: 'md' }, { width: 46 }]}
+      >
         <Table.Header>
           <Table.Column>{t('pipeline.colElement')}</Table.Column>
-          <Table.Column wide>{t('pipeline.treatments')}</Table.Column>
-          <Table.Column wide>{t('pipeline.colStatus')}</Table.Column>
+          <Table.Column>{t('pipeline.treatments')}</Table.Column>
+          <Table.Column>{t('pipeline.colStatus')}</Table.Column>
           <Table.Cell />
         </Table.Header>
 

@@ -8,7 +8,6 @@ import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type ColorToken, styles } from '#ui/core';
 import { hasGlyph } from '#ui/lib/icons/glyphs';
-import { WEB } from '#ui/lib/platform';
 import type { ToastOptions } from './toast';
 
 function ToastCard({
@@ -92,9 +91,6 @@ const s = styles({
     border: 'border',
     radius: 'xl',
     maxW: 520,
-    // The lift that separates a notice from the picture behind it. Web-only: the
-    // native shadow props cost a rasterisation pass a TV does not need to spend.
-    ...(WEB ? { boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)' } : null),
   },
   well: { bg: 'tint/8' },
   text: { minW: 0, shrink: 1 },

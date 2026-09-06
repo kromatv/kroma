@@ -22,6 +22,12 @@ import { type AlphabetItemProps, Item } from './alphabet-rail-item';
 import { Bubble, Lens, lensFor } from './alphabet-rail-lens';
 import { clampNum, type Slot, useLetterScrub } from './use-letter-scrub';
 
+type AlphabetRailSize = 'sm' | 'md';
+
+// A thumb's pitch: rows a finger can land on, and the whole alphabet under six
+// hundred points so it clears a phone's tab bar.
+const HAND = { rowH: 21, fontSize: 12 } as const;
+
 function slotsOf(children: ReactNode): Slot[] {
   const out: Slot[] = [];
   for (const child of Children.toArray(children)) {
@@ -43,6 +49,9 @@ function rangeIndices(slots: readonly Slot[], range: LetterRange | undefined) {
 interface AlphabetRailRootProps {
   /** Accessible name of the rail. */
   label: string;
+  /** `sm` fixes the rows to a thumb's pitch; `md` (the default) scales them
+   *  with the window, up to a 10-foot cap. */
+  size?: AlphabetRailSize;
   /** The stretch of buckets whose sections are on screen: where the lens sits.
    *  It is the HOST's scroll, not the rail's own state. */
   range?: LetterRange;
@@ -56,12 +65,19 @@ interface AlphabetRailRootProps {
  * lens over the letters on screen, and (under a finger or pointer drag) a
  * bubble naming the letter being scrubbed to. The host owns the list and the
  * scroll; the rail only reports jumps. */
-function Root({ label, range, onJump, style, children }: Readonly<AlphabetRailRootProps>) {
+function Root({
+  label,
+  size = 'md',
+  range,
+  onJump,
+  style,
+  children,
+}: Readonly<AlphabetRailRootProps>) {
   // Rows scale with the viewport so the full alphabet always fits, capped
   // where the letters stop gaining legibility.
   const { height: winH } = useWindowDimensions();
-  const rowH = Math.round(clampNum(19, winH * 0.03, 31));
-  const fontSize = Math.round(clampNum(12, winH * 0.019, 17));
+  const rowH = size === 'sm' ? HAND.rowH : Math.round(clampNum(19, winH * 0.03, 31));
+  const fontSize = size === 'sm' ? HAND.fontSize : Math.round(clampNum(12, winH * 0.019, 17));
 
   const slots = useMemo(() => slotsOf(children), [children]);
 
@@ -122,5 +138,5 @@ function Root({ label, range, onJump, style, children }: Readonly<AlphabetRailRo
  */
 const AlphabetRail = { Root, Item };
 
-export type { AlphabetItemProps, AlphabetRailRootProps, LetterRange };
+export type { AlphabetItemProps, AlphabetRailRootProps, AlphabetRailSize, LetterRange };
 export { AlphabetRail };

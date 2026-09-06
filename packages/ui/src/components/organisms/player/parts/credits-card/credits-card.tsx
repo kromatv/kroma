@@ -5,7 +5,7 @@ import { clamp01 } from '#ui/components/atoms/progress';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
 import { Text } from '#ui/components/atoms/text';
 import { scaler } from '#ui/components/organisms/player/lib/metrics';
-import { styles, sv, useTheme } from '#ui/core';
+import { sharedStyle, styles, sv, useTheme } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
 
@@ -54,6 +54,8 @@ const playFill = sv({ base: { flex: 1, _focus: { bg: 'accentHover' } } });
  * a conic gradient is CSS-only, and an SVG arc is the same picture on every
  * platform.
  */
+
+const sizeOf = (fontSize: number) => sharedStyle(`credits-card:size:${fontSize}`, { fontSize });
 export function CreditsCard({
   item,
   secondsLeft,
@@ -82,7 +84,6 @@ export function CreditsCard({
       border="white/12"
       bg="rgba(16, 16, 20, 0.9)"
       p={px(20)}
-      style={s.cardShadow}
     >
       <Box h={px(150)} mb={px(16)} radius={px(theme.radius.lg)} overflow="hidden">
         <Img src={item.posterUrl ?? null} background={ART_FILL} fill />
@@ -98,9 +99,7 @@ export function CreditsCard({
             />
           </Box>
           <Box w={px(42)} h={px(42)} center radius="circle" bg="#101014">
-            <Text style={[s.countdown, { fontSize: px(COUNTDOWN_SIZE) }]}>
-              {String(secondsLeft)}
-            </Text>
+            <Text style={[s.countdown, sizeOf(px(COUNTDOWN_SIZE))]}>{String(secondsLeft)}</Text>
           </Box>
         </Box>
       </Box>
@@ -144,7 +143,6 @@ export function CreditsCard({
 const COUNTDOWN_SIZE = 19;
 
 const s = styles({
-  cardShadow: { boxShadow: '0 26px 64px rgba(0, 0, 0, 0.62)' },
   vignette: { pointerEvents: 'none' },
   countdown: {
     font: 'ui',

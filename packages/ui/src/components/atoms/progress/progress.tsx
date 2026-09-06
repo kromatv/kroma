@@ -5,7 +5,7 @@
 
 import { Animated } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { type ColorValue, sharedStyle } from '#ui/core';
+import { type ColorValue, sharedStyle, style } from '#ui/core';
 import { motion } from '#ui/core/tokens';
 import { a11yState, a11yValue } from '#ui/lib/a11y';
 import { useLoop } from '#ui/lib/loop';
@@ -41,7 +41,7 @@ const BREATH_MS = motion.duration.slow * 3;
 const BUFFERED_OPACITY = 0.32;
 const WAITING_OPACITY = 0.22;
 
-const FULL_WIDTH = { right: 0 } as const;
+const FULL_WIDTH = style({ right: 0 });
 
 function clamp01(n: number): number {
   if (!Number.isFinite(n)) return 0;

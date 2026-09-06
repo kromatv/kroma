@@ -11,7 +11,7 @@ import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { tintGradient } from '#ui/components/molecules/media-card';
-import { styles, useTheme } from '#ui/core';
+import { sharedStyle, styles, useTheme } from '#ui/core';
 
 interface PosterCardProps {
   title: string;
@@ -33,6 +33,8 @@ interface PosterCardProps {
   autoFocus?: boolean;
 }
 
+const frameOf = (width: number | string) =>
+  sharedStyle(`poster-card:${width}`, { width, radius: 'xl' });
 function PosterCard({
   title,
   overline,
@@ -53,14 +55,14 @@ function PosterCard({
       autoFocus={autoFocus}
       label={title}
       focusScale={1.05}
-      style={{ width: width ?? '100%', borderRadius: radius.lg }}
+      style={frameOf(width ?? '100%')}
     >
-      <Box aspect={2 / 3} radius="lg" overflow="hidden" bg="surface1" shadow="card">
+      <Box aspect={2 / 3} radius="xl" overflow="hidden" bg="surface1">
         {/* Every layer rounds itself as well as the parent clipping: Chrome
             doesn't reliably apply an `overflow: hidden` + `border-radius` clip
             to a composited descendant like the `<img>` below. */}
-        <Img src={art} background={tintGradient(tint)} radius={radius.lg} fill />
-        <ArtScrim variant="deep" radius="lg" />
+        <Img src={art} background={tintGradient(tint)} radius={radius.xl} fill />
+        <ArtScrim variant="deep" radius="xl" />
         {watched ? <WatchedBadge /> : null}
         <Box absolute left={14} right={14} bottom={12} gap={3}>
           {overline ? (

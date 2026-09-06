@@ -41,6 +41,7 @@ export {
   onThemeChange,
   pinDesignWidth,
   readMode,
+  registered,
   setTheme,
   sharedStyle,
   style,
@@ -66,6 +67,7 @@ export {
   useAnchoredPlacement,
   useTriggerFocus,
 } from './lib/anchored-panel';
+export { classes } from './lib/classed';
 export type { Rect } from './lib/cover-rect';
 export { coverRect, parsePosition } from './lib/cover-rect';
 export { backdropBlur, bgPosition, bgSize, gradient, promote } from './lib/css';

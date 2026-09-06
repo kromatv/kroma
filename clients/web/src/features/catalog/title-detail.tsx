@@ -2,10 +2,9 @@
 
 import { ItemId, type SubjectId } from '@kroma/client/media';
 import { useCast, useT } from '@kroma/ui';
-import { type HostElement, Text } from '@kroma/ui/kit';
+import { classes, type HostElement, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import type { CSSProperties } from 'react';
 import { AiSuggestRail } from '#web/features/catalog/ai-suggest-rail';
 import { CastRail, type SimilarItem, SimilarRail } from '#web/features/catalog/detail';
 import { SeasonSection } from '#web/features/catalog/episode-list';
@@ -17,16 +16,21 @@ import { useMyList } from '#web/shared/lib/mylist';
 import { userQueries } from '#web/shared/lib/queries';
 import type { SimilarTarget, TitleView } from '#web/shared/lib/titleView';
 import { useWatched } from '#web/shared/lib/watched';
+import { page } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 // The page gutter is a fluid CSS custom property, which no style number can
 // carry, so anything indented by it stays a plain element.
-const GUTTER: CSSProperties = {
-  paddingLeft: 'var(--gutter-web)',
-  paddingRight: 'var(--gutter-web)',
-};
 
-const PAGE: CSSProperties = { minWidth: 0, paddingBottom: 80, animation: 'fade-in .4s ease' };
+const s = styles({
+  page: {
+    minWidth: 0,
+    pb: 80,
+    animationKeyframes: 'fade-in',
+    animationDuration: '400ms',
+    animationTimingFunction: 'ease',
+  },
+});
 
 type ProgressEntry = { itemId: string; positionMs: number; durationMs?: number | null };
 
@@ -100,7 +104,7 @@ function TitleBody({
   return (
     <>
       {error ? (
-        <div style={GUTTER}>
+        <div className={classes(page.gutter)}>
           <Text variant="label" color="dangerHover" mt={8}>
             {error}
           </Text>
@@ -198,7 +202,7 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
   }));
 
   return (
-    <main style={PAGE}>
+    <main className={classes(s.page)}>
       <TitleHero
         view={view}
         owned={owned}

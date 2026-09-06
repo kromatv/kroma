@@ -70,7 +70,7 @@ function CycleArrow({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Box style={[s.arrow, { opacity: dim ? 0.45 : 1 }]}>
+      <Box style={[s.arrow, dim ? s.dim : s.full]}>
         <Icon name={icon} size={ARROW_SIZE} color="accentText" />
       </Box>
     </Pressable>
@@ -78,7 +78,9 @@ function CycleArrow({
 }
 
 const s = styles({
-  cycleRow: { row: true, align: 'center', between: true, gap: 18, radius: 'lg', px: 22, py: 18 },
+  dim: { opacity: 0.45 },
+  full: { opacity: 1 },
+  cycleRow: { row: true, align: 'center', between: true, gap: 18, radius: 'xl', px: 22, py: 18 },
   cycleOn: { bg: 'tint/8', ring: 'focusLift', z: 1 },
   cycleOff: { bg: 'tint/4' },
   fieldLabel: { text: 'labelTv', color: 'textMuted' },

@@ -13,9 +13,9 @@
 // a thumb's gesture, and a D-pad synopsis wants a screen of its own.
 
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, type ViewStyle } from 'react-native';
+import { Animated, Pressable } from 'react-native';
 import { Text, type TextProps } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
+import { style, styles } from '#ui/core';
 import { motion } from '#ui/core/tokens';
 import { a11yState } from '#ui/lib/a11y';
 import { ease } from '#ui/lib/ease';
@@ -156,22 +156,16 @@ function Grow({ height, children }: Readonly<{ height?: number; children: ReactN
 
   if (height === undefined) return <>{children}</>;
   if (WEB) {
-    return (
-      <Animated.View style={[s.clip, TRANSITION as ViewStyle, { height }]}>
-        {children}
-      </Animated.View>
-    );
+    return <Animated.View style={[s.clip, TRANSITION, { height }]}>{children}</Animated.View>;
   }
   return <Animated.View style={[s.clip, { height: value }]}>{children}</Animated.View>;
 }
 
-// react-native-web understands these CSS-only props; React Native's types do
-// not, hence the cast at the use site.
-const TRANSITION = {
+const TRANSITION = style({
   transitionProperty: 'height',
   transitionDuration: `${GROW_MS}ms`,
   transitionTimingFunction: ease.out.css,
-};
+});
 
 const s = styles({
   ghost: { absolute: true, left: 0, right: 0, top: 0, opacity: 0, pointerEvents: 'none' },

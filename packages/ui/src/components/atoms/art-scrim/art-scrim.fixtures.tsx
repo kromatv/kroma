@@ -6,8 +6,8 @@ import { Text } from '#ui/components/atoms/text';
 
 export function Tile({ variant }: Readonly<{ variant?: ArtScrimVariant }>) {
   return (
-    <Box aspect={2 / 3} radius="lg" overflow="hidden" bg="accentBright">
-      {variant ? <ArtScrim variant={variant} radius="lg" /> : null}
+    <Box aspect={2 / 3} radius="xl" overflow="hidden" bg="accentBright">
+      {variant ? <ArtScrim variant={variant} radius="xl" /> : null}
       <Box absolute left={14} right={14} bottom={12}>
         <Text variant="title" color="white">
           Blade Runner 2049

@@ -3,10 +3,22 @@
 // before sending is what recipients get.
 
 import type { KNOWN_NOTIFICATION_EVENTS, NotificationEvent } from '@kroma/client/notifications';
-import { Box, type ColorToken, Icon, type IconName, Row, Text, useTheme } from '@kroma/ui/kit';
-import type { CSSProperties, ReactNode } from 'react';
+import {
+  Box,
+  type ColorToken,
+  classes,
+  Icon,
+  type IconName,
+  Row,
+  styles,
+  Text,
+} from '@kroma/ui/kit';
+import type { ReactNode } from 'react';
 
-const CARD_ROW = { display: 'flex', flex: 1, alignItems: 'flex-start' } as const;
+const s = styles({
+  row: { display: 'flex', flex: true, alignItems: 'flex-start' },
+  tile: { width: 48, height: 48, flexShrink: 0, mr: 12, radius: 'sm', objectFit: 'cover' },
+});
 
 export function NotificationCard({
   style,
@@ -23,7 +35,8 @@ export function NotificationCard({
 }: Readonly<{
   /** The shell the card sits in, padding included: a drawer row takes its
    *  <ListRow.Root>'s, the composer's preview draws its own. */
-  style?: CSSProperties;
+  /** A registered style, merged over the row's own. */
+  style?: object;
   event: NotificationEvent;
   src: string | null;
   unread: boolean;
@@ -42,7 +55,7 @@ export function NotificationCard({
   time: ReactNode;
 }>) {
   return (
-    <div style={style ? { ...CARD_ROW, ...style } : CARD_ROW}>
+    <div className={classes(s.row, style)}>
       {/* The gutter is reserved on every row, empty or not, so nothing shifts. */}
       <Row w={6} h={48} shrink={0} mr={8}>
         {unread ? <Box w={3} h={30} radius="pill" bg="accent" /> : null}
@@ -74,26 +87,11 @@ export function NotificationTile({
   event,
   src,
 }: Readonly<{ event: NotificationEvent; src?: string | null }>) {
-  const { radius } = useTheme();
   if (src) {
-    return (
-      <img
-        src={src}
-        alt=""
-        loading="lazy"
-        style={{
-          width: 48,
-          height: 48,
-          flexShrink: 0,
-          marginRight: 12,
-          borderRadius: radius.lg,
-          objectFit: 'cover',
-        }}
-      />
-    );
+    return <img src={src} alt="" loading="lazy" className={classes(s.tile)} />;
   }
   return (
-    <Box w={48} h={48} shrink={0} mr={12} center radius="lg" bg="white/6">
+    <Box w={48} h={48} shrink={0} mr={12} center radius="sm" bg="white/6">
       <NotificationGlyph event={event} />
     </Box>
   );

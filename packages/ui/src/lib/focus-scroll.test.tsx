@@ -9,6 +9,7 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
+import { wearsRing } from '#ui/testing';
 import { configureRemote } from './focus-remote';
 import { FocusRegion, FocusScope } from './focus-scope';
 import { FocusSlot, pageOffset } from './focus-scroll';
@@ -37,10 +38,7 @@ beforeAll(() => configureRemote());
 afterEach(cleanup);
 
 const LABELS = ['Back', 'Pill', 'Avatar'];
-const lit = (): string[] =>
-  LABELS.filter((label) =>
-    screen.queryByLabelText(label)?.getAttribute('style')?.includes('box-shadow'),
-  );
+const lit = (): string[] => LABELS.filter((label) => wearsRing(screen.queryByLabelText(label)));
 
 function press(key: string) {
   act(() => {

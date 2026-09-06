@@ -9,9 +9,11 @@ import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Text } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
-import { styles } from '#ui/core';
+import { sharedStyle, styles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
 
+const titleOf = (fontSize: number) =>
+  sharedStyle(`title-bar:size:${fontSize}`, { fontSize, flexShrink: 1 });
 export function TitleBar({
   title,
   back,
@@ -39,7 +41,7 @@ export function TitleBar({
           label={t('player.back')}
         />
       ) : null}
-      <Text lines={1} variant="h1" style={{ fontSize: px(38), flexShrink: 1 }}>
+      <Text lines={1} variant="h1" style={titleOf(px(38))}>
         {title}
       </Text>
       {onClose ? (

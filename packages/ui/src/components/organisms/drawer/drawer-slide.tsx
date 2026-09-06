@@ -5,7 +5,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { Animated, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { styles } from '#ui/core';
+import { sharedStyle, styles } from '#ui/core';
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
 import { WEB } from '#ui/lib/platform';
@@ -23,13 +23,27 @@ function useSlide(open: boolean): { mounted: boolean; shown: boolean } {
   useEffect(() => {
     if (open) {
       setMounted(true);
-      const raf = requestAnimationFrame(() => setShown(true));
-      return () => cancelAnimationFrame(raf);
+      return;
     }
     setShown(false);
     const out = setTimeout(() => setMounted(false), SLIDE_MS);
     return () => clearTimeout(out);
   }, [open]);
+  // Two frames after the panel mounts, not one: React may commit the mount in
+  // the same frame the first callback runs in, and a panel that is first
+  // painted where it ends has no off-screen start for the transition to play
+  // from. The second frame is on the far side of that paint.
+  useEffect(() => {
+    if (!open || !mounted) return;
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => setShown(true));
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(second);
+    };
+  }, [open, mounted]);
   return { mounted, shown };
 }
 
@@ -42,11 +56,7 @@ function SlidePanel({
   const holder = side === 'right' ? s.holderRight : s.holderLeft;
   if (WEB) {
     const away = side === 'right' ? SLIDE_OUT : SLIDE_OUT_LEFT;
-    return (
-      <Box style={[holder, SLIDE as ViewStyle, { transform: [{ translateX: shown ? 0 : away }] }]}>
-        {children}
-      </Box>
-    );
+    return <Box style={[holder, move.slide, slideTo(shown ? 0 : away)]}>{children}</Box>;
   }
   return (
     <SlidePanelNative shown={shown} side={side} width={width} holder={holder}>
@@ -90,18 +100,22 @@ function SlidePanelNative({
 const SLIDE_OUT = '105%' as unknown as number;
 const SLIDE_OUT_LEFT = '-105%' as unknown as number;
 
-// react-native-web understands these CSS-only props; React Native's types do
-// not, hence the casts at the use sites.
-const SLIDE = {
-  transitionProperty: 'transform',
-  transitionDuration: `${SLIDE_MS}ms`,
-  transitionTimingFunction: ease.out.css,
-};
-const FADE = {
-  transitionProperty: 'opacity',
-  transitionDuration: `${SLIDE_MS}ms`,
-  transitionTimingFunction: ease.out.css,
-};
+const move = styles({
+  slide: {
+    transitionProperty: 'transform',
+    transitionDuration: `${SLIDE_MS}ms`,
+    transitionTimingFunction: ease.out.css,
+  },
+  fade: {
+    transitionProperty: 'opacity',
+    transitionDuration: `${SLIDE_MS}ms`,
+    transitionTimingFunction: ease.out.css,
+  },
+});
+
+const FADE = move.fade;
+
+const slideTo = (x: number) => sharedStyle(`drawer:slide:${x}`, { transform: [{ translateX: x }] });
 
 const s = styles({
   holderRight: { absolute: true, top: 0, bottom: 0, right: 0, maxW: '100%' },

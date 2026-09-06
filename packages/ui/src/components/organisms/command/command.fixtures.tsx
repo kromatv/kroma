@@ -41,7 +41,7 @@ export function Palette() {
   const [open, setOpen] = useState(true);
   const [picked, setPicked] = useState('films');
   return (
-    <Box h={480} p={20} bg="bg" radius="lg" overflow="hidden">
+    <Box h={480} p={20} bg="bg" radius="xl" overflow="hidden">
       <Box row align="center" gap={10}>
         <Button
           size="sm"

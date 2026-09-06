@@ -8,10 +8,11 @@
 import type { ReactNode } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
-import { type BoxStyleProps, boxStyle, splitShorthand, sv, type Variant } from '#ui/core';
+import { type BoxStyleProps, breakpointIndex, splitShorthand, sv, type Variant } from '#ui/core';
+import { sharedBoxStyle } from '#ui/lib/box-style';
 
 const surfaceVariants = sv({
-  base: { radius: 'lg' },
+  base: { radius: 'xl' },
   variants: {
     tone: {
       /** The default card: one step up from the page. */
@@ -30,9 +31,7 @@ const surfaceVariants = sv({
       lg: { p: 28 },
     },
     elevated: {
-      // `shadow.card` is a CSS box-shadow string; React Native 0.76+ takes it
-      // through the `boxShadow` style, which is what the `shadow` shorthand sets.
-      true: { shadow: 'card' },
+      true: { border: 'borderStrong' },
     },
   },
   defaults: { tone: 'plain', pad: 'md', elevated: false },
@@ -44,7 +43,7 @@ type SurfacePad = Variant<typeof surfaceVariants, 'pad'>;
 interface SurfaceProps extends Omit<BoxProps, 'bg' | 'children'> {
   tone?: SurfaceTone;
   pad?: SurfacePad;
-  /** Lift it off the page with the design's card shadow. */
+  /** Set it off the page with the stronger edge. Nothing in the kit floats. */
   elevated?: boolean;
   children?: ReactNode;
 }
@@ -60,10 +59,11 @@ function Surface({
   const { root } = surfaceVariants({ tone, pad, elevated });
   // Resolved here so the layers land in the order a reader expects: recipe,
   // then the caller's shorthands, then the one-off `style`.
-  const { shorthand, rest, any } = splitShorthand(box);
-  const asked = any ? boxStyle(shorthand as BoxStyleProps) : null;
+  const split = splitShorthand(box);
+  const key = split.breakpoints === 0 ? split.key : `${breakpointIndex()}|${split.key}`;
+  const asked = split.key ? sharedBoxStyle(key, split.shorthand as BoxStyleProps) : null;
   const panel = (
-    <Box {...rest} style={[root, asked, style]}>
+    <Box {...split.rest} style={[root, asked, style]}>
       {children}
     </Box>
   );

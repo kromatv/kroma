@@ -2,6 +2,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { declared } from '#ui/testing';
 import { AlphabetRail } from './alphabet-rail';
 
 afterEach(cleanup);
@@ -77,6 +78,16 @@ describe('AlphabetRail', () => {
     const onJump = rail();
     fireEvent.click(screen.getByLabelText('Jump to C'));
     expect(onJump).toHaveBeenCalledWith('C');
+  });
+
+  it('fixes its rows to a thumb when sized for a hand', () => {
+    render(
+      <AlphabetRail.Root label="Alphabet" size="sm" onJump={vi.fn()}>
+        {letters()}
+      </AlphabetRail.Root>,
+    );
+
+    expect(declared(screen.getByLabelText('Jump to A'), 'height')).toBe('21px');
   });
 
   it('accepts a range without a matching letter without crashing', () => {

@@ -4,15 +4,21 @@
 import { KromaApiError } from '@kroma/client';
 import type { JobInfo } from '@kroma/client/jobs';
 import { useT } from '@kroma/ui';
-import { Badge, Box, Button, Chip, Dialog, Field, Row, Text } from '@kroma/ui/kit';
+import { Badge, Box, Button, Chip, Dialog, Field, Row, styles, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
-const MONO = { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' } as const;
-const CRON = { ...MONO, fontSize: 11.5, fontWeight: '600' } as const;
-const RESET_LABEL = { fontSize: 12, fontWeight: '600' } as const;
+const s = styles({
+  mono: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' },
+  cron: {
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
+  resetLabel: { fontSize: 12, fontWeight: '600' },
+});
 
 const PRESETS: { label: string; expr: string }[] = [
   { label: '@hourly', expr: '0 * * * *' },
@@ -48,14 +54,14 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
           value={value}
           onValueChange={setValue}
           placeholder="0 4 * * *"
-          textStyle={MONO}
+          textStyle={s.mono}
         />
       </Field.Root>
 
       <Row wrap gap={8}>
         {PRESETS.map((p) => (
           <Chip key={p.expr} variant="surface" onPress={() => setValue(p.expr)}>
-            <Text style={CRON} color="textMuted">
+            <Text style={s.cron} color="textMuted">
               {p.label}
             </Text>
           </Chip>
@@ -74,7 +80,7 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
             label={t('jobs.resetDefault')}
             onPress={() => setValue(job.defaultSchedule ?? '')}
           >
-            <Text color="accentText" style={RESET_LABEL}>
+            <Text color="accentText" style={s.resetLabel}>
               {t('jobs.resetDefault')}
             </Text>
             <Badge tone="neutral">{job.defaultSchedule}</Badge>

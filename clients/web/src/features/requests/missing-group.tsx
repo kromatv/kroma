@@ -6,23 +6,12 @@
 // mutation state lives in `missing.tsx`.
 
 import type { CalendarEntry } from '@kroma/client/requests';
-import { posterColors, relativeAirDate, sentenceCase, sizedImageUrl } from '@kroma/core';
+import { relativeAirDate, sentenceCase } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import {
-  Badge,
-  Box,
-  Button,
-  Checkbox,
-  Divider,
-  Focusable,
-  Img,
-  Row,
-  Surface,
-  styles,
-  Text,
-} from '@kroma/ui/kit';
+import { Badge, Box, Button, Checkbox, Divider, Text } from '@kroma/ui/kit';
 import { EpisodeList } from '#web/features/requests/missing-episodes';
 import { epKey, type MissingGroup } from '#web/features/requests/missing-model';
+import { RequestCard } from '#web/features/requests/request-card';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 function episodesOf(group: MissingGroup): CalendarEntry[] {
@@ -50,8 +39,7 @@ export function MissingGroupCard({
   onSearch: (items: CalendarEntry[]) => void;
 }>) {
   const t = useT();
-  const [c1, c2] = posterColors(String(group.tmdbId));
-  const poster = sizedImageUrl(group.posterUrl, 92);
+  const locale = useLocale();
 
   const episodes = episodesOf(group);
   const keys = group.items.map(epKey);
@@ -62,10 +50,28 @@ export function MissingGroupCard({
   // A gap is actionable by any requester; a request needs manage.
   const canAct = group.requestId ? canManage : true;
 
+  const movie = group.kind === 'movie';
+  const rel = movie ? relativeAirDate(group.items[0]?.airDate ?? null, locale) : '';
+  const gap = movie
+    ? t('requests.missingMovie')
+    : t('requests.missingCount', { count: episodes.length });
+
   return (
-    <Surface pad="none" radius="2xl" border="border" overflow="hidden" role="region">
-      <Row gap={14} p={14}>
-        {canAct ? (
+    <RequestCard
+      label={`${group.title} · ${gap}`}
+      tmdbId={group.tmdbId}
+      posterUrl={group.posterUrl}
+      title={group.title}
+      meta={
+        <Text variant="meta" color="textDim" mt={2}>
+          {[group.year ? String(group.year) : '', rel ? sentenceCase(rel, locale) : '']
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
+      }
+      trailing={<Badge tone="warning">{gap}</Badge>}
+      leading={
+        canAct ? (
           <Checkbox
             checked={allPicked}
             indeterminate={pickedCount > 0 && !allPicked}
@@ -74,41 +80,24 @@ export function MissingGroupCard({
           />
         ) : (
           <Box w={20} />
-        )}
-        <Focusable asChild label={group.title} style={s.head}>
-          {(state) => (
-            <RouteLink
-              to="/discover/$type/$tmdbId"
-              params={{
-                type: group.kind === 'movie' ? 'movie' : 'tv',
-                tmdbId: String(group.tmdbId),
-              }}
-            >
-              <Box w={36} h={52} shrink={0}>
-                <Img
-                  src={poster}
-                  background={`linear-gradient(158deg, ${c1}, ${c2})`}
-                  radius="md"
-                  fill
-                />
-              </Box>
-              <Box minW={0} shrink={1}>
-                <Text variant="label" lines={1} color={state.hovered ? 'accent' : 'text'}>
-                  {group.title}
-                </Text>
-                <GroupMeta group={group} episodeCount={episodes.length} />
-              </Box>
-            </RouteLink>
-          )}
-        </Focusable>
-        {canAct ? (
+        )
+      }
+      aside={
+        canAct ? (
           <GroupSearchButton
             busy={groupBusy}
             done={groupDone}
             onPress={() => onSearch(group.items)}
           />
-        ) : null}
-      </Row>
+        ) : null
+      }
+      link={
+        <RouteLink
+          to="/discover/$type/$tmdbId"
+          params={{ type: movie ? 'movie' : 'tv', tmdbId: String(group.tmdbId) }}
+        />
+      }
+    >
       {episodes.length > 0 ? <Divider color="tint/6" /> : null}
       <EpisodeList
         entries={episodes}
@@ -119,38 +108,7 @@ export function MissingGroupCard({
         onToggleRow={onToggleRow}
         onSearch={onSearch}
       />
-    </Surface>
-  );
-}
-
-const s = styles({
-  head: { row: true, align: 'center', gap: 14, flex: true, minW: 0 },
-});
-
-function GroupMeta({
-  group,
-  episodeCount,
-}: Readonly<{ group: MissingGroup; episodeCount: number }>) {
-  const t = useT();
-  const locale = useLocale();
-  const movie = group.kind === 'movie';
-  const rel = movie ? relativeAirDate(group.items[0]?.airDate ?? null, locale) : '';
-  return (
-    <Row wrap gapX={8} gapY={4} mt={4}>
-      <Badge tone="warning">
-        {movie ? t('requests.missingMovie') : t('requests.missingCount', { count: episodeCount })}
-      </Badge>
-      {group.year ? (
-        <Text variant="meta" color="textDim">
-          {group.year}
-        </Text>
-      ) : null}
-      {rel ? (
-        <Text variant="meta" color="textDim">
-          {sentenceCase(rel, locale)}
-        </Text>
-      ) : null}
-    </Row>
+    </RequestCard>
   );
 }
 

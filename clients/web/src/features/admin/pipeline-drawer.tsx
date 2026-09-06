@@ -1,11 +1,12 @@
 import { ItemId, ShowId } from '@kroma/client/media';
 import type { ElementRow } from '@kroma/client/pipeline';
-import { type MessageKey, posterGradient } from '@kroma/core';
+import type { MessageKey } from '@kroma/core';
 import { useFormat, useT } from '@kroma/ui';
-import { Box, Button, Callout, color, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
+import { Box, Button, Callout, Drawer, IconButton, Row, styles, Text } from '@kroma/ui/kit';
 import { createCallable } from 'react-call';
 import { Pill, PillDot } from '#web/features/admin/pill';
 import { kindMeta, statusMeta } from '#web/features/admin/pipeline-meta';
+import { posterScrim } from '#web/shared/lib/art-styles';
 import { useAuth } from '#web/shared/lib/auth';
 import { Image } from '#web/shared/ui';
 
@@ -17,8 +18,8 @@ function DrawerPoster({ el }: Readonly<{ el: ElementRow }>) {
       ? client.media.artwork.showPosterUrl(ShowId.parse(el.id))
       : client.media.artwork.posterUrl(ItemId.parse(el.id)));
   return (
-    <Box w={70} h={104} shrink={0} radius="xs" overflow="hidden" shadow="pop">
-      <div style={{ position: 'absolute', inset: 0, background: posterGradient(el.title) }} />
+    <Box w={70} h={104} shrink={0} radius="xs" overflow="hidden">
+      <Box fill style={posterScrim(el.title)} />
       <Image src={src} fit="cover" fill />
     </Box>
   );
@@ -57,7 +58,7 @@ export const PipelineDrawer = createCallable<
       open={!call.ended}
       onClose={close}
       title={t('pipeline.elementSheet')}
-      panelStyle={DRAWER_FILL}
+      panelStyle={s.drawerFill}
     >
       <Drawer.Header>
         <Row between mb={16}>
@@ -91,7 +92,7 @@ export const PipelineDrawer = createCallable<
             const m = statusMeta(tr.status);
             const failed = tr.status === 'failed';
             return (
-              <Box key={tr.key} px={16} py={14} radius="lg" bg="surface1" border="tint/7">
+              <Box key={tr.key} px={16} py={14} radius="xl" bg="surface1" border="tint/7">
                 <Row between gap={12}>
                   <Text variant="label">{t(`pipeline.t.${tr.key}` as MessageKey)}</Text>
                   <Row gap={8}>
@@ -126,7 +127,7 @@ export const PipelineDrawer = createCallable<
         </Box>
 
         {el.kind === 'series' && eps ? (
-          <Box mt={20} px={16} py={14} radius="lg" bg="bg" border="tint/7">
+          <Box mt={20} px={16} py={14} radius="xl" bg="bg" border="tint/7">
             <Text variant="overline" color="textDim" mb={8}>
               {t('pipeline.epsAggregated')}
             </Text>
@@ -159,4 +160,4 @@ export const PipelineDrawer = createCallable<
 }, 400);
 
 // The drawers' darker fill, kept from the hand-rolled asides they replace.
-const DRAWER_FILL = { backgroundColor: color('bg') } as const;
+const s = styles({ drawerFill: { bg: 'bg' }, flex1: { flex: true } });

@@ -14,7 +14,7 @@ import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-butt
 import { Text } from '#ui/components/atoms/text';
 import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
 import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field';
-import { type BoxStyleProps, boxStyle, styles } from '#ui/core';
+import { type BoxStyleProps, sharedStyle, styles } from '#ui/core';
 import { nestedRadius } from '#ui/core/tokens';
 import { controlRadius } from '#ui/lib/field-shell';
 import {
@@ -155,7 +155,7 @@ function Addon({
         onPress?.();
         focusControl();
       }}
-      style={[boxStyle(shape), ...coats]}
+      style={[sharedStyle(`input-group:addon:${JSON.stringify(shape)}`, shape), ...coats]}
     >
       {slotted}
     </Pressable>
@@ -194,8 +194,9 @@ function useInShell(part: string): { box: number; radius: number; pull: ViewStyl
 /** A labelled button that lives inside the shell. */
 function GroupButton({ style, ...props }: Readonly<ButtonProps>) {
   const at = useInShell('Button');
-  const shape = useMemo<ViewStyle>(
-    () => ({
+  const shape = sharedStyle(
+    `input-group:button:${at.box}:${at.radius}:${JSON.stringify(at.pull)}`,
+    {
       minHeight: at.box,
       paddingTop: 0,
       paddingBottom: 0,
@@ -203,8 +204,7 @@ function GroupButton({ style, ...props }: Readonly<ButtonProps>) {
       paddingRight: 12,
       borderRadius: at.radius,
       ...at.pull,
-    }),
-    [at],
+    },
   );
   return <Button variant="ghost" size="sm" {...props} style={[shape, style]} />;
 }

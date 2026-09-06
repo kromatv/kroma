@@ -1,8 +1,8 @@
 import { Box, Focusable, Icon, type StyleDecl, svFor, Text } from '@kroma/ui/kit';
-import { UserAvatar } from '#web/shared/ui/user-avatar';
+import { avatarCorner, UserAvatar } from '#web/shared/ui/user-avatar';
 
 const AVATAR = 146;
-const AVATAR_RADIUS = 22;
+const AVATAR_RADIUS = avatarCorner(AVATAR);
 
 // The amber edge the row's tiles take, drawn on the avatar rather than around
 // the whole column: the caption below is part of the control, not part of the
@@ -12,7 +12,6 @@ const profileTile = svFor<{ root: StyleDecl; well: StyleDecl; label: StyleDecl }
     root: { align: 'center', gap: 14 },
     well: {
       radius: AVATAR_RADIUS,
-      shadow: 'card',
       _hover: { ring: 'focus' },
       _focus: { ring: 'focus' },
     },
@@ -40,13 +39,7 @@ export function ProfileTile({
       {({ slots }) => (
         <>
           <Box style={slots.well}>
-            <UserAvatar
-              name={username}
-              avatarUrl={avatarUrl}
-              seed={seed}
-              size={AVATAR}
-              radius={AVATAR_RADIUS}
-            />
+            <UserAvatar name={username} avatarUrl={avatarUrl} seed={seed} size={AVATAR} />
             {locked ? (
               // Solid surface, never a translucent one: an alpha background
               // lets the avatar gradient bleed through and muddies the icon.
@@ -60,7 +53,6 @@ export function ProfileTile({
                 radius="circle"
                 border="white/12"
                 bg="surface2"
-                shadow="card"
                 accessibilityLabel={lockedLabel}
               >
                 <Icon name="lock" size={15} thickness={2.2} color="accent" />

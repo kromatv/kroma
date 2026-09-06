@@ -5,7 +5,16 @@
 import { hasPermission } from '@kroma/client/accounts';
 import type { DiscoverType } from '@kroma/client/discovery';
 import { useT } from '@kroma/ui';
-import { Box, EmptyState, Icon, InputGroup, PageHeader, SegmentGroup } from '@kroma/ui/kit';
+import {
+  Box,
+  classes,
+  EmptyState,
+  Icon,
+  InputGroup,
+  PageHeader,
+  SegmentGroup,
+  styles,
+} from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import { SearchResults } from '#web/features/requests/search-results';
 import { TrendingBrowse } from '#web/features/requests/trending';
@@ -21,7 +30,25 @@ const TYPES: {
   { value: 'tv', labelKey: 'discover.shows' },
 ];
 
-const SEARCH_BOX = { width: '100%', maxWidth: 672 } as const;
+const GUTTER = { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' } as const;
+
+const s = styles({
+  searchBox: { width: '100%', maxWidth: 672 },
+  page: { minWidth: 0, pb: 80 },
+  gutter: GUTTER,
+  hero: { ...GUTTER, position: 'relative', pt: 36 },
+  washClip: { fill: true, overflow: 'hidden', pointerEvents: 'none' },
+  wash: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: -80,
+    height: 288,
+    backgroundImage:
+      'radial-gradient(48% 60% at 28% 20%, color-mix(in srgb, var(--kroma-accent-wash) 10%, transparent), transparent 70%)',
+  },
+  aboveWash: { position: 'relative' },
+});
 
 export type DiscoverSearch = { q: string; type: DiscoverType };
 
@@ -66,12 +93,12 @@ export function SearchPage({
   }
 
   return (
-    <main style={PAGE}>
-      <div style={HERO}>
-        <div style={WASH_CLIP}>
-          <div style={WASH} />
+    <main className={classes(s.page)}>
+      <div className={classes(s.hero)}>
+        <div className={classes(s.washClip)}>
+          <div className={classes(s.wash)} />
         </div>
-        <div style={ABOVE_WASH}>
+        <div className={classes(s.aboveWash)}>
           <PageHeader.Root>
             <PageHeader.Title>{t('discover.title')}</PageHeader.Title>
             <PageHeader.Subtitle>
@@ -80,7 +107,7 @@ export function SearchPage({
           </PageHeader.Root>
 
           <Box row wrap align="center" gap={12} mt={24}>
-            <InputGroup.Root size="md" label={t('discover.title')} style={SEARCH_BOX}>
+            <InputGroup.Root size="md" label={t('discover.title')} style={s.searchBox}>
               <InputGroup.Addon>
                 <Icon name="search" size={20} color="textDim" />
               </InputGroup.Addon>
@@ -119,32 +146,7 @@ export function SearchPage({
         </div>
       </div>
 
-      <div style={GUTTER}>{body}</div>
+      <div className={classes(s.gutter)}>{body}</div>
     </main>
   );
 }
-
-const PAGE = { minWidth: 0, paddingBottom: 80 } as const;
-
-const GUTTER = { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' } as const;
-
-const HERO = { ...GUTTER, position: 'relative', paddingTop: 36 } as const;
-
-const WASH_CLIP = {
-  position: 'absolute',
-  inset: 0,
-  overflow: 'hidden',
-  pointerEvents: 'none',
-} as const;
-
-const WASH = {
-  position: 'absolute',
-  left: 0,
-  right: 0,
-  top: -80,
-  height: 288,
-  background:
-    'radial-gradient(48% 60% at 28% 20%, color-mix(in srgb, var(--kroma-accent-wash) 10%, transparent), transparent 70%)',
-} as const;
-
-const ABOVE_WASH = { position: 'relative' } as const;

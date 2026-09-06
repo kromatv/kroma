@@ -59,7 +59,6 @@ function ResetPage() {
     >
       <Field.Root w="100%" size="md" label={t('auth.resetCode')} hideLabel>
         <Field.Input
-          lift
           icon="key"
           placeholder={t('auth.resetCode')}
           value={code}
@@ -69,7 +68,6 @@ function ResetPage() {
       </Field.Root>
       <Field.Root w="100%" size="md" label={t('auth.newPassword')} hideLabel>
         <Field.Input
-          lift
           type="password"
           icon="lock"
           placeholder={t('auth.newPassword')}

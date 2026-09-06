@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { onScreen } from '@kroma/ui/testing';
+import { declared, onScreen } from '@kroma/ui/testing';
 import { cleanup, render } from '@testing-library/react';
 import { Animated } from 'react-native';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
@@ -56,6 +56,9 @@ describe('the halo behind the microphone', () => {
     listen();
 
     // The dialog renders into a portal, so the halo is not under the container.
-    expect(document.querySelector(`[style*="animation-duration: ${PULSE_MS}ms"]`)).toBeTruthy();
+    const breathing = [...document.querySelectorAll('div')].find(
+      (el) => declared(el, 'animation-duration') === `${PULSE_MS}ms`,
+    );
+    expect(breathing).toBeTruthy();
   });
 });

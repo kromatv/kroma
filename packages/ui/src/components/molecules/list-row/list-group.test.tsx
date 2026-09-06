@@ -7,6 +7,7 @@ import { activeTheme } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusScope } from '#ui/lib/focus-scope';
+import { declared } from '#ui/testing';
 import { ListRow } from './list-row';
 
 beforeAll(() => configureRemote());
@@ -46,8 +47,7 @@ describe('ListRow.Group', () => {
       </ListRow.Root>,
     );
     const standalone = alone.querySelector('[aria-label="Seule"]') as HTMLElement;
-    expect(getComputedStyle(standalone).boxShadow).toBeTruthy();
-    expect(getComputedStyle(standalone).backgroundColor).toBeTruthy();
+    expect(declared(standalone, 'backgroundColor')).toBeTruthy();
 
     cleanup();
     const { container: grouped } = render(
@@ -58,8 +58,8 @@ describe('ListRow.Group', () => {
       </ListRow.Group>,
     );
     const member = grouped.querySelector('[aria-label="Membre"]') as HTMLElement;
-    expect(getComputedStyle(member).boxShadow).toBeFalsy();
-    expect(getComputedStyle(member).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(declared(member, 'boxShadow')).toBeFalsy();
+    expect(declared(member, 'backgroundColor')).toBe('rgba(0, 0, 0, 0)');
   });
 
   // The card clips its members, so a ring standing off one would survive as two
@@ -79,8 +79,8 @@ describe('ListRow.Group', () => {
     );
 
     const inset = activeTheme().ring.focusInset;
-    expect(painted('Bascule').style.outlineOffset).toBe(`${inset.outlineOffset}px`);
-    expect(painted('Bascule').style.outlineWidth).toBe(`${inset.outlineWidth}px`);
+    expect(declared(painted('Bascule'), 'outlineOffset')).toBe(`${inset.outlineOffset}px`);
+    expect(declared(painted('Bascule'), 'outlineWidth')).toBe(`${inset.outlineWidth}px`);
   });
 
   // A member declines the STANDOFF ring, not every ring. Passing `ring={false}`
@@ -98,9 +98,9 @@ describe('ListRow.Group', () => {
 
     const inset = activeTheme().ring.focusInset;
     const row = painted('Membre');
-    expect(row.style.outlineWidth).toBe(`${inset.outlineWidth}px`);
-    expect(row.style.outlineOffset).toBe(`${inset.outlineOffset}px`);
-    expect(row.style.outlineStyle).not.toBe('none');
+    expect(declared(row, 'outlineWidth')).toBe(`${inset.outlineWidth}px`);
+    expect(declared(row, 'outlineOffset')).toBe(`${inset.outlineOffset}px`);
+    expect(declared(row, 'outlineStyle')).not.toBe('none');
   });
 
   it('leaves a control outside it standing the ring off', () => {
@@ -110,7 +110,7 @@ describe('ListRow.Group', () => {
       </FocusScope>,
     );
 
-    expect(painted('Seul').style.outlineOffset).toBe(
+    expect(declared(painted('Seul'), 'outlineOffset')).toBe(
       `${activeTheme().ring.focusLift.outlineOffset}px`,
     );
   });
@@ -127,7 +127,7 @@ describe('ListRow.Group', () => {
       </ListRow.Group>,
     );
     const heightOf = (name: string) =>
-      getComputedStyle(container.querySelector(`[aria-label="${name}"]`) as HTMLElement).minHeight;
+      declared(container.querySelector(`[aria-label="${name}"]`) as HTMLElement, 'minHeight');
     expect(heightOf('Suit')).toBe(`${CONTROL.tv.height}px`);
     expect(heightOf('Décide')).toBe(`${CONTROL.sm.height}px`);
   });

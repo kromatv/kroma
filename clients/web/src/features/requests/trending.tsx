@@ -4,7 +4,7 @@
 
 import type { DiscoverEntry, DiscoverType } from '@kroma/client/discovery';
 import { useT } from '@kroma/ui';
-import { Box, Icon, Row, Text } from '@kroma/ui/kit';
+import { Box, classes, Icon, Row, styles, Text } from '@kroma/ui/kit';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
@@ -17,7 +17,7 @@ function RailHeading({ title, action }: Readonly<{ title: string; action?: React
   return (
     <Row between gap={12} mt={36} mb={16}>
       {/* Still an <h2>: <Text accessibilityRole="header"> can only render an h1. */}
-      <h2 style={HEADING}>
+      <h2 className={classes(s.heading)}>
         <Row gap={8}>
           <Icon name="flame" size={20} thickness={2} color="accent" />
           <Text variant="h2">{title}</Text>
@@ -40,7 +40,7 @@ function TrendRail({
       <RailHeading
         title={title}
         action={
-          <Link to="/trending/$type" params={{ type: linkType }} style={INLINE_LINK}>
+          <Link to="/trending/$type" params={{ type: linkType }} className={classes(s.inlineLink)}>
             <Text variant="meta" color="textDim">
               {t('discover.seeAll')}
             </Text>
@@ -79,7 +79,7 @@ export function TrendingBrowse({
   const wantShows = type !== 'movie';
 
   return (
-    <div style={FADE_IN}>
+    <div className={classes(s.fadeIn)}>
       {wantMovies ? (
         <TrendRail title={t('discover.trendingMovies')} entries={movies} linkType="movie" />
       ) : null}
@@ -90,17 +90,22 @@ export function TrendingBrowse({
   );
 }
 
-const HEADING = { margin: 0 } as const;
+const s = styles({
+  heading: { m: 0 },
+  inlineLink: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
+    textDecorationLine: 'none',
+    borderRadius: 'var(--radius-sm)',
+  },
+  fadeIn: {
+    animationKeyframes: 'fade-in',
+    animationDuration: '300ms',
+    animationTimingFunction: 'var(--ease-out)',
+  },
+});
 
 // The focus ring is an outline and takes the corners of what it rings, so a bare
 // inline link states a radius rather than being boxed square.
-const INLINE_LINK = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 4,
-  flexShrink: 0,
-  textDecoration: 'none',
-  borderRadius: 'var(--radius-sm)',
-} as const;
-
-const FADE_IN = { animation: 'fade-in .3s var(--ease-out)' } as const;

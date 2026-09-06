@@ -250,6 +250,20 @@ const s = styles({
 });
 ```
 
+### Compiled ahead of time
+
+On the browser targets a build compiles the static declarations above, the way
+StyleX does: one atomic class per property in the token stylesheet, the resolved
+longhands at the call site, and a per-property merge at render with no rule
+inserted at runtime. What a declaration means does not change, only who
+resolves it. A value stated per breakpoint compiles too, as a custom property
+the step restates. A declaration the build cannot read (a call, anything bound
+at render time) stays on the runtime beside the compiled ones, and React Native
+resolves everything at runtime as before. A style is always
+declared, never written as a plain object: a plain object is registered by
+nothing and lands on the element inline. See
+[`src/core/atomic/`](src/core/atomic/README.md).
+
 ### Themes
 
 Every token group (colours, radius, shadows, fonts, type roles, motion) lives in one

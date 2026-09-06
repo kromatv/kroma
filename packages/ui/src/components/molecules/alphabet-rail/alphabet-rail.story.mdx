@@ -8,7 +8,7 @@ export const story = defineStory({
 
 The NavPill turned vertical: a fast-scroll rail for a long alphabetical list. The **amber lens** covers every letter whose section is on screen (a tall viewport shows several at once) and travels with the scroll; scrubbing along the rail shows a bubble naming the letter under the finger and jumps as it crosses rows. A letter the list does not carry is `disabled`: it renders dimmed, takes no focus stop, and a scrub or tap near it snaps to its nearest present neighbour. The host owns the list and the scroll: the rail only reports jumps.
 
-One `<AlphabetRail.Item>` per bucket, in rail order, is the whole API: the item says which letter it stands for and whether the list carries it, and the Root reads their positions to place the lens.
+One `<AlphabetRail.Item>` per bucket, in rail order, is the whole API: the item says which letter it stands for and whether the list carries it, and the Root reads their positions to place the lens. The rows scale with the window so the alphabet always fits; on a phone, `size="sm"` fixes them to a thumb's pitch instead.
 
 ```tsx
 <AlphabetRail.Root

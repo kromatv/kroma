@@ -9,6 +9,7 @@ import {
   Row,
   SegmentGroup,
   Switch,
+  styles,
   Text,
 } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
@@ -23,8 +24,10 @@ import {
 } from '#web/features/admin/ai-provider-spec';
 import { SearchSelect } from './search-select';
 
-const MONO = { fontFamily: 'monospace' } as const;
-const MODEL_PICKER = { width: 288, maxWidth: '100%' } as const;
+const s = styles({
+  mono: { fontFamily: 'monospace' },
+  modelPicker: { width: 288, maxWidth: '100%' },
+});
 
 function ModelField({
   p,
@@ -52,7 +55,7 @@ function ModelField({
             onChange={onModel}
             placeholder={modelPlaceholder}
             searchPlaceholder={t('admin.aiSearchModels')}
-            style={MODEL_PICKER}
+            style={s.modelPicker}
           />
         ) : (
           <Field.Root label={t('admin.aiModel')} hideLabel w={288} maxW="100%">
@@ -61,7 +64,7 @@ function ModelField({
               value={p.model}
               onValueChange={onModel}
               placeholder={modelPlaceholder}
-              textStyle={MONO}
+              textStyle={s.mono}
             />
           </Field.Root>
         )}
@@ -179,7 +182,7 @@ export function ProviderBody({
         value={p.baseUrl}
         onValueChange={(v) => set({ baseUrl: v })}
         placeholder={PROVIDER_BASE[p.provider] || 'http://localhost:11434/v1'}
-        textStyle={MONO}
+        textStyle={s.mono}
       />
       <Field.Hint>{t(BASE_HINT_KEY[p.provider] ?? 'admin.aiBaseUrlHint')}</Field.Hint>
     </Field.Root>
@@ -224,7 +227,7 @@ export function ProviderBody({
             value={p.apiKey}
             onValueChange={(v) => set({ apiKey: v })}
             placeholder={p.hasApiKey ? t('admin.aiApiKeyKeep') : 'sk-…'}
-            textStyle={MONO}
+            textStyle={s.mono}
           />
           <Field.Hint>{t('admin.aiApiKeyHint')}</Field.Hint>
         </Field.Root>

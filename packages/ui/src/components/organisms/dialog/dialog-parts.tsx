@@ -4,7 +4,7 @@
 import { createContext, type ReactNode, useContext } from 'react';
 import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { RING_ROOM, styles } from '#ui/core';
+import { RING_ROOM, sharedStyle, styles } from '#ui/core';
 import { DIALOG_PAD } from '#ui/lib/surface-shell';
 
 interface Shell {
@@ -28,6 +28,14 @@ const GAP = 24;
 const band = (pad: number) => (pad > 0 ? GAP - RING_ROOM : 0);
 
 /** The pinned top of the panel: it stays put while the content scrolls under it. */
+
+const bandOf = (pad: number, top: number, bottom: number, gap: number) =>
+  sharedStyle(`dialog:band:${pad}:${top}:${bottom}:${gap}`, {
+    paddingHorizontal: pad,
+    paddingTop: top,
+    paddingBottom: bottom,
+    gap,
+  });
 function Header({ children }: Readonly<{ children: ReactNode }>) {
   const { pad } = useShell();
   return (
@@ -48,12 +56,7 @@ function Panel({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <ScrollView
       style={s.panel}
-      contentContainerStyle={{
-        paddingHorizontal: pad,
-        paddingTop: hasHeader ? room : pad,
-        paddingBottom: hasFooter ? room : pad,
-        gap,
-      }}
+      contentContainerStyle={bandOf(pad, hasHeader ? room : pad, hasFooter ? room : pad, gap)}
     >
       {children}
     </ScrollView>

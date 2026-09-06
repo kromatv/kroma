@@ -13,8 +13,8 @@ const otpVariants = sv({
   },
   variants: {
     size: {
-      md: { slot: { w: 52, h: 60, radius: 'lg' }, char: { text: 'subheading' } },
-      tv: { slot: { w: 72, h: 84, radius: 'xl' }, char: { text: 'h1' } },
+      md: { slot: { w: 52, h: 60, radius: CONTROL.md.radius }, char: { text: 'subheading' } },
+      tv: { slot: { w: 72, h: 84, radius: CONTROL.tv.radius }, char: { text: 'h1' } },
     },
     /** `active` is the slot the next character lands in, and the only one with a caret. */
     state: {

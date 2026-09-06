@@ -2,12 +2,18 @@
 // nothing here has a target to be scored against. What the row carries instead
 // is what the parser read off the name, which is what the grab will import it as.
 
-import { Table, useT } from '@kroma/module-sdk';
+import { Table, type TableColumn, useT } from '@kroma/module-sdk';
 import { Box, EmptyState, Row, Text } from '@kroma/ui/kit';
 import { ReleaseFacts } from './release-cells';
 import type { ManualReleaseView } from './schemas';
 
-const COLUMNS = 'minmax(0,1fr) 150px 92px 84px 44px';
+const COLUMNS: TableColumn[] = [
+  {},
+  { width: 150, from: 'md' },
+  { width: 92, from: 'md' },
+  { width: 84, from: 'md' },
+  { width: 44 },
+];
 
 export function ManualReleaseTable({
   releases,
@@ -35,9 +41,9 @@ export function ManualReleaseTable({
     <Table.Root columns={COLUMNS}>
       <Table.Header>
         <Table.Column>{t('requests.colRelease')}</Table.Column>
-        <Table.Column wide>{t('requests.colIndexer')}</Table.Column>
-        <Table.Column wide>{t('requests.colSize')}</Table.Column>
-        <Table.Column wide>{t('requests.colSeeders')}</Table.Column>
+        <Table.Column>{t('requests.colIndexer')}</Table.Column>
+        <Table.Column>{t('requests.colSize')}</Table.Column>
+        <Table.Column>{t('requests.colSeeders')}</Table.Column>
         <Table.Cell />
       </Table.Header>
       {releases.map((r) => (

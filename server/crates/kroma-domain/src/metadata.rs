@@ -31,6 +31,10 @@ pub struct Metadata {
     pub tmdb_genre_ids: Vec<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rating: Option<f32>,
+    /// The provider's own spelling ("PG-13", "TV-MA", "12"), for the region the
+    /// enrichment language asked for.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub certification: Option<String>,
     #[serde(rename = "posterUrl", skip_serializing_if = "Option::is_none")]
     pub poster_url: Option<String>,
     #[serde(rename = "backdropUrl", skip_serializing_if = "Option::is_none")]
@@ -70,6 +74,32 @@ pub struct CastMember {
         skip_serializing_if = "Option::is_none"
     )]
     pub profile_url: Option<String>,
+}
+
+/// The character each member of `core` plays according to `localized`, the same
+/// cast fetched in another language: matched by TMDB person id, then by name,
+/// never by position, since TMDB does not promise the two lists the same order.
+/// Index-aligned to `core`, so a reader can zip it; empty when nothing matched,
+/// so nothing is written and the reader keeps the core's own names.
+pub fn characters_aligned(core: &[CastMember], localized: &[CastMember]) -> Vec<Option<String>> {
+    let same = |member: &CastMember, other: &CastMember| match (member.tmdb_id, other.tmdb_id) {
+        (Some(a), Some(b)) => a == b,
+        _ => !member.name.is_empty() && other.name == member.name,
+    };
+    let aligned: Vec<Option<String>> = core
+        .iter()
+        .map(|member| {
+            localized
+                .iter()
+                .find(|other| same(member, other))
+                .and_then(|other| other.character.clone())
+        })
+        .collect();
+    if aligned.iter().all(Option::is_none) {
+        Vec::new()
+    } else {
+        aligned
+    }
 }
 
 /// `job` is the TMDB job title (`"Director"`, `"Writer"`, `"Creator"`, …).
@@ -189,6 +219,41 @@ pub struct MatchCandidates {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_character_follows_its_person_not_its_row() {
+        let member = |name: &str, id: Option<u64>, character: Option<&str>| super::CastMember {
+            name: name.into(),
+            tmdb_id: id,
+            character: character.map(String::from),
+            profile_url: None,
+        };
+        let core = vec![
+            member("Tom Hanks", Some(31), Some("Woody")),
+            member("Tim Allen", Some(12898), Some("Buzz")),
+            member("Joan Cusack", None, Some("Jessie")),
+        ];
+        let localized = vec![
+            member("Joan Cusack", None, Some("Jessie (voix)")),
+            member("Tim Allen", Some(12898), Some("Buzz (voix)")),
+            member("Tom Hanks", Some(31), Some("Woody (voix)")),
+            member("Someone New", Some(7), Some("Extra")),
+        ];
+
+        let aligned = super::characters_aligned(&core, &localized);
+
+        assert_eq!(
+            aligned,
+            vec![
+                Some("Woody (voix)".to_string()),
+                Some("Buzz (voix)".to_string()),
+                Some("Jessie (voix)".to_string()),
+            ]
+        );
+        assert!(
+            super::characters_aligned(&core, &[member("Nobody", Some(1), Some("X"))]).is_empty()
+        );
+    }
+
     use super::*;
 
     fn cast(name: &str) -> CastMember {
@@ -212,6 +277,7 @@ mod tests {
             genres: Vec::new(),
             tmdb_genre_ids: Vec::new(),
             rating: None,
+            certification: None,
             poster_url: None,
             backdrop_url: None,
             logo_url: None,
@@ -254,6 +320,34 @@ mod tests {
 
         assert_eq!(meta.genres, vec!["Science Fiction".to_string()]);
         assert!(meta.tmdb_genre_ids.is_empty());
+    }
+
+    #[test]
+    fn the_age_rating_survives_a_blob_round_trip_under_its_own_name() {
+        let meta = Metadata {
+            certification: Some("PG-13".into()),
+            ..metadata()
+        };
+
+        let json = serde_json::to_value(&meta).unwrap();
+
+        assert_eq!(json["certification"], serde_json::json!("PG-13"));
+        assert_eq!(
+            serde_json::from_value::<Metadata>(json)
+                .unwrap()
+                .certification,
+            Some("PG-13".to_string())
+        );
+    }
+
+    #[test]
+    fn a_blob_stored_before_the_age_rating_reads_as_having_none() {
+        let stored = r#"{"tmdbId":603,"title":"Dune","overview":null,"genres":[],
+            "tmdbUrl":"https://themoviedb.org/movie/603"}"#;
+
+        let meta: Metadata = serde_json::from_str(stored).unwrap();
+
+        assert!(meta.certification.is_none());
     }
 
     #[test]

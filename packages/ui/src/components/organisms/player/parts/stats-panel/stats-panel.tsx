@@ -69,7 +69,7 @@ export function StatsPanel({
       <Box
         w={width}
         maxH={maxHeight}
-        radius="lg"
+        radius="xl"
         borderWidth={1}
         border="white/10"
         bg="bg/94"

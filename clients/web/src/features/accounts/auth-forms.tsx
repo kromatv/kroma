@@ -4,12 +4,12 @@
 
 import { isEmail, isPassword, isUsername, type PublicUser } from '@kroma/client/accounts';
 import { useT } from '@kroma/ui';
-import { Box, Button, Callout, Field, Text } from '@kroma/ui/kit';
-import { type CSSProperties, useState } from 'react';
+import { Box, Button, Callout, classes, Field, styles, Text } from '@kroma/ui/kit';
+import { useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
 import { UserAvatar } from '#web/shared/ui/user-avatar';
 
-const FORM: CSSProperties = { width: '100%' };
+const s = styles({ form: { width: '100%' }, nudge: { mt: 4 } });
 
 const COLUMN = 380;
 
@@ -46,7 +46,7 @@ export function LoginForm({
         e.preventDefault();
         if (identifier.trim() && password) onSubmit(identifier.trim(), password);
       }}
-      style={FORM}
+      className={classes(s.form)}
     >
       <Box w="100%" maxW={COLUMN} mx="auto" align="center" gap={20}>
         {profile ? (
@@ -81,7 +81,6 @@ export function LoginForm({
             hideLabel // Deliberate: the sign-in field is what this screen is for.
           >
             <Field.Input
-              lift
               icon="user"
               placeholder={t('auth.emailOrUsername')}
               value={identifier}
@@ -98,7 +97,6 @@ export function LoginForm({
           hideLabel // Deliberate: with a profile already picked, the password is the only thing left to type.
         >
           <Field.Input
-            lift
             type="password"
             icon="lock"
             placeholder={t('auth.password')}
@@ -125,7 +123,7 @@ export function LoginForm({
           onPress={() => {
             if (identifier.trim() && password) onSubmit(identifier.trim(), password);
           }}
-          style={{ marginTop: 4 }}
+          style={s.nudge}
         />
         {canUsePasskey && onPasskey ? (
           <Button
@@ -185,7 +183,7 @@ export function ForgotForm({
         e.preventDefault();
         if (identifier.trim()) onSubmit(identifier.trim());
       }}
-      style={FORM}
+      className={classes(s.form)}
     >
       <Box w="100%" maxW={COLUMN} mx="auto" align="center" gap={20}>
         <Text variant="subheading" accessibilityRole="header">
@@ -206,7 +204,6 @@ export function ForgotForm({
             </Text>
             <Field.Root w="100%" size="md" label={t('auth.emailOrUsername')} hideLabel>
               <Field.Input
-                lift
                 icon="user"
                 placeholder={t('auth.emailOrUsername')}
                 value={identifier}
@@ -267,7 +264,7 @@ export function RegisterForm({
         e.preventDefault();
         if (valid) onSubmit(email.trim(), username.trim(), password, avatar);
       }}
-      style={FORM}
+      className={classes(s.form)}
     >
       <Box w="100%" maxW={COLUMN} mx="auto" align="center" gap={20}>
         <Text variant="subheading" accessibilityRole="header">

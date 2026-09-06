@@ -6,6 +6,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { activeTheme } from '#ui/core';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
+import { declared, wearsRing } from '#ui/testing';
 import { TextField } from './text-field';
 
 beforeAll(() => configureRemote());
@@ -32,13 +33,13 @@ describe('TextField', () => {
 
     const edge = activeTheme().ring.focusEdge;
     const reveal = screen.getByLabelText('Show password');
-    expect(reveal.style.outlineOffset).toBe(`${edge.outlineOffset}px`);
-    expect(reveal.style.outlineWidth).toBe(`${edge.outlineWidth}px`);
+    expect(declared(reveal, 'outlineOffset')).toBe(`${edge.outlineOffset}px`);
+    expect(declared(reveal, 'outlineWidth')).toBe(`${edge.outlineWidth}px`);
   });
 
   it('leaves an unfocused reveal button no outline to suppress', () => {
     passwordField();
 
-    expect(screen.getByLabelText('Show password').style.outlineStyle).toBe('');
+    expect(wearsRing(screen.getByLabelText('Show password'))).toBe(false);
   });
 });

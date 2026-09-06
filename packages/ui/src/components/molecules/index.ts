@@ -1,6 +1,11 @@
 export type { AddTileProps, AddTileSize } from './add-tile';
 export { AddTile, addTileVariants } from './add-tile';
-export type { AlphabetItemProps, AlphabetRailRootProps, LetterRange } from './alphabet-rail';
+export type {
+  AlphabetItemProps,
+  AlphabetRailRootProps,
+  AlphabetRailSize,
+  LetterRange,
+} from './alphabet-rail';
 export { AlphabetRail } from './alphabet-rail';
 export type { BackButtonProps } from './back-button';
 export { BackButton } from './back-button';

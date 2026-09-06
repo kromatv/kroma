@@ -2,8 +2,15 @@
 // element states. See RING_ROOM for the number, and lib/focus-scroll for the
 // same trick spelled in React Native, which the kit's own scrollers use.
 
-import type { CSSProperties } from 'react';
 import { RING_ROOM } from '#ui/core/tokens';
+
+interface RingRoom {
+  marginBlock?: number;
+  paddingBlock?: number;
+  marginInline?: number;
+  paddingInline?: number;
+  scrollPadding: number;
+}
 
 /**
  * Vertical room for a focus ring inside an element that scrolls or clips: the
@@ -21,7 +28,7 @@ import { RING_ROOM } from '#ui/core/tokens';
  * them - has no outside to reach into: its rows take the inset ring instead
  * (`ring: 'focusInset'`, as `<ListRow.Group>`'s members do).
  */
-export function ringRoomBlock(inset = 0): CSSProperties {
+export function ringRoomBlock(inset = 0): RingRoom {
   return {
     marginBlock: inset - RING_ROOM,
     paddingBlock: RING_ROOM,
@@ -30,7 +37,7 @@ export function ringRoomBlock(inset = 0): CSSProperties {
 }
 
 /** The same room on the other axis. See {@link ringRoomBlock}. */
-export function ringRoomInline(inset = 0): CSSProperties {
+export function ringRoomInline(inset = 0): RingRoom {
   return {
     marginInline: inset - RING_ROOM,
     paddingInline: RING_ROOM,

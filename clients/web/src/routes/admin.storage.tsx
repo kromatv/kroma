@@ -13,11 +13,11 @@ import {
   Select,
   StatCard,
   Surface,
+  styles,
   Text,
 } from '@kroma/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import type { TextStyle } from 'react-native';
 import { PageHeader, usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -246,7 +246,7 @@ function VolumeCard({ v }: Readonly<{ v: Volume }>) {
   const pct = v.totalBytes ? Math.round((v.usedBytes / v.totalBytes) * 100) : 0;
   const nearFull = pct >= 80;
   return (
-    <Surface elevated pad="none" radius={16} border="border" px={22} py={18}>
+    <Surface elevated pad="none" border="border" px={22} py={18}>
       <Box row align="center" justify="space-between" gap={16} mb={12}>
         <Box row align="center" gap={14} minW={0}>
           <Box w={40} h={40} shrink={0} center radius="xs" bg="accentSoft">
@@ -260,9 +260,9 @@ function VolumeCard({ v }: Readonly<{ v: Volume }>) {
           </Box>
         </Box>
         <Box shrink={0} align="flex-end">
-          <Text variant="label" style={FIGURES}>
+          <Text variant="label" style={s.figures}>
             {fmt.bytes(v.usedBytes)}{' '}
-            <Text variant="label" color="text/40" style={QUIET}>
+            <Text variant="label" color="text/40" style={s.quiet}>
               / {fmt.bytes(v.totalBytes)}
             </Text>
           </Text>
@@ -276,8 +276,7 @@ function VolumeCard({ v }: Readonly<{ v: Volume }>) {
   );
 }
 
-const FIGURES: TextStyle = { fontVariant: ['tabular-nums'] };
-const QUIET = { fontWeight: '500' } as const;
+const s = styles({ figures: { fontVariant: ['tabular-nums'] }, quiet: { fontWeight: '500' } });
 
 function MaintRow({
   title,

@@ -2,41 +2,39 @@ import buildInfo from 'virtual:build-info';
 import type { Health } from '@kroma/client/media';
 import { LOCALES } from '@kroma/core';
 import { useLocale, useSetLocale, useT } from '@kroma/ui';
-import { Box, Divider, IconButton, Row, Select, StatusDot, styles, Text } from '@kroma/ui/kit';
+import {
+  Box,
+  classes,
+  Divider,
+  IconButton,
+  Row,
+  Select,
+  StatusDot,
+  styles,
+  Text,
+} from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { type CSSProperties, type ReactNode, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { serverQueries } from '#web/shared/lib/queries';
 import { MODAL_SCRIM } from '#web/shared/ui';
 import { CapabilityChip } from '#web/shared/ui/capability-chip';
 
 // The three web-only frames of this sheet: a safe-area inset, a fixed overlay
 // and a scroll container, none of which the kit's vocabulary can spell.
-const GEAR: CSSProperties = {
-  position: 'absolute',
-  right: 16,
-  top: 'max(1rem, env(safe-area-inset-top))',
-  zIndex: 20,
-};
-
-const LAYER: CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 61,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 16,
-  pointerEvents: 'none',
-};
-
-const BODY: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  overflowY: 'auto',
-  padding: '16px 24px',
-};
 
 const s = styles({
+  gear: { position: 'absolute', right: 16, top: 'max(1rem, env(safe-area-inset-top))', zIndex: 20 },
+  layer: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 61,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    p: 16,
+    pointerEvents: 'none',
+  },
+  body: { display: 'flex', flexDirection: 'column', overflowY: 'auto', py: 16, px: 24 },
   panel: { pointerEvents: 'auto' },
   value: { fontVariant: ['tabular-nums'], fontWeight: '600' },
 });
@@ -91,7 +89,7 @@ export function LoginSettings() {
 
   return (
     <>
-      <div style={GEAR}>
+      <div className={classes(s.gear)}>
         <IconButton
           icon="settings"
           variant="ghost"
@@ -107,9 +105,9 @@ export function LoginSettings() {
             aria-label={t('common.close')}
             tabIndex={-1}
             onClick={() => setOpen(false)}
-            style={MODAL_SCRIM}
+            className={classes(MODAL_SCRIM)}
           />
-          <div style={LAYER}>
+          <div className={classes(s.layer)}>
             <Box
               role="region"
               w="100%"
@@ -119,7 +117,6 @@ export function LoginSettings() {
               radius="xl"
               border="white/10"
               bg="bg"
-              shadow="pop"
               style={s.panel}
             >
               <Row between gap={16} px={24} py={16}>
@@ -132,7 +129,7 @@ export function LoginSettings() {
                 />
               </Row>
               <Divider />
-              <div style={BODY}>
+              <div className={classes(s.body)}>
                 <Row between gap={16} py={8}>
                   <Text variant="meta" color="textMuted">
                     {t('account.uiLanguage')}

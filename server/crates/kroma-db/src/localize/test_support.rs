@@ -19,6 +19,7 @@ pub(super) fn meta(title: &str) -> Metadata {
         genres: vec!["Original".into()],
         tmdb_genre_ids: vec![878],
         rating: None,
+        certification: None,
         poster_url: None,
         backdrop_url: None,
         logo_url: None,

@@ -11,7 +11,7 @@ export const story = defineStory({
   render: ({ icon, ...props }) => <Chip {...props} icon={icon || undefined} />,
 });
 
-A filter or a choice in a row. The active state is carried by the **amber fill**, never by text color alone. A filter that counts something says so in the chip: `dot` for what it is counting, `count` for how many, both in the chip's own ink so they stay legible whichever state it is in.
+A filter or a choice in a row. The active state is carried by the **fill**, never by text color alone: amber on the three washed variants, and ink on `outline`, whose screens have already spent their amber on a Play button. A filter that counts something says so in the chip: `dot` for what it is counting, `count` for how many, both in the chip's own ink so they stay legible whichever state it is in.
 
 ```tsx
 <Chip label="Sci-Fi" active={selected} onPress={toggle} />
@@ -40,8 +40,19 @@ A filter or a choice in a row. The active state is carried by the **amber fill**
   </Box>
 </Scene>
 
+<Scene name="An outline filter row">
+  The phone home's type filter. `outline` is an edge and nothing else at 36pt tall, and a selected one fills with ink rather than amber, so the row reads as navigation while the billboard's Play button keeps the accent.
+
+  <Box row gap={10} wrap>
+    <Chip variant="outline" label="Movies" active />
+    <Chip variant="outline" label="Series" />
+    <Chip variant="outline" label="Genres" icon="chevron-down" />
+  </Box>
+</Scene>
+
 <Do>
 - Use `subtle` over ambient artwork. It recedes until focused.
+- Use `outline` where the accent is already carrying a primary action on the same screen.
 - Use the `tv` size on any 10-foot screen: the small target is a mouse target.
 - Give `dot` the colour the status is drawn in everywhere else, and let the chip decide how to keep it visible.
 </Do>

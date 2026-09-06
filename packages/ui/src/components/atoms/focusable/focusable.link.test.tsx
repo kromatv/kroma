@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { View } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { activeTheme, sv } from '#ui/core';
+import { declared } from '#ui/testing';
 import { Focusable } from './focusable';
 
 afterEach(cleanup);
@@ -96,8 +97,8 @@ describe('a Focusable that delegates its host to a router link', () => {
       </Focusable>,
     );
 
-    expect(host('Genres').style.backgroundColor).toBe('var(--kroma-surface-1)');
-    expect(host('Genres').style.opacity).toBe('0.5');
+    expect(declared(host('Genres'), 'background-color')).toBe('var(--kroma-surface-1)');
+    expect(declared(host('Genres'), 'opacity')).toBe('0.5');
   });
 
   it('paints the recipe on the delegated element', () => {
@@ -107,7 +108,7 @@ describe('a Focusable that delegates its host to a router link', () => {
       </Focusable>,
     );
 
-    expect(host('Genres').style.backgroundColor).toBe('var(--kroma-surface-1)');
+    expect(declared(host('Genres'), 'background-color')).toBe('var(--kroma-surface-1)');
   });
 
   it('paints hover and press on the delegated element', () => {
@@ -118,14 +119,14 @@ describe('a Focusable that delegates its host to a router link', () => {
     );
 
     fireEvent.pointerEnter(host('Genres'));
-    expect(host('Genres').style.backgroundColor).toBe('var(--kroma-surface-2)');
+    expect(declared(host('Genres'), 'background-color')).toBe('var(--kroma-surface-2)');
 
     fireEvent.pointerDown(host('Genres'));
-    expect(host('Genres').style.backgroundColor).toBe('var(--kroma-surface-3)');
+    expect(declared(host('Genres'), 'background-color')).toBe('var(--kroma-surface-3)');
 
     fireEvent.pointerUp(host('Genres'));
     fireEvent.pointerLeave(host('Genres'));
-    expect(host('Genres').style.backgroundColor).toBe('var(--kroma-surface-1)');
+    expect(declared(host('Genres'), 'background-color')).toBe('var(--kroma-surface-1)');
   });
 
   it('rings the delegated element when the keyboard puts focus on it', () => {
@@ -138,12 +139,12 @@ describe('a Focusable that delegates its host to a router link', () => {
     fireEvent.keyDown(window, { key: 'Tab' });
     fireEvent.focus(host('Genres'));
 
-    expect(host('Genres').style.outlineWidth).toBe(
+    expect(declared(host('Genres'), 'outline-width')).toBe(
       `${activeTheme().ring.focusLift.outlineWidth}px`,
     );
 
     fireEvent.blur(host('Genres'));
-    expect(host('Genres').style.outlineWidth).toBe('');
+    expect(declared(host('Genres'), 'outline-width')).toBeNull();
   });
 
   it('gives the delegated element the hand a pressable control gets', () => {
@@ -153,7 +154,7 @@ describe('a Focusable that delegates its host to a router link', () => {
       </Focusable>,
     );
 
-    expect(host('Genres').style.cursor).toBe('pointer');
+    expect(declared(host('Genres'), 'cursor')).toBe('pointer');
   });
 
   it('carries a control that says which page it is on', () => {

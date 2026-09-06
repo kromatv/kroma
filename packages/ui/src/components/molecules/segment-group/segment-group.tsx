@@ -5,7 +5,7 @@
 import { Children, isValidElement, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { Animated, Easing, type StyleProp, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { useTheme } from '#ui/core';
+import { sharedStyle, style } from '#ui/core';
 import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
 import { useStableCallback } from '#ui/lib/stable-callback';
@@ -132,7 +132,6 @@ function Root<T extends string>({
 
 // One layer behind every segment, which is why a segment paints no fill.
 function Thumb({ at, radius }: Readonly<{ at: Box2D | null; radius: number }>) {
-  const theme = useTheme();
   const [x] = useState(() => new Animated.Value(0));
   const [width] = useState(() => new Animated.Value(0));
   const placed = useRef(false);
@@ -155,19 +154,21 @@ function Thumb({ at, radius }: Readonly<{ at: Box2D | null; radius: number }>) {
     <Animated.View
       style={[
         THUMB,
-        {
-          pointerEvents: 'none',
-          backgroundColor: theme.colors.accentSoft,
-          borderRadius: radius,
-          transform: [{ translateX: x }],
-          width,
-        },
+        sharedStyle(`segment:thumb:${radius}`, { radius }),
+        { transform: [{ translateX: x }], width },
       ]}
     />
   );
 }
 
-const THUMB = { position: 'absolute', top: GROUP_PAD, bottom: GROUP_PAD, left: 0 } as const;
+const THUMB = style({
+  position: 'absolute',
+  top: GROUP_PAD,
+  bottom: GROUP_PAD,
+  left: 0,
+  pointerEvents: 'none',
+  bg: 'accentSoft',
+});
 
 const SegmentGroup = { Root, Item, Label, Hint };
 

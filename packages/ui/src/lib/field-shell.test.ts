@@ -75,18 +75,10 @@ describe('fieldShell', () => {
     expect(flat.edge).toBeNull();
   });
 
-  it('draws its own well when it owns the shell, and lifts only when asked', () => {
+  it('draws its own well when it owns the shell, and never a shadow', () => {
     const plain = fieldShell(CONTROL.md, { flat: false, focused: false, invalid: false });
     expect(plain.box).toMatchObject({ radius: CONTROL.md.radius, bg: CONTROL.md.bg });
     expect(plain.box).not.toHaveProperty('shadow');
-
-    const lifted = fieldShell(CONTROL.md, {
-      flat: false,
-      focused: false,
-      invalid: false,
-      lift: true,
-    });
-    expect(lifted.box).toHaveProperty('shadow', 'card');
   });
 
   it('adds the kit ring on focus, and only then', () => {

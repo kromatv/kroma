@@ -1,25 +1,26 @@
 import { TITLE_LETTERS } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import type { LetterRange } from '@kroma/ui/kit';
-import { AlphabetRail as Rail, useBreakpoint } from '@kroma/ui/kit';
-import type { CSSProperties } from 'react';
+import { classes, AlphabetRail as Rail, styles, useBreakpoint } from '@kroma/ui/kit';
 
 export type { LetterRange };
 
 // Fixed to the viewport and centred in it: neither position is in the kit's
 // vocabulary, which lays out inside a flow rather than against the window.
-const RAIL_POSITION: CSSProperties = {
-  position: 'fixed',
-  top: 0,
-  bottom: 0,
-  right: 10,
-  zIndex: 30,
-  marginTop: 'auto',
-  marginBottom: 'auto',
-  height: 'fit-content',
-  userSelect: 'none',
-  touchAction: 'none',
-};
+const s = styles({
+  rail: {
+    position: 'fixed',
+    top: 0,
+    bottom: 0,
+    right: 10,
+    zIndex: 30,
+    marginTop: 'auto',
+    marginBottom: 'auto',
+    height: 'fit-content',
+    userSelect: 'none',
+    touchAction: 'none',
+  },
+});
 
 export interface AlphabetRailProps {
   /** Buckets that exist in the current view; the rest render dimmed. */
@@ -39,7 +40,7 @@ export function AlphabetRail({ available, range, onJump }: Readonly<AlphabetRail
   // affordance, so below `md` it is not rendered at all.
   if (useBreakpoint() === 'base') return null;
   return (
-    <nav aria-label={t('browse.letterNav')} style={RAIL_POSITION}>
+    <nav aria-label={t('browse.letterNav')} className={classes(s.rail)}>
       <Rail.Root range={range} onJump={onJump} label={t('browse.letterNav')}>
         {TITLE_LETTERS.map((letter) => (
           <Rail.Item

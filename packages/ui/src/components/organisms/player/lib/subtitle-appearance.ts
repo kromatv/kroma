@@ -2,6 +2,7 @@ import { deviceStorage } from '@kroma/client';
 import { useCallback, useEffect, useState } from 'react';
 import type { TextStyle, ViewStyle } from 'react-native';
 import type { ColorValue } from '#ui/core';
+import { sharedStyle } from '#ui/core';
 import { edgeStyle } from './subtitle-edge';
 
 /**
@@ -210,12 +211,12 @@ export function withOpacity(hex: string, pct: number): string {
  * not a TextStyle: RN's stricter native typings require it for a container. */
 export function subtitleWindowStyle(style: SubtitleAppearance): ViewStyle {
   if (style.windowOpacity <= 0) return NO_WINDOW;
-  return {
+  return sharedStyle(`subtitle:window:${style.windowColor}:${style.windowOpacity}`, {
     backgroundColor: withOpacity(style.windowColor, style.windowOpacity),
     paddingVertical: 6,
     paddingHorizontal: 18,
     borderRadius: 10,
-  };
+  });
 }
 
 // Interned: the default appearance has no window, and the cue re-renders at
@@ -228,7 +229,7 @@ const NO_WINDOW: ViewStyle = Object.freeze({});
 export function subtitleStyle(style: SubtitleAppearance): TextStyle {
   const size = SIZE_PX[style.size];
   const hasBg = clampPct(style.bgOpacity) > 0;
-  return {
+  return sharedStyle(`subtitle:text:${JSON.stringify(style)}`, {
     // Folded into the colour, not node opacity: the node also carries the
     // background box, so `opacity` would dim it too, and the window (a
     // separate View) wouldn't dim at all. CEA-708 gives each layer its own opacity.
@@ -249,5 +250,5 @@ export function subtitleStyle(style: SubtitleAppearance): TextStyle {
         }
       : null),
     ...edgeStyle(style.edge),
-  };
+  });
 }

@@ -91,12 +91,20 @@ function UsersPageInner() {
         <Section.Header>
           <Section.Title>{t('admin.membersSharing')}</Section.Title>
         </Section.Header>
-        <Table.Root columns="2.4fr 1fr 1.3fr 1.2fr 44px">
+        <Table.Root
+          columns={[
+            { flex: 2.4 },
+            { flex: 1, from: 'md' },
+            { flex: 1.3, from: 'md' },
+            { flex: 1.2, from: 'md' },
+            { width: 44 },
+          ]}
+        >
           <Table.Header>
             <Table.Column>{t('admin.colUser')}</Table.Column>
-            <Table.Column wide>{t('admin.colRole')}</Table.Column>
-            <Table.Column wide>{t('admin.colAccess')}</Table.Column>
-            <Table.Column wide>{t('admin.colLastActivity')}</Table.Column>
+            <Table.Column>{t('admin.colRole')}</Table.Column>
+            <Table.Column>{t('admin.colAccess')}</Table.Column>
+            <Table.Column>{t('admin.colLastActivity')}</Table.Column>
             <Table.Cell />
           </Table.Header>
           {users.map((u) => {
@@ -113,7 +121,6 @@ function UsersPageInner() {
                     src={resolveImageUrl(apiBase(), u.avatarUrl)}
                     size={42}
                     circle
-                    shadow={false}
                   />
                   <Box minW={0}>
                     <Box row align="center" gap={8}>
@@ -131,17 +138,17 @@ function UsersPageInner() {
                     </Text>
                   </Box>
                 </Table.Cell>
-                <Table.Cell wide>
+                <Table.Cell>
                   <Pill ink={rs.ink} bg={rs.bg}>
                     {u.role}
                   </Pill>
                 </Table.Cell>
-                <Table.Cell wide>
+                <Table.Cell>
                   <Text variant="meta" color="textMuted">
                     {access}
                   </Text>
                 </Table.Cell>
-                <Table.Cell wide row gap={8}>
+                <Table.Cell row gap={8}>
                   <PillDot tone={u.online ? 'success' : 'text/30'} size={7} />
                   <Text variant="meta" color="textDim">
                     {u.online ? t('admin.online') : fmt.elapsed(u.lastSeen)}

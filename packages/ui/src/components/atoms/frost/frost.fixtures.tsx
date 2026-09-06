@@ -20,7 +20,7 @@ export // A photograph behind the panel, never a flat fill: a blur over one colo
 // that colour again, and the layer would look like nothing at all.
 function OverArt({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <Box h={240} radius="lg" overflow="hidden" center px={24}>
+    <Box h={240} radius="xl" overflow="hidden" center px={24}>
       <Img src={stillArt(2)} background={TINT} fill />
       {children}
     </Box>

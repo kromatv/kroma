@@ -3,6 +3,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import {
   type AnySv,
   activeTheme,
+  breakpointIndex,
   normalize,
   type StyleDecl,
   type SvStateName,
@@ -18,7 +19,9 @@ import { WEB } from '#ui/lib/platform';
 import type { Resolve } from './focusable-types';
 
 function coat(decl: StyleDecl | undefined): ViewStyle | undefined {
-  return decl ? (stabilise(normalize(decl as Record<string, unknown>)) as ViewStyle) : undefined;
+  return decl
+    ? (stabilise(normalize(decl as Record<string, unknown>, breakpointIndex())) as ViewStyle)
+    : undefined;
 }
 
 const NO_SLOTS = Object.freeze({ root: undefined }) as unknown as ReturnType<AnySv>;

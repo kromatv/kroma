@@ -1,5 +1,4 @@
-import { CONTROL, type StyleDecl, svFor, typeSpec } from '@kroma/ui/kit';
-import type { ViewStyle } from 'react-native';
+import { CONTROL, type StyleDecl, styles, svFor, typeSpec } from '@kroma/ui/kit';
 import { safeAreaBottom } from '#web/shared/lib/safe-area';
 
 const SHELL = CONTROL.sm;
@@ -55,6 +54,8 @@ export const sideNavRow = svFor<{
   defaults: { current: false },
 });
 
-export const SIDE_NAV_FRAME: ViewStyle = { flex: 1, minHeight: 0 };
+const s = styles({ frame: { flex: true, minHeight: 0 }, safeBottom: safeAreaBottom(28) });
 
-export const SIDE_NAV_SAFE_BOTTOM: ViewStyle = safeAreaBottom(28);
+export const SIDE_NAV_FRAME = s.frame;
+
+export const SIDE_NAV_SAFE_BOTTOM = s.safeBottom;

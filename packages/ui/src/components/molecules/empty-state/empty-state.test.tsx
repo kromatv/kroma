@@ -3,22 +3,20 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
+import { declared } from '#ui/testing';
 import { EmptyState, type EmptyStateSize } from './empty-state';
 
 afterEach(cleanup);
 
 const SIZES: readonly EmptyStateSize[] = ['sm', 'md', 'tv'];
 
-// react-native-web resolves styles to atomic class names, so the frame is read
-// back as the set of classes the two axes can move.
-const FRAME = /^r-(flex|marginTop|paddingTop|paddingBottom)-/;
+// react-native-web resolves styles to classes, so the frame is read back as
+// what the two axes declare through them.
+const FRAME = ['flex-grow', 'margin-top', 'padding-top', 'padding-bottom'] as const;
 
 function frameOf(container: HTMLElement): string {
   const root = container.firstElementChild as HTMLElement;
-  return [...root.classList]
-    .filter((name) => FRAME.test(name))
-    .sort()
-    .join(' ');
+  return FRAME.map((property) => `${property}=${declared(root, property) ?? ''}`).join(' ');
 }
 
 function glyphWidth(container: HTMLElement): string | null {
@@ -100,9 +98,9 @@ describe('<EmptyState>', () => {
       </EmptyState.Root>,
     );
     const frame = frameOf(container);
-    expect(frame).not.toMatch(/marginTop/);
-    expect(frame).toMatch(/paddingTop/);
-    expect(frame).toMatch(/paddingBottom/);
+    expect(frame).toMatch(/margin-top=(0px)? /);
+    expect(frame).toMatch(/padding-top=\d/);
+    expect(frame).toMatch(/padding-bottom=\d/);
   });
 
   it('refuses a part used outside the Root, rather than rendering something wrong', () => {

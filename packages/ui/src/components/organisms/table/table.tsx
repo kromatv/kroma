@@ -8,7 +8,6 @@ import {
   breakpointMask,
   columnBox,
   GridContext,
-  minWidthOf,
   NO_COLUMNS,
   type TableColumn,
 } from './table-columns';
@@ -90,10 +89,7 @@ function GridScope({
   children: ReactNode;
 }>) {
   const step = useBreakpointStep(breakpoints);
-  const value = useMemo(
-    () => ({ columns, boxes, step, minWidth: minWidthOf(columns, step) }),
-    [columns, boxes, step],
-  );
+  const value = useMemo(() => ({ columns, boxes, step }), [columns, boxes, step]);
   return <GridContext.Provider value={value}>{children}</GridContext.Provider>;
 }
 

@@ -2,20 +2,21 @@
 // requester, date, status chip, and quick approve/deny on pending rows.
 
 import type { MediaRequest } from '@kroma/client/requests';
-import { type MessageKey, posterGradient } from '@kroma/core';
+import type { MessageKey } from '@kroma/core';
 import { TABULAR, Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Avatar, Box, Row, Text } from '@kroma/ui/kit';
 import { Pill } from '#web/features/admin/pill';
 import { kindMeta } from '#web/features/admin/pipeline-meta';
+import { posterScrim } from '#web/shared/lib/art-styles';
 import { seasonsSummary } from '#web/shared/lib/request-status';
 import { Image } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 function Poster({ req }: Readonly<{ req: MediaRequest }>) {
   return (
-    <Box w={32} h={46} shrink={0} radius={4} overflow="hidden" shadow="card">
-      <div style={{ position: 'absolute', inset: 0, background: posterGradient(req.title) }} />
+    <Box w={32} h={46} shrink={0} radius="xs" overflow="hidden">
+      <Box fill style={posterScrim(req.title)} />
       <Image src={req.posterUrl} fit="cover" fill />
     </Box>
   );
@@ -65,20 +66,20 @@ export function RequestRowView({
         </Box>
       </Table.Cell>
 
-      <Table.Cell wide row gap={10}>
-        <Avatar name={req.requestedByName ?? '?'} size={26} circle shadow={false} />
+      <Table.Cell row gap={10}>
+        <Avatar name={req.requestedByName ?? '?'} size={26} circle />
         <Text variant="meta" color="textMuted" lines={1}>
           {req.requestedByName ?? t('requests.unknownUser')}
         </Text>
       </Table.Cell>
 
-      <Table.Cell wide>
+      <Table.Cell>
         <Text variant="meta" color="textDim" style={TABULAR}>
           {new Date(req.createdAt).toLocaleDateString()}
         </Text>
       </Table.Cell>
 
-      <Table.Cell wide align="flex-start">
+      <Table.Cell align="flex-start">
         <RequestStatusChip status={req.status} progress={req.progress} />
       </Table.Cell>
 

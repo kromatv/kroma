@@ -10,6 +10,7 @@ import {
   ListRow,
   RING_ROOM,
   SURFACE_WIDTH,
+  styles,
   VirtualGrid,
 } from '@kroma/ui/kit';
 import type { ChoiceItem } from '#tv/app/settings/items';
@@ -28,6 +29,11 @@ const LIST_HEIGHT = (ROW_HEIGHT + ROW_GAP) * VISIBLE_ROWS;
 // width of its own to resolve against, so the row collapses to its trailing
 // glyph.
 const ROW_WIDTH = SURFACE_WIDTH.lg - DIALOG_PAD * 2;
+
+const s = styles({
+  list: { h: LIST_HEIGHT, w: ROW_WIDTH },
+  row: { h: ROW_HEIGHT, w: ROW_WIDTH },
+});
 
 export interface ChoicePickerProps {
   open: boolean;
@@ -64,11 +70,11 @@ export function ChoicePicker({
         rowGap={ROW_GAP}
         pt={RING_ROOM}
         width={ROW_WIDTH}
-        style={{ height: LIST_HEIGHT, width: ROW_WIDTH }}
+        style={s.list}
         initialIndex={current}
         renderItem={(option) => (
           <ListRow.Root
-            style={{ height: ROW_HEIGHT, width: ROW_WIDTH }}
+            style={s.row}
             ground="surface"
             chevron={false}
             role="option"

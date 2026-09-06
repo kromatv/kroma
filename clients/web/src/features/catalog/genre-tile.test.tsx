@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { I18nProvider } from '@kroma/ui';
+import { declared } from '@kroma/ui/testing';
 import {
   createMemoryHistory,
   createRootRoute,
@@ -54,7 +55,14 @@ async function wall() {
 }
 
 const art = (container: HTMLElement) =>
-  container.querySelector<HTMLElement>('[style*="transition-property: transform"]');
+  [...container.querySelectorAll<HTMLElement>('div')].find(
+    (el) => declared(el, 'transition-property') === 'transform',
+  );
+
+const scaleOf = (container: HTMLElement) => {
+  const el = art(container);
+  return el ? declared(el, 'transform') : undefined;
+};
 
 describe('the genre tile zooming under the pointer', () => {
   it('never asks a browser for the native driver it does not have', async () => {
@@ -74,7 +82,7 @@ describe('the genre tile zooming under the pointer', () => {
     const { container } = await wall();
 
     expect(timing).not.toHaveBeenCalled();
-    expect(art(container)?.style.transform).toBe('scale(1)');
+    expect(scaleOf(container)).toBe('scale(1)');
   });
 
   it('grows the art while the pointer is over the tile and lets it back down after', async () => {
@@ -82,9 +90,9 @@ describe('the genre tile zooming under the pointer', () => {
     const tile = screen.getByLabelText('Science Fiction');
 
     fireEvent.pointerOver(tile);
-    expect(art(container)?.style.transform).toBe('scale(1.05)');
+    expect(scaleOf(container)).toBe('scale(1.05)');
 
     fireEvent.pointerOut(tile);
-    expect(art(container)?.style.transform).toBe('scale(1)');
+    expect(scaleOf(container)).toBe('scale(1)');
   });
 });

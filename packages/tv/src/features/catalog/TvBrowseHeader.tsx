@@ -44,6 +44,7 @@ function entryBadge(e: CatalogEntry): string | null {
 }
 
 const s = styles({
+  echoWidth: { maxW: 960 },
   // The design's clamp(30px, 4.8vh, 46px), resolved: on the fixed 1920x1080
   // stage a viewport unit would mean something different on each of the four
   // targets.
@@ -84,7 +85,7 @@ function FocusEcho({ entry }: Readonly<{ entry: CatalogEntry }>) {
     entry.kind === 'show' ? t('content.seasonCount', { count: entry.item.seasonCount }) : null;
   return (
     <Box mt={8} gap={6}>
-      <Text variant="hero" style={[s.echoTitle, { maxWidth: 960 }]} lines={1}>
+      <Text variant="hero" style={[s.echoTitle, s.echoWidth]} lines={1}>
         {entry.item.title}
       </Text>
       <Box row align="center" gap={10}>

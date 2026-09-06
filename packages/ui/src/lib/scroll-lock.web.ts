@@ -11,9 +11,13 @@
 // the way the finger asked.
 
 import { useEffect } from 'react';
+import { style } from '#ui/core';
+import { classes } from '#ui/lib/classed';
 import { webDocument, webWindow } from '#ui/lib/dom';
 
 const NOOP = () => {};
+
+const LOCK = style({ overflow: 'hidden' });
 
 const ELEMENT_NODE = 1;
 
@@ -51,11 +55,16 @@ function lockPage(): () => void {
   // Both, because which of the two owns the viewport's scrollbar is the page's
   // decision: the root's overflow wins unless it is `visible`, and a shell that
   // states one of them leaves the other free to keep scrolling.
+  const lock = classes(LOCK) ?? '';
+  // A shell that wrote its own overflow inline would beat the class: it is
+  // stashed for the lock's duration and handed back with the page.
   const held = { root: root.style.overflow, body: body.style.overflow };
   const padding = body.style.paddingRight;
   const gap = win.innerWidth - root.clientWidth;
-  root.style.overflow = 'hidden';
-  body.style.overflow = 'hidden';
+  root.style.overflow = '';
+  body.style.overflow = '';
+  root.classList.add(lock);
+  body.classList.add(lock);
   if (gap > 0) {
     const own = Number.parseFloat(win.getComputedStyle(body).paddingRight) || 0;
     body.style.paddingRight = `${own + gap}px`;
@@ -63,6 +72,8 @@ function lockPage(): () => void {
   const unguard = guardTouch(doc, win);
   return () => {
     unguard();
+    root.classList.remove(lock);
+    body.classList.remove(lock);
     root.style.overflow = held.root;
     body.style.overflow = held.body;
     body.style.paddingRight = padding;

@@ -1,6 +1,16 @@
 import { sizedImageUrl, type Translate } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { ArtScrim, Box, Img, Progress, rhythm, Text, VirtualRail } from '@kroma/ui/kit';
+import {
+  ArtScrim,
+  Box,
+  Img,
+  Progress,
+  rhythm,
+  sharedStyle,
+  styles,
+  Text,
+  VirtualRail,
+} from '@kroma/ui/kit';
 import { type ReactElement, type ReactNode, useState } from 'react';
 import type { PosterAction } from '#web/shared/ui/poster-action-bar';
 import { ART_FADE, PosterTile } from '#web/shared/ui/poster-tile';
@@ -25,6 +35,10 @@ const RAIL_TILE = rhythm.cardWidth;
 const RAIL_GAP = rhythm.rowGap;
 const RAIL_PAD = 12;
 
+const rail = styles({ content: { py: RAIL_PAD } });
+
+const railHeight = (height: number) => sharedStyle(`poster-rail:${height}`, { height });
+
 export interface PosterRailProps<T> {
   data: readonly T[];
   renderItem: (item: T, index: number) => ReactElement;
@@ -43,8 +57,8 @@ export function PosterRail<T>({
       data={data}
       itemWidth={RAIL_TILE + RAIL_GAP}
       gap={RAIL_GAP}
-      style={{ height: Math.round(RAIL_TILE * 1.5) + extraHeight + RAIL_PAD * 2 }}
-      contentStyle={{ paddingVertical: RAIL_PAD }}
+      style={railHeight(Math.round(RAIL_TILE * 1.5) + extraHeight + RAIL_PAD * 2)}
+      contentStyle={rail.content}
       onEndReached={onEndReached}
       renderItem={(item, index) => (
         <Box w="100%" maxW={RAIL_TILE} self="center">
@@ -118,14 +132,14 @@ export function Poster({
               src={poster ? sizedImageUrl(poster, width ?? RAIL_TILE) : null}
               alt={title}
               fit="cover"
-              radius="lg"
+              radius="xl"
               fill
               onError={() => setImgOk(false)}
             />
             {caption ? (
               <>
                 <Box fill pointerEvents="none" opacity={revealed ? 1 : 0} style={ART_FADE}>
-                  <ArtScrim variant="deep" radius="lg" />
+                  <ArtScrim variant="deep" radius="xl" />
                 </Box>
                 <Box
                   absolute

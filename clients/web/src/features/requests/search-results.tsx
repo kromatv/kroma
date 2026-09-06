@@ -5,7 +5,7 @@
 import type { SearchHit } from '@kroma/client/media';
 import { episodeTag, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, EmptyState, Row, Text } from '@kroma/ui/kit';
+import { Box, classes, EmptyState, Row, styles, Text } from '@kroma/ui/kit';
 
 import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
@@ -16,7 +16,16 @@ import { Poster } from '#web/shared/ui/poster';
 import { RouteLink } from '#web/shared/ui/route-link';
 import { TileGrid } from '#web/shared/ui/tile-grid';
 
-const COUNT = { fontVariant: ['tabular-nums' as const] };
+const s = styles({
+  count: { fontVariant: ['tabular-nums'] },
+  band: {
+    mb: 36,
+    animationKeyframes: 'fade-in',
+    animationDuration: '250ms',
+    animationTimingFunction: 'var(--ease-out)',
+  },
+  heading: { m: 0 },
+});
 
 function Section({
   title,
@@ -24,12 +33,12 @@ function Section({
   children,
 }: Readonly<{ title: string; count: number; children: (width: number) => ReactNode }>) {
   return (
-    <section style={BAND}>
+    <section className={classes(s.band)}>
       {/* Still an <h2>: <Text accessibilityRole="header"> can only render an h1. */}
-      <h2 style={HEADING}>
+      <h2 className={classes(s.heading)}>
         <Row align="baseline" gap={10} mb={16}>
           <Text variant="title">{title}</Text>
-          <Text variant="meta" color="textDim" style={COUNT}>
+          <Text variant="meta" color="textDim" style={s.count}>
             {count}
           </Text>
         </Row>
@@ -38,10 +47,6 @@ function Section({
     </section>
   );
 }
-
-const BAND = { marginBottom: 36, animation: 'fade-in .25s var(--ease-out)' } as const;
-
-const HEADING = { margin: 0 } as const;
 
 function LocalHit({ hit, width }: Readonly<{ hit: SearchHit; width: number }>) {
   const { client } = useAuth();

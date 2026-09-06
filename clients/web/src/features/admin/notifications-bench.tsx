@@ -10,13 +10,13 @@ import {
   Box,
   Button,
   ChoiceList,
-  color,
   Divider,
   Field,
   Icon,
   Row,
   Select,
   Surface,
+  styles,
   Text,
 } from '@kroma/ui/kit';
 import { useState } from 'react';
@@ -157,9 +157,9 @@ export function NotificationBench() {
           {/* Said before the press: "everyone" writes a row into every account
           on this server, and there is no unsend. */}
           {target === 'everyone' ? (
-            <Row gap={10} align="flex-start" bg="accent/12" radius={10} px={12} py={10}>
+            <Row gap={10} align="flex-start" bg="accent/12" radius="sm" px={12} py={10}>
               <Icon name="alert-triangle" size={16} color="accent" />
-              <Text variant="meta" color="accent" style={NOTE}>
+              <Text variant="meta" color="accent" style={s.note}>
                 {t('admin.notifTestEveryoneWarning')}
               </Text>
             </Row>
@@ -175,12 +175,12 @@ export function NotificationBench() {
           />
 
           {sent !== null ? (
-            <Text variant="meta" color={sent > 0 ? 'success' : 'textDim'} style={CENTRED}>
+            <Text variant="meta" color={sent > 0 ? 'success' : 'textDim'} style={s.centred}>
               {sent > 0 ? t('admin.notifTestSent', { n: sent }) : t('admin.notifTestMuted')}
             </Text>
           ) : null}
           {error ? (
-            <Text variant="meta" color="danger" style={CENTRED}>
+            <Text variant="meta" color="danger" style={s.centred}>
               {error}
             </Text>
           ) : null}
@@ -194,17 +194,13 @@ export function NotificationBench() {
   );
 }
 
-const CENTRED = { textAlign: 'center' } as const;
-
 // The composer's preview draws its own shell, where a drawer row takes its
 // <ListRow.Root>'s.
-const PREVIEW_CARD = {
-  borderRadius: 16,
-  background: color('surface2'),
-  padding: 10,
-  paddingLeft: 8,
-} as const;
-const NOTE = { flex: 1 } as const;
+const s = styles({
+  centred: { textAlign: 'center' },
+  previewCard: { radius: 'xl', bg: 'surface2', p: 10, pl: 8 },
+  note: { flex: true },
+});
 
 // The same tile, gutter and metrics the drawer uses, so the preview matches
 // what recipients actually see; `custom` is the event type this bench always sends.
@@ -213,7 +209,7 @@ function PreviewRow({ draft, empty }: Readonly<{ draft: Draft; empty: string }>)
   const art = draft.imageUrl ? kromaClient().media.artwork.resolve(draft.imageUrl) : null;
   return (
     <NotificationCard
-      style={PREVIEW_CARD}
+      style={s.previewCard}
       event="custom"
       src={art}
       unread

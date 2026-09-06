@@ -1,0 +1,510 @@
+diff --git a/node_modules/react-native-web/.bun-tag-53c7926c465f5221 b/.bun-tag-53c7926c465f5221
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/react-native-web/.bun-tag-65cd760928415cf b/.bun-tag-65cd760928415cf
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/react-native-web/.bun-tag-7388d1148b8587d6 b/.bun-tag-7388d1148b8587d6
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/react-native-web/.bun-tag-819891abbb95d2f5 b/.bun-tag-819891abbb95d2f5
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/react-native-web/.bun-tag-a1aac35d3c43e36b b/.bun-tag-a1aac35d3c43e36b
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/react-native-web/.bun-tag-ae45b8d2ba1a836f b/.bun-tag-ae45b8d2ba1a836f
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/react-native-web/.bun-tag-b13be9ea39bf34b0 b/.bun-tag-b13be9ea39bf34b0
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/dist/cjs/exports/Modal/ModalPortal.js b/dist/cjs/exports/Modal/ModalPortal.js
+index f94b0aa4f56db7d21b730cdaacc6c73e22d3bce0..0d4279ed4654be1808709c3adf233ffd3a6b0add 100644
+--- a/dist/cjs/exports/Modal/ModalPortal.js
++++ b/dist/cjs/exports/Modal/ModalPortal.js
+@@ -29,10 +29,17 @@ function ModalPortal(props) {
+   }
+   React.useEffect(() => {
+     if (_canUseDom.default) {
++      // KROMA: React disconnects this effect when a Suspense boundary above
++      // hides the tree, and reconnects it when the tree shows again. The
++      // container leaves the document with the effect and has to come back with
++      // it, into the same element the portal still renders into.
++      var element = elementRef.current;
++      if (element && document.body && !element.isConnected) {
++        document.body.appendChild(element);
++      }
+       return () => {
+-        if (document.body && elementRef.current) {
++        if (document.body && elementRef.current && elementRef.current.isConnected) {
+           document.body.removeChild(elementRef.current);
+-          elementRef.current = null;
+         }
+       };
+     }
+diff --git a/dist/cjs/exports/StyleSheet/compiler/hash.js b/dist/cjs/exports/StyleSheet/compiler/hash.js
+index 190e589731f14777c0cd3403a2669f6f693242d7..7749f6a44a259f97506bc67b1df73715b59f719c 100644
+--- a/dist/cjs/exports/StyleSheet/compiler/hash.js
++++ b/dist/cjs/exports/StyleSheet/compiler/hash.js
+@@ -47,6 +47,18 @@ function murmurhash2_32_gc(str, seed) {
+   h ^= h >>> 15;
+   return h >>> 0;
+ }
+-var hash = str => murmurhash2_32_gc(str, 1).toString(36);
++// KROMA: sixty-four symbols, so a 32-bit hash is six characters where base36
++// needs seven. The two bits left for the first symbol pick a letter, so the
++// name is a legal class on its own and carries no prefix.
++var ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-';
++var hash = str => {
++  var h = murmurhash2_32_gc(str, 1);
++  var out = '';
++  for (var i = 0; i < 6; i++) {
++    out = ALPHABET[h & 63] + out;
++    h >>>= 6;
++  }
++  return out;
++};
+ var _default = exports.default = hash;
+ module.exports = exports.default;
+\ No newline at end of file
+diff --git a/dist/cjs/exports/StyleSheet/compiler/index.js b/dist/cjs/exports/StyleSheet/compiler/index.js
+index fbdf038a97b1bb5b185b7f1e9807a35f5c3ef9b2..ed6202ce3e2203cf36d224f9857fd470e8c52bc3 100644
+--- a/dist/cjs/exports/StyleSheet/compiler/index.js
++++ b/dist/cjs/exports/StyleSheet/compiler/index.js
+@@ -437,7 +437,10 @@ function createDeclarationBlock(style) {
+  */
+ function createIdentifier(prefix, name, key) {
+   var hashedString = (0, _hash.default)(name + key);
+-  return process.env.NODE_ENV !== 'production' ? prefix + "-" + name + "-" + hashedString : prefix + "-" + hashedString;
++  // KROMA: an atomic class is the six-character hash alone, and the name is
++  // the same on a dev server and in a build, so the rule a build wrote is the
++  // rule a dev server reads.
++  return prefix === 'r' ? hashedString : prefix + "-" + hashedString;
+ }
+ 
+ /**
+diff --git a/dist/cjs/exports/StyleSheet/dom/createOrderedCSSStyleSheet.js b/dist/cjs/exports/StyleSheet/dom/createOrderedCSSStyleSheet.js
+index 10618d4abd09be5f046e23a74d6b3c6c4ef7de4c..10580246bbe9aae4472474c483a16994c47cb59d 100644
+--- a/dist/cjs/exports/StyleSheet/dom/createOrderedCSSStyleSheet.js
++++ b/dist/cjs/exports/StyleSheet/dom/createOrderedCSSStyleSheet.js
+@@ -55,6 +55,13 @@ function createOrderedCSSStyleSheet(sheet) {
+       }
+     });
+   }
++
++  // KROMA: the atomic rules a build wrote into the static stylesheet are in
++  // the document before this sheet exists. Their selectors are known here, so
++  // a style registered at runtime that compiles to one of them inserts nothing.
++  staticSelectors(sheet).forEach(selectorText => {
++    selectors[selectorText] = true;
++  });
+   function sheetInsert(sheet, group, text) {
+     var orderedGroups = getOrderedGroups(groups);
+     var groupIndex = orderedGroups.indexOf(group);
+@@ -150,6 +157,27 @@ function getOrderedGroups(obj) {
+   return Object.keys(obj).map(Number).sort((a, b) => a > b ? 1 : -1);
+ }
+ var selectorPattern = /\s*([,])\s*/g;
++var ATOMIC_SELECTOR = /^\.[a-d][A-Za-z0-9_-]{5}(?![A-Za-z0-9_-])/;
++function staticSelectors(own) {
++  var found = [];
++  if (typeof document === 'undefined' || document.styleSheets == null) return found;
++  var sheets = document.styleSheets;
++  for (var i = 0; i < sheets.length; i++) {
++    if (sheets[i] === own) continue;
++    var rules;
++    try {
++      rules = sheets[i].cssRules;
++    } catch (e) {
++      continue;
++    }
++    if (rules == null) continue;
++    for (var j = 0; j < rules.length; j++) {
++      var selectorText = rules[j].selectorText;
++      if (selectorText != null && ATOMIC_SELECTOR.test(selectorText)) found.push(selectorText);
++    }
++  }
++  return found;
++}
+ function getSelectorText(cssText) {
+   var selector = cssText.split('{')[0].trim();
+   return selector !== '' ? selector.replace(selectorPattern, '$1') : null;
+diff --git a/dist/cjs/exports/StyleSheet/index.js b/dist/cjs/exports/StyleSheet/index.js
+index eedf49039dce440eb60bb4eefbc5c4c8be952f30..0d774e1a194a55561d2b2d9eeaec810a8f87e8b5 100644
+--- a/dist/cjs/exports/StyleSheet/index.js
++++ b/dist/cjs/exports/StyleSheet/index.js
+@@ -27,6 +27,27 @@ var defaultPreprocessOptions = {
+   shadow: true,
+   textShadow: true
+ };
++
++// KROMA: a style nobody registered paints inline, one declaration per element.
++// A value only a render knows is allowed through; anything else is a
++// declaration that belongs in `styles()`, and is reported once per shape.
++var INLINE_ALLOWED = {
++  width: 1, height: 1, minWidth: 1, maxWidth: 1, maxHeight: 1,
++  top: 1, left: 1, right: 1, bottom: 1, paddingTop: 1,
++  transform: 1, opacity: 1, borderRadius: 1,
++  backgroundImage: 1, backgroundPosition: 1, backgroundSize: 1
++};
++var inlineReported = {};
++function reportInlineStyle(style) {
++  var keys = Object.keys(style).filter(function (key) { return style[key] != null && INLINE_ALLOWED[key] !== 1; });
++  if (keys.length === 0) return;
++  var shape = keys.sort().join(',');
++  if (inlineReported[shape]) return;
++  inlineReported[shape] = true;
++  var values = keys.map(function (key) { return key + ': ' + JSON.stringify(style[key]); }).join(', ');
++  console.warn('[kroma] a style painted inline instead of as classes: {' + values + '}. Declare it with styles() so it is registered, or keep only the values a render computes.');
++}
++
+ function customStyleq(styles, options) {
+   if (options === void 0) {
+     options = {};
+@@ -41,6 +62,9 @@ function customStyleq(styles, options) {
+       if (compiledStyle != null) {
+         return (0, _transformLocalizeStyle.localizeStyle)(compiledStyle, isRTL);
+       }
++      if (process.env.NODE_ENV === 'development') {
++        reportInlineStyle(style);
++      }
+       return (0, _preprocess.preprocess)(style, (0, _objectSpread2.default)((0, _objectSpread2.default)({}, defaultPreprocessOptions), preprocessOptions));
+     }
+   })(styles);
+@@ -60,7 +84,11 @@ function compileAndInsertAtomic(style) {
+   var _atomic = (0, _compiler.atomic)((0, _preprocess.preprocess)(style, defaultPreprocessOptions)),
+     compiledStyle = _atomic[0],
+     compiledOrderedRules = _atomic[1];
+-  insertRules(compiledOrderedRules);
++  // KROMA: a style whose rules a build wrote into the static stylesheet is
++  // compiled to the same classes and inserted nowhere.
++  if (style.$$static !== true) {
++    insertRules(compiledOrderedRules);
++  }
+   return compiledStyle;
+ }
+ function compileAndInsertReset(style, key) {
+@@ -182,6 +210,12 @@ StyleSheet.getSheet = getSheet;
+ // `hairlineWidth` is not implemented using screen density as browsers may
+ // round sub-pixel values down to `0`, causing the line not to be rendered.
+ StyleSheet.hairlineWidth = 1;
++// KROMA: the dev server's door into the ordered sheet, so a rule a module
++// compiled holds its group's place and a class registered later inserts
++// nothing twice. A build writes the same rules into the static stylesheet.
++StyleSheet.insertStatic = function (cssText, group) {
++  if (sheet != null) sheet.insert(cssText, group);
++};
+ if (_canUseDom.default && window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+   window.__REACT_DEVTOOLS_GLOBAL_HOOK__.resolveRNStyle = StyleSheet.flatten;
+ }
+diff --git a/dist/cjs/exports/Text/index.js b/dist/cjs/exports/Text/index.js
+index 1d03735f0e5ba42b0da8bbfa5692d572db95e38d..0197413399735d05e66125f986aca51e2d4b71d9 100644
+--- a/dist/cjs/exports/Text/index.js
++++ b/dist/cjs/exports/Text/index.js
+@@ -115,9 +115,7 @@ var Text = /*#__PURE__*/React.forwardRef((props, forwardedRef) => {
+   if (onClick || onPress) {
+     supportedProps.onClick = handleClick;
+   }
+-  supportedProps.style = [numberOfLines != null && numberOfLines > 1 && {
+-    WebkitLineClamp: numberOfLines
+-  }, hasTextAncestor === true ? styles.textHasAncestor$raw : styles.text$raw, numberOfLines === 1 && styles.textOneLine, numberOfLines != null && numberOfLines > 1 && styles.textMultiLine, props.style, selectable === true && styles.selectable, selectable === false && styles.notSelectable, onPress && styles.pressable];
++  supportedProps.style = [numberOfLines != null && numberOfLines > 1 && clampStyle(numberOfLines), hasTextAncestor === true ? styles.textHasAncestor$raw : styles.text$raw, numberOfLines === 1 && styles.textOneLine, numberOfLines != null && numberOfLines > 1 && styles.textMultiLine, props.style, selectable === true && styles.selectable, selectable === false && styles.notSelectable, onPress && styles.pressable];
+   if (props.href != null) {
+     component = 'a';
+     if (hrefAttrs != null) {
+@@ -162,6 +160,17 @@ var textStyle = {
+   whiteSpace: 'pre-wrap',
+   wordWrap: 'break-word'
+ };
++// KROMA: the clamp is a registered style per line count, so a clamped string
++// wears a class rather than an inline declaration.
++var clampStyles = {};
++function clampStyle(lines) {
++  if (!clampStyles[lines]) clampStyles[lines] = _StyleSheet.default.create({
++    clamp: {
++      WebkitLineClamp: lines
++    }
++  }).clamp;
++  return clampStyles[lines];
++}
+ var styles = _StyleSheet.default.create({
+   text$raw: textStyle,
+   textHasAncestor$raw: (0, _objectSpread2.default)((0, _objectSpread2.default)({}, textStyle), {}, {
+diff --git a/dist/cjs/exports/TextInput/index.js b/dist/cjs/exports/TextInput/index.js
+index ec9227892217fedcd6ad92b836ad8afb55f7ce40..f9fac41ff5bba18591cc255094cdb7de8d020d2f 100644
+--- a/dist/cjs/exports/TextInput/index.js
++++ b/dist/cjs/exports/TextInput/index.js
+@@ -381,9 +381,7 @@ var TextInput = /*#__PURE__*/React.forwardRef((props, forwardedRef) => {
+   */
+   supportedProps.rows = multiline ? rows != null ? rows : numberOfLines : 1;
+   supportedProps.spellCheck = spellCheck != null ? spellCheck : autoCorrect;
+-  supportedProps.style = [{
+-    '--placeholderTextColor': placeholderTextColor
+-  }, styles.textinput$raw, styles.placeholder, props.style, caretHidden && styles.caretHidden];
++  supportedProps.style = [placeholderStyle(placeholderTextColor), styles.textinput$raw, styles.placeholder, props.style, caretHidden && styles.caretHidden];
+   supportedProps.type = multiline ? undefined : type;
+   supportedProps.virtualkeyboardpolicy = showSoftInputOnFocus === false ? 'manual' : 'auto';
+   var platformMethodsRef = (0, _usePlatformMethods.default)(supportedProps);
+@@ -400,6 +398,17 @@ var TextInput = /*#__PURE__*/React.forwardRef((props, forwardedRef) => {
+ TextInput.displayName = 'TextInput';
+ // $FlowFixMe
+ TextInput.State = _TextInputState.default;
++// KROMA: the placeholder colour is a registered style per colour, so an entry
++// wears a class for it rather than an inline custom property.
++var placeholderStyles = {};
++function placeholderStyle(color) {
++  if (!placeholderStyles[color]) placeholderStyles[color] = _StyleSheet.default.create({
++    placeholder: {
++      '--placeholderTextColor': color
++    }
++  }).placeholder;
++  return placeholderStyles[color];
++}
+ var styles = _StyleSheet.default.create({
+   textinput$raw: {
+     MozAppearance: 'textfield',
+diff --git a/dist/exports/Modal/ModalPortal.js b/dist/exports/Modal/ModalPortal.js
+index df3bcbbd4dee13c614466ca30af52f10bf20398c..320adbb723af18ce36b514123d8bc5853fc19f94 100644
+--- a/dist/exports/Modal/ModalPortal.js
++++ b/dist/exports/Modal/ModalPortal.js
+@@ -23,10 +23,17 @@ function ModalPortal(props) {
+   }
+   React.useEffect(() => {
+     if (canUseDOM) {
++      // KROMA: React disconnects this effect when a Suspense boundary above
++      // hides the tree, and reconnects it when the tree shows again. The
++      // container leaves the document with the effect and has to come back with
++      // it, into the same element the portal still renders into.
++      var element = elementRef.current;
++      if (element && document.body && !element.isConnected) {
++        document.body.appendChild(element);
++      }
+       return () => {
+-        if (document.body && elementRef.current) {
++        if (document.body && elementRef.current && elementRef.current.isConnected) {
+           document.body.removeChild(elementRef.current);
+-          elementRef.current = null;
+         }
+       };
+     }
+diff --git a/dist/exports/StyleSheet/compiler/hash.js b/dist/exports/StyleSheet/compiler/hash.js
+index 372f56444f1d4e497eba5da7e727c4d95f519e7f..6d4a3945d9e4ef91840f7cdc6c864dd8e5c502b5 100644
+--- a/dist/exports/StyleSheet/compiler/hash.js
++++ b/dist/exports/StyleSheet/compiler/hash.js
+@@ -43,5 +43,17 @@ function murmurhash2_32_gc(str, seed) {
+   h ^= h >>> 15;
+   return h >>> 0;
+ }
+-var hash = str => murmurhash2_32_gc(str, 1).toString(36);
++// KROMA: sixty-four symbols, so a 32-bit hash is six characters where base36
++// needs seven. The two bits left for the first symbol pick a letter, so the
++// name is a legal class on its own and carries no prefix.
++var ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-';
++var hash = str => {
++  var h = murmurhash2_32_gc(str, 1);
++  var out = '';
++  for (var i = 0; i < 6; i++) {
++    out = ALPHABET[h & 63] + out;
++    h >>>= 6;
++  }
++  return out;
++};
+ export default hash;
+\ No newline at end of file
+diff --git a/dist/exports/StyleSheet/compiler/index.js b/dist/exports/StyleSheet/compiler/index.js
+index b1b01e6b84e7872e560f91a1164c6470b9d43abc..59eadee57cf217b03d7b42458906747426014901 100644
+--- a/dist/exports/StyleSheet/compiler/index.js
++++ b/dist/exports/StyleSheet/compiler/index.js
+@@ -430,7 +430,10 @@ function createDeclarationBlock(style) {
+  */
+ function createIdentifier(prefix, name, key) {
+   var hashedString = hash(name + key);
+-  return process.env.NODE_ENV !== 'production' ? prefix + "-" + name + "-" + hashedString : prefix + "-" + hashedString;
++  // KROMA: an atomic class is the six-character hash alone, and the name is
++  // the same on a dev server and in a build, so the rule a build wrote is the
++  // rule a dev server reads.
++  return prefix === 'r' ? hashedString : prefix + "-" + hashedString;
+ }
+ 
+ /**
+diff --git a/dist/exports/StyleSheet/dom/createOrderedCSSStyleSheet.js b/dist/exports/StyleSheet/dom/createOrderedCSSStyleSheet.js
+index 86fad4b02c974213f39c53af8333a095ff50b53f..2cd7500ab73fa67ab197f1531e567dd1cc177302 100644
+--- a/dist/exports/StyleSheet/dom/createOrderedCSSStyleSheet.js
++++ b/dist/exports/StyleSheet/dom/createOrderedCSSStyleSheet.js
+@@ -51,6 +51,13 @@ export default function createOrderedCSSStyleSheet(sheet) {
+       }
+     });
+   }
++
++  // KROMA: the atomic rules a build wrote into the static stylesheet are in
++  // the document before this sheet exists. Their selectors are known here, so
++  // a style registered at runtime that compiles to one of them inserts nothing.
++  staticSelectors(sheet).forEach(selectorText => {
++    selectors[selectorText] = true;
++  });
+   function sheetInsert(sheet, group, text) {
+     var orderedGroups = getOrderedGroups(groups);
+     var groupIndex = orderedGroups.indexOf(group);
+@@ -146,6 +153,27 @@ function getOrderedGroups(obj) {
+   return Object.keys(obj).map(Number).sort((a, b) => a > b ? 1 : -1);
+ }
+ var selectorPattern = /\s*([,])\s*/g;
++var ATOMIC_SELECTOR = /^\.[a-d][A-Za-z0-9_-]{5}(?![A-Za-z0-9_-])/;
++function staticSelectors(own) {
++  var found = [];
++  if (typeof document === 'undefined' || document.styleSheets == null) return found;
++  var sheets = document.styleSheets;
++  for (var i = 0; i < sheets.length; i++) {
++    if (sheets[i] === own) continue;
++    var rules;
++    try {
++      rules = sheets[i].cssRules;
++    } catch (e) {
++      continue;
++    }
++    if (rules == null) continue;
++    for (var j = 0; j < rules.length; j++) {
++      var selectorText = rules[j].selectorText;
++      if (selectorText != null && ATOMIC_SELECTOR.test(selectorText)) found.push(selectorText);
++    }
++  }
++  return found;
++}
+ function getSelectorText(cssText) {
+   var selector = cssText.split('{')[0].trim();
+   return selector !== '' ? selector.replace(selectorPattern, '$1') : null;
+diff --git a/dist/exports/StyleSheet/index.js b/dist/exports/StyleSheet/index.js
+index 891994c511839216d523e68786daea85261539fb..25493db362126fc29de3b37e0e7d4db56315fb42 100644
+--- a/dist/exports/StyleSheet/index.js
++++ b/dist/exports/StyleSheet/index.js
+@@ -23,6 +23,27 @@ var defaultPreprocessOptions = {
+   shadow: true,
+   textShadow: true
+ };
++
++// KROMA: a style nobody registered paints inline, one declaration per element.
++// A value only a render knows is allowed through; anything else is a
++// declaration that belongs in `styles()`, and is reported once per shape.
++var INLINE_ALLOWED = {
++  width: 1, height: 1, minWidth: 1, maxWidth: 1, maxHeight: 1,
++  top: 1, left: 1, right: 1, bottom: 1, paddingTop: 1,
++  transform: 1, opacity: 1, borderRadius: 1,
++  backgroundImage: 1, backgroundPosition: 1, backgroundSize: 1
++};
++var inlineReported = {};
++function reportInlineStyle(style) {
++  var keys = Object.keys(style).filter(function (key) { return style[key] != null && INLINE_ALLOWED[key] !== 1; });
++  if (keys.length === 0) return;
++  var shape = keys.sort().join(',');
++  if (inlineReported[shape]) return;
++  inlineReported[shape] = true;
++  var values = keys.map(function (key) { return key + ': ' + JSON.stringify(style[key]); }).join(', ');
++  console.warn('[kroma] a style painted inline instead of as classes: {' + values + '}. Declare it with styles() so it is registered, or keep only the values a render computes.');
++}
++
+ function customStyleq(styles, options) {
+   if (options === void 0) {
+     options = {};
+@@ -37,6 +58,9 @@ function customStyleq(styles, options) {
+       if (compiledStyle != null) {
+         return localizeStyle(compiledStyle, isRTL);
+       }
++      if (process.env.NODE_ENV === 'development') {
++        reportInlineStyle(style);
++      }
+       return preprocess(style, _objectSpread(_objectSpread({}, defaultPreprocessOptions), preprocessOptions));
+     }
+   })(styles);
+@@ -56,7 +80,11 @@ function compileAndInsertAtomic(style) {
+   var _atomic = atomic(preprocess(style, defaultPreprocessOptions)),
+     compiledStyle = _atomic[0],
+     compiledOrderedRules = _atomic[1];
+-  insertRules(compiledOrderedRules);
++  // KROMA: a style whose rules a build wrote into the static stylesheet is
++  // compiled to the same classes and inserted nowhere.
++  if (style.$$static !== true) {
++    insertRules(compiledOrderedRules);
++  }
+   return compiledStyle;
+ }
+ function compileAndInsertReset(style, key) {
+@@ -178,6 +206,12 @@ StyleSheet.getSheet = getSheet;
+ // `hairlineWidth` is not implemented using screen density as browsers may
+ // round sub-pixel values down to `0`, causing the line not to be rendered.
+ StyleSheet.hairlineWidth = 1;
++// KROMA: the dev server's door into the ordered sheet, so a rule a module
++// compiled holds its group's place and a class registered later inserts
++// nothing twice. A build writes the same rules into the static stylesheet.
++StyleSheet.insertStatic = function (cssText, group) {
++  if (sheet != null) sheet.insert(cssText, group);
++};
+ if (canUseDOM && window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+   window.__REACT_DEVTOOLS_GLOBAL_HOOK__.resolveRNStyle = StyleSheet.flatten;
+ }
+diff --git a/dist/exports/Text/index.js b/dist/exports/Text/index.js
+index 1076f551ead7bb506f128b65412dc90df2dda0b7..cfe60f2e205b284d6c3a6398ede89cd7786db1eb 100644
+--- a/dist/exports/Text/index.js
++++ b/dist/exports/Text/index.js
+@@ -110,9 +110,7 @@ var Text = /*#__PURE__*/React.forwardRef((props, forwardedRef) => {
+   if (onClick || onPress) {
+     supportedProps.onClick = handleClick;
+   }
+-  supportedProps.style = [numberOfLines != null && numberOfLines > 1 && {
+-    WebkitLineClamp: numberOfLines
+-  }, hasTextAncestor === true ? styles.textHasAncestor$raw : styles.text$raw, numberOfLines === 1 && styles.textOneLine, numberOfLines != null && numberOfLines > 1 && styles.textMultiLine, props.style, selectable === true && styles.selectable, selectable === false && styles.notSelectable, onPress && styles.pressable];
++  supportedProps.style = [numberOfLines != null && numberOfLines > 1 && clampStyle(numberOfLines), hasTextAncestor === true ? styles.textHasAncestor$raw : styles.text$raw, numberOfLines === 1 && styles.textOneLine, numberOfLines != null && numberOfLines > 1 && styles.textMultiLine, props.style, selectable === true && styles.selectable, selectable === false && styles.notSelectable, onPress && styles.pressable];
+   if (props.href != null) {
+     component = 'a';
+     if (hrefAttrs != null) {
+@@ -157,6 +155,17 @@ var textStyle = {
+   whiteSpace: 'pre-wrap',
+   wordWrap: 'break-word'
+ };
++// KROMA: the clamp is a registered style per line count, so a clamped string
++// wears a class rather than an inline declaration.
++var clampStyles = {};
++function clampStyle(lines) {
++  if (!clampStyles[lines]) clampStyles[lines] = StyleSheet.create({
++    clamp: {
++      WebkitLineClamp: lines
++    }
++  }).clamp;
++  return clampStyles[lines];
++}
+ var styles = StyleSheet.create({
+   text$raw: textStyle,
+   textHasAncestor$raw: _objectSpread(_objectSpread({}, textStyle), {}, {
+diff --git a/dist/exports/TextInput/index.js b/dist/exports/TextInput/index.js
+index 0f476a7db2658a4f969ec7a0736d57e4656b2356..ed031dd1706945f1b69dbff041f498eb8a38f207 100644
+--- a/dist/exports/TextInput/index.js
++++ b/dist/exports/TextInput/index.js
+@@ -376,9 +376,7 @@ var TextInput = /*#__PURE__*/React.forwardRef((props, forwardedRef) => {
+   */
+   supportedProps.rows = multiline ? rows != null ? rows : numberOfLines : 1;
+   supportedProps.spellCheck = spellCheck != null ? spellCheck : autoCorrect;
+-  supportedProps.style = [{
+-    '--placeholderTextColor': placeholderTextColor
+-  }, styles.textinput$raw, styles.placeholder, props.style, caretHidden && styles.caretHidden];
++  supportedProps.style = [placeholderStyle(placeholderTextColor), styles.textinput$raw, styles.placeholder, props.style, caretHidden && styles.caretHidden];
+   supportedProps.type = multiline ? undefined : type;
+   supportedProps.virtualkeyboardpolicy = showSoftInputOnFocus === false ? 'manual' : 'auto';
+   var platformMethodsRef = usePlatformMethods(supportedProps);
+@@ -395,6 +393,17 @@ var TextInput = /*#__PURE__*/React.forwardRef((props, forwardedRef) => {
+ TextInput.displayName = 'TextInput';
+ // $FlowFixMe
+ TextInput.State = TextInputState;
++// KROMA: the placeholder colour is a registered style per colour, so an entry
++// wears a class for it rather than an inline custom property.
++var placeholderStyles = {};
++function placeholderStyle(color) {
++  if (!placeholderStyles[color]) placeholderStyles[color] = StyleSheet.create({
++    placeholder: {
++      '--placeholderTextColor': color
++    }
++  }).placeholder;
++  return placeholderStyles[color];
++}
+ var styles = StyleSheet.create({
+   textinput$raw: {
+     MozAppearance: 'textfield',

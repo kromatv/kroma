@@ -2,18 +2,15 @@
 
 import buildInfo from 'virtual:build-info';
 import { useT } from '@kroma/ui';
-import { Box, Menu, type MenuTriggerBind, Text } from '@kroma/ui/kit';
+import { Box, Menu, type MenuTriggerBind, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouterState } from '@tanstack/react-router';
-import { type CSSProperties, type Ref, useState } from 'react';
+import { type Ref, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
 import { serverQueries } from '#web/shared/lib/queries';
 import { useFocusRing } from '#web/shared/lib/use-focus-ring';
 import { RouteLink } from '#web/shared/ui/route-link';
 import { UserAvatar } from '#web/shared/ui/user-avatar';
-
-const TABULAR = { fontVariant: ['tabular-nums' as const] };
-const NO_CAPS = { textTransform: 'none' } as const;
 
 // A `title` tooltip and the UA's own button skin are browser concerns the kit
 // has no name for, so the trigger stays an element around a kit row.
@@ -21,19 +18,26 @@ const NO_CAPS = { textTransform: 'none' } as const;
 // on: the button has to carry the surface's own radius, or it rings the row as a
 // square. The gap above is a margin for the same reason, so the box the outline
 // traces is the box the eye sees.
-const CHIP_BUTTON: CSSProperties = {
-  display: 'block',
-  width: '100%',
-  marginTop: 8,
-  padding: 0,
-  border: 0,
-  borderRadius: 'var(--radius-md)',
-  background: 'none',
-  font: 'inherit',
-  color: 'inherit',
-  textAlign: 'left',
-  cursor: 'pointer',
-};
+const s = styles({
+  tabular: { fontVariant: ['tabular-nums'] },
+  noCaps: { textTransform: 'none' },
+  chipButton: {
+    display: 'block',
+    width: '100%',
+    mt: 8,
+    p: 0,
+    borderWidth: 0,
+    borderRadius: 'var(--radius-md)',
+    bg: 'transparent',
+    backgroundImage: 'none',
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    lineHeight: 'inherit',
+    color: 'inherit',
+    textAlign: 'left',
+    cursor: 'pointer',
+  },
+});
 
 /** Client version + commit come from the build-time `virtual:build-info`
  *  module; the server version is the public `/api/health` endpoint. */
@@ -44,9 +48,9 @@ export function VersionInfo() {
   return (
     <Box row align="center" gap={6} px={2}>
       <span title={clientTitle}>
-        <Text variant="overline" color="textDim" style={NO_CAPS}>
+        <Text variant="overline" color="textDim" style={s.noCaps}>
           {t('nav.versionClient')}{' '}
-          <Text variant="overline" color="textDim" style={TABULAR}>
+          <Text variant="overline" color="textDim" style={s.tabular}>
             {`v${buildInfo.version}`}
           </Text>
         </Text>
@@ -54,9 +58,9 @@ export function VersionInfo() {
       <Text variant="overline" color="textDim" opacity={0.4}>
         ·
       </Text>
-      <Text variant="overline" color="textDim" style={NO_CAPS}>
+      <Text variant="overline" color="textDim" style={s.noCaps}>
         {t('nav.versionServer')}{' '}
-        <Text variant="overline" color="textDim" style={TABULAR}>
+        <Text variant="overline" color="textDim" style={s.tabular}>
           {health ? `v${health.version}` : '…'}
         </Text>
       </Text>
@@ -111,7 +115,7 @@ function UserChipTrigger({
 }: Readonly<{ bind: MenuTriggerBind; user: ChipUser; label: string }>) {
   const { ref, expanded, onPress } = bind;
   const [hovered, setHovered] = useState(false);
-  const focus = useFocusRing(CHIP_BUTTON, 'focusLift');
+  const focus = useFocusRing(s.chipButton, 'focusLift');
   return (
     <button
       ref={ref as unknown as Ref<HTMLButtonElement>}
@@ -122,7 +126,7 @@ function UserChipTrigger({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       {...focus.bind}
-      style={focus.style}
+      className={focus.className}
       title={label}
     >
       <Box
@@ -133,18 +137,12 @@ function UserChipTrigger({
         radius="md"
         bg={expanded || hovered ? 'white/4' : undefined}
       >
-        <UserAvatar
-          name={user.username}
-          avatarUrl={user.avatarUrl}
-          seed={user.id}
-          size={36}
-          radius={10}
-        />
+        <UserAvatar name={user.username} avatarUrl={user.avatarUrl} seed={user.id} size={36} />
         <Box minW={0}>
           <Text variant="label" lines={1}>
             {user.username}
           </Text>
-          <Text variant="overline" color="textDim" style={NO_CAPS} lines={1}>
+          <Text variant="overline" color="textDim" style={s.noCaps} lines={1}>
             {label}
           </Text>
         </Box>

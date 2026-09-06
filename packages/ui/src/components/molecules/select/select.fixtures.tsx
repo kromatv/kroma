@@ -203,7 +203,7 @@ export function Members({ presentation }: Readonly<{ presentation: SelectPresent
         {MEMBERS.map((name) => (
           <Select.Item key={name} value={name} label={name}>
             <Select.Media>
-              <Avatar name={name} size={18} circle shadow={false} />
+              <Avatar name={name} size={18} circle />
             </Select.Media>
           </Select.Item>
         ))}

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { pinDesignWidth } from '#ui/core';
 import { breakpoint } from '#ui/core/tokens';
+import { declared } from '#ui/testing';
 import { InputGroup } from './input-group';
 
 afterEach(() => {
@@ -42,7 +43,7 @@ describe('<InputGroup>', () => {
         <InputGroup.Input placeholder="0.00" physicalKeyboard />
       </InputGroup.Root>,
     );
-    expect(screen.getByPlaceholderText('0.00').style.fontSize).toBe(fontSize);
+    expect(declared(screen.getByPlaceholderText('0.00'), 'font-size')).toBe(fontSize);
     cleanup();
   });
 
@@ -111,7 +112,7 @@ describe('<InputGroup>', () => {
     );
     // By the shell's own padding minus the inset, so a ghost button's fill
     // stops exactly where the well does.
-    expect(screen.getByLabelText('Test').style.marginRight).toBe('-6px');
+    expect(declared(screen.getByLabelText('Test'), 'margin-right')).toBe('-6px');
   });
 
   it('refuses a part used outside the Root, rather than rendering something wrong', () => {

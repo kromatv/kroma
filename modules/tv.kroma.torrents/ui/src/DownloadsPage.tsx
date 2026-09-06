@@ -192,41 +192,38 @@ export default function DownloadsPage() {
         </Row>
       ) : null}
 
-      <Surface elevated pad="none" overflow="hidden" radius="xl">
-        <Table.Root
-          variant="plain"
-          columns={DOWNLOAD_BOXES}
-          label={t('admin.downloadsTitle')}
-          sort={sort}
-          onSortChange={onSortChange}
-        >
-          <DownloadTableHead headings={headings} />
-          <Table.Body>
-            {table.getRowModel().rows.map(({ id, original: dl }) => (
-              <DownloadRowView
-                key={id}
-                dl={dl}
-                live={live[dl.id]}
-                busy={busy}
-                onPause={() => act(() => torrents.pause(dl.id))}
-                onResume={() => act(() => torrents.resume(dl.id))}
-                onRetry={() => act(() => torrents.retry(dl.id))}
-                onAskPeers={() => act(() => torrents.reannounce(dl.id))}
-                onRelink={() => relink(dl)}
-                onContents={() => void ContentsModal.call({ dl })}
-                onRemove={() => setConfirm(dl)}
-              />
-            ))}
-          </Table.Body>
-        </Table.Root>
-        {downloads.length === 0 ? (
-          <Box py={24}>
-            <EmptyState.Root icon="download">
-              <EmptyState.Title>{t('downloads.empty')}</EmptyState.Title>
-            </EmptyState.Root>
-          </Box>
-        ) : null}
-      </Surface>
+      <Table.Root
+        columns={DOWNLOAD_BOXES}
+        label={t('admin.downloadsTitle')}
+        sort={sort}
+        onSortChange={onSortChange}
+      >
+        <DownloadTableHead headings={headings} />
+        <Table.Body>
+          {table.getRowModel().rows.map(({ id, original: dl }) => (
+            <DownloadRowView
+              key={id}
+              dl={dl}
+              live={live[dl.id]}
+              busy={busy}
+              onPause={() => act(() => torrents.pause(dl.id))}
+              onResume={() => act(() => torrents.resume(dl.id))}
+              onRetry={() => act(() => torrents.retry(dl.id))}
+              onAskPeers={() => act(() => torrents.reannounce(dl.id))}
+              onRelink={() => relink(dl)}
+              onContents={() => void ContentsModal.call({ dl })}
+              onRemove={() => setConfirm(dl)}
+            />
+          ))}
+        </Table.Body>
+      </Table.Root>
+      {downloads.length === 0 ? (
+        <Surface elevated radius="xl" py={24} mt={12}>
+          <EmptyState.Root icon="download">
+            <EmptyState.Title>{t('downloads.empty')}</EmptyState.Title>
+          </EmptyState.Root>
+        </Surface>
+      ) : null}
 
       {page.total > 0 ? (
         <Row between wrap gap={12} mt={16}>

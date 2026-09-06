@@ -3,14 +3,13 @@ import {
   color,
   delegateOf,
   Focusable,
-  gradient,
   motion,
+  sharedStyle,
   styles,
   useFocusVisible,
   WatchedBadge,
 } from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';
-import type { ViewStyle } from 'react-native';
 import { type PosterAction, PosterActionBar } from '#web/shared/ui/poster-action-bar';
 
 const NO_HOVER =
@@ -18,36 +17,34 @@ const NO_HOVER =
 
 const EASE = `cubic-bezier(${motion.bezier.out.join(', ')})`;
 
-// react-native-web understands these CSS-only props; React Native's types do not.
-const transition = (property: string) =>
-  ({
-    transitionProperty: property,
-    transitionDuration: `${motion.duration.base}ms`,
-    transitionTimingFunction: EASE,
-  }) as ViewStyle;
+const transition = (property: string) => ({
+  transitionProperty: property,
+  transitionDuration: `${motion.duration.base}ms`,
+  transitionTimingFunction: EASE,
+});
 
-export const ART_FADE = transition('opacity');
+const move = styles({
+  artFade: transition('opacity'),
+  lift: transition('transform'),
+  art: transition('box-shadow, outline-color'),
+});
 
-const LIFT_MOTION = transition('transform');
+export const ART_FADE = move.artFade;
 
-const ART_MOTION = transition('box-shadow, outline-color');
+const washOf = (image: string) => sharedStyle(`poster:wash:${image}`, { backgroundImage: image });
 
-// An outline, not a second shadow: a shadow list interpolates item by item, so
-// growing [card] into [ring, pop] faded the card's 28px blur into the ring's
-// slot and the ring arrived as a halo before it snapped.
 const s = styles({
-  hit: { w: '100%', radius: 'lg' },
+  hit: { w: '100%', radius: 'xl' },
   lift: { transform: [{ translateY: motion.focusLift }] },
   art: {
     aspect: 2 / 3,
-    radius: 'lg',
+    radius: 'xl',
     overflow: 'hidden',
-    shadow: 'card',
     outlineStyle: 'solid',
     outlineWidth: 3,
     outlineColor: 'transparent',
   },
-  artLit: { shadow: 'pop', outlineColor: color('accent') },
+  artLit: { outlineColor: color('accent') },
 });
 
 export interface PosterTileProps {
@@ -102,10 +99,10 @@ export function PosterTile({
       onFocus={() => setFocusWithin(true)}
       onBlur={() => setFocusWithin(false)}
     >
-      <Box style={hovered ? [LIFT_MOTION, s.lift] : LIFT_MOTION}>
+      <Box style={hovered ? [move.lift, s.lift] : move.lift}>
         <Focusable label={label} asChild={asChild} style={s.hit}>
           {delegate.wrap(
-            <Box style={[s.art, gradient(background), ART_MOTION, hovered ? s.artLit : null]}>
+            <Box style={[s.art, washOf(background), move.art, hovered ? s.artLit : null]}>
               {art(engaged)}
               {watched ? (
                 <Box fill pointerEvents="none" opacity={fold ? 1 : 0}>

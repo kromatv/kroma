@@ -1,27 +1,24 @@
-import { ItemId, ShowId } from '@kroma/client/media';
-import { Box, Chip, color, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
+import { ItemId, type SectionItem, ShowId } from '@kroma/client/media';
+import { Box, color, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { RefreshControl, ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar } from '#mobile/components/Avatar';
-import {
-  ContinueRail,
-  MediaRail,
-  movieCard,
-  sectionCard,
-  showCard,
-} from '#mobile/components/cards';
+import { ContinueRail, MediaRail, sectionCard } from '#mobile/components/cards';
 import { CastIconButton } from '#mobile/components/cast/CastIconButton';
 import { HeroBillboard } from '#mobile/components/HeroBillboard';
+import { HomeFilterChips } from '#mobile/components/HomeFilterChips';
 import { KromaLockup } from '#mobile/components/KromaLockup';
 import { NotificationBell } from '#mobile/components/NotificationBell';
 import { ProgressRing } from '#mobile/components/ProgressRing';
 import { ErrorView, Loading, SectionTitle } from '#mobile/components/ui';
 import { useDownloads } from '#mobile/lib/downloads';
+import { featuredProgress } from '#mobile/lib/featured';
+import { filterEntries, filterResume, type TitleFilter } from '#mobile/lib/homeFilter';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
-import { useClient, useSession } from '#mobile/lib/session';
+import { useClient } from '#mobile/lib/session';
 import { posterWidth, spacing, TAB_BAR_CLEARANCE } from '#mobile/lib/theme';
 
 function DownloadsGlyph() {
@@ -47,12 +44,9 @@ function DownloadsGlyph() {
 }
 
 function HomeHeader() {
-  const { user } = useSession();
-  const client = useClient();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const gutters = useGutters();
-  const avatar = client.media.artwork.resolve(user?.avatarUrl);
   return (
     <Box style={[s.header, { paddingTop: insets.top + spacing.sm }, gutters.style]}>
       <Box style={s.brandRow}>
@@ -70,42 +64,12 @@ function HomeHeader() {
           <DownloadsGlyph />
         </IconButton>
         <NotificationBell />
-        <IconButton
-          variant="ghost"
-          diameter={40}
-          hitSlop={8}
-          onPress={() => router.push('/profile' as never)}
-        >
-          <Avatar uri={avatar} name={user?.username} size={28} />
-        </IconButton>
       </Box>
     </Box>
   );
 }
 
-function CategoryChips() {
-  const t = useT();
-  const router = useRouter();
-  const gutters = useGutters();
-  const chips = [
-    { label: t('nav.films'), route: '/films' },
-    { label: t('nav.series'), route: '/series' },
-    { label: t('nav.genres'), route: '/genres' },
-  ];
-  return (
-    <Box style={[s.chips, gutters.style]}>
-      {chips.map((chip) => (
-        <Chip
-          key={chip.route}
-          label={chip.label}
-          onPress={() => router.push(chip.route as never)}
-        />
-      ))}
-    </Box>
-  );
-}
-
-function MyListRail() {
+function MyListRail({ filter }: Readonly<{ filter: TitleFilter }>) {
   const t = useT();
   const client = useClient();
   const { width } = useWindowDimensions();
@@ -116,29 +80,24 @@ function MyListRail() {
     enabled: (ids.data?.length ?? 0) > 0,
     // A list id names a movie OR a show, so a miss on the item endpoint is
     // retried as a show rather than dropped.
-    queryFn: async () => {
+    queryFn: async (): Promise<SectionItem[]> => {
       const found = await Promise.all(
-        (ids.data ?? []).slice(0, 24).map(async (id) => {
+        (ids.data ?? []).slice(0, 24).map(async (id): Promise<SectionItem | null> => {
           const movie = await client.media.item(ItemId.parse(id)).catch(() => null);
-          if (movie) return { kind: 'movie', movie } as const;
+          if (movie) return { type: 'movie', item: movie };
           const detail = await client.media.show(ShowId.parse(id)).catch(() => null);
-          return detail ? ({ kind: 'show', show: detail.show } as const) : null;
+          return detail ? { type: 'show', show: detail.show } : null;
         }),
       );
-      return found.filter((x) => x !== null);
+      return found.filter((entry) => entry !== null);
     },
   });
-  if (!items.data?.length) return null;
+  const entries = filterEntries(items.data ?? [], filter);
+  if (entries.length === 0) return null;
   return (
     <Box>
       <SectionTitle>{t('nav.myList')}</SectionTitle>
-      <MediaRail
-        cards={items.data.map((entry) =>
-          entry.kind === 'movie'
-            ? movieCard(entry.movie, client, cardW)
-            : showCard(entry.show, client, cardW),
-        )}
-      />
+      <MediaRail cards={entries.map((entry) => sectionCard(entry, client, cardW))} />
     </Box>
   );
 }
@@ -148,6 +107,7 @@ export default function Home() {
   const client = useClient();
   const { width } = useWindowDimensions();
   const cardW = posterWidth(width);
+  const [filter, setFilter] = useState<TitleFilter>(null);
 
   const featured = useQuery({ ...client.query.media.featured(), staleTime: 5 * 60_000 });
   const home = useQuery(client.query.media.home());
@@ -166,6 +126,12 @@ export default function Home() {
       />
     );
 
+  const hero = filterEntries(featured.data ? [featured.data] : [], filter)[0] ?? null;
+  const resume = filterResume(cont.data ?? [], filter);
+  const sections = (home.data ?? [])
+    .map((section) => ({ ...section, items: filterEntries(section.items, filter) }))
+    .filter((section) => section.items.length > 0);
+
   return (
     <ScrollView
       style={s.screen}
@@ -182,23 +148,23 @@ export default function Home() {
       }
     >
       <HomeHeader />
-      <CategoryChips />
-      {featured.data ? <HeroBillboard entry={featured.data} /> : null}
-      {cont.data?.length ? (
+      <HomeFilterChips filter={filter} onFilter={setFilter} />
+      {hero ? (
+        <HeroBillboard entry={hero} progress={featuredProgress(hero, cont.data ?? [])} />
+      ) : null}
+      {resume.length > 0 ? (
         <Box>
           <SectionTitle>{t('content.continueWatching')}</SectionTitle>
-          <ContinueRail entries={cont.data} client={client} />
+          <ContinueRail entries={resume} client={client} />
         </Box>
       ) : null}
-      <MyListRail />
-      {(home.data ?? [])
-        .filter((s) => s.items.length > 0)
-        .map((section) => (
-          <Box key={section.id}>
-            <SectionTitle>{section.title}</SectionTitle>
-            <MediaRail cards={section.items.map((i) => sectionCard(i, client, cardW))} />
-          </Box>
-        ))}
+      <MyListRail filter={filter} />
+      {sections.map((section) => (
+        <Box key={section.id}>
+          <SectionTitle>{section.title}</SectionTitle>
+          <MediaRail cards={section.items.map((i) => sectionCard(i, client, cardW))} />
+        </Box>
+      ))}
       <Box style={{ height: TAB_BAR_CLEARANCE }} />
     </ScrollView>
   );
@@ -225,5 +191,4 @@ const s = styles({
     radius: 8,
   },
   dlCountText: { color: 'accentInk', fontSize: 10, fontWeight: '700' },
-  chips: { row: true, gap: 8, mt: spacing.md },
 });

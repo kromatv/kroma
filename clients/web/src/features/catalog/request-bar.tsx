@@ -4,17 +4,18 @@
 // far down the season the viewer has scrolled.
 
 import { useT } from '@kroma/ui';
-import { Button, IconButton, Row, Surface, Text } from '@kroma/ui/kit';
-import type { CSSProperties } from 'react';
+import { Button, classes, IconButton, Row, Surface, styles, Text } from '@kroma/ui/kit';
 
-const STICKY: CSSProperties = {
-  position: 'sticky',
-  bottom: 16,
-  zIndex: 3,
-  paddingLeft: 'var(--gutter-web)',
-  paddingRight: 'var(--gutter-web)',
-  marginTop: 20,
-};
+const s = styles({
+  sticky: {
+    position: 'sticky',
+    bottom: 16,
+    zIndex: 3,
+    paddingLeft: 'var(--gutter-web)',
+    paddingRight: 'var(--gutter-web)',
+    mt: 20,
+  },
+});
 
 export function RequestBar({
   count,
@@ -43,8 +44,8 @@ export function RequestBar({
   const t = useT();
   if (count === 0 && !seasonPickable && !allPickable) return null;
   return (
-    <div style={STICKY}>
-      <Surface elevated radius="2xl" pad="md">
+    <div className={classes(s.sticky)}>
+      <Surface elevated radius="xl" pad="md">
         <Row wrap between gap={12}>
           <Text variant="meta" color={count > 0 ? 'text' : 'textDim'}>
             {count > 0 ? t('requests.selectedEpisodes', { count }) : t('requests.pickEpisodesHint')}

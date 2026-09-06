@@ -9,7 +9,7 @@ import {
   useSubtitleAppearance,
   useT,
 } from '@kroma/ui';
-import { Box, Button, Icon, Text } from '@kroma/ui/kit';
+import { Box, Button, Icon, style, Text } from '@kroma/ui/kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -28,6 +28,8 @@ const PREVIEW_W = 256;
 // which the stage prints across the picture instead of hinting at it in a corner.
 // Priority order: direct-play verdict (in-page surface only) -> audio support.
 // Null when nothing to warn about.
+
+const BACK = style({ radius: 999, mt: 8 });
 function playerWarn(pb: Playback, item: MediaItem, t: Translate): string | null {
   if (pb.error) return null;
   if (pb.surface === 'video' && pb.verdict && !pb.verdict.canDirectPlay)
@@ -184,7 +186,7 @@ export function TvPlayer() {
               icon="chevron-left"
               label={t('player.back')}
               onPress={nav.back}
-              style={{ borderRadius: 999, marginTop: 8 }}
+              style={BACK}
               autoFocus
             />
           </Box>

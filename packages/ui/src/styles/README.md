@@ -4,7 +4,7 @@ The CSS half of the design system, for the targets that read CSS. The TV and nat
 apps never load any of it. They consume the TypeScript tokens directly.
 
 **There are no `.css` files here, and no CSS text.** Every rule is data:
-`reset.ts`, `page.ts`, `admin-table.ts` and `motion.ts` are lists of `rule()`,
+`reset.ts`, `page.ts` and `motion.ts` are lists of `rule()`,
 `atMedia()` and `keyframes()` entries with colours read back through `cssRef`, and
 `sheet.ts` is the only thing that knows what CSS syntax looks like. `kromaUI()`
 (`@kroma/ui/vite`) compiles them, together with the tokens and the `@font-face`

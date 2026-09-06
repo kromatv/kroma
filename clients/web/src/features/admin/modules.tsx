@@ -4,13 +4,13 @@
 // and registry management in its own drawer.
 
 import { useT } from '@kroma/ui';
-import { Box, Button, Field, Row, SegmentGroup, Text } from '@kroma/ui/kit';
+import { Box, Button, classes, Field, Row, SegmentGroup, styles, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
-import { type CSSProperties, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 // The file input is a handle for the upload button, never a control a reader
 // sees; `display: none` has no React Native spelling.
-const HIDDEN: CSSProperties = { display: 'none' };
+const s = styles({ hidden: { display: 'none' } });
 
 import { installBundle, message, updateModules } from '#web/features/admin/module-api';
 import { useModuleData } from '#web/features/admin/module-data';
@@ -114,7 +114,7 @@ function ModulesInner() {
         ref={fileRef}
         type="file"
         accept=".kmod,.tar"
-        style={HIDDEN}
+        className={classes(s.hidden)}
         onChange={(e) => {
           onPick(e.target.files?.[0]);
           e.target.value = '';

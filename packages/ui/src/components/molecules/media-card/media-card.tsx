@@ -8,9 +8,12 @@ import { Img } from '#ui/components/atoms/img';
 import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
-import { styles, useTheme } from '#ui/core';
+import { sharedStyle, styles, useTheme } from '#ui/core';
 
 /** The fill behind artwork, so a tile is never blank while the art loads. */
+
+const frameOf = (width: number | string) =>
+  sharedStyle(`media-card:${width}`, { width, flexShrink: 0, radius: 'xl' });
 function tintGradient(tint: readonly [string, string]): string {
   // `to bottom`, not a tilt: a tilted gradient's iso-lines run diagonally, so it
   // reads as a wedge across the card's width rather than as a fade.
@@ -56,9 +59,9 @@ function MediaCard({
       autoFocus={autoFocus}
       label={title}
       focusScale={1.06}
-      style={{ width, flexShrink: 0, borderRadius: radius.xl }}
+      style={frameOf(width)}
     >
-      <Box w={width} aspect={16 / 9} radius="xl" overflow="hidden" bg="surface1" shadow="card">
+      <Box w={width} aspect={16 / 9} radius="xl" overflow="hidden" bg="surface1">
         {/* Every layer rounds itself as well as being clipped by the parent:
             Chrome fails to apply an `overflow: hidden` + `border-radius` clip to
             a composited descendant, which the `<img decoding="async">` is. */}

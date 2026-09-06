@@ -18,7 +18,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type StyleDecl, styles, svFor } from '#ui/core';
+import { type StyleDecl, sharedStyle, styles, svFor } from '#ui/core';
 import { HAND } from '#ui/lib/cursor';
 import { keyFace } from '#ui/lib/field-shell';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
@@ -30,6 +30,8 @@ import { useTDefault } from '#ui/services/i18n';
 // than imported: a television has no haptics and the browser shells have no
 // module, and a bare `import` would break both. (`await import()` is not an
 // option under Metro - it throws in dev builds.)
+
+const gapOf = (gap: number) => sharedStyle(`keypad:gap:${gap}`, { gap });
 function loadHaptics(): { selectionAsync: () => Promise<void> } | null {
   try {
     return require('expo-haptics');
@@ -110,7 +112,7 @@ function Keypad({
     else onDigit(value);
   });
   return (
-    <FocusColumn grid style={[HAND, s.pad, { gap }]}>
+    <FocusColumn grid style={[HAND, s.pad, gapOf(gap)]}>
       {ROWS.map((row) => (
         <FocusRegion key={row.join('')} style={padRow}>
           {row.map((d) => (

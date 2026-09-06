@@ -12,6 +12,7 @@ import {
   Button,
   CardSkeleton,
   EmptyState,
+  Focusable,
   Grid,
   Icon,
   Progress,
@@ -20,12 +21,14 @@ import {
   Text,
 } from '@kroma/ui/kit';
 import { useId } from 'react';
+import { Pressable } from 'react-native';
 import { matchesQuery } from '#web/features/admin/module-api';
 import { type OpModule, opPct, PHASE_KEY, runningPct } from '#web/features/admin/module-ops';
-import { ADMIN_PRESS, PRESSABLE } from '#web/features/admin/web-style';
 import { Image } from '#web/shared/ui';
 
 /** Compact live progress: the phase label above a thin bar. */
+
+const CARD_STATES = { hover: { bg: 'tint/4' }, press: { bg: 'tint/8' } } as const;
 export function OpProgress({ op }: Readonly<{ op: OpModule }>) {
   const t = useT();
   const pct = opPct(op);
@@ -98,63 +101,73 @@ function StoreCard({
   const fmt = useFormat();
   const id = useId();
   return (
-    <Surface
-      elevated
-      pad="none"
-      radius="xl"
-      p={16}
-      gap={12}
-      row
-      align="flex-start"
-      opacity={m.compatible ? 1 : 0.7}
-      dataSet={PRESSABLE}
-    >
-      <button type="button" className={ADMIN_PRESS} aria-labelledby={id} onClick={onOpen} />
-      <Box w={40} h={40} mt={2} radius="lg" overflow="hidden" bg={m.icon ? undefined : 'tint/5'}>
-        {m.icon ? <Image src={m.icon} fit="cover" fill /> : null}
-      </Box>
-      <Box flex minW={0}>
-        <Row between gap={12}>
-          <Text id={id} variant="label" lines={1}>
-            {m.name}
-          </Text>
-          <CardAction m={m} op={op} onInstall={onInstall} onUpdate={onUpdate} />
-        </Row>
-        <Row wrap gap={6} mt={2}>
-          <Text variant="meta" color="textDim">
-            v{m.version}
-          </Text>
-          {m.size ? (
-            <Text variant="meta" color="textDim">
-              · {fmt.bytes(m.size)}
-            </Text>
-          ) : null}
-          <Text variant="meta" color={m.source === 'Official' ? 'accentText' : 'textDim'}>
-            · {m.source === 'Official' ? t('admin.modulesOfficial') : m.source}
-          </Text>
-          {m.library && (
-            <Text variant="meta" color="textDim">
-              · {t('admin.modulesLibraryChip')}
-            </Text>
-          )}
-          {m.installedVersion && m.updateAvailable && (
-            <Text variant="meta" color="accentText">
-              · {t('admin.modulesUpdateChip', { version: m.version })}
-            </Text>
-          )}
-        </Row>
-        {m.description && (
-          <Text variant="meta" color="textMuted" lines={2} mt={4}>
-            {m.description}
-          </Text>
-        )}
-        {!m.compatible && m.reason && (
-          <Text variant="meta" color="danger" mt={4}>
-            {m.reason}
-          </Text>
-        )}
-      </Box>
-    </Surface>
+    <Focusable asChild ring="focusEdge" states={CARD_STATES} label={m.name}>
+      <Surface
+        asChild
+        elevated
+        pad="none"
+        radius="xl"
+        p={16}
+        gap={12}
+        row
+        align="flex-start"
+        opacity={m.compatible ? 1 : 0.7}
+      >
+        <Pressable onPress={onOpen}>
+          <Box
+            w={40}
+            h={40}
+            mt={2}
+            radius="sm"
+            overflow="hidden"
+            bg={m.icon ? undefined : 'tint/5'}
+          >
+            {m.icon ? <Image src={m.icon} fit="cover" fill /> : null}
+          </Box>
+          <Box flex minW={0}>
+            <Row between gap={12}>
+              <Text id={id} variant="label" lines={1}>
+                {m.name}
+              </Text>
+              <CardAction m={m} op={op} onInstall={onInstall} onUpdate={onUpdate} />
+            </Row>
+            <Row wrap gap={6} mt={2}>
+              <Text variant="meta" color="textDim">
+                v{m.version}
+              </Text>
+              {m.size ? (
+                <Text variant="meta" color="textDim">
+                  · {fmt.bytes(m.size)}
+                </Text>
+              ) : null}
+              <Text variant="meta" color={m.source === 'Official' ? 'accentText' : 'textDim'}>
+                · {m.source === 'Official' ? t('admin.modulesOfficial') : m.source}
+              </Text>
+              {m.library && (
+                <Text variant="meta" color="textDim">
+                  · {t('admin.modulesLibraryChip')}
+                </Text>
+              )}
+              {m.installedVersion && m.updateAvailable && (
+                <Text variant="meta" color="accentText">
+                  · {t('admin.modulesUpdateChip', { version: m.version })}
+                </Text>
+              )}
+            </Row>
+            {m.description && (
+              <Text variant="meta" color="textMuted" lines={2} mt={4}>
+                {m.description}
+              </Text>
+            )}
+            {!m.compatible && m.reason && (
+              <Text variant="meta" color="danger" mt={4}>
+                {m.reason}
+              </Text>
+            )}
+          </Box>
+        </Pressable>
+      </Surface>
+    </Focusable>
   );
 }
 

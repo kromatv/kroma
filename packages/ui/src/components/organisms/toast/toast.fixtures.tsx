@@ -13,7 +13,7 @@ function Screen({
   children,
 }: Readonly<{ height?: number; position?: ToastPosition; children: ReactNode }>) {
   return (
-    <Box h={height} radius="lg" bg="surface1" border="border" overflow="hidden">
+    <Box h={height} radius="xl" bg="surface1" border="border" overflow="hidden">
       <Box flex p={20} gap={12} align="flex-start" justify="center">
         {children}
       </Box>

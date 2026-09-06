@@ -126,7 +126,7 @@ function LibraryCard({
   return (
     <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
       <Row gap={14} px={20} py={18} bg="success/7">
-        <Row center w={46} h={46} shrink={0} radius="lg" bg="success/16">
+        <Row center w={46} h={46} shrink={0} radius="sm" bg="success/16">
           <Icon name={glyph} size={22} thickness={1.8} color="success" />
         </Row>
         <Box flex minW={0}>

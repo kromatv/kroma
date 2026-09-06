@@ -1,4 +1,4 @@
-import { Box, Button, Logo, Text } from '@kroma/ui/kit';
+import { Box, Button, classes, Logo, styles, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Spinner } from '#web/features/accounts/auth-gate';
@@ -104,7 +104,7 @@ export function TokenScreen({
   children?: ReactNode;
 }>) {
   return (
-    <main style={{ ...SCREEN, background: PAGE_RADIAL }}>
+    <main className={classes(s.screen)}>
       {/* Auto margins (not justify-center) so a form taller than a small phone
           viewport scrolls instead of clipping its top. */}
       <Box w="100%" align="center" m="auto">
@@ -123,7 +123,7 @@ export function TokenScreen({
               e.preventDefault();
               onSubmit();
             }}
-            style={FORM}
+            className={classes(s.form)}
           >
             <Text variant="heading" accessibilityRole="header">
               {copy.title}
@@ -169,22 +169,24 @@ function Outcome({ title, desc }: Readonly<{ title: string; desc: string }>) {
   );
 }
 
-const SCREEN = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 100,
-  display: 'flex',
-  flexDirection: 'column',
-  overflowY: 'auto',
-  paddingInline: 24,
-  paddingBlock: 48,
-} as const;
-
-const FORM = {
-  display: 'flex',
-  width: '100%',
-  maxWidth: 380,
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: 20,
-} as const;
+const s = styles({
+  screen: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 100,
+    display: 'flex',
+    flexDirection: 'column',
+    overflowY: 'auto',
+    paddingInline: 24,
+    paddingBlock: 48,
+    backgroundImage: PAGE_RADIAL,
+  },
+  form: {
+    display: 'flex',
+    width: '100%',
+    maxWidth: 380,
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 20,
+  },
+});

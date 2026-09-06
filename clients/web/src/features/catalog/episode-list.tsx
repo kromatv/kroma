@@ -6,8 +6,8 @@
 
 import type { CastMember, ItemId, MediaItem, SubjectId } from '@kroma/client/media';
 import { useT } from '@kroma/ui';
-import { Box, Chip, ringRoomBlock, Text } from '@kroma/ui/kit';
-import { type CSSProperties, useState } from 'react';
+import { Box, Chip, classes, ringRoomBlock, styles, Text } from '@kroma/ui/kit';
+import { useState } from 'react';
 import { CastRail } from '#web/features/catalog/detail';
 import { EpisodeRow, MissingEpisodeRow } from '#web/features/catalog/episode-row';
 import { epKey } from '#web/features/catalog/episode-selection';
@@ -17,23 +17,20 @@ import type { TitleSeason } from '#web/shared/lib/titleView';
 
 // The page gutter is a fluid CSS custom property and `overflow-x` names one
 // axis, so both stay plain elements around kit content.
-const GUTTER: CSSProperties = {
-  paddingLeft: 'var(--gutter-web)',
-  paddingRight: 'var(--gutter-web)',
-};
+const GUTTER = { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' } as const;
 
-// `scrollbar-width` only; the legacy `::-webkit-scrollbar` rule it used to pair
-// with needs a stylesheet, which an inline style has no way to reach.
-const CHIP_SCROLLER: CSSProperties = {
-  ...GUTTER,
-  ...ringRoomBlock(),
-  display: 'flex',
-  gap: 8,
-  overflowX: 'auto',
-  scrollbarWidth: 'none',
-};
-
-const SECTION: CSSProperties = { marginTop: 40 };
+const s = styles({
+  gutter: GUTTER,
+  chipScroller: {
+    ...GUTTER,
+    ...ringRoomBlock(),
+    display: 'flex',
+    gap: 8,
+    overflowX: 'auto',
+    scrollbarWidth: 'none',
+  },
+  section: { mt: 40 },
+});
 
 /** Where the hero's "ask for it" button sends a show: the season list is where
  * the choice actually happens. */
@@ -46,7 +43,7 @@ function SeasonSwitcher({
 }: Readonly<{ seasons: TitleSeason[]; current: number; onPick: (n: number) => void }>) {
   const t = useT();
   return (
-    <div style={CHIP_SCROLLER}>
+    <div className={classes(s.chipScroller)}>
       {seasons.map((s) => (
         <Chip
           key={s.number}
@@ -109,8 +106,8 @@ export function SeasonSection({
   const { ownedByNum, ordered, perEpisode } = mergeEpisodes(current, canRequest);
 
   return (
-    <section id={EPISODES_ANCHOR} style={SECTION}>
-      <div style={GUTTER}>
+    <section id={EPISODES_ANCHOR} className={classes(s.section)}>
+      <div className={classes(s.gutter)}>
         <Box row align="center" between gap={12} mb={16}>
           <h2>
             <Text variant="h2">{t('content.episodes')}</Text>
@@ -128,7 +125,7 @@ export function SeasonSection({
 
       {ordered.length > 0 ? (
         <>
-          <div style={GUTTER}>
+          <div className={classes(s.gutter)}>
             <Text variant="meta" color="white/45" mt={16} mb={20}>
               {t('content.episodeCount', {
                 count: perEpisode ? current.episodeCount : current.episodes.length,
@@ -214,7 +211,7 @@ function SeasonEpisodes({
   pendingEpisodes: Set<string>;
 }>) {
   return (
-    <div style={GUTTER}>
+    <div className={classes(s.gutter)}>
       <Box gap={14}>
         {ordered.map((n) => {
           const owned = ownedByNum.get(n);

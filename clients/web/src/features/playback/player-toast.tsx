@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Box, backdropBlur, IconButton, Row, Text } from '@kroma/ui/kit';
+import { Box, backdropBlur, IconButton, Row, styles, Text } from '@kroma/ui/kit';
 
 /** Centered top toast for transient player notices (audio re-encode, resume, errors). */
 export function Toast({
@@ -24,7 +24,7 @@ export function Toast({
         radius="xl"
         bg="black/80"
         border={variant === 'danger' ? 'danger/40' : 'white/15'}
-        style={FROST}
+        style={s.frost}
       >
         <Text variant="meta" color="white/90">
           {children}
@@ -43,4 +43,4 @@ export function Toast({
   );
 }
 
-const FROST = backdropBlur(12);
+const s = styles({ frost: backdropBlur(12) });

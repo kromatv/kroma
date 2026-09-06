@@ -4,20 +4,15 @@
 
 import type { ItemId } from '@kroma/client/media';
 import { useAiSuggest, useT } from '@kroma/ui';
-import { Box, ProgressRing, Row, Text } from '@kroma/ui/kit';
-import type { CSSProperties } from 'react';
+import { Box, classes, ProgressRing, Row, styles, Text } from '@kroma/ui/kit';
 import { SectionPoster } from '#web/features/catalog/cards';
 import { useAuth } from '#web/shared/lib/auth';
-import { PosterRail } from '#web/shared/ui';
+import { PosterRail, page } from '#web/shared/ui';
 
 // The page gutter is a fluid CSS custom property, which no style number can
 // carry, so anything indented by it stays a plain element.
-const GUTTER: CSSProperties = {
-  paddingLeft: 'var(--gutter-web)',
-  paddingRight: 'var(--gutter-web)',
-};
 
-const RAIL_SECTION: CSSProperties = { marginTop: 44 };
+const s = styles({ section: { mt: 44 } });
 
 export function AiSuggestRail({ id }: Readonly<{ id: ItemId }>) {
   const t = useT();
@@ -26,14 +21,14 @@ export function AiSuggestRail({ id }: Readonly<{ id: ItemId }>) {
 
   if (section && section.items.length > 0) {
     return (
-      <section style={RAIL_SECTION}>
-        <h2 style={GUTTER}>
+      <section className={classes(s.section)}>
+        <h2 className={classes(page.gutter)}>
           <Text variant="h2" mb={4}>
             {section.title}
           </Text>
         </h2>
         {section.reason ? (
-          <div style={GUTTER}>
+          <div className={classes(page.gutter)}>
             <Text variant="meta" color="white/45" mb={16}>
               {section.reason}
             </Text>
@@ -41,7 +36,7 @@ export function AiSuggestRail({ id }: Readonly<{ id: ItemId }>) {
         ) : (
           <Box mb={12} />
         )}
-        <div style={GUTTER}>
+        <div className={classes(page.gutter)}>
           <PosterRail
             data={section.items}
             renderItem={(entry) => <SectionPoster entry={entry} />}
@@ -55,13 +50,13 @@ export function AiSuggestRail({ id }: Readonly<{ id: ItemId }>) {
   // Terminal-empty or gave up → render nothing.
   if (pending) {
     return (
-      <section style={RAIL_SECTION}>
-        <h2 style={GUTTER}>
+      <section className={classes(s.section)}>
+        <h2 className={classes(page.gutter)}>
           <Text variant="h2" mb={4}>
             {t('content.aiSuggestions')}
           </Text>
         </h2>
-        <div style={GUTTER}>
+        <div className={classes(page.gutter)}>
           <Row gap={12} mt={12}>
             <ProgressRing value={progress} />
             <Text variant="meta" color="white/40">

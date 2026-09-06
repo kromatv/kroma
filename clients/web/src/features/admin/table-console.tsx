@@ -6,14 +6,15 @@
 import {
   Box,
   type ColorValue,
-  color,
+  classes,
   Field,
   IconButton,
   Chip as KitChip,
   Row,
+  styles,
   Text,
 } from '@kroma/ui/kit';
-import { type CSSProperties, useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 /** Coalesce event-driven reloads to at most one call per 1.5 s. */
 export function useThrottledReload(reload: () => void): () => void {
@@ -89,7 +90,20 @@ export function ConsoleSummary({
   );
 }
 
-const BLUE_ACTIVE = { backgroundColor: color('info') } as const;
+const s = styles({
+  blueActive: { bg: 'info' },
+  toast: {
+    position: 'fixed',
+    bottom: 24,
+    left: '50%',
+    zIndex: 80,
+    pointerEvents: 'none',
+    transition:
+      'opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out)',
+  },
+  toastOn: { opacity: 1, transform: [{ translateX: '-50%' }, { translateY: 0 }] },
+  toastOff: { opacity: 0, transform: [{ translateX: '-50%' }, { translateY: 12 }] },
+});
 
 /** A filter chip on the kit pill. `tone` picks the active fill (defaults to the
  * amber accent; `blue` keeps the console's type-filter family). */
@@ -115,33 +129,16 @@ export function Chip({
       dot={dot}
       count={count}
       onPress={onClick}
-      style={on && tone === 'blue' ? BLUE_ACTIVE : null}
+      style={on && tone === 'blue' ? s.blueActive : null}
     />
   );
 }
 
-// `position: fixed` and a translate have no React Native spelling, so the
-// anchor stays a real element and only its contents speak the kit.
-const TOAST_ANCHOR: CSSProperties = {
-  position: 'fixed',
-  bottom: 24,
-  left: '50%',
-  zIndex: 80,
-  pointerEvents: 'none',
-  transition: 'opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out)',
-};
-
 /** The floating bottom-center toast, driven by `useConsoleToast`. */
 export function ConsoleToast({ toast }: Readonly<{ toast: { text: string; on: boolean } }>) {
   return (
-    <div
-      style={{
-        ...TOAST_ANCHOR,
-        opacity: toast.on ? 1 : 0,
-        transform: `translateX(-50%) translateY(${toast.on ? 0 : 12}px)`,
-      }}
-    >
-      <Row gap={10} px={18} py={10} radius="pill" bg="surface2" border="borderStrong" shadow="pop">
+    <div className={classes(s.toast, toast.on ? s.toastOn : s.toastOff)}>
+      <Row gap={10} px={18} py={10} radius="pill" bg="surface2" border="borderStrong">
         <Box w={8} h={8} shrink={0} radius="circle" bg="accent" />
         <Text variant="label">{toast.text}</Text>
       </Row>

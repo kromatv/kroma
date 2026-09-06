@@ -89,7 +89,7 @@ function TranscodeRow({ s }: Readonly<{ s: LiveTranscode }>) {
   const heavy = s.transcodesVideo && s.onTheCpu;
 
   return (
-    <Surface elevated pad="none" radius={16} border="border" px={20} py={16} gap={12}>
+    <Surface elevated pad="none" border="border" px={20} py={16} gap={12}>
       <Row between align="flex-start" gap={16}>
         <Box minW={0} gap={4}>
           <Text variant="title" lines={1}>
@@ -112,7 +112,7 @@ function TranscodeRow({ s }: Readonly<{ s: LiveTranscode }>) {
       </Row>
 
       {s.speed > 0 && s.speed < FALLING_BEHIND ? (
-        <Row gap={8} radius={8} bg="danger/10" px={12} py={8}>
+        <Row gap={8} radius="sm" bg="danger/10" px={12} py={8}>
           <Icon name="alert-triangle" size={14} color="danger" />
           <Text variant="meta" color="danger">
             {t('admin.tcTooSlow')}

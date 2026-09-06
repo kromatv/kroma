@@ -21,12 +21,12 @@ function Members({ presentation = 'panel' }: Readonly<{ presentation?: SelectPre
       <Select.Item value="everyone" label="Tous les membres" icon="users" />
       <Select.Item value="ada" label="Ada Lovelace" note="12 titres">
         <Select.Media>
-          <Avatar name="Ada Lovelace" size={18} circle shadow={false} />
+          <Avatar name="Ada Lovelace" size={18} circle />
         </Select.Media>
       </Select.Item>
       <Select.Item value="grace" label="Grace Hopper" icon="users">
         <Select.Media>
-          <Avatar name="Grace Hopper" size={18} circle shadow={false} />
+          <Avatar name="Grace Hopper" size={18} circle />
         </Select.Media>
       </Select.Item>
     </Select.Root>

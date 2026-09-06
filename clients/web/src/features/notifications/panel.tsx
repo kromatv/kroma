@@ -6,9 +6,8 @@
 // happened, not a console.
 
 import { useT } from '@kroma/ui';
-import { Box, color, Drawer, Icon, IconButton, Text } from '@kroma/ui/kit';
+import { Box, Drawer, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
-import type { ViewStyle } from 'react-native';
 import { PanelBody } from '#web/features/notifications/panel-body';
 import { PanelHeader } from '#web/features/notifications/panel-header';
 import {
@@ -65,9 +64,9 @@ export function NotificationBell() {
         width="sm"
         fullBelow={640}
         pad={8}
-        panelStyle={PANEL_FILL}
+        panelStyle={s.panelFill}
       >
-        <Drawer.Header style={HEADER_BAND}>
+        <Drawer.Header style={s.headerBand}>
           <PanelHeader filter={filter} onFilterChange={setFilter} />
         </Drawer.Header>
         <Drawer.Panel>
@@ -79,13 +78,10 @@ export function NotificationBell() {
   );
 }
 
-const PANEL_FILL = { backgroundColor: color('bg') } as const;
+const s = styles({
+  panelFill: { bg: 'bg' },
+  headerBand: { px: 16, paddingTop: 'max(1.15rem, env(safe-area-inset-top))', pb: 12 },
+});
 
 // The sheet takes the whole screen on a phone, so its first band clears the
 // notch; `env()` has no React Native spelling.
-const HEADER_BAND = {
-  paddingLeft: 16,
-  paddingRight: 16,
-  paddingTop: 'max(1.15rem, env(safe-area-inset-top))',
-  paddingBottom: 12,
-} as unknown as ViewStyle;

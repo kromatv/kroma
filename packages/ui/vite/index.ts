@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { iconPass, kromaUi, sourceRoots, walkSources } from '../bundler/index.ts';
 import { alphaPass } from './alpha-scan.ts';
+import { kromaAtomic } from './atomic/index.ts';
 import { kromaFontPreload } from './font-preload.ts';
 import { kromaTokens } from './stylesheet.ts';
 import { KNOWN_COLOR_NAMES } from './tokens.ts';
@@ -19,6 +20,10 @@ function findRepoRoot(from = process.cwd()): string {
 export interface KromaUIOptions {
   /** `full` keeps every Tabler glyph instead of the scanned subset. */
   icons?: 'subset' | 'full';
+  /** Compile the static style declarations ahead of time. On by default;
+   *  `KROMA_ATOMIC=0` in the environment turns it off for a build or a dev
+   *  server, to tell a compiler fault from a runtime one. */
+  atomic?: boolean;
   repoRoot?: string;
 }
 
@@ -40,14 +45,20 @@ function kromaScan(repoRoot: string, icons: 'subset' | 'full') {
   };
 }
 
-/** Everything a browser build needs from the design system: the icon subset and
- *  the design tokens. Drop `kromaUI()` into `plugins` and nothing else. */
-export function kromaUI({ icons = 'subset', repoRoot }: KromaUIOptions = {}) {
+/** Everything a browser build needs from the design system: the icon subset,
+ *  the design tokens and the styles compiled ahead of time. Drop `kromaUI()`
+ *  into `plugins` and nothing else. */
+export function kromaUI({
+  icons = 'subset',
+  atomic = process.env.KROMA_ATOMIC !== '0',
+  repoRoot,
+}: KromaUIOptions = {}) {
   const root = repoRoot ?? findRepoRoot();
   return [
     kromaScan(root, icons),
     kromaUi.vite({ repoRoot: root, icons }),
     kromaTokens(),
     kromaFontPreload(),
+    ...(atomic ? [kromaAtomic({ repoRoot: root })] : []),
   ];
 }

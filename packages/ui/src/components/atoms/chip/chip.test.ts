@@ -11,6 +11,7 @@ describe('chip design', () => {
     expect(chipVariants({ variant: 'surface' }).root.backgroundColor).toBe(
       'var(--kroma-surface-2)',
     );
+    expect(chipVariants({ variant: 'outline' }).root.backgroundColor).toBe('transparent');
   });
 
   it("paints an active chip's dot in ink, whatever colour the caller asked for", () => {
@@ -38,8 +39,9 @@ describe('chip design', () => {
     }
   });
 
-  it('borders only the solid variant', () => {
+  it('borders the drawn variants and leaves the washes edgeless', () => {
     expect(chipVariants({ variant: 'solid' }).root.borderWidth).toBe(1);
+    expect(chipVariants({ variant: 'outline' }).root.borderWidth).toBe(1);
     expect(chipVariants({ variant: 'subtle' }).root.borderWidth).toBe(0);
     expect(chipVariants({ variant: 'surface' }).root.borderWidth).toBe(0);
   });
@@ -77,6 +79,14 @@ describe('chip design', () => {
       expect(chipVariants({ variant: 'surface', active: false }).root.backgroundColor).toBe(
         'var(--kroma-surface-2)',
       );
+    });
+
+    it('fills the outline chip with ink, leaving the amber to the screen', () => {
+      const on = chipVariants({ variant: 'outline', active: true });
+
+      expect(on.root.backgroundColor).toBe('var(--kroma-text)');
+      expect(on.label.color).toBe('var(--kroma-bg)');
+      expect(on.icon.color).toBe('var(--kroma-bg)');
     });
 
     it('accepts the boolean rather than its string spelling', () => {

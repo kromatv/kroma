@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Animated, Platform, Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { styles } from '#ui/core';
+import { sharedStyle, style, styles } from '#ui/core';
 import { ease } from '#ui/lib/ease';
 import { WEB } from '#ui/lib/platform';
 import { useT } from '#ui/services/i18n';
@@ -40,7 +40,7 @@ const ANDROID = Platform.OS === 'android';
 // clipped to it. Inner radius = borderRadius - borderWidth, hence the doubling.
 // Always mounted, with the same geometry throughout; only its opacity moves,
 // on the same value as the shrink.
-const CORNER_MASK: ViewStyle = {
+const CORNER_MASK = style({
   position: 'absolute',
   left: -CARD_RADIUS,
   right: -CARD_RADIUS,
@@ -49,7 +49,10 @@ const CORNER_MASK: ViewStyle = {
   borderWidth: CARD_RADIUS,
   borderColor: '#000000',
   borderRadius: CARD_RADIUS * 2,
-};
+});
+
+const cornerOf = (radius: number) =>
+  sharedStyle(`stage:corner:${radius}`, { borderRadius: radius });
 
 const pct = (fraction: number): `${number}%` => `${fraction * 100}%`;
 
@@ -253,7 +256,7 @@ function Stage({
           instead of the window's. Nothing here is added, removed or given a
           style key it did not already have when the card comes out: a video
           texture's surface does not survive its subtree being rebuilt. */}
-        <Animated.View style={[pictureBox, { borderRadius: ANDROID ? 0 : radius }]}>
+        <Animated.View style={[pictureBox, cornerOf(ANDROID ? 0 : radius)]}>
           <SurfaceRadiusProvider radius={ANDROID ? 0 : radius}>{children}</SurfaceRadiusProvider>
           {/* Every native surface takes the mask, not just Android's texture: an
             AVPlayerLayer is not clipped by a rounded ancestor either (see

@@ -8,6 +8,7 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Progress } from '#ui/components/atoms/progress';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
+import { declared } from '#ui/testing';
 import { ProgressFill } from './progress-motion';
 import { ringGeometry } from './ring';
 
@@ -28,7 +29,7 @@ describe('ProgressFill', () => {
     const { container } = render(<ProgressFill value={0.25} style={null} />);
     const fill = only(container, 'div');
     expect(fill.style.right).toBe('75%');
-    expect(fill.style.transitionProperty).toBe('right');
+    expect(declared(fill, 'transition-property')).toBe('right');
   });
 
   it('reaches the far edge at 1 and shows nothing at 0', () => {
@@ -43,7 +44,7 @@ describe('the ring', () => {
   it('transitions the dash offset the value drives', () => {
     const { container } = render(<ProgressRing value={0.5} />);
     const arc = arcIn(container);
-    expect(arc.style.transition).toContain('stroke-dashoffset');
+    expect(declared(arc, 'transition-property')).toContain('stroke-dashoffset');
     expect(arc.getAttribute('stroke-dashoffset')).toBe(
       String(ringGeometry({ value: 0.5 }).dashOffset),
     );
@@ -55,7 +56,7 @@ describe('the ring', () => {
     const { circumference, dashOffset } = ringGeometry({ value: 0.25 });
     expect(arc.getAttribute('stroke-dashoffset')).toBe(String(dashOffset));
     expect(dashOffset).toBeLessThan(circumference);
-    expect(only(container, 'div').className).toMatch(/r-animationKeyframes-/);
+    expect(declared(only(container, 'div'), 'animation-name')).toBeTruthy();
   });
 });
 
@@ -70,9 +71,9 @@ describe('the bar', () => {
     const bar = barIn(render(<Progress indeterminate />).container);
     // The keyframes and the segment's width are compiled rules, so they arrive
     // as classes; only the duration is written inline.
-    expect(bar.className).toMatch(/r-animationKeyframes-/);
-    expect(bar.className).toMatch(/r-width-/);
-    expect(bar.style.animationDuration).toBe('1200ms');
+    expect(declared(bar, 'animation-name')).toBeTruthy();
+    expect(declared(bar, 'width')).toBeTruthy();
+    expect(declared(bar, 'animation-duration')).toBe('1200ms');
     expect(bar.style.right).toBe('');
   });
 });

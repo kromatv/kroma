@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { layout } from '#ui/testing';
+import { declared, layout } from '#ui/testing';
 import { NavPill, type NavPillRootProps } from './nav-pill';
 
 afterEach(cleanup);
@@ -126,7 +126,7 @@ describe('NavPill items', () => {
     );
     const backdrop = container.firstElementChild?.firstElementChild as HTMLElement;
 
-    expect(backdrop.style.backdropFilter).toMatch(/blur/);
+    expect(declared(backdrop, 'backdropFilter') ?? '').toMatch(/blur/);
     expect(screen.getByText('Home')).toBeTruthy();
     expect(container.textContent).toBe('Home');
   });
@@ -172,8 +172,19 @@ describe('NavPill items', () => {
     layout(item('Profile'), { x: 128, y: 4, width: 120, height: 44 });
     expect(capsule.children).toHaveLength(3);
     const lens = capsule.firstElementChild as HTMLElement;
-    expect(lens.style.transform).toBe('translateX(128px)');
+    expect(declared(lens, 'transform')).toBe('translateX(128px)');
     expect(lens.style.width).toBe('120px');
+  });
+
+  it('paints the lens in the tone the capsule was given', () => {
+    const fill = (props: Partial<NavPillRootProps>) => {
+      const { container } = render(bar(props));
+      layout(within(container).getByLabelText('Search'), { x: 8, y: 4, width: 96, height: 44 });
+      const lens = container.firstElementChild?.firstElementChild as HTMLElement;
+      return getComputedStyle(lens).backgroundColor;
+    };
+
+    expect(fill({ tone: 'neutral' })).not.toBe(fill({}));
   });
 
   it('survives having no active item at all', () => {

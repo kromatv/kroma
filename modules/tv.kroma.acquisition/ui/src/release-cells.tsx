@@ -24,7 +24,7 @@ export function ReleaseFacts({
   const fmt = useFormat();
   return (
     <>
-      <Table.Cell wide>
+      <Table.Cell>
         <Row gap={4}>
           <Text variant="meta" color="textDim" lines={1}>
             {indexerName}
@@ -41,12 +41,12 @@ export function ReleaseFacts({
           ) : null}
         </Row>
       </Table.Cell>
-      <Table.Cell wide>
+      <Table.Cell>
         <Text variant="meta" color="textDim" style={TABULAR}>
           {sizeBytes != null ? fmt.bytes(sizeBytes) : '—'}
         </Text>
       </Table.Cell>
-      <Table.Cell wide>
+      <Table.Cell>
         <Text variant="meta" color="success" style={TABULAR}>
           {seeders ?? '—'}
         </Text>

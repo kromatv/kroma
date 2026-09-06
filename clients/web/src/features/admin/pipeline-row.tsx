@@ -4,12 +4,13 @@
 
 import { ItemId, ShowId } from '@kroma/client/media';
 import type { ElementRow, Treatment } from '@kroma/client/pipeline';
-import { type MessageKey, posterGradient, type Translate } from '@kroma/core';
+import type { MessageKey, Translate } from '@kroma/core';
 import { Table } from '@kroma/module-sdk';
 import { type Format, useFormat, useT } from '@kroma/ui';
 import { Box, type ColorValue, Icon, Row, Spinner, Text, Tooltip } from '@kroma/ui/kit';
 import { Pill, PillDot } from '#web/features/admin/pill';
 import { kindMeta, overallMeta, statusMeta } from '#web/features/admin/pipeline-meta';
+import { posterScrim } from '#web/shared/lib/art-styles';
 import { useAuth } from '#web/shared/lib/auth';
 import { Image } from '#web/shared/ui';
 
@@ -60,8 +61,8 @@ function Poster({
       ? client.media.artwork.showPosterUrl(ShowId.parse(id))
       : client.media.artwork.posterUrl(ItemId.parse(id)));
   return (
-    <Box w={32} h={46} shrink={0} radius={4} overflow="hidden" shadow="card">
-      <div style={{ position: 'absolute', inset: 0, background: posterGradient(seed) }} />
+    <Box w={32} h={46} shrink={0} radius="xs" overflow="hidden">
+      <Box fill style={posterScrim(seed)} />
       <Image src={src} fit="cover" fill />
     </Box>
   );
@@ -103,7 +104,7 @@ function FlowDot({ treatment }: Readonly<{ treatment: Treatment }>) {
 
 function FlowDots({ treatments }: Readonly<{ treatments: Treatment[] }>) {
   return (
-    <Table.Cell wide row>
+    <Table.Cell row>
       {treatments.map((tr, i) => (
         <Row key={tr.key}>
           {i > 0 ? (
@@ -154,7 +155,7 @@ export function ElementRowView({
 
       <FlowDots treatments={el.treatments} />
 
-      <Table.Cell wide>
+      <Table.Cell>
         <Pill ink={om.color} bg={om.bg} leading={<PillDot tone={om.dot} pulse={om.pulse} />}>
           {t(`pipeline.overall.${el.overall}` as MessageKey)}
         </Pill>

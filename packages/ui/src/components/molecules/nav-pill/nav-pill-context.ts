@@ -10,6 +10,8 @@ type NavPillSize = 'sm' | 'tv';
  *  label at `tv`, the active item's at `sm`. */
 type NavPillLabels = 'all' | 'active' | 'none';
 
+type NavPillTone = 'accent' | 'neutral';
+
 // The item's WHOLE box, measured: `onLayout` reports the content box while an
 // absolute child is placed against the padding box, so a derived height misses.
 interface LensRect {
@@ -37,5 +39,5 @@ interface NavPillState {
 
 const [NavPillContext, useNavPill] = partContext<NavPillState>('NavPill.Root');
 
-export type { LensRect, NavPillLabels, NavPillSize, NavPillState, SlideTarget };
+export type { LensRect, NavPillLabels, NavPillSize, NavPillState, NavPillTone, SlideTarget };
 export { NavPillContext, useNavPill };

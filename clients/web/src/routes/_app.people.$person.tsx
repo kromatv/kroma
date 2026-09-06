@@ -3,10 +3,10 @@ import { personInvolvement, posterColors, roleLabels } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,
+  classes,
   color,
   EmptyState,
   Focusable,
-  gradient,
   PageHeader,
   Row,
   styles,
@@ -19,6 +19,7 @@ import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
 import { initials } from '#web/features/catalog/detail';
 import { PersonProfile } from '#web/features/catalog/person-profile';
 import { imageUrl, isAuthed, kromaClient, toMovieView, toShowView } from '#web/shared/lib/api';
+import { wash } from '#web/shared/lib/art-styles';
 import { catalogQueries } from '#web/shared/lib/queries';
 import { Image, PageFrame, PageSkeleton } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
@@ -69,7 +70,6 @@ function PersonPage() {
             h={{ base: 80, md: 104 }}
             radius="circle"
             overflow="hidden"
-            shadow="card"
           >
             <Image
               src={photo}
@@ -119,7 +119,13 @@ function renderPersonBody(
   );
 }
 
-const s = styles({ credit: { gap: 8 } });
+const s = styles({
+  credit: { gap: 8 },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 20 },
+  sheen: {
+    backgroundImage: `radial-gradient(70% 60% at 50% 22%, ${color('white/20')}, transparent 60%)`,
+  },
+});
 
 function TmdbFilmography({ credits }: Readonly<{ credits: readonly TmdbCredit[] }>) {
   const t = useT();
@@ -133,13 +139,7 @@ function TmdbFilmography({ credits }: Readonly<{ credits: readonly TmdbCredit[] 
           {t('person.filmographyHint')}
         </Text>
       </Box>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-          gap: 20,
-        }}
-      >
+      <div className={classes(s.grid)}>
         {credits.map((credit) => (
           <Focusable
             key={`${credit.mediaType}-${credit.tmdbId}`}
@@ -154,7 +154,7 @@ function TmdbFilmography({ credits }: Readonly<{ credits: readonly TmdbCredit[] 
                 tmdbId: String(credit.tmdbId),
               }}
             >
-              <Box aspect={2 / 3} radius="md" overflow="hidden" shadow="card">
+              <Box aspect={2 / 3} radius="md" overflow="hidden">
                 <Image src={credit.posterUrl ?? null} alt={credit.title} fit="cover" fill />
               </Box>
               <Text variant="label" lines={2}>
@@ -182,13 +182,8 @@ function TmdbFilmography({ credits }: Readonly<{ credits: readonly TmdbCredit[] 
 
 function PersonInitials({ name, g1, g2 }: Readonly<{ name: string; g1: string; g2: string }>) {
   return (
-    <Box fill center style={gradient(`linear-gradient(158deg, ${g1}, ${g2})`)}>
-      <Box
-        fill
-        style={gradient(
-          `radial-gradient(70% 60% at 50% 22%, ${color('white/20')}, transparent 60%)`,
-        )}
-      />
+    <Box fill center style={wash(g1, g2)}>
+      <Box fill style={s.sheen} />
       <Text variant="heading" color="white/90">
         {initials(name)}
       </Text>

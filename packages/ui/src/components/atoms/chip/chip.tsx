@@ -63,6 +63,14 @@ const chipVariants = svFor<{
         count: { color: 'textMuted' },
         icon: { color: 'textMuted' },
       },
+      /** An edge and nothing else, on a screen whose amber is already spoken
+       *  for by a Play button: selected fills with ink instead of accent (see
+       *  the compound below), so the row never competes with the action. */
+      outline: {
+        root: { bg: 'transparent', border: 'tint/14', minH: 36, _hover: { bg: 'tint/8' } },
+        label: { text: 'label', color: 'text' },
+        count: { color: 'text' },
+      },
     },
     /** Declared after `variant` so the accent fill and ink beat whatever idle
      *  colours the variant declared. A filled chip hovers up the amber ladder
@@ -87,6 +95,18 @@ const chipVariants = svFor<{
       },
     },
   },
+  compound: [
+    {
+      when: { variant: 'outline', active: true },
+      style: {
+        root: { bg: 'text', borderColor: 'text', _hover: { bg: 'text/88' } },
+        label: { color: 'bg' },
+        count: { color: 'bg' },
+        icon: { color: 'bg' },
+        dot: { bg: 'bg' },
+      },
+    },
+  ],
   defaults: { variant: 'solid', active: false, size: 'sm' },
 });
 
@@ -95,7 +115,7 @@ interface ChipProps extends Omit<FocusableProps, 'children' | 'style' | 'label'>
    *  on and off says so with `pressed`, which is what assistive tech hears. */
   active?: boolean;
   size?: 'sm' | 'tv';
-  variant?: 'solid' | 'subtle' | 'surface';
+  variant?: 'solid' | 'subtle' | 'surface' | 'outline';
   /** Leading glyph, before the label. */
   icon?: IconName;
   /** A status colour as a dot before the label. An active chip paints it in

@@ -11,7 +11,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field';
-import { styles } from '#ui/core';
+import { style, styles } from '#ui/core';
 import { bySize, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { useTDefault } from '#ui/services/i18n';
@@ -159,7 +159,7 @@ function Step({
 const STEP_STATES = { hover: { bg: 'tint/10' } } as const;
 
 // Digits that keep their width, so 99 -> 100 does not make the box breathe.
-const TABULAR = { fontVariant: ['tabular-nums' as const] };
+const TABULAR = style({ fontVariant: ['tabular-nums'] });
 
 const s = styles({
   step: { w: 24, center: true, radius: 'xs' },

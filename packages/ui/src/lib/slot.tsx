@@ -24,7 +24,9 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
-import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import type { StyleProp } from 'react-native';
+import { registered } from '#ui/core';
+import type { AnyStyle } from '#ui/core/types';
 
 type AnyProps = Record<string, unknown>;
 
@@ -120,7 +122,7 @@ function cloneHost(host: ReactElement, props: AnyProps): ReactElement {
   const merged = mergeSlotProps(props, propsOf(host));
   return cloneElement(host as ReactElement<AnyProps>, {
     ...merged,
-    style: StyleSheet.flatten(merged.style as StyleProp<ViewStyle>),
+    style: registered(merged.style as StyleProp<AnyStyle>),
   });
 }
 

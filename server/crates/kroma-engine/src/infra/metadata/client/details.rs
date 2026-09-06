@@ -1,6 +1,7 @@
 use crate::domain::metadata::Metadata;
 
 use super::super::common::{build_cast, build_crew};
+use super::certification::country_of;
 use super::details_json::{collect_keywords, pick_logo, Details};
 use super::{api, curl_json, Target, IMG, MAX_CAST, MAX_CREW};
 
@@ -16,7 +17,10 @@ pub(super) fn fetch_details(
         ("language", language.to_string()),
         (
             "append_to_response",
-            "external_ids,credits,images,keywords".to_string(),
+            format!(
+                "external_ids,credits,images,keywords,{}",
+                target.certification_append()
+            ),
         ),
         ("include_image_language", format!("{lang2},en,null")),
     ];
@@ -25,10 +29,10 @@ pub(super) fn fetch_details(
         api_key,
         &detail_params,
     )?;
-    Ok(metadata_from(d, target, id, lang2))
+    Ok(metadata_from(d, target, id, lang2, &country_of(language)))
 }
 
-fn metadata_from(d: Details, target: Target, id: u64, lang2: &str) -> Metadata {
+fn metadata_from(d: Details, target: Target, id: u64, lang2: &str, country: &str) -> Metadata {
     let ext = d.external_ids;
     let imdb_id = d
         .imdb_id
@@ -58,6 +62,10 @@ fn metadata_from(d: Details, target: Target, id: u64, lang2: &str) -> Metadata {
         genres: d.genres.into_iter().map(|g| g.name).collect(),
         keywords: d.keywords.map(collect_keywords).unwrap_or_default(),
         rating: d.vote_average.filter(|v| *v > 0.0),
+        certification: d
+            .release_dates
+            .or(d.content_ratings)
+            .and_then(|c| c.preferring(country)),
         poster_url: d.poster_path.map(|p| format!("{IMG}/w500{p}")),
         backdrop_url: d.backdrop_path.map(|p| format!("{IMG}/w1280{p}")),
         logo_url: d
@@ -90,7 +98,7 @@ mod tests {
         }"#;
         let d: Details = serde_json::from_str(raw).unwrap();
 
-        let meta = metadata_from(d, Target::Movie, 542178, "en");
+        let meta = metadata_from(d, Target::Movie, 542178, "en", "US");
 
         assert_eq!(meta.tmdb_genre_ids, vec![35, 18]);
         assert_eq!(meta.genres, vec!["Comedy", "Drama"]);
@@ -105,16 +113,56 @@ mod tests {
         }"#;
         let d: Details = serde_json::from_str(raw).unwrap();
 
-        let meta = metadata_from(d, Target::Tv, 1399, "en");
+        let meta = metadata_from(d, Target::Tv, 1399, "en", "US");
 
         assert_eq!(meta.tmdb_genre_ids, vec![10765, 18]);
+    }
+
+    #[test]
+    fn a_movie_takes_its_age_rating_from_the_release_dates_of_the_asked_country() {
+        let raw = r#"{
+            "id": 603,
+            "title": "The Matrix",
+            "release_dates": {"results": [
+                {"iso_3166_1": "FR", "release_dates": [{"certification": "12"}]},
+                {"iso_3166_1": "US", "release_dates": [{"certification": "R"}]}
+            ]}
+        }"#;
+        let d: Details = serde_json::from_str(raw).unwrap();
+
+        let meta = metadata_from(d, Target::Movie, 603, "fr", "FR");
+
+        assert_eq!(meta.certification.as_deref(), Some("12"));
+    }
+
+    #[test]
+    fn a_show_takes_its_age_rating_from_the_content_ratings() {
+        let raw = r#"{
+            "id": 1396,
+            "name": "Breaking Bad",
+            "content_ratings": {"results": [{"iso_3166_1": "US", "rating": "TV-MA"}]}
+        }"#;
+        let d: Details = serde_json::from_str(raw).unwrap();
+
+        let meta = metadata_from(d, Target::Tv, 1396, "en", "US");
+
+        assert_eq!(meta.certification.as_deref(), Some("TV-MA"));
+    }
+
+    #[test]
+    fn a_title_no_provider_rated_carries_no_age_rating() {
+        let d: Details = serde_json::from_str(r#"{"id": 1, "title": "X"}"#).unwrap();
+
+        let meta = metadata_from(d, Target::Movie, 1, "en", "US");
+
+        assert!(meta.certification.is_none());
     }
 
     #[test]
     fn a_title_with_no_genres_carries_no_genre_ids() {
         let d: Details = serde_json::from_str(r#"{"id": 1, "title": "X"}"#).unwrap();
 
-        let meta = metadata_from(d, Target::Movie, 1, "en");
+        let meta = metadata_from(d, Target::Movie, 1, "en", "US");
 
         assert!(meta.tmdb_genre_ids.is_empty());
         assert!(meta.genres.is_empty());

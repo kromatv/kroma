@@ -18,6 +18,7 @@ import {
   Select,
   Surface,
   Switch,
+  styles,
   Text,
   useStableCallback,
 } from '@kroma/ui/kit';
@@ -37,6 +38,8 @@ interface SettingsViewProps {
 // A `secret`/`password` row records only WHETHER it now holds a value, not the
 // value itself: the server never sends one back, and keeping it in state would
 // put a signing key in the React tree for the rest of the session.
+
+const s = styles({ minW: { minWidth: 0 }, desc: { mt: 3 }, saved: { mt: 4 } });
 function applySetting(groups: SettingGroup[], key: string, value: unknown): SettingGroup[] {
   const applied = (r: SettingRow): SettingRow =>
     r.kind === 'secret' || r.kind === 'password'
@@ -150,15 +153,15 @@ const Row = memo(function Row({
   const change = (v: unknown) => onChange(row.key, v);
   return (
     <Box row align="center" justify="space-between" gap={20} px={22} py={16}>
-      <Box shrink={1} style={{ minWidth: 0 }}>
+      <Box shrink={1} style={s.minW}>
         <Text variant="label">{row.label}</Text>
         {row.desc ? (
-          <Text variant="meta" color="textDim" style={{ marginTop: 3 }}>
+          <Text variant="meta" color="textDim" style={s.desc}>
             {row.desc}
           </Text>
         ) : null}
         {!row.applied && row.kind !== 'value' ? (
-          <Text variant="overline" color="text/30" style={{ marginTop: 4 }}>
+          <Text variant="overline" color="text/30" style={s.saved}>
             {t('admin.prefSaved')}
           </Text>
         ) : null}

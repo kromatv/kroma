@@ -1,7 +1,8 @@
 // Authored declaration -> the canonical form the resolver merges. Runs once per
-// declaration at module load, never per render.
+// declaration at module load, never per render, and once per build for the
+// declarations the build compiles ahead of time: nothing here reads a store.
 
-import { StyleSheet } from 'react-native';
+import { isStaticStyle, staticStates } from '#ui/core/atomic/static-style';
 import { COLOR_KEYS, color } from '#ui/core/color';
 import {
   boxStyle,
@@ -10,8 +11,7 @@ import {
   textStyle,
 } from '#ui/core/shorthand-resolve';
 import type { BoxStyleProps } from '#ui/core/shorthands';
-import { STATE_KEYS, type SvStateName } from '#ui/core/states';
-import type { AnyStyle } from '#ui/core/types';
+import { STATE_KEYS, SV_STATES, type SvStateName } from '#ui/core/states';
 
 export interface Split {
   rest: Record<string, unknown>;
@@ -22,34 +22,92 @@ export interface Split {
 
 /**
  * Splits a declaration into its rest value and its per-state layers, normalising
- * each. Throws on an unknown `_`-prefixed key: TypeScript only guards those for
- * an inline literal, and a layer built from a variable would otherwise carry
- * `_active` into the output as a style key React Native silently ignores.
+ * each against the breakpoint at `index`. Throws on an unknown `_`-prefixed key:
+ * TypeScript only guards those for an inline literal, and a layer built from a
+ * variable would otherwise carry `_active` into the output as a style key React
+ * Native silently ignores.
+ *
+ * A layer the build already compiled comes back as it is, its states read off
+ * the compiled form.
  */
-export function split(decl: Record<string, unknown> | undefined): Split | undefined {
+const CONDITION_KEYS: ReadonlySet<string> = new Set(['base', ...SV_STATES]);
+
+// A value stated per interaction state, `base` for the rest: an object whose
+// keys are all conditions and at least one of them a state, which is what
+// tells it apart from a value stated per breakpoint.
+function conditional(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
+  const keys = Object.keys(value);
+  const stated =
+    keys.length > 0 &&
+    keys.every((key) => CONDITION_KEYS.has(key)) &&
+    keys.some((key) => key !== 'base');
+  return stated ? (value as Record<string, unknown>) : null;
+}
+
+type StateLayers = Partial<Record<SvStateName, Record<string, unknown>>>;
+
+interface Sorted {
+  authored: Record<string, unknown>;
+  byState: StateLayers;
+  explicit: StateLayers;
+}
+
+function stateOf(key: string): SvStateName {
+  if (!STATE_KEYS.has(key)) {
+    throw new Error(
+      `sv: unknown state "${key}". States are ${[...STATE_KEYS].join(', ')}; anything else a component can be in is a variant.`,
+    );
+  }
+  return key.slice(1) as SvStateName;
+}
+
+function sortValue(key: string, value: unknown, into: Sorted): void {
+  const stated = conditional(value);
+  if (!stated) {
+    into.authored[key] = value;
+    return;
+  }
+  if ('base' in stated) into.authored[key] = stated.base;
+  for (const name of SV_STATES) {
+    if (!(name in stated)) continue;
+    const layer = into.byState[name] ?? {};
+    layer[key] = stated[name];
+    into.byState[name] = layer;
+  }
+}
+
+function sortKeys(decl: Record<string, unknown>): Sorted {
+  const sorted: Sorted = { authored: {}, byState: {}, explicit: {} };
+  for (const key of Object.keys(decl)) {
+    const value = decl[key];
+    if (key.startsWith('_')) sorted.explicit[stateOf(key)] = value as Record<string, unknown>;
+    else sortValue(key, value, sorted);
+  }
+  return sorted;
+}
+
+export function split(decl: Record<string, unknown> | undefined, index: number): Split | undefined {
   if (!decl) return undefined;
-  const authored: Record<string, unknown> = {};
+  if (isStaticStyle(decl)) {
+    const states = staticStates(decl);
+    return { rest: decl, states, declared: Object.keys(states) as SvStateName[], breakpoints: 0 };
+  }
+  const { authored, byState, explicit } = sortKeys(decl);
   const states: Split['states'] = {};
   const declared: SvStateName[] = [];
   let breakpoints = 0;
-  for (const key of Object.keys(decl)) {
-    if (!key.startsWith('_')) {
-      authored[key] = decl[key];
-      continue;
-    }
-    if (!STATE_KEYS.has(key)) {
-      throw new Error(
-        `sv: unknown state "${key}". States are ${[...STATE_KEYS].join(', ')}; anything else a component can be in is a variant.`,
-      );
-    }
-    const name = key.slice(1) as SvStateName;
-    const layer = decl[key] as Record<string, unknown>;
-    breakpoints |= declaredBreakpoints(layer);
-    states[name] = normalize(layer);
+  for (const name of SV_STATES) {
+    const stated = byState[name];
+    const layer = explicit[name];
+    if (!stated && !layer) continue;
+    const merged = { ...stated, ...layer };
+    breakpoints |= declaredBreakpoints(merged);
+    states[name] = normalize(merged, index);
     declared.push(name);
   }
   return {
-    rest: normalize(authored),
+    rest: normalize(authored, index),
     states,
     declared,
     breakpoints: breakpoints | declaredBreakpoints(authored),
@@ -58,15 +116,18 @@ export function split(decl: Record<string, unknown> | undefined): Split | undefi
 
 /**
  * Rewrites one layer into React Native longhands, resolving shorthands, colours
- * and, against the active breakpoint, any value stated per breakpoint.
+ * and, against the breakpoint at `index`, any value stated per breakpoint.
  *
  * Per LAYER, which is what makes merging correct: merging authored keys would
  * leave `{ px: 18 }` and `{ p: 12 }` both alive, and the resolver would then
  * pick by specificity rather than by order, so an earlier base would beat a
  * later variant. Once every layer speaks longhand, `Object.assign` is the
  * conflict resolution - last write wins, per property, like CSS.
+ *
+ * A layer the build already compiled is its own canonical form.
  */
-export function normalize(decl: Record<string, unknown>): Record<string, unknown> {
+export function normalize(decl: Record<string, unknown>, index: number): Record<string, unknown> {
+  if (isStaticStyle(decl)) return decl;
   const { shorthand, rest, any } = splitShorthand(decl);
   // Text before colour: `text` may bring keys the loop below never touches, and
   // consuming `text`/`font` first keeps them out of the colour pass entirely.
@@ -78,42 +139,5 @@ export function normalize(decl: Record<string, unknown>): Record<string, unknown
   if (!any && !type) return rest;
   // Shorthands first, the role's bundle under them, so a longhand in the same
   // layer wins over both.
-  return { ...type, ...boxStyle(shorthand as BoxStyleProps), ...rest };
-}
-
-// React Native resolves a shorthand against its own longhands by DECLARATION
-// ORDER within one object, so `paddingVertical` must precede `paddingTop` or the
-// less specific key wins. Sorting alphabetically would put it after.
-const RN_SHORTHANDS: ReadonlySet<string> = new Set([
-  'padding',
-  'paddingVertical',
-  'paddingHorizontal',
-  'margin',
-  'marginVertical',
-  'marginHorizontal',
-  'borderWidth',
-  'borderColor',
-  'borderRadius',
-  'inset',
-  'gap',
-]);
-
-const rank = (key: string) => (RN_SHORTHANDS.has(key) ? 0 : 1);
-
-/**
- * Registers a merged value, with its keys in a canonical order: React Native's
- * own shorthands first, then everything else alphabetically.
- *
- * Registration is what makes react-native-web compile the declarations into
- * atomic classes rather than re-serialise them onto every element. It hands the
- * same object back, so the result is still a plain style a caller can read.
- *
- * An order that varied with which layers contributed would mean an unstable
- * stylesheet between builds. Sorting alone is not enough, see `RN_SHORTHANDS`.
- */
-export function stabilise(merged: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  const keys = Object.keys(merged).sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : 1));
-  for (const key of keys) out[key] = merged[key];
-  return Object.freeze(StyleSheet.create({ s: out as AnyStyle }).s) as Record<string, unknown>;
+  return { ...type, ...boxStyle(shorthand as BoxStyleProps, index), ...rest };
 }

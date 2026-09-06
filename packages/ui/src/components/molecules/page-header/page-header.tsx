@@ -7,6 +7,7 @@ import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
+import { styles } from '#ui/core';
 
 interface PageHeaderRootProps extends Omit<BoxProps, 'children'> {
   /** A `<PageHeader.Actions>` must be a DIRECT child to be pinned to the far
@@ -54,9 +55,9 @@ function Root({ children, ...box }: Readonly<PageHeaderRootProps>) {
   const at = useMemo(() => sort(children), [children]);
   return (
     <Box row align="center" justify="space-between" gap={24} wrap {...box}>
-      <Box row align="center" gap={BACK_GAP} shrink={1} style={MIN_W}>
+      <Box row align="center" gap={BACK_GAP} shrink={1} style={s.minW}>
         {at.back}
-        <Box shrink={1} style={MIN_W}>
+        <Box shrink={1} style={s.minW}>
           {at.column}
         </Box>
       </Box>
@@ -80,7 +81,7 @@ function Title({ suffix, icon, children }: Readonly<PageHeaderTitleProps>) {
     <Text variant="h1" accessibilityRole="header">
       {children}
       {suffix ? (
-        <Text variant="h1" color="text/40" style={QUIET}>
+        <Text variant="h1" color="text/40" style={s.quiet}>
           {' '}
           {suffix}
         </Text>
@@ -91,7 +92,7 @@ function Title({ suffix, icon, children }: Readonly<PageHeaderTitleProps>) {
   return (
     <Box row align="center" gap={GLYPH_GAP}>
       <Icon name={icon} size={GLYPH_SIZE} thickness={2} color="accent" />
-      <Box shrink={1} style={MIN_W}>
+      <Box shrink={1} style={s.minW}>
         {heading}
       </Box>
     </Box>
@@ -101,7 +102,7 @@ function Title({ suffix, icon, children }: Readonly<PageHeaderTitleProps>) {
 /** The line under the title: what the page holds, in one sentence. */
 function Subtitle({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <Text variant="body" color="textDim" style={SUBTITLE}>
+    <Text variant="body" color="textDim" style={s.subtitle}>
       {children}
     </Text>
   );
@@ -132,17 +133,19 @@ function Back({ label, onPress, asChild, children }: Readonly<PageHeaderBackProp
 /** The page-level controls, pinned to the far end of the header. */
 function Actions({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <Box row wrap align="center" gap={12} style={PUSH}>
+    <Box row wrap align="center" gap={12} style={s.push}>
       {children}
     </Box>
   );
 }
 
-const MIN_W = { minWidth: 0 } as const;
+const s = styles({
+  minW: { minWidth: 0 },
+  quiet: { fontWeight: '400' },
+  subtitle: { mt: 6 },
+  push: { marginLeft: 'auto' },
+});
 const BACK_GAP = 14;
-const QUIET = { fontWeight: '400' } as const;
-const SUBTITLE = { marginTop: 6 } as const;
-const PUSH = { marginLeft: 'auto' } as const;
 const GLYPH_GAP = 10;
 const GLYPH_SIZE = 26;
 

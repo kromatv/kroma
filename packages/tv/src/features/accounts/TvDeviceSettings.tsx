@@ -3,6 +3,7 @@ import { Box, Hint, Text, useFocusNav } from '@kroma/ui/kit';
 import { useNav } from '#tv/app/router';
 import { aboutItem, DEVICE_SETTINGS, quitAppItem } from '#tv/app/settings/registry';
 import { AuthScreen, GATE_MARK, KromaMark } from '#tv/shared/ui';
+import { weight } from '#tv/shared/ui/weight';
 import { SettingsRows } from './SettingsRows';
 
 /** Device settings (route `deviceSettings`), reachable from the signed-out
@@ -31,7 +32,7 @@ export function TvDeviceSettings() {
         gap={4}
         mt={28}
         color="text/40"
-        textStyle={{ fontWeight: '500' }}
+        textStyle={weight.medium}
       />
     </AuthScreen>
   );

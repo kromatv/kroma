@@ -42,7 +42,7 @@ export function PointsList({
       <Text variant="meta" color="textDim">
         {t('admin.modulesPointsHint')}
       </Text>
-      <Table.Root columns="minmax(0, 1fr) 320px" narrow="minmax(0, 1fr)">
+      <Table.Root columns={[{}, { width: 320, from: 'md' }]}>
         {shown.map((p) => (
           <PointRow key={p.name} point={p} />
         ))}

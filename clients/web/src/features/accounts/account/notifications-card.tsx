@@ -81,7 +81,7 @@ function PushPanel() {
   };
 
   return (
-    <Surface elevated pad="none" p={22} radius="lg" border="border" gap={12}>
+    <Surface elevated pad="none" p={22} radius="xl" border="border" gap={12}>
       <Box row align="flex-start" between gap={16}>
         <Box minW={0}>
           <Row gap={8}>
@@ -156,7 +156,7 @@ function CategoryMatrix() {
 
   if (isPending || !data) {
     return (
-      <Surface elevated pad="none" p={22} radius="lg" border="border">
+      <Surface elevated pad="none" p={22} radius="xl" border="border">
         <Skeleton h={128} radius="sm" />
       </Surface>
     );

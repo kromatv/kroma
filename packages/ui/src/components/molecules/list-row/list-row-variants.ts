@@ -35,7 +35,7 @@ const listRowVariants = svFor<{
      *  recycles are paid per frame for nothing. Only the shape changes: the
      *  well, the corner and the outward ring are the same row either way. */
     ground: {
-      artwork: { root: { shadow: 'card' } },
+      artwork: {},
       surface: {},
     },
     /** Its own object, or one member of a <ListRow.Group>'s single card. A

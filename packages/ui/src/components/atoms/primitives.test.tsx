@@ -568,6 +568,6 @@ describe('Dialog', () => {
   it('rounds the panel with the design radius', () => {
     render(<Dialog.Root open title="Titre" />);
     const panel = document.querySelector('[data-focus-scope]') as HTMLElement;
-    expect(css(panel).borderTopLeftRadius).toBe(`${radius['2xl']}px`);
+    expect(css(panel).borderTopLeftRadius).toBe(`${radius.xl}px`);
   });
 });

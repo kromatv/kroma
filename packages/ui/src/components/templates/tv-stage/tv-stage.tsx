@@ -4,13 +4,15 @@
 
 import type { ReactNode } from 'react';
 import { useWindowDimensions, View } from 'react-native';
-import { styles } from '#ui/core';
+import { sharedStyle, styles } from '#ui/core';
 import { CANVAS } from '#ui/core/tokens';
 
 interface TvStageProps {
   children: ReactNode;
 }
 
+const scaleOf = (scale: number) =>
+  sharedStyle(`tv-stage:scale:${scale}`, { transform: [{ scale }] });
 function TvStage({ children }: Readonly<TvStageProps>) {
   const { width, height } = useWindowDimensions();
   // Contain, never cover: a cropped stage loses the overscan-safe gutters.
@@ -18,7 +20,7 @@ function TvStage({ children }: Readonly<TvStageProps>) {
 
   return (
     <View style={s.viewport}>
-      <View style={[s.canvas, { transform: [{ scale }] }]}>{children}</View>
+      <View style={[s.canvas, scaleOf(scale)]}>{children}</View>
     </View>
   );
 }

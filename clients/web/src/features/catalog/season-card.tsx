@@ -3,20 +3,16 @@
 // face rather than a second stop.
 
 import { useT } from '@kroma/ui';
-import { Box, color, Focusable, sv, Text } from '@kroma/ui/kit';
+import { Box, classes, color, Focusable, styles, sv, Text } from '@kroma/ui/kit';
 import { IconPlus } from '@tabler/icons-react';
-import type { CSSProperties } from 'react';
 import type { TitleSeason } from '#web/shared/lib/titleView';
+import { page } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
-const BOLD = { fontWeight: '700' } as const;
+const s = styles({ bold: { fontWeight: '700' } });
 
 // The page gutter is a fluid CSS custom property, which no style number can
 // carry, so anything indented by it stays a plain element.
-const GUTTER: CSSProperties = {
-  paddingLeft: 'var(--gutter-web)',
-  paddingRight: 'var(--gutter-web)',
-};
 
 const seasonCard = sv({
   base: {
@@ -80,12 +76,12 @@ export function SeasonRequestCard({
   const name = season.name ?? t('discover.seasonN', { n: String(season.number) });
 
   return (
-    <div style={GUTTER}>
+    <div className={classes(page.gutter)}>
       <Focusable sv={seasonCard} vars={{ tone }} disabled={locked} label={name} onPress={onPick}>
         {({ hovered }) => (
           <>
             <Box minW={0} flex>
-              <Text variant="meta" lines={1} style={BOLD}>
+              <Text variant="meta" lines={1} style={s.bold}>
                 {name}
               </Text>
               <Text variant="meta" color={partial ? 'accent' : 'white/45'} lines={1} mt={2}>

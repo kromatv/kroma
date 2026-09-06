@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { declared } from '#ui/testing';
 import { Box } from './box';
 
 afterEach(cleanup);
@@ -47,13 +48,13 @@ describe('a box that states its hit testing', () => {
     const { container } = render(<Box pointerEvents="none" testID="hit" />);
 
     const host = container.firstElementChild as HTMLElement;
-    expect(host.style.pointerEvents).toBe('none');
+    expect(declared(host, 'pointerEvents')).toBe('none');
     expect(host.getAttribute('pointerEvents')).toBeNull();
   });
 
   it('lets the style a caller passes win over it', () => {
     const { container } = render(<Box pointerEvents="none" style={{ pointerEvents: 'auto' }} />);
 
-    expect((container.firstElementChild as HTMLElement).style.pointerEvents).toBe('auto');
+    expect(declared(container.firstElementChild as HTMLElement, 'pointerEvents')).toBe('auto');
   });
 });

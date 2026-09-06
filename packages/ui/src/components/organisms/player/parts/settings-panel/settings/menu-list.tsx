@@ -8,10 +8,14 @@ import { Fragment } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { playerStyle } from '#ui/components/organisms/player/lib/style';
+import { sharedStyle } from '#ui/core';
 import { useT } from '#ui/services/i18n';
 import type { Entry } from './entries';
 import { MenuRow } from './menu-row';
 
+const sizeOf = (fontSize: number) => sharedStyle(`menu-list:size:${fontSize}`, { fontSize });
+
+const gapOf = (marginTop: number) => sharedStyle(`menu-list:gap:${marginTop}`, { marginTop });
 export function MenuList({
   entries,
   moved,
@@ -32,9 +36,7 @@ export function MenuList({
       {entries.map((e, i) => (
         <Fragment key={e.id}>
           {moved > 0 && i === 0 ? (
-            <Text style={[playerStyle.eyebrow, { fontSize: px(12) }]}>
-              {t('player.movedControls')}
-            </Text>
+            <Text style={[playerStyle.eyebrow, sizeOf(px(12))]}>{t('player.movedControls')}</Text>
           ) : null}
           <MenuRow
             icon={e.icon}
@@ -45,7 +47,7 @@ export function MenuList({
             focused={focused === i}
             onActivate={e.activate}
             onFocus={onFocus(i)}
-            style={moved > 0 && i === moved ? { marginTop: px(20) } : undefined}
+            style={moved > 0 && i === moved ? gapOf(px(20)) : undefined}
           />
         </Fragment>
       ))}

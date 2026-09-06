@@ -6,6 +6,7 @@
 // same thing.
 
 import { StyleSheet, type ViewStyle } from 'react-native';
+import { breakpointIndex } from '#ui/core/breakpoint';
 import { boxStyle } from '#ui/core/shorthand-resolve';
 import type { BoxStyleProps } from '#ui/core/shorthands';
 import { themedCache } from '#ui/core/theme';
@@ -26,5 +27,8 @@ const shared = themedCache<ViewStyle>(4096);
  * own vocabulary; this one takes <Box>'s prop bag.
  */
 export function sharedBoxStyle(key: string, p: Readonly<BoxStyleProps>): ViewStyle {
-  return shared(key, () => StyleSheet.create({ box: boxStyle(p) }).box as ViewStyle);
+  return shared(
+    key,
+    () => StyleSheet.create({ box: boxStyle(p, breakpointIndex()) }).box as ViewStyle,
+  );
 }

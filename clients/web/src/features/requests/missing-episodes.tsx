@@ -9,6 +9,7 @@ import {
   Box,
   Button,
   CheckboxFace,
+  classes,
   Divider,
   Focusable,
   Icon,
@@ -28,7 +29,10 @@ const COLLAPSE_OVER = 12;
 const COLLAPSED_ROWS = 10;
 
 const s = styles({
-  episode: { row: true, align: 'center', gap: 14, flex: true, minW: 0, py: 10, pl: 14 },
+  list: { m: 0, p: 0, listStyleType: 'none' },
+  listItem: { display: 'block' },
+  italic: { fontStyle: 'italic' },
+  episode: { row: true, align: 'center', gap: 16, flex: true, minW: 0, py: 10, pl: 14 },
   tag: { w: 62, shrink: 0, fontWeight: '700', fontVariant: ['tabular-nums'] },
 });
 
@@ -57,7 +61,7 @@ export function EpisodeList({
   const visible = collapsed ? entries.slice(0, COLLAPSED_ROWS) : entries;
   return (
     <RingScopeProvider value="focusInset">
-      <ul style={LIST}>
+      <ul className={classes(s.list)}>
         {visible.map((e, index) => (
           <EpisodeRow
             key={epKey(e)}
@@ -72,7 +76,7 @@ export function EpisodeList({
           />
         ))}
         {entries.length > COLLAPSE_OVER ? (
-          <li style={LIST_ITEM}>
+          <li className={classes(s.listItem)}>
             <Divider color="tint/4" />
             <Box px={6} py={6} self="flex-start">
               <Button
@@ -93,10 +97,6 @@ export function EpisodeList({
     </RingScopeProvider>
   );
 }
-
-const LIST = { margin: 0, padding: 0, listStyle: 'none' } as const;
-
-const LIST_ITEM = { display: 'block' } as const;
 
 function EpisodeRow({
   entry,
@@ -122,16 +122,16 @@ function EpisodeRow({
 
   if (!canAct) {
     return (
-      <li style={LIST_ITEM}>
+      <li className={classes(s.listItem)}>
         {rule}
-        <Row gap={14} py={10} pl={48} pr={14}>
+        <Row gap={16} py={10} pl={50} pr={14}>
           {cells}
         </Row>
       </li>
     );
   }
   return (
-    <li style={LIST_ITEM}>
+    <li className={classes(s.listItem)}>
       {rule}
       <Row minW={0}>
         <Focusable
@@ -166,15 +166,13 @@ function EpisodeCells({ entry }: Readonly<{ entry: CalendarEntry }>) {
           {sentenceCase(rel, locale)}
         </Text>
       ) : (
-        <Text variant="meta" color="white/35" lines={1} flex minW={0} style={ITALIC}>
+        <Text variant="meta" color="white/35" lines={1} flex minW={0} style={s.italic}>
           {t('requests.noDate')}
         </Text>
       )}
     </>
   );
 }
-
-const ITALIC = { fontStyle: 'italic' } as const;
 
 function RowAction({
   busy,

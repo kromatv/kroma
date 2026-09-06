@@ -21,12 +21,12 @@ const SEARCH: LensRect = { x: 128, y: 4, width: 120, height: 44 };
 function lens(rect: LensRect | null, chase = false) {
   const timing = vi.spyOn(Animated, 'timing');
   timing.mockClear();
-  const { container, rerender } = render(<Lens rect={rect} chase={chase} />);
+  const { container, rerender } = render(<Lens rect={rect} chase={chase} tone="accent" />);
   return {
     container,
     timing,
     node: container.firstElementChild as HTMLElement,
-    move: (next: LensRect | null) => rerender(<Lens rect={next} chase={chase} />),
+    move: (next: LensRect | null) => rerender(<Lens rect={next} chase={chase} tone="accent" />),
   };
 }
 

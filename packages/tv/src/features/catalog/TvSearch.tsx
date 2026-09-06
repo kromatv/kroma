@@ -209,7 +209,6 @@ export function TvSearch() {
             mb={26}
           >
             <Field.Input
-              lift
               icon="search"
               physicalKeyboard={physicalKeyboard}
               trailing={

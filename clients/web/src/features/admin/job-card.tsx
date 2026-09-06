@@ -14,6 +14,7 @@ import {
   Row,
   Surface,
   Switch,
+  styles,
   Text,
 } from '@kroma/ui/kit';
 import { useState } from 'react';
@@ -24,11 +25,13 @@ import { useAsyncAction, useCap } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
 // Cron strings read best in a monospace, which the kit chip's label is not.
-const CRON = {
-  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-  fontSize: 11.5,
-  fontWeight: '600',
-} as const;
+const s = styles({
+  cron: {
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
+});
 
 function JobMeta({ job, onEdit }: Readonly<{ job: JobInfo; onEdit?: () => void }>) {
   const t = useT();
@@ -213,7 +216,7 @@ function ScheduleChip({ job, onEdit }: Readonly<{ job: JobInfo; onEdit?: () => v
   const label = job.schedule ?? t('jobs.manual');
   return (
     <Chip variant="surface" icon="calendar-clock" onPress={onEdit} disabled={!onEdit}>
-      <Text style={CRON} color="textMuted">
+      <Text style={s.cron} color="textMuted">
         {label}
       </Text>
       {job.customized ? <Text color="accent">•</Text> : null}

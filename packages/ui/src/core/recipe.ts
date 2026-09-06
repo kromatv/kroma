@@ -4,8 +4,11 @@
 //
 // See packages/ui/README.md for the authoring guide.
 
-import { breakpointStep } from '#ui/core/breakpoint';
-import { type Split, split, stabilise } from '#ui/core/normalize';
+import { mergeStatic } from '#ui/core/atomic/register';
+import { isStaticStyle } from '#ui/core/atomic/static-style';
+import { breakpointIndex, breakpointStep } from '#ui/core/breakpoint';
+import { type Split, split } from '#ui/core/normalize';
+import { stabilise } from '#ui/core/stabilise';
 import { maskOf, SV_STATES, type SvState, type SvStateName, stateSuffix } from '#ui/core/states';
 import { themeVersion } from '#ui/core/theme';
 import type {
@@ -56,21 +59,38 @@ function cascadeOf(
 }
 
 // Each active state sweeps every layer again, so a variant's `_hover` beats the
-// base's.
+// base's. The layers come back in cascade order; a slot the build compiled
+// merges without registering new rules, any other as it always did.
+function coatsOf(
+  layers: (Split | undefined)[][],
+  slot: number,
+  state: SvState,
+): Record<string, unknown>[] {
+  const coats: Record<string, unknown>[] = [];
+  for (const name of SV_STATES) {
+    if (state[name] !== true) continue;
+    for (const layer of layers) {
+      const coat = layer[slot]?.states[name];
+      if (coat) coats.push(coat);
+    }
+  }
+  return coats;
+}
+
 function mergeSlot(
   layers: (Split | undefined)[][],
   slot: number,
   state: SvState | undefined,
   stateful: boolean,
 ): Record<string, unknown> {
-  const merged: Record<string, unknown> = {};
-  for (const layer of layers) Object.assign(merged, layer[slot]?.rest);
-  if (!stateful || !state) return merged;
-  for (const name of SV_STATES) {
-    if (state[name] !== true) continue;
-    for (const layer of layers) Object.assign(merged, layer[slot]?.states[name]);
+  const parts: Record<string, unknown>[] = [];
+  for (const layer of layers) {
+    const rest = layer[slot]?.rest;
+    if (rest) parts.push(rest);
   }
-  return merged;
+  if (stateful && state) parts.push(...coatsOf(layers, slot, state));
+  if (isStaticStyle(parts[0])) return mergeStatic(parts);
+  return stabilise(Object.assign({}, ...parts));
 }
 
 /** Single slot: `base` plus flat variant options, which is most components. */
@@ -107,10 +127,11 @@ export function sv(
   const build = (): Compiled => {
     const declared = new Set<SvStateName>();
     let breakpoints = 0;
+    const at = breakpointIndex();
     const layersOf = (layer: unknown): (Split | undefined)[] => {
       const wrapped = wrap(layer);
       return names.map((name) => {
-        const piece = split(wrapped[name] as Record<string, unknown>);
+        const piece = split(wrapped[name] as Record<string, unknown>, at);
         for (const state of piece?.declared ?? []) declared.add(state);
         breakpoints |= piece?.breakpoints ?? 0;
         return piece;
@@ -118,7 +139,7 @@ export function sv(
     };
 
     const bases = names.map((name) => {
-      const piece = split(slots[name] as Record<string, unknown>) as Split;
+      const piece = split(slots[name] as Record<string, unknown>, at) as Split;
       for (const state of piece.declared) declared.add(state);
       breakpoints |= piece.breakpoints;
       return piece;
@@ -175,7 +196,7 @@ export function sv(
     const layers = cascadeOf(active, groups, pickOf);
     const out: Record<string, unknown> = {};
     for (let i = 0; i < names.length; i++) {
-      out[names[i] as string] = stabilise(mergeSlot(layers, i, state, active.mask !== 0));
+      out[names[i] as string] = mergeSlot(layers, i, state, active.mask !== 0);
     }
 
     const frozen = Object.freeze(out) as Record<string, object>;

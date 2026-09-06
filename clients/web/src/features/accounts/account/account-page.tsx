@@ -4,6 +4,7 @@ import { useT } from '@kroma/ui';
 import {
   Box,
   Button,
+  classes,
   color,
   EmptyState,
   Field,
@@ -12,9 +13,10 @@ import {
   Row,
   Section,
   Surface,
+  styles,
   Text,
 } from '@kroma/ui/kit';
-import { type CSSProperties, useState } from 'react';
+import { useState } from 'react';
 import { NotificationsCard } from '#web/features/accounts/account/notifications-card';
 import { PasskeysCard } from '#web/features/accounts/account/passkeys-card';
 import { PinCard } from '#web/features/accounts/account/pin-card';
@@ -128,7 +130,7 @@ function ProfileEditor() {
           <Section.Header>
             <Section.Title>{t('account.sectionInfo')}</Section.Title>
           </Section.Header>
-          <Surface elevated pad="none" p={22} radius="lg" border="border" gap={18}>
+          <Surface elevated pad="none" p={22} radius="xl" border="border" gap={18}>
             <Box maxW={{ base: '100%', md: '50%' }}>
               <Field.Root label={t('auth.username')}>
                 <Field.Input
@@ -177,7 +179,7 @@ function ProfileEditor() {
 
       {/* Plain CSS: neither `position: sticky` nor a gradient has a React Native
           spelling, so the kit's vocabulary cannot carry this frame. */}
-      <div style={dockStyle()}>
+      <div className={classes(s.dock)}>
         {dirty || save.status !== 'idle' ? (
           <Row
             between
@@ -185,7 +187,6 @@ function ProfileEditor() {
             radius="sm"
             border="borderStrong"
             bg="surface2"
-            shadow="pop"
             py={12}
             pl={20}
             pr={12}
@@ -217,16 +218,16 @@ function ProfileEditor() {
   );
 }
 
-function dockStyle(): CSSProperties {
-  return {
+const s = styles({
+  dock: {
     position: 'sticky',
     bottom: 0,
-    marginTop: 24,
-    paddingTop: 24,
-    paddingBottom: 20,
+    mt: 24,
+    pt: 24,
+    pb: 20,
     backgroundImage: `linear-gradient(to top, ${color('bg')} 0%, ${color('bg/90')} 60%, ${color('bg/0')} 100%)`,
-  };
-}
+  },
+});
 
 function SaveStatusLabel({
   dirty,

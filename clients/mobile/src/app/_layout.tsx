@@ -28,9 +28,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { installDeviceStore } from '#mobile/lib/deviceStore';
 import { DownloadsProvider } from '#mobile/lib/downloads';
 import { I18nProvider, useI18n } from '#mobile/lib/i18n';
-import { isTablet } from '#mobile/lib/layout';
 import { useNotificationStream } from '#mobile/lib/notifications';
 import { usePushGrantRefresh, usePushLabels, usePushTaps } from '#mobile/lib/notifications/usePush';
+import { lockUpright, UPRIGHT } from '#mobile/lib/orientation';
 import { SessionProvider, useSession } from '#mobile/lib/session';
 import { MOBILE, mobileTheme } from '#mobile/lib/theme';
 
@@ -92,6 +92,7 @@ function makeQueryClient(): QueryClient {
 
 function Shell() {
   const { status, user, client } = useSession();
+  useEffect(lockUpright, []);
   // The gate and the player sit over artwork and keep the dark ground. Decided here
   // because one theme store means a subtree driving it from an effect remounts itself.
   const segments: string[] = useSegments();
@@ -142,10 +143,7 @@ function Shell() {
                       headerShown: false,
                       contentStyle: { backgroundColor: theme.colors.bg },
                       animation: 'fade',
-                      // Phones are portrait-only outside the player (which sets
-                      // its own landscape lock in (app)/_layout); tablets rotate
-                      // freely.
-                      orientation: isTablet ? 'default' : 'portrait',
+                      orientation: UPRIGHT,
                     }}
                   />
                 </ThemeProvider>

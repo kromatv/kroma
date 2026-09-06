@@ -27,18 +27,21 @@ const navPillItemVariants = svFor<{
   icon: { color: string } & Pick<IconProps, 'size' | 'thickness'>;
 }>()({
   slots: {
-    root: { row: true, align: 'center', radius: 'pill' },
+    root: { align: 'center', radius: 'pill' },
     label: { fontWeight: '700', letterSpacing: 0.2, color: 'textMuted' },
     icon: { color: 'glyph', thickness: 1.9 },
   },
   variants: {
     size: {
-      tv: { root: { gap: 9, px: 18, py: 11 }, label: { fontSize: 18 }, icon: { size: 26 } },
+      tv: {
+        root: { row: true, gap: 9, px: 18, py: 11 },
+        label: { fontSize: 18 },
+        icon: { size: 26 },
+      },
       sm: {
-        root: { gap: 6, px: 12, py: 10 },
-        // Capped: a long locale label ("Rechercher") otherwise swallows the row.
-        label: { fontSize: 12, maxW: 92, shrink: 1 },
-        icon: { size: 22 },
+        root: { center: true, flex: true, gap: 3, px: 10, py: 10, minW: 44, minH: 44 },
+        label: { fontSize: 12, shrink: 0 },
+        icon: { size: 24, color: 'textDim' },
       },
     },
     /** Under the lens: the current section, or the one a slide is previewing.

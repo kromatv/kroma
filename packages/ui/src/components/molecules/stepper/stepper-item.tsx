@@ -3,7 +3,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type StyleDecl, svFor } from '#ui/core';
+import { type StyleDecl, style, svFor } from '#ui/core';
 import { bySize, CONTROL } from '#ui/lib/field-shell';
 import { nameOf } from '#ui/lib/name-of';
 import { partContext } from '#ui/lib/part-context';
@@ -220,7 +220,7 @@ function Hint({ children }: Readonly<{ children: ReactNode }>) {
   return <Text style={slots.hint}>{children}</Text>;
 }
 
-const STRETCH = { alignSelf: 'stretch' } as const;
+const STRETCH = style({ alignSelf: 'stretch' });
 
 export type { StepperItemProps };
 export { Hint, Item, Label, stepperVariants };

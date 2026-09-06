@@ -16,21 +16,38 @@ function labelKey(slug: GenreSlug): GenreCopyKey {
   return `genre.${slug}`;
 }
 
-const BY_FOLD: ReadonlyMap<string, GenreRow> = new Map(
-  GENRES.flatMap((genre) => [
-    [genre.slug, genre] as const,
-    ...[...SUPPORTED_LOCALES].map(
-      (locale) => [fold(translate(locale, labelKey(genre.slug))), genre] as const,
-    ),
-  ]),
+const BY_SLUG: ReadonlyMap<string, GenreRow> = new Map(
+  GENRES.map((genre) => [genre.slug, genre] as const),
 );
 
 const BY_TMDB: ReadonlyMap<number, GenreRow> = new Map(
   GENRES.map((genre) => [genre.tmdb, genre] as const),
 );
 
+// Translated names are matched when asked, never at module load: a locale's
+// catalog other than the default's arrives after this module runs, and a table
+// built then would hold the keys where the French names should be. A name a
+// loaded catalog spells is remembered; a miss is asked again, since the
+// catalog it lives in may still be on its way.
+const FOLDED = new Map<string, GenreRow>();
+
+function localized(key: string): GenreRow | undefined {
+  for (const genre of GENRES) {
+    const copy = labelKey(genre.slug);
+    for (const locale of SUPPORTED_LOCALES) {
+      const name = translate(locale, copy);
+      if (name !== copy && fold(name) === key) {
+        FOLDED.set(key, genre);
+        return genre;
+      }
+    }
+  }
+  return undefined;
+}
+
 function rowOf(nameOrSlug: string): GenreRow | undefined {
-  return BY_FOLD.get(fold(nameOrSlug));
+  const key = fold(nameOrSlug);
+  return BY_SLUG.get(key) ?? FOLDED.get(key) ?? localized(key);
 }
 
 /** The genre a stored display name or a URL slug denotes, in any language the

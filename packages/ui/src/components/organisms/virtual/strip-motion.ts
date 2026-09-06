@@ -6,6 +6,7 @@
 // as a string, Animated as an Easing. Declared together so they can never drift
 // apart.
 
+import { style } from '#ui/core';
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
 
@@ -18,8 +19,8 @@ export const EASE_NATIVE = ease.out.native;
 
 // The web-only opacity transition the edge controls fade with, so they come
 // and go with the pointer rather than blinking.
-export const FADE = {
+export const FADE = style({
   transitionProperty: 'opacity',
   transitionDuration: `${SETTLE_MS}ms`,
   transitionTimingFunction: EASE_CSS,
-};
+});

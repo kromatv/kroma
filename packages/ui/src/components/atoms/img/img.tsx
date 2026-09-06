@@ -11,8 +11,8 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import { radiusValue } from '#ui/core';
-import { absoluteFill, type CornerValue } from '#ui/core/tokens';
+import { radiusValue, sharedStyle, styles } from '#ui/core';
+import type { CornerValue } from '#ui/core/tokens';
 import { coverRect, parsePosition } from '#ui/lib/cover-rect';
 import { gradient } from '#ui/lib/css';
 import { WEB } from '#ui/lib/platform';
@@ -62,6 +62,8 @@ export interface ImgProps {
 
 export const IMG_FADE_MS = 400;
 
+const s = styles({ clip: { overflow: 'hidden' }, fill: { fill: true } });
+
 function Img({
   src: requested,
   alt = '',
@@ -85,6 +87,7 @@ function Img({
   const under = noCrossFade ? null : cross.under;
   const [box, setBox] = useState<Size | null>(null);
   const [natural, setNatural] = useState<Size | null>(null);
+  const [decoded, setDecoded] = useState<string | null>(null);
   const [opacity] = useState(() => new Animated.Value(0));
   const focal = parsePosition(position);
   const radius = corner === undefined ? undefined : radiusValue(corner);
@@ -112,22 +115,22 @@ function Img({
   };
 
   const container = [
-    fill ? absoluteFill : null,
-    { overflow: 'hidden' as const },
-    radius === undefined ? null : { borderRadius: radius },
-    background === undefined ? null : gradient(background),
+    fill ? s.fill : null,
+    s.clip,
+    radius === undefined ? null : sharedStyle(`img:radius:${radius}`, { radius }),
+    background === undefined ? null : sharedStyle(`img:bg:${background}`, gradient(background)),
     style,
   ];
 
   const showPlaceholder = placeholder != null && src != null && !loaded && !errored;
   const showFallback = fallback != null && (src == null || errored);
   const placeholderLayer = showPlaceholder ? (
-    <View key="placeholder" style={absoluteFill}>
+    <View key="placeholder" style={s.fill}>
       {placeholder}
     </View>
   ) : null;
   const fallbackLayer = showFallback ? (
-    <View key="fallback" style={absoluteFill}>
+    <View key="fallback" style={s.fill}>
       {fallback}
     </View>
   ) : null;
@@ -146,6 +149,8 @@ function Img({
           priority,
           duration,
           errored,
+          decoded: decoded === src,
+          markDecoded: () => setDecoded(src),
           markLoaded,
           onLoad,
           onError: handleError,

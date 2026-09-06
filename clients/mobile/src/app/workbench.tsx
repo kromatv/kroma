@@ -13,7 +13,7 @@ declare const require: {
 };
 
 const STORIES = discoverMetro(
-  require.context('../../../../packages/ui/src', true, /\.(stories|demo)\.tsx$|\.docs\.mdx$/),
+  require.context('../../../../packages/ui/src', true, /\.demo\.tsx$|\.story\.mdx$/),
 );
 
 export default defineWorkbench({ ...KROMA_WORKBENCH, stories: STORIES, router: memoryRouter() });

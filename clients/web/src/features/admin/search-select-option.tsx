@@ -1,22 +1,28 @@
-import { Box, color, Icon, Text } from '@kroma/ui/kit';
-import { type CSSProperties, type MouseEvent, memo } from 'react';
+import { Box, classes, Icon, styles, Text } from '@kroma/ui/kit';
+import { type MouseEvent, memo } from 'react';
 
-const OPTION: CSSProperties = {
-  position: 'relative',
-  display: 'flex',
-  width: '100%',
-  alignItems: 'center',
-  margin: 0,
-  padding: '8px 32px 8px 12px',
-  border: 0,
-  // A <button> left without one paints the UA's `buttonface`.
-  background: 'transparent',
-  borderRadius: 4,
-  textAlign: 'left',
-  cursor: 'pointer',
-  outline: 'none',
-  userSelect: 'none',
-};
+// A <button> left without a background paints the UA's `buttonface`.
+const s = styles({
+  option: {
+    position: 'relative',
+    display: 'flex',
+    width: '100%',
+    alignItems: 'center',
+    m: 0,
+    pt: 8,
+    pr: 32,
+    pb: 8,
+    pl: 12,
+    borderWidth: 0,
+    bg: 'transparent',
+    radius: 'xs',
+    textAlign: 'left',
+    cursor: 'pointer',
+    outlineStyle: 'none',
+    userSelect: 'none',
+  },
+  active: { bg: 'tint/6' },
+});
 
 interface SearchOptionProps {
   id: string;
@@ -59,7 +65,7 @@ const SearchOption = memo(function SearchOption({
       onMouseEnter={() => onHover(index)}
       onMouseDown={swallow}
       onClick={() => onPick(option)}
-      style={active ? { ...OPTION, background: color('tint/6') } : OPTION}
+      className={classes(s.option, active ? s.active : null)}
     >
       <Text variant="meta" color={selected ? 'accentText' : 'text'}>
         {option}

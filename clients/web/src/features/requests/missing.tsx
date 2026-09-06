@@ -258,10 +258,10 @@ function MissingSkeleton() {
 
 function GroupSkeleton({ rows }: Readonly<{ rows: number }>) {
   return (
-    <Surface pad="none" radius="2xl" border="border" overflow="hidden">
-      <Row gap={14} p={14}>
+    <Surface pad="none" radius="xl" border="border" overflow="hidden">
+      <Row gap={16} p={14}>
         <Skeleton w={20} h={20} radius="sm" />
-        <Skeleton w={36} h={52} radius="sm" />
+        <Skeleton w={46} h={68} radius="sm" />
         <Box minW={0} flex>
           <Skeleton shape="text" lines={2} variant="meta" maxW={220} />
         </Box>
@@ -270,7 +270,7 @@ function GroupSkeleton({ rows }: Readonly<{ rows: number }>) {
       <Divider color="tint/6" />
       {Array.from({ length: rows }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
-        <Row key={i} gap={14} px={14} py={14}>
+        <Row key={i} gap={16} px={14} py={14}>
           <Skeleton w={20} h={20} radius="sm" />
           <Skeleton w={62} h={12} radius="pill" />
           <Skeleton w="28%" h={12} radius="pill" />

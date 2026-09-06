@@ -1,5 +1,4 @@
-import { Box, type BoxProps, color, PageMain } from '@kroma/ui/kit';
-import type { CSSProperties } from 'react';
+import { Box, type BoxProps, PageMain, styles } from '@kroma/ui/kit';
 
 export const PAGE_GUTTER = { base: 16, md: 24, lg: 40, tv: 56 } as const;
 
@@ -21,14 +20,22 @@ export const SCRIM_Z = 60;
  *  inside the player and has to land in front of it. */
 export const CAST_PICKER_Z = SCRIM_Z + 10;
 
-export const MODAL_SCRIM: CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: SCRIM_Z,
-  backgroundColor: color('black/66'),
-  backdropFilter: 'blur(3px)',
-  WebkitBackdropFilter: 'blur(3px)',
-};
-
 export const PAGE_RADIAL =
   'radial-gradient(120% 90% at 50% 0%, var(--kroma-surface-1), var(--kroma-bg) 70%)';
+
+/** The page-level shapes a route states on its own elements. */
+export const page = styles({
+  scrim: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: SCRIM_Z,
+    bg: 'black/66',
+    backdropFilter: 'blur(3px)',
+    WebkitBackdropFilter: 'blur(3px)',
+  },
+  gutter: { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' },
+  screen: { minHeight: '100vh', display: 'flex' },
+  radial: { backgroundImage: PAGE_RADIAL },
+});
+
+export const MODAL_SCRIM = page.scrim;

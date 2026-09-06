@@ -90,7 +90,6 @@ function PersonCard({
               src={photo ?? null}
               gradient={gradient}
               circle
-              shadow={false}
               {...state.slots.photo}
             />
           </Box>

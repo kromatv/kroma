@@ -275,6 +275,12 @@ each other, and both reach a library by its `@kroma/*` name.
 - Design tokens live in TypeScript only. `kromaUI()` (`@kroma/ui/vite`) expands
   `@import "@kroma/ui/css"` into them at build time, so there is no generated CSS
   to commit and nothing to keep in step.
+- Static style declarations (`styles()`, `sv()`) compile ahead of time on the
+  browser targets: `kromaUI()`'s `kroma-atomic` plugin emits atomic classes into
+  the token sheet and rewrites the call site (StyleX's shape, react-native-web's
+  compiler). React Native resolves at runtime as before. See
+  `packages/ui/src/core/atomic/README.md`, including what the engine's pure
+  core owes the plugin (Node loads it natively).
 - `react-native` is aliased repo-wide to `react-native-tvos` via root `overrides`
   **and** a root dependency: both entries are load-bearing (the long comment in
   `package.json` explains why); do not "clean them up".

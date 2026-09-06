@@ -7,6 +7,7 @@ import { activeTheme } from '#ui/core';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
 import { RingScopeProvider } from '#ui/lib/ring-scope';
+import { declared } from '#ui/testing';
 import { Focusable } from './focusable';
 
 beforeAll(() => configureRemote());
@@ -26,20 +27,20 @@ describe('the ring a control draws', () => {
   it("suppresses the browser's own outline on a control that opted out", () => {
     render(<Focusable label="Ronde" ring={false} onPress={() => {}} />);
 
-    expect(painted('Ronde').style.outlineStyle).toBe('none');
-    expect(painted('Ronde').style.outlineWidth).toBe('0px');
+    expect(declared(painted('Ronde'), 'outlineStyle')).toBe('none');
+    expect(declared(painted('Ronde'), 'outlineWidth')).toBe('0px');
   });
 
   it('composes no outline at all on a control that asked for nothing', () => {
     render(<Focusable label="Nue" onPress={() => {}} />);
 
-    expect(painted('Nue').style.outlineStyle).toBe('');
+    expect(declared(painted('Nue'), 'outlineStyle')).toBeNull();
   });
 
   it('keeps the ring a control paints itself after opting out of the kit ring', () => {
     render(<Focusable label="Propre" ring={false} focused states={{ focus: { ring: 'focus' } }} />);
 
-    expect(getComputedStyle(painted('Propre')).outlineStyle).toBe('solid');
+    expect(declared(painted('Propre'), 'outlineStyle')).toBe('solid');
   });
 
   it('draws the ring a control names rather than the one that lifts off the page', () => {
@@ -49,7 +50,7 @@ describe('the ring a control draws', () => {
       </FocusRegion>,
     );
 
-    expect(painted('Bord').style.outlineOffset).toBe(
+    expect(declared(painted('Bord'), 'outlineOffset')).toBe(
       `${activeTheme().ring.focusInset.outlineOffset}px`,
     );
   });
@@ -63,7 +64,7 @@ describe('the ring a control draws', () => {
       </RingScopeProvider>,
     );
 
-    expect(painted('Membre').style.outlineOffset).toBe(
+    expect(declared(painted('Membre'), 'outlineOffset')).toBe(
       `${activeTheme().ring.focusInset.outlineOffset}px`,
     );
   });
@@ -77,7 +78,7 @@ describe('the ring a control draws', () => {
       </RingScopeProvider>,
     );
 
-    expect(painted('Propre').style.outlineOffset).toBe(
+    expect(declared(painted('Propre'), 'outlineOffset')).toBe(
       `${activeTheme().ring.focusEdge.outlineOffset}px`,
     );
   });

@@ -11,7 +11,7 @@ interface TableSkeletonProps {
 
 function TableSkeleton({ rows = 8 }: Readonly<TableSkeletonProps>) {
   return (
-    <Box gap={8} p={12} radius="lg" border="borderStrong" bg="surface1" aria-hidden>
+    <Box gap={8} p={12} radius="xl" border="borderStrong" bg="surface1" aria-hidden>
       {Array.from({ length: rows }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
         <Box key={i} row align="center" gap={16} py={8}>

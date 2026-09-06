@@ -4,6 +4,7 @@
 use serde::Deserialize;
 
 use super::super::common::{RawCreatedBy, RawCredits};
+use super::certification::Certifications;
 use super::MAX_KEYWORDS;
 
 #[derive(Debug, Deserialize)]
@@ -41,6 +42,10 @@ pub(super) struct Details {
     pub(super) images: Option<Images>, // appended (logos)
     #[serde(default)]
     pub(super) keywords: Option<Keywords>, // appended (thematic tags)
+    #[serde(default)]
+    pub(super) release_dates: Option<Certifications>, // appended (movie age ratings)
+    #[serde(default)]
+    pub(super) content_ratings: Option<Certifications>, // appended (show age ratings)
 }
 
 #[derive(Debug, Deserialize)]

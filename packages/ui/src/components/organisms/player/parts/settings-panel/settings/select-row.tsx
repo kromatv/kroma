@@ -4,9 +4,11 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { IconOk } from '#ui/components/organisms/player/parts/icons';
+import { style } from '#ui/core';
 import { a11yState } from '#ui/lib/a11y';
 import { panel, rowStyle } from './panel-style';
 
+const MIN_W = style({ minWidth: 0 });
 function Line({ node, style }: Readonly<{ node?: ReactNode; style: TextStyle }>) {
   if (node == null) return null;
   if (typeof node !== 'string') return node;
@@ -56,7 +58,7 @@ export function SelectRow({
       style={rowStyle(panel.selectRow, panel.rowOn, focused)}
     >
       {leading}
-      <Box flex style={{ minWidth: 0 }}>
+      <Box flex style={MIN_W}>
         <Line node={label} style={panel.selectLabel} />
         <Line node={sub} style={panel.selectSub} />
       </Box>

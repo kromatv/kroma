@@ -9,6 +9,7 @@ import {
   Row,
   SegmentGroup,
   Select,
+  styles,
   useBreakpoint,
 } from '@kroma/ui/kit';
 import {
@@ -37,7 +38,7 @@ const SORT_ICON: Record<SavedSort, IconName> = {
   rating: 'star',
 };
 
-const SORT_TRIGGER = { flexShrink: 0, minWidth: 196 } as const;
+const s = styles({ sortTrigger: { flexShrink: 0, minWidth: 196 } });
 
 export interface SavedTitlesBarProps {
   tab: SavedTab;
@@ -129,7 +130,7 @@ export function SavedTitlesBar({
           if (next) onSort(next);
         }}
       >
-        <Select.Trigger size="sm" style={phone ? undefined : SORT_TRIGGER}>
+        <Select.Trigger size="sm" style={phone ? undefined : s.sortTrigger}>
           {phone ? <Icon name={SORT_ICON[sort]} size={18} color="textMuted" /> : <Select.Value />}
         </Select.Trigger>
         {SAVED_SORTS.map((mode) => (

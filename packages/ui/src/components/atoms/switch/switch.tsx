@@ -137,15 +137,8 @@ function Flip({ on, travel, thumb }: Readonly<{ on: boolean; travel: number; thu
   if (WEB) {
     return (
       <>
-        <View style={[s.fill, TRANSITION_OPACITY as ViewStyle, { opacity: on ? 1 : 0 }]} />
-        <View
-          style={[
-            face,
-            s.thumb,
-            TRANSITION_TRANSFORM as ViewStyle,
-            { transform: [{ translateX: on ? travel : 0 }] },
-          ]}
-        />
+        <View style={[s.fill, move.opacity, on ? move.shown : move.hidden]} />
+        <View style={[face, s.thumb, move.transform, slideOf(on ? travel : 0)]} />
       </>
     );
   }
@@ -179,16 +172,22 @@ function FlipNative({
 
 // react-native-web understands these CSS-only props; React Native's types do
 // not, hence the casts at the use sites.
-const TRANSITION_OPACITY = {
-  transitionProperty: 'opacity',
-  transitionDuration: `${FLIP_MS}ms`,
-  transitionTimingFunction: EASE_CSS,
-};
-const TRANSITION_TRANSFORM = {
-  transitionProperty: 'transform',
-  transitionDuration: `${FLIP_MS}ms`,
-  transitionTimingFunction: EASE_CSS,
-};
+const slideOf = (x: number) => sharedStyle(`switch:slide:${x}`, { transform: [{ translateX: x }] });
+
+const move = styles({
+  opacity: {
+    transitionProperty: 'opacity',
+    transitionDuration: `${FLIP_MS}ms`,
+    transitionTimingFunction: EASE_CSS,
+  },
+  transform: {
+    transitionProperty: 'transform',
+    transitionDuration: `${FLIP_MS}ms`,
+    transitionTimingFunction: EASE_CSS,
+  },
+  shown: { opacity: 1 },
+  hidden: { opacity: 0 },
+});
 
 const s = styles({
   fill: { fill: true, bg: 'accent', radius: 'pill' },

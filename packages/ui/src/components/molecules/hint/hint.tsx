@@ -1,5 +1,6 @@
 import type { StyleProp, TextStyle } from 'react-native';
 import type { ColorToken } from '#ui/core';
+import { sharedStyle } from '#ui/core';
 // <Hint>: the row that tells you what the remote does. Translations carry only
 // the words and a `{left}`-style token where a key belongs; the tokens become
 // kit icons, because tvOS renders the geometric arrow code points with emoji
@@ -31,6 +32,7 @@ interface HintProps extends Omit<BoxProps, 'children'> {
   textStyle?: StyleProp<TextStyle>;
 }
 
+const sizeOf = (fontSize: number) => sharedStyle(`hint:size:${fontSize}`, { fontSize });
 function partsOf(text: string): string[] {
   const parts: string[] = [];
   let at = 0;
@@ -56,7 +58,7 @@ function Hint({ text, size = 15, color = 'textDim', textStyle, ...box }: Readonl
       {parts.map((part, index) =>
         !(part in KEYS) ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: the parts of one line are a fixed, ordered split; there is no stable id to key on.
-          <Text key={index} color={color} style={[{ fontSize: size }, textStyle]}>
+          <Text key={index} color={color} style={[sizeOf(size), textStyle]}>
             {part}
           </Text>
         ) : (

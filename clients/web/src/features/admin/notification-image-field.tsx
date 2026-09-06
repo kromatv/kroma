@@ -3,6 +3,7 @@ import { useT } from '@kroma/ui';
 import {
   Box,
   Button,
+  classes,
   color,
   Dialog,
   EmptyState,
@@ -17,11 +18,14 @@ import {
   styles,
   Text,
 } from '@kroma/ui/kit';
-import { type CSSProperties, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-const HIDDEN: CSSProperties = { display: 'none' };
-
-const s = styles({ tile: { minW: 0 } });
+const s = styles({
+  tile: { minW: 0 },
+  hidden: { display: 'none' },
+  thumb: { width: 20, height: 20 },
+  art: { width: '100%', aspectRatio: 16 / 9 },
+});
 
 import { useAsyncAction } from '#web/features/admin/hooks';
 import { kromaClient } from '#web/shared/lib/api';
@@ -45,8 +49,8 @@ export function NotificationImageField({
           <Img
             src={value ? kromaClient().media.artwork.resolve(value, 160) : null}
             alt=""
-            radius={4}
-            style={THUMB}
+            radius="xs"
+            style={s.thumb}
             background={WASH}
             fallback={<Icon name="photo" size={18} color="textDim" />}
           />
@@ -77,9 +81,6 @@ function imageName(value: string): string {
 }
 
 const WASH = color('tint/4');
-
-const THUMB = { width: 20, height: 20 } as const;
-const TILE = { width: '100%', aspectRatio: 16 / 9 } as const;
 
 function ImagePickerDialog({
   open,
@@ -121,7 +122,7 @@ function ImagePickerDialog({
           ref={fileRef}
           type="file"
           accept="image/*"
-          style={HIDDEN}
+          className={classes(s.hidden)}
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) void upload(file);
@@ -188,8 +189,8 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
           <Img
             src={kromaClient().media.artwork.resolve(img.url, 320)}
             alt={img.name}
-            radius={8}
-            style={TILE}
+            radius="sm"
+            style={s.art}
             background={WASH}
           />
           <Text variant="meta" color="textDim" lines={1} mt={6}>

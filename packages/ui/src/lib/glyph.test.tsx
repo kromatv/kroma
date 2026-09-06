@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { Icon } from '#ui/components/atoms/icon';
 import { colors } from '#ui/core/tokens';
 import { splitAlpha } from '#ui/core/tokens/colors';
+import { declared } from '#ui/testing';
 import { DEFAULT_ICON_SIZE, resolveIcon } from './glyph';
 
 afterEach(cleanup);
@@ -127,7 +128,7 @@ describe('<Icon>', () => {
     // crossings inside the glyph invisible. On this target that is the element
     // the glyph already had; the native file needs a wrapper for it, because
     // Tabler's React Native build would hand the alpha to every path.
-    expect((svg as unknown as HTMLElement).style.opacity).toBe('var(--kroma-text-dim-alpha)');
+    expect(declared(svg, 'opacity')).toBe('var(--kroma-text-dim-alpha)');
   });
 
   it('draws a faded glyph without a wrapper element', () => {
@@ -146,6 +147,6 @@ describe('<Icon>', () => {
     const { container } = render(<Icon name="player-play" color="accent" />);
     const svg = svgIn(container);
     expect(svg.getAttribute('stroke')).toBe('var(--kroma-accent)');
-    expect((svg as unknown as HTMLElement).style.opacity).toBe('');
+    expect(declared(svg, 'opacity')).toBeNull();
   });
 });

@@ -25,6 +25,7 @@ import {
   useState,
 } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
+import { styles } from '#ui/core';
 
 type Report = (focused: boolean) => void;
 
@@ -35,15 +36,17 @@ export function useFocusLift(): Report | null {
   return useContext(LiftContext);
 }
 
+const s = styles({ lifted: { z: 1 }, grounded: { z: 0 } });
+
 /** One layer clear of a sibling, the same step <Focusable> and <ButtonGroup>
  *  use, so a control sitting in several of these cannot fight itself. */
-export const LIFTED: ViewStyle = { zIndex: 1 };
+export const LIFTED: ViewStyle = s.lifted;
 
 /** The resting half of <LIFTED>, and never `null`: on Fabric a `zIndex` that
  *  appears and disappears flattens and unflattens the native view under it, and
  *  the mount operations aimed at the tag it just dropped are discarded
  *  ("Unable to find viewState for tag"), which loses the row's layout. */
-export const GROUNDED: ViewStyle = { zIndex: 0 };
+export const GROUNDED: ViewStyle = s.grounded;
 
 /**
  * Makes its subtree's focus visible to a container, so the container can lift

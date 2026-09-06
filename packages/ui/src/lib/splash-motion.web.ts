@@ -9,6 +9,7 @@
 
 import { useMemo } from 'react';
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import { sharedStyle } from '#ui/core';
 import type { DriftSpec } from './splash-motion';
 
 /** react-native-web's keyframe extension, absent from React Native's style types. */
@@ -80,7 +81,7 @@ export function useDrift(spec: Readonly<DriftSpec>): StyleProp<ViewStyle> {
     if (!width || !height) return null;
     return [
       sheet({ x, y, zoom, ms, width, height }),
-      { animationDuration: `${ms * 2}ms` } as ViewStyle,
+      sharedStyle(`splash:drift:${ms}`, { animationDuration: `${ms * 2}ms` }),
     ];
   }, [x, y, zoom, ms, width, height]);
 }

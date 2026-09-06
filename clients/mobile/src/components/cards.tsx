@@ -5,10 +5,10 @@
 import type { KromaClient } from '@kroma/client';
 import type { ContinueItem, MediaItem, SectionItem, Show } from '@kroma/client/media';
 import { episodeTag, sizedImageUrl } from '@kroma/core';
-import { Box, styles, Text, VirtualRail } from '@kroma/ui/kit';
+import { Box, styles, Text, VirtualRail, WatchedBadge } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
-import { Pressable, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useGutters } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
 import { posterWidth, radius, type } from '#mobile/lib/theme';
@@ -22,6 +22,7 @@ export interface CardModel {
   subtitle?: string;
   poster: string | null;
   route: string;
+  watched?: boolean;
 }
 
 export function movieCard(item: MediaItem, client: KromaClient, width: number): CardModel {
@@ -50,25 +51,60 @@ export function sectionCard(entry: SectionItem, client: KromaClient, width: numb
     : showCard(entry.show, client, width);
 }
 
+/** A poster's height at a width, on whole points so a grid of them stacks
+ * without drift. */
+export const posterHeight = (width: number): number => Math.round(width * 1.5);
+
+/** The label block under a labelled poster: two title lines and a year, at a
+ * fixed height so every row of a grid is the same. */
+export const POSTER_LABEL_H =
+  6 + 2 * (type.caption.lineHeight ?? 18) + (type.small.lineHeight ?? 16);
+
+// The fold keeps its share of the poster, so a phone's tile wears the same
+// silhouette as a desktop's.
+const badgeSize = (width: number | '100%') =>
+  typeof width === 'number' ? Math.round(Math.min(40, Math.max(24, width * 0.27))) : 32;
+
 export const PosterCard = memo(function PosterCard({
   card,
   width,
+  labelled = false,
 }: Readonly<{
   card: CardModel;
   width: number | '100%';
+  labelled?: boolean;
 }>) {
   const router = useRouter();
+  const size =
+    typeof width === 'number'
+      ? { width, height: posterHeight(width) }
+      : { width, aspectRatio: 2 / 3 };
   return (
     <Pressable
       onPress={() => router.push(card.route as never)}
       style={({ pressed }) => [{ width, opacity: pressed ? 0.75 : 1 }]}
     >
-      <FadeImage
-        uri={card.poster}
-        seed={card.key}
-        radius={radius.sm}
-        style={{ width, aspectRatio: 2 / 3 }}
-      />
+      <Box style={[size, s.art]}>
+        <FadeImage
+          uri={card.poster}
+          seed={card.key}
+          radius={radius.sm}
+          style={StyleSheet.absoluteFill}
+        />
+        {card.watched ? <WatchedBadge size={badgeSize(width)} /> : null}
+      </Box>
+      {labelled ? (
+        <Box style={s.label}>
+          <Text lines={2} style={s.labelTitle}>
+            {card.title}
+          </Text>
+          {card.subtitle ? (
+            <Text lines={1} style={s.labelSub}>
+              {card.subtitle}
+            </Text>
+          ) : null}
+        </Box>
+      ) : null}
     </Pressable>
   );
 });
@@ -163,6 +199,10 @@ export function ContinueRail({
 }
 
 const s = styles({
+  art: { radius: radius.sm, overflow: 'hidden' },
+  label: { h: POSTER_LABEL_H, pt: 6 },
+  labelTitle: { ...type.caption, color: 'text', fontWeight: '600' },
+  labelSub: { ...type.small },
   cardTitle: { ...type.caption, mt: 6, color: 'text' },
   cardSub: { ...type.small, mt: 1 },
   progressTrack: { absolute: true, right: 6, bottom: 6, left: 6, h: 3, bg: 'text/30', radius: 2 },

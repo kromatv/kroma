@@ -1,6 +1,7 @@
 import { useT } from '@kroma/ui';
 import { Box, FocusScroll, Grid, Hint, PosterCard, styles, Text } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
+import { weight } from '#tv/shared/ui/weight';
 
 /** One result, already reduced to what a poster needs. */
 export interface SearchResult {
@@ -41,7 +42,7 @@ export function TvSearchResults({ hits, query, width, header }: Readonly<TvSearc
           size={12}
           gap={3}
           color="text/34"
-          textStyle={{ fontWeight: '600' }}
+          textStyle={weight.semibold}
         />
       </Box>
       {hits.length ? (

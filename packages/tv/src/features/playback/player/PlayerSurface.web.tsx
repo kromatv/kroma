@@ -1,9 +1,11 @@
 // The video surface on the browser targets: which element it is depends on the
 // backend the playback hook chose. PlayerSurface.tsx is the native half.
 
+import { classes, style } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
 
+const FILL = style({ width: '100%', height: '100%' });
 export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: string }>): ReactNode {
   if (pb.surface === 'avplay') {
     // NO child text: AVPlay renders to a hardware plane, not into this <object>'s
@@ -13,13 +15,13 @@ export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: str
       <object
         ref={pb.objectRef}
         type="application/avplayer"
-        style={{ width: '100%', height: '100%' }}
+        className={classes(FILL)}
         aria-label={title}
       />
     );
   }
   if (pb.surface === 'mpv') {
-    return <div style={{ width: '100%', height: '100%' }} role="img" aria-label={title} />;
+    return <div className={classes(FILL)} role="img" aria-label={title} />;
   }
   // Subtitles render through the shared SubtitleRenderer; the empty captions
   // track only satisfies the media-caption accessibility requirement.

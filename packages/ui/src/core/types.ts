@@ -4,6 +4,7 @@ import type { ImageStyle, TextStyle, ViewStyle } from 'react-native';
 import type { TextStyleProps } from '#ui/core/shorthand-resolve';
 import type { BoxStyleProps } from '#ui/core/shorthands';
 import type { SvState, SvStateName } from '#ui/core/states';
+import type { WebStyle } from '#ui/core/web-style';
 
 // All three, not TextStyle alone: the tvos fork types some properties
 // differently, so a plain TextStyle there satisfies neither a View nor a Text,
@@ -18,9 +19,21 @@ export type AnyStyle = ViewStyle & TextStyle & ImageStyle;
  *  so a slot handed a plain `TextStyle` is still a legal declaration. */
 declare const PAINTED: unique symbol;
 
-export type StyleDecl = Omit<AnyStyle, keyof BoxStyleProps> & {
-  [K in keyof BoxStyleProps]?: BoxStyleProps[K] | (K extends keyof AnyStyle ? AnyStyle[K] : never);
-} & TextStyleProps & { readonly [PAINTED]?: true };
+type Plain = Omit<AnyStyle, keyof BoxStyleProps | keyof WebStyle> & {
+  [K in keyof BoxStyleProps]?:
+    | BoxStyleProps[K]
+    | (K extends keyof AnyStyle ? AnyStyle[K] : never)
+    | (K extends keyof WebStyle ? WebStyle[K] : never);
+} & TextStyleProps &
+  Omit<WebStyle, keyof BoxStyleProps>;
+
+/** A value stated per interaction state, `base` for the rest:
+ *  `bg: { base: 'accent', hover: 'accentHover' }`. */
+export type Conditional<V> = { base?: V } & { [S in SvStateName]?: V };
+
+export type StyleDecl = { [K in keyof Plain]?: Plain[K] | Conditional<Plain[K]> } & {
+  readonly [PAINTED]?: true;
+};
 
 export type Decl<T> = T & { [K in SvStateName as `_${K}`]?: T };
 

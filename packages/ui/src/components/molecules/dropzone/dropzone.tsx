@@ -8,6 +8,7 @@
 
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
+import { style } from '#ui/core';
 import { HAND } from '#ui/lib/cursor';
 import {
   DropzoneDescription,
@@ -17,7 +18,7 @@ import {
   SURFACE_SHAPE,
 } from './dropzone-parts';
 
-const SURFACE = {
+const SURFACE = style({
   alignItems: 'center',
   justifyContent: 'center',
   borderWidth: SURFACE_SHAPE.borderWidth,
@@ -25,7 +26,7 @@ const SURFACE = {
   borderRadius: SURFACE_SHAPE.borderRadius,
   paddingHorizontal: SURFACE_SHAPE.paddingX,
   paddingVertical: SURFACE_SHAPE.paddingY,
-} as const;
+});
 
 function Root({ label, disabled = false, children }: Readonly<DropzoneRootProps>) {
   return (

@@ -8,6 +8,7 @@ import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusScope } from '#ui/lib/focus-scope';
 import { OverlayHost } from '#ui/lib/overlay-host';
 import { clearPressGuard } from '#ui/lib/press-guard';
+import { wearsRing } from '#ui/testing';
 import { Dialog } from './dialog';
 
 beforeAll(() => configureRemote());
@@ -18,10 +19,8 @@ afterEach(() => {
 });
 
 const host = (label: string) => screen.getByLabelText(label);
-// A control wears the focus ring as a box shadow.
 function lit(label: string, at: { rendered: boolean } = { rendered: true }): boolean {
-  const el = at.rendered ? host(label) : screen.queryByLabelText(label);
-  return el instanceof HTMLElement && el.style.boxShadow !== '';
+  return wearsRing(at.rendered ? host(label) : screen.queryByLabelText(label));
 }
 
 function press(key: string) {

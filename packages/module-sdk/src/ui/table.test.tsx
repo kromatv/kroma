@@ -1,12 +1,16 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { Table } from './table';
+import { type SortColumn, Table } from './table';
 
-function head(children: ReactNode) {
+function head(children: ReactNode, sorting?: Partial<Parameters<typeof Table.Root>[0]>) {
   return render(
-    <Table.Root columns="1fr 1fr" label="Downloads">
+    <Table.Root
+      columns={[{ column: 'release' }, { column: 'added' }]}
+      label="Downloads"
+      {...sorting}
+    >
       <Table.Header>{children}</Table.Header>
     </Table.Root>,
   );
@@ -20,26 +24,43 @@ describe('Table.Column', () => {
     expect(screen.queryByRole('button')).toBeNull();
   });
 
-  it('turns the whole heading cell into one control when it can sort', () => {
-    const onSortPress = vi.fn();
+  it('turns the heading into the sort control once the table sorts', () => {
+    const onSortChange = vi.fn();
+    const sort: SortColumn[] = [{ column: 'added', direction: 'desc' }];
 
     head(
-      <Table.Column sorted="desc" onSortPress={onSortPress}>
-        Added
-      </Table.Column>,
+      [
+        <Table.Column key="release">Release</Table.Column>,
+        <Table.Column key="added">Added</Table.Column>,
+      ],
+      { sort, onSortChange },
     );
-    const control = screen.getByRole('button');
-    control.click();
+    const [, added] = screen.getAllByRole('columnheader');
+    expect(added?.getAttribute('aria-sort')).toBe('descending');
 
-    const column = screen.getByRole('columnheader');
-    expect(column.getAttribute('aria-sort')).toBe('descending');
-    expect(control.getAttribute('aria-labelledby')).toBe(column.id);
-    expect(onSortPress).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getAllByRole('button')[1] as HTMLElement);
+
+    expect(onSortChange).toHaveBeenCalledOnce();
+    expect(onSortChange.mock.calls[0]?.[1]).toEqual({ column: 'added' });
   });
+});
 
-  it('says it sorts nothing yet while another column is doing the ordering', () => {
-    head(<Table.Column onSortPress={() => undefined}>Progress</Table.Column>);
+describe('Table.Row', () => {
+  it('presses as one control and keeps its cells', () => {
+    const onPress = vi.fn();
+    render(
+      <Table.Root columns={[{}, { width: 80 }]} label="Downloads">
+        <Table.Row onPress={onPress}>
+          <Table.Cell>Alpha</Table.Cell>
+          <Table.Cell>Beta</Table.Cell>
+        </Table.Row>
+      </Table.Root>,
+    );
 
-    expect(screen.getByRole('columnheader').getAttribute('aria-sort')).toBe('none');
+    const row = screen.getByRole('row');
+    expect(row.textContent).toBe('AlphaBeta');
+    fireEvent.click(row);
+
+    expect(onPress).toHaveBeenCalledOnce();
   });
 });

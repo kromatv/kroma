@@ -6,7 +6,9 @@
 // See progress-motion.tsx for the native half.
 
 import { type StyleProp, View, type ViewStyle } from 'react-native';
+import { style } from '#ui/core';
 import { motion } from '#ui/core/tokens';
+import { classes } from '#ui/lib/classed';
 import { ease } from '#ui/lib/ease';
 import type { RingGeometry } from '#ui/lib/ring';
 
@@ -15,15 +17,17 @@ export interface ProgressFillProps {
   style: StyleProp<ViewStyle>;
 }
 
-const ARC_TRANSITION = {
-  transition: `stroke-dashoffset ${motion.duration.base}ms ${ease.out.css}`,
-};
+const ARC_TRANSITION = style({
+  transitionProperty: 'stroke-dashoffset',
+  transitionDuration: `${motion.duration.base}ms`,
+  transitionTimingFunction: ease.out.css,
+});
 
-const FILL_TRANSITION = {
+const FILL_TRANSITION = style({
   transitionProperty: 'right',
   transitionDuration: `${motion.duration.base}ms`,
   transitionTimingFunction: ease.out.css,
-} as unknown as ViewStyle;
+});
 
 /** The arc of a <ProgressRing>, easing to a new length when the value changes. */
 export function ProgressArc({
@@ -45,7 +49,7 @@ export function ProgressArc({
       strokeLinecap="round"
       strokeDasharray={circumference}
       strokeDashoffset={dashOffset}
-      style={ARC_TRANSITION}
+      className={classes(ARC_TRANSITION)}
     />
   );
 }

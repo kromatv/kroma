@@ -12,11 +12,12 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { FocusLiftHost, FocusLiftView, LIFTED } from '#ui/lib/focus-lift';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusScope } from '#ui/lib/focus-scope';
+import { declared } from '#ui/testing';
 
 beforeAll(() => configureRemote());
 afterEach(cleanup);
 
-const lifted = () => screen.getByTestId('host').style.zIndex === '1';
+const lifted = () => declared(screen.getByTestId('host'), 'zIndex') === '1';
 
 // The only focusable inside the host is the one under test, so nothing inside
 // can inherit the focus when it goes: whatever the navigator does next, this
@@ -73,14 +74,13 @@ describe('a lifting container', () => {
 
   it('rises above the container beside it while it holds the focus', () => {
     pair();
-
-    expect(holder('Tile').style.zIndex).toBe('1');
+    expect(declared(holder('Tile'), 'zIndex')).toBe('1');
   });
 
   it('grounds itself on a number rather than on nothing', () => {
     pair();
 
-    expect(holder('Elsewhere').style.zIndex).toBe('0');
+    expect(declared(holder('Elsewhere'), 'zIndex')).toBe('0');
   });
 });
 
@@ -117,7 +117,7 @@ describe('a lift chain under StrictMode', () => {
     nested();
 
     const inner = screen.getByLabelText('Tile').parentElement as HTMLElement;
-    expect(inner.style.zIndex).toBe('1');
-    expect((inner.parentElement as HTMLElement).style.zIndex).toBe('1');
+    expect(declared(inner, 'zIndex')).toBe('1');
+    expect(declared(inner.parentElement as HTMLElement, 'zIndex')).toBe('1');
   });
 });

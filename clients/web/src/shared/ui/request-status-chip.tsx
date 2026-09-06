@@ -3,7 +3,7 @@
 
 import type { RequestStatus } from '@kroma/client/requests';
 import { useT } from '@kroma/ui';
-import { Box, backdropBlur, Row, Text, useLoop } from '@kroma/ui/kit';
+import { Box, backdropBlur, classes, Row, sharedStyle, styles, Text, useLoop } from '@kroma/ui/kit';
 import { requestStatusMeta } from '#web/shared/lib/request-status';
 
 const PULSE_MS = 2000;
@@ -20,7 +20,7 @@ function Ring({ value, size, color }: Readonly<{ value: number; size: number; co
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
-      style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}
+      className={classes(s.ring)}
       aria-hidden="true"
     >
       <circle
@@ -42,7 +42,7 @@ function Ring({ value, size, color }: Readonly<{ value: number; size: number; co
         strokeLinecap="round"
         strokeDasharray={circ}
         strokeDashoffset={offset}
-        style={{ transition: `stroke-dashoffset ${RING_MS}ms` }}
+        className={classes(s.arc)}
       />
     </svg>
   );
@@ -54,11 +54,15 @@ const SHAPE = {
   hero: { dot: 8, ring: 16, gap: 8, px: 16, py: 8 },
 } as const;
 
-const BOLD = { fontWeight: '700' } as const;
+const s = styles({
+  ring: { transform: [{ rotate: '-90deg' }], flexShrink: 0 },
+  arc: { transitionProperty: 'stroke-dashoffset', transitionDuration: `${RING_MS}ms` },
+  bold: { fontWeight: '700' },
+  tabular: { fontVariant: ['tabular-nums'] },
+  cardFrost: backdropBlur(6),
+});
 
-const TABULAR = { fontVariant: ['tabular-nums' as const] };
-
-const CARD_FROST = backdropBlur(6);
+const inkOf = (ink: string) => sharedStyle(`chip:ink:${ink}`, { backgroundColor: ink });
 
 export function RequestStatusChip({
   status,
@@ -76,17 +80,11 @@ export function RequestStatusChip({
   const pct = downloading ? `${Math.round((progress ?? 0) * 100)}%` : null;
   const pulse = useLoop('pulse', PULSE_MS, m.pulse === true);
 
-  const fill = { backgroundColor: m.bg };
+  const fill = inkOf(m.bg);
   const lead = downloading ? (
     <Ring value={progress ?? 0} size={shape.ring} color={m.dot} />
   ) : (
-    <Box
-      w={shape.dot}
-      h={shape.dot}
-      shrink={0}
-      radius="circle"
-      style={[{ backgroundColor: m.dot }, pulse]}
-    />
+    <Box w={shape.dot} h={shape.dot} shrink={0} radius="circle" style={[inkOf(m.dot), pulse]} />
   );
 
   if (size === 'card') {
@@ -98,7 +96,7 @@ export function RequestStatusChip({
         py={shape.py}
         radius="pill"
         bg="bg/72"
-        style={CARD_FROST}
+        style={s.cardFrost}
       >
         {lead}
         <Text variant="overline" color={m.color}>
@@ -111,11 +109,15 @@ export function RequestStatusChip({
   return (
     <Row self="flex-start" gap={shape.gap} px={shape.px} py={shape.py} radius="pill" style={fill}>
       {lead}
-      <Text variant={size === 'hero' ? 'label' : 'meta'} color={m.color} style={BOLD}>
+      <Text variant={size === 'hero' ? 'label' : 'meta'} color={m.color} style={s.bold}>
         {t(m.labelKey)}
       </Text>
       {pct ? (
-        <Text variant={size === 'hero' ? 'label' : 'meta'} color={m.color} style={[BOLD, TABULAR]}>
+        <Text
+          variant={size === 'hero' ? 'label' : 'meta'}
+          color={m.color}
+          style={[s.bold, s.tabular]}
+        >
           {pct}
         </Text>
       ) : null}

@@ -11,6 +11,7 @@ import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import type { IconName } from '#ui/components/atoms/icon';
+import { styles } from '#ui/core';
 import { ToastCard } from './toast-card';
 
 const DEFAULT_MS = 4500;
@@ -31,7 +32,7 @@ export type ToastPosition =
 
 const DEFAULT_POSITION: ToastPosition = 'top-right';
 
-const NO_POINTER: ViewStyle = { pointerEvents: 'none' };
+const NO_POINTER: ViewStyle = styles({ none: { pointerEvents: 'none' } }).none;
 
 const COLUMNS = {
   'top-left': { top: true, align: 'flex-start' },

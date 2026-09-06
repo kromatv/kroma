@@ -137,7 +137,7 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
       art={() => (
         <>
           {showImg ? (
-            <Img src={poster} alt={entry.title} radius="lg" fill onError={() => setImgOk(false)} />
+            <Img src={poster} alt={entry.title} radius="xl" fill onError={() => setImgOk(false)} />
           ) : (
             <Box fill justify="flex-end" p={12}>
               <Text variant="label" color="white/90" lines={3}>

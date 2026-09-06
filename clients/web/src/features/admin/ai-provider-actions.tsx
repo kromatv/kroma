@@ -1,8 +1,8 @@
 import { useT } from '@kroma/ui';
-import { Button, Icon, Row, Spacer, Text } from '@kroma/ui/kit';
+import { Button, Icon, Row, Spacer, styles, Text } from '@kroma/ui/kit';
 import type { Busy, Probe } from '#web/features/admin/ai-provider-spec';
 
-const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
+const s = styles({ dangerLabel: { fontSize: 13, fontWeight: '600' } });
 
 export function CardActions({
   busy,
@@ -55,7 +55,7 @@ export function CardActions({
       <Spacer />
       <Button variant="ghost" size="sm" onPress={onRemove}>
         <Icon name="trash" size={15} color="danger" />
-        <Text color="danger" style={DANGER_LABEL}>
+        <Text color="danger" style={s.dangerLabel}>
           {t('admin.aiRemoveProvider')}
         </Text>
       </Button>

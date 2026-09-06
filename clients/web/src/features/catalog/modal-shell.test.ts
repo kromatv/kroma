@@ -3,27 +3,34 @@ import { describe, expect, it } from 'vitest';
 import { MODAL_SCRIM, SCRIM_Z } from '#web/shared/ui/page';
 import { FOOTER_RULE, HEADER_RULE, MODAL_BODY, MODAL_LAYER, modalPanel } from './modal-shell';
 
-const PANEL = modalPanel(768);
+const read = (style: object) => style as Record<string, unknown>;
+
+const flat = (layers: object[]) =>
+  Object.assign({}, ...layers.map(read)) as Record<string, unknown>;
+
+const LAYER = read(MODAL_LAYER);
+const BODY = read(MODAL_BODY);
+const PANEL = flat(modalPanel(768));
 
 describe('the modal layer', () => {
   it('covers the window rather than a place in the page', () => {
-    expect(MODAL_LAYER.position).toBe('fixed');
-    expect(MODAL_LAYER.inset).toBe(0);
+    expect(LAYER.position).toBe('fixed');
+    expect(LAYER.inset).toBe(0);
   });
 
   it('floats above the scrim it shares the page with', () => {
-    expect(MODAL_SCRIM.zIndex).toBe(SCRIM_Z);
-    expect(MODAL_LAYER.zIndex).toBeGreaterThan(SCRIM_Z);
+    expect(read(MODAL_SCRIM).zIndex).toBe(SCRIM_Z);
+    expect(LAYER.zIndex as number).toBeGreaterThan(SCRIM_Z);
   });
 
   it('centres whatever it holds', () => {
-    expect(MODAL_LAYER.display).toBe('flex');
-    expect(MODAL_LAYER.alignItems).toBe('center');
-    expect(MODAL_LAYER.justifyContent).toBe('center');
+    expect(LAYER.display).toBe('flex');
+    expect(LAYER.alignItems).toBe('center');
+    expect(LAYER.justifyContent).toBe('center');
   });
 
   it('lets the page through everywhere the panel is not', () => {
-    expect(MODAL_LAYER.pointerEvents).toBe('none');
+    expect(LAYER.pointerEvents).toBe('none');
     expect(PANEL.pointerEvents).toBe('auto');
   });
 });
@@ -31,8 +38,8 @@ describe('the modal layer', () => {
 describe('the modal panel', () => {
   it('fills the width up to the cap its caller states', () => {
     expect(PANEL.width).toBe('100%');
-    expect(modalPanel(512).maxWidth).toBe(512);
-    expect(modalPanel(1024).maxWidth).toBe(1024);
+    expect(flat(modalPanel(512)).maxWidth).toBe(512);
+    expect(flat(modalPanel(1024)).maxWidth).toBe(1024);
   });
 
   it('never grows past the layer it floats in', () => {
@@ -43,37 +50,33 @@ describe('the modal panel', () => {
     expect(PANEL.overflow).toBe('hidden');
     expect(PANEL.display).toBe('flex');
     expect(PANEL.flexDirection).toBe('column');
-    expect(MODAL_BODY.flex).toBe(1);
-    expect(MODAL_BODY.overflowY).toBe('auto');
+    expect(BODY.flex).toBe(1);
+    expect(BODY.overflowY).toBe('auto');
     // A flex child refuses to shrink below its content without it, which is
     // what turns the scrolling pane into a growing panel.
-    expect(MODAL_BODY.minHeight).toBe(0);
+    expect(BODY.minHeight).toBe(0);
   });
 
   it('takes its corner and its edge from the kit rather than a copy of them', () => {
-    expect(PANEL.borderRadius).toBe(radius['2xl']);
+    expect(PANEL.borderRadius).toBe(radius.xl);
     expect(PANEL.borderColor).toBe(color('white/10'));
     expect(PANEL.borderStyle).toBe('solid');
     expect(PANEL.borderWidth).toBe(1);
   });
 
   it('paints on the theme’s ground, so a repainted theme repaints the panel', () => {
-    expect(PANEL.background).toMatch(/^var\(--kroma-/);
-  });
-
-  it('casts its shadow in a palette colour', () => {
-    expect(PANEL.boxShadow).toContain(color('black/60'));
+    expect(PANEL.backgroundColor).toMatch(/^var\(--kroma-/);
   });
 });
 
 describe('the header and footer rules', () => {
   it('separate with the same hairline on both sides of the body', () => {
-    expect(HEADER_RULE.borderBottomWidth).toBe(1);
-    expect(FOOTER_RULE.borderTopWidth).toBe(1);
-    expect(HEADER_RULE.borderBottomColor).toBe(FOOTER_RULE.borderTopColor);
+    expect(read(HEADER_RULE).borderBottomWidth).toBe(1);
+    expect(read(FOOTER_RULE).borderTopWidth).toBe(1);
+    expect(read(HEADER_RULE).borderBottomColor).toBe(read(FOOTER_RULE).borderTopColor);
   });
 
   it('draw that hairline in a palette colour', () => {
-    expect(HEADER_RULE.borderBottomColor).toBe(color('white/7'));
+    expect(read(HEADER_RULE).borderBottomColor).toBe(color('white/7'));
   });
 });

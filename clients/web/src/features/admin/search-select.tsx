@@ -11,6 +11,7 @@ import { useT } from '@kroma/ui';
 import {
   armEscapeGuard,
   Box,
+  classes,
   Divider,
   entryDefaultSize,
   Focusable,
@@ -24,10 +25,8 @@ import {
   Text,
   useAnchoredPlacement,
   useStableCallback,
-  useTheme,
 } from '@kroma/ui/kit';
 import {
-  type CSSProperties,
   type KeyboardEvent,
   type RefObject,
   useEffect,
@@ -42,18 +41,31 @@ import { SearchOption } from './search-select-option';
 // A popup is `position: fixed` and its list scrolls on one axis, neither of
 // which React Native has, so the panel stays real CSS. Every value in it still
 // comes from a token.
-const BACKDROP: CSSProperties = {
-  ...PANEL_BACKDROP,
-  margin: 0,
-  padding: 0,
-  border: 0,
-  background: 'none',
-  cursor: 'default',
-};
-
-const LIST: CSSProperties = { maxHeight: 256, overflowY: 'auto', padding: 6 };
-
-const s = styles({ ring: { ring: 'focusEdge' } });
+const s = styles({
+  ring: { ring: 'focusEdge' },
+  backdrop: { ...PANEL_BACKDROP, m: 0, p: 0, borderWidth: 0, bg: 'transparent', cursor: 'default' },
+  list: { maxHeight: 256, overflowY: 'auto', p: 6 },
+  panel: {
+    ...PANEL_SHELL,
+    minWidth: 240,
+    overflow: 'hidden',
+    radius: 'xs',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'borderStrong',
+    bg: 'surface1',
+  },
+  entry: {
+    text: 'meta',
+    width: '100%',
+    m: 0,
+    p: 0,
+    borderWidth: 0,
+    bg: 'transparent',
+    color: 'text',
+    outlineStyle: 'none',
+  },
+});
 
 export function SearchSelect({
   value,
@@ -143,26 +155,6 @@ function SearchPanel({
   const t = useT();
   const pick = useStableCallback(onPick);
   const at = useAnchoredPlacement(anchor, { minWidth: 240, matchWidth: true, maxHeight: 320 });
-  const theme = useTheme();
-  const panel: CSSProperties = {
-    ...PANEL_SHELL,
-    minWidth: 240,
-    overflow: 'hidden',
-    borderRadius: theme.radius.xs,
-    border: `1px solid ${theme.colors.borderStrong}`,
-    background: theme.colors.surface1,
-    boxShadow: theme.shadow.pop,
-  };
-  const entry: CSSProperties = {
-    font: 'var(--type-meta)',
-    width: '100%',
-    margin: 0,
-    padding: 0,
-    border: 0,
-    background: 'transparent',
-    color: theme.colors.text,
-    outline: 'none',
-  };
 
   const all = useMemo(
     () => (value && !options.includes(value) ? [value, ...options] : options),
@@ -212,16 +204,11 @@ function SearchPanel({
         aria-label={t('common.close')}
         tabIndex={-1}
         onClick={onClose}
-        style={BACKDROP}
+        className={classes(s.backdrop)}
       />
       <div
-        style={{
-          ...panel,
-          left: at.left,
-          top: at.top,
-          bottom: at.bottom,
-          width: at.width,
-        }}
+        className={classes(s.panel)}
+        style={{ left: at.left, top: at.top, bottom: at.bottom, width: at.width }}
       >
         <Row gap={8} px={12} py={10} style={focused ? s.ring : null}>
           <Icon name="search" size={14} color="textDim" />
@@ -237,11 +224,11 @@ function SearchPanel({
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             placeholder={searchPlaceholder}
-            style={entry}
+            className={classes(s.entry)}
           />
         </Row>
         <Divider />
-        <div ref={list} id={listId} role="listbox" style={LIST}>
+        <div ref={list} id={listId} role="listbox" className={classes(s.list)}>
           {filtered.length === 0 ? (
             <Text variant="meta" color="textDim" textAlign="center" px={12} py={16}>
               -

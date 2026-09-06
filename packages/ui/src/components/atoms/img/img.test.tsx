@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { declared } from '#ui/testing';
 import { Img, type ImgProps } from './img';
 
 const el = (props: ImgProps) => createElement(Img, props);
@@ -37,7 +38,7 @@ describe('Img', () => {
     // The fade is the browser's, so the element's RESTING state is opaque: an
     // image whose reveal depended on React state stayed invisible whenever that
     // state never arrived, with its bytes already decoded.
-    expect(img.style.animation).toContain('kroma-img-in');
+    expect(declared(img, 'animation-name')).toBe('kroma-img-in');
     expect(img.style.opacity).toBe('');
     expect(img.getAttribute('loading')).toBe('lazy');
     expect(img.getAttribute('decoding')).toBe('async');
@@ -48,7 +49,7 @@ describe('Img', () => {
 
     const { container } = render(el({ src: 'a.jpg' }));
 
-    expect(main(container)?.style.animation).toBe('none');
+    expect(declared(main(container) as Element, 'animation-name')).toBe('none');
   });
 
   it('loads eagerly at high priority when marked the LCP art', () => {
@@ -134,7 +135,7 @@ describe('Img', () => {
       const next = main(container);
       if (!next) throw new Error('no incoming <img> rendered');
       expect(next.getAttribute('src')).toBe('b.jpg');
-      expect(next.style.animation).toContain('kroma-img-in');
+      expect(declared(next, 'animation-name')).toBe('kroma-img-in');
 
       fireEvent.load(next);
       act(() => vi.advanceTimersByTime(16));
@@ -159,7 +160,7 @@ describe('Img', () => {
     // from the start rather than inheriting the previous one's finished state.
     expect(next.getAttribute('src')).toBe('b.jpg');
     expect(next).not.toBe(first);
-    expect(next.style.animation).toContain('kroma-img-in');
+    expect(declared(next, 'animation-name')).toBe('kroma-img-in');
     await frame();
   });
 

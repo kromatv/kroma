@@ -9,12 +9,14 @@ import { useT } from '@kroma/ui';
 import {
   Box,
   Button,
+  classes,
   color,
   Disclosure,
   EmptyState,
   type HostElement,
   Logo,
   Row,
+  styles,
   Text,
 } from '@kroma/ui/kit';
 import { useRouter, useRouterState } from '@tanstack/react-router';
@@ -56,7 +58,7 @@ function ErrorScreen({
   const { code, title, body } = COPY[kind];
 
   return (
-    <main style={SCREEN}>
+    <main className={classes(s.screen)}>
       <Box flex w="100%" maxW={440}>
         <EmptyState.Root size="md" layout="fill">
           <Box mb={22} opacity={0.9}>
@@ -64,7 +66,7 @@ function ErrorScreen({
           </Box>
 
           <EmptyState.Media variant="plain">
-            <div style={NUMERAL}>{code}</div>
+            <div className={classes(s.numeral)}>{code}</div>
           </EmptyState.Media>
 
           <Text variant="h2" accessibilityRole="header" textAlign="center">
@@ -109,31 +111,32 @@ function ErrorScreen({
   );
 }
 
-const SCREEN = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  minHeight: '100vh',
-  paddingLeft: 24,
-  paddingRight: 24,
-  background: PAGE_RADIAL,
-} as const;
+const s = styles({
+  screen: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    minHeight: '100vh',
+    px: 24,
+    backgroundImage: PAGE_RADIAL,
+  },
+  numeral: {
+    fontFamily: 'var(--font-display)',
+    fontSize: 104,
+    fontWeight: '800',
+    lineHeight: 1,
+    letterSpacing: '-0.04em',
+    color: 'transparent',
+    backgroundImage: `linear-gradient(180deg, ${color('text')} 0%, ${color('text/28')} 100%)`,
+    WebkitBackgroundClip: 'text',
+    backgroundClip: 'text',
+  },
+});
 
 // The status numeral is a gradient clipped to its own glyphs, which is a
 // browser text effect with no React Native spelling, so it stays CSS rather
 // than becoming a type role: the ramp tops out at `hero` 66 and a step this
 // far above it would open a gap wider than the ramp allows.
-const NUMERAL = {
-  fontFamily: 'var(--font-display)',
-  fontSize: 104,
-  fontWeight: 800,
-  lineHeight: 1,
-  letterSpacing: '-0.04em',
-  color: 'transparent',
-  backgroundImage: `linear-gradient(180deg, ${color('text')} 0%, ${color('text/28')} 100%)`,
-  WebkitBackgroundClip: 'text',
-  backgroundClip: 'text',
-} as const;
 
 /** Router `defaultErrorComponent`: a thrown error (loader/component). Picks the
  * variant from the error's status and offers a retry that re-runs the route. */

@@ -9,6 +9,8 @@ use std::thread;
 
 use tracing::{info, warn};
 
+use kroma_domain::metadata::characters_aligned;
+
 use crate::db::{self, Pool};
 use crate::infra::events::{Bus, ServerEvent};
 use crate::infra::image;
@@ -193,6 +195,7 @@ fn blank_metadata() -> Metadata {
         genres: Vec::new(),
         tmdb_genre_ids: Vec::new(),
         rating: None,
+        certification: None,
         poster_url: None,
         backdrop_url: None,
         logo_url: None,
@@ -366,11 +369,11 @@ fn store_season_cast(
         if sdata.cast.is_empty() {
             continue;
         }
-        let characters: Vec<Option<String>> =
-            sdata.cast.iter().map(|c| c.character.clone()).collect();
-        // Index-aligned to the cast row, so only written where the two came
-        // from the same response and cannot have drifted apart.
-        if characters.len() != data.cast.len() {
+        // Aligned to the stored cast rows by person, not by position: the two
+        // responses are the same cast in two languages, and TMDB does not
+        // promise them the same order.
+        let characters = characters_aligned(&data.cast, &sdata.cast);
+        if characters.is_empty() {
             continue;
         }
         let td = TransData {
@@ -839,6 +842,7 @@ mod tests {
                 genres: Vec::new(),
                 tmdb_genre_ids: Vec::new(),
                 rating: None,
+                certification: None,
                 poster_url: None,
                 backdrop_url: None,
                 logo_url: None,

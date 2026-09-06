@@ -29,7 +29,6 @@ export function Avatar({
       circle={circle}
       locked={locked}
       gradient={tintGradient(posterColors(label))}
-      shadow={false}
     />
   );
 }

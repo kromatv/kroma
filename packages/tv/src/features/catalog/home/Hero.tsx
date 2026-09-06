@@ -37,6 +37,8 @@ const HERO_EMPTY_HEIGHT = 432;
 const HERO_W = 960;
 
 const s = styles({
+  titleGap: { mt: 16, mb: 14 },
+  moreInfo: { px: 34 },
   heroActions: { row: true, gap: 18 },
   heroTitle: { fontSize: 82, lineHeight: 79, fontWeight: '700', letterSpacing: -1.64 },
   featuredLabel: { fontSize: 14 },
@@ -107,7 +109,7 @@ export function Hero({ info, onPlay, onSelectShow, onSelectEntry }: Readonly<Her
         <Text variant="overlineTv" style={s.featuredLabel} color="accentText">
           {t('content.featured')}
         </Text>
-        <Text variant="hero" style={[s.heroTitle, { marginTop: 16, marginBottom: 14 }]}>
+        <Text variant="hero" style={[s.heroTitle, s.titleGap]}>
           {hero.type === 'show' ? hero.show.title : hero.item.title}
         </Text>
         <Box row wrap align="center" gap={12} mb={14}>
@@ -146,7 +148,7 @@ export function Hero({ info, onPlay, onSelectShow, onSelectEntry }: Readonly<Her
             variant="outline"
             label={t('content.moreInfo')}
             onPress={() => onSelectEntry(hero)}
-            style={{ paddingHorizontal: 34 }}
+            style={s.moreInfo}
           />
         </FocusRegion>
       </Box>

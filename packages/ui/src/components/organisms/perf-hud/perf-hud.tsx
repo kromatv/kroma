@@ -92,7 +92,7 @@ const s = styles({
     gap: 4,
     py: 12,
     px: 16,
-    radius: 'md',
+    radius: 'xl',
     bg: 'bg/86',
     border: 'border',
   },

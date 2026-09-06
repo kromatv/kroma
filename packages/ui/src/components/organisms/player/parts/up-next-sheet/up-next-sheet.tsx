@@ -54,10 +54,16 @@ function parkOffset(sheetHeight: number): number {
 // it goes: a hard cut reads as a row sliced in half.
 const TOP_FADE = maskImage('linear-gradient(180deg, transparent 0, #000 40px)');
 
-const SCRIM = gradient('linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.55) 45%)');
-const SHEET_FILL = gradient(
-  'linear-gradient(180deg, transparent, rgba(10,10,12,0.55) 12%, rgba(10,10,12,0.97) 30%)',
-);
+const fills = styles({
+  scrim: gradient('linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.55) 45%)'),
+  sheet: gradient(
+    'linear-gradient(180deg, transparent, rgba(10,10,12,0.55) 12%, rgba(10,10,12,0.97) 30%)',
+  ),
+  scrimOn: { opacity: 1, pointerEvents: 'auto' },
+  scrimOff: { opacity: 0, pointerEvents: 'none' },
+  chevronOpen: { transform: [{ rotate: '0deg' }] },
+  chevronClosed: { transform: [{ rotate: '180deg' }] },
+});
 
 interface Section {
   id: string;
@@ -156,18 +162,14 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
         onPress={onClose}
         accessibilityRole="button"
         accessibilityLabel={t('player.back')}
-        style={[
-          s.scrimBox,
-          SCRIM,
-          { opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none' },
-        ]}
+        style={[s.scrimBox, fills.scrim, open ? fills.scrimOn : fills.scrimOff]}
       />
       <Animated.View
         onLayout={(e) => {
           const h = Math.round(e.nativeEvent.layout.height);
           setSheetHeight((prev) => (prev === h ? prev : h));
         }}
-        style={[s.sheetBox, SHEET_FILL, slide]}
+        style={[s.sheetBox, fills.sheet, slide]}
       >
         {/* One column, so ▲ off the top row reaches the header rather than
             leaving the sheet. `bridge={false}`: the screen's remote bridge is
@@ -243,7 +245,7 @@ const s = styles({
   },
   sheetTitle: { font: 'display', fontSize: 22, fontWeight: '700' },
   headerRow: { row: true, align: 'flex-start' },
-  headerBox: { px: 56, pt: 28, pb: 18, radius: 'lg' },
+  headerBox: { px: 56, pt: 28, pb: 18, radius: 'xl' },
   fill: { flex: true, minH: 0 },
   list: { flex: true, minH: 0 },
   grid: { gap: 32 },
@@ -295,7 +297,7 @@ function SheetHeader({
   const inside = (
     <Box row align="center" gap={14}>
       <Text style={s.sheetTitle}>{title}</Text>
-      <Box style={{ transform: [{ rotate: open ? '0deg' : '180deg' }] }}>
+      <Box style={open ? fills.chevronOpen : fills.chevronClosed}>
         <Chevron />
       </Box>
     </Box>

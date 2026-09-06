@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { normalize, split, stabilise } from './normalize';
+import { normalize, split } from './normalize';
+import { stabilise } from './stabilise';
 
 describe('normalize', () => {
   it('expands shorthands into React Native longhands', () => {
-    expect(normalize({ row: true, center: true, px: 18, radius: 'pill' })).toEqual({
+    expect(normalize({ row: true, center: true, px: 18, radius: 'pill' }, 0)).toEqual({
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -14,7 +15,7 @@ describe('normalize', () => {
   });
 
   it('expands an edge shorthand into all four sides, so a later layer can beat it', () => {
-    expect(normalize({ p: 12 })).toEqual({
+    expect(normalize({ p: 12 }, 0)).toEqual({
       paddingTop: 12,
       paddingRight: 12,
       paddingBottom: 12,
@@ -23,73 +24,73 @@ describe('normalize', () => {
   });
 
   it('lets the most specific edge win within one layer', () => {
-    expect(normalize({ p: 20, pt: 4 })).toMatchObject({ paddingTop: 4, paddingBottom: 20 });
+    expect(normalize({ p: 20, pt: 4 }, 0)).toMatchObject({ paddingTop: 4, paddingBottom: 20 });
   });
 
   it('passes a key it does not own straight through', () => {
-    expect(normalize({ fontSize: 15, letterSpacing: 0.2 })).toEqual({
+    expect(normalize({ fontSize: 15, letterSpacing: 0.2 }, 0)).toEqual({
       fontSize: 15,
       letterSpacing: 0.2,
     });
   });
 
   it('resolves colours behind a shorthand', () => {
-    expect(normalize({ bg: 'accent' })).toEqual({ backgroundColor: 'var(--kroma-accent)' });
-    expect(normalize({ bg: 'white/12' })).toEqual({
+    expect(normalize({ bg: 'accent' }, 0)).toEqual({ backgroundColor: 'var(--kroma-accent)' });
+    expect(normalize({ bg: 'white/12' }, 0)).toEqual({
       backgroundColor: 'rgba(255, 255, 255, 0.12)',
     });
   });
 
   it('resolves colours behind a longhand, which is what a props slot writes', () => {
-    expect(normalize({ color: 'accent' })).toEqual({ color: 'var(--kroma-accent)' });
-    expect(normalize({ color: 'white/50' })).toEqual({ color: 'rgba(255, 255, 255, 0.5)' });
-    expect(normalize({ shadowColor: 'bg' })).toEqual({ shadowColor: 'var(--kroma-bg)' });
+    expect(normalize({ color: 'accent' }, 0)).toEqual({ color: 'var(--kroma-accent)' });
+    expect(normalize({ color: 'white/50' }, 0)).toEqual({ color: 'rgba(255, 255, 255, 0.5)' });
+    expect(normalize({ shadowColor: 'bg' }, 0)).toEqual({ shadowColor: 'var(--kroma-bg)' });
   });
 
   it('leaves a non-string colour value alone', () => {
-    expect(normalize({ color: undefined })).toEqual({ color: undefined });
+    expect(normalize({ color: undefined }, 0)).toEqual({ color: undefined });
   });
 
   it('lets a longhand beat the shorthand it stands for, within one layer', () => {
-    expect(normalize({ bg: 'accent', backgroundColor: '#123456' })).toEqual({
+    expect(normalize({ bg: 'accent', backgroundColor: '#123456' }, 0)).toEqual({
       backgroundColor: '#123456',
     });
   });
 
   it('returns an empty object for an empty layer', () => {
-    expect(normalize({})).toEqual({});
+    expect(normalize({}, 0)).toEqual({});
   });
 });
 
 describe('split', () => {
   it('is undefined for a missing declaration', () => {
-    expect(split(undefined)).toBeUndefined();
+    expect(split(undefined, 0)).toBeUndefined();
   });
 
   it('separates the rest value from the per-state layers', () => {
-    const s = split({ bg: 'accent', _hover: { bg: 'accentHover' } });
+    const s = split({ bg: 'accent', _hover: { bg: 'accentHover' } }, 0);
     expect(s?.rest).toEqual({ backgroundColor: 'var(--kroma-accent)' });
     expect(s?.states.hover).toEqual({ backgroundColor: 'var(--kroma-accent-hover)' });
   });
 
   it('normalises the state layers too', () => {
-    expect(split({ _press: { px: 4 } })?.states.press).toEqual({
+    expect(split({ _press: { px: 4 } }, 0)?.states.press).toEqual({
       paddingLeft: 4,
       paddingRight: 4,
     });
   });
 
   it('reports which states it declared, so the compiler can mask the rest', () => {
-    expect(split({ bg: 'accent' })?.declared).toEqual([]);
-    expect(split({ _hover: {}, _disabled: {} })?.declared).toEqual(['hover', 'disabled']);
+    expect(split({ bg: 'accent' }, 0)?.declared).toEqual([]);
+    expect(split({ _hover: {}, _disabled: {} }, 0)?.declared).toEqual(['hover', 'disabled']);
   });
 
   it('rejects an unknown state rather than emitting it as a style key', () => {
-    expect(() => split({ _active: { bg: 'accent' } })).toThrow(/unknown state "_active"/);
+    expect(() => split({ _active: { bg: 'accent' } }, 0)).toThrow(/unknown state "_active"/);
   });
 
   it('names the states it does accept, so the error is actionable', () => {
-    expect(() => split({ _pressed: {} })).toThrow(/_hover/);
+    expect(() => split({ _pressed: {} }, 0)).toThrow(/_hover/);
   });
 });
 
@@ -124,5 +125,64 @@ describe('stabilise ordering', () => {
       'opacity',
       'zIndex',
     ]);
+  });
+});
+
+describe('a static layer', () => {
+  it('is its own canonical form, its states read off the mark', async () => {
+    const { markStatic } = await import('./atomic/static-style');
+    const hover = { opacity: 1 };
+    markStatic(hover);
+    const layer = { opacity: 0.5 };
+    markStatic(layer, { hover });
+
+    expect(normalize(layer as never, 0)).toBe(layer);
+    expect(split(layer as never, 0)).toEqual({
+      rest: layer,
+      states: { hover },
+      declared: ['hover'],
+      breakpoints: 0,
+    });
+  });
+});
+
+describe('split', () => {
+  it("reads a value stated per state into that state's layer, base into the rest", () => {
+    const out = split(
+      {
+        bg: { base: 'accent', hover: 'accentHover', press: 'accentPress' },
+        opacity: { press: 0.8 },
+        px: 12,
+      },
+      0,
+    );
+
+    expect(out?.rest).toEqual({
+      backgroundColor: 'var(--kroma-accent)',
+      paddingLeft: 12,
+      paddingRight: 12,
+    });
+    expect(out?.declared).toEqual(['hover', 'press']);
+    expect(out?.states.hover).toEqual({ backgroundColor: 'var(--kroma-accent-hover)' });
+    expect(out?.states.press).toEqual({
+      backgroundColor: 'var(--kroma-accent-press)',
+      opacity: 0.8,
+    });
+  });
+
+  it('merges a stated value under the state layer written beside it', () => {
+    const out = split(
+      { bg: { base: 'accent', hover: 'accentHover' }, _hover: { bg: 'danger' } },
+      0,
+    );
+
+    expect(out?.states.hover).toEqual({ backgroundColor: 'var(--kroma-danger)' });
+  });
+
+  it('keeps a value stated per breakpoint as one', () => {
+    const out = split({ px: { base: 8, md: 12 } }, 0);
+
+    expect(out?.rest).toEqual({ paddingLeft: 8, paddingRight: 8 });
+    expect(out?.declared).toEqual([]);
   });
 });

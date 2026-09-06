@@ -104,7 +104,7 @@ export function InvitePage() {
       </PageHeader.Root>
 
       <Box mt={24}>
-        <Surface elevated pad="none" radius={16} px={22} py={20} gap={18} minW={0}>
+        <Surface elevated pad="none" px={22} py={20} gap={18} minW={0}>
           <Box gap={10}>
             <Text variant="label">{t('admin.permissions')}</Text>
             <ChoiceList.Root
@@ -248,7 +248,7 @@ function PendingInviteRow({ inv, onChange }: Readonly<{ inv: Invite; onChange: (
   }
 
   return (
-    <Surface elevated pad="none" radius={16} px={18} py={14}>
+    <Surface elevated pad="none" px={18} py={14}>
       <Row gap={14} align="center" wrap>
         <IconWell name="mail" size="sm" />
         <Box flex minW={180} gap={2}>

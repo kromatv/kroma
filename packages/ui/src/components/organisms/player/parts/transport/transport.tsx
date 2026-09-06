@@ -2,7 +2,7 @@ import { formatTimecode as fmtTime } from '@kroma/core';
 import { useMemo } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { styles } from '#ui/core';
+import { style, styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { useLocale, useT } from '#ui/services/i18n';
 import type { StoryboardTile } from '#ui/services/storyboard';
@@ -102,7 +102,7 @@ function Transport({
   );
 }
 
-const BOTTOM_SCRIM = gradient('linear-gradient(0deg, rgba(0,0,0,0.82), transparent)');
+const BOTTOM_SCRIM = style(gradient('linear-gradient(0deg, rgba(0,0,0,0.82), transparent)'));
 
 const s = styles({
   inert: { pointerEvents: 'none' },

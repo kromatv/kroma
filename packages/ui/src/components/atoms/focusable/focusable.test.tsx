@@ -17,6 +17,7 @@ import { activeTheme } from '#ui/core';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
 import { armPressGuard, clearPressGuard } from '#ui/lib/press-guard';
+import { declared, wearsRing } from '#ui/testing';
 import { Focusable } from './focusable';
 
 beforeAll(() => configureRemote());
@@ -38,7 +39,7 @@ const painted = (label: string) => host(label);
 // The ring is an outline standing off the control (see tokens/effects), so the
 // question "is this the focus?" is asked of the outline and not of a shadow -
 // several controls carry a shadow when nothing is focused at all.
-const ringed = (label: string) => painted(label).style.outlineWidth !== '';
+const ringed = (label: string) => wearsRing(painted(label));
 
 function press(key: string) {
   act(() => {
@@ -64,9 +65,13 @@ describe('Focusable on react-native-web', () => {
       </>,
     );
     const entry = painted('Entree');
-    expect(entry.style.outlineWidth).toBe(`${activeTheme().ring.focusLift.outlineWidth}px`);
-    expect(entry.style.outlineOffset).toBe(`${activeTheme().ring.focusLift.outlineOffset}px`);
-    expect(entry.style.boxShadow.replace(/\s+/g, ' ')).toBe(activeTheme().ring.focusLift.boxShadow);
+    expect(declared(entry, 'outlineWidth')).toBe(`${activeTheme().ring.focusLift.outlineWidth}px`);
+    expect(declared(entry, 'outlineOffset')).toBe(
+      `${activeTheme().ring.focusLift.outlineOffset}px`,
+    );
+    expect(declared(entry, 'boxShadow')?.replace(/\s+/g, ' ')).toBe(
+      activeTheme().ring.focusLift.boxShadow,
+    );
     expect(ringed('Premier')).toBe(false);
   });
 
@@ -164,9 +169,9 @@ describe('Focusable on react-native-web', () => {
         <Focusable label="Plate" />
       </FocusRegion>,
     );
-    expect(painted('Tuile').style.transform).toContain('scale(1.06)');
+    expect(declared(painted('Tuile'), 'transform')).toContain('scale(1.06)');
     press('ArrowRight');
-    expect(painted('Plate').style.transform).toBe('');
+    expect(declared(painted('Plate'), 'transform')).toBeNull();
   });
 
   it('exposes focus state to a render-prop child', () => {
@@ -180,7 +185,7 @@ describe('Focusable on react-native-web', () => {
 
   it('applies a focus state layer from the design tokens', () => {
     screenWith(<Focusable label="Chip" autoFocus states={{ focus: { bg: 'accentSoft' } }} />);
-    expect(painted('Chip').style.backgroundColor.replace(/\s+/g, ' ')).toBe(
+    expect((declared(painted('Chip'), 'backgroundColor') ?? '').replace(/\s+/g, ' ')).toBe(
       'var(--kroma-accent-soft)',
     );
   });
@@ -194,15 +199,15 @@ describe('Focusable on react-native-web', () => {
     // React's enter/leave pair - derived from `pointerover`/`pointerout`, which
     // is what the events below dispatch.
     screenWith(<Focusable label="Survol" states={{ hover: { bg: 'accentSoft' } }} />);
-    expect(painted('Survol').style.backgroundColor).toBe('');
+    expect(declared(painted('Survol'), 'backgroundColor')).toBe('rgba(0, 0, 0, 0)');
 
     fireEvent.pointerOver(host('Survol'));
-    expect(painted('Survol').style.backgroundColor.replace(/\s+/g, ' ')).toBe(
+    expect(declared(painted('Survol'), 'backgroundColor')?.replace(/\s+/g, ' ')).toBe(
       'var(--kroma-accent-soft)',
     );
 
     fireEvent.pointerOut(host('Survol'));
-    expect(painted('Survol').style.backgroundColor).toBe('');
+    expect(declared(painted('Survol'), 'backgroundColor')).toBe('rgba(0, 0, 0, 0)');
   });
 
   it('grows under the pointer by the amount it grows on focus', () => {
@@ -215,16 +220,16 @@ describe('Focusable on react-native-web', () => {
         <Focusable label="Plate" />
       </>,
     );
-    expect(painted('Tuile').style.transform).toBe('scale(1)');
+    expect(declared(painted('Tuile'), 'transform')).toBe('scale(1)');
 
     fireEvent.pointerOver(host('Tuile'));
-    expect(painted('Tuile').style.transform).toContain('scale(1.06)');
+    expect(declared(painted('Tuile'), 'transform')).toContain('scale(1.06)');
 
     fireEvent.pointerOver(host('Plate'));
-    expect(painted('Plate').style.transform).toBe('');
+    expect(declared(painted('Plate'), 'transform')).toBeNull();
 
     fireEvent.pointerOut(host('Tuile'));
-    expect(painted('Tuile').style.transform).toBe('scale(1)');
+    expect(declared(painted('Tuile'), 'transform')).toBe('scale(1)');
   });
 
   it('applies a hover state layer on a page with no navigator at all', () => {
@@ -232,7 +237,7 @@ describe('Focusable on react-native-web', () => {
     // clients/web. Nothing can focus it and no finger will press it, so the
     // hover is the ONLY answer a cursor gets there.
     render(<Focusable label="Nu" states={{ hover: { bg: 'accentSoft' } }} />);
-    const wash = () => getComputedStyle(painted('Nu')).backgroundColor;
+    const wash = () => declared(painted('Nu'), 'backgroundColor');
     expect(wash()).toBe('rgba(0, 0, 0, 0)');
 
     // A Pressable listens for the hover itself (react-native-web's useHover),
@@ -290,7 +295,7 @@ describe('the cursor a browser draws over a control', () => {
         <Focusable label="Press me" onPress={() => {}} />
       </FocusRegion>,
     );
-    expect(painted('Press me').style.cursor).toBe('pointer');
+    expect(declared(painted('Press me'), 'cursor')).toBe('pointer');
   });
 
   it('states the arrow on a disabled control rather than inheriting a hand', () => {
@@ -301,7 +306,7 @@ describe('the cursor a browser draws over a control', () => {
         </Focusable>
       </FocusRegion>,
     );
-    expect(painted('Dead').style.cursor).toBe('default');
+    expect(declared(painted('Dead'), 'cursor')).toBe('default');
   });
 
   it('leaves a control that does nothing alone', () => {
@@ -310,7 +315,7 @@ describe('the cursor a browser draws over a control', () => {
         <Focusable label="Inert" />
       </FocusRegion>,
     );
-    expect(painted('Inert').style.cursor).toBe('');
+    expect(declared(painted('Inert'), 'cursor')).toBeNull();
   });
 
   it("keeps a control's own cursor over the hand", () => {
@@ -319,6 +324,6 @@ describe('the cursor a browser draws over a control', () => {
         <Focusable label="Seam" onPress={() => {}} style={{ cursor: 'col-resize' } as never} />
       </FocusRegion>,
     );
-    expect(painted('Seam').style.cursor).toBe('col-resize');
+    expect(declared(painted('Seam'), 'cursor')).toBe('col-resize');
   });
 });

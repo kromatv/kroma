@@ -32,6 +32,7 @@ import { playerStyle } from '#ui/components/organisms/player/lib/style';
 import type { SubtitleAppearance } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import type { PlayerController } from '#ui/components/organisms/player/types';
+import { sharedStyle, styles } from '#ui/core';
 import { ease } from '#ui/lib/ease';
 import { WEB } from '#ui/lib/platform';
 import { useT } from '#ui/services/i18n';
@@ -79,6 +80,20 @@ interface SettingsPanelProps {
 // The browsers have no native driver (react-native-web falls back to a JS
 // animation), so there the panel travels on a CSS transition and the movement
 // belongs to the compositor rather than to the thread the chrome ticks on.
+
+const veil = styles({
+  box: { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 41 },
+  live: { pointerEvents: 'auto' },
+  inert: { pointerEvents: 'none' },
+});
+
+const veilTo = (right: number | string) => sharedStyle(`settings:veil:${right}`, { right });
+
+const panelWidth = (width: number | string) =>
+  sharedStyle(`settings:panel:${width}`, { width, maxWidth: PANEL_MAX });
+
+const panelPad = (x: number, y: number) =>
+  sharedStyle(`settings:pad:${x}:${y}`, { paddingHorizontal: x, paddingVertical: y });
 function webPanelTravel(shown: boolean, width: number): ViewStyle {
   return {
     opacity: shown ? 1 : 0,
@@ -190,19 +205,11 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
         accessibilityRole="button"
         accessibilityLabel={t('common.close')}
         onPress={onClose}
-        style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          left: 0,
-          right: width ?? '44%',
-          zIndex: 41,
-          pointerEvents: shown ? 'auto' : 'none',
-        }}
+        style={[veil.box, veilTo(width ?? '44%'), shown ? veil.live : veil.inert]}
       />
       <Animated.ScrollView
-        style={[playerStyle.panel, { width: width ?? '44%', maxWidth: PANEL_MAX }, travel]}
-        contentContainerStyle={{ paddingHorizontal: px(58), paddingVertical: px(56) }}
+        style={[playerStyle.panel, panelWidth(width ?? '44%'), travel]}
+        contentContainerStyle={panelPad(px(58), px(56))}
         showsVerticalScrollIndicator={false}
       >
         <TitleBar

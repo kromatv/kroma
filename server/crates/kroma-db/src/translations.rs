@@ -11,7 +11,7 @@ const FALLBACK: &str = "en";
 /// What a row is expected to carry. Bumped when the payload grows a field that
 /// existing rows cannot have, so a catalog written before the change is refilled
 /// instead of being mistaken for complete.
-pub const REV: u32 = 1;
+pub const REV: u32 = 2;
 
 use serde::{Deserialize, Serialize};
 

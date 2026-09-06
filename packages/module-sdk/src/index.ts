@@ -64,8 +64,10 @@ export type {
   PointReq,
 } from './types';
 export type {
+  SortColumn,
   TableActionProps,
   TableCellProps,
+  TableColumn,
   TableColumnProps,
   TableRootProps,
   TableRowProps,

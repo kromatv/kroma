@@ -4,14 +4,14 @@
 // <Box> all check that version and re-resolve lazily on their next use, so a
 // switch costs one rebuild per recipe actually rendered, not an eager sweep.
 
+import { KROMA, KROMA_LIGHT, type Theme } from '#ui/core/theme-create';
+import { splitAlpha, withAlpha } from '#ui/core/tokens/colors';
+import { CSS_COLORS } from '#ui/core/tokens/css-palette';
+import { cssName, cssVar } from '#ui/core/tokens/css-var';
+import { CIRCLE_RADIUS, type CornerValue } from '#ui/core/tokens/layout';
 import { webDocument } from '#ui/lib/dom';
-import { KROMA, KROMA_LIGHT, type Theme } from './theme-create';
-import { splitAlpha, withAlpha } from './tokens/colors';
-import { CSS_COLORS } from './tokens/css-palette';
-import { cssName, cssVar } from './tokens/css-var';
-import { CIRCLE_RADIUS, type CornerValue } from './tokens/layout';
 
-export * from './theme-create';
+export * from '#ui/core/theme-create';
 
 let active: Theme = KROMA;
 // Starts at 1 so a consumer can use 0 (or -1) as "never resolved".

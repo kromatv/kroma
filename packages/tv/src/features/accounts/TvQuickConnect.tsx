@@ -135,7 +135,7 @@ export function TvQuickConnect() {
       {!error && info ? (
         <>
           {qr ? (
-            <Box w={280} h={280} center radius={28} bg="white" p={20} shadow="pop">
+            <Box w={280} h={280} center radius={28} bg="white" p={20}>
               <SvgXml xml={qr} width="100%" height="100%" />
             </Box>
           ) : null}

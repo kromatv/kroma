@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { StyleSheet } from 'react-native';
 import { describe, expect, it } from 'vitest';
-import { sharedStyle, style, styles } from './styles';
+import { registered, sharedStyle, style, styles } from './styles';
 
 const flat = (s: unknown) => StyleSheet.flatten(s as never) as Record<string, unknown>;
 
@@ -92,5 +92,27 @@ describe('sharedStyle', () => {
     const second = sharedStyle('overflow', { width: 7 });
     expect(flat(first)).toEqual({ width: 7 });
     expect(second).not.toBe(first);
+  });
+});
+
+describe('styles over a static entry', () => {
+  it('hands the static entry back as it is, beside the entries it resolves', async () => {
+    const { staticStyle } = await import('./atomic/register');
+    const compiled = staticStyle({ opacity: 0.5 });
+    const s = styles({ dim: compiled as never, row: { row: true } });
+
+    expect(s.dim).toBe(compiled);
+    expect(flat(s.row)).toEqual({ flexDirection: 'row' });
+  });
+});
+
+describe('registered', () => {
+  it('hands the same registered style to every caller rebuilding the same paint', () => {
+    const a = registered([{ paddingTop: 8 }, { opacity: 0.5 }]);
+    const b = registered({ paddingTop: 8, opacity: 0.5 });
+
+    expect(b).toBe(a);
+    expect(flat(a)).toEqual({ paddingTop: 8, opacity: 0.5 });
+    expect(registered({ paddingTop: 9 })).not.toBe(a);
   });
 });

@@ -11,7 +11,7 @@ interface CardSkeletonProps {
 
 function CardSkeleton({ fields = 4 }: Readonly<CardSkeletonProps>) {
   return (
-    <Box gap={16} p={24} radius="lg" border="borderStrong" bg="surface1" aria-hidden>
+    <Box gap={16} p={24} radius="xl" border="borderStrong" bg="surface1" aria-hidden>
       <Skeleton h={24} w={160} />
       {Array.from({ length: fields }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder fields

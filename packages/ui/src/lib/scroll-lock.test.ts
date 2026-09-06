@@ -2,6 +2,7 @@
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { webDocument } from '#ui/lib/dom';
+import { declared } from '#ui/testing';
 import { useScrollLock } from './scroll-lock';
 
 vi.mock('#ui/lib/dom', async (original) => {
@@ -9,10 +10,9 @@ vi.mock('#ui/lib/dom', async (original) => {
   return { webDocument: vi.fn(real.webDocument), webWindow: vi.fn(real.webWindow) };
 });
 
-const overflow = () => ({
-  root: document.documentElement.style.overflow,
-  body: document.body.style.overflow,
-});
+const read = (el: Element) => declared(el, 'overflow-y') || declared(el, 'overflow') || '';
+
+const overflow = () => ({ root: read(document.documentElement), body: read(document.body) });
 const padding = () => document.body.style.paddingRight;
 
 function viewport(at: Readonly<{ window: number; page: number }>) {

@@ -5,7 +5,8 @@
 import { type DragEvent, type KeyboardEvent, useCallback, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Spinner } from '#ui/components/atoms/spinner';
-import { color } from '#ui/core';
+import { styles } from '#ui/core';
+import { classes } from '#ui/lib/classed';
 import {
   DropzoneDescription,
   DropzoneIcon,
@@ -15,7 +16,28 @@ import {
 } from './dropzone-parts';
 import { sift } from './dropzone-sift';
 
-const HIDDEN = { display: 'none' } as const;
+const s = styles({
+  surface: {
+    display: 'flex',
+    width: '100%',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SURFACE_SHAPE.gap,
+    borderWidth: SURFACE_SHAPE.borderWidth,
+    borderStyle: 'dashed',
+    borderRadius: SURFACE_SHAPE.borderRadius,
+    py: SURFACE_SHAPE.paddingY,
+    px: SURFACE_SHAPE.paddingX,
+    transition: 'border-color 140ms ease, background 140ms ease',
+  },
+  rest: { borderColor: 'border', bg: 'transparent' },
+  over: { borderColor: 'accent', bg: 'accentSoft' },
+  hand: { cursor: 'pointer' },
+  inert: { cursor: 'default' },
+  dim: { opacity: 0.5 },
+  hidden: { display: 'none' },
+});
 
 function Root({
   label,
@@ -70,13 +92,12 @@ function Root({
         }}
         onDragLeave={() => setOver(false)}
         onDrop={onDropped}
-        style={{
-          ...SURFACE_CSS,
-          borderColor: color(over ? 'accent' : 'border'),
-          background: over ? color('accentSoft') : 'transparent',
-          cursor: inert ? 'default' : 'pointer',
-          opacity: disabled ? 0.5 : 1,
-        }}
+        className={classes(
+          s.surface,
+          over ? s.over : s.rest,
+          inert ? s.inert : s.hand,
+          disabled ? s.dim : null,
+        )}
       >
         <Box center gap={SURFACE_SHAPE.gap}>
           {loading ? <Spinner /> : children}
@@ -92,7 +113,7 @@ function Root({
         disabled={inert}
         aria-label={label}
         tabIndex={-1}
-        style={HIDDEN}
+        className={classes(s.hidden)}
         onChange={(e) => {
           take(e.target.files);
           // Cleared so picking the SAME file again still fires a change.
@@ -102,20 +123,6 @@ function Root({
     </>
   );
 }
-
-const SURFACE_CSS = {
-  display: 'flex',
-  width: '100%',
-  flexDirection: 'column' as const,
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: SURFACE_SHAPE.gap,
-  borderWidth: SURFACE_SHAPE.borderWidth,
-  borderStyle: 'dashed' as const,
-  borderRadius: SURFACE_SHAPE.borderRadius,
-  padding: `${SURFACE_SHAPE.paddingY}px ${SURFACE_SHAPE.paddingX}px`,
-  transition: 'border-color 140ms ease, background 140ms ease',
-};
 
 /** A surface files are dropped on, or clicked to browse for. See ./dropzone. */
 const Dropzone = {

@@ -9,6 +9,7 @@ import {
   FocusRegion,
   Hint,
   StatusDot,
+  style,
   styles,
   Text,
   useFocusNav,
@@ -31,6 +32,10 @@ interface Tile {
  * device; a PIN-protected profile routes to the PIN screen, the rest sign in
  * instantly.
  */
+
+const TILE = style({ radius: 24 });
+
+const SETTINGS = style({ px: 18, py: 10, borderWidth: 1 });
 export function TvProfiles() {
   const nav = useNav();
   const t = useT();
@@ -93,7 +98,7 @@ export function TvProfiles() {
                 // engine by DOM order, so this isn't left to chance.
                 autoFocus={index === 0}
                 focusScale={1.07}
-                style={{ borderRadius: 24 }}
+                style={TILE}
               >
                 <Box opacity={offline ? 0.4 : 1}>
                   <Avatar
@@ -139,7 +144,7 @@ export function TvProfiles() {
           focusScale={1.04}
           label={t('profiles.deviceSettings')}
           onPress={() => nav.go('deviceSettings')}
-          style={{ paddingHorizontal: 18, paddingVertical: 10, borderWidth: 1 }}
+          style={SETTINGS}
         />
       </Box>
 

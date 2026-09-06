@@ -1,7 +1,7 @@
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
-import { type StyleDecl, svFor } from '#ui/core';
+import { type StyleDecl, sharedStyle, svFor } from '#ui/core';
 import { ROW_W, useAlphabetRail } from './alphabet-rail-context';
 
 // The lens is the solid accent fill, so a dimmed letter under it keeps its
@@ -26,6 +26,7 @@ const letterVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
 
 type Tone = 'idle' | 'dim' | 'lit' | 'litDim';
 
+const sizeOf = (fontSize: number) => sharedStyle(`letter:size:${fontSize}`, { fontSize });
 function toneOf(index: number, present: boolean, lit: [number, number] | null): Tone {
   const inLens = lit !== null && index >= lit[0] && index <= lit[1];
   if (present) return inLens ? 'lit' : 'idle';
@@ -46,12 +47,16 @@ interface AlphabetItemProps {
 function Item({ value, disabled = false, label }: Readonly<AlphabetItemProps>) {
   const { indexOf, lit, rowH, fontSize, jump } = useAlphabetRail('Item');
   const tone = toneOf(indexOf(value), !disabled, lit);
-  const box = { width: ROW_W, height: rowH };
+  const box = sharedStyle(`letter:box:${rowH}`, { width: ROW_W, height: rowH });
 
   if (disabled) {
     return (
       <Box align="center" justify="center" style={box}>
-        <Text aria-hidden selectable={false} style={[letterVariants({ tone }).label, { fontSize }]}>
+        <Text
+          aria-hidden
+          selectable={false}
+          style={[letterVariants({ tone }).label, sizeOf(fontSize)]}
+        >
           {value}
         </Text>
       </Box>
@@ -67,7 +72,7 @@ function Item({ value, disabled = false, label }: Readonly<AlphabetItemProps>) {
       style={box}
     >
       {(state) => (
-        <Text selectable={false} style={[state.slots.label, { fontSize }]}>
+        <Text selectable={false} style={[state.slots.label, sizeOf(fontSize)]}>
           {value}
         </Text>
       )}

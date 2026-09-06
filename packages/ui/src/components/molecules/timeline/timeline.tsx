@@ -12,7 +12,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type ColorValue, styles, sv, type TypeRole } from '#ui/core';
+import { type ColorValue, sharedStyle, styles, sv, type TypeRole } from '#ui/core';
 import { type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
 
@@ -65,6 +65,8 @@ interface TimelineRootProps {
   children?: ReactNode;
 }
 
+const bodyOf = (gap: number) =>
+  sharedStyle(`timeline:body:${gap}`, { flex: true, minWidth: 0, ml: gap });
 function Root({ size, children }: Readonly<TimelineRootProps>) {
   const shape = SHAPE[size ?? entryDefaultSize()];
   const items = useMemo(
@@ -143,7 +145,7 @@ function Item({
           focusScale={1}
           onPress={onPress}
           sv={timelineEntry}
-          style={{ flex: 1, minWidth: 0, marginLeft: shape.gap }}
+          style={bodyOf(shape.gap)}
         >
           {body}
         </Focusable>

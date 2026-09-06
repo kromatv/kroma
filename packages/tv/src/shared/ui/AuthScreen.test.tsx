@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { HandoffBeaconView } from '@kroma/core';
 import { configureRemote, Focusable } from '@kroma/ui/kit';
-import { onScreen } from '@kroma/ui/testing';
+import { onScreen, wearsRing } from '@kroma/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { type ReactNode, useEffect } from 'react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -24,11 +24,7 @@ const LABELS = ['Back', 'First', 'Second'];
 // Which control the navigator rests on. On the browser targets a control paints
 // its own focus: the amber ring is a box-shadow, and the Back button - which
 // wears no ring, so it can float over artwork - answers with its focus scale.
-const lit = (): string[] =>
-  LABELS.filter((label) => {
-    const style = screen.queryByLabelText(label)?.getAttribute('style') ?? '';
-    return style.includes('box-shadow') || /transform: scale\(1\.\d/.test(style);
-  });
+const lit = (): string[] => LABELS.filter((label) => wearsRing(screen.queryByLabelText(label)));
 
 function press(key: string) {
   act(() => {

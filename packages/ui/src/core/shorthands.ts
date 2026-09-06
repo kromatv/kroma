@@ -24,7 +24,8 @@ import type { DimensionValue, TextStyle, ViewStyle } from 'react-native';
 import type { Responsive } from '#ui/core/breakpoint';
 import { type ColorValue, color } from '#ui/core/color';
 import { activeTheme, type RingToken, radiusValue } from '#ui/core/theme';
-import { absoluteFill, type CornerValue, type ShadowToken } from '#ui/core/tokens';
+import type { ShadowToken } from '#ui/core/tokens/effects';
+import { absoluteFill, type CornerValue } from '#ui/core/tokens/layout';
 
 // Every value below is {@link Responsive}: the value itself, or one per
 // breakpoint (`px={{ base: 16, md: 40 }}`), which resolves through the same

@@ -7,6 +7,7 @@
 // cost a third of the frame rate on a Samsung LS03D, so the ring does not fade.
 
 import { useCallback, useState } from 'react';
+import { sharedStyle } from '#ui/core';
 import { motion } from '#ui/core/tokens';
 import { type PressScale, pressScaleFor, useLongestSide } from '#ui/lib/press-dip';
 import { ease } from './ease';
@@ -18,14 +19,24 @@ const TIMING = ease.out.css;
 // compositing layer, which a TV GPU pays for even at scale 1.
 const RING_ONLY = {} as const;
 
+// Registered per scale, so the transition paints as a class shared by every
+// control at that size rather than inline on each.
+const scaled = (
+  key: string,
+  scale: number,
+  duration: string,
+  timing: string,
+): Record<string, unknown> =>
+  sharedStyle(`scale:${key}:${scale}`, {
+    transform: [{ scale }],
+    transitionProperty: 'transform',
+    transitionDuration: duration,
+    transitionTimingFunction: timing,
+  } as never) as Record<string, unknown>;
+
 export function useFocusScale(focused: boolean, to: number): Record<string, unknown> {
   if (to === 1) return RING_ONLY;
-  return {
-    transform: [{ scale: focused ? to : 1 }],
-    transitionProperty: 'transform',
-    transitionDuration: DURATION,
-    transitionTimingFunction: TIMING,
-  };
+  return scaled('focus', focused ? to : 1, DURATION, TIMING);
 }
 
 const DURATION_FAST = `${motion.duration.fast}ms`;
@@ -39,12 +50,7 @@ export function usePressScale(): PressScale {
   return {
     pressed,
     onLayout,
-    style: {
-      transform: [{ scale: pressed ? pressScaleFor(longest.current) : 1 }],
-      transitionProperty: 'transform',
-      transitionDuration: DURATION_FAST,
-      transitionTimingFunction: SPRING,
-    },
+    style: scaled('press', pressed ? pressScaleFor(longest.current) : 1, DURATION_FAST, SPRING),
     onPressIn,
     onPressOut,
   };

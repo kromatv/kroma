@@ -24,7 +24,12 @@ function SortCell({ column, align, sort, box, pad, children }: Readonly<SortCell
   const face = (
     <>
       {children}
-      <Icon name={SORT_GLYPH[state]} size={14} thickness={2.2} color={place ? 'text' : 'textDim'} />
+      <Icon
+        name={SORT_GLYPH[state]}
+        size={14}
+        thickness={2.2}
+        color={place ? 'accent' : 'textDim'}
+      />
       {place && sort.columns.length > 1 ? (
         <Text variant="overline" color="accentText">
           {place.rank}

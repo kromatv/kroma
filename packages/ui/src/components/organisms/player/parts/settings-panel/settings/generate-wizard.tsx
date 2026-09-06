@@ -119,7 +119,7 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
 
   return (
     <Box
-      radius="2xl"
+      radius="xl"
       borderWidth={1}
       border="rgba(124, 92, 255, 0.34)"
       p={32}
@@ -146,7 +146,7 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
         row
         gap={10}
         mb={14}
-        radius="lg"
+        radius="xl"
         onPointerEnter={focus.hover(0)}
         style={
           focus.index === 0 ? sharedStyle('generate-wizard:tabs-ring', { ring: 'focusLift' }) : null
@@ -229,7 +229,7 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
 const s = styles({
   startButton: { mt: 4 },
   backgroundHint: { mx: 2, mt: 12, mb: 4, text: 'captionTv' },
-  modeTab: { flex: 1, radius: 'lg', px: 18, py: 14 },
+  modeTab: { flex: 1, radius: 'xl', px: 18, py: 14 },
   modeHint: { opacity: 0.75 },
   modeDisabled: { bg: 'tint/4' },
   modeOn: { bg: 'accent' },

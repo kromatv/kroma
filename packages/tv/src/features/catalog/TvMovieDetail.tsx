@@ -34,6 +34,7 @@ export function TvMovieDetail() {
   const metaLong = [
     item.year ? String(item.year) : null,
     formatRuntime(item.durationMs),
+    meta?.certification,
     genreLabels(t, meta)[0],
   ]
     .filter(Boolean)

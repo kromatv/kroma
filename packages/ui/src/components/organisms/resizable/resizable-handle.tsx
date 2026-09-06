@@ -6,10 +6,10 @@
 // handle has to work on Apple TV, where there is no DOM to listen to.
 
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
-import { PanResponder, type PanResponderGestureState, type ViewStyle } from 'react-native';
+import { PanResponder, type PanResponderGestureState } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { sv } from '#ui/core';
+import { styles, sv } from '#ui/core';
 import { space } from '#ui/core/tokens';
 import type { GroupOrientation } from '#ui/lib/group-shape';
 import { useResizableGroup, useSeamIndex } from './resizable-context';
@@ -63,10 +63,10 @@ const span = (upright: boolean) =>
 // react-native-web paints a real cursor; React Native's own `CursorValue` knows
 // `auto` and `pointer` and nothing else, so the two resize cursors are stated
 // as plain style rather than through the shorthand vocabulary.
-const CURSOR = {
+const CURSOR = styles({
   horizontal: { cursor: 'col-resize' },
   vertical: { cursor: 'row-resize' },
-} as unknown as Record<GroupOrientation, ViewStyle>;
+});
 
 function along(orientation: GroupOrientation, gesture: PanResponderGestureState): number {
   return orientation === 'horizontal' ? gesture.dx : gesture.dy;

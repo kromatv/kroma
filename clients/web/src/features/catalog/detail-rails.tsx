@@ -3,42 +3,43 @@
 import type { CastMember } from '@kroma/client/media';
 import { personSegment, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, color, Focusable, gradient, type HostElement, sv, Text, themed } from '@kroma/ui/kit';
-import type { CSSProperties } from 'react';
+import { Box, classes, color, Focusable, type HostElement, styles, sv, Text } from '@kroma/ui/kit';
 import { imageUrl } from '#web/shared/lib/api';
+import { wash } from '#web/shared/lib/art-styles';
 import { Image, Poster, PosterRail } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 // The page gutter is a fluid CSS custom property and `overflow-x` names one
 // axis, so both scrollers stay plain elements around kit content.
-const GUTTER: CSSProperties = {
-  paddingLeft: 'var(--gutter-web)',
-  paddingRight: 'var(--gutter-web)',
-};
+const GUTTER = { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' } as const;
 
-// `scrollbar-width` only; the legacy `::-webkit-scrollbar` rule it used to pair
-// with needs a stylesheet, which an inline style has no way to reach.
-const CAST_SCROLLER: CSSProperties = {
-  ...GUTTER,
-  display: 'flex',
-  gap: 22,
-  overflowX: 'auto',
-  paddingTop: 16,
-  paddingBottom: 16,
-  scrollbarWidth: 'none',
-};
-
-const AVATAR: CSSProperties = {
-  width: '100%',
-  aspectRatio: '1',
-  borderRadius: '50%',
-  marginBottom: 11,
-  boxShadow: `0 8px 22px ${color('black/45')}`,
-  transition: 'outline-color .2s',
-  outlineColor: 'transparent',
-};
-
-const avatarRing = themed((theme): CSSProperties => ({ ...AVATAR, ...theme.ring.focus }));
+const s = styles({
+  gutter: GUTTER,
+  castSection: { mt: 40 },
+  similarSection: { mt: 44 },
+  scroller: {
+    ...GUTTER,
+    display: 'flex',
+    gap: 22,
+    overflowX: 'auto',
+    pt: 16,
+    pb: 16,
+    scrollbarWidth: 'none',
+  },
+  avatar: {
+    w: '100%',
+    aspectRatio: 1,
+    radius: 'circle',
+    mb: 11,
+    transitionProperty: 'outline-color',
+    transitionDuration: '200ms',
+    outlineColor: 'transparent',
+  },
+  avatarLit: { ring: 'focus' },
+  sheen: {
+    backgroundImage: `radial-gradient(70% 60% at 50% 22%, ${color('white/20')}, transparent 60%)`,
+  },
+});
 
 const castTile = sv({ base: { shrink: 0, align: 'center', w: { base: 96, md: 112 } } });
 
@@ -57,14 +58,14 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
   const t = useT();
   if (cast.length === 0) return null;
   return (
-    <section style={CAST_SECTION}>
-      <h2 style={GUTTER}>
+    <section className={classes(s.castSection)}>
+      <h2 className={classes(s.gutter)}>
         <Text variant="h2" mb={18}>
           {t('content.cast')}
         </Text>
       </h2>
       {/* A named <section> for assistive tech. */}
-      <section aria-label={t('content.cast')} style={CAST_SCROLLER}>
+      <section aria-label={t('content.cast')} className={classes(s.scroller)}>
         {cast.map((p) => (
           <CastTile key={`${p.name}-${p.character ?? ''}`} person={p} />
         ))}
@@ -72,9 +73,6 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
     </section>
   );
 }
-
-const CAST_SECTION: CSSProperties = { marginTop: 40 };
-const SIMILAR_SECTION: CSSProperties = { marginTop: 44 };
 
 function CastTile({ person }: Readonly<{ person: CastMember }>) {
   const t = useT();
@@ -92,7 +90,7 @@ function CastTile({ person }: Readonly<{ person: CastMember }>) {
       {({ hovered, focused }) => (
         <RouteLink to="/people/$person" params={{ person: personSegment(person) }}>
           <Image
-            style={hovered || focused ? avatarRing() : AVATAR}
+            style={[s.avatar, hovered || focused ? s.avatarLit : null]}
             src={photo}
             alt={person.name}
             placeholder={face}
@@ -131,13 +129,13 @@ export interface SimilarItem {
 export function SimilarRail({ title, items }: Readonly<{ title: string; items: SimilarItem[] }>) {
   if (items.length === 0) return null;
   return (
-    <section style={SIMILAR_SECTION}>
-      <h2 style={GUTTER}>
+    <section className={classes(s.similarSection)}>
+      <h2 className={classes(s.gutter)}>
         <Text variant="h2" mb={16}>
           {title}
         </Text>
       </h2>
-      <div style={GUTTER}>
+      <div className={classes(s.gutter)}>
         <PosterRail
           data={items}
           renderItem={(m) => (
@@ -159,15 +157,11 @@ export function SimilarRail({ title, items }: Readonly<{ title: string; items: S
 
 function CastInitials({ name, g1, g2 }: Readonly<{ name: string; g1: string; g2: string }>) {
   return (
-    <Box fill center style={gradient(`linear-gradient(158deg, ${g1}, ${g2})`)}>
-      <Box fill style={SHEEN} />
+    <Box fill center style={wash(g1, g2)}>
+      <Box fill style={s.sheen} />
       <Text variant="h1" color="white/90">
         {initials(name)}
       </Text>
     </Box>
   );
 }
-
-const SHEEN = gradient(
-  `radial-gradient(70% 60% at 50% 22%, ${color('white/20')}, transparent 60%)`,
-);

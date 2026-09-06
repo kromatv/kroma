@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { Focusable } from '@kroma/ui/kit';
-import { onScreen } from '@kroma/ui/testing';
+import { onScreen, wearsRing } from '@kroma/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { type TvNav, TvNavProvider, useNav } from '#tv/app/router';
@@ -24,11 +24,7 @@ const LABELS = ['Back', 'Home', 'Max', 'Content'];
 
 // A focused control paints itself: the amber ring is a box-shadow, and the ones
 // that wear none over artwork answer with their focus scale.
-const lit = (): string[] =>
-  LABELS.filter((label) => {
-    const style = screen.queryByLabelText(label)?.getAttribute('style') ?? '';
-    return style.includes('box-shadow') || /transform: scale\(1\.\d/.test(style);
-  });
+const lit = (): string[] => LABELS.filter((label) => wearsRing(screen.queryByLabelText(label)));
 
 function press(key: string) {
   act(() => {

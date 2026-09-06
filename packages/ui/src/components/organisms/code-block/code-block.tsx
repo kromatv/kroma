@@ -63,7 +63,7 @@ function CodeBlock({ code, numbers, maxHeight = 320 }: Readonly<CodeBlockProps>)
   // not shove its code sideways one digit at a time.
   const digits = String(rows.length).length;
   return (
-    <Box bg="surface2" radius="md" style={[s.frame, { maxHeight }]}>
+    <Box bg="surface2" radius="xl" style={[s.frame, { maxHeight }]}>
       {available ? (
         <RingScopeProvider value="focusEdge">
           <Box absolute style={s.copySlot}>

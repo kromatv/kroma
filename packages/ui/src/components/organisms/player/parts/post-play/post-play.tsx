@@ -3,7 +3,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
+import { sharedStyle, styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
 import { useRise } from './rise';
@@ -81,15 +81,25 @@ const ART_FILL = 'linear-gradient(135deg, rgba(244,182,66,0.14), rgba(12,12,16,0
 // The copy sits at the foot of the left half, so the art is darkened from that
 // corner outwards rather than evenly: a flat scrim over a whole frame reads as
 // a dimmed picture instead of a picture with something written on it.
-const SCRIM = gradient(
-  'linear-gradient(90deg, rgba(8,8,11,0.94) 0%, rgba(8,8,11,0.7) 44%, transparent 80%)',
-);
-const FLOOR = gradient(
-  'linear-gradient(0deg, rgba(8,8,11,0.97) 0%, rgba(8,8,11,0.42) 36%, transparent 64%)',
-);
+const layers = styles({
+  scrim: gradient(
+    'linear-gradient(90deg, rgba(8,8,11,0.94) 0%, rgba(8,8,11,0.7) 44%, transparent 80%)',
+  ),
+  floor: gradient(
+    'linear-gradient(0deg, rgba(8,8,11,0.97) 0%, rgba(8,8,11,0.42) 36%, transparent 64%)',
+  ),
+  ceiling: gradient('linear-gradient(180deg, rgba(8,8,11,0.72) 0%, transparent 20%)'),
+});
+
+const copyOf = (tier: (typeof TIERS)[keyof typeof TIERS]) =>
+  sharedStyle(`post-play:copy:${tier.copy}`, {
+    position: 'absolute',
+    left: tier.gutter,
+    bottom: tier.foot,
+    maxWidth: tier.copy,
+  });
 // The one line above the art needs its own ground; the floor below reaches
 // nowhere near it.
-const CEILING = gradient('linear-gradient(180deg, rgba(8,8,11,0.72) 0%, transparent 20%)');
 
 /**
  * The end of a film (§10): a full screen naming what just finished, offering
@@ -115,9 +125,9 @@ export function PostPlay({
             cropped, and what it is cropped towards should be the faces rather
             than the floor the copy is written on. */}
         <Img src={item.artUrl ?? null} background={ART_FILL} position="50% 30%" fill priority />
-        <Box fill style={[s.inert, SCRIM]} />
-        <Box fill style={[s.inert, FLOOR]} />
-        <Box fill style={[s.inert, CEILING]} />
+        <Box fill style={[s.inert, layers.scrim]} />
+        <Box fill style={[s.inert, layers.floor]} />
+        <Box fill style={[s.inert, layers.ceiling]} />
       </Animated.View>
 
       <Box absolute left={tier.gutter} top={tier.head} right={tier.gutter}>
@@ -126,12 +136,7 @@ export function PostPlay({
         </Text>
       </Box>
 
-      <Animated.View
-        style={[
-          { position: 'absolute', left: tier.gutter, bottom: tier.foot, maxWidth: tier.copy },
-          rise.copy,
-        ]}
-      >
+      <Animated.View style={[copyOf(tier), rise.copy]}>
         <Text variant={tier.eyebrow} color="accentText" mb={12}>
           {t('player.upNextTitle')}
         </Text>

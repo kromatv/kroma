@@ -11,16 +11,18 @@ import {
   Box,
   Focusable,
   genreIcon,
-  gradient,
   Icon,
   Img,
   motion,
   type StyleDecl,
+  sharedStyle,
+  styles,
   svFor,
   Text,
 } from '@kroma/ui/kit';
 import { View, type ViewStyle } from 'react-native';
 
+import { wash } from '#web/shared/lib/art-styles';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 const genreTile = svFor<{ root: StyleDecl; art: StyleDecl }>()({
@@ -28,7 +30,7 @@ const genreTile = svFor<{ root: StyleDecl; art: StyleDecl }>()({
     root: {
       overflow: 'hidden',
       aspect: 3 / 2,
-      radius: '2xl',
+      radius: 'xl',
       borderWidth: 1,
       border: 'tint/6',
       _hover: { border: 'accent/50' },
@@ -45,11 +47,14 @@ const ZOOM_TRANSITION = {
   transitionProperty: 'transform',
   transitionDuration: `${motion.duration.slow}ms`,
   transitionTimingFunction: `cubic-bezier(${motion.bezier.out.join(', ')})`,
-} as ViewStyle;
+} as const;
 
-function zoom(hovered: boolean): ViewStyle {
-  return { ...ZOOM_TRANSITION, transform: [{ scale: hovered ? ZOOM : 1 }] };
-}
+const tint = (slug: string) => sharedStyle(`tint:${slug}`, { backgroundImage: genreTint(slug) });
+
+const art = styles({
+  still: { ...ZOOM_TRANSITION, transform: [{ scale: 1 }] },
+  zoomed: { ...ZOOM_TRANSITION, transform: [{ scale: ZOOM }] },
+});
 
 export interface GenreTileProps {
   genre: GenreCount;
@@ -63,16 +68,11 @@ export function GenreTile({ genre, count, backdrop }: Readonly<GenreTileProps>) 
   const icon = genreIcon(genre.slug);
   const label = genreLabel(t, genre.name);
   return (
-    <Focusable
-      sv={genreTile}
-      label={label}
-      style={gradient(`linear-gradient(150deg, ${from}, ${to})`)}
-      asChild
-    >
+    <Focusable sv={genreTile} label={label} style={wash(from, to, 150)} asChild>
       {({ hovered, slots }) => (
         <RouteLink to="/genres/$id" params={{ id: genreSegment(genre.slug) }}>
           <Art src={backdrop} hovered={hovered} style={slots.art} />
-          <Box fill pointerEvents="none" style={gradient(genreTint(genre.slug))} />
+          <Box fill pointerEvents="none" style={tint(genre.slug)} />
           <Box
             absolute
             left={{ base: 16, md: 20 }}
@@ -101,7 +101,7 @@ function Art({
   style,
 }: Readonly<{ src: string | null; hovered: boolean; style: ViewStyle }>) {
   return (
-    <View style={[style, zoom(hovered)]}>
+    <View style={[style, hovered ? art.zoomed : art.still]}>
       <Img src={src ? sizedImageUrl(src, 420) : null} fit="cover" position="50% 25%" fill />
     </View>
   );

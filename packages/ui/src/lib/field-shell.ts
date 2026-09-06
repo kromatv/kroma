@@ -19,6 +19,8 @@ import {
   type ColorValue,
   type RadiusToken,
   radiusValue,
+  type StyleDecl,
+  sharedStyle,
   styles,
   useBreakpoint,
 } from '#ui/core';
@@ -131,11 +133,10 @@ export const keyFace = {
     center: true,
     // The same well a field sits in, opaque: a key is a control, not a wash.
     // Over artwork a translucent tint let every key sample whatever was behind
-    // it, so one keyboard arrived in six colours. The hairline edge and the
-    // lift are what keep a key off the artwork at all.
+    // it, so one keyboard arrived in six colours. The hairline edge is what
+    // keeps a key off the artwork at all.
     bg: CONTROL.md.bg,
     border: 'border',
-    shadow: 'card',
     // A key under the cursor lifts its own wash rather than borrowing the
     // amber, which is reserved for where focus is. Focus is the kit's ring,
     // the same one a tile and a row wear, over a wash that says which key it
@@ -172,8 +173,8 @@ export function fieldRing(): TextStyle {
 /**
  * What an entry paints for itself, and what it drops when the shell belongs to
  * something else: the well of an <InputGroup>, the row of a command palette.
- * A flattened entry that kept drawing its own fill, edge, corner, lift and ring
- * paints a second set of all five over the parent's, and its rounded rectangle
+ * A flattened entry that kept drawing its own fill, edge, corner and ring
+ * paints a second set of all four over the parent's, and its rounded rectangle
  * shows through as the seam where the addons begin and end.
  *
  * Both <TextField> and <TextArea> read it, so the answer to "what does flat
@@ -181,7 +182,7 @@ export function fieldRing(): TextStyle {
  */
 export function fieldShell(
   metrics: ControlMetrics,
-  at: Readonly<{ flat: boolean; focused: boolean; invalid: boolean; lift?: boolean }>,
+  at: Readonly<{ flat: boolean; focused: boolean; invalid: boolean }>,
 ): { box: Record<string, unknown>; edge: TextStyle | null } {
   if (at.flat) return { box: { radius: 0, bg: 'transparent', borderWidth: 0 }, edge: null };
   return {
@@ -189,14 +190,11 @@ export function fieldShell(
       radius: metrics.radius,
       bg: metrics.bg,
       borderWidth: 1,
-      // The fill is translucent, so a lift is what keeps the field off the
-      // artwork. Only <TextField> asks for it; a textarea sits in a form.
-      ...(at.lift ? { shadow: 'card' } : null),
     },
-    edge: {
+    edge: sharedStyle(`field:edge:${at.focused}:${at.invalid}`, {
       borderColor: edgeColor(at.focused, at.invalid),
       ...(at.focused ? fieldRing() : null),
-    } as TextStyle,
+    }) as TextStyle,
   };
 }
 
@@ -249,6 +247,8 @@ export function useEntryFontSize(fontSize: number): number {
  * browser ring inside the kit's amber one until the STYLE was cleared. React
  * Native's types don't know `none` (native has no outline at all), hence the
  * cast. */
-export const NO_OUTLINE = { outlineStyle: 'none', outlineWidth: 0 } as unknown as TextStyle;
+export const NO_OUTLINE: TextStyle = styles({
+  none: { outlineStyle: 'none', outlineWidth: 0 } as unknown as StyleDecl,
+}).none;
 
 export type { ControlMetrics, ControlSize };

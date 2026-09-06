@@ -23,6 +23,7 @@ export const Metadata = z.object({
   genres: z.array(z.string()),
   tmdbGenreIds: z.array(z.number()).nullish(),
   rating: z.number().nullish(),
+  certification: z.string().nullish(),
   posterUrl: z.string().nullish(),
   backdropUrl: z.string().nullish(),
   logoUrl: z.string().nullish(),

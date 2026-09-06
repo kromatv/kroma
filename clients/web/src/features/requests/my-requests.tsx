@@ -1,28 +1,16 @@
 import { KromaEvents, type ServerEvent } from '@kroma/client/events';
 import type { DownloadProgressEvent, MediaRequest } from '@kroma/client/requests';
-import { posterColors, sizedImageUrl } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import {
-  Box,
-  Button,
-  EmptyState,
-  Focusable,
-  Icon,
-  IconButton,
-  Img,
-  PageHeader,
-  Row,
-  Surface,
-  styles,
-  Text,
-} from '@kroma/ui/kit';
+import { Box, Button, EmptyState, Icon, IconButton, PageHeader, Row, Text } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import type { ViewProps } from 'react-native';
+import { RequestCard, RequestCardSkeleton } from '#web/features/requests/request-card';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
 import { requestStatusMeta, seasonsSummary } from '#web/shared/lib/request-status';
-import { PageFrame, Skeleton } from '#web/shared/ui';
+import { PageFrame } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 import { RouteLink } from '#web/shared/ui/route-link';
 
@@ -74,14 +62,7 @@ export function MyRequestsPage() {
         <PageHeader.Subtitle>{t('requests.mySubtitle')}</PageHeader.Subtitle>
       </PageHeader.Root>
 
-      {isPending ? (
-        <Box mt={24} gap={10}>
-          {Array.from({ length: 4 }, (_, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
-            <Skeleton key={i} h={92} radius={16} />
-          ))}
-        </Box>
-      ) : null}
+      {isPending ? <RequestCardSkeleton rows={4} /> : null}
 
       {requests?.length === 0 ? (
         <EmptyState.Root icon="inbox">
@@ -109,10 +90,16 @@ export function MyRequestsPage() {
   );
 }
 
-function RequestLink({ req, children }: Readonly<{ req: MediaRequest; children: ReactNode }>) {
+// The rest is what the focusable around it hands its host: the row's paint,
+// its ref and its handlers all have to reach the anchor itself.
+function RequestLink({
+  req,
+  children,
+  ...link
+}: Readonly<{ req: MediaRequest; children?: ReactNode } & ViewProps>) {
   if (req.status === 'available') {
     return (
-      <RouteLink to="/search" search={{ q: '', type: 'all' }}>
+      <RouteLink to="/search" search={{ q: '', type: 'all' }} {...link}>
         {children}
       </RouteLink>
     );
@@ -121,6 +108,7 @@ function RequestLink({ req, children }: Readonly<{ req: MediaRequest; children: 
     <RouteLink
       to="/discover/$type/$tmdbId"
       params={{ type: req.kind === 'show' ? 'tv' : 'movie', tmdbId: String(req.tmdbId) }}
+      {...link}
     >
       {children}
     </RouteLink>
@@ -140,8 +128,6 @@ function RequestRow({
 }>) {
   const t = useT();
   const locale = useLocale();
-  const [c1, c2] = posterColors(String(req.tmdbId));
-  const poster = sizedImageUrl(req.posterUrl, 92);
   const seasons = seasonsSummary(req.seasons);
   const today = new Date().toISOString().slice(0, 10);
   const upcomingKey = req.kind === 'show' ? 'requests.nextEpisodeDate' : 'requests.availableDate';
@@ -157,64 +143,51 @@ function RequestRow({
   // only the part it did not cover. It joins the label rather than being read
   // separately, which is what a row announcing "Mutiny, approved" wants.
   return (
-    <Surface pad="none" p={14} radius="2xl" border="border" row align="center" gap={16}>
-      <Focusable
-        asChild
-        label={`${req.title} · ${t(requestStatusMeta(req.status).labelKey)}`}
-        style={s.head}
-      >
-        <RequestLink req={req}>
-          <Box w={46} h={68} shrink={0}>
-            <Img
-              src={poster}
-              background={`linear-gradient(158deg, ${c1}, ${c2})`}
-              radius="lg"
-              fill
-            />
-          </Box>
-          <Box minW={0} shrink={1}>
-            <Text variant="label" lines={1}>
-              {req.title}
-            </Text>
-            <Text variant="meta" color="textDim" mt={2}>
-              {[
-                req.year ? String(req.year) : '',
-                req.kind === 'show' ? (seasons ?? t('requests.allSeasons')) : '',
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </Text>
-            {upcoming ? (
-              <Row gap={4} mt={4}>
-                <Icon name="calendar-clock" size={13} thickness={1.9} color="accent" />
-                <Text variant="meta" color="accent">
-                  {upcoming}
-                </Text>
-              </Row>
-            ) : null}
-            {req.note ? (
-              <Text variant="meta" color="dangerHover" mt={4}>
-                {req.note}
+    <RequestCard
+      label={`${req.title} · ${t(requestStatusMeta(req.status).labelKey)}`}
+      tmdbId={req.tmdbId}
+      posterUrl={req.posterUrl}
+      title={req.title}
+      meta={
+        <>
+          <Text variant="meta" color="textDim" mt={2}>
+            {[
+              req.year ? String(req.year) : '',
+              req.kind === 'show' ? (seasons ?? t('requests.allSeasons')) : '',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+          {upcoming ? (
+            <Row gap={4} mt={4}>
+              <Icon name="calendar-clock" size={13} thickness={1.9} color="accent" />
+              <Text variant="meta" color="accent">
+                {upcoming}
               </Text>
-            ) : null}
-          </Box>
-          <Box flex />
-          <RequestStatusChip status={req.status} progress={progress ?? req.progress ?? null} />
-        </RequestLink>
-      </Focusable>
-      {req.status === 'pending' ? (
-        <IconButton
-          control="sm"
-          icon="x"
-          label={t('requests.cancel')}
-          onPress={onCancel}
-          disabled={busy}
-        />
-      ) : null}
-    </Surface>
+            </Row>
+          ) : null}
+          {req.note ? (
+            <Text variant="meta" color="dangerHover" mt={4}>
+              {req.note}
+            </Text>
+          ) : null}
+        </>
+      }
+      trailing={
+        <RequestStatusChip status={req.status} progress={progress ?? req.progress ?? null} />
+      }
+      aside={
+        req.status === 'pending' ? (
+          <IconButton
+            control="sm"
+            icon="x"
+            label={t('requests.cancel')}
+            onPress={onCancel}
+            disabled={busy}
+          />
+        ) : null
+      }
+      link={<RequestLink req={req} />}
+    />
   );
 }
-
-const s = styles({
-  head: { row: true, align: 'center', gap: 16, flex: true, minW: 0 },
-});

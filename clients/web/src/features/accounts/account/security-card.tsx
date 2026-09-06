@@ -31,7 +31,7 @@ export function SecurityCard() {
   };
 
   return (
-    <Surface elevated pad="none" p={22} radius="lg" border="border">
+    <Surface elevated pad="none" p={22} radius="xl" border="border">
       <Text variant="label" font="display">
         {t('account.updatePassword')}
       </Text>

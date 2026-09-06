@@ -4,7 +4,7 @@ import {
   NOTIFICATION_DAY_LABEL,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, EmptyState, ListRow, Row, Skeleton, Text } from '@kroma/ui/kit';
+import { Box, classes, EmptyState, ListRow, Row, Skeleton, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { NotificationEntry } from '#web/features/notifications/notification-row';
@@ -60,7 +60,7 @@ export function PanelBody({
         // second "Earlier" run, and two sections must not share a key.
         <section key={group.items[0]?.id}>
           {/* h3, not h2: the panel header renders the h2. */}
-          <h3 style={DAY_LABEL}>
+          <h3 className={classes(s.dayLabel)}>
             <Box bg="bg" px={8} pt={12} pb={6}>
               <Text variant="meta" color="textDim">
                 {t(NOTIFICATION_DAY_LABEL[group.day])}
@@ -78,7 +78,7 @@ export function PanelBody({
   );
 }
 
-const DAY_LABEL = { position: 'sticky', top: 0, zIndex: 10, margin: 0 } as const;
+const s = styles({ dayLabel: { position: 'sticky', top: 0, zIndex: 10, m: 0 } });
 
 function PanelSkeleton() {
   return (

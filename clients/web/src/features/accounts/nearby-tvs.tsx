@@ -68,7 +68,7 @@ function CheckPrompt({
   const asked = t('handoff.checkPrompt', { name: device.name });
 
   return (
-    <Box align="center" gap={16} radius="lg" border="border" bg="surface2" px={16} py={24}>
+    <Box align="center" gap={16} radius="xl" border="border" bg="surface2" px={16} py={24}>
       <Text variant="label" font="display" textAlign="center">
         {asked}
       </Text>

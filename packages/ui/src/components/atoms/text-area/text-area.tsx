@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { color, styles, useTheme } from '#ui/core';
+import { color, sharedStyle, style, styles, useTheme } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
 import { fieldSizing } from '#ui/lib/css';
 import {
@@ -52,6 +52,15 @@ interface TextAreaProps extends Omit<BoxProps, 'children' | 'ring'> {
   flat?: boolean;
 }
 
+const SHRINK = style({ flexShrink: 1 });
+
+const entryOf = (minHeight: number, maxHeight: number | undefined, fontSize: number) =>
+  sharedStyle(`text-area:entry:${minHeight}:${maxHeight}:${fontSize}`, {
+    color: 'text',
+    minHeight,
+    maxHeight,
+    fontSize,
+  });
 function TextArea({
   value: valueProp,
   defaultValue = '',
@@ -130,7 +139,7 @@ function TextArea({
           style={[
             s.entry,
             NO_OUTLINE,
-            { color: theme.colors.text, minHeight: min, maxHeight: max, fontSize },
+            entryOf(min, max, fontSize),
             textStyle,
             growth(autoSize, min, grown),
           ]}
@@ -138,11 +147,7 @@ function TextArea({
       ) : (
         // A television: a display, not an input, so no tap can summon the IME.
         <Box row align="flex-end" gap={2} flex minH={min}>
-          <Text
-            lines={maxRows}
-            style={[{ flexShrink: 1 }, textStyle]}
-            color={value ? 'text' : PLACEHOLDER}
-          >
+          <Text lines={maxRows} style={[SHRINK, textStyle]} color={value ? 'text' : PLACEHOLDER}>
             {value || placeholder || ''}
           </Text>
           <Caret height={LINE} />
@@ -152,11 +157,11 @@ function TextArea({
   );
 }
 
+const SIZED = style(fieldSizing());
+
 function growth(autoSize: boolean, min: number, grown: number): StyleProp<TextStyle> {
-  if (!autoSize) return { height: min };
-  // The two react-native copies the kit compiles against (the tvOS fork, then
-  // mainline) disagree about whether a ViewStyle is a TextStyle: hence the cast.
-  return WEB ? (fieldSizing() as unknown as TextStyle) : { height: grown };
+  if (!autoSize) return sharedStyle(`text-area:height:${min}`, { height: min });
+  return WEB ? SIZED : { height: grown };
 }
 
 // The row unit `rows`/`maxRows` count in: the md shell's content line, so a

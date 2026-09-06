@@ -1,6 +1,6 @@
 import { NavigatorItem, type NavigatorItemProps, type NodeHandle } from '@kroma/spatial-nav/react';
 import type { ReactNode, RefObject } from 'react';
-import { Animated, type StyleProp, StyleSheet, type View, type ViewStyle } from 'react-native';
+import { Animated, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import type { AnySv } from '#ui/core';
 import type { RingToken } from '#ui/core/theme';
 import type { splitBoxLayers } from '#ui/lib/box-layers';
@@ -24,6 +24,10 @@ import { Painted, TouchPressable } from './touch-pressable';
 type NavigatorStyle = NavigatorItemProps['style'];
 const flat = (style: StyleProp<ViewStyle>[]): NavigatorStyle =>
   StyleSheet.flatten(style) as NavigatorStyle;
+// The browser keeps the array: flattened, a style is a fresh object nothing
+// registered, which react-native-web serialises inline on every control, and
+// the classes its declarations compiled to never reach the element.
+const layered = (style: StyleProp<ViewStyle>[]): NavigatorStyle => style as NavigatorStyle;
 
 type ItemViewProps = NavigatorItemProps['viewProps'];
 
@@ -45,7 +49,7 @@ function DisabledForm({
   };
 }>): ReactNode {
   return (
-    <Animated.View
+    <DisabledHost
       accessibilityRole={platformRole(at.role)}
       {...at.disabledState}
       accessibilityLabel={at.label}
@@ -60,9 +64,14 @@ function DisabledForm({
             slots: at.slots,
           })
         : at.children}
-    </Animated.View>
+    </DisabledHost>
   );
 }
+
+// A plain view on the browser: react-native-web's Animated rewrites a
+// `transform` in the style it is handed into plain values, so even a scale a
+// class already declares would paint inline on every disabled control.
+const DisabledHost = WEB ? View : Animated.View;
 
 function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   // Not `at.controlled &&`: an uncontrolled control on a browser target reports
@@ -188,7 +197,7 @@ function NavigatorForm({
       // On the browser targets the control is ONE element: a second view per
       // control is a cost Tizen pays on every focus move. The native builds keep
       // the inner view because their focus scale is a real Animated value.
-      style={WEB ? flat(painted) : liftedBox(at.layers, at.focused)}
+      style={WEB ? layered(painted) : liftedBox(at.layers, at.focused)}
       viewProps={
         {
           accessibilityRole: platformRole(at.role),

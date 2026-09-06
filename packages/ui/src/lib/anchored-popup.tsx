@@ -55,7 +55,6 @@ function AnchoredPopup({
         radius={RADIUS}
         border="borderStrong"
         bg="surface2"
-        shadow="pop"
         overflow="hidden"
         style={[
           PANEL_SHELL,

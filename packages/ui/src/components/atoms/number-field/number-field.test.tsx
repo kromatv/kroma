@@ -6,6 +6,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { activeTheme } from '#ui/core';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
+import { declared, wearsRing } from '#ui/testing';
 import { NumberField } from './number-field';
 
 beforeAll(() => configureRemote());
@@ -32,8 +33,8 @@ describe('NumberField', () => {
 
     const edge = activeTheme().ring.focusEdge;
     const step = screen.getByLabelText('Augmenter');
-    expect(step.style.outlineOffset).toBe(`${edge.outlineOffset}px`);
-    expect(step.style.outlineWidth).toBe(`${edge.outlineWidth}px`);
+    expect(declared(step, 'outlineOffset')).toBe(`${edge.outlineOffset}px`);
+    expect(declared(step, 'outlineWidth')).toBe(`${edge.outlineWidth}px`);
   });
 
   it('leaves an unfocused stepper no outline to suppress', () => {
@@ -45,6 +46,6 @@ describe('NumberField', () => {
       </FocusScope>,
     );
 
-    expect(screen.getByLabelText('Augmenter').style.outlineStyle).toBe('');
+    expect(wearsRing(screen.getByLabelText('Augmenter'))).toBe(false);
   });
 });

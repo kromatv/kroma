@@ -1,5 +1,6 @@
 import type { NavigatorViewProps } from '@kroma/spatial-nav/react';
-import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
+import { registered } from '#ui/core';
 
 // The navigator's `style` type follows whichever react-native copy the app
 // resolves (the tvos fork on a TV, mainline on the phone), and the two are not
@@ -7,4 +8,4 @@ import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 type NavigatorStyle = NavigatorViewProps['style'];
 
 export const flat = (style: StyleProp<ViewStyle>[] | StyleProp<ViewStyle>): NavigatorStyle =>
-  StyleSheet.flatten(style) as NavigatorStyle;
+  registered(style as never) as NavigatorStyle;

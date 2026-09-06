@@ -3,9 +3,11 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
 import { GUTTER, scaler } from '#ui/components/organisms/player/lib/metrics';
-import { styles } from '#ui/core';
+import { sharedStyle, styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
+
+const sizeOf = (fontSize: number) => sharedStyle(`top-bar:size:${fontSize}`, { fontSize });
 
 /**
  * Player top chrome (§ top chrome): a gradient bar holding the round back
@@ -70,11 +72,11 @@ export const TopBar = memo(function TopBar({
           line) rather than pushing the warning pill and the host's own actions
           off the right edge of a narrow window. */}
       <Box shrink={1} minW={0}>
-        <Text lines={1} style={[s.title, { fontSize: px(TITLE_SIZE) }]}>
+        <Text lines={1} style={[s.title, sizeOf(px(TITLE_SIZE))]}>
           {title}
         </Text>
         {subtitle ? (
-          <Text lines={1} style={[s.subtitle, { fontSize: px(SUBTITLE_SIZE) }]} color="text/60">
+          <Text lines={1} style={[s.subtitle, sizeOf(px(SUBTITLE_SIZE))]} color="text/60">
             {subtitle}
           </Text>
         ) : null}
@@ -86,7 +88,7 @@ export const TopBar = memo(function TopBar({
             // title does: a codec notice is a sentence, and it wraps to two
             // lines sooner than it crowds out what is playing.
             <Box shrink={1} radius="pill" bg="accentSoft" px={px(14)} py={px(8)}>
-              <Text lines={2} style={[s.warn, { fontSize: px(WARN_SIZE) }]} color="accentText">
+              <Text lines={2} style={[s.warn, sizeOf(px(WARN_SIZE))]} color="accentText">
                 {warn}
               </Text>
             </Box>

@@ -9,6 +9,7 @@ import { type Cast, useCast, useT } from '@kroma/ui';
 import {
   Box,
   breakpoint,
+  classes,
   color,
   Focusable,
   Icon,
@@ -16,6 +17,7 @@ import {
   type IconName,
   Img,
   Row,
+  styles,
   Text,
 } from '@kroma/ui/kit';
 import { useState } from 'react';
@@ -36,22 +38,7 @@ export function CastBar() {
   const playingOn = t('cast.playingOn', { device: active.name });
 
   return (
-    <aside
-      aria-label={playingOn}
-      style={{
-        position: 'fixed',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 40,
-        display: 'flex',
-        flexDirection: 'column',
-        borderTop: `1px solid ${color('border')}`,
-        background: color('surface1/95'),
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-      }}
-    >
+    <aside aria-label={playingOn} className={classes(s.bar)}>
       <Row self="center" w="100%" maxW={1024} gap={12} px={16} py={10}>
         <NowPlaying item={playing?.item} playingOn={playingOn} onSelect={select} />
 
@@ -112,7 +99,7 @@ function NowPlaying({
                 variant="meta"
                 color="accent"
                 lines={1}
-                style={state.hovered ? UNDERLINE : undefined}
+                style={state.hovered ? s.underline : undefined}
               >
                 {playingOn}
               </Text>
@@ -180,7 +167,7 @@ function Scrubber({
 
   return (
     <>
-      <Text variant="meta" color="textDim" shrink={0} style={TABULAR}>
+      <Text variant="meta" color="textDim" shrink={0} style={s.tabular}>
         {formatTimecode(shownMs / 1000)}
       </Text>
       <input
@@ -193,24 +180,36 @@ function Scrubber({
         onPointerUp={() => commit()}
         onKeyUp={() => commit()}
         onBlur={() => commit()}
-        style={{
-          height: 4,
-          minWidth: 0,
-          flex: 1,
-          cursor: 'pointer',
-          accentColor: color('accent'),
-        }}
+        className={classes(s.slider)}
       />
-      <Text variant="meta" color="textDim" shrink={0} style={TABULAR}>
+      <Text variant="meta" color="textDim" shrink={0} style={s.tabular}>
         {durationMs ? formatTimecode(durationMs / 1000) : '--:--'}
       </Text>
     </>
   );
 }
 
-const UNDERLINE = { textDecorationLine: 'underline' } as const;
-
-const TABULAR = { fontVariant: ['tabular-nums' as const] };
+const s = styles({
+  bar: {
+    position: 'fixed',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 40,
+    display: 'flex',
+    flexDirection: 'column',
+    borderWidth: 0,
+    borderTopWidth: 1,
+    borderStyle: 'solid',
+    borderTopColor: 'border',
+    bg: 'surface1/95',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+  },
+  slider: { height: 4, minWidth: 0, flex: true, cursor: 'pointer', accentColor: color('accent') },
+  underline: { textDecorationLine: 'underline' },
+  tabular: { fontVariant: ['tabular-nums'] },
+});
 
 function Transport({
   icon,

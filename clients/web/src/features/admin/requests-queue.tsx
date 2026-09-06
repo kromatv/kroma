@@ -156,12 +156,20 @@ export function RequestsQueuePage() {
         />
       </Row>
 
-      <Table.Root columns="minmax(0,1fr) 190px 110px 132px 76px">
+      <Table.Root
+        columns={[
+          {},
+          { width: 190, from: 'md' },
+          { width: 110, from: 'md' },
+          { width: 132, from: 'md' },
+          { width: 76 },
+        ]}
+      >
         <Table.Header>
           <Table.Column>{t('requests.colTitle')}</Table.Column>
-          <Table.Column wide>{t('requests.colRequester')}</Table.Column>
-          <Table.Column wide>{t('requests.colDate')}</Table.Column>
-          <Table.Column wide>{t('requests.colStatus')}</Table.Column>
+          <Table.Column>{t('requests.colRequester')}</Table.Column>
+          <Table.Column>{t('requests.colDate')}</Table.Column>
+          <Table.Column>{t('requests.colStatus')}</Table.Column>
           <Table.Cell />
         </Table.Header>
 

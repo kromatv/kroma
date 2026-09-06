@@ -192,7 +192,7 @@ function ChartTooltip() {
         pointerEvents="none"
         {...(past ? { right: state.plot.width - x + CURSOR_GAP } : { left: x + CURSOR_GAP })}
       >
-        <Box bg="surface2" borderWidth={1} border="border" radius="md" px={10} py={8} gap={4}>
+        <Box bg="surface2" borderWidth={1} border="border" radius="sm" px={10} py={8} gap={4}>
           {name ? (
             <Text variant="meta" color="textMuted" lines={1}>
               {name}

@@ -5,7 +5,7 @@ import type { LayoutChangeEvent } from 'react-native';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type StyleDecl, svFor } from '#ui/core';
+import { type StyleDecl, sharedStyle, style, svFor } from '#ui/core';
 import { bySize, CONTROL } from '#ui/lib/field-shell';
 import { nameOf } from '#ui/lib/name-of';
 import { partContext } from '#ui/lib/part-context';
@@ -56,7 +56,7 @@ function Item({ value, label, icon, disabled, children }: Readonly<ItemProps>) {
   const { value: picked, select, size, stretch, report } = useSegmentGroup('Item');
   const active = value === picked;
   const glyph = Math.round(CONTROL[size].fontSize * 1.2);
-  const corner = { borderRadius: segmentRadius(size) };
+  const corner = sharedStyle(`segment:corner:${size}`, { radius: segmentRadius(size) });
   const slots = segmentGroupVariants({ size, active });
   return (
     <ItemContext.Provider value={slots}>
@@ -97,6 +97,6 @@ function Hint({ children }: Readonly<{ children: ReactNode }>) {
 
 // An equal share of the row, with the label centred in it. Frozen rather than
 // built per render: it never varies.
-const SEGMENT_GROW = { flex: 1, alignItems: 'center' } as const;
+const SEGMENT_GROW = style({ flex: true, alignItems: 'center' });
 
 export { Hint, Item, Label, segmentGroupVariants };

@@ -13,12 +13,16 @@
   },
   "sideEffects": false,
   "imports": {
-    "#ui/*": "./src/*"
+    "#ui/*": {
+      "node": "./src/*.ts",
+      "default": "./src/*"
+    }
   },
   "exports": {
     ".": "./src/index.ts",
     "./kit": "./src/kit.ts",
     "./kit/*": "./src/components/*/index.ts",
+    "./atomic": "./src/core/atomic/index.ts",
     "./ssr": "./src/ssr.ts",
     "./expo-image": "./src/lib/expo-image-backend.tsx",
     "./testing": "./src/testing.tsx",
@@ -62,6 +66,7 @@
     "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "magic-string": "^0.30.21",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-native": "npm:react-native-tvos@0.86.0-2",

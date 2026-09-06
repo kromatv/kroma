@@ -1,28 +1,24 @@
-// Web adapter over the kit's <Img>: a class or a style sizes the box, the kit
-// fills it and owns the fade, cross-fade, fallback and sanitising. `fill`
-// stretches the box itself to a positioned parent.
+// Web adapter over the kit's <Img>: a style sizes the box, the kit fills it
+// and owns the fade, cross-fade, fallback and sanitising. `fill` stretches the
+// box itself to a positioned parent.
 
-import { Img, type ImgProps } from '@kroma/ui/kit';
-import type { CSSProperties } from 'react';
+import { Box, Img, type ImgProps, styles } from '@kroma/ui/kit';
+import type { StyleProp, ViewStyle } from 'react-native';
 
 export interface ImageProps extends Omit<ImgProps, 'fill' | 'style'> {
-  className?: string;
-  style?: CSSProperties;
+  style?: StyleProp<ViewStyle>;
   fill?: boolean;
 }
 
-export function Image({ className, style, fill = false, ...img }: Readonly<ImageProps>) {
+const s = styles({
+  box: { position: 'relative', overflow: 'hidden' },
+  fill: { fill: true, overflow: 'hidden' },
+});
+
+export function Image({ style, fill = false, ...img }: Readonly<ImageProps>) {
   return (
-    <div
-      className={className}
-      style={{
-        position: fill ? 'absolute' : 'relative',
-        ...(fill ? { top: 0, right: 0, bottom: 0, left: 0 } : null),
-        overflow: 'hidden',
-        ...style,
-      }}
-    >
+    <Box style={[fill ? s.fill : s.box, style]}>
       <Img fill {...img} />
-    </div>
+    </Box>
   );
 }

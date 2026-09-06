@@ -1,11 +1,11 @@
 import { hasPermission } from '@kroma/client/accounts';
 import type { ModuleNav } from '@kroma/module-sdk';
 import { useFormat, useT } from '@kroma/ui';
-import { Box, color, Drawer, Focusable, Logo, Row, sv, Text } from '@kroma/ui/kit';
+import { Box, color, Drawer, Focusable, Logo, Row, styles, sv, Text } from '@kroma/ui/kit';
 import { IconChevronRight } from '@tabler/icons-react';
 import { useRouterState } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, type ViewStyle } from 'react-native';
+import { ScrollView } from 'react-native';
 import { adminNavSections } from '#web/features/admin/admin-nav';
 import { PillDot } from '#web/features/admin/pill';
 import { useAdmin } from '#web/features/admin/shell-context';
@@ -20,7 +20,11 @@ import { RouteLink } from '#web/shared/ui/route-link';
 import { SideNav } from '#web/shared/ui/side-nav';
 import { SIDE_NAV_FRAME, SIDE_NAV_GUTTER } from '#web/shared/ui/side-nav-style';
 
-const NAV_FILL = { backgroundColor: color('bg') } as const;
+const s = styles({
+  navFill: { bg: 'bg' },
+  railEdge: { borderRightWidth: 1, borderRightColor: 'border' },
+  drawerHead: { pl: 24, pr: 16, pb: 16, ...safeAreaTop(24) },
+});
 
 const serverCard = sv({
   base: {
@@ -37,24 +41,12 @@ const serverCard = sv({
   },
 });
 
-const RAIL_EDGE: ViewStyle = {
-  borderRightWidth: 1,
-  borderRightColor: color('border'),
-};
-
-const DRAWER_HEAD: ViewStyle = {
-  paddingLeft: 24,
-  paddingRight: 16,
-  paddingBottom: 16,
-  ...safeAreaTop(24),
-};
-
 function AdminBrand() {
   const t = useT();
   return (
     <Row gap={10}>
       <Logo size={19} />
-      <Box radius={4} bg="accent" px={6} py={3}>
+      <Box radius="xs" bg="accent" px={6} py={3}>
         <Text variant="overline" color="accentInk">
           {t('admin.badge')}
         </Text>
@@ -130,7 +122,7 @@ function ServerStatusCard() {
   const fmt = useFormat();
   const { serverInfo } = useAdmin();
   return (
-    <Box p={14} radius="lg" bg="surface1" border="border">
+    <Box p={14} radius="xl" bg="surface1" border="border">
       <Row gap={10} mb={8}>
         <PillDot tone="success" size={8} pulse />
         <Text variant="meta" color="success">
@@ -150,7 +142,7 @@ function ServerStatusCard() {
 /** The permanent left navigation, rendered only from `lg` up. */
 export function AdminSidebar() {
   return (
-    <Box role="complementary" w={ADMIN_RAIL_WIDTH} shrink={0} h="100%" bg="bg" style={RAIL_EDGE}>
+    <Box role="complementary" w={ADMIN_RAIL_WIDTH} shrink={0} h="100%" bg="bg" style={s.railEdge}>
       <SideNav.Header>
         <AdminBrand />
       </SideNav.Header>
@@ -195,9 +187,9 @@ export function AdminMobileTopbar() {
         width="xs"
         fullBelow={640}
         pad={0}
-        panelStyle={NAV_FILL}
+        panelStyle={s.navFill}
       >
-        <Drawer.Header style={DRAWER_HEAD}>
+        <Drawer.Header style={s.drawerHead}>
           <Row between>
             <AdminBrand />
             <Drawer.Close glyph={20} />

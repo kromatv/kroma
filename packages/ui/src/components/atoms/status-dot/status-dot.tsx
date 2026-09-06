@@ -2,7 +2,7 @@
 // The third state matters: "not known yet" must not look like "down".
 
 import { Box } from '#ui/components/atoms/box';
-import { type ColorValue, color } from '#ui/core';
+import { type ColorValue, color, sharedStyle } from '#ui/core';
 
 /** What one status reads as: the dot's fill and its optional halo. */
 interface Look {
@@ -27,7 +27,7 @@ function StatusDot({ online, size = 10, overArt = false }: Readonly<StatusDotPro
       shrink={0}
       radius="circle"
       bg={look.bg}
-      style={shadow ? { boxShadow: shadow } : null}
+      style={shadow ? sharedStyle(`status-dot:glow:${shadow}`, { boxShadow: shadow }) : null}
     />
   );
 }

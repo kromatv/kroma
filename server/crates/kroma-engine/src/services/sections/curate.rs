@@ -535,6 +535,7 @@ mod tests {
             genres: genres.iter().map(|s| s.to_string()).collect(),
             tmdb_genre_ids: Vec::new(),
             rating: Some(rating),
+            certification: None,
             poster_url: None,
             backdrop_url: None,
             logo_url: None,

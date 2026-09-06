@@ -1,19 +1,19 @@
-import { Box, PageMain, PosterSkeleton, rhythm, Skeleton } from '@kroma/ui/kit';
-import type { CSSProperties } from 'react';
+import { Box, classes, PageMain, PosterSkeleton, rhythm, Skeleton, styles } from '@kroma/ui/kit';
 import { PAGE_GUTTER, PageFrame } from '#web/shared/ui/page';
 import { TileGrid } from '#web/shared/ui/tile-grid';
 
 export { CardSkeleton, Skeleton, TableSkeleton } from '@kroma/ui/kit';
 
-const HOME_BAND: CSSProperties = { width: '100%', height: '46vh', minHeight: 320 };
-
-const DETAIL_BAND: CSSProperties = {
-  position: 'relative',
-  width: '100%',
-  height: '56vh',
-  minHeight: 384,
-  overflow: 'hidden',
-};
+const s = styles({
+  homeBand: { width: '100%', height: '46vh', minHeight: 320 },
+  detailBand: {
+    position: 'relative',
+    width: '100%',
+    height: '56vh',
+    minHeight: 384,
+    overflow: 'hidden',
+  },
+});
 
 export function SkeletonRow({ count = 7 }: Readonly<{ count?: number }>) {
   return (
@@ -45,8 +45,8 @@ export function RailSkeleton({ count = 7 }: Readonly<{ count?: number }>) {
 export function PageSkeleton({ rails = 3 }: Readonly<{ rails?: number }>) {
   return (
     <PageFrame>
-      <div style={HOME_BAND}>
-        <Skeleton h="100%" w="100%" radius={16} />
+      <div className={classes(s.homeBand)}>
+        <Skeleton h="100%" w="100%" radius="xl" />
       </div>
       {Array.from({ length: rails }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rails
@@ -60,7 +60,7 @@ export function DetailSkeleton() {
   return (
     <PageMain>
       <Box pb={64}>
-        <div style={DETAIL_BAND}>
+        <div className={classes(s.detailBand)}>
           <Skeleton h="100%" w="100%" radius={0} />
         </div>
         <Box px={PAGE_GUTTER}>
@@ -74,8 +74,8 @@ export function DetailSkeleton() {
             <Skeleton shape="text" lines={3} />
           </Box>
           <Box row gap={12} mt={32}>
-            <Skeleton h={48} w={144} radius="lg" />
-            <Skeleton h={48} w={48} radius="lg" />
+            <Skeleton h={48} w={144} radius="xl" />
+            <Skeleton h={48} w={48} radius="xl" />
           </Box>
           <RailSkeleton count={6} />
         </Box>

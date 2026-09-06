@@ -9,7 +9,7 @@ import { ItemId, ShowId } from '@kroma/client/media';
 import type { Treatment } from '@kroma/client/pipeline';
 import type { MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, color, Spinner, Text } from '@kroma/ui/kit';
+import { Box, Button, classes, color, Spinner, styles, Text } from '@kroma/ui/kit';
 import {
   IconAlertTriangleFilled,
   IconCircle,
@@ -18,7 +18,7 @@ import {
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { type CSSProperties, useState } from 'react';
+import { useState } from 'react';
 import { RematchDialog } from '#web/features/catalog/rematch-dialog';
 import { kromaClient } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
@@ -37,11 +37,7 @@ const STATUS = {
 const PANEL_PAD = { base: 24, md: 64 } as const;
 
 // A <span> so the native tooltip survives: react-native-web drops a `title`.
-const TREATMENT: CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-};
+const s = styles({ treatment: { display: 'inline-flex', alignItems: 'center', gap: 6 } });
 
 export function TreatmentsPanel({
   kind,
@@ -123,7 +119,7 @@ export function TreatmentsPanel({
           return (
             <span
               key={tr.key}
-              style={TREATMENT}
+              className={classes(s.treatment)}
               title={t(`pipeline.st.${tr.status}` as MessageKey)}
             >
               {spin ? (

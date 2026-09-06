@@ -1,5 +1,5 @@
+import { classes, styles } from '@kroma/ui/kit';
 import {
-  type CSSProperties,
   Fragment,
   memo,
   type ReactElement,
@@ -26,9 +26,10 @@ const NOTHING: RowWindow = { first: 0, count: 0 };
 // size, which is exactly what mounting a row is. Left on, its compensation
 // fires the scroll listener, which mounts another row, which compensates again:
 // the page runs away to the end.
-const BOX: CSSProperties = { position: 'relative', overflowAnchor: 'none' };
-
-const ROW: CSSProperties = { position: 'absolute', left: 0, right: 0, display: 'flex' };
+const s = styles({
+  box: { position: 'relative', overflowAnchor: 'none' },
+  row: { position: 'absolute', left: 0, right: 0, display: 'flex', gap: TILE_GAP },
+});
 
 // Measured before paint rather than through <Box onLayout>, whose observer
 // lands a frame late: for that frame the grid would reserve no height at all,
@@ -109,7 +110,7 @@ const GridRow = memo(function GridRow<T>({
   renderItem,
 }: Readonly<GridRowProps<T>>) {
   return (
-    <div style={{ ...ROW, top, gap: TILE_GAP }}>
+    <div className={classes(s.row)} style={{ top }}>
       {data.slice(from, to).map((item) => (
         <Fragment key={keyOf(item)}>{renderItem(item, cell)}</Fragment>
       ))}
@@ -138,7 +139,8 @@ export function VirtualTileGrid<T>({ data, keyOf, renderItem }: Readonly<Virtual
       ref={box}
       data-tile-columns={shape.columns}
       data-tile-pitch={shape.pitch}
-      style={{ ...BOX, height: shape.height }}
+      className={classes(s.box)}
+      style={{ height: shape.height }}
     >
       {rows.map((row) => (
         // Keyed by the row's place in the WHOLE grid, never by its place in the

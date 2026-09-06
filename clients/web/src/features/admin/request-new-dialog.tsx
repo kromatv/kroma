@@ -1,6 +1,5 @@
 import { apiErrorText } from '@kroma/client';
 import type { DiscoverEntry } from '@kroma/client/discovery';
-import { posterGradient } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,
@@ -19,6 +18,7 @@ import {
   Text,
 } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
+import { posterScrim } from '#web/shared/lib/art-styles';
 import { useAuth } from '#web/shared/lib/auth';
 import { Image } from '#web/shared/ui';
 
@@ -170,7 +170,7 @@ export function NewRequestDialog({
           {!short && busy && results == null ? (
             <Box gap={8}>
               {[0, 1, 2, 3].map((n) => (
-                <Skeleton key={n} w="100%" h={92} radius="lg" />
+                <Skeleton key={n} w="100%" h={92} radius="xl" />
               ))}
             </Box>
           ) : null}
@@ -226,9 +226,7 @@ function ResultRow({
     <ListRow.Root chevron={false} label={entry.title}>
       <ListRow.Leading>
         <Box w={52} h={76} shrink={0} radius="sm" overflow="hidden">
-          <div
-            style={{ position: 'absolute', inset: 0, background: posterGradient(entry.title) }}
-          />
+          <div style={posterScrim(entry.title)} />
           <Image src={entry.posterUrl} fit="cover" fill />
         </Box>
       </ListRow.Leading>

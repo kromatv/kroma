@@ -30,15 +30,13 @@ interface BoxProps extends BoxStyleProps, Omit<ViewProps, 'style'> {
 }
 
 // A style, never the prop of the same name: react-native-web deprecated the
-// prop form, and every target has read it off the style since RN 0.71. One
-// frozen object per value, so a box that states one still shares its style by
-// identity.
-const HIT = {
+// prop form, and every target has read it off the style since RN 0.71.
+const HIT = styles({
   auto: { pointerEvents: 'auto' },
   none: { pointerEvents: 'none' },
   'box-none': { pointerEvents: 'box-none' },
   'box-only': { pointerEvents: 'box-only' },
-} as const satisfies Record<string, ViewStyle>;
+});
 
 function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonly<BoxProps>) {
   const split = splitShorthand(props);

@@ -7,7 +7,7 @@ import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
-import { keyFace } from '#ui/lib/field-shell';
+import { CONTROL, keyFace } from '#ui/lib/field-shell';
 
 /** A keyboard's scale: `sm` is arm's length, `tv` is across a room. */
 type KeyboardSize = 'sm' | 'tv';
@@ -50,8 +50,8 @@ const face = svFor<{
   slots: keyFace,
   variants: {
     size: {
-      sm: { root: { radius: 'lg' } },
-      tv: { root: { radius: '2xl' } },
+      sm: { root: { radius: CONTROL.sm.radius } },
+      tv: { root: { radius: CONTROL.tv.radius } },
     },
   },
 });

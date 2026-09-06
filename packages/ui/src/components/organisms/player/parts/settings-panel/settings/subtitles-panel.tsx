@@ -9,7 +9,7 @@ import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-foc
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { IconAi } from '#ui/components/organisms/player/parts/icons';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
-import { styles } from '#ui/core';
+import { style, styles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
 import type { SubtitleGenBundle } from './gen';
 import { GenerateWizard } from './generate-wizard';
@@ -87,7 +87,7 @@ export const SubtitlesPanel = forwardRef<PanelHandle, SubtitlesPanelProps>(funct
           const row = (
             <Box
               flex={s.ai && s.subId ? 1 : undefined}
-              style={{ minWidth: 0 }}
+              style={MIN_W}
               opacity={s.selectable ? 1 : 0.4}
             >
               <SelectRow
@@ -150,6 +150,7 @@ export const SubtitlesPanel = forwardRef<PanelHandle, SubtitlesPanelProps>(funct
   );
 });
 
+const MIN_W = style({ minWidth: 0 });
 function AiBadge() {
   return (
     <Box
@@ -195,7 +196,7 @@ function GenRow({
   const engine = gen.mode === 'translate' ? t('player.subAiBadge') : 'Whisper';
   return (
     <Box
-      radius="lg"
+      radius="xl"
       borderWidth={1}
       border="rgba(124, 92, 255, 0.4)"
       bg="rgba(124, 92, 255, 0.06)"

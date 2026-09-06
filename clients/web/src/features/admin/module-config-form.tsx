@@ -15,6 +15,7 @@ import {
   Row,
   Select,
   Switch,
+  styles,
 } from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { adminApi } from '#web/features/admin/module-api';
@@ -22,7 +23,7 @@ import { adminApi } from '#web/features/admin/module-api';
 type ConfigValue = string | number | boolean;
 
 const CONTROL_WIDTH = 160;
-const SELECT_STYLE = { width: CONTROL_WIDTH } as const;
+const s = styles({ select: { width: CONTROL_WIDTH } });
 
 function initial(field: ConfigField, stored: unknown): ConfigValue {
   const raw = stored ?? field.default;
@@ -113,7 +114,7 @@ function ConfigRow({
   } else if (field.type === 'select') {
     control = (
       <Select.Root label={field.label} value={String(value ?? '')} onValueChange={onChange}>
-        <Select.Trigger style={SELECT_STYLE} />
+        <Select.Trigger style={s.select} />
         {(field.options ?? []).map((opt) => (
           <Select.Item key={opt} value={opt} label={opt} />
         ))}

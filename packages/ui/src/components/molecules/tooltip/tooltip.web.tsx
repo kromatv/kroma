@@ -3,7 +3,8 @@
 // the bubble with aria-describedby while it shows.
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { activeTheme } from '#ui/core';
+import { styles } from '#ui/core';
+import { classes } from '#ui/lib/classed';
 import { Portal } from '#ui/lib/portal';
 import type { TooltipProps } from './tooltip';
 
@@ -15,6 +16,27 @@ interface Spot {
   top: number;
 }
 
+const s = styles({
+  wrap: { display: 'inline-flex' },
+  tip: {
+    position: 'fixed',
+    transform: [{ translateX: '-50%' }, { translateY: '-100%' }],
+    zIndex: 120,
+    maxWidth: 280,
+    py: 6,
+    px: 10,
+    radius: 'sm',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'borderStrong',
+    bg: 'surface2',
+    color: 'text',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: '1.4',
+    pointerEvents: 'none',
+  },
+});
 function Tooltip({ label, children }: Readonly<TooltipProps>) {
   const id = useId();
   const box = useRef<HTMLSpanElement>(null);
@@ -63,7 +85,7 @@ function Tooltip({ label, children }: Readonly<TooltipProps>) {
     // biome-ignore lint/a11y/noStaticElementInteractions: the wrapper only watches hover/focus travelling through it; the child stays the interactive element.
     <span
       ref={box}
-      style={{ display: 'inline-flex' }}
+      className={classes(s.wrap)}
       // An inert subtree (a pressable row makes its cells one) would swallow
       // the hover this exists to watch.
       data-hoverable="true"
@@ -80,30 +102,13 @@ function Tooltip({ label, children }: Readonly<TooltipProps>) {
 }
 
 function Bubble({ id, label, spot }: Readonly<{ id: string; label: string; spot: Spot }>) {
-  const { colors, radius } = activeTheme();
   return (
     <Portal>
       <span
         id={id}
         role="tooltip"
-        style={{
-          position: 'fixed',
-          left: spot.left,
-          top: spot.top,
-          transform: 'translate(-50%, -100%)',
-          zIndex: 120,
-          maxWidth: 280,
-          padding: '6px 10px',
-          borderRadius: radius.sm,
-          border: `1px solid ${colors.borderStrong}`,
-          background: colors.surface2,
-          color: colors.text,
-          fontSize: 12,
-          fontWeight: 600,
-          lineHeight: 1.4,
-          pointerEvents: 'none',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
-        }}
+        className={classes(s.tip)}
+        style={{ left: spot.left, top: spot.top }}
       >
         {label}
       </span>

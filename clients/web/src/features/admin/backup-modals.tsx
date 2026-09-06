@@ -3,7 +3,16 @@
 // and only then asks for a password, always confirming before it overwrites.
 
 import { useT } from '@kroma/ui';
-import { Box, controlMetrics, Dialog, Field, ListRow, SwitchFace, Text } from '@kroma/ui/kit';
+import {
+  Box,
+  controlMetrics,
+  Dialog,
+  Field,
+  ListRow,
+  SwitchFace,
+  sharedStyle,
+  Text,
+} from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAuth } from '#web/shared/lib/auth';
@@ -47,7 +56,10 @@ function ChosenFile({ name }: Readonly<{ name: string }>) {
       bg={control.bg}
       border="borderStrong"
     >
-      <Text lines={1} style={{ fontSize: control.fontSize }}>
+      <Text
+        lines={1}
+        style={sharedStyle(`backup:font:${control.fontSize}`, { fontSize: control.fontSize })}
+      >
         {name}
       </Text>
     </Box>

@@ -1,5 +1,5 @@
-// The active breakpoint: where the design width comes from, and how a value
-// authored per breakpoint collapses to one.
+// The active breakpoint: where the design width comes from, and when it moves.
+// The cascade a value resolves through is `breakpoint-cascade.ts`.
 //
 // React Native has no media query, so the width has to be read from the surface
 // and re-read when it moves. That width is NOT always the window's: <TvStage>
@@ -10,34 +10,22 @@
 // rendering <TvStage> at half size) states it with `pinDesignWidth`.
 
 import { Dimensions, Platform } from 'react-native';
-import { BREAKPOINTS, type BreakpointName, breakpoint, CANVAS } from '#ui/core/tokens';
+import {
+  BREAKPOINT_ATTRIBUTE,
+  breakpointAt,
+  stepAt,
+  stepsReached,
+} from '#ui/core/breakpoint-cascade';
+import { BREAKPOINTS, type BreakpointName, CANVAS } from '#ui/core/tokens';
+import { webDocument } from '#ui/lib/dom';
 
-/**
- * A value stated per breakpoint, mobile-first: `base` is mandatory and applies
- * until the next breakpoint the object names. A missing middle step inherits
- * from below, never from above.
- */
-export type Breakpoints<T> = { base: T } & {
-  [K in Exclude<BreakpointName, 'base'>]?: T;
-};
-
-/** Any value in the vocabulary: one value, or one per breakpoint. */
-export type Responsive<T> = T | Breakpoints<T>;
-
-const WIDTH = BREAKPOINTS.map((name) => breakpoint[name]);
-
-const LAST = BREAKPOINTS.length - 1;
+export type { Breakpoints, Responsive } from '#ui/core/breakpoint-cascade';
+export { breakpointBits, valueAt } from '#ui/core/breakpoint-cascade';
 
 const listeners = new Set<() => void>();
 
 let current = -1;
 let pinned: number | undefined;
-
-function indexOf(width: number): number {
-  let at = 0;
-  while (at < LAST && width >= (WIDTH[at + 1] as number)) at++;
-  return at;
-}
 
 function measure(): number {
   if (pinned !== undefined) return pinned;
@@ -45,10 +33,15 @@ function measure(): number {
   return Dimensions.get('window').width;
 }
 
+function stampStepOnRoot(index: number): void {
+  webDocument()?.documentElement.setAttribute(BREAKPOINT_ATTRIBUTE, stepsReached(index));
+}
+
 function settle(): void {
-  const next = indexOf(measure());
+  const next = breakpointAt(measure());
   if (next === current) return;
   current = next;
+  stampStepOnRoot(next);
   for (const listener of listeners) listener();
 }
 
@@ -57,7 +50,8 @@ function settle(): void {
 export function breakpointIndex(): number {
   if (current < 0) {
     Dimensions.addEventListener('change', settle);
-    current = indexOf(measure());
+    current = breakpointAt(measure());
+    stampStepOnRoot(current);
   }
   return current;
 }
@@ -89,44 +83,8 @@ export function subscribeBreakpoint(listener: () => void): () => void {
   };
 }
 
-/**
- * Which breakpoints a value names, as a bitmask, and 0 for anything that is not
- * a breakpoint object - a plain value, an Animated node, a transform array.
- * Zero is the whole zero-cost path: it is what keeps a flat declaration off the
- * breakpoint axis, exactly as an empty state mask keeps it off the state axis.
- */
-export function breakpointBits(value: unknown): number {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return 0;
-  let bits = 0;
-  for (let at = 0; at <= LAST; at++) {
-    if ((BREAKPOINTS[at] as string) in value) bits |= 1 << at;
-  }
-  return bits;
-}
-
-/** The value at a breakpoint, mobile-first. A value naming no breakpoint at all
- *  passes through, so an Animated node stays itself. */
-export function valueAt(value: object, index: number): unknown {
-  const bag = value as Record<string, unknown>;
-  for (let at = Math.min(index, LAST); at >= 0; at--) {
-    const found = bag[BREAKPOINTS[at] as string];
-    if (found !== undefined) return found;
-  }
-  return breakpointBits(value) === 0 ? value : undefined;
-}
-
-/**
- * The step a declaration naming `mask` actually resolves at: the widest
- * breakpoint it names at or below the active one, and 0 when it names none.
- *
- * This is the cache-key axis. Two widths a declaration cannot tell apart share
- * one entry, and a declaration with no responsive value at all keys on 0
- * forever - so it mints exactly the one entry it does today.
- */
+/** The step a declaration naming `mask` resolves at, against the active
+ *  breakpoint unless `at` says otherwise; see {@link stepAt}. */
 export function breakpointStep(mask: number, at?: number): number {
-  if (mask === 0) return 0;
-  for (let step = Math.min(at ?? breakpointIndex(), LAST); step > 0; step--) {
-    if ((mask & (1 << step)) !== 0) return step;
-  }
-  return 0;
+  return stepAt(mask, at ?? breakpointIndex());
 }

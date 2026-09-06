@@ -7,7 +7,6 @@ import {
   Button,
   Callout,
   ChoiceList,
-  color,
   confirm,
   Dialog,
   Field,
@@ -15,6 +14,7 @@ import {
   InputGroup,
   ListRow,
   Row,
+  styles,
   Text,
 } from '@kroma/ui/kit';
 import { useCallback, useState } from 'react';
@@ -22,7 +22,10 @@ import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
-const DASHED = { borderWidth: 1, borderColor: color('text/25'), borderStyle: 'dashed' } as const;
+const s = styles({
+  dashed: { borderWidth: 1, borderColor: 'text/25', borderStyle: 'dashed' },
+  code: { fontFamily: 'monospace', letterSpacing: 4 },
+});
 
 // `navigator.clipboard` is undefined outside a secure context, so on a
 // plain-http LAN address this throws synchronously, not via rejection.
@@ -128,7 +131,7 @@ export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChang
         })}
       </ListRow.Hint>
       <ListRow.Leading>
-        <Row center w={42} h={42} shrink={0} radius="circle" style={DASHED}>
+        <Row center w={42} h={42} shrink={0} radius="circle" style={s.dashed}>
           <Icon name="mail" size={18} thickness={1.8} color="textDim" />
         </Row>
       </ListRow.Leading>
@@ -374,11 +377,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
         {reset ? (
           <Callout.Root tone="accent">
             <Callout.Title>{t('admin.resetCode')}</Callout.Title>
-            <Text
-              variant="heading"
-              textAlign="center"
-              style={{ fontFamily: 'monospace', letterSpacing: 4 }}
-            >
+            <Text variant="heading" textAlign="center" style={s.code}>
               {reset.code}
             </Text>
             <Text variant="meta" color="textMuted">

@@ -1,30 +1,34 @@
 import type { CrewMember } from '@kroma/client/media';
 import { personSegment } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, color, DataField, IconButton, Text } from '@kroma/ui/kit';
+import {
+  Box,
+  Button,
+  CONTROL,
+  DataField,
+  entryDefaultSize,
+  IconButton,
+  styles,
+  Text,
+} from '@kroma/ui/kit';
 import { Link } from '@tanstack/react-router';
-import type { CSSProperties } from 'react';
 import { useFocusRing } from '#web/shared/lib/use-focus-ring';
 
 const FIELD_GAP_X = { base: 24, md: 44 } as const;
-const RULE = { borderTopWidth: 1, borderTopColor: color('white/8') } as const;
-
-const DIRECTOR_LINK: CSSProperties = {
-  font: 'inherit',
-  color: 'inherit',
-  textDecoration: 'underline',
-  textUnderlineOffset: 2,
-  borderRadius: 4,
-};
+const s = styles({
+  rule: { borderTopWidth: 1, borderTopColor: 'white/8' },
+  link: { color: 'inherit', textDecorationLine: 'underline', textUnderlineOffset: 2, radius: 'xs' },
+  bold: { fontWeight: '600' },
+});
 
 function DirectorLink({ person, label }: Readonly<{ person: CrewMember; label: string }>) {
-  const focus = useFocusRing(DIRECTOR_LINK);
+  const focus = useFocusRing(s.link);
   return (
     <Link
       to="/people/$person"
       params={{ person: personSegment(person) }}
       aria-label={label}
-      style={focus.style}
+      className={focus.className}
       {...focus.bind}
     >
       {person.name}
@@ -32,14 +36,12 @@ function DirectorLink({ person, label }: Readonly<{ person: CrewMember; label: s
   );
 }
 
-const BOLD = { fontWeight: '600' } as const;
-
 export function DirectorsLine({ directors }: Readonly<{ directors?: CrewMember[] }>) {
   const t = useT();
   if (!directors || directors.length === 0) return null;
   return (
     <Text variant="meta" color="white/60" mb={12}>
-      <Text variant="meta" color="white/80" style={BOLD}>
+      <Text variant="meta" color="white/80" style={s.bold}>
         {t('content.directedBy')}
       </Text>{' '}
       {directors.map((d, i) => (
@@ -78,7 +80,7 @@ export function ListButton({
   if (!onToggle) return null;
   return (
     <IconButton
-      diameter={50}
+      diameter={CONTROL[entryDefaultSize()].height}
       glyph={20}
       radius="md"
       active={inList ?? false}
@@ -95,7 +97,7 @@ export function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) 
   if (!onReport) return null;
   return (
     <IconButton
-      diameter={50}
+      diameter={CONTROL[entryDefaultSize()].height}
       glyph={19}
       radius="md"
       icon="flag"
@@ -109,7 +111,7 @@ export function HeroFields({ audio, subtitles }: Readonly<{ audio?: string; subt
   const t = useT();
   if (audio == null && subtitles == null) return null;
   return (
-    <Box row wrap gapX={FIELD_GAP_X} gapY={16} py={18} style={RULE}>
+    <Box row wrap gapX={FIELD_GAP_X} gapY={16} py={18} style={s.rule}>
       {audio != null ? (
         <DataField.Root size="md">
           <DataField.Label>{t('content.fieldAudio')}</DataField.Label>

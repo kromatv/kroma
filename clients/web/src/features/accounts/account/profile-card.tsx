@@ -31,7 +31,7 @@ export function PhotoCard() {
       elevated
       pad="none"
       p={22}
-      radius="lg"
+      radius="xl"
       border="border"
       row
       wrap
@@ -39,13 +39,7 @@ export function PhotoCard() {
       gap={24}
     >
       <Box shrink={0}>
-        <UserAvatar
-          name={user.username}
-          avatarUrl={user.avatarUrl}
-          seed={user.id}
-          size={96}
-          radius={22}
-        />
+        <UserAvatar name={user.username} avatarUrl={user.avatarUrl} seed={user.id} size={96} />
         <Box
           absolute
           bottom={-4}

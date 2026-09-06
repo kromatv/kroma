@@ -62,7 +62,7 @@ export function TvDetailScaffold({
           <Text variant="overlineTv" color="accentText">
             {kind}
           </Text>
-          <Text variant="hero" style={[s.title, { marginTop: 14, marginBottom: 16 }]}>
+          <Text variant="hero" style={[s.title, s.titleGap]}>
             {title}
           </Text>
 
@@ -99,6 +99,7 @@ export function TvDetailScaffold({
 }
 
 const s = styles({
+  titleGap: { mt: 14, mb: 16 },
   // clamp(46px, 7.6vh, 86px) resolves to 82px on the fixed 1080-tall stage.
   title: { fontSize: 82, lineHeight: 78, fontWeight: '700', letterSpacing: -1.64 },
   scroll: { fill: true },

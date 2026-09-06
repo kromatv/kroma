@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
 import { MovingStrip } from '#ui/components/organisms/virtual/moving-strip';
-import { styles } from '#ui/core';
+import { sharedStyle, styles } from '#ui/core';
 import { FocusLiftView } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusReporter } from '#ui/lib/focus-report';
@@ -51,6 +51,7 @@ interface VirtualRailProps<T> {
   arrows?: boolean;
 }
 
+const rangeOf = (minWidth: number) => sharedStyle(`virtual-rail:range:${minWidth}`, { minWidth });
 function VirtualRail<T>({
   data,
   itemWidth,
@@ -176,7 +177,10 @@ function VirtualRail<T>({
   const mounted = Math.min(count, reach + 1);
   // Every cell is the same box, so it is the same OBJECT: the tiles rebuild on
   // every pan, and a fresh style per tile is a styleq cache miss on each of them.
-  const cell = useMemo(() => ({ width: pitch, paddingHorizontal: gap / 2 }), [pitch, gap]);
+  const cell = sharedStyle(`virtual-rail:cell:${pitch}:${gap}`, {
+    width: pitch,
+    paddingHorizontal: gap / 2,
+  });
   const tiles: ReactElement[] = [];
   for (let next = 0; next < mounted; next += 1) {
     const index = next;
@@ -228,7 +232,7 @@ function VirtualRail<T>({
           scrollEventThrottle={16}
           // The full row's width from the first frame: the scroll RANGE must not
           // grow with the mounted window, or a hard fling bounces off its end.
-          contentContainerStyle={[s.row, contentStyle, { minWidth: count * pitch }]}
+          contentContainerStyle={[s.row, contentStyle, rangeOf(count * pitch)]}
         >
           {row}
         </ScrollView>

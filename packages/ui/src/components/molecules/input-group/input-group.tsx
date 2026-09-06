@@ -13,6 +13,7 @@ import {
 } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { sharedStyle } from '#ui/core';
 import { type ControlSize, controlMetrics, edgeColor, fieldRing } from '#ui/lib/field-shell';
 import { Context, type InputGroupContext } from './input-group-context';
 import {
@@ -53,6 +54,10 @@ const BUCKET: Record<string, keyof Buckets> = {
   'inline-end': 'inlineEnd',
 };
 
+const edgeOf = (focused: boolean, invalid: boolean) => {
+  const borderColor = edgeColor(focused, invalid);
+  return sharedStyle(`input-group:edge:${borderColor}`, { borderColor });
+};
 function sort(children: ReactNode): Buckets {
   const at: Buckets = {
     blockStart: [],
@@ -125,7 +130,7 @@ function Root({ label, size, invalid = false, style, children }: Readonly<InputG
         borderWidth={1}
         minW={0}
         {...(stacked ? null : run)}
-        style={[{ borderColor: edgeColor(focused, invalid) }, focused ? fieldRing() : null, style]}
+        style={[edgeOf(focused, invalid), focused ? fieldRing() : null, style]}
       >
         {stacked ? (
           <>

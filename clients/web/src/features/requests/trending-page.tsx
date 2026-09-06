@@ -3,7 +3,17 @@
 
 import { hasPermission } from '@kroma/client/accounts';
 import { useT } from '@kroma/ui';
-import { Box, Button, EmptyState, Icon, PageHeader, Row, Text } from '@kroma/ui/kit';
+import {
+  Box,
+  Button,
+  classes,
+  EmptyState,
+  Icon,
+  PageHeader,
+  Row,
+  styles,
+  Text,
+} from '@kroma/ui/kit';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
@@ -15,16 +25,17 @@ import { useAuth } from '#web/shared/lib/auth';
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
 import { TileGrid } from '#web/shared/ui/tile-grid';
 
-const PAGE_COUNT = { fontVariant: ['tabular-nums' as const] };
-
-const BACK_LINK = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  alignSelf: 'flex-start',
-  gap: 6,
-  marginBottom: 24,
-  textDecoration: 'none',
-} as const;
+const s = styles({
+  count: { fontVariant: ['tabular-nums'] },
+  backLink: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    mb: 24,
+    textDecorationLine: 'none',
+  },
+});
 
 export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
   const t = useT();
@@ -43,7 +54,7 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
 
   return (
     <PageFrame>
-      <Link to="/search" search={{ q: '', type: 'all' }} style={BACK_LINK}>
+      <Link to="/search" search={{ q: '', type: 'all' }} className={classes(s.backLink)}>
         <Icon name="arrow-left" size={16} thickness={2.2} color="textDim" />
         <Text variant="meta" color="textDim">
           {t('discover.back')}
@@ -115,7 +126,7 @@ function Pager({
         onPress={() => onGo(page - 1)}
         disabled={page <= 1}
       />
-      <Text variant="meta" color="textDim" style={PAGE_COUNT}>
+      <Text variant="meta" color="textDim" style={s.count}>
         {t('discover.pageOf', { page: String(page), total: String(totalPages) })}
       </Text>
       <Button

@@ -37,23 +37,25 @@ const FADE_MS = 2800;
 // sinks the middle, where the form is. Two layers rather than one
 // comma-separated background, which React Native's gradients cannot express;
 // each is promoted so a full-screen gradient is rasterised once.
-const VEIL = [
-  gradient(
-    'linear-gradient(180deg, rgba(8, 8, 10, 0.86) 0%, rgba(8, 8, 10, 0.5) 20%, rgba(8, 8, 10, 0.3) 38%, rgba(8, 8, 10, 0.72) 62%, rgba(8, 8, 10, 0.97) 88%)',
+const layers = styles({
+  veil: {
+    ...gradient(
+      'linear-gradient(180deg, rgba(8, 8, 10, 0.86) 0%, rgba(8, 8, 10, 0.5) 20%, rgba(8, 8, 10, 0.3) 38%, rgba(8, 8, 10, 0.72) 62%, rgba(8, 8, 10, 0.97) 88%)',
+    ),
+    ...promote(),
+  },
+  vignette: {
+    ...gradient(
+      'radial-gradient(58% 46% at 50% 50%, rgba(8, 8, 10, 0.72) 0%, rgba(8, 8, 10, 0.34) 58%, rgba(8, 8, 10, 0) 100%)',
+    ),
+    ...promote(),
+  },
+  foot: gradient(
+    'linear-gradient(0deg, rgba(244, 180, 66, 0.07) 0%, rgba(79, 157, 224, 0.05) 46%, rgba(79, 157, 224, 0) 100%)',
   ),
-  promote(),
-];
-const VIGNETTE = [
-  gradient(
-    'radial-gradient(58% 46% at 50% 50%, rgba(8, 8, 10, 0.72) 0%, rgba(8, 8, 10, 0.34) 58%, rgba(8, 8, 10, 0) 100%)',
-  ),
-  promote(),
-];
+});
 // The wheel's warm and cool ends breathed back into the foot of the frame, so
 // the rule below reads as where a gradient lands rather than as a sticker.
-const FOOT = gradient(
-  'linear-gradient(0deg, rgba(244, 180, 66, 0.07) 0%, rgba(79, 157, 224, 0.05) 46%, rgba(79, 157, 224, 0) 100%)',
-);
 const FOOT_H = 190;
 const RULE_H = 3;
 
@@ -171,9 +173,9 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
             style={GRADE}
           />
         </Animated.View>
-        <Box fill style={VEIL} />
-        <Box fill style={VIGNETTE} />
-        <Box absolute left={0} right={0} bottom={0} h={FOOT_H} style={FOOT} />
+        <Box fill style={layers.veil} />
+        <Box fill style={layers.vignette} />
+        <Box absolute left={0} right={0} bottom={0} h={FOOT_H} style={layers.foot} />
         <Box absolute left={0} right={0} bottom={0} h={RULE_H} row>
           {WHEEL_COLORS.map((segment) => (
             <Box key={segment} flex bg={segment} />

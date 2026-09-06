@@ -1,5 +1,5 @@
 import { CastProvider } from '@kroma/ui';
-import { Box, useBreakpoint } from '@kroma/ui/kit';
+import { Box, styles, useBreakpoint } from '@kroma/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { GateLoading } from '#web/features/accounts/auth-gate';
 import { CatalogModalHosts } from '#web/features/catalog/modal-hosts';
@@ -24,7 +24,7 @@ export const Route = createFileRoute('/_app')({
 const BROWSER_LABEL =
   typeof navigator === 'undefined' ? 'Web' : deviceInfo(navigator.userAgent, 'Web').label;
 
-const UNPOSITIONED = { position: 'static' } as const;
+const s = styles({ unpositioned: { position: 'static' } });
 
 const RAIL_WIDTH = 248;
 
@@ -48,7 +48,7 @@ function AppLayout() {
             `position: relative` by default, and the player's root fills its
             nearest positioned ancestor, so a positioned column here sizes
             "fullscreen" to the content beside the rail. */}
-        <Box flex minW={0} style={UNPOSITIONED}>
+        <Box flex minW={0} style={s.unpositioned}>
           <Outlet />
         </Box>
         <CatalogModalHosts />

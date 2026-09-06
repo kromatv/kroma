@@ -3,7 +3,6 @@
 // itself stays data + layout.
 
 import type { MediaRequest } from '@kroma/client/requests';
-import { posterGradient } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Avatar,
@@ -20,6 +19,7 @@ import {
 } from '@kroma/ui/kit';
 import { Pill } from '#web/features/admin/pill';
 import { kindMeta } from '#web/features/admin/pipeline-meta';
+import { posterScrim } from '#web/shared/lib/art-styles';
 import { Image } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 import { RouteLink } from '#web/shared/ui/route-link';
@@ -43,8 +43,8 @@ export function IdentityCard({
   return (
     <Surface elevated radius="xl" pad="lg">
       <Box row gap={16}>
-        <Box w={70} h={104} shrink={0} radius="xs" overflow="hidden" shadow="pop">
-          <div style={{ position: 'absolute', inset: 0, background: posterGradient(req.title) }} />
+        <Box w={70} h={104} shrink={0} radius="xs" overflow="hidden">
+          <Box fill style={posterScrim(req.title)} />
           <Image src={posterUrl ?? req.posterUrl} fit="cover" fill />
         </Box>
         <Box minW={0} pt={4} align="flex-start" gap={10}>
@@ -93,7 +93,7 @@ export function RequesterCard({ req }: Readonly<{ req: MediaRequest }>) {
         {t('requests.requestedBy')}
       </Text>
       <Row gap={12}>
-        <Avatar name={req.requestedByName ?? '?'} size={34} circle shadow={false} />
+        <Avatar name={req.requestedByName ?? '?'} size={34} circle />
         <Box minW={0}>
           <Text variant="label" lines={1}>
             {req.requestedByName ?? t('requests.unknownUser')}

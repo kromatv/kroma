@@ -2,6 +2,7 @@ import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
 import { Text } from '#ui/components/atoms/text';
+import { style } from '#ui/core';
 
 interface SectionRootProps extends Omit<BoxProps, 'children'> {
   /** Space between the band's content rows, not between them and the header.
@@ -69,7 +70,7 @@ function Actions({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-const PUSH = { marginLeft: 'auto' } as const;
+const PUSH = style({ marginLeft: 'auto' });
 
 /**
  * A titled band: an overline, a rule, and the content under both.

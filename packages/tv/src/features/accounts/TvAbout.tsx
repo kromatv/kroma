@@ -7,6 +7,7 @@ import { type ClientHardware, clientHardware } from '#tv/app/clientHardware';
 import { useEnv } from '#tv/app/providers/env';
 import { useNav } from '#tv/app/router';
 import { AuthScreen, GATE_MARK, KromaMark } from '#tv/shared/ui';
+import { weight } from '#tv/shared/ui/weight';
 
 /**
  * About (route `about`): which build of the client is running.
@@ -71,7 +72,7 @@ export function TvAbout() {
         gap={4}
         mt={28}
         color="text/40"
-        textStyle={{ fontWeight: '500' }}
+        textStyle={weight.medium}
       />
     </AuthScreen>
   );

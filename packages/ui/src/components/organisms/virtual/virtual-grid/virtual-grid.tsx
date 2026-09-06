@@ -13,6 +13,7 @@ import { Dimensions, type LayoutChangeEvent, View, type ViewStyle } from 'react-
 import { cellWidth, columnsFor } from '#ui/components/atoms/grid';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
 import { MovingStrip } from '#ui/components/organisms/virtual/moving-strip';
+import { styles } from '#ui/core';
 import { FocusReporter } from '#ui/lib/focus-report';
 import { markGridFocus } from '#ui/lib/perf';
 import { useStableCallback } from '#ui/lib/stable-callback';
@@ -20,12 +21,14 @@ import { GridRow } from './grid-row';
 import { freeOffset, type GridRows, rowMetrics, rowTop, rowWindow, stripOffset } from './grid-rows';
 import { useWheelScroll } from './use-wheel-rows';
 
-const NO_POINTER = { pointerEvents: 'none' } as const;
-const VIEWPORT: ViewStyle = { flex: 1, minHeight: 0 };
+const boxes = styles({
+  noPointer: { pointerEvents: 'none' },
+  viewport: { flex: true, minHeight: 0 },
+  row: { position: 'absolute', left: 0 },
+  header: { position: 'absolute', left: 0, top: 0 },
+});
 // Every row is placed at its own offset down the strip, so only the mounted
 // ones have to exist and they still land where the whole list would put them.
-const ROW_BOX: ViewStyle = { position: 'absolute', left: 0 };
-const HEADER_BOX: ViewStyle = { ...ROW_BOX, top: 0 };
 
 // Rows left before the grid asks for more. Enough that the next page is in
 // hand by the time a held D-pad reaches it.
@@ -218,7 +221,7 @@ function VirtualGrid<T>({
     () => ({ paddingHorizontal: px, paddingTop: pt, height: metrics.height }),
     [px, pt, metrics.height],
   );
-  const rowStyle = useMemo<ViewStyle>(() => ({ ...ROW_BOX, flexDirection: 'row', gap }), [gap]);
+  const rowStyle = useMemo<ViewStyle>(() => ({ ...boxes.row, flexDirection: 'row', gap }), [gap]);
 
   const rows = useMemo<GridRows>(() => ({ focus: focusRow, focusedRow }), [focusRow, focusedRow]);
   const lastRow = Math.max(0, metrics.count - metrics.headerRows - 1);
@@ -247,18 +250,18 @@ function VirtualGrid<T>({
   }
 
   return (
-    <View style={style ?? VIEWPORT} ref={viewport} onLayout={onLayout}>
+    <View style={style ?? boxes.viewport} ref={viewport} onLayout={onLayout}>
       {/* Inert on the inner clip, not the viewport: the wheel listener lives on
           the viewport's node, and pointer-events none there would drop the pan
           events too. */}
-      <View style={[clipStyles.column, fraction === null ? null : NO_POINTER]}>
+      <View style={[clipStyles.column, fraction === null ? null : boxes.noPointer]}>
         {cell > 0 ? (
           <MovingStrip axis="y" offset={offset} still={fraction !== null} style={contentStyle}>
             <NavigatorView direction="vertical" alignInGrid>
               {hasHeader && shown.start === 0 ? (
                 <NavigatorNode ref={onHeaderNode} index={0} orientation="horizontal">
                   <FocusReporter onFocus={onHeaderFocus}>
-                    <View style={HEADER_BOX}>{header}</View>
+                    <View style={boxes.header}>{header}</View>
                   </FocusReporter>
                 </NavigatorNode>
               ) : null}

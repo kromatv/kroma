@@ -6,7 +6,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusScope } from '#ui/lib/focus-scope';
-import { layout } from '#ui/testing';
+import { declared, layout } from '#ui/testing';
 import { cellWidth, columnsFor, Grid } from './grid';
 
 describe('columnsFor', () => {
@@ -100,7 +100,7 @@ function twoByTwo(): HTMLElement {
 function stackFrom(label: string, box: HTMLElement): string[] {
   const layers: string[] = [];
   for (let node = screen.getByLabelText(label); node !== box; ) {
-    layers.push(node.style.zIndex);
+    layers.push(declared(node, 'zIndex') ?? '');
     node = node.parentElement as HTMLElement;
   }
   return layers;

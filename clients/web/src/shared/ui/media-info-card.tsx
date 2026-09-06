@@ -6,16 +6,18 @@
 import type { AudioTrack, MediaFile, SubtitleTrack, VideoTrack } from '@kroma/client/media';
 import { channelLabel, codecLabel, langName } from '@kroma/core';
 import { useFormat, useT } from '@kroma/ui';
-import { Box, color, DataField, Grid, Row, Text } from '@kroma/ui/kit';
+import { Box, classes, color, DataField, Grid, Row, styles, Text } from '@kroma/ui/kit';
 import { IconFileInfo } from '@tabler/icons-react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
-const TOP_RULE = { borderTopWidth: 1, borderTopColor: color('white/6') } as const;
-const BOTTOM_RULE = { borderBottomWidth: 1, borderBottomColor: color('white/6') } as const;
-const GLYPH = { marginTop: 2, flexShrink: 0 } as const;
-const NO_CAPS = { textTransform: 'none' } as const;
+const s = styles({
+  topRule: { borderTopWidth: 1, borderTopColor: 'white/6' },
+  bottomRule: { borderBottomWidth: 1, borderBottomColor: 'white/6' },
+  glyph: { mt: 2, flexShrink: 0 },
+  noCaps: { textTransform: 'none' },
+  path: { wordBreak: 'break-all' },
+});
 // `word-break` inherits, and React Native's TextStyle has no name for it.
-const PATH: CSSProperties = { wordBreak: 'break-all' };
 
 export function FileCard({
   file,
@@ -55,8 +57,8 @@ function FileHeader({
   const t = useT();
   const name = file.relPath?.split('/').pop() ?? t('mediaInfo.unknownFile');
   return (
-    <Box row align="flex-start" gap={12} px={16} py={12} style={BOTTOM_RULE}>
-      <IconFileInfo size={18} stroke={1.9} color={color('white/40')} style={GLYPH} />
+    <Box row align="flex-start" gap={12} px={16} py={12} style={s.bottomRule}>
+      <IconFileInfo size={18} stroke={1.9} color={color('white/40')} className={classes(s.glyph)} />
       <Box minW={0} flex>
         <Row wrap gap={8}>
           <Text variant="label" lines={1}>
@@ -66,7 +68,7 @@ function FileHeader({
           {file.edition ? <Chip accent>{file.edition}</Chip> : null}
         </Row>
         {file.relPath ? (
-          <div style={PATH}>
+          <div className={classes(s.path)}>
             <Text variant="meta" font="mono" color="white/35" mt={2}>
               {file.relPath}
             </Text>
@@ -80,7 +82,7 @@ function FileHeader({
 function Unprobed() {
   const t = useT();
   return (
-    <Box px={16} py={12} style={TOP_RULE}>
+    <Box px={16} py={12} style={s.topRule}>
       <Text variant="meta" color="accent/80">
         {t('mediaInfo.unprobed')}
       </Text>
@@ -164,7 +166,7 @@ function Section({
   children,
 }: Readonly<{ label: string; last?: boolean; children: ReactNode }>) {
   return (
-    <Box px={16} py={12} style={last ? undefined : BOTTOM_RULE}>
+    <Box px={16} py={12} style={last ? undefined : s.bottomRule}>
       <Text variant="overline" color="white/35" mb={6}>
         {label}
       </Text>
@@ -200,7 +202,7 @@ function FileField({ label, value }: Readonly<{ label: string; value: string }>)
 function Chip({ children, accent }: Readonly<{ children: string; accent?: boolean }>) {
   return (
     <Box radius="pill" px={6} py={2} bg={accent ? 'accent/20' : 'white/8'}>
-      <Text variant="overline" color={accent ? 'accent' : 'white/50'} style={NO_CAPS}>
+      <Text variant="overline" color={accent ? 'accent' : 'white/50'} style={s.noCaps}>
         {children}
       </Text>
     </Box>

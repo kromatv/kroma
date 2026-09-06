@@ -2,6 +2,7 @@
 
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { declared } from '#ui/testing';
 import { edgeWidth, RailEdge } from './rail-edge';
 
 afterEach(cleanup);
@@ -26,20 +27,20 @@ describe('a rail edge', () => {
   it('covers the row with the page ground rather than masking it away', () => {
     const edge = strip('start');
 
-    expect(edge.style.maskImage).toBe('');
-    expect(edge.style.backgroundImage).toContain('linear-gradient(to right');
+    expect(declared(edge, 'mask-image')).toBeNull();
+    expect(declared(edge, 'background-image') ?? '').toContain('linear-gradient(to right');
   });
 
   it('runs its fade from the far end at the other side of the row', () => {
     const edge = strip('end');
 
-    expect(edge.style.backgroundImage).toContain('linear-gradient(to left');
+    expect(declared(edge, 'background-image') ?? '').toContain('linear-gradient(to left');
   });
 
   it('holds the ground solid across the bleed, then clears over the fade', () => {
     const edge = strip('start');
 
-    const curve = stops(edge.style.backgroundImage);
+    const curve = stops(declared(edge, 'background-image') ?? '');
 
     expect(curve.filter(([, at]) => at <= BLEED_PX).every(([alpha]) => alpha === 1)).toBe(true);
     expect(curve.at(-1)).toEqual([0, BLEED_PX + FADE_PX]);
@@ -48,7 +49,7 @@ describe('a rail edge', () => {
   it('thins monotonically, so the row never comes back through a band', () => {
     const edge = strip('start');
 
-    const curve = stops(edge.style.backgroundImage);
+    const curve = stops(declared(edge, 'background-image') ?? '');
 
     for (let at = 1; at < curve.length; at++) {
       const [alpha, position] = curve[at] ?? [0, 0];
@@ -62,8 +63,8 @@ describe('a rail edge', () => {
     const resting = strip('start', false);
     const scrollable = strip('start');
 
-    expect(resting.style.opacity).toBe('0');
-    expect(scrollable.style.opacity).toBe('1');
+    expect(declared(resting, 'opacity')).toBe('0');
+    expect(declared(scrollable, 'opacity')).toBe('1');
   });
 });
 

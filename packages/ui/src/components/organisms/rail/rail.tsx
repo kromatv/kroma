@@ -10,6 +10,7 @@ import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import type { StyleProp, TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
+import { sharedStyle } from '#ui/core';
 import { gutter, type TypeRole } from '#ui/core/tokens';
 import { RailContext, useRail } from './rail-context';
 import { GrowingRow, List } from './rail-row';
@@ -30,10 +31,12 @@ interface RailTitleProps {
 }
 
 /** The row's heading, inset to the same gutter its first tile starts at. */
+
+const insetOf = (paddingLeft: number) => sharedStyle(`rail:inset:${paddingLeft}`, { paddingLeft });
 function Title({ variant = 'h2', style, children }: Readonly<RailTitleProps>) {
   const { inset } = useRail('Title');
   return (
-    <Text variant={variant} style={[{ paddingLeft: inset }, style]}>
+    <Text variant={variant} style={[insetOf(inset), style]}>
       {children}
     </Text>
   );
