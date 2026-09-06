@@ -7,6 +7,8 @@
 // rather than a blank one. Nothing here is a limit: a grid handed more room
 // fills it with more columns.
 
+import { webDocument, webWindow } from '@kroma/ui/kit';
+
 /** The design canvas, in the pixels the layout is authored in. */
 export const STAGE_W = 1920;
 export const STAGE_H = 1080;
@@ -53,7 +55,10 @@ export function fitStage(windowW: number, windowH: number): StageFit {
  * layers, so they fill the stage rather than the window. Web shells only.
  */
 export function installStage(): void {
-  const style = document.createElement('style');
+  const doc = webDocument();
+  const win = webWindow();
+  if (!doc || !win) return;
+  const style = doc.createElement('style');
   style.textContent = `
     html, body { height: 100%; margin: 0; overflow: hidden; background: var(--kroma-bg, #0a0a0c); }
     #root {
@@ -64,14 +69,14 @@ export function installStage(): void {
       overflow: hidden;
     }
   `;
-  document.head.appendChild(style);
+  doc.head.appendChild(style);
 
   const apply = () => {
-    const fit = fitStage(window.innerWidth, window.innerHeight);
-    const root = document.documentElement.style;
+    const fit = fitStage(win.innerWidth, win.innerHeight);
+    const root = doc.documentElement.style;
     root.setProperty('--kroma-stage-scale', String(fit.scale));
     root.setProperty('--kroma-stage-width', `${fit.width}px`);
   };
   apply();
-  window.addEventListener('resize', apply);
+  win.addEventListener('resize', apply);
 }
