@@ -9,10 +9,13 @@ import {
   type RefObject,
   useCallback,
   useContext,
+  useEffect,
   useRef,
 } from 'react';
 import {
   type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   ScrollView,
   type StyleProp,
   StyleSheet,
@@ -23,6 +26,7 @@ import { RING_ROOM } from '#ui/core/tokens';
 import { FocusLiftView } from '#ui/lib/focus-lift';
 import { pointerDriving } from '#ui/lib/input-source';
 import { WEB } from '#ui/lib/platform';
+import { useReducedMotion } from '#ui/lib/reduced-motion';
 
 type Anchor = RefObject<View | null>;
 
@@ -103,11 +107,40 @@ function pageOffset({ top, offsetFromStart, viewport, content }: PageMetrics): n
   return Math.min(Math.max(top - offsetFromStart, 0), last);
 }
 
+interface NearestMetrics {
+  top: number;
+  size: number;
+  current: number;
+  margin: number;
+  viewport: number;
+  content: number;
+}
+
+/** The offset that shows a row whole with `margin` to spare, moving the page
+ *  only when the row is not already there. */
+function nearestOffset({ top, size, current, margin, viewport, content }: NearestMetrics): number {
+  const last = Math.max(0, content - viewport);
+  if (top - margin < current) return Math.min(Math.max(top - margin, 0), last);
+  if (top + size + margin > current + viewport) {
+    return Math.min(Math.max(top + size + margin - viewport, 0), last);
+  }
+  return current;
+}
+
+type Reveal = 'start' | 'nearest';
+
 interface FocusScrollProps {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
+  /** Under `start`, where a revealed row rests below the top edge. Under
+   *  `nearest`, the room kept between the row and whichever edge it came in
+   *  from. */
   offsetFromStart?: number;
+  /** `start` (the default) is a television's page: every revealed row comes to
+   *  rest at the same height. `nearest` is a list: the page moves only as far
+   *  as showing the row whole takes. */
+  reveal?: Reveal;
 }
 
 function AxisScroll({
@@ -115,6 +148,7 @@ function AxisScroll({
   style,
   contentStyle,
   offsetFromStart = 0,
+  reveal: mode = 'start',
   horizontal,
   context: RevealContext,
 }: Readonly<
@@ -129,7 +163,9 @@ function AxisScroll({
   // react-native-web has no `innerViewRef`, hence the fallback.
   const inner = useRef<View>(null);
   const extent = useRef({ viewport: 0, content: 0 });
+  const current = useRef(0);
   const showing = useRef<Anchor | null>(null);
+  const reduced = useReducedMotion();
 
   const reveal = useCallback(
     (anchor: Anchor) => {
@@ -141,26 +177,38 @@ function AxisScroll({
       if (!target || !measuredAgainst) return;
       target.measureLayout(
         measuredAgainst,
-        (left, top) => {
+        (left, top, width, height) => {
           const { viewport, content } = extent.current;
-          const offset = pageOffset({
-            top: horizontal ? left : top,
-            // The reach above is padding on the content, so every item measures
-            // that much further in: without it here the row would scroll the
-            // room back out from under the first tile's ring.
-            offsetFromStart: horizontal ? offsetFromStart + RING_ROOM : offsetFromStart,
-            viewport,
-            content,
-          });
+          const offset =
+            mode === 'nearest'
+              ? nearestOffset({
+                  top: horizontal ? left : top,
+                  size: horizontal ? width : height,
+                  current: current.current,
+                  margin: offsetFromStart + RING_ROOM,
+                  viewport,
+                  content,
+                })
+              : pageOffset({
+                  top: horizontal ? left : top,
+                  // The reach above is padding on the content, so every item
+                  // measures that much further in: without it here the row would
+                  // scroll the room back out from under the first tile's ring.
+                  offsetFromStart: horizontal ? offsetFromStart + RING_ROOM : offsetFromStart,
+                  viewport,
+                  content,
+                });
+          if (mode === 'nearest' && offset === current.current) return;
+          current.current = offset;
           scroller.current?.scrollTo(
-            horizontal ? { x: offset, animated: true } : { y: offset, animated: true },
+            horizontal ? { x: offset, animated: !reduced } : { y: offset, animated: !reduced },
           );
         },
         // Measuring a view on its way out fails, and that is not an error.
         () => {},
       );
     },
-    [horizontal, offsetFromStart],
+    [horizontal, mode, offsetFromStart, reduced],
   );
 
   const room = ringRoom(flat(style), flat(contentStyle), horizontal);
@@ -179,6 +227,11 @@ function AxisScroll({
         onLayout={(e: LayoutChangeEvent) => {
           const { width, height } = e.nativeEvent.layout;
           extent.current.viewport = horizontal ? width : height;
+        }}
+        scrollEventThrottle={16}
+        onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+          const { x, y } = e.nativeEvent.contentOffset;
+          current.current = horizontal ? x : y;
         }}
         onContentSizeChange={(width: number, height: number) => {
           extent.current.content = horizontal ? width : height;
@@ -263,5 +316,27 @@ function useRevealOnFocus(self: Anchor): () => void {
   }, [page, rail, row, self]);
 }
 
-export type { Anchor, FocusScrollProps, PageMetrics };
-export { FocusLine, FocusRail, FocusScroll, FocusSlot, pageOffset, useRevealOnFocus };
+/**
+ * The anchor of a row whose focus is a prop rather than the navigator's (a
+ * player panel's rows): the page reveals it the moment `focused` turns true.
+ */
+function useRevealWhenFocused(focused: boolean): Anchor {
+  const self = useRef<View>(null);
+  const reveal = useRevealOnFocus(self);
+  useEffect(() => {
+    if (focused) reveal();
+  }, [focused, reveal]);
+  return self;
+}
+
+export type { Anchor, FocusScrollProps, NearestMetrics, PageMetrics, Reveal };
+export {
+  FocusLine,
+  FocusRail,
+  FocusScroll,
+  FocusSlot,
+  nearestOffset,
+  pageOffset,
+  useRevealOnFocus,
+  useRevealWhenFocused,
+};

@@ -1,9 +1,7 @@
 import 'virtual:kroma-tv.css';
 import { mountTv } from '@kroma/tv/mount';
-// Display-matched grade of the brand-intro film, bundled by THIS shell only: the
-// Tauri window is transparent (native mpv plane behind the webview), which costs
-// <video> its compositor fast path, so the shared 4K60 HEVC film decodes and
-// downscales the slow way and stutters. 1080p60 is a quarter of the work and
+// Display-matched grade of the brand-intro film, bundled by THIS shell only:
+// 1080p60 is a quarter of the shared 4K60 film's decode work and
 // indistinguishable in a desktop window, and H.264 (not HEVC like the shared
 // film) so Linux WebKitGTK can decode it at all (gstreamer1.0-libav; HEVC there
 // hit the CSS fallback) and a software decode stays cheap. Same master,
@@ -13,7 +11,7 @@ import introFilm from './assets/kroma-intro-h264-1080.mp4';
 import { startGamepadBridge } from './gamepad';
 import { installStage } from './stage';
 import { startUpdater } from './updater';
-import { installVideoHole, planeBehindPage } from './video-hole';
+import { installVideoHole, nativePlane } from './video-hole';
 
 // The 1920x1080 stage, on EVERY desktop window: the shared 10-foot UI is authored
 // in fixed pixels against that canvas (PosterGrid's 8 x 203px columns, the nav row,
@@ -21,7 +19,7 @@ import { installVideoHole, planeBehindPage } from './video-hole';
 // layout, it clips it. Fitted the same way as the Steam Deck panel and the browser
 // shell (see ./stage and clients/tv-web/src/stage.ts). A genuinely fluid 10-foot
 // layout is a design-system change, not a shell one.
-const fixedScreen = planeBehindPage();
+const fixedScreen = nativePlane();
 installStage();
 
 // The Deck is driven by a gamepad, not a remote. Bridge the Gamepad API onto the
@@ -30,9 +28,9 @@ startGamepadBridge();
 
 mountTv({ platform: 'Desktop', introVideoSrc: introFilm });
 
-// Linux draws the picture on an mpv plane BEHIND the page, and WebKitGTK never
-// lets a pixel of it through; the hole in the window's shape is what makes it
-// visible (see ./video-hole).
+// Linux draws the picture on an mpv plane cut into the page, and WebKitGTK never
+// lets a pixel through on its own; the plane's shape is what makes it visible
+// (see ./video-hole).
 installVideoHole();
 
 // The frontend is alive: disarm the GPU-rendering crash guard for this boot

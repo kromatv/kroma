@@ -190,7 +190,9 @@ function VirtualRail<T>({
       // <FocusReporter> rather than a node per tile: the tile's own focusable
       // is already the node, and the row only needs to know which one took it.
       <FocusLiftView key={index} style={cell}>
-        <FocusReporter onFocus={() => select(index)}>{renderItem(item, index)}</FocusReporter>
+        <FocusReporter onFocus={select} index={index}>
+          {renderItem(item, index)}
+        </FocusReporter>
       </FocusLiftView>,
     );
   }

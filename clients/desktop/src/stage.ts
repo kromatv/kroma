@@ -7,21 +7,16 @@
 // leaves at that scale, and the grids auto-fill it (see @kroma/tv/stage). The
 // `transform` also makes #root the containing block for the app's
 // `position: fixed` layers; `vh`-based `clamp()`s still resolve against the real
-// window and drift slightly on heavy scale.
+// window and drift slightly on heavy scale. The page is opaque on every OS: where
+// a native plane draws the picture, the shell cuts it into the page (video-hole).
 
 import { fitStage, STAGE_H, STAGE_W } from '@kroma/tv/stage';
 
 /** Installs the self-scaling stage. */
 export function installStage(): void {
-  // Transparent when a native mpv window renders behind the UI.
-  const inTauri = '__TAURI_INTERNALS__' in globalThis || '__TAURI__' in globalThis;
-  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-  const mpvBehind = inTauri && /Linux/i.test(ua) && !/Android/i.test(ua);
-  const bg = mpvBehind ? 'transparent' : 'var(--kroma-bg, #0a0a0c)';
-
   const style = document.createElement('style');
   style.textContent = `
-    html, body { height: 100%; margin: 0; overflow: hidden; background: ${bg}; }
+    html, body { height: 100%; margin: 0; overflow: hidden; background: var(--kroma-bg, #0a0a0c); }
     #root {
       position: fixed; top: 50%; left: 50%;
       width: var(--kroma-stage-width, ${STAGE_W}px); height: ${STAGE_H}px;

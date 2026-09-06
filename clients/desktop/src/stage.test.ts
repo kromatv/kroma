@@ -122,54 +122,14 @@ describe('the surround', () => {
     expect(css()).not.toContain('background: transparent');
   });
 
-  it('is TRANSPARENT on the Linux desktop shell, where mpv is behind', () => {
+  it('is painted on the Linux desktop shell too, where the plane is cut into the page', () => {
     vi.stubGlobal('__TAURI_INTERNALS__', {});
     Object.defineProperty(navigator, 'userAgent', {
       value: 'Mozilla/5.0 (X11; Linux x86_64)',
       configurable: true,
     });
     installStage();
-    // mpv renders in a native window behind the web view; painting here hides
-    // the film entirely.
-    expect(css()).toContain('background: transparent');
-  });
-
-  it('is painted on Tauri where mpv is NOT behind', () => {
-    vi.stubGlobal('__TAURI_INTERNALS__', {});
-    Object.defineProperty(navigator, 'userAgent', {
-      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-      configurable: true,
-    });
-    installStage();
+    expect(css()).toContain('var(--kroma-bg, #0a0a0c)');
     expect(css()).not.toContain('background: transparent');
-  });
-
-  it('is painted on Android, whose user agent also says Linux', () => {
-    vi.stubGlobal('__TAURI_INTERNALS__', {});
-    Object.defineProperty(navigator, 'userAgent', {
-      value: 'Mozilla/5.0 (Linux; Android 14; Pixel)',
-      configurable: true,
-    });
-    // Every Android UA contains "Linux"; matching on that alone makes the TV
-    // shell transparent over nothing.
-    installStage();
-    expect(css()).not.toContain('background: transparent');
-  });
-
-  it('is painted where there is no navigator to ask', () => {
-    vi.stubGlobal('__TAURI_INTERNALS__', {});
-    vi.stubGlobal('navigator', undefined);
-    installStage();
-    expect(css()).not.toContain('background: transparent');
-  });
-
-  it('accepts either spelling of the Tauri global', () => {
-    vi.stubGlobal('__TAURI__', {});
-    Object.defineProperty(navigator, 'userAgent', {
-      value: 'Mozilla/5.0 (X11; Linux x86_64)',
-      configurable: true,
-    });
-    installStage();
-    expect(css()).toContain('background: transparent');
   });
 });
