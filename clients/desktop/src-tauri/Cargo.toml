@@ -34,11 +34,10 @@ serde_json = "1"
 #   - Windows: the self-contained mpv-2.dll (ffmpeg statically linked in) fetched by
 #              scripts/fetch-libmpv-windows.ps1, shipped next to the .exe.
 #   - Linux:   libmpv.so.2 (apt `libmpv-dev` to build); the AppImage/.deb bundle it.
-#              libmpv is the PRIMARY engine but the mpv BINARY (mpv.rs) stays as an
-#              automatic fallback when the in-process GPU context can't initialise
-#              (the Deck's fragile EGL/Wayland stack) - so the sidecar is still bundled.
-#              On Linux the in-process engine is opt-in and has NO UI overlay (see
-#              libmpv_linux.rs); the sidecar is what the player chrome draws over.
+#              The mpv BINARY (mpv.rs) is the default and the automatic fallback
+#              when the in-process GPU context can't initialise (the Deck's fragile
+#              EGL/Wayland stack), so the sidecar is still bundled. Both draw into
+#              the plane (plane.rs), an X11 child of the app window.
 # Disable for a lean webview-only build (`--no-default-features`): the in-page <video>
 # path then handles playback (no libmpv link/bundle needed).
 default = ["libmpv"]
@@ -64,21 +63,22 @@ libmpv2 = { version = "6.0.0", optional = true }
 libmpv2 = { version = "6.0.0", optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-# In-process libmpv on Linux, embedded into the GTK window's X11 XID via `--wid`
-# (mpv's gpu VO renders a child surface behind the transparent webview, like the
-# Windows HWND path). The PRIMARY engine; if its GPU context fails to initialise
-# (the Deck's EGL/Wayland stack), libmpv_linux::init returns false and the shell
-# falls back to the mpv BINARY over IPC (mpv.rs, VO fallback ladder + process
-# isolation). Off with `--no-default-features`. Needs `libmpv-dev` at link time.
+# In-process libmpv on Linux, embedded into the plane's X11 XID via `wid`. Opt-in
+# (KROMA_LINUX_LIBMPV=1); if its GPU context fails to initialise (the Deck's
+# EGL/Wayland stack), libmpv_linux::init returns false and the shell falls back
+# to the mpv BINARY over IPC (mpv.rs, VO fallback ladder + process isolation).
+# Off with `--no-default-features`. Needs `libmpv-dev` at link time.
 libmpv2 = { version = "6.0.0", optional = true }
-# Extract the app window's X11 XID for libmpv's `--wid` (0.6 = Tauri v2's version,
-# so `WebviewWindow::window_handle()` returns a matching RawWindowHandle). Only used
-# in a libmpv build; harmless otherwise.
-raw-window-handle = "0.6"
-# The window's X11 shape (video_hole.rs): GDK's shape_combine_region cuts the
-# picture's box out of the window so the mpv plane below shows through. 0.18 is
-# Tauri v2's own gtk, so `WebviewWindow::gtk_window()` hands back a matching type.
+# The plane (plane.rs): a native child GdkWindow, shaped to the picture. 0.18 is
+# Tauri v2's own gtk, so `WebviewWindow::gtk_window()` hands back a matching type;
+# gdkx11 reads the plane's XID for mpv's `--wid`.
 gtk = "0.18"
+gdkx11 = "0.18"
+# WebKit's own settings object (Tauri hands the WebView back through
+# `with_webview`), to pin its hardware-acceleration policy. 2.0 is wry's.
+webkit2gtk = "2.0"
+# The plane's black background pixel is one Xlib call; this links libX11.
+x11 = { version = "2", features = ["xlib"] }
 # Process-group kill of the mpv sidecar tree (the AppImage runtime execs the real
 # mpv as a grandchild, so Child::kill alone orphans the player).
 libc = "0.2"

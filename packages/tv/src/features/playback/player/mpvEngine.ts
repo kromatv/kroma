@@ -7,9 +7,9 @@
 // (a far seek or language switch re-anchors, since the master carries only
 // one audio track).
 //
-// mpv renders to its own native window behind the transparent Tauri UI
-// window, the same "plane behind the page" model AVPlay uses on Tizen, so
-// this backend shows no in-page media element (surface: 'mpv').
+// mpv renders to a native plane the shell cuts into the page, the same "plane
+// behind the page" model AVPlay uses on Tizen, so this backend shows no in-page
+// media element (surface: 'mpv').
 
 import type { AudioFilterMode, PlaneRect } from '@kroma/ui';
 import {
@@ -20,6 +20,7 @@ import {
 import {
   getTauri,
   resolveMasterStart,
+  shellOwnsPlaneGeometry,
   type TauriBridge,
 } from '#tv/features/playback/player/engine';
 
@@ -307,6 +308,7 @@ export class MpvEngine extends BaseTvEngine {
   // The mpv window fills the screen behind the page, so a fraction-rect maps
   // straight to margin ratios; the video letterboxes inside the remainder.
   setRect(rect: PlaneRect | null): void {
+    if (shellOwnsPlaneGeometry()) return;
     const [l, t, r, b] = rect
       ? [rect.x, rect.y, Math.max(0, 1 - (rect.x + rect.w)), Math.max(0, 1 - (rect.y + rect.h))]
       : [0, 0, 0, 0];

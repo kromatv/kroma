@@ -210,7 +210,7 @@ function VirtualGrid<T>({
   const cell = geometry.cell;
   const renderCell = useCallback(
     (item: T, index: number) => (
-      <FocusReporter onFocus={() => onCellFocus(index)}>
+      <FocusReporter onFocus={onCellFocus} index={index}>
         {renderItem(item, index, cell)}
       </FocusReporter>
     ),

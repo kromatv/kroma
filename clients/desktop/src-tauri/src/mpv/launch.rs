@@ -14,9 +14,10 @@ const VO_PROBE_ID: u64 = 9001;
 const BASE_ARGS: &[&str] = &[
     "--idle=yes",
     "--force-window=yes",
-    "--fullscreen",
-    "--ontop=no", // stay BELOW the always-on-top Tauri window
-    "--title=KROMA Player",
+    // An embedded X child that listens for keys steals every keystroke from
+    // the window it sits in while the pointer is over it (the mpv manual on
+    // `--wid`); the page owns the keyboard.
+    "--input-vo-keyboard=no",
     "--no-osc",
     "--no-input-default-bindings",
     "--no-terminal",
@@ -74,6 +75,7 @@ fn vo_ladder() -> Vec<Vec<String>> {
         vec!["--vo=gpu-next".into()],
         vec!["--vo=gpu-next".into(), "--gpu-api=vulkan".into()], // Vulkan: no EGL
         vec!["--vo=gpu".into(), "--gpu-context=x11".into()],     // GLX via X11/XWayland: no EGL
+        vec!["--vo=gpu".into(), "--gpu-context=x11egl".into()],  // EGL on X11: where GLX has no usable GL
         vec!["--vo=x11".into()],                                 // software: always works
     ]
 }
@@ -106,7 +108,30 @@ pub(super) fn mpv_binary() -> String {
     "mpv".to_string()
 }
 
-pub(super) fn start_mpv(binary: &str, sock: &Path) -> Result<(Child, UnixStream), &'static str> {
+// Embedded in the plane when there is one (`wid`); otherwise mpv opens a
+// fullscreen window of its own below the app's, which only X11 window
+// managers stack the way the app needs.
+fn window_args(wid: Option<u64>, sidecar: bool) -> Vec<String> {
+    match wid {
+        Some(xid) => vec![format!("--wid={xid}")],
+        None => {
+            let mut args = vec!["--fullscreen".to_owned(), "--ontop=no".to_owned()];
+            // Only the pinned sidecar (mpv 0.41) gets --focus-on: a pre-0.39 system
+            // mpv aborts on the unknown option and would sink every ladder rung.
+            // Without it the fullscreen mpv window grabs focus as it maps.
+            if sidecar {
+                args.push("--focus-on=never".to_owned());
+            }
+            args
+        }
+    }
+}
+
+pub(super) fn start_mpv(
+    binary: &str,
+    sock: &Path,
+    wid: Option<u64>,
+) -> Result<(Child, UnixStream), &'static str> {
     let ladder = vo_ladder();
     // PATH with the no-op yt-dlp shim prepended, so the AppImage's
     // get-yt-dlp.hook skips its blocking install dialog. See `ytdlp_shim_dir`.
@@ -118,12 +143,10 @@ pub(super) fn start_mpv(binary: &str, sock: &Path) -> Result<(Child, UnixStream)
         }
         p
     });
-    // Only the pinned sidecar (mpv 0.41) gets --focus-on: a pre-0.39 system mpv
-    // aborts on the unknown option and would sink every ladder rung. Without it
-    // the fullscreen mpv window grabs focus as it maps, hiding the UI window.
-    let sidecar_focus_flag = Path::new(binary)
+    let sidecar = Path::new(binary)
         .file_name()
         .is_some_and(|n| n.to_string_lossy().starts_with("kroma-mpv"));
+    let window = window_args(wid, sidecar);
     for cfg in &ladder {
         let _ = std::fs::remove_file(sock);
         let mut command = Command::new(binary);
@@ -134,10 +157,8 @@ pub(super) fn start_mpv(binary: &str, sock: &Path) -> Result<(Child, UnixStream)
             use std::os::unix::process::CommandExt;
             command.process_group(0);
         }
-        if sidecar_focus_flag {
-            command.arg("--focus-on=never");
-        }
         command
+            .args(&window)
             // The sidecar is an AppImage spawned from INSIDE the KROMA AppImage,
             // where nested FUSE mounting is unreliable (esp. SteamOS).
             .env("APPIMAGE_EXTRACT_AND_RUN", "1")
@@ -150,9 +171,9 @@ pub(super) fn start_mpv(binary: &str, sock: &Path) -> Result<(Child, UnixStream)
             .env_remove("LD_LIBRARY_PATH")
             .env_remove("LD_PRELOAD")
             .env_remove("APPDIR")
-            // Keep mpv on XWayland like the UI window: the keep-above sandwich
-            // and --focus-on=never rely on X11 WM semantics, and a native-Wayland
-            // client cannot refuse the focus its mapping fullscreen window gets.
+            // Keep mpv on XWayland like the UI window: `--wid` embeds into an X11
+            // window, and a native-Wayland mpv would ignore it and map a surface
+            // of its own.
             .env_remove("WAYLAND_DISPLAY")
             .args(BASE_ARGS)
             .args(cfg)

@@ -1,19 +1,19 @@
 // WebKitGTK paints an opaque background whatever alpha the page or the window
 // asks for (measured on SteamOS 3.8: an rgba(0,0,255,0.5) body came back as solid
-// rgb(0,0,250) over magenta), so the mpv plane behind a "transparent" Tauri window
-// is never visible. What IS visible is a hole: the X SHAPE extension cuts the
-// picture's box out of the window and the plane below shows through it, with no
-// alpha and no compositing manager involved.
+// rgb(0,0,250) over magenta), so no alpha ever lets the picture through. What
+// does is a shape: the mpv plane is an X11 child window of the app window, and
+// the X SHAPE extension limits it to the picture's box, with no alpha and no
+// compositing manager involved.
 //
-// A pixel inside the hole belongs to mpv's window, so the page cannot draw there
+// A pixel inside the plane belongs to mpv's window, so the page cannot draw there
 // at all. The chrome is therefore measured and handed over as COVERS, and the
-// shell puts those rectangles back into the window's shape: video everywhere in
-// the picture's box except where the chrome actually paints, chrome everywhere
-// else. What is measured is a layer's painted leaves, not its box - the chrome is
-// laid out as full-stage containers, and cutting the hole around those would hide
-// the picture behind transparent air.
+// shell takes those rectangles out of the plane's shape: video everywhere in the
+// picture's box except where the chrome actually paints, chrome everywhere else.
+// What is measured is a layer's painted leaves, not its box - the chrome is laid
+// out as full-stage containers, and shaping around those would hide the picture
+// behind transparent air.
 
-import { PLAYER_ROOT_ID, PLAYER_STAGE_ID, PLAYER_SUBTITLE_ID } from '@kroma/ui';
+import { PLAYER_PICTURE_ID, PLAYER_ROOT_ID, PLAYER_STAGE_ID, PLAYER_SUBTITLE_ID } from '@kroma/ui';
 
 /** A box in window pixels, the shape `getBoundingClientRect` returns. */
 export interface Box {
@@ -39,6 +39,9 @@ export interface HoleShape {
 
 const MIN_SIDE_PX = 16;
 const VISIBLE_OPACITY = 0.02;
+// Measuring every painted leaf of the chrome forces layout; ten times a second
+// follows a fade closely enough and costs a sixth of every frame.
+const MEASURE_EVERY_MS = 100;
 
 function area(box: Box): number {
   return Math.max(0, box.right - box.left) * Math.max(0, box.bottom - box.top);
@@ -145,9 +148,11 @@ function opacityOf(el: Element): number {
 // What a pixel of chrome actually comes from: a fill, an edge, or a glyph. A
 // container that only positions its children paints nothing and must not be
 // treated as chrome, or the hole would be cut around empty air.
+// A shadow lies outside the element's box, so a box with nothing but a shadow
+// (the mask around the shrunk picture) is clear where its rect says it is.
 function paints(el: Element): boolean {
   const style = getComputedStyle(el);
-  if (style.backgroundImage !== 'none' || style.boxShadow !== 'none') return true;
+  if (style.backgroundImage !== 'none') return true;
   if (!/^(rgba?\(0, 0, 0, 0\)|transparent)$/.test(style.backgroundColor)) return true;
   if (Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderLeftWidth) > 0) {
     return true;
@@ -216,25 +221,26 @@ function push(invoke: Invoke, shape: HoleShape | null): void {
   }
 }
 
-/** Whether the picture is drawn on a native plane BEHIND the page, which is what
- *  the Linux shell does and no other desktop OS needs. */
-export function planeBehindPage(): boolean {
+/** Whether the picture is drawn by a native plane the shell cuts into the page,
+ *  which is what the Linux shell does and no other desktop OS needs. */
+export function nativePlane(): boolean {
   const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent;
   return /Linux/i.test(ua) && !/Android/i.test(ua);
 }
 
 /**
- * Track the picture's box for as long as the player is on screen, cutting it out
- * of the window's shape and pointing mpv's plane at the same rect. The frame loop
- * runs only while the player is mounted, and only sends a shape that moved.
+ * Track the picture's box for as long as the player is on screen, shaping the
+ * plane to it and pointing mpv's picture at the same rect. The frame loop runs
+ * only while the player is mounted, and only sends a shape that moved.
  */
 export function installVideoHole(): void {
   const invoke = tauriInvoke();
-  if (!invoke || !planeBehindPage()) return;
+  if (!invoke || !nativePlane()) return;
 
   let last: HoleShape | null = null;
   let layers: Layer[] = [];
   let frame: number | null = null;
+  let measuredAt = 0;
   // A resize keeps the fractions but moves their pixels, so the shape has to be
   // re-cut even though nothing in the page moved.
   let dirty = true;
@@ -246,14 +252,19 @@ export function installVideoHole(): void {
     push(invoke, shape);
   };
 
-  const tick = () => {
+  const tick = (now: number) => {
     const stage = document.getElementById(PLAYER_STAGE_ID);
     if (!stage) {
       frame = null;
       send(null);
       return;
     }
-    send(holeShape(boxOf(stage), coversOver(layers), window.innerWidth, window.innerHeight));
+    if (dirty || now - measuredAt >= MEASURE_EVERY_MS) {
+      measuredAt = now;
+      // The picture's own box: the card while the settings shrink it.
+      const picture = document.getElementById(PLAYER_PICTURE_ID) ?? stage;
+      send(holeShape(boxOf(picture), coversOver(layers), window.innerWidth, window.innerHeight));
+    }
     frame = requestAnimationFrame(tick);
   };
 

@@ -190,10 +190,18 @@ export function shakaAvailable(): boolean {
 /** Only the Linux desktop shell spawns mpv (the Deck's VA-API path); on macOS
  * the WKWebView decodes HEVC via VideoToolbox, so we use the in-page
  * `<video>` engine there instead of a second window. */
-export function mpvAvailable(): boolean {
+/** The Linux desktop shell, where mpv draws into a plane the shell itself cuts
+ *  into the page: the shell measures the picture's box on screen and owns mpv's
+ *  margins along with the plane's shape, so the engine must not write them. */
+export function shellOwnsPlaneGeometry(): boolean {
   if (getTauri() == null) return false;
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-  if (/Linux/i.test(ua) && !/Android/i.test(ua)) return true; // Deck: mpv binary
+  return /Linux/i.test(ua) && !/Android/i.test(ua);
+}
+
+export function mpvAvailable(): boolean {
+  if (getTauri() == null) return false;
+  if (shellOwnsPlaneGeometry()) return true; // Deck: mpv binary
   // macOS: the in-process libmpv engine flags itself in Rust `setup` once it's up.
   return '__KROMA_MPV__' in globalThis;
 }

@@ -182,11 +182,21 @@ function stageBoxes(card: StageCard, settingsShrink: boolean, planeShrink: boole
         height: pct(card.picture.height),
       }
     : s.picture;
-  // On a plane shrink the stage stays put, so this wrapper carries the spinner
+  // On a plane shrink the stage stays put and the picture's box moves to the
+  // card, which is where the plane is asked to go, so a shell that measures the
+  // box to place the plane lands it there too. This wrapper carries the spinner
   // and subtitles down itself, with the scale the stage would have taken.
   if (planeShrink) {
+    const onCard: ViewStyle = {
+      position: 'absolute',
+      overflow: 'hidden',
+      left: pct(card.rect.x),
+      top: pct(card.rect.y),
+      width: pct(card.rect.w),
+      height: pct(card.rect.h),
+    };
     return {
-      picture,
+      picture: onCard,
       content: {
         ...picture,
         transformOrigin: `${pct(card.origin)} 50%`,
@@ -256,7 +266,7 @@ function Stage({
           instead of the window's. Nothing here is added, removed or given a
           style key it did not already have when the card comes out: a video
           texture's surface does not survive its subtree being rebuilt. */}
-        <Animated.View style={[pictureBox, cornerOf(ANDROID ? 0 : radius)]}>
+        <Animated.View nativeID={PICTURE_ID} style={[pictureBox, cornerOf(ANDROID ? 0 : radius)]}>
           <SurfaceRadiusProvider radius={ANDROID ? 0 : radius}>{children}</SurfaceRadiusProvider>
           {/* Every native surface takes the mask, not just Android's texture: an
             AVPlayerLayer is not clipped by a rounded ancestor either (see
@@ -305,6 +315,11 @@ function Stage({
 /** The picture box's DOM id: what web CSS sizes an in-page `<video>` through,
  * and what a shell measures to place a native plane behind the page. */
 export const STAGE_ID = 'kroma-player-stage';
+
+/** The picture's own box inside the stage: the card when the settings shrink
+ * it, the whole stage otherwise. What a shell that cuts a native plane into the
+ * page measures, since the plane has to sit exactly where the picture is. */
+export const PICTURE_ID = 'kroma-player-picture';
 
 const s = styles({
   stage: { fill: true, z: 2, overflow: 'hidden' },

@@ -30,7 +30,7 @@
     "@kroma/ui": "workspace:*",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-process": "^2.3.1",
-    "@tauri-apps/plugin-updater": "^2.10.1",
+    "@tauri-apps/plugin-updater": "^2.11.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-native-web": "^0.21.2"

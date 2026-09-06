@@ -1,7 +1,7 @@
 import 'virtual:kroma-tv.css';
 import { mountTv } from '@kroma/tv/mount';
+import { installStage } from '@kroma/tv/stage';
 import { warnIfMixedContent } from './mixed-content';
-import { installStage } from './stage';
 
 // The 10-foot layout is fixed-px against a 1920-wide canvas, so a browser window
 // gets that canvas scaled to its width rather than the raw pixels. See ./stage.

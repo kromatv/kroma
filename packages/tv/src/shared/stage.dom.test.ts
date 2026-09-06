@@ -12,12 +12,11 @@
 // guards is that the canvas never overflows the window in either direction, and
 // that the surround only appears where the canvas has stopped narrowing.
 //
-// The maths itself is @kroma/tv's (`fitStage`, tested there); this is the
-// shell's half - the box, the custom properties, and the resize listener.
+// The maths itself is `fitStage` (tested beside it); this is the browser
+// half - the box, the custom properties, and the resize listener.
 
-import { fitStage, MIN_STAGE_W, STAGE_H, STAGE_W } from '@kroma/tv/stage';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { installStage } from './stage';
+import { fitStage, installStage, MIN_STAGE_W, STAGE_H, STAGE_W } from './stage';
 
 function resizeTo(width: number, height: number) {
   Object.defineProperty(window, 'innerWidth', { value: width, configurable: true });
