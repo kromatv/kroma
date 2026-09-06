@@ -7,6 +7,7 @@ import {
   mpvAvailable,
   renditionFor,
   resolveMasterStart,
+  shellOwnsPlaneGeometry,
 } from './engine';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -76,6 +77,26 @@ describe('mpvAvailable', () => {
     expect(mpvAvailable()).toBe(false);
     vi.stubGlobal('__KROMA_MPV__', true);
     expect(mpvAvailable()).toBe(true);
+  });
+});
+
+describe('shellOwnsPlaneGeometry', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('is the Linux desktop shell and nothing else', () => {
+    const tauri = { core: { invoke: () => {} }, event: { listen: () => {} } };
+    vi.stubGlobal('__TAURI__', tauri);
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' });
+    expect(shellOwnsPlaneGeometry()).toBe(true);
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Linux; Android 14)' });
+    expect(shellOwnsPlaneGeometry()).toBe(false);
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' });
+    expect(shellOwnsPlaneGeometry()).toBe(false);
+  });
+
+  it('is never a browser, whatever the user agent says', () => {
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' });
+    expect(shellOwnsPlaneGeometry()).toBe(false);
   });
 });
 
