@@ -61,6 +61,26 @@ fn write_enabled(on: bool) {
     );
 }
 
+// Arms the GPU boot guard. A marker still present from the last boot means
+// that boot never reached the frontend, so the setting reverts to software.
+fn arm_gpu_probe() -> bool {
+    let Some(probe) = probe_path() else {
+        return false;
+    };
+    if probe.exists() {
+        eprintln!(
+            "KROMA: the last GPU-rendering boot never reached the frontend; reverting to software rendering"
+        );
+        write_enabled(false);
+        let _ = std::fs::remove_file(probe);
+        return false;
+    }
+    if let Some(dir) = probe.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    std::fs::write(&probe, b"").is_ok()
+}
+
 /// Decide the renderer for this boot. Called by `prepare_linux_env` BEFORE any
 /// webview/GTK init. An explicit env pin (either var, either direction) always
 /// wins and leaves the probe state untouched - that's a manual A/B session.
@@ -70,21 +90,28 @@ pub fn apply_env() {
     {
         return;
     }
-    if gpu_enabled() {
-        if let Some(probe) = probe_path() {
-            if probe.exists() {
-                eprintln!(
-                    "KROMA: the last GPU-rendering boot never reached the frontend; reverting to software rendering"
-                );
-                write_enabled(false);
-                let _ = std::fs::remove_file(probe);
-            } else if std::fs::write(&probe, b"").is_ok() {
-                return; // GPU boot armed: leave the DMABUF renderer enabled
-            }
-            // Probe unwritable: no crash guard possible, stay on the safe path.
-        }
+    if gpu_enabled() && arm_gpu_probe() {
+        return;
     }
     std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+}
+
+/// Pin WebKit's hardware acceleration on for this webview, and honour
+/// `KROMA_REDUCED_MOTION=1`, which turns GTK animations off so the page reads
+/// `prefers-reduced-motion` and drops its scroll and fade animations.
+pub fn pin_acceleration(win: &tauri::WebviewWindow) {
+    use gtk::prelude::GtkSettingsExt as _;
+    use webkit2gtk::{HardwareAccelerationPolicy, SettingsExt as _, WebViewExt as _};
+    let _ = win.with_webview(|webview| {
+        if let Some(settings) = webview.inner().settings() {
+            settings.set_hardware_acceleration_policy(HardwareAccelerationPolicy::Always);
+        }
+    });
+    if std::env::var("KROMA_REDUCED_MOTION").is_ok_and(|v| v == "1") {
+        if let Some(settings) = gtk::Settings::default() {
+            settings.set_gtk_enable_animations(false);
+        }
+    }
 }
 
 /// Current persisted choice, read when the menu row mounts.
@@ -105,5 +132,25 @@ pub fn webview_gpu_set(enabled: bool) {
 pub fn webview_boot_ok() {
     if let Some(probe) = probe_path() {
         let _ = std::fs::remove_file(probe);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_fresh_install_arms_the_gpu_probe_instead_of_falling_back_to_software() {
+        let home = std::env::temp_dir().join(format!("kroma-gpu-probe-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&home);
+        std::env::set_var("XDG_CONFIG_HOME", &home);
+        std::env::remove_var("WEBKIT_DISABLE_DMABUF_RENDERER");
+        std::env::remove_var("KROMA_WEBKIT_DMABUF");
+
+        apply_env();
+
+        assert!(probe_path().unwrap().exists());
+        assert!(std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none());
+        let _ = std::fs::remove_dir_all(&home);
     }
 }

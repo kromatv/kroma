@@ -25,10 +25,12 @@ It rides KROMA's existing player-engine seam:
   `mpv://file-loaded`, `mpv://end-file`). No libmpv build dependency: it drives the
   mpv binary over a unix socket.
 
-**Compositing:** the Tauri window is `transparent` + `alwaysOnTop`; mpv renders to its
-own fullscreen window behind it. Browsing screens paint an opaque background (hiding
-idle mpv); the player screen is transparent so the video shows through, the same
-"video plane behind the page" trick AVPlay uses. See Known risks below.
+**Compositing:** one window. The shell creates a native X11 child window inside the
+Tauri window (the *plane*, `src-tauri/src/plane.rs`), black-backed, and hands its XID
+to mpv as `--wid`. The plane is shaped (X SHAPE) to the picture's box minus the
+chrome the page paints over it (`src/video-hole.ts` measures that every frame), so
+the page shows everywhere else and the two never need alpha: WebKitGTK ignores it
+anyway. The window is opaque and never kept above anything.
 
 ### Playback per OS
 
@@ -194,10 +196,9 @@ poison it.
 
 ## Known risks (validate on real hardware)
 
-- **Two-window compositing under gamescope.** Transparent-UI-over-mpv-window layering is
-  the least-certain part on the Deck's Game Mode compositor. If the UI or video doesn't
-  layer correctly, this is the first thing to check (it may need gamescope-specific
-  window hints, or driving mpv via `--wid` embedding instead).
+- **The plane under gamescope.** mpv's picture is an X11 child window shaped into
+  the app window (see Compositing). Verified on the SteamOS 3.8 rootfs under KWin's
+  X11 compositing; Game Mode's gamescope sees one toplevel, as it should.
 - **mpv GPU context / EGL.** mpv's default `--vo=gpu-next` needs an EGL/GL context that
   aborts on some driver stacks (the Deck's KDE-Wayland *desktop* session: "Could not
   create default EGL display: EGL_BAD_PARAMETER", the same driver bug the webview dodges

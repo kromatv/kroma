@@ -404,6 +404,22 @@ describe('MpvEngine end-of-file + destroy', () => {
     e.setRect(null);
     expect(t.cmds()).toContainEqual(['set_property', 'video-margin-ratio-left', 0]);
   });
+
+  it('leaves the margins to the shell where it cuts the plane into the page', () => {
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' });
+    const { e, t } = started();
+    const before = t.cmds().length;
+
+    e.setRect({ x: 0.03, y: 0.25, w: 0.5, h: 0.5 });
+    e.setRect(null);
+
+    expect(
+      t
+        .cmds()
+        .slice(before)
+        .filter((c) => String(c[1]).startsWith('video-margin')),
+    ).toEqual([]);
+  });
 });
 
 describe('MpvEngine audio filter', () => {

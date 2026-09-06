@@ -1,6 +1,6 @@
 // Native mpv playback for the Steam Deck shell: the mpv BINARY (not libmpv)
-// driven over its JSON IPC socket, rendering to its own window beneath the
-// transparent, always-on-top Tauri UI.
+// driven over its JSON IPC socket, rendering into the plane (plane.rs) inside
+// the app window.
 
 mod ipc;
 mod launch;
@@ -47,8 +47,14 @@ pub fn spawn(app: AppHandle) {
 fn connect(app: &AppHandle) -> Option<UnixStream> {
     let sock = socket_path();
     let binary = mpv_binary();
+    let wid = app
+        .try_state::<crate::plane::PlaneState>()
+        .and_then(|plane| plane.xid());
+    if wid.is_none() {
+        eprintln!("KROMA: no X11 plane to embed mpv into; it opens its own window");
+    }
 
-    let (child, stream) = match start_mpv(&binary, &sock) {
+    let (child, stream) = match start_mpv(&binary, &sock, wid) {
         Ok(v) => v,
         Err(reason) => {
             if reason == "socket-timeout" {

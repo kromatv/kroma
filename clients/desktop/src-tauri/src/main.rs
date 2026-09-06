@@ -2,7 +2,8 @@
 // shared @kroma/tv frontend. In-process libmpv is the default native engine on
 // every OS (feature `libmpv`); Linux falls back to the mpv binary over unix-socket
 // IPC unless KROMA_LINUX_LIBMPV=1 opts in. `--no-default-features` drops libmpv for
-// the in-page <video> (macOS/Windows) or the mpv binary (Linux).
+// the in-page <video> (macOS/Windows) or the mpv binary (Linux). On Linux both
+// engines draw into the plane (plane.rs), one X11 child of the app window.
 
 // Prevents an extra console window on Windows in release; a no-op on Linux/macOS.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -40,10 +41,14 @@ mod webview_gpu;
 #[allow(dead_code)]
 mod gst_env;
 
-// Cuts the picture's box out of the window's shape so the mpv plane shows through
-// it (Linux; WebKitGTK never honours alpha, so a hole is the only way).
+// Shapes the plane to the picture's box minus the chrome over it (Linux;
+// WebKitGTK never honours alpha, so a shape is the only way).
 #[allow(dead_code)]
 mod video_hole;
+
+// The X11 child window mpv draws into (Linux).
+#[cfg(target_os = "linux")]
+mod plane;
 
 // In-process libmpv (macOS): renders into a native NSView behind the webview.
 #[cfg(all(target_os = "macos", feature = "libmpv"))]
@@ -124,22 +129,9 @@ fn init_libmpv_win_deferred(app: &tauri::AppHandle) {
     });
 }
 
-// Linux: the app window's X11 XID, for mpv's `--wid` embedding. `None` on a Wayland
-// backend (no XID to embed into) - the shell then falls back to the mpv binary. The
-// app pins GDK_BACKEND=x11 (prepare_linux_env), so this is Xlib in practice.
-#[cfg(all(target_os = "linux", feature = "libmpv"))]
-fn window_xid(win: &tauri::WebviewWindow) -> Option<u64> {
-    use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-    match win.window_handle().ok()?.as_raw() {
-        RawWindowHandle::Xlib(h) => Some(h.window),
-        RawWindowHandle::Xcb(h) => Some(u32::from(h.window) as u64),
-        _ => None,
-    }
-}
-
-// Linux: build the in-process libmpv engine embedded in the window's X11 XID, once
-// the window is realised. On ANY failure (no XID / Wayland / GPU-context abort) it
-// falls back to spawning the mpv binary, so the Deck is never left without a player.
+// Linux: build the in-process libmpv engine embedded in the plane, once the window
+// is realised. On ANY failure (no plane / Wayland / GPU-context abort) it falls
+// back to spawning the mpv binary, so the Deck is never left without a player.
 // Only called when the user opted in (KROMA_LINUX_LIBMPV=1); the default is the binary.
 #[cfg(all(target_os = "linux", feature = "libmpv"))]
 fn init_libmpv_linux_deferred(app: &tauri::AppHandle) {
@@ -149,7 +141,7 @@ fn init_libmpv_linux_deferred(app: &tauri::AppHandle) {
         std::thread::sleep(std::time::Duration::from_millis(700));
         let h = handle.clone();
         let _ = handle.run_on_main_thread(move || {
-            let xid = h.webview_windows().values().next().and_then(window_xid);
+            let xid = h.try_state::<plane::PlaneState>().and_then(|p| p.xid());
             let up = matches!(xid, Some(x) if libmpv_linux::init(&h, x));
             if up {
                 mpv_dispatch::mark_inproc_active();
@@ -198,6 +190,46 @@ fn on_run_event(app: &tauri::AppHandle, event: &tauri::RunEvent) {
     }
 }
 
+// The plane follows the window; the shape is fractional, so a resize only
+// moves its pixels.
+#[cfg(target_os = "linux")]
+fn linux_window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
+    use tauri::Manager;
+    if !matches!(event, tauri::WindowEvent::Resized(_)) {
+        return;
+    }
+    let Some(view) = window.get_webview_window(window.label()) else {
+        return;
+    };
+    plane::resize(&view);
+    if let Some(state) = view.try_state::<video_hole::HoleState>() {
+        video_hole::refresh(&view, &state);
+    }
+}
+
+// The plane first, so whichever engine comes up embeds into it; then in-process
+// libmpv when opted in (deferred; falls back to the binary on any init
+// failure), otherwise the proven mpv binary now.
+#[cfg(target_os = "linux")]
+fn linux_setup(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    if let Some(win) = app.webview_windows().values().next() {
+        webview_gpu::pin_acceleration(win);
+        if let Some(state) = app.try_state::<plane::PlaneState>() {
+            match plane::create(win, &state) {
+                Some(xid) => eprintln!("KROMA: plane up (xid={xid})"),
+                None => eprintln!("KROMA: no X11 plane; the window is not X11"),
+            }
+        }
+    }
+    #[cfg(feature = "libmpv")]
+    if mpv_dispatch::opt_in() {
+        init_libmpv_linux_deferred(app);
+        return;
+    }
+    mpv::spawn(app.clone());
+}
+
 fn main() {
     #[cfg(target_os = "linux")]
     prepare_linux_env();
@@ -211,6 +243,7 @@ fn main() {
     {
         builder = builder.manage(mpv::MpvState::default());
         builder = builder.manage(video_hole::HoleState::default());
+        builder = builder.manage(plane::PlaneState::default());
         // In-process libmpv state (empty until init succeeds); the dispatcher routes
         // commands to it or the binary. Only present in a libmpv build.
         #[cfg(feature = "libmpv")]
@@ -269,46 +302,13 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build());
 
     builder
-        // Deck: the transparent UI window is always-on-top so the chrome floats over
-        // the mpv plane - but a PERMANENT keep-above makes every other window
-        // unreachable (alt-tab away showed nothing but KROMA). Track focus instead:
-        // keep-above only while KROMA is the active window, so alt-tabbing to Steam
-        // or a terminal actually reveals it.
         .on_window_event(|_window, _event| {
             #[cfg(target_os = "linux")]
-            {
-                use tauri::Manager;
-                if let tauri::WindowEvent::Focused(focused) = _event {
-                    let _ = _window.set_always_on_top(*focused);
-                }
-                // The hole is fractional, so a resize only moves its pixels.
-                if matches!(_event, tauri::WindowEvent::Resized(_)) {
-                    if let Some(view) = _window.get_webview_window(_window.label()) {
-                        if let Some(state) = view.try_state::<video_hole::HoleState>() {
-                            video_hole::refresh(&view, &state);
-                        }
-                    }
-                }
-            }
+            linux_window_event(_window, _event);
         })
         .setup(|_app| {
-            // Linux: in-process libmpv when opted in (deferred; falls back to the
-            // binary on any init failure), otherwise launch the proven mpv binary now.
             #[cfg(target_os = "linux")]
-            {
-                #[cfg(feature = "libmpv")]
-                {
-                    if mpv_dispatch::opt_in() {
-                        init_libmpv_linux_deferred(_app.handle());
-                    } else {
-                        mpv::spawn(_app.handle().clone());
-                    }
-                }
-                #[cfg(not(feature = "libmpv"))]
-                {
-                    mpv::spawn(_app.handle().clone());
-                }
-            }
+            linux_setup(_app.handle());
             // macOS: build the in-process libmpv engine once the window is laid out
             // (deferred; see [`init_libmpv_deferred`]).
             #[cfg(all(target_os = "macos", feature = "libmpv"))]

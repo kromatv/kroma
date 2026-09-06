@@ -16,9 +16,8 @@ pub struct HoleRect {
     pub h: f64,
 }
 
-/// The picture's box and the chrome painted over it. The box is cut out of the
-/// window and every cover is put back, so the plane shows through exactly the
-/// pixels the page does not paint.
+/// The picture's box and the chrome painted over it. The plane shows through
+/// the box minus every cover: exactly the pixels the page does not paint.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Shape {
     pub rect: Option<HoleRect>,
@@ -68,24 +67,22 @@ fn apply(window: &WebviewWindow, shape: &Shape) {
     let Ok(gtk_window) = window.gtk_window() else { return };
     let Some(surface) = gtk_window.window() else { return };
     let (width, height) = (surface.width(), surface.height());
+    let region = Region::create();
     let cut = shape.rect.and_then(|rect| hole_pixels(rect, width, height));
-    let Some((x, y, box_w, box_h)) = cut else {
-        surface.shape_combine_region(None, 0, 0);
-        return;
-    };
-    let region = Region::create_rectangle(&RectangleInt::new(0, 0, width, height));
-    if region
-        .subtract_rectangle(&RectangleInt::new(x, y, box_w, box_h))
-        .is_err()
-    {
-        return;
-    }
-    for cover in &shape.covers {
-        if let Some((cx, cy, cw, ch)) = hole_pixels(*cover, width, height) {
-            region.union_rectangle(&RectangleInt::new(cx, cy, cw, ch)).ok();
+    if let Some((x, y, box_w, box_h)) = cut {
+        if region
+            .union_rectangle(&RectangleInt::new(x, y, box_w, box_h))
+            .is_err()
+        {
+            return;
+        }
+        for cover in &shape.covers {
+            if let Some((cx, cy, cw, ch)) = hole_pixels(*cover, width, height) {
+                region.subtract_rectangle(&RectangleInt::new(cx, cy, cw, ch)).ok();
+            }
         }
     }
-    surface.shape_combine_region(Some(&region), 0, 0);
+    crate::plane::set_region(&region);
 }
 
 #[cfg(not(target_os = "linux"))]
@@ -96,13 +93,10 @@ fn dispatch(window: &WebviewWindow, shape: Shape) {
     let _ = window.run_on_main_thread(move || apply(&target, &shape));
 }
 
-/// Cut the picture's box out of the window's shape so the mpv plane beneath shows
-/// through it, putting every `covers` rectangle back so the chrome painted over
-/// the picture keeps its pixels. `rect` of `null` restores the whole window.
-/// WebKitGTK paints an opaque background whatever alpha it is given, so a hole is
-/// the only way the plane is ever visible. Pointer events over the hole reach the
-/// plane's window rather than the page; the chrome stays clickable because it is
-/// covered back in.
+/// Show the mpv plane through the picture's box, minus every `covers` rectangle
+/// so the chrome painted over the picture keeps its pixels. `rect` of `null`
+/// hides the plane. WebKitGTK paints an opaque background whatever alpha it is
+/// given, so shaping the plane is the only way it is ever visible.
 #[tauri::command]
 pub fn video_hole_set(
     window: WebviewWindow,

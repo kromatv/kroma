@@ -37,7 +37,7 @@ export type { CreditsCardItem } from './parts/credits-card';
 // The width the end-of-film hero is drawn at, so a host asks for art that size.
 export { POST_PLAY_ART_W, type PostPlayItem } from './parts/post-play';
 export type { SubtitleGenBundle, SubtitleGenRequest } from './parts/settings-panel/settings/gen';
-export { STAGE_ID as PLAYER_STAGE_ID } from './parts/stage/stage';
+export { PICTURE_ID as PLAYER_PICTURE_ID, STAGE_ID as PLAYER_STAGE_ID } from './parts/stage/stage';
 export { StatsPanel } from './parts/stats-panel';
 export { SUBTITLE_LAYER_ID as PLAYER_SUBTITLE_ID } from './parts/subtitle-renderer/subtitle-renderer';
 export type { SurfaceRadius } from './parts/surface-radius';
