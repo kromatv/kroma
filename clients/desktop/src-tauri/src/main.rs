@@ -190,6 +190,46 @@ fn on_run_event(app: &tauri::AppHandle, event: &tauri::RunEvent) {
     }
 }
 
+// The plane follows the window; the shape is fractional, so a resize only
+// moves its pixels.
+#[cfg(target_os = "linux")]
+fn linux_window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
+    use tauri::Manager;
+    if !matches!(event, tauri::WindowEvent::Resized(_)) {
+        return;
+    }
+    let Some(view) = window.get_webview_window(window.label()) else {
+        return;
+    };
+    plane::resize(&view);
+    if let Some(state) = view.try_state::<video_hole::HoleState>() {
+        video_hole::refresh(&view, &state);
+    }
+}
+
+// The plane first, so whichever engine comes up embeds into it; then in-process
+// libmpv when opted in (deferred; falls back to the binary on any init
+// failure), otherwise the proven mpv binary now.
+#[cfg(target_os = "linux")]
+fn linux_setup(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    if let Some(win) = app.webview_windows().values().next() {
+        webview_gpu::pin_acceleration(win);
+        if let Some(state) = app.try_state::<plane::PlaneState>() {
+            match plane::create(win, &state) {
+                Some(xid) => eprintln!("KROMA: plane up (xid={xid})"),
+                None => eprintln!("KROMA: no X11 plane; the window is not X11"),
+            }
+        }
+    }
+    #[cfg(feature = "libmpv")]
+    if mpv_dispatch::opt_in() {
+        init_libmpv_linux_deferred(app);
+        return;
+    }
+    mpv::spawn(app.clone());
+}
+
 fn main() {
     #[cfg(target_os = "linux")]
     prepare_linux_env();
@@ -264,49 +304,11 @@ fn main() {
     builder
         .on_window_event(|_window, _event| {
             #[cfg(target_os = "linux")]
-            {
-                use tauri::Manager;
-                // The plane follows the window; the shape is fractional, so a
-                // resize only moves its pixels.
-                if matches!(_event, tauri::WindowEvent::Resized(_)) {
-                    if let Some(view) = _window.get_webview_window(_window.label()) {
-                        plane::resize(&view);
-                        if let Some(state) = view.try_state::<video_hole::HoleState>() {
-                            video_hole::refresh(&view, &state);
-                        }
-                    }
-                }
-            }
+            linux_window_event(_window, _event);
         })
         .setup(|_app| {
-            // Linux: the plane first, so whichever engine comes up embeds into it;
-            // then in-process libmpv when opted in (deferred; falls back to the
-            // binary on any init failure), otherwise the proven mpv binary now.
             #[cfg(target_os = "linux")]
-            {
-                use tauri::Manager;
-                if let Some(win) = _app.webview_windows().values().next() {
-                    webview_gpu::pin_acceleration(win);
-                    if let Some(state) = _app.try_state::<plane::PlaneState>() {
-                        match plane::create(win, &state) {
-                            Some(xid) => eprintln!("KROMA: plane up (xid={xid})"),
-                            None => eprintln!("KROMA: no X11 plane; the window is not X11"),
-                        }
-                    }
-                }
-                #[cfg(feature = "libmpv")]
-                {
-                    if mpv_dispatch::opt_in() {
-                        init_libmpv_linux_deferred(_app.handle());
-                    } else {
-                        mpv::spawn(_app.handle().clone());
-                    }
-                }
-                #[cfg(not(feature = "libmpv"))]
-                {
-                    mpv::spawn(_app.handle().clone());
-                }
-            }
+            linux_setup(_app.handle());
             // macOS: build the in-process libmpv engine once the window is laid out
             // (deferred; see [`init_libmpv_deferred`]).
             #[cfg(all(target_os = "macos", feature = "libmpv"))]

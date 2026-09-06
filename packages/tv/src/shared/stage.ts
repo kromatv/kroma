@@ -44,3 +44,34 @@ export function fitStage(windowW: number, windowH: number): StageFit {
   const scale = Math.min(windowH / STAGE_H, windowW / MIN_STAGE_W);
   return { scale, width: Math.round(windowW / scale) };
 }
+
+/**
+ * Fit the canvas to a browser window: `#root` is drawn at the design height and
+ * scaled to the window, and its width is whatever the window leaves at that
+ * scale, handed over as custom properties the layout reads. The `transform`
+ * also makes `#root` the containing block for the app's `position: fixed`
+ * layers, so they fill the stage rather than the window. Web shells only.
+ */
+export function installStage(): void {
+  const style = document.createElement('style');
+  style.textContent = `
+    html, body { height: 100%; margin: 0; overflow: hidden; background: var(--kroma-bg, #0a0a0c); }
+    #root {
+      position: fixed; top: 50%; left: 50%;
+      width: var(--kroma-stage-width, ${STAGE_W}px); height: ${STAGE_H}px;
+      transform: translate(-50%, -50%) scale(var(--kroma-stage-scale, 1));
+      transform-origin: center center;
+      overflow: hidden;
+    }
+  `;
+  document.head.appendChild(style);
+
+  const apply = () => {
+    const fit = fitStage(window.innerWidth, window.innerHeight);
+    const root = document.documentElement.style;
+    root.setProperty('--kroma-stage-scale', String(fit.scale));
+    root.setProperty('--kroma-stage-width', `${fit.width}px`);
+  };
+  apply();
+  window.addEventListener('resize', apply);
+}

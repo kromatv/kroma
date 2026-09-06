@@ -61,6 +61,26 @@ fn write_enabled(on: bool) {
     );
 }
 
+// Arms the GPU boot guard. A marker still present from the last boot means
+// that boot never reached the frontend, so the setting reverts to software.
+fn arm_gpu_probe() -> bool {
+    let Some(probe) = probe_path() else {
+        return false;
+    };
+    if probe.exists() {
+        eprintln!(
+            "KROMA: the last GPU-rendering boot never reached the frontend; reverting to software rendering"
+        );
+        write_enabled(false);
+        let _ = std::fs::remove_file(probe);
+        return false;
+    }
+    if let Some(dir) = probe.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    std::fs::write(&probe, b"").is_ok()
+}
+
 /// Decide the renderer for this boot. Called by `prepare_linux_env` BEFORE any
 /// webview/GTK init. An explicit env pin (either var, either direction) always
 /// wins and leaves the probe state untouched - that's a manual A/B session.
@@ -70,24 +90,8 @@ pub fn apply_env() {
     {
         return;
     }
-    if gpu_enabled() {
-        if let Some(probe) = probe_path() {
-            if probe.exists() {
-                eprintln!(
-                    "KROMA: the last GPU-rendering boot never reached the frontend; reverting to software rendering"
-                );
-                write_enabled(false);
-                let _ = std::fs::remove_file(probe);
-            } else {
-                if let Some(dir) = probe.parent() {
-                    let _ = std::fs::create_dir_all(dir);
-                }
-                if std::fs::write(&probe, b"").is_ok() {
-                    return; // GPU boot armed: leave the DMABUF renderer enabled
-                }
-            }
-            // Probe unwritable: no crash guard possible, stay on the safe path.
-        }
+    if gpu_enabled() && arm_gpu_probe() {
+        return;
     }
     std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
 }
