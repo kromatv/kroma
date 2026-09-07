@@ -6,8 +6,8 @@ a store account or a paid certificate.
 
 ## Where to get the builds
 
-- **GitHub Releases** (a `vX.Y.Z` tag): every artifact attached to one release
-  `.spk` (Synology), `.dmg` (macOS), `-setup.exe` / `.msi` (Windows),
+- **GitHub Releases** (a `vX.Y.Z` tag): every artifact is attached to one
+  release, `.spk` (Synology), `.dmg` (macOS), `-setup.exe` / `.msi` (Windows),
   `.AppImage` / `.deb` (Linux / Steam Deck), `.ipk` (LG webOS),
   `.wgt` (Samsung Tizen), `.apk` (Android TV).
 - **Prebuilt from GitHub Actions** without tagging a release: see below.
@@ -16,19 +16,18 @@ a store account or a paid certificate.
 
 ### Prebuilt installers from Actions (no release needed)
 
-The **Build & Release** workflow can be run by hand and produces the exact same
-installable packages as a tagged release, just as run artifacts instead of
-release assets:
+Run the **Build & Release** workflow by hand. It produces the same installable
+packages as a tagged release, as run artifacts instead of release assets:
 
 1. GitHub > **Actions** > **Build & Release** > **Run workflow**. Pick the
    scope with `targets`: `all`, `tv` (.ipk + .wgt + .apk), `desktop`
-   (.dmg + .exe/.msi + .AppImage/.deb) or `spk`; `version` is optional
+   (.dmg + .exe/.msi + .AppImage/.deb) or `spk`. `version` is optional
    (defaults to `server/Cargo.toml`).
 2. When the run is green, open it and scroll to **Artifacts**:
    `kroma-webos-ipk`, `kroma-tizen-wgt`, `kroma-androidtv-apk`,
    `kroma-desktop-macos|windows|linux`, `kroma-synology-spk`, `kroma-web`.
-3. Download the one you need. GitHub wraps every artifact in a **.zip**:
-   unzip it first, the installable file (`.ipk`, `.wgt`, `.apk`, `.dmg`, ...)
+3. Download the one you need. GitHub wraps every artifact in a **.zip**, so
+   unzip it first: the installable file (`.ipk`, `.wgt`, `.apk`, `.dmg`, ...)
    is inside. Then follow the per-device steps below.
 
 Same thing from the CLI:
@@ -41,39 +40,39 @@ gh run download -n kroma-androidtv-apk
 gh run download -n kroma-tizen-wgt
 ```
 
-Heads-up: the **CI** workflow (every push/PR) also uploads artifacts, but those
-are the raw web bundles (`dist/` folders) for debugging, NOT installable
-packages. For something you can put on a device, use **Build & Release**
-artifacts or a tagged release. Artifacts expire (90 days by default; CI ones
-after 7); releases stay forever.
+The **CI** workflow (every push and PR) also uploads artifacts, but those are raw
+web bundles (`dist/` folders) for debugging, NOT installable packages. Use a
+**Build & Release** artifact or a tagged release for anything you put on a
+device. Artifacts expire after 90 days by default, CI ones after 7. Releases stay
+forever.
 
-Also: the **`desktop-latest`** release you may find on the Releases page is the
-rolling **desktop auto-update channel** (macOS/Windows/Linux installers + the
-`latest.json` the installed apps poll). It never contains TV packages get
-those from a Build & Release run or a `vX.Y.Z` release.
+The **`desktop-latest`** release on the Releases page is the rolling **desktop
+auto-update channel** (macOS/Windows/Linux installers plus the `latest.json` the
+installed apps poll). It never contains TV packages. Get those from a Build &
+Release run or a `vX.Y.Z` release.
 
-Install the **server** first (Synology `.spk`; the multi-arch Docker image
-`ghcr.io/<owner>/kroma` for x86_64 AND arm64 hosts such as a Raspberry Pi 4/5;
-or `cargo` see [server/README.md](server/README.md)); every client asks for
-the server address on first launch and remembers it.
+Install the **server** first: the Synology `.spk`, the multi-arch Docker image
+`ghcr.io/<owner>/kroma` for x86_64 AND arm64 hosts such as a Raspberry Pi 4/5, or
+`cargo` (see [server/README.md](server/README.md)). Every client asks for the
+server address on first launch and remembers it.
 
 ---
 
 ## The easy path for TVs (`bun run tv`)
 
-From a clone of the repo (`bun install` once), one command sweeps the network for
-televisions, installs the Samsung, LG or Android tooling it needs, finds the
-newest package built here or pulls the latest release asset with `gh`, and
-installs KROMA on the sets you tick:
+From a clone of the repo (`bun install` once), one command scans the network for
+televisions, installs the Samsung, LG or Android tooling it needs, takes the
+newest package built here or the latest release asset via `gh`, and installs
+KROMA on the sets you tick:
 
 ```bash
 bun run tv
 ```
 
-The developer-mode steps below still have to be done once on each television:
-nothing turns them on over the network. What the scan probes, the commands it
-takes without the picker, where each toolchain lands and the Local Network
-permission macOS asks for on the first sweep are in
+The developer-mode steps below still have to be done once on each television,
+because nothing turns them on over the network. What the scan probes, the
+commands it takes without the picker, where each toolchain lands and the Local
+Network permission macOS asks for on the first run are in
 [packages/tv-installer/README.md](packages/tv-installer/README.md).
 
 ## Samsung TV (Tizen) `.wgt`
@@ -81,22 +80,22 @@ permission macOS asks for on the first sweep are in
 One-time **developer mode** on the TV:
 
 1. Open the **Apps** panel on the TV.
-2. With the remote, type **1 2 3 4 5** (a hidden shortcut; use the on-screen
+2. With the remote, type **1 2 3 4 5**, a hidden shortcut (use the on-screen
    number pad if your remote has no digits). A "Developer mode" popup appears.
 3. Switch **Developer mode ON**, enter the **IP of your computer** (the machine
    that will push the app), and restart the TV.
 
 ### Install a prebuilt `.wgt` (from Actions / a release)
 
-There is **no npm package** for Samsung's tooling (unlike LG's
-`@webos-tools/cli`): the `tizen` and `sdb` commands only ship with
-**Tizen Studio**. You do NOT need the IDE, the **CLI-only** installer is enough.
+Samsung's tooling has **no npm package**, unlike LG's `@webos-tools/cli`: the
+`tizen` and `sdb` commands ship only with **Tizen Studio**. You do NOT need the
+IDE, the **CLI-only** installer is enough.
 
 You DO need a **certificate of your own**. A retail Samsung accepts only a
 distributor certificate Samsung issued against that set's DUID, so the release
-`.wgt` has to be re-signed before it installs; ours carries a build certificate
-that every retail set refuses with `Invalid certificate chain with certificate
-in signature`. `bun run tv` does the re-signing for you. By hand:
+`.wgt` has to be re-signed before it installs. Ours carries a build certificate
+that every retail set refuses with `Invalid certificate chain with certificate in
+signature`. `bun run tv` does the re-signing for you. By hand:
 
 ```bash
 # 1. Get the .wgt
@@ -130,21 +129,20 @@ make -C clients/tizen deploy TV_IP=192.168.1.50   # build + sign + install + lau
 ```
 
 Notes:
-- The release `.wgt` is signed with a **build certificate**, which is enough for
-  the emulator and refused by every retail set. Re-sign it with your own profile,
-  as above. If a KROMA signed with a *different* certificate is already on the
-  set, uninstall that one first (Apps > long-press the KROMA tile > Delete), or
-  the install fails with a signature error.
-- Developer mode survives reboots; the app stays installed like any other.
-- Community GUI installers that skip Tizen Studio exist (they speak the sdb
-  protocol directly), but nothing official or maintained enough to recommend
-  here; the CLI-only install above is the reliable minimal path.
+- The build certificate on the release `.wgt` is enough for the emulator only. If
+  a KROMA signed with a *different* certificate is already on the set, uninstall
+  that one first (Apps > long-press the KROMA tile > Delete), or the install
+  fails with a signature error.
+- Developer mode survives reboots, and the app stays installed like any other.
+- Community GUI installers that skip Tizen Studio exist and speak the sdb
+  protocol directly, but none is official or maintained enough to recommend here.
+  The CLI install above is the reliable minimum.
 
 ## LG TV (webOS) `.ipk`, old and new models
 
-The single `.ipk` covers **every supported generation** (webOS 4.x from 2018 up
-to current): it carries both the modern and the legacy bundle and picks the
-right one at launch. One-time **Developer Mode** on the TV:
+One `.ipk` covers **every supported generation** (webOS 4.x from 2018 up to
+current): it carries both the modern and the legacy bundle and picks the right
+one at launch. One-time **Developer Mode** on the TV:
 
 1. Create a (free) account on [developer.lge.com](https://developer.lge.com).
 2. On the TV, install the **Developer Mode** app from the LG Content Store and
@@ -152,8 +150,7 @@ right one at launch. One-time **Developer Mode** on the TV:
 3. In the app, switch **Dev Mode Status ON** (the TV restarts), then switch
    **Key Server ON**.
 
-Then, from a computer on the same network - end to end, starting from a
-prebuilt Actions artifact:
+Then, from a computer on the same network, starting from an Actions artifact:
 
 ```bash
 # 1. Get the .ipk (from a Build & Release run, or download it from a release)
@@ -173,19 +170,19 @@ ares-launch tv.kroma.webos -d tv
 ```
 
 Notes:
-- Dev Mode sessions last **50 hours**; open the Developer Mode app and press
-  the extend button (or just relaunch it) to renew. If it expires, sideloaded
-  apps disappear until Dev Mode is re-enabled reinstall the `.ipk` after.
-- 2016-17 models (webOS 3.x) are not supported; 2018+ (webOS 4.0) and newer are.
+- Dev Mode sessions last **50 hours**. Open the Developer Mode app and press the
+  extend button, or just relaunch it, to renew. If it expires, sideloaded apps
+  disappear until Dev Mode is re-enabled, and the `.ipk` has to be reinstalled.
+- 2016-17 models (webOS 3.x) are not supported. 2018 (webOS 4.0) and newer are.
 
 ## Android TV / Google TV / Nvidia Shield `.apk`
 
 One-time **developer options** on the device:
 
-1. **Settings > System (or Device Preferences) > About**, scroll to
-   **Android TV OS build** and click it **7 times** "You are now a developer".
-2. Back in Settings, open **Developer options** and enable
-   **USB debugging** and/or **Network debugging** (name varies per device).
+1. **Settings > System (or Device Preferences) > About**, scroll to **Android TV
+   OS build** and click it **7 times**, until "You are now a developer" appears.
+2. Back in Settings, open **Developer options** and enable **USB debugging**
+   and/or **Network debugging** (the name varies per device).
 
 Then, from a computer with [adb](https://developer.android.com/tools/adb):
 
@@ -195,21 +192,21 @@ adb install -r KROMA-androidtv-0.1.0.apk
 ```
 
 The app appears in the normal apps row (it registers as a Leanback TV app).
-Alternative without a computer: the **Downloader** app (allow it in
-"unknown sources") can fetch the `.apk` from any URL, e.g. the GitHub release.
+Without a computer, the **Downloader** app (allow it in "unknown sources") can
+fetch the `.apk` from any URL, e.g. the GitHub release.
 
 ### Google Chromecast with Google TV (4K / HD)
 
-The Chromecast with Google TV is an Android TV device: the same `.apk`
-installs and gets full hardware HEVC decode (the pre-Google-TV cast-only
-dongles are NOT supported: no apps, and no HEVC on most of them). The menu
-paths on the Google TV UI:
+The Chromecast with Google TV is an Android TV device: the same `.apk` installs
+and gets full hardware HEVC decode (the pre-Google-TV cast-only dongles are NOT
+supported: no apps, and no HEVC on most of them). The menu paths on the Google TV
+UI:
 
-1. **Settings > System > About > Android TV OS build**: click it **7 times**
-   with the remote until "You are now a developer!" appears.
-2. **Settings > System > Developer options** (now visible) > enable
-   **USB debugging** (this also allows debugging over the network there is
-   no usable USB data port anyway).
+1. **Settings > System > About > Android TV OS build**: click it **7 times** with
+   the remote until "You are now a developer!" appears.
+2. **Settings > System > Developer options** (now visible) > enable **USB
+   debugging**. That also allows debugging over the network, and there is no
+   usable USB data port anyway.
 3. Get the dongle's IP: **Settings > Network & Internet** > your Wi-Fi.
 4. From a computer on the same network:
 
@@ -219,19 +216,19 @@ adb connect 192.168.1.61:5555     # a confirmation prompt appears on the TV:
 adb install -r KROMA-androidtv-0.1.0.apk
 ```
 
-Without a computer: install **Downloader** (by AFTVnews) from the Play Store
-on the Chromecast, allow it under **Settings > Apps > Security & restrictions
-> Unknown sources**, then enter the direct URL of the `.apk` from a GitHub
-release (Actions artifacts won't work there: they need a GitHub login and are
-zipped). KROMA shows up under "Your apps" like any installed app; storage is
-tight on these dongles (8 GB) but the app is only ~4 MB.
+Without a computer: install **Downloader** (by AFTVnews) from the Play Store on
+the Chromecast, allow it under **Settings > Apps > Security & restrictions >
+Unknown sources**, then enter the direct URL of the `.apk` from a GitHub release
+(Actions artifacts won't work there: they need a GitHub login and are zipped).
+KROMA shows up under "Your apps" like any installed app. Storage is tight on
+these dongles (8 GB), but the app is only ~4 MB.
 
 Notes:
-- Release APKs are debug-signed. Android refuses to update an app whose
-  signature changed if an install fails with a signature error:
+- Release APKs are debug-signed, and Android refuses to update an app whose
+  signature changed. If an install fails with a signature error, run
   `adb uninstall tv.kroma.tv`, then install the new one.
 - **Upgrading from a KROMA older than 0.2:** the Android TV client used to be a
-  WebView shell under the package id `tv.kroma.androidtv`; it is now the native
+  WebView shell under the package id `tv.kroma.androidtv`, and is now the native
   React Native app, `tv.kroma.tv`. A different package id installs ALONGSIDE the
   old one rather than replacing it, so remove the old app once:
   `adb uninstall tv.kroma.androidtv`.
@@ -239,30 +236,28 @@ Notes:
 ## macOS `.dmg` (and removing the quarantine)
 
 The app is not notarized (no paid Apple developer account), so the **first**
-launch trips Gatekeeper: "KROMA is damaged / can't be opened". This is only the
+launch trips Gatekeeper: "KROMA is damaged / can't be opened". That is only the
 quarantine flag macOS puts on downloaded files. Two ways to clear it:
 
-**Option A settings toggle:**
+**Option A, the settings toggle:**
 
 1. Double-click `KROMA.app` once (it will be blocked, that's expected).
 2. Open **System Settings > Privacy & Security**, scroll down to the message
    about KROMA, click **Open Anyway**, and confirm.
 
-**Option B terminal (fastest):** after dragging `KROMA.app` to Applications:
+**Option B, the terminal (fastest).** After dragging `KROMA.app` to Applications:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/KROMA.app
 ```
 
 Then it opens normally. This is needed **once per machine**: the built-in
-auto-updater installs future versions without quarantine, so updates are
-silent from then on.
+auto-updater installs future versions without quarantine.
 
 ## Windows `.exe` / `.msi`
 
 The installer is unsigned, so SmartScreen shows "Windows protected your PC":
-click **More info > Run anyway**. Once installed, the app self-updates
-silently.
+click **More info > Run anyway**. Once installed, the app self-updates silently.
 
 ## Linux desktop / Steam Deck `.AppImage` / `.deb`
 
@@ -275,18 +270,18 @@ Steam Deck:
 3. Launch from Game Mode and set the controller layout to **Gamepad**.
    D-pad/stick = focus, A = OK, B = back, X = play/pause, L/R = seek.
 
-mpv is bundled (the `kroma-mpv` sidecar drives hardware video decode); nothing to
-install. To use your own mpv instead, point the `KROMA_MPV` env var at it.
+mpv is bundled, so there is nothing to install: the `kroma-mpv` sidecar drives
+hardware video decode. To use your own mpv, point the `KROMA_MPV` env var at it.
 
 ## Synology NAS `.spk`
 
-1. **Package Center > Settings > General > Trust Level**: allow
-   **Any publisher** (the package is self-built, not Synology-signed).
+1. **Package Center > Settings > General > Trust Level**: allow **Any publisher**
+   (the package is self-built, not Synology-signed).
 2. **Package Center > Manual Install**, pick the `.spk`, follow the wizard.
-3. Open KROMA from the main menu; media folders are configured in the app's
+3. Open KROMA from the main menu. Media folders are configured in the app's
    admin console.
 
 ## Web browser
 
-Nothing to install: browse to the server (e.g. `http://nas:4040` or your
-tunnel URL). The server ships the web app itself.
+Nothing to install: browse to the server (e.g. `http://nas:4040` or your tunnel
+URL). The server ships the web app itself.

@@ -44,10 +44,10 @@ New releases then show an **Update** button automatically. Opening the same URL
 in a browser shows a landing page listing every published version with download
 links.
 
-**Nightly channel (optional):** every push to `main` publishes a canary `.spk`
-to the rolling `nightly` prerelease. Enable *Settings → General → beta packages*
-on the SAME source and DSM rides whichever channel is newest (nightlies use a
-4th feature segment, so they outrank their stable base until the next tag).
+**Canary channel (optional):** every push to `main` publishes a canary `.spk`
+to the rolling `canary` prerelease. Enable *Settings → General → beta packages*
+on the SAME source and DSM rides whichever channel is newest (a canary uses a
+4th feature segment, so it outranks its stable base until the next tag).
 
 The dynamic worker is the only package source now (the old GitHub Pages static
 catalogs were retired). To self-host a static catalog anyway, the generator
@@ -75,7 +75,7 @@ default. Grant it read access to the media folder:
 set the system user **`kroma`** (or `sc-kroma`) to **Read-only**, then restart the
 package.
 
-> Prefer zero setup over least-privilege? Change `conf/privilege` to
+> Prefer zero setup over least-privilege? Change `spk/conf/privilege` to
 > `{ "defaults": { "run-as": "root" } }` and rebuild it then reads everything
 > without granting permissions (less safe; your call for a personal NAS).
 
@@ -126,29 +126,29 @@ One workflow owns the whole server deliverable: `.github/workflows/synology.yml`
 A `vX.Y.Z` tag builds the stable `.spk` and attaches it (+ a `<spk>.info.json`
 sidecar with version/md5/size, read by the dynamic source) to that GitHub
 Release; a push to `main` that touches server/web/shared code builds a canary
-`.spk` into the rolling `nightly` prerelease. The same run then assembles the
-**Docker image from the .spk payload** (no second compile) and pushes it to
-ghcr, and regenerates the static Pages catalogs as a fallback. The dynamic
+`.spk` into the rolling `canary` prerelease. The same run then assembles the
+multi-arch **Docker image** (amd64 reuses the `.spk` payload with no second
+compile, arm64 cross-compiles in its own job) and pushes it to ghcr. The dynamic
 worker source needs nothing: it reads the releases live.
 
 The musl target dir is cached between runs (`synology-v2-*` cache) and the
 cross image is digest-pinned, so a warm push build takes minutes, not a cold
-~15-minute compile. The full client fleet (desktop + TV + modules) also
-ships nightly at 03:00 UTC onto the same `nightly` prerelease via
-`.github/workflows/release.yml` (skipped when main has not moved).
+~15-minute compile. The full client fleet (desktop + TV) ships from
+`.github/workflows/release.yml` on every push to `main`, onto its own `canary`
+tag. Modules release separately, from `.github/workflows/modules.yml`.
 
 To iterate on the store landing page without a build, run
-`bun run --filter @kroma/synology-repo preview` (live-reload; `CATALOG_BETA=true`
-for the nightly variant).
+`bun run --filter @kroma/synology-repo preview` (live-reload, with
+`CATALOG_BETA=true` for the canary variant).
 
 **Version rule (do not regress this):** DSM installs a `.spk` over an existing one
 only when the version is **strictly greater**; otherwise it refuses with the
 misleading `4521 "invalid file format"`. DSM's manual-install check compares the
 dotted **feature** version and IGNORES the `-build` suffix (proven on a real NAS:
 two `0.1.2-<build>` spks read as "same version already installed"). So `build.sh`
-stamps `X.Y.Z.BUILD-BUILD` with `BUILD` in a **4th feature segment** (`BUILD` =
-minutes since 2020, monotonic) this way every build is strictly newer, including
-tag-less **nightlies** that share the same `X.Y.Z`. An earlier commit broke this by
+stamps `X.Y.Z.BUILD`, with `BUILD` a **4th feature segment** (minutes since 2020,
+monotonic), so every build is strictly newer, including the tag-less **canaries**
+that share the same `X.Y.Z`. An earlier commit broke this by
 shrinking that segment `0.1.3.<minutes>` (~3.4M) &rarr; `0.1.3.<days>` (~2.4k), so
 any NAS with the big-numbered build saw every new build as a **downgrade** and
 rejected it forever. Two rules: (1) the base was bumped to `0.1.4` so it outranks

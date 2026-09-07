@@ -7,9 +7,8 @@ binding `@kroma/ui`'s `<Focusable>`, rails and grid are built on.
 This replaces `react-tv-space-navigation@6.0.0-beta1` and the `@bam.tech/lrud`
 tree underneath it.
 
-> The conformance suite in `src/*.test.ts` is written; the engine it describes is
-> not. Every test in this package fails until `src/index.ts` and
-> `src/react.tsx` land. That is the point: the suite is the specification.
+The conformance suite in `src/*.test.ts` came first and is the specification the
+engine was written against.
 
 ## Why replace it
 
@@ -23,7 +22,7 @@ repo leans on hardest:
   run in one commit the second re-registers the tail, the throw aborts the
   `forEach` that was registering the rest, and the remaining nodes never exist.
   Focus then lands on nodes that are not there and blurs never fire. That is the
-  many-tiles-lit bug, and it is why `patches/` exists.
+  many-tiles-lit bug, and it is what `patches/` used to carry.
 - **A recycled React key collides.** `getRange` can return more items than the
   modulus the key is taken against, so two indices share a key, React refuses to
   reconcile them, and the mounted tile count climbs without bound as the row is
@@ -35,9 +34,9 @@ repo leans on hardest:
   rails work around it by growing and never shrinking, which is the mounting cost
   virtualisation was supposed to remove.
 
-Owning the engine also ends the patch file, which currently carries the
-idempotence fix, the key fix, and the `freeScrollFraction` prop the grid's wheel
-scrolling needs.
+Owning the engine ended the patch file, which carried the idempotence fix, the
+key fix, and the `freeScrollFraction` prop the grid's wheel scrolling needs.
+`react-tv-space-navigation` is gone from every manifest.
 
 ## The two entry points
 
@@ -115,9 +114,7 @@ Unlocking a navigator that is not locked clamps at zero rather than going
 negative.
 
 **`Directions` is a const object, not a TS enum.** `Directions.LEFT` still reads
-the same, but the type is now `Direction`. Three call sites use the old name in
-type position (`focus-tab.ts`, `focus-tab.test.ts`, `focus-remote.web.ts`) and
-become `Direction` there.
+the same, and the type is `Direction`.
 
 **One flag turns a container into a grid.** `alignInGrid` on the vertical
 container is enough; the rows do not also need LRUD's `useMeForIndexAlign`. When

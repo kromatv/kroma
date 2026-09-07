@@ -107,13 +107,17 @@ those same helpers.
 Files stay under 300 lines (repo-wide rule), which is why `downloads`, `session`,
 `engine` and `ui` are directories rather than single modules.
 
-## Not in the release pipeline (yet)
+## In the release pipeline
 
-`.github/workflows/release.yml` builds the Synology package, desktop installers
-and the TV bundles; there is no Expo/EAS job, so tagging a release ships no
-mobile binary. Builds are local (`bun run ios` / `bun run android`) or a manual
-EAS run until that job exists. Note that `app.json`'s `version` is independent of
-the release tag: `chore(release)` bumps `server/Cargo.toml`, not this app.
+Every push to `main` runs `.github/workflows/release.yml`, whose `mobile` job
+calls `_release-mobile.yml` to build the `.apk` and `.ipa` and push them to the
+two beta channels [`BETA.md`](../../BETA.md) points testers at: Firebase App
+Distribution and TestFlight. The `.spk` is a different workflow
+(`.github/workflows/synology.yml`).
+
+Local builds are still `bun run ios` / `bun run android`. `app.json`'s `version`
+is independent of the release tag: `chore(release)` bumps `server/Cargo.toml`,
+not this app.
 
 ## Brand assets
 
