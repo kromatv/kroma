@@ -155,8 +155,8 @@ describe('serverPlatform', () => {
     });
   });
 
-  it('is null on a server too old to answer', async () => {
-    vi.stubGlobal('fetch', async () => new Response('', { status: 404 }));
+  it.each([404, 405])('is null on a server too old to answer, which says %i', async (status) => {
+    vi.stubGlobal('fetch', async () => new Response('', { status }));
 
     await expect(serverPlatform(SERVER)).resolves.toBeNull();
   });

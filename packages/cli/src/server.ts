@@ -57,6 +57,10 @@ export function bundleFor(
 const Platform = z.object({ target: z.string(), serverVersion: z.string() });
 export type Platform = z.infer<typeof Platform>;
 
+/** A server with no platform endpoint: absent as a route (404), or shadowed by
+ *  a store route that takes another verb (405). Either way it cannot say. */
+const UNANSWERED = [404, 405];
+
 /** What the server runs on, so a bundle for another platform is refused here
  *  with a fix rather than by a sidecar that never starts. `null` on a server
  *  too old to say. */
@@ -64,7 +68,7 @@ export async function serverPlatform(server: Server): Promise<Platform | null> {
   const res = await fetch(`${server.url}/api/admin/store/platform`, {
     headers: { authorization: `Bearer ${server.token}` },
   });
-  if (res.status === 404) return null;
+  if (UNANSWERED.includes(res.status)) return null;
   if (!res.ok)
     throw new Error(`${server.url}: GET /api/admin/store/platform failed (${res.status})`);
   return Platform.parse(await res.json());
