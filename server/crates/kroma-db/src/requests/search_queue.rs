@@ -5,7 +5,7 @@ use rusqlite::{params, Connection};
 
 use super::wanted::{row_to_wanted, WantedRow, WANTED_COLS};
 use crate::chunked::IN_CHUNK;
-use crate::pool::Pool;
+use crate::Pool;
 
 /// Rows ready for an automatic search pass: still wanted, aired or undated, and
 /// past their backoff. Ordered freshest air date first, so an episode that aired

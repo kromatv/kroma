@@ -117,9 +117,10 @@ export default defineConfig({
       },
       {
         plugins: plugins(),
-        // Metro's precedence: the plain file wins, `.web.*` is never consulted
-        // unless named outright. Derived from the web list so an extension
-        // can't be added to one universe and forgotten in the other.
+        // Metro's precedence: `.native.*` first, then the plain file; `.web.*`
+        // is never consulted unless named outright. Derived from the web list
+        // so an extension can't be added to one universe and forgotten in the
+        // other.
         resolve: {
           alias: [
             // @kroma/client discovers its domains per bundler: `discover.web.ts`
@@ -132,7 +133,11 @@ export default defineConfig({
             },
             ...alias,
           ],
-          extensions: WEB_EXTENSIONS.filter((e) => !e.startsWith('.web.')),
+          extensions: [
+            '.native.tsx',
+            '.native.ts',
+            ...WEB_EXTENSIONS.filter((e) => !e.startsWith('.web.')),
+          ],
           dedupe,
         },
         test: {

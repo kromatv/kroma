@@ -50,7 +50,9 @@ server/
   crates/
     kroma-engine/       infra + services + state + i18n + model  (the business logic, 20k LOC)
     kroma-db/           all SQL, one shared Pool                 (persistence, 7k LOC)
+    kroma-sqlite/       the pool itself, the storage grant, a module's migrations
     kroma-domain/       entities + PURE rules (serde only, no I/O)
+    kroma-module-wire/  the JSON a module and the host exchange (serde only)
     kroma-config/       env-parsed Config
     kroma-i18n/         translate + CLDR plurals (Rust port of @kroma/core i18n)
     kroma-primitives/         timestamps · short hashes · random tokens (below db)
@@ -69,6 +71,10 @@ kroma-server(bin) → kroma-engine → { kroma-db, kroma-whisper, kroma-vector, 
 ```
 
 - **`kroma-domain`** depends only on serde, **never** axum/rusqlite/reqwest/process.
+- **A sidecar links neither `kroma-db` nor `kroma-domain`.** The seven types it
+  exchanges with the host are `kroma-module-wire`, the pool and the grant are
+  `kroma-sqlite`, and both are re-exported by the crate that used to own them,
+  so nothing above the seam moved.
 - The layer modules keep their historical paths (`crate::db`, `crate::services`,
   `crate::model`, …) via crate aliases, so the split left call sites untouched.
 - Heavy or optional dependencies (candle, mdns) live in the module that needs them,

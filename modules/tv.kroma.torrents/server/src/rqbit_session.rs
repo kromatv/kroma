@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn an_entry_with_no_metadata_on_disk_is_dropped() {
-        let dir = kroma_testing::temp_dir("session-prune");
+        let dir = kroma_module_sdk::testing::temp_dir("session-prune");
         metadata(dir.path(), "aa", b"d4:infod4:name1:ae");
         store(
             dir.path(),
@@ -123,7 +123,7 @@ mod tests {
     fn an_empty_torrent_file_counts_as_no_metadata() {
         // The exact shape librqbit leaves behind for a magnet it never
         // resolved, and the one that hangs the restore.
-        let dir = kroma_testing::temp_dir("session-prune");
+        let dir = kroma_module_sdk::testing::temp_dir("session-prune");
         metadata(dir.path(), "aa", b"");
         store(dir.path(), &format!("{{\"0\":{}}}", entry("aa")));
 
@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn the_stub_and_its_resume_data_go_with_the_entry() {
-        let dir = kroma_testing::temp_dir("session-prune");
+        let dir = kroma_module_sdk::testing::temp_dir("session-prune");
         metadata(dir.path(), "aa", b"");
         store(dir.path(), &format!("{{\"0\":{}}}", entry("aa")));
 
@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn a_store_where_everything_restores_is_left_untouched() {
-        let dir = kroma_testing::temp_dir("session-prune");
+        let dir = kroma_module_sdk::testing::temp_dir("session-prune");
         metadata(dir.path(), "aa", b"d4:infod4:name1:ae");
         let before = format!("{{\"0\":{}}}", entry("aa"));
         store(dir.path(), &before);
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn anything_unreadable_is_left_exactly_as_it_was() {
-        let dir = kroma_testing::temp_dir("session-prune");
+        let dir = kroma_module_sdk::testing::temp_dir("session-prune");
         std::fs::write(dir.path().join(STORE), b"{not json").unwrap();
 
         assert_eq!(prune_unrestorable(dir.path()), 0);
@@ -169,14 +169,14 @@ mod tests {
 
     #[test]
     fn a_first_run_with_no_store_yet_is_not_an_error() {
-        let dir = kroma_testing::temp_dir("session-prune");
+        let dir = kroma_module_sdk::testing::temp_dir("session-prune");
 
         assert_eq!(prune_unrestorable(dir.path()), 0);
     }
 
     #[test]
     fn a_store_that_names_no_torrents_is_left_exactly_as_it_was() {
-        let dir = kroma_testing::temp_dir("session-prune");
+        let dir = kroma_module_sdk::testing::temp_dir("session-prune");
         std::fs::write(dir.path().join(STORE), b"{\"version\":2}").unwrap();
 
         assert_eq!(prune_unrestorable(dir.path()), 0);

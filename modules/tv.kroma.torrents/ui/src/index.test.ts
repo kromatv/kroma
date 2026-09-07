@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { useTorrentsApi } from './api';
-import { torrentsModule } from './index';
+import torrentsModule from './module';
 
 describe('torrentsModule', () => {
   it('takes its identity and its dependencies from the shared manifest', () => {

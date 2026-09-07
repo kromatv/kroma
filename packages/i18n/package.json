@@ -54,5 +54,6 @@
     "vite": {
       "optional": true
     }
-  }
+  },
+  "homepage": "https://kroma.tv"
 }

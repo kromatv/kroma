@@ -181,7 +181,7 @@ mod tests {
     type DbHost = kroma_module_sdk::host::testing::StubHost;
 
     fn migrated_host() -> DbHost {
-        let host = DbHost::with_db("torrents-ledger");
+        let host = DbHost::with_core(kroma_module_sdk::db::testing::temp_pool("torrents-ledger"));
         let conn = host.store().get().unwrap();
         kroma_module_sdk::db::apply_migrations(&conn, crate::db::MIGRATIONS).unwrap();
         drop(conn);

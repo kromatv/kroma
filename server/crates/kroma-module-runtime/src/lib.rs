@@ -15,7 +15,7 @@ use std::sync::{Arc, RwLock};
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use kroma_domain::{Permission, User};
+use kroma_module_wire::{Permission, User};
 use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_host::{json_error, Event, HostCtx, ServerModule};
 
@@ -49,13 +49,13 @@ impl Env {
     /// Absent or unreadable is the empty grant: a pool that answers nothing,
     /// never an unscoped one.
     #[cfg(feature = "storage")]
-    fn grant(&self) -> kroma_db::Grant {
+    fn grant(&self) -> kroma_sqlite::Grant {
         let Ok(json) = std::env::var("KROMA_MODULE_GRANT") else {
-            return kroma_db::Grant::none();
+            return kroma_sqlite::Grant::none();
         };
         serde_json::from_str(&json).unwrap_or_else(|error| {
             tracing::error!(%error, "core sent a storage grant this build cannot read; denying all");
-            kroma_db::Grant::none()
+            kroma_sqlite::Grant::none()
         })
     }
 
@@ -82,9 +82,9 @@ struct Inner {
     module_id: String,
     data_dir: PathBuf,
     #[cfg(feature = "storage")]
-    store: kroma_db::Pool,
+    store: kroma_sqlite::Pool,
     #[cfg(feature = "storage")]
-    core: kroma_db::Pool,
+    core: kroma_sqlite::Pool,
     core_url: String,
     host_token: String,
     services: RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
@@ -102,9 +102,9 @@ impl RemoteHost {
                 // `open`, not `init`: the module's own file has no core schema
                 // in it, only whatever its own `migrations()` create below.
                 #[cfg(feature = "storage")]
-                store: kroma_db::open(&env.store_path())?,
+                store: kroma_sqlite::open(&env.store_path())?,
                 #[cfg(feature = "storage")]
-                core: kroma_db::init_scoped(&env.db_path, &env.module_id, &env.grant())?,
+                core: kroma_sqlite::init_scoped(&env.db_path, &env.module_id, &env.grant())?,
                 core_url: env.core_url.clone(),
                 host_token: env.host_token.clone(),
                 services: RwLock::new(HashMap::new()),
@@ -143,11 +143,11 @@ impl RemoteHost {
 
 #[cfg(feature = "storage")]
 impl kroma_module_host::HostStorage for RemoteHost {
-    fn db(&self) -> &kroma_db::Pool {
+    fn db(&self) -> &kroma_sqlite::Pool {
         &self.inner.core
     }
 
-    fn store(&self) -> &kroma_db::Pool {
+    fn store(&self) -> &kroma_sqlite::Pool {
         &self.inner.store
     }
 }
@@ -319,12 +319,12 @@ impl HostCtx for RemoteHost {
         query: &str,
         kind: &str,
         year: Option<u32>,
-    ) -> Vec<kroma_domain::metadata::MatchCandidate> {
+    ) -> Vec<kroma_module_wire::MatchCandidate> {
         let mut call = self.callback().query("q", query).query("kind", kind);
         if let Some(year) = year {
             call = call.query("year", year.to_string());
         }
-        call.get_json::<Vec<kroma_domain::metadata::MatchCandidate>>(
+        call.get_json::<Vec<kroma_module_wire::MatchCandidate>>(
             &self.host_url("metadata-search"),
         )
         .unwrap_or_default()
@@ -334,11 +334,11 @@ impl HostCtx for RemoteHost {
         &self,
         tmdb_id: u64,
         season: u32,
-    ) -> Vec<kroma_domain::metadata::EpisodeInfo> {
+    ) -> Vec<kroma_module_wire::EpisodeInfo> {
         self.callback()
             .query("tmdbId", tmdb_id.to_string())
             .query("season", season.to_string())
-            .get_json::<Vec<kroma_domain::metadata::EpisodeInfo>>(&self.host_url("metadata-episodes"))
+            .get_json::<Vec<kroma_module_wire::EpisodeInfo>>(&self.host_url("metadata-episodes"))
             .unwrap_or_default()
     }
 
@@ -541,7 +541,7 @@ fn apply_module_migrations(
         let migrations = module.migrations();
         if !migrations.is_empty() {
             let conn = host.store().get()?;
-            kroma_db::apply_migrations(&conn, migrations)?;
+            kroma_sqlite::apply_migrations(&conn, migrations)?;
         }
     }
     Ok(())

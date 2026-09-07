@@ -1,4 +1,4 @@
-use super::{allows, init_scoped, Grant};
+use kroma_sqlite::{init_scoped, Grant};
 
 fn core(tag: &str) -> (crate::testing::TempPool, std::path::PathBuf) {
     let pool = crate::testing::temp_pool(tag);
@@ -220,36 +220,4 @@ fn two_modules_read_the_same_database_through_different_scopes() {
         .unwrap()
         .prepare("SELECT title FROM requests")
         .is_err());
-}
-
-#[test]
-fn a_grant_round_trips_through_the_manifest_shape() {
-    let g: Grant =
-        serde_json::from_str(r#"{ "read": ["requests", "users.username"], "write": ["wanted"] }"#)
-            .unwrap();
-    assert_eq!(g.read, ["requests", "users.username"]);
-    assert_eq!(g.write, ["wanted"]);
-    assert_eq!(
-        serde_json::from_value::<Grant>(serde_json::to_value(&g).unwrap()).unwrap(),
-        g
-    );
-    // An absent object is the empty grant, not an error.
-    assert_eq!(serde_json::from_str::<Grant>("{}").unwrap(), Grant::none());
-}
-
-#[test]
-fn table_and_column_entries_for_one_table_keep_the_wider_grant() {
-    let compiled = grant(&["users.username", "users"], &[]).compile();
-    assert!(allows(&compiled.read, "users", "email"));
-    // Order must not matter.
-    let compiled = grant(&["users", "users.username"], &[]).compile();
-    assert!(allows(&compiled.read, "users", "email"));
-}
-
-#[test]
-fn a_table_name_matches_whatever_case_the_sql_used() {
-    let compiled = grant(&["Requests.Title"], &[]).compile();
-    assert!(allows(&compiled.read, "requests", "title"));
-    assert!(allows(&compiled.read, "REQUESTS", "TITLE"));
-    assert!(!allows(&compiled.read, "requests", "status"));
 }

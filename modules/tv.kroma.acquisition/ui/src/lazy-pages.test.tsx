@@ -3,7 +3,7 @@
 import { render } from '@testing-library/react';
 import { createElement, Suspense } from 'react';
 import { describe, expect, it } from 'vitest';
-import { acquisitionModule } from './index';
+import acquisitionModule from './module';
 
 describe('acquisitionModule pages', () => {
   it('keeps /acquisition out of the admin bundle behind a lazy boundary', () => {

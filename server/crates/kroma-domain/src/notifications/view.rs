@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::push::PushCategory;
 
-use super::action::NotificationAction;
-use super::event::{NotificationCategory, NotificationEvent};
+use super::{NotificationAction, NotificationCategory, NotificationEvent};
 
 /// One notification as a client sees it: fully rendered in the reader's locale.
 #[derive(Debug, Clone, Serialize)]

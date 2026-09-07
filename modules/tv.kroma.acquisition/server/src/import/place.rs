@@ -143,8 +143,8 @@ mod tests {
         std::fs::write(path, body).unwrap();
     }
 
-    fn tmp(name: &str) -> kroma_testing::TempDir {
-        kroma_testing::temp_dir(&format!("import-{name}"))
+    fn tmp(name: &str) -> kroma_module_sdk::testing::TempDir {
+        kroma_module_sdk::testing::temp_dir(&format!("import-{name}"))
     }
 
     #[test]

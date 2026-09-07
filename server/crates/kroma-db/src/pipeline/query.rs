@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use rusqlite::params;
 
-use crate::pool::Pool;
+use crate::Pool;
 use kroma_domain::{PipelineTaskView, StageStat};
 
 mod elements;

@@ -13,7 +13,8 @@ use serde_json::{json, Value};
 
 use crate::state::SharedState;
 
-const BUILD_TARGET: &str = env!("KROMA_BUILD_TARGET");
+/// The Rust target this server was built for: what a sidecar bundle must match.
+pub const BUILD_TARGET: &str = env!("KROMA_BUILD_TARGET");
 
 const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
 

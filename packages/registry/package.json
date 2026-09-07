@@ -23,5 +23,11 @@
   },
   "devDependencies": {
     "typescript": "^7.0.2"
-  }
+  },
+  "files": [
+    "src",
+    "README.md",
+    "!src/**/*.test.ts"
+  ],
+  "homepage": "https://kroma.tv"
 }

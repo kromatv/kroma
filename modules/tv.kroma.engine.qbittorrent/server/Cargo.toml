@@ -32,8 +32,6 @@ serde_json = "1"
 tower = { version = "0.5", features = ["util"] }
 # The shared HostCtx double, for the routes' state.
 kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
-# The fake WebUI's cookie jar lives in a directory that removes itself.
-kroma-testing = { path = "../../../server/crates/kroma-testing" }
 
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =
 # "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO

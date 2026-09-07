@@ -8,7 +8,7 @@
 //! declares no storage neither links SQLite nor can reach a row.
 
 use axum::response::Response;
-use kroma_db::Pool;
+use kroma_sqlite::Pool;
 
 use crate::{blocking, HostCtx};
 
@@ -56,7 +56,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_hands_the_closure_its_own_pool() {
-        let pool = kroma_db::testing::temp_pool("host-query");
+        let pool = kroma_sqlite::testing::temp_pool("host-query");
         let n: Result<i64, Response> = query(&pool, |p| {
             let conn = p.get()?;
             let v: i64 = conn.query_row("SELECT 1 + 1", [], |r| r.get(0))?;

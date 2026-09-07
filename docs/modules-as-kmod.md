@@ -50,13 +50,20 @@ it, supervises it, and reverse-proxies its HTTP.**
 - **Core integration**: `main.rs` builds the supervisor and `spawn_enabled`s
   installed modules at boot; `api/mod.rs` mounts the callback API and a
   `/api/module/<id>/*` reverse proxy.
-- **`bun run modules:pack`** builds a module's native binary + stages
+- **`kroma build`** (`packages/cli`, shipped inside the public `kroma` package) builds a
+  module's native binary, bundles its frontend into `fe/`, and stages
   `module.json` + `module` (the binary) + `icon` + `fe/` into a zstd `.kmod`
-  (per-target via `KMOD_TARGET`; sidecar bundles are suffixed with the triple)
-  plus a `.sha256` sidecar.
-- **Registry + Store (shipped)**: `bun run modules registry` builds a catalog
+  (per-target via `--target`; sidecar bundles are suffixed with the triple)
+  plus a `.sha256` sidecar. `kroma dev` uploads a debug build to a running
+  server and again on every save.
+- **The frontend tier**: `fe/remoteEntry.js` is served at
+  `/modules/<id>/remoteEntry.js` and the web client imports it for every
+  enabled module at boot. The bundle takes React, the design system, the SDK
+  and the client from the host through one global (`SHARED_MODULES` in
+  `@kroma/module-sdk`), so one React and one theme live on the page.
+- **Registry + Store (shipped)**: `kroma registry` builds a catalog
   (schema 2: per-target `artifacts` with `sha256`, `contentHash`, `dependsOn`,
-  `engines`) for a self-hosted directory; `bun run modules release` builds the
+  `engines`) for a self-hosted directory; `kroma release` builds the
   published one (see "The release train" below). The server's default registry is
   `https://modules.kroma.tv/modules.json`, the registry worker
   (`apps/modules`) that serves the catalog with edge
@@ -76,17 +83,17 @@ it, supervises it, and reverse-proxies its HTTP.**
 Modules release **independently of the server**, each on its own tag.
 `.github/workflows/modules.yml` owns it, triggered by a push touching
 `modules/**` or anything a bundle is built from (the module SDK/runtime crates,
-`packages/module-tools`, the pinned toolchain).
+`packages/cli`, the pinned toolchain).
 
 ```
 modules.yml
   build (matrix: 3 targets)      pack every module -> dist/modules/*.kmod
     |
   publish
-    |- modules release           compare each bundle against the LIVE catalog
+    |- kroma release             compare each bundle against the LIVE catalog
     |     publish   -> cut <module-id>@<version>
     |     unchanged -> skip, carry the live entry forward at its own older tag
-    |     stale     -> FAIL the run
+    |     stale     -> name it, leave it unpublished
     |- publish-modules.sh        the per-module releases, then modules.json
                                  onto the rolling `modules` release
 ```
@@ -169,10 +176,10 @@ generic `ServerModule<S: HostCtx>` behind `RemoteHost`.
 3. ~~**Core → module direct calls**~~ shipped: `api/requests/acquisition.rs`
    forwards opaque JSON to whatever answers a point, and `boot/embedder.rs` /
    `boot/transcriber.rs` resolve theirs by name. No crate under `server/` names a module.
-4. ~~**Zero-module base build**~~ shipped: `roster.yaml` and the generated
-   aggregator are empty, modules live at `modules/<id>` as their own cargo
-   workspaces outside `server/`, and no module is a dependency of the binary any
-   more. `kroma-scene` became a library its consumers link; `kroma-whisper` and
+4. ~~**Zero-module base build**~~ shipped: the compile-time roster and its
+   generated aggregator are gone, modules live at `modules/<id>` as their own
+   cargo workspaces outside `server/`, and no module is a dependency of the
+   binary any more. `kroma-scene` became a library its consumers link; `kroma-whisper` and
    `kroma-vector` were only there so the `whisper-*` / `semantic-embeddings`
    feature flags could forward into them, which compiled candle into the binary
    for code no file under `src/` reached.

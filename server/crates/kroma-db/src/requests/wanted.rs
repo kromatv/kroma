@@ -4,7 +4,7 @@ use anyhow::Result;
 use rusqlite::{params, Connection, Row};
 
 use crate::chunked::IN_CHUNK;
-use crate::pool::Pool;
+use crate::Pool;
 
 /// One wanted unit: a movie, or one episode of a requested show season.
 #[derive(Debug, Clone)]

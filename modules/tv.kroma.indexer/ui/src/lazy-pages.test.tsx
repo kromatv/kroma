@@ -3,7 +3,7 @@
 import { render } from '@testing-library/react';
 import { createElement, Suspense } from 'react';
 import { describe, expect, it } from 'vitest';
-import { indexerModule } from './index';
+import indexerModule from './module';
 
 describe('indexerModule pages', () => {
   it('keeps /indexers out of the admin bundle behind a lazy boundary', () => {

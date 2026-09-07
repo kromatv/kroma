@@ -47,15 +47,11 @@ walkdir = "2"
 rustix = { version = "1", features = ["fs"] }
 
 [dev-dependencies]
-# The shared HostCtx doubles (`host::testing::StubHost`), reached through the
-# SDK's re-export. Enabling the feature here is what compiles them.
-kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
+# The shared HostCtx doubles, the throwaway pool and the self-deleting scratch
+# dir, all through the SDK's `testing` feature.
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
 # `oneshot`, to drive the sidecar routes without binding a port.
 tower = "0.5"
-# `db::testing`: the scoped pool the storage-grant test asserts against.
-kroma-db = { path = "../../../server/crates/kroma-db", features = ["testing"] }
-# The scratch directory that takes itself with it, panic or not.
-kroma-testing = { path = "../../../server/crates/kroma-testing" }
 
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =
 # "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO

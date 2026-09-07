@@ -142,7 +142,7 @@ mod tests {
     // sync, and an error there reads as a broken module rather than a new one.
     #[test]
     fn a_store_that_has_never_synced_is_empty_rather_than_broken() {
-        let dir = kroma_testing::temp_dir("defs-empty");
+        let dir = kroma_module_sdk::testing::temp_dir("defs-empty");
         let store = DefinitionStore::new(dir.path());
         assert!(!store.is_populated());
         assert!(store

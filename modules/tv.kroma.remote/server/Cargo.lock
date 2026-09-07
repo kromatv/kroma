@@ -372,13 +372,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
-name = "kroma-domain"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "kroma-http"
 version = "0.1.0"
 dependencies = [
@@ -401,8 +394,8 @@ dependencies = [
  "anyhow",
  "async-trait",
  "axum",
- "kroma-domain",
  "kroma-http",
+ "kroma-module-wire",
  "serde",
  "serde_json",
  "tokio",
@@ -429,9 +422,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
- "kroma-domain",
  "kroma-http",
  "kroma-module-host",
+ "kroma-module-wire",
  "serde",
  "serde_json",
  "tokio",
@@ -445,15 +438,22 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
- "kroma-domain",
  "kroma-http",
  "kroma-module-host",
  "kroma-module-macros",
  "kroma-module-manifest",
+ "kroma-module-wire",
  "kroma-primitives",
  "serde",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "kroma-module-wire"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

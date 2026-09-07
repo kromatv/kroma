@@ -5,6 +5,7 @@ import { type DomainFactory, domainKey } from '../core/client';
 // text, and this package keeps `vite/client` types out.
 interface GlobHost {
   glob(pattern: string, options: { eager: true; import: 'default' }): Record<string, DomainFactory>;
+  glob(pattern: string, options: { eager: true }): Record<string, unknown>;
 }
 
 const modules = (import.meta as unknown as GlobHost).glob('./*/client.ts', {
@@ -14,4 +15,12 @@ const modules = (import.meta as unknown as GlobHost).glob('./*/client.ts', {
 
 export const domains: Readonly<Record<string, DomainFactory>> = Object.fromEntries(
   Object.entries(modules).map(([path, factory]) => [domainKey(path), factory]),
+);
+
+const indexes = (import.meta as unknown as GlobHost).glob('./*/index.ts', { eager: true });
+
+/** Every domain's public module (`@kroma/client/<domain>`) by domain name, for
+ *  a host that hands them to code it loads at runtime. */
+export const domainModules: Readonly<Record<string, unknown>> = Object.fromEntries(
+  Object.entries(indexes).map(([path, mod]) => [domainKey(path), mod]),
 );

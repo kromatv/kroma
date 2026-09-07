@@ -154,7 +154,7 @@ mod tests {
 
     #[test]
     fn stored_bytes_come_back_by_hash_and_a_miss_is_not_an_error() {
-        let dir = kroma_testing::temp_dir("torrent-upload");
+        let dir = kroma_module_sdk::testing::temp_dir("torrent-upload");
 
         store(dir.path(), "abc123", b"payload").unwrap();
 

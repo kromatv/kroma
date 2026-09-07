@@ -102,7 +102,31 @@ independently of the server.
 A module runs as its own process next to the server, and the server checks its
 sha256 before unpacking it. The official catalog is
 [modules.kroma.tv](https://modules.kroma.tv). Operators can add their own.
-Authoring one starts at [modules/README.md](modules/README.md).
+
+### Write one
+
+Everything a module needs is one npm package,
+[`@kromatv/sdk`](https://www.npmjs.com/package/@kromatv/sdk): the SDK and the
+design system as types, the Rust crates a sidecar links, and the `kroma` CLI.
+Bun 1.4 and a Rust toolchain are the only requirements.
+
+```bash
+bunx @kromatv/sdk create            # a few questions, then a project ready to run
+cd tv.acme.notes
+bunx kroma login http://localhost:4040   # once; an account with settings.manage
+bunx kroma dev                      # build, install on your server, rebuild on every save
+bunx kroma check                    # manifest, types, clippy
+bunx kroma build                    # dist/modules/tv.acme.notes.kmod
+```
+
+`module.json` is the manifest, `ui/src/module.tsx` the page the KROMA app
+renders with its own design system, `server/` the sidecar the server spawns.
+The page's runtime is the app's, injected when the module loads, so the
+package holds types only; `kroma build` refuses an import the app does not
+provide. `kroma dev` uploads a debug build to whichever server you signed in
+to, this machine or the NAS, and again on every save. The authoring guide is
+[modules/README.md](modules/README.md); how the package is built and released
+is [docs/module-sdk-publishing.md](docs/module-sdk-publishing.md).
 
 ## Developing
 

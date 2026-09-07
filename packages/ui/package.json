@@ -14,6 +14,12 @@
   "sideEffects": false,
   "imports": {
     "#ui/*": {
+      "types": [
+        "./src/*.ts",
+        "./src/*.tsx",
+        "./src/*/index.ts",
+        "./src/*/index.tsx"
+      ],
       "node": "./src/*.ts",
       "default": "./src/*"
     }
@@ -81,5 +87,17 @@
     "expo-video": {
       "optional": true
     }
-  }
+  },
+  "files": [
+    "src",
+    "vite",
+    "bundler",
+    "README.md",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
+    "!src/**/*.story.*",
+    "!src/**/*.demo.tsx",
+    "!src/**/*.docs.mdx"
+  ],
+  "homepage": "https://kroma.tv"
 }

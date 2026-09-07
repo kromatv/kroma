@@ -313,7 +313,7 @@ mod tests {
     }
 
     async fn ledger_host() -> StubHost {
-        let resolve = kroma_module_host::test_serve::serve(fake_ledger(), ()).await;
+        let resolve = kroma_module_sdk::testing::serve(fake_ledger(), ()).await;
         let (base, token) = resolve().expect("the fake ledger is up");
         StubHost::new()
             .with_point(DOWNLOAD_GRAB, None, &base, &token)
@@ -324,7 +324,7 @@ mod tests {
     async fn a_grab_crosses_and_the_row_comes_back() {
         let host = ledger_host().await;
 
-        let row = kroma_module_host::test_serve::blocking(move || {
+        let row = kroma_module_sdk::testing::blocking(move || {
             grab(
                 &host,
                 &GrabSpec {
@@ -350,7 +350,7 @@ mod tests {
     async fn the_gate_and_the_file_listing_answer() {
         let host = ledger_host().await;
 
-        let (open, files) = kroma_module_host::test_serve::blocking(move || {
+        let (open, files) = kroma_module_sdk::testing::blocking(move || {
             (gate_open(&host), list_files(&host, "magnet:?xt=1"))
         })
         .await;
@@ -366,7 +366,7 @@ mod tests {
     async fn the_import_pass_reads_and_writes_the_ledger() {
         let host = ledger_host().await;
 
-        let outcome = kroma_module_host::test_serve::blocking(move || {
+        let outcome = kroma_module_sdk::testing::blocking(move || {
             let ready = completed(&host)?;
             mark_imported(&host, "done", &["/media/a.mkv".to_string()], 42)?;
             let flipped = set_status(&host, "done", "completed", Some("why"))?;
@@ -388,7 +388,7 @@ mod tests {
     async fn the_lifecycle_calls_never_propagate_a_failure() {
         let host = ledger_host().await;
 
-        kroma_module_host::test_serve::blocking(move || {
+        kroma_module_sdk::testing::blocking(move || {
             activate(&host, "d1");
             drop_data(&host, "d1");
             // Neither of these is delivered anywhere, and neither may panic.

@@ -14,7 +14,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./vite": "./vite.ts"
+    "./vite": "./vite.ts",
+    "./shared": "./src/shared.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -35,5 +36,14 @@
     "@types/react": "^19.2.18",
     "typescript": "^7.0.2",
     "vite": "^8.2.1"
-  }
+  },
+  "files": [
+    "src",
+    "vite.ts",
+    "rust",
+    "README.md",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx"
+  ],
+  "homepage": "https://kroma.tv"
 }

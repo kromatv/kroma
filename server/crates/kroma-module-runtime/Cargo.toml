@@ -8,9 +8,9 @@ license.workspace = true
 
 [features]
 # The `storage` capability: the module's own database plus the scoped core one.
-# Off by default -- a module that declares no storage must not link `kroma-db`,
-# and it is `kroma-db` that drags the bundled SQLite amalgamation into a sidecar.
-storage = ["dep:kroma-db", "kroma-module-host/storage"]
+# Off by default -- a module that declares no storage must not link SQLite, whose
+# bundled amalgamation is most of a sidecar's size.
+storage = ["dep:kroma-sqlite", "kroma-module-host/storage"]
 
 [dependencies]
 # The host contract the module code is written against (HostCtx / ServerModule /
@@ -20,9 +20,9 @@ kroma-module-host = { workspace = true }
 # Only under `storage`: the module's own database, and the core one behind the
 # grant its manifest declared. WAL is multi-process, so both are opened here
 # rather than proxied.
-kroma-db = { workspace = true, optional = true }
+kroma-sqlite = { workspace = true, optional = true }
 # User / Permission for local require() checks.
-kroma-domain = { workspace = true }
+kroma-module-wire = { workspace = true }
 kroma-http = { workspace = true }
 axum = { workspace = true }
 tokio = { workspace = true }

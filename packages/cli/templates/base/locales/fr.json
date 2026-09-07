@@ -1,0 +1,7 @@
+{
+  "nav.__SLUG__": "__NAME__",
+  "page.title": "__NAME__",
+  "page.hello": "Bonjour de __NAME__. Le module a répondu : {answer}",
+  "page.loading": "Chargement",
+  "page.failed": "Le module n'a pas répondu"
+}
