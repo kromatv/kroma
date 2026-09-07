@@ -8,9 +8,11 @@ use std::sync::{Arc, Mutex};
 
 use axum::http::StatusCode;
 use axum::response::Response;
-use kroma_db::Pool;
-use kroma_domain::metadata::{EpisodeInfo, MatchCandidate};
-use kroma_domain::{Audience, NotificationSpec, Permission, User};
+use kroma_sqlite::testing::TempPool;
+use kroma_sqlite::Pool;
+use kroma_module_wire::{
+    Audience, EpisodeInfo, MatchCandidate, NotificationSpec, Permission, User,
+};
 use kroma_testing::TempDir;
 
 use super::log::{records_into_log, Log, Published};
@@ -69,16 +71,18 @@ impl StubHost {
         Self::in_dir(kroma_testing::temp_dir("stub-host"))
     }
 
-    /// A host over a real, empty, migrated SQLite database inside this host's
-    /// own scratch directory, plus the module-private store beside it. `tag` only
-    /// shapes that directory's name, to make a stray one identifiable.
+    /// A host over a real, empty SQLite database inside this host's own scratch
+    /// directory, plus the module-private store beside it. Neither carries a
+    /// schema: a test that needs the core tables hands a migrated pool to
+    /// [`with_pool`](Self::with_pool). `tag` only shapes that directory's name,
+    /// to make a stray one identifiable.
     pub fn with_db(tag: &str) -> Self {
         let data_dir = kroma_testing::temp_dir(tag);
-        let db = kroma_db::init(&data_dir.path().join("kroma.db")).expect("init test db");
+        let db = kroma_sqlite::open(&data_dir.path().join("kroma.db")).expect("open test db");
         // `open`, like the real runtime: a module's own file carries no core
         // schema, only what its own migrations put there.
         let store =
-            kroma_db::open(&data_dir.path().join("module.sqlite")).expect("open test store");
+            kroma_sqlite::open(&data_dir.path().join("module.sqlite")).expect("open test store");
         Self {
             db: Some(db),
             store: Some(store),
@@ -106,29 +110,28 @@ impl StubHost {
         }
     }
 
-    /// A host over a pool the caller already built. For a module whose tests
-    /// need their OWN migrations applied on top of the core schema, which
-    /// [`with_db`](Self::with_db) does not know about.
-    pub fn with_pool(pool: Pool) -> Self {
-        let store = kroma_db::open(
-            &kroma_testing::temp_dir("stub-store")
-                .path()
-                .join("module.sqlite"),
-        )
-        .expect("open test store");
+    /// A host over a core database the caller built, with the module-private
+    /// store beside it. The core schema is not this crate's to know: a test that
+    /// needs it hands over `kroma_db::testing::temp_pool`, whose directory this
+    /// host then keeps for as long as it lives.
+    pub fn with_core(core: TempPool) -> Self {
+        let (db, data_dir) = core.into_parts();
+        let store =
+            kroma_sqlite::open(&data_dir.path().join("module.sqlite")).expect("open test store");
         Self {
-            db: Some(pool),
+            db: Some(db),
             store: Some(store),
-            ..Self::new()
+            ..Self::in_dir(data_dir)
         }
     }
 
-    /// A host whose MODULE store is `pool`, with a fresh core database beside it.
-    /// For a module testing its own tables: those live in its own file, so a test
-    /// that seeded them has to hand them over as the store and not as the core.
+    /// A host whose MODULE store is `pool`, with a fresh, empty core database
+    /// beside it. For a module testing its own tables: those live in its own file,
+    /// so a test that seeded them has to hand them over as the store and not as
+    /// the core.
     pub fn with_store(pool: Pool) -> Self {
         let data_dir = kroma_testing::temp_dir("stub-core");
-        let db = kroma_db::init(&data_dir.path().join("kroma.db")).expect("init test db");
+        let db = kroma_sqlite::open(&data_dir.path().join("kroma.db")).expect("open test db");
         Self {
             db: Some(db),
             store: Some(pool),
@@ -136,9 +139,8 @@ impl StubHost {
         }
     }
 
-    /// Answer `session_user(token)` with `user`. Without a seeded token the host
-    /// falls back to a real lookup against its core pool, so a test that created
-    /// a genuine session still authenticates through the seam.
+    /// Answer `session_user(token)` with `user`. A token nobody seeded is an
+    /// unknown session, the way the real host answers one.
     pub fn with_session(self, token: &str, user: User) -> Self {
         self.sessions
             .lock()
@@ -282,12 +284,7 @@ impl HostCtx for StubHost {
         self.data_dir.path()
     }
     fn session_user(&self, token: &str) -> Option<User> {
-        if let Some(u) = self.sessions.lock().unwrap().get(token) {
-            return Some(u.clone());
-        }
-        kroma_db::session_user(self.db.as_ref()?, token)
-            .ok()
-            .flatten()
+        self.sessions.lock().unwrap().get(token).cloned()
     }
     fn require(&self, _user: &User, _perm: Permission) -> Result<(), Response> {
         Ok(())
@@ -511,24 +508,19 @@ mod tests {
     }
 
     #[test]
-    fn with_db_hands_out_a_migrated_pool_and_never_the_same_file_twice() {
+    fn with_db_hands_out_a_writable_pool_and_never_the_same_file_twice() {
         let a = StubHost::with_db("selftest");
         let b = StubHost::with_db("selftest");
-        // Migrated: a core table is queryable.
-        a.db()
-            .get()
-            .unwrap()
-            .execute("SELECT 1 FROM users LIMIT 0", [])
-            .unwrap();
+        let ddl = "CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)";
+        for host in [&a, &b] {
+            host.db().get().unwrap().execute(ddl, []).unwrap();
+        }
         // Separate: a row in one is not in the other. Two tests running in
         // parallel threads of one process must not share a database.
         a.db()
             .get()
             .unwrap()
-            .execute(
-                "INSERT INTO settings (key, value, updated_at) VALUES ('k', 'v', 'now')",
-                [],
-            )
+            .execute("INSERT INTO settings (key, value) VALUES ('k', 'v')", [])
             .unwrap();
         let n: i64 = b
             .db()

@@ -8,7 +8,8 @@ const WORKSPACE = {
   package: { edition: '2021', 'rust-version': '1.88', license: 'MIT' },
   dependencies: {
     'kroma-module-manifest': { path: 'crates/kroma-module-manifest' },
-    'kroma-db': { path: 'crates/kroma-db' },
+    'kroma-sqlite': { path: 'crates/kroma-sqlite' },
+    'kroma-testing': { path: 'crates/kroma-testing' },
     'kroma-engine': { path: 'crates/kroma-engine' },
     serde: { version: '1', features: ['derive'] },
   },
@@ -23,12 +24,15 @@ license.workspace = true
 
 [dependencies]
 kroma-module-manifest = { workspace = true }
-kroma-db = { workspace = true, optional = true }
+kroma-sqlite = { workspace = true, optional = true }
+kroma-testing = { workspace = true, optional = true }
+# The whole core, for the two modules that orchestrate it.
 kroma-engine = { workspace = true, optional = true }
 serde = { workspace = true }
 
 [features]
-storage = ["dep:kroma-db", "kroma-module-host/storage"]
+storage = ["dep:kroma-sqlite", "kroma-module-host/storage"]
+testing = ["kroma-sqlite/testing", "kroma-engine?/testing", "dep:kroma-testing"]
 engine = ["dep:kroma-engine", "storage"]
 
 [dev-dependencies]
@@ -70,8 +74,8 @@ serde = { version = "1", features = ["derive"] }
 }
 
 const SERVER = seedServer(join(ROOT, 'server'), CLOSURE);
-mkdirSync(join(SERVER, 'crates', 'kroma-db', 'tests'));
-writeFileSync(join(SERVER, 'crates', 'kroma-db', 'tests', 'round_trip.rs'), '');
+mkdirSync(join(SERVER, 'crates', 'kroma-sqlite', 'tests'));
+writeFileSync(join(SERVER, 'crates', 'kroma-sqlite', 'tests', 'round_trip.rs'), '');
 
 afterAll(() => rmSync(ROOT, { recursive: true, force: true }));
 
@@ -105,11 +109,11 @@ describe('concreteDep', () => {
   it('turns a closure crate into a sibling path carrying no version', () => {
     expect(
       concreteDep(
-        'kroma-db',
+        'kroma-sqlite',
         { workspace: true, optional: true },
-        { path: 'crates/kroma-db', version: '0.1.0' },
+        { path: 'crates/kroma-sqlite', version: '0.1.0' },
       ),
-    ).toBe('{ path = "../kroma-db", optional = true }');
+    ).toBe('{ path = "../kroma-sqlite", optional = true }');
   });
 });
 
@@ -125,21 +129,28 @@ describe('standaloneCargoToml', () => {
 
   it('rewrites every workspace dependency as the spec it stood for', () => {
     expect(out).toContain('kroma-module-manifest = { path = "../kroma-module-manifest" }');
-    expect(out).toContain('kroma-db = { path = "../kroma-db", optional = true }');
+    expect(out).toContain('kroma-sqlite = { path = "../kroma-sqlite", optional = true }');
     expect(out).toContain('serde = { version = "1", features = ["derive"] }');
   });
 
   it('drops the dev-dependencies table whole', () => {
     expect(out).not.toContain('[dev-dependencies]');
-    expect(out).not.toContain('kroma-testing');
   });
 
   it('drops a crate outside the closure with the feature naming it, and allows the cfg', () => {
     expect(out).not.toContain('kroma-engine');
-    expect(out).toContain('storage = ["dep:kroma-db", "kroma-module-host/storage"]');
+    expect(out).toContain('storage = ["dep:kroma-sqlite", "kroma-module-host/storage"]');
     expect(out).toContain(
       '[lints.rust]\nunexpected_cfgs = { level = "allow", check-cfg = [\'cfg(feature, values("engine"))\'] }',
     );
+  });
+
+  it('keeps a feature that only turned a dropped crate on, minus that entry', () => {
+    expect(out).toContain('testing = ["kroma-sqlite/testing", "dep:kroma-testing"]');
+  });
+
+  it('takes the comment that introduced a dropped dependency with it', () => {
+    expect(out).not.toContain('The whole core, for the two modules');
   });
 
   it('refuses a dependency the workspace never declared', () => {
@@ -167,8 +178,8 @@ describe('vendorRust', () => {
   });
 
   it('takes the sources and not the test tree beside them', () => {
-    expect(existsSync(join(out, 'kroma-db', 'src', 'lib.rs'))).toBe(true);
-    expect(existsSync(join(out, 'kroma-db', 'tests'))).toBe(false);
+    expect(existsSync(join(out, 'kroma-sqlite', 'src', 'lib.rs'))).toBe(true);
+    expect(existsSync(join(out, 'kroma-sqlite', 'tests'))).toBe(false);
   });
 
   it('refuses a closure crate the repository has not got', () => {

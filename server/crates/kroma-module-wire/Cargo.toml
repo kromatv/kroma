@@ -1,0 +1,13 @@
+[package]
+name = "kroma-module-wire"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "The JSON a module and the host exchange: the session user, notifications and their audience, metadata answers. Serde only."
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

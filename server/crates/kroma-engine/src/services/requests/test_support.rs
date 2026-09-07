@@ -17,7 +17,7 @@ pub(super) fn host_without_tmdb() -> TestHost {
 pub(super) fn host_with_tmdb(key: Option<&str>) -> TestHost {
     // `en-US`, not the stub's bare `en`: a test asserts the exact `language=`
     // sent to TMDB.
-    let host = TestHost::with_db("requests")
+    let host = TestHost::with_core(crate::db::testing::temp_pool("requests"))
         .with_module_enabled(false)
         .with_metadata_language("en-US");
     match key {

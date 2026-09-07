@@ -12,8 +12,7 @@
 //! `sessions` is the target throughout: its `token` column is the one row of
 //! data that turns into someone else's account.
 
-use super::{init_scoped, Grant};
-use crate::Pool;
+use kroma_sqlite::{init_scoped, Grant, Pool};
 
 mod schema;
 mod statements;

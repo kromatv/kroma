@@ -114,16 +114,23 @@ server/
     kroma-domain      entities + pure rules: serde ONLY, no axum/rusqlite/reqwest
     kroma-primitives  timestamps · short hashes · random tokens
     kroma-config      env-parsed Config
-    kroma-db          all SQL, one shared Pool (WAL)
+    kroma-sqlite      the WAL pool, the storage grant, a module's migrations
+    kroma-db          all SQL on top of it, one shared Pool
     kroma-engine      infra + services + state + model, the business logic
     kroma-http kroma-i18n kroma-push
     kroma-module-*    the module host: kernel, manifest, macros, sdk, runtime,
-                      host, supervisor. It carries the
+                      host, supervisor, wire. It carries the
                       MECHANISM and never the meaning: nothing here names a
                       module's domain (see docs/module-plugin-model.md)
 modules/<id>/       NOT in this workspace, see below
 modules/lib/        shared Rust libraries, not modules: naming (and scene, in its own dir)
 ```
+
+A sidecar links a strict subset: `kroma-module-{sdk,runtime,host,manifest,
+macros,wire}`, `kroma-sqlite`, `kroma-http`, `kroma-primitives`,
+`kroma-testing`. It never links `kroma-db` or `kroma-domain`, which is why the
+JSON both sides exchange lives in `kroma-module-wire` and the pool in
+`kroma-sqlite`, each re-exported by the crate that used to own it.
 
 `api/` translates HTTP↔services and holds no business logic; `main.rs` and the
 engine's `state.rs` are the only composition points. Integration tests live beside

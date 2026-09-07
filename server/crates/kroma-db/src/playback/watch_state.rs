@@ -4,7 +4,7 @@ use anyhow::Result;
 use rusqlite::params;
 
 use crate::now_or_blank;
-use crate::pool::Pool;
+use crate::Pool;
 
 /// Mark an item as watched for a user, and drop any resume position so it leaves
 /// "Continue watching". Idempotent (re-marking just refreshes `watched_at`).

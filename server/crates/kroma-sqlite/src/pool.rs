@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::{Context, Result};
 use rusqlite::Connection;
 
-use super::PRAGMAS;
+use crate::PRAGMAS;
 
 /// A small, cheap-to-clone WAL connection pool. Cloning shares the same idle
 /// connection set (it's an `Arc` inside). Read queries on separate

@@ -591,7 +591,7 @@ search:
     #[test]
     fn a_grab_whose_database_is_gone_reports_the_failure_instead_of_no_such_indexer() {
         let dir = kroma_module_sdk::testing::temp_dir("indexer-lib-nopool");
-        let pool = kroma_module_sdk::db::init(&dir.path().join("kroma.db")).unwrap();
+        let pool = kroma_module_sdk::db::open(&dir.path().join("module.sqlite")).unwrap();
         let held = pool.get().unwrap();
         std::fs::remove_dir_all(dir.path()).unwrap();
         let host = DbHost::with_store(pool.clone());

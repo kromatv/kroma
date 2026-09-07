@@ -4,7 +4,7 @@ use anyhow::Result;
 use rusqlite::{params, TransactionBehavior};
 
 use super::{Subject, RETRY_BASE_MS};
-use crate::pool::Pool;
+use crate::Pool;
 
 /// Claim up to `limit` pending tasks for a stage: pick the highest-priority /
 /// oldest, flip them to `running`, and return `(subject_id, input_sig)` for the

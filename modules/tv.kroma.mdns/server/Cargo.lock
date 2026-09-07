@@ -476,6 +476,7 @@ dependencies = [
  "anyhow",
  "kroma-domain",
  "kroma-primitives",
+ "kroma-sqlite",
  "kroma-testing",
  "rusqlite",
  "serde",
@@ -488,6 +489,7 @@ dependencies = [
 name = "kroma-domain"
 version = "0.1.0"
 dependencies = [
+ "kroma-module-wire",
  "serde",
 ]
 
@@ -527,9 +529,9 @@ dependencies = [
  "anyhow",
  "async-trait",
  "axum",
- "kroma-db",
- "kroma-domain",
  "kroma-http",
+ "kroma-module-wire",
+ "kroma-sqlite",
  "kroma-testing",
  "serde",
  "serde_json",
@@ -557,9 +559,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
- "kroma-domain",
  "kroma-http",
  "kroma-module-host",
+ "kroma-module-wire",
  "serde",
  "serde_json",
  "tokio",
@@ -574,16 +576,24 @@ dependencies = [
  "anyhow",
  "axum",
  "kroma-db",
- "kroma-domain",
  "kroma-http",
  "kroma-module-host",
  "kroma-module-macros",
  "kroma-module-manifest",
+ "kroma-module-wire",
  "kroma-primitives",
+ "kroma-sqlite",
  "kroma-testing",
  "serde",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "kroma-module-wire"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -593,6 +603,18 @@ dependencies = [
  "hex",
  "sha2",
  "time",
+]
+
+[[package]]
+name = "kroma-sqlite"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "kroma-testing",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tracing",
 ]
 
 [[package]]

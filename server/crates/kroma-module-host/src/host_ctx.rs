@@ -8,8 +8,9 @@ use std::sync::Arc;
 use axum::http::StatusCode;
 use axum::response::Response;
 
-use kroma_domain::metadata::{EpisodeInfo, MatchCandidate};
-use kroma_domain::{Audience, NotificationSpec, Permission, User};
+use kroma_module_wire::{
+    Audience, EpisodeInfo, MatchCandidate, NotificationSpec, Permission, User,
+};
 
 use super::{Contribution, Event, LibraryFolders};
 
@@ -180,7 +181,7 @@ mod tests {
 
     use super::*;
 
-    use kroma_domain::NotificationEvent;
+    use kroma_module_wire::NotificationEvent;
 
     use crate::testing;
 

@@ -3,7 +3,7 @@
 use anyhow::Result;
 use rusqlite::params;
 
-use crate::pool::Pool;
+use crate::Pool;
 
 /// Per-user progress through each show, as a percent 0–100 (only shows with >0).
 /// `(watched episodes + the in-progress episode's fraction) / total episodes`

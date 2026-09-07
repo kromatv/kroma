@@ -6,7 +6,7 @@ use anyhow::Result;
 use rusqlite::{params, TransactionBehavior};
 
 use super::{Subject, MAX_ATTEMPTS, UNREADABLE_SIG};
-use crate::pool::Pool;
+use crate::Pool;
 
 /// Reconcile a stage's ledger against the freshly-enumerated `subjects` (one
 /// transaction). Insert missing subjects as `pending`; re-`pending` any whose

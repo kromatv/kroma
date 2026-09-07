@@ -95,7 +95,7 @@ mod tests {
     type DbHost = kroma_module_sdk::host::testing::StubHost;
 
     fn db_host() -> DbHost {
-        DbHost::with_db("acqserve")
+        DbHost::with_core(kroma_module_sdk::db::testing::temp_pool("acqserve"))
     }
 
     async fn post(path: &str, body: serde_json::Value) -> (StatusCode, serde_json::Value) {

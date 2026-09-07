@@ -6,7 +6,7 @@ use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::Response;
 
-use kroma_domain::User;
+use kroma_module_wire::User;
 
 use super::{json_error, HostCtx};
 

@@ -10,9 +10,9 @@ export const CLOSURE = [
   'kroma-module-host',
   'kroma-module-manifest',
   'kroma-module-macros',
-  'kroma-domain',
+  'kroma-module-wire',
+  'kroma-sqlite',
   'kroma-http',
-  'kroma-db',
   'kroma-primitives',
   'kroma-testing',
 ] as const;
@@ -112,60 +112,92 @@ function lintsForDroppedFeatures(features: readonly string[]): string[] {
 
 interface Rewrite {
   out: string[];
+  comments: string[];
   dropped: string[];
   droppedFeatures: string[];
+}
+
+function keep(state: Rewrite, line: string): void {
+  state.out.push(...state.comments, line);
+  state.comments.length = 0;
 }
 
 function takePackageField(line: string, ws: Ws, state: Rewrite): boolean {
   const inherited = inheritedPackageLine(line, ws);
   if (!inherited) return false;
-  state.out.push(inherited);
+  keep(state, inherited);
   return true;
 }
 
 function takeDependency(line: string, ws: Ws, state: Rewrite): boolean {
   const dep = workspaceDependency(line, ws);
   if (!dep) return false;
-  if (dep.line) state.out.push(dep.line);
-  else state.dropped.push(dep.name);
+  if (dep.line) keep(state, dep.line);
+  else {
+    state.dropped.push(dep.name);
+    state.comments.length = 0;
+  }
   return true;
 }
 
-function takeDroppedFeature(line: string, state: Rewrite): boolean {
-  if (!state.dropped.some((name) => line.includes(`dep:${name}`))) return false;
-  const feature = /^([A-Za-z0-9_-]+)\s*=/.exec(line)?.[1];
-  if (feature) state.droppedFeatures.push(feature);
+/** A feature entry that turns a dropped crate on (`"dep:x"`), or turns one of
+ *  its features on (`"x/f"`, `"x?/f"`). The first takes the whole feature with
+ *  it; the second is one entry among others and only that entry goes. */
+function takeFeature(line: string, state: Rewrite): boolean {
+  const named = state.dropped.filter(
+    (name) =>
+      line.includes(`dep:${name}`) || line.includes(`"${name}/`) || line.includes(`"${name}?/`),
+  );
+  if (named.length === 0) return false;
+  if (named.some((name) => line.includes(`dep:${name}`))) {
+    const feature = /^([A-Za-z0-9_-]+)\s*=/.exec(line)?.[1];
+    if (feature) state.droppedFeatures.push(feature);
+    state.comments.length = 0;
+    return true;
+  }
+  const entry = /"[^"]*"\s*,?\s*/g;
+  const kept = line.replaceAll(entry, (match) =>
+    named.some((name) => match.includes(`"${name}/`) || match.includes(`"${name}?/`)) ? '' : match,
+  );
+  keep(state, kept.replace(/,\s*\]/, ']'));
   return true;
 }
 
 function rewriteLine(line: string, table: string, ws: Ws, state: Rewrite): void {
   if (table === 'dev-dependencies') return;
+  if (line.trimStart().startsWith('#')) {
+    state.comments.push(line);
+    return;
+  }
   if (table === 'package' && takePackageField(line, ws, state)) return;
   if (table.endsWith('dependencies') && takeDependency(line, ws, state)) return;
-  if (table === 'features' && takeDroppedFeature(line, state)) return;
-  state.out.push(line);
+  if (table === 'features' && takeFeature(line, state)) return;
+  keep(state, line);
 }
 
 /**
  * A member crate's `Cargo.toml` rewritten to stand alone: `*.workspace = true`
  * package fields inlined, `{ workspace = true }` dependencies replaced by the
- * concrete spec, and the `[dev-dependencies]` table dropped (the vendored
- * crates ship to be linked, not tested).
+ * concrete spec, whatever names a crate outside the closure dropped along with
+ * the comment that introduced it, and the `[dev-dependencies]` table gone (the
+ * vendored crates ship to be linked, not tested).
  */
 export function standaloneCargoToml(text: string, ws: Ws): string {
-  const state: Rewrite = { out: [], dropped: [], droppedFeatures: [] };
+  const state: Rewrite = { out: [], comments: [], dropped: [], droppedFeatures: [] };
   let table = '';
   for (const line of text.split('\n')) {
     const header = /^\[([^\]]+)\]\s*$/.exec(line);
     if (header) {
       table = header[1] ?? '';
-      if (table !== 'dev-dependencies') state.out.push(line);
+      if (table !== 'dev-dependencies') keep(state, line);
       continue;
     }
     rewriteLine(line, table, ws, state);
   }
+  state.out.push(...state.comments);
+  while (state.out.at(-1) === '') state.out.pop();
   state.out.push(...lintsForDroppedFeatures(state.droppedFeatures));
-  return state.out.join('\n');
+  return `${state.out.join('\n')}\n`;
 }
 
 /** A repository crate that is not vendored: a path-only workspace dependency

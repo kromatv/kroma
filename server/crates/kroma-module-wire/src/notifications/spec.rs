@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::push::PushCategory;
+use crate::PushCategory;
 
 use super::action::ActionSpec;
 use super::event::{NotificationCategory, NotificationEvent};
@@ -121,7 +121,7 @@ impl NotificationSpec {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::notifications::{ActionKind, ActionStyle};
+    use crate::{ActionKind, ActionStyle};
 
     #[test]
     fn param_marks_text_and_param_key_marks_a_key() {
