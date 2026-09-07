@@ -405,7 +405,7 @@ viewport started, and that edge lives inside the zoom transform (a 1pt hairline 
   ordering (functional group first, then name).
 - `play-types.ts` is what a `play` is handed, addressed by accessible name so the
   same script runs on a television and in a browser.
-- `controls.tsx`, `code.tsx`, `docs.tsx`, `props.ts`, `prop-table.tsx` and `demos.ts`
+- `controls.tsx`, `source.tsx`, `docs.tsx`, `props.ts`, `prop-table.tsx` and `demos.ts`
   are the parts above.
 
 The story SDK ships here rather than separately because a story format that

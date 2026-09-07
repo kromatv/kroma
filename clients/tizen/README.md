@@ -5,24 +5,27 @@
 Thin shell over `@kroma/tv`, the shared 10-foot experience. Tizen TVs decode
 HEVC/H.265 (incl. 10-bit / HDR) in hardware, so playback is direct-play.
 
-## Two bundles, one package (2021-2023 sets)
+## Three bundles, one package (2017-2023 sets)
 
-Samsung freezes Chromium per Tizen major (4.0 = 56, 5.0 = 63, 5.5 = 69, 6.0 = 76,
-6.5 = 85, 7.0 = 94, 8.0 = 108, 9.0 = 120), and Tailwind v4's cascade layers need
-Chrome 99, so only 2024 models can run the modern bundle. `config.xml` offers
-the app from **Tizen 6.0 (2021)**, so the build emits **two bundles** and
+Samsung freezes Chromium per Tizen major (3.0 = 47, 4.0 = 56, 5.0 = 63, 5.5 = 69,
+6.0 = 76, 6.5 = 85, 7.0 = 94, 8.0 = 108, 9.0 = 120), and Tailwind v4's cascade
+layers need Chrome 99, so only 2024 models can run the modern bundle. `config.xml`
+offers the app from **Tizen 3.0 (2017)**, so the build emits **three bundles** and
 `dist/index.html` picks one at runtime (an ES5 loader gated on
-`CSSLayerBlockRule`):
+`CSSLayerBlockRule`, then on custom-property support):
 
 - **modern** (`dist/assets/`): ESM, ES2020, Lightning CSS @ Chrome 99, untouched.
 - **legacy** (`dist/legacy/`): one ES2015 IIFE + a flattened stylesheet, verified
-  down to Chromium 53. `../tv-build/check-legacy.ts` fails the build if anything
-  unparseable for that engine sneaks back.
+  down to Chromium 53.
+- **deep** (`dist/deep/`): the same shape again for Chromium 47, which has no
+  custom properties, so the kit's palette resolves to literals at build time.
 
-Without it a 2021 set cannot even *parse* the bundle (`?.` and `??` are Chrome
-80) and 2022-2023 sets drop every `@layer` block, so the app installs and shows
-a black or unstyled screen. This is the same machinery webOS uses; it is driven
-by `tv.target.ts` through the shared factory in `packages/bundler/src/shell.ts`.
+`../tv-build/check-legacy.ts` fails the build if anything unparseable for those
+engines sneaks back. Without the split a 2021 set cannot even *parse* the bundle
+(`?.` and `??` are Chrome 80) and 2022-2023 sets drop every `@layer` block, so
+the app installs and shows a black or unstyled screen. This is the same machinery
+webOS uses, driven by `tv.target.ts` through the shared factory in
+`packages/bundler/src/shell.ts`.
 
 Authoring rules that keep the legacy tier working: flex only (no CSS grid), no
 `/opacity` colour modifiers, spacing via `gap-*` (shimmed) or margins.
@@ -105,8 +108,9 @@ Notes / caveats:
   Mirror logs to a LAN HTTP collector (Samsung's own sample does this) the
   service can POST via `require('http')`, the app via `fetch` (its `console.*` is
   stripped from the production build).
-- `devel.api.version` in `config.xml` targets the Samsung Product API level; bump
-  it toward the device's version if a newer `webapis` is ever needed.
+- `devel.api.version` in `config.xml` targets the Samsung Product API level and
+  is capped by `required_version`: a set refuses a level it does not implement,
+  so it may never exceed the floor.
 
 ## Performance built to feel like Netflix / Disney+
 
@@ -123,8 +127,8 @@ TVs have weak CPUs/GPUs and slow storage, so the shell is tuned for that:
 - **GPU-only focus animation** focus uses `transform`/`box-shadow` (composited),
   never layout-triggering properties, for a smooth 60 fps highlight.
 - **Lean bundle** production build is a single JS + single CSS file (fewer TV
-  round-trips), `console`/`debugger` stripped, ES2018 target for the Tizen webview.
-  Ships ~**52 kB gzip** JS.
+  round-trips), `console`/`debugger` stripped. ES2020 for the modern bundle,
+  ES2015 for legacy and deep. Ships ~**52 kB gzip** JS.
 - **Early connection warm-up** a `<link rel="preconnect">` to the media server
   is injected as soon as the client is created.
 
@@ -155,7 +159,7 @@ what Samsung's testers need to be able to test a client for a server
 they cannot reach.
 
 Notes:
-- `config.xml` targets Tizen 6.0+ (2021+ TVs), package id `KromaTV001`.
+- `config.xml` targets Tizen 3.0+ (2017+ TVs), package id `KromaTV001`.
 - The package version is stamped from the product version at build time
   ([`stamp-version.ts`](../tv-build/stamp-version.ts)); bump `server/Cargo.toml`,
   not `config.xml`.

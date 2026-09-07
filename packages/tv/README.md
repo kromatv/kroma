@@ -13,8 +13,8 @@
 ## Mount it
 
 ```ts
-import { mountTv } from '@kroma/tv';
-import 'virtual:kroma-tv.css';   // the kit's stylesheet, served by tvStylesheet()
+import { mountTv } from '@kroma/tv/mount';
+import 'virtual:kroma-tv.css';   // the kit's stylesheet, served by kromaUI()
 
 mountTv();          // renders the whole TV app into #root
 ```
@@ -27,21 +27,21 @@ import { TvApp } from '@kroma/tv';
 <TvApp />
 ```
 
-`react` / `react-dom` are peer dependencies (≥ 18). Built on
+`react` / `react-dom` are peer dependencies (≥ 19.2). Built on
 [`@kroma/core`](../core/README.md) (API, capabilities, remote map) and
 [`@kroma/ui`](../ui/README.md) (components, tokens).
 
 ## What it provides
 
-- **Spatial focus navigation** (`useFocusNav`). D-pad / arrow-key driven focus
-  with auto-scroll-into-view and an always-visible amber focus ring, the way a
-  remote expects.
+- **Spatial focus navigation**, on `@kroma/ui`'s `useFocusNav`. D-pad and
+  arrow-key driven focus with auto-scroll-into-view and an always-visible amber
+  focus ring, the way a remote expects.
 - **Full screen flow.** Connection / auto-discovery, profiles & Quick Connect
   (QR pairing), home (hero + rails), movie & show detail (cast, seasons), player
   with audio/subtitle selection and resume.
 - **Direct-play player.** Streams the original file and decodes HEVC/HDR in TV
   hardware; falls back to the audio-only HLS path when needed (all via `@kroma/core`).
-- **Smart Hub preview** (`preview.ts`) builds the "new movies" carousel data
+- **Smart Hub preview** (`shared/preview/`) builds the "new movies" carousel data
   Samsung shows on the home screen even while the app is closed (see the
   [Tizen README](../../clients/tizen/README.md#smart-hub-preview-new-movies-carousel)).
 - **Tuned for TV hardware:** lazy poster decode, `content-visibility`, memoized
@@ -51,9 +51,8 @@ import { TvApp } from '@kroma/tv';
 
 | Export | What |
 | ------ | ---- |
-| `mountTv(props?)` | Render the TV app into `#root`. |
-| `TvApp` / `TvAppProps` | The root React component. |
-| `useFocusNav` | Spatial remote-navigation hook. |
+| `mountTv(props?)` | Render the TV app into `#root`. From `@kroma/tv/mount`. |
+| `TvApp` / `TvAppProps` | The root React component, from the package root. |
 
 ## Develop
 

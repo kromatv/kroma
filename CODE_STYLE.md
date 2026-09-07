@@ -1,13 +1,11 @@
 # Code style
 
-How code is written here, for humans and for agents alike. [`CONVENTIONS.md`](CONVENTIONS.md)
-covers house rules that span files; this document covers the shape of the code
-itself, and mostly it covers **comments**, because that is where this codebase
-drifts.
+How code is written here, for humans and agents alike. [`CONVENTIONS.md`](CONVENTIONS.md)
+covers house rules that span files. This one covers the shape of the code itself,
+and mostly it covers **comments**, because that is where this codebase drifts.
 
-The short version: **well-written code does not need to be narrated.** A comment
-is a failure to express something in the language, tolerated only when the
-language genuinely cannot express it.
+**Well-written code does not need to be narrated.** A comment is a failure to
+express something in the language, tolerated only where the language cannot.
 
 ## The default is no comment
 
@@ -22,8 +20,8 @@ Before writing a comment, try to delete the need for it:
 | Explaining an invariant                  | Encode it in the type, or assert it            |
 | Explaining what a test checks            | Name the test after what it checks             |
 
-If, after that, the code still cannot say it, say it in a comment. That comment
-is now worth reading, because it is rare.
+If the code still cannot say it, write the comment. It is worth reading because
+it is rare.
 
 ## What a comment is for
 
@@ -58,17 +56,17 @@ const end = Math.min(requestedEnd, size - 1);
   signature. One or two sentences. Say what it guarantees and what it costs the
   caller, not how it is implemented.
 - **Private functions get no doc comment.** They are read together with their
-  only caller. If a private function needs explaining, its name is wrong or it is
-  doing two things.
+  only caller. If one needs explaining, its name is wrong or it is doing two
+  things.
 - **Properties, fields, struct members, interface members, enum variants and
   constants get no doc comment.** Name them so they do not need one. A field
   called `expiresAtMs` does not need `/** Expiry timestamp in ms. */`.
 - **One exception: a kit component's props.** The props of a component exported
   from `@kroma/ui` ARE its public API: a caller outside the file reads nothing
-  else, and the workbench renders them as the component's help. So a prop gets
-  ONE line when the contract is not visible from its name and its type: a
-  default, a unit, a fallback chain, or how it interacts with another prop.
-  A prop whose name and type already say it gets nothing.
+  else, and the workbench renders them as the component's help. A prop gets ONE
+  line when its contract is not visible from its name and its type: a default, a
+  unit, a fallback chain, or how it interacts with another prop. A prop whose
+  name and type already say it gets nothing.
 
 ```ts
 // Good - states a fallback chain the type cannot
@@ -81,11 +79,11 @@ size?: ControlSize;
 disabled?: boolean;
 ```
 
-  This exception is for the kit only. Props on an app-level component, and every
-  other interface member anywhere, follow the rule above.
+  The exception is the kit's alone. App-level component props, and every other
+  interface member anywhere, follow the rule above.
 - **No `@param` / `@returns` / `@type`.** TypeScript and Rust already state the
   types, and the duplicate rots the moment a signature changes. Mention a
-  parameter in prose only when its meaning is genuinely surprising.
+  parameter in prose only when its meaning is surprising.
 
 ```ts
 // Bad
@@ -112,9 +110,9 @@ export function formatDuration(ms: number): string
 - **Section banners.** `// ---- helpers ----`, `// === STATE ===`, ASCII boxes. If
   a file needs internal signposting it needs splitting.
 - **File-header essays.** A module doc is at most a few lines saying what the
-  module is for. Not a design document, not a rationale for the architecture,
-  not a tour of the alternatives rejected. Long-form rationale belongs in
-  `ARCHITECTURE.md` or a package `README.md`, where it is found on purpose.
+  module is for, never a design document or a tour of the alternatives rejected.
+  Long-form rationale belongs in `ARCHITECTURE.md` or a package `README.md`,
+  where it is found on purpose.
 - **Commented-out code.** Delete it. It is in git.
 - **Changelog comments.** `// Added 2026-03 for the cast feature`. Git blame.
 - **Restating the next line.** `// loop over items`, `// return early`.
@@ -128,7 +126,7 @@ export function formatDuration(ms: number): string
 
 ## When a comment is worth it
 
-Keep (and write) comments in these cases, because the code cannot carry them:
+Keep and write these, because the code cannot carry them:
 
 - A **workaround** for a platform, browser, or vendor bug: name the platform and
   what breaks without it.
@@ -138,8 +136,7 @@ Keep (and write) comments in these cases, because the code cannot carry them:
   form.
 - A **security or safety constraint**: why this is validated here, why this
   ordering matters, why this must not be logged.
-- A **deliberate deviation** from what the reader would otherwise assume is a
-  bug.
+- A **deliberate deviation** from what the reader would otherwise read as a bug.
 - `SAFETY:` on `unsafe` blocks in Rust, always required.
 - `TODO(owner):` / `FIXME(owner):`, only with a name and, ideally, an issue.
   An unowned TODO is deleted on sight.
@@ -163,36 +160,35 @@ The same instinct applies to the code:
 
 - **Name things fully.** `remainingRetries`, not `n`, not `retriesLeft2`. Short
   names are fine only for a short life (`i`, `f`, `ok` inside a five-line block).
-- **Small functions with one job**, named after the job. The same rule holds
-  one level up: a file does one thing (see
-  [`CONVENTIONS.md`](CONVENTIONS.md) and the file-size policy in
-  [`ARCHITECTURE.md`](ARCHITECTURE.md#file-size-policy)).
-- **Return early**; do not nest to describe control flow.
+- **Small functions with one job**, named after the job. The same rule holds one
+  level up: a file does one thing (see [`CONVENTIONS.md`](CONVENTIONS.md) and the
+  file-size policy in [`ARCHITECTURE.md`](ARCHITECTURE.md#file-size-policy)).
+- **Return early.** Do not nest to describe control flow.
 - **Prefer a named pattern over a bespoke tangle.** When a well-known design
   pattern fits (a registry, a strategy, a builder, a state machine), use it and
   let the *names* carry it: `SubtitleStrategy`, `formatRegistry`. A reader who
-  recognises the pattern reads the code for free; a comment announcing the
+  recognises the pattern reads the code for free. A comment announcing the
   pattern is the code failing to.
 - **Leave code simpler than you found it.** A change that lands duplication,
   dead code, or a second way of doing something the file already does is not
-  done; the refactor is part of the change, not a follow-up.
+  done. The refactor is part of the change, not a follow-up.
 - **Types over checks.** See [`CONVENTIONS.md`](CONVENTIONS.md) for validating
   untrusted input with zod rather than by hand.
 - **No dead code, no unused exports.** `bun run deadcode` catches them.
-- Follow `biome.json` for formatting and lint; run `bun run check` before a PR.
+- Follow `biome.json` for formatting and lint. Run `bun run check` before a PR.
 - For Rust, rustfmt is canonical: run `cargo fmt` before a PR. The root
   `rustfmt.toml` is the law, applied across every cargo workspace, and CI
   enforces `cargo fmt --check`. Do not hand-format or keep a custom import
-  grouping; take rustfmt's output as-is.
+  grouping. Take rustfmt's output as-is.
 
 ## For agents
 
 If you are an AI agent working in this repository, these are hard rules:
 
 1. **Do not narrate your work in the code.** No "I changed this because…", no
-   summary of the approach you considered, no notes to the next reader about
-   what you just did. Put that in the PR description or your response, never in
-   a source file.
+   summary of the approach you considered, no note to the next reader about what
+   you just did. Put that in the PR description or your response, never in a
+   source file.
 2. **Do not add a comment to explain a change.** The diff explains the change.
 3. **Adding a comment is a decision you must justify.** If asked why a comment
    exists, "for clarity" is not an answer: name the specific thing a reader
@@ -200,7 +196,7 @@ If you are an AI agent working in this repository, these are hard rules:
 4. **Do not add doc comments to private functions, fields, or properties**, even
    when writing new code and even when the surrounding file has them.
 5. **When you touch a function, leave its comments no longer than you found
-   them.** Cleaning up as you go is welcome; growing them is not.
+   them.** Cleaning up as you go is welcome, growing them is not.
 6. **Never delete a comment that documents a workaround, a spec rule, or a
    safety constraint** while cleaning. Those are the ones that were expensive to
    learn.

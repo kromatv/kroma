@@ -72,7 +72,7 @@ expect(measure(<Keyboard />).churn).toEqual([]);
 import { formatResult } from '@kroma/react-audit';
 
 console.log(formatResult(result));
-// 2 commits  42 churned  0 re-rendered
+// 2 commits  188 elements  42 churned  0 re-rendered
 //
 // destroyed and rebuilt:
 //     42  Key

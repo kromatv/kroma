@@ -28,7 +28,6 @@ src/
   lib/                      the focus engine, pure maths, the form runtime
   lib/icons/                the icon set, resolved from Tabler by name (see "Icons")
   foundations/              stories for what has no component: the palette, the type ramp
-  guides/                   the `.page.mdx` articles the workbench serves as its docs
   services/                 React contexts the shells share (auth, cast, i18n, playback)
   styles/                   the CSS the web targets import, expanded by `kromaUI()`
   assets/                   the fonts and the intro sting
@@ -380,10 +379,11 @@ live list. They fall into five reasons, and a new one needs to name its reason t
 | Browser APIs with no RN equivalent | `lib/{portal,modal-portal,landmark,scroll-lock,drag-select,loop,wheel-pan,perf-memory}` | a DOM portal, a landmark role, pointer capture and `performance.memory` have no React Native spelling |
 | Drawing primitives | `lib/{css,svg}`, `lib/icons/stroke-prop` | React Native prefixes gradients `experimental_`; react-native-svg vs the browser's own SVG parser |
 | Motion | `lib/{progress-motion,splash-motion}`, `organisms/kroma-intro` | a CSS transition vs an `Animated` value |
-| Layered surfaces | `molecules/{select,tooltip}`, `organisms/menu` | the web stacks them in a portal above the document; native stacks them in a modal host |
+| Layered surfaces | `molecules/tooltip` | the web stacks it in a portal above the document, native in a modal host. `molecules/select` and `organisms/menu` do the same job in one file, behind a shared surface contract |
 
-Each split is a whole-module swap, so the two halves must export the same names. A
-split that exists only to change a few lines belongs in `Platform.OS` instead.
+The table names one module per reason rather than every split. Each split is a
+whole-module swap, so the two halves must export the same names, and a split that
+exists only to change a few lines belongs in `Platform.OS` instead.
 
 **`Platform.OS`, inside one file**, where the split is a single element rather than a
 whole module. `<Img>` uses this: its leaf is a real `<img>` on the web, keeping
@@ -574,8 +574,10 @@ on the one platform that cannot render it. Helpers a document needs go in
 `<component>.fixtures.tsx` beside it: MDX is for the writing, TypeScript stays in
 TypeScript.
 
-**Stories, demos and pages are discovered, never listed.** Drop a `*.story.mdx`, a
-`*.demo.tsx` or a `*.page.mdx` anywhere under `src/` and it is in the workbench.
+**Stories and demos are discovered, never listed.** Drop a `*.story.mdx` or a
+`*.demo.tsx` anywhere under `src/` and it is in the workbench. The `.page.mdx`
+guides are the site's, not the kit's, so they live in `apps/kit/src/guides/` and
+the host globs them separately.
 There is no registry to regenerate and no generated file to fall behind. Discovery
 needs a bundler primitive, and both bundlers resolve theirs relative to the file
 that writes it, so the glob lives in the HOST rather than in the kit:

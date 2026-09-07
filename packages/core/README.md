@@ -4,38 +4,59 @@
   <p><i>Shared, framework-agnostic core for every KROMA client.</i></p>
 </div>
 
-> Part of the [KROMA](../../README.md) monorepo. Zero UI, zero framework: just
-> the API contract, media types, and the playback/runtime logic that every shell
-> (web, Tizen, webOS) depends on. Write it once, run it everywhere.
+> Part of the [KROMA](../../README.md) monorepo. Zero UI, zero framework: the
+> playback and runtime rules every shell (web, TV, mobile, desktop) depends on.
+> Write it once, run it everywhere.
 
 ## Install
 
 ```ts
 // workspace dependency already wired in clients
-import { KromaClient, canDirectPlay, detectCapabilities } from '@kroma/core';
+import { canDirectPlay, detectCapabilities } from '@kroma/core';
 ```
 
-Pure TypeScript, no build step (consumed as source via the workspace), `react`-free.
+Pure TypeScript, no build step: the workspace consumes it as source. The root
+entry pulls in no framework. The `./react` subpath does, and holds the hooks
+built on these rules.
+
+## What this package is not
+
+`@kroma/core` re-exports nothing. Three doors, and each thing is behind exactly
+one, so an import path says where a symbol came from:
+
+- `@kroma/client/<domain>` is what one domain owns: its zod schemas, its ids, its
+  response types. `MediaItem`, `Show`, `ShowDetail`, `Season`, `Library`,
+  `VideoTrack`, `AudioTrack`, `SubtitleTrack`, `Metadata`, `CastMember`, `User`,
+  `Permission` and `hasPermission` all live there.
+- `@kroma/client` is what no single domain owns: `createKromaClient`,
+  `KromaClient`, `KromaApiError`, `KromaClientOptions`, the transport, the
+  WebSocket events and the remembered-session store.
+- `@kroma/core` is what is not a wire type at all: the rules built on top.
+
+Adding or changing a payload means editing the zod schema in
+`packages/client/src/api/<domain>/`, never redefining a wire type here.
 
 ## What's inside
 
 | Module | Exports | Purpose |
 | ------ | ------- | ------- |
-| `api` | `KromaClient`, `KromaApiError`, `KromaClientOptions` | Typed REST client for the server (`/movies`, `/shows`, `/items`, `/stream`, `/hls`, `/metadata`, auth, Quick Connect, progress…). |
-| `types` | `MediaItem`, `Show`, `ShowDetail`, `Season`, `Library`, `VideoTrack`, `AudioTrack`, `SubtitleTrack`, `Metadata`, `CastMember`, `User`, `Permission`, `hasPermission`, … | The complete API data model, shared with the Rust server's JSON. |
 | `hevc` | `detectCapabilities`, `capabilities`, `canDirectPlay`, `audioSupport` | Capability detection: what this device can decode (HEVC 10-bit/HDR, AV1, AC3/EAC3/DTS) and whether a given item direct-plays. |
 | `player` | `attachDirectPlay`, `formatRuntime` | Wire a `MediaItem` to a `<video>` element for direct-play streaming. |
 | `remote` | `resolveRemoteKey`, `registerTvMediaKeys`, `RemoteKey` | Normalize TV remote / keyboard input into semantic keys (`back`, `play`, colour buttons, D-pad). |
-| `discover` | `discoverServer`, `subnetCandidates`, `getLocalIPv4` | Zero-config LAN discovery (mDNS candidates + `/24` subnet scan, because TVs can't resolve `.local`). |
-| `events` | `KromaEvents`, `ServerEvent` | Reconnecting WebSocket to `/api/events` for live scan/enrich/library updates. |
-| `session` | `loadSession`, `saveSession`, `clearSession`, `loadAccounts`, `forgetAccount` | Persisted auth sessions + multi-account storage. |
-| `format` | `metaLine`, `qualityBadge`, `codecLabel`, `langCode`, `formatTimecode`, `channelLabel`, `posterColors` | Brand-consistent text formatting (e.g. `2024 · 2h08 · Thriller`, `4K HDR`, `H.265`). |
+| `discover` | `discoverServer`, `discoverServers`, `subnetCandidates`, `getLocalIPv4` | Zero-config LAN discovery (mDNS candidates + `/24` subnet scan, because TVs can't resolve `.local`). |
+| `handoff` | the beacon a television raises and the phone answers | The road a TV takes to an account, on top of the handoff domain's wire types. |
+| `format` | `metaLine`, `qualityBadge`, `codecLabel`, `channelLabel`, `posterColors` | Brand-consistent text formatting (e.g. `2024 · 2h08 · Thriller`, `4K HDR`, `H.265`). |
+| `intl` | `formatTimecode`, `formatBytes`, `formatDuration`, `formatUptime` | Locale-aware number, size and duration formatting. |
+| `lang` | `langCode`, the language table | Track languages, named the way the product names them. |
 | `subtitles` | `parseVtt`, `activeCueText`, `isTextSubtitle`, `Cue` | Minimal WebVTT parsing + cue lookup for the custom subtitle layer. |
+| `permissions` | `PERMISSIONS`, `PermissionMeta` | What each permission means, for the admin screens that render them. |
+| `i18n` | the core catalogs, one folder per language and one file per namespace | `src/locales/{en,fr}/<namespace>.json`, found and typed by the Vite plugin. |
 
 ## Direct-play, in one decision
 
-The heart of KROMA: the server never transcodes video, so the client decides up
-front whether a title will play.
+Direct play is the default, so the client decides up front whether a title will
+play on its own decoder. What it cannot decode goes through the server's HLS
+path instead.
 
 ```ts
 import { capabilities, canDirectPlay, audioSupport } from '@kroma/core';
@@ -57,10 +78,12 @@ Safari / HW-Chromium, no AC3) each get the right path.
 
 ## Talking to the server
 
-```ts
-import { KromaClient } from '@kroma/core';
+The client is `@kroma/client`, and it is a factory rather than a class:
 
-const client = new KromaClient({ baseUrl: 'http://nas.local:4040' });
+```ts
+import { createKromaClient } from '@kroma/client';
+
+const client = createKromaClient({ baseUrl: 'http://nas.local:4040' });
 
 const movies  = await client.media.movies();
 const show    = await client.media.show(id);           // seasons + episodes
@@ -70,6 +93,7 @@ const poster  = client.media.artwork.posterFor(item);  // resolved TMDB/cached a
 
 ## See also
 
+- `@kroma/client` (`../client/src/api/`): the transport and every wire type
 - [`@kroma/ui`](../ui/README.md): design-system components built on these types
 - [`@kroma/tv`](../tv/README.md): the 10-foot experience that ties it together
 - [server/README.md](../../server/README.md): the API this client speaks to

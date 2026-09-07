@@ -21,9 +21,10 @@ applies on `serve` alone, so a built shell never sees any of it.
 ## The engine is an adapter
 
 The panel names no engine. It is handed an `Engine` at mount, and everything it
-needs from one is four methods and an optional fifth — the two switches, the
-locales to offer, the locale the app resolved, and how that engine names a
-plural category where it disagrees with CLDR. An adapter ships as a subpath and
+needs from one is four methods and two optional ones: the two switches, the
+locales to offer, the locale the app resolved, how that engine names a plural
+category where it disagrees with CLDR, and a subscription for an engine whose
+locales are not settled before the tools mount. An adapter ships as a subpath and
 takes its engine as an **optional peer**, so a shell that uses neither pulls in
 neither. Three ship: `@kroma/i18n-devtools/{kroma,i18next,paraglide}`.
 

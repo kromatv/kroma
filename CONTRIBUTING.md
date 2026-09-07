@@ -1,9 +1,8 @@
 # Contributing to KROMA
 
-Thanks for your interest in KROMA! This is a self-hosted media-streaming project
-a Rust server plus web and TV clients sharing one core and one design language.
-Contributions of all sizes are welcome: bug reports, fixes, docs, new platform
-shells, and design polish.
+KROMA is a self-hosted media-streaming project: a Rust server plus web and TV
+clients sharing one core and one design language. Bug reports, fixes, docs, new
+platform shells and design polish are all welcome.
 
 ## Project layout
 
@@ -16,13 +15,13 @@ kroma/
 └─ clients/     @kroma/web · @kroma/tizen · @kroma/webos  (thin platform shells)
 ```
 
-See the [root README](README.md) for the full architecture and each package's
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full architecture and each package's
 own README for details.
 
 ## Prerequisites
 
-- **Bun** ≥ 1.3 package manager + runner ([why Bun](README.md#prerequisites))
-- **Rust** ≥ 1.81 + **ffmpeg/ffprobe** for the server
+- **Bun** ≥ 1.4, the package manager and runner (the repo is a Bun workspace)
+- **Rust** ≥ 1.88 + **ffmpeg/ffprobe** for the server (`rust-toolchain.toml` pins the exact stable, and rustup installs it)
 - Optional, only to package TV apps: **Tizen Studio** (Samsung) · **webOS TV CLI** (LG)
 
 ## Getting started
@@ -34,8 +33,8 @@ bun install
 bun run dev      # media server (:4040) + web client (:3000) together
 ```
 
-With no media configured, the server seeds demo titles so the UI is populated
-immediately. Point it at real files with `KROMA_MEDIA_DIRS=/path/to/media`.
+With no media configured the server seeds demo titles. Point it at real files
+with `KROMA_MEDIA_DIRS=/path/to/media`.
 
 `bun install` wires the repo's git hooks (`prepare` → `core.hooksPath .githooks`).
 If you cloned before that existed, run `bun run hooks:install` once.
@@ -63,11 +62,10 @@ cargo fmt                   # rustfmt is canonical; run before every PR
 - The quality gate (0 Sonar issues, 0% duplication, ~100% coverage on new
   logic) is part of done, not a follow-up: see
   [`CONVENTIONS.md`](CONVENTIONS.md#the-quality-gate-is-not-optional).
-- Keep clients **thin** UI belongs in `@kroma/ui`, logic in `@kroma/core`, and the
+- Keep clients **thin**: UI belongs in `@kroma/ui`, logic in `@kroma/core`, the
   shared TV experience in `@kroma/tv`. Write platform code once.
-- Match the existing style: the design language (deep-charcoal + amber, French
-  copy, no emoji) is documented in
-  [`packages/ui/README.md`](packages/ui/README.md).
+- Match the design language (deep-charcoal + amber, French copy, no emoji),
+  documented in [`packages/ui/README.md`](packages/ui/README.md).
 - Keep the server's dependency graph **lean and Rust 1.81-friendly** (see the
   notes in [`server/Cargo.toml`](server/Cargo.toml)).
 - Write clear commit messages and describe the *why* in your PR.
@@ -83,5 +81,5 @@ Open an issue with:
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the
-project's [GPL-2.0 License](LICENSE).
+By contributing, you agree your contributions are licensed under the project's
+[GPL-2.0 License](LICENSE).

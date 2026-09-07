@@ -27,8 +27,8 @@ testing someone else's server, ask them for its address (something like
    **https://testflight.apple.com/join/RvvRxgvV**
 3. Tap **Accept**, then **Install**.
 
-KROMA then appears on your home screen like any other app, and TestFlight
-notifies you whenever a new version is available.
+KROMA appears on your home screen like any other app, and TestFlight tells you
+whenever a new version is available.
 
 > The link goes live once Apple has approved the first beta build. If it still
 > shows an error, the review is in progress: try again later.
@@ -36,7 +36,8 @@ notifies you whenever a new version is available.
 ## Apple TV
 
 The Apple TV app is the same beta as the iPhone one, so there is nothing new to
-join: if you already did the steps above, you are already a tester for it.
+join. Both are one record on the App Store: installing KROMA on your phone also
+entitles you to it on your Apple TV, and vice versa.
 
 1. On your **iPhone or iPad**, join the beta using the link above. There is no
    way to open a link on an Apple TV, which is why this step happens on a phone.
@@ -45,10 +46,7 @@ join: if you already did the steps above, you are already a tester for it.
 3. Sign in with the **same Apple Account** you used on your phone.
 4. KROMA appears in the list. Select it, then **Install**.
 
-Updates work exactly like the phone: TestFlight offers each new version.
-
-> Both apps are one and the same on the App Store, so installing KROMA on your
-> phone also entitles you to it on your Apple TV, and vice versa.
+Updates work like on the phone: TestFlight offers each new version.
 
 ## Android phone and tablet
 
@@ -66,9 +64,9 @@ Android will ask you to allow installs from that source: accept. See
 This covers Android beamers, Android TV and Google TV sets, Fire TV devices and
 Nvidia Shield boxes.
 
-> **Important:** the Firebase App Tester app does not exist on Android TV. On a
-> beamer or a TV you therefore have to install the `.apk` file by hand. The three
-> methods below all do the same thing, so pick whichever suits you.
+> **Important:** the Firebase App Tester app does not exist on Android TV, so on
+> a beamer or a TV you have to install the `.apk` file by hand. The three methods
+> below all do the same thing, so pick whichever suits you.
 
 ### Method 1: from your phone (easiest)
 
@@ -96,9 +94,6 @@ You need your Android phone and the beamer on the same Wi-Fi network.
 3. On the page that opens, scroll down to the list of files and select the one
    whose name starts with `KROMA-androidtv`.
 4. The download starts, then Downloader offers to install it: confirm.
-
-Typing an address with a remote is tedious, which is why method 1 is nicer when
-you have a phone at hand.
 
 ### Method 3: with a computer
 

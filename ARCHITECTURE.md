@@ -1,27 +1,27 @@
 # KROMA architecture
 
-> North-star for the in-progress structural migration. Decided by a senior-architect
-> review (onion vs modular vs hybrid vs DDD). Verdict: a **domain-columnar polyglot hybrid**.
+> Where the in-progress structural migration is heading. A review weighed onion,
+> modular, hybrid and DDD and picked a **domain-columnar polyglot hybrid**.
 
 ## The one idea
 
-A single vocabulary of **domain nouns** organizes the whole repo:
+One vocabulary of **domain nouns** organizes the whole repo:
 
 ```
 media · accounts · playback · library · admin · discovery
 ```
 
-Each side of the wire expresses those nouns in the shape that matches how it changes:
+Each side of the wire shapes those nouns to how it changes:
 
 - the **Rust server is layered** (I/O dominates → separate the rings),
 - the **React frontends are feature-sliced** (screens dominate → group by feature).
 
-The same noun names the server's layer-files *and* the client's feature-folders, so you can
-navigate the UI by knowing the server, and vice-versa.
+The same noun names the server's layer-files *and* the client's feature-folders, so
+knowing one side tells you where to look on the other.
 
 ## Monorepo layout (target)
 
-Split by **role**, not by accident of history:
+Split by **role**, not by history:
 
 ```
 apps/        deployables have an entry point, ship
@@ -40,9 +40,9 @@ Only adapts/packages an app for a device → `clients/`.
 
 ## Server (Rust) layered, domain as the column
 
-The server is a **cargo workspace**. The layers are crates, so the "inward-only"
-dependency rule is enforced by the compiler (an illegal `use` won't resolve),
-not by convention or a CI grep. The binary is a thin HTTP shell over the engine:
+The server is a **cargo workspace**. The layers are crates, so the compiler enforces
+the inward-only dependency rule (an illegal `use` will not resolve), not a convention
+or a CI grep. The binary is a thin HTTP shell over the engine:
 
 ```
 server/
@@ -68,17 +68,16 @@ kroma-server(bin) → kroma-engine → { kroma-db, kroma-whisper, kroma-vector, 
        kroma-db → kroma-domain, kroma-primitives        everything → kroma-domain / kroma-config
 ```
 
-- **`kroma-domain`** depends only on serde **never** axum/rusqlite/reqwest/process.
-  Purity is compiler-enforced, so no CI grep is needed.
+- **`kroma-domain`** depends only on serde, **never** axum/rusqlite/reqwest/process.
 - The layer modules keep their historical paths (`crate::db`, `crate::services`,
-  `crate::model`, …) via crate aliases, so call sites were untouched by the split.
-- Heavy or optional dependencies (candle, mdns) live in the module that needs
-  them, and each `.kmod` selects its own backend through its
-  `[package.metadata.kmod] features`. The binary has no feature flags for them.
-- `services/` may use db/infra/domain; never api. `api/` translates HTTP↔services, holds no business logic.
+  `crate::model`, …) via crate aliases, so the split left call sites untouched.
+- Heavy or optional dependencies (candle, mdns) live in the module that needs them,
+  and each `.kmod` picks its own backend through its `[package.metadata.kmod]
+  features`. The binary has no feature flags for them.
+- `services/` may use db/infra/domain, never api. `api/` translates HTTP↔services and holds no business logic.
 - `main.rs` + `state.rs` are the only composition points.
-- **Cross-cutting joins** are owned by the consuming domain (e.g. `continue_watching` in `db/playback.rs`, admin history in `db/admin.rs`). One Pool; "a domain owns its tables" is a convention, not a wall.
-- **Thin domains** (discovery, pairing) may collapse the layer spread to a single file don't force the full ladder on tiny domains.
+- The consuming domain owns **cross-cutting joins** (e.g. `continue_watching` in `db/playback.rs`, admin history in `db/admin.rs`). One Pool, so "a domain owns its tables" is a convention, not a wall.
+- **Thin domains** (discovery, pairing) may collapse to a single file. Do not force the full ladder on a tiny domain.
 
 ## Frontend (React) feature slices
 
@@ -89,15 +88,15 @@ clients/web/src/  features/{catalog,playback,admin}/  routes/ = thin re-exports
 
 **Dependency rule:** `features/* → shared/* → @kroma/ui → @kroma/core`.
 
-- A feature **must not import a sibling feature** shared code moves to `shared/` or up into `@kroma/ui`. (Biome-guarded.)
-- Wire types come only from `@kroma/core` (the generated barrel); never hand-redefined.
+- A feature **must not import a sibling feature**. Shared code moves to `shared/` or up into `@kroma/ui`. (Biome-guarded.)
+- Wire types come only from `@kroma/core` (the generated barrel), never hand-redefined.
 
 ## File-size policy
 
-Hard-split files **> 300 LOC**; split **200–300** only at a natural seam; aim for ~150.
-The **domain seam is the cut line** split a god-file where a domain/layer boundary already
-runs through it, never at an arbitrary line. Exempt: `generated/`, vendored, data/locale JSON,
-lockfiles, `*.gen.ts`, irreducible adapters (ffmpeg flag-builders).
+Hard-split files **> 300 LOC**, split **200 to 300** only at a natural seam, aim for ~150.
+The **domain seam is the cut line**. Split a god-file where a domain or layer boundary
+already runs through it, never at an arbitrary line. Exempt: `generated/`, vendored,
+data/locale JSON, lockfiles, `*.gen.ts`, irreducible adapters (ffmpeg flag-builders).
 
 ## Migration phases
 
@@ -111,9 +110,8 @@ lockfiles, `*.gen.ts`, irreducible adapters (ffmpeg flag-builders).
 | 5 | Hardening (one `KromaClient` namespace per domain, `packages/client/src/api/`) | ✓ done |
 | 6 | Server workspace split into 14 crates (1 bin + 13 libs), binary is a thin `api` shell over `kroma-engine`; layers compiler-enforced | ✓ done |
 
-Phase 3 was dropped: the layering it was after came from phase 6's crates instead,
-and `apps/` has since been claimed for the web properties (kit, www, modules,
-packages), so the names it wanted are taken. The product's shells stay in
-`clients/`, the libraries in `packages/`. See CLAUDE.md.
+Phase 3 is dead. Phase 6's crates gave the layering it was after, and `apps/` now holds
+the web properties (kit, www, modules, packages), so the names it wanted are taken. The
+product's shells stay in `clients/`, the libraries in `packages/`. See CLAUDE.md.
 
-Each phase is independently shippable and verified (`cargo test` · `bun run typecheck`/`build`).
+Each phase ships on its own, verified with `cargo test` and `bun run typecheck`/`build`.
