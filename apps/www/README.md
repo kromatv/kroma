@@ -11,10 +11,10 @@
 
 ## What it is
 
-A TanStack Start app built in fully static mode: every page is prerendered
-to its own `index.html` at build time (no server runtime), so Cloudflare serves it
-straight from the edge, the same assets-only pattern as
-[`clients/tv-web`](../../clients/tv-web).
+A TanStack Start app built in mostly static mode: every page is prerendered
+to its own `index.html` at build time, so Cloudflare serves it straight from the
+edge. A worker runs first for `/api/*` alone, because the release feed needs a
+GitHub token.
 Chosen because it matches the house web stack ([`clients/web`](../../clients/web) is also
 TanStack Start) while giving a marketing site the SEO of real per-page HTML.
 
@@ -73,8 +73,8 @@ generated, typed function for the one it needs.
 
 ```
 messages/
-  en.json      the base locale, 278 keys
-  fr.json      the same 278 keys, in French
+  en.json      the base locale, 353 keys
+  fr.json      the same 353 keys, in French
 project.inlang/settings.json    the locale list
 ```
 
@@ -141,7 +141,8 @@ a reader gets the page rather than a 404. See the
 
 `ogPlugin()` renders `public/og.png` and `public/og.fr.png` during the build, from
 a TSX component ([`vite/og-card.tsx`](./vite/og-card.tsx)) with
-[Satori](https://github.com/vercel/satori) (JSX → SVG) and resvg (SVG → PNG). No
+[Takumi](https://github.com/kane50613/takumi) (`takumi-js`), a Rust renderer that
+goes JSX → PNG in one step. No
 browser and no network: the brand faces are read from `@kroma/ui`'s own font files,
 and the colours come from its tokens, so a card cannot drift from the design.
 
@@ -150,16 +151,21 @@ the only way a link shared in French previews in French.
 
 ## Deploy
 
-The site is an assets-only Cloudflare Worker ([`wrangler.jsonc`](./wrangler.jsonc)),
-served at `kroma.tv` + `www.kroma.tv` (the 10-foot app lives at `tv.kroma.tv`,
-see `clients/tv-web`). Requires the `kroma.tv` zone on the Cloudflare account;
-`wrangler` provisions the custom domains on deploy.
+The site is static assets plus a worker for `/api/*`
+([`wrangler.jsonc`](./wrangler.jsonc)), served at `kroma.tv` + `www.kroma.tv` (the
+10-foot app lives at `tv.kroma.tv`, see `clients/tv-web`). It requires the
+`kroma.tv` zone on the Cloudflare account, and `wrangler` provisions the custom
+domains on deploy.
 
 ```bash
 bun run --filter '@kroma/site' deploy
 # or, if dist/ is already built:
-cd apps/www && bunx wrangler@4 deploy
+cd apps/www && bunx wrangler@4 deploy -c dist/server/wrangler.json
 ```
+
+The `-c` is load-bearing: the build rewrites the config to `dist/server/` with
+`main` pointed at the built worker, so a bare `wrangler deploy` would ship the
+unbuilt `worker.ts`.
 
 ## Layout
 
@@ -168,7 +174,8 @@ apps/www/
 ├─ content/blog/       the blog, one .mdx per post + .<lang>.mdx translations
 ├─ content/legal/      the privacy policy, as MDX per locale
 ├─ messages/           the Paraglide catalogs, one .json per locale
-├─ vite/               the build's own plugins: og (Satori, JSX -> SVG -> PNG), mdx
+├─ vite/               the build's own plugins: og (Takumi, JSX -> PNG), mdx,
+│                      modules, releases, fetch-body, reading-time
 ├─ public/             static assets served as-is (favicon, og image, robots)
 ├─ src/
 │  ├─ components/      site chrome + per-page section components (Tailwind v4)
@@ -177,10 +184,14 @@ apps/www/
 │  │  ├─ rich.ts       the [amber]/`mono`/*bright* marker parser
 │  │  ├─ legal.ts      resolves content/legal into a per-locale component
 │  │  ├─ blog.ts       resolves content/blog into typed posts
-│  │  ├─ seo.ts        the <head> helper (title, canonical, OG, hreflang)
-│  │  └─ site.ts       the domain, contact addresses and nav
-│  ├─ routes/          file-based routes (home, download, blog, privacy, support)
+│  │  └─ seo.ts        the <head> helper (title, canonical, OG, hreflang)
+│  │                   (the domain, addresses and nav are @kroma/site-meta's)
+│  ├─ routes/          file-based routes (home, download, blog, modules, privacy,
+│  │                   support, 404)
+│  ├─ server/          what the worker answers under /api/*
+│  ├─ router.tsx       the router the prerender and the worker share
 │  └─ styles.css       imports @kroma/ui/css + site-only @utility/@theme
+├─ worker.ts           the /api/* worker entry
 ├─ vite.config.ts      TanStack Start (static prerender) + MDX pipeline
-└─ wrangler.jsonc      assets-only Cloudflare Worker (kroma.tv)
+└─ wrangler.jsonc      static assets + the /api/* worker (kroma.tv)
 ```

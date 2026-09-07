@@ -59,6 +59,7 @@ overrides the port; `CATALOG_BETA=true` previews the nightly variant.
 
 ## How it's wired for KROMA
 
-`.github/workflows/synology.yml` runs this for both channels in its `pages` job
-(`catalog.json` from the latest stable release, `nightly.json` from the rolling
-`nightly` prerelease) and deploys to GitHub Pages. See `clients/synology/README.md`.
+`.github/workflows/synology.yml` runs `src/gen-spk-info.ts` alone, on the stable
+build and on the canary. Nothing in CI generates the static catalog any more: the
+dynamic worker in `apps/packages` reads the releases live, so `gen` is a manual
+escape hatch for self-hosting one. See `clients/synology/README.md`.

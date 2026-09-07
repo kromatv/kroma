@@ -11,7 +11,7 @@ KROMA desktop/browser client. Vite + React + TypeScript, composed from `@kroma/u
 # from the repo root
 bun install
 bun run server          # start the Rust media server on :4040 (separate terminal)
-bun run dev:web         # Vite dev server on http://localhost:5173
+bun run dev:web         # Vite dev server on http://localhost:3000
 ```
 
 The client auto-targets `http://<host>:4040`. Point it elsewhere with
@@ -20,7 +20,7 @@ The client auto-targets `http://<host>:4040`. Point it elsewhere with
 ## Build
 
 ```bash
-bun run build:web       # vite build + precompress → clients/web/dist
+bun run build:web       # vite build + precompress → clients/web/dist/client
 ```
 
 ## Playback

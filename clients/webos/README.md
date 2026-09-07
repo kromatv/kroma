@@ -27,7 +27,7 @@ The whole thing is driven by `tv.target.ts` (platform, dev port, engine
 floors) through the shared factory in `packages/bundler/src/shell.ts`. See that
 file for how to give any shell a legacy tier.
 
-Playback on those engines: MSE cannot decode HEVC there, so `useDirectPlayback`
+Playback on those engines: MSE cannot decode HEVC there, so `detectTvEnv`
 flags `nativeHls` (UA Chrome < 99) and the player hands the stream-copied HLS
 master straight to the TV's media pipeline (`<video src>`, surround preserved),
 the same shape as Safari's native-HLS path. webOS 3.x (Chromium 38, 2016-17)

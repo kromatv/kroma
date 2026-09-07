@@ -114,11 +114,12 @@ namespace in that locale and the provider redraws. Under a test runner, pass
 
 ## Beyond the browser
 
-- **Metro (React Native).** There is no `import.meta.glob`, so the engine
-  module has a `.native.ts` half that reads the folder with
-  `require.context` and ships everything eagerly; a native bundle is one file
-  anyway. The types come from the same `messages.d.ts`, written by
-  `writeCatalogTypes` in a script.
+- **Metro (React Native).** There is no `import.meta.glob`, so the plain file is
+  Metro's and reads the folder with `require.context`, shipping everything
+  eagerly, which costs nothing because a native bundle is one file anyway. The
+  `.web.ts` half beside it is Vite's. In this repo that pair is
+  `packages/core/src/locales/catalogs.ts` and `catalogs.web.ts`. The types come
+  from the same `messages.d.ts`, written by `writeCatalogTypes` in a script.
 - **Runtime scopes.** `i18n.add(scope, catalogs)` layers a catalog that arrives
   at runtime, a plugin's own messages for instance, ahead of the base ones for
   translators asked with that scope: `useT(scope)`.
