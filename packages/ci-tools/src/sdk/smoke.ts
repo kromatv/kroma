@@ -83,6 +83,9 @@ export async function smoke(options: SmokeOptions): Promise<void> {
     const manifest = join(project, 'package.json');
     writeFileSync(manifest, wireToTarball(readFileSync(manifest, 'utf8'), tarball));
     await $`bun install`.cwd(project);
+    if (existsSync(join(project, 'node_modules', 'react-native'))) {
+      throw new Error('the scaffold installed react-native: the SDK must carry its types');
+    }
     writeFileSync(join(project, 'ui', 'src', 'types-probe.ts'), TYPES_PROBE);
     const check = options.rust ? [] : ['--no-rust'];
     await $`bun x kroma check ${check}`.cwd(project);
@@ -92,7 +95,9 @@ export async function smoke(options: SmokeOptions): Promise<void> {
       if (!existsSync(bundle))
         throw new Error(`sdk smoke: kroma build left no bundle at ${bundle}`);
     }
-    console.log(`sdk smoke: ${ID} scaffolded, installed and checked from ${tarball}`);
+    const installed = await $`du -sm ${join(project, 'node_modules')}`.text();
+    const size = installed.trim().split('\t')[0] ?? '?';
+    console.log(`sdk smoke: ${ID} scaffolded, installed (${size} MB) and checked from ${tarball}`);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

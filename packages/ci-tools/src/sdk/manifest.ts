@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { REACT_NATIVE_PATHS } from './react-native-types';
 
 /** The one package that ships; its bin is `kroma`. */
 export const SDK = '@kromatv/sdk';
@@ -44,12 +45,15 @@ export function declarationOf(dir: string, target: string): string | null {
 }
 
 /** The `paths` a module's tsconfig needs so every `@kroma/*` specifier the kit
- *  and the SDK use resolves to a declaration inside this one package. Built
- *  from each package's own `exports`, so a subpath cannot drift. */
+ *  and the SDK use resolves to a declaration inside this one package, and
+ *  `react-native` to the declarations shipped beside them. Built from each
+ *  package's own `exports`, so a subpath cannot drift. */
 export function pathsFor(
   manifests: ReadonlyArray<[string, PackageJson]>,
 ): Record<string, string[]> {
-  const paths: Record<string, string[]> = {};
+  const paths: Record<string, string[]> = {
+    ...Object.fromEntries(Object.entries(REACT_NATIVE_PATHS).map(([k, v]) => [k, [...v]])),
+  };
   for (const [dir, pkg] of manifests) {
     for (const [key, target] of Object.entries(pkg.exports ?? {})) {
       const types = declarationOf(dir, target);
@@ -97,11 +101,11 @@ function ranges(
 }
 
 /**
- * The published manifest of the one package: the SDK's own identity, every
- * built-in package's npm dependencies folded in (their declarations name
- * those types), the CLI's runtime dependencies, the `kroma` bin, and the
- * kit's `#ui/*` alias pointed at its declarations. Public, and the only
- * thing that is.
+ * The published manifest of the one package: the SDK's own identity, the
+ * CLI's runtime dependencies, React as the one peer (React Native's types
+ * ship inside, its runtime is the host's), the `kroma` bin, and the kit's
+ * `#ui/*` alias pointed at its declarations. Public, and the only thing that
+ * is.
  */
 export function sdkManifest(
   sdk: PackageJson,
@@ -111,7 +115,7 @@ export function sdkManifest(
 ): string {
   const all = [cli, sdk, ...builtIn.map(([, pkg]) => pkg)];
   const dependencies = ranges([...RUNTIME, ...TYPED], all);
-  const peerDependencies = ranges(['react', 'react-dom', 'react-native'], all);
+  const peerDependencies = ranges(['react'], all);
   const own = declarationOf('module-sdk', sdk.exports?.['.'] ?? './src/index.ts');
   const shared = declarationOf('module-sdk', sdk.exports?.['./shared'] ?? './src/shared.ts');
   const manifest = {
@@ -137,7 +141,6 @@ export function sdkManifest(
     publishConfig: { access: 'public' },
     dependencies: sorted(dependencies),
     peerDependencies: sorted(peerDependencies),
-    kroma: cli.kroma,
   };
   return `${JSON.stringify(manifest, null, 2)}\n`;
 }

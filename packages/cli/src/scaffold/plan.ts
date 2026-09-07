@@ -26,7 +26,6 @@ export interface Versions {
   rustChannel: string;
   /** The React Native the kit is written against (the tvOS fork), which the
    *  scaffold pins so the kit's types read the same outside this repository. */
-  reactNative: string;
 }
 
 /** The workspace package here, or the published one it is bundled into. */
@@ -64,10 +63,7 @@ function snake(slug: string): string {
   return slug.replace(/[^a-z0-9]+/gi, '_').toLowerCase();
 }
 
-const PackageJson = z.object({
-  version: z.string(),
-  kroma: z.object({ reactNative: z.string() }),
-});
+const PackageJson = z.object({ version: z.string() });
 
 /** What this CLI was installed as, and what the tree it runs in pins. Inside the
  *  repository every version is `0.0.0`, so the server's own version stands in. */
@@ -81,7 +77,6 @@ export function versions(cwd: string): Versions {
     sdk,
     server: server ?? sdk,
     rustChannel: channel ?? '1.98.0',
-    reactNative: own.kroma.reactNative,
   };
 }
 
@@ -205,11 +200,10 @@ export function packageJsonFor(a: Answers, v: Versions): Record<string, unknown>
     },
     peerDependencies: { react: '^19.2.8' },
     devDependencies: {
-      ...(a.inRepo ? {} : { react: '^19.2.8', 'react-native': v.reactNative }),
+      ...(a.inRepo ? {} : { react: '^19.2.8' }),
       '@types/react': '^19.2.18',
       typescript: '^7.0.2',
     },
-    ...(a.inRepo ? {} : { overrides: { 'react-native': v.reactNative } }),
   };
 }
 

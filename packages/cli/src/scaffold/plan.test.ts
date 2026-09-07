@@ -52,7 +52,6 @@ const V: Versions = {
   sdk: '1.2.3',
   server: '1.2.3',
   rustChannel: '1.99.0',
-  reactNative: 'npm:react-native-tvos@0.86.0-2',
 };
 
 afterEach(() => {
@@ -97,7 +96,6 @@ describe('versions', () => {
     expect(v.sdk).toBe('0.0.0');
     expect(v.server).toBe('0.0.0');
     expect(v.rustChannel).toBe('1.98.0');
-    expect(v.reactNative).toMatch(/^npm:react-native-tvos@/);
   });
 });
 
@@ -206,15 +204,16 @@ describe('packageJsonFor', () => {
     expect(pkg?.overrides).toBeUndefined();
   });
 
-  it('depends on the published SDK outside it, and overrides React Native to the fork', () => {
+  it('depends on the published SDK outside it, and installs no React Native', () => {
     const pkg = packageJsonFor(answers(), V);
 
     expect(pkg).toMatchObject({
       name: 'tv.acme.notes',
       dependencies: { '@kromatv/sdk': '^1.2.3' },
-      devDependencies: { 'react-native': V.reactNative },
-      overrides: { 'react-native': V.reactNative },
+      devDependencies: { react: '^19.2.8', '@types/react': '^19.2.18', typescript: '^7.0.2' },
     });
+    expect(pkg?.devDependencies).not.toHaveProperty('react-native');
+    expect(pkg?.overrides).toBeUndefined();
     expect(pkg?.exports).toBeUndefined();
   });
 });

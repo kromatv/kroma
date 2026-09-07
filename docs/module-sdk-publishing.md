@@ -7,7 +7,8 @@ of what a module written elsewhere depends on, and the only thing published.
 |---|---|
 | `dist/cli.js`, the `kroma` bin | `packages/cli`, bundled with its workspace imports inlined |
 | `types/<pkg>/` declarations | `packages/{module-sdk,ui,core,client,registry,i18n,spatial-nav}` |
-| `tsconfig.module.json` | `packages/cli/tsconfig.module.json` plus `paths` mapping every `@kroma/*` specifier onto `types/` |
+| `types/react-native/` | the declaration files of the React Native fork the kit is typed against, so a module installs no React Native (it and its toolchain are most of a 250 MB `node_modules`; the runtime is the host's) |
+| `tsconfig.module.json` | `packages/cli/tsconfig.module.json` plus `paths` mapping every `@kroma/*` specifier and `react-native` onto `types/` |
 | `rust/` | the ten crates a sidecar links, out of `server/crates` |
 | `templates/` | what `kroma create` renders |
 

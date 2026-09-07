@@ -57,7 +57,6 @@ const CLI: PackageJson = {
     vite: '8.2.1',
     zod: '^4',
   },
-  kroma: { reactNative: 'npm:react-native-tvos@0.86.0-2' },
 };
 
 describe('declarationOf', () => {
@@ -87,6 +86,8 @@ describe('pathsFor', () => {
         ['client', CLIENT],
       ]),
     ).toEqual({
+      'react-native': ['./types/react-native/types/index.d.ts'],
+      'react-native/*': ['./types/react-native/*'],
       '@kroma/ui': ['./types/ui/src/index.d.ts'],
       '@kroma/ui/kit': ['./types/ui/src/kit.d.ts'],
       '@kroma/ui/kit/*': ['./types/ui/src/components/*/index.d.ts'],
@@ -131,16 +132,11 @@ describe('sdkManifest', () => {
     expect(pkg.bin).toEqual({ kroma: './dist/cli.js' });
     expect(pkg.exports['.']).toEqual({ types: './types/module-sdk/src/index.d.ts' });
     expect(pkg.exports['./tsconfig']).toBe('./tsconfig.module.json');
-    expect(pkg.kroma).toEqual(CLI.kroma);
   });
 
   it('installs Vite and nothing else: the CLI carries the rest, the types degrade gracefully', () => {
     expect(pkg.dependencies).toEqual({ vite: '8.2.1' });
-    expect(pkg.peerDependencies).toEqual({
-      react: '^19',
-      'react-dom': '>=18',
-      'react-native': '*',
-    });
+    expect(pkg.peerDependencies).toEqual({ react: '^19' });
   });
 
   it("points the kit's private alias at its declarations", () => {

@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { $ } from 'bun';
 import { root } from '../root';
 import { BUILT_IN, PackageJson, sdkManifest, tsconfigPreset } from './manifest';
+import { stageReactNativeTypes } from './react-native-types';
 import { vendorRust } from './vendor-rust';
 
 function readManifest(dir: string): PackageJson {
@@ -149,6 +150,7 @@ export async function stage(options: StageOptions): Promise<string> {
     if (dir === 'ui') inlineIconNames(from, join(to, 'types', dir));
     manifests.push([dir, readManifest(from)]);
   }
+  stageReactNativeTypes(join(root, 'packages', 'ui'), join(to, 'types', 'react-native'));
   const cliDir = join(root, 'packages', 'cli');
   await bundleCli(cliDir, to);
   vendorRust({ serverDir: join(root, 'server'), outDir: join(to, 'rust'), version });

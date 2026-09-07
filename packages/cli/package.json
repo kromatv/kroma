@@ -55,8 +55,5 @@
     "bun-types": "^1.4.0",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
-  },
-  "kroma": {
-    "reactNative": "npm:react-native-tvos@0.86.0-2"
   }
 }
