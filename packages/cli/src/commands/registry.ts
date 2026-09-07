@@ -11,9 +11,9 @@ import {
 import { readBundles, toEntries } from '../bundle/read';
 
 export interface RegistryOptions {
-  from?: string | undefined;
-  out?: string | undefined;
-  base?: string | undefined;
+  from?: string;
+  out?: string;
+  base?: string;
   cwd?: string;
 }
 

@@ -9,9 +9,9 @@ const Login = z.object({
 });
 
 export interface LoginOptions {
-  server?: string | undefined;
-  email?: string | undefined;
-  password?: string | undefined;
+  server?: string;
+  email?: string;
+  password?: string;
 }
 
 async function ask(label: string, given: string | undefined, secret: boolean): Promise<string> {
@@ -26,10 +26,10 @@ async function ask(label: string, given: string | undefined, secret: boolean): P
 /** `kroma login [server]`: sign in once, keep the session token for `dev` and
  *  `install`. The account needs `settings.manage`. */
 export async function loginCommand(options: LoginOptions): Promise<number> {
-  const url = normalizeServer(options.server ?? process.env.KROMA_SERVER ?? DEFAULT_SERVER);
+  const url = normalizeServer(options.server || process.env.KROMA_SERVER || DEFAULT_SERVER);
   p.intro(`sign in to ${url}`);
-  const email = await ask('email or username', options.email ?? process.env.KROMA_EMAIL, false);
-  const password = await ask('password', options.password ?? process.env.KROMA_PASSWORD, true);
+  const email = await ask('email or username', options.email || process.env.KROMA_EMAIL, false);
+  const password = await ask('password', options.password || process.env.KROMA_PASSWORD, true);
   const res = await fetch(`${url}/api/auth/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

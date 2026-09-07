@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   copyFileSync,
   cpSync,
@@ -8,6 +9,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
+import { constants, zstdCompressSync } from 'node:zlib';
 import type { Project } from '../project';
 import { deterministicTar } from './tar';
 
@@ -22,9 +24,15 @@ export interface PackInput {
   target: string | null;
 }
 
+const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
+
+const zstd = (bytes: Uint8Array, level: number) =>
+  zstdCompressSync(bytes, { params: { [constants.ZSTD_c_compressionLevel]: level } });
+
 /** `<id>.kmod`, or `<id>-<triple>.kmod` for a sidecar built for one platform. */
 export function bundleName(id: string, hasBinary: boolean, target: string | null): string {
-  return `${id}${hasBinary && target ? `-${target}` : ''}.kmod`;
+  const suffix = hasBinary && target ? `-${target}` : '';
+  return `${id}${suffix}.kmod`;
 }
 
 function stage(input: PackInput): { staging: string; entries: string[] } {
@@ -72,14 +80,14 @@ export function packBundle(input: PackInput): Packed {
   const tar = deterministicTar(staging, entries);
   rmSync(staging, { recursive: true, force: true });
   const stamp = `${kmod}.tarsha`;
-  const tarSha = Bun.SHA256.hash(tar, 'hex');
+  const tarSha = sha256(tar);
   if (existsSync(kmod) && existsSync(stamp) && readFileSync(stamp, 'utf8').trim() === tarSha) {
     return { path: kmod, file, changed: false };
   }
-  const bytes = Bun.zstdCompressSync(tar, { level: 19 });
+  const bytes = zstd(tar, 19);
   writeFileSync(kmod, bytes);
   writeFileSync(stamp, `${tarSha}\n`);
-  writeFileSync(`${kmod}.sha256`, `${Bun.SHA256.hash(bytes, 'hex')}  ${file}\n`);
+  writeFileSync(`${kmod}.sha256`, `${sha256(bytes)}  ${file}\n`);
   return { path: kmod, file, changed: true };
 }
 
@@ -93,6 +101,6 @@ export function packForDev(input: PackInput): Packed {
   const kmod = join(outDir, file);
   const tar = deterministicTar(staging, entries);
   rmSync(staging, { recursive: true, force: true });
-  writeFileSync(kmod, Bun.zstdCompressSync(tar, { level: 1 }));
+  writeFileSync(kmod, zstd(tar, 1));
   return { path: kmod, file, changed: true };
 }

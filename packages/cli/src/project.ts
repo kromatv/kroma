@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { Manifest, MODULE_SCHEMA_VERSION, REVERSE_DNS_ID } from '@kroma/registry';
+import { parse as parseToml } from 'smol-toml';
 import { z } from 'zod';
 import { byCodeUnit } from './sort';
 
@@ -50,7 +51,7 @@ function readServer(dir: string): ServerCrate | null {
   const serverDir = join(dir, 'server');
   const cargoPath = join(serverDir, 'Cargo.toml');
   if (!existsSync(cargoPath)) return null;
-  const cargo = CargoManifest.parse(Bun.TOML.parse(readFileSync(cargoPath, 'utf8')));
+  const cargo = CargoManifest.parse(parseToml(readFileSync(cargoPath, 'utf8')));
   return {
     dir: serverDir,
     crate: cargo.package.name,
@@ -66,7 +67,10 @@ function readFrontend(dir: string): Frontend | null {
 
 function issues(error: z.ZodError): string {
   return error.issues
-    .map((i) => `  ${i.path.length ? `${i.path.join('.')}: ` : ''}${i.message}`)
+    .map((i) => {
+      const at = i.path.length ? `${i.path.join('.')}: ` : '';
+      return `  ${at}${i.message}`;
+    })
     .join('\n');
 }
 

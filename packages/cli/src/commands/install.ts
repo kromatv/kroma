@@ -12,9 +12,9 @@ import {
 } from '../server';
 
 export interface InstallOptions extends ServerOptions {
-  id?: string | undefined;
-  file?: string | undefined;
-  from?: string | undefined;
+  id?: string;
+  file?: string;
+  from?: string;
   cwd?: string;
 }
 

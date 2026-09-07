@@ -68,6 +68,12 @@ describe('declarationOf', () => {
     );
   });
 
+  it('maps a .tsx target onto the same declaration', () => {
+    expect(declarationOf('ui', './src/components/badge/index.tsx')).toBe(
+      './types/ui/src/components/badge/index.d.ts',
+    );
+  });
+
   it('answers nothing for a target outside src', () => {
     expect(declarationOf('ui', './vite/index.ts')).toBeNull();
   });
@@ -87,6 +93,10 @@ describe('pathsFor', () => {
       '@kroma/client': ['./types/client/src/index.d.ts'],
       '@kroma/client/*': ['./types/client/src/api/*/index.d.ts'],
     });
+  });
+
+  it('leaves out an export served from outside src', () => {
+    expect(pathsFor([['ui', UI]])).not.toHaveProperty('@kroma/ui/vite');
   });
 });
 
@@ -137,5 +147,32 @@ describe('sdkManifest', () => {
     expect(pkg.imports).toEqual({
       '#ui/*': { types: ['./types/ui/src/*.d.ts', './types/ui/src/*/index.d.ts'] },
     });
+  });
+
+  it("falls back to the SDK's own entry points when its exports name neither", () => {
+    const bare: PackageJson = { ...SDK, exports: { './vite': './vite.ts' } };
+
+    const fallback = JSON.parse(
+      sdkManifest(
+        bare,
+        [
+          ['ui', UI],
+          ['module-sdk', bare],
+        ],
+        CLI,
+        '0.1.40',
+      ),
+    );
+
+    expect(fallback.exports['.']).toEqual({ types: './types/module-sdk/src/index.d.ts' });
+    expect(fallback.exports['./shared']).toEqual({ types: './types/module-sdk/src/shared.d.ts' });
+  });
+
+  it('refuses a build where no workspace package declares a range it needs', () => {
+    const cli: PackageJson = { ...CLI, dependencies: { citty: '0.2.2' } };
+
+    expect(() => sdkManifest(SDK, [['module-sdk', SDK]], cli, '0.1.40')).toThrow(
+      /vite: no workspace package declares a range for it/,
+    );
   });
 });

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { $ } from 'bun';
+import { exec } from './exec';
 import type { Project } from './project';
 
 export type Profile = 'release-kmod' | 'dev';
@@ -51,11 +51,11 @@ export async function cargo(
   dir: string,
   quiet = false,
 ): Promise<number> {
-  const run = $`cargo ${args}`
-    .cwd(cwd)
-    .env({ ...process.env, CARGO_TARGET_DIR: dir })
-    .nothrow();
-  const result = quiet ? await run.quiet() : await run;
+  const result = await exec('cargo', args, {
+    cwd,
+    env: { ...process.env, CARGO_TARGET_DIR: dir },
+    quiet,
+  });
   return result.exitCode;
 }
 

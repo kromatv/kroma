@@ -43,6 +43,12 @@ function bundle(id: string, version: string, target: string, contentHash: string
 
 const catalog = (...modules: Entry[]): Catalog => ({ schema: 2, modules });
 
+describe('tagFor', () => {
+  it('cuts a module its own tag, id and version joined', () => {
+    expect(tagFor('tv.kroma.indexer', '0.1.3')).toBe('tv.kroma.indexer@0.1.3');
+  });
+});
+
 describe('verdictFor', () => {
   it('publishes a module nothing knows about yet', () => {
     expect(verdictFor(entry('a', '0.1.0', { musl: 'h1' }), undefined)).toEqual({ kind: 'new' });

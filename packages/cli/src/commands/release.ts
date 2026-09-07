@@ -184,10 +184,10 @@ function report(plan: Plan, stale: string[], errors: string[], strict: boolean):
 }
 
 export interface ReleaseOptions {
-  repo?: string | undefined;
-  published?: string | undefined;
-  from?: string | undefined;
-  out?: string | undefined;
+  repo?: string;
+  published?: string;
+  from?: string;
+  out?: string;
   dryRun?: boolean;
   strict?: boolean;
   cwd?: string;

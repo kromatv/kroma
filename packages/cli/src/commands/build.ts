@@ -7,8 +7,8 @@ import { style } from '../style';
 
 export interface BuildOptions {
   dirs: readonly string[];
-  out?: string | undefined;
-  target?: string | undefined;
+  out?: string;
+  target?: string;
   profile?: Profile;
   skipBuild?: boolean;
   cwd?: string;

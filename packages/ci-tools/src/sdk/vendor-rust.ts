@@ -1,5 +1,6 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parse as parseToml } from 'smol-toml';
 import { z } from 'zod';
 
 /** The crates a module links, closed over their dependencies on each other. */
@@ -76,8 +77,37 @@ export function concreteDep(name: string, member: Record<string, unknown>, works
 const WORKSPACE_LINE = /^([A-Za-z0-9_-]+)\s*=\s*(\{[^}]*\bworkspace\s*=\s*true\b[^}]*\})\s*$/;
 
 function parseInline(text: string): Record<string, unknown> {
-  const parsed = Bun.TOML.parse(`x = ${text}`) as { x: Record<string, unknown> };
+  const parsed = parseToml(`x = ${text}`) as { x: Record<string, unknown> };
   return parsed.x;
+}
+
+type Ws = z.infer<typeof Workspace>['workspace'];
+
+function inheritedPackageLine(line: string, ws: Ws): string | null {
+  const inherited = /^(edition|rust-version|license)\.workspace\s*=\s*true\s*$/.exec(line);
+  if (!inherited) return null;
+  const key = inherited[1] as 'edition' | 'rust-version' | 'license';
+  return `${key} = ${JSON.stringify(ws.package[key])}`;
+}
+
+function workspaceDependency(line: string, ws: Ws): { name: string; line: string | null } | null {
+  const dep = WORKSPACE_LINE.exec(line);
+  if (!dep) return null;
+  const name = dep[1] ?? '';
+  const spec = ws.dependencies[name];
+  if (spec === undefined) throw new Error(`${name} is not in [workspace.dependencies]`);
+  if (outsideClosure(name, spec)) return { name, line: null };
+  return { name, line: `${name} = ${concreteDep(name, parseInline(dep[2] ?? '{}'), spec)}` };
+}
+
+function lintsForDroppedFeatures(features: readonly string[]): string[] {
+  if (features.length === 0) return [];
+  const cfgs = features.map((f) => `'cfg(feature, values(${JSON.stringify(f)}))'`);
+  return [
+    '',
+    '[lints.rust]',
+    `unexpected_cfgs = { level = "allow", check-cfg = [${cfgs.join(', ')}] }`,
+  ];
 }
 
 /**
@@ -86,10 +116,7 @@ function parseInline(text: string): Record<string, unknown> {
  * concrete spec, and the `[dev-dependencies]` table dropped (the vendored
  * crates ship to be linked, not tested).
  */
-export function standaloneCargoToml(
-  text: string,
-  ws: z.infer<typeof Workspace>['workspace'],
-): string {
+export function standaloneCargoToml(text: string, ws: Ws): string {
   const out: string[] = [];
   const dropped: string[] = [];
   const droppedFeatures: string[] = [];
@@ -98,29 +125,19 @@ export function standaloneCargoToml(
     const header = /^\[([^\]]+)\]\s*$/.exec(line);
     if (header) {
       table = header[1] ?? '';
-      if (table === 'dev-dependencies') continue;
-      out.push(line);
+      if (table !== 'dev-dependencies') out.push(line);
       continue;
     }
     if (table === 'dev-dependencies') continue;
-    if (table === 'package') {
-      const inherited = /^(edition|rust-version|license)\.workspace\s*=\s*true\s*$/.exec(line);
-      if (inherited) {
-        const key = inherited[1] as 'edition' | 'rust-version' | 'license';
-        out.push(`${key} = ${JSON.stringify(ws.package[key])}`);
-        continue;
-      }
+    const inherited = table === 'package' ? inheritedPackageLine(line, ws) : null;
+    if (inherited) {
+      out.push(inherited);
+      continue;
     }
-    const dep = WORKSPACE_LINE.exec(line);
-    if (dep && /dependencies$/.test(table)) {
-      const name = dep[1] ?? '';
-      const spec = ws.dependencies[name];
-      if (spec === undefined) throw new Error(`${name} is not in [workspace.dependencies]`);
-      if (outsideClosure(name, spec)) {
-        dropped.push(name);
-        continue;
-      }
-      out.push(`${name} = ${concreteDep(name, parseInline(dep[2] ?? '{}'), spec)}`);
+    const dep = table.endsWith('dependencies') ? workspaceDependency(line, ws) : null;
+    if (dep) {
+      if (dep.line) out.push(dep.line);
+      else dropped.push(dep.name);
       continue;
     }
     if (table === 'features' && dropped.some((name) => line.includes(`dep:${name}`))) {
@@ -130,14 +147,7 @@ export function standaloneCargoToml(
     }
     out.push(line);
   }
-  if (droppedFeatures.length > 0) {
-    const cfgs = droppedFeatures.map((f) => `'cfg(feature, values(${JSON.stringify(f)}))'`);
-    out.push(
-      '',
-      '[lints.rust]',
-      `unexpected_cfgs = { level = "allow", check-cfg = [${cfgs.join(', ')}] }`,
-    );
-  }
+  out.push(...lintsForDroppedFeatures(droppedFeatures));
   return out.join('\n');
 }
 
@@ -162,7 +172,7 @@ export interface VendorOptions {
  *  inside `node_modules`. */
 export function vendorRust(options: VendorOptions): string[] {
   const workspace = Workspace.parse(
-    Bun.TOML.parse(readFileSync(join(options.serverDir, 'Cargo.toml'), 'utf8')),
+    parseToml(readFileSync(join(options.serverDir, 'Cargo.toml'), 'utf8')),
   );
   rmSync(options.outDir, { recursive: true, force: true });
   mkdirSync(options.outDir, { recursive: true });

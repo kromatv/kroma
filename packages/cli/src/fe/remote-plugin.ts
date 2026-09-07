@@ -23,9 +23,11 @@ const HELPER_FN = '__kroma_shared';
 
 const OPTIONS_ONLY_CALL = /\bdefineModule\s*\(\s*\{/;
 
+const STYLES_HREF = JSON.stringify(`./${REMOTE_STYLES}`);
+
 const LINK_STYLES = [
   '(function () {',
-  `  var href = new URL(${JSON.stringify(`./${REMOTE_STYLES}`)}, import.meta.url).href;`,
+  `  var href = new URL(${STYLES_HREF}, import.meta.url).href;`,
   "  if (document.querySelector('link[href=\"' + href + '\"]')) return;",
   "  var link = document.createElement('link');",
   "  link.rel = 'stylesheet';",
@@ -36,7 +38,7 @@ const LINK_STYLES = [
 const SCRIPT = /\.[cm]?[jt]sx?$/;
 
 function posix(path: string): string {
-  return path.split('\\').join('/');
+  return path.replaceAll('\\', '/');
 }
 
 function relativeImport(from: string, to: string): string {
@@ -48,57 +50,80 @@ function clean(id: string): string {
   return id.split('?', 1)[0] ?? id;
 }
 
-/** `{ a, b as c }` → the destructuring pattern that reads it off a namespace. */
-function pattern(braces: string): string {
-  const fields = braces
+/** `b as c` → `['b', 'c']`; `b` → `['b', undefined]`. */
+function splitAs(field: string): [string, string | undefined] {
+  const words = field.split(' ').filter(Boolean);
+  const as = words.indexOf('as');
+  if (as < 0) return [words.join(''), undefined];
+  return [words.slice(0, as).join(''), words.slice(as + 1).join('')];
+}
+
+function fieldsOf(braces: string): [string, string | undefined][] {
+  return braces
     .slice(1, -1)
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
-    .map((s) => {
-      const [name, alias] = s.split(/\s+as\s+/);
-      return alias ? `${name}: ${alias}` : String(name);
-    });
+    .map(splitAs);
+}
+
+/** `{ a, b as c }` → the destructuring pattern that reads it off a namespace. */
+function pattern(braces: string): string {
+  const fields = fieldsOf(braces).map(([name, alias]) => (alias ? `${name}: ${alias}` : name));
   return `{ ${fields.join(', ')} }`;
+}
+
+/** The `{ ... }` group in an import clause, and the clause without it. */
+function takeBraces(clause: string): [string | null, string] {
+  const open = clause.indexOf('{');
+  const close = clause.indexOf('}');
+  if (open < 0 || close < open) return [null, clause];
+  return [clause.slice(open, close + 1), `${clause.slice(0, open)}${clause.slice(close + 1)}`];
+}
+
+/** The `* as ns` binding in an import clause, and the clause without it. */
+function takeNamespace(clause: string): [string | null, string] {
+  const star = clause.indexOf('*');
+  if (star < 0) return [null, clause];
+  const [, ns] = splitAs(clause.slice(star + 1).split(',')[0] ?? '');
+  const rest =
+    clause.slice(0, star) +
+    clause
+      .slice(star + 1)
+      .split(',')
+      .slice(1)
+      .join(',');
+  return [ns ?? null, rest];
 }
 
 function rewriteImport(statement: string, key: string, tmp: string): string {
   const take = `const ${tmp} = ${HELPER_FN}(${JSON.stringify(key)});`;
-  if (/^import\s*['"]/.test(statement)) return `${HELPER_FN}(${JSON.stringify(key)});`;
-  const clause = /^import\s+([\s\S]*?)\s*from\s*['"]/.exec(statement)?.[1];
-  if (clause === undefined) throw new Error(`cannot rewrite: ${statement}`);
+  const afterImport = statement.slice('import'.length).trimStart();
+  if (afterImport.startsWith("'") || afterImport.startsWith('"')) {
+    return `${HELPER_FN}(${JSON.stringify(key)});`;
+  }
+  const fromAt = statement.lastIndexOf(' from ');
+  if (!statement.startsWith('import') || fromAt < 0)
+    throw new Error(`cannot rewrite: ${statement}`);
   const lines = [take];
-  let rest = clause.trim();
-  const braces = /\{[^}]*\}/.exec(rest)?.[0];
-  if (braces) {
-    lines.push(`const ${pattern(braces)} = ${tmp};`);
-    rest = rest.replace(braces, '');
-  }
-  const ns = /\*\s+as\s+(\w+)/.exec(rest)?.[1];
-  if (ns) {
-    lines.push(`const ${ns} = ${tmp};`);
-    rest = rest.replace(/\*\s+as\s+\w+/, '');
-  }
-  const def = rest.replace(/,/g, '').trim();
+  const [braces, afterBraces] = takeBraces(statement.slice('import'.length, fromAt).trim());
+  if (braces) lines.push(`const ${pattern(braces)} = ${tmp};`);
+  const [ns, afterNs] = takeNamespace(afterBraces);
+  if (ns) lines.push(`const ${ns} = ${tmp};`);
+  const def = afterNs.replaceAll(',', '').trim();
   if (def) lines.push(`const ${def} = ${tmp}.default;`);
   return lines.join(' ');
 }
 
 function rewriteReexport(statement: string, key: string, tmp: string): string {
   const take = `const ${tmp} = ${HELPER_FN}(${JSON.stringify(key)});`;
-  const braces = /\{[^}]*\}/.exec(statement)?.[0];
+  const [braces] = takeBraces(statement);
   if (!braces) {
     throw new Error(`\`export * from '${key}'\` is not supported for a package the host provides`);
   }
-  const fields = braces
-    .slice(1, -1)
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((s) => {
-      const [name, alias] = s.split(/\s+as\s+/);
-      return `export const ${alias ?? name} = ${tmp}.${name};`;
-    });
+  const fields = fieldsOf(braces).map(
+    ([name, alias]) => `export const ${alias ?? name} = ${tmp}.${name};`,
+  );
   return [take, ...fields].join(' ');
 }
 

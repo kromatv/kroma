@@ -457,22 +457,6 @@
         "react": "^19.2.8",
       },
     },
-    "modules/tv.kroma.smoke": {
-      "name": "@kroma/module-smoke",
-      "version": "0.0.0",
-      "dependencies": {
-        "@kroma/module-sdk": "workspace:*",
-        "@kroma/ui": "workspace:*",
-        "zod": "^4.5.4",
-      },
-      "devDependencies": {
-        "@types/react": "^19.2.18",
-        "typescript": "^7.0.2",
-      },
-      "peerDependencies": {
-        "react": "^19.2.8",
-      },
-    },
     "modules/tv.kroma.torrents": {
       "name": "@kroma/module-torrents",
       "version": "0.0.0",
@@ -555,6 +539,7 @@
       "name": "@kroma/ci-tools",
       "version": "0.0.0",
       "dependencies": {
+        "smol-toml": "^1.8.0",
         "zod": "^4.5.4",
       },
       "devDependencies": {
@@ -576,6 +561,7 @@
         "es-module-lexer": "^2.3.1",
         "hono": "^4.13.2",
         "magic-string": "^0.30.21",
+        "smol-toml": "^1.8.0",
         "vite": "8.2.1",
         "zod": "^4.5.4",
       },
@@ -1556,8 +1542,6 @@
     "@kroma/module-remote": ["@kroma/module-remote@workspace:modules/tv.kroma.remote"],
 
     "@kroma/module-sdk": ["@kroma/module-sdk@workspace:packages/module-sdk"],
-
-    "@kroma/module-smoke": ["@kroma/module-smoke@workspace:modules/tv.kroma.smoke"],
 
     "@kroma/module-torrents": ["@kroma/module-torrents@workspace:modules/tv.kroma.torrents"],
 
@@ -3220,6 +3204,8 @@
     "sisteransi": ["sisteransi@1.0.5", "", {}, "sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg=="],
 
     "slugify": ["slugify@1.6.9", "", {}, "sha512-vZ7rfeehZui7wQs438JXBckYLkIIdfHOXsaVEUMyS5fHo1483l1bMdo0EDSWYclY0yZKFOipDy4KHuKs6ssvdg=="],
+
+    "smol-toml": ["smol-toml@1.8.0", "", {}, "sha512-kCZr2V3ch9i00x8zXRhjUNVcjG9ijES5dDudkXvUVCT5QlJNQWElSJdZqyPemffHoLNUYwOcou0Fy+ojN0uHSQ=="],
 
     "source-map": ["source-map@0.7.6", "", {}, "sha512-i5uvt8C3ikiWeNZSVZNWcfZPItFQOsYTUAOkcUPGd8DqDy1uOUikjt5dG+uRlwyvR108Fb9DOd4GvXfT0N2/uQ=="],
 

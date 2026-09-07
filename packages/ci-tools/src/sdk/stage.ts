@@ -7,6 +7,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { $ } from 'bun';
 import { root } from '../root';
@@ -77,7 +78,9 @@ async function bundleCli(from: string, to: string): Promise<void> {
  *  `IconName` union is derived from them, and the package is not one a module
  *  installs. */
 function tablerIconNames(uiDir: string): string[] {
-  const manifest = Bun.resolveSync('@tabler/icons-react-native/package.json', uiDir);
+  const manifest = createRequire(join(uiDir, 'package.json')).resolve(
+    '@tabler/icons-react-native/package.json',
+  );
   const typings = readFileSync(
     join(manifest, '..', 'dist', 'tabler-icons-react-native.d.ts'),
     'utf8',
@@ -85,7 +88,7 @@ function tablerIconNames(uiDir: string): string[] {
   const names = [...typings.matchAll(/ as (Icon[A-Za-z0-9]+)\b/g)].map((m) => m[1] ?? '');
   if (names.length < 1000)
     throw new Error(`Tabler typings list ${names.length} icons; expected thousands`);
-  return [...new Set(names)].sort();
+  return [...new Set(names)].sort((a, b) => (a < b ? -1 : 1));
 }
 
 /**
@@ -98,7 +101,7 @@ function inlineIconNames(uiDir: string, typesDir: string): void {
   const glyphs = join(typesDir, 'src', 'lib', 'icons', 'glyphs.d.ts');
   const source = join(typesDir, 'src', 'lib', 'icons', 'glyph-source.d.ts');
   const importLine = "import type * as Tabler from '@tabler/icons-react-native';\n";
-  const derived = 'type IconExport = Extract<keyof typeof Tabler, `Icon${string}`>;';
+  const derived = `type IconExport = Extract<keyof typeof Tabler, \`Icon\${string}\`>;`;
   const text = readFileSync(glyphs, 'utf8');
   if (!text.includes(importLine) || !text.includes(derived)) {
     throw new Error(`${glyphs}: the icon-name derivation moved; update inlineIconNames`);

@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { gunzipSync, zstdDecompressSync } from 'node:zlib';
 import { byCodeUnit } from '../sort';
 
 const BLOCK = 512;
@@ -114,12 +115,12 @@ export function tarNames(tar: Uint8Array): string[] {
 }
 
 /** The tar inside a `.kmod`, whichever way it was compressed. */
-export function toTar(buf: Uint8Array<ArrayBuffer>): Uint8Array {
+export function toTar(buf: Uint8Array): Uint8Array {
   if (buf[0] === 0x28 && buf[1] === 0xb5 && buf[2] === 0x2f && buf[3] === 0xfd) {
-    return Bun.zstdDecompressSync(buf);
+    return new Uint8Array(zstdDecompressSync(buf));
   }
   if (buf[0] === 0x1f && buf[1] === 0x8b) {
-    return Bun.gunzipSync(buf);
+    return new Uint8Array(gunzipSync(buf));
   }
   return buf;
 }

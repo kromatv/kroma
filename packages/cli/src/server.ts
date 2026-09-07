@@ -10,8 +10,8 @@ export interface Server {
 }
 
 export interface ServerOptions {
-  server?: string | undefined;
-  token?: string | undefined;
+  server?: string;
+  token?: string;
 }
 
 /** The server a command talks to: the flag, else `KROMA_SERVER`, else the one
@@ -20,9 +20,9 @@ export interface ServerOptions {
 export function resolveServer(options: ServerOptions): Server {
   const config = readConfig();
   const url = normalizeServer(
-    options.server ?? process.env.KROMA_SERVER ?? config.defaultServer ?? DEFAULT_SERVER,
+    options.server || process.env.KROMA_SERVER || config.defaultServer || DEFAULT_SERVER,
   );
-  const token = options.token ?? process.env.KROMA_TOKEN ?? config.servers[url]?.token;
+  const token = options.token || process.env.KROMA_TOKEN || config.servers[url]?.token;
   if (!token) {
     throw new Error(
       `no token for ${url}: run \`kroma login ${url}\`, or pass --token / set KROMA_TOKEN (an account with settings.manage)`,

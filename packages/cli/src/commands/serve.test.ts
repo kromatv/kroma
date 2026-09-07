@@ -88,4 +88,26 @@ describe('registryApp', () => {
     expect((await get('/../etc/passwd.kmod')).status).toBe(404);
     expect((await get('/other.kmod')).status).toBe(404);
   });
+
+  it('hands a bundle over as bytes rather than as a document', async () => {
+    const res = await get('/com.acme.demo.kmod');
+
+    expect(res.headers.get('content-type')).toBe('application/octet-stream');
+    expect((await res.arrayBuffer()).byteLength).toBeGreaterThan(0);
+  });
+
+  it('lets a page on any origin read the JSON documents', async () => {
+    const paths = [
+      '/registry.json',
+      '/index.json',
+      '/m/com.acme.demo.json',
+      '/schemas/2/manifest.json',
+    ];
+
+    const allowed = await Promise.all(
+      paths.map(async (path) => (await get(path)).headers.get('access-control-allow-origin')),
+    );
+
+    expect(allowed).toEqual(['*', '*', '*', '*']);
+  });
 });

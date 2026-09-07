@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import * as p from '@clack/prompts';
 import { REVERSE_DNS_ID } from '@kroma/registry';
-import { $ } from 'bun';
+import { exec } from '../exec';
 import {
   type Answers,
   type Kind,
@@ -20,13 +20,13 @@ import { renderTree } from '../scaffold/render';
 import { style } from '../style';
 
 export interface CreateOptions {
-  dir?: string | undefined;
-  id?: string | undefined;
-  name?: string | undefined;
-  description?: string | undefined;
-  kind?: string | undefined;
-  storage?: boolean | undefined;
-  inRepo?: boolean | undefined;
+  dir?: string;
+  id?: string;
+  name?: string;
+  description?: string;
+  kind?: string;
+  storage?: boolean;
+  inRepo?: boolean;
   install?: boolean;
   yes?: boolean;
   cwd?: string;
@@ -56,7 +56,7 @@ function idIssue(id: string): string | undefined {
 
 function titleOf(id: string): string {
   const slug = slugOf(id);
-  return slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ');
+  return slug.charAt(0).toUpperCase() + slug.slice(1).replaceAll('-', ' ');
 }
 
 async function answer<T>(value: T | symbol): Promise<T> {
@@ -116,27 +116,24 @@ function write(target: string, rel: string, value: unknown): void {
   writeFileSync(join(target, rel), `${JSON.stringify(value, null, 2)}\n`);
 }
 
-/** `kroma create [dir]`: a module project from a few answers, installed and
- *  ready for `kroma dev`. Inside this repository it lands under `modules/`
- *  with workspace links instead. */
-export async function createCommand(options: CreateOptions): Promise<number> {
-  const cwd = options.cwd ?? process.cwd();
-  const a = await ask(options, cwd);
-  const repo = a.inRepo ? repoRoot(cwd) : null;
+function targetFor(options: CreateOptions, id: string, cwd: string, repo: string | null): string {
   const explicit = options.dir && !isBareId(options.dir) ? resolve(cwd, options.dir) : null;
-  const target = explicit ?? (repo ? join(repo, 'modules', a.id) : join(cwd, a.id));
-  if (existsSync(target) && readdirSync(target).length > 0) {
-    throw new Error(`${target} exists and is not empty`);
-  }
-  mkdirSync(target, { recursive: true });
+  return explicit ?? (repo ? join(repo, 'modules', id) : join(cwd, id));
+}
 
+function scaffold(
+  a: Answers,
+  target: string,
+  repo: string | null,
+  cwd: string,
+): { written: string[]; hasPackage: boolean } {
   const v = versions(cwd);
   const vars = templateVars(a, v);
   const written: string[] = [];
   for (const tree of treesFor(a.kind)) {
     for (const rel of renderTree(tree, target, vars)) {
       if (a.inRepo && skipInRepo(rel)) {
-        await $`rm -f ${join(target, rel)}`.quiet();
+        rmSync(join(target, rel), { force: true });
         continue;
       }
       written.push(rel);
@@ -147,46 +144,60 @@ export async function createCommand(options: CreateOptions): Promise<number> {
   const pkg = packageJsonFor(a, v);
   if (pkg) {
     write(target, 'package.json', pkg);
-    write(
-      target,
-      'tsconfig.json',
-      tsconfigFor(a, repo ? relative(repo, target).split('/').length : 0),
-    );
+    const depth = repo ? relative(repo, target).split('/').length : 0;
+    write(target, 'tsconfig.json', tsconfigFor(a, depth));
     written.push('package.json', 'tsconfig.json');
   }
+  return { written, hasPackage: pkg !== null };
+}
+
+async function install(quiet: boolean, inRepo: boolean, cwd: string): Promise<boolean> {
+  const s = quiet ? null : p.spinner();
+  s?.start(inRepo ? 'bun install (workspace links)' : 'bun install');
+  const result = await exec('bun', ['install'], { cwd, quiet: true });
+  if (result.exitCode !== 0) {
+    s?.stop('bun install failed');
+    console.error(result.stderr);
+    return false;
+  }
+  s?.stop('installed');
+  return true;
+}
+
+function nextSteps(where: string, inRepo: boolean): string {
+  return [
+    ...(where === '.' ? [] : [`cd ${where}`]),
+    ...(inRepo ? [] : ['bunx kroma login http://localhost:4040']),
+    'bunx kroma dev',
+  ].join('\n');
+}
+
+/** `kroma create [dir]`: a module project from a few answers, installed and
+ *  ready for `kroma dev`. Inside this repository it lands under `modules/`
+ *  with workspace links instead. */
+export async function createCommand(options: CreateOptions): Promise<number> {
+  const cwd = options.cwd ?? process.cwd();
+  const a = await ask(options, cwd);
+  const repo = a.inRepo ? repoRoot(cwd) : null;
+  const target = targetFor(options, a.id, cwd, repo);
+  if (existsSync(target) && readdirSync(target).length > 0) {
+    throw new Error(`${target} exists and is not empty`);
+  }
+  mkdirSync(target, { recursive: true });
+  const { written, hasPackage } = scaffold(a, target, repo, cwd);
 
   const where = relative(cwd, target) || '.';
-  if (options.yes) {
-    console.log(`created ${a.id} in ${where} (${written.length} files)`);
-  } else {
-    p.log.success(`${a.id} in ${where}`);
-  }
+  const quiet = options.yes === true;
+  if (quiet) console.log(`created ${a.id} in ${where} (${written.length} files)`);
+  else p.log.success(`${a.id} in ${where}`);
 
-  const install = options.install !== false && pkg !== null;
-  if (install) {
-    const s = options.yes ? null : p.spinner();
-    s?.start(a.inRepo ? 'bun install (workspace links)' : 'bun install');
-    const result = await $`bun install`
-      .cwd(repo ?? target)
-      .quiet()
-      .nothrow();
-    if (result.exitCode !== 0) {
-      s?.stop('bun install failed');
-      console.error(result.stderr.toString());
-      return 1;
-    }
-    s?.stop('installed');
-  }
+  const wanted = options.install !== false && hasPackage;
+  if (wanted && !(await install(quiet, a.inRepo, repo ?? target))) return 1;
 
-  const next = [
-    ...(where === '.' ? [] : [`cd ${where}`]),
-    ...(a.inRepo ? [] : ['bunx kroma login http://localhost:4040']),
-    a.inRepo ? 'bunx kroma dev' : 'bunx kroma dev',
-  ];
-  if (options.yes) {
-    console.log(next.join('\n'));
+  if (quiet) {
+    console.log(nextSteps(where, a.inRepo));
   } else {
-    p.note(next.join('\n'), 'next');
+    p.note(nextSteps(where, a.inRepo), 'next');
     p.outro('done');
   }
   return 0;

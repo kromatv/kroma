@@ -17,8 +17,8 @@ import { style } from '../style';
 import { feOutDir } from './build';
 
 export interface DevOptions extends ServerOptions {
-  dir?: string | undefined;
-  target?: string | undefined;
+  dir?: string;
+  target?: string;
   cwd?: string;
 }
 
@@ -26,7 +26,7 @@ const DEBOUNCE_MS = 120;
 
 type Part = 'server' | 'ui' | 'bundle';
 
-function partOf(project: Project, file: string): Part | null {
+export function partOf(project: Project, file: string): Part | null {
   const rel = relative(project.dir, file);
   if (rel.startsWith('..') || rel.startsWith('dist') || rel.startsWith('.bundle')) return null;
   if (rel.startsWith('server/'))
@@ -42,7 +42,7 @@ class Loop {
   private binPath: string | null = null;
   private hasFe = false;
   private running: Promise<void> | null = null;
-  private pending = new Set<Part>();
+  private readonly pending = new Set<Part>();
 
   constructor(
     private readonly project: Project,

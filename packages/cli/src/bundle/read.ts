@@ -36,9 +36,7 @@ function iconDataUri(tar: Uint8Array): string | undefined {
 export function readBundle(path: string): Bundle | null {
   const file = path.split('/').pop() ?? path;
   const bytes = readFileSync(path);
-  const tar = toTar(
-    new Uint8Array(bytes.buffer as ArrayBuffer, bytes.byteOffset, bytes.byteLength),
-  );
+  const tar = toTar(bytes);
   const manifestBytes = tarRead(tar, 'module.json');
   if (!manifestBytes) {
     console.warn(`  ! ${file}: no module.json inside, skipped`);

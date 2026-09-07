@@ -64,8 +64,8 @@ export function registryApp(dir: string) {
 }
 
 export interface ServeOptions {
-  from?: string | undefined;
-  port?: number | undefined;
+  from?: string;
+  port?: number;
   cwd?: string;
 }
 

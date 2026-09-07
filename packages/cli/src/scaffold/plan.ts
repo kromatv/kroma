@@ -45,7 +45,7 @@ function packageRoot(from: string): string {
   }
 }
 
-const CLI_ROOT = packageRoot(import.meta.dir);
+const CLI_ROOT = packageRoot(import.meta.dirname);
 
 /** The npm slug of an id: `tv.acme.notes` → `notes`; `tv.acme.my-notes` → `my-notes`. */
 export function slugOf(id: string): string {
