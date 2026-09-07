@@ -7,8 +7,13 @@ interface MetroContext {
   (key: string): { default: DomainFactory };
 }
 
+interface MetroIndexContext {
+  keys(): string[];
+  (key: string): unknown;
+}
+
 declare const require: {
-  context(directory: string, recursive: boolean, filter: RegExp): MetroContext;
+  context(directory: string, recursive: boolean, filter: RegExp): MetroContext & MetroIndexContext;
 };
 
 function every(): Record<string, DomainFactory> {
@@ -19,3 +24,14 @@ function every(): Record<string, DomainFactory> {
 }
 
 export const domains: Readonly<Record<string, DomainFactory>> = every();
+
+function everyIndex(): Record<string, unknown> {
+  const context = require.context('.', true, /\/index\.ts$/);
+  const found: Record<string, unknown> = {};
+  for (const key of context.keys()) found[domainKey(key)] = context(key);
+  return found;
+}
+
+/** Every domain's public module (`@kroma/client/<domain>`) by domain name, for
+ *  a host that hands them to code it loads at runtime. */
+export const domainModules: Readonly<Record<string, unknown>> = everyIndex();

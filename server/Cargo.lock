@@ -1798,6 +1798,7 @@ dependencies = [
  "anyhow",
  "kroma-domain",
  "kroma-primitives",
+ "kroma-sqlite",
  "kroma-testing",
  "rusqlite",
  "serde",
@@ -1810,6 +1811,7 @@ dependencies = [
 name = "kroma-domain"
 version = "0.1.0"
 dependencies = [
+ "kroma-module-wire",
  "serde",
  "serde_json",
 ]
@@ -1881,9 +1883,9 @@ dependencies = [
  "anyhow",
  "async-trait",
  "axum",
- "kroma-db",
- "kroma-domain",
  "kroma-http",
+ "kroma-module-wire",
+ "kroma-sqlite",
  "kroma-testing",
  "serde",
  "serde_json",
@@ -1903,7 +1905,6 @@ dependencies = [
  "kroma-module-host",
  "kroma-module-manifest",
  "kroma-module-supervisor",
- "kroma-modules-generated",
  "kroma-testing",
  "serde_json",
  "tokio",
@@ -1934,10 +1935,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
- "kroma-db",
- "kroma-domain",
  "kroma-http",
  "kroma-module-host",
+ "kroma-module-wire",
+ "kroma-sqlite",
  "serde",
  "serde_json",
  "tokio",
@@ -1958,7 +1959,10 @@ dependencies = [
  "kroma-module-host",
  "kroma-module-macros",
  "kroma-module-manifest",
+ "kroma-module-wire",
  "kroma-primitives",
+ "kroma-sqlite",
+ "kroma-testing",
  "serde",
  "serde_json",
  "tokio",
@@ -1993,12 +1997,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "kroma-modules-generated"
-version = "0.0.0"
+name = "kroma-module-wire"
+version = "0.1.0"
 dependencies = [
- "kroma-engine",
- "kroma-module-host",
- "kroma-module-manifest",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2073,6 +2076,18 @@ dependencies = [
  "walkdir",
  "webauthn-rs",
  "zip",
+]
+
+[[package]]
+name = "kroma-sqlite"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "kroma-testing",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tracing",
 ]
 
 [[package]]

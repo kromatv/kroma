@@ -1,0 +1,7 @@
+{
+  "nav.__SLUG__": "__NAME__",
+  "page.title": "__NAME__",
+  "page.hello": "Hello from __NAME__. The sidecar answered: {answer}",
+  "page.loading": "Loading",
+  "page.failed": "The module did not answer"
+}

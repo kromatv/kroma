@@ -266,6 +266,56 @@ jobs:
           echo "::notice::Candidate ${{ needs.version.outputs.version }} is complete and promotable."
           echo "Promote it with: gh workflow run deploy.yml -f build_run_id=${{ github.run_id }}"
 
+  # ------------------------------------------------------------------- SDK ---
+
+  # `@kroma/module-sdk`, the one public package: the declarations of the SDK,
+  # the kit and their closure, the Rust crates a sidecar links, and the `kroma`
+  # CLI, all built into one tarball stamped with this run's version. A
+  # candidate publishes under the `canary` dist-tag, a stable tag under
+  # `latest`; a dispatch publishes nothing. Not in the candidate gate: a module
+  # author's toolchain must not hold a server release. The tarball is proven by
+  # scaffolding a module from it alone and building it before anything ships.
+  sdk:
+    name: Module SDK
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    timeout-minutes: 25
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+      - run: bun install --frozen-lockfile
+      - name: Stage the package
+        run: >-
+          bun run ci sdk stage
+          --version "${{ needs.version.outputs.channel == 'candidate' && needs.version.outputs.canary || needs.version.outputs.version }}"
+      - name: A module built from the staged package alone
+        run: bun run ci sdk smoke
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kroma-sdk
+          path: dist/sdk/*.tgz
+          if-no-files-found: error
+      # Skipped, not failed, while the NPM_TOKEN secret is absent: the tarball
+      # is still on the run for a hand publish.
+      - name: Publish
+        if: needs.version.outputs.channel != 'none' && env.NODE_AUTH_TOKEN != ''
+        run: >-
+          bun run ci sdk publish --provenance
+          --tag "${{ needs.version.outputs.channel == 'candidate' && 'canary' || 'latest' }}"
+
   # ---------------------------------------------------------------- Canary ---
 
   # The sideloadable half of what this push built, on the rolling `canary`

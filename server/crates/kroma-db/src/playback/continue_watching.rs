@@ -5,7 +5,7 @@ use rusqlite::params;
 
 use super::on_deck::on_deck;
 use crate::hydrate::items_by_ids_ordered;
-use crate::pool::Pool;
+use crate::Pool;
 use crate::rows::parse_metadata;
 use kroma_domain::{ContinueItem, Kind, MediaItem};
 

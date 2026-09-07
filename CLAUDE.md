@@ -52,9 +52,9 @@ workspaces, so `--workspace` from `server/` does not reach them (see below).
 `cargo clippy --workspace --all-targets` and `cargo test --workspace` in
 `server/` are still the quick local loop for the server alone.
 
-`bun run modules:check` (manifests valid + generated output in sync) and
-`bun run deadcode` (knip) are **not** wired into any workflow today. Run them by
-hand after touching a module or a generator.
+`bun run modules:check` (`kroma check` over every module: manifests valid,
+frontends typed, clippy clean) and `bun run deadcode` (knip) are **not** wired
+into any workflow today. Run them by hand after touching a module.
 
 Rust is pinned by `rust-toolchain.toml` (1.96.1, with clippy + rustfmt); the
 workspace `rust-version` floor is 1.88. `cargo fmt --check` is non-blocking: the
@@ -114,16 +114,23 @@ server/
     kroma-domain      entities + pure rules: serde ONLY, no axum/rusqlite/reqwest
     kroma-primitives  timestamps · short hashes · random tokens
     kroma-config      env-parsed Config
-    kroma-db          all SQL, one shared Pool (WAL)
+    kroma-sqlite      the WAL pool, the storage grant, a module's migrations
+    kroma-db          all SQL on top of it, one shared Pool
     kroma-engine      infra + services + state + model, the business logic
     kroma-http kroma-i18n kroma-push
     kroma-module-*    the module host: kernel, manifest, macros, sdk, runtime,
-                      host, supervisor, modules-generated. It carries the
+                      host, supervisor, wire. It carries the
                       MECHANISM and never the meaning: nothing here names a
                       module's domain (see docs/module-plugin-model.md)
 modules/<id>/       NOT in this workspace, see below
 modules/lib/        shared Rust libraries, not modules: naming (and scene, in its own dir)
 ```
+
+A sidecar links a strict subset: `kroma-module-{sdk,runtime,host,manifest,
+macros,wire}`, `kroma-sqlite`, `kroma-http`, `kroma-primitives`,
+`kroma-testing`. It never links `kroma-db` or `kroma-domain`, which is why the
+JSON both sides exchange lives in `kroma-module-wire` and the pool in
+`kroma-sqlite`, each re-exported by the crate that used to own it.
 
 `api/` translates HTTP↔services and holds no business logic; `main.rs` and the
 engine's `state.rs` are the only composition points. Integration tests live beside
@@ -150,9 +157,10 @@ for the model and what is still missing from it, and
 [`modules/README.md`](modules/README.md#calling-another-module) for how to write
 one end.
 
-`modules/roster.yaml` (the compile-time roster) is **empty on purpose**: this is
-the zero-module base build. Every first-party module ships as an installable
-`.kmod` (a zstd bundle of `module.json` + a native `module` binary + icon + `fe/`).
+Nothing is compiled into the server: this is the zero-module base build. Every
+first-party module ships as an installable `.kmod` (a zstd bundle of
+`module.json` + a native `module` binary + icon + `fe/`, the frontend the web
+client loads at runtime).
 `kroma-module-supervisor` scans `<data>/modules/*`, spawns each enabled module as
 its own process on a free localhost port, and reverse-proxies
 `/api/module/<id>/*` to it; modules call back into the core over the token-authed
@@ -181,23 +189,30 @@ workspace boundary, which cargo *does* allow.
 Consequences worth knowing: features are **bare** (`--features local`, never
 `kroma-whisper/local`, inside its own single-package workspace that names a
 dependency); one `cargo build` can no longer select every module, so
-`bun run modules plan` emits one per module against a shared
+`bun run kroma plan` emits one per module against a shared
 `CARGO_TARGET_DIR` (`target/kmod`); and any container that builds the server or a
 module must mount the **whole repo**, not `server/`.
 
-Authoring paths (`modules/README.md`): a **single-file** `modules/<name>.module.md`
-(YAML frontmatter + fenced `tsx`/`rust`/`sql`/`svg` blocks) expanded by
-`bun run modules:gen` into `modules/<id>/` beside it, or a **hand-written crate**.
-Generated output is committed: re-run `modules:gen` after editing the source and
-commit the result, or `modules:check` fails. Never hand-edit generated files.
+Every module chore is the `kroma` CLI (`packages/cli`; `bun run kroma
+<command>` here). A module written outside this repository is the same
+project: `bunx @kromatv/sdk create`, depending on the one public npm package `@kromatv/sdk`
+(the SDK and the kit as declarations only, the Rust crates it links, and the
+CLI), assembled at release time from the private workspace packages
+(`docs/module-sdk-publishing.md`).
 
 ```bash
-bun run modules:new tv.kroma.notes   # scaffold
-bun run modules:gen                  # expand + regenerate the aggregators
-bun run modules:validate             # schema-check every manifest
-bun run modules:pack                 # build the native .kmod
-bun run modules release --dry-run --repo <owner/repo>   # CI's publish verdict
+bun run kroma create tv.kroma.notes   # scaffold under modules/
+bun run kroma check                   # manifests, frontend types, clippy
+bun run kroma build                   # every .kmod into dist/modules
+cd modules/tv.kroma.notes && bunx kroma dev   # install on a server, rebuild on save
+bun run kroma release --dry-run --repo <owner/repo>   # CI's publish verdict
 ```
+
+A module's frontend is a bundle the web client loads at runtime. It takes
+`react`, `@kroma/ui`, `@kroma/module-sdk`, `@kroma/core`, `@kroma/client` and
+the query cache from the host (`SHARED_MODULES` in `@kroma/module-sdk`), so a
+page renders inside the host's theme with one React on the page; nothing in
+`clients/web` names a module.
 
 Modules install from **registries**: one pinned official catalog plus any the
 operator adds under Admin → Modules → Registries. Official always wins an id
@@ -218,7 +233,7 @@ packages/  libraries, consumed by name and never by path
   tv/       the whole 10-foot experience (spatial focus nav, home, detail, player)
   workbench the component atelier + the story SDK the kit's stories are written in
   bundler   the shared Vite/Metro pipeline (rnw, mdx, shell, props-docs, site)
-  site-kit site-meta module-sdk module-tools push-relay ...
+  site-kit site-meta module-sdk cli push-relay ...
 clients/   the product's shells, thin: web · tizen · webos · tv-web · tv-native ·
            mobile · desktop (Tauri+mpv) · synology · tv-build + expo-build (pipelines)
 apps/      the web properties, deployed to Cloudflare

@@ -20,8 +20,9 @@ pub use stub::StubHost;
 
 #[cfg(test)]
 mod fixtures {
-    use kroma_domain::metadata::{EpisodeInfo, MatchCandidate};
-    use kroma_domain::{NotificationEvent, NotificationSpec, User};
+    use kroma_module_wire::{
+        EpisodeInfo, MatchCandidate, NotificationEvent, NotificationSpec, User,
+    };
 
     pub fn candidate() -> MatchCandidate {
         MatchCandidate {

@@ -9,6 +9,7 @@ const COMMANDS = {
   cache: async (args: string[]) => (await import('./cache')).main(args),
   tools: async (args: string[]) => (await import('./tools')).main(args),
   sonar: async (args: string[]) => (await import('./sonar')).main(args),
+  sdk: async (args: string[]) => (await import('./sdk-command')).main(args),
 };
 
 type Command = keyof typeof COMMANDS;

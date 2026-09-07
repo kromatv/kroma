@@ -18,7 +18,7 @@ use kroma_indexer::store::DefinitionStore;
 #[test]
 #[ignore]
 fn real_sync_downloads_and_loads() {
-    let dir = kroma_testing::temp_dir("defs-live");
+    let dir = kroma_module_sdk::testing::temp_dir("defs-live");
     let store = DefinitionStore::new(dir.path());
 
     let report = store.sync().expect("sync");

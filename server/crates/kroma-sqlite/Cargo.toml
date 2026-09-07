@@ -1,0 +1,24 @@
+[package]
+name = "kroma-sqlite"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "The SQLite pool, the storage grant that scopes it and a module's own migrations: the mechanism a sidecar links, none of the schema."
+license.workspace = true
+
+[features]
+# `testing::temp_pool`, the throwaway database. Off by default so nothing
+# reaches a release build.
+testing = ["dep:kroma-testing", "dep:serde_json"]
+
+[dependencies]
+kroma-testing = { workspace = true, optional = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true, optional = true }
+rusqlite = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+kroma-testing = { workspace = true }
+serde_json = { workspace = true }

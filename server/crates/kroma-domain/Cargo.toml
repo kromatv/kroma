@@ -9,6 +9,7 @@ license.workspace = true
 # Purity is now enforced by the compiler, not a CI grep: this crate depends only
 # on serde, so an accidental `use axum::` / `use rusqlite::` won't resolve.
 [dependencies]
+kroma-module-wire = { workspace = true }
 serde = { workspace = true }
 
 # Tests only, so the purity rule above still holds for library code: the wire

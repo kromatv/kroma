@@ -362,6 +362,26 @@ async fn store_catalog_requires_settings_manage() {
 }
 
 #[tokio::test]
+async fn store_platform_requires_settings_manage() {
+    let t = test_app();
+    let m = member(&t, "platform-member");
+    let (status, _) = get(&t.app, "/api/admin/store/platform", Some(&m)).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn store_platform_names_the_build_target_and_the_server_version() {
+    let t = test_app();
+
+    let (status, body) = get(&t.app, "/api/admin/store/platform", Some(&t.token)).await;
+
+    assert_eq!(status, StatusCode::OK);
+    let target = body["target"].as_str().expect("a target triple");
+    assert!(target.contains('-'), "{target}");
+    assert_eq!(body["serverVersion"], json!(env!("CARGO_PKG_VERSION")));
+}
+
+#[tokio::test]
 async fn store_catalog_reports_an_unreachable_registry_cleanly() {
     let t = test_app();
     // Point the store at a local port that refuses instantly: the fetch fails,

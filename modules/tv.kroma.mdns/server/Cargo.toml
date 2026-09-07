@@ -28,7 +28,7 @@ mdns-sd = "0.20"
 # cannot be written from a crate that does not depend on axum. The shared
 # `StubHost` is the only way to reach this module's enable/disable path.
 [dev-dependencies]
-kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
 
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =
 # "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO

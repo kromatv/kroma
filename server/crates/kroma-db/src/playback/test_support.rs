@@ -1,6 +1,6 @@
 use rusqlite::params;
 
-use crate::pool::Pool;
+use crate::Pool;
 use crate::testing::TempPool;
 use kroma_domain::Permission;
 

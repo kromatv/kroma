@@ -9,7 +9,7 @@ use axum::routing::post;
 use axum::{Json, Router};
 use serde::Deserialize;
 
-use kroma_module_host::port_reply;
+use kroma_module_sdk::host::port_reply;
 
 use crate::types::{Caps, IndexerEndpoint, Query, Release};
 

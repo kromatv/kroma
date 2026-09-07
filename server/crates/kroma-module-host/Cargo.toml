@@ -10,21 +10,21 @@ license.workspace = true
 # Compiles `testing::{StubHost, Recording}`, the shared HostCtx doubles. Off by
 # default so nothing reaches a release build; crates that test against the seam
 # turn it on in their dev-dependencies.
-testing = ["dep:kroma-testing", "storage", "test-serve"]
+testing = ["dep:kroma-testing", "storage", "test-serve", "kroma-sqlite/testing"]
 # `test_serve::{serve, blocking}` alone: an axum router on an ephemeral localhost
 # port. Separate from `testing` because a port contract's round-trip test needs
 # the wire and not a database.
 test-serve = []
 # The `storage` capability: `HostStorage`, the two pools, and the `query` helper.
 # Off by default, and that default is the point -- a module that declares no
-# storage must not link `kroma-db`, which is what drags the whole bundled SQLite
-# amalgamation (1.5 MB of machine code) into a sidecar that never opens a
-# database. Enabled through `kroma-module-sdk/storage` by the modules that do.
-storage = ["dep:kroma-db"]
+# storage must not link SQLite, whose bundled amalgamation is 1.5 MB of machine
+# code in a sidecar that never opens a database. Enabled through
+# `kroma-module-sdk/storage` by the modules that do.
+storage = ["dep:kroma-sqlite"]
 
 [dependencies]
-kroma-domain = { workspace = true }
-kroma-db = { workspace = true, optional = true }
+kroma-module-wire = { workspace = true }
+kroma-sqlite = { workspace = true, optional = true }
 kroma-http = { workspace = true }
 kroma-testing = { workspace = true, optional = true }
 axum = { workspace = true }
@@ -39,7 +39,7 @@ tracing = { workspace = true }
 # `oneshot`, to drive the host-token guard without binding a port.
 tower = { workspace = true }
 tokio = { workspace = true }
-# `db::testing::temp_pool` for the pool-handling tests, and the scratch dir the
+# `testing::temp_pool` for the pool-handling tests, and the scratch dir the
 # `testing` module hands every StubHost (its own feature cannot switch itself on).
-kroma-db = { workspace = true, features = ["testing"] }
+kroma-sqlite = { workspace = true, features = ["testing"] }
 kroma-testing = { workspace = true }

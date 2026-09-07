@@ -16,7 +16,6 @@ kroma-module-manifest = { workspace = true }
 # Generated aggregator: owns the whole compile-time roster (every module's
 # manifest + the backend behaviors), built from modules/roster.yaml. The kernel
 # names no individual module, so it needs none of them as a direct dependency.
-kroma-modules-generated = { workspace = true }
 # The supervisor (resolved as a host service) so the listing endpoints include
 # runtime-installed `.kmod` modules alongside the compile-time roster.
 kroma-module-supervisor = { workspace = true }

@@ -43,5 +43,14 @@
     "react": "19.2.8",
     "typescript": "^7.0.2",
     "vite": "^8.2.1"
-  }
+  },
+  "files": [
+    "src",
+    "vite",
+    "assets",
+    "README.md",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx"
+  ],
+  "homepage": "https://kroma.tv"
 }

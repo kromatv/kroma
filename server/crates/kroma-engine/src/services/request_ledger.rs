@@ -211,7 +211,8 @@ mod tests {
     use kroma_module_host::testing::StubHost;
 
     fn host(key: Option<&str>) -> StubHost {
-        let host = StubHost::with_db("ledger").with_metadata_language("en-US");
+        let host =
+            StubHost::with_core(crate::db::testing::temp_pool("ledger")).with_metadata_language("en-US");
         match key {
             Some(k) => host.with_tmdb_key(k),
             None => host,

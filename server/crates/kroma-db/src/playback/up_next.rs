@@ -4,7 +4,7 @@ use anyhow::Result;
 use rusqlite::{params, OptionalExtension};
 
 use crate::hydrate::attach_files;
-use crate::pool::Pool;
+use crate::Pool;
 use crate::rows::row_to_item;
 use crate::schema::ITEM_COLS;
 use kroma_domain::MediaItem;

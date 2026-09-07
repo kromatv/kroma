@@ -8,9 +8,9 @@ name: Modules
 # version module.json happened to say, with nothing checking that the version had
 # moved. So the same version went out again carrying different bytes, the Store
 # (which compares versions to offer an update) concluded there was nothing to do,
-# and module fixes reached nobody. `modules release` is the gate that closes that:
+# and module fixes reached nobody. `kroma release` is the gate that closes that:
 # packed bundles are content-hashed against the live catalog, and a changed module
-# whose version stood still FAILS the run.
+# whose version stood still is left unpublished and named in the run.
 #
 # What publishing produces:
 #   <module-id>@<version>   one prerelease per module, holding its per-target
@@ -34,7 +34,7 @@ on:
       # content-hash gate is what decides whether it actually did.
       - 'modules/**'
       - 'server/crates/kroma-module-*/**'
-      - 'packages/module-tools/**'
+      - 'packages/cli/**'
       - 'packages/module-sdk/**'
       - 'rust-toolchain.toml'
       - '.github/workflows/modules.yml'
@@ -75,7 +75,7 @@ jobs:
   #    is derived from each module's Cargo.toml, then run in the container; the
   #    .kmod staging + zstd packing (and each vite frontend) run on the host.
   #  - macOS arm64 (dev servers): built natively on a macos runner, no container
-  #    (modules:pack compiles + packs in one step).
+  #    (`kroma build` compiles + packs in one step).
   modules:
     name: Modules (.kmod ${{ matrix.target }})
     runs-on: ${{ matrix.runner }}
@@ -137,7 +137,7 @@ jobs:
         if: matrix.image != ''
         run: |
           set -euo pipefail
-          bun run modules plan > /tmp/kmod-build.sh
+          bun run kroma plan > /tmp/kmod-build.sh
           echo "=== build plan ==="; cat /tmp/kmod-build.sh
           mkdir -p "$HOME/.cargo/registry"
           docker run --rm \
@@ -169,18 +169,18 @@ jobs:
         if: matrix.image == ''
         run: |
           set -euo pipefail
-          bun run modules plan > /tmp/kmod-build.sh
+          bun run kroma plan > /tmp/kmod-build.sh
           echo "=== build plan ==="; cat /tmp/kmod-build.sh
           bash -euo pipefail /tmp/kmod-build.sh
 
-      # Stage + zstd-pack each binary (and build its vite frontend) into
-      # dist/modules/<id>-<target>.kmod (+ a .sha256 sidecar each).
-      # KMOD_SKIP_BUILD is now set on BOTH legs: whichever step above produced
-      # the binaries, this one only stages them.
+      # Build each module's frontend remote, then stage + zstd-pack it with the
+      # binary into dist/modules/<id>-<target>.kmod (+ a .sha256 sidecar each).
+      # KMOD_SKIP_BUILD is set on BOTH legs: whichever step above produced the
+      # binaries, this one only stages them.
       - name: Pack all modules
         env:
           KMOD_SKIP_BUILD: '1'
-        run: bun run modules:pack
+        run: bun run kroma build
 
       - name: Upload .kmod artifacts (+ checksums)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -218,9 +218,8 @@ jobs:
           bun-version-file: .bun-version
           no-cache: true
 
-      # `modules release` reads the registry contract (`@kroma/registry`) to
+      # `kroma release` reads the registry contract (`@kroma/registry`) to
       # order versions, so this job needs the workspace links like any other.
-      # It went without one for as long as module-tools had no dependencies.
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -235,7 +234,7 @@ jobs:
       # comparison is against what servers are actually being served - not
       # against a release asset that may have been superseded.
       - name: Decide what to publish
-        run: bun run modules release --repo "$GH_REPO"
+        run: bun run kroma release --repo "$GH_REPO"
 
       - name: Show the plan
         run: |

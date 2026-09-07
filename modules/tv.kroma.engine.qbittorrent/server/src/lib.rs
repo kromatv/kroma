@@ -276,7 +276,7 @@ mod tests {
     struct FakeQbit {
         base: String,
         seen: Arc<Mutex<Vec<String>>>,
-        jar_dir: kroma_testing::TempDir,
+        jar_dir: kroma_module_sdk::testing::TempDir,
     }
 
     // (status, body)
@@ -356,7 +356,7 @@ mod tests {
             Self {
                 base: format!("http://127.0.0.1:{port}"),
                 seen,
-                jar_dir: kroma_testing::temp_dir("qbit-jar"),
+                jar_dir: kroma_module_sdk::testing::temp_dir("qbit-jar"),
             }
         }
 

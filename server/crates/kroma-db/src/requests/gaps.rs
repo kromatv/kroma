@@ -3,7 +3,7 @@
 use anyhow::Result;
 use rusqlite::{params, Connection};
 
-use crate::pool::Pool;
+use crate::Pool;
 use kroma_domain::{CalendarEntry, RequestKind};
 
 /// Replace one show's library-scan gaps (aired TMDB episodes not on disk) in one

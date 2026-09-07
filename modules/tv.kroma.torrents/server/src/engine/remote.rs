@@ -418,7 +418,7 @@ mod tests {
     }
 
     async fn engine_on(port_name: &str) -> (StubHost, String) {
-        let resolve = kroma_module_host::test_serve::serve(fake_engine(), ()).await;
+        let resolve = kroma_module_sdk::testing::serve(fake_engine(), ()).await;
         let (base, token) = resolve().expect("the fake engine is up");
         let host = StubHost::new().with_point(DOWNLOAD_CLIENT, Some(port_name), &base, &token);
         (host, base)
@@ -429,7 +429,7 @@ mod tests {
         let (host, _) = engine_on("qbittorrent").await;
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
 
-        let reported = kroma_module_host::test_serve::blocking(move || engine.test())
+        let reported = kroma_module_sdk::testing::blocking(move || engine.test())
             .await
             .unwrap();
 
@@ -443,7 +443,7 @@ mod tests {
         let (host, _) = engine_on("qbittorrent").await;
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
 
-        let reference = kroma_module_host::test_serve::blocking(move || {
+        let reference = kroma_module_sdk::testing::blocking(move || {
             engine.add(&AddTorrentReq {
                 magnet_or_url: "magnet:?xt=urn:btih:AB",
                 download_dir: Some("/downloads"),
@@ -463,7 +463,7 @@ mod tests {
         let (host, _) = engine_on("qbittorrent").await;
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
 
-        let status = kroma_module_host::test_serve::blocking(move || engine.status("abc"))
+        let status = kroma_module_sdk::testing::blocking(move || engine.status("abc"))
             .await
             .unwrap()
             .expect("the engine knows this torrent");
@@ -489,7 +489,7 @@ mod tests {
         let (host, _) = engine_on("qbittorrent").await;
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
 
-        let status = kroma_module_host::test_serve::blocking(move || engine.status("forgotten"))
+        let status = kroma_module_sdk::testing::blocking(move || engine.status("forgotten"))
             .await
             .unwrap();
 
@@ -501,7 +501,7 @@ mod tests {
         let (host, _) = engine_on("qbittorrent").await;
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
 
-        let outcome = kroma_module_host::test_serve::blocking(move || {
+        let outcome = kroma_module_sdk::testing::blocking(move || {
             (
                 engine.pause("abc"),
                 engine.resume("abc"),
@@ -541,7 +541,7 @@ mod tests {
         );
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
 
-        let failed = kroma_module_host::test_serve::blocking(move || engine.test()).await;
+        let failed = kroma_module_sdk::testing::blocking(move || engine.test()).await;
 
         assert!(failed.is_err());
     }

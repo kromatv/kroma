@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { useIndexerApi } from './api';
-import { indexerModule } from './index';
+import indexerModule from './module';
 
 describe('indexerModule', () => {
   it('takes its identity from the shared manifest and depends on nothing', () => {

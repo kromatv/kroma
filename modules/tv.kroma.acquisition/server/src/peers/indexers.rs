@@ -310,7 +310,7 @@ mod tests {
     }
 
     async fn indexer_host() -> StubHost {
-        let resolve = kroma_module_host::test_serve::serve(fake_indexer(), ()).await;
+        let resolve = kroma_module_sdk::testing::serve(fake_indexer(), ()).await;
         let (base, token) = resolve().expect("the fake indexer is up");
         StubHost::new()
             .with_point(INDEXER_DB, None, &base, &token)
@@ -321,7 +321,7 @@ mod tests {
     async fn the_sweep_gets_the_indexers_it_orders_on() {
         let host = indexer_host().await;
 
-        let (all, live) = kroma_module_host::test_serve::blocking(move || {
+        let (all, live) = kroma_module_sdk::testing::blocking(move || {
             (list(&host).unwrap(), enabled(&host).unwrap())
         })
         .await;
@@ -336,7 +336,7 @@ mod tests {
     async fn one_indexer_by_id_or_none_when_it_is_gone() {
         let host = indexer_host().await;
 
-        let (found, missing) = kroma_module_host::test_serve::blocking(move || {
+        let (found, missing) = kroma_module_sdk::testing::blocking(move || {
             (get(&host, "a").unwrap(), get(&host, "ghost").unwrap())
         })
         .await;
@@ -349,7 +349,7 @@ mod tests {
     async fn a_search_names_the_indexer_by_id_and_keeps_both_halves_of_the_answer() {
         let host = indexer_host().await;
 
-        let outcome = kroma_module_host::test_serve::blocking(move || {
+        let outcome = kroma_module_sdk::testing::blocking(move || {
             search(
                 &host,
                 "a",
@@ -373,7 +373,7 @@ mod tests {
     async fn a_resolved_download_yields_the_link_and_a_note_lands() {
         let host = indexer_host().await;
 
-        let link = kroma_module_host::test_serve::blocking(move || {
+        let link = kroma_module_sdk::testing::blocking(move || {
             note_result(&host, "a", false, Some("timeout"), 42).unwrap();
             resolve_download(&host, "a", "R", None, "http://t/f.torrent")
                 .unwrap()

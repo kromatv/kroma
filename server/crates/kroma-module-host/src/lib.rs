@@ -37,7 +37,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 
 pub use async_trait::async_trait;
-pub use kroma_domain::{
+pub use kroma_module_wire::{
     ActionKind, ActionSpec, ActionStyle, Audience, NotificationCategory, NotificationEvent,
     NotificationSpec, PushCategory,
 };

@@ -1,8 +1,17 @@
-// Detail-page theme playback on native. expo-video rather than expo-audio: its
-// pod is already linked in, so a theme needs no extra native module.
+// Detail-page theme playback, web (Tizen / webOS / desktop / browser).
+//
+// Built on `new Audio()`, which is the whole reason this file exists separately:
+// React Native has no such constructor, and reaching for it there threw a
+// ReferenceError the runtime turned into SIGABRT, so opening a series page
+// killed the app outright. The native half (themeAudio.native.ts) is the same
+// feature on an expo-video player; this plain file is the one a consumer's tsc
+// reads, so it must not import an Expo package.
+//
+// Everything the DESIGN specifies - the quiet level, the fade timings, the mute
+// preference and the key it lives under - is shared with the native half in
+// ./lib/theme-audio. Only the machinery differs.
 
-import { useVideoPlayer, type VideoPlayer } from 'expo-video';
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FADE_IN_MS,
   FADE_OUT_MS,
@@ -11,116 +20,121 @@ import {
   writeThemeMuted,
 } from '#ui/lib/theme-audio';
 
-/** Same shape as the web half, so callers need no platform branch. */
+/** Fade a (detached) audio element to silence over `ms`, then pause it owning a
+ * private interval so it always completes. Used on unmount/theme change: the
+ * in-component `fadeTo` shares one ref, so the *next* theme's fade-in would clear
+ * a shared fade-out before it paused the previous element, leaving it looping. */
+function fadeOutAndStop(a: HTMLAudioElement, ms: number): void {
+  const steps = Math.max(1, Math.round(ms / 50));
+  const from = a.volume;
+  let i = 0;
+  const id = setInterval(() => {
+    i += 1;
+    a.volume = Math.max(0, from * (1 - i / steps));
+    if (i >= steps) {
+      clearInterval(id);
+      a.pause();
+    }
+  }, 50);
+}
+
+/** Same shape as the native half, so callers need no platform branch. */
 export interface ThemeAudio {
+  /** Whether a theme is available gates whether the mute toggle renders. */
   active: boolean;
   muted: boolean;
   toggle: () => void;
 }
 
-// Every touch of the player lives in these module-level helpers, for two
-// reasons at once: expo-video releases the native object with the screen and a
-// call after that throws out of the Swift bridge (React Native turns it into
-// SIGABRT), and the React Compiler refuses a hook that mutates a value another
-// hook returned.
-
-function setLevel(player: VideoPlayer, level: RefObject<number>, value: number): void {
-  level.current = Math.min(1, Math.max(0, value));
-  try {
-    player.volume = level.current;
-  } catch {
-    // Released with the screen; the fade that is running will stop itself.
-  }
-}
-
-function pauseQuietly(player: VideoPlayer): void {
-  try {
-    player.pause();
-  } catch {
-    // Already gone.
-  }
-}
-
-function playQuietly(player: VideoPlayer): boolean {
-  try {
-    player.play();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// This interval owns itself: the screen is going, so nothing else clears it.
-function fadeOutAlone(player: VideoPlayer, level: RefObject<number>): void {
-  const steps = Math.max(1, Math.round(FADE_OUT_MS / 50));
-  const from = level.current;
-  let i = 0;
-  const out = setInterval(() => {
-    i += 1;
-    level.current = Math.max(0, from * (1 - i / steps));
-    try {
-      player.volume = level.current;
-      if (i < steps) return;
-      player.pause();
-    } catch {
-      // Released before the fade finished; stop quietly.
-    }
-    if (i >= steps) clearInterval(out);
-  }, 50);
-}
-
-/** Loops `themeUrl` quietly, fading in once it can play and out on the way out. */
+/**
+ * Plex-style theme playback for a detail page: loops `themeUrl` at a low volume,
+ * fading in once it can play and fading out + stopping on unmount (i.e. when the
+ * user hits Play or navigates away).
+ *
+ * Browsers gate autoplay-with-sound behind a user gesture arriving on this page
+ * via a click usually satisfies that, and a one-shot pointer/key fallback covers
+ * the rest. The mute preference is persisted per device so it survives the trip
+ * between pages; React state mirrors it only for the toggle icon (kept SSR-safe
+ * by starting unmuted and syncing on mount).
+ */
 export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
-  const [muted, setMuted] = useState(readThemeMuted);
-  const fade = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  // Nothing here may READ from the player (see the helpers above).
-  const level = useRef(0);
+  const [muted, setMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fadeRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
-  const player = useVideoPlayer(themeUrl ?? null, (p) => {
-    p.loop = true;
-    p.volume = 0;
-  });
+  // Reflect the stored preference once mounted (no storage read during SSR).
+  useEffect(() => setMuted(readThemeMuted()), []);
 
-  const fadeTo = useCallback(
-    (target: number, ms: number, thenPause = false) => {
-      clearInterval(fade.current);
-      const steps = Math.max(1, Math.round(ms / 50));
-      const from = level.current;
-      let i = 0;
-      fade.current = setInterval(() => {
-        i += 1;
-        setLevel(player, level, from + (target - from) * (i / steps));
-        if (i < steps) return;
-        clearInterval(fade.current);
-        if (thenPause) pauseQuietly(player);
-      }, 50);
-    },
-    [player],
-  );
+  // Ramp the element volume toward `target` over `ms`, then optionally pause.
+  const fadeTo = useCallback((target: number, ms: number, thenPause = false) => {
+    const a = audioRef.current;
+    if (!a) return;
+    clearInterval(fadeRef.current);
+    const steps = Math.max(1, Math.round(ms / 50));
+    const from = a.volume;
+    let i = 0;
+    fadeRef.current = setInterval(() => {
+      i += 1;
+      a.volume = Math.min(1, Math.max(0, from + (target - from) * (i / steps)));
+      if (i >= steps) {
+        clearInterval(fadeRef.current);
+        if (thenPause) a.pause();
+      }
+    }, 50);
+  }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the theme and its player only. Re-running when `fadeTo` changes identity would restart the film's theme from the top on an unrelated render.
+  // (Re)create the audio element for the current theme.
   useEffect(() => {
-    if (!themeUrl || readThemeMuted()) return;
-    setLevel(player, level, 0);
-    if (!playQuietly(player)) return;
-    fadeTo(TARGET_VOLUME, FADE_IN_MS);
-    return () => {
-      clearInterval(fade.current);
-      fadeOutAlone(player, level);
+    if (!themeUrl) return;
+    const a = new Audio(themeUrl);
+    a.loop = true;
+    a.preload = 'auto';
+    a.volume = 0;
+    audioRef.current = a;
+
+    const start = () => {
+      if (readThemeMuted()) return;
+      const p = a.play();
+      if (p != null && typeof p.then === 'function')
+        p.then(() => fadeTo(TARGET_VOLUME, FADE_IN_MS)).catch(() => undefined);
+      else fadeTo(TARGET_VOLUME, FADE_IN_MS);
     };
-  }, [themeUrl, player]);
+
+    // Autoplay-with-sound may still be blocked; unblock on the first gesture.
+    const unblock = () => {
+      if (a.paused) start();
+    };
+    document.addEventListener('pointerdown', unblock, { once: true });
+    document.addEventListener('keydown', unblock, { once: true });
+
+    start();
+
+    return () => {
+      document.removeEventListener('pointerdown', unblock);
+      document.removeEventListener('keydown', unblock);
+      // Stop any in-flight in-component fade (shared ref), then fade THIS element
+      // out on its own interval so a remount's fade-in can't cancel it before it
+      // pauses otherwise the old <audio loop> keeps playing forever.
+      clearInterval(fadeRef.current);
+      audioRef.current = null;
+      fadeOutAndStop(a, FADE_OUT_MS);
+    };
+  }, [themeUrl, fadeTo]);
 
   const toggle = useCallback(() => {
     const next = !readThemeMuted();
     writeThemeMuted(next);
     setMuted(next);
+    const a = audioRef.current;
+    if (!a) return;
     if (next) {
       fadeTo(0, 250, true);
       return;
     }
-    if (!playQuietly(player)) return;
+    const p = a.play();
+    if (p != null && typeof p.then === 'function') p.catch(() => undefined);
     fadeTo(TARGET_VOLUME, 400);
-  }, [fadeTo, player]);
+  }, [fadeTo]);
 
   return { active: Boolean(themeUrl), muted, toggle };
 }

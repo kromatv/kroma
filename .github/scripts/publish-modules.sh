@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cut one GitHub Release per module that `modules release` decided to publish,
+# Cut one GitHub Release per module that `kroma release` decided to publish,
 # then refresh the rolling catalog release the registry worker reads.
 #
 # Inputs (env): GH_TOKEN, GH_REPO, SHA
@@ -9,7 +9,7 @@ set -euo pipefail
 
 plan=dist/registry/plan.json
 catalog=dist/registry/modules.json
-[[ -f $plan ]] || { echo "::error::$plan is missing; run \`modules release\` first"; exit 1; }
+[[ -f $plan ]] || { echo "::error::$plan is missing; run \`kroma release\` first"; exit 1; }
 [[ -f $catalog ]] || { echo "::error::$catalog is missing"; exit 1; }
 
 # The per-module releases go up FIRST. The catalog published below points every
@@ -31,7 +31,7 @@ for i in $(seq 0 $((count - 1))); do
   done < <(jq -r ".publish[$i].files[]" "$plan")
 
   if gh release view "$tag" >/dev/null 2>&1; then
-    # A re-run after a partial failure. Safe to overwrite: `modules release`
+    # A re-run after a partial failure. Safe to overwrite: `kroma release`
     # already refused the case where these bytes differ from a version the
     # catalog says is live, so anything here is a release that never completed.
     echo "  $tag exists; re-uploading ${#files[@]} asset(s)"

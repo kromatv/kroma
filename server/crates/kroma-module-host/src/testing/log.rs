@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
-use kroma_domain::{Audience, NotificationSpec};
+use kroma_module_wire::{Audience, NotificationSpec};
 
 /// One thing that went onto the event bus: the addressee (`None` for a
 /// broadcast) and the event's topic.

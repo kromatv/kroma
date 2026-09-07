@@ -1,18 +1,5 @@
-//! The core schema: connection pragmas, tables, indices and the canonical
+//! The core schema: tables, indices and the canonical
 //! column lists item/file SELECTs project.
-
-pub(crate) const PRAGMAS: &str = "
-    PRAGMA journal_mode = WAL;
-    PRAGMA synchronous = NORMAL;
-    PRAGMA foreign_keys = ON;
-    PRAGMA temp_store = MEMORY;
-    PRAGMA busy_timeout = 5000;
-    PRAGMA mmap_size = 268435456;
-    PRAGMA cache_size = -16000;
-    -- ~40 MB checkpoints instead of the 4 MB default: frequent checkpoints
-    -- stall readers on HDD during scan/probe bursts.
-    PRAGMA wal_autocheckpoint = 10000;
-";
 
 pub(crate) const SCHEMA: &str = "
     CREATE TABLE IF NOT EXISTS libraries (

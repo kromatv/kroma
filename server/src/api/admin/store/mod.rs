@@ -51,6 +51,7 @@ pub fn routes() -> Router<SharedState> {
         .route("/store/update", post(update))
         .route("/store/registry-preview", post(registry_preview))
         .route("/store/catalog", get(catalog_view))
+        .route("/store/platform", get(platform))
         .route("/store/{id}", delete(uninstall))
 }
 
@@ -192,6 +193,17 @@ async fn catalog_view(
     super::require(&user, Permission::SettingsManage)?;
     let fetched = registries::fetch_all(&state, &sup).await;
     Ok(Json(catalog::enriched(&state, &fetched)).into_response())
+}
+
+/// `GET /api/admin/store/platform`: the target a `.kmod` must be built for and
+/// the server version, so `kroma install` refuses a mismatch before uploading.
+async fn platform(AuthUser(user): AuthUser) -> Result<Response, Response> {
+    super::require(&user, Permission::SettingsManage)?;
+    Ok(Json(json!({
+        "target": catalog::BUILD_TARGET,
+        "serverVersion": env!("CARGO_PKG_VERSION"),
+    }))
+    .into_response())
 }
 
 // The manual escape hatch: no registry, no checksum to verify against - the

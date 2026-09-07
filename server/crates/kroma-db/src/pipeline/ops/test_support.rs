@@ -1,7 +1,7 @@
 use rusqlite::params;
 
 use super::TaskResult;
-use crate::pool::Pool;
+use crate::Pool;
 use crate::testing::TempPool;
 
 pub(super) fn pool() -> TempPool {

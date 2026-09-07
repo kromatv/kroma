@@ -76,6 +76,7 @@
         "!**/*.test.tsx",
         "!**/preview/**",
         "!packages/ui/src/lib/dom.ts",
+        "!packages/ui/src/services/themeAudio.ts",
         "!packages/tv/src/shared/preview/cards.test.ts",
         "!packages/tv/src/shared/preview/deeplink.test.ts"
       ],

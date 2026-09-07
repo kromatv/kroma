@@ -1,0 +1,34 @@
+{
+  "name": "@kroma/module-remote",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "KROMA Remote access module (frontend half): the Remote access admin page (share URL + managed Cloudflare Tunnel). Paired with the RemoteModule ServerModule via the shared module.json.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "modules/tv.kroma.remote"
+  },
+  "exports": {
+    ".": "./ui/src/module.ts",
+    "./schemas": "./ui/src/schemas.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kroma/module-sdk": "workspace:*",
+    "@kroma/ui": "workspace:*",
+    "@tabler/icons-react": "^3.46.0",
+    "zod": "^4.5.4"
+  },
+  "peerDependencies": {
+    "react": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "typescript": "^7.0.2"
+  }
+}

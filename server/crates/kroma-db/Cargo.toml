@@ -10,9 +10,10 @@ license.workspace = true
 # Compiles `testing::temp_pool`, the shared throwaway database. Off by default
 # so nothing reaches a release build; crates whose tests need a real pool turn
 # it on in their dev-dependencies.
-testing = ["dep:kroma-testing"]
+testing = ["dep:kroma-testing", "kroma-sqlite/testing"]
 
 [dependencies]
+kroma-sqlite = { workspace = true }
 kroma-domain = { workspace = true }
 kroma-primitives = { workspace = true }
 kroma-testing = { workspace = true, optional = true }
@@ -31,3 +32,4 @@ tracing = { workspace = true }
 # for themselves; naming the leaf here makes `testing::temp_pool` compile under
 # `cargo test -p kroma-db` too.
 kroma-testing = { workspace = true }
+kroma-sqlite = { workspace = true, features = ["testing"] }

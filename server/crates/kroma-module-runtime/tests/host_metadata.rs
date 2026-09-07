@@ -5,7 +5,7 @@ use axum::extract::State;
 use axum::http::Uri;
 use axum::routing::get;
 use axum::{Json, Router};
-use kroma_domain::metadata::{EpisodeInfo, MatchCandidate};
+use kroma_module_wire::{EpisodeInfo, MatchCandidate};
 use kroma_module_host::HostCtx;
 
 #[derive(Clone, Default)]

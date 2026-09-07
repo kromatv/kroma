@@ -1,7 +1,7 @@
 //! Statement shapes that could launder a read past the grant.
 
 use super::{allowed, fixture, refused, MODULE};
-use crate::grant::{init_scoped, Grant};
+use kroma_sqlite::{init_scoped, Grant};
 
 #[test]
 fn a_plain_read_of_an_ungranted_table_is_refused() {

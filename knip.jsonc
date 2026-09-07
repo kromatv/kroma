@@ -24,8 +24,6 @@
     // Reached only through the runner's `cloudflare:workers` alias, which is a
     // resolution no static tool can follow.
     "packages/site-kit/test/cloudflare-workers.ts",
-    // Written by `bun run modules:gen` from the module manifests.
-    "packages/modules-generated/**",
     // Written by the i18n Vite plugin from the catalog folder, and gitignored.
     "packages/core/src/locales/messages.d.ts",
     "**/*.gen.ts",
@@ -93,7 +91,7 @@
         "src/**/*.native.{ts,tsx}",
         // CLI helpers run by name (`bun packages/<pkg>/src/gen-spk-info.ts`).
         "src/{backfill-info,gen-spk-info}.ts",
-        // Repo tooling: one CLI entry (`bun run modules <cmd>`) and a filter
+        // Repo tooling: one CLI entry (`bun run ci <cmd>`, `bun run kroma <cmd>`) and a filter
         // reading stdin (`bun run sonar:precheck`).
         "src/cli.ts",
         "src/precheck.ts",
@@ -130,8 +128,8 @@
       ]
     },
 
-    "modules/*/ui": {
-      "entry": ["src/index.{ts,tsx}"]
+    "modules/*": {
+      "entry": ["ui/src/module.{ts,tsx}"]
     },
 
     // knip's config loader parses an imported `.tsx` with JSX turned OFF, so

@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn version_dir_picks_highest() {
-        let tmp = kroma_testing::temp_dir("defs-test");
+        let tmp = kroma_module_sdk::testing::temp_dir("defs-test");
         let defs = tmp.path().join("definitions");
         for v in ["v1", "v9", "v11", "v10", "notaversion"] {
             std::fs::create_dir_all(defs.join(v)).unwrap();

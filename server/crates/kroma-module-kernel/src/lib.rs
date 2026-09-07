@@ -18,22 +18,14 @@ struct ModuleRegistry {
     servers: Vec<Box<dyn ServerModule<SharedState>>>,
 }
 
+// Empty on purpose: every module ships as a `.kmod` the supervisor installs.
+// The registry stays so a build that links a module in-process again would
+// slot into the same kernel.
 fn build() -> ModuleRegistry {
-    // Generated from modules/roster.yaml via kroma_modules_generated; nothing
-    // here names a specific module.
-    let mut manifests = Registry::new();
-    kroma_modules_generated::register_all(&mut manifests);
-    let servers = kroma_modules_generated::server_modules();
-
-    let ids: Vec<String> = manifests.manifests().into_iter().map(|m| m.id).collect();
-    for s in &servers {
-        assert!(
-            ids.iter().any(|id| id == s.id()),
-            "ServerModule {:?} has no matching module manifest",
-            s.id(),
-        );
+    ModuleRegistry {
+        manifests: Registry::new(),
+        servers: Vec::new(),
     }
-    ModuleRegistry { manifests, servers }
 }
 
 fn registry() -> &'static ModuleRegistry {

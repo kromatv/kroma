@@ -3,7 +3,7 @@
 import { render } from '@testing-library/react';
 import { createElement, Suspense } from 'react';
 import { describe, expect, it } from 'vitest';
-import { torrentsModule } from './index';
+import torrentsModule from './module';
 
 describe('torrentsModule pages', () => {
   it.each(['downloads', 'naming'])(
