@@ -110,6 +110,42 @@ function lintsForDroppedFeatures(features: readonly string[]): string[] {
   ];
 }
 
+interface Rewrite {
+  out: string[];
+  dropped: string[];
+  droppedFeatures: string[];
+}
+
+function takePackageField(line: string, ws: Ws, state: Rewrite): boolean {
+  const inherited = inheritedPackageLine(line, ws);
+  if (!inherited) return false;
+  state.out.push(inherited);
+  return true;
+}
+
+function takeDependency(line: string, ws: Ws, state: Rewrite): boolean {
+  const dep = workspaceDependency(line, ws);
+  if (!dep) return false;
+  if (dep.line) state.out.push(dep.line);
+  else state.dropped.push(dep.name);
+  return true;
+}
+
+function takeDroppedFeature(line: string, state: Rewrite): boolean {
+  if (!state.dropped.some((name) => line.includes(`dep:${name}`))) return false;
+  const feature = /^([A-Za-z0-9_-]+)\s*=/.exec(line)?.[1];
+  if (feature) state.droppedFeatures.push(feature);
+  return true;
+}
+
+function rewriteLine(line: string, table: string, ws: Ws, state: Rewrite): void {
+  if (table === 'dev-dependencies') return;
+  if (table === 'package' && takePackageField(line, ws, state)) return;
+  if (table.endsWith('dependencies') && takeDependency(line, ws, state)) return;
+  if (table === 'features' && takeDroppedFeature(line, state)) return;
+  state.out.push(line);
+}
+
 /**
  * A member crate's `Cargo.toml` rewritten to stand alone: `*.workspace = true`
  * package fields inlined, `{ workspace = true }` dependencies replaced by the
@@ -117,38 +153,19 @@ function lintsForDroppedFeatures(features: readonly string[]): string[] {
  * crates ship to be linked, not tested).
  */
 export function standaloneCargoToml(text: string, ws: Ws): string {
-  const out: string[] = [];
-  const dropped: string[] = [];
-  const droppedFeatures: string[] = [];
+  const state: Rewrite = { out: [], dropped: [], droppedFeatures: [] };
   let table = '';
   for (const line of text.split('\n')) {
     const header = /^\[([^\]]+)\]\s*$/.exec(line);
     if (header) {
       table = header[1] ?? '';
-      if (table !== 'dev-dependencies') out.push(line);
+      if (table !== 'dev-dependencies') state.out.push(line);
       continue;
     }
-    if (table === 'dev-dependencies') continue;
-    const inherited = table === 'package' ? inheritedPackageLine(line, ws) : null;
-    if (inherited) {
-      out.push(inherited);
-      continue;
-    }
-    const dep = table.endsWith('dependencies') ? workspaceDependency(line, ws) : null;
-    if (dep) {
-      if (dep.line) out.push(dep.line);
-      else dropped.push(dep.name);
-      continue;
-    }
-    if (table === 'features' && dropped.some((name) => line.includes(`dep:${name}`))) {
-      const feature = /^([A-Za-z0-9_-]+)\s*=/.exec(line)?.[1];
-      if (feature) droppedFeatures.push(feature);
-      continue;
-    }
-    out.push(line);
+    rewriteLine(line, table, ws, state);
   }
-  out.push(...lintsForDroppedFeatures(droppedFeatures));
-  return out.join('\n');
+  state.out.push(...lintsForDroppedFeatures(state.droppedFeatures));
+  return state.out.join('\n');
 }
 
 /** A repository crate that is not vendored: a path-only workspace dependency

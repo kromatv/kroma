@@ -92,8 +92,8 @@ describe('deterministicTar', () => {
     const exact = deterministicTar(staging, ['block.bin']);
     const short = deterministicTar(staging, ['module.json']);
 
-    expect(exact.length).toBe(512 * 4);
-    expect(short.length).toBe(512 * 4);
+    expect(exact).toHaveLength(512 * 4);
+    expect(short).toHaveLength(512 * 4);
   });
 
   it('packs the same tree to the same bytes twice', () => {
