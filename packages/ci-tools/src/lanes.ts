@@ -27,6 +27,8 @@ export const LANES = {
       'clients/**',
       'packages/**',
       'modules/*/ui/**',
+      'modules/*/package.json',
+      'modules/*/tsconfig.json',
       'tsconfig.base.json',
       'rust-toolchain.toml',
       ...INSTALL,
@@ -45,9 +47,17 @@ export const LANES = {
     paths: [
       'server/**',
       'modules/**',
-      'packages/module-tools/**',
+      'packages/cli/**',
       'packages/core/src/locales/**',
       'rust-toolchain.toml',
+    ],
+  },
+  sdk: {
+    paths: [
+      'packages/{cli,client,core,i18n,module-sdk,registry,spatial-nav,ui}/**',
+      'server/crates/{kroma-module-*,kroma-domain,kroma-http,kroma-db,kroma-primitives,kroma-testing}/**',
+      'server/Cargo.toml',
+      ...INSTALL,
     ],
   },
   synology: {

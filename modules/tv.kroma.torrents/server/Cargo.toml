@@ -81,14 +81,11 @@ librqbit = { version = "=9.0.0-rc.0", optional = true, default-features = false,
 tokio = { version = "1", features = ["rt", "time"] }
 
 [dev-dependencies]
-# The shared HostCtx double (`host::testing::StubHost`), via the SDK re-export.
-kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
-# `db::testing::temp_pool`, also via the SDK re-export.
-kroma-db = { path = "../../../server/crates/kroma-db", features = ["testing"] }
+# The shared HostCtx double, the throwaway pool and the scratch dir, all through
+# the SDK's `testing` feature.
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
 # The engine_probe example only: session logs for swarm diagnostics.
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-# The scratch directory the storage-grant test builds its two pools in.
-kroma-testing = { path = "../../../server/crates/kroma-testing" }
 # `oneshot`, to drive the points' routes without binding a port.
 tower = { version = "0.5", features = ["util"] }
 

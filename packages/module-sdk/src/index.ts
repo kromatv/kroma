@@ -54,6 +54,16 @@ export type {
 } from './registry';
 export { depEntries, ModuleRegistry } from './registry';
 export { ModuleScope, moduleApiHook, useModuleApi, useT } from './scope';
+export type { SharedModule } from './shared';
+export {
+  PUBLIC_NAME,
+  REMOTE_ENTRY,
+  REMOTE_STYLES,
+  remoteEntryUrl,
+  SHARED_GLOBAL,
+  SHARED_MODULES,
+  sharedKey,
+} from './shared';
 export { ModuleSlot, ModuleSlotProvider, useSlotEntries } from './slot';
 export type {
   ConfigField,

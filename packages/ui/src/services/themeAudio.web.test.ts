@@ -13,7 +13,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FADE_IN_MS, FADE_OUT_MS, TARGET_VOLUME } from '#ui/lib/theme-audio';
-import { useThemeAudio } from './themeAudio.web';
+import { useThemeAudio } from './themeAudio';
 
 /** The slice of HTMLAudioElement the hook drives. */
 interface FakeAudio {

@@ -5,9 +5,11 @@ acquisition, VPN, transcription, embeddings, discovery, remote access) is a
 module: a separate program with a reverse-DNS id (`tv.kroma.torrents`) that
 the server installs, spawns and reverse-proxies.
 
-Modules are NOT compiled into the server. `roster.yaml` is empty on purpose:
-this is the zero-module base build. A module reaches users as a `.kmod` bundle
-installed from Admin → Modules, either from a registry or by upload.
+Modules are NOT compiled into the server: the base build carries none, and a
+module reaches users as a `.kmod` bundle installed from Admin → Modules, either
+from a registry or by upload. A module is written the same way inside this
+repository (under `modules/`) and outside it (`bunx @kromatv/sdk create`, against the
+public `kroma` package).
 
 ## Layout
 
@@ -18,53 +20,49 @@ standalone, with its own `Cargo.lock`, outside the server tree:
 modules/<id>/
   module.json      manifest: id, version, engines, dependencies, points, config
   server/          the Rust backend: a [[bin]] makes it a spawned sidecar
-  ui/              optional React frontend (a KromaModule: pages, nav, settings)
+  ui/src/module.ts optional React frontend (a KromaModule: pages, nav, slots)
   locales/         optional en.json, fr.json, this module's own catalog
+  package.json     with a frontend: its dependencies (@kroma/module-sdk, @kroma/ui)
   icon.svg
   README.md
 ```
 
-`ui/` and `locales/` are optional and travel together: 5 of the 12 first-party
-modules have a frontend. A `modules/<name>.module.md` single-file source lives
-here too, beside the directory it expands into, though none is checked in today.
+`ui/`, `locales/` and `package.json` are optional and travel together: 5 of
+the 12 first-party modules have a frontend.
 
 ## Build one
 
-Each command works from the module's own directory, because nothing above it
-matters:
+Every module chore is one `kroma` command (`packages/cli`). Inside this
+repository it is `bun run kroma <command>`; a module of your own gets it with
+the `kroma` package it depends on, as `bunx kroma <command>`.
 
 ```bash
-cd modules/tv.kroma.remote/server
-cargo build            # or check / test / clippy, a normal standalone crate
+bun run kroma build modules/tv.kroma.remote   # -> dist/modules/<id>.kmod (+ .sha256)
+bun run kroma build                           # every module under modules/
+bun run kroma check                           # manifests, frontend types, clippy
+cd modules/tv.kroma.remote/server && cargo build   # a normal standalone crate
 ```
 
-To produce the installable bundle, from the repo root:
-
-```bash
-bun run modules:pack modules/tv.kroma.remote   # -> dist/modules/<id>.kmod (+ .sha256)
-bun run modules:pack                           # every module
-```
-
-`modules:pack` compiles the `[[bin]]` with the `release-kmod` profile (release +
+`kroma build` compiles the `[[bin]]` with the `release-kmod` profile (release +
 `panic = "abort"`: a sidecar aborts and the supervisor respawns it, which drops
-the unwinding tables for ~11% smaller binaries), builds the `ui/` remote if there
-is one, and packs `module.json` + the `module` binary + the icon + `fe/` into a
-zstd tarball.
+the unwinding tables for ~11% smaller binaries), builds the `ui/` into `fe/`
+(see [Frontend](#frontend)), and packs `module.json` + the `module` binary + the
+icon + `fe/` into a zstd tarball.
 
-Every module workspace shares one build directory (`target/kmod`), so their
-common dependencies (axum, tokio, candle, librqbit) compile once rather than once
-per module. Cargo holds an exclusive lock on it, so module builds run in
-sequence.
+Every module workspace shares one build directory (`target/kmod`), so the
+dependency graph they have in common (axum, tokio, candle, librqbit) compiles
+once rather than once per module. Cargo holds an exclusive lock on it, so module
+builds run in sequence.
 
 A `.kmod` carries a native binary, so it must match the server's platform.
-Cross-compile with `KMOD_TARGET`, which also suffixes the bundle with the triple:
+Cross-compile with `--target`, which also suffixes the bundle with the triple:
 
 ```bash
-KMOD_TARGET=x86_64-unknown-linux-musl bun run modules:pack
+bun run kroma build --target x86_64-unknown-linux-musl
 ```
 
 Declare cargo features the bundle needs in the manifest, not on the command
-line, because `modules:pack` reads them:
+line, because `kroma build` reads them:
 
 ```toml
 [package.metadata.kmod]
@@ -75,33 +73,33 @@ A module with no `[[bin]]` is a *library module*: manifest + frontend only, no
 spawned process. Whatever uses it links its Rust code (`tv.kroma.scene`, the
 release-name parser, is one).
 
-## Write one
-
-Two shapes. Start with the first.
-
-### Single-file (codegen)
-
-One file holds the manifest and every part of the module:
+### Iterating against a server
 
 ```bash
-bun run modules:new tv.kroma.notes     # scaffolds modules/tv-kroma-notes.module.md
-bun run modules:gen                    # expands it into modules/tv.kroma.notes/
+bun run kroma login http://localhost:4040     # once; an account with settings.manage
+cd modules/tv.kroma.remote && bunx kroma dev  # build, install, rebuild on every save
 ```
 
-The file is YAML frontmatter (the manifest) plus fenced blocks: ` ```tsx ` the
-page (required), ` ```rust ` extra backend items, ` ```sql ` migrations,
-` ```svg ` the icon, ` ```locale.en `/` ```locale.fr ` the catalogs. The registry
-entry `pub const MODULE` is generated: do not write one.
+`kroma dev` uploads a debug build to the server and re-uploads whichever half
+changed on every save: the server stops the old process, keeps the module's
+database, and spawns the new one. The server can be this machine or the NAS
+(`--server http://kroma.local:4040`, with `--target` for its platform).
+`kroma install` uploads a `kroma build` bundle the same way.
 
-**Generated output is committed.** Re-run `modules:gen` after editing the source
-and commit the result. Never hand-edit a generated file, and `modules:check`
-fails on drift.
+## Write one
 
-### Hand-written crate
+```bash
+bun run kroma create tv.kroma.notes          # a few questions; lands in modules/
+```
 
-For a substantial backend. Use `modules/tv.kroma.torrents/` as the template. The
-crate exports one `pub const MODULE`, which the macro fills in from the manifest
-and icon at compile time:
+The scaffold is the layout above: a manifest, a page, a sidecar crate with one
+admin route, both locales, and the `package.json` that links the SDK. Outside
+this repository `bunx @kromatv/sdk create` produces the same project against the one
+public package, `kroma`, declarations only (`docs/module-sdk-publishing.md`). Use
+`modules/tv.kroma.remote/` as the reference for a real one.
+
+The crate exports one `pub const MODULE`, which the macro fills in from the
+manifest and icon at compile time:
 
 ```rust
 use kroma_module_sdk::EmbeddedModule;
@@ -131,7 +129,10 @@ beside every module's `admin_routes`.
 
 Depend on **`kroma-module-sdk`** and, for a sidecar, **`kroma-module-runtime`**,
 never on core crates directly. The SDK re-exports everything a module is allowed
-to touch. In this repo they are path deps back into `server/crates/`.
+to touch, its `testing` feature included (`host::testing::StubHost`,
+`testing::serve`, `db::testing::temp_pool`, `testing::temp_dir`). In this repo
+they are path deps back into `server/crates/`; outside it they are the same
+crates under `node_modules/@kromatv/sdk/rust`, built into the public package.
 
 What the SDK does NOT carry is any description of what a module is for. To reach
 a peer, ask the host for a POINT name and speak JSON both sides declare
@@ -228,34 +229,43 @@ The design, and the parts of it not built yet, are in
 
 ### Frontend
 
-`ui/src/index.tsx` calls `defineModule` with pages and nothing else. The
-`kromaModule()` Vite plugin injects `../../module.json` and `../../locales/*.json`
-into that call, so id, version and dependencies are never restated. Each page is
-a `path` + `component`, and the nav URL comes from `section` + `path`, so a route
-and its link cannot drift:
+`ui/src/module.ts` default-exports the module. `defineModule` takes id / version /
+dependencies from `module.json` (the build injects them, with `locales/*.json`),
+so they are never restated. Each page is a `path` + `component`; the nav URL is
+derived from `section` + `path`, so a route and its link cannot drift:
 
 ```ts
-export const torrentsModule = defineModule({
+const torrentsModule = defineModule({
   pages: [
     {
       path: 'downloads', // -> /admin/downloads
       component: lazy(() => import('./DownloadsPage')),
-      nav: { label: 'nav.downloads', icon: 'download', section: 'acquisition', requires: 'library.manage' },
+      nav: { label: 'nav.title', icon: 'download', section: 'acquisition', requires: 'library.manage' },
     },
   ],
 });
+
+export default torrentsModule;
 ```
 
-The two-argument `defineModule(manifest, { ... })` form is the escape hatch the
-plugin deliberately skips, for a test or a build that does not run it.
+`section` picks the nav group: an admin group (`management | media | acquisition
+| system | maintenance`, or `admin` for the generic one) or `library` for the
+main sidebar. `icon` is a name from `clients/web/src/modules/module-icons.ts`;
+`requires` gates the link by capability.
 
-`section` picks an admin nav group: `management | media | acquisition | system |
-maintenance`, or `admin` for the generic one. A page with no `section` lands in
-`library`, the main sidebar. `icon` is a name from
-`clients/web/src/modules/module-icons.ts`, and `requires` gates the link by
-capability.
+`kroma build` bundles the frontend into `fe/` and `module.json` declares it with
+`"feRemote": { "module": "./remoteEntry.js" }`. The web client fetches
+`/modules/<id>/remoteEntry.js` for every enabled module at boot. The bundle
+carries none of `react`, `@kroma/ui`, `@kroma/module-sdk`, `@kroma/core`,
+`@kroma/client`, `@tanstack/react-query` or `react-call`: it reads them from
+the host at load time (`SHARED_MODULES` in `@kroma/module-sdk`), so one React,
+one design system and one query cache live on the page and a module's `<Text>`
+renders inside the host's theme. Outside this repository those packages are
+declarations only, and a `@kroma/*` import the host does not provide fails the
+build. Anything else a page imports (`zod`, an icon set) is bundled. Import
+components from `@kroma/ui/kit`; a deeper kit path is folded onto it.
 
-Every user-visible string is a key. Ship `locales/{en,fr}.json`, which resolve
+Every user-visible string is a key. Ship `locales/{en,fr}.json`; they resolve
 against the module's own catalog first, then the core ones.
 
 ## Runtime contract
@@ -336,14 +346,14 @@ cross. Name a row by id and let the provider read it.
 
 ## Publish one
 
-`bun run modules:pack` output installs as it is: upload the `.kmod` in
-Admin → Modules.
+`kroma build` output installs as it is: `kroma install` uploads it, or upload
+the `.kmod` in Admin → Modules.
 
 To try the packed bundles as a registry before publishing anything:
 
 ```bash
-bun run modules serve                      # dist/modules, on :4173
-bun run modules serve --from ./bundles --port 8080
+bun run kroma serve                        # dist/modules, on :4173
+bun run kroma serve --from ./bundles --port 8080
 ```
 
 It serves the RFC 110 documents live off the directory, re-read per request, with
@@ -357,18 +367,18 @@ registry never is:
 
 ```bash
 KROMA_TOKEN=<a token with settings.manage> \
-  bun run modules install tv.kroma.vpn            # -> http://localhost:4040
-bun run modules install tv.kroma.vpn --server http://192.168.1.20:4040
+  bun run kroma install tv.kroma.vpn              # -> http://localhost:4040
+bun run kroma install tv.kroma.vpn --server http://192.168.1.20:4040
 ```
 
 It picks this machine's build out of `dist/modules` when a module was packed for
 several targets, and the server applies the same gates the Store does. It refuses
 a bundle built against an older manifest schema, with what to do about it.
 
-To serve modules to others, host them: `bun run modules registry` writes the same
+To serve modules to others, host them: `bun run kroma registry` writes the same
 documents to disk (`catalog.json`, `registry.json`, `index.json`, `m/*.json` and
 the schemas), which any static host can serve. The `modules.json` mirror comes
-from `modules release`. See
+from `kroma release`. See
 [`docs/module-registries.md`](../docs/module-registries.md).
 
 ### Releasing this repo's modules
@@ -377,7 +387,7 @@ from `modules release`. See
 release on their own tags (`<module-id>@<version>`) from
 `.github/workflows/modules.yml`, and it refuses a module whose bundle changed
 while its version stood still. The Store decides "update available" by comparing
-versions, so a silent republish reaches nobody. `bun run modules release
+versions, so a silent republish reaches nobody. `bun run kroma release
 --dry-run --repo <owner/repo>` gives the same verdict locally, against whatever
 `dist/modules` currently holds. Full shape in
 [`docs/modules-as-kmod.md`](../docs/modules-as-kmod.md#the-release-train).
@@ -385,12 +395,11 @@ versions, so a silent republish reaches nobody. `bun run modules release
 ## Checks
 
 ```bash
-bun run modules:validate   # every manifest against the @kroma/registry schema
-bun run modules:gen        # expand single-file sources + regenerate aggregators
-bun run modules:check      # CI gate: valid + generated output in sync
+bun run modules:check      # every manifest valid, every frontend typed, clippy clean
+bun run modules:test       # cargo test in every module workspace
+bun run modules:clippy     # cargo clippy --all-targets in every module workspace
 ```
 
-`id` must be reverse-DNS (`^[a-z0-9]+(?:\.[a-z0-9-]+)+$`) and unique, checked
-before anything is generated. `version` is only checked for semver by
-`modules:gen`, on `.module.md` frontmatter: a directory module's `module.json`
-version passes `modules:validate` unread.
+`id` must be reverse-DNS (`^[a-z0-9]+(?:\.[a-z0-9-]+)+$`) and unique, and
+`version` semver: `kroma check` refuses a manifest that is not, and `kroma
+release` refuses one it cannot order against what is published.

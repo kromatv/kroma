@@ -476,6 +476,7 @@ dependencies = [
  "anyhow",
  "kroma-domain",
  "kroma-primitives",
+ "kroma-testing",
  "rusqlite",
  "serde",
  "serde_json",
@@ -511,7 +512,6 @@ name = "kroma-mdns"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "kroma-module-host",
  "kroma-module-runtime",
  "kroma-module-sdk",
  "mdns-sd",
@@ -573,12 +573,14 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "kroma-db",
  "kroma-domain",
  "kroma-http",
  "kroma-module-host",
  "kroma-module-macros",
  "kroma-module-manifest",
  "kroma-primitives",
+ "kroma-testing",
  "serde",
  "serde_json",
  "tokio",

@@ -137,9 +137,6 @@ kroma-push = { path = "crates/kroma-push" }
 # The module SDK facade (ABOVE engine): the single crate every module depends on.
 # Re-exports the manifest layer + the engine/host/domain/http surface modules use.
 kroma-module-sdk = { path = "crates/kroma-module-sdk" }
-# Generated aggregator: registers every single-file (codegen) module. Owned by
-# @kroma/module-tools; run `bun run modules:gen` after adding a *.module.md.
-kroma-modules-generated = { path = "crates/kroma-modules-generated" }
 kroma-config = { path = "crates/kroma-config" }
 kroma-primitives = { path = "crates/kroma-primitives" }
 # Dev-only leaf: the `TempDir` every test harness scratches in.

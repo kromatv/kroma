@@ -483,7 +483,7 @@ search:
         let mut row = seed_row("pl-1", "prowlarr", true, 100);
         row.url = "http://prowlarr.example/api".into();
         db::insert_indexer(&pool, &row).unwrap();
-        let resolve = kroma_module_host::test_serve::serve(fake_torznab(), ()).await;
+        let resolve = kroma_module_sdk::testing::serve(fake_torznab(), ()).await;
         let (base, token) = resolve().expect("the fake engine is up");
         let host = DbHost::with_store(pool.clone()).with_point(
             peers::ENGINE,
@@ -492,7 +492,7 @@ search:
             &token,
         );
 
-        let outcome = kroma_module_host::test_serve::blocking(move || {
+        let outcome = kroma_module_sdk::testing::blocking(move || {
             search::run(&host, &row, &port_query(), &[2000])
         })
         .await
@@ -508,7 +508,7 @@ search:
         let mut row = seed_row("tz-engine", "torznab", true, 100);
         row.url = "http://tracker.example/api".into();
         db::insert_indexer(&pool, &row).unwrap();
-        let resolve = kroma_module_host::test_serve::serve(fake_torznab(), ()).await;
+        let resolve = kroma_module_sdk::testing::serve(fake_torznab(), ()).await;
         let (base, token) = resolve().expect("the fake provider is up");
         let host = DbHost::with_store(pool.clone()).with_point(
             peers::ENGINE,
@@ -517,7 +517,7 @@ search:
             &token,
         );
 
-        let outcome = kroma_module_host::test_serve::blocking(move || {
+        let outcome = kroma_module_sdk::testing::blocking(move || {
             search::run(&host, &row, &port_query(), &[2000])
         })
         .await
@@ -590,7 +590,7 @@ search:
 
     #[test]
     fn a_grab_whose_database_is_gone_reports_the_failure_instead_of_no_such_indexer() {
-        let dir = kroma_testing::temp_dir("indexer-lib-nopool");
+        let dir = kroma_module_sdk::testing::temp_dir("indexer-lib-nopool");
         let pool = kroma_module_sdk::db::init(&dir.path().join("kroma.db")).unwrap();
         let held = pool.get().unwrap();
         std::fs::remove_dir_all(dir.path()).unwrap();

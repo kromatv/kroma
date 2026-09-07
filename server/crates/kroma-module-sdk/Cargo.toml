@@ -21,6 +21,8 @@ kroma-domain = { workspace = true }
 kroma-http = { workspace = true }
 kroma-db = { workspace = true, optional = true }
 kroma-primitives = { workspace = true }
+# `testing::{TempDir, temp_dir}`, the scratch dir every module test writes in.
+kroma-testing = { workspace = true, optional = true }
 # Both ends of every port contract live beside its trait: the provider mounts
 # axum routes, the consumer proxies over them.
 axum = { workspace = true }
@@ -31,7 +33,10 @@ serde_json = { workspace = true }
 anyhow = { workspace = true }
 
 [features]
-testing = ["kroma-module-host/testing", "storage", "engine"]
+# Everything a module's tests reach: the `StubHost` double, `test_serve`, a
+# throwaway pool and a self-deleting scratch dir. Never `engine`: a round-trip
+# test must not link the whole core.
+testing = ["kroma-module-host/testing", "storage", "kroma-db/testing", "dep:kroma-testing"]
 # The `storage` capability: `host::HostStorage` and the `db` facade. A module
 # enables it when its `module.json` declares `storage`, and only then does its
 # binary link SQLite -- which is 1.5 MB of the 3.3 MB a sidecar used to be.
@@ -44,5 +49,6 @@ engine = ["dep:kroma-engine", "storage"]
 [dev-dependencies]
 # The shared HostCtx double (`testing::StubHost`) for the seam tests.
 kroma-module-host = { workspace = true, features = ["testing"] }
+kroma-testing = { workspace = true }
 # Only so a test can implement `HostCtx`, whose methods return axum responses.
 axum = { workspace = true }

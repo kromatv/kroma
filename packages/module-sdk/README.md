@@ -39,13 +39,25 @@ reaching past them buys nothing and couples a module to the kit's file layout.
 The same applies to a module's own `ui/`: a module is a separate cargo workspace
 and a separate frontend, and it consumes the kit exactly as an app does.
 
+## What the host provides
+
+A module's frontend is built on its own (`kroma build`) and loaded by the web
+client at runtime. It does not carry React, this package, `@kroma/ui`,
+`@kroma/core`, `@kroma/client` or the query cache: the build rewrites those
+imports to read the host's copy, so one React and one theme live on the page.
+The list is `SHARED_MODULES` here; the host fills `SHARED_GLOBAL` before it
+imports `remoteEntry.js`. Outside this repository this package and the kit ship
+as declarations only, built into the public `@kromatv/sdk` package (which a module
+imports the SDK by), so a page can import nothing from them the host does not
+provide. Everything else a module imports is bundled with it.
+
 ## Styling
 
-The kit's vocabulary, and no Tailwind. A module's admin pages are bundled into
-the web client's build, so they inherit whatever that shell provides, but they
-must not depend on it: a raw hex or a utility class is invisible to the theme and
-survives a palette swap as a stain. Colours, radii and type come from token names.
-See `CONVENTIONS.md`.
+The kit's vocabulary, and no Tailwind. A module's pages render inside the web
+client, so they inherit whatever that shell provides, but they must not depend
+on it: a raw hex or a utility class is invisible to the theme and survives a
+palette swap as a stain. Colours, radii and type come from token names. See
+`CONVENTIONS.md`.
 
 Every user-visible string is a translation key, resolved against the module's own
 `locales/{en,fr}.json` first. That is a hard rule rather than a preference: a module

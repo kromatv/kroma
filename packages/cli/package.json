@@ -1,0 +1,61 @@
+{
+  "name": "@kroma/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The KROMA module author's CLI: `kroma create` scaffolds a module, `kroma dev` iterates it against a running server, `kroma build` packs the installable .kmod, `kroma check` validates it.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "homepage": "https://kroma.tv",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "packages/cli"
+  },
+  "keywords": [
+    "kroma",
+    "module",
+    "kmod",
+    "cli"
+  ],
+  "bin": {
+    "kroma": "./src/cli.ts"
+  },
+  "exports": {
+    ".": "./src/cli.ts",
+    "./tsconfig": "./tsconfig.module.json"
+  },
+  "files": [
+    "src",
+    "templates",
+    "tsconfig.module.json",
+    "README.md",
+    "!src/**/*.test.ts"
+  ],
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "1.7.0",
+    "@kroma/module-sdk": "workspace:*",
+    "@kroma/registry": "workspace:*",
+    "citty": "0.2.2",
+    "es-module-lexer": "^2.3.1",
+    "hono": "^4.13.2",
+    "magic-string": "^0.30.21",
+    "vite": "8.2.1",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "bun-types": "^1.4.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  },
+  "kroma": {
+    "reactNative": "npm:react-native-tvos@0.86.0-2"
+  }
+}

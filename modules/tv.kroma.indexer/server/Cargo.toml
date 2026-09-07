@@ -49,12 +49,6 @@ xpath = ["dep:libxml"]
 [dev-dependencies]
 # `testing::serve` stands a fake port provider up on a real localhost port.
 kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
-# The shared HostCtx double (`host::testing::StubHost`), via the SDK re-export.
-kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
-# `db::testing::temp_pool`, also via the SDK re-export.
-kroma-db = { path = "../../../server/crates/kroma-db", features = ["testing"] }
-# Self-deleting scratch dirs for the definition-store fixtures.
-kroma-testing = { path = "../../../server/crates/kroma-testing" }
 # `oneshot`, to drive the point's routes without binding a port.
 tower = { version = "0.5", features = ["util"] }
 

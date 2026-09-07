@@ -7,8 +7,8 @@ use std::process::Command;
 
 use super::DefinitionStore;
 
-pub(super) fn tmpdir(tag: &str) -> kroma_testing::TempDir {
-    kroma_testing::temp_dir(&format!("store-test-{tag}"))
+pub(super) fn tmpdir(tag: &str) -> kroma_module_sdk::testing::TempDir {
+    kroma_module_sdk::testing::temp_dir(&format!("store-test-{tag}"))
 }
 
 pub(super) fn valid_definition(id: &str) -> String {
@@ -26,8 +26,8 @@ search:
     )
 }
 
-pub(super) fn scratch(label: &str) -> kroma_testing::TempDir {
-    kroma_testing::temp_dir(&format!("defs-{label}"))
+pub(super) fn scratch(label: &str) -> kroma_module_sdk::testing::TempDir {
+    kroma_module_sdk::testing::temp_dir(&format!("defs-{label}"))
 }
 
 pub(super) const DEMO_YML: &str = "\
@@ -97,7 +97,7 @@ pub(super) fn serve(status: u16, body: Vec<u8>) -> String {
 
 pub(super) struct TempStore {
     store: DefinitionStore,
-    _dir: kroma_testing::TempDir,
+    _dir: kroma_module_sdk::testing::TempDir,
 }
 
 impl std::ops::Deref for TempStore {

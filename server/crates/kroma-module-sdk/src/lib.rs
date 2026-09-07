@@ -59,8 +59,12 @@ pub mod primitives {
     pub use kroma_primitives::*;
 }
 
-/// Standing a point's provider up on a real socket, for a test that drives both
-/// ends. Re-exported from the host crate, where it lives behind its own feature so
-/// a module with no database does not link one to run a round-trip test.
+/// What a module's tests reach: `serve` / `blocking` stand a point's provider up
+/// on a real socket for a test that drives both ends, and `TempDir` / `temp_dir`
+/// are the self-deleting scratch dir. The `StubHost` double is
+/// `host::testing::StubHost`, and a throwaway pool is `db::testing::temp_pool`.
 #[cfg(any(test, feature = "testing"))]
-pub use kroma_module_host::test_serve as testing;
+pub mod testing {
+    pub use kroma_module_host::test_serve::*;
+    pub use kroma_testing::*;
+}

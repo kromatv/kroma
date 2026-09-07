@@ -10,16 +10,14 @@ describe('matchLanes', () => {
   });
 
   it('puts a server change in the rust and synology lanes only', () => {
-    expect(matchLanes(['server/crates/kroma-db/src/lib.rs'])).toEqual(
-      only('code', 'rust', 'synology'),
-    );
+    expect(matchLanes(['server/src/main.rs'])).toEqual(only('code', 'rust', 'synology'));
   });
 
   it('puts a module sidecar change in rust and synology, and its ui in the fleet too', () => {
     expect(matchLanes(['modules/tv.kroma.vpn/server/src/lib.rs'])).toEqual(
       only('code', 'rust', 'synology'),
     );
-    expect(matchLanes(['modules/tv.kroma.vpn/ui/src/index.tsx'])).toEqual(
+    expect(matchLanes(['modules/tv.kroma.vpn/ui/src/module.ts'])).toEqual(
       only('code', 'fleet', 'rust', 'synology'),
     );
   });
@@ -35,7 +33,19 @@ describe('matchLanes', () => {
 
   it('opens every lane for a lockfile change', () => {
     expect(matchLanes(['bun.lock'])).toEqual(
-      only('code', 'fleet', 'android', 'desktop', 'synology', 'site'),
+      only('code', 'fleet', 'android', 'desktop', 'synology', 'site', 'sdk'),
+    );
+  });
+
+  it('puts the published SDK packages and the crates they vendor in the sdk lane', () => {
+    expect(matchLanes(['packages/cli/src/cli.ts'])).toEqual(
+      only('code', 'fleet', 'rust', 'synology', 'sdk'),
+    );
+    expect(matchLanes(['server/crates/kroma-module-host/src/lib.rs'])).toEqual(
+      only('code', 'rust', 'synology', 'sdk'),
+    );
+    expect(matchLanes(['server/crates/kroma-engine/src/lib.rs'])).toEqual(
+      only('code', 'rust', 'synology'),
     );
   });
 

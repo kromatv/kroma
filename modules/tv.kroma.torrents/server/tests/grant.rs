@@ -116,7 +116,7 @@ fn this_modules_migrations_build_its_own_table_and_leave_the_shared_one_alone() 
     // `migrations()` runs against the module's OWN database now. A shared table
     // listed here would be created a second time, empty, in a file where its
     // foreign key has no parent -- and the module would still read the real one.
-    let dir = kroma_testing::temp_dir("torrents-store");
+    let dir = kroma_module_sdk::testing::temp_dir("torrents-store");
     let store = db::open(&dir.path().join("module.sqlite")).unwrap();
     let conn = store.get().unwrap();
     db::apply_migrations(&conn, kroma_torrent::db::MIGRATIONS).unwrap();
@@ -154,7 +154,7 @@ fn the_client_configs_are_read_from_this_modules_own_database() {
         let conn = store.get().unwrap();
         db::apply_migrations(&conn, kroma_torrent::db::MIGRATIONS).unwrap();
     }
-    let dir = kroma_testing::temp_dir("torrents-clients-dir");
+    let dir = kroma_module_sdk::testing::temp_dir("torrents-clients-dir");
     // No engine is resolved in this test: the host answers nothing, which is a
     // server with no download-engine module installed.
     let host: std::sync::Arc<dyn kroma_module_sdk::host::HostCtx> =

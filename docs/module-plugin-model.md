@@ -336,7 +336,7 @@ Phases 1 through 5 have landed. Each was green on `cargo clippy --workspace`,
    handle as an `Arc<dyn Any>`, so an engine had to share the download module's
    address space, and both `.kmod`s shipped with NO binary at all: the supervisor
    could never have spawned them. They were installable in name only. Inverting it
-   deleted the registry, the ctx and the host trait, and now `bun run modules plan`
+   deleted the registry, the ctx and the host trait, and now `kroma plan`
    emits a binary for each.
 
    The engine is stateless about which client it serves: an operator may have two

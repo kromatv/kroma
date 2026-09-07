@@ -21,6 +21,10 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
+      '/modules': {
+        target: process.env.KROMA_SERVER_URL ?? 'http://localhost:4040',
+        changeOrigin: true,
+      },
     },
   },
 });

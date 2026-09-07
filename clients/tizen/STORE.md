@@ -273,7 +273,7 @@ does neither indexing nor downloading.*
 `kroma-server` after both verticals moved out of process, and `default = […
 "torrent-rqbit"]` dragged the BitTorrent library in with them. Both are gone; the
 sidecar still gets a real engine from its own
-`[package.metadata.kmod] features = ["rqbit"]`, which `modules:pack` forwards.
+`[package.metadata.kmod] features = ["rqbit"]`, which `kroma build` forwards.
 The check anyone can repeat:
 
 ```

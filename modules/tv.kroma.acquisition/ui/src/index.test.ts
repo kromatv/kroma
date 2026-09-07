@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { useAcquisitionApi } from './api';
-import { acquisitionModule } from './index';
+import acquisitionModule from './module';
 
 describe('acquisitionModule', () => {
   it('takes its identity and its dependency from the shared manifest', () => {

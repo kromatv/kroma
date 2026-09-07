@@ -1,0 +1,40 @@
+{
+  "name": "@kroma/module-torrents",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "KROMA Downloads module (frontend half): the Downloads admin page (live queue + download-clients). Paired with the kroma-torrent backend at ../server via the shared module.json.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "modules/tv.kroma.torrents"
+  },
+  "exports": {
+    ".": "./ui/src/module.ts",
+    "./schemas": "./ui/src/schemas.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kroma/client": "workspace:*",
+    "@kroma/module-acquisition": "workspace:*",
+    "@kroma/module-sdk": "workspace:*",
+    "@kroma/module-vpn": "workspace:*",
+    "@kroma/ui": "workspace:*",
+    "@tabler/icons-react": "^3.46.0",
+    "@tanstack/react-query": "^5.101.4",
+    "@tanstack/react-router": "^1.170.29",
+    "react-call": "^2.0.2",
+    "zod": "^4.5.4"
+  },
+  "peerDependencies": {
+    "react": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "typescript": "^7.0.2"
+  }
+}
