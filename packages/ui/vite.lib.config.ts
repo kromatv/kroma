@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { webResolve } from '@kromatv/bundler/rnw';
 import react from '@vitejs/plugin-react';
@@ -18,6 +19,17 @@ export default defineConfig({
       transform(code: string, id: string) {
         if (!id.endsWith('kroma-intro/constants.ts')) return null;
         return code.replace(/new URL\([^)]*kroma-intro[^)]*\)\.href/g, "''");
+      },
+    },
+    {
+      // The published kit speaks a host's catalogs, not KROMA's.
+      name: 'kroma-ui-inject-i18n',
+      enforce: 'pre' as const,
+      load(id: string) {
+        for (const swap of ['services/i18n-instance', 'lib/genre-icon']) {
+          if (id.endsWith(`${swap}.ts`)) return readFileSync(src(`${swap}.published.ts`), 'utf8');
+        }
+        return null;
       },
     },
     {
@@ -48,6 +60,7 @@ export default defineConfig({
         'device-store': src('lib/device-store.ts'),
         'remote-keys': src('lib/remote-keys.ts'),
         testing: src('testing.tsx'),
+        'i18n-host': src('i18n-host.ts'),
       },
       formats: ['es'],
     },

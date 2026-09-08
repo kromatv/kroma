@@ -95,6 +95,7 @@ const manifest = {
     entry('./device-store', 'device-store'),
     entry('./remote-keys', 'remote-keys'),
     entry('./testing', 'testing'),
+    entry('./i18n', 'i18n-host'),
     ['./styles.css', './styles.css'],
   ]),
   // The kit spells its own files `#ui/*`, and 166 of the emitted declarations

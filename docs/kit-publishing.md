@@ -70,10 +70,37 @@ addGlyphs({ IconHeart });
 covers the whole set: a name outside the subset typechecks and draws the
 fallback, which is what lets an icon name arrive from data.
 
+## Words
+
+The kit's own chrome says about 95 phrases. In this repo they come from KROMA's
+catalogs; the published package arrives with none and is given them, because a
+design system that ships someone else's catalogs is carrying their whole
+vocabulary to say ninety-five things.
+
+```tsx
+import { createI18n, I18nProvider, setKitI18n } from '@kromatv/ui/i18n';
+
+const i18n = createI18n({
+  catalogs: { en: { 'player.play': 'Play' }, sv: { 'player.play': 'Spela' } },
+  defaultLocale: 'en',
+});
+setKitI18n(i18n, 'en');
+
+<I18nProvider locale="sv">{children}</I18nProvider>;
+```
+
+`createI18n` is re-exported from the package, so there is no second install. Until
+`setKitI18n` is called every key renders as itself, which is a legible
+placeholder rather than a crash. `src/services/i18n-instance.ts` names the
+instance for this repo and the build swaps it for the published one, the same
+way `glyph-source.ts` is swapped for the icon subset.
+
+`genreIcon` is swapped too, and answers `undefined`: it maps KROMA's own genre
+vocabulary, and resolving a genre written as a display name goes back through
+the catalogs. Moving it out of the kit is the honest fix; it has eight call
+sites across web, tv and mobile.
+
 ## What is still rough
 
-- **Catalogs.** The kit's own chrome says about 95 phrases, and they come from
-  `@kromatv/core`'s catalogs, which are bundled whole. A consumer gets KROMA's
-  wording, and more of it than the kit uses.
 - **Native.** The staged package is web-first: `.web.*` is resolved at build
   time, so React Native consumers still want the workspace source.
