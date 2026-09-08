@@ -53,6 +53,7 @@
     "subset-fonts": "python3 ./scripts/subset-fonts.py"
   },
   "dependencies": {
+    "@kromatv/client": "workspace:*",
     "@kromatv/core": "workspace:*",
     "@kromatv/i18n": "workspace:*",
     "@kromatv/spatial-nav": "workspace:*",

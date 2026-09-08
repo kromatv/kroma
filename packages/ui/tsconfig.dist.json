@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "incremental": false,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"],
+  "exclude": [
+    "src/**/*.test.*",
+    "src/**/*.story.*",
+    "src/**/*.demo.*",
+    "src/**/*.fixture.*",
+    "src/**/*.fixtures.*",
+    "src/**/*.docs.mdx"
+  ]
+}
