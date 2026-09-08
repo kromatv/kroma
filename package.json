@@ -35,6 +35,7 @@
     "perf:scan": "bun packages/ui/scripts/perf-audit.ts",
     "kit:perf": "KROMA_PERF=1 bun x vitest run --project audit packages/ui/audit/perf-report.test.tsx --reporter=dot --disable-console-intercept",
     "kit:stage": "bun packages/ui/scripts/stage.ts",
+    "kit:smoke": "bun packages/ui/scripts/smoke.ts",
     "store:art": "bun clients/tv-build/store-art.ts .store-art && python3 clients/tv-build/store-art.py .store-art",
     "start": "bun run tizen:prepare && bun run dev",
     "dev": "concurrently -k -n server,web,tv -c yellow,cyan,magenta \"bun run server:watch\" \"bun run dev:web\" \"VITE_KROMA_SERVER=http://localhost:4040 bun run dev:tizen\"",

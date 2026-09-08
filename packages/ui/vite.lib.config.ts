@@ -7,6 +7,27 @@ import { iconSubset } from './scripts/icon-subset.ts';
 
 const src = (p: string) => fileURLToPath(new URL(`./src/${p}`, import.meta.url));
 
+const NATIVE = process.env.KROMA_UI_TARGET === 'native';
+
+// Metro's precedence in reverse of the web's: a plain file wins, and `.native.*`
+// wins over it. `.web.*` is never seen.
+const nativeResolve = {
+  alias: [{ find: /^#ui\//, replacement: `${fileURLToPath(new URL('./src', import.meta.url))}/` }],
+  extensions: ['.native.tsx', '.native.ts', '.tsx', '.ts', '.jsx', '.js', '.json', '.mjs'],
+};
+
+// A native host brings its own React Native, its own SVG renderer and its own
+// Expo media; the web build folds the first into react-native-web and never
+// reaches the other three.
+const NATIVE_EXTERNAL = [
+  /^react-native$/,
+  /^react-native\//,
+  'react-native-svg',
+  'expo-image',
+  'expo-video',
+  /^@tabler\/icons-react-native(?:\/|$)/,
+];
+
 export default defineConfig({
   plugins: [
     // The brand intro's 4K master and its sting are 11 MB of KROMA, and the
@@ -26,7 +47,7 @@ export default defineConfig({
       name: 'kroma-ui-inject-i18n',
       enforce: 'pre' as const,
       load(id: string) {
-        for (const swap of ['services/i18n-instance', 'lib/genre-icon']) {
+        for (const swap of ['services/i18n-instance']) {
           if (id.endsWith(`${swap}.ts`)) return readFileSync(src(`${swap}.published.ts`), 'utf8');
         }
         return null;
@@ -36,19 +57,18 @@ export default defineConfig({
       name: 'kroma-ui-icon-subset',
       enforce: 'pre' as const,
       load(id: string) {
-        return id.endsWith('lib/icons/glyph-source.ts')
-          ? iconSubset(fileURLToPath(new URL('.', import.meta.url)))
-          : null;
+        if (NATIVE || !id.endsWith('lib/icons/glyph-source.ts')) return null;
+        return iconSubset(fileURLToPath(new URL('.', import.meta.url)));
       },
     },
     react(),
   ],
-  resolve: webResolve(),
+  resolve: NATIVE ? nativeResolve : webResolve(),
   define: { global: 'globalThis', 'process.env.NODE_ENV': '"production"' },
   build: {
-    outDir: 'dist',
+    outDir: NATIVE ? 'dist/native' : 'dist',
     assetsInlineLimit: 0,
-    emptyOutDir: true,
+    emptyOutDir: !NATIVE,
     minify: false,
     sourcemap: true,
     lib: {
@@ -70,8 +90,7 @@ export default defineConfig({
         'react-dom',
         'react/jsx-runtime',
         'react-dom/client',
-        'react-native-web',
-        /^@tabler\/icons-react(?:\/|$)/,
+        ...(NATIVE ? NATIVE_EXTERNAL : ['react-native-web', /^@tabler\/icons-react(?:\/|$)/]),
       ],
       output: {
         preserveModules: true,

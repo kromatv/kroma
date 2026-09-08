@@ -29,6 +29,14 @@ rmSync(dist, { recursive: true, force: true });
 const run = (...args: string[]) => execFileSync('bun', args, { cwd: pkgRoot, stdio: 'inherit' });
 
 run('x', 'vite', 'build', '--config', 'vite.lib.config.ts');
+// The same source through Metro's resolution: a plain file wins over its
+// `.web.*` sibling, and React Native stays external because a native host
+// brings its own.
+execFileSync('bun', ['x', 'vite', 'build', '--config', 'vite.lib.config.ts'], {
+  cwd: pkgRoot,
+  stdio: 'inherit',
+  env: { ...process.env, KROMA_UI_TARGET: 'native' },
+});
 run('x', 'tsc', '--project', 'tsconfig.dist.json');
 
 // The whole stylesheet as a file, because the `@import "@kromatv/ui/css"`
@@ -73,9 +81,16 @@ const source = JSON.parse(readFileSync(join(pkgRoot, 'package.json'), 'utf8'));
 
 // A subpath ships as its built pair. `types` first: a consumer's `moduleResolution`
 // reads the condition order, and a `.d.ts` beside the `.js` is not enough on its own.
+// `react-native` before `default`, so Metro takes the native build and every
+// other bundler takes the web one. Both are the same API, so one set of
+// declarations answers for both.
 const entry = (name: string, from: string) => [
   name,
-  { types: `./${from}.d.ts`, default: `./${from}.js` },
+  {
+    types: `./${from}.d.ts`,
+    'react-native': `./native/${from}.js`,
+    default: `./${from}.js`,
+  },
 ];
 
 const manifest = {
@@ -107,8 +122,26 @@ const manifest = {
     'react-dom': '>=18',
     'react-native-web': '>=0.21',
     '@tabler/icons-react': '>=3',
+    'react-native': '*',
+    'react-native-svg': '>=15',
+    '@tabler/icons-react-native': '>=3',
+    'expo-image': '*',
+    'expo-video': '*',
   },
-  peerDependenciesMeta: { '@tabler/icons-react': { optional: false } },
+  // The native half: a browser app installs none of them, and Metro needs all
+  // but the Expo two, which only the image backend and the theme audio reach.
+  peerDependenciesMeta: Object.fromEntries(
+    [
+      'react-dom',
+      'react-native-web',
+      '@tabler/icons-react',
+      'react-native',
+      'react-native-svg',
+      '@tabler/icons-react-native',
+      'expo-image',
+      'expo-video',
+    ].map((name) => [name, { optional: true }]),
+  ),
   publishConfig: { access: 'public' },
 };
 

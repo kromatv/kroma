@@ -4,6 +4,7 @@
 // input to a slug before matching.
 
 import type { Translate } from '@kromatv/i18n';
+import { genreRowOfSlug } from './genre-glyph';
 import { GENRES, type GenreCopyKey, type GenreRow, type GenreSlug } from './genre-table';
 import { SUPPORTED_LOCALES, translate } from './i18n';
 import { slugify as fold } from './slug';
@@ -16,10 +17,6 @@ export { GENRES } from './genre-table';
 function labelKey(slug: GenreSlug): GenreCopyKey {
   return `genre.${slug}`;
 }
-
-const BY_SLUG: ReadonlyMap<string, GenreRow> = new Map(
-  GENRES.map((genre) => [genre.slug, genre] as const),
-);
 
 const BY_TMDB: ReadonlyMap<number, GenreRow> = new Map(
   GENRES.map((genre) => [genre.tmdb, genre] as const),
@@ -48,7 +45,7 @@ function localized(key: string): GenreRow | undefined {
 
 function rowOf(nameOrSlug: string): GenreRow | undefined {
   const key = fold(nameOrSlug);
-  return BY_SLUG.get(key) ?? FOLDED.get(key) ?? localized(key);
+  return genreRowOfSlug(key) ?? FOLDED.get(key) ?? localized(key);
 }
 
 /** The genre a stored display name or a URL slug denotes, in any language the

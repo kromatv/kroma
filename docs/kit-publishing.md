@@ -6,26 +6,42 @@ The kit leaves this repository as a built package. The workspace stays
 `packages/ui/dist`, and that directory is what `npm publish` takes.
 
 ```bash
-bun run kit:stage --version 0.1.0
-cd packages/ui/dist && npm publish
+bun run kit:stage --version 0.1.0   # assemble packages/ui/dist
+bun run kit:smoke                   # install the tarball outside the repo and build it
 ```
+
+`release.yml`'s **Design system** job runs both on every push and uploads the
+tarball as the `kroma-ui` artifact. It publishes `X.Y.Z-canary.<build>` under
+the `canary` dist-tag from a push to `main`, and `X.Y.Z` under `latest` from a
+stable tag, on the same channel rules as the SDK and only when `NPM_TOKEN` is
+set. Without the secret the step is skipped rather than failed, and the tarball
+stays on the run for a hand publish.
 
 ## What the staged package is
 
 | In it | From |
 |---|---|
 | `kit.js` and the module tree beside it | a Vite library build of `src`, `preserveModules` |
+| `native/` | the same build under `KROMA_UI_TARGET=native` |
 | `*.d.ts` | `tsc --project tsconfig.dist.json` |
 | `styles.css` + `fonts/` | `vite/tokens.ts`, with the faces copied beside the sheet |
 | `package.json` | written by `scripts/stage.ts`, not the workspace one |
 
-The build resolves the two rules that make this kit universal, so a consumer
-does not have to: `react-native` lands on `react-native-web`, and `.web.*` wins
-over its native sibling. It also resolves `#ui/*`, though the emitted
-declarations still spell it, which is why the staged `package.json` keeps an
-`imports` map pointing at the package's own files.
+Two builds of one source, because the resolution rules that make this kit
+universal have to be settled by somebody and it should not be the consumer. The
+web build lands `react-native` on `react-native-web` and picks `.web.*` over its
+native sibling; the native build keeps React Native external and picks the plain
+file, which is Metro's order. Each subpath exports both, `react-native` ahead of
+`default`, and one set of declarations answers for both because the API is the
+same.
 
-`react`, `react-dom`, `react-native-web` and `@tabler/icons-react` are peers.
+Both resolve `#ui/*`, though the emitted declarations still spell it, which is
+why the staged `package.json` keeps an `imports` map pointing at the package's
+own files.
+
+Every peer is optional but `react`: a browser app installs `react-dom`,
+`react-native-web` and `@tabler/icons-react`, a native one installs React Native,
+`react-native-svg` and Tabler's native set, and neither is asked for the other's.
 
 ## Consuming it
 
@@ -102,5 +118,9 @@ sites across web, tv and mobile.
 
 ## What is still rough
 
-- **Native.** The staged package is web-first: `.web.*` is resolved at build
-  time, so React Native consumers still want the workspace source.
+- **The native half is built but unproven.** `kit:smoke` installs the tarball
+  into a Vite app, so the web build is exercised on every push; nothing yet
+  mounts the native one under Metro.
+- **`<KromaIntro>` is drawn from CSS.** Its 4K master and sting are stripped, so
+  the component falls back to the scene it already falls back to on a decoder
+  that cannot play HEVC.
