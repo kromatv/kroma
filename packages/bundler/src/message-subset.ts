@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { LABEL_NAMESPACE, namespaceOf } from '@kroma/i18n';
+import { namespaceOf } from '@kroma/i18n/layout';
+import { LABEL_NAMESPACE } from '@kroma/i18n/locales';
 import type { Plugin } from 'vite';
 
 const KIT_SRC = fileURLToPath(new URL('../../ui/src', import.meta.url));

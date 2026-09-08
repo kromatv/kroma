@@ -15,6 +15,8 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./layout": "./src/layout.ts",
+    "./locales": "./src/locales.ts",
     "./react": "./src/react/index.ts",
     "./schema": "./schema/catalog.schema.json",
     "./vite": "./vite/index.ts"

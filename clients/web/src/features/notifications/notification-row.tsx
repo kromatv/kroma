@@ -37,7 +37,7 @@ function foldLabels(
 ): { span: string | null; repeat: string | null } {
   const { head, items } = run;
   if (items.length <= 1) return { span: null, repeat: null };
-  const oldest = relative(items[items.length - 1]?.createdAt ?? head.createdAt);
+  const oldest = relative(items.at(-1)?.createdAt ?? head.createdAt);
   return {
     span: oldest === latest ? null : t('notifications.repeatSpan', { first: oldest, last: latest }),
     repeat: t('notifications.repeatCount', { count: items.length }),
