@@ -1,4 +1,5 @@
-//! `stats.report` send this install's anonymous heartbeat, if it was asked to.
+//! `stats.report` sends this install's anonymous heartbeat, unless it was told
+//! not to.
 //!
 //! The scheduling shell only: what is in the payload, and what is kept out of
 //! it, lives in `services::stats`. The run log prints the exact bytes that left

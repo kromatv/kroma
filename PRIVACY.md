@@ -18,14 +18,14 @@ sign in) to nothing else at all.
 **Your server counts itself among the KROMA installs running in the world, and
 you can stop it.** The server software has one setting, on by default and
 switched off in Admin → General → Privacy, that sends us a single anonymous
-payload a day: a random identifier that server
-minted for itself, its version and platform, how many devices used it in the
-last week, which languages those devices asked for, which official modules are
-on, and coarse size bands. It carries no name, no address, no titles and no
-exact counts, and it comes from the server, never from this app. Every field is
-listed in [`docs/anonymous-stats.md`](docs/anonymous-stats.md), the numbers are
-published at [kroma.tv/stats](https://kroma.tv/stats), and the server prints the
-exact payload in its own job log before sending it.
+payload a day: a random identifier that server minted for itself, its version
+and platform, how many devices used it in the last week, which languages those
+devices asked for, which official modules are on, and coarse size bands. It
+carries no name, no address, no titles and no exact counts, and it comes from
+the server, never from this app. Every field is listed in
+[`docs/anonymous-stats.md`](docs/anonymous-stats.md), the numbers are published
+at [kroma.tv/stats](https://kroma.tv/stats), and the server prints the exact
+payload in its own job log before sending it.
 
 Crash reporting is **off by default**. If you turn it on, a crash sends a stack
 trace and your app build and device model to **your own KROMA server** and to
@@ -56,8 +56,8 @@ TV, mobile and web clients do not do this.
 Two things your **server** reaches, which are its connections and not the app's.
 It fetches the official module catalog from `modules.kroma.tv` at every start, so
 an installed module can be kept up to date; an operator can turn that off in
-Admin → Modules. And, only if switched on, it posts the anonymous statistics
-described above to `stats.kroma.tv`.
+Admin → Modules. And, unless the switch above has been turned off, it posts the
+anonymous statistics described above to `stats.kroma.tv`.
 
 The typefaces are bundled inside the app rather than fetched from a font CDN, so
 a television with no route to the internet runs KROMA normally against a server
@@ -113,11 +113,11 @@ curl -X POST https://stats.kroma.tv/v1/forget \
 ```
 
 Turn the switch off before erasing: a server still reporting writes the row again
-the next day. Or write to privacy@kroma.tv and we will do it. The compliance record, including
-the legal basis, the processors and the retention periods, is
-[`docs/anonymous-stats-gdpr.md`](docs/anonymous-stats-gdpr.md). You have the right
-to complain to a supervisory authority: in Switzerland the FDPIC, in the EU the
-authority for your country.
+the next day. Or write to privacy@kroma.tv and we will do it. The compliance
+record, including the legal basis, the processors and the retention periods, is
+[`docs/anonymous-stats-gdpr.md`](docs/anonymous-stats-gdpr.md). You have the
+right to complain to a supervisory authority: in Switzerland the FDPIC, in the EU
+the authority for your country.
 
 If you switched it off before its first report, we hold nothing about you at all.
 

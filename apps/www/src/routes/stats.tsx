@@ -150,7 +150,7 @@ function StatsPage() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Note title={m.stats_method_title()} body={m.stats_method_body()} />
-        <Note title={m.stats_optin_title()} body={m.stats_optin_body()}>
+        <Note title={m.stats_switch_title()} body={m.stats_switch_body()}>
           <L to="/privacy" className="mt-3 inline-block text-sm text-accent-text">
             {m.stats_privacy_link()}
           </L>

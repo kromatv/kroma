@@ -63,8 +63,8 @@ pub fn build(
     };
 
     // And the second: which installed modules came from the official catalog, so
-    // the opt-in statistics can name them without a third-party id ever leaving
-    // the box. Still a function, still no roster.
+    // the statistics can name them without a third-party id ever leaving the box.
+    // Still a function, still no roster.
     let official_modules: state::OfficialModules = {
         let supervisor = supervisor.clone();
         Arc::new(move || {

@@ -56,8 +56,8 @@ pub struct Config {
     /// Naming an origin lets any page served from it act as a client of this
     /// server, so name only origins you publish yourself.
     pub allowed_origins: Vec<String>,
-    /// How this server was installed. Reported with the opt-in anonymous
-    /// statistics and nowhere else.
+    /// How this server was installed. Reported with the anonymous statistics
+    /// and nowhere else.
     pub install: Install,
 }
 

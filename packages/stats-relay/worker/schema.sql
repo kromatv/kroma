@@ -1,4 +1,4 @@
--- One row per install that has opted in, upserted by its own heartbeat.
+-- One row per install that reports, upserted by its own heartbeat.
 -- `id` is the only key: it is an opaque random token the install minted for
 -- itself, is never joined to an address, and is the whole authorisation to
 -- write this row.

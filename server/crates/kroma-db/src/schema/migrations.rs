@@ -259,6 +259,6 @@ pub(crate) const MIGRATIONS: &[&str] = &[
         created_at  TEXT NOT NULL)",
     "ALTER TABLE metadata_core ADD COLUMN certification TEXT",
     // The language tag the device asked for, beside the label it goes by. Read
-    // only in aggregate, by the opt-in anonymous statistics.
+    // only in aggregate, by the anonymous statistics.
     "ALTER TABLE access_tokens ADD COLUMN language TEXT",
 ];

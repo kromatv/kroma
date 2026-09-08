@@ -1,5 +1,9 @@
 use kroma_db::DeviceHints;
 
+// The collector refuses a longer list, and a server whose devices speak more
+// languages than this is not the one the field exists to find.
+const MAX_TAGS: usize = 32;
+
 /// Which languages the devices on this server ask for, as a set and never as
 /// counts: the sum of per-language counts would give away the user total that
 /// the bucket exists to keep coarse.
@@ -7,10 +11,6 @@ use kroma_db::DeviceHints;
 /// The tag is what the device asked for, not what KROMA answered with, so a
 /// reader running the French UI on a German phone shows up as German. That is
 /// the whole reason to collect it.
-// The collector refuses a longer list, and a server whose devices speak more
-// languages than this is not the one the field exists to find.
-const MAX_TAGS: usize = 32;
-
 pub fn spoken(devices: &[DeviceHints]) -> Vec<String> {
     let mut tags: Vec<String> = devices
         .iter()

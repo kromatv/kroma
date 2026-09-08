@@ -138,7 +138,7 @@ addendum.
 |---|---|
 | Object (Art. 21) | Admin → General → Privacy. Takes effect at once, and no reason is asked for. Where processing rests on legitimate interests this is the right that answers it, and here it is a switch rather than a request. |
 | Access (Art. 15) | Admin → Jobs → Anonymous statistics → Run now prints the exact payload. The identifier is shown in Admin → General → Privacy. |
-| Erasure (Art. 17) | `POST https://stats.kroma.tv/v1/forget` with `{"id":"<your identifier>"}`. Self-service, immediate, no request to anyone. Withdraw consent first: a server still reporting writes the row again the next day. |
+| Erasure (Art. 17) | `POST https://stats.kroma.tv/v1/forget` with `{"id":"<your identifier>"}`. Self-service, immediate, no request to anyone. Object first: a server still reporting writes the row again the next day. |
 | Rectification (Art. 16) | The next day's payload replaces the row. |
 | Portability (Art. 20) | The payload is JSON, printed by the server that produced it. |
 | Object, or complain | privacy@kroma.tv, and the right to lodge a complaint with a supervisory authority, in Switzerland the FDPIC and in the EU the authority for your country. |
@@ -169,8 +169,9 @@ so it cannot be used to test whether an identifier exists.
 
 KROMA is published from Switzerland, so the revised Federal Act on Data
 Protection applies alongside the GDPR. Its requirements are met by the same
-measures: the processing is consented to, minimal, documented here, and
-erasable on request.
+measures: the processing is justified by an overriding private interest under
+Article 31, minimal, documented here, refusable with one switch, and erasable
+without asking anyone.
 
 ## Changes
 

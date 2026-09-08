@@ -56,9 +56,9 @@ fn version_label() -> String {
     format!("{} ({} · {})", b.version, b.commit, b.built)
 }
 
-// The identifier is shown only once it exists, because until an operator has
-// switched statistics on there is nothing minted and nothing to erase. Seeing it
-// is what lets them ask for that row to be deleted.
+// The identifier is shown only once it exists, because a server that has never
+// reported has nothing minted and nothing to erase. Seeing it is what lets an
+// operator have that row deleted.
 fn privacy_rows(settings: &Settings, t: &impl Fn(&str) -> String) -> Vec<SettingRow> {
     let mut rows = vec![row(
         "anonStats",

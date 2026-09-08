@@ -49,7 +49,8 @@ consentement : c’est activé par défaut, et appeler un réglage par défaut u
 Administration → Général → Confidentialité, immédiatement et sans avoir à vous
 justifier. Nous ne demandons rien et vous ne devez aucune explication.
 
-Une fois activé, votre serveur envoie un relevé par jour. Le voici en entier :
+Tant que c’est activé, votre serveur envoie un relevé par jour. Le voici en
+entier :
 
 | Quoi | Pourquoi |
 |---|---|
@@ -91,14 +92,16 @@ curl -X POST https://stats.kroma.tv/v1/forget \
   -d '{"id":"<l’identifiant affiché dans votre page d’administration>"}'
 ```
 
-Elle disparaît immédiatement. Désactivez d’abord l’interrupteur : un serveur qui envoie encore des relevés réécrit la ligne le lendemain. Vous pouvez aussi écrire à privacy@kroma.tv et nous le
-ferons, et vous avez le droit d’introduire une réclamation auprès d’une autorité de
-contrôle : en Suisse le PFPDT, et dans l’Union européenne l’autorité de votre pays.
+Elle disparaît immédiatement. Désactivez d’abord l’interrupteur : un serveur qui
+envoie encore des relevés réécrit la ligne le lendemain. Vous pouvez aussi écrire à
+privacy@kroma.tv et nous le ferons, et vous avez le droit d’introduire une
+réclamation auprès d’une autorité de contrôle : en Suisse le PFPDT, et dans l’Union
+européenne l’autorité de votre pays.
 
 ## Notifications push via le relais Cloudflare
 
-C’est le seul composant qui touche un service que nous opérons, et nous préférons le
-dire franchement. Les applications mobile et TV peuvent recevoir des notifications
+C’est la seule partie de l’**application** qui touche un service que nous opérons,
+et nous préférons le dire franchement. Les applications mobile et TV peuvent recevoir des notifications
 push, par exemple « votre téléchargement est prêt ». Apple et Google exigent pour
 cela des identifiants confidentiels qui ne peuvent pas vivre dans un code source
 public et auto-hébergé. Un petit relais que nous exécutons sur Cloudflare les détient

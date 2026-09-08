@@ -68,9 +68,9 @@ pub async fn put_settings(
     if written.iter().any(|k| k == "mediaConcurrency") {
         crate::infra::ffmpeg_gate::set_capacity(settings::media_workers(&state.settings));
     }
-    // Consent given is the moment the identifier exists: the settings page shows
-    // it, and it is what an operator quotes to have their row erased, so waiting
-    // for the first scheduled run would leave both looking broken for a day.
+    // A server that booted with the switch off has no identifier, and the moment
+    // it is switched on the settings page has to name one: it is what an operator
+    // quotes to have their row erased.
     if written.iter().any(|k| k == settings::stats::ENABLED_KEY) {
         settings::stats::ensure_identity(&state.settings, &state.db);
     }

@@ -82,14 +82,16 @@ curl -X POST https://stats.kroma.tv/v1/forget \
   -d '{"id":"<the identifier from your admin page>"}'
 ```
 
-It is gone immediately. Turn the switch off first, though: a server that is still reporting writes the row again the next day. You can also write to privacy@kroma.tv and we will do it, and
-you have the right to complain to a supervisory authority: in Switzerland the FDPIC,
-and in the EU the authority for your country.
+It is gone immediately. Turn the switch off first, though: a server that is still
+reporting writes the row again the next day. You can also write to
+privacy@kroma.tv and we will do it, and you have the right to complain to a
+supervisory authority: in Switzerland the FDPIC, and in the EU the authority for
+your country.
 
 ## Push notifications via the Cloudflare relay
 
-This is the only component that touches a service we operate, and we would rather
-say so plainly. The mobile and TV apps can receive push notifications, for example
+This is the only part of the **app** that touches a service we operate, and we
+would rather say so plainly. The mobile and TV apps can receive push notifications, for example
 "your download is ready". Apple and Google require confidential credentials for
 that, and those cannot live in public, self-hosted source code. A small relay we run
 on Cloudflare holds them instead.
