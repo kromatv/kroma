@@ -9,7 +9,6 @@
 // is not spelt here at all: `lib/splash-motion` answers both with one API, and
 // its web half compiles the drift to @keyframes so the compositor owns it.
 
-import { safeImageUrl } from '@kromatv/core';
 import { useEffect, useState } from 'react';
 import {
   Animated,
@@ -25,6 +24,7 @@ import { Text } from '#ui/components/atoms/text';
 import { styles, WHEEL_COLORS } from '#ui/core';
 import { gradient, promote } from '#ui/lib/css';
 import { WEB } from '#ui/lib/platform';
+import { safeImageUrl } from '#ui/lib/safe-image-url';
 import { GRADE, useDrift } from '#ui/lib/splash-motion';
 
 // Ambience, not a carousel: each cover lingers, and the handover is a long
