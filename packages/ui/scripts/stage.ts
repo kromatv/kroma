@@ -26,13 +26,16 @@ const version = process.argv.includes('--version')
 
 rmSync(dist, { recursive: true, force: true });
 
-const run = (...args: string[]) => execFileSync('bun', args, { cwd: pkgRoot, stdio: 'inherit' });
+// `process.execPath` rather than the name: this script runs under bun, so that
+// IS the interpreter to re-enter, and nothing resolves through PATH.
+const bun = process.execPath;
+const run = (...args: string[]) => execFileSync(bun, args, { cwd: pkgRoot, stdio: 'inherit' });
 
 run('x', 'vite', 'build', '--config', 'vite.lib.config.ts');
 // The same source through Metro's resolution: a plain file wins over its
 // `.web.*` sibling, and React Native stays external because a native host
 // brings its own.
-execFileSync('bun', ['x', 'vite', 'build', '--config', 'vite.lib.config.ts'], {
+execFileSync(bun, ['x', 'vite', 'build', '--config', 'vite.lib.config.ts'], {
   cwd: pkgRoot,
   stdio: 'inherit',
   env: { ...process.env, KROMA_UI_TARGET: 'native' },

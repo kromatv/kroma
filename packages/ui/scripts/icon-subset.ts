@@ -17,6 +17,14 @@ const LITERAL = /['"`]([a-z][a-z0-9]*(?:-[a-z0-9]+)*)['"`]/g;
 const SKIP = new Set(['node_modules', '__snapshots__']);
 const IGNORED = ['.test.', '.story.', '.demo.', '.fixture', '.docs.'];
 
+// Not `localeCompare`: this ordering ends up in generated source, so it has to
+// be identical on every machine rather than follow the build's locale. Same
+// reason `@kromatv/ui/bundler` sorts its own subset this way.
+function byCodeUnit(a: string, b: string): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
 function exportName(slug: string): string {
   let out = 'Icon';
   for (const word of slug.split('-')) out += word.charAt(0).toUpperCase() + word.slice(1);
@@ -67,7 +75,7 @@ export function iconSubset(pkgRoot: string, pkg = '@tabler/icons-react'): string
       if (glyphs.has(name)) used.add(name);
     }
   });
-  const names = [...used].sort();
+  const names = [...used].sort(byCodeUnit);
   return [
     ...names.map((n) => `import ${n} from ${JSON.stringify(glyphs.get(n))};`),
     `export const EXPORTS = { ${names.join(', ')} };`,

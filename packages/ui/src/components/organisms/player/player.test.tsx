@@ -140,6 +140,65 @@ describe('<Player> as a compound', () => {
     expect(() => render(<Player.Media>{null}</Player.Media>)).toThrow('<Player.Media>');
     quiet.mockRestore();
   });
+
+  // A setting is never rendered while it is a child of the Root: `sortSlots`
+  // takes its props and the Root draws that region itself. Outside one it IS
+  // rendered, which is the only time its guard can fire, and the only way to
+  // find out it was written somewhere it does nothing.
+  it.each([
+    ['Title', <Player.Title key="t">x</Player.Title>],
+    ['Subtitle', <Player.Subtitle key="s">x</Player.Subtitle>],
+    ['Warning', <Player.Warning key="w">x</Player.Warning>],
+    ['Actions', <Player.Actions key="a">x</Player.Actions>],
+    ['Panel', <Player.Panel key="p">x</Player.Panel>],
+    ['Transport', <Player.Transport key="tr" tileAt={() => null} />],
+    ['UpNext', <Player.UpNext key="u" data={NO_UP_NEXT} />],
+    ['Credits', <Player.Credits key="c" />],
+    ['PostPlay', <Player.PostPlay key="pp" item={null} />],
+    ['SkipIntro', <Player.SkipIntro key="si" onSkip={() => {}} />],
+    [
+      'Subtitles',
+      <Player.Subtitles
+        key="su"
+        appearance={DEFAULT_SUB_APPEARANCE}
+        onAppearanceChange={() => {}}
+        gen={NO_GEN}
+      />,
+    ],
+    ['Report', <Player.Report key="r" onReport={async () => {}} />],
+  ])('refuses <Player.%s> outside the Root', (name, element) => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => render(element)).toThrow(`<Player.${name}>`);
+
+    quiet.mockRestore();
+  });
+
+  // Only a DIRECT child takes its slot. A setting wrapped in anything is missed
+  // by `sortSlots`, so React renders it where it was written, where it draws
+  // nothing: the region it was meant to configure never appears, and the misuse
+  // is silent rather than loud.
+  it('draws nothing for a setting that is not a direct child', () => {
+    render(
+      player(
+        <div key="wrapped">
+          <Player.Transport tileAt={() => null} />
+          <Player.UpNext data={NO_UP_NEXT} />
+          <Player.Credits />
+          <Player.PostPlay item={null} />
+          <Player.SkipIntro onSkip={() => {}} />
+          <Player.Subtitles
+            appearance={DEFAULT_SUB_APPEARANCE}
+            onAppearanceChange={() => {}}
+            gen={NO_GEN}
+          />
+          <Player.Report onReport={async () => {}} />
+        </div>,
+      ),
+    );
+
+    expect(screen.queryByTestId('surface')).toBeNull();
+  });
 });
 
 describe('<Player> with a title that will not play', () => {
