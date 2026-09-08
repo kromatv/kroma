@@ -6,10 +6,21 @@
 // Both have happened in this repo, which is why the properties file says so
 // twice. Run: `bun run sonar:lint`.
 
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync, realpathSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 
-const CONFIG = process.argv[2] ?? 'sonar-project.properties';
+function underCwd(path: string): string {
+  const full = realpathSync(path);
+  const root = realpathSync(process.cwd());
+  if (full !== root && !full.startsWith(root + sep)) {
+    console.error(`${path} is outside ${root}.`);
+    process.exit(1);
+  }
+  return full;
+}
+
+const CONFIG = underCwd(process.argv[2] ?? 'sonar-project.properties');
+const NAME = relative(process.cwd(), CONFIG);
 
 // Patterns that are meant to match nothing today. Each guards against a tree
 // the scanner walks but git does not track (build output, caches, vendored
@@ -153,9 +164,9 @@ for (const id of ids) {
 }
 
 if (problems.length > 0) {
-  console.log(`${CONFIG}\n`);
+  console.log(`${NAME}\n`);
   for (const p of problems) console.log(`  ${p}`);
   console.log(`\n${problems.length} problem(s).`);
   process.exit(1);
 }
-console.log(`${CONFIG}: every exclusion and suppression still matches something.`);
+console.log(`${NAME}: every exclusion and suppression still matches something.`);
