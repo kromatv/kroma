@@ -17,7 +17,6 @@
     "migrate": "wrangler d1 execute kroma-stats --remote --file worker/schema.sql"
   },
   "dependencies": {
-    "@hono/zod-validator": "^0.9.0",
     "hono": "^4.13.2",
     "zod": "^4.5.4"
   },

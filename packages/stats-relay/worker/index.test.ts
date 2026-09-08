@@ -55,6 +55,21 @@ describe('POST /v1/ping', () => {
     expect(body.error).not.toContain('not-a-token');
   });
 
+  it('refuses a body that is not JSON at all, rather than raising an error', async () => {
+    const store = memoryStore();
+    const request = new Request('https://stats.kroma.tv/v1/ping', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: 'not json',
+    });
+
+    const res = await send(store, request);
+
+    expect(res.status).toBe(400);
+    expect((await res.json()) as { error: string }).toEqual({ error: 'body is not JSON' });
+    expect(store.rows.size).toBe(0);
+  });
+
   it('refuses a module id that is not reverse-DNS', async () => {
     const store = memoryStore();
 

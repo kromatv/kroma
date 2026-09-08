@@ -58,12 +58,34 @@ export type Ping = z.infer<typeof Ping>;
 export const Forget = z.object({ id: InstallId });
 export type Forget = z.infer<typeof Forget>;
 
+/** What a body turned out to be, or the one sentence saying why it did not. */
+export type Parsed<S extends z.ZodType> =
+  | { ok: true; value: z.infer<S> }
+  | { ok: false; error: string };
+
 /**
- * The first problem zod found, naming the offending field and nothing else.
- * Deliberately not `z.treeifyError` or the raw issue list: those echo the
- * received value back, reflecting an attacker's payload into a response.
+ * Read one request body against the schema that decides what a route accepts.
+ * Takes the text rather than the request, because the bytes have already been
+ * counted through the collector's ceiling and reading them again would parse
+ * bytes nobody measured.
  */
-export function firstIssue(error: { issues: readonly z.core.$ZodIssue[] }): string {
+export function parse<S extends z.ZodType>(text: string, schema: S): Parsed<S> {
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    return { ok: false, error: 'body is not JSON' };
+  }
+  const result = schema.safeParse(json);
+  return result.success
+    ? { ok: true, value: result.data }
+    : { ok: false, error: firstIssue(result.error) };
+}
+
+// The first problem zod found, naming the offending field and nothing else.
+// Deliberately not `z.treeifyError` or the raw issue list: those echo the
+// received value back, reflecting an attacker's payload into a response.
+function firstIssue(error: { issues: readonly z.core.$ZodIssue[] }): string {
   const issue = error.issues[0];
   if (!issue) return 'invalid request';
   const path = issue.path.join('.');
