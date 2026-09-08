@@ -3,6 +3,7 @@
 // SecureStore, see storage.ts.
 
 import { type SessionStorage, setSessionStorage } from '@kromatv/client';
+import { setDeviceStore } from '@kromatv/ui';
 import { Directory, File, Paths } from 'expo-file-system';
 import { z } from 'zod';
 
@@ -62,5 +63,7 @@ function read(file: File | null): Record<string, string> {
 /** Installs the store, synchronously. Call it before the first read: the theme
  *  mode is applied at module scope, ahead of the first render. */
 export function installDeviceStore(): void {
-  setSessionStorage(new DeviceStore());
+  const store = new DeviceStore();
+  setSessionStorage(store);
+  setDeviceStore(store);
 }

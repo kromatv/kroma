@@ -12,6 +12,7 @@
 // purgeable caches directory if they did not.
 
 import { type SessionStorage, setSessionStorage } from '@kromatv/client';
+import { setDeviceStore } from '@kromatv/ui';
 import { Directory, File, Paths } from 'expo-file-system';
 
 const FILE_NAME = 'kroma-session.json';
@@ -95,4 +96,5 @@ export async function hydrateSessionStorage(): Promise<void> {
     console.warn('[kroma] session store unreadable, starting empty:', cause);
   }
   setSessionStorage(store);
+  setDeviceStore(store);
 }

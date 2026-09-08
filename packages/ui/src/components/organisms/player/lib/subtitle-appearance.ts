@@ -1,8 +1,8 @@
-import { deviceStorage } from '@kromatv/client';
 import { useCallback, useEffect, useState } from 'react';
 import type { TextStyle, ViewStyle } from 'react-native';
 import type { ColorValue } from '#ui/core';
 import { sharedStyle } from '#ui/core';
+import { deviceStore } from '#ui/lib/device-store';
 import { edgeStyle } from './subtitle-edge';
 
 /**
@@ -162,7 +162,7 @@ export function migrateAppearance(raw: unknown): SubtitleAppearance {
 
 function readStoredAppearance(): SubtitleAppearance | null {
   try {
-    const raw = deviceStorage()?.getItem(KEY);
+    const raw = deviceStore()?.getItem(KEY);
     return raw ? migrateAppearance(JSON.parse(raw)) : null;
   } catch {
     return null;
@@ -171,7 +171,7 @@ function readStoredAppearance(): SubtitleAppearance | null {
 
 function persistAppearance(next: SubtitleAppearance): void {
   try {
-    deviceStorage()?.setItem(KEY, JSON.stringify(next));
+    deviceStore()?.setItem(KEY, JSON.stringify(next));
   } catch {}
 }
 
