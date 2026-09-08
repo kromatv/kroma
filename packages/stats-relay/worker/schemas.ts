@@ -28,25 +28,38 @@ const Clients = z.object({
 });
 
 /**
+ * The payload shapes this collector understands. A new one is ADDED here, never
+ * swapped in: a self-hosted server updates when its operator decides to, so
+ * refusing the shape they still send drops them out of the count for as long as
+ * they take.
+ */
+export const SUPPORTED_SCHEMAS = [2] as const;
+
+/**
  * `POST /v1/ping`: what one install says about itself, once a day.
  *
  * Deliberately unauthenticated, for the same reason the push relay's routes
  * are: the sender is public source, so any credential shipped in it would be
  * public too. The id is the whole authorisation, and it authorises writing one
  * row and nothing else.
+ *
+ * The base block is required. The two detail blocks are optional as a whole,
+ * because a server whose operator dropped one omits its keys rather than
+ * sending them empty, and "no modules enabled" has to stay distinguishable from
+ * "not telling you".
  */
 export const Ping = z.object({
-  schema: z.literal(1),
+  schema: z.literal(SUPPORTED_SCHEMAS),
   id: InstallId,
   version: z.string().trim().min(1).max(32),
   commit: z.string().trim().min(1).max(40),
   target: z.string().trim().max(64),
   install: z.enum(['docker', 'synology', 'binary', 'unknown']),
-  clients: Clients,
-  locales: z.array(Tag).max(32),
-  modules: z.array(ModuleId).max(64),
-  users: z.enum(['1', '2-5', '6-20', '21+']),
-  titles: z.enum(['0-99', '100-999', '1k-4999', '5k+']),
+  locales: z.array(Tag).max(32).optional(),
+  modules: z.array(ModuleId).max(64).optional(),
+  clients: Clients.optional(),
+  users: z.enum(['1', '2-5', '6-20', '21+']).optional(),
+  titles: z.enum(['0-99', '100-999', '1k-4999', '5k+']).optional(),
 });
 export type Ping = z.infer<typeof Ping>;
 

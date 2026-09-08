@@ -14,7 +14,7 @@ That document is the contract; this one is how to run the thing.
 |---|---|
 | `POST /v1/ping` | One install's daily payload. Unauthenticated on purpose. |
 | `POST /v1/forget` | Deletes the row an identifier names. The identifier is the authorisation. |
-| `GET /v1/stats` | The published aggregate, CORS-open and cached an hour. |
+| `GET /v1/stats` | The published aggregate, CORS-open and cached an hour. This is the public data file: `kroma.tv/stats` renders it and nothing else, and a nightly job commits a copy to the `stats-data` branch. |
 | `GET /v1/admin/stats` | The same aggregate with no floor, plus the sweep's counts. Behind Cloudflare Access. |
 | `GET /health` | Whether the database is reachable. |
 
@@ -31,6 +31,19 @@ the only expensive thing a caller can do, which is create rows. Cloudflare's
 limiter takes a 10- or 60-second window and nothing longer, so neither is a
 daily budget: what actually bounds a fake fleet is the seven-day settling window
 and the nightly burst sweep, both described in the document above.
+
+## Adding a payload shape
+
+`SUPPORTED_SCHEMAS` in `worker/schemas.ts` is a list, and a new shape is **added
+to it rather than swapping the old one out**. A KROMA server updates when its
+operator decides to, which for a self-hosted box is often months; a collector
+that only accepts the newest shape silently drops every install that has not got
+there yet, and those installs are the ones a count of long-lived servers most
+needs. Retire a shape when the servers sending it have aged out of the window
+anyway, not when a newer one ships.
+
+A server whose payload is refused logs it and retries the next day. It does not
+fail its job, because a rejection is never something the operator can act on.
 
 ## Deploying
 

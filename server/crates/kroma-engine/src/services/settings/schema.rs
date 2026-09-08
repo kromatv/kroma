@@ -60,15 +60,36 @@ fn version_label() -> String {
 // reported has nothing minted and nothing to erase. Seeing it is what lets an
 // operator have that row deleted.
 fn privacy_rows(settings: &Settings, t: &impl Fn(&str) -> String) -> Vec<SettingRow> {
-    let mut rows = vec![row(
-        "anonStats",
-        t("admin.anonStats"),
-        Some(t("admin.anonStatsHint")),
-        "toggle",
-        &[],
-        settings.get("anonStats"),
-        true,
-    )];
+    // The base switch first, then what it carries. The two detail switches send
+    // nothing while the base one is off, which is why they read as its parts
+    // rather than as three independent settings.
+    let toggles = [
+        ("anonStats", "admin.anonStats", "admin.anonStatsHint"),
+        (
+            "anonStatsUsage",
+            "admin.anonStatsUsage",
+            "admin.anonStatsUsageHint",
+        ),
+        (
+            "anonStatsStatistics",
+            "admin.anonStatsStatistics",
+            "admin.anonStatsStatisticsHint",
+        ),
+    ];
+    let mut rows: Vec<SettingRow> = toggles
+        .into_iter()
+        .map(|(key, label, hint)| {
+            row(
+                key,
+                t(label),
+                Some(t(hint)),
+                "toggle",
+                &[],
+                settings.get(key),
+                true,
+            )
+        })
+        .collect();
     let id = settings.get_str("statsId", "");
     if !id.trim().is_empty() {
         rows.push(row(
@@ -730,6 +751,20 @@ mod tests {
             "on by default, and one switch stops it"
         );
         assert!(row.applied);
+    }
+
+    #[test]
+    fn the_privacy_group_offers_the_feature_and_the_two_blocks_it_carries() {
+        let pool = test_pool();
+        let s = Settings::load(&pool);
+
+        let groups = groups("general", &s, &test_config(), "en");
+
+        for key in ["anonStats", "anonStatsUsage", "anonStatsStatistics"] {
+            let row = find_row(&groups, key).unwrap_or_else(|| panic!("{key} is not offered"));
+            assert_eq!(row.kind, "toggle", "{key}");
+            assert_eq!(row.value, json!(true), "{key} starts on");
+        }
     }
 
     #[test]

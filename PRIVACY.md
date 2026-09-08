@@ -16,16 +16,21 @@ for us to hold. The app talks to the server you point it at, and (unless you
 sign in) to nothing else at all.
 
 **Your server counts itself among the KROMA installs running in the world, and
-you can stop it.** The server software has one setting, on by default and
-switched off in Admin → General → Privacy, that sends us a single anonymous
-payload a day: a random identifier that server minted for itself, its version
-and platform, how many devices used it in the last week, which languages those
+you can stop it.** The server software sends us a single anonymous payload a
+day: a random identifier that server minted for itself, its version and
+platform, how many devices used it in the last week, which languages those
 devices asked for, which official modules are on, and coarse size bands. It
 carries no name, no address, no titles and no exact counts, and it comes from
-the server, never from this app. Every field is listed in
+the server, never from this app.
+
+Admin → General → Privacy holds three switches, on by default. The first is the
+whole thing. Under it, *what this server runs* and *how much of it there is* can
+each be dropped on their own, and a part you switch off is left out of the
+payload rather than sent empty. Every field is listed in
 [`docs/anonymous-stats.md`](docs/anonymous-stats.md), the numbers are published
-at [kroma.tv/stats](https://kroma.tv/stats), and the server prints the exact
-payload in its own job log before sending it.
+at [kroma.tv/stats](https://kroma.tv/stats) and readable as raw JSON at
+`stats.kroma.tv/v1/stats`, and the server prints the exact payload in its own
+job log before sending it.
 
 Crash reporting is **off by default**. If you turn it on, a crash sends a stack
 trace and your app build and device model to **your own KROMA server** and to

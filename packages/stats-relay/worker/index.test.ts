@@ -70,6 +70,31 @@ describe('POST /v1/ping', () => {
     expect(store.rows.size).toBe(0);
   });
 
+  it('takes a payload whose detail blocks the operator dropped, and stores them absent', async () => {
+    const store = memoryStore();
+    const base = ping();
+    const { locales: _l, modules: _m, clients: _c, users: _u, titles: _t, ...only } = base;
+
+    const res = await send(store, post(only));
+
+    expect(res.status).toBe(200);
+    const row = store.rows.get(base.id);
+    expect(row?.version).toBe(base.version);
+    for (const absent of [row?.locales, row?.modules, row?.clients, row?.users, row?.titles]) {
+      expect(absent).toBeUndefined();
+    }
+  });
+
+  it('refuses a payload shape it has not been taught', async () => {
+    const store = memoryStore();
+
+    const res = await send(store, post({ ...ping(), schema: 1 }));
+
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toContain('schema');
+    expect(store.rows.size).toBe(0);
+  });
+
   it('refuses a module id that is not reverse-DNS', async () => {
     const store = memoryStore();
 
@@ -231,6 +256,32 @@ describe('GET /v1/stats', () => {
     } finally {
       globals.caches = undefined;
     }
+  });
+
+  it('says how many of the counted servers supplied each optional block', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const settled = { firstSeen: now - 30 * DAY, lastSeen: now - DAY };
+    const store = memoryStore([
+      ...Array.from({ length: FLOOR }, (_, i) => row({ id: `full-${i}`, ...settled })),
+      row({
+        id: 'base-only',
+        ...settled,
+        locales: undefined,
+        modules: undefined,
+        clients: undefined,
+      }),
+    ]);
+
+    const res = await send(store, new Request('https://stats.kroma.tv/v1/stats'));
+
+    const body = (await res.json()) as {
+      instances: number;
+      reports: { usage: number; statistics: number };
+      clients: { total: number };
+    };
+    expect(body.instances).toBe(FLOOR + 1);
+    expect(body.reports).toEqual({ usage: FLOOR, statistics: FLOOR });
+    expect(body.clients.total).toBe(FLOOR * 3);
   });
 
   it('never returns a row, only counts', async () => {

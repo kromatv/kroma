@@ -36,6 +36,15 @@ the reader this is meant to find.
 defaults, already translated in both catalogs, read by nothing. This fills that
 slot, flips the default to on, and surfaces it under Admin → General → Privacy.
 
+Two further switches sit under it, following the shape Home Assistant's
+analytics uses: *what this server runs* and *how much of it there is*, each
+droppable on its own while the server still counts itself, and both silent while
+the base switch is off. A block that is off is **absent from the payload**
+rather than sent empty, because "no modules enabled" is a fact about a server
+and an empty list would make it indistinguishable from a refusal. The published
+aggregate carries how many servers supplied each block, so a breakdown is read
+against its own denominator rather than against the whole fleet.
+
 The basis is **legitimate interests (Art 6(1)(f))**, not consent. A default-on
 switch is not consent, and calling it consent is the kind of claim the code
 contradicts. The balancing test is written out in
@@ -72,6 +81,14 @@ build honours `KROMA_STATS_URL` so the loop can be run locally.
 The full field list, and the list of what is deliberately absent, is
 [`docs/anonymous-stats.md`](../anonymous-stats.md). It is the contract, and a
 new field is a change to it and to the schema number.
+
+The collector holds a **set** of shapes it accepts rather than one, and a new
+shape is added to it rather than swapped in. A self-hosted server updates when
+its operator decides to, so a collector that only takes the newest payload drops
+every install that has not got there yet, which are the installs a count of
+long-lived servers most needs to see. A server whose payload is refused writes
+it into its run log and offers it again tomorrow; it never fails its job,
+because a rejection is not something its operator can act on.
 
 ## What this costs
 

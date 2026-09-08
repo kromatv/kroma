@@ -142,8 +142,11 @@ fn defaults() -> BTreeMap<String, Value> {
     m.insert("watchIntervalSecs".into(), json!(-1));
     // On, and an operator turns it off in Admin -> General -> Privacy. What it
     // sends, and why this is legitimate interest rather than consent, is
-    // docs/anonymous-stats-gdpr.md.
+    // docs/anonymous-stats-gdpr.md. The two below are the detail blocks the base
+    // switch carries, each droppable on its own and each silent without it.
     m.insert("anonStats".into(), json!(true));
+    m.insert("anonStatsUsage".into(), json!(true));
+    m.insert("anonStatsStatistics".into(), json!(true));
     m.insert("showRecentHome".into(), json!(true));
     // Security: exposes the account roster on the login screen. Off by default so
     // knowing the server URL does not reveal who has an account; when off,

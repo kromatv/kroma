@@ -97,7 +97,7 @@ Environment variables carry all configuration:
 | `KROMA_ALLOWED_ORIGINS`| *(empty)* | Extra browser origins allowed to read the API. See [Which browsers are answered](#which-browsers-are-answered). |
 | `KROMA_WEB_URL`    | *(`:<port>`)* | Public address written into invite and account links.                |
 | `KROMA_WEB_DIR`    | *(empty)*   | Built SPA served as the fallback route. Ignored unless it holds `_shell.html`, which is why dev leaves it unset. |
-| `KROMA_INSTALL`    | `unknown`   | How this server was installed: `docker`, `synology` or `binary`. Set by the packaging, and reported only with the anonymous statistics. See [`docs/anonymous-stats.md`](../docs/anonymous-stats.md). |
+| `KROMA_INSTALL`    | `unknown`   | How this server was installed: `docker`, `synology` or `binary`. The Docker images and the Synology package set their own; `binary` is for an operator running the built server directly, and an unset value reports `unknown` rather than guessing. Reported only with the anonymous statistics. See [`docs/anonymous-stats.md`](../docs/anonymous-stats.md). |
 | `RUST_LOG`         | `info`      | Standard `tracing` filter, e.g. `kroma_server=debug`. Inherited by the module sidecars. |
 | `KROMA_MODULE_LOG` | *(empty)*   | Overrides `RUST_LOG` for the module sidecars only, e.g. `kroma_indexer=debug`. Their output is drained into the core's log and Admin → Modules → *module* → Journaux. |
 | `KROMA_HWACCEL`    | *(probed)*  | Pins the re-encode pipeline: `qsv`, `vaapi`, `nvenc`, `videotoolbox`, or `software` to rule hardware out of a problem. See [Hardware transcoding](#hardware-transcoding). |

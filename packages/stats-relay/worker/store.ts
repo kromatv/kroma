@@ -11,11 +11,12 @@ export interface InstanceRow {
   target: string;
   install: string;
   country: string | null;
-  clients: { tv: number; mobile: number; desktop: number };
-  locales: string[];
-  modules: string[];
-  users: string;
-  titles: string;
+  /** Absent when the operator dropped that block, never an empty stand-in. */
+  clients?: { tv: number; mobile: number; desktop: number };
+  locales?: string[];
+  modules?: string[];
+  users?: string;
+  titles?: string;
   flagged: boolean;
 }
 
@@ -67,26 +68,29 @@ interface StoredRow {
   target: string;
   install: string;
   country: string | null;
-  clients_tv: number;
-  clients_mobile: number;
-  clients_desktop: number;
-  locales: string;
-  modules: string;
-  users_bucket: string;
-  titles_bucket: string;
+  clients_tv: number | null;
+  clients_mobile: number | null;
+  clients_desktop: number | null;
+  locales: string | null;
+  modules: string | null;
+  users_bucket: string | null;
+  titles_bucket: string | null;
   flagged: number;
 }
 
-function parseList(raw: string): string[] {
+function parseList(raw: string | null): string[] | undefined {
+  if (raw === null) return undefined;
   try {
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
   } catch {
-    return [];
+    return undefined;
   }
 }
 
 function toRow(row: StoredRow): InstanceRow {
+  const counted =
+    row.clients_tv !== null && row.clients_mobile !== null && row.clients_desktop !== null;
   return {
     id: row.id,
     firstSeen: row.first_seen,
@@ -95,15 +99,17 @@ function toRow(row: StoredRow): InstanceRow {
     target: row.target,
     install: row.install,
     country: row.country,
-    clients: {
-      tv: row.clients_tv,
-      mobile: row.clients_mobile,
-      desktop: row.clients_desktop,
-    },
+    clients: counted
+      ? {
+          tv: row.clients_tv ?? 0,
+          mobile: row.clients_mobile ?? 0,
+          desktop: row.clients_desktop ?? 0,
+        }
+      : undefined,
     locales: parseList(row.locales),
     modules: parseList(row.modules),
-    users: row.users_bucket,
-    titles: row.titles_bucket,
+    users: row.users_bucket ?? undefined,
+    titles: row.titles_bucket ?? undefined,
     flagged: row.flagged !== 0,
   };
 }
@@ -141,13 +147,13 @@ export function d1Store(db: D1Database): Store {
           ping.target,
           ping.install,
           country,
-          ping.clients.tv,
-          ping.clients.mobile,
-          ping.clients.desktop,
-          JSON.stringify(ping.locales),
-          JSON.stringify(ping.modules),
-          ping.users,
-          ping.titles,
+          ping.clients?.tv ?? null,
+          ping.clients?.mobile ?? null,
+          ping.clients?.desktop ?? null,
+          ping.locales === undefined ? null : JSON.stringify(ping.locales),
+          ping.modules === undefined ? null : JSON.stringify(ping.modules),
+          ping.users ?? null,
+          ping.titles ?? null,
         )
         .run();
     },

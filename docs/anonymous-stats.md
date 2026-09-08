@@ -13,6 +13,13 @@ Admin → General → Privacy → *Anonymous usage statistics*. While it is on, 
 server posts one payload a day to `stats.kroma.tv` and the numbers appear on
 [kroma.tv/stats](https://kroma.tv/stats). Switch it off and it stops at once.
 
+**Three switches, nested.** The first is the whole feature. Under it sit *what
+this server runs* and *how much of it there is*, either of which can be dropped
+on its own while the server still counts itself. A block that is off is **absent
+from the payload**, not sent empty, so "no modules enabled" stays
+distinguishable from "not telling you", and the published page says how many
+servers a breakdown is actually over.
+
 The basis is legitimate interests rather than consent, because a default-on
 switch is not consent and calling it that would be a claim the code contradicts.
 The balancing test behind that, and the right to object, are in
@@ -28,29 +35,42 @@ One JSON body, once a day. This is all of it:
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "id": "9f2c…",
   "version": "1.4.2",
   "commit": "cafed00d",
   "target": "aarch64-apple-darwin",
   "install": "docker",
-  "clients": { "tv": 2, "mobile": 1, "desktop": 3 },
   "locales": ["de-de", "fr-ch"],
   "modules": ["tv.kroma.torrents"],
+  "clients": { "tv": 2, "mobile": 1, "desktop": 3 },
   "users": "2-5",
   "titles": "1k-4999"
 }
 ```
 
+**Base**, and the only part that is always there:
+
 | Field | What it is |
 |---|---|
+| `schema` | The payload's shape. The collector is taught a new one rather than swapped onto it, so a server that has not updated keeps counting. |
 | `id` | 32 random bytes this server minted for itself on the first start after this shipped. Not derived from any hardware, not the `instanceId` on `/api/health`, and never joined to an address. |
 | `version`, `commit` | Which build is running, so a version can be retired once nobody runs it. |
 | `target` | The build triple. The collector keeps only the operating system half of it. |
-| `install` | `docker`, `synology`, `binary` or `unknown`, from `KROMA_INSTALL`. |
-| `clients` | Devices that used this server in the last 7 days, by kind, each capped at 50. |
-| `locales` | The languages those devices asked for, as a set. This is the one field that says which languages KROMA should be translated into next: a reader on a German phone shows up as German even though KROMA has no German. |
+| `install` | `docker`, `synology`, `binary` or `unknown`, from `KROMA_INSTALL`. The Docker images and the Synology package set their own; nothing sets `binary`, so an operator running the built server directly sets it by hand or is counted as `unknown`. |
+
+**What this server runs**, absent unless that switch is on:
+
+| Field | What it is |
+|---|---|
+| `locales` | The languages the devices here asked for, as a set. This is the one field that says which languages KROMA should be translated into next: a reader on a German phone shows up as German even though KROMA has no German. |
 | `modules` | Installed, enabled modules that came from the official catalog. A module installed from anywhere else is never named. |
+
+**How much of it there is**, absent unless that switch is on:
+
+| Field | What it is |
+|---|---|
+| `clients` | Devices that used this server in the last 7 days, by kind, each capped at 50. |
 | `users`, `titles` | Coarse bands, never counts: `1 / 2-5 / 6-20 / 21+` and `0-99 / 100-999 / 1k-4999 / 5k+`. |
 
 ## What is never sent
@@ -110,11 +130,23 @@ of the rights, is [`anonymous-stats-gdpr.md`](anonymous-stats-gdpr.md).
   where at least **5** servers share it, so a lone install is never singled out.
 - Newcomers that arrive in the same minute wearing an identical payload are
   flagged and left out.
+- A breakdown that only some servers report is published beside the number that
+  reported it, because a chart over half the fleet and a chart over all of it
+  are not the same chart.
 
 None of that is proof. KROMA is free software anyone can read and change, so no
 server can prove it is real, and no scheme in a public binary can make it. The
 rules above make faking cost something and make a fleet visible; read the
 published number as a floor, not a census.
+
+## Reading the numbers yourself
+
+`GET https://stats.kroma.tv/v1/stats` is the published aggregate, CORS-open and
+cached an hour. It is the same document [kroma.tv/stats](https://kroma.tv/stats)
+renders, so any chart on that page can be checked against it or replaced with
+your own. A nightly job commits a copy to the `stats-data` branch of the
+repository, which is both the history of how the numbers moved and a copy of
+them that does not live at Cloudflare.
 
 ## The collector
 

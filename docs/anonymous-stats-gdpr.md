@@ -41,7 +41,11 @@ machine. This record covers only what leaves it.
 ## Legal basis
 
 **Legitimate interests, Article 6(1)(f).** Statistics are on by default and an
-operator switches them off in Admin → General → Privacy.
+operator switches them off in Admin → General → Privacy. The switch is three
+nested ones: the feature, and under it *what this server runs* and *how much of
+it there is*, either droppable on its own. A block that is off is absent from
+the payload rather than sent empty, so an objection to part of the processing is
+carried out rather than recorded.
 
 Consent is not relied on, and saying so plainly matters: a default-on switch is
 not consent, and calling it consent would be the kind of claim that fails the
@@ -89,15 +93,19 @@ so the description here can be checked rather than believed.
 
 ## What is processed
 
-| Category | Field | Why it is collected |
-|---|---|---|
-| Pseudonymous identifier | `id` | To count servers once rather than once a day. 32 random bytes minted locally, not derived from hardware, not the identifier served on `/api/health`. |
-| Software version | `version`, `commit` | To know when a release can stop being supported. |
-| Platform | `target`, `install` | To know which operating systems and packagings are still in use. Only the OS half of the build triple is stored. |
-| Usage scale | `clients`, `users`, `titles` | To know how many devices a server serves. Device counts are capped at 50; users and titles are coarse bands, never counts. |
-| Language preference | `locales` | To know which languages to translate into. The set of tags devices asked for, never per-device and never counted. |
-| Enabled modules | `modules` | To know which official modules are worth maintaining. Modules from any other catalog are never named. |
-| Approximate location | derived country | A two-letter code Cloudflare derives at the edge from the connection. Never sent by the server, and the address it came from is not stored. |
+| Block | Category | Field | Why it is collected |
+|---|---|---|---|
+| Base | Pseudonymous identifier | `id` | To count servers once rather than once a day. 32 random bytes minted locally, not derived from hardware, not the identifier served on `/api/health`. |
+| Base | Software version | `version`, `commit` | To know when a release can stop being supported. |
+| Base | Platform | `target`, `install` | To know which operating systems and packagings are still in use. Only the OS half of the build triple is stored. |
+| Base | Approximate location | derived country | A two-letter code Cloudflare derives at the edge from the connection. Never sent by the server, and the address it came from is not stored. |
+| What it runs | Language preference | `locales` | To know which languages to translate into. The set of tags devices asked for, never per-device and never counted. |
+| What it runs | Enabled modules | `modules` | To know which official modules are worth maintaining. Modules from any other catalog are never named. |
+| How much | Usage scale | `clients`, `users`, `titles` | To know how many devices a server serves. Device counts are capped at 50; users and titles are coarse bands, never counts. |
+
+The two lower blocks are absent entirely from the payload of a server whose
+operator switched them off. The published aggregate carries the number of
+servers that supplied each, so a breakdown is read against its own denominator.
 
 **Not processed, at all:** IP addresses, server names, hostnames, URLs, ports,
 media titles, file paths, watch history, search queries, account names, email
@@ -136,7 +144,7 @@ addendum.
 
 | Right | How |
 |---|---|
-| Object (Art. 21) | Admin → General → Privacy. Takes effect at once, and no reason is asked for. Where processing rests on legitimate interests this is the right that answers it, and here it is a switch rather than a request. |
+| Object (Art. 21) | Admin → General → Privacy. Takes effect at once, and no reason is asked for. Where processing rests on legitimate interests this is the right that answers it, and here it is a switch rather than a request. Objecting to part of it is a switch too: either detail block can be dropped while the server still counts itself. |
 | Access (Art. 15) | Admin → Jobs → Anonymous statistics → Run now prints the exact payload. The identifier is shown in Admin → General → Privacy. |
 | Erasure (Art. 17) | `POST https://stats.kroma.tv/v1/forget` with `{"id":"<your identifier>"}`. Self-service, immediate, no request to anyone. Object first: a server still reporting writes the row again the next day. |
 | Rectification (Art. 16) | The next day's payload replaces the row. |
@@ -164,6 +172,10 @@ so it cannot be used to test whether an identifier exists.
   Cloudflare account, and is logged there.
 - Data minimisation is the main control here: the strongest protection for a
   field is that it was never collected.
+- The published aggregate is the whole of what is disclosed, at
+  `https://stats.kroma.tv/v1/stats`, snapshotted daily into the repository's
+  `stats-data` branch. Anyone can check the page against it, and nothing in
+  either carries an identifier.
 
 ## Swiss law
 

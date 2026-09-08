@@ -3,7 +3,7 @@ import type { DailyRow, InstanceRow, Store } from './store';
 
 export function ping(overrides: Partial<Ping> = {}): Ping {
   return {
-    schema: 1,
+    schema: 2,
     id: 'a'.repeat(64),
     version: '1.4.2',
     commit: 'cafed00d',
@@ -55,8 +55,8 @@ export function memoryStore(seed: InstanceRow[] = []): Store & { rows: Map<strin
         install: p.install,
         country,
         clients: p.clients,
-        locales: [...p.locales],
-        modules: [...p.modules],
+        locales: p.locales === undefined ? undefined : [...p.locales],
+        modules: p.modules === undefined ? undefined : [...p.modules],
         users: p.users,
         titles: p.titles,
         flagged: existing?.flagged ?? false,

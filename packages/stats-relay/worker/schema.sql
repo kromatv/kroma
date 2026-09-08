@@ -11,13 +11,15 @@ CREATE TABLE IF NOT EXISTS instances (
     target          TEXT NOT NULL,
     install         TEXT NOT NULL,
     country         TEXT,
-    clients_tv      INTEGER NOT NULL DEFAULT 0,
-    clients_mobile  INTEGER NOT NULL DEFAULT 0,
-    clients_desktop INTEGER NOT NULL DEFAULT 0,
-    locales         TEXT NOT NULL DEFAULT '[]',
-    modules         TEXT NOT NULL DEFAULT '[]',
-    users_bucket    TEXT NOT NULL,
-    titles_bucket   TEXT NOT NULL,
+    -- NULL where the operator dropped that block. Distinct from zero and from
+    -- an empty list, which are things a server said about itself.
+    clients_tv      INTEGER,
+    clients_mobile  INTEGER,
+    clients_desktop INTEGER,
+    locales         TEXT,
+    modules         TEXT,
+    users_bucket    TEXT,
+    titles_bucket   TEXT,
     flagged         INTEGER NOT NULL DEFAULT 0
 );
 

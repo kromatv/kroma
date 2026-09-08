@@ -61,6 +61,12 @@ function Numbers({ stats }: Readonly<{ stats: Stats }>) {
   const languages = displayName('language', locale);
   const other = m.stats_other();
   const empty = m.stats_empty();
+  // A breakdown is over the servers that report that block, and saying which is
+  // the difference between a number and a misleading one.
+  const over = (n: number | undefined) =>
+    n !== undefined && n < stats.instances
+      ? m.stats_reported_by({ n: count(n), total: count(stats.instances) })
+      : undefined;
 
   return (
     <>
@@ -73,7 +79,9 @@ function Numbers({ stats }: Readonly<{ stats: Stats }>) {
         <StatTile
           label={m.stats_tile_clients()}
           value={count(stats.clients.total)}
-          hint={m.stats_tile_clients_hint()}
+          hint={[m.stats_tile_clients_hint(), over(stats.reports?.statistics)]
+            .filter(Boolean)
+            .join(' ')}
         />
       </div>
 
@@ -124,12 +132,14 @@ function Numbers({ stats }: Readonly<{ stats: Stats }>) {
           empty={empty}
           otherLabel={other}
           format={languages}
+          footnote={over(stats.reports?.usage)}
         />
         <BarList
           title={m.stats_modules_title()}
           counts={stats.modules}
           empty={empty}
           otherLabel={other}
+          footnote={over(stats.reports?.usage)}
         />
       </div>
 

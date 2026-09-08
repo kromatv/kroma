@@ -21,11 +21,11 @@ function fingerprint(row: InstanceRow): string {
     row.version,
     row.target,
     row.install,
-    row.users,
-    row.titles,
-    row.clients.tv,
-    row.clients.mobile,
-    row.clients.desktop,
+    row.users ?? '-',
+    row.titles ?? '-',
+    row.clients?.tv ?? '-',
+    row.clients?.mobile ?? '-',
+    row.clients?.desktop ?? '-',
   ].join('|');
 }
 

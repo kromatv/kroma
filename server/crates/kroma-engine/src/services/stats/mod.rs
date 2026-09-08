@@ -9,6 +9,7 @@ mod buckets;
 mod clients;
 mod locales;
 mod payload;
+mod preferences;
 mod schedule;
 
 use anyhow::Result;
@@ -21,10 +22,13 @@ use crate::state::SharedState;
 
 pub use clients::Clients;
 pub use payload::Payload;
+pub use preferences::Preferences;
 
 use schedule::due;
 
 pub const ENABLED_KEY: &str = "anonStats";
+pub const USAGE_KEY: &str = "anonStatsUsage";
+pub const STATISTICS_KEY: &str = "anonStatsStatistics";
 pub const ID_KEY: &str = "statsId";
 pub const SENT_KEY: &str = "stats.lastSentAt";
 
@@ -62,7 +66,8 @@ fn report(
     state: &SharedState,
     mut send: impl FnMut(&str, &Payload) -> Result<Outcome>,
 ) -> Result<Report> {
-    if !state.settings.get_bool(ENABLED_KEY, false) {
+    let prefs = Preferences::read(&state.settings);
+    if !prefs.base {
         return Ok(Report::Off);
     }
     let id = ensure_stats_id(&state.settings, &state.db);
@@ -70,7 +75,7 @@ fn report(
     if !due(&id, &last, OffsetDateTime::now_utc()) {
         return Ok(Report::NotYet);
     }
-    let payload = payload::build(state, id.clone())?;
+    let payload = payload::build(state, id.clone(), prefs)?;
     let outcome = send(&endpoint(), &payload)?;
     if let Outcome::Transient(status) = outcome {
         return Ok(Report::Deferred(status));

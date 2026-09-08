@@ -8,6 +8,8 @@ export interface BarListProps {
   otherLabel: string;
   /** Applied to a key from the collector, never to the "other" row's label. */
   format?: (key: string) => string;
+  /** Says which servers this list is over, when that is fewer than all of them. */
+  footnote?: string;
 }
 
 const DEFAULT_MAX = 8;
@@ -19,6 +21,7 @@ export function BarList({
   max = DEFAULT_MAX,
   otherLabel,
   format,
+  footnote,
 }: Readonly<BarListProps>) {
   const shown = counts.slice(0, max);
   const rest = counts.slice(max).reduce((sum, { n }) => sum + n, 0);
@@ -56,6 +59,7 @@ export function BarList({
           ))}
         </ul>
       )}
+      {footnote && <p className="mt-4 text-xs text-dim">{footnote}</p>}
     </section>
   );
 }

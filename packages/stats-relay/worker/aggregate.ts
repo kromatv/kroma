@@ -27,8 +27,19 @@ export interface Counted {
   n: number;
 }
 
+/**
+ * How many of the counted installs supplied each optional block. A breakdown is
+ * over the servers that reported it, not over every server, and publishing the
+ * denominator is what keeps that readable rather than misleading.
+ */
+export interface Reports {
+  usage: number;
+  statistics: number;
+}
+
 interface Aggregate {
   instances: number;
+  reports: Reports;
   clients: { tv: number; mobile: number; desktop: number; total: number };
   versions: Counted[];
   platforms: Counted[];
@@ -108,21 +119,25 @@ export function aggregate(
   const live = counted(rows, now);
   const clients = live.reduce(
     (sum, row) => ({
-      tv: sum.tv + row.clients.tv,
-      mobile: sum.mobile + row.clients.mobile,
-      desktop: sum.desktop + row.clients.desktop,
+      tv: sum.tv + (row.clients?.tv ?? 0),
+      mobile: sum.mobile + (row.clients?.mobile ?? 0),
+      desktop: sum.desktop + (row.clients?.desktop ?? 0),
     }),
     { tv: 0, mobile: 0, desktop: 0 },
   );
   return {
     instances: live.length,
+    reports: {
+      usage: live.filter((row) => row.modules !== undefined || row.locales !== undefined).length,
+      statistics: live.filter((row) => row.clients !== undefined).length,
+    },
     clients: { ...clients, total: clients.tv + clients.mobile + clients.desktop },
     versions: floored(tally(live.map((row) => row.version)), floor),
     platforms: floored(tally(live.map((row) => platform(row.target))), floor),
     installs: floored(tally(live.map((row) => row.install)), floor),
     countries: floored(tally(live.flatMap((row) => (row.country ? [row.country] : []))), floor),
-    locales: floored(tally(live.flatMap((row) => unique(row.locales))), floor),
-    modules: floored(tally(live.flatMap((row) => unique(row.modules))), floor),
+    locales: floored(tally(live.flatMap((row) => unique(row.locales ?? []))), floor),
+    modules: floored(tally(live.flatMap((row) => unique(row.modules ?? []))), floor),
     history,
     updatedAt: now,
   };

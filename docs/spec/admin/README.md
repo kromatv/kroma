@@ -226,9 +226,11 @@ When something is wrong, the owner needs to see it and hand it to someone who ca
 - **Being counted.** The owner may let this install be counted among the KROMA servers
   running in the world. It is on by default and one switch stops it at once, it sends one
   anonymous payload a day and nothing when off, and it carries no name, no address, no
-  titles and no exact counts. The payload is printed in full in its own job log before it
-  is sent, so the claim is checkable rather than trusted. What is in it is
-  [`docs/anonymous-stats.md`](../../anonymous-stats.md).
+  titles and no exact counts. Two further switches sit under it, for what the server runs
+  and for how much of it there is, either droppable while the server still counts itself;
+  a block that is off is absent from the payload rather than empty. The payload is printed
+  in full in its own job log before it is sent, so the claim is checkable rather than
+  trusted. What is in it is [`docs/anonymous-stats.md`](../../anonymous-stats.md).
 
 ## Backup and restore
 

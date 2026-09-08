@@ -40,20 +40,24 @@ maintained and a translation chosen on evidence rather than a guess. Not your
 consent: it is on by default, and calling a default "consent" would be untrue.
 
 **You can object at any time**, with one switch in Admin → General → Privacy, at
-once and without giving a reason. We ask nothing and you owe no explanation.
+once and without giving a reason. We ask nothing and you owe no explanation. You
+can also object to part of it: under that switch sit *what this server runs* and
+*how much of it there is*, either of which you can drop while your server still
+counts itself. What you switch off is left out of the payload, not sent empty.
 
-While it is on, your server posts one payload a day. This is all of it:
+While it is on, your server posts one payload a day. This is all of it, and the
+right-hand column says which switch each row belongs to:
 
-| What | Why |
-|---|---|
-| A random identifier your server made up for itself | So it is counted once rather than once a day. Not derived from your hardware, and tied to nothing else. |
-| Its version and the commit it was built from | So a release can stop being supported once nobody runs it. |
-| Its operating system and how it was installed | So we know which platforms are still in use. |
-| How many televisions, phones and computers used it in the last week | The other half of the question. Capped at 50 each. |
-| The languages those devices ask for | So we know which language to translate KROMA into next. A set, never counted, never per-device. |
-| Which official modules are switched on | So we know which are worth maintaining. A module installed from anywhere else is never named. |
-| Roughly how many accounts and titles, as bands like "2-5" or "1k-4999" | So a number can never be exact enough to pick you out. |
-| A two-letter country code | Read from your connection at Cloudflare's edge, so the map means something. Your address is not stored. |
+| What | Why | Switch |
+|---|---|---|
+| A random identifier your server made up for itself | So it is counted once rather than once a day. Not derived from your hardware, and tied to nothing else. | The first |
+| Its version and the commit it was built from | So a release can stop being supported once nobody runs it. | The first |
+| Its operating system and how it was installed | So we know which platforms are still in use. | The first |
+| A two-letter country code | Read from your connection at Cloudflare's edge, so the map means something. Your address is not stored. | The first |
+| The languages your devices ask for | So we know which language to translate KROMA into next. A set, never counted, never per-device. | What it runs |
+| Which official modules are switched on | So we know which are worth maintaining. A module installed from anywhere else is never named. | What it runs |
+| How many televisions, phones and computers used it in the last week | The other half of the question. Capped at 50 each. | How much |
+| Roughly how many accounts and titles, as bands like "2-5" or "1k-4999" | So a number can never be exact enough to pick you out. | How much |
 
 **Never any of this:** your IP address, your server's name, its hostname or web
 address, any title, any file path, anything you watched or searched for, any account
