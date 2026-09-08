@@ -147,28 +147,27 @@ export function TvPlayer() {
   );
 
   return (
-    <Player.Root
-      controller={controller}
-      flags={playerFlags}
-      title={item.title}
-      subtitle={subtitle}
-      warn={warn}
-      markers={item.markers ?? undefined}
-      tileAt={tileAt}
-      appearance={appearance}
-      onAppearanceChange={setAppearance}
-      subtitleGen={subtitleGen}
-      onReport={onReport}
-      upNext={up.data}
-      onPlayItem={onPlayItem}
-      onPlayNext={next ? goNext : undefined}
-      nextTitle={nextTitle}
-      postPlay={up.postPlay}
-      onGoHome={nav.home}
-      introActive={introActive}
-      onSkipIntro={intro ? () => pb.seekTo(intro.endMs / 1000) : undefined}
-      onClose={nav.back}
-    >
+    <Player.Root controller={controller} flags={playerFlags} title={item.title} onClose={nav.back}>
+      <Player.Title>{item.title}</Player.Title>
+      {subtitle ? <Player.Subtitle>{subtitle}</Player.Subtitle> : null}
+      {warn ? <Player.Warning>{warn}</Player.Warning> : null}
+      <Player.Transport tileAt={tileAt} />
+      <Player.Subtitles
+        appearance={appearance}
+        onAppearanceChange={setAppearance}
+        gen={subtitleGen}
+      />
+      <Player.Report onReport={onReport} />
+      <Player.UpNext data={up.data} onPlay={onPlayItem} />
+      <Player.Credits
+        markers={item.markers ?? undefined}
+        next={nextTitle}
+        onPlay={next ? goNext : undefined}
+      />
+      <Player.PostPlay item={up.postPlay} onHome={nav.home} />
+      {intro ? (
+        <Player.SkipIntro active={introActive} onSkip={() => pb.seekTo(intro.endMs / 1000)} />
+      ) : null}
       <Player.Media>
         <PlayerSurface pb={pb} title={item.title} />
       </Player.Media>
