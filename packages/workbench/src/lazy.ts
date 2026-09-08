@@ -120,6 +120,10 @@ async function compile(row: Row, registry: LazyRegistry): Promise<Story> {
 function entryOf(row: Row, registry: LazyRegistry): StoryEntry {
   let pending: Promise<Story> | undefined;
   let done: Story | undefined;
+  const listeners = new Set<() => void>();
+  const announce = () => {
+    for (const listener of listeners) listener();
+  };
   return {
     id: row.id,
     name: row.name,
@@ -127,14 +131,22 @@ function entryOf(row: Row, registry: LazyRegistry): StoryEntry {
     tier: row.tier,
     path: row.path,
     ready: () => done,
+    subscribe: (onChange: () => void) => {
+      listeners.add(onChange);
+      return () => {
+        listeners.delete(onChange);
+      };
+    },
     load: () => {
       pending ??= compile(row, registry).then(
         (story) => {
           done = story;
+          announce();
           return story;
         },
         (error: unknown) => {
           pending = undefined;
+          announce();
           throw error;
         },
       );
