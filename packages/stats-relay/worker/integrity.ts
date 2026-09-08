@@ -47,7 +47,9 @@ export function burstIds(rows: InstanceRow[], now: number, limit: number = BURST
     if (row.flagged) continue;
     if (row.firstSeen > now - SETTLE_DAYS * DAY) continue;
     const key = fingerprint(row);
-    groups.set(key, [...(groups.get(key) ?? []), row.id]);
+    const group = groups.get(key);
+    if (group) group.push(row.id);
+    else groups.set(key, [row.id]);
   }
   return [...groups.values()]
     .filter((ids) => ids.length >= limit)

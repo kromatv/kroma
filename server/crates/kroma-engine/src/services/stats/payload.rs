@@ -35,7 +35,7 @@ pub fn build(state: &SharedState, id: String) -> Result<Payload> {
     // Films and shows, not every episode row: a library of 40 series would
     // otherwise report the top band and say nothing about its size.
     let (_, _, shows) = crate::db::counts(&state.db)?;
-    let films = crate::db::list_movies(&state.db, None)?.len();
+    let films = crate::db::movie_count(&state.db)?;
     Ok(Payload {
         schema: 1,
         id,
@@ -47,7 +47,7 @@ pub fn build(state: &SharedState, id: String) -> Result<Payload> {
         locales: locales::spoken(&devices),
         modules: enabled_official(state),
         users: buckets::users(crate::db::user_count(&state.db)?),
-        titles: buckets::titles((films + shows) as i64),
+        titles: buckets::titles(films + shows as i64),
     })
 }
 

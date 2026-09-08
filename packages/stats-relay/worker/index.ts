@@ -53,6 +53,20 @@ const STATS_MAX_AGE = 3600;
 
 type Vars = { store: Store; now: number };
 
+// Cloudflare does not cache a Worker's own response on the strength of its
+// headers, so without this every reader of the page costs a full table read and
+// a fresh aggregate. Declared locally, like the D1 binding: `caches.default` is
+// Cloudflare's and this repo installs no workers types. Absent under the test
+// runner, where the route simply answers from the store.
+interface EdgeCache {
+  match(request: Request): Promise<Response | undefined>;
+  put(request: Request, response: Response): Promise<void>;
+}
+
+function edgeCache(): EdgeCache | undefined {
+  return (globalThis as { caches?: { default?: EdgeCache } }).caches?.default;
+}
+
 async function keyOf(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -74,6 +88,28 @@ function assertion(request: Request): string | undefined {
   if (header) return header;
   const cookie = request.headers.get('cookie') ?? '';
   return /(?:^|;\s*)CF_Authorization=([^;]+)/.exec(cookie)?.[1];
+}
+
+// The body, read once and abandoned at the ceiling rather than buffered whole
+// and measured afterwards, so a caller that declares no length cannot make the
+// collector hold megabytes to discover it did not want them. `null` means it
+// went over.
+async function within(request: Request): Promise<string | null> {
+  const reader = request.body?.getReader();
+  if (!reader) return '';
+  const decoder = new TextDecoder();
+  let text = '';
+  let seen = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) return text;
+    seen += value.byteLength;
+    if (seen > MAX_REQUEST_BYTES) {
+      reader.cancel().catch(() => {});
+      return null;
+    }
+    text += decoder.decode(value, { stream: true });
+  }
 }
 
 function country(header: string | undefined): string | null {
@@ -106,16 +142,21 @@ export function createApp(storeFor: (env: Env) => Store) {
   // bytes it has not parsed, and buffering an unbounded body to discover it was
   // junk is exactly the work an attacker would like the collector to do.
   // A declared length is checked first because it is free, but a caller can
-  // simply not declare one, so the body is also read through a ceiling before
-  // anything parses it.
+  // simply not declare one, so the body is also counted through a ceiling and
+  // dropped at it, rather than buffered whole and measured afterwards.
   app.use('/v1/*', async (c, next) => {
     const declared = Number(c.req.header('content-length') ?? '0');
     if (declared > MAX_REQUEST_BYTES) return c.json({ error: 'body too large' }, 413);
     if (c.req.method === 'POST') {
-      const body = await c.req.raw.clone().arrayBuffer();
-      if (body.byteLength > MAX_REQUEST_BYTES) {
-        return c.json({ error: 'body too large' }, 413);
-      }
+      const body = await within(c.req.raw);
+      if (body === null) return c.json({ error: 'body too large' }, 413);
+      // The bytes handed back rather than read a second time: the stream above
+      // is spent, so the schema below parses what was actually measured.
+      c.req.raw = new Request(c.req.raw.url, {
+        method: 'POST',
+        headers: c.req.raw.headers,
+        body,
+      });
     }
     await next();
   });
@@ -215,12 +256,18 @@ export function createApp(storeFor: (env: Env) => Store) {
   });
 
   app.get('/v1/stats', async (c) => {
+    const cache = edgeCache();
+    const cached = await cache?.match(c.req.raw);
+    if (cached) return cached;
+
     const store = c.get('store');
     const [rows, history] = await Promise.all([store.all(), store.daily()]);
-    return c.json(aggregate(rows, history, c.get('now')), 200, {
+    const answer = c.json(aggregate(rows, history, c.get('now')), 200, {
       'access-control-allow-origin': '*',
       'cache-control': `public, max-age=${STATS_MAX_AGE}`,
     });
+    await cache?.put(c.req.raw, answer.clone());
+    return answer;
   });
 
   return app;

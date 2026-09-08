@@ -188,6 +188,36 @@ describe('GET /v1/stats', () => {
     expect(body.instances).toBe(FLOOR);
   });
 
+  it('is read from the edge cache when one is there, rather than from the store', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const store = memoryStore([row({ id: OTHER_ID, firstSeen: now - 30 * DAY, lastSeen: now })]);
+    const held = new Map<string, Response>();
+    const edge = {
+      async match(request: Request) {
+        return held.get(request.url)?.clone();
+      },
+      async put(request: Request, response: Response) {
+        held.set(request.url, response);
+      },
+    };
+    const globals = globalThis as { caches?: unknown };
+    globals.caches = { default: edge };
+
+    try {
+      const first = await send(store, new Request('https://stats.kroma.tv/v1/stats'));
+      const counted = (await first.json()) as { instances: number };
+      expect(held.size).toBe(1);
+
+      store.rows.clear();
+      const second = await send(store, new Request('https://stats.kroma.tv/v1/stats'));
+
+      expect(second.status).toBe(200);
+      expect((await second.json()) as { instances: number }).toEqual(counted);
+    } finally {
+      globals.caches = undefined;
+    }
+  });
+
   it('never returns a row, only counts', async () => {
     const store = memoryStore([
       row({ id: OTHER_ID, firstSeen: 0, lastSeen: Math.floor(Date.now() / 1000) }),
