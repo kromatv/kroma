@@ -7,8 +7,8 @@ import { splitAlpha } from '#ui/core/tokens/colors';
 import { CSS_FADED } from '#ui/core/tokens/css-palette';
 import { type Glyph, glyphFor, type IconName } from '#ui/lib/icons/glyphs';
 
-export type { Glyph, IconName } from '#ui/lib/icons/glyphs';
-export { hasGlyph, iconNames } from '#ui/lib/icons/glyphs';
+export type { Glyph, GlyphExports, IconName } from '#ui/lib/icons/glyphs';
+export { addGlyphs, hasGlyph, iconNames } from '#ui/lib/icons/glyphs';
 
 export interface IconProps {
   name: IconName;

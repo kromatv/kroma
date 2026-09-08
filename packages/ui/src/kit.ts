@@ -97,7 +97,9 @@ export type {
 } from './lib/form';
 export { msg, useForm } from './lib/form';
 export { genreIcon } from './lib/genre-icon';
+export type { GlyphExports } from './lib/glyph';
 export {
+  addGlyphs,
   DEFAULT_ICON_SIZE,
   DEFAULT_ICON_THICKNESS,
   hasGlyph,

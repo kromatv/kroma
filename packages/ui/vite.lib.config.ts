@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { webResolve } from '@kromatv/bundler/rnw';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { iconSubset } from './scripts/icon-subset.ts';
 
 const src = (p: string) => fileURLToPath(new URL(`./src/${p}`, import.meta.url));
 
@@ -17,6 +18,15 @@ export default defineConfig({
       transform(code: string, id: string) {
         if (!id.endsWith('kroma-intro/constants.ts')) return null;
         return code.replace(/new URL\([^)]*kroma-intro[^)]*\)\.href/g, "''");
+      },
+    },
+    {
+      name: 'kroma-ui-icon-subset',
+      enforce: 'pre' as const,
+      load(id: string) {
+        return id.endsWith('lib/icons/glyph-source.ts')
+          ? iconSubset(fileURLToPath(new URL('.', import.meta.url)))
+          : null;
       },
     },
     react(),
@@ -48,7 +58,7 @@ export default defineConfig({
         'react/jsx-runtime',
         'react-dom/client',
         'react-native-web',
-        '@tabler/icons-react',
+        /^@tabler\/icons-react(?:\/|$)/,
       ],
       output: {
         preserveModules: true,

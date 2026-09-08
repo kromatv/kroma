@@ -4,9 +4,17 @@
 // `exports` point at JS and declarations.
 
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+function declarations(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((at) => {
+    const path = join(dir, at.name);
+    if (at.isDirectory()) return declarations(path);
+    return at.name.endsWith('.d.ts') ? [path] : [];
+  });
+}
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pkgRoot = join(here, '..');
@@ -49,6 +57,17 @@ writeFileSync(
   join(dist, 'styles.css'),
   sheet.replace(/url\("[^"]*\/assets\/fonts\/([^"/]+)"\)/g, 'url("./fonts/$1")'),
 );
+
+// `IconName` is derived from a type-only namespace import of Tabler's REACT
+// NATIVE package, which the build aliases to the DOM one and the declaration
+// emit does not. Left alone, a consumer resolves the namespace to nothing and
+// every icon name fails to typecheck. The two packages export the same names,
+// which is what the alias has always claimed.
+for (const file of declarations(dist)) {
+  const before = readFileSync(file, 'utf8');
+  const after = before.replaceAll('@tabler/icons-react-native', '@tabler/icons-react');
+  if (after !== before) writeFileSync(file, after);
+}
 
 const source = JSON.parse(readFileSync(join(pkgRoot, 'package.json'), 'utf8'));
 

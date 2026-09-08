@@ -47,12 +47,31 @@ falls back to its CSS scene when the video will not play. A design system
 shipping someone else's logo reel is 11 MB nobody asked for, so the build
 strips both. That is the difference between 1.2 MB and 9.2 MB on npm.
 
+## Icons
+
+The staged package carries the 152 glyphs the kit's own components draw, one
+default import each, so a consumer's bundler keeps only what it renders. The
+subset is computed by `scripts/icon-subset.ts`, which differs from the pass in
+`@kromatv/ui/bundler` in one way that matters: it emits bare specifiers into
+Tabler rather than the absolute path each glyph resolved to on the machine that
+built it.
+
+A name the kit never draws gets the `?` fallback. Widen the set with the glyphs
+you need and pay for those alone:
+
+```tsx
+import { IconHeart } from '@tabler/icons-react';
+import { addGlyphs } from '@kromatv/ui';
+
+addGlyphs({ IconHeart });
+```
+
+`IconName` is derived from a type-only namespace import of Tabler, so it always
+covers the whole set: a name outside the subset typechecks and draws the
+fallback, which is what lets an icon name arrive from data.
+
 ## What is still rough
 
-- **Icons.** `glyph-source.ts` is a namespace import of `@tabler/icons-react`,
-  so a consumer's bundler cannot tree-shake it and pays for the whole set. In
-  this repo a build-time pass subsets it by scanning the source; a published
-  package cannot scan a consumer's. Shipping that pass as a plugin is the fix.
 - **Catalogs.** The kit's own chrome says about 95 phrases, and they come from
   `@kromatv/core`'s catalogs, which are bundled whole. A consumer gets KROMA's
   wording, and more of it than the kit uses.
