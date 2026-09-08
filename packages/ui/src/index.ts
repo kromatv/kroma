@@ -3,6 +3,14 @@
 
 export * from './components/organisms/player';
 export { type DeviceStore, deviceStore, setDeviceStore } from './lib/device-store';
+export {
+  dispatchRemoteKey,
+  type RemoteKey,
+  type RemoteKeyHandler,
+  type RemoteKeyMap,
+  registerTvMediaKeys,
+  resolveRemoteKey,
+} from './lib/remote-keys';
 export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/aiSuggest';
 export { useAiSuggest } from './services/aiSuggest';
 export type { ActivateResult, AuthSession } from './services/auth';

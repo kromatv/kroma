@@ -3,7 +3,6 @@
 // normalized by `resolveRemoteKey` (@kromatv/core). The native counterpart is
 // `usePlayerKeys.ts`; Vite resolves `.web` first, Metro takes the plain file.
 
-import { resolveRemoteKey } from '@kromatv/core';
 import { useEffect, useEffectEvent } from 'react';
 import { VOLUME_MAX } from '#ui/components/organisms/player/lib/fmt';
 import {
@@ -12,6 +11,7 @@ import {
   tabDirection,
 } from '#ui/components/organisms/player/lib/player-keys';
 import type { PlayerController, PlayerFlags } from '#ui/components/organisms/player/types';
+import { resolveRemoteKey } from '#ui/lib/remote-keys';
 import type { PlayerNav } from './use-player-nav';
 
 function letterShortcut(

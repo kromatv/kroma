@@ -3,7 +3,7 @@
 // SecureStore, see storage.ts.
 
 import { type SessionStorage, setSessionStorage } from '@kromatv/client';
-import { setDeviceStore } from '@kromatv/ui';
+import { setDeviceStore } from '@kromatv/ui/device-store';
 import { Directory, File, Paths } from 'expo-file-system';
 import { z } from 'zod';
 

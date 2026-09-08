@@ -1,4 +1,4 @@
-import type { RemoteKey } from '@kromatv/core';
+import type { RemoteKey } from '@kromatv/ui/remote-keys';
 
 // Pure gamepad decoding for the desktop bridge (see gamepad.ts for the loop).
 //

@@ -1,6 +1,6 @@
-import type { RemoteKey } from '@kromatv/core';
 import type { Dispatch, SetStateAction } from 'react';
 import { describe, expect, it, type Mock, vi } from 'vitest';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 import type { usePlayerNav } from './hooks/use-player-nav';
 import { handleCreditsKey, handlePostPlayKey, playerInputHandlers } from './player-input';
 import { type PlayerController, type PlayerFlags, WEB_FLAGS } from './types';

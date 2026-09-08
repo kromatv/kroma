@@ -1,6 +1,6 @@
-import type { RemoteKey } from '@kromatv/core';
 import type { Dispatch, SetStateAction } from 'react';
 import type { PlayerNavActions } from '#ui/components/organisms/player/hooks/use-player-nav';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 import type { ControlId, Overlay, Zone } from './nav';
 
 interface DpadContext {

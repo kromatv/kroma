@@ -1,5 +1,5 @@
-import type { RemoteKey } from '@kromatv/core';
 import { useCallback, useState } from 'react';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 
 export interface GridFocusOptions {
   count: number;

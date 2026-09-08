@@ -22,6 +22,5 @@ export * from './playback-buffer';
 export * from './playback-stall';
 export * from './player';
 export * from './push-labels';
-export * from './remote';
 export * from './slug';
 export * from './subtitles';

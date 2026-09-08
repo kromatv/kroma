@@ -1,4 +1,4 @@
-import { langName, type RemoteKey, subtitleEtaTime, subtitleStageKey } from '@kromatv/core';
+import { langName, subtitleEtaTime, subtitleStageKey } from '@kromatv/core';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
@@ -9,6 +9,7 @@ import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { IconAi } from '#ui/components/organisms/player/parts/icons';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
 import { style, styles } from '#ui/core';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 import { useT } from '#ui/services/i18n';
 import type { PlayerSubtitleGeneration } from '../../../media-types';
 import type { SubtitleGenBundle } from './gen';

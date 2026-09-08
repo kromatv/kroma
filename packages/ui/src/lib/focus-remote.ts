@@ -5,7 +5,6 @@
 // Read via `useTVEventHandler` rather than the plain emitter: this fork's
 // emitter export has been unreliable.
 
-import type { RemoteKey } from '@kromatv/core';
 import { type Direction, Directions } from '@kromatv/spatial-nav';
 import { configureRemote as configureNavigatorRemote } from '@kromatv/spatial-nav/react';
 import { useCallback, useEffect, useEffectEvent } from 'react';
@@ -16,6 +15,7 @@ import {
   type TVKeyEvent,
   useTVEventHandler,
 } from 'react-native';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 import { inputHeld } from './input-gate';
 import { markPress } from './perf';
 import { isRemoteKeyUp } from './tv-remote';

@@ -1,13 +1,13 @@
-import type { RemoteKey } from '@kromatv/core';
 import type { PlayerFlags } from '#ui/components/organisms/player/types';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 
 /**
  * The unified input model. ONE navigation contract drives both the D-pad (TV
  * remote) and the mouse (hover = focus, click = OK), so every control responds
  * to both without per-platform branches (§15). Logical keys come from
- * `@kromatv/core` `resolveRemoteKey`, shared with the rest of the TV shell.
+ * `resolveRemoteKey`, shared with the rest of the TV shell.
  */
-export type { RemoteKey } from '@kromatv/core';
+export type { RemoteKey } from '#ui/lib/remote-keys';
 
 /** The vertical zones the player is split into (§3), top to bottom. The bottom
  * "À suivre" zone is the {@link Overlay} `sheet`, opened by ▼ from the controls
