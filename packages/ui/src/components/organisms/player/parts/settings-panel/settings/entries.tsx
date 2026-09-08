@@ -7,8 +7,8 @@
 // does that - so this file answers exactly one question: what is in the menu,
 // and what does each row say right now.
 
-import type { MessageKey } from '@kromatv/core';
 import { langName } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import type { ReactNode } from 'react';
 import { audioFilterLabels } from '#ui/components/organisms/player/lib/audio-filter';
 import type { ControlId } from '#ui/components/organisms/player/lib/nav';

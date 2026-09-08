@@ -1,4 +1,4 @@
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { memo, type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';

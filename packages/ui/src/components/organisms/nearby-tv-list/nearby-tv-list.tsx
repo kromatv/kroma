@@ -14,9 +14,10 @@
 // `t` is a prop rather than the kit's own `useT`, because the phone mounts its
 // own translator and would otherwise read an empty catalogue here.
 
-import type { DiscoveredTv, Translate } from '@kromatv/core';
+import type { DiscoveredTv } from '@kromatv/core';
 import type { HandoffOutcome } from '@kromatv/core/react';
 import { handoffRowHint } from '@kromatv/core/react';
+import type { Translate } from '@kromatv/i18n';
 import type { ReactNode } from 'react';
 import { Badge } from '#ui/components/atoms/badge';
 import { Icon } from '#ui/components/atoms/icon';

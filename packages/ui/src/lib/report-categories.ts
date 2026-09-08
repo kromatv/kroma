@@ -6,7 +6,7 @@
 // Labels stay message keys: this is data, translated where it is rendered.
 
 import type { ReportCategory } from '@kromatv/client/reports';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import type { IconName } from './glyph';
 
 export interface ReportCategoryMeta {

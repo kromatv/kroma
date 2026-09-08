@@ -6,7 +6,8 @@
 // ambient instance by design; they are what lets a kit component translate its
 // own chrome without making the provider a mount requirement.
 
-import { DEFAULT_LOCALE, i18n, type Locale, type Translate } from '@kromatv/core';
+import { DEFAULT_LOCALE, i18n } from '@kromatv/core';
+import type { Locale, Translate } from '@kromatv/i18n';
 import { I18nContext, I18nProvider as Provider } from '@kromatv/i18n/react';
 import { type ReactNode, useContext } from 'react';
 

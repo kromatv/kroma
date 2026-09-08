@@ -1,4 +1,4 @@
-import type { MessageKey, Translate } from '@kromatv/core';
+import type { MessageKey, Translate } from '@kromatv/i18n';
 import { type RefObject, useCallback, useEffect, useState } from 'react';
 import type { AudioFilterMode } from '#ui/components/organisms/player/types';
 import { deviceStore } from '#ui/lib/device-store';

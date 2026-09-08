@@ -5,7 +5,8 @@
 // person holding both devices sees both.
 
 import { HandoffHandle } from '@kromatv/client/handoff';
-import type { DiscoveredTv, Translate } from '@kromatv/core';
+import type { DiscoveredTv } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NearbyTvList } from './nearby-tv-list';

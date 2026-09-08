@@ -1,4 +1,4 @@
-import type { Translate } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { forwardRef, memo, type ReactNode, useImperativeHandle, useMemo, useState } from 'react';
 import { Animated, Pressable, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';

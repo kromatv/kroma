@@ -1,4 +1,4 @@
-import type { Translate } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { useCallback, useRef, useState } from 'react';
 import { type MessageLookup, resolveMessage } from './message';
 import { issueField, type StandardIssue, type StandardSchemaV1 } from './standard-schema';

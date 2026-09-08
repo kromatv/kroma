@@ -1,7 +1,7 @@
 // For surfaces whose player exposes no decode counters; the web builds its own
 // richer snapshot instead.
 
-import type { Translate } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import type { PlayerStats } from '#ui/components/organisms/player/types';
 import type { PlayerAudioTrack, PlayerStatsItem, PlayerVideoTrack } from '../media-types';
 

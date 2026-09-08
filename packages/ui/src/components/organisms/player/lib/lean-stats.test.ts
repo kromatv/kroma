@@ -1,4 +1,4 @@
-import type { Translate } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
 import type { PlayerAudioTrack } from '../media-types';
 import { buildLeanStats, type LeanStatsInput } from './lean-stats';

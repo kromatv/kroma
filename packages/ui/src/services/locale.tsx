@@ -10,7 +10,8 @@
 // reached), so even pre-auth copy is translated.
 
 import { type KromaClient, saveLocalePref } from '@kromatv/client';
-import { deviceLocale, type Locale, normalizeLocale, setActiveLocale } from '@kromatv/core';
+import { deviceLocale, normalizeLocale, setActiveLocale } from '@kromatv/core';
+import type { Locale } from '@kromatv/i18n';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { I18nProvider } from './i18n';
 
