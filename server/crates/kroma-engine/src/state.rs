@@ -43,7 +43,7 @@ pub struct ModuleWiring {
     // Resolves a port contract name to the running provider's `(base_url, token)`.
     pub contributions: Contributions,
     // Names the installed modules that came from the official catalog, for the
-    // opt-in anonymous statistics. Anything installed from elsewhere is absent.
+    // anonymous statistics. Anything installed from elsewhere is absent.
     pub official_modules: OfficialModules,
 }
 
@@ -132,7 +132,7 @@ impl AppState {
         // Minted here rather than on the statistics job's first run: the settings
         // page shows it and an operator quotes it to have their row erased, so it
         // has to exist from the moment the feature is on rather than an hour later.
-        if settings.get_bool(crate::services::stats::ENABLED_KEY, true) {
+        if settings.get_bool(crate::services::stats::ENABLED_KEY, false) {
             crate::services::stats::ensure_identity(&settings, &db);
         }
         // Offline downloads draw from the same operator-facing budget as the HLS

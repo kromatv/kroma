@@ -1,20 +1,19 @@
-//! The opt-in anonymous heartbeat.
+//! The anonymous heartbeat.
 //!
 //! One payload a day describing this install and nothing else: no name, no
-//! address, no titles, no exact counts. It is sent only while `anonStats` is on,
-//! which is off until an operator turns it on. What every field means, and what
-//! is deliberately absent, is written down in `docs/anonymous-stats.md`.
+//! address, no titles, no exact counts. It is sent while `anonStats` is on,
+//! which it is until an operator switches it off. What every field means, and
+//! what is deliberately absent, is written down in `docs/anonymous-stats.md`.
 
 mod buckets;
 mod clients;
 mod locales;
 mod payload;
+mod schedule;
 
 use anyhow::Result;
 use serde_json::json;
-
-use time::format_description::well_known::Rfc3339;
-use time::{Duration, OffsetDateTime};
+use time::OffsetDateTime;
 
 use crate::db::Pool;
 use crate::services::settings::Settings;
@@ -22,6 +21,8 @@ use crate::state::SharedState;
 
 pub use clients::Clients;
 pub use payload::Payload;
+
+use schedule::due;
 
 pub const ENABLED_KEY: &str = "anonStats";
 pub const ID_KEY: &str = "statsId";
@@ -49,8 +50,8 @@ enum Outcome {
     Transient(u16),
 }
 
-/// Send this install's heartbeat, or do nothing at all if the operator has not
-/// asked for it.
+/// Send this install's heartbeat, or do nothing at all if the operator has
+/// switched it off.
 pub fn run(state: &SharedState) -> Result<Report> {
     report(state, post)
 }
@@ -81,30 +82,12 @@ fn report(
     }
 }
 
-// The hour of the day this install reports in, spread across all 24 by its own
-// identifier. A fixed hour for everyone would land the whole world on the
-// collector in the same minute, and would make every install that opted in that
-// day share a first-seen minute, which is the shape the collector's fleet
-// detection looks for.
-fn slot_hour(id: &str) -> u8 {
-    id.bytes().fold(0u16, |acc, b| (acc + b as u16) % 24) as u8
-}
-
-// Once a day, in this install's own hour. A server that has never reported goes
-// at the next run whatever the hour, so switching the toggle on and watching it
-// work does not mean waiting until tomorrow.
-fn due(id: &str, last_sent: &str, now: OffsetDateTime) -> bool {
-    let Ok(last) = OffsetDateTime::parse(last_sent.trim(), &Rfc3339) else {
-        return true;
-    };
-    now - last >= Duration::hours(23) && now.hour() == slot_hour(id)
-}
-
 // Separate from `instanceId`, which is served on the public health endpoint and
 // announced over DNS-SD: reusing it would let anyone who can reach this server
 // look up the row it writes.
 /// Mint this install's statistics identifier if it has none, and return it.
-/// Called when consent is given, and again by the job in case it was not.
+/// Called at boot and again whenever the switch is written, so the settings page
+/// always has an identifier to show.
 pub fn ensure_identity(settings: &Settings, pool: &Pool) -> String {
     ensure_stats_id(settings, pool)
 }
@@ -248,53 +231,6 @@ mod tests {
 
         assert!(matches!(report, Report::Sent(_)));
         assert!(!state.settings.get_str(SENT_KEY, "").is_empty());
-    }
-
-    #[test]
-    fn a_server_that_has_never_reported_goes_at_the_next_run_whatever_the_hour() {
-        let now = OffsetDateTime::now_utc();
-
-        assert!(due("any-id", "", now));
-        assert!(due("any-id", "not a timestamp", now));
-    }
-
-    #[test]
-    fn a_server_that_reported_today_waits_for_its_own_hour_tomorrow() {
-        // A fixed instant, not the wall clock: hanging the fixtures off `now`
-        // makes whether a day has elapsed depend on the time of day the suite
-        // happens to run at.
-        let id = "a".repeat(64);
-        let hour = slot_hour(&id);
-        let sent = OffsetDateTime::from_unix_timestamp(1_800_000_000).unwrap();
-        let stamp = sent.format(&Rfc3339).unwrap();
-        let at = |h: u8| {
-            (sent + Duration::days(1)).replace_time(time::Time::from_hms(h, 30, 0).unwrap())
-        };
-
-        assert!(due(&id, &stamp, at(hour)), "its own hour");
-        assert!(
-            !due(&id, &stamp, at((hour + 1) % 24)),
-            "somebody else's hour"
-        );
-    }
-
-    #[test]
-    fn a_server_that_reported_an_hour_ago_does_not_report_again() {
-        let id = "b".repeat(64);
-        let now = OffsetDateTime::now_utc();
-        let recent = (now - Duration::hours(1)).format(&Rfc3339).unwrap();
-
-        assert!(!due(&id, &recent, now));
-    }
-
-    #[test]
-    fn the_reporting_hour_is_spread_across_the_day_rather_than_shared() {
-        let hours: std::collections::HashSet<u8> = (0..200u32)
-            .map(|i| slot_hour(&format!("{i:064x}")))
-            .collect();
-
-        assert!(hours.len() > 12, "only {} distinct hours", hours.len());
-        assert!(hours.iter().all(|h| *h < 24));
     }
 
     #[test]
