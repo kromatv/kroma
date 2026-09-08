@@ -48,14 +48,6 @@ const VERSION: u32 = 1;
 // [`module_stores`]), which is both how the admin's indexer keys and download
 // client passwords still travel and how this list stopped needing to know which
 // modules exist.
-// Settings a backup must not carry across machines. `statsId` names one row at
-// the statistics collector and holding it is the whole authorisation over that
-// row, so restoring a backup onto a second box would have two servers reporting
-// as one and would hand the erasure token to whoever holds the file. `anonStats`
-// is a consent, and consent does not restore: an operator who never gave it must
-// not find it given.
-const NOT_PORTABLE: &[&str] = &["statsId", "anonStats", "stats.lastSentAt"];
-
 const TABLES: &[&str] = &[
     "users",
     "settings",
@@ -69,7 +61,16 @@ const TABLES: &[&str] = &[
     "my_list",
 ];
 
-fn placeholders() -> String {
+// Settings that name this machine at the statistics collector rather than
+// describing the server. `statsId` is the whole authorisation over one row
+// there, so restoring a backup onto a second box would have two servers
+// reporting as one and would hand the erasure token to whoever holds the file;
+// `stats.lastSentAt` is the schedule of a machine that is not this one. The
+// `anonStats` switch itself DOES travel: it is an operator's objection, and an
+// objection that a restore throws away is not one.
+const NOT_PORTABLE: &[&str] = &["statsId", "stats.lastSentAt"];
+
+fn not_portable_list() -> String {
     NOT_PORTABLE
         .iter()
         .map(|k| format!("'{k}'"))
@@ -112,7 +113,7 @@ pub fn export_portable(pool: &Pool, data_dir: &std::path::Path) -> Result<Backup
                 &conn,
                 &format!(
                     "SELECT * FROM settings WHERE key NOT IN ({})",
-                    placeholders()
+                    not_portable_list()
                 ),
             )?
         } else {
@@ -194,9 +195,22 @@ fn restore_all(
     let tx = conn.transaction()?;
     if reset {
         for &t in TABLES {
-            if table_exists(&tx, t)? {
-                tx.execute(&format!("DELETE FROM {t}"), [])?;
+            if !table_exists(&tx, t)? {
+                continue;
             }
+            // A key a backup never carries is one this machine owns, so a
+            // restore must not take it away either: wiping `statsId` would
+            // leave the row already written at the collector with nobody able
+            // to name it, which is the erasure right gone.
+            let sql = if t == "settings" {
+                format!(
+                    "DELETE FROM settings WHERE key NOT IN ({})",
+                    not_portable_list()
+                )
+            } else {
+                format!("DELETE FROM {t}")
+            };
+            tx.execute(&sql, [])?;
         }
     }
     let mut summary = Vec::new();
@@ -340,9 +354,8 @@ mod tests {
 mod stats_identity_tests {
     use super::*;
 
-    #[test]
-    fn a_backup_carries_the_server_name_and_neither_the_statistics_id_nor_the_consent() {
-        let dir = kroma_testing::temp_dir("backup-stats");
+    fn seeded(name: &str) -> (kroma_testing::TempDir, Pool) {
+        let dir = kroma_testing::temp_dir(name);
         let pool = crate::init(&dir.path().join("kroma.db")).unwrap();
         {
             let conn = pool.get().unwrap();
@@ -359,6 +372,21 @@ mod stats_identity_tests {
                 .unwrap();
             }
         }
+        (dir, pool)
+    }
+
+    fn setting(pool: &Pool, key: &str) -> Option<String> {
+        pool.get()
+            .unwrap()
+            .query_row("SELECT value FROM settings WHERE key = ?1", [key], |r| {
+                r.get::<_, String>(0)
+            })
+            .ok()
+    }
+
+    #[test]
+    fn a_backup_carries_the_switch_an_operator_set_and_never_the_identifier_behind_it() {
+        let (dir, pool) = seeded("backup-stats");
 
         let doc = export_portable(&pool, dir.path()).unwrap();
 
@@ -367,8 +395,39 @@ mod stats_identity_tests {
             .filter_map(|row| row.get("key").and_then(|v| v.as_str()).map(str::to_string))
             .collect();
         assert!(keys.contains(&"serverName".to_string()));
+        assert!(
+            keys.contains(&"anonStats".to_string()),
+            "an operator who switched it off would find it on again after a restore"
+        );
         for absent in NOT_PORTABLE {
             assert!(!keys.contains(&(*absent).to_string()), "{absent} travelled");
         }
+    }
+
+    #[test]
+    fn a_restore_that_empties_the_tables_leaves_this_machine_its_own_identifier() {
+        let (source_dir, source) = seeded("backup-stats-src");
+        let doc = export_portable(&source, source_dir.path()).unwrap();
+        let (target_dir, target) = seeded("backup-stats-dst");
+        target
+            .get()
+            .unwrap()
+            .execute(
+                "UPDATE settings SET value = '\"the-target-token\"' WHERE key = 'statsId'",
+                [],
+            )
+            .unwrap();
+
+        import_portable(&target, target_dir.path(), &doc, true).unwrap();
+
+        assert_eq!(
+            setting(&target, "statsId").as_deref(),
+            Some("\"the-target-token\""),
+            "the row already written at the collector would have nobody able to name it"
+        );
+        assert_eq!(
+            setting(&target, "serverName").as_deref(),
+            Some("\"My KROMA\"")
+        );
     }
 }

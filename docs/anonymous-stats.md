@@ -70,12 +70,14 @@ sent` when the toggle is off. The code is
 
 ## Turning it off, and erasing what was sent
 
-The toggle in Admin → General → Privacy. The server stops sending immediately. Its row drops out of the
-published numbers 30 days after its last report, and is deleted from the
-collector 90 days after it.
+The toggle in Admin → General → Privacy. The server stops sending immediately.
+Its row drops out of the published numbers 30 days after its last report, and is
+deleted from the collector 90 days after it. A backup carries that switch, so a
+restore does not undo it; it does not carry the identifier, because that names
+one machine at the collector and two servers must not report as one.
 
-To delete it now rather than wait, quote the identifier from Admin → General →
-Privacy:
+To delete the row now rather than wait, quote the identifier from Admin →
+General → Privacy:
 
 ```bash
 curl -X POST https://stats.kroma.tv/v1/forget \
@@ -85,13 +87,14 @@ curl -X POST https://stats.kroma.tv/v1/forget \
 
 Holding the identifier is the whole authorisation, on the same rule a ping runs
 under, and it reaches exactly one row.
+
 **Switch it off first.** Erasing the row while the server is still reporting only
 buys a day: the next payload writes the row again, and because that row is new it
 stops counting for another seven days. Off, then erase, is the order that means
 what it says.
- The legal side of all this, the basis, the
-processors, the retention and the rest of the rights, is
-[`anonymous-stats-gdpr.md`](anonymous-stats-gdpr.md).
+
+The legal side of all this, the basis, the processors, the retention and the rest
+of the rights, is [`anonymous-stats-gdpr.md`](anonymous-stats-gdpr.md).
 
 ## How the published number is counted
 
