@@ -21,11 +21,13 @@ const dist = join(pkgRoot, 'dist');
 const run = (cmd: string, args: string[], cwd: string) =>
   execFileSync(cmd, args, { cwd, stdio: 'inherit' });
 
-const tarball = readdirSync(dist).find((name) => name.endsWith('.tgz'));
-if (!tarball) {
-  run('npm', ['pack', '--silent'], dist);
-}
-const packed = join(dist, readdirSync(dist).find((name) => name.endsWith('.tgz')) as string);
+const isTarball = (name: string) => name.endsWith('.tgz');
+
+if (!readdirSync(dist).some(isTarball)) run('npm', ['pack', '--silent'], dist);
+
+const tarball = readdirSync(dist).find(isTarball);
+if (!tarball) throw new Error(`no tarball in ${dist}, and npm pack produced none`);
+const packed = join(dist, tarball);
 
 const app = mkdtempSync(join(tmpdir(), 'kroma-ui-smoke-'));
 mkdirSync(join(app, 'src'), { recursive: true });
