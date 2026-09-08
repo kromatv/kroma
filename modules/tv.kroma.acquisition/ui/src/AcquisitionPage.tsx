@@ -3,7 +3,7 @@
 // `/api/admin/settings?view=acquisition` endpoint. Default export so the module
 // runtime can React.lazy it into its own chunk.
 
-import { SettingsView } from '@kroma/module-sdk';
+import { SettingsView } from '@kromatv/module-sdk';
 
 export default function AcquisitionPage() {
   return (

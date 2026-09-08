@@ -1,9 +1,9 @@
 // Shared fetch layer for the admin module endpoints (/api/admin/modules* and
 // /api/admin/store/*), so the bearer + base-URL plumbing lives in one place.
 // Store responses cross a trust boundary and are parsed with the zod wire
-// schemas from @kroma/client/modules.
+// schemas from @kromatv/client/modules.
 
-import { sessionToken } from '@kroma/client';
+import { sessionToken } from '@kromatv/client';
 import {
   ModuleEnabledResult,
   ModuleRestartResult,
@@ -13,8 +13,8 @@ import {
   StoreRegistryPreview,
   StoreUninstallConflict,
   StoreUpdateResult,
-} from '@kroma/client/modules';
-import type { ModuleManifest } from '@kroma/module-sdk';
+} from '@kromatv/client/modules';
+import type { ModuleManifest } from '@kromatv/module-sdk';
 import { apiBase } from '#web/shared/lib/api';
 
 /** A module as `GET /api/admin/modules` returns it: the manifest plus its

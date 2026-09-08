@@ -8,7 +8,7 @@ import { everyGlyph } from './every-glyph';
 import { addGlyphs } from './glyphs';
 
 /** Fetches Tabler's categories and tags. Only a workbench has them: they are
- * read at build time by `kromaIconCatalog()` (`@kroma/ui/vite/icon-catalog`). */
+ * read at build time by `kromaIconCatalog()` (`@kromatv/ui/vite/icon-catalog`). */
 type IconCatalogLoader = () => Promise<IconCatalog>;
 
 let fetchCatalog: IconCatalogLoader | null = null;

@@ -1,4 +1,4 @@
-import type { MediaItem, Show, SubjectId } from '@kroma/client/media';
+import type { MediaItem, Show, SubjectId } from '@kromatv/client/media';
 import {
   collectGenres,
   hasGenre,
@@ -6,9 +6,9 @@ import {
   posterColors,
   type SortMode,
   sortTitles,
-} from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, Text, useFocusNav } from '@kroma/ui/kit';
+} from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Box, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useEffect, useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useMyList } from '#tv/app/providers/mylist';

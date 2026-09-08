@@ -8,8 +8,8 @@ import {
   sv,
   useCopy,
   webWindow,
-} from '@kroma/ui/kit';
-import { type ColorToken, space } from '@kroma/ui/tokens';
+} from '@kromatv/ui/kit';
+import { type ColorToken, space } from '@kromatv/ui/tokens';
 import { useCallback } from 'react';
 
 // The house shape for a copy control: the confirmation is the glyph itself

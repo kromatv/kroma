@@ -3,7 +3,7 @@ import {
   type MediaItem,
   setArtworkScale,
   type VideoTrack,
-} from '@kroma/client/media';
+} from '@kromatv/client/media';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   audioTrackLabel,

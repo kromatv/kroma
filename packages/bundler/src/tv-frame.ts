@@ -46,7 +46,7 @@ export function tvFrame(options: TvFrameOptions = {}): DevOnlyHtmlPlugin {
 
 function stageCss(w: number, h: number): string {
   return `
-/* KROMA dev TV frame injected by vite dev only (see @kroma/bundler tv-frame.ts) */
+/* KROMA dev TV frame injected by vite dev only (see @kromatv/bundler tv-frame.ts) */
 html[data-tv-frame="on"], html[data-tv-frame="on"] body {
   height: 100%; margin: 0; overflow: hidden;
   background: #0b0b0d; /* letterbox bars */

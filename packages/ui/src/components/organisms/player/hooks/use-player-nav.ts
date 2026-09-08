@@ -1,4 +1,4 @@
-import type { RemoteKey } from '@kroma/core';
+import type { RemoteKey } from '@kromatv/core';
 import {
   type SetStateAction,
   useCallback,

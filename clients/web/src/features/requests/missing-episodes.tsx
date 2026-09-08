@@ -2,9 +2,9 @@
 // the selection control, and long lists collapse behind a "show more" toggle so
 // one gappy series can't swallow the page.
 
-import type { CalendarEntry } from '@kroma/client/requests';
-import { episodeTag, relativeAirDate, sentenceCase } from '@kroma/core';
-import { useLocale, useT } from '@kroma/ui';
+import type { CalendarEntry } from '@kromatv/client/requests';
+import { episodeTag, relativeAirDate, sentenceCase } from '@kromatv/core';
+import { useLocale, useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -19,7 +19,7 @@ import {
   Spinner,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { epKey } from '#web/features/requests/missing-model';
 

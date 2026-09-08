@@ -1,15 +1,15 @@
 // Thin web wrapper over the shared `useStoryboard` hook: injects the global
 // `kromaClient()` so existing callers keep the `useStoryboard(itemId, opts?)`
 // signature. All logic (lazy-generation polling, fast+slow backoff, visibility
-// re-check, tile math) lives in `@kroma/ui`.
+// re-check, tile math) lives in `@kromatv/ui`.
 
-import { loadSession } from '@kroma/client/accounts';
-import type { ItemId } from '@kroma/client/media';
-import { useStoryboard as useSharedStoryboard } from '@kroma/ui';
+import { loadSession } from '@kromatv/client/accounts';
+import type { ItemId } from '@kromatv/client/media';
+import { useStoryboard as useSharedStoryboard } from '@kromatv/ui';
 import { useMemo } from 'react';
 import { kromaClient } from '#web/shared/lib/api';
 
-export type { Storyboard, StoryboardTile } from '@kroma/ui';
+export type { Storyboard, StoryboardTile } from '@kromatv/ui';
 
 export function useStoryboard(itemId: ItemId, opts?: { generate?: boolean }) {
   // `kromaClient()` mints a fresh instance every call, and the Player re-renders

@@ -18,7 +18,7 @@ declared range means editing WEIGHT here and rerunning, which is the whole
 reason upstream is kept.
 
     pip install "fonttools[woff]" brotli
-    bun run --filter '@kroma/ui' subset-fonts
+    bun run --filter '@kromatv/ui' subset-fonts
 """
 
 import sys

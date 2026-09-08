@@ -1,4 +1,4 @@
-import { type MediaFile, MediaFileId, type MediaItem } from '@kroma/client/media';
+import { type MediaFile, MediaFileId, type MediaItem } from '@kromatv/client/media';
 import { describe, expect, it } from 'vitest';
 import {
   bufferPlan,

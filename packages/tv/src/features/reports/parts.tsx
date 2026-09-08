@@ -1,6 +1,6 @@
-import type { ReportCategory } from '@kroma/client/reports';
-import { useT } from '@kroma/ui';
-import { Box, Chip, Icon, ListRow, Rail, REPORT_CATEGORIES, Text } from '@kroma/ui/kit';
+import type { ReportCategory } from '@kromatv/client/reports';
+import { useT } from '@kromatv/ui';
+import { Box, Chip, Icon, ListRow, Rail, REPORT_CATEGORIES, Text } from '@kromatv/ui/kit';
 import type { ReportEpisode } from '#tv/app/router';
 
 export function GroupLabel({ text }: Readonly<{ text: string }>) {

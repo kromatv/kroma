@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Button, Icon, Row, Spacer, styles, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Button, Icon, Row, Spacer, styles, Text } from '@kromatv/ui/kit';
 import type { Busy, Probe } from '#web/features/admin/ai-provider-spec';
 
 const s = styles({ dangerLabel: { fontSize: 13, fontWeight: '600' } });

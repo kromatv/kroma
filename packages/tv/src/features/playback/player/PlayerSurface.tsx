@@ -1,7 +1,7 @@
 // The native half of the video surface; see PlayerSurface.web.tsx for the other.
 
-import { type SurfaceRadius, useSurfaceRadius } from '@kroma/ui';
-import { style } from '@kroma/ui/kit';
+import { type SurfaceRadius, useSurfaceRadius } from '@kromatv/ui';
+import { style } from '@kromatv/ui/kit';
 import { VideoView } from 'expo-video';
 import type { ReactNode } from 'react';
 import { Animated, StyleSheet } from 'react-native';

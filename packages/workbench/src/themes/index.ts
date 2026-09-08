@@ -4,7 +4,7 @@
 // keeps its round corners under Terminal, its declaration is bypassing the
 // vocabulary.
 
-import { KROMA, type Theme } from '@kroma/ui/kit';
+import { KROMA, type Theme } from '@kromatv/ui/kit';
 import { ember } from './ember';
 import { ocean } from './ocean';
 import { terminal } from './terminal';

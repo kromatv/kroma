@@ -2,7 +2,7 @@
 //
 // The module arrives with the document as its default export, its typed
 // declaration as `story` (see `defineStory`), and the scenes the compiler
-// lifted out of the prose as `__scenes` (@kroma/bundler's story-scenes.mjs).
+// lifted out of the prose as `__scenes` (@kromatv/bundler's story-scenes.mjs).
 // All the derivation - the controls, the matrix, whether the args reach the
 // canvas - is story.ts's, so the two authoring formats cannot drift while both
 // exist.

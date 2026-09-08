@@ -1,4 +1,4 @@
-import { Box, Focusable, Icon, type StyleDecl, svFor, Text } from '@kroma/ui/kit';
+import { Box, Focusable, Icon, type StyleDecl, svFor, Text } from '@kromatv/ui/kit';
 import { avatarCorner, UserAvatar } from '#web/shared/ui/user-avatar';
 
 const AVATAR = 146;

@@ -1,4 +1,4 @@
-import { genreGlyph } from '@kroma/core';
+import { genreGlyph } from '@kromatv/core';
 import { hasGlyph, type IconName } from '#ui/lib/glyph';
 
 /** The icon for a genre, or `undefined` when the table has none for it, or the

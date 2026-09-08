@@ -1,4 +1,4 @@
-import type { RemoteKey } from '@kroma/core';
+import type { RemoteKey } from '@kromatv/core';
 import type { Dispatch, SetStateAction } from 'react';
 import type { usePlayerNav } from './hooks/use-player-nav';
 import type { PlayerController, PlayerFlags } from './types';

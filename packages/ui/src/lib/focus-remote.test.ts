@@ -16,7 +16,7 @@ const nav = vi.hoisted(() => ({
   subscribe: null as ((handle: (direction: string) => void) => () => void) | null,
 }));
 
-vi.mock('@kroma/spatial-nav/react', () => ({
+vi.mock('@kromatv/spatial-nav/react', () => ({
   configureRemote: (config: { subscribe: (handle: (direction: string) => void) => () => void }) => {
     nav.subscribe = config.subscribe;
   },

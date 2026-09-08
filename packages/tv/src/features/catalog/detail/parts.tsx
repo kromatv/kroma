@@ -1,6 +1,6 @@
-import type { CastMember, CrewMember } from '@kroma/client/media';
-import { directorsOf, jobLabel, type Translate } from '@kroma/core';
-import { endsAtClock, useLocale, useT } from '@kroma/ui';
+import type { CastMember, CrewMember } from '@kromatv/client/media';
+import { directorsOf, jobLabel, type Translate } from '@kromatv/core';
+import { endsAtClock, useLocale, useT } from '@kromatv/ui';
 import {
   AVATAR_GRADIENTS,
   Box,
@@ -11,7 +11,7 @@ import {
   Rail,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { useClient, useNav } from '#tv/app/router';
 

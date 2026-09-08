@@ -1,6 +1,6 @@
 // Admin console data hooks and the capability/access helpers.
 
-import { hasPermission, type Permission, type User } from '@kroma/client/accounts';
+import { hasPermission, type Permission, type User } from '@kromatv/client/accounts';
 import { type QueryKey, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { useAdminHost } from './context';

@@ -52,9 +52,9 @@ describe('textOf', () => {
   it('flattens the marks a heading is written with', () => {
     const heading = createElement('h2', null, [
       'Installing ',
-      createElement('code', { key: 'code' }, '@kroma/ui'),
+      createElement('code', { key: 'code' }, '@kromatv/ui'),
     ]);
-    expect(textOf(heading)).toBe('Installing @kroma/ui');
+    expect(textOf(heading)).toBe('Installing @kromatv/ui');
   });
 
   it('reads a number as its digits and anything else as nothing', () => {

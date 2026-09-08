@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Box, Button, classes, Icon, OtpField, styles, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Button, classes, Icon, OtpField, styles, Text } from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { NearbyTvs } from '#web/features/accounts/nearby-tvs';

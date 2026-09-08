@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import type { GenreCount } from '@kroma/core';
-import { I18nProvider } from '@kroma/ui';
+import type { GenreCount } from '@kromatv/core';
+import { I18nProvider } from '@kromatv/ui';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BrowseFilters } from '#tv/features/catalog/TvBrowseHeader';

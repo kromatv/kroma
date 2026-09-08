@@ -3,9 +3,9 @@
 // until now was invisible: a remux is a child ffmpeg, so the CPU chart read as
 // idle while the machine sat at 100%.
 
-import type { LiveTranscode, Transcodes } from '@kroma/client/admin';
-import { TABULAR } from '@kroma/module-sdk';
-import { useFormat, useT } from '@kroma/ui';
+import type { LiveTranscode, Transcodes } from '@kromatv/client/admin';
+import { TABULAR } from '@kromatv/module-sdk';
+import { useFormat, useT } from '@kromatv/ui';
 import {
   Box,
   type ColorValue,
@@ -17,7 +17,7 @@ import {
   Section,
   Surface,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { Pill, PillDot } from '#web/features/admin/pill';
 
 // Below this the encoder is producing less than a second of film per second and

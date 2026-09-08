@@ -104,8 +104,8 @@ describe('kromaSite', () => {
   it('keeps the kit and its react-native-web deps out of the server externals', () => {
     const noExternal = shared(config(siteRoot())).ssr?.noExternal;
 
-    expect(noExternal).toContain('@kroma/ui');
-    expect(noExternal).toContain('@kroma/core');
+    expect(noExternal).toContain('@kromatv/ui');
+    expect(noExternal).toContain('@kromatv/core');
     expect(noExternal).toContain('react-native-web');
   });
 

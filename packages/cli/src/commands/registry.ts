@@ -7,7 +7,7 @@ import {
   jsonSchema,
   SCHEMA_NAMES,
   schemaPath,
-} from '@kroma/registry';
+} from '@kromatv/registry';
 import { readBundles, toEntries } from '../bundle/read';
 
 export interface RegistryOptions {

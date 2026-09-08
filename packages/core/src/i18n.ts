@@ -5,8 +5,8 @@
 // Each catalog names its own language under `lang.<code>`, so the set of
 // locales is read from the catalogs rather than written down twice.
 
-import { loadLocalePref } from '@kroma/client';
-import { defineI18n, type Locale } from '@kroma/i18n';
+import { loadLocalePref } from '@kromatv/client';
+import { defineI18n, type Locale } from '@kromatv/i18n';
 import { catalogs, lazy } from './locales/catalogs';
 import { DEFAULT_LOCALE_CODE } from './locales/default-locale';
 
@@ -42,4 +42,4 @@ export function setActiveLocale(locale: Locale): void {
   active = locale;
 }
 
-export type { Catalogs, Locale, MessageKey, Translate, TVars } from '@kroma/i18n';
+export type { Catalogs, Locale, MessageKey, Translate, TVars } from '@kromatv/i18n';

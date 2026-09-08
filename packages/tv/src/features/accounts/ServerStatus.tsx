@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Box, StatusDot, styles, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, StatusDot, styles, Text } from '@kromatv/ui/kit';
 import type { ServerProbe } from '#tv/app/useServersHealth';
 
 /** The dot plus the round-trip time, rather than a bare "En ligne": on a LAN

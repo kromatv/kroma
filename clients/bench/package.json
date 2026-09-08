@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/tv-bench",
+  "name": "@kromatv/tv-bench",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -18,13 +18,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/ui": "workspace:*",
+    "@kromatv/ui": "workspace:*",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
-    "@kroma/bundler": "workspace:*",
+    "@kromatv/bundler": "workspace:*",
     "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",

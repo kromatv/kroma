@@ -27,7 +27,7 @@ export async function captureApple(
 ): Promise<void> {
   const udid = deviceUdid(target);
   const appId = target.appId ?? '';
-  await assertMetro(metroPort, target.id, "bun run --filter '@kroma/tv-native' start");
+  await assertMetro(metroPort, target.id, "bun run --filter '@kromatv/tv-native' start");
 
   if (!bootedUdids().includes(udid)) {
     run('xcrun', ['simctl', 'boot', udid]);
@@ -82,7 +82,7 @@ function assertInstalled(udid: string, appId: string, target: Target): void {
   throw new Error(
     `${target.id}: "${appId}" is not installed on the simulator. ` +
       `This tool photographs a build, it does not make one - install it first with ` +
-      `\`bun run --filter '@kroma/tv-native' ios\` (and leave Metro running).`,
+      `\`bun run --filter '@kromatv/tv-native' ios\` (and leave Metro running).`,
   );
 }
 

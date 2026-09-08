@@ -1,6 +1,6 @@
-import { useFormat, useT } from '@kroma/module-sdk';
-import type { ChartCurve, IconName } from '@kroma/ui/kit';
-import { Box, Chart, Icon, Row, Surface, styles, Text } from '@kroma/ui/kit';
+import { useFormat, useT } from '@kromatv/module-sdk';
+import type { ChartCurve, IconName } from '@kromatv/ui/kit';
+import { Box, Chart, Icon, Row, Surface, styles, Text } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import type { DownloadStatsView, SpeedSample } from './schemas';
 import { useLiveStats } from './use-live-stats';

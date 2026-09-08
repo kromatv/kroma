@@ -1,4 +1,4 @@
-import type { RemoteKey } from '@kroma/core';
+import type { RemoteKey } from '@kromatv/core';
 import { useCallback, useEffect, useState } from 'react';
 import { usePanelHeader } from '#ui/components/organisms/player/lib/panel-header';
 

@@ -1,4 +1,4 @@
-import type { RemoteKey, Translate } from '@kroma/core';
+import type { RemoteKey, Translate } from '@kromatv/core';
 import { forwardRef, memo, type ReactNode, useImperativeHandle, useMemo, useState } from 'react';
 import { Animated, Pressable, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';

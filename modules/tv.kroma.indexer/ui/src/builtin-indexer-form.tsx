@@ -1,4 +1,4 @@
-import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
+import { apiErrorText, useAsyncAction, useT } from '@kromatv/module-sdk';
 import {
   Button,
   Dialog,
@@ -9,7 +9,7 @@ import {
   Select,
   Switch,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { type CSSProperties, useEffect, useState } from 'react';
 import { useIndexerApi } from './api';
 import { CategoriesAndPriority } from './categories-and-priority';

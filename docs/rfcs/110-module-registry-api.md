@@ -42,7 +42,7 @@ them. Where the wording below and those schemas ever disagree, the schemas are t
 Merged in #111, and **deployed**: `modules.kroma.tv` serves the documents and the schemas
 today.
 
-The contract package (`@kroma/registry`), the generator, the paths on the reference
+The contract package (`@kromatv/registry`), the generator, the paths on the reference
 registry — including per-module version history read off the `<id>@<version>` release tags —
 and the server's reading half: a descriptor is followed, an unknown `apiVersion` refused,
 and `integrity` verified through the existing install gate. The `dependencies` rename, the
@@ -230,7 +230,7 @@ that is local configuration, and the wire format does not depend on it.
 
 ### 3. The typed client
 
-`@kroma/registry` is the contract in code, and the same package both emits the
+`@kromatv/registry` is the contract in code, and the same package both emits the
 documents and reads them — so the reference registry cannot publish a shape its own client
 would reject:
 
@@ -249,11 +249,11 @@ against the same documents, which is why the schema is the contract and the clie
 
 ### 4. Where it lands
 
-- **`packages/registry`** (`@kroma/registry`): the contract itself — schemas, builders,
+- **`packages/registry`** (`@kromatv/registry`): the contract itself — schemas, builders,
   client, derived JSON Schema. A leaf package depending on zod and nothing else, so the
   same code runs under Bun, Node and workerd. Named after the protocol, not after any one
   consumer of it.
-- **`packages/module-tools`**: depends on `@kroma/registry` to emit. `modules registry`
+- **`packages/module-tools`**: depends on `@kromatv/registry` to emit. `modules registry`
   writes `registry.json`, `index.json` and `m/{id}.json` beside the bundles, with the new
   metadata read from each `module.json` (`author`, `keywords`, `tags`, `homepage`,
   `license` — optional manifest fields). `sha256` becomes `integrity`, reformatted.

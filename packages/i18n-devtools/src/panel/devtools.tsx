@@ -1,4 +1,4 @@
-import { IconButton } from '@kroma/ui/kit';
+import { IconButton } from '@kromatv/ui/kit';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { engine } from '../engine/engine';
 import { liveState, type Outline, onLiveChange, setLive } from '../live';

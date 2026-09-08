@@ -1,7 +1,7 @@
 // The `?sort=&genre=` query string shared by the Films and Series browse pages
 // (both render the same <BrowseBar> over a different catalogue view).
 
-import { SORT_MODES, type SortMode } from '@kroma/core';
+import { SORT_MODES, type SortMode } from '@kromatv/core';
 import { z } from 'zod';
 
 const MAX_GENRE_LENGTH = 64;

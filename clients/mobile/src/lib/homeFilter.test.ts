@@ -1,4 +1,4 @@
-import type { ContinueItem, MediaItem, SectionItem, Show } from '@kroma/client/media';
+import type { ContinueItem, MediaItem, SectionItem, Show } from '@kromatv/client/media';
 import { describe, expect, it } from 'vitest';
 import { filterEntries, filterResume } from './homeFilter';
 

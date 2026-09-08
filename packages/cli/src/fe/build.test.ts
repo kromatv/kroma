@@ -12,7 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MODULE_SCHEMA_VERSION } from '@kroma/registry';
+import { MODULE_SCHEMA_VERSION } from '@kromatv/registry';
 import { afterEach, describe, expect, it } from 'vitest';
 import { openProject } from '../project';
 import { buildFrontend } from './build';
@@ -48,7 +48,7 @@ function withPage(): string {
   write(
     'ui/src/module.tsx',
     [
-      "import { defineModule } from '@kroma/module-sdk';",
+      "import { defineModule } from '@kromatv/module-sdk';",
       "import { lazy } from 'react';",
       '',
       'export default defineModule({',
@@ -60,7 +60,7 @@ function withPage(): string {
   write(
     'ui/src/page.tsx',
     [
-      "import { Button } from '@kroma/ui/kit';",
+      "import { Button } from '@kromatv/ui/kit';",
       '',
       'export default function NotesPage() {',
       '  return Button;',
@@ -92,9 +92,9 @@ describe('buildFrontend', () => {
 
     const entry = readFileSync(join(out, 'remoteEntry.js'), 'utf8');
     expect(built).toBe(true);
-    expect(entry).toContain('("@kroma/module-sdk")');
+    expect(entry).toContain('("@kromatv/module-sdk")');
     expect(entry).toContain('("react")');
-    expect(emitted(out)).toContain('("@kroma/ui/kit")');
+    expect(emitted(out)).toContain('("@kromatv/ui/kit")');
     expect(emitted(out)).toContain('__KROMA_SHARED__');
   }, 60_000);
 

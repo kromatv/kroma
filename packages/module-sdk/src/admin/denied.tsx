@@ -1,8 +1,8 @@
 // The console's access-denied panel, shared by every admin page that gates on
 // a capability.
 
-import { useT } from '@kroma/ui';
-import { Box, Surface, styles, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Surface, styles, Text } from '@kromatv/ui/kit';
 
 const s = styles({ panel: { minHeight: '60vh' } });
 

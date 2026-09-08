@@ -56,7 +56,7 @@ export interface DefineModuleOptions<Exports = unknown> {
 }
 
 /** Build a `KromaModule` from its manifest + pages. `defineModule({ pages })` has
- *  the manifest and locales injected by the `@kroma/module-sdk/vite` plugin;
+ *  the manifest and locales injected by the `@kromatv/module-sdk/vite` plugin;
  *  `defineModule(manifest, { pages })` is the explicit form for when it is off. */
 export function defineModule<Exports = unknown>(
   manifestOrOptions: ModuleManifestInput | DefineModuleOptions<Exports>,
@@ -70,7 +70,7 @@ export function defineModule<Exports = unknown>(
   if (!manifest) {
     throw new Error(
       'defineModule: no manifest. Pass it as the first argument, or enable the ' +
-        '@kroma/module-sdk/vite plugin, which injects the manifest + locales by convention.',
+        '@kromatv/module-sdk/vite plugin, which injects the manifest + locales by convention.',
     );
   }
   const pages = options.pages ?? [];

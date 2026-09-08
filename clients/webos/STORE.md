@@ -1,6 +1,6 @@
 # Publishing KROMA to the LG Content Store
 
-Everything needed to file `@kroma/webos` with **LG Seller Lounge**
+Everything needed to file `@kromatv/webos` with **LG Seller Lounge**
 (<https://seller.lgappstv.com>). Sources for every rule quoted here are LG's own
 Seller Lounge user guide and the public [self-checklist
 v5.0](https://seller.lgappstv.com/seller/support/RetrieveSelfCheckSample.lge).
@@ -228,7 +228,7 @@ Items that need real attention for this app:
 - **TC 27–30, Magic Remote.** Support is mandatory. The pointer emits mouse events, which the `Focusable`/navigator path already handles, but verify hover + OK activates controls on a real TV.
 - **TC 43, Adaptive bitrate.** Tested at 512 Kbps / 1 Mbps / 7 Mbps / 17.5 Mbps, twice each, plus IPv6. Resolution must track bandwidth without constant buffering. Direct-play from a LAN server has no answer for this, so plan what the demo server does under throttling.
 - **TC 15–17, Virtual keyboard.** The LG IME is exercised including Voice Search and case switching; relevant to the server-address and search fields.
-- **TC 48/49, Subtitles and resume.** Both supported (`@kroma/core` WebVTT + `useSubtitleSelection`).
+- **TC 48/49, Subtitles and resume.** Both supported (`@kromatv/core` WebVTT + `useSubtitleSelection`).
 - **TC 52, DRM.** `N/A`.
 - **TC 53, Factory reset**, then install and run.
 

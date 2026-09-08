@@ -1,5 +1,5 @@
-import { activeLocale, type Locale } from '@kroma/core';
-import { LocaleProvider as UiLocaleProvider, useLocale } from '@kroma/ui';
+import { activeLocale, type Locale } from '@kromatv/core';
+import { LocaleProvider as UiLocaleProvider, useLocale } from '@kromatv/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useAuth } from '#web/shared/lib/auth';

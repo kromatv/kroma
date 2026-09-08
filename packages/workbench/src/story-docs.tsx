@@ -5,8 +5,8 @@
 // story: the same centred cap, the same outline rail on a desk - plus the story
 // scope, so the `<Scene>` specimens in the prose draw with the live args.
 
-import { Box, styles, Text } from '@kroma/ui/kit';
-import { space } from '@kroma/ui/tokens';
+import { Box, styles, Text } from '@kromatv/ui/kit';
+import { space } from '@kromatv/ui/tokens';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView } from 'react-native';
 import type { WorkbenchLayout } from './layout';

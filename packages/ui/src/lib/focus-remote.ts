@@ -5,9 +5,9 @@
 // Read via `useTVEventHandler` rather than the plain emitter: this fork's
 // emitter export has been unreliable.
 
-import type { RemoteKey } from '@kroma/core';
-import { type Direction, Directions } from '@kroma/spatial-nav';
-import { configureRemote as configureNavigatorRemote } from '@kroma/spatial-nav/react';
+import type { RemoteKey } from '@kromatv/core';
+import { type Direction, Directions } from '@kromatv/spatial-nav';
+import { configureRemote as configureNavigatorRemote } from '@kromatv/spatial-nav/react';
 import { useCallback, useEffect, useEffectEvent } from 'react';
 import {
   type HWEvent,

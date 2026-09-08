@@ -1,7 +1,7 @@
-import { hasPermission } from '@kroma/client/accounts';
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, classes, Drawer, Logo, Row, styles, Text, useBreakpoint } from '@kroma/ui/kit';
+import { hasPermission } from '@kromatv/client/accounts';
+import type { MessageKey } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Box, classes, Drawer, Logo, Row, styles, Text, useBreakpoint } from '@kromatv/ui/kit';
 import {
   IconAlertTriangle,
   IconBookmark,

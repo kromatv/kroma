@@ -1,7 +1,7 @@
-import { hasPermission } from '@kroma/client/accounts';
-import type { TVars } from '@kroma/core';
-import type { KromaHost, ModuleNav, ModulePanel, ModuleRoute } from '@kroma/module-sdk';
-import { useScopedT, useT } from '@kroma/ui';
+import { hasPermission } from '@kromatv/client/accounts';
+import type { TVars } from '@kromatv/core';
+import type { KromaHost, ModuleNav, ModulePanel, ModuleRoute } from '@kromatv/module-sdk';
+import { useScopedT, useT } from '@kromatv/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import { useModuleHost } from '#web/modules/host';

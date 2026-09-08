@@ -1,8 +1,8 @@
 // App settings: appearance, interface language (dedicated page), server
 // identity, and what build of the app this actually is.
 
-import { formatBuildDate, LOCALES } from '@kroma/core';
-import { Box, Icon, type IconName, styles, Text, ThemeSwitch } from '@kroma/ui/kit';
+import { formatBuildDate, LOCALES } from '@kromatv/core';
+import { Box, Icon, type IconName, styles, Text, ThemeSwitch } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';

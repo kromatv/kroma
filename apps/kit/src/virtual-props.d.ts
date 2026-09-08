@@ -1,7 +1,7 @@
-// Served by the `propDocs` plugin in @kroma/bundler; no file on disk.
+// Served by the `propDocs` plugin in @kromatv/bundler; no file on disk.
 
 declare module 'virtual:kroma-props' {
-  import type { PropDocs } from '@kroma/workbench';
+  import type { PropDocs } from '@kromatv/workbench';
 
   export const PROPS: PropDocs;
 }

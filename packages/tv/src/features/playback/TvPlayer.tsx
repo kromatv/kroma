@@ -1,6 +1,6 @@
-import type { MediaItem } from '@kroma/client/media';
-import type { ReportCategory } from '@kroma/client/reports';
-import { audioSupport, playerSubtitle, type Translate } from '@kroma/core';
+import type { MediaItem } from '@kromatv/client/media';
+import type { ReportCategory } from '@kromatv/client/reports';
+import { audioSupport, playerSubtitle, type Translate } from '@kromatv/core';
 import {
   Player,
   TV_FLAGS,
@@ -8,8 +8,8 @@ import {
   type UpNextItem,
   useSubtitleAppearance,
   useT,
-} from '@kroma/ui';
-import { Box, Button, Icon, style, Text } from '@kroma/ui/kit';
+} from '@kromatv/ui';
+import { Box, Button, Icon, style, Text } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';

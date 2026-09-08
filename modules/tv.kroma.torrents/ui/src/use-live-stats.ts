@@ -1,4 +1,4 @@
-import { useServerEvents } from '@kroma/module-sdk';
+import { useServerEvents } from '@kromatv/module-sdk';
 import { useRef, useState } from 'react';
 import type { DownloadStatsEvent, DownloadStatsView, SpeedSample } from './schemas';
 

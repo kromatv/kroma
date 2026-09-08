@@ -1,4 +1,4 @@
-import type { MediaItem } from '@kroma/client/media';
+import type { MediaItem } from '@kromatv/client/media';
 import { describe, expect, it } from 'vitest';
 import {
   audioSupport,

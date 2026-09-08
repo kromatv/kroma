@@ -1,4 +1,4 @@
-import type { DiscoverEntry } from '@kroma/client/discovery';
+import type { DiscoverEntry } from '@kromatv/client/discovery';
 import { describe, expect, it } from 'vitest';
 import {
   featuredSavedTitle,

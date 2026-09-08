@@ -1,8 +1,8 @@
-# @kroma/webos: LG TV (webOS)
+# @kromatv/webos: LG TV (webOS)
 
 > Part of the [KROMA](../../README.md) monorepo: the LG TV shell.
 
-Thin shell over `@kroma/tv`, the shared 10-foot experience. webOS TVs decode
+Thin shell over `@kromatv/tv`, the shared 10-foot experience. webOS TVs decode
 HEVC/H.265 (incl. HDR) in hardware, so playback is direct-play.
 
 ## Two bundles, one package (old-TV support)
@@ -16,7 +16,7 @@ ES5 loader gated on `CSSLayerBlockRule`):
 - **legacy** (`dist/legacy/`): one ES2015 IIFE + a flattened stylesheet for
   Chromium 53-94 (webOS 4.x-23, 2018-2023 models). `vite.config.legacy.ts`
   lowers the JS (core-js + AbortController + IntersectionObserver polyfills);
-  `@kroma/bundler`'s `legacy-css.ts` shims flex `gap` (negative-margin
+  `@kromatv/bundler`'s `legacy-css.ts` shims flex `gap` (negative-margin
   technique), `aspect-ratio` (`::before` strut) and `scale`/`translate`
   (composed transform), then `legacy-finalize.ts` hands the sheet to Lightning
   CSS, which flattens `@layer` and down-levels to Chrome 53.
@@ -115,7 +115,7 @@ Notes:
   ([`stamp-version.ts`](../tv-build/stamp-version.ts)); bump `server/Cargo.toml`,
   not `appinfo.json`.
 - `disableBackHistoryAPI: true` routes the remote Back button to the app, where
-  `@kroma/core`'s remote mapping (`keyCode 461`) handles it.
+  `@kromatv/core`'s remote mapping (`keyCode 461`) handles it.
 - Arrow keys + OK drive spatial focus navigation; media keys control the player.
 - Set the server address on first launch (connection screen); it persists in
   `localStorage`.

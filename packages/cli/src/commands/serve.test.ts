@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { MODULE_SCHEMA_VERSION } from '@kroma/registry';
+import { MODULE_SCHEMA_VERSION } from '@kromatv/registry';
 import { describe, expect, it } from 'vitest';
 import { registryApp } from './serve';
 

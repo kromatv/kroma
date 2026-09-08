@@ -1,8 +1,8 @@
 // Shared catalogue browser for the Films / Series tabs: the masthead and its
 // filter strip, an exact-fit poster grid, and the A-Z rail beside it.
 
-import type { KromaClient } from '@kroma/client';
-import type { MediaItem, Show } from '@kroma/client/media';
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem, Show } from '@kromatv/client/media';
 import {
   collectGenres,
   genreLabel,
@@ -12,8 +12,8 @@ import {
   sizedImageUrl,
   sortTitles,
   titleLetter,
-} from '@kroma/core';
-import { Box, Icon, styles } from '@kroma/ui/kit';
+} from '@kromatv/core';
+import { Box, Icon, styles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions } from 'react-native';

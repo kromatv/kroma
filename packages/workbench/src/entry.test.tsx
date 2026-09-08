@@ -4,8 +4,8 @@
 // chrome the index already knows about, says it is busy, and swaps the component
 // in when its module lands.
 
-import { Text } from '@kroma/ui/kit';
-import { onScreen } from '@kroma/ui/testing';
+import { Text } from '@kromatv/ui/kit';
+import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { storyEntries } from './entry';

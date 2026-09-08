@@ -1,5 +1,5 @@
 // Shared domain logic, and only that: the client, the transport and the session
-// are `@kroma/client`, a domain's schemas are `@kroma/client/<domain>`, and what
+// are `@kromatv/client`, a domain's schemas are `@kromatv/client/<domain>`, and what
 // is here is what neither of those owns - the rules built on top of them.
 export * from './airdate';
 export * from './browse';

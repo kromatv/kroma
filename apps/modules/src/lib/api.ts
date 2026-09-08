@@ -3,8 +3,8 @@
 // the module icons, and the favicon. Anything not routed here falls through to
 // the rendered page.
 
-import { trimTrailingSlashes } from '@kroma/registry';
-import { workerContext } from '@kroma/site-kit/worker-env';
+import { trimTrailingSlashes } from '@kromatv/registry';
+import { workerContext } from '@kromatv/site-kit/worker-env';
 import { type Context, Hono } from 'hono';
 import { iconResponse } from '#site/lib/icon';
 import {

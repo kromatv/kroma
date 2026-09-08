@@ -1,7 +1,7 @@
 // The interactions panel: a story's play function as it runs, one row per step.
 
-import { Box, Chip, Icon, type IconName, Spinner, styles, Text } from '@kroma/ui/kit';
-import type { ColorToken } from '@kroma/ui/tokens';
+import { Box, Chip, Icon, type IconName, Spinner, styles, Text } from '@kromatv/ui/kit';
+import type { ColorToken } from '@kromatv/ui/tokens';
 import { RULE } from './chrome';
 import type { PlayStatus, PlayStep } from './play-types';
 

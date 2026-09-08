@@ -1,12 +1,12 @@
-import { ItemId, type MediaItem } from '@kroma/client/media';
-import { formatRuntime, genreLabels, metaLine, type Translate } from '@kroma/core';
+import { ItemId, type MediaItem } from '@kromatv/client/media';
+import { formatRuntime, genreLabels, metaLine, type Translate } from '@kromatv/core';
 import {
   POST_PLAY_ART_W,
   type PostPlayItem,
   UP_NEXT_ART_W,
   type UpNextData,
   type UpNextItem,
-} from '@kroma/ui';
+} from '@kromatv/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { kromaClient } from '#web/shared/lib/api';
 

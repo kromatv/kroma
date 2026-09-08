@@ -1,8 +1,8 @@
 // Wiring the remote into the spatial navigator, on the browser targets, where
 // it arrives as ordinary key events on the document.
 
-import { type Direction, Directions } from '@kroma/spatial-nav';
-import { configureRemote as configureNavigatorRemote } from '@kroma/spatial-nav/react';
+import { type Direction, Directions } from '@kromatv/spatial-nav';
+import { configureRemote as configureNavigatorRemote } from '@kromatv/spatial-nav/react';
 import { webDocument } from './dom';
 import { focusBox, focusSeq } from './focus-here';
 import { walkTab } from './focus-tab';
@@ -128,7 +128,7 @@ export function useRemoteBridge(_on = true): void {
 }
 
 /** Nothing to subscribe to: a browser shell already reads its hardware keyboard
- * from `document` (see @kroma/tv's `usePhysicalTyping`). Kept so the on-screen
+ * from `document` (see @kromatv/tv's `usePhysicalTyping`). Kept so the on-screen
  * keyboard can call the same hook on every target. */
 export function useHardwareKeys(_handle: (key: string) => void): void {
   // Intentionally empty.

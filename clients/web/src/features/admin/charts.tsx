@@ -1,6 +1,6 @@
-import type { HistoryBucket } from '@kroma/client/admin';
-import { useFormat, useT } from '@kroma/ui';
-import { Chart, type ChartPoint, type ColorValue } from '@kroma/ui/kit';
+import type { HistoryBucket } from '@kromatv/client/admin';
+import { useFormat, useT } from '@kromatv/ui';
+import { Chart, type ChartPoint, type ColorValue } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { KIND_SERIES } from '#web/features/admin/chart-palette';
 

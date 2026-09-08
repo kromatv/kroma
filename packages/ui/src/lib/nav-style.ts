@@ -1,4 +1,4 @@
-import type { NavigatorViewProps } from '@kroma/spatial-nav/react';
+import type { NavigatorViewProps } from '@kromatv/spatial-nav/react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { registered } from '#ui/core';
 

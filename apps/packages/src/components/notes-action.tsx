@@ -1,6 +1,6 @@
-import { Row } from '@kroma/ui/kit/atoms/box';
-import { Button } from '@kroma/ui/kit/atoms/button';
-import { Dialog } from '@kroma/ui/kit/organisms/dialog';
+import { Row } from '@kromatv/ui/kit/atoms/box';
+import { Button } from '@kromatv/ui/kit/atoms/button';
+import { Dialog } from '@kromatv/ui/kit/organisms/dialog';
 import { useState } from 'react';
 import { NotesBody } from '#site/components/notes-body';
 import type { Release } from '#site/lib/release';

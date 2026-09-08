@@ -5,7 +5,7 @@
 //
 // One control drives the connector: the enable toggle (auto-saved). The server
 // reconciles the running connector to match it, so disabling always stops it.
-import { Denied, ModuleFailed, ModuleLoading, useCap, useT } from '@kroma/module-sdk';
+import { Denied, ModuleFailed, ModuleLoading, useCap, useT } from '@kromatv/module-sdk';
 import {
   Badge,
   Box,
@@ -18,7 +18,7 @@ import {
   Surface,
   Switch,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { useRemoteApi } from './api';
 import type { RemoteAccessView } from './schemas';

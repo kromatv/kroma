@@ -1,5 +1,5 @@
-import type { KromaClient } from '@kroma/client';
-import type { MediaItem } from '@kroma/client/media';
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem } from '@kromatv/client/media';
 import { canDirectPlay, capabilities, type DirectPlayVerdict } from './hevc';
 
 export interface AttachOptions {

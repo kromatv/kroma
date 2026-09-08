@@ -10,9 +10,9 @@
       },
       "devDependencies": {
         "@biomejs/biome": "^2.5.8",
-        "@kroma/bundler": "workspace:*",
-        "@kroma/core": "workspace:*",
-        "@kroma/module-sdk": "workspace:*",
+        "@kromatv/bundler": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/module-sdk": "workspace:*",
         "@testing-library/dom": "^10.4.1",
         "@testing-library/react": "^16.3.2",
         "@vitejs/plugin-react": "^6.0.5",
@@ -35,12 +35,12 @@
       },
     },
     "apps/kit": {
-      "name": "@kroma/kit",
+      "name": "@kromatv/kit",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/core": "workspace:*",
-        "@kroma/ui": "workspace:*",
-        "@kroma/workbench": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/ui": "workspace:*",
+        "@kromatv/workbench": "workspace:*",
         "expo": "~57.0.13",
         "expo-constants": "~57.0.11",
         "expo-font": "~57.0.1",
@@ -55,8 +55,8 @@
       },
       "devDependencies": {
         "@babel/core": "^7.29.7",
-        "@kroma/build-info": "workspace:*",
-        "@kroma/bundler": "workspace:*",
+        "@kromatv/build-info": "workspace:*",
+        "@kromatv/bundler": "workspace:*",
         "@react-native-tvos/config-tv": "^0.1.6",
         "@types/node": "^22.20.1",
         "@types/react": "^19.2.18",
@@ -68,13 +68,13 @@
       },
     },
     "apps/modules": {
-      "name": "@kroma/modules-site",
+      "name": "@kromatv/modules-site",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/registry": "workspace:*",
-        "@kroma/site-kit": "workspace:*",
-        "@kroma/site-meta": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/registry": "workspace:*",
+        "@kromatv/site-kit": "workspace:*",
+        "@kromatv/site-meta": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "@tanstack/react-router": "^1.170.29",
         "@tanstack/react-start": "^1.168.46",
         "hono": "^4.13.2",
@@ -83,7 +83,7 @@
         "zod": "^4.5.4",
       },
       "devDependencies": {
-        "@kroma/bundler": "workspace:*",
+        "@kromatv/bundler": "workspace:*",
         "@tanstack/router-cli": "^1.167.30",
         "@types/node": "^22.20.1",
         "@types/react": "^19.2.18",
@@ -96,19 +96,19 @@
       },
     },
     "apps/packages": {
-      "name": "@kroma/package-source",
+      "name": "@kromatv/package-source",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/site-kit": "workspace:*",
-        "@kroma/site-meta": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/site-kit": "workspace:*",
+        "@kromatv/site-meta": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "@tanstack/react-router": "^1.170.29",
         "@tanstack/react-start": "^1.168.46",
         "react": "19.2.8",
         "react-dom": "19.2.8",
       },
       "devDependencies": {
-        "@kroma/bundler": "workspace:*",
+        "@kromatv/bundler": "workspace:*",
         "@tanstack/router-cli": "^1.167.30",
         "@types/node": "^22.20.1",
         "@types/react": "^19.2.18",
@@ -121,12 +121,12 @@
       },
     },
     "apps/www": {
-      "name": "@kroma/site",
+      "name": "@kromatv/site",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/registry": "workspace:*",
-        "@kroma/site-meta": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/registry": "workspace:*",
+        "@kromatv/site-meta": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "@mdx-js/react": "^3.1.1",
         "@tabler/icons-react": "^3.46.0",
         "@tanstack/react-router": "^1.170.29",
@@ -159,16 +159,16 @@
       },
     },
     "clients/bench": {
-      "name": "@kroma/tv-bench",
+      "name": "@kromatv/tv-bench",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/ui": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "react": "19.2.8",
         "react-dom": "19.2.8",
         "react-native-web": "^0.21.2",
       },
       "devDependencies": {
-        "@kroma/bundler": "workspace:*",
+        "@kromatv/bundler": "workspace:*",
         "@types/node": "^22.20.1",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.4",
@@ -178,16 +178,16 @@
       },
     },
     "clients/build-info": {
-      "name": "@kroma/build-info",
+      "name": "@kromatv/build-info",
       "version": "0.0.0",
     },
     "clients/desktop": {
-      "name": "@kroma/desktop",
+      "name": "@kromatv/desktop",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/core": "workspace:*",
-        "@kroma/tv": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/tv": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "@tauri-apps/api": "^2.11.1",
         "@tauri-apps/plugin-process": "^2.3.1",
         "@tauri-apps/plugin-updater": "^2.11.0",
@@ -196,7 +196,7 @@
         "react-native-web": "^0.21.2",
       },
       "devDependencies": {
-        "@kroma/bundler": "workspace:*",
+        "@kromatv/bundler": "workspace:*",
         "@tauri-apps/cli": "^2.11.4",
         "@types/node": "^22.20.1",
         "@types/react": "^19.2.18",
@@ -207,17 +207,17 @@
       },
     },
     "clients/mobile": {
-      "name": "@kroma/mobile",
+      "name": "@kromatv/mobile",
       "version": "0.0.0",
       "dependencies": {
         "@gorhom/bottom-sheet": "^5.2.14",
         "@kesha-antonov/react-native-background-downloader": "^4.6.1",
-        "@kroma/client": "workspace:*",
-        "@kroma/core": "workspace:*",
-        "@kroma/lan-beacon": "workspace:*",
-        "@kroma/media3-ffmpeg": "workspace:*",
-        "@kroma/ui": "workspace:*",
-        "@kroma/workbench": "workspace:*",
+        "@kromatv/client": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/lan-beacon": "workspace:*",
+        "@kromatv/media3-ffmpeg": "workspace:*",
+        "@kromatv/ui": "workspace:*",
+        "@kromatv/workbench": "workspace:*",
         "@shopify/flash-list": "^2.3.2",
         "@tabler/icons-react-native": "^3.46.0",
         "@tanstack/react-query": "^5.101.4",
@@ -262,19 +262,19 @@
       },
     },
     "clients/tizen": {
-      "name": "@kroma/tizen",
+      "name": "@kromatv/tizen",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/core": "workspace:*",
-        "@kroma/tv": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/tv": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "react": "19.2.8",
         "react-dom": "19.2.8",
         "react-native-web": "^0.21.2",
         "zod": "^4.5.4",
       },
       "devDependencies": {
-        "@kroma/bundler": "workspace:*",
+        "@kromatv/bundler": "workspace:*",
         "@types/node": "^22.20.1",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.4",
@@ -286,15 +286,15 @@
       },
     },
     "clients/tv-native": {
-      "name": "@kroma/tv-native",
+      "name": "@kromatv/tv-native",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/client": "workspace:*",
-        "@kroma/core": "workspace:*",
-        "@kroma/lan-beacon": "workspace:*",
-        "@kroma/media3-ffmpeg": "workspace:*",
-        "@kroma/tv": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/client": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/lan-beacon": "workspace:*",
+        "@kromatv/media3-ffmpeg": "workspace:*",
+        "@kromatv/tv": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "expo": "~57.0.13",
         "expo-blur": "~57.0.2",
         "expo-constants": "~57.0.11",
@@ -321,18 +321,18 @@
       },
     },
     "clients/tv-web": {
-      "name": "@kroma/tv-web",
+      "name": "@kromatv/tv-web",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/core": "workspace:*",
-        "@kroma/tv": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/tv": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "react": "19.2.8",
         "react-dom": "19.2.8",
         "react-native-web": "^0.21.2",
       },
       "devDependencies": {
-        "@kroma/bundler": "workspace:*",
+        "@kromatv/bundler": "workspace:*",
         "@types/node": "^22.20.1",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.4",
@@ -343,14 +343,14 @@
       },
     },
     "clients/web": {
-      "name": "@kroma/web",
+      "name": "@kromatv/web",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/client": "workspace:*",
-        "@kroma/core": "workspace:*",
-        "@kroma/i18n": "workspace:*",
-        "@kroma/module-sdk": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/client": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/i18n": "workspace:*",
+        "@kromatv/module-sdk": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "@tabler/icons-react": "^3.46.0",
         "@tanstack/react-query": "^5.101.4",
         "@tanstack/react-router": "^1.170.29",
@@ -365,7 +365,7 @@
       },
       "devDependencies": {
         "@babel/core": "^8.0.1",
-        "@kroma/bundler": "workspace:*",
+        "@kromatv/bundler": "workspace:*",
         "@tanstack/react-query-devtools": "^5.101.4",
         "@tanstack/router-cli": "^1.167.30",
         "@types/node": "^22.20.1",
@@ -378,20 +378,20 @@
       },
     },
     "clients/webos": {
-      "name": "@kroma/webos",
+      "name": "@kromatv/webos",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/core": "workspace:*",
-        "@kroma/mdns-beacon": "workspace:*",
-        "@kroma/tv": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/mdns-beacon": "workspace:*",
+        "@kromatv/tv": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "react": "19.2.8",
         "react-dom": "19.2.8",
         "react-native-web": "^0.21.2",
         "zod": "^4.5.4",
       },
       "devDependencies": {
-        "@kroma/bundler": "workspace:*",
+        "@kromatv/bundler": "workspace:*",
         "@types/node": "^22.20.1",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.4",
@@ -403,13 +403,13 @@
       },
     },
     "modules/tv.kroma.acquisition": {
-      "name": "@kroma/module-acquisition",
+      "name": "@kromatv/module-acquisition",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/client": "workspace:*",
-        "@kroma/core": "workspace:*",
-        "@kroma/module-sdk": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/client": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/module-sdk": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "@tanstack/react-query": "^5.101.4",
         "@tanstack/react-router": "^1.170.29",
         "zod": "^4.5.4",
@@ -423,11 +423,11 @@
       },
     },
     "modules/tv.kroma.indexer": {
-      "name": "@kroma/module-indexer",
+      "name": "@kromatv/module-indexer",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/module-sdk": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/module-sdk": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "@tabler/icons-react": "^3.46.0",
         "react-call": "^2.0.2",
         "zod": "^4.5.4",
@@ -441,11 +441,11 @@
       },
     },
     "modules/tv.kroma.remote": {
-      "name": "@kroma/module-remote",
+      "name": "@kromatv/module-remote",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/module-sdk": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/module-sdk": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "@tabler/icons-react": "^3.46.0",
         "zod": "^4.5.4",
       },
@@ -458,14 +458,14 @@
       },
     },
     "modules/tv.kroma.torrents": {
-      "name": "@kroma/module-torrents",
+      "name": "@kromatv/module-torrents",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/client": "workspace:*",
-        "@kroma/module-acquisition": "workspace:*",
-        "@kroma/module-sdk": "workspace:*",
-        "@kroma/module-vpn": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/client": "workspace:*",
+        "@kromatv/module-acquisition": "workspace:*",
+        "@kromatv/module-sdk": "workspace:*",
+        "@kromatv/module-vpn": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "@tabler/icons-react": "^3.46.0",
         "@tanstack/react-query": "^5.101.4",
         "@tanstack/react-router": "^1.170.29",
@@ -481,11 +481,11 @@
       },
     },
     "modules/tv.kroma.vpn": {
-      "name": "@kroma/module-vpn",
+      "name": "@kromatv/module-vpn",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/module-sdk": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/module-sdk": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "@tabler/icons-react": "^3.46.0",
         "zod": "^4.5.4",
       },
@@ -498,17 +498,17 @@
       },
     },
     "packages/bundler": {
-      "name": "@kroma/bundler",
+      "name": "@kromatv/bundler",
       "version": "0.0.0",
       "dependencies": {
         "@babel/core": "^7.29.7",
         "@babel/plugin-transform-classes": "^7.29.7",
         "@babel/preset-env": "^7.29.7",
-        "@kroma/build-info": "workspace:*",
-        "@kroma/core": "workspace:*",
-        "@kroma/i18n": "workspace:*",
-        "@kroma/i18n-devtools": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/build-info": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/i18n": "workspace:*",
+        "@kromatv/i18n-devtools": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "@mdx-js/mdx": "^3.1.1",
         "@mdx-js/rollup": "^3.1.1",
         "@rolldown/plugin-babel": "^0.2.3",
@@ -536,7 +536,7 @@
       },
     },
     "packages/ci-tools": {
-      "name": "@kroma/ci-tools",
+      "name": "@kromatv/ci-tools",
       "version": "0.0.0",
       "dependencies": {
         "smol-toml": "^1.8.0",
@@ -548,15 +548,15 @@
       },
     },
     "packages/cli": {
-      "name": "@kroma/cli",
+      "name": "@kromatv/cli",
       "version": "0.0.0",
       "bin": {
         "kroma": "./src/cli.ts",
       },
       "dependencies": {
         "@clack/prompts": "1.7.0",
-        "@kroma/module-sdk": "workspace:*",
-        "@kroma/registry": "workspace:*",
+        "@kromatv/module-sdk": "workspace:*",
+        "@kromatv/registry": "workspace:*",
         "citty": "0.2.2",
         "es-module-lexer": "^2.3.1",
         "hono": "^4.13.2",
@@ -573,10 +573,10 @@
       },
     },
     "packages/client": {
-      "name": "@kroma/client",
+      "name": "@kromatv/client",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/registry": "workspace:*",
+        "@kromatv/registry": "workspace:*",
         "zod": "^4.5.4",
       },
       "devDependencies": {
@@ -591,11 +591,11 @@
       ],
     },
     "packages/core": {
-      "name": "@kroma/core",
+      "name": "@kromatv/core",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/client": "workspace:*",
-        "@kroma/i18n": "workspace:*",
+        "@kromatv/client": "workspace:*",
+        "@kromatv/i18n": "workspace:*",
         "zod": "^4.5.4",
       },
       "devDependencies": {
@@ -614,7 +614,7 @@
       ],
     },
     "packages/i18n": {
-      "name": "@kroma/i18n",
+      "name": "@kromatv/i18n",
       "version": "0.0.0",
       "devDependencies": {
         "@types/react": "^19.2.18",
@@ -632,16 +632,16 @@
       ],
     },
     "packages/i18n-devtools": {
-      "name": "@kroma/i18n-devtools",
+      "name": "@kromatv/i18n-devtools",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/ui": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "zod": "^4.5.4",
       },
       "devDependencies": {
         "@jridgewell/trace-mapping": "^0.3.31",
-        "@kroma/bundler": "workspace:*",
-        "@kroma/i18n": "workspace:*",
+        "@kromatv/bundler": "workspace:*",
+        "@kromatv/i18n": "workspace:*",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.4",
         "launch-editor": "^2.9.1",
@@ -653,7 +653,7 @@
       },
       "peerDependencies": {
         "@inlang/paraglide-js": "*",
-        "@kroma/i18n": "workspace:*",
+        "@kromatv/i18n": "workspace:*",
         "i18next": "*",
         "react": ">=18",
         "react-dom": ">=18",
@@ -661,23 +661,23 @@
       },
       "optionalPeers": [
         "@inlang/paraglide-js",
-        "@kroma/i18n",
+        "@kromatv/i18n",
         "i18next",
       ],
     },
     "packages/lan-beacon": {
-      "name": "@kroma/lan-beacon",
+      "name": "@kromatv/lan-beacon",
       "version": "0.0.0",
       "devDependencies": {
         "typescript": "^7.0.2",
       },
       "peerDependencies": {
-        "@kroma/core": "workspace:*",
+        "@kromatv/core": "workspace:*",
         "expo": "^57.0.13",
       },
     },
     "packages/mdns-beacon": {
-      "name": "@kroma/mdns-beacon",
+      "name": "@kromatv/mdns-beacon",
       "version": "0.0.0",
       "devDependencies": {
         "@types/node": "^22.20.1",
@@ -686,7 +686,7 @@
       },
     },
     "packages/media3-ffmpeg": {
-      "name": "@kroma/media3-ffmpeg",
+      "name": "@kromatv/media3-ffmpeg",
       "version": "0.0.0",
       "devDependencies": {
         "expo": "~57.0.13",
@@ -696,13 +696,13 @@
       },
     },
     "packages/module-sdk": {
-      "name": "@kroma/module-sdk",
+      "name": "@kromatv/module-sdk",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/client": "workspace:*",
-        "@kroma/core": "workspace:*",
-        "@kroma/registry": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/client": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/registry": "workspace:*",
+        "@kromatv/ui": "workspace:*",
         "@tanstack/react-query": "^5.101.4",
         "@tanstack/react-table": "^8.21.3",
       },
@@ -716,7 +716,7 @@
       },
     },
     "packages/push-relay": {
-      "name": "@kroma/push-relay",
+      "name": "@kromatv/push-relay",
       "version": "0.0.0",
       "dependencies": {
         "@hono/zod-validator": "^0.9.0",
@@ -729,7 +729,7 @@
       },
     },
     "packages/react-audit": {
-      "name": "@kroma/react-audit",
+      "name": "@kromatv/react-audit",
       "version": "0.0.0",
       "devDependencies": {
         "@testing-library/react": "^16.3.0",
@@ -749,7 +749,7 @@
       ],
     },
     "packages/registry": {
-      "name": "@kroma/registry",
+      "name": "@kromatv/registry",
       "version": "0.0.0",
       "dependencies": {
         "zod": "^4.5.4",
@@ -759,7 +759,7 @@
       },
     },
     "packages/shots": {
-      "name": "@kroma/shots",
+      "name": "@kromatv/shots",
       "version": "0.0.0",
       "dependencies": {
         "playwright": "1.62.1",
@@ -770,11 +770,11 @@
       },
     },
     "packages/site-kit": {
-      "name": "@kroma/site-kit",
+      "name": "@kromatv/site-kit",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/site-meta": "workspace:*",
-        "@kroma/ui": "workspace:*",
+        "@kromatv/site-meta": "workspace:*",
+        "@kromatv/ui": "workspace:*",
       },
       "devDependencies": {
         "@tanstack/react-router": "^1.170.29",
@@ -792,14 +792,14 @@
       },
     },
     "packages/site-meta": {
-      "name": "@kroma/site-meta",
+      "name": "@kromatv/site-meta",
       "version": "0.0.0",
       "devDependencies": {
         "typescript": "^7.0.2",
       },
     },
     "packages/sonar-tools": {
-      "name": "@kroma/sonar-tools",
+      "name": "@kromatv/sonar-tools",
       "version": "0.0.0",
       "dependencies": {
         "zod": "^4.5.4",
@@ -810,7 +810,7 @@
       },
     },
     "packages/spatial-nav": {
-      "name": "@kroma/spatial-nav",
+      "name": "@kromatv/spatial-nav",
       "version": "0.0.0",
       "devDependencies": {
         "@testing-library/react": "^16.3.0",
@@ -834,7 +834,7 @@
       ],
     },
     "packages/synology-repo": {
-      "name": "@kroma/synology-repo",
+      "name": "@kromatv/synology-repo",
       "version": "0.0.0",
       "bin": {
         "kroma-synology-repo": "./src/gen-catalog.ts",
@@ -844,19 +844,19 @@
       },
     },
     "packages/tv": {
-      "name": "@kroma/tv",
+      "name": "@kromatv/tv",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/core": "workspace:*",
-        "@kroma/ui": "workspace:*",
-        "@kroma/workbench": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/ui": "workspace:*",
+        "@kromatv/workbench": "workspace:*",
         "@tabler/icons-react": "^3.46.0",
         "hls.js": "^1.7.0",
         "qrcode-generator": "^2.0.4",
         "shaka-player": "^5.2.5",
       },
       "devDependencies": {
-        "@kroma/client": "workspace:*",
+        "@kromatv/client": "workspace:*",
         "@types/qrcode-generator": "^1.0.6",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.4",
@@ -875,7 +875,7 @@
       ],
     },
     "packages/tv-installer": {
-      "name": "@kroma/tv-installer",
+      "name": "@kromatv/tv-installer",
       "version": "0.0.0",
       "bin": {
         "kroma-tv": "./src/cli.ts",
@@ -894,11 +894,11 @@
       },
     },
     "packages/tv-probe": {
-      "name": "@kroma/tv-probe",
+      "name": "@kromatv/tv-probe",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/client": "workspace:*",
-        "@kroma/i18n": "workspace:*",
+        "@kromatv/client": "workspace:*",
+        "@kromatv/i18n": "workspace:*",
         "playwright": "1.62.1",
       },
       "devDependencies": {
@@ -907,20 +907,20 @@
       },
     },
     "packages/ui": {
-      "name": "@kroma/ui",
+      "name": "@kromatv/ui",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/core": "workspace:*",
-        "@kroma/i18n": "workspace:*",
-        "@kroma/spatial-nav": "workspace:*",
+        "@kromatv/core": "workspace:*",
+        "@kromatv/i18n": "workspace:*",
+        "@kromatv/spatial-nav": "workspace:*",
         "@tabler/icons-react": "^3.46.0",
         "@tabler/icons-react-native": "^3.46.0",
         "react-native-svg": "^15.15.5",
       },
       "devDependencies": {
-        "@kroma/client": "workspace:*",
-        "@kroma/react-audit": "workspace:*",
-        "@kroma/workbench": "workspace:*",
+        "@kromatv/client": "workspace:*",
+        "@kromatv/react-audit": "workspace:*",
+        "@kromatv/workbench": "workspace:*",
         "@tabler/icons": "^3.46.0",
         "@types/node": "^22.20.1",
         "@types/react": "^19.2.18",
@@ -946,13 +946,13 @@
       ],
     },
     "packages/workbench": {
-      "name": "@kroma/workbench",
+      "name": "@kromatv/workbench",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/ui": "workspace:*",
+        "@kromatv/ui": "workspace:*",
       },
       "devDependencies": {
-        "@kroma/bundler": "workspace:*",
+        "@kromatv/bundler": "workspace:*",
         "@tanstack/react-router": "^1.170.29",
         "@types/node": "^22.20.1",
         "@types/react": "^19.2.18",
@@ -971,13 +971,13 @@
       ],
     },
     "packages/workspace-tools": {
-      "name": "@kroma/workspace-tools",
+      "name": "@kromatv/workspace-tools",
       "version": "0.0.0",
       "bin": {
         "workspace-tools": "src/cli.ts",
       },
       "dependencies": {
-        "@kroma/registry": "workspace:*",
+        "@kromatv/registry": "workspace:*",
       },
       "devDependencies": {
         "bun-types": "^1.4.0",
@@ -1507,93 +1507,93 @@
 
     "@kesha-antonov/react-native-background-downloader": ["@kesha-antonov/react-native-background-downloader@4.6.1", "", { "peerDependencies": { "react-native": ">=0.57.0" } }, "sha512-dDVqo4eaoBYAz5bsENFqxBirx5JfAEHOh/Zb6Zv/bXni7a6pFtD5PJLEL/N6ZLcsoAmlmO56siY3nCoJV7KkGg=="],
 
-    "@kroma/build-info": ["@kroma/build-info@workspace:clients/build-info"],
+    "@kromatv/build-info": ["@kromatv/build-info@workspace:clients/build-info"],
 
-    "@kroma/bundler": ["@kroma/bundler@workspace:packages/bundler"],
+    "@kromatv/bundler": ["@kromatv/bundler@workspace:packages/bundler"],
 
-    "@kroma/ci-tools": ["@kroma/ci-tools@workspace:packages/ci-tools"],
+    "@kromatv/ci-tools": ["@kromatv/ci-tools@workspace:packages/ci-tools"],
 
-    "@kroma/cli": ["@kroma/cli@workspace:packages/cli"],
+    "@kromatv/cli": ["@kromatv/cli@workspace:packages/cli"],
 
-    "@kroma/client": ["@kroma/client@workspace:packages/client"],
+    "@kromatv/client": ["@kromatv/client@workspace:packages/client"],
 
-    "@kroma/core": ["@kroma/core@workspace:packages/core"],
+    "@kromatv/core": ["@kromatv/core@workspace:packages/core"],
 
-    "@kroma/desktop": ["@kroma/desktop@workspace:clients/desktop"],
+    "@kromatv/desktop": ["@kromatv/desktop@workspace:clients/desktop"],
 
-    "@kroma/i18n": ["@kroma/i18n@workspace:packages/i18n"],
+    "@kromatv/i18n": ["@kromatv/i18n@workspace:packages/i18n"],
 
-    "@kroma/i18n-devtools": ["@kroma/i18n-devtools@workspace:packages/i18n-devtools"],
+    "@kromatv/i18n-devtools": ["@kromatv/i18n-devtools@workspace:packages/i18n-devtools"],
 
-    "@kroma/kit": ["@kroma/kit@workspace:apps/kit"],
+    "@kromatv/kit": ["@kromatv/kit@workspace:apps/kit"],
 
-    "@kroma/lan-beacon": ["@kroma/lan-beacon@workspace:packages/lan-beacon"],
+    "@kromatv/lan-beacon": ["@kromatv/lan-beacon@workspace:packages/lan-beacon"],
 
-    "@kroma/mdns-beacon": ["@kroma/mdns-beacon@workspace:packages/mdns-beacon"],
+    "@kromatv/mdns-beacon": ["@kromatv/mdns-beacon@workspace:packages/mdns-beacon"],
 
-    "@kroma/media3-ffmpeg": ["@kroma/media3-ffmpeg@workspace:packages/media3-ffmpeg"],
+    "@kromatv/media3-ffmpeg": ["@kromatv/media3-ffmpeg@workspace:packages/media3-ffmpeg"],
 
-    "@kroma/mobile": ["@kroma/mobile@workspace:clients/mobile"],
+    "@kromatv/mobile": ["@kromatv/mobile@workspace:clients/mobile"],
 
-    "@kroma/module-acquisition": ["@kroma/module-acquisition@workspace:modules/tv.kroma.acquisition"],
+    "@kromatv/module-acquisition": ["@kromatv/module-acquisition@workspace:modules/tv.kroma.acquisition"],
 
-    "@kroma/module-indexer": ["@kroma/module-indexer@workspace:modules/tv.kroma.indexer"],
+    "@kromatv/module-indexer": ["@kromatv/module-indexer@workspace:modules/tv.kroma.indexer"],
 
-    "@kroma/module-remote": ["@kroma/module-remote@workspace:modules/tv.kroma.remote"],
+    "@kromatv/module-remote": ["@kromatv/module-remote@workspace:modules/tv.kroma.remote"],
 
-    "@kroma/module-sdk": ["@kroma/module-sdk@workspace:packages/module-sdk"],
+    "@kromatv/module-sdk": ["@kromatv/module-sdk@workspace:packages/module-sdk"],
 
-    "@kroma/module-torrents": ["@kroma/module-torrents@workspace:modules/tv.kroma.torrents"],
+    "@kromatv/module-torrents": ["@kromatv/module-torrents@workspace:modules/tv.kroma.torrents"],
 
-    "@kroma/module-vpn": ["@kroma/module-vpn@workspace:modules/tv.kroma.vpn"],
+    "@kromatv/module-vpn": ["@kromatv/module-vpn@workspace:modules/tv.kroma.vpn"],
 
-    "@kroma/modules-site": ["@kroma/modules-site@workspace:apps/modules"],
+    "@kromatv/modules-site": ["@kromatv/modules-site@workspace:apps/modules"],
 
-    "@kroma/package-source": ["@kroma/package-source@workspace:apps/packages"],
+    "@kromatv/package-source": ["@kromatv/package-source@workspace:apps/packages"],
 
-    "@kroma/push-relay": ["@kroma/push-relay@workspace:packages/push-relay"],
+    "@kromatv/push-relay": ["@kromatv/push-relay@workspace:packages/push-relay"],
 
-    "@kroma/react-audit": ["@kroma/react-audit@workspace:packages/react-audit"],
+    "@kromatv/react-audit": ["@kromatv/react-audit@workspace:packages/react-audit"],
 
-    "@kroma/registry": ["@kroma/registry@workspace:packages/registry"],
+    "@kromatv/registry": ["@kromatv/registry@workspace:packages/registry"],
 
-    "@kroma/shots": ["@kroma/shots@workspace:packages/shots"],
+    "@kromatv/shots": ["@kromatv/shots@workspace:packages/shots"],
 
-    "@kroma/site": ["@kroma/site@workspace:apps/www"],
+    "@kromatv/site": ["@kromatv/site@workspace:apps/www"],
 
-    "@kroma/site-kit": ["@kroma/site-kit@workspace:packages/site-kit"],
+    "@kromatv/site-kit": ["@kromatv/site-kit@workspace:packages/site-kit"],
 
-    "@kroma/site-meta": ["@kroma/site-meta@workspace:packages/site-meta"],
+    "@kromatv/site-meta": ["@kromatv/site-meta@workspace:packages/site-meta"],
 
-    "@kroma/sonar-tools": ["@kroma/sonar-tools@workspace:packages/sonar-tools"],
+    "@kromatv/sonar-tools": ["@kromatv/sonar-tools@workspace:packages/sonar-tools"],
 
-    "@kroma/spatial-nav": ["@kroma/spatial-nav@workspace:packages/spatial-nav"],
+    "@kromatv/spatial-nav": ["@kromatv/spatial-nav@workspace:packages/spatial-nav"],
 
-    "@kroma/synology-repo": ["@kroma/synology-repo@workspace:packages/synology-repo"],
+    "@kromatv/synology-repo": ["@kromatv/synology-repo@workspace:packages/synology-repo"],
 
-    "@kroma/tizen": ["@kroma/tizen@workspace:clients/tizen"],
+    "@kromatv/tizen": ["@kromatv/tizen@workspace:clients/tizen"],
 
-    "@kroma/tv": ["@kroma/tv@workspace:packages/tv"],
+    "@kromatv/tv": ["@kromatv/tv@workspace:packages/tv"],
 
-    "@kroma/tv-bench": ["@kroma/tv-bench@workspace:clients/bench"],
+    "@kromatv/tv-bench": ["@kromatv/tv-bench@workspace:clients/bench"],
 
-    "@kroma/tv-installer": ["@kroma/tv-installer@workspace:packages/tv-installer"],
+    "@kromatv/tv-installer": ["@kromatv/tv-installer@workspace:packages/tv-installer"],
 
-    "@kroma/tv-native": ["@kroma/tv-native@workspace:clients/tv-native"],
+    "@kromatv/tv-native": ["@kromatv/tv-native@workspace:clients/tv-native"],
 
-    "@kroma/tv-probe": ["@kroma/tv-probe@workspace:packages/tv-probe"],
+    "@kromatv/tv-probe": ["@kromatv/tv-probe@workspace:packages/tv-probe"],
 
-    "@kroma/tv-web": ["@kroma/tv-web@workspace:clients/tv-web"],
+    "@kromatv/tv-web": ["@kromatv/tv-web@workspace:clients/tv-web"],
 
-    "@kroma/ui": ["@kroma/ui@workspace:packages/ui"],
+    "@kromatv/ui": ["@kromatv/ui@workspace:packages/ui"],
 
-    "@kroma/web": ["@kroma/web@workspace:clients/web"],
+    "@kromatv/web": ["@kromatv/web@workspace:clients/web"],
 
-    "@kroma/webos": ["@kroma/webos@workspace:clients/webos"],
+    "@kromatv/webos": ["@kromatv/webos@workspace:clients/webos"],
 
-    "@kroma/workbench": ["@kroma/workbench@workspace:packages/workbench"],
+    "@kromatv/workbench": ["@kromatv/workbench@workspace:packages/workbench"],
 
-    "@kroma/workspace-tools": ["@kroma/workspace-tools@workspace:packages/workspace-tools"],
+    "@kromatv/workspace-tools": ["@kromatv/workspace-tools@workspace:packages/workspace-tools"],
 
     "@lix-js/sdk": ["@lix-js/sdk@0.12.0", "", { "dependencies": { "fflate": "^0.8.3" }, "optionalDependencies": { "@lix-js/sdk-darwin-arm64": "0.12.0", "@lix-js/sdk-linux-arm64": "0.12.0", "@lix-js/sdk-linux-x64": "0.12.0", "@lix-js/sdk-win32-x64": "0.12.0" } }, "sha512-Vn4IYLmQyvqrVM+wcpzK6yDAZoK2Q4Hi9wRSsslfr1CcLQanRV1Tfheb5Kh2xy5NBLLbzFmFLsl7ElIKo8wVuA=="],
 
@@ -3557,11 +3557,11 @@
 
     "@jest/types/chalk": ["chalk@4.1.2", "", { "dependencies": { "ansi-styles": "^4.1.0", "supports-color": "^7.1.0" } }, "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA=="],
 
-    "@kroma/mobile/react-native-svg": ["react-native-svg@15.15.5", "", { "dependencies": { "css-select": "^5.1.0", "css-tree": "^1.1.3" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-L4go5jA+GWutdJ/JucuN20cjAbMg1HmMtAP+wZ+3JLCf6Jd0bhXQHxciRP/AQm/FlrIEZwkMcHNZP+FXAiic0w=="],
+    "@kromatv/mobile/react-native-svg": ["react-native-svg@15.15.5", "", { "dependencies": { "css-select": "^5.1.0", "css-tree": "^1.1.3" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-L4go5jA+GWutdJ/JucuN20cjAbMg1HmMtAP+wZ+3JLCf6Jd0bhXQHxciRP/AQm/FlrIEZwkMcHNZP+FXAiic0w=="],
 
-    "@kroma/ui/react-native-svg": ["react-native-svg@15.15.5", "", { "dependencies": { "css-select": "^5.1.0", "css-tree": "^1.1.3" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-L4go5jA+GWutdJ/JucuN20cjAbMg1HmMtAP+wZ+3JLCf6Jd0bhXQHxciRP/AQm/FlrIEZwkMcHNZP+FXAiic0w=="],
+    "@kromatv/ui/react-native-svg": ["react-native-svg@15.15.5", "", { "dependencies": { "css-select": "^5.1.0", "css-tree": "^1.1.3" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-L4go5jA+GWutdJ/JucuN20cjAbMg1HmMtAP+wZ+3JLCf6Jd0bhXQHxciRP/AQm/FlrIEZwkMcHNZP+FXAiic0w=="],
 
-    "@kroma/web/@babel/core": ["@babel/core@8.0.1", "", { "dependencies": { "@babel/code-frame": "^8.0.0", "@babel/generator": "^8.0.0", "@babel/helper-compilation-targets": "^8.0.0", "@babel/helpers": "^8.0.0", "@babel/parser": "^8.0.0", "@babel/template": "^8.0.0", "@babel/traverse": "^8.0.0", "@babel/types": "^8.0.0", "@types/gensync": "^1.0.5", "convert-source-map": "^2.0.0", "empathic": "^2.0.1", "gensync": "^1.0.0-beta.2", "import-meta-resolve": "^4.2.0", "json5": "^2.2.3", "obug": "^2.1.1", "semver": "^7.7.3" } }, "sha512-5FgxM4dLQpMJHSiVATk8foW263dVHQHBVpXYiimNECVWG01f4nFyEbQixeT6Mwvg7TayREJ2gpKl3o2RoMdnqw=="],
+    "@kromatv/web/@babel/core": ["@babel/core@8.0.1", "", { "dependencies": { "@babel/code-frame": "^8.0.0", "@babel/generator": "^8.0.0", "@babel/helper-compilation-targets": "^8.0.0", "@babel/helpers": "^8.0.0", "@babel/parser": "^8.0.0", "@babel/template": "^8.0.0", "@babel/traverse": "^8.0.0", "@babel/types": "^8.0.0", "@types/gensync": "^1.0.5", "convert-source-map": "^2.0.0", "empathic": "^2.0.1", "gensync": "^1.0.0-beta.2", "import-meta-resolve": "^4.2.0", "json5": "^2.2.3", "obug": "^2.1.1", "semver": "^7.7.3" } }, "sha512-5FgxM4dLQpMJHSiVATk8foW263dVHQHBVpXYiimNECVWG01f4nFyEbQixeT6Mwvg7TayREJ2gpKl3o2RoMdnqw=="],
 
     "@poppinss/colors/kleur": ["kleur@4.1.5", "", {}, "sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ=="],
 
@@ -3841,25 +3841,25 @@
 
     "@jest/types/chalk/supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
 
-    "@kroma/mobile/react-native-svg/css-tree": ["css-tree@1.1.3", "", { "dependencies": { "mdn-data": "2.0.14", "source-map": "^0.6.1" } }, "sha512-tRpdppF7TRazZrjJ6v3stzv93qxRcSsFmW6cX0Zm2NVKpxE1WV1HblnghVv9TreireHkqI/VDEsfolRF1p6y7Q=="],
+    "@kromatv/mobile/react-native-svg/css-tree": ["css-tree@1.1.3", "", { "dependencies": { "mdn-data": "2.0.14", "source-map": "^0.6.1" } }, "sha512-tRpdppF7TRazZrjJ6v3stzv93qxRcSsFmW6cX0Zm2NVKpxE1WV1HblnghVv9TreireHkqI/VDEsfolRF1p6y7Q=="],
 
-    "@kroma/ui/react-native-svg/css-tree": ["css-tree@1.1.3", "", { "dependencies": { "mdn-data": "2.0.14", "source-map": "^0.6.1" } }, "sha512-tRpdppF7TRazZrjJ6v3stzv93qxRcSsFmW6cX0Zm2NVKpxE1WV1HblnghVv9TreireHkqI/VDEsfolRF1p6y7Q=="],
+    "@kromatv/ui/react-native-svg/css-tree": ["css-tree@1.1.3", "", { "dependencies": { "mdn-data": "2.0.14", "source-map": "^0.6.1" } }, "sha512-tRpdppF7TRazZrjJ6v3stzv93qxRcSsFmW6cX0Zm2NVKpxE1WV1HblnghVv9TreireHkqI/VDEsfolRF1p6y7Q=="],
 
-    "@kroma/web/@babel/core/@babel/code-frame": ["@babel/code-frame@8.0.0", "", { "dependencies": { "@babel/helper-validator-identifier": "^8.0.0", "js-tokens": "^10.0.0" } }, "sha512-dYYg153EyN2Ekbqw2zAsbd6/JR+9N2SEoC7YV2GyyqMM7x9bLDTjBD6XBhSMLH0wtIVyJj03jWNriQhaN+eoCw=="],
+    "@kromatv/web/@babel/core/@babel/code-frame": ["@babel/code-frame@8.0.0", "", { "dependencies": { "@babel/helper-validator-identifier": "^8.0.0", "js-tokens": "^10.0.0" } }, "sha512-dYYg153EyN2Ekbqw2zAsbd6/JR+9N2SEoC7YV2GyyqMM7x9bLDTjBD6XBhSMLH0wtIVyJj03jWNriQhaN+eoCw=="],
 
-    "@kroma/web/@babel/core/@babel/generator": ["@babel/generator@8.0.0", "", { "dependencies": { "@babel/parser": "^8.0.0", "@babel/types": "^8.0.0", "@jridgewell/gen-mapping": "^0.3.12", "@jridgewell/trace-mapping": "^0.3.28", "@types/jsesc": "^2.5.0", "jsesc": "^3.0.2" } }, "sha512-NT9NrVwJsbSV6Y2FSstWa71EETOnzrjkL5/wX3D2mYHtKM+qvqB1DvR4D0Setb/gDBsHzRICifwEWMO8CnTF6g=="],
+    "@kromatv/web/@babel/core/@babel/generator": ["@babel/generator@8.0.0", "", { "dependencies": { "@babel/parser": "^8.0.0", "@babel/types": "^8.0.0", "@jridgewell/gen-mapping": "^0.3.12", "@jridgewell/trace-mapping": "^0.3.28", "@types/jsesc": "^2.5.0", "jsesc": "^3.0.2" } }, "sha512-NT9NrVwJsbSV6Y2FSstWa71EETOnzrjkL5/wX3D2mYHtKM+qvqB1DvR4D0Setb/gDBsHzRICifwEWMO8CnTF6g=="],
 
-    "@kroma/web/@babel/core/@babel/helper-compilation-targets": ["@babel/helper-compilation-targets@8.0.0", "", { "dependencies": { "@babel/compat-data": "^8.0.0", "@babel/helper-validator-option": "^8.0.0", "browserslist": "^4.24.0", "lru-cache": "^11.0.0", "semver": "^7.7.3" } }, "sha512-JwculLABZvyPvyLBpwU/E/IbH2uM3mnxNtIJpxnIfb24y1PrdVxK5Dqjle4DpgqpGRnwgC7G8IkzPdSXZrO1Ew=="],
+    "@kromatv/web/@babel/core/@babel/helper-compilation-targets": ["@babel/helper-compilation-targets@8.0.0", "", { "dependencies": { "@babel/compat-data": "^8.0.0", "@babel/helper-validator-option": "^8.0.0", "browserslist": "^4.24.0", "lru-cache": "^11.0.0", "semver": "^7.7.3" } }, "sha512-JwculLABZvyPvyLBpwU/E/IbH2uM3mnxNtIJpxnIfb24y1PrdVxK5Dqjle4DpgqpGRnwgC7G8IkzPdSXZrO1Ew=="],
 
-    "@kroma/web/@babel/core/@babel/helpers": ["@babel/helpers@8.0.0", "", { "dependencies": { "@babel/template": "^8.0.0", "@babel/types": "^8.0.0" } }, "sha512-wfbi91pM3py96oIiJEz7qIpyXDytgr9zQC1HEWwlGNVRAEmItuU/0a41ZUKu1sJGyhhOIpc4t5vk4PYzt8wpsg=="],
+    "@kromatv/web/@babel/core/@babel/helpers": ["@babel/helpers@8.0.0", "", { "dependencies": { "@babel/template": "^8.0.0", "@babel/types": "^8.0.0" } }, "sha512-wfbi91pM3py96oIiJEz7qIpyXDytgr9zQC1HEWwlGNVRAEmItuU/0a41ZUKu1sJGyhhOIpc4t5vk4PYzt8wpsg=="],
 
-    "@kroma/web/@babel/core/@babel/parser": ["@babel/parser@8.0.4", "", { "dependencies": { "@babel/types": "^8.0.4" }, "bin": "./bin/babel-parser.js" }, "sha512-srpptsAkEbbNIC/q8nT7o+m6CQe8CJUTV/t7MYc9NnWlgYVtHOb7JH6SorxMhN0kuRJjVqXbKClG6xSbPtzz+g=="],
+    "@kromatv/web/@babel/core/@babel/parser": ["@babel/parser@8.0.4", "", { "dependencies": { "@babel/types": "^8.0.4" }, "bin": "./bin/babel-parser.js" }, "sha512-srpptsAkEbbNIC/q8nT7o+m6CQe8CJUTV/t7MYc9NnWlgYVtHOb7JH6SorxMhN0kuRJjVqXbKClG6xSbPtzz+g=="],
 
-    "@kroma/web/@babel/core/@babel/template": ["@babel/template@8.0.0", "", { "dependencies": { "@babel/code-frame": "^8.0.0", "@babel/parser": "^8.0.0", "@babel/types": "^8.0.0" } }, "sha512-eAD0QW/AlbamBbw0FeGiwasbCVPq5ncW0HNVyLP3B9czqLyh4gvw+5JTSNt6le9+ziAU7mqDZsKTHf3jTb4chQ=="],
+    "@kromatv/web/@babel/core/@babel/template": ["@babel/template@8.0.0", "", { "dependencies": { "@babel/code-frame": "^8.0.0", "@babel/parser": "^8.0.0", "@babel/types": "^8.0.0" } }, "sha512-eAD0QW/AlbamBbw0FeGiwasbCVPq5ncW0HNVyLP3B9czqLyh4gvw+5JTSNt6le9+ziAU7mqDZsKTHf3jTb4chQ=="],
 
-    "@kroma/web/@babel/core/@babel/traverse": ["@babel/traverse@8.0.4", "", { "dependencies": { "@babel/code-frame": "^8.0.0", "@babel/generator": "^8.0.0", "@babel/helper-globals": "^8.0.0", "@babel/parser": "^8.0.4", "@babel/template": "^8.0.0", "@babel/types": "^8.0.4", "obug": "^2.1.1" } }, "sha512-bZnmqzGG8UZneG1lLxBoWIH0G6Gr1D846Yu4/3XnY6FhCndMR49u26nTY08u/dAxWmLWF9vGQOuC+84FfIUoeg=="],
+    "@kromatv/web/@babel/core/@babel/traverse": ["@babel/traverse@8.0.4", "", { "dependencies": { "@babel/code-frame": "^8.0.0", "@babel/generator": "^8.0.0", "@babel/helper-globals": "^8.0.0", "@babel/parser": "^8.0.4", "@babel/template": "^8.0.0", "@babel/types": "^8.0.4", "obug": "^2.1.1" } }, "sha512-bZnmqzGG8UZneG1lLxBoWIH0G6Gr1D846Yu4/3XnY6FhCndMR49u26nTY08u/dAxWmLWF9vGQOuC+84FfIUoeg=="],
 
-    "@kroma/web/@babel/core/@babel/types": ["@babel/types@8.0.4", "", { "dependencies": { "@babel/helper-string-parser": "^8.0.0", "@babel/helper-validator-identifier": "^8.0.4" } }, "sha512-eY+Yn3dCqTGmyiq2QRU66lA5FL8lqqqvecHt0fF3uHONIa7ToYsaCiWV8lOKqAs0Rb2SjixiKFROngnulPtt2g=="],
+    "@kromatv/web/@babel/core/@babel/types": ["@babel/types@8.0.4", "", { "dependencies": { "@babel/helper-string-parser": "^8.0.0", "@babel/helper-validator-identifier": "^8.0.4" } }, "sha512-eY+Yn3dCqTGmyiq2QRU66lA5FL8lqqqvecHt0fF3uHONIa7ToYsaCiWV8lOKqAs0Rb2SjixiKFROngnulPtt2g=="],
 
     "@react-native/babel-plugin-codegen/@react-native/codegen/yargs": ["yargs@17.7.3", "", { "dependencies": { "cliui": "^8.0.1", "escalade": "^3.1.1", "get-caller-file": "^2.0.5", "require-directory": "^2.1.1", "string-width": "^4.2.3", "y18n": "^5.0.5", "yargs-parser": "^21.1.1" } }, "sha512-GZtjxm/J/4TSxuL3FNYjCmLktBTnIw/rVmKSIyKeYAZpmJB2ig9VauCC5xsa82GNKVKDAqpOn3KVzNt0zmrU0g=="],
 
@@ -4061,27 +4061,27 @@
 
     "@expo/config/@expo/config-plugins/chalk/supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
 
-    "@kroma/mobile/react-native-svg/css-tree/mdn-data": ["mdn-data@2.0.14", "", {}, "sha512-dn6wd0uw5GsdswPFfsgMp5NSB0/aDe6fK94YJV/AJDYXL6HVLWBsxeq7js7Ad+mU2K9LAlwpk6kN2D5mwCPVow=="],
+    "@kromatv/mobile/react-native-svg/css-tree/mdn-data": ["mdn-data@2.0.14", "", {}, "sha512-dn6wd0uw5GsdswPFfsgMp5NSB0/aDe6fK94YJV/AJDYXL6HVLWBsxeq7js7Ad+mU2K9LAlwpk6kN2D5mwCPVow=="],
 
-    "@kroma/mobile/react-native-svg/css-tree/source-map": ["source-map@0.6.1", "", {}, "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g=="],
+    "@kromatv/mobile/react-native-svg/css-tree/source-map": ["source-map@0.6.1", "", {}, "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g=="],
 
-    "@kroma/ui/react-native-svg/css-tree/mdn-data": ["mdn-data@2.0.14", "", {}, "sha512-dn6wd0uw5GsdswPFfsgMp5NSB0/aDe6fK94YJV/AJDYXL6HVLWBsxeq7js7Ad+mU2K9LAlwpk6kN2D5mwCPVow=="],
+    "@kromatv/ui/react-native-svg/css-tree/mdn-data": ["mdn-data@2.0.14", "", {}, "sha512-dn6wd0uw5GsdswPFfsgMp5NSB0/aDe6fK94YJV/AJDYXL6HVLWBsxeq7js7Ad+mU2K9LAlwpk6kN2D5mwCPVow=="],
 
-    "@kroma/ui/react-native-svg/css-tree/source-map": ["source-map@0.6.1", "", {}, "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g=="],
+    "@kromatv/ui/react-native-svg/css-tree/source-map": ["source-map@0.6.1", "", {}, "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g=="],
 
-    "@kroma/web/@babel/core/@babel/code-frame/@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@8.0.4", "", {}, "sha512-4wFaiLd0bVo4cIoTXI3zKI038NIWE/cr3jvBjejOVYVxV/m8Ltav1USiGzG1fmS5J2RhgEOgXNNK46cRPnRsrg=="],
+    "@kromatv/web/@babel/core/@babel/code-frame/@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@8.0.4", "", {}, "sha512-4wFaiLd0bVo4cIoTXI3zKI038NIWE/cr3jvBjejOVYVxV/m8Ltav1USiGzG1fmS5J2RhgEOgXNNK46cRPnRsrg=="],
 
-    "@kroma/web/@babel/core/@babel/code-frame/js-tokens": ["js-tokens@10.0.0", "", {}, "sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q=="],
+    "@kromatv/web/@babel/core/@babel/code-frame/js-tokens": ["js-tokens@10.0.0", "", {}, "sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q=="],
 
-    "@kroma/web/@babel/core/@babel/helper-compilation-targets/@babel/compat-data": ["@babel/compat-data@8.0.0", "", {}, "sha512-DOjnob/cXOUgDOozCDeq/aK2p5y8dUIVdf6tNhEV1HQRd6I8aQ4f4fbtHRVEvb6lP3BGomrKHiS8ICAASSVQSw=="],
+    "@kromatv/web/@babel/core/@babel/helper-compilation-targets/@babel/compat-data": ["@babel/compat-data@8.0.0", "", {}, "sha512-DOjnob/cXOUgDOozCDeq/aK2p5y8dUIVdf6tNhEV1HQRd6I8aQ4f4fbtHRVEvb6lP3BGomrKHiS8ICAASSVQSw=="],
 
-    "@kroma/web/@babel/core/@babel/helper-compilation-targets/@babel/helper-validator-option": ["@babel/helper-validator-option@8.0.0", "", {}, "sha512-U4Dybxh4WESWHt5XhBeExi4DrY0/DNK1aHpQbsrQXCUbFHuMweT0TpLEWKvaraV2Y6fS+ZXunsZ8zIuZIgvF2Q=="],
+    "@kromatv/web/@babel/core/@babel/helper-compilation-targets/@babel/helper-validator-option": ["@babel/helper-validator-option@8.0.0", "", {}, "sha512-U4Dybxh4WESWHt5XhBeExi4DrY0/DNK1aHpQbsrQXCUbFHuMweT0TpLEWKvaraV2Y6fS+ZXunsZ8zIuZIgvF2Q=="],
 
-    "@kroma/web/@babel/core/@babel/traverse/@babel/helper-globals": ["@babel/helper-globals@8.0.0", "", {}, "sha512-lLozHOM6sWWlxNo8CYqHy4MBZeTvHXNgVPBfPOGsjPKUzHC2Az9QwB6gxdQmpwHl6GlQtbGgS+lj5887guDiLw=="],
+    "@kromatv/web/@babel/core/@babel/traverse/@babel/helper-globals": ["@babel/helper-globals@8.0.0", "", {}, "sha512-lLozHOM6sWWlxNo8CYqHy4MBZeTvHXNgVPBfPOGsjPKUzHC2Az9QwB6gxdQmpwHl6GlQtbGgS+lj5887guDiLw=="],
 
-    "@kroma/web/@babel/core/@babel/types/@babel/helper-string-parser": ["@babel/helper-string-parser@8.0.0", "", {}, "sha512-6mJgmFFFIIO82vvoLt9XtRC7/TkzXfts1t/SpRX4IHSzMgqoPYCWesVu1udUPUWioAE/2fcG6WuI8zrkE1gwrg=="],
+    "@kromatv/web/@babel/core/@babel/types/@babel/helper-string-parser": ["@babel/helper-string-parser@8.0.0", "", {}, "sha512-6mJgmFFFIIO82vvoLt9XtRC7/TkzXfts1t/SpRX4IHSzMgqoPYCWesVu1udUPUWioAE/2fcG6WuI8zrkE1gwrg=="],
 
-    "@kroma/web/@babel/core/@babel/types/@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@8.0.4", "", {}, "sha512-4wFaiLd0bVo4cIoTXI3zKI038NIWE/cr3jvBjejOVYVxV/m8Ltav1USiGzG1fmS5J2RhgEOgXNNK46cRPnRsrg=="],
+    "@kromatv/web/@babel/core/@babel/types/@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@8.0.4", "", {}, "sha512-4wFaiLd0bVo4cIoTXI3zKI038NIWE/cr3jvBjejOVYVxV/m8Ltav1USiGzG1fmS5J2RhgEOgXNNK46cRPnRsrg=="],
 
     "@react-native/babel-plugin-codegen/@react-native/codegen/yargs/cliui": ["cliui@8.0.1", "", { "dependencies": { "string-width": "^4.2.0", "strip-ansi": "^6.0.1", "wrap-ansi": "^7.0.0" } }, "sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ=="],
 

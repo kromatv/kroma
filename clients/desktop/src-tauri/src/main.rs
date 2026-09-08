@@ -1,5 +1,5 @@
 // KROMA desktop shell (Steam Deck / macOS / Windows): a Tauri window hosting the
-// shared @kroma/tv frontend. In-process libmpv is the default native engine on
+// shared @kromatv/tv frontend. In-process libmpv is the default native engine on
 // every OS (feature `libmpv`); Linux falls back to the mpv binary over unix-socket
 // IPC unless KROMA_LINUX_LIBMPV=1 opts in. `--no-default-features` drops libmpv for
 // the in-page <video> (macOS/Windows) or the mpv binary (Linux). On Linux both

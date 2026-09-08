@@ -1,9 +1,9 @@
 // Shows a suggested list while the query is empty; debounced results render
 // as a poster grid.
 
-import type { MediaItem } from '@kroma/client/media';
-import { sizedImageUrl } from '@kroma/core';
-import { Box, Field, Icon, styles, Text } from '@kroma/ui/kit';
+import type { MediaItem } from '@kromatv/client/media';
+import { sizedImageUrl } from '@kromatv/core';
+import { Box, Field, Icon, styles, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';

@@ -2,9 +2,9 @@
 // keys + accent colours, used by the admin queue and its drawer (kept here so
 // neither file imports the other).
 
-import type { ReportCategory, ReportStatus, ReportSubjectKind } from '@kroma/client/reports';
-import type { MessageKey } from '@kroma/core';
-import type { ColorToken, ColorValue } from '@kroma/ui/kit';
+import type { ReportCategory, ReportStatus, ReportSubjectKind } from '@kromatv/client/reports';
+import type { MessageKey } from '@kromatv/core';
+import type { ColorToken, ColorValue } from '@kromatv/ui/kit';
 
 export interface Meta {
   labelKey: MessageKey;

@@ -1,6 +1,6 @@
 // The KROMA brand mark and the 10-foot wall clock.
 
-import { Logo } from '@kroma/ui/kit';
+import { Logo } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 
 /** The KROMA brand lockup: the wordmark with the chromatic-wheel O. `size` keeps

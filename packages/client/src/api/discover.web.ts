@@ -19,7 +19,7 @@ export const domains: Readonly<Record<string, DomainFactory>> = Object.fromEntri
 
 const indexes = (import.meta as unknown as GlobHost).glob('./*/index.ts', { eager: true });
 
-/** Every domain's public module (`@kroma/client/<domain>`) by domain name, for
+/** Every domain's public module (`@kromatv/client/<domain>`) by domain name, for
  *  a host that hands them to code it loads at runtime. */
 export const domainModules: Readonly<Record<string, unknown>> = Object.fromEntries(
   Object.entries(indexes).map(([path, mod]) => [domainKey(path), mod]),

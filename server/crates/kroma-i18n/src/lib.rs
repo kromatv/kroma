@@ -1,5 +1,5 @@
 //! A small, generic i18n engine — a framework-agnostic Rust counterpart to
-//! `@kroma/core`'s `i18n.ts`.
+//! `@kromatv/core`'s `i18n.ts`.
 //!
 //! Nothing here is application-specific: build an [`I18n`] instance from your
 //! own catalogs, default locale, and plural rules, then translate against it.

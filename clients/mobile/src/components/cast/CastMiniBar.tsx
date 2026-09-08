@@ -1,7 +1,7 @@
 // The strip above the tab bar while this phone is driving a TV.
 
-import { useCast } from '@kroma/ui';
-import { Box, Icon, styles, Text } from '@kroma/ui/kit';
+import { useCast } from '@kromatv/ui';
+import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';

@@ -7,7 +7,7 @@
 // about - Back, the transport keys, and swallowing a held OK's auto-repeats so
 // one long press cannot fire a control dozens of times.
 
-import { dispatchRemoteKey, registerTvMediaKeys } from '@kroma/core';
+import { dispatchRemoteKey, registerTvMediaKeys } from '@kromatv/core';
 import { useEffect } from 'react';
 import { resetFocusEntry } from './focus-entry';
 import type { FocusNavHandlers } from './focus-types';

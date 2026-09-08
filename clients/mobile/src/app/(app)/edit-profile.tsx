@@ -1,5 +1,5 @@
-import { LANG_OFF, langName } from '@kroma/core';
-import { Box, styles } from '@kroma/ui/kit';
+import { LANG_OFF, langName } from '@kromatv/core';
+import { Box, styles } from '@kromatv/ui/kit';
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { type LangPickerRef, LangPickerSheet } from '#mobile/components/LangPickerSheet';

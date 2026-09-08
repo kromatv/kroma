@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 // so this module has no dependencies.
 //
 // It answers with hosts and PORTS only - whether one speaks https is not mDNS's
-// business; `resolveServerOrigin` in @kroma/core settles that by asking.
+// business; `resolveServerOrigin` in @kromatv/core settles that by asking.
 private const val SERVICE_TYPE = "_kroma._tcp."
 
 class ServerDiscoveryModule : Module() {

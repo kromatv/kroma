@@ -3,10 +3,19 @@
 // :runId/logs`; while a run is active the short poll interval makes the logs
 // feel live.
 
-import type { JobKey, JobLog, JobRun, JobRunId } from '@kroma/client/jobs';
-import type { MessageKey } from '@kroma/core';
-import { useLocale, useT } from '@kroma/ui';
-import { Box, type ColorValue, classes, Divider, ListRow, Row, styles, Text } from '@kroma/ui/kit';
+import type { JobKey, JobLog, JobRun, JobRunId } from '@kromatv/client/jobs';
+import type { MessageKey } from '@kromatv/core';
+import { useLocale, useT } from '@kromatv/ui';
+import {
+  Box,
+  type ColorValue,
+  classes,
+  Divider,
+  ListRow,
+  Row,
+  styles,
+  Text,
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { clock, dur, rel } from '#web/features/admin/jobs-format';
 import { usePoll } from '#web/features/admin/shell';

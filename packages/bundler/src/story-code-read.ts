@@ -11,7 +11,7 @@ import { relative, sep } from 'node:path';
 
 /** What the build knows about one story file: the `name` and `group` a
  *  workbench needs to LIST it without running the module that draws it. Mirrors
- *  `StoryCode` in @kroma/workbench; kept structural rather than imported so
+ *  `StoryCode` in @kromatv/workbench; kept structural rather than imported so
  *  this build-time module has no runtime dependency on the package. */
 export interface StoryCode {
   name?: string;

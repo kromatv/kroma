@@ -1,5 +1,5 @@
-import { episodeTag, qualityBadgeForVideo } from '@kroma/core';
-import { useT, useThemeAudio } from '@kroma/ui';
+import { episodeTag, qualityBadgeForVideo } from '@kromatv/core';
+import { useT, useThemeAudio } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -13,7 +13,7 @@ import {
   styles,
   Text,
   useFocusNav,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav, useParams } from '#tv/app/router';

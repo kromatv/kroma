@@ -4,8 +4,8 @@
 // bundle. Both halves discover the same files; this one lacks demo sources and
 // prop docs, since Metro cannot hand a module its own text.
 
-import { KROMA_WORKBENCH } from '@kroma/ui/workbench-config';
-import { type Context, defineWorkbench, discoverMetro, memoryRouter } from '@kroma/workbench';
+import { KROMA_WORKBENCH } from '@kromatv/ui/workbench-config';
+import { type Context, defineWorkbench, discoverMetro, memoryRouter } from '@kromatv/workbench';
 
 // Declared locally, not globally: this exists in the bundler, not the runtime.
 declare const require: {

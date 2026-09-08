@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { setSessionStorage } from '@kroma/client';
+import { setSessionStorage } from '@kromatv/client';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import {

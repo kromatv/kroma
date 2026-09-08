@@ -14,7 +14,7 @@ import {
   Spinner,
   Text,
   useGrowingCount,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { createRoot } from 'react-dom/client';
 
 configureRemote();

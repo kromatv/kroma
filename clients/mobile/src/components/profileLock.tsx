@@ -2,7 +2,7 @@
 // biometric switch row and the step-at-a-time masked PIN wizard. All state
 // and auth calls stay in the route (app/(app)/profile-pin.tsx).
 
-import { Box, Button, Keypad, OtpField, Spinner, Switch, styles, Text } from '@kroma/ui/kit';
+import { Box, Button, Keypad, OtpField, Spinner, Switch, styles, Text } from '@kromatv/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { radius, spacing, type } from '#mobile/lib/theme';
 import { ErrorBanner } from './ui';

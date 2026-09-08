@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { I18nProvider } from '@kroma/ui';
-import { declared } from '@kroma/ui/testing';
+import { I18nProvider } from '@kromatv/ui';
+import { declared } from '@kromatv/ui/testing';
 import {
   createMemoryHistory,
   createRootRoute,

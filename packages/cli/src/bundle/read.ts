@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Manifest, MODULE_SCHEMA_VERSION, speaksCurrentSchema } from '@kroma/registry';
+import { Manifest, MODULE_SCHEMA_VERSION, speaksCurrentSchema } from '@kromatv/registry';
 import { byCodeUnit } from '../sort';
 import type { Artifact, Entry } from './catalog';
 import { tarRead, toTar } from './tar';

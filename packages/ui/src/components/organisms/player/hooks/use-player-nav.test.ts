@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { RemoteKey } from '@kroma/core';
+import type { RemoteKey } from '@kromatv/core';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { controlOrder } from '#ui/components/organisms/player/lib/nav';

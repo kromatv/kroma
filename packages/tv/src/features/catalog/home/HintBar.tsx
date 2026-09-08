@@ -2,9 +2,9 @@
 // hints over a gradient that fades into the page. Purely decorative, so it never
 // takes pointer events and never joins the focus set.
 
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, gradient, Hint, shade, styles, Text } from '@kroma/ui/kit';
+import type { MessageKey } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Box, gradient, Hint, shade, styles, Text } from '@kromatv/ui/kit';
 
 const s = styles({
   hint: { fontSize: 13, fontWeight: '600' },

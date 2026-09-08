@@ -10,7 +10,7 @@ import {
   mobileType,
   mobileTypeSpec,
   setTheme,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   colors,

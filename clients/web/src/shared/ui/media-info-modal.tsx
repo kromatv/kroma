@@ -3,9 +3,9 @@
 // subtitle stream ffprobe found. All of this already rides on the item DTO the
 // fiche loaded, so the modal reads from cache and adds no request.
 
-import { ItemId, type MediaFile, MediaFileId, type MediaItem } from '@kroma/client/media';
-import { useT } from '@kroma/ui';
-import { Box, Dialog, IconButton, Row, Spinner, Text } from '@kroma/ui/kit';
+import { ItemId, type MediaFile, MediaFileId, type MediaItem } from '@kromatv/client/media';
+import { useT } from '@kromatv/ui';
+import { Box, Dialog, IconButton, Row, Spinner, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { createCallable } from 'react-call';
 import { catalogQueries } from '#web/shared/lib/queries';

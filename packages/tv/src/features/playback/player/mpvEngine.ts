@@ -1,4 +1,4 @@
-// Native mpv backend for the @kroma/desktop shell (Steam Deck the primary
+// Native mpv backend for the @kromatv/desktop shell (Steam Deck the primary
 // target), in one of two source modes (same shape as the Tizen AVPlay
 // backend): `direct` opens the original file and lets mpv demux/decode it via
 // VA-API, with native absolute seeks and in-place (`aid`) track switches;
@@ -11,7 +11,7 @@
 // behind the page" model AVPlay uses on Tizen, so this backend shows no in-page
 // media element (surface: 'mpv').
 
-import type { AudioFilterMode, PlaneRect } from '@kroma/ui';
+import type { AudioFilterMode, PlaneRect } from '@kromatv/ui';
 import {
   BaseTvEngine,
   type EngineOptions,
@@ -38,7 +38,7 @@ function isAudioTrack(track: unknown): track is { id: number } {
   );
 }
 
-// `af` chains tuned to match the Web Audio compressor in @kroma/ui
+// `af` chains tuned to match the Web Audio compressor in @kromatv/ui
 // `audio-filter.ts`, so every engine sounds the same. `lavfi=[...]` is
 // explicit so the bracket body is plain ffmpeg filter syntax on every mpv build.
 const MPV_AF: Record<Exclude<AudioFilterMode, 'off'>, string> = {

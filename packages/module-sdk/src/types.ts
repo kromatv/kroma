@@ -3,12 +3,12 @@
 // this to learn which backend modules are active and to reconcile them against
 // the frontend modules registered in the host.
 //
-// The manifest half comes from `@kroma/registry`, which is where the contract is
+// The manifest half comes from `@kromatv/registry`, which is where the contract is
 // defined; what is added here is the runtime state only this endpoint reports.
 
-import type { ConfigField, Manifest } from '@kroma/registry';
+import type { ConfigField, Manifest } from '@kromatv/registry';
 
-export type { ConfigField } from '@kroma/registry';
+export type { ConfigField } from '@kromatv/registry';
 
 /** One thing a backend module contributes: the `point` it answers, and the `id`
  *  of this instance when the point takes several. A contribution the admin can

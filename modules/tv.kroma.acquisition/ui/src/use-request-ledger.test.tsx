@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { RequestId } from '@kroma/client/requests';
+import { RequestId } from '@kromatv/client/requests';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -10,7 +10,7 @@ const client = {
   requests: { ledger: vi.fn(), seasonLedger: vi.fn() },
 };
 
-vi.mock('@kroma/module-sdk', () => ({ useAdminHost: () => ({ client }) }));
+vi.mock('@kromatv/module-sdk', () => ({ useAdminHost: () => ({ client }) }));
 
 const REQUEST = RequestId.parse('r1');
 

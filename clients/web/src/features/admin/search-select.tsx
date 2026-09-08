@@ -7,7 +7,7 @@
 // filtered list is a listbox it controls through aria-activedescendant, and
 // arrows/Enter/Escape drive it while typing filters.
 
-import { useT } from '@kroma/ui';
+import { useT } from '@kromatv/ui';
 import {
   armEscapeGuard,
   Box,
@@ -25,7 +25,7 @@ import {
   Text,
   useAnchoredPlacement,
   useStableCallback,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import {
   type KeyboardEvent,
   type RefObject,

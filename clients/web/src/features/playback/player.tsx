@@ -1,13 +1,13 @@
-import type { MediaItem } from '@kroma/client/media';
-import { audioSupport, formatTimecode as fmtTime, playerSubtitle } from '@kroma/core';
+import type { MediaItem } from '@kromatv/client/media';
+import { audioSupport, formatTimecode as fmtTime, playerSubtitle } from '@kromatv/core';
 import {
   Player as UnifiedPlayer,
   useCast,
   useSubtitleAppearance,
   useT,
   WEB_FLAGS,
-} from '@kroma/ui';
-import { Box, Button, backdropBlur, classes, Icon, styles, Text } from '@kroma/ui/kit';
+} from '@kromatv/ui';
+import { Box, Button, backdropBlur, classes, Icon, styles, Text } from '@kromatv/ui/kit';
 import type { Ref } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import type { View } from 'react-native';

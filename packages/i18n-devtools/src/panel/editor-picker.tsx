@@ -1,4 +1,4 @@
-import { Icon, Row, Select, Text } from '@kroma/ui/kit';
+import { Icon, Row, Select, Text } from '@kromatv/ui/kit';
 import { useEditors } from '../server/editors';
 
 export interface EditorPickerProps {

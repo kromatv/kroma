@@ -1,6 +1,6 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { genreSegment } from '@kroma/core';
-import { Chip, Icon, IconButton, styles } from '@kroma/ui/kit';
+import { genreSegment } from '@kromatv/core';
+import { Chip, Icon, IconButton, styles } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';

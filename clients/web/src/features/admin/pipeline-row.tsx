@@ -2,12 +2,12 @@
 // (metadata, or the failing/running stage), the treatment "flow" of status dots,
 // the overall status pill, and a reprocess shortcut.
 
-import { ItemId, ShowId } from '@kroma/client/media';
-import type { ElementRow, Treatment } from '@kroma/client/pipeline';
-import type { MessageKey, Translate } from '@kroma/core';
-import { Table } from '@kroma/module-sdk';
-import { type Format, useFormat, useT } from '@kroma/ui';
-import { Box, type ColorValue, Icon, Row, Spinner, Text, Tooltip } from '@kroma/ui/kit';
+import { ItemId, ShowId } from '@kromatv/client/media';
+import type { ElementRow, Treatment } from '@kromatv/client/pipeline';
+import type { MessageKey, Translate } from '@kromatv/core';
+import { Table } from '@kromatv/module-sdk';
+import { type Format, useFormat, useT } from '@kromatv/ui';
+import { Box, type ColorValue, Icon, Row, Spinner, Text, Tooltip } from '@kromatv/ui/kit';
 import { Pill, PillDot } from '#web/features/admin/pill';
 import { kindMeta, overallMeta, statusMeta } from '#web/features/admin/pipeline-meta';
 import { posterScrim } from '#web/shared/lib/art-styles';

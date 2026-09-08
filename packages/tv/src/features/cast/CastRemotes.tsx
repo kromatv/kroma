@@ -1,4 +1,4 @@
-import { useT } from '@kroma/ui';
+import { useT } from '@kromatv/ui';
 import {
   Avatar,
   Button,
@@ -10,7 +10,7 @@ import {
   styles,
   sv,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { kickCastController, useCastControllers } from '#tv/features/cast/controllers';

@@ -1,7 +1,7 @@
 // The shell: what is selected, where that lives in the URL, and where the three
 // regions go. One story on the canvas is `story-view.tsx`.
 
-import { Box, configureRemote, Focusable, FocusScope, Resizable, styles } from '@kroma/ui/kit';
+import { Box, configureRemote, Focusable, FocusScope, Resizable, styles } from '@kromatv/ui/kit';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { RULE } from './chrome';
 import { CommandPalette, useCommandKey } from './command';

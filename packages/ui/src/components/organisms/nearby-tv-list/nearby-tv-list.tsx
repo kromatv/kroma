@@ -8,15 +8,15 @@
 // apart in front of the same person holding both devices.
 //
 // It renders the rows and nothing around them. Everything a tap DOES lives in
-// `useHandoffPicker` (@kroma/core/react); this only says what a row looks like
+// `useHandoffPicker` (@kromatv/core/react); this only says what a row looks like
 // while it is doing it.
 //
 // `t` is a prop rather than the kit's own `useT`, because the phone mounts its
 // own translator and would otherwise read an empty catalogue here.
 
-import type { DiscoveredTv, Translate } from '@kroma/core';
-import type { HandoffOutcome } from '@kroma/core/react';
-import { handoffRowHint } from '@kroma/core/react';
+import type { DiscoveredTv, Translate } from '@kromatv/core';
+import type { HandoffOutcome } from '@kromatv/core/react';
+import { handoffRowHint } from '@kromatv/core/react';
 import type { ReactNode } from 'react';
 import { Badge } from '#ui/components/atoms/badge';
 import { Icon } from '#ui/components/atoms/icon';

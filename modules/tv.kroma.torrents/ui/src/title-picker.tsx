@@ -1,7 +1,7 @@
 // Choosing which title a torrent is for.
 
-import { useT } from '@kroma/module-sdk';
-import { Box, Button, EmptyState, Field, Row, Spinner } from '@kroma/ui/kit';
+import { useT } from '@kromatv/module-sdk';
+import { Box, Button, EmptyState, Field, Row, Spinner } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useState } from 'react';
 import { useTorrentsApi } from './api';
 import { CandidateRow } from './candidate-row';

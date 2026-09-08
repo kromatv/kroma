@@ -1,4 +1,4 @@
-import { formatTimecode as fmtTime } from '@kroma/core';
+import { formatTimecode as fmtTime } from '@kromatv/core';
 import { useMemo } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { Box } from '#ui/components/atoms/box';

@@ -3,7 +3,7 @@
 // exhaustive `Record` below makes a new blocker reason impossible to add
 // without writing its copy.
 
-import type { PushBlocker } from '@kroma/client/notifications';
+import type { PushBlocker } from '@kromatv/client/notifications';
 import type { MessageKey } from './i18n';
 
 /** The message explaining each reason push is unavailable. */

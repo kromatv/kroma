@@ -13,8 +13,8 @@
 
 import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
-import { flattenCustomProperties, lowerJs, trimCorejs } from '@kroma/bundler/deep-tier';
-import { kromaLegacyCss } from '@kroma/bundler/legacy-css';
+import { flattenCustomProperties, lowerJs, trimCorejs } from '@kromatv/bundler/deep-tier';
+import { kromaLegacyCss } from '@kromatv/bundler/legacy-css';
 import { transform } from 'lightningcss';
 import postcss from 'postcss';
 import type { Plugin } from 'vite';

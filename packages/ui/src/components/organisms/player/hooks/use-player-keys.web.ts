@@ -1,9 +1,9 @@
 // Web / browser-TV key source: one window keydown listener. Tizen, webOS, the
 // desktop shell and the browser all deliver the remote as keyboard events,
-// normalized by `resolveRemoteKey` (@kroma/core). The native counterpart is
+// normalized by `resolveRemoteKey` (@kromatv/core). The native counterpart is
 // `usePlayerKeys.ts`; Vite resolves `.web` first, Metro takes the plain file.
 
-import { resolveRemoteKey } from '@kroma/core';
+import { resolveRemoteKey } from '@kromatv/core';
 import { useEffect, useEffectEvent } from 'react';
 import { VOLUME_MAX } from '#ui/components/organisms/player/lib/fmt';
 import {

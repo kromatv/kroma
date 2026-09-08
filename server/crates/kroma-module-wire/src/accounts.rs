@@ -48,7 +48,7 @@ impl User {
 }
 
 /// A granular capability. Stored on each user as a JSON array of the string keys
-/// below. Extend this enum (and the TS mirror in `@kroma/core`) to add more
+/// below. Extend this enum (and the TS mirror in `@kromatv/core`) to add more
 /// e.g. a `stats.view` for the upcoming stats pages.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Permission {

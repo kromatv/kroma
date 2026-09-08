@@ -7,7 +7,7 @@ import {
   jsonSchema,
   SCHEMA_NAMES,
   type SchemaName,
-} from '@kroma/registry';
+} from '@kromatv/registry';
 import { Hono } from 'hono';
 import { readBundles, toEntries } from '../bundle/read';
 import { resolveDir } from './registry';

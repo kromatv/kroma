@@ -1,4 +1,4 @@
-import { Box, styles } from '@kroma/ui/kit';
+import { Box, styles } from '@kromatv/ui/kit';
 import type { useT } from '#mobile/lib/i18n';
 import { MenuRow } from '#mobile/player/TrackSheetRows';
 

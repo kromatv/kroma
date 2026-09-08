@@ -1,6 +1,6 @@
-import { sizedImageUrl } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { SplashBackdrop } from '@kroma/ui/kit';
+import { sizedImageUrl } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { SplashBackdrop } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { serverQueries } from '#web/shared/lib/queries';

@@ -1,6 +1,6 @@
-import type { HistoryStats } from '@kroma/client/admin';
-import { useFormat, useT } from '@kroma/ui';
-import { Button, Row, Section } from '@kroma/ui/kit';
+import type { HistoryStats } from '@kromatv/client/admin';
+import { useFormat, useT } from '@kromatv/ui';
+import { Button, Row, Section } from '@kromatv/ui/kit';
 import { HistoryBars } from '#web/features/admin/charts';
 import { useAccountOptions } from '#web/features/admin/dashboard-accounts';
 import {

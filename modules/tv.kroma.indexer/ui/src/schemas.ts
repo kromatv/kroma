@@ -1,9 +1,9 @@
-// This module's wire types. They live here, not in `@kroma/core`: the core
+// This module's wire types. They live here, not in `@kromatv/core`: the core
 // client has no business knowing how an indexer is configured. `IndexerId`
 // stays in core because core's own request/search flow carries release ids,
 // an opaque brand, not this module's shape.
 
-import { IndexerId } from '@kroma/module-sdk';
+import { IndexerId } from '@kromatv/module-sdk';
 import { z } from 'zod';
 
 /** One configured Torznab indexer (API key write-only). `categories` are raw

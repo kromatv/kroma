@@ -1,8 +1,8 @@
-import { Badge } from '@kroma/ui/kit/atoms/badge';
-import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
-import { Button } from '@kroma/ui/kit/atoms/button';
-import { Divider } from '@kroma/ui/kit/atoms/divider';
-import { Text } from '@kroma/ui/kit/atoms/text';
+import { Badge } from '@kromatv/ui/kit/atoms/badge';
+import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
+import { Button } from '@kromatv/ui/kit/atoms/button';
+import { Divider } from '@kromatv/ui/kit/atoms/divider';
+import { Text } from '@kromatv/ui/kit/atoms/text';
 import type { VersionRow } from '#site/lib/history';
 import { mb } from '#site/lib/ui';
 

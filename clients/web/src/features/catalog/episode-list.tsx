@@ -4,9 +4,9 @@
 // for exactly the episodes it is missing from one screen. The sticky request
 // bar below turns the ticks into one request.
 
-import type { CastMember, ItemId, MediaItem, SubjectId } from '@kroma/client/media';
-import { useT } from '@kroma/ui';
-import { Box, Chip, classes, ringRoomBlock, styles, Text } from '@kroma/ui/kit';
+import type { CastMember, ItemId, MediaItem, SubjectId } from '@kromatv/client/media';
+import { useT } from '@kromatv/ui';
+import { Box, Chip, classes, ringRoomBlock, styles, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { CastRail } from '#web/features/catalog/detail';
 import { EpisodeRow, MissingEpisodeRow } from '#web/features/catalog/episode-row';

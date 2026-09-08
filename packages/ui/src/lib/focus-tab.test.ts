@@ -1,4 +1,4 @@
-import { type Direction, Directions } from '@kroma/spatial-nav';
+import { type Direction, Directions } from '@kromatv/spatial-nav';
 import { describe, expect, it } from 'vitest';
 import type { FocusBox } from './focus-here';
 import { walkTab } from './focus-tab';

@@ -1,7 +1,7 @@
-import { KromaEvents, type ServerEvent } from '@kroma/client/events';
-import type { DownloadProgressEvent, MediaRequest } from '@kroma/client/requests';
-import { useLocale, useT } from '@kroma/ui';
-import { Box, Button, EmptyState, Icon, IconButton, PageHeader, Row, Text } from '@kroma/ui/kit';
+import { KromaEvents, type ServerEvent } from '@kromatv/client/events';
+import type { DownloadProgressEvent, MediaRequest } from '@kromatv/client/requests';
+import { useLocale, useT } from '@kromatv/ui';
+import { Box, Button, EmptyState, Icon, IconButton, PageHeader, Row, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ViewProps } from 'react-native';

@@ -2,7 +2,7 @@
 // section and the manual add row. Presentation only; selection, connection
 // and the discovery loop stay in the sign-in screen.
 
-import { Icon } from '@kroma/ui/kit';
+import { Icon } from '@kromatv/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { OnboardingBox, OnboardingTitle } from './OnboardingScreen';
 import { ServerList, ServerRow, ServerSectionHeader, ServerSectionHint } from './serverRows';

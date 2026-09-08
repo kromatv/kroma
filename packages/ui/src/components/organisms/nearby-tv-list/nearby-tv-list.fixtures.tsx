@@ -1,7 +1,7 @@
-import { HandoffHandle } from '@kroma/client/handoff';
-import type { DiscoveredTv } from '@kroma/core';
+import { HandoffHandle } from '@kromatv/client/handoff';
+import type { DiscoveredTv } from '@kromatv/core';
 
-import type { HandoffOutcome } from '@kroma/core/react';
+import type { HandoffOutcome } from '@kromatv/core/react';
 
 import { Box } from '#ui/components/atoms/box';
 

@@ -1,4 +1,4 @@
-# @kroma/i18n-devtools
+# @kromatv/i18n-devtools
 
 The panel a developer inspects the app's translations with: switch the locale
 for the tab, mark every string on the page with what answered it, and read the
@@ -7,14 +7,14 @@ key, the variables and the file behind the one under the pointer.
 Dev server only, and a shell configures nothing:
 
 ```ts
-import { kromaI18nDevtools } from '@kroma/i18n-devtools/vite';
+import { kromaI18nDevtools } from '@kromatv/i18n-devtools/vite';
 
 export default defineConfig({ plugins: [kromaI18nDevtools()] });
 ```
 
 The plugin reads which engine the app translates through off what it depends
 on, injects `mount()` into that engine's own front door, and carries the
-react-native-web pipeline the panel needs - the panel is `@kroma/ui`, and a
+react-native-web pipeline the panel needs - the panel is `@kromatv/ui`, and a
 site that renders no kit component has no reason to carry that itself. It
 applies on `serve` alone, so a built shell never sees any of it.
 
@@ -26,7 +26,7 @@ locales to offer, the locale the app resolved, how that engine names a plural
 category where it disagrees with CLDR, and a subscription for an engine whose
 locales are not settled before the tools mount. An adapter ships as a subpath and
 takes its engine as an **optional peer**, so a shell that uses neither pulls in
-neither. Three ship: `@kroma/i18n-devtools/{kroma,i18next,paraglide}`.
+neither. Three ship: `@kromatv/i18n-devtools/{kroma,i18next,paraglide}`.
 
 The plugin picks one on its own. Name it only in an app that depends on two:
 

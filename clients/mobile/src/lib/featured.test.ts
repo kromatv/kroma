@@ -1,5 +1,5 @@
-import type { ContinueItem, MediaItem, Metadata, SectionItem, Show } from '@kroma/client/media';
-import type { Translate } from '@kroma/core';
+import type { ContinueItem, MediaItem, Metadata, SectionItem, Show } from '@kromatv/client/media';
+import type { Translate } from '@kromatv/core';
 import { describe, expect, it } from 'vitest';
 import { featuredMetaLine, featuredProgress } from './featured';
 

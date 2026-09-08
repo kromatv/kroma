@@ -1,4 +1,4 @@
-import { formatTimecode } from '@kroma/core';
+import { formatTimecode } from '@kromatv/core';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 

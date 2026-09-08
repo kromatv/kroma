@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { posterColors, posterGradient } from '@kroma/core';
+import { posterColors, posterGradient } from '@kromatv/core';
 import { describe, expect, it } from 'vitest';
 import { posterScrim, posterWash, wash } from './art-styles';
 

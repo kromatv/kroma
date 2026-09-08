@@ -41,7 +41,7 @@ reach `toggle`, and a name that is not in the schema does not compile.
 
 The `schema` is anything implementing [Standard
 Schema](https://standardschema.dev): zod, valibot, arktype. The spec is types only,
-so `standard-schema.ts` vendors the interface and `@kroma/ui` depends on no
+so `standard-schema.ts` vendors the interface and `@kromatv/ui` depends on no
 validator at all. Apps bring their own; this repo uses zod.
 
 ## Messages are catalog keys
@@ -59,7 +59,7 @@ A tail only counts when it is entirely `name=value` pairs, which leaves an ordin
 sentence ending in a question mark alone.
 
 The shared keys (`form.required`, `form.email`, `form.tooShort`, …) live in
-`@kroma/core`'s catalogs next to every other string.
+`@kromatv/core`'s catalogs next to every other string.
 
 ## When errors appear
 

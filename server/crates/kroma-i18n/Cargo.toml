@@ -3,7 +3,7 @@ name = "kroma-i18n"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
-description = "Server-side i18n: a faithful Rust port of @kroma/core's i18n (shared catalogs, plurals, fallback)"
+description = "Server-side i18n: a faithful Rust port of @kromatv/core's i18n (shared catalogs, plurals, fallback)"
 license.workspace = true
 
 [dependencies]

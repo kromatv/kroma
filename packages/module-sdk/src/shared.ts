@@ -14,16 +14,16 @@ export const SHARED_MODULES = [
   'react/jsx-dev-runtime',
   'react-dom',
   'react-native',
-  '@kroma/module-sdk',
-  '@kroma/ui',
-  '@kroma/ui/kit',
-  '@kroma/ui/tokens',
-  '@kroma/core',
-  '@kroma/core/react',
-  '@kroma/client',
-  '@kroma/client/query',
-  '@kroma/i18n',
-  '@kroma/i18n/react',
+  '@kromatv/module-sdk',
+  '@kromatv/ui',
+  '@kromatv/ui/kit',
+  '@kromatv/ui/tokens',
+  '@kromatv/core',
+  '@kromatv/core/react',
+  '@kromatv/client',
+  '@kromatv/client/query',
+  '@kromatv/i18n',
+  '@kromatv/i18n/react',
   '@tanstack/react-query',
   '@tanstack/react-router',
   'react-call',
@@ -31,29 +31,29 @@ export const SHARED_MODULES = [
 
 export type SharedModule = (typeof SHARED_MODULES)[number];
 
-/** `@kroma/client/<domain>`: one entry per domain, which nothing lists, so the
+/** `@kromatv/client/<domain>`: one entry per domain, which nothing lists, so the
  *  host provides them by pattern and the build matches the same pattern. */
-const CLIENT_DOMAIN = /^@kroma\/client\/[a-z][a-z0-9-]*$/;
+const CLIENT_DOMAIN = /^@kromatv\/client\/[a-z][a-z0-9-]*$/;
 
-/** A kit component reached below the barrel (`@kroma/ui/kit/atoms/button`). */
-const KIT_DEEP = /^@kroma\/ui\/kit\/.+/;
+/** A kit component reached below the barrel (`@kromatv/ui/kit/atoms/button`). */
+const KIT_DEEP = /^@kromatv\/ui\/kit\/.+/;
 
 /**
  * What the host provides for an import specifier: the specifier itself when it
- * is shared, `@kroma/ui/kit` for a deep kit import (the barrel exports every
+ * is shared, `@kromatv/ui/kit` for a deep kit import (the barrel exports every
  * component, and the host holds one copy of it), and `null` for a package the
  * bundle carries itself.
  */
 export function sharedKey(specifier: string): string | null {
-  if (specifier === PUBLIC_NAME) return '@kroma/module-sdk';
+  if (specifier === PUBLIC_NAME) return '@kromatv/module-sdk';
   if ((SHARED_MODULES as readonly string[]).includes(specifier)) return specifier;
   if (CLIENT_DOMAIN.test(specifier)) return specifier;
-  if (KIT_DEEP.test(specifier)) return '@kroma/ui/kit';
+  if (KIT_DEEP.test(specifier)) return '@kromatv/ui/kit';
   return null;
 }
 
 /** The published package's name, and the specifier a module written against it
- *  imports the SDK by. The host provides it as `@kroma/module-sdk`. */
+ *  imports the SDK by. The host provides it as `@kromatv/module-sdk`. */
 export const PUBLIC_NAME = '@kromatv/sdk';
 
 /** The global the host fills with `{ [specifier]: module namespace }` before it

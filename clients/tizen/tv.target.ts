@@ -1,4 +1,4 @@
-import type { TvTarget } from '@kroma/bundler/shell';
+import type { TvTarget } from '@kromatv/bundler/shell';
 
 // Samsung Tizen. Modern tier: Tizen 8+ (Chromium 108, 2024 models). Legacy tier:
 // Tizen 6.0-7.0 (Chromium 76-94, 2021-2023) - Samsung freezes Chromium per Tizen

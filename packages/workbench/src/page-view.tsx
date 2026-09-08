@@ -11,8 +11,8 @@
 // line readable lives on the elements themselves (see `MEASURE` in
 // `mdx-blocks.tsx`), so a wide page spends its width on what asked for it.
 
-import { Box, styles, Text } from '@kroma/ui/kit';
-import { space } from '@kroma/ui/tokens';
+import { Box, styles, Text } from '@kromatv/ui/kit';
+import { space } from '@kromatv/ui/tokens';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView } from 'react-native';
 import type { WorkbenchLayout } from './layout';

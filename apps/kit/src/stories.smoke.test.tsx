@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { clearPressGuard } from '@kroma/ui/kit';
-import { onScreen } from '@kroma/ui/testing';
-import { STORY_COMPONENTS, StoryDocContext } from '@kroma/workbench';
+import { clearPressGuard } from '@kromatv/ui/kit';
+import { onScreen } from '@kromatv/ui/testing';
+import { STORY_COMPONENTS, StoryDocContext } from '@kromatv/workbench';
 import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';

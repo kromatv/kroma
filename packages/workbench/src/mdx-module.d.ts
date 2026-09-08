@@ -5,7 +5,7 @@ declare module '*.story.mdx' {
   export default MDXContent;
 
   export const story: StoryMdxModule['story'];
-  // Both injected by @kroma/bundler's story-scenes.mjs: the scenes lifted out
+  // Both injected by @kromatv/bundler's story-scenes.mjs: the scenes lifted out
   // of the prose, and the declaration's own render source.
   export const __scenes: StoryMdxModule['__scenes'];
   export const __code: StoryMdxModule['__code'];

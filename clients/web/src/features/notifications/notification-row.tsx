@@ -11,10 +11,10 @@
 // than the two sharing the width: a focus ring belongs around the notification,
 // and a row holding only the left two thirds of the line cannot draw one.
 
-import type { Notification, NotificationId } from '@kroma/client/notifications';
-import { type NotificationRun, sizedImageUrl, type Translate } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Badge, Box, classes, Icon, IconButton, ListRow, styles, Text } from '@kroma/ui/kit';
+import type { Notification, NotificationId } from '@kromatv/client/notifications';
+import { type NotificationRun, sizedImageUrl, type Translate } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Badge, Box, classes, Icon, IconButton, ListRow, styles, Text } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { notificationLink } from '#web/features/notifications/notification-link';

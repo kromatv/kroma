@@ -4,7 +4,7 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const offWeb = vi.hoisted(() => ({ value: false }));
-vi.mock('@kroma/ui/kit', () => ({
+vi.mock('@kromatv/ui/kit', () => ({
   webWindow: () => (offWeb.value ? null : window),
 }));
 

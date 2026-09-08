@@ -4,7 +4,7 @@
 // changes what the picker can do: surface the televisions with no account, and
 // nudge a refetch when a signed-in one turns up the roster has not mentioned.
 
-import { beaconTxt, type LanService } from '@kroma/core';
+import { beaconTxt, type LanService } from '@kromatv/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useLanCast } from '#ui/services/cast-lan';

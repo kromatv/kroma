@@ -1,4 +1,4 @@
-import type { ContinueItem } from '@kroma/client/media';
+import type { ContinueItem } from '@kromatv/client/media';
 import {
   createContext,
   type ReactNode,

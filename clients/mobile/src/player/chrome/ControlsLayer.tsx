@@ -2,12 +2,12 @@
 // with its actions. Mounted only while controls are up; every press pokes the
 // auto-hide timer.
 //
-// The design mirrors the TV player's (@kroma/ui player parts) at phone scale;
+// The design mirrors the TV player's (@kromatv/ui player parts) at phone scale;
 // the UX stays the phone's own, which is why this file mirrors those parts
 // rather than importing them.
 
-import type { MediaItem } from '@kroma/client/media';
-import { audioTracksOf, episodeTag, formatTimecode } from '@kroma/core';
+import type { MediaItem } from '@kromatv/client/media';
+import { audioTracksOf, episodeTag, formatTimecode } from '@kromatv/core';
 import {
   BackButton,
   Box,
@@ -20,7 +20,7 @@ import {
   shade,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';

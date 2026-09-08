@@ -3,7 +3,7 @@
 // row and drawer can share it; labels come from the i18n catalog in the
 // components.
 
-import type { ColorValue } from '@kroma/ui/kit';
+import type { ColorValue } from '@kromatv/ui/kit';
 
 export type Meta = {
   color: ColorValue;

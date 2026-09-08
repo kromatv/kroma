@@ -3,9 +3,9 @@
 // score breakdown answering "why this one". Replaces the two stacked lists the
 // request drawer used to show.
 
-import type { IndexerReport, ScoredReleaseView } from '@kroma/client/requests';
-import { TABULAR, Table, type TableColumn, useT } from '@kroma/module-sdk';
-import { Box, Chip, Divider, EmptyState, Icon, Row, SegmentGroup, Text } from '@kroma/ui/kit';
+import type { IndexerReport, ScoredReleaseView } from '@kromatv/client/requests';
+import { TABULAR, Table, type TableColumn, useT } from '@kromatv/module-sdk';
+import { Box, Chip, Divider, EmptyState, Icon, Row, SegmentGroup, Text } from '@kromatv/ui/kit';
 import { useMemo, useState } from 'react';
 import { IndexerReportStrip } from './indexer-report';
 import { ReleaseFacts } from './release-cells';

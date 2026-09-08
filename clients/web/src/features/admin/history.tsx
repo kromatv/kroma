@@ -1,7 +1,7 @@
-import type { PlayEntry } from '@kroma/client/admin';
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, Pagination, Row } from '@kroma/ui/kit';
+import type { PlayEntry } from '@kromatv/client/admin';
+import type { MessageKey } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Box, Pagination, Row } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { HISTORY_COLUMNS, ITEM_HISTORY_COLUMNS } from '#web/features/admin/history-columns';
 import { HistoryFilters } from '#web/features/admin/history-filters';

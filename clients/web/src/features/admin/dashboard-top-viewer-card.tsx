@@ -1,7 +1,7 @@
-import type { TopUser, WatchKind } from '@kroma/client/admin';
-import { resolveImageUrl } from '@kroma/core';
-import { TABULAR } from '@kroma/module-sdk';
-import { useFormat, useT } from '@kroma/ui';
+import type { TopUser, WatchKind } from '@kromatv/client/admin';
+import { resolveImageUrl } from '@kromatv/core';
+import { TABULAR } from '@kromatv/module-sdk';
+import { useFormat, useT } from '@kromatv/ui';
 import {
   Avatar,
   Box,
@@ -13,7 +13,7 @@ import {
   styles,
   sv,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { KIND_SERIES } from '#web/features/admin/chart-palette';
 import { kindLabelKey, WATCH_KINDS } from '#web/features/admin/dashboard-filters';
 import { dominantKind, kindTotals } from '#web/features/admin/dashboard-kind-totals';

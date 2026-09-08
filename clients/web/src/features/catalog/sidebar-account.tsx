@@ -1,8 +1,8 @@
 // The sidebar's footer: who is signed in, and what this build is.
 
 import buildInfo from 'virtual:build-info';
-import { useT } from '@kroma/ui';
-import { Box, Menu, type MenuTriggerBind, styles, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Menu, type MenuTriggerBind, styles, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouterState } from '@tanstack/react-router';
 import { type Ref, useState } from 'react';

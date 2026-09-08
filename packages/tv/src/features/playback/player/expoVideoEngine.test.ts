@@ -1,5 +1,5 @@
-import type { MediaItem } from '@kroma/client/media';
-import { fakeClient } from '@kroma/client/test';
+import type { MediaItem } from '@kromatv/client/media';
+import { fakeClient } from '@kromatv/client/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineOptions } from './baseEngine';
 import { NATIVE_SEEK_AHEAD } from './baseEngine';

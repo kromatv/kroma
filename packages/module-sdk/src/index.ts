@@ -1,17 +1,17 @@
 // The frontend module contract. A module package imports its manifest types,
 // host context, admin data hooks and event bus from here; the COMPONENTS it
-// renders with come from `@kroma/ui/kit`, the one design system every KROMA
+// renders with come from `@kromatv/ui/kit`, the one design system every KROMA
 // surface shares.
 
-export { apiErrorText, brandedId, type KromaClient } from '@kroma/client';
+export { apiErrorText, brandedId, type KromaClient } from '@kromatv/client';
 // The SSE client is renamed to avoid colliding with the SDK's own `KromaEvents`
 // event-map interface.
-export { KromaEvents as KromaEventStream, type ServerEvent } from '@kroma/client/events';
-export { ItemId } from '@kroma/client/media';
-export { type EngineContribution, type ModuleApi, ModuleId } from '@kroma/client/modules';
-export { IndexerId, RequestId } from '@kroma/client/requests';
-export type { MessageKey } from '@kroma/core';
-export { useFormat, useLocale } from '@kroma/ui';
+export { KromaEvents as KromaEventStream, type ServerEvent } from '@kromatv/client/events';
+export { ItemId } from '@kromatv/client/media';
+export { type EngineContribution, type ModuleApi, ModuleId } from '@kromatv/client/modules';
+export { IndexerId, RequestId } from '@kromatv/client/requests';
+export type { MessageKey } from '@kromatv/core';
+export { useFormat, useLocale } from '@kromatv/ui';
 export type { AdminHostValue } from './admin/context';
 export { AdminHostProvider, useAdminHost } from './admin/context';
 export { Denied } from './admin/denied';

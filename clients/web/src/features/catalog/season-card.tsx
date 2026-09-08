@@ -2,8 +2,8 @@
 // to request the gap. The whole card is the control, so its trailing badge is a
 // face rather than a second stop.
 
-import { useT } from '@kroma/ui';
-import { Box, classes, color, Focusable, styles, sv, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, classes, color, Focusable, styles, sv, Text } from '@kromatv/ui/kit';
 import { IconPlus } from '@tabler/icons-react';
 import type { TitleSeason } from '#web/shared/lib/titleView';
 import { page } from '#web/shared/ui';

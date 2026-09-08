@@ -1,9 +1,9 @@
 // A config object rather than a `kromaWorkbench()` factory: calling
-// `defineWorkbench` here would make @kroma/ui import @kroma/workbench, which
-// imports @kroma/ui. Spreading a plain object leaves the only dependency a TYPE,
+// `defineWorkbench` here would make @kromatv/ui import @kromatv/workbench, which
+// imports @kromatv/ui. Spreading a plain object leaves the only dependency a TYPE,
 // and a type import is erased, so at runtime nothing points back.
 
-import type { ProviderSpec } from '@kroma/workbench';
+import type { ProviderSpec } from '@kromatv/workbench';
 import type { ReactNode } from 'react';
 import { Logo } from '#ui/components/atoms/logo';
 import { I18nProvider } from '#ui/services/i18n';

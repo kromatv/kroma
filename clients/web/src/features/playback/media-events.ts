@@ -1,7 +1,7 @@
 // The `<video>` element event wiring; `useVideoPlayback` owns the React
 // state/effects that drive these helpers.
 
-import { reachableBufferEnd } from '@kroma/core';
+import { reachableBufferEnd } from '@kromatv/core';
 import type { MovieView } from '#web/shared/lib/api';
 
 export interface MediaEventSetters {

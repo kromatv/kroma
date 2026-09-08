@@ -7,8 +7,8 @@ import {
   type MessageKey,
   SORT_MODES,
   type SortMode,
-} from '@kroma/core';
-import { Box, Chip, genreIcon, Icon, SORT_ICON, styles, Text } from '@kroma/ui/kit';
+} from '@kromatv/core';
+import { Box, Chip, genreIcon, Icon, SORT_ICON, styles, Text } from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, type View } from 'react-native';

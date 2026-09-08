@@ -1,9 +1,18 @@
 // The request status chip, one component for every surface: poster-card
 // overlay, table rows and the discover-detail hero.
 
-import type { RequestStatus } from '@kroma/client/requests';
-import { useT } from '@kroma/ui';
-import { Box, backdropBlur, classes, Row, sharedStyle, styles, Text, useLoop } from '@kroma/ui/kit';
+import type { RequestStatus } from '@kromatv/client/requests';
+import { useT } from '@kromatv/ui';
+import {
+  Box,
+  backdropBlur,
+  classes,
+  Row,
+  sharedStyle,
+  styles,
+  Text,
+  useLoop,
+} from '@kromatv/ui/kit';
 import { requestStatusMeta } from '#web/shared/lib/request-status';
 
 const PULSE_MS = 2000;

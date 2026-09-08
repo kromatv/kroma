@@ -3,7 +3,7 @@
 // not reach into a feature. The loop that fills it in is the feature's
 // (features/accounts/HandoffBeaconProvider).
 
-import type { HandoffBeaconView } from '@kroma/core';
+import type { HandoffBeaconView } from '@kromatv/core';
 import { createContext, useContext } from 'react';
 
 export const HandoffBeaconContext = createContext<HandoffBeaconView | null>(null);

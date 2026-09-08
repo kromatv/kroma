@@ -1,8 +1,8 @@
-import type { PlaybackSession } from '@kroma/client/admin';
-import { resolveImageUrl } from '@kroma/core';
-import type { Translate } from '@kroma/i18n';
-import { TABULAR } from '@kroma/module-sdk';
-import { useFormat, useT } from '@kroma/ui';
+import type { PlaybackSession } from '@kromatv/client/admin';
+import { resolveImageUrl } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
+import { TABULAR } from '@kromatv/module-sdk';
+import { useFormat, useT } from '@kromatv/ui';
 import {
   Avatar,
   Box,
@@ -17,7 +17,7 @@ import {
   Row,
   Surface,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { PillDot } from '#web/features/admin/pill';

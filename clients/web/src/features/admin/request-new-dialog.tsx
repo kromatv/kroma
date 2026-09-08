@@ -1,6 +1,6 @@
-import { apiErrorText } from '@kroma/client';
-import type { DiscoverEntry } from '@kroma/client/discovery';
-import { useT } from '@kroma/ui';
+import { apiErrorText } from '@kromatv/client';
+import type { DiscoverEntry } from '@kromatv/client/discovery';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -16,7 +16,7 @@ import {
   Skeleton,
   Spinner,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 import { posterScrim } from '#web/shared/lib/art-styles';
 import { useAuth } from '#web/shared/lib/auth';

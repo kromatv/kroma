@@ -1,4 +1,4 @@
-import type { AudioTrack, MediaItem } from '@kroma/client/media';
+import type { AudioTrack, MediaItem } from '@kromatv/client/media';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   avplayAvailable,

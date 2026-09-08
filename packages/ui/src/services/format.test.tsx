@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { Locale } from '@kroma/core';
+import type { Locale } from '@kromatv/core';
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { useFormat } from './format';

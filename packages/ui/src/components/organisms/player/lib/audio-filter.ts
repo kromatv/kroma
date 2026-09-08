@@ -1,5 +1,5 @@
-import { deviceStorage } from '@kroma/client';
-import type { MessageKey, Translate } from '@kroma/core';
+import { deviceStorage } from '@kromatv/client';
+import type { MessageKey, Translate } from '@kromatv/core';
 import { type RefObject, useCallback, useEffect, useState } from 'react';
 import type { AudioFilterMode } from '#ui/components/organisms/player/types';
 import { webDocument } from '#ui/lib/dom';
@@ -75,7 +75,7 @@ interface FilterDebugHandle {
 // DEV only: the handle hard-references the <video> via `graph.source`; shipping
 // it would pin a detached element's decoder buffers, defeating the WeakMap below.
 function publishDebugHandle(handle: FilterDebugHandle): void {
-  // Cast rather than `vite/client` types: @kroma/ui is also consumed outside a
+  // Cast rather than `vite/client` types: @kromatv/ui is also consumed outside a
   // Vite build (module SDK), where `import.meta.env` is undefined.
   if (!(import.meta as { env?: { DEV?: boolean } }).env?.DEV) return;
   (globalThis as { __kromaAudioFilter?: FilterDebugHandle }).__kromaAudioFilter = handle;

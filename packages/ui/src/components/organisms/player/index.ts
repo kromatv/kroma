@@ -9,7 +9,7 @@ export {
   useAudioFilter,
 } from './lib/audio-filter';
 export { currentChapter, currentChapterIndex, normalizeChapters } from './lib/chapters';
-// NOT `clamp01`: the kit already exports it, and `@kroma/ui` re-exports this
+// NOT `clamp01`: the kit already exports it, and `@kromatv/ui` re-exports this
 // barrel, so listing it here puts the same name on both entry points.
 export { endsAtClock, pct } from './lib/fmt';
 export {

@@ -2,10 +2,10 @@
 // drives a TV. It shows what the TV last reported, not what was last asked of
 // it, with the position interpolated between the receiver's heartbeats.
 
-import type { CastNowPlaying } from '@kroma/client/cast';
-import type { MediaItem } from '@kroma/client/media';
-import { formatTimecode } from '@kroma/core';
-import { type Cast, useCast, useT } from '@kroma/ui';
+import type { CastNowPlaying } from '@kromatv/client/cast';
+import type { MediaItem } from '@kromatv/client/media';
+import { formatTimecode } from '@kromatv/core';
+import { type Cast, useCast, useT } from '@kromatv/ui';
 import {
   Box,
   breakpoint,
@@ -19,7 +19,7 @@ import {
   Row,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { kromaClient } from '#web/shared/lib/api';

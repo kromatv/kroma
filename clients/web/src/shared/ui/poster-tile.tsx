@@ -8,7 +8,7 @@ import {
   styles,
   useFocusVisible,
   WatchedBadge,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { type PosterAction, PosterActionBar } from '#web/shared/ui/poster-action-bar';
 

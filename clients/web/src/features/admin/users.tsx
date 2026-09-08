@@ -1,7 +1,7 @@
-import type { AdminUser } from '@kroma/client/admin';
-import { resolveImageUrl } from '@kroma/core';
-import { Table } from '@kroma/module-sdk';
-import { useFormat, useT } from '@kroma/ui';
+import type { AdminUser } from '@kromatv/client/admin';
+import { resolveImageUrl } from '@kromatv/core';
+import { Table } from '@kromatv/module-sdk';
+import { useFormat, useT } from '@kromatv/ui';
 import {
   Avatar,
   Box,
@@ -13,7 +13,7 @@ import {
   Section,
   StatCard,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { Pill, PillDot } from '#web/features/admin/pill';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
 import { EditUserModal, InviteModal, PendingInvite } from '#web/features/admin/users-modals';

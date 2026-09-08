@@ -1,7 +1,7 @@
-import { hasPermission } from '@kroma/client/accounts';
-import type { ModuleNav } from '@kroma/module-sdk';
-import { useFormat, useT } from '@kroma/ui';
-import { Box, color, Drawer, Focusable, Logo, Row, styles, sv, Text } from '@kroma/ui/kit';
+import { hasPermission } from '@kromatv/client/accounts';
+import type { ModuleNav } from '@kromatv/module-sdk';
+import { useFormat, useT } from '@kromatv/ui';
+import { Box, color, Drawer, Focusable, Logo, Row, styles, sv, Text } from '@kromatv/ui/kit';
 import { IconChevronRight } from '@tabler/icons-react';
 import { useRouterState } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';

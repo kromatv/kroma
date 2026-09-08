@@ -13,7 +13,7 @@ const cast = vi.hoisted(() => ({
   active: null as { id: string; name: string } | null,
   playOn: vi.fn(async () => true),
 }));
-vi.mock('@kroma/ui', () => ({ useCast: () => cast }));
+vi.mock('@kromatv/ui', () => ({ useCast: () => cast }));
 
 const { usePlay } = await import('./play');
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { Translate, TVars } from '@kroma/core';
+import type { Translate, TVars } from '@kromatv/core';
 import { act, cleanup, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';

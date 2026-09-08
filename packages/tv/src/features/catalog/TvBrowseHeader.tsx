@@ -9,8 +9,8 @@ import {
   SORT_MODES,
   type SortMode,
   type Translate,
-} from '@kroma/core';
-import { useT } from '@kroma/ui';
+} from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -22,7 +22,7 @@ import {
   SORT_ICON,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { memo } from 'react';
 import type { CatalogEntry } from '#tv/features/catalog/home/AmbientBackdrop';
 

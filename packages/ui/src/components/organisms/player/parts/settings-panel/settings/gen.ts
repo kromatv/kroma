@@ -1,4 +1,4 @@
-import type { SubCapabilities, SubtitleGeneration } from '@kroma/client/subtitles';
+import type { SubCapabilities, SubtitleGeneration } from '@kromatv/client/subtitles';
 
 /** The request {@link GenerateWizard} emits; the platform adapter maps it to its own
  * `subtitles.generate` call, so the shared chrome never imports an API client. */
@@ -13,7 +13,7 @@ export interface SubtitleGenRequest {
 }
 
 /** Everything the Subtitles panel needs to drive generation, kept prop-driven so
- * `@kroma/ui` stays engine- and client-agnostic. */
+ * `@kromatv/ui` stays engine- and client-agnostic. */
 export interface SubtitleGenBundle {
   canCreate: boolean;
   caps: SubCapabilities | null;

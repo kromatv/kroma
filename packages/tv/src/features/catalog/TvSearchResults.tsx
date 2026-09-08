@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Box, FocusScroll, Grid, Hint, PosterCard, styles, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, FocusScroll, Grid, Hint, PosterCard, styles, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { weight } from '#tv/shared/ui/weight';
 

@@ -1,7 +1,7 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import type { MediaItem } from '@kroma/client/media';
-import { useCast } from '@kroma/ui';
-import { Box, Button, Icon, styles, Text } from '@kroma/ui/kit';
+import type { MediaItem } from '@kromatv/client/media';
+import { useCast } from '@kromatv/ui';
+import { Box, Button, Icon, styles, Text } from '@kromatv/ui/kit';
 import { useRef } from 'react';
 import { Alert, Pressable } from 'react-native';
 import { CastSheet } from '#mobile/components/cast/CastSheet';

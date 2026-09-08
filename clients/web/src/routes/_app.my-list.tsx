@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Box, Button, EmptyState, If } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Button, EmptyState, If } from '@kromatv/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo } from 'react';

@@ -1,6 +1,6 @@
-import type { SubtitleAppearance } from '@kroma/ui';
-import { SUB_COLORS } from '@kroma/ui';
-import { Box, Chip, styles } from '@kroma/ui/kit';
+import type { SubtitleAppearance } from '@kromatv/ui';
+import { SUB_COLORS } from '@kromatv/ui';
+import { Box, Chip, styles } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import type { useT } from '#mobile/lib/i18n';
 import { ChipGroup, SubHeader } from './TrackSheetRows';

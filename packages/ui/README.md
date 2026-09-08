@@ -1,6 +1,6 @@
 <div align="center">
   <img src="../../.github/assets/logo.svg" alt="KROMA" height="56">
-  <h1>@kroma/ui</h1>
+  <h1>@kromatv/ui</h1>
   <p><i>The KROMA design system. One component library, every platform.</i></p>
 </div>
 
@@ -37,7 +37,7 @@ See src/components/README.md for the hierarchy and the three ways to import from
 ```
 
 ```tsx
-import { Box, Button, MediaCard, PosterCard, Text } from '@kroma/ui/kit';
+import { Box, Button, MediaCard, PosterCard, Text } from '@kromatv/ui/kit';
 
 <Box row center gap={16} px={64}>
   <Button variant="primary" size="tv" icon="player-play-filled" label="Lecture" />
@@ -70,7 +70,7 @@ The test for moving up a level is whether this arrangement has now been written
 twice. `ListRow` earned its place after the third copy.
 
 Every level is re-exported flat, so a consumer writes
-`import { Button, ListRow } from '@kroma/ui/kit'` and never has to care which level
+`import { Button, ListRow } from '@kromatv/ui/kit'` and never has to care which level
 something is at. The split is for the people editing the kit, not for the people
 using it.
 
@@ -271,7 +271,7 @@ and everything derived, meaning type roles from specs plus families and the focu
 ring from the accent, re-derives:
 
 ```tsx
-import { createTheme, setTheme, ThemeProvider, useTheme } from '@kroma/ui/kit';
+import { createTheme, setTheme, ThemeProvider, useTheme } from '@kromatv/ui/kit';
 
 const ocean = createTheme({
   colors: { accent: '#3FB6F2', accentHover: '#66C6F5' },
@@ -292,7 +292,7 @@ plus an augmentable registry, so a name added once is immediately legal, and
 autocompleted, in `bg`, `border`, `color`, `/NN` alpha, `radius` and `font`:
 
 ```ts
-declare module '@kroma/ui/tokens/colors' {
+declare module '@kromatv/ui/tokens/colors' {
   interface ColorRegistry { brand: string }
 }
 createTheme({ colors: { brand: '#6C5CE7' } });   // → bg="brand", 'brand/40', …
@@ -338,7 +338,7 @@ and it carries the signature 10-foot affordance: a solid amber ring plus a dark
 lift, with an optional scale (1.06 for rail tiles, 1.05 for posters, 1.04 for the
 primary action).
 
-The spatial navigator (`@kroma/spatial-nav`) owns directional movement on
+The spatial navigator (`@kromatv/spatial-nav`) owns directional movement on
 every target, so a browser TV and an Apple TV move focus by the same rules rather
 than by two engines that drift apart. What is platform-split is only how the remote
 reaches it, which is what `useFocusNav()` wires, plus the keys the navigator has no
@@ -430,7 +430,7 @@ why `src/lib/icons/stroke-prop.ts` is itself a `.web` split.
 
 The cost, measured: a namespace import cannot be tree-shaken, so left alone the
 whole set ships, and the kit site went from 258 KB to 741 KB gzipped. A build-time
-subset in `@kroma/ui/bundler` buys it back on every target: 299 of 6,250 glyphs
+subset in `@kromatv/ui/bundler` buys it back on every target: 299 of 6,250 glyphs
 kept, and `<Icon>` costs 49 KB gzipped instead of 573 KB. `vite dev` is not subset
 (`apply: 'build'`); Metro is, in both `start` and `export`.
 
@@ -447,7 +447,7 @@ tier inlines every chunk back into one IIFE, so a Metro workbench still opts int
 ## Tokens
 
 `src/core/tokens/*.ts` is the single source of truth for the design, and it is also
-what builds the default theme (see Styling: Themes). `kromaUI()` (`@kroma/ui/vite`)
+what builds the default theme (see Styling: Themes). `kromaUI()` (`@kromatv/ui/vite`)
 emits the CSS custom properties the web and desktop clients consume from it at build
 time, so there is no stylesheet copy that can drift.
 
@@ -464,7 +464,7 @@ a TV is watched from three metres. So there is a second ramp, and it lives here
 rather than in the mobile app, because it is a design decision and not drift:
 
 ```ts
-import { mobileType, mobileSpace, mobileRadius } from '@kroma/ui/kit';
+import { mobileType, mobileSpace, mobileRadius } from '@kromatv/ui/kit';
 
 mobileType.title   // 28px / 800, where the 10-foot ramp says 44
 mobileRadius.lg    // 18, rounder: close-up chrome reads sharp, not crisp
@@ -496,7 +496,7 @@ actually has to render it. It also rides along on the TV shells, behind `?workbe
 with one typed export at the top:
 
 ```mdx
-import { defineStory } from '@kroma/workbench/story';
+import { defineStory } from '@kromatv/workbench/story';
 import { Chip } from './chip';
 
 export const story = defineStory({ group: 'Actions', component: Chip, args: { label: 'HDR' } });
@@ -568,7 +568,7 @@ One D-pad stop per row, and a pointer-sized hit area.
 
 Unlike a demo's code panel this does NOT thin out on a television. MDX is a plain
 compiler, so Vite runs it as a plugin and Metro runs it as a transformer, and
-`@kroma/workbench`'s `mdx.tsx` maps every HTML element MDX emits to a kit component.
+`@kromatv/workbench`'s `mdx.tsx` maps every HTML element MDX emits to a kit component.
 Its own test holds that map to a real compile, because a missing element is a crash
 on the one platform that cannot render it. Helpers a document needs go in
 `<component>.fixtures.tsx` beside it: MDX is for the writing, TypeScript stays in
@@ -582,7 +582,7 @@ There is no registry to regenerate and no generated file to fall behind. Discove
 needs a bundler primitive, and both bundlers resolve theirs relative to the file
 that writes it, so the glob lives in the HOST rather than in the kit:
 `apps/kit/src/stories.web.ts` writes `import.meta.glob`, `stories.ts` beside it
-writes `require.context`, and both hand the result to `@kroma/workbench`. Every
+writes `require.context`, and both hand the result to `@kromatv/workbench`. Every
 state is a real path (`/story/button/matrix`).
 
 **The toolbar switches themes.** KROMA plus three restatements (Ocean, Ember,
@@ -595,11 +595,11 @@ three columns; below that the inspector docks under the canvas as a wrapping row
 below 880pt the list becomes a drawer over the canvas and the dock collapses to its
 titlebar, so the component keeps the room on a phone.
 
-The workbench is `@kroma/workbench`, a package of its own, and it knows no design
+The workbench is `@kromatv/workbench`, a package of its own, and it knows no design
 system: a host hands it the stories, the wordmark and the app context. This package
 supplies KROMA's half of that in `src/workbench-config.tsx`, which is a plain object
-rather than a call, because calling `defineWorkbench()` here would make `@kroma/ui`
-import `@kroma/workbench`, which imports `@kroma/ui`. Each host spreads it and adds
+rather than a call, because calling `defineWorkbench()` here would make `@kromatv/ui`
+import `@kromatv/workbench`, which imports `@kromatv/ui`. Each host spreads it and adds
 its own discovery and router: `apps/kit/src/config{,.web}.tsx`,
 `packages/tv/src/workbench{,.web}.tsx`, `clients/mobile/src/app/workbench.tsx`.
 
@@ -648,6 +648,6 @@ Two things worth knowing when writing them:
 
 ## See also
 
-- [`@kroma/core`](../core/README.md) the types and logic these components render
-- [`@kroma/tv`](../tv/README.md) the 10-foot experience composed from these
+- [`@kromatv/core`](../core/README.md) the types and logic these components render
+- [`@kromatv/tv`](../tv/README.md) the 10-foot experience composed from these
 - [`src/components/DESIGN.md`](src/components/DESIGN.md) how a component's API is shaped

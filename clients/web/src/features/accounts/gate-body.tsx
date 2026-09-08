@@ -1,6 +1,6 @@
-import { apiErrorText, KromaApiError } from '@kroma/client';
-import type { PublicUser, StoredSession } from '@kroma/client/accounts';
-import { useT } from '@kroma/ui';
+import { apiErrorText, KromaApiError } from '@kromatv/client';
+import type { PublicUser, StoredSession } from '@kromatv/client/accounts';
+import { useT } from '@kromatv/ui';
 import { useEffect, useState } from 'react';
 import { ForgotForm, LoginForm, RegisterForm } from '#web/features/accounts/auth-forms';
 import { PinEntry } from '#web/features/accounts/pin-entry';

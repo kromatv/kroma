@@ -1,4 +1,4 @@
-// The native TV app: the SAME @kroma/tv experience the Tizen, webOS, Android TV
+// The native TV app: the SAME @kromatv/tv experience the Tizen, webOS, Android TV
 // and desktop shells mount, compiled by React Native instead of rendered in a
 // WebView.
 //
@@ -16,10 +16,10 @@ import {
   setServerBrowse,
   setVoiceSearchBackend,
   TvApp,
-} from '@kroma/tv';
-import { expoImageBackend } from '@kroma/ui/expo-image';
-import { KIT_FONTS } from '@kroma/ui/fonts';
-import { registerFrost, setImageBackend, TvStage } from '@kroma/ui/kit';
+} from '@kromatv/tv';
+import { expoImageBackend } from '@kromatv/ui/expo-image';
+import { KIT_FONTS } from '@kromatv/ui/fonts';
+import { registerFrost, setImageBackend, TvStage } from '@kromatv/ui/kit';
 import { BlurView } from 'expo-blur';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
@@ -29,8 +29,8 @@ import { LogBox, Platform } from 'react-native';
 
 LogBox.ignoreAllLogs(true);
 
-import { setDecoderFrameLimits } from '@kroma/core';
-import { lanBeacon } from '@kroma/lan-beacon';
+import { setDecoderFrameLimits } from '@kromatv/core';
+import { lanBeacon } from '@kromatv/lan-beacon';
 import { useEffect, useState } from 'react';
 import { decoderFrameLimits } from '../modules/device-hardware';
 import { browseForServers } from '../modules/server-discovery';

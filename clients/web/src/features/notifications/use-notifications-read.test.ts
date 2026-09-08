@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { NotificationsView } from '@kroma/client/notifications';
+import type { NotificationsView } from '@kromatv/client/notifications';
 import { useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -18,7 +18,7 @@ import {
   row,
 } from '#web/features/notifications/use-notifications.fixture';
 
-vi.mock('@kroma/core', async (importOriginal) => {
+vi.mock('@kromatv/core', async (importOriginal) => {
   class KromaEvents {
     private readonly self: { url: string; emit: Listener; closed: boolean };
     constructor(url: string, opts: { onEvent: Listener }) {
@@ -31,7 +31,7 @@ vi.mock('@kroma/core', async (importOriginal) => {
       this.self.closed = true;
     }
   }
-  return { ...(await importOriginal<typeof import('@kroma/core')>()), KromaEvents };
+  return { ...(await importOriginal<typeof import('@kromatv/core')>()), KromaEvents };
 });
 
 vi.mock('#web/shared/lib/api', () => ({

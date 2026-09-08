@@ -1,7 +1,7 @@
 // Genres: the library's own genres as artwork tiles, most common first, on the
 // same tile the web and the television draw.
 
-import type { MediaItem, Show } from '@kroma/client/media';
+import type { MediaItem, Show } from '@kromatv/client/media';
 import {
   collectGenres,
   genreColors,
@@ -9,7 +9,7 @@ import {
   genreSegment,
   genreShowcases,
   genreTint,
-} from '@kroma/core';
+} from '@kromatv/core';
 import {
   CategoryTile,
   cellWidth,
@@ -19,7 +19,7 @@ import {
   Icon,
   styles,
   tintGradient,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';

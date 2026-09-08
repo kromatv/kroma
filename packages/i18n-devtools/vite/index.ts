@@ -7,7 +7,7 @@ import {
   RNW_OPTIMIZE_INCLUDE,
   RNW_SSR_NO_EXTERNAL,
   webResolve,
-} from '@kroma/bundler/rnw';
+} from '@kromatv/bundler/rnw';
 import launchEditor from 'launch-editor';
 import type { Plugin, ViteDevServer } from 'vite';
 import { type Editor, installedEditors, launcherOf, resolveFile, within } from './editors.ts';
@@ -23,12 +23,12 @@ import { forgetMaps, type Served, sourceOf } from './where.ts';
 const ADAPTERS = {
   kroma: {
     anchor: /[\\/]i18n[\\/]src[\\/]react[\\/]provider\.tsx$/,
-    engine: '@kroma/i18n-devtools/kroma',
+    engine: '@kromatv/i18n-devtools/kroma',
     wire: null,
   },
   paraglide: {
     anchor: /[\\/]paraglide[\\/]messages\.js$/,
-    engine: '@kroma/i18n-devtools/paraglide',
+    engine: '@kromatv/i18n-devtools/paraglide',
     wire: throughParaglide,
   },
 } as const;
@@ -62,7 +62,7 @@ export type Adapter = keyof typeof ADAPTERS;
 
 const SPEAKS: Record<string, Adapter> = {
   '@inlang/paraglide-js': 'paraglide',
-  '@kroma/i18n': 'kroma',
+  '@kromatv/i18n': 'kroma',
 };
 
 function speaks(from: string): Adapter {
@@ -87,7 +87,7 @@ const OVERLAYS = ['.tsqd-parent-container'];
 
 function injected(ignore: readonly string[], engine: string): string {
   return `
-import { mount as __kromaI18nDevtools } from '@kroma/i18n-devtools';
+import { mount as __kromaI18nDevtools } from '@kromatv/i18n-devtools';
 import { engine as __kromaI18nEngine } from '${engine}';
 const __kromaI18nDevtoolsStop = __kromaI18nDevtools({
   ...${JSON.stringify({ ignore })},
@@ -103,11 +103,11 @@ interface AliasEntry {
   replacement: string;
 }
 
-const PANEL = '@kroma/i18n-devtools';
-const KIT = '@kroma/ui';
+const PANEL = '@kromatv/i18n-devtools';
+const KIT = '@kromatv/ui';
 const POSITION = /:\d+(?::\d+)?$/;
 
-// The injection lands in @kroma/i18n, which does not depend on the panel: only
+// The injection lands in @kromatv/i18n, which does not depend on the panel: only
 // a shell does. So the bare specifier is resolved here, against the shell that
 // loaded this plugin, and handed to Vite as an alias.
 function panelEntry(): string | null {
@@ -165,7 +165,7 @@ export function kromaI18nDevtools({ ignore = OVERLAYS, adapter }: DevtoolsOption
     name: 'kroma-i18n-devtools',
     apply: 'serve',
     enforce: 'pre',
-    // The panel is @kroma/ui, which is authored against React Native, so it
+    // The panel is @kromatv/ui, which is authored against React Native, so it
     // needs the web pipeline whatever the host is - a site that renders no
     // kit component has no reason to carry it. `apply: 'serve'` keeps all of
     // it out of the build.

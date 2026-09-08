@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { AdminHostProvider, ModuleScope } from '@kroma/module-sdk';
-import { clearPressGuard } from '@kroma/ui/kit';
-import { onScreen } from '@kroma/ui/testing';
+import { AdminHostProvider, ModuleScope } from '@kromatv/module-sdk';
+import { clearPressGuard } from '@kromatv/ui/kit';
+import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DownloadFilters } from './downloads-filters';

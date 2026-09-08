@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/web",
+  "name": "@kromatv/web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -19,11 +19,11 @@
     "typecheck": "tsr generate && tsc --noEmit && tsc -p tsconfig.sw.json"
   },
   "dependencies": {
-    "@kroma/client": "workspace:*",
-    "@kroma/core": "workspace:*",
-    "@kroma/i18n": "workspace:*",
-    "@kroma/module-sdk": "workspace:*",
-    "@kroma/ui": "workspace:*",
+    "@kromatv/client": "workspace:*",
+    "@kromatv/core": "workspace:*",
+    "@kromatv/i18n": "workspace:*",
+    "@kromatv/module-sdk": "workspace:*",
+    "@kromatv/ui": "workspace:*",
     "@tabler/icons-react": "^3.46.0",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-router": "^1.170.29",
@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
-    "@kroma/bundler": "workspace:*",
+    "@kromatv/bundler": "workspace:*",
     "@tanstack/react-query-devtools": "^5.101.4",
     "@tanstack/router-cli": "^1.167.30",
     "@types/node": "^22.20.1",

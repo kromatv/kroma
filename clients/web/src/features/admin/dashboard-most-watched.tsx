@@ -1,7 +1,7 @@
-import type { KromaClient } from '@kroma/client';
-import type { MostWatchedColumn, MostWatchedEntry } from '@kroma/client/admin';
-import { posterColors, type Translate } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import type { KromaClient } from '@kromatv/client';
+import type { MostWatchedColumn, MostWatchedEntry } from '@kromatv/client/admin';
+import { posterColors, type Translate } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Focusable,
@@ -14,7 +14,7 @@ import {
   styles,
   Text,
   tintGradient,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { ScrollView } from 'react-native';
 import { useAccountOptions } from '#web/features/admin/dashboard-accounts';
 import {

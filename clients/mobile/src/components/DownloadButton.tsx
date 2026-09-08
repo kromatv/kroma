@@ -1,8 +1,8 @@
 // Offline download affordance: idle arrow, live progress ring, done check.
 // Long-press (or tap when done) removes the download.
 
-import type { MediaItem } from '@kroma/client/media';
-import { Box, Icon, IconButton, styles } from '@kroma/ui/kit';
+import type { MediaItem } from '@kromatv/client/media';
+import { Box, Icon, IconButton, styles } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { Alert } from 'react-native';
 import { useDownloads } from '#mobile/lib/downloads';

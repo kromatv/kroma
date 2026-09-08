@@ -1,4 +1,4 @@
-// This module's wire types. `@kroma/core` does not model remote access: a
+// This module's wire types. `@kromatv/core` does not model remote access: a
 // module owns the shape of its own API.
 
 import { z } from 'zod';

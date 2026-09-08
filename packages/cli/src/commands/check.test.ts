@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { MODULE_SCHEMA_VERSION } from '@kroma/registry';
+import { MODULE_SCHEMA_VERSION } from '@kromatv/registry';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { checkCommand, importProblems, specifierOf } from './check';
 
@@ -49,8 +49,8 @@ afterEach(() => {
 
 describe('specifierOf', () => {
   it('reads the specifier off an import, whichever quote it uses', () => {
-    expect(specifierOf("import { Button } from '@kroma/ui/kit';")).toBe('@kroma/ui/kit');
-    expect(specifierOf('import { Button } from "@kroma/ui/kit";')).toBe('@kroma/ui/kit');
+    expect(specifierOf("import { Button } from '@kromatv/ui/kit';")).toBe('@kromatv/ui/kit');
+    expect(specifierOf('import { Button } from "@kromatv/ui/kit";')).toBe('@kromatv/ui/kit');
   });
 
   it('reads it off a re-export and off a side-effect import', () => {
@@ -74,7 +74,7 @@ describe('specifierOf', () => {
 describe('importProblems', () => {
   it('names the kit’s private alias and the import that replaces it', () => {
     expect(problems("import { Button } from '#ui/components/atoms/button';")).toEqual([
-      "ui/src/page.tsx: '#ui/components/atoms/button' is the kit's private alias; import from '@kroma/ui/kit'",
+      "ui/src/page.tsx: '#ui/components/atoms/button' is the kit's private alias; import from '@kromatv/ui/kit'",
     ]);
   });
 
@@ -86,7 +86,7 @@ describe('importProblems', () => {
 
   it('leaves an import that stays inside, and a package the host provides', () => {
     expect(problems("import { schemas } from './schemas';")).toEqual([]);
-    expect(problems("import { Button } from '@kroma/ui/kit';")).toEqual([]);
+    expect(problems("import { Button } from '@kromatv/ui/kit';")).toEqual([]);
   });
 });
 

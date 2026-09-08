@@ -6,7 +6,7 @@ import {
   type PlayEnv,
   SAFARI_CAPS,
   selectEngine,
-} from '@kroma/core';
+} from '@kromatv/core';
 import { useMemo, useState } from 'react';
 import { getWebEnginePref, type WebEnginePref } from '#web/features/playback/engine-pref';
 import type { MovieView } from '#web/shared/lib/api';

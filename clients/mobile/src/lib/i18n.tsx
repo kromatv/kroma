@@ -1,4 +1,4 @@
-// React bindings for the shared @kroma/core i18n catalogs. Locale precedence:
+// React bindings for the shared @kromatv/core i18n catalogs. Locale precedence:
 // in-app override, then the OS locale (which reflects the per-app language in
 // iOS Settings, thanks to CFBundleLocalizations), then the account preference.
 
@@ -9,7 +9,7 @@ import {
   normalizeLocale,
   setActiveLocale,
   type Translate,
-} from '@kroma/core';
+} from '@kromatv/core';
 import { getLocales } from 'expo-localization';
 import {
   createContext,

@@ -1,5 +1,5 @@
-import { ItemId, type SectionItem, ShowId } from '@kroma/client/media';
-import { Box, color, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
+import { ItemId, type SectionItem, ShowId } from '@kromatv/client/media';
+import { Box, color, Icon, IconButton, styles, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';

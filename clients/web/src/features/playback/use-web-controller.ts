@@ -3,7 +3,7 @@ import {
   declaredAspect,
   qualityBadgeForVideo,
   refineTrackLang,
-} from '@kroma/core';
+} from '@kromatv/core';
 import {
   type PlayerController,
   type PlayerStats,
@@ -11,7 +11,7 @@ import {
   useAudioFilter,
   useLocale,
   useT,
-} from '@kroma/ui';
+} from '@kromatv/ui';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isWebEnginePref } from '#web/features/playback/engine-pref';
 import { makeFpsSampler, readEngineStats } from '#web/features/playback/engine-stats';

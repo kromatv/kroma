@@ -235,7 +235,7 @@ function iconSubset(repoRoot: string, pkg: TablerPkg): Subset {
 function assertTargetExists(repoRoot: string): void {
   if (existsSync(join(repoRoot, GLYPH_SOURCE))) return;
   throw new Error(
-    `[kroma-ui] ${GLYPH_SOURCE} not found under ${repoRoot}. The icon subset is keyed on that path; update GLYPH_SOURCE in @kroma/ui/bundler if the module moved.`,
+    `[kroma-ui] ${GLYPH_SOURCE} not found under ${repoRoot}. The icon subset is keyed on that path; update GLYPH_SOURCE in @kromatv/ui/bundler if the module moved.`,
   );
 }
 

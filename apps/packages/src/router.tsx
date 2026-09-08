@@ -1,4 +1,4 @@
-import { setEntryDefaults } from '@kroma/ui/kit';
+import { setEntryDefaults } from '@kromatv/ui/kit';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { routeTree } from '#site/routeTree.gen';
 

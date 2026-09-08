@@ -1,4 +1,4 @@
-import { ItemId, ShowId } from '@kroma/client/media';
+import { ItemId, ShowId } from '@kromatv/client/media';
 import { describe, expect, it, vi } from 'vitest';
 import { c, installHarness, run, show } from './queries.fixture';
 

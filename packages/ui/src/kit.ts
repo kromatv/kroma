@@ -1,7 +1,7 @@
 /// <reference path="lib/types/react-native-tv.d.ts" />
 /// <reference path="lib/types/react-native-web.d.ts" />
-// @kroma/ui/kit: the universal component library. Services and `Player` ship
-// from `@kroma/ui` instead, so the two entry points share no symbols.
+// @kromatv/ui/kit: the universal component library. Services and `Player` ship
+// from `@kromatv/ui` instead, so the two entry points share no symbols.
 export * from './components/atoms';
 export * from './components/common';
 export * from './components/molecules';

@@ -21,4 +21,4 @@ export KROMA_TV_HOST="$HOST_IP"
 # A fresh dev shell's initial server, since the TV cannot use localhost.
 export VITE_KROMA_SERVER="${VITE_KROMA_SERVER:-http://$HOST_IP:4040}"
 
-exec bun run --filter '@kroma/tizen' dev
+exec bun run --filter '@kromatv/tizen' dev

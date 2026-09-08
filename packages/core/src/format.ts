@@ -3,7 +3,7 @@ import {
   artworkWidth,
   type MediaItem,
   type VideoTrack,
-} from '@kroma/client/media';
+} from '@kromatv/client/media';
 import type { Translate } from './i18n';
 import { langKey } from './lang';
 import { match } from './match';

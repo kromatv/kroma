@@ -2,8 +2,8 @@
 // how wide a story is drawn, how far a frame is scaled, and how thick a border
 // has to be asked for to come out one pixel after that. `canvas.tsx` draws it.
 
-import type { IconName } from '@kroma/ui/kit';
-import { CANVAS, type ColorToken } from '@kroma/ui/tokens';
+import type { IconName } from '@kromatv/ui/kit';
+import { CANVAS, type ColorToken } from '@kromatv/ui/tokens';
 import type { StoryWidth } from './story';
 
 interface Viewport {

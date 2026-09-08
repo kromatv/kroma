@@ -1,8 +1,8 @@
-# @kroma/spatial-nav
+# @kromatv/spatial-nav
 
 The focus tree a D-pad walks. A dependency-free engine that owns registration,
 sibling order, directional resolution and single-owner focus, plus the React
-binding `@kroma/ui`'s `<Focusable>`, rails and grid are built on.
+binding `@kromatv/ui`'s `<Focusable>`, rails and grid are built on.
 
 This replaces `react-tv-space-navigation@6.0.0-beta1` and the `@bam.tech/lrud`
 tree underneath it.
@@ -41,8 +41,8 @@ key fix, and the `freeScrollFraction` prop the grid's wheel scrolling needs.
 ## The two entry points
 
 ```ts
-import { SpatialNavigator, Directions } from '@kroma/spatial-nav';        // the engine
-import { NavigatorRoot, NavigatorItem } from '@kroma/spatial-nav/react';  // the binding
+import { SpatialNavigator, Directions } from '@kromatv/spatial-nav';        // the engine
+import { NavigatorRoot, NavigatorItem } from '@kromatv/spatial-nav/react';  // the binding
 ```
 
 The engine imports nothing. It is a plain class over a tree of ids, so the whole
@@ -51,7 +51,7 @@ React and no React Native. `./react` is the only half that renders anything.
 
 ## The API map
 
-| `react-tv-space-navigation` | `@kroma/spatial-nav` |
+| `react-tv-space-navigation` | `@kromatv/spatial-nav` |
 | --- | --- |
 | `SpatialNavigation.configureRemoteControl({ remoteControlSubscriber, remoteControlUnsubscriber })` | `configureRemote({ subscribe })` |
 | `Directions` (a TS enum, used as a type) | `Directions` (a const object) + `type Direction` |
@@ -132,7 +132,7 @@ the focus to the sibling before it, else the one after it, else up the tree.
 
 **Nothing is virtualised here.** `SpatialNavigationVirtualizedGrid` and its list
 were the old package's own windowing, translation and scroll animation, and the
-grid in `@kroma/ui` already wraps them in a clip, a column calculation and a
+grid in `@kromatv/ui` already wraps them in a clip, a column calculation and a
 wheel gesture. That belongs in the kit's `<VirtualGrid>`, against this engine's
 `index`, rather than in the navigator. The `freeScrollFraction` prop the patch
 adds goes with it.

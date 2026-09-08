@@ -1,6 +1,6 @@
-import { formatRuntime, genreLabels, qualityBadge } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Button, FocusRegion, styles, useFocusNav } from '@kroma/ui/kit';
+import { formatRuntime, genreLabels, qualityBadge } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Button, FocusRegion, styles, useFocusNav } from '@kromatv/ui/kit';
 import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav, useParams } from '#tv/app/router';

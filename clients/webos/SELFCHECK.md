@@ -53,7 +53,7 @@ v5.0](https://seller.lgappstv.com/seller/support/RetrieveSelfCheckSample.lge),
 | 29 | MMRC OK key | 📺 | |
 | 30 | MMRC wheel | 📺 | Wheel scrolling of rows exists (`use-wheel-rows.ts`); confirm the Magic Remote wheel drives it. |
 | 31 | Navigation keys | Pass | Arrow keys drive spatial focus; verified in the simulator. Re-confirm on the set. |
-| 32 | Function (colour) keys | Pass | The colour keys are *mapped* in `@kroma/core`'s remote table but bound to no action, so they are inert, which is the required behaviour: the app must not misbehave, not must it use them. |
+| 32 | Function (colour) keys | Pass | The colour keys are *mapped* in `@kromatv/core`'s remote table but bound to no action, so they are inert, which is the required behaviour: the app must not misbehave, not must it use them. |
 | 33 | OK key | Pass | Verified in the simulator. |
 | 34 | MMRC-only: basic keys | **N/A** | Condition is "Magic remote control only". KROMA fully supports the general remote, so the rule does not apply. |
 | 35 | MMRC-only: non-basic keys | **N/A** | Same as TC 34. |
@@ -69,7 +69,7 @@ v5.0](https://seller.lgappstv.com/seller/support/RetrieveSelfCheckSample.lge),
 | 45 | Playback control | 📺 | The app draws its own transport controls. |
 | 46 | Replay after completion | 📺 | |
 | 47 | Real-time streaming | **N/A** | No live or linear streaming. The app plays files served by the viewer's own server. |
-| 48 | Subtitles | Pass | The app parses and renders WebVTT itself (`@kroma/core` + `useSubtitleSelection`) rather than relying on `<track>`. Confirm on the set. |
+| 48 | Subtitles | Pass | The app parses and renders WebVTT itself (`@kromatv/core` + `useSubtitleSelection`) rather than relying on `<track>`. Confirm on the set. |
 | 49 | Resume playback | Pass | Continue-watching resumes at the stored position. Confirm on the set. |
 | 50 | Content resolutions (SD/HD/FHD/UHD) | 📺 | Whatever your demo server carries: cover each tier you declare. |
 | 51 | Content codecs | 📺 | Must match the Player Specification you declare: HEVC/H.265 (incl. 10-bit/HDR) and H.264, direct play. |

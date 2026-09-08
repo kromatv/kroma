@@ -1,7 +1,7 @@
-import type { AdminUser, HistoryLibrary } from '@kroma/client/admin';
-import { resolveImageUrl } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Avatar, Chip, Row, Select } from '@kroma/ui/kit';
+import type { AdminUser, HistoryLibrary } from '@kromatv/client/admin';
+import { resolveImageUrl } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Avatar, Chip, Row, Select } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import {
   EVERY_WINDOW,

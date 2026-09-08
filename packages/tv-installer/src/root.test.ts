@@ -42,7 +42,7 @@ describe('root', () => {
   it('walks past a workspace that is not the checkout itself', async () => {
     const { base, directory } = checkout();
     manifest(base, JSON.stringify({ name: 'kroma' }));
-    manifest(directory, JSON.stringify({ name: '@kroma/tv-installer' }));
+    manifest(directory, JSON.stringify({ name: '@kromatv/tv-installer' }));
 
     expect(await rootStartedIn(directory)).toBe(base);
   });

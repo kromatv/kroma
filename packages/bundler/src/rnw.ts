@@ -1,7 +1,7 @@
 // react-native-web wiring, shared by every browser target (Tizen, webOS,
 // Android TV's WebView shell, the Tauri desktop app and the web client).
 //
-// @kroma/ui and the screens built on it are authored against React Native.
+// @kromatv/ui and the screens built on it are authored against React Native.
 // On the browser targets that module specifier has to land on react-native-web,
 // and `.web.*` files have to win over their native siblings. Those two rules are
 // the ENTIRE web/native split: keeping them in one place is what stops the four
@@ -25,7 +25,7 @@ export const WEB_EXTENSIONS = [
   '.mjs',
 ];
 
-// `@kroma/ui`'s own internal subpath alias, declared in its package.json
+// `@kromatv/ui`'s own internal subpath alias, declared in its package.json
 // `imports` and mirrored here. Every web target gets it for free, because it
 // is the kit's own spelling of its own files - a shell should not have to
 // know that the kit refers to itself as `#ui`. The Metro half lives in
@@ -97,11 +97,11 @@ export const RNW_SSR_NO_EXTERNAL = ['react-native-web', 'inline-style-prefixer',
 // missing from a shell's copy is a dev server quietly serving a stale build
 // of it.
 export const KROMA_SOURCE_PACKAGES = [
-  '@kroma/ui',
-  '@kroma/core',
-  '@kroma/tv',
-  '@kroma/workbench',
-  '@kroma/spatial-nav',
+  '@kromatv/ui',
+  '@kromatv/core',
+  '@kromatv/tv',
+  '@kromatv/workbench',
+  '@kromatv/spatial-nav',
 ];
 
 /** The dev server's dependency pre-bundle, the same for every shell: the

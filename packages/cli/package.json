@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/cli",
+  "name": "@kromatv/cli",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -40,8 +40,8 @@
   },
   "dependencies": {
     "@clack/prompts": "1.7.0",
-    "@kroma/module-sdk": "workspace:*",
-    "@kroma/registry": "workspace:*",
+    "@kromatv/module-sdk": "workspace:*",
+    "@kromatv/registry": "workspace:*",
     "citty": "0.2.2",
     "es-module-lexer": "^2.3.1",
     "hono": "^4.13.2",

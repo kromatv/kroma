@@ -8,13 +8,13 @@
 // The beacon goes up at the server always, and on this television's own link
 // when the shell handed a stack in to publish with (see TvApp's `lan`).
 
-import type { KromaClient } from '@kroma/client';
+import type { KromaClient } from '@kromatv/client';
 import {
   type HandoffBeaconHandle,
   type HandoffBeaconView,
   type LanDiscoveryBridge,
   startHandoff,
-} from '@kroma/core';
+} from '@kromatv/core';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';

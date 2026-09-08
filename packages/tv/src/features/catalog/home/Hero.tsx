@@ -1,5 +1,5 @@
-import type { KromaClient } from '@kroma/client';
-import type { MediaItem, Section, SectionItem, Show } from '@kroma/client/media';
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem, Section, SectionItem, Show } from '@kromatv/client/media';
 import {
   formatRuntime,
   genreLabels,
@@ -7,8 +7,8 @@ import {
   qualityBadge,
   qualityBadgeForVideo,
   type Translate,
-} from '@kroma/core';
-import { useT } from '@kroma/ui';
+} from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -21,7 +21,7 @@ import {
   styles,
   Text,
   tintGradient,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { entryId, entryMetadata } from '#tv/features/catalog/home/sectionEntry';
 
 // Two layers rather than one comma-separated background-image: a multi-value

@@ -1,7 +1,7 @@
 // The style constants every piece of workbench chrome shares.
 
-import { styles } from '@kroma/ui/kit';
-import { radius } from '@kroma/ui/tokens';
+import { styles } from '@kromatv/ui/kit';
+import { radius } from '@kromatv/ui/tokens';
 
 export const { RULE, RULE_TOP } = styles({
   RULE: { borderBottomWidth: 1, borderBottomColor: 'border' },

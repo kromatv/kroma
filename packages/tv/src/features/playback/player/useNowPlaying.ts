@@ -1,5 +1,5 @@
-import type { KromaClient } from '@kroma/client';
-import type { MediaItem } from '@kroma/client/media';
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem } from '@kromatv/client/media';
 import { useCallback, useEffect, useRef } from 'react';
 import { getTauri } from '#tv/features/playback/player/engine';
 

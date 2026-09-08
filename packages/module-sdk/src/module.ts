@@ -1,7 +1,7 @@
-// The frontend module contract: a `@kroma/module-<id>` package exports one
+// The frontend module contract: a `@kromatv/module-<id>` package exports one
 // `KromaModule`, whose `id` must match its backend crate's module id.
 
-import type { RequestId } from '@kroma/client/requests';
+import type { RequestId } from '@kromatv/client/requests';
 import type { ComponentType } from 'react';
 import type { KromaHost } from './host';
 import type { Dependencies } from './types';

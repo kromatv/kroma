@@ -3,14 +3,14 @@
 // recipient, so anything arriving on this socket is ours and needs no filtering;
 // its unread total is authoritative, while the list is only marked stale.
 
-import { KromaEvents } from '@kroma/client/events';
-import type { NotificationsView } from '@kroma/client/notifications';
-import type { QueryClient } from '@kroma/client/query';
+import { KromaEvents } from '@kromatv/client/events';
+import type { NotificationsView } from '@kromatv/client/notifications';
+import type { QueryClient } from '@kromatv/client/query';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useClient, useSession } from '#mobile/lib/session';
 
-export type { Notification } from '@kroma/client/notifications';
+export type { Notification } from '@kromatv/client/notifications';
 export { mobileRoute } from './route';
 
 /** Opens the stream while signed in. Mount once, near the root. */

@@ -5,7 +5,7 @@
 // Routing itself belongs to lib/player-keys; what is pinned here is the
 // vocabulary, the key-up filter and the Menu claim.
 
-import type { RemoteKey } from '@kroma/core';
+import type { RemoteKey } from '@kromatv/core';
 import { act, renderHook } from '@testing-library/react';
 import type { HWEvent } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

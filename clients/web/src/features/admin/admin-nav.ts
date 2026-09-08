@@ -1,6 +1,6 @@
-import type { Permission } from '@kroma/client/accounts';
-import type { MessageKey } from '@kroma/core';
-import type { ModuleNav } from '@kroma/module-sdk';
+import type { Permission } from '@kromatv/client/accounts';
+import type { MessageKey } from '@kromatv/core';
+import type { ModuleNav } from '@kromatv/module-sdk';
 import {
   IconApps,
   IconArchive,

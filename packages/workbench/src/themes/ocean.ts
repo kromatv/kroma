@@ -1,6 +1,6 @@
 // The amber restated as sea blue; everything else stays KROMA.
 
-import { createTheme } from '@kroma/ui/kit';
+import { createTheme } from '@kromatv/ui/kit';
 
 export const ocean = createTheme({
   colors: {

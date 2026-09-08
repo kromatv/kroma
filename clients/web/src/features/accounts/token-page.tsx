@@ -1,4 +1,4 @@
-import { Box, Button, classes, Logo, styles, Text } from '@kroma/ui/kit';
+import { Box, Button, classes, Logo, styles, Text } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Spinner } from '#web/features/accounts/auth-gate';

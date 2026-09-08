@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Box, Button, FocusScope, Icon, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Button, FocusScope, Icon, Text } from '@kromatv/ui/kit';
 
 interface CrashScreenProps {
   /** Clears the boundary and renders the tree again. */

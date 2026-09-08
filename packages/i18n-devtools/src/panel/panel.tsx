@@ -1,5 +1,5 @@
-import type { IconName } from '@kroma/ui/kit';
-import { Divider, Icon, IconButton, Row, SegmentGroup, Surface, Text } from '@kroma/ui/kit';
+import type { IconName } from '@kromatv/ui/kit';
+import { Divider, Icon, IconButton, Row, SegmentGroup, Surface, Text } from '@kromatv/ui/kit';
 import type { Outline } from '../live';
 import { Chord, chordName, HOLD } from './chord';
 import { GRIP_DATA } from './drag';

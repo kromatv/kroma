@@ -1,12 +1,12 @@
 // Static playback capabilities of the two mobile runtimes, and the pure
-// direct-vs-master source decision built on the shared @kroma/core direct-play
+// direct-vs-master source decision built on the shared @kromatv/core direct-play
 // primitives (same model as the TV engines).
 //
 // iOS drives AVPlayer, Android drives ExoPlayer (both via expo-video); a
 // direct attempt the decoder rejects falls back to the HLS master at the same
 // position (see engine.ts).
 
-import type { MediaItem } from '@kroma/client/media';
+import type { MediaItem } from '@kromatv/client/media';
 import {
   audioTracksOf,
   canDecodeAudioCodec,
@@ -14,7 +14,7 @@ import {
   FMP4_COPY_CODECS,
   masterNeedsAac,
   type PlaybackCapabilities,
-} from '@kroma/core';
+} from '@kromatv/core';
 import { Platform } from 'react-native';
 
 // AVPlayer: HEVC/H264 hardware decode, Dolby (AC3/EAC3) native, no VP9/AV1

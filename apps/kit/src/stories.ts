@@ -1,7 +1,7 @@
 // The Metro mirror of `stories.web.ts`. Metro cannot hand a module its own
 // text, so there is no `?raw` half here and a demo renders without its code
 // panel. A `.docs.mdx` is not that case: Metro compiles it to a component
-// through @kroma/bundler's mdx-transformer, so the prose is whole.
+// through @kromatv/bundler's mdx-transformer, so the prose is whole.
 //
 // Nor is there a lazy half. `require.context` puts every matched module in the
 // bundle whatever is done with it, so deferring the CALL buys a phone nothing
@@ -9,7 +9,12 @@
 // download. The registry is compiled here and handed over as an index that is
 // already `ready()`, so the shell reads one shape on both bundlers.
 
-import { discoverMetro, discoverPagesMetro, storyEntries, withPageHistory } from '@kroma/workbench';
+import {
+  discoverMetro,
+  discoverPagesMetro,
+  storyEntries,
+  withPageHistory,
+} from '@kromatv/workbench';
 
 declare const require: {
   context(

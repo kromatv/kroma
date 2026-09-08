@@ -3,11 +3,11 @@ import type { TVars } from './types';
 /**
  * The seam that makes this package typed without a generic at every call site.
  *
- * The `@kroma/i18n/vite` plugin augments it from the catalog folder, with the
+ * The `@kromatv/i18n/vite` plugin augments it from the catalog folder, with the
  * locales it found and every namespace's messages folded into one map:
  *
  * ```ts
- * declare module '@kroma/i18n' {
+ * declare module '@kromatv/i18n' {
  *   interface Register {
  *     locale: 'en' | 'fr';
  *     messages: typeof navMessages & typeof playerMessages;

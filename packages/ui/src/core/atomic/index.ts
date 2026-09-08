@@ -1,4 +1,4 @@
-// @kroma/ui/atomic: what a module the build compiled imports. Nothing a
+// @kromatv/ui/atomic: what a module the build compiled imports. Nothing a
 // component writes by hand.
 export type { RuleEntry } from './inject';
 export { injectRules } from './inject';

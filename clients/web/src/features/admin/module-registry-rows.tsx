@@ -2,8 +2,8 @@
 // operator-added registry, and the add flow with its verify-before-save step.
 // The drawer container and its draft state live in module-registries.tsx.
 
-import type { StoreRegistry, StoreRegistryPreview } from '@kroma/client/modules';
-import { useT } from '@kroma/ui';
+import type { StoreRegistry, StoreRegistryPreview } from '@kromatv/client/modules';
+import { useT } from '@kromatv/ui';
 import {
   Button,
   Callout,
@@ -14,7 +14,7 @@ import {
   Surface,
   Switch,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAsyncAction } from '#web/features/admin/hooks';
 import { adminApi, message, previewRegistry } from '#web/features/admin/module-api';

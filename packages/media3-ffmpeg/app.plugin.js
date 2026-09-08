@@ -31,7 +31,7 @@ const withDependency = (config) =>
     if (contents.includes(AAR)) return cfg;
     if (!contents.includes(ANCHOR)) {
       throw new Error(
-        `@kroma/media3-ffmpeg: no "${ANCHOR}" block in app/build.gradle. The Expo ` +
+        `@kromatv/media3-ffmpeg: no "${ANCHOR}" block in app/build.gradle. The Expo ` +
           'template changed - re-point this plugin, or every DTS and TrueHD track ' +
           'goes back to being transcoded by the server.',
       );
@@ -42,4 +42,4 @@ const withDependency = (config) =>
 
 const withMedia3Ffmpeg = (config) => withDependency(withAar(config));
 
-module.exports = createRunOncePlugin(withMedia3Ffmpeg, '@kroma/media3-ffmpeg', '0.0.0');
+module.exports = createRunOncePlugin(withMedia3Ffmpeg, '@kromatv/media3-ffmpeg', '0.0.0');

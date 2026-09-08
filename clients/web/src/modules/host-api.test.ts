@@ -18,10 +18,10 @@ import {
   t,
 } from '#web/modules/host.fixture';
 
-vi.mock('@kroma/client/accounts', () => ({ hasPermission }));
-vi.mock('@kroma/client', () => ({ sessionToken }));
-vi.mock('@kroma/module-sdk', () => ({ createEventBus }));
-vi.mock('@kroma/ui', () => ({
+vi.mock('@kromatv/client/accounts', () => ({ hasPermission }));
+vi.mock('@kromatv/client', () => ({ sessionToken }));
+vi.mock('@kromatv/module-sdk', () => ({ createEventBus }));
+vi.mock('@kromatv/ui', () => ({
   useT: () => t,
   useLocale: () => locale.value,
 }));

@@ -7,7 +7,7 @@
 // whatever the user dragged it to, and a fixed column count on the second one
 // runs the last tiles off the right edge.
 
-import { NavigatorNode, NavigatorView, type NodeHandle } from '@kroma/spatial-nav/react';
+import { NavigatorNode, NavigatorView, type NodeHandle } from '@kromatv/spatial-nav/react';
 import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, type LayoutChangeEvent, View, type ViewStyle } from 'react-native';
 import { cellWidth, columnsFor } from '#ui/components/atoms/grid';

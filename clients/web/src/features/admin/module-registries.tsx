@@ -6,8 +6,8 @@
 // Resolves `true` when anything was saved, so the caller knows whether to
 // refresh.
 
-import { useT } from '@kroma/ui';
-import { Box, Button, Drawer, Row, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Button, Drawer, Row, Text } from '@kromatv/ui/kit';
 import { useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction, usePoll } from '#web/features/admin/hooks';

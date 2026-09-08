@@ -15,8 +15,8 @@ import {
   styles,
   Table,
   type TextProps,
-} from '@kroma/ui/kit';
-import { space } from '@kroma/ui/tokens';
+} from '@kromatv/ui/kit';
+import { space } from '@kromatv/ui/tokens';
 import { Children, createContext, isValidElement, type ReactNode, useContext } from 'react';
 import { BODY, Prose, runs, TaskBox } from './mdx-marks';
 import { useSection } from './outline';

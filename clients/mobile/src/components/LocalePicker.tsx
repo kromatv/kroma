@@ -4,8 +4,8 @@
 // account. They differ in what a pick DOES, which is the prop, and in nothing
 // else.
 
-import { LOCALES, type Locale } from '@kroma/core';
-import { Box, Icon, styles, Text } from '@kroma/ui/kit';
+import { LOCALES, type Locale } from '@kromatv/core';
+import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { radius, spacing, type } from '#mobile/lib/theme';

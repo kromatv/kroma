@@ -4,9 +4,9 @@
 // live on the push notification itself (see lib/notifications/push); this
 // list stays a record rather than a console.
 
-import type { Notification, NotificationEvent } from '@kroma/client/notifications';
-import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kroma/core';
-import { Box, color, Icon, IconButton, type IconName, styles, Text } from '@kroma/ui/kit';
+import type { Notification, NotificationEvent } from '@kromatv/client/notifications';
+import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kromatv/core';
+import { Box, color, Icon, IconButton, type IconName, styles, Text } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, SectionList } from 'react-native';

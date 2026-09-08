@@ -1,7 +1,7 @@
 // The platform-free half of `usePlayerKeys`: given a resolved RemoteKey, decide
 // who gets it. Both platform hooks differ only in where the key comes from.
 
-import type { RemoteKey } from '@kroma/core';
+import type { RemoteKey } from '@kromatv/core';
 import type { RefObject } from 'react';
 import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav';
 import type { PlayerController, PlayerFlags } from '#ui/components/organisms/player/types';

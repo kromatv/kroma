@@ -7,7 +7,7 @@
 // Unlike the expo-video engine, the player here IS the view: libVLC binds to a
 // surface, so <PlayerSurface> renders the plane and drives it with props.
 
-import type { AudioFilterMode } from '@kroma/ui';
+import type { AudioFilterMode } from '@kromatv/ui';
 import { BaseTvEngine, type EngineOptions } from '#tv/features/playback/player/baseEngine';
 import type { TvEngine } from '#tv/features/playback/player/engine';
 import { releaseVlcPlanes, type VlcPlaneStats } from '#tv/features/playback/player/vlcPlane';

@@ -1,5 +1,5 @@
-import type { ContinueItem, MediaItem } from '@kroma/client/media';
-import { fakeClient } from '@kroma/client/test';
+import type { ContinueItem, MediaItem } from '@kromatv/client/media';
+import { fakeClient } from '@kromatv/client/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const buildPreviewData = vi.hoisted(() => vi.fn(() => '{"sections":[]}' as string | null));

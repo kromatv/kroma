@@ -10,7 +10,7 @@ import {
   publishesSchema,
   SCHEMA_NAMES,
   type SchemaName,
-} from '@kroma/registry';
+} from '@kromatv/registry';
 import type { ModuleEntry } from '#site/catalog';
 import { releaseHistory } from '#site/lib/releases';
 import { type Env, jsonResponse, loadCatalog } from '#site/lib/source';

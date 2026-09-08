@@ -1,6 +1,6 @@
-import { TABULAR } from '@kroma/module-sdk';
-import { useT } from '@kroma/ui';
-import { Button, Divider, Legend, Row, Text } from '@kroma/ui/kit';
+import { TABULAR } from '@kromatv/module-sdk';
+import { useT } from '@kromatv/ui';
+import { Button, Divider, Legend, Row, Text } from '@kromatv/ui/kit';
 
 export function PipelineFooter({
   start,

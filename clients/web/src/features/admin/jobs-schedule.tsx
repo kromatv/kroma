@@ -1,10 +1,10 @@
 // The "edit schedule" modal for a background job: cron input with presets, a
 // "manual only" option, and reset-to-default. The server validates the cron.
 
-import { KromaApiError } from '@kroma/client';
-import type { JobInfo } from '@kroma/client/jobs';
-import { useT } from '@kroma/ui';
-import { Badge, Box, Button, Chip, Dialog, Field, Row, styles, Text } from '@kroma/ui/kit';
+import { KromaApiError } from '@kromatv/client';
+import type { JobInfo } from '@kromatv/client/jobs';
+import { useT } from '@kromatv/ui';
+import { Badge, Box, Button, Chip, Dialog, Field, Row, styles, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';

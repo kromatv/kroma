@@ -1,5 +1,5 @@
-import { CastProvider } from '@kroma/ui';
-import { Box, styles, useBreakpoint } from '@kroma/ui/kit';
+import { CastProvider } from '@kromatv/ui';
+import { Box, styles, useBreakpoint } from '@kromatv/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { GateLoading } from '#web/features/accounts/auth-gate';
 import { CatalogModalHosts } from '#web/features/catalog/modal-hosts';

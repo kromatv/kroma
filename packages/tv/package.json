@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/tv",
+  "name": "@kromatv/tv",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -21,13 +21,13 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/core": "workspace:*",
-    "@kroma/ui": "workspace:*",
+    "@kromatv/core": "workspace:*",
+    "@kromatv/ui": "workspace:*",
     "@tabler/icons-react": "^3.46.0",
     "hls.js": "^1.7.0",
     "shaka-player": "^5.2.5",
     "qrcode-generator": "^2.0.4",
-    "@kroma/workbench": "workspace:*"
+    "@kromatv/workbench": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.2.8",
@@ -36,7 +36,7 @@
     "expo-video": "*"
   },
   "devDependencies": {
-    "@kroma/client": "workspace:*",
+    "@kromatv/client": "workspace:*",
     "@types/qrcode-generator": "^1.0.6",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",

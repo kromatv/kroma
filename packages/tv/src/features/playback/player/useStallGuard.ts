@@ -1,4 +1,4 @@
-import { driveStallRecovery } from '@kroma/core';
+import { driveStallRecovery } from '@kromatv/core';
 import { useEffect, useState } from 'react';
 import type { TvEngine } from '#tv/features/playback/player/engine';
 

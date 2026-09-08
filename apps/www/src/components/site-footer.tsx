@@ -1,4 +1,4 @@
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import { IconBrandGithub } from '@tabler/icons-react';
 import { L } from '#site/components/localized-link';
 import { WheelMark } from '#site/components/wheel-mark';

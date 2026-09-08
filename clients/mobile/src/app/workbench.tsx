@@ -3,8 +3,8 @@
 // `memoryRouter` is explicit: Expo Router already owns navigation history, and
 // two routers writing one history send Back somewhere neither of them meant.
 
-import { KROMA_WORKBENCH } from '@kroma/ui/workbench-config';
-import { type Context, defineWorkbench, discoverMetro, memoryRouter } from '@kroma/workbench';
+import { KROMA_WORKBENCH } from '@kromatv/ui/workbench-config';
+import { type Context, defineWorkbench, discoverMetro, memoryRouter } from '@kromatv/workbench';
 
 // Metro's build-time directory require, declared locally: it exists in the
 // bundler, not in the runtime.

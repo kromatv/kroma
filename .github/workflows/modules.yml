@@ -218,7 +218,7 @@ jobs:
           bun-version-file: .bun-version
           no-cache: true
 
-      # `kroma release` reads the registry contract (`@kroma/registry`) to
+      # `kroma release` reads the registry contract (`@kromatv/registry`) to
       # order versions, so this job needs the workspace links like any other.
       - name: Install dependencies
         run: bun install --frozen-lockfile

@@ -1,9 +1,9 @@
-import { Avatar, classes, sharedStyle, styles } from '@kroma/ui/kit';
+import { Avatar, classes, sharedStyle, styles } from '@kromatv/ui/kit';
 import { imageUrl } from '#web/shared/lib/api';
 
 // The deterministic gradient + initials are the design system's own, so an
 // account keeps the same colour on the TV, the phone and here.
-export { gradientFor as avatarGradient, initialsOf as initials } from '@kroma/ui/kit';
+export { gradientFor as avatarGradient, initialsOf as initials } from '@kromatv/ui/kit';
 
 /**
  * Account avatar in the KROMA shape: a rounded-square gradient with Bricolage

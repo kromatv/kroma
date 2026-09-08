@@ -1,4 +1,4 @@
-import type { Notification } from '@kroma/client/notifications';
+import type { Notification } from '@kromatv/client/notifications';
 import { describe, expect, it } from 'vitest';
 import { notificationLink } from '#web/features/notifications/notification-link';
 

@@ -1,4 +1,4 @@
-import type { Marker } from '@kroma/client/media';
+import type { Marker } from '@kromatv/client/media';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const CREDITS_TAIL = 30;

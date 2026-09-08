@@ -22,7 +22,7 @@ modules/<id>/
   server/          the Rust backend: a [[bin]] makes it a spawned sidecar
   ui/src/module.ts optional React frontend (a KromaModule: pages, nav, slots)
   locales/         optional en.json, fr.json, this module's own catalog
-  package.json     with a frontend: its dependencies (@kroma/module-sdk, @kroma/ui)
+  package.json     with a frontend: its dependencies (@kromatv/module-sdk, @kromatv/ui)
   icon.svg
   README.md
 ```
@@ -256,14 +256,14 @@ main sidebar. `icon` is a name from `clients/web/src/modules/module-icons.ts`;
 `kroma build` bundles the frontend into `fe/` and `module.json` declares it with
 `"feRemote": { "module": "./remoteEntry.js" }`. The web client fetches
 `/modules/<id>/remoteEntry.js` for every enabled module at boot. The bundle
-carries none of `react`, `@kroma/ui`, `@kroma/module-sdk`, `@kroma/core`,
-`@kroma/client`, `@tanstack/react-query` or `react-call`: it reads them from
-the host at load time (`SHARED_MODULES` in `@kroma/module-sdk`), so one React,
+carries none of `react`, `@kromatv/ui`, `@kromatv/module-sdk`, `@kromatv/core`,
+`@kromatv/client`, `@tanstack/react-query` or `react-call`: it reads them from
+the host at load time (`SHARED_MODULES` in `@kromatv/module-sdk`), so one React,
 one design system and one query cache live on the page and a module's `<Text>`
 renders inside the host's theme. Outside this repository those packages are
-declarations only, and a `@kroma/*` import the host does not provide fails the
+declarations only, and a `@kromatv/*` import the host does not provide fails the
 build. Anything else a page imports (`zod`, an icon set) is bundled. Import
-components from `@kroma/ui/kit`; a deeper kit path is folded onto it.
+components from `@kromatv/ui/kit`; a deeper kit path is folded onto it.
 
 Every user-visible string is a key. Ship `locales/{en,fr}.json`; they resolve
 against the module's own catalog first, then the core ones.

@@ -2,7 +2,7 @@
 // (continuous LAN sweep); this screen is only the manual path: one field,
 // one button. A bare host tries https then http (session.connect).
 
-import { Button, Field } from '@kroma/ui/kit';
+import { Button, Field } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {

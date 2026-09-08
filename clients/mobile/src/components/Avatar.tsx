@@ -2,8 +2,8 @@
 // `posterColors(name)`, the per-title palette used for artwork placeholders,
 // not the five-way profile palette the TV pickers use.
 
-import { posterColors } from '@kroma/core';
-import { Avatar as KitAvatar, tintGradient } from '@kroma/ui/kit';
+import { posterColors } from '@kromatv/core';
+import { Avatar as KitAvatar, tintGradient } from '@kromatv/ui/kit';
 
 export function Avatar({
   uri,

@@ -13,7 +13,12 @@
 // out as full-stage containers, and shaping around those would hide the picture
 // behind transparent air.
 
-import { PLAYER_PICTURE_ID, PLAYER_ROOT_ID, PLAYER_STAGE_ID, PLAYER_SUBTITLE_ID } from '@kroma/ui';
+import {
+  PLAYER_PICTURE_ID,
+  PLAYER_ROOT_ID,
+  PLAYER_STAGE_ID,
+  PLAYER_SUBTITLE_ID,
+} from '@kromatv/ui';
 
 /** A box in window pixels, the shape `getBoundingClientRect` returns. */
 export interface Box {

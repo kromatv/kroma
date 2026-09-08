@@ -1,4 +1,4 @@
-# @kroma/synology-repo
+# @kromatv/synology-repo
 
 Everything that makes KROMA installable from Synology's Package Center:
 
@@ -9,7 +9,7 @@ Everything that makes KROMA installable from Synology's Package Center:
   channels, arch/DSM filtered, edge-cached 5 min). Publishing a release is the
   whole deploy; nothing is rebuilt. Browsers hitting the same URL get a landing
   page listing EVERY version. Deploy:
-  `bun run --filter '@kroma/package-source' deploy`
+  `bun run --filter '@kromatv/package-source' deploy`
   (CI: `.github/workflows/repo-worker.yml`, on app changes only).
 - **`src/gen-catalog.ts`** is the STATIC catalog generator (`catalog.json` +
   landing page + icon) for GitHub Pages, kept as a zero-infra fallback.
@@ -29,15 +29,15 @@ and env-driven. Node built-ins only; run with `bun` (or Node).
 CATALOG_DOWNLOAD_URL="https://github.com/<you>/<repo>/releases/download/v1.2.3/pkg.spk" \
 CATALOG_PAGES_URL="https://<you>.github.io/<repo>" \
 CATALOG_OUT_DIR=_site \
-bun run --filter @kroma/synology-repo gen
+bun run --filter @kromatv/synology-repo gen
 ```
 
-Or copy `.env.example` to `.env` and just run `bun run --filter @kroma/synology-repo gen`.
+Or copy `.env.example` to `.env` and just run `bun run --filter @kromatv/synology-repo gen`.
 
 ## Preview the landing page (live reload)
 
 ```bash
-bun run --filter @kroma/synology-repo preview   # http://localhost:4321
+bun run --filter @kromatv/synology-repo preview   # http://localhost:4321
 ```
 
 Serves the landing page rendered from `src/landing.template.html` with sample

@@ -1,4 +1,4 @@
-import { PortalHost } from '@kroma/ui/kit';
+import { PortalHost } from '@kromatv/ui/kit';
 import { createRoot, type Root } from 'react-dom/client';
 import { bindEngine } from './engine/bind';
 import { type Engine, setEngine } from './engine/engine';

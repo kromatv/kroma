@@ -2,7 +2,7 @@
 // derives from its id; `moduleApiHook` binds it, so the id is never repeated
 // here.
 
-import { moduleApiHook } from '@kroma/module-sdk';
+import { moduleApiHook } from '@kromatv/module-sdk';
 import { RemoteAccessView } from './schemas';
 
 /** A blank/omitted `token` keeps the stored one; an empty field never wipes it. */

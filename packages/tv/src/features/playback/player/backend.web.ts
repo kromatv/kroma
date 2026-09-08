@@ -3,8 +3,8 @@
 // plane, or mpv on the desktop shell. The hook that drives playback never
 // learns which one it got.
 
-import type { KromaClient } from '@kroma/client';
-import type { MediaItem } from '@kroma/client/media';
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem } from '@kromatv/client/media';
 import {
   audioTracksOf,
   avplayDirectPlayable,
@@ -12,8 +12,8 @@ import {
   NATIVE_TV_CAPS,
   type PlayEnv,
   selectEngine,
-} from '@kroma/core';
-import type { AudioFilterMode } from '@kroma/ui';
+} from '@kromatv/core';
+import type { AudioFilterMode } from '@kromatv/ui';
 import { availableEngines, type EnginePref } from '#tv/app/enginePref';
 import { AvplayEngine } from '#tv/features/playback/player/avplayEngine';
 import {

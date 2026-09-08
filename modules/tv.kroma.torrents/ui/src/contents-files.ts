@@ -1,4 +1,4 @@
-import type { TorrentFileView } from '@kroma/module-acquisition/schemas';
+import type { TorrentFileView } from '@kromatv/module-acquisition/schemas';
 
 /** Selectable rows. Omit the whole thing for a read-only view. */
 export interface ContentsSelection {

@@ -7,9 +7,9 @@ import {
   isSortMode,
   type Sortable,
   type SortMode,
-} from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, EmptyState, genreIcon, PageHeader } from '@kroma/ui/kit';
+} from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Box, EmptyState, genreIcon, PageHeader } from '@kromatv/ui/kit';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';

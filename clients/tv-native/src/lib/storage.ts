@@ -1,5 +1,5 @@
 // Device persistence for the native TV client: React Native has no
-// `localStorage`, so this supplies the store @kroma/client's session store
+// `localStorage`, so this supplies the store @kromatv/client's session store
 // asks for.
 //
 // Backed by ONE JSON file, mirrored in memory: `loadSession()` is synchronous
@@ -11,7 +11,7 @@
 // store probes by writing and checking the bytes landed, falling back to the
 // purgeable caches directory if they did not.
 
-import { type SessionStorage, setSessionStorage } from '@kroma/client';
+import { type SessionStorage, setSessionStorage } from '@kromatv/client';
 import { Directory, File, Paths } from 'expo-file-system';
 
 const FILE_NAME = 'kroma-session.json';

@@ -2,10 +2,10 @@
 // show / episode (wrong metadata, audio, video, subtitles, other) with an
 // optional note. Posts to /api/reports; the server resolves the title itself.
 
-import { apiErrorText } from '@kroma/client';
-import type { ReportCategory, ReportSubjectKind } from '@kroma/client/reports';
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { apiErrorText } from '@kromatv/client';
+import type { ReportCategory, ReportSubjectKind } from '@kromatv/client/reports';
+import type { MessageKey } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Callout,
@@ -17,7 +17,7 @@ import {
   Row,
   sv,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import {
   IconCheck,
   IconDotsCircleHorizontal,

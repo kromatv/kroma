@@ -1,4 +1,4 @@
-import { styles, Text } from '@kroma/ui/kit';
+import { styles, Text } from '@kromatv/ui/kit';
 import { type } from '#mobile/lib/theme';
 
 export type Note = { text: string; ok: boolean } | null;

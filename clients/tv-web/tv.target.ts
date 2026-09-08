@@ -1,4 +1,4 @@
-import type { TvTarget } from '@kroma/bundler/shell';
+import type { TvTarget } from '@kromatv/bundler/shell';
 
 // The 10-foot experience served from an origin instead of packaged into a
 // .wgt/.ipk. No legacy tier: a browser that can be pointed at this URL is past

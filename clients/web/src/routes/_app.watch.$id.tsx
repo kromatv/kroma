@@ -1,5 +1,5 @@
-import { ItemId } from '@kroma/client/media';
-import { Box, styles } from '@kroma/ui/kit';
+import { ItemId } from '@kromatv/client/media';
+import { Box, styles } from '@kromatv/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { Player } from '#web/features/playback/player';

@@ -2,7 +2,7 @@
 // change; `background` shows instantly as the fallback so the surface is never
 // blank.
 
-import { safeImageUrl } from '@kroma/core';
+import { safeImageUrl } from '@kromatv/core';
 import { type ReactNode, useLayoutEffect, useState } from 'react';
 import {
   Animated,

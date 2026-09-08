@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { Focusable } from '@kroma/ui/kit';
-import { onScreen, wearsRing } from '@kroma/ui/testing';
+import { Focusable } from '@kromatv/ui/kit';
+import { onScreen, wearsRing } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { type TvNav, TvNavProvider, useNav } from '#tv/app/router';
@@ -14,7 +14,7 @@ vi.mock('#tv/app/providers/connection', () => ({
 // Late-mounting in its own right, and not what this file is about.
 vi.mock('#tv/features/cast/CastRemotes', () => ({ CastRemotes: () => null }));
 
-const { configureRemote } = await import('@kroma/ui/kit');
+const { configureRemote } = await import('@kromatv/ui/kit');
 const { TvTopNav } = await import('#tv/features/catalog/home/TopNav');
 
 beforeAll(() => configureRemote());

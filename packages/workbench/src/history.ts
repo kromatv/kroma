@@ -1,6 +1,6 @@
 // What git says about a component or an article, as the workbench reads it.
 //
-// There is no git here: this is the data `@kroma/bundler`'s `gitHistory` plugin
+// There is no git here: this is the data `@kromatv/bundler`'s `gitHistory` plugin
 // extracted at build time, plus the rules for turning it into something a reader
 // can act on. Empty on Metro, which has no build-time reader - the same shape as
 // the prop docs.

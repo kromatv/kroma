@@ -1,16 +1,16 @@
 // Adapts the web app's providers (auth, i18n, router, session) into the neutral
 // KromaHost the module SDK defines, then resolves + starts the registry.
 
-import { sessionToken } from '@kroma/client';
-import { hasPermission } from '@kroma/client/accounts';
-import type { MessageKey, TVars } from '@kroma/core';
+import { sessionToken } from '@kromatv/client';
+import { hasPermission } from '@kromatv/client/accounts';
+import type { MessageKey, TVars } from '@kromatv/core';
 import {
   createEventBus,
   type HostBase,
   type KromaHost,
   type ModuleManifest,
-} from '@kroma/module-sdk';
-import { useLocale, useT } from '@kroma/ui';
+} from '@kromatv/module-sdk';
+import { useLocale, useT } from '@kromatv/ui';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { moduleRegistry } from '#web/modules/registry';

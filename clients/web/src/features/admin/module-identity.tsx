@@ -1,7 +1,7 @@
-import type { StoreModule } from '@kroma/client/modules';
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Row, Surface, Text } from '@kroma/ui/kit';
+import type { StoreModule } from '@kromatv/client/modules';
+import type { MessageKey } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Row, Surface, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import type { AdminModule } from '#web/features/admin/module-api';
 import { HeaderIcon } from '#web/features/admin/module-detail-sections';

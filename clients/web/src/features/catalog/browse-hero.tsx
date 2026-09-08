@@ -6,7 +6,7 @@ import {
   styles,
   Text,
   useBreakpoint,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { useCrossfade } from '#web/shared/lib/use-crossfade';
 import { Image } from '#web/shared/ui';

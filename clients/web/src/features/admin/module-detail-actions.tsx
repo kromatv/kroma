@@ -3,9 +3,9 @@
 // uninstall, including the informed-force ask when other modules still depend
 // on it.
 
-import type { StoreModule } from '@kroma/client/modules';
-import { useT } from '@kroma/ui';
-import { Box, Button, Dialog, Row, Switch, Text } from '@kroma/ui/kit';
+import type { StoreModule } from '@kromatv/client/modules';
+import { useT } from '@kromatv/ui';
+import { Box, Button, Dialog, Row, Switch, Text } from '@kromatv/ui/kit';
 import type { AdminModule } from '#web/features/admin/module-api';
 import type { ModuleToggle } from '#web/features/admin/module-data';
 

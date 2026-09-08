@@ -9,7 +9,7 @@
 // is not spelt here at all: `lib/splash-motion` answers both with one API, and
 // its web half compiles the drift to @keyframes so the compositor owns it.
 
-import { safeImageUrl } from '@kroma/core';
+import { safeImageUrl } from '@kromatv/core';
 import { useEffect, useState } from 'react';
 import {
   Animated,

@@ -1,4 +1,4 @@
-import { formatTimecode } from '@kroma/core';
+import { formatTimecode } from '@kromatv/core';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';

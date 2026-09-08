@@ -1,6 +1,6 @@
 // How fast the engine may go and how much of it may run at once.
 
-import { useAsyncAction, useT } from '@kroma/module-sdk';
+import { useAsyncAction, useT } from '@kromatv/module-sdk';
 import {
   Box,
   Button,
@@ -11,7 +11,7 @@ import {
   Row,
   Spinner,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useTorrentsApi } from './api';

@@ -1,4 +1,4 @@
-// The kit's binding of @kroma/i18n's React layer to KROMA's own instance. The
+// The kit's binding of @kromatv/i18n's React layer to KROMA's own instance. The
 // provider is controlled: the app owns the resolved `locale`, and useSetLocale()
 // bubbles a change request back through `onLocaleChange`.
 //
@@ -6,11 +6,11 @@
 // ambient instance by design; they are what lets a kit component translate its
 // own chrome without making the provider a mount requirement.
 
-import { DEFAULT_LOCALE, i18n, type Locale, type Translate } from '@kroma/core';
-import { I18nContext, I18nProvider as Provider } from '@kroma/i18n/react';
+import { DEFAULT_LOCALE, i18n, type Locale, type Translate } from '@kromatv/core';
+import { I18nContext, I18nProvider as Provider } from '@kromatv/i18n/react';
 import { type ReactNode, useContext } from 'react';
 
-export { useI18n, useLocale, useScopedT, useSetLocale, useT } from '@kroma/i18n/react';
+export { useI18n, useLocale, useScopedT, useSetLocale, useT } from '@kromatv/i18n/react';
 
 export interface I18nProviderProps {
   locale: Locale;

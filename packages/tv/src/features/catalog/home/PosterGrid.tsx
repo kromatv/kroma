@@ -1,4 +1,4 @@
-import { PosterCard, VirtualGrid } from '@kroma/ui/kit';
+import { PosterCard, VirtualGrid } from '@kromatv/ui/kit';
 import { memo } from 'react';
 import { SCREEN_PAD, STAGE_W } from '#tv/shared/stage';
 

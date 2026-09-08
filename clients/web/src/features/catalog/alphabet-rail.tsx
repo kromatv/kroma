@@ -1,7 +1,7 @@
-import { TITLE_LETTERS } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import type { LetterRange } from '@kroma/ui/kit';
-import { classes, AlphabetRail as Rail, styles, useBreakpoint } from '@kroma/ui/kit';
+import { TITLE_LETTERS } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import type { LetterRange } from '@kromatv/ui/kit';
+import { classes, AlphabetRail as Rail, styles, useBreakpoint } from '@kromatv/ui/kit';
 
 export type { LetterRange };
 

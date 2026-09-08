@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ManualSearchView } from './schemas';
 import { useFreeSearch } from './use-free-search';
 
-vi.mock('@kroma/module-sdk', () => ({ useT: () => (key: string) => key }));
+vi.mock('@kromatv/module-sdk', () => ({ useT: () => (key: string) => key }));
 
 const EMPTY: ManualSearchView = { releases: [], indexers: [] };
 

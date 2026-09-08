@@ -1,4 +1,4 @@
-// KROMA Kit — the @kroma/ui workbench as a static site on ui.kroma.tv.
+// KROMA Kit — the @kromatv/ui workbench as a static site on ui.kroma.tv.
 //
 // An assets-only Worker (no `main`): Cloudflare serves apps/kit/dist
 // straight from the edge, so there is no script to run and nothing to keep

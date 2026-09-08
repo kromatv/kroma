@@ -1,4 +1,4 @@
-import { Box, Icon, type IconName, styles } from '@kroma/ui/kit';
+import { Box, Icon, type IconName, styles } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { spacing } from '#mobile/lib/theme';

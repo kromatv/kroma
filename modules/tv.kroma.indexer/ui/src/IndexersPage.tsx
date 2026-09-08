@@ -14,7 +14,7 @@ import {
   useEnabledEngines,
   usePoll,
   useT,
-} from '@kroma/module-sdk';
+} from '@kromatv/module-sdk';
 import {
   Badge,
   Box,
@@ -30,7 +30,7 @@ import {
   Switch,
   TableSkeleton,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useIndexerApi } from './api';
 import { BuiltinIndexerModal } from './builtin-indexer-modal';

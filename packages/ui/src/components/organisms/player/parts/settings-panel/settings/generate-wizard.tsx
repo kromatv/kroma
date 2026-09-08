@@ -3,7 +3,7 @@ import {
   GEN_QUALITIES,
   type GenQuality,
   type SubCapabilities,
-} from '@kroma/client/subtitles';
+} from '@kromatv/client/subtitles';
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -42,7 +42,7 @@ interface Field {
 const mod = (n: number, m: number) => ((n % m) + m) % m;
 
 /**
- * The on-device subtitle-generation form (§5), prop-driven so @kroma/ui stays
+ * The on-device subtitle-generation form (§5), prop-driven so @kromatv/ui stays
  * client-agnostic. Mode tabs pick transcribe (Whisper) / translate (LLM); ▲▼ move
  * between cycle fields, ◀▶ change the focused field, OK on the last row emits a
  * {@link SubtitleGenRequest} and closes. Modes are gated by `caps`.

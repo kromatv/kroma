@@ -1,6 +1,6 @@
-import type { CrewMember } from '@kroma/client/media';
-import { personSegment } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import type { CrewMember } from '@kromatv/client/media';
+import { personSegment } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -10,7 +10,7 @@ import {
   IconButton,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { Link } from '@tanstack/react-router';
 import { useFocusRing } from '#web/shared/lib/use-focus-ring';
 

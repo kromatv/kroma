@@ -1,8 +1,8 @@
-import type { KromaClient } from '@kroma/client';
-import type { StoredSession } from '@kroma/client/accounts';
-import type { MediaItem, Show } from '@kroma/client/media';
-import type { ReportSubjectKind } from '@kroma/client/reports';
-import { Box, FocusScope, PageMain, PerfHud } from '@kroma/ui/kit';
+import type { KromaClient } from '@kromatv/client';
+import type { StoredSession } from '@kromatv/client/accounts';
+import type { MediaItem, Show } from '@kromatv/client/media';
+import type { ReportSubjectKind } from '@kromatv/client/reports';
+import { Box, FocusScope, PageMain, PerfHud } from '@kromatv/ui/kit';
 import {
   type ComponentType,
   createContext,

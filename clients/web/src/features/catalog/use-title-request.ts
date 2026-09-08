@@ -1,6 +1,6 @@
-import { apiErrorText } from '@kroma/client';
-import type { EpisodeRef } from '@kroma/client/requests';
-import { useT } from '@kroma/ui';
+import { apiErrorText } from '@kromatv/client';
+import type { EpisodeRef } from '@kromatv/client/requests';
+import { useT } from '@kromatv/ui';
 import { useState } from 'react';
 import { EPISODES_ANCHOR } from '#web/features/catalog/episode-list';
 import { epKey, toEpisodeRefs, toggle } from '#web/features/catalog/episode-selection';

@@ -134,14 +134,14 @@ const ALIASES: readonly (readonly [prefix: string, dir: string])[] = [
   ['#ui/', 'packages/ui/src/'],
   ['#tv/', 'packages/tv/src/'],
   ['#web/', 'clients/web/src/'],
-  ['@kroma/ui/tokens/', 'packages/ui/src/core/tokens/'],
-  ['@kroma/ui/kit/', 'packages/ui/src/components/'],
+  ['@kromatv/ui/tokens/', 'packages/ui/src/core/tokens/'],
+  ['@kromatv/ui/kit/', 'packages/ui/src/components/'],
 ];
 
 const EXACT: Readonly<Record<string, string>> = {
-  '@kroma/ui/tokens': 'packages/ui/src/core/tokens/index.ts',
-  '@kroma/ui/kit': 'packages/ui/src/kit.ts',
-  '@kroma/ui': 'packages/ui/src/index.ts',
+  '@kromatv/ui/tokens': 'packages/ui/src/core/tokens/index.ts',
+  '@kromatv/ui/kit': 'packages/ui/src/kit.ts',
+  '@kromatv/ui': 'packages/ui/src/index.ts',
 };
 
 /** Where an import lands on disk, for the specifiers a workspace file may use

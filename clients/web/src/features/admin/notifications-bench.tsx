@@ -3,9 +3,9 @@
 // preferences, per-recipient rendering, the stored row, the live bell, the push
 // fan-out), so "everyone" reaches every account for real.
 
-import type { Notification } from '@kroma/client/notifications';
-import { type MessageKey, NOTIFICATION_CATEGORY_LABEL } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import type { Notification } from '@kromatv/client/notifications';
+import { type MessageKey, NOTIFICATION_CATEGORY_LABEL } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -18,7 +18,7 @@ import {
   Surface,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAsyncAction } from '#web/features/admin/hooks';
 import { NotificationImageField } from '#web/features/admin/notification-image-field';

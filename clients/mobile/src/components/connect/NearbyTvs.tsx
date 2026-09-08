@@ -23,9 +23,9 @@
 // here, and why" are both the kit's <EmptyState.Root> - and the footer that
 // says the looking goes on belongs under a list, never under one of those.
 
-import { useHandoffPicker, useNearbyTvs } from '@kroma/core/react';
-import { lanBeacon } from '@kroma/lan-beacon';
-import { Box, EmptyState, NearbyTvList, Spinner, styles, Text } from '@kroma/ui/kit';
+import { useHandoffPicker, useNearbyTvs } from '@kromatv/core/react';
+import { lanBeacon } from '@kromatv/lan-beacon';
+import { Box, EmptyState, NearbyTvList, Spinner, styles, Text } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { CheckPrompt } from '#mobile/components/connect/CheckPrompt';

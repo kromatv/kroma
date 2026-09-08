@@ -5,8 +5,8 @@ import {
   installAppLocales,
   installKeyInspector,
   installLocaleOverride,
-} from '@kroma/i18n';
-import { I18nProvider, useI18n, useLocale } from '@kroma/i18n/react';
+} from '@kromatv/i18n';
+import { I18nProvider, useI18n, useLocale } from '@kromatv/i18n/react';
 import { act, render } from '@testing-library/react';
 import { createElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';

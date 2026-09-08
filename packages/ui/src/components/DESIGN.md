@@ -9,7 +9,7 @@ It deliberately does not repeat what other documents own. One link each:
 - The six levels and what earns a place at each: [`README.md`](./README.md).
 - `sv`, `<Box>`, `styles()`, themes, tokens, the 1920x1080 stage:
   [`packages/ui/README.md`](../../README.md).
-- Stories and demos: [`@kroma/workbench`](../../../workbench/README.md).
+- Stories and demos: [`@kromatv/workbench`](../../../workbench/README.md).
 - Comments, naming, file size: [`CODE_STYLE.md`](../../../../CODE_STYLE.md).
 
 The rules below are drawn from Radix, Base UI, Ark UI, shadcn/ui and React Aria,

@@ -7,7 +7,7 @@
 // never unmounting what's already been reached (the navigator can only move to
 // a node that exists).
 
-import { NavigatorNode, NavigatorView } from '@kroma/spatial-nav/react';
+import { NavigatorNode, NavigatorView } from '@kromatv/spatial-nav/react';
 import { Children, type ReactElement, type ReactNode, useMemo } from 'react';
 import { ScrollView, type ViewStyle } from 'react-native';
 import { VirtualRail } from '#ui/components/organisms/virtual';

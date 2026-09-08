@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 
-import { SpatialNavigator } from '@kroma/spatial-nav';
+import { SpatialNavigator } from '@kromatv/spatial-nav';
 import {
   NavigatorItem,
   NavigatorRoot,
   NavigatorView,
   type NodeHandle,
-} from '@kroma/spatial-nav/react';
+} from '@kromatv/spatial-nav/react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';

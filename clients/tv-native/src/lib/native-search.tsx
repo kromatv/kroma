@@ -13,8 +13,8 @@
 // render inside. Typing and dictation are the system's; the posters, their
 // focus and every query that follows are still the shared app's.
 
-import type { SearchShell, SearchShellProps } from '@kroma/tv';
-import { type FocusDirection, postRemoteDirection, usePlatformFocus } from '@kroma/ui/kit';
+import type { SearchShell, SearchShellProps } from '@kromatv/tv';
+import { type FocusDirection, postRemoteDirection, usePlatformFocus } from '@kromatv/ui/kit';
 import { useCallback, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { type NativeSearchFocus, NativeSearchView } from '../../modules/native-search';

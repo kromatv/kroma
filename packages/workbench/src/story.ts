@@ -1,7 +1,7 @@
 // The story format: one plain object per component describing how to render it,
 // what about it is worth changing, and which of its views actually read that.
 
-import type { VariantSource } from '@kroma/ui/kit';
+import type { VariantSource } from '@kromatv/ui/kit';
 import { type ComponentType, createElement, type ReactNode } from 'react';
 import {
   type Args,

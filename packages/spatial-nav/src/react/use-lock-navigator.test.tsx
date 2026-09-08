@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { useLockNavigator } from '@kroma/spatial-nav/react';
+import { useLockNavigator } from '@kromatv/spatial-nav/react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { Text } from 'react-native';
 import { afterEach, expect, it } from 'vitest';

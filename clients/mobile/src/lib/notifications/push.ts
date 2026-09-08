@@ -3,8 +3,8 @@
 // an Expo push token) and is traded at push.kroma.tv for a grant before it's
 // ever registered with the server.
 
-import type { PushBlocker, PushCapability, SubscribeBody } from '@kroma/client/notifications';
-import { createTranslator, DEFAULT_LOCALE, type MessageKey, type Translate } from '@kroma/core';
+import type { PushBlocker, PushCapability, SubscribeBody } from '@kromatv/client/notifications';
+import { createTranslator, DEFAULT_LOCALE, type MessageKey, type Translate } from '@kromatv/core';
 import * as Device from 'expo-device';
 // Type-only: erased at build time, so it never pulls the native module in.
 import type * as ExpoNotifications from 'expo-notifications';

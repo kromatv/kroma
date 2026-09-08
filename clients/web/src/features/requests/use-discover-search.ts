@@ -2,9 +2,9 @@
 // on requests.create). Backed by TanStack Query (dedup + cache); latest-wins is
 // handled by the query key changing per (query, type).
 
-import { hasPermission } from '@kroma/client/accounts';
-import type { DiscoverEntry, DiscoverType } from '@kroma/client/discovery';
-import type { SearchHit } from '@kroma/client/media';
+import { hasPermission } from '@kromatv/client/accounts';
+import type { DiscoverEntry, DiscoverType } from '@kromatv/client/discovery';
+import type { SearchHit } from '@kromatv/client/media';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { kromaClient } from '#web/shared/lib/api';

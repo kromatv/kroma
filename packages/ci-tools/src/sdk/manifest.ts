@@ -8,13 +8,13 @@ export const SDK = '@kromatv/sdk';
  *  land under `types/<dir>/`, and its own name resolves there through the
  *  tsconfig preset. Nothing in this list is published on its own. */
 export const BUILT_IN = [
-  ['registry', '@kroma/registry'],
-  ['i18n', '@kroma/i18n'],
-  ['spatial-nav', '@kroma/spatial-nav'],
-  ['client', '@kroma/client'],
-  ['core', '@kroma/core'],
-  ['ui', '@kroma/ui'],
-  ['module-sdk', '@kroma/module-sdk'],
+  ['registry', '@kromatv/registry'],
+  ['i18n', '@kromatv/i18n'],
+  ['spatial-nav', '@kromatv/spatial-nav'],
+  ['client', '@kromatv/client'],
+  ['core', '@kromatv/core'],
+  ['ui', '@kromatv/ui'],
+  ['module-sdk', '@kromatv/module-sdk'],
 ] as const;
 
 const Deps = z.record(z.string(), z.string());
@@ -44,7 +44,7 @@ export function declarationOf(dir: string, target: string): string | null {
   return m ? `./types/${dir}/${m[1]}.d.ts` : null;
 }
 
-/** The `paths` a module's tsconfig needs so every `@kroma/*` specifier the kit
+/** The `paths` a module's tsconfig needs so every `@kromatv/*` specifier the kit
  *  and the SDK use resolves to a declaration inside this one package, and
  *  `react-native` to the declarations shipped beside them. Built from each
  *  package's own `exports`, so a subpath cannot drift. */

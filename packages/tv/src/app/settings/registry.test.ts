@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { LANG_NO_PREF, LANG_OFF, LOCALES, type Locale, type Translate } from '@kroma/core';
-import { I18nProvider } from '@kroma/ui';
+import { LANG_NO_PREF, LANG_OFF, LOCALES, type Locale, type Translate } from '@kromatv/core';
+import { I18nProvider } from '@kromatv/ui';
 import { act, renderHook } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

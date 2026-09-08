@@ -1,6 +1,6 @@
-import { InviteToken } from '@kroma/client/accounts';
-import { useT } from '@kroma/ui';
-import { Box, Button, classes, Logo, styles, Text } from '@kroma/ui/kit';
+import { InviteToken } from '@kromatv/client/accounts';
+import { useT } from '@kromatv/ui';
+import { Box, Button, classes, Logo, styles, Text } from '@kromatv/ui/kit';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';

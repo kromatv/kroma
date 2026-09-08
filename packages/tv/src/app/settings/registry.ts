@@ -11,8 +11,8 @@ import {
   langOptions,
   type MessageKey,
   type Translate,
-} from '@kroma/core';
-import { useLocale, useSetLocale } from '@kroma/ui';
+} from '@kromatv/core';
+import { useLocale, useSetLocale } from '@kromatv/ui';
 import { useEffect, useState } from 'react';
 import { canQuitApp, quitApp } from '#tv/app/appQuit';
 import { crashReportingPrefStore } from '#tv/app/crashReportingPref';

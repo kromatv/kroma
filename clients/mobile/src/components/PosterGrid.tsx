@@ -6,7 +6,7 @@
 // reports which rows are on screen without a cell ever having been measured.
 // The cells recycle (FlashList), so a library of thousands costs a screenful.
 
-import { Box, styles } from '@kroma/ui/kit';
+import { Box, styles } from '@kromatv/ui/kit';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import {
   type ReactElement,

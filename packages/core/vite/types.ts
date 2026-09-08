@@ -1,4 +1,4 @@
-import { writeCatalogTypes } from '@kroma/i18n/vite';
+import { writeCatalogTypes } from '@kromatv/i18n/vite';
 import { DEFAULT_LOCALE_CODE } from '../src/locales/default-locale.ts';
 import { CORE_LOCALES } from './index.ts';
 

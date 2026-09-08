@@ -6,7 +6,7 @@
 // Device-local, like the engine override in features/playback/engine-pref: it is
 // a property of the machine, not of the account, so it is not sent anywhere.
 
-import { setFrostEnabled } from '@kroma/ui/kit';
+import { setFrostEnabled } from '@kromatv/ui/kit';
 
 const KEY = 'kroma:blur';
 

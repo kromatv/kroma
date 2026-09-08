@@ -17,8 +17,8 @@ const ID = 'tv.kroma.smoke';
 
 /** What a module author relies on the declarations for: a kit icon name is a
  *  checked literal, a client id is branded, the SDK's hooks are typed. */
-const TYPES_PROBE = `import type { RequestId } from '@kroma/client/requests';
-import type { IconName } from '@kroma/ui/kit';
+const TYPES_PROBE = `import type { RequestId } from '@kromatv/client/requests';
+import type { IconName } from '@kromatv/ui/kit';
 import type { useFetch } from '@kromatv/sdk';
 
 export const icon: IconName = 'download';

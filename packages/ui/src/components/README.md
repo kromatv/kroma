@@ -77,15 +77,15 @@ The `index.ts` is what lets the level barrel keep saying `from './button'`.
 Three doors, in the order you should reach for them:
 
 ```tsx
-import { Button, ListRow, Rail } from '@kroma/ui/kit';        // 1. the flat barrel
-import { Button } from '@kroma/ui/kit/atoms/button';          // 2. one component
+import { Button, ListRow, Rail } from '@kromatv/ui/kit';        // 1. the flat barrel
+import { Button } from '@kromatv/ui/kit/atoms/button';          // 2. one component
 import { colors } from '#ui/core/tokens';                      // 3. inside the kit only
 ```
 
-1. `@kroma/ui/kit` re-exports all four component levels flat. App code should use
+1. `@kromatv/ui/kit` re-exports all four component levels flat. App code should use
    this and never learn which level something is at. The levels are for the people
    editing the kit.
-2. `@kroma/ui/kit/<level>/<name>` is one component, for a package that wants
+2. `@kromatv/ui/kit/<level>/<name>` is one component, for a package that wants
    `Button` and nothing else. It is a single wildcard in `package.json`, so no list
    is maintained: add a folder and it is importable.
 3. `#ui/*` is the kit's own internal alias (package.json `imports`) so its files
@@ -95,8 +95,8 @@ import { colors } from '#ui/core/tokens';                      // 3. inside the 
    web target) and `clients/expo-build/metro-workspace.ts` (Metro).
 
 Doors 1 and 2 cost the same, which is why door 1 can be the default. Measured with
-the repo's own Vite, `import { Button } from '@kroma/ui/kit'` and
-`import { Button } from '@kroma/ui/kit/atoms/button'` emit the same 478,646 bytes
+the repo's own Vite, `import { Button } from '@kromatv/ui/kit'` and
+`import { Button } from '@kromatv/ui/kit/atoms/button'` emit the same 478,646 bytes
 before gzip. `Text` and `ListRow` agree to the byte too, and gzip differs between
 them by 0.3%, which is chunk ordering. What buys that is `"sideEffects": false` in
 [`package.json`](../../package.json), the one thing that lets a bundler drop a
@@ -109,4 +109,4 @@ true. Do not "tidy" it away.
 
 Move the folder and fix the two barrels. That is all. The workbench follows on its
 own, because it reads the level from the file's path rather than from a field
-anything could get wrong. See `tierFor` in `@kroma/workbench`.
+anything could get wrong. See `tierFor` in `@kromatv/workbench`.

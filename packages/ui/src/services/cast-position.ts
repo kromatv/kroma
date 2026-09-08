@@ -1,4 +1,4 @@
-import type { CastReceiver } from '@kroma/client/cast';
+import type { CastReceiver } from '@kromatv/client/cast';
 
 /** What a receiver last reported, and when this sender heard it. */
 interface PositionBase {
