@@ -28,6 +28,10 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
         Report::Deferred(status) => ctx.info(format!(
             "the statistics endpoint answered {status}; the next run is the retry"
         )),
+        Report::Refused(status) => ctx.info(format!(
+            "the statistics endpoint refused this payload ({status}); nothing was recorded, \
+             and this server will offer it again tomorrow"
+        )),
         Report::Sent(payload) => ctx.info(format!(
             "sent: {}",
             serde_json::to_string(&payload).unwrap_or_default()

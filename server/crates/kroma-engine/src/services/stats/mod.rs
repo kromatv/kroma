@@ -43,11 +43,13 @@ pub enum Report {
     NotYet,
     Sent(Box<Payload>),
     Deferred(u16),
+    Refused(u16),
 }
 
 enum Outcome {
     Accepted,
     Transient(u16),
+    Refused(u16),
 }
 
 /// Send this install's heartbeat, or do nothing at all if the operator has
@@ -69,17 +71,19 @@ fn report(
         return Ok(Report::NotYet);
     }
     let payload = payload::build(state, id.clone())?;
-    match send(&endpoint(), &payload)? {
-        Outcome::Transient(status) => Ok(Report::Deferred(status)),
-        Outcome::Accepted => {
-            state.settings.set_internal(
-                &state.db,
-                SENT_KEY,
-                json!(kroma_primitives::now_iso8601()),
-            );
-            Ok(Report::Sent(Box::new(payload)))
-        }
+    let outcome = send(&endpoint(), &payload)?;
+    if let Outcome::Transient(status) = outcome {
+        return Ok(Report::Deferred(status));
     }
+    // A refusal is stamped like a delivery: the collector answered, so the next
+    // attempt belongs tomorrow rather than in an hour.
+    state
+        .settings
+        .set_internal(&state.db, SENT_KEY, json!(kroma_primitives::now_iso8601()));
+    Ok(match outcome {
+        Outcome::Refused(status) => Report::Refused(status),
+        _ => Report::Sent(Box::new(payload)),
+    })
 }
 
 // Separate from `instanceId`, which is served on the public health endpoint and
@@ -118,10 +122,10 @@ fn post(url: &str, payload: &Payload) -> Result<Outcome> {
     if matches!(res.status, 408 | 429 | 500..=599) {
         return Ok(Outcome::Transient(res.status));
     }
-    anyhow::bail!(
-        "the statistics endpoint rejected the payload: {}",
-        res.status
-    )
+    // Neither is a refusal. Whatever the collector will not accept, an operator
+    // cannot fix from their side, and a failed job here is a notification about
+    // a feature they were promised would stay out of their way.
+    Ok(Outcome::Refused(res.status))
 }
 
 fn endpoint() -> String {
@@ -231,6 +235,20 @@ mod tests {
 
         assert!(matches!(report, Report::Sent(_)));
         assert!(!state.settings.get_str(SENT_KEY, "").is_empty());
+    }
+
+    #[test]
+    fn a_payload_the_collector_will_not_take_is_reported_and_never_raised() {
+        let state = test_state();
+        enable(&state);
+
+        let report = report(&state, |_, _| Ok(Outcome::Refused(400))).unwrap();
+
+        assert_eq!(report, Report::Refused(400));
+        assert!(
+            !state.settings.get_str(SENT_KEY, "").is_empty(),
+            "a refusal an operator cannot act on must back off to daily, not retry hourly"
+        );
     }
 
     #[test]

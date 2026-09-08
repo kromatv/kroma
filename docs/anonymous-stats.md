@@ -68,6 +68,11 @@ bytes that left the box, and prints `anonymous statistics are off; nothing was
 sent` when the toggle is off. The code is
 `server/crates/kroma-engine/src/services/stats/`.
 
+The job never fails. A collector that is down, or that will not take this
+server's payload, is written into the run log and retried the next day: neither
+is something an operator can act on, and a job that fails is a notification
+about a feature that was meant to stay out of the way.
+
 ## Turning it off, and erasing what was sent
 
 The toggle in Admin → General → Privacy. The server stops sending immediately.
