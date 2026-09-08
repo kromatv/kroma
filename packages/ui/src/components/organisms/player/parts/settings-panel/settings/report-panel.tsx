@@ -1,4 +1,3 @@
-import type { ReportCategory } from '@kromatv/client/reports';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
@@ -6,13 +5,14 @@ import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-foc
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { REPORT_CATEGORIES } from '#ui/lib/report-categories';
 import { useT } from '#ui/services/i18n';
+import type { PlayerReportCategory } from '../../../media-types';
 import { panel } from './panel-style';
 import { SelectRow } from './select-row';
 
 // A category and nothing else: no free-text field mid-film. Details belong to
 // the detail page's report screen.
 interface ReportPanelProps {
-  onReport: (category: ReportCategory) => Promise<void>;
+  onReport: (category: PlayerReportCategory) => Promise<void>;
   onBack: () => void;
 }
 

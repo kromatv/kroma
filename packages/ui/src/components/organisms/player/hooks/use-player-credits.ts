@@ -1,5 +1,5 @@
-import type { Marker } from '@kromatv/client/media';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { PlayerMarker } from '../media-types';
 
 const CREDITS_TAIL = 30;
 const AUTO_NEXT = 5;
@@ -18,7 +18,7 @@ export interface CreditsState {
  * countdown is frozen during a scrub, so seeking near the end never teleports.
  */
 export function usePlayerCredits(opts: {
-  markers?: readonly Marker[];
+  markers?: readonly PlayerMarker[];
   dur: number;
   cur: number;
   seeking: boolean;

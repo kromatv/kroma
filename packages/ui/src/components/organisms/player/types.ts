@@ -1,5 +1,5 @@
-import type { AudioTrack } from '@kromatv/client/media';
 import type { ColorValue } from '#ui/core';
+import type { PlayerAudioTrack } from './media-types';
 
 /**
  * The unified player contract. ONE `<Player>` chrome (packages/ui/src/player)
@@ -221,7 +221,7 @@ export interface PlayerController {
   rate: number;
   setRate(r: number): void;
 
-  audioTracks: AudioTrack[];
+  audioTracks: PlayerAudioTrack[];
   audioIndex: number;
   setAudio(index: number): void;
 

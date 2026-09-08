@@ -1,4 +1,3 @@
-import type { SubtitleGeneration } from '@kromatv/client/subtitles';
 import { langName, type RemoteKey, subtitleEtaTime, subtitleStageKey } from '@kromatv/core';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
@@ -11,6 +10,7 @@ import { IconAi } from '#ui/components/organisms/player/parts/icons';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
 import { style, styles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
+import type { PlayerSubtitleGeneration } from '../../../media-types';
 import type { SubtitleGenBundle } from './gen';
 import { GenerateWizard } from './generate-wizard';
 import { panel } from './panel-style';
@@ -189,7 +189,7 @@ function TrashButton({ label, onPress }: Readonly<{ label: string; onPress: () =
 function GenRow({
   gen,
   onCancel,
-}: Readonly<{ gen: SubtitleGeneration; onCancel: (id: string) => void }>) {
+}: Readonly<{ gen: PlayerSubtitleGeneration; onCancel: (id: string) => void }>) {
   const t = useT();
   const pct = Math.round(gen.progress * 100);
   const err = gen.status === 'error';

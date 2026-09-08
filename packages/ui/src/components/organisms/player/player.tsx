@@ -1,5 +1,3 @@
-import type { Marker } from '@kromatv/client/media';
-import type { ReportCategory } from '@kromatv/client/reports';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 import type { LayoutChangeEvent, View } from 'react-native';
 import { Dimensions } from 'react-native';
@@ -18,6 +16,7 @@ import { type ControlId, controlOrder, type PanelHandle } from './lib/nav';
 import { usePanelSlide } from './lib/panel-slide';
 import type { SubtitleAppearance } from './lib/subtitle-appearance';
 import { surfaceShrink } from './lib/surface-shrink';
+import type { PlayerMarker, PlayerReportCategory } from './media-types';
 import { CreditsCard, type CreditsCardItem } from './parts/credits-card';
 import { PostPlay, type PostPlayItem } from './parts/post-play';
 import { SettingsPanel } from './parts/settings-panel';
@@ -47,13 +46,13 @@ export interface PlayerRootProps {
   /** Pre-translated warning, drawn as a pill in the top bar; null to hide it. */
   warn?: string | null;
   chapters?: Chapter[];
-  markers?: readonly Marker[];
+  markers?: readonly PlayerMarker[];
   tileAt: (sec: number) => StoryboardTile | null;
   appearance: SubtitleAppearance;
   onAppearanceChange: (next: Partial<SubtitleAppearance>) => void;
   subtitleGen: SubtitleGenBundle;
   upNext: UpNextData;
-  onReport?: (category: ReportCategory) => Promise<void>;
+  onReport?: (category: PlayerReportCategory) => Promise<void>;
   onPlayItem?: (item: UpNextItem) => void;
   /** Given one, the chrome grows a "next" control and plays the credits card. */
   onPlayNext?: () => void;

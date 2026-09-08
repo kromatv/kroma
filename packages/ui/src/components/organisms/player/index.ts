@@ -33,6 +33,15 @@ export {
   useSubtitleAppearance,
   withOpacity,
 } from './lib/subtitle-appearance';
+export type {
+  PlayerAudioTrack,
+  PlayerMarker,
+  PlayerReportCategory,
+  PlayerStatsItem,
+  PlayerSubCapabilities,
+  PlayerSubtitleGeneration,
+  PlayerVideoTrack,
+} from './media-types';
 export type { CreditsCardItem } from './parts/credits-card';
 // The width the end-of-film hero is drawn at, so a host asks for art that size.
 export { POST_PLAY_ART_W, type PostPlayItem } from './parts/post-play';

@@ -1,9 +1,4 @@
-import {
-  GEN_LANGS,
-  GEN_QUALITIES,
-  type GenQuality,
-  type SubCapabilities,
-} from '@kromatv/client/subtitles';
+import { GEN_LANGS, GEN_QUALITIES, type GenQuality } from '@kromatv/client/subtitles';
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -12,8 +7,8 @@ import { IconButton } from '#ui/components/atoms/icon-button';
 import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
-
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
+import type { PlayerSubCapabilities } from '#ui/components/organisms/player/media-types';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
 import { type ColorValue, sharedStyle, styles } from '#ui/core';
 import { a11yState } from '#ui/lib/a11y';
@@ -26,7 +21,7 @@ import { CycleField } from './wizard-parts';
 type Mode = 'transcribe' | 'translate';
 
 interface GenerateWizardProps {
-  caps: SubCapabilities | null;
+  caps: PlayerSubCapabilities | null;
   sources: PlayerSub[];
   onStart: (req: SubtitleGenRequest) => void;
   onClose: () => void;

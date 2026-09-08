@@ -1,4 +1,3 @@
-import type { AudioTrack } from '@kromatv/client/media';
 import { channelLabel, langName } from '@kromatv/core';
 import { forwardRef, useImperativeHandle } from 'react';
 import { Box } from '#ui/components/atoms/box';
@@ -6,11 +5,12 @@ import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { useT } from '#ui/services/i18n';
+import type { PlayerAudioTrack } from '../../../media-types';
 import { panel } from './panel-style';
 import { SelectRow } from './select-row';
 
 interface AudioPanelProps {
-  tracks: AudioTrack[];
+  tracks: PlayerAudioTrack[];
   current: number;
   onSelect: (index: number) => void;
   onBack: () => void;

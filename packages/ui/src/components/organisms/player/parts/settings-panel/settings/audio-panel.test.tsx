@@ -1,17 +1,17 @@
 // @vitest-environment jsdom
 
-import type { AudioTrack } from '@kromatv/client/media';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
+import type { PlayerAudioTrack } from '../../../media-types';
 import { AudioPanel } from './audio-panel';
 
 afterEach(cleanup);
 
 const show = (ui: ReactElement) => render(<I18nProvider locale="en">{ui}</I18nProvider>);
 
-const track = (over: Partial<AudioTrack> & { index: number }): AudioTrack => ({
+const track = (over: Partial<PlayerAudioTrack> & { index: number }): PlayerAudioTrack => ({
   codec: 'ac3',
   channels: 6,
   language: 'eng',

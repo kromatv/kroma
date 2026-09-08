@@ -1,9 +1,9 @@
 // For surfaces whose player exposes no decode counters; the web builds its own
 // richer snapshot instead.
 
-import type { AudioTrack, MediaItem } from '@kromatv/client/media';
 import type { Translate } from '@kromatv/core';
 import type { PlayerStats } from '#ui/components/organisms/player/types';
+import type { PlayerAudioTrack, PlayerStatsItem, PlayerVideoTrack } from '../media-types';
 
 /** Typed structurally so React Native surfaces can satisfy it with no DOM lib. */
 export interface LeanStatsVideoHandle {
@@ -13,11 +13,11 @@ export interface LeanStatsVideoHandle {
 }
 
 export interface LeanStatsInput {
-  item: MediaItem;
+  item: PlayerStatsItem;
   cur: number;
   dur: number;
   bufEnd: number | null;
-  audioTracks: AudioTrack[];
+  audioTracks: PlayerAudioTrack[];
   audioIndex: number;
   /** Null for native planes (AVPlay / mpv / exo / AVPlayer). */
   video: LeanStatsVideoHandle | null;
@@ -32,14 +32,14 @@ export interface LeanStatsInput {
   meters?: NonNullable<PlayerStats['meters']>;
 }
 
-function videoCodecLabel(video: MediaItem['video']): string | undefined {
+function videoCodecLabel(video: PlayerVideoTrack | null): string | undefined {
   if (!video) return undefined;
   const depth = video.bitDepth ? ` ${video.bitDepth}-bit` : '';
   const hdr = video.hdr ? ' HDR' : '';
   return `${video.codec.toUpperCase()}${depth}${hdr}`;
 }
 
-function audioFormatLabel(track: AudioTrack | undefined): string | undefined {
+function audioFormatLabel(track: PlayerAudioTrack | undefined): string | undefined {
   if (!track) return undefined;
   const channels = track.channels ? ` ${track.channels}.0` : '';
   const lang = track.language ? ` (${track.language})` : '';
