@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -146,5 +147,18 @@ describe('kromaSite', () => {
     config(siteRoot(), { prerender: true });
 
     expect(startOptions).toEqual([{}, { prerender: { enabled: true, crawlLinks: true } }]);
+  });
+
+  it('loads under node alone, the way vite reads a site config', () => {
+    const entry = fileURLToPath(new URL('./site.ts', import.meta.url));
+
+    const node = spawnSync(
+      process.execPath,
+      ['--input-type=module', '-e', `await import(${JSON.stringify(entry)})`],
+      { encoding: 'utf8' },
+    );
+
+    expect(node.stderr).toBe('');
+    expect(node.status).toBe(0);
   });
 });

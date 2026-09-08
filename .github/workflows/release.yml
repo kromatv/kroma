@@ -285,6 +285,7 @@ jobs:
     timeout-minutes: 25
     env:
       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
@@ -309,9 +310,11 @@ jobs:
           path: dist/sdk/*.tgz
           if-no-files-found: error
       # Skipped, not failed, while the NPM_TOKEN secret is absent: the tarball
-      # is still on the run for a hand publish.
+      # is still on the run for a hand publish. The guard reads its own flag and
+      # never NODE_AUTH_TOKEN, which setup-node fills with a placeholder so npm
+      # has something to expand: it is never empty.
       - name: Publish
-        if: needs.version.outputs.channel != 'none' && env.NODE_AUTH_TOKEN != ''
+        if: needs.version.outputs.channel != 'none' && env.HAS_NPM_TOKEN == 'true'
         run: >-
           bun run ci sdk publish --provenance
           --tag "${{ needs.version.outputs.channel == 'candidate' && 'canary' || 'latest' }}"
