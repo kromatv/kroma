@@ -1,5 +1,5 @@
 import type { Permission } from '@kromatv/client/accounts';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import type { ModuleNav } from '@kromatv/module-sdk';
 import {
   IconApps,

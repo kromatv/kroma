@@ -1,4 +1,4 @@
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Icon, Row, Text } from '@kromatv/ui/kit';
 

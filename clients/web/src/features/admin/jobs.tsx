@@ -4,7 +4,7 @@
 // (`services::jobs`) over `/api/admin/jobs`.
 
 import { KromaEvents } from '@kromatv/client/events';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, EmptyState, Section } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';

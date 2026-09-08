@@ -2,7 +2,7 @@
 // requester, date, status chip, and quick approve/deny on pending rows.
 
 import type { MediaRequest } from '@kromatv/client/requests';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { TABULAR, Table } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 import { Avatar, Box, Row, Text } from '@kromatv/ui/kit';

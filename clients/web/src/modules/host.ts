@@ -3,7 +3,7 @@
 
 import { sessionToken } from '@kromatv/client';
 import { hasPermission } from '@kromatv/client/accounts';
-import type { MessageKey, TVars } from '@kromatv/core';
+import type { MessageKey, TVars } from '@kromatv/i18n';
 import {
   createEventBus,
   type HostBase,

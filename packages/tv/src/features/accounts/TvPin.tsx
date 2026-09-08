@@ -1,6 +1,6 @@
 import { KromaApiError, type KromaClient } from '@kromatv/client';
 import type { StoredSession, User } from '@kromatv/client/accounts';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Avatar, Box, Icon, Keypad, PinField, Spinner, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useEffect, useMemo, useState } from 'react';

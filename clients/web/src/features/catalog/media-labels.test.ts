@@ -1,5 +1,5 @@
 import type { AudioTrack, MediaItem, VideoTrack } from '@kromatv/client/media';
-import type { Translate } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
 import { audioFlagLabel, audioString, qualityBadges, subString } from './media-labels';
 

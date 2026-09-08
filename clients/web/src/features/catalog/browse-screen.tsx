@@ -5,12 +5,12 @@ import {
   hasGenre,
   type LetterMark,
   letterMarks,
-  type MessageKey,
   type Sortable,
   type SortMode,
   sortTitles,
   titleLetter,
 } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, EmptyState, type IconName } from '@kromatv/ui/kit';
 import {

@@ -28,6 +28,7 @@
     "@kesha-antonov/react-native-background-downloader": "^4.6.1",
     "@kromatv/client": "workspace:*",
     "@kromatv/core": "workspace:*",
+    "@kromatv/i18n": "workspace:*",
     "@kromatv/lan-beacon": "workspace:*",
     "@kromatv/media3-ffmpeg": "workspace:*",
     "@kromatv/ui": "workspace:*",

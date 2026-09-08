@@ -1,5 +1,5 @@
 import type { JobInfo } from '@kromatv/client/jobs';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { TABULAR } from '@kromatv/module-sdk';
 import { useLocale, useT } from '@kromatv/ui';
 import {

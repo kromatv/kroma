@@ -2,7 +2,7 @@
 // (null on the `connect` screen, before a server is reached) and wired together
 // with the signed-in account's preference.
 import type { KromaClient } from '@kromatv/client';
-import type { Locale } from '@kromatv/core';
+import type { Locale } from '@kromatv/i18n';
 import { LocaleProvider as UiLocaleProvider } from '@kromatv/ui';
 import type { ReactNode } from 'react';
 import { useAuth } from '#tv/app/providers/auth';

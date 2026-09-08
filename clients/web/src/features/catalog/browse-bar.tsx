@@ -3,10 +3,10 @@ import {
   genreLabel,
   genreOfSegment,
   genreSegment,
-  type MessageKey,
   SORT_MODES,
   type SortMode,
 } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
   Box,

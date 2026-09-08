@@ -1,4 +1,5 @@
-import { commitLabel, formatBuildDate, repoLabel, type Translate } from '@kromatv/core';
+import { commitLabel, formatBuildDate, repoLabel } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { useLocale, useT } from '@kromatv/ui';
 import { Box, Hint, ListRow, styles, Text, useFocusNav } from '@kromatv/ui/kit';
 import { Platform } from 'react-native';

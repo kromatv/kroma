@@ -1,4 +1,4 @@
-import type { Translate } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
   Badge,

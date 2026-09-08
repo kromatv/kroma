@@ -5,7 +5,7 @@
 
 import { apiErrorText, type KromaClient } from '@kromatv/client';
 import type { SettingGroup, SettingRow } from '@kromatv/client/admin';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
   Box,

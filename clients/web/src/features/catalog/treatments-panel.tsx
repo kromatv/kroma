@@ -7,7 +7,7 @@
 import { hasPermission } from '@kromatv/client/accounts';
 import { ItemId, ShowId } from '@kromatv/client/media';
 import type { Treatment } from '@kromatv/client/pipeline';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Button, classes, color, Spinner, styles, Text } from '@kromatv/ui/kit';
 import {

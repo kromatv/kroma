@@ -1,6 +1,6 @@
 import type { User } from '@kromatv/client/accounts';
 import { fakeClient } from '@kromatv/client/test';
-import type { Translate } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { buildTitleView, type TitleInput } from './titleView';
 
 // A translator that echoes the key, appending var values so we can assert

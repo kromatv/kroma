@@ -4,7 +4,8 @@
 // fan-out), so "everyone" reaches every account for real.
 
 import type { Notification } from '@kromatv/client/notifications';
-import { type MessageKey, NOTIFICATION_CATEGORY_LABEL } from '@kromatv/core';
+import { NOTIFICATION_CATEGORY_LABEL } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
   Box,

@@ -3,7 +3,7 @@
 // neither file imports the other).
 
 import type { ReportCategory, ReportStatus, ReportSubjectKind } from '@kromatv/client/reports';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import type { ColorToken, ColorValue } from '@kromatv/ui/kit';
 
 export interface Meta {

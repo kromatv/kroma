@@ -4,7 +4,7 @@
 
 import { apiErrorText } from '@kromatv/client';
 import type { ReportCategory, ReportSubjectKind } from '@kromatv/client/reports';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
   Box,

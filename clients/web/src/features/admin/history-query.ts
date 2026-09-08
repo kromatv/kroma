@@ -1,6 +1,6 @@
 import { UserId } from '@kromatv/client/accounts';
 import { LibraryId } from '@kromatv/client/media';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import type { SortColumn, SortDirection } from '@kromatv/ui/kit';
 import { z } from 'zod';
 import { type HistorySort, isHistorySort } from '#web/features/admin/history-columns';

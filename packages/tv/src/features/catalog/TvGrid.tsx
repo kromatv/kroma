@@ -1,12 +1,6 @@
 import type { MediaItem, Show, SubjectId } from '@kromatv/client/media';
-import {
-  collectGenres,
-  hasGenre,
-  type MessageKey,
-  posterColors,
-  type SortMode,
-  sortTitles,
-} from '@kromatv/core';
+import { collectGenres, hasGenre, posterColors, type SortMode, sortTitles } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useEffect, useMemo, useState } from 'react';

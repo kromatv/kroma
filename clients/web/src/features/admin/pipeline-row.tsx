@@ -4,7 +4,7 @@
 
 import { ItemId, ShowId } from '@kromatv/client/media';
 import type { ElementRow, Treatment } from '@kromatv/client/pipeline';
-import type { MessageKey, Translate } from '@kromatv/core';
+import type { MessageKey, Translate } from '@kromatv/i18n';
 import { Table } from '@kromatv/module-sdk';
 import { type Format, useFormat, useT } from '@kromatv/ui';
 import { Box, type ColorValue, Icon, Row, Spinner, Text, Tooltip } from '@kromatv/ui/kit';

@@ -2,7 +2,7 @@
 // hints over a gradient that fades into the page. Purely decorative, so it never
 // takes pointer events and never joins the focus set.
 
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, gradient, Hint, shade, styles, Text } from '@kromatv/ui/kit';
 

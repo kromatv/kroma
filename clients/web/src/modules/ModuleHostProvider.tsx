@@ -1,5 +1,5 @@
 import { hasPermission } from '@kromatv/client/accounts';
-import type { TVars } from '@kromatv/core';
+import type { TVars } from '@kromatv/i18n';
 import type { KromaHost, ModuleNav, ModulePanel, ModuleRoute } from '@kromatv/module-sdk';
 import { useScopedT, useT } from '@kromatv/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';

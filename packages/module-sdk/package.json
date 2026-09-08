@@ -24,6 +24,7 @@
   "dependencies": {
     "@kromatv/client": "workspace:*",
     "@kromatv/core": "workspace:*",
+    "@kromatv/i18n": "workspace:*",
     "@kromatv/registry": "workspace:*",
     "@kromatv/ui": "workspace:*",
     "@tanstack/react-query": "^5.101.4",

@@ -41,5 +41,3 @@ export function activeLocale(): Locale {
 export function setActiveLocale(locale: Locale): void {
   active = locale;
 }
-
-export type { Catalogs, Locale, MessageKey, Translate, TVars } from '@kromatv/i18n';

@@ -4,7 +4,7 @@
 // feel live.
 
 import type { JobKey, JobLog, JobRun, JobRunId } from '@kromatv/client/jobs';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useLocale, useT } from '@kromatv/ui';
 import {
   Box,

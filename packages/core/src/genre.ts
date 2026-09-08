@@ -3,8 +3,9 @@
 // ("Family" or "Familial"), so a URL, a colour and a label all fold their
 // input to a slug before matching.
 
+import type { Translate } from '@kromatv/i18n';
 import { GENRES, type GenreCopyKey, type GenreRow, type GenreSlug } from './genre-table';
-import { SUPPORTED_LOCALES, type Translate, translate } from './i18n';
+import { SUPPORTED_LOCALES, translate } from './i18n';
 import { slugify as fold } from './slug';
 
 export type { GenreRow, GenreSlug } from './genre-table';

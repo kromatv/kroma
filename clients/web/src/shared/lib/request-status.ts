@@ -3,7 +3,7 @@
 // Pure data (no JSX); labels resolve through i18n in the components.
 
 import type { RequestStatus } from '@kromatv/client/requests';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { color } from '@kromatv/ui/kit';
 
 export interface RequestStatusMeta {

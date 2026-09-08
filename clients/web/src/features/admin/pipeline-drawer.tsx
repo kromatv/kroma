@@ -1,6 +1,6 @@
 import { ItemId, ShowId } from '@kromatv/client/media';
 import type { ElementRow } from '@kromatv/client/pipeline';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useFormat, useT } from '@kromatv/ui';
 import { Box, Button, Callout, Drawer, IconButton, Row, styles, Text } from '@kromatv/ui/kit';
 import { createCallable } from 'react-call';

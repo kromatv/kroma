@@ -2,7 +2,7 @@
 // shots, each band an even grid of same-sized cards.
 
 import type { MatchCandidate } from '@kromatv/client/media';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Section } from '@kromatv/ui/kit';
 import { useMemo } from 'react';

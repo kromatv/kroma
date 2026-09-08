@@ -11,7 +11,7 @@
 // shell (the desktop shell's config file, applied at boot), or account
 // (synced to the signed-in account by the server).
 
-import type { Locale, MessageKey, Translate } from '@kromatv/core';
+import type { Locale, MessageKey, Translate } from '@kromatv/i18n';
 import type { IconName } from '@kromatv/ui/kit';
 
 export type SettingsLevel = 'device' | 'shell' | 'account';

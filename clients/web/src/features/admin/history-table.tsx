@@ -1,5 +1,5 @@
 import type { PlayEntry } from '@kromatv/client/admin';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { TABULAR } from '@kromatv/module-sdk';
 import { useFormat, useT } from '@kromatv/ui';
 import { Box, EmptyState, type SortColumn, Table, Text } from '@kromatv/ui/kit';

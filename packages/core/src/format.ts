@@ -4,7 +4,7 @@ import {
   type MediaItem,
   type VideoTrack,
 } from '@kromatv/client/media';
-import type { Translate } from './i18n';
+import type { Translate } from '@kromatv/i18n';
 import { langKey } from './lang';
 import { match } from './match';
 import { formatRuntime } from './player';

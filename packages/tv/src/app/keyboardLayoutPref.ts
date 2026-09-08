@@ -7,7 +7,7 @@
 //  - qwerty : US/UK typewriter order.
 //  - qwertz : German/Swiss typewriter order.
 
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { KEYBOARD_LAYOUTS, type KeyboardLayout } from '@kromatv/ui/kit';
 import { reactivePref } from '#tv/app/settings/store';
 

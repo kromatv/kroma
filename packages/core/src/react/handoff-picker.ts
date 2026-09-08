@@ -3,10 +3,10 @@
 // sequence on both. The shells keep what is genuinely theirs: pixels, and
 // whatever else the platform answers with (a phone also buzzes).
 
+import type { Translate } from '@kromatv/i18n';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DiscoveredTv, FinalRefusal, GrantRefusal, GrantResult } from '../handoff';
 import { checkRetryable } from '../handoff';
-import type { Translate } from '../i18n';
 
 /** How long a finished row keeps saying how it finished. `useNearbyTvs` cannot
  *  know when the reader has read it, so the picker decides, and it decides that

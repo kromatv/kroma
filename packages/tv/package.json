@@ -22,12 +22,13 @@
   },
   "dependencies": {
     "@kromatv/core": "workspace:*",
+    "@kromatv/i18n": "workspace:*",
     "@kromatv/ui": "workspace:*",
+    "@kromatv/workbench": "workspace:*",
     "@tabler/icons-react": "^3.46.0",
     "hls.js": "^1.7.0",
-    "shaka-player": "^5.2.5",
     "qrcode-generator": "^2.0.4",
-    "@kromatv/workbench": "workspace:*"
+    "shaka-player": "^5.2.5"
   },
   "peerDependencies": {
     "react": "^19.2.8",

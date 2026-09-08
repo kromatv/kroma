@@ -4,7 +4,7 @@
 // design: deep charcoal, a single amber accent, a big cinematic status number.
 
 import { apiErrorText, KromaApiError } from '@kromatv/client';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
   Box,

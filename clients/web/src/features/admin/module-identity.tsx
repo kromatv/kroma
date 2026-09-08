@@ -1,5 +1,5 @@
 import type { StoreModule } from '@kromatv/client/modules';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Row, Surface, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';

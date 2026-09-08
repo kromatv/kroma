@@ -8,7 +8,7 @@
 
 import { KromaEvents, type ServerEvent, type StoreOpEvent } from '@kromatv/client/events';
 import type { ModuleId } from '@kromatv/client/modules';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { message, restartModule } from '#web/features/admin/module-api';
 import { apiBase } from '#web/shared/lib/api';

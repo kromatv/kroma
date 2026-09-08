@@ -5,7 +5,7 @@
 // them waits the same way.
 
 import { apiErrorText, KromaApiError } from '@kromatv/client';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
   Box,

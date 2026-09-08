@@ -1,7 +1,8 @@
 // User-selectable playback engine: a manual override of the automatic
 // `selectEngine` decision, persisted per device.
 
-import { isTizenRuntime, isWebOsRuntime, type MessageKey } from '@kromatv/core';
+import { isTizenRuntime, isWebOsRuntime } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { Platform } from 'react-native';
 import { devicePref } from '#tv/app/devicePref';
 import type { ReactivePref } from '#tv/app/settings/store';

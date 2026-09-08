@@ -15,7 +15,8 @@ import type {
   VideoTrack,
 } from '@kromatv/client/media';
 import type { RequestStatus } from '@kromatv/client/requests';
-import { directorsOf, formatRuntime, genreLabels, type Translate } from '@kromatv/core';
+import { directorsOf, formatRuntime, genreLabels } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { imageUrl } from '#web/shared/lib/api';
 
 /** A season in the unified model: owned playable episodes merged with TMDB

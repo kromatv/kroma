@@ -1,6 +1,7 @@
 import type { MediaItem } from '@kromatv/client/media';
 import type { ReportCategory } from '@kromatv/client/reports';
-import { audioSupport, playerSubtitle, type Translate } from '@kromatv/core';
+import { audioSupport, playerSubtitle } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import {
   Player,
   TV_FLAGS,

@@ -1,4 +1,5 @@
-import { sizedImageUrl, type Translate } from '@kromatv/core';
+import { sizedImageUrl } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
   ArtScrim,

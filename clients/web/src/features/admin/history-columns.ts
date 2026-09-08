@@ -1,5 +1,5 @@
 import type { PlayEntry } from '@kromatv/client/admin';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import type { TableColumn } from '@kromatv/ui/kit';
 
 export type HistorySort = 'username' | 'kind' | 'title' | 'device' | 'player' | 'endedAt';

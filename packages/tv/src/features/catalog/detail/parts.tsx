@@ -1,5 +1,6 @@
 import type { CastMember, CrewMember } from '@kromatv/client/media';
-import { directorsOf, jobLabel, type Translate } from '@kromatv/core';
+import { directorsOf, jobLabel } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { endsAtClock, useLocale, useT } from '@kromatv/ui';
 import {
   AVATAR_GRADIENTS,

@@ -1,5 +1,6 @@
 import type { MediaItem, VideoTrack } from '@kromatv/client/media';
-import { channelLabel, codecLabel, langName, type Translate } from '@kromatv/core';
+import { channelLabel, codecLabel, langName } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 
 export type QualityTone = '4K' | 'HDR' | 'H.265';
 

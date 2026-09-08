@@ -5,7 +5,8 @@ import {
   type SubCapabilities,
   SubtitleId,
 } from '@kromatv/client/subtitles';
-import { LANG_OFF, langName, preferredSubIndex, type Translate } from '@kromatv/core';
+import { LANG_OFF, langName, preferredSubIndex } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import {
   type PlayerSub,
   type SubtitleGenBundle,

@@ -1,7 +1,8 @@
 import type { DiscoverEntry } from '@kromatv/client/discovery';
 import type { SubjectId } from '@kromatv/client/media';
 import type { RequestStatus } from '@kromatv/client/requests';
-import { posterColors, sizedImageUrl, type Translate } from '@kromatv/core';
+import { posterColors, sizedImageUrl } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Img, rhythm, Text } from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';

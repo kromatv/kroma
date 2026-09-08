@@ -8,7 +8,7 @@
 
 import { apiErrorText } from '@kromatv/client';
 import type { EngineContribution, EngineField, ModuleInfo } from '@kromatv/client/modules';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Dialog, Field, SegmentGroup, Select, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';

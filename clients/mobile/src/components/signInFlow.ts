@@ -4,7 +4,7 @@
 // stays state + presentation wiring.
 
 import { apiErrorText, KromaApiError } from '@kromatv/client';
-import type { Translate } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { passProfileBiometricGate } from '#mobile/lib/biometricGate';
 import type { AuthSession } from '#mobile/lib/session';
 import {

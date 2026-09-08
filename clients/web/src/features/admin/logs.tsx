@@ -3,7 +3,7 @@
 // text filters and a follow-tail toggle. Polls; the ring is the source of
 // truth so a page load shows history, not just what streams in afterwards.
 
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
   EmptyState,

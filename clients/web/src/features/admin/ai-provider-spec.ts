@@ -1,5 +1,5 @@
 import type { LlmProviderId } from '@kromatv/client/llm';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 
 // `apiKey` is a transient field ('' = keep the stored secret); `hasApiKey`
 // reports whether one is stored server-side. `id` is blank until the server

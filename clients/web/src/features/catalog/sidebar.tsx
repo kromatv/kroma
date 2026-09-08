@@ -1,5 +1,5 @@
 import { hasPermission } from '@kromatv/client/accounts';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, classes, Drawer, Logo, Row, styles, Text, useBreakpoint } from '@kromatv/ui/kit';
 import {

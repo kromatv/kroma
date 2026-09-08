@@ -4,7 +4,7 @@
 // uninstall live in the drawer, so the list stays scannable.
 
 import type { StoreCatalog } from '@kromatv/client/modules';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { moduleIconUrl, Table } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 import { Badge, Box, EmptyState, Icon, Row, Switch, styles, Text, Tooltip } from '@kromatv/ui/kit';

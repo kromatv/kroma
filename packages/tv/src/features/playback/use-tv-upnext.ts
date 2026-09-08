@@ -1,6 +1,7 @@
 import type { KromaClient } from '@kromatv/client';
 import { ItemId, type MediaItem } from '@kromatv/client/media';
-import { formatRuntime, genreLabels, metaLine, type Translate } from '@kromatv/core';
+import { formatRuntime, genreLabels, metaLine } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import {
   POST_PLAY_ART_W,
   type PostPlayItem,

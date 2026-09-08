@@ -3,7 +3,7 @@
 // async-save state machine every section reuses.
 
 import { apiErrorText } from '@kromatv/client';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { type ColorValue, type IconName, IconWell, ListRow, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';

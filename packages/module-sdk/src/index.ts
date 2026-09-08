@@ -10,7 +10,7 @@ export { KromaEvents as KromaEventStream, type ServerEvent } from '@kromatv/clie
 export { ItemId } from '@kromatv/client/media';
 export { type EngineContribution, type ModuleApi, ModuleId } from '@kromatv/client/modules';
 export { IndexerId, RequestId } from '@kromatv/client/requests';
-export type { MessageKey } from '@kromatv/core';
+export type { MessageKey } from '@kromatv/i18n';
 export { useFormat, useLocale } from '@kromatv/ui';
 export type { AdminHostValue } from './admin/context';
 export { AdminHostProvider, useAdminHost } from './admin/context';

@@ -4,7 +4,7 @@
 
 import { hasPermission } from '@kromatv/client/accounts';
 import type { MediaRequest, RequestId } from '@kromatv/client/requests';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { ModuleSlot } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 import { Box, Button, EmptyState, Row, Surface } from '@kromatv/ui/kit';

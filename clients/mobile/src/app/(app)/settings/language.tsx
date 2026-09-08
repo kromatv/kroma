@@ -1,7 +1,7 @@
 // Interface language: device override, synced to the account like the other
 // clients so the choice follows the user everywhere.
 
-import type { Locale } from '@kromatv/core';
+import type { Locale } from '@kromatv/i18n';
 import { Box, styles, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { LocalePicker } from '#mobile/components/LocalePicker';

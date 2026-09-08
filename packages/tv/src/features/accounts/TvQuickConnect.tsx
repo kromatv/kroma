@@ -1,6 +1,6 @@
 import type { KromaClient } from '@kromatv/client';
 import type { AuthResult, QuickConnectInit } from '@kromatv/client/accounts';
-import type { MessageKey } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Spinner, SvgXml, styles, Text, useFocusNav } from '@kromatv/ui/kit';
 // Static import on purpose: Metro has no code splitting, and a dynamic `import()`

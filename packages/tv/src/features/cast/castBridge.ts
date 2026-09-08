@@ -4,7 +4,8 @@
 
 import type { CastAnnounceBody } from '@kromatv/client/cast';
 import type { MediaItem } from '@kromatv/client/media';
-import { audioTrackLabel, langName, type Translate } from '@kromatv/core';
+import { audioTrackLabel, langName } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import type { PlayerController } from '@kromatv/ui';
 import { useEffect } from 'react';
 

@@ -3,13 +3,12 @@ import {
   type GenreCount,
   genreLabel,
   genreLabels,
-  type MessageKey,
   qualityBadge,
   qualityBadgeForVideo,
   SORT_MODES,
   type SortMode,
-  type Translate,
 } from '@kromatv/core';
+import type { MessageKey, Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
   Badge,

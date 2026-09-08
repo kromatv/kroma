@@ -2,14 +2,8 @@
 // in-app override, then the OS locale (which reflects the per-app language in
 // iOS Settings, thanks to CFBundleLocalizations), then the account preference.
 
-import {
-  createTranslator,
-  DEFAULT_LOCALE,
-  type Locale,
-  normalizeLocale,
-  setActiveLocale,
-  type Translate,
-} from '@kromatv/core';
+import { createTranslator, DEFAULT_LOCALE, normalizeLocale, setActiveLocale } from '@kromatv/core';
+import type { Locale, Translate } from '@kromatv/i18n';
 import { getLocales } from 'expo-localization';
 import {
   createContext,

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { MediaItem } from '@kromatv/client/media';
-import type { Translate } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import type { PlayerController, PlayerSub } from '@kromatv/ui';
 import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';

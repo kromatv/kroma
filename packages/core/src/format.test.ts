@@ -4,6 +4,7 @@ import {
   setArtworkScale,
   type VideoTrack,
 } from '@kromatv/client/media';
+import type { Translate } from '@kromatv/i18n';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   audioTrackLabel,
@@ -25,7 +26,6 @@ import {
   resolveImageUrl,
   sizedImageUrl,
 } from './format';
-import type { Translate } from './i18n';
 
 // Echoes the message key so localized output is asserted by key.
 const t: Translate = (key) => key;

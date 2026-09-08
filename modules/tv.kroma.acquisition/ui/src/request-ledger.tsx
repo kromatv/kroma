@@ -6,7 +6,8 @@
 // that width on headings until the episode title had none.
 
 import type { LedgerEpisode, LedgerSeason, RequestId } from '@kromatv/client/requests';
-import { datedDayLabel, type MessageKey, qualityBadgeForVideo } from '@kromatv/core';
+import { datedDayLabel, qualityBadgeForVideo } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
 import { ModuleSlot, TABULAR, Table, useT } from '@kromatv/module-sdk';
 import {
   Box,

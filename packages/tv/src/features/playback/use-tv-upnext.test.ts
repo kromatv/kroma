@@ -3,7 +3,7 @@
 import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
-import type { Translate } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useTvUpNext } from './use-tv-upnext';
