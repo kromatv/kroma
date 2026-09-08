@@ -10,6 +10,7 @@
 // fallback `useTDefault` documents. That is the whole contract, and the test
 // beside this file holds it in place.
 
+import type { Locale, Translate } from '@kromatv/i18n';
 import {
   decimal,
   formatBytes,
@@ -20,8 +21,7 @@ import {
   formatStamp,
   formatTimecodeMs,
   formatUptime,
-} from '@kromatv/core';
-import type { Locale, Translate } from '@kromatv/i18n';
+} from '#ui/lib/intl';
 import { useLocaleDefault, useTDefault } from './i18n';
 
 export interface Format {

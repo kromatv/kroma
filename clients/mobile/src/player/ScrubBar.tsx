@@ -2,8 +2,8 @@
 // thumbnail + time bubble, drawn from the kit's seek-bar paints so it matches
 // the TV seek bar.
 
-import { formatTimecode } from '@kromatv/core';
 import { seekBar } from '@kromatv/ui';
+import { formatTimecode } from '@kromatv/ui/intl';
 import { Box, styles, Text } from '@kromatv/ui/kit';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';

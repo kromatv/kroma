@@ -1,4 +1,3 @@
-import { formatTimecode } from '@kromatv/core';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -14,6 +13,7 @@ import { sharedStyle, style, styles, sv, themed } from '#ui/core';
 import { a11yValue } from '#ui/lib/a11y';
 import { gradient } from '#ui/lib/css';
 import { suppressSelection } from '#ui/lib/drag-select';
+import { formatTimecode } from '#ui/lib/intl';
 import { useT } from '#ui/services/i18n';
 import type { StoryboardTile } from '#ui/services/storyboard';
 

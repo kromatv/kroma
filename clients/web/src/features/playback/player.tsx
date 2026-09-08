@@ -1,5 +1,5 @@
 import type { MediaItem } from '@kromatv/client/media';
-import { audioSupport, formatTimecode as fmtTime, playerSubtitle } from '@kromatv/core';
+import { audioSupport, playerSubtitle } from '@kromatv/core';
 import {
   Player as UnifiedPlayer,
   useCast,
@@ -7,6 +7,7 @@ import {
   useT,
   WEB_FLAGS,
 } from '@kromatv/ui';
+import { formatTimecode as fmtTime } from '@kromatv/ui/intl';
 import { Box, Button, backdropBlur, classes, Icon, styles, Text } from '@kromatv/ui/kit';
 import type { Ref } from 'react';
 import { useCallback, useMemo, useState } from 'react';

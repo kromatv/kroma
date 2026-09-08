@@ -7,7 +7,8 @@
 // rather than importing them.
 
 import type { MediaItem } from '@kromatv/client/media';
-import { audioTracksOf, episodeTag, formatTimecode } from '@kromatv/core';
+import { audioTracksOf, episodeTag } from '@kromatv/core';
+import { formatTimecode } from '@kromatv/ui/intl';
 import {
   BackButton,
   Box,

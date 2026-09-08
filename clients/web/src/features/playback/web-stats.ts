@@ -1,12 +1,7 @@
 import type { AudioTrack } from '@kromatv/client/media';
-import {
-  formatTimecode as clock,
-  decimal,
-  formatBytes,
-  type Locale,
-  type Translate,
-} from '@kromatv/core';
+import type { Locale, Translate } from '@kromatv/core';
 import type { PlayerMeter, PlayerStats } from '@kromatv/ui';
+import { formatTimecode as clock, decimal, formatBytes } from '@kromatv/ui/intl';
 import type { EngineLiveStats } from '#web/features/playback/engine-stats';
 import type { MovieView } from '#web/shared/lib/api';
 

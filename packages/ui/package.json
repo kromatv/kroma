@@ -29,6 +29,7 @@
     "./kit": "./src/kit.ts",
     "./kit/*": "./src/components/*/index.ts",
     "./atomic": "./src/core/atomic/index.ts",
+    "./intl": "./src/lib/intl.ts",
     "./ssr": "./src/ssr.ts",
     "./expo-image": "./src/lib/expo-image-backend.tsx",
     "./testing": "./src/testing.tsx",

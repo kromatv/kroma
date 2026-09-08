@@ -1,9 +1,9 @@
-import { formatTimecode as fmtTime } from '@kromatv/core';
 import { useMemo } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { style, styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
+import { formatTimecode as fmtTime } from '#ui/lib/intl';
 import { useLocale, useT } from '#ui/services/i18n';
 import type { StoryboardTile } from '#ui/services/storyboard';
 import type { usePlayerNav } from '../../hooks/use-player-nav';

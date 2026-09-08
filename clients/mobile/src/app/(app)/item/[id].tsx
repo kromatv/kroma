@@ -5,11 +5,11 @@ import { ItemId, type MediaItem, type ProgressEntry } from '@kromatv/client/medi
 import {
   episodeTag,
   formatRuntime,
-  formatTimecode,
   qualityBadge,
   sizedImageUrl,
   type Translate,
 } from '@kromatv/core';
+import { formatTimecode } from '@kromatv/ui/intl';
 import { Box, styles, Text } from '@kromatv/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';

@@ -1,5 +1,5 @@
+import { createTranslator } from '@kromatv/core';
 import { describe, expect, it } from 'vitest';
-import { createTranslator } from './i18n';
 import {
   decimal,
   formatBytes,

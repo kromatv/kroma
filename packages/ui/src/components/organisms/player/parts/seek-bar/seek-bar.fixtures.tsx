@@ -1,14 +1,9 @@
-import { formatTimecode } from '@kromatv/core';
-
 import { useCallback, useEffect, useRef, useState } from 'react';
-
 import { Box } from '#ui/components/atoms/box';
-
 import { Ground } from '#ui/components/atoms/ground';
-
 import { currentChapter } from '#ui/components/organisms/player/lib/chapters';
-
 import { CHAPTERS, fakeTileAt } from '#ui/components/organisms/player/player.fixture';
+import { formatTimecode } from '#ui/lib/intl';
 
 import { stillArt } from '#ui/lib/sample-art';
 

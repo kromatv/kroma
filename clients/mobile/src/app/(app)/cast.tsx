@@ -2,8 +2,8 @@
 // (position interpolated between heartbeats), never what this phone just asked for.
 
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { formatTimecode } from '@kromatv/core';
 import { useCast } from '@kromatv/ui';
+import { formatTimecode } from '@kromatv/ui/intl';
 import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';

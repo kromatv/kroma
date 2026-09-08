@@ -4,8 +4,8 @@
 
 import type { CastNowPlaying } from '@kromatv/client/cast';
 import type { MediaItem } from '@kromatv/client/media';
-import { formatTimecode } from '@kromatv/core';
 import { type Cast, useCast, useT } from '@kromatv/ui';
+import { formatTimecode } from '@kromatv/ui/intl';
 import {
   Box,
   breakpoint,
