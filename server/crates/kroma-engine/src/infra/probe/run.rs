@@ -230,7 +230,10 @@ mod tests {
         let Outcome::Read(result) = outcome else {
             panic!("a parsable description must read as one");
         };
-        assert_eq!(result.video.as_ref().map(|v| v.codec.as_str()), Some("hevc"));
+        assert_eq!(
+            result.video.as_ref().map(|v| v.codec.as_str()),
+            Some("hevc")
+        );
         assert!(result.unreadable.is_none());
     }
 

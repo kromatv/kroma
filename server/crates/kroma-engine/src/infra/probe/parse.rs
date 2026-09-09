@@ -201,9 +201,8 @@ mod tests {
 
     #[test]
     fn pq_reads_as_hdr10_and_the_arib_transfer_as_hlg() {
-        let pq = video_of(
-            r#"{"codec_type":"video","codec_name":"hevc","color_transfer":"smpte2084"}"#,
-        );
+        let pq =
+            video_of(r#"{"codec_type":"video","codec_name":"hevc","color_transfer":"smpte2084"}"#);
         let hlg = video_of(
             r#"{"codec_type":"video","codec_name":"hevc","color_transfer":"arib-std-b67"}"#,
         );
@@ -233,7 +232,9 @@ mod tests {
 
         assert!(video.hdr_format.is_none());
         assert!(!video.hdr);
-        let color = video.color.expect("bt709 is colour metadata like any other");
+        let color = video
+            .color
+            .expect("bt709 is colour metadata like any other");
         assert_eq!(color.primaries.as_deref(), Some("bt709"));
         assert_eq!(color.transfer.as_deref(), Some("bt709"));
         assert_eq!(color.matrix.as_deref(), Some("bt709"));
