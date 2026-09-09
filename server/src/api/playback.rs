@@ -15,7 +15,7 @@ use crate::api::util::{client_ip, query};
 use crate::api::visibility;
 use crate::db;
 use crate::infra::events::ServerEvent;
-use crate::services::playback::{self, Ping};
+use crate::services::playback::{self, Beat, Ping};
 use crate::services::settings;
 use crate::state::SharedState;
 use axum::routing::{get, post, put};
@@ -143,7 +143,7 @@ pub async fn ping(
         }
     }
 
-    let is_new = state.playback.upsert(
+    let beat = state.playback.upsert(
         ping,
         Some(user.id.clone()),
         user.username.clone(),
@@ -151,6 +151,11 @@ pub async fn ping(
         network,
         item.as_ref(),
     );
+    // A session another account owns answers 204, as `/playback/stop` does: the
+    // endpoint must not double as a way to discover which sessions exist.
+    if beat == Beat::Refused {
+        return StatusCode::NO_CONTENT.into_response();
+    }
 
     let uid = user.id.clone();
     let _ = query(&state.db, move |pool| {
@@ -160,7 +165,7 @@ pub async fn ping(
     .await;
 
     let count = state.playback.list().len();
-    state.events.publish(if is_new {
+    state.events.publish(if beat == Beat::Opened {
         ServerEvent::PlaybackStarted { count }
     } else {
         ServerEvent::PlaybackUpdated { count }
