@@ -1,7 +1,6 @@
 # Library
 
-Status: **AGREED** overall, with one section still **DRAFT** where a product choice
-stays open. Every section carries its own status; the file-level label is the floor.
+Status: **AGREED**. Every section carries its own status; the file-level label is the floor.
 
 Sources on disk become titles you can browse. Everything upstream of "there is something
 to play". What a title *is* once matched, meaning streams, codecs and artwork, is
@@ -215,27 +214,32 @@ architecture rather than product rules, and are not fixed here.
 
 ## Refresh
 
-Status: **DRAFT**, recommended rules provisional
+Status: **AGREED**
 
-**LIB-41** (DRAFT) - A newly matched item fetches its metadata once.
+**LIB-41** (SHIPPED) - A newly matched item fetches its metadata once.
 
-**LIB-42** (DRAFT) - Running series are re-checked on a slow cadence, so a new episode's air
+**LIB-42** (AGREED) - Running series are re-checked on a slow cadence, so a new episode's air
 date and stills appear without a person asking. Completed films are not re-checked on a
 timer, because their metadata does not change.
 
-**LIB-43** (DRAFT) - A "Refresh metadata" action on any title, season or whole source
+**LIB-43** (AGREED) - A "Refresh metadata" action on any title, season or whole source
 re-fetches from the provider and overwrites the cache, so a person can pull a corrected
 summary or better artwork on demand.
 
-**LIB-44** (DRAFT) - A forced refresh **never** discards a manual match or user-chosen
+**LIB-44** (AGREED) - A forced refresh **never** discards a manual match or user-chosen
 artwork. It refreshes the descriptive fields around a binding the person set; it does not
 overturn the binding.
 
-Open, with a recommendation: whether a forced refresh should also re-run *matching* rather
-than only re-fetch metadata for the current identity. Recommended answer: keep them separate.
-"Refresh metadata" updates the record, and a distinct "Re-match" action re-runs
-identification, so a person never loses a correct match by asking for fresher artwork. This is
-provisional pending review.
+**LIB-50** (SHIPPED) - Refreshing metadata and re-running identification are two actions, and
+a metadata refresh never re-runs matching. "Re-match" is its own action, on a title, and it is
+the only thing that can change a binding.
+
+Two actions rather than one, because they fail in opposite directions. A person asking for
+better artwork is asking about the *record*; a person fixing a wrong film is asking about the
+*identity*. Folding them together means the cheap, frequent, safe request carries the risk of
+the rare, deliberate, destructive one, and the first time a refresh silently re-matched a
+correctly-bound file the person would stop trusting refresh entirely. Splitting them costs one
+menu entry.
 
 ## Deletions and moves
 
