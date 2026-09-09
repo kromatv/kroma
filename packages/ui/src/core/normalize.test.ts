@@ -10,7 +10,7 @@ describe('normalize', () => {
       justifyContent: 'center',
       paddingLeft: 18,
       paddingRight: 18,
-      borderRadius: 999,
+      borderRadius: 'var(--radius-pill)',
     });
   });
 

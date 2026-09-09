@@ -10,6 +10,7 @@
 import { createContext, useCallback, useContext, useState } from 'react';
 import type { ViewStyle } from 'react-native';
 import { sharedStyle } from '#ui/core';
+import type { Radius } from '#ui/core/tokens/layout';
 import type { ControlSize } from '#ui/lib/field-shell';
 
 type GroupOrientation = 'horizontal' | 'vertical';
@@ -19,7 +20,7 @@ type GroupPosition = 'only' | 'first' | 'middle' | 'last';
 interface GroupSlot {
   orientation: GroupOrientation;
   position: GroupPosition;
-  radius: number;
+  radius: Radius;
   size: ControlSize;
 }
 
@@ -40,7 +41,7 @@ const slots = new Map<string, GroupSlot>();
 function groupSlot(
   orientation: GroupOrientation,
   position: GroupPosition,
-  radius: number,
+  radius: Radius,
   size: ControlSize,
 ): GroupSlot {
   const key = `${orientation}:${position}:${radius}:${size}`;
@@ -54,7 +55,7 @@ function groupSlot(
 function corners(
   orientation: GroupOrientation,
   position: GroupPosition,
-  radius: number,
+  radius: Radius,
 ): ViewStyle {
   const joinsBefore = position === 'middle' || position === 'last';
   const joinsAfter = position === 'middle' || position === 'first';

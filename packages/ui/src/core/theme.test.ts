@@ -7,6 +7,8 @@ import {
   KROMA_LIGHT,
   onPaper,
   onThemeChange,
+  radiusValue,
+  scaledRadius,
   setTheme,
   themed,
   themedCache,
@@ -28,10 +30,12 @@ describe('createTheme', () => {
       colors: { accent: '#3FB6F2' },
       fonts: { display: 'Clash Display' },
     });
-    // The focus ring follows the accent; the roles follow the family they name.
+    // The focus ring follows the accent; a role reads the family it names off
+    // the cascade, where the restated face lands (see theme-sheet.test).
     expect(ocean.ring.focus.outlineColor).toBe('#3FB6F2');
-    expect(ocean.type.hero?.fontFamily).toBe('Clash Display');
-    expect(ocean.type.body?.fontFamily).toBe(KROMA.fonts.ui);
+    expect(ocean.fonts.display).toBe('Clash Display');
+    expect(ocean.fonts.ui).toBe(KROMA.fonts.ui);
+    expect(ocean.type.hero?.fontFamily).toBe('var(--type-hero-family)');
   });
 
   it('merges nested groups per key rather than wholesale', () => {
@@ -158,5 +162,21 @@ describe('setTheme', () => {
     off();
     expect(themeVersion()).toBe(before + 1);
     expect(calls).toBe(1);
+  });
+});
+
+describe('radiusValue', () => {
+  it('reads a token off the cascade and passes a derived corner through', () => {
+    expect(radiusValue('md')).toBe('var(--radius-md)');
+    expect(radiusValue('calc(var(--radius-md) - 4px)')).toBe('calc(var(--radius-md) - 4px)');
+    expect(radiusValue(7)).toBe(7);
+  });
+});
+
+describe('scaledRadius', () => {
+  it('multiplies a number and wraps a property in calc', () => {
+    expect(scaledRadius(10, 0.5)).toBe(5);
+    expect(scaledRadius('md', 1)).toBe('var(--radius-md)');
+    expect(scaledRadius('md', 0.75)).toBe('calc(var(--radius-md) * 0.75)');
   });
 });

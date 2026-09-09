@@ -4,7 +4,6 @@ import type { ReactElement } from 'react';
 import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cellWidth } from '#ui/components/atoms/grid';
-import { radius } from '#ui/core/tokens';
 import { clearPressGuard } from '#ui/lib/press-guard';
 import { declared, onScreen } from '#ui/testing';
 import { MediaCard, tintGradient } from './media-card';
@@ -37,7 +36,7 @@ describe('MediaCard', () => {
     // A rail fits its pitch to whole columns, so a tile pinned to a width of
     // its own eats the gap the cell was holding for it.
     expect(css(el).width).toBe('100%');
-    expect(css(el).borderTopLeftRadius).toBe(`${radius.xl}px`);
+    expect(css(el).borderTopLeftRadius).toBe('var(--radius-xl)');
   });
 
   it('takes a width where there is no cell to fill', () => {
@@ -78,7 +77,7 @@ describe('PosterCard', () => {
     render(<PosterCard title="Arrival" art={null} tint={TINT} autoFocus />);
     const el = tile('Arrival');
     expect(css(el).width).toBe('100%');
-    expect(css(el).borderTopLeftRadius).toBe(`${radius.xl}px`);
+    expect(css(el).borderTopLeftRadius).toBe('var(--radius-xl)');
     expect(declared(el, 'transform') ?? '').toContain('scale(1.05)');
   });
 });

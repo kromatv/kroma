@@ -1,4 +1,4 @@
-import { CONTROL, color, radius, typeSpec } from '@kromatv/ui/kit';
+import { CONTROL, color, typeSpec } from '@kromatv/ui/kit';
 import { describe, expect, it } from 'vitest';
 import { SIDE_NAV_GUTTER, sideNavRow } from './side-nav-style';
 
@@ -17,7 +17,7 @@ describe('a navigation row', () => {
     expect(REST.root.gap).toBe(SHELL.gap);
     expect(REST.root.minHeight).toBe(SHELL.height);
     expect(REST.root.paddingLeft).toBe(SHELL.px);
-    expect(REST.root.borderRadius).toBe(radius[SHELL.radius]);
+    expect(REST.root.borderRadius).toBe(`var(--radius-${SHELL.radius})`);
   });
 
   it('carries the rhythm between two rows as its own margin', () => {
@@ -67,7 +67,7 @@ describe('a navigation row', () => {
       for (const slot of Object.values(face)) {
         for (const value of Object.values(slot)) {
           if (typeof value !== 'string') continue;
-          expect(value).toMatch(/^var\(--kroma-|^[a-z]+$/);
+          expect(value).toMatch(/^var\(--(kroma|radius)-|^[a-z]+$/);
         }
       }
     }

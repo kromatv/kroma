@@ -106,7 +106,7 @@ describe('chip design', () => {
       expect(chipVariants({ size: 'tv' }).root).toMatchObject({
         paddingTop: 10,
         paddingLeft: 22,
-        borderRadius: 999,
+        borderRadius: 'var(--radius-pill)',
       });
     });
   });
