@@ -46,13 +46,31 @@ The scanner recognises these layouts and naming cues:
   year *2017* (not 2049). The scanner strips release junk (resolution / source /
   codec / group) from titles, and falls back to the `Title (Year)` folder name
   when the filename is generic.
-- Episodes: `S01E02`, `s1e2`, `S01E02-E03` (multi-episode), `1x02`. The
-  top-level folder under the library root is the show identity
-  (`TV Shows/The Office (2005)/Season 02/The Office - S02E01 - The Dundies.mkv`),
-  with the text after the marker becoming the episode title. Episodes are grouped
-  into shows and seasons.
+- Episodes: `S01E02`, `s1e2`, `S01E02-E03` (multi-episode), `1x02`, with the text
+  after the marker becoming the episode title. Episodes are grouped into shows and
+  seasons.
+
+  A `Season 01` / `Saison 1` / `Specials` folder is what proves the folder above it
+  is a show folder, so that folder names the show and every release convention
+  inside it collapses to one series
+  (`TV Shows/The Office (2005)/Season 02/The Office - S02E01 - The Dundies.mkv`).
+  Intermediate folders are stepped over, so `TV Shows/4K/The Office (2005)/Season 02/…`
+  reaches the same show.
+
+  With no season folder to vouch for one, the path proves nothing (a flat folder
+  holds many shows side by side), so the filename names the show:
+  `dump/Breaking.Bad.S01E01.mkv` and `dump/The.Office.S01E01.mkv` are two series,
+  not one folder's worth. A file that carries no name of its own (`S01E01.mkv`) falls
+  back to the folder holding it, and at the library root to the library folder, so
+  such episodes land in one series rather than one series each.
 
 A library's `kind` (`movies` / `shows` / `mixed`) follows from what it holds.
+
+Symlinks are followed, so a curated library of links into a shared dump scans as if
+the files sat there: the link's own name is what gets parsed, and the target is what
+gets streamed. A link whose target is not mounted (the usual shape in a container that
+mounts the library but not the dump) cannot be read at all; the scan logs how many
+entries it skipped and one offending path rather than reporting an empty library.
 
 ## Quickstart
 

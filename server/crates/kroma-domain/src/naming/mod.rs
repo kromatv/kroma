@@ -4,19 +4,21 @@
 //! name, season, episode (incl. multi-episode files), titles and year using
 //! the same cues Plex/Jellyfin rely on:
 //!   * `S01E02`, `s1e2`, `S01E02-E03`, `1x02` season/episode markers
-//!   * the top-level folder under a library root as the *show* identity
-//!     (`Library/Show Name/Season 01/Show - S01E02.mkv`)
+//!   * the folder a season folder vouches for as the *show* identity, and the
+//!     filename when the path has no season folder to vouch for one (see
+//!     [`show`])
 //!   * `Movie Title (2017)` movie folders / filenames
 //!   * release-junk stripping for clean titles (resolution, source, codec, group)
 //!
 //! This is pure domain logic: filename → parsed identity, no I/O.
 
 mod marker;
+mod show;
 mod title;
 
 use std::path::Path;
 
-use marker::{find_marker, is_season_folder};
+use marker::find_marker;
 use title::clean_episode_title;
 pub use title::{clean_title, parse_year};
 
@@ -57,20 +59,7 @@ pub fn parse(root: &Path, path: &Path) -> Parsed {
         .unwrap_or_default();
 
     if let Some(m) = find_marker(stem) {
-        // Show identity: the top-level folder under the library root, else the
-        // text before the marker in the filename (flat layout).
-        let (show_title, show_year) = match dirs.first() {
-            Some(folder) if !is_season_folder(folder) => (clean_title(folder), parse_year(folder)),
-            _ => {
-                let before = &stem[..m.start];
-                (clean_title(before), parse_year(before))
-            }
-        };
-        let show_title = if show_title.is_empty() {
-            clean_title(stem)
-        } else {
-            show_title
-        };
+        let show = show::identify(root, &dirs, &stem[..m.start], stem);
 
         let after = stem.get(m.end..).unwrap_or("");
         let episode_title = {
@@ -83,8 +72,8 @@ pub fn parse(root: &Path, path: &Path) -> Parsed {
         };
 
         Parsed::Episode {
-            show_title,
-            show_year,
+            show_title: show.title,
+            show_year: show.year,
             season: m.season,
             episode: m.episode,
             episode_end: m.episode_end,
@@ -115,11 +104,11 @@ mod tests {
     }
 
     #[test]
-    fn an_episode_under_a_bare_season_folder_falls_back_to_the_filename() {
+    fn an_episode_under_a_bare_season_folder_falls_back_to_the_library_folder() {
         assert_eq!(
             p("/tv", "/tv/Season 01/S01E02.mkv"),
             Parsed::Episode {
-                show_title: "S01E02".into(),
+                show_title: "tv".into(),
                 show_year: None,
                 season: 1,
                 episode: 2,
@@ -192,6 +181,41 @@ mod tests {
                 episode_title: Some("The Dundies".into()),
             }
         );
+    }
+
+    #[test]
+    fn shows_grouped_under_one_folder_keep_their_own_identities() {
+        let one = p("/lib", "/lib/Shows/Breaking Bad/Season 01/S01E01.mkv");
+        let two = p("/lib", "/lib/Shows/The Office/Season 01/S01E02.mkv");
+
+        assert!(
+            matches!(one, Parsed::Episode { ref show_title, .. } if show_title == "Breaking Bad")
+        );
+        assert!(
+            matches!(two, Parsed::Episode { ref show_title, .. } if show_title == "The Office")
+        );
+    }
+
+    #[test]
+    fn a_dump_folder_lets_each_filename_name_its_own_show() {
+        let one = p("/lib", "/lib/all/Breaking.Bad.S01E01.1080p.mkv");
+        let two = p("/lib", "/lib/all/The.Office.S01E01.1080p.mkv");
+
+        assert!(
+            matches!(one, Parsed::Episode { ref show_title, .. } if show_title == "Breaking Bad")
+        );
+        assert!(
+            matches!(two, Parsed::Episode { ref show_title, .. } if show_title == "The Office")
+        );
+    }
+
+    #[test]
+    fn episodes_named_only_by_their_marker_land_in_one_series() {
+        let one = p("/media/4k Shows", "/media/4k Shows/S01E01.mkv");
+        let two = p("/media/4k Shows", "/media/4k Shows/S01E02.mkv");
+
+        assert!(matches!(one, Parsed::Episode { ref show_title, .. } if show_title == "4k Shows"));
+        assert!(matches!(two, Parsed::Episode { ref show_title, .. } if show_title == "4k Shows"));
     }
 
     #[test]
