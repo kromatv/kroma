@@ -29,6 +29,7 @@
   "player.directPlayHevc": "Direct play in H.265.",
   "player.directPlayUnknown": "Unknown codec, trying direct play.",
   "player.directPlayVp9": "Direct play in VP9.",
+  "player.dolbyVisionUnsupported": "This device can't play Dolby Vision",
   "player.dismiss": "Dismiss",
   "player.fileUnreadable": "This file will not open",
   "player.fileUnreadableHint": "KROMA could not read it: {reason}. Copy it again, then run a scan.",

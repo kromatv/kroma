@@ -250,7 +250,7 @@
 - **MEDIA-18** (AGREED) - HDR is preserved end to end or it is not offered. KROMA never
 - **MEDIA-19** (SHIPPED) - **Bit depth.** 8-bit and 10-bit are first-class, and 10-bit is
 - **MEDIA-20** (AGREED) - KROMA distinguishes **HDR10**, **HDR10+**, **Dolby Vision** and
-- **MEDIA-21** (AGREED) - Colour primaries, transfer characteristics and matrix coefficients
+- **MEDIA-21** (SHIPPED) - Colour primaries, transfer characteristics and matrix coefficients
 - **MEDIA-22** (AGREED) - Where dynamic metadata, HDR10+ or Dolby Vision, cannot be carried
 - **MEDIA-23** (AGREED) - The first-class audio codecs are **AAC**, **AC-3** and **E-AC-3**
 - **MEDIA-24** (AGREED) - An audio stream's **channel layout**, stereo, 5.1, 7.1 or Atmos

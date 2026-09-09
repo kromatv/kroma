@@ -2297,7 +2297,7 @@
     "status": "SHIPPED",
     "text": "**Bit depth.** 8-bit and 10-bit are first-class, and 10-bit is",
     "file": "docs/spec/media/README.md",
-    "line": 97
+    "line": 103
   },
   {
     "id": "MEDIA-20",
@@ -2307,17 +2307,17 @@
     "status": "AGREED",
     "text": "KROMA distinguishes **HDR10**, **HDR10+**, **Dolby Vision** and",
     "file": "docs/spec/media/README.md",
-    "line": 99
+    "line": 105
   },
   {
     "id": "MEDIA-21",
     "domain": "MEDIA",
     "space": "media",
     "number": 21,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Colour primaries, transfer characteristics and matrix coefficients",
     "file": "docs/spec/media/README.md",
-    "line": 103
+    "line": 111
   },
   {
     "id": "MEDIA-22",
@@ -2327,7 +2327,7 @@
     "status": "AGREED",
     "text": "Where dynamic metadata, HDR10+ or Dolby Vision, cannot be carried",
     "file": "docs/spec/media/README.md",
-    "line": 106
+    "line": 114
   },
   {
     "id": "MEDIA-23",
@@ -2337,7 +2337,7 @@
     "status": "AGREED",
     "text": "The first-class audio codecs are **AAC**, **AC-3** and **E-AC-3**",
     "file": "docs/spec/media/README.md",
-    "line": 114
+    "line": 122
   },
   {
     "id": "MEDIA-24",
@@ -2347,7 +2347,7 @@
     "status": "AGREED",
     "text": "An audio stream's **channel layout**, stereo, 5.1, 7.1 or Atmos",
     "file": "docs/spec/media/README.md",
-    "line": 118
+    "line": 126
   },
   {
     "id": "MEDIA-25",
@@ -2357,7 +2357,7 @@
     "status": "SHIPPED",
     "text": "**Passthrough** is the default for multichannel and lossless audio:",
     "file": "docs/spec/media/README.md",
-    "line": 121
+    "line": 129
   },
   {
     "id": "MEDIA-26",
@@ -2367,7 +2367,7 @@
     "status": "AGREED",
     "text": "**Downmixing** to stereo happens only when the target cannot render",
     "file": "docs/spec/media/README.md",
-    "line": 124
+    "line": 132
   },
   {
     "id": "MEDIA-27",
@@ -2377,7 +2377,7 @@
     "status": "SHIPPED",
     "text": "Multiple audio streams, languages and commentary alike, are all",
     "file": "docs/spec/media/README.md",
-    "line": 128
+    "line": 136
   },
   {
     "id": "MEDIA-28",
@@ -2387,7 +2387,7 @@
     "status": "AGREED",
     "text": "A subtitle stream is either **embedded**, a track inside the media",
     "file": "docs/spec/media/README.md",
-    "line": 136
+    "line": 144
   },
   {
     "id": "MEDIA-29",
@@ -2397,7 +2397,7 @@
     "status": "AGREED",
     "text": "The first-class subtitle formats are **SRT**, **WebVTT** and",
     "file": "docs/spec/media/README.md",
-    "line": 140
+    "line": 148
   },
   {
     "id": "MEDIA-30",
@@ -2407,7 +2407,7 @@
     "status": "AGREED",
     "text": "The **forced** disposition, only the foreign-language lines a",
     "file": "docs/spec/media/README.md",
-    "line": 144
+    "line": 152
   },
   {
     "id": "MEDIA-31",
@@ -2417,7 +2417,7 @@
     "status": "AGREED",
     "text": "**Burning in**, rendering a subtitle permanently into the video, is",
     "file": "docs/spec/media/README.md",
-    "line": 147
+    "line": 155
   },
   {
     "id": "MEDIA-32",
@@ -2427,7 +2427,7 @@
     "status": "SHIPPED",
     "text": "Every title carries a **poster**, a **backdrop**, a **logo** and, per",
     "file": "docs/spec/media/README.md",
-    "line": 157
+    "line": 165
   },
   {
     "id": "MEDIA-33",
@@ -2437,7 +2437,7 @@
     "status": "AGREED",
     "text": "Image sources rank by trust: embedded in the media file, then a",
     "file": "docs/spec/media/README.md",
-    "line": 160
+    "line": 168
   },
   {
     "id": "MEDIA-34",
@@ -2447,7 +2447,7 @@
     "status": "AGREED",
     "text": "KROMA derives a fixed set of sizes per image, a small grid",
     "file": "docs/spec/media/README.md",
-    "line": 163
+    "line": 171
   },
   {
     "id": "MEDIA-35",
@@ -2457,7 +2457,7 @@
     "status": "AGREED",
     "text": "Derived sizes are cached and served without re-deriving, and a",
     "file": "docs/spec/media/README.md",
-    "line": 166
+    "line": 174
   },
   {
     "id": "MEDIA-36",
@@ -2467,7 +2467,7 @@
     "status": "AGREED",
     "text": "Artwork is never a reason a title fails to appear. A title with no",
     "file": "docs/spec/media/README.md",
-    "line": 168
+    "line": 176
   },
   {
     "id": "MEDIA-37",
@@ -2477,7 +2477,7 @@
     "status": "SHIPPED",
     "text": "KROMA learns a file's streams by **probing** it once, when the",
     "file": "docs/spec/media/README.md",
-    "line": 175
+    "line": 183
   },
   {
     "id": "MEDIA-38",
@@ -2487,7 +2487,7 @@
     "status": "AGREED",
     "text": "A probe is the authoritative stream truth until the file's bytes",
     "file": "docs/spec/media/README.md",
-    "line": 185
+    "line": 193
   },
   {
     "id": "MEDIA-39",
@@ -2497,7 +2497,7 @@
     "status": "AGREED",
     "text": "When a direct play fails in a way that implicates the stream",
     "file": "docs/spec/media/README.md",
-    "line": 188
+    "line": 196
   },
   {
     "id": "MEDIA-40",
@@ -2507,7 +2507,7 @@
     "status": "AGREED",
     "text": "Trust is per-file and durable: a corrected probe is written back,",
     "file": "docs/spec/media/README.md",
-    "line": 193
+    "line": 201
   },
   {
     "id": "MEDIA-41",
@@ -2517,7 +2517,7 @@
     "status": "AGREED",
     "text": "A file whose container opens and whose streams enumerate, but which",
     "file": "docs/spec/media/README.md",
-    "line": 207
+    "line": 215
   },
   {
     "id": "MEDIA-42",
@@ -2527,7 +2527,7 @@
     "status": "AGREED",
     "text": "The title **appears** in the library with whatever *is* known. A",
     "file": "docs/spec/media/README.md",
-    "line": 211
+    "line": 219
   },
   {
     "id": "MEDIA-43",
@@ -2537,7 +2537,7 @@
     "status": "AGREED",
     "text": "The unknown stream is marked **undescribed** and carries its raw",
     "file": "docs/spec/media/README.md",
-    "line": 214
+    "line": 222
   },
   {
     "id": "MEDIA-44",
@@ -2547,7 +2547,7 @@
     "status": "SHIPPED",
     "text": "An undescribed stream is *not direct-playable*, because KROMA will",
     "file": "docs/spec/media/README.md",
-    "line": 216
+    "line": 224
   },
   {
     "id": "MEDIA-45",
@@ -2557,7 +2557,7 @@
     "status": "SHIPPED",
     "text": "A file that will not open at all, a truncated or corrupt container,",
     "file": "docs/spec/media/README.md",
-    "line": 219
+    "line": 227
   },
   {
     "id": "MEDIA-46",
@@ -2567,7 +2567,7 @@
     "status": "AGREED",
     "text": "Undescribed and unreadable are distinct states. The first is \"we",
     "file": "docs/spec/media/README.md",
-    "line": 222
+    "line": 230
   },
   {
     "id": "MOD-1",

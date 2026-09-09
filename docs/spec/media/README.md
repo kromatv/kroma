@@ -94,13 +94,21 @@ Status: **SHIPPED** in part; each requirement carries its own.
 silently flattens HDR to SDR, and a tone-mapped picture is surfaced as the compromise it is
 by [`playback/`](../playback/).
 
+Matching a client against a variant is only a refusal where the variant has no picture of
+its own to fall back on. HDR10+ and HLG degrade cleanly, and so do Dolby Vision profiles 8
+and 9, whose base layer is a valid HDR10 or HLG picture: a device that cannot read the
+dynamic metadata still draws the film. Profiles 5 and 7 have no such base layer, so a device
+with no Dolby Vision decoder draws them in the wrong colours, and those are refused.
+
 - **MEDIA-19** (SHIPPED) - **Bit depth.** 8-bit and 10-bit are first-class, and 10-bit is
   retained as a property of the video stream rather than rounded away in the model.
 - **MEDIA-20** (AGREED) - KROMA distinguishes **HDR10**, **HDR10+**, **Dolby Vision** and
   **HLG** as separate properties, because each has distinct client support, and it records
   Dolby Vision's profile, because a profile a client cannot decode is not the same as one it
-  can. Today a video stream carries one HDR flag, so the variants are the part not built.
-- **MEDIA-21** (AGREED) - Colour primaries, transfer characteristics and matrix coefficients
+  can. Three of the four are recorded, with the profile: **HDR10+ is the part not built**,
+  because its metadata is per-frame and a probe reads headers, so a file carrying it is
+  recorded as the HDR10 it also is.
+- **MEDIA-21** (SHIPPED) - Colour primaries, transfer characteristics and matrix coefficients
   travel with the video stream, and a client is matched against the exact HDR variant rather
   than a generic "HDR" flag.
 - **MEDIA-22** (AGREED) - Where dynamic metadata, HDR10+ or Dolby Vision, cannot be carried

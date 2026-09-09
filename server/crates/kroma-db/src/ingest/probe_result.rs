@@ -3,7 +3,7 @@
 use anyhow::Result;
 use rusqlite::{params, Connection, OptionalExtension};
 
-use kroma_domain::{AudioStream, SubtitleTrack, VideoStream};
+use kroma_domain::{AudioStream, HdrFormat, SubtitleTrack, VideoStream};
 
 use crate::Pool;
 
@@ -25,11 +25,13 @@ pub fn set_file_probe(pool: &Pool, file_id: &str, probe: &FileProbe) -> Result<(
     let subs = serde_json::to_string(probe.subtitles).unwrap_or_else(|_| "[]".into());
     let a_tracks = serde_json::to_string(probe.audio_tracks).unwrap_or_else(|_| "[]".into());
     let (video, audio) = (probe.video, probe.audio);
+    let color = video.and_then(|v| v.color.as_ref());
     conn.execute(
         "UPDATE files SET probed=1, duration_ms=?2, \
             v_codec=?3, v_width=?4, v_height=?5, v_hdr=?6, v_bit_depth=?7, \
             a_codec=?8, a_channels=?9, a_language=?10, subtitles=?11, audio_tracks=?12, \
-            unreadable=?13 \
+            unreadable=?13, v_hdr_format=?14, v_dv_profile=?15, \
+            v_color_primaries=?16, v_color_transfer=?17, v_color_matrix=?18 \
          WHERE id = ?1",
         params![
             file_id,
@@ -45,6 +47,11 @@ pub fn set_file_probe(pool: &Pool, file_id: &str, probe: &FileProbe) -> Result<(
             subs,
             a_tracks,
             probe.unreadable,
+            video.and_then(|v| v.hdr_format).map(HdrFormat::as_str),
+            video.and_then(|v| v.dolby_vision_profile),
+            color.and_then(|c| c.primaries.clone()),
+            color.and_then(|c| c.transfer.clone()),
+            color.and_then(|c| c.matrix.clone()),
         ],
     )?;
 

@@ -9,11 +9,14 @@ import {
 import {
   beyondDecoder,
   canDirectPlay,
+  canRenderHdr,
   ceilingLabel,
   decoderMaxFrame,
   frameLabel,
   MSE_CAPS,
+  NATIVE_TV_CAPS,
   overrunLabels,
+  SAFARI_CAPS,
 } from './directplay';
 import { makeItem, probedItem, track } from './directplay.fixture';
 
@@ -109,6 +112,36 @@ describe('canDirectPlay', () => {
     });
     expect(canDirectPlay(namelessCodec, MSE_CAPS).messageKey).toBe('player.streamUndescribed');
     expect(canDirectPlay(unprobed, MSE_CAPS).messageKey).toBe('player.directPlayUnknown');
+  });
+
+  it('refuses Dolby Vision with no usable base layer on a device without a decoder', () => {
+    const profile5 = makeItem({
+      videoCodec: 'hevc',
+      bitDepth: 10,
+      hdrFormat: 'dolbyVision',
+      dolbyVisionProfile: 5,
+      audio: [],
+    });
+
+    expect(canDirectPlay(profile5, MSE_CAPS)).toEqual({
+      canDirectPlay: false,
+      messageKey: 'player.dolbyVisionUnsupported',
+      hintKey: 'player.codecUnsupportedHint',
+    });
+    expect(canDirectPlay(profile5, SAFARI_CAPS).canDirectPlay).toBe(true);
+    expect(canDirectPlay(profile5, NATIVE_TV_CAPS).canDirectPlay).toBe(true);
+  });
+
+  it('lets every variant that degrades to a picture through', () => {
+    const base = { videoCodec: 'hevc', bitDepth: 10, audio: [] };
+    const profile8 = makeItem({ ...base, hdrFormat: 'dolbyVision', dolbyVisionProfile: 8 });
+    const unstatedProfile = makeItem({ ...base, hdrFormat: 'dolbyVision' });
+
+    expect(canRenderHdr(profile8, MSE_CAPS)).toBe(true);
+    expect(canRenderHdr(unstatedProfile, MSE_CAPS)).toBe(true);
+    expect(canRenderHdr(makeItem({ ...base, hdrFormat: 'hdr10Plus' }), MSE_CAPS)).toBe(true);
+    expect(canRenderHdr(makeItem({ ...base, hdrFormat: 'hlg' }), MSE_CAPS)).toBe(true);
+    expect(canRenderHdr(makeItem({ ...base }), MSE_CAPS)).toBe(true);
   });
 
   it('judges the file a play request serves, not whichever one is listed first', () => {

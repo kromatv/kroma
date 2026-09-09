@@ -166,6 +166,9 @@ mod apply_files_tests {
             height: Some(2160),
             hdr: false,
             bit_depth: Some(10),
+            hdr_format: None,
+            dolby_vision_profile: None,
+            color: None,
         }
     }
 

@@ -150,6 +150,9 @@ fn fallback_from_extension(path: &Path) -> ProbeResult {
             height: None,
             hdr: false,
             bit_depth: None,
+            hdr_format: None,
+            dolby_vision_profile: None,
+            color: None,
         }),
         ..ProbeResult::default()
     }

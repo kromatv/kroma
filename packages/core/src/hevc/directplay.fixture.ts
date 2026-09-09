@@ -1,4 +1,4 @@
-import type { AudioTrack, MediaItem } from '@kromatv/client/media';
+import type { AudioTrack, HdrFormat, MediaItem } from '@kromatv/client/media';
 
 export function track(p: Partial<AudioTrack> & { index: number }): AudioTrack {
   return {
@@ -17,6 +17,8 @@ export function makeItem(p: {
   bitDepth?: number;
   width?: number;
   height?: number;
+  hdrFormat?: HdrFormat;
+  dolbyVisionProfile?: number;
   audio: AudioTrack[];
 }): MediaItem {
   return {
@@ -26,6 +28,9 @@ export function makeItem(p: {
       bitDepth: p.bitDepth ?? 8,
       width: p.width ?? null,
       height: p.height ?? null,
+      hdr: p.hdrFormat != null,
+      hdrFormat: p.hdrFormat ?? null,
+      dolbyVisionProfile: p.dolbyVisionProfile ?? null,
     },
     audio: p.audio[0] ?? null,
     audioTracks: p.audio,

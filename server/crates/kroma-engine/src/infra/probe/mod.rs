@@ -2,6 +2,7 @@
 //! ffprobe or output KROMA cannot parse falls back to a container-extension
 //! guess; a file ffprobe itself refused is recorded as unreadable instead.
 
+mod ffprobe_output;
 mod markers;
 mod parse;
 mod pass;

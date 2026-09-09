@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use rusqlite::params;
 
-use kroma_domain::{MediaFile, MediaItem};
+use kroma_domain::{HdrFormat, MediaFile, MediaItem};
 
 pub(super) fn sync_files(
     tx: &rusqlite::Transaction,
@@ -38,13 +38,16 @@ pub(super) fn sync_files(
              container=excluded.container, size=excluded.size, mtime=excluded.mtime, \
              edition=excluded.edition, probed=0, duration_ms=NULL, v_codec=NULL, v_width=NULL, \
              v_height=NULL, v_hdr=NULL, v_bit_depth=NULL, a_codec=NULL, a_channels=NULL, \
-             a_language=NULL, subtitles='[]', audio_tracks='[]', unreadable=NULL",
+             a_language=NULL, subtitles='[]', audio_tracks='[]', unreadable=NULL, \
+             v_hdr_format=NULL, v_dv_profile=NULL, v_color_primaries=NULL, \
+             v_color_transfer=NULL, v_color_matrix=NULL",
     )?;
     // Pre-probed files (demo/seed content) skip the phase-2 probe pass.
     let mut preprobed_stmt = tx.prepare(
         "INSERT INTO files (id,item_id,abs_path,rel_path,container,size,mtime,edition,probed,\
-             duration_ms,v_codec,v_width,v_height,v_hdr,v_bit_depth,a_codec,a_channels,a_language,subtitles,audio_tracks) \
-         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,1,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19) \
+             duration_ms,v_codec,v_width,v_height,v_hdr,v_bit_depth,a_codec,a_channels,a_language,subtitles,audio_tracks,\
+             v_hdr_format,v_dv_profile,v_color_primaries,v_color_transfer,v_color_matrix) \
+         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,1,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24) \
          ON CONFLICT(abs_path) DO UPDATE SET \
              id=excluded.id, item_id=excluded.item_id, rel_path=excluded.rel_path, \
              container=excluded.container, size=excluded.size, mtime=excluded.mtime, \
@@ -52,7 +55,10 @@ pub(super) fn sync_files(
              v_codec=excluded.v_codec, v_width=excluded.v_width, v_height=excluded.v_height, \
              v_hdr=excluded.v_hdr, v_bit_depth=excluded.v_bit_depth, a_codec=excluded.a_codec, \
              a_channels=excluded.a_channels, a_language=excluded.a_language, subtitles=excluded.subtitles, \
-             audio_tracks=excluded.audio_tracks, unreadable=NULL",
+             audio_tracks=excluded.audio_tracks, unreadable=NULL, \
+             v_hdr_format=excluded.v_hdr_format, v_dv_profile=excluded.v_dv_profile, \
+             v_color_primaries=excluded.v_color_primaries, v_color_transfer=excluded.v_color_transfer, \
+             v_color_matrix=excluded.v_color_matrix",
     )?;
 
     for i in items {
@@ -137,6 +143,7 @@ fn upsert_scanned_file<'a>(
     if f.probed {
         let v = f.video.as_ref();
         let a = f.audio.as_ref();
+        let color = v.and_then(|v| v.color.as_ref());
         let subs = serde_json::to_string(&f.subtitles).unwrap_or_else(|_| "[]".into());
         let a_tracks = serde_json::to_string(&f.audio_tracks).unwrap_or_else(|_| "[]".into());
         preprobed_stmt.execute(params![
@@ -159,6 +166,11 @@ fn upsert_scanned_file<'a>(
             a.and_then(|a| a.language.clone()),
             subs,
             a_tracks,
+            v.and_then(|v| v.hdr_format).map(HdrFormat::as_str),
+            v.and_then(|v| v.dolby_vision_profile),
+            color.and_then(|c| c.primaries.clone()),
+            color.and_then(|c| c.transfer.clone()),
+            color.and_then(|c| c.matrix.clone()),
         ])?;
         return Ok(());
     }

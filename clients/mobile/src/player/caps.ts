@@ -25,7 +25,7 @@ export const IOS_CAPS: PlaybackCapabilities = {
   h264: true,
   av1: false,
   vp9: false,
-  hdr: true,
+  hdr: { hdr10: true, hdr10Plus: false, dolbyVision: true, hlg: true },
   audio: {
     aac: true,
     ac3: true,
@@ -42,14 +42,16 @@ export const IOS_CAPS: PlaybackCapabilities = {
 
 // ExoPlayer: wide container/codec demux; HEVC/VP9 hardware decode is
 // ubiquitous on phones, AV1 is not (pre-2023 SoCs). Dolby/DTS decoders are TV
-// licenses phones usually lack, so surround masters transcode to AAC.
+// licenses phones usually lack, so surround masters transcode to AAC. Dolby
+// Vision is per-device and nothing here can ask, so it claims support rather
+// than forcing a transcode on a handset that would have decoded it.
 export const ANDROID_CAPS: PlaybackCapabilities = {
   hevc: true,
   hevc10bit: true,
   h264: true,
   av1: false,
   vp9: true,
-  hdr: true,
+  hdr: { hdr10: true, hdr10Plus: true, dolbyVision: true, hlg: true },
   audio: {
     aac: true,
     ac3: false,

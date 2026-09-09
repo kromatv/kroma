@@ -12,6 +12,9 @@ const PROBE = {
   h264High: 'video/mp4; codecs="avc1.640028"',
   av1Main: 'video/mp4; codecs="av01.0.05M.08"',
   vp9: 'video/webm; codecs="vp09.00.10.08"',
+  // `dvh1` profile 5 level 6: the dual-layer-free Dolby Vision a browser either
+  // has a decoder for or has not.
+  dolbyVision: 'video/mp4; codecs="dvh1.05.06"',
 } as const;
 
 // AC3/EAC3/DTS/TrueHD are not decodable by Chrome/Firefox (licensing); only
@@ -48,13 +51,23 @@ export interface FrameSize {
  * is not gated on size. */
 export type DecoderFrameLimits = Readonly<Record<string, FrameSize>>;
 
+/** Which HDR systems this device renders, one answer each: a set that draws
+ * HDR10 but not Dolby Vision is not the same set as one that draws both, which is
+ * the whole reason a single `hdr` flag could not be matched against. */
+export interface HdrCapabilities {
+  hdr10: boolean;
+  hdr10Plus: boolean;
+  dolbyVision: boolean;
+  hlg: boolean;
+}
+
 export interface PlaybackCapabilities {
   hevc: boolean;
   hevc10bit: boolean;
   h264: boolean;
   av1: boolean;
   vp9: boolean;
-  hdr: boolean;
+  hdr: HdrCapabilities;
   /** Absent where the runtime will not say, which gates nothing. */
   frameLimits?: DecoderFrameLimits;
   audio: AudioCapabilities;
@@ -95,6 +108,20 @@ function detectHdr(): boolean {
   );
 }
 
+// What the panel reports covers HDR10 and HLG, which need nothing but a wide
+// display. Dolby Vision needs a decoder, so it is probed like a codec. HDR10+ is
+// `false` everywhere in a browser: none of them apply its dynamic metadata, and
+// the HDR10 base layer is what actually gets drawn.
+function detectHdrFormats(): HdrCapabilities {
+  const panel = detectHdr();
+  return {
+    hdr10: panel,
+    hdr10Plus: false,
+    dolbyVision: supportsType(PROBE.dolbyVision),
+    hlg: panel,
+  };
+}
+
 // The native clients decode through the platform, not a `<video>` element:
 // React Native has neither `canPlayType` nor `MediaSource`, so every probe
 // below answers "no". `navigator.product`, not `typeof document`: a server-side
@@ -131,7 +158,11 @@ export function detectCapabilities(): PlaybackCapabilities {
       h264: true,
       av1: false,
       vp9: true,
-      hdr: true,
+      // No platform here reports its HDR systems, and a panel that cannot draw a
+      // variant still draws its base layer, so this claims all four rather than
+      // refusing a title a set would have played. Which set actually does what is
+      // the device matrix's job, not this table's.
+      hdr: { hdr10: true, hdr10Plus: true, dolbyVision: true, hlg: true },
       frameLimits: injectedLimits,
       audio: tvAudio,
       source: 'platform-tv',
@@ -157,7 +188,7 @@ export function detectCapabilities(): PlaybackCapabilities {
     h264: supportsType(PROBE.h264High),
     av1: supportsType(PROBE.av1Main),
     vp9: supportsType(PROBE.vp9),
-    hdr: detectHdr(),
+    hdr: detectHdrFormats(),
     frameLimits: injectedLimits,
     audio,
     source: usingMse ? 'mediaSource' : 'videoElement',

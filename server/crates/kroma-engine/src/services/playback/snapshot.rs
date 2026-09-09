@@ -119,7 +119,7 @@ fn bitrate_mbps(item: &MediaItem) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::{AudioStream, Kind, MediaFile, VideoStream};
+    use crate::model::{AudioStream, HdrFormat, Kind, MediaFile, VideoStream};
 
     fn base_item() -> MediaItem {
         MediaItem {
@@ -158,6 +158,9 @@ mod tests {
             height: Some(width * 9 / 16),
             hdr,
             bit_depth: Some(10),
+            hdr_format: hdr.then_some(HdrFormat::Hdr10),
+            dolby_vision_profile: None,
+            color: None,
         }
     }
 
