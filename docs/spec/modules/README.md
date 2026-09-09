@@ -54,6 +54,11 @@ What a module may **not** do:
 - **MOD-8** (SHIPPED) - It may not assume it is present. Because any module is uninstallable,
   core never depends on one, so a feature that needs a module is absent, not broken, when the
   module is gone.
+- **MOD-51** (SHIPPED) - It may not read or write the server's own credentials. The settings
+  callback withholds every key only the server consumes, meaning the mail, LLM and push
+  credentials plus the registry list modules are installed from: a read answers the module's
+  own default and a write naming one is refused. A credential whose consumer *is* a module
+  stays reachable, because that callback is how it reaches the process that uses it.
 
 **MOD-9** (SHIPPED) - A module *may* depend on another module, hard or optional, and that
 dependency is declared, resolved and enforced rather than discovered at runtime.

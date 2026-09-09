@@ -9,9 +9,11 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use kroma_domain::User;
 use kroma_module_host::testing::StubHost;
+use kroma_module_supervisor::CoreOnlySettings;
 use tower::ServiceExt;
 
 const TOKEN: &str = "host-token";
+const NOTHING_WITHHELD: CoreOnlySettings = CoreOnlySettings(|_| false);
 
 fn ana() -> User {
     User {
@@ -30,7 +32,8 @@ fn ana() -> User {
 }
 
 fn app(host: StubHost) -> axum::Router {
-    kroma_module_supervisor::host_router::<StubHost>(TOKEN.into()).with_state(host)
+    kroma_module_supervisor::host_router::<StubHost>(TOKEN.into(), NOTHING_WITHHELD)
+        .with_state(host)
 }
 
 async fn post(host: StubHost, token: Option<&str>, body: &str) -> (StatusCode, String) {
