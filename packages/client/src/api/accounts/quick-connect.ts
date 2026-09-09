@@ -1,4 +1,4 @@
-import { KromaApiError, type RequestContext } from '../../core/http';
+import { adoptMediaTicket, KromaApiError, type RequestContext } from '../../core/http';
 import { PairingStatus, QuickConnectInit } from './schemas';
 
 const PAIRING_SECRET_HEADER = 'x-kroma-pairing-secret';
@@ -7,13 +7,19 @@ function poller(ctx: RequestContext) {
   let legacy = false;
   return async (secret: string): Promise<PairingStatus> => {
     const withQuery = () =>
-      ctx.get('/auth/quickconnect/poll', PairingStatus, { auth: 'public', query: { secret } });
+      adoptMediaTicket(
+        ctx,
+        ctx.get('/auth/quickconnect/poll', PairingStatus, { auth: 'public', query: { secret } }),
+      );
     if (legacy) return withQuery();
     try {
-      return await ctx.get('/auth/quickconnect/poll', PairingStatus, {
-        auth: 'public',
-        headers: { [PAIRING_SECRET_HEADER]: secret },
-      });
+      return await adoptMediaTicket(
+        ctx,
+        ctx.get('/auth/quickconnect/poll', PairingStatus, {
+          auth: 'public',
+          headers: { [PAIRING_SECRET_HEADER]: secret },
+        }),
+      );
     } catch (e) {
       if (!(e instanceof KromaApiError) || e.status !== 400) throw e;
       const status = await withQuery();

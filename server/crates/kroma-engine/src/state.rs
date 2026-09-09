@@ -70,6 +70,8 @@ pub struct AppState {
     pub jobs: Arc<JobManager>,
     pub subtitle_gen: Arc<GenRegistry>,
     pub instance_id: String,
+    // Signs the media tickets the byte routes accept in a URL. Never served.
+    pub media_ticket_key: String,
     // Semaphore for offline-download remuxes; a full gate returns `503`
     // rather than queueing, since a permit is held for the whole transfer.
     pub downloads: Arc<tokio::sync::Semaphore>,
@@ -129,6 +131,7 @@ impl AppState {
         // Mint (or read back) this install's stable identity before anything can
         // serve `/api/health`.
         let instance_id = crate::services::settings::ensure_instance_id(&settings, &db);
+        let media_ticket_key = crate::services::media_ticket::signing_key(&settings, &db);
         // Minted here rather than on the statistics job's first run: the settings
         // page shows it and an operator quotes it to have their row erased, so it
         // has to exist from the moment the feature is on rather than an hour later.
@@ -195,6 +198,7 @@ impl AppState {
             jobs: Arc::new(jobs),
             subtitle_gen: Arc::new(GenRegistry::default()),
             instance_id,
+            media_ticket_key,
             downloads,
             me: weak.clone(),
             contributions,

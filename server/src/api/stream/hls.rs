@@ -9,14 +9,14 @@ use axum::response::{IntoResponse, Redirect, Response};
 use serde::Deserialize;
 
 use crate::api::error::json_error;
-use crate::api::extract::OptionalAuthUser;
+use crate::api::media_ticket::{self, MediaViewer, TicketQuery};
 use crate::api::visibility;
 use crate::infra::hls::StreamMode;
 use crate::infra::metrics::ByteSink;
 use crate::infra::stream::metered_body;
 use crate::state::SharedState;
 
-use super::{byte_sink, load_item};
+use super::{byte_sink, hls_playlist, load_item};
 
 /// `?copy=` names the audio codecs the client can decode or pass through, so the
 /// server can refuse to stream-copy one the device would play silent; `?video=`
@@ -31,6 +31,8 @@ pub struct HlsQuery {
     /// it never probed one, and the source's own size stands.
     pub maxw: Option<u32>,
     pub maxh: Option<u32>,
+    #[serde(flatten)]
+    pub ticket: TicketQuery,
 }
 
 /// `GET /api/items/:id/hls/:mode/:anchor/:audio/index.m3u8` (mode = an audio
@@ -41,7 +43,7 @@ pub struct HlsQuery {
 /// URLs, so switching language means reloading with a different `audio`.
 pub async fn hls_master(
     State(state): State<SharedState>,
-    OptionalAuthUser(caller): OptionalAuthUser,
+    MediaViewer(viewer): MediaViewer,
     Path((id, mode, anchor, audio)): Path<(String, String, u64, u32)>,
     Query(q): Query<HlsQuery>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
@@ -50,7 +52,7 @@ pub async fn hls_master(
     let Some(mode) = StreamMode::parse(&mode) else {
         return json_error(StatusCode::BAD_REQUEST, "bad mode");
     };
-    let Some(item) = load_item(&state, caller.as_ref(), id).await else {
+    let Some(item) = load_item(&state, &viewer, id).await else {
         return visibility::out_of_scope();
     };
     // Redirected rather than served here: the effective mode owns the session and
@@ -70,8 +72,14 @@ pub async fn hls_master(
         )
         .for_client_frame(source_frame, q.maxw.zip(q.maxh));
     if effective != mode {
-        return Redirect::temporary(&hls_master_path(&item.id, effective, anchor, audio))
-            .into_response();
+        return Redirect::temporary(&hls_master_path(
+            &item.id,
+            effective,
+            anchor,
+            audio,
+            q.ticket.ticket(),
+        ))
+        .into_response();
     }
     let Some(abs) = item.abs_path.clone() else {
         return json_error(StatusCode::NOT_FOUND, "no media file for item");
@@ -96,6 +104,10 @@ pub async fn hls_master(
         // `X-Hls-Start` is the real start (the keyframe at-or-before the anchor, where
         // `-noaccurate_seek` begins); the client needs it to align clock and subtitles.
         Some((body, start)) => {
+            let body = match q.ticket.ticket() {
+                Some(ticket) => hls_playlist::ticketed(&body, ticket),
+                None => body,
+            };
             let mut resp = playlist_response(body, byte_sink(&state, &headers, &addr));
             if let Ok(v) = header::HeaderValue::from_str(&format!("{start:.3}")) {
                 resp.headers_mut().insert("X-Hls-Start", v);
@@ -126,7 +138,7 @@ pub async fn hls_master(
 /// segment is polled for until ffmpeg flushes it.
 pub async fn hls_file(
     State(state): State<SharedState>,
-    OptionalAuthUser(caller): OptionalAuthUser,
+    MediaViewer(viewer): MediaViewer,
     Path((id, mode, anchor, audio, file)): Path<(String, String, u64, u32, String)>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
@@ -134,10 +146,8 @@ pub async fn hls_file(
     let Some(mode) = StreamMode::parse(&mode) else {
         return json_error(StatusCode::BAD_REQUEST, "bad mode");
     };
-    if let Some(user) = caller.as_ref() {
-        if let Err(resp) = visibility::gate_item(&state, user, &id).await {
-            return resp;
-        }
+    if let Err(resp) = visibility::gate_item(&state, &viewer, &id).await {
+        return resp;
     }
     let immutable = !file.ends_with(".m3u8");
     match state.hls.file(&id, mode, anchor, audio, &file).await {
@@ -176,10 +186,20 @@ pub async fn hls_file(
 }
 
 // Item ids are hex `short_hash`es (optionally joined by a colon), so they need no
-// escaping to sit in a path segment.
-fn hls_master_path(id: &str, mode: StreamMode, anchor: u64, audio: u32) -> String {
+// escaping to sit in a path segment. The ticket is carried across because a
+// redirect drops the query and the player would arrive with no credential.
+fn hls_master_path(
+    id: &str,
+    mode: StreamMode,
+    anchor: u64,
+    audio: u32,
+    ticket: Option<&str>,
+) -> String {
+    let credential = ticket
+        .map(|t| format!("?{}={t}", media_ticket::PARAM))
+        .unwrap_or_default();
     format!(
-        "/api/items/{id}/hls/{}/{anchor}/{audio}/index.m3u8",
+        "/api/items/{id}/hls/{}/{anchor}/{audio}/index.m3u8{credential}",
         mode.token()
     )
 }
@@ -195,77 +215,4 @@ fn playlist_response(body: String, sink: ByteSink) -> Response {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::infra::hls::{AudioMode, VideoMode};
-
-    fn mode(video: VideoMode, audio: AudioMode) -> StreamMode {
-        StreamMode::new(video, audio)
-    }
-
-    #[test]
-    fn redirect_path_swaps_only_the_mode_segment() {
-        assert_eq!(
-            hls_master_path("abc123", mode(VideoMode::Copy, AudioMode::Aac), 30, 1),
-            "/api/items/abc123/hls/aac/30/1/index.m3u8"
-        );
-        assert_eq!(
-            hls_master_path("tv:s1e2", mode(VideoMode::Copy, AudioMode::Aac), 0, 0),
-            "/api/items/tv:s1e2/hls/aac/0/0/index.m3u8"
-        );
-        assert_eq!(
-            hls_master_path("abc123", mode(VideoMode::H264, AudioMode::AacNight), 30, 1),
-            "/api/items/abc123/hls/h264-aac-night/30/1/index.m3u8"
-        );
-    }
-
-    #[test]
-    fn parse_mode_variants() {
-        assert_eq!(
-            StreamMode::parse("copy"),
-            Some(mode(VideoMode::Copy, AudioMode::Copy))
-        );
-        assert_eq!(
-            StreamMode::parse("aac"),
-            Some(mode(VideoMode::Copy, AudioMode::Aac))
-        );
-        assert_eq!(
-            StreamMode::parse("aac-standard"),
-            Some(mode(VideoMode::Copy, AudioMode::AacStandard))
-        );
-        assert_eq!(
-            StreamMode::parse("aac-night"),
-            Some(mode(VideoMode::Copy, AudioMode::AacNight))
-        );
-        assert_eq!(
-            StreamMode::parse("h264-copy"),
-            Some(mode(VideoMode::H264, AudioMode::Copy))
-        );
-        assert_eq!(
-            StreamMode::parse("h264-aac-standard"),
-            Some(mode(VideoMode::H264, AudioMode::AacStandard))
-        );
-        assert_eq!(StreamMode::parse("bogus"), None);
-    }
-
-    // A redirect drops the query, so re-resolving the mode it names must be a
-    // no-op or the master would bounce forever.
-    #[test]
-    fn the_redirect_target_resolves_to_itself() {
-        let asked = mode(VideoMode::Copy, AudioMode::Copy);
-        let effective = asked
-            .for_client_audio(Some("dts"), Some("aac"))
-            .for_client_video(Some("hevc"), Some("h264"));
-        assert_eq!(effective, mode(VideoMode::H264, AudioMode::Aac));
-        assert_eq!(
-            hls_master_path("abc123", effective, 30, 1),
-            "/api/items/abc123/hls/h264-aac/30/1/index.m3u8"
-        );
-        assert_eq!(
-            effective
-                .for_client_audio(Some("dts"), None)
-                .for_client_video(Some("hevc"), None),
-            effective
-        );
-    }
-}
+mod tests;

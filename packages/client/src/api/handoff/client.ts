@@ -1,4 +1,5 @@
 import type { RequestContext } from '../../core/client';
+import { adoptMediaTicket } from '../../core/http';
 import { PairingStatus } from '../accounts';
 import type { HandoffHandle } from './ids';
 import {
@@ -28,7 +29,10 @@ export default function handoffApi(ctx: RequestContext) {
      * is not a read (it refreshes the beacon and consumes the grant), and a URL
      * is written into every access log the request passes through. */
     poll: (secret: string) =>
-      ctx.post('/handoff/poll', PairingStatus, { auth: 'public', body: { secret } }),
+      adoptMediaTicket(
+        ctx,
+        ctx.post('/handoff/poll', PairingStatus, { auth: 'public', body: { secret } }),
+      ),
 
     /** The TVs waiting on this device's own network. Empty off it: the same
      * answer as "none waiting", which is all a caller may learn. (Bearer.) */

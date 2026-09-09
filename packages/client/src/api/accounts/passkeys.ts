@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RequestContext } from '../../core/http';
+import { adoptMediaTicket, type RequestContext } from '../../core/http';
 import { CeremonyId, type PasskeyId } from './ids';
 import { AuthResult, PasskeyInfo } from './schemas';
 
@@ -41,6 +41,6 @@ export function passkeysApi(ctx: RequestContext) {
     /** Finish passwordless sign-in with the browser's assertion, giving the same
      * `{ token, accessToken, user }` as a password login. Public. */
     authFinish: (body: { ceremonyId: CeremonyId; credential: WebAuthnCredential }) =>
-      ctx.post('/auth/passkeys/authenticate/finish', AuthResult, { body }),
+      adoptMediaTicket(ctx, ctx.post('/auth/passkeys/authenticate/finish', AuthResult, { body })),
   };
 }

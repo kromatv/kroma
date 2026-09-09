@@ -22,7 +22,7 @@ pub const SESSION_TTL_SECS: i64 = 3600;
 pub const ACCESS_TTL_SECS: i64 = 90 * 24 * 3600;
 
 // HMAC-SHA256 (RFC 2104) over `msg` keyed by `key`.
-fn hmac_sha256(key: &[u8], msg: &[u8]) -> [u8; 32] {
+pub(crate) fn hmac_sha256(key: &[u8], msg: &[u8]) -> [u8; 32] {
     let mut k = [0u8; SHA256_BLOCK];
     if key.len() > SHA256_BLOCK {
         let mut h = Sha256::new();

@@ -4,6 +4,14 @@ import type { Metadata } from './credits';
 import type { ItemId, ShowId } from './ids';
 import type { MediaItem, Show } from './schemas';
 
+// A storyboard sheet and a generated subtitle are composed by the server and
+// handed over as relative paths, so they reach a player through here rather than
+// through a builder, and still need the credential it cannot send as a header.
+const isItemBytes = (url: string) => url.startsWith('/api/items/');
+
+const withParam = (url: string, name: string, value: string) =>
+  `${url}${url.includes('?') ? '&' : '?'}${name}=${value}`;
+
 /** Artwork URLs: resolving stored art against the server, at the size it is drawn. */
 export function artworkApi(ctx: RequestContext) {
   /** Resolve a metadata image URL against the server origin, at the size it will
@@ -14,9 +22,10 @@ export function artworkApi(ctx: RequestContext) {
   const resolve = (url?: string | null, width?: number): string | null => {
     if (!url) return null;
     if (/^https?:\/\//.test(url)) return url;
-    const join = url.includes('?') ? '&' : '?';
-    const sized = width ? `${url}${join}w=${artworkWidth(width)}` : url;
-    return `${ctx.baseUrl}${sized}`;
+    let path = width ? withParam(url, 'w', String(artworkWidth(width))) : url;
+    const held = ctx.mediaTicket();
+    if (held && isItemBytes(url)) path = withParam(path, 't', held);
+    return `${ctx.baseUrl}${path}`;
   };
 
   /** Generated SVG poster URL for a movie/episode. */

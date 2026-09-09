@@ -14,6 +14,7 @@ pub mod library_missing;
 pub mod llm;
 pub mod loginguard;
 pub mod markers;
+pub mod media_ticket;
 pub mod notify;
 pub mod pairing;
 pub mod pipeline;

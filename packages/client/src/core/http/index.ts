@@ -1,3 +1,4 @@
+export * from './adopt-media-ticket';
 export * from './api-error';
 export * from './path';
 export * from './preconnect';

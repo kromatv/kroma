@@ -137,7 +137,12 @@ pub async fn exchange_token(
     {
         return resp;
     }
-    Json(crate::api::dto::SessionResult { token, user }).into_response()
+    Json(crate::api::dto::SessionResult {
+        media_ticket: crate::services::media_ticket::for_access_token(&state.media_ticket_key, &access),
+        token,
+        user,
+    })
+    .into_response()
 }
 
 async fn enforce_pin_gate(
@@ -284,6 +289,7 @@ pub(crate) async fn issue_tokens(
     })
     .await;
     Json(crate::api::dto::AuthResult {
+        media_ticket: crate::services::media_ticket::for_access_token(&state.media_ticket_key, &access),
         token,
         access_token: access,
         user,
