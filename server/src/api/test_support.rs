@@ -259,6 +259,31 @@ pub fn seed_library(state: &SharedState, name: &str) -> String {
     id
 }
 
+/// Narrow an account to the named libraries, as `PATCH /admin/users/:id` does.
+pub fn grant_libraries(state: &SharedState, user_id: &str, libraries: &[String]) {
+    db::set_user_libraries(
+        &state.db,
+        user_id,
+        &crate::model::LibraryScope::Only(libraries.to_vec()),
+    )
+    .expect("grant libraries");
+}
+
+/// The demo catalogue's library ids, `(movies, shows)`.
+pub fn demo_library_ids() -> (String, String) {
+    let libs = crate::services::demo::demo_data().libraries;
+    let id_of = |kind| {
+        libs.iter()
+            .find(|l| l.kind == kind)
+            .map(|l| l.id.clone())
+            .unwrap_or_else(|| panic!("demo library {kind:?} not found"))
+    };
+    (
+        id_of(crate::model::LibraryKind::Movies),
+        id_of(crate::model::LibraryKind::Shows),
+    )
+}
+
 /// A demo item id by title, so tests can hit `/items/:id` without first listing.
 pub fn demo_item_id(title: &str) -> String {
     crate::services::demo::demo_data()

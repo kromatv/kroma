@@ -3,7 +3,8 @@
 use rusqlite::Row;
 
 use kroma_domain::{
-    AudioStream, Kind, MediaFile, MediaItem, Metadata, Permission, SubtitleTrack, User, VideoStream,
+    AudioStream, Kind, LibraryScope, MediaFile, MediaItem, Metadata, Permission, SubtitleTrack,
+    User, VideoStream,
 };
 
 /// Parse a stored `metadata` JSON blob into [`Metadata`]; tolerant of nulls and
@@ -13,9 +14,9 @@ pub(crate) fn parse_metadata(json: Option<String>) -> Option<Metadata> {
 }
 
 /// Map a row of
-/// `id,email,username,avatar_url,created_at,permissions,language,has_pin,audio_language,subtitle_language`
+/// `id,email,username,avatar_url,created_at,permissions,language,has_pin,audio_language,subtitle_language,libraries`
 /// to a [`User`]. Column 7 is a boolean (`pin_hash IS NOT NULL`) every SELECT
-/// that feeds this must project cols 0..=9 (the password-hash lookups carry them
+/// that feeds this must project cols 0..=10 (the password-hash lookups carry them
 /// before their trailing `password_hash`). Column 6 is read as `language`; the
 /// admin members query repurposes it for `last_seen` (which the caller re-reads
 /// itself).
@@ -31,7 +32,20 @@ pub(crate) fn row_to_user(r: &Row) -> rusqlite::Result<User> {
         has_pin: r.get(7)?,
         audio_language: r.get(8)?,
         subtitle_language: r.get(9)?,
+        libraries: parse_library_scope(r.get::<_, Option<String>>(10)?),
     })
+}
+
+/// Parse a stored `libraries` JSON array of library ids. A `NULL` column, and a
+/// blob that no longer parses, both read as [`LibraryScope::All`]: a grant that
+/// cannot be read must not be the reason a household loses its own media.
+pub(crate) fn parse_library_scope(json: Option<String>) -> LibraryScope {
+    match json {
+        Some(raw) => serde_json::from_str::<Vec<String>>(&raw)
+            .map(LibraryScope::Only)
+            .unwrap_or(LibraryScope::All),
+        None => LibraryScope::All,
+    }
 }
 
 /// Parse a stored `permissions` JSON array of string keys, dropping any unknown
@@ -155,6 +169,23 @@ mod row_tests {
         );
         assert_eq!(parse_permissions("not json"), vec![Permission::Playback]);
         assert_eq!(parse_permissions(""), vec![Permission::Playback]);
+    }
+
+    #[test]
+    fn a_library_grant_that_cannot_be_read_reads_as_every_library() {
+        assert_eq!(parse_library_scope(None), LibraryScope::All);
+        assert_eq!(
+            parse_library_scope(Some("not json".into())),
+            LibraryScope::All
+        );
+        assert_eq!(
+            parse_library_scope(Some(r#"["films"]"#.into())),
+            LibraryScope::Only(vec!["films".into()])
+        );
+        assert_eq!(
+            parse_library_scope(Some("[]".into())),
+            LibraryScope::Only(Vec::new())
+        );
     }
 
     #[test]

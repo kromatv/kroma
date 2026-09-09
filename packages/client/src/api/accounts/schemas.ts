@@ -17,7 +17,8 @@ export type Permission = z.infer<typeof Permission>;
 /** A full account (`GET /auth/me`, login/exchange results). `permissions` is
  * validated as `string[]`, not the closed {@link Permission} enum: this runs in
  * the auth-critical login/exchange path, so a server that adds a capability must
- * not make an older client throw on an unknown key. */
+ * not make an older client throw on an unknown key. `libraries` is the ids this
+ * account may see, `null` meaning every library. */
 export const User = z.object({
   id: UserId,
   email: z.string(),
@@ -27,6 +28,7 @@ export const User = z.object({
   audioLanguage: z.string().nullish(),
   subtitleLanguage: z.string().nullish(),
   permissions: z.array(z.string()),
+  libraries: z.array(z.string()).nullish(),
   createdAt: z.string(),
   hasPin: z.boolean(),
 });

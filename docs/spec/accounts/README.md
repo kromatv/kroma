@@ -1,7 +1,7 @@
 # Accounts
 
-Status: **AGREED**. Sections carry their own status below, and requirements carry
-theirs, because much of this model already ships while library visibility does not.
+Status: **SHIPPED** in part. Sections carry their own status below, and requirements carry
+theirs, because the model ships while a few of its edges are still only agreed.
 
 Who is using the server, what they may see, and how a device proves it is them.
 
@@ -101,7 +101,7 @@ only the case that makes forced expiry obviously wrong.
 
 ## Authorisation
 
-Status: **SHIPPED** for the two roles, **AGREED** for library visibility.
+Status: **SHIPPED** in part; each requirement carries its own.
 
 **ACCT-17** (SHIPPED) - An **owner or admin** runs the server: users, settings, jobs and
 modules. Admin rights are server-wide, never per-library.
@@ -112,11 +112,31 @@ account, and there is always at least one admin.
 **ACCT-19** (SHIPPED) - A **user** uses the server: browses and plays what they are permitted
 to see, owns their own watch state and preferences, and manages their own devices.
 
-**ACCT-20** (AGREED) - **Library visibility is per user.** An admin decides which libraries a
+**ACCT-20** (SHIPPED) - **Library visibility is per user.** An admin decides which libraries a
 given user may see; that user sees exactly those and cannot discover the rest.
+
+An account with no grant on record sees every library, which is what every account on an
+existing server reads as: narrowing is something an admin does, never something an upgrade
+does for them. A library nobody has been granted therefore stays visible to the unrestricted
+accounts and invisible to the narrowed ones.
 
 **ACCT-21** (AGREED) - Visibility gates browsing, search and playback alike. A title a user
 cannot see is a title they cannot play, resume or find.
+
+That full rule is not true yet, and the two requirements below are the halves it breaks into.
+The catalogue half ships; the bytes do not, so ACCT-21 stays agreed until ACCT-35 lands rather
+than shipping with a caveat only this paragraph carries.
+
+**ACCT-34** (SHIPPED) - A title outside a person's grant is absent from browse, search, every
+home row and their watch state, and is refused by its id on every endpoint that presents a
+session. An unknown id and an ungranted one refuse identically, so probing cannot tell a title
+that is hidden from one that was never scanned.
+
+**ACCT-35** (AGREED) - Every request for media bytes carries a credential the grant can be
+enforced against. Today those routes are reachable with no session at all, because a `<video>`
+element cannot attach a bearer, so they enforce the grant on a request that presents one and
+nothing on a request that presents none. A person who knows an id and drops their session
+reaches the bytes, which is why ACCT-21 is not shipped.
 
 **ACCT-22** (SHIPPED) - Installing a module is an **admin** right, because it runs new
 out-of-process code on the server ([`modules/`](../modules/)). A plain user may use whatever

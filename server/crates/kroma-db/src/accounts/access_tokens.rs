@@ -120,12 +120,12 @@ pub fn access_token_user(pool: &Pool, token: &str) -> Result<Option<(User, bool)
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
     let mut stmt = conn.prepare(
-        "SELECT u.id,u.email,u.username,u.avatar_url,u.created_at,u.permissions,u.language,(u.pin_hash IS NOT NULL),u.audio_language,u.subtitle_language,a.pin_verified \
+        "SELECT u.id,u.email,u.username,u.avatar_url,u.created_at,u.permissions,u.language,(u.pin_hash IS NOT NULL),u.audio_language,u.subtitle_language,u.libraries,a.pin_verified \
          FROM access_tokens a JOIN users u ON u.id = a.user_id \
          WHERE a.token = ?1 AND a.expires_at > ?2",
     )?;
     let mut rows = stmt.query_map(params![token, now], |r| {
-        Ok((row_to_user(r)?, r.get::<_, i64>(10)? != 0))
+        Ok((row_to_user(r)?, r.get::<_, i64>(11)? != 0))
     })?;
     match rows.next() {
         Some(v) => Ok(Some(v?)),

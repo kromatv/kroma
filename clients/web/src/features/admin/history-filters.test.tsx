@@ -20,6 +20,7 @@ const USERS: AdminUser[] = [
     email: 'max@kroma.tv',
     username: 'maxime',
     permissions: [],
+    libraries: null,
     role: 'Propriétaire',
     createdAt: '2026-01-01',
     online: true,

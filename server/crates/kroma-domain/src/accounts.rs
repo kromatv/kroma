@@ -6,7 +6,7 @@
 
 use serde::Serialize;
 
-pub use kroma_module_wire::{Permission, User};
+pub use kroma_module_wire::{LibraryScope, Permission, User};
 
 /// Derive a display role label from a capability set. The backend is
 /// capability-based; this is purely for the admin UI's "Rôle" badge.

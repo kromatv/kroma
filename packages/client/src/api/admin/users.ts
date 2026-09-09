@@ -1,10 +1,12 @@
 import { z } from 'zod';
 import { Permission, User } from '../accounts';
+import { LibraryId } from '../media';
 
 /** One account in the admin "Membres & partage" table carries email, a derived
  * role, last-activity and a live `online` flag. `resetRequested` marks a user
  * who asked for a credential reset from the sign-in screen and for whom the
- * owner has not minted one since. */
+ * owner has not minted one since. `libraries` is the grant: the library ids this
+ * account may see, or `null` for every library. */
 export const AdminUser = User.pick({
   id: true,
   email: true,
@@ -14,6 +16,7 @@ export const AdminUser = User.pick({
   createdAt: true,
 }).extend({
   permissions: z.array(Permission),
+  libraries: z.array(LibraryId).nullable(),
   role: z.string(),
   lastSeen: z.string().nullish(),
   online: z.boolean(),
@@ -29,8 +32,13 @@ export const AdminUsers = z.object({
 });
 export type AdminUsers = z.infer<typeof AdminUsers>;
 
-/** `PATCH /api/admin/users/:id` body. */
-export const AdminUserPatch = AdminUser.pick({ permissions: true, username: true }).exactPartial();
+/** `PATCH /api/admin/users/:id` body. An omitted `libraries` leaves the grant
+ * alone; `null` grants every library, a list grants exactly those. */
+export const AdminUserPatch = AdminUser.pick({
+  permissions: true,
+  username: true,
+  libraries: true,
+}).exactPartial();
 export type AdminUserPatch = z.infer<typeof AdminUserPatch>;
 
 /** `GET /api/admin/stats/overview`. */

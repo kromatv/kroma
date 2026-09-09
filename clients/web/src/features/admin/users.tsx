@@ -14,6 +14,7 @@ import {
   StatCard,
   Text,
 } from '@kromatv/ui/kit';
+import { accessLabel } from '#web/features/admin/library-visibility';
 import { Pill, PillDot } from '#web/features/admin/pill';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
 import { EditUserModal, InviteModal, PendingInvite } from '#web/features/admin/users-modals';
@@ -52,7 +53,6 @@ function UsersPageInner() {
   };
 
   const users = data?.users ?? [];
-  const libraryCount = data?.libraryCount ?? 0;
   const invites = invitesData ?? [];
   const online = users.filter((u) => u.online).length;
 
@@ -109,10 +109,7 @@ function UsersPageInner() {
           </Table.Header>
           {users.map((u) => {
             const rs = roleStyle(u.role);
-            const access =
-              u.role === 'Propriétaire' || u.role === 'Owner'
-                ? t('admin.allLibraries')
-                : t('admin.libraryCount', { count: libraryCount });
+            const access = accessLabel(u.libraries, t);
             return (
               <Table.Row key={u.id}>
                 <Table.Cell row gap={14}>

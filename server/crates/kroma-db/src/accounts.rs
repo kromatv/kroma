@@ -62,6 +62,7 @@ pub fn create_user(
         avatar_url: None,
         language: None,
         permissions,
+        libraries: kroma_domain::LibraryScope::All,
         created_at,
         has_pin: false,
         audio_language: None,
@@ -79,10 +80,10 @@ pub fn user_count(pool: &Pool) -> Result<i64> {
 pub fn find_user_by_email(pool: &Pool, email: &str) -> Result<Option<(User, String)>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
-        "SELECT id,email,username,avatar_url,created_at,permissions,language,(pin_hash IS NOT NULL),audio_language,subtitle_language,password_hash FROM users WHERE email = ?1",
+        "SELECT id,email,username,avatar_url,created_at,permissions,language,(pin_hash IS NOT NULL),audio_language,subtitle_language,libraries,password_hash FROM users WHERE email = ?1",
     )?;
     let mut rows = stmt.query_map(params![email], |r| {
-        Ok((row_to_user(r)?, r.get::<_, String>(10)?))
+        Ok((row_to_user(r)?, r.get::<_, String>(11)?))
     })?;
     match rows.next() {
         Some(v) => Ok(Some(v?)),
@@ -96,11 +97,11 @@ pub fn find_user_by_email(pool: &Pool, email: &str) -> Result<Option<(User, Stri
 pub fn find_user_by_login(pool: &Pool, identifier: &str) -> Result<Option<(User, String)>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
-        "SELECT id,email,username,avatar_url,created_at,permissions,language,(pin_hash IS NOT NULL),audio_language,subtitle_language,password_hash FROM users \
+        "SELECT id,email,username,avatar_url,created_at,permissions,language,(pin_hash IS NOT NULL),audio_language,subtitle_language,libraries,password_hash FROM users \
          WHERE email = ?1 COLLATE NOCASE OR username = ?1 LIMIT 1",
     )?;
     let mut rows = stmt.query_map(params![identifier], |r| {
-        Ok((row_to_user(r)?, r.get::<_, String>(10)?))
+        Ok((row_to_user(r)?, r.get::<_, String>(11)?))
     })?;
     match rows.next() {
         Some(v) => Ok(Some(v?)),
@@ -112,7 +113,7 @@ pub fn user_by_id(pool: &Pool, id: &str) -> Result<Option<User>> {
     let conn = pool.get()?;
     let user = conn
         .query_row(
-            "SELECT id,email,username,avatar_url,created_at,permissions,language,(pin_hash IS NOT NULL),audio_language,subtitle_language FROM users WHERE id = ?1",
+            "SELECT id,email,username,avatar_url,created_at,permissions,language,(pin_hash IS NOT NULL),audio_language,subtitle_language,libraries FROM users WHERE id = ?1",
             params![id],
             row_to_user,
         )

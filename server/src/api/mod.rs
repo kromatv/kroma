@@ -42,6 +42,7 @@ mod stream;
 mod suggest;
 mod themes;
 mod util;
+mod visibility;
 
 // Integration-test harness + suites for the HTTP handler layer. `test_support`
 // builds a fully wired router over a temp DB (see its docs); the `it_*` modules
@@ -72,6 +73,8 @@ mod it_handoff;
 mod it_images;
 #[cfg(test)]
 mod it_invites;
+#[cfg(test)]
+mod it_library_visibility;
 #[cfg(test)]
 mod it_media;
 #[cfg(test)]

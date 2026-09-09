@@ -258,6 +258,7 @@ pub async fn command(
         let known = query(&state.db, move |pool| db::get_item(&pool, &wanted))
             .await
             .unwrap_or_default()
+            .filter(|item| user.sees_library(&item.library))
             .is_some();
         if !known {
             return Err(lerr(

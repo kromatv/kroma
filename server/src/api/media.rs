@@ -12,6 +12,7 @@ use serde::Deserialize;
 use crate::api::error::json_error;
 use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
+use crate::api::visibility;
 use crate::db;
 use crate::i18n::ReqLocale;
 use crate::state::SharedState;
@@ -86,39 +87,50 @@ pub async fn health(
     .into_response())
 }
 
-/// `GET /api/libraries` → `Library[]`
-pub async fn list_libraries(State(state): State<SharedState>) -> Result<Response, Response> {
-    let libs = query(&state.db, move |pool| db::list_libraries(&pool)).await?;
+/// `GET /api/libraries` → `Library[]`, narrowed to the libraries the caller was
+/// granted (ACCT-20).
+pub async fn list_libraries(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    let mut libs = query(&state.db, move |pool| db::list_libraries(&pool)).await?;
+    if !user.sees_every_library() {
+        libs.retain(|lib| user.sees_library(&lib.id));
+    }
     Ok(Json(libs).into_response())
 }
 
 /// `GET /api/items` (optional `?library=`) → all playable items (movies + episodes).
 pub async fn list_items(
     State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
     Query(q): Query<LibraryQuery>,
 ) -> Result<Response, Response> {
-    let items = query(&state.db, move |pool| {
+    let mut items = query(&state.db, move |pool| {
         let mut items = db::list_items(&pool, q.library.as_deref())?;
         db::localize::overlay_items(&pool, &mut items, locale)?;
         Ok(items)
     })
     .await?;
+    visibility::keep_items(&user, &mut items);
     Ok(Json(items).into_response())
 }
 
 /// `GET /api/movies` (optional `?library=`) → `MediaItem[]` (movies only).
 pub async fn list_movies(
     State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
     Query(q): Query<LibraryQuery>,
 ) -> Result<Response, Response> {
-    let items = query(&state.db, move |pool| {
+    let mut items = query(&state.db, move |pool| {
         let mut items = db::list_movies(&pool, q.library.as_deref())?;
         db::localize::overlay_items(&pool, &mut items, locale)?;
         Ok(items)
     })
     .await?;
+    visibility::keep_items(&user, &mut items);
     Ok(Json(items).into_response())
 }
 
@@ -130,8 +142,8 @@ pub async fn list_shows(
     ReqLocale(locale): ReqLocale,
     Query(q): Query<LibraryQuery>,
 ) -> Result<Response, Response> {
-    let uid = user.id;
-    let shows = query(&state.db, move |pool| {
+    let uid = user.id.clone();
+    let mut shows = query(&state.db, move |pool| {
         let mut shows = db::list_shows(&pool, q.library.as_deref())?;
         let prog = db::show_progress(&pool, &uid).unwrap_or_default();
         for s in &mut shows {
@@ -141,6 +153,7 @@ pub async fn list_shows(
         Ok(shows)
     })
     .await?;
+    visibility::keep_shows(&user, &mut shows);
     Ok(Json(shows).into_response())
 }
 
@@ -152,6 +165,7 @@ pub async fn get_show(
     ReqLocale(locale): ReqLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
+    visibility::gate_show(&state, &user, &id).await?;
     let uid = user.id;
     let detail = query(&state.db, move |pool| {
         let Some(mut detail) = db::get_show(&pool, &id)? else {
@@ -169,9 +183,11 @@ pub async fn get_show(
 /// `GET /api/items/:id` → `MediaItem`
 pub async fn get_item(
     State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
+    visibility::gate_item(&state, &user, &id).await?;
     let item = query(&state.db, move |pool| {
         let Some(mut item) = db::get_item(&pool, &id)? else {
             return Ok(None);

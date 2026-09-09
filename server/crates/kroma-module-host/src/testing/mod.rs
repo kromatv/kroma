@@ -21,7 +21,7 @@ pub use stub::StubHost;
 #[cfg(test)]
 mod fixtures {
     use kroma_module_wire::{
-        EpisodeInfo, MatchCandidate, NotificationEvent, NotificationSpec, User,
+        EpisodeInfo, LibraryScope, MatchCandidate, NotificationEvent, NotificationSpec, User,
     };
 
     pub fn candidate() -> MatchCandidate {
@@ -66,6 +66,7 @@ mod fixtures {
             audio_language: None,
             subtitle_language: None,
             permissions: Vec::new(),
+            libraries: LibraryScope::All,
             created_at: "2024-01-01T00:00:00Z".into(),
             has_pin: false,
         }

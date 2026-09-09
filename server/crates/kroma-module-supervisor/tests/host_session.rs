@@ -23,6 +23,7 @@ fn ana() -> User {
         audio_language: None,
         subtitle_language: None,
         permissions: Vec::new(),
+        libraries: kroma_domain::LibraryScope::All,
         created_at: "2024-01-01T00:00:00Z".into(),
         has_pin: false,
     }
