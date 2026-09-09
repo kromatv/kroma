@@ -3,11 +3,11 @@ import {
   genreLabel,
   genreOfSegment,
   genreSegment,
-  type MessageKey,
   SORT_MODES,
   type SortMode,
-} from '@kroma/core';
-import { useT } from '@kroma/ui';
+} from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Chip,
@@ -21,7 +21,7 @@ import {
   sharedStyle,
   styles,
   useBreakpoint,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 
 import { PAGE_GUTTER } from '#web/shared/ui/page';

@@ -1,6 +1,6 @@
-import { compareTitles, genreLabel, hasGenre, posterColors, type SortMode } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, Text, useFocusNav } from '@kroma/ui/kit';
+import { compareTitles, genreLabel, hasGenre, posterColors, type SortMode } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Box, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useEffect, useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav, useParams } from '#tv/app/router';

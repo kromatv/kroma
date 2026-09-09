@@ -1,0 +1,126 @@
+# Publishing `@kromatv/ui`
+
+The kit leaves this repository as a built package. The workspace stays
+`private` and is consumed as source here, exactly as `@kromatv/sdk` works
+(`docs/module-sdk-publishing.md`): `bun run kit:stage --version X.Y.Z` assembles
+`packages/ui/dist`, and that directory is what `npm publish` takes.
+
+```bash
+bun run kit:stage --version 0.1.0   # assemble packages/ui/dist
+bun run kit:smoke                   # install the tarball outside the repo and build it
+```
+
+`release.yml`'s **Design system** job runs both on every push and uploads the
+tarball as the `kroma-ui` artifact. It publishes `X.Y.Z-canary.<build>` under
+the `canary` dist-tag from a push to `main`, and `X.Y.Z` under `latest` from a
+stable tag, on the same channel rules as the SDK and only when `NPM_TOKEN` is
+set. Without the secret the step is skipped rather than failed, and the tarball
+stays on the run for a hand publish.
+
+## What the staged package is
+
+| In it | From |
+|---|---|
+| `kit.js` and the module tree beside it | a Vite library build of `src`, `preserveModules` |
+| `native/` | the same build under `KROMA_UI_TARGET=native` |
+| `*.d.ts` | `tsc --project tsconfig.dist.json` |
+| `styles.css` + `fonts/` | `vite/tokens.ts`, with the faces copied beside the sheet |
+| `package.json` | written by `scripts/stage.ts`, not the workspace one |
+
+Two builds of one source, because the resolution rules that make this kit
+universal have to be settled by somebody and it should not be the consumer. The
+web build lands `react-native` on `react-native-web` and picks `.web.*` over its
+native sibling; the native build keeps React Native external and picks the plain
+file, which is Metro's order. Each subpath exports both, `react-native` ahead of
+`default`, and one set of declarations answers for both because the API is the
+same.
+
+Both resolve `#ui/*`, though the emitted declarations still spell it, which is
+why the staged `package.json` keeps an `imports` map pointing at the package's
+own files.
+
+Every peer is optional but `react`: a browser app installs `react-dom`,
+`react-native-web` and `@tabler/icons-react`, a native one installs React Native,
+`react-native-svg` and Tabler's native set, and neither is asked for the other's.
+
+## Consuming it
+
+```tsx
+import '@kromatv/ui/styles.css';
+import { Button, Text } from '@kromatv/ui';
+```
+
+The stylesheet is a real file because the `@import "@kromatv/ui/css"` directive
+is expanded by a Vite plugin that only exists in this repo. A consumer needs
+`react-native` aliased to `react-native-web` and `global` defined as
+`globalThis`, which is the same two lines every browser target here already
+carries (`packages/bundler/src/rnw.ts`).
+
+## What the staged package deliberately drops
+
+The brand intro's 4K master and its sting are 11 MB, and `<KromaIntro>` already
+falls back to its CSS scene when the video will not play. A design system
+shipping someone else's logo reel is 11 MB nobody asked for, so the build
+strips both. That is the difference between 1.2 MB and 9.2 MB on npm.
+
+## Icons
+
+The staged package carries the 152 glyphs the kit's own components draw, one
+default import each, so a consumer's bundler keeps only what it renders. The
+subset is computed by `scripts/icon-subset.ts`, which differs from the pass in
+`@kromatv/ui/bundler` in one way that matters: it emits bare specifiers into
+Tabler rather than the absolute path each glyph resolved to on the machine that
+built it.
+
+A name the kit never draws gets the `?` fallback. Widen the set with the glyphs
+you need and pay for those alone:
+
+```tsx
+import { IconHeart } from '@tabler/icons-react';
+import { addGlyphs } from '@kromatv/ui';
+
+addGlyphs({ IconHeart });
+```
+
+`IconName` is derived from a type-only namespace import of Tabler, so it always
+covers the whole set: a name outside the subset typechecks and draws the
+fallback, which is what lets an icon name arrive from data.
+
+## Words
+
+The kit's own chrome says about 95 phrases. In this repo they come from KROMA's
+catalogs; the published package arrives with none and is given them, because a
+design system that ships someone else's catalogs is carrying their whole
+vocabulary to say ninety-five things.
+
+```tsx
+import { createI18n, I18nProvider, setKitI18n } from '@kromatv/ui/i18n';
+
+const i18n = createI18n({
+  catalogs: { en: { 'player.play': 'Play' }, sv: { 'player.play': 'Spela' } },
+  defaultLocale: 'en',
+});
+setKitI18n(i18n, 'en');
+
+<I18nProvider locale="sv">{children}</I18nProvider>;
+```
+
+`createI18n` is re-exported from the package, so there is no second install. Until
+`setKitI18n` is called every key renders as itself, which is a legible
+placeholder rather than a crash. `src/services/i18n-instance.ts` names the
+instance for this repo and the build swaps it for the published one, the same
+way `glyph-source.ts` is swapped for the icon subset.
+
+`genreIcon` is swapped too, and answers `undefined`: it maps KROMA's own genre
+vocabulary, and resolving a genre written as a display name goes back through
+the catalogs. Moving it out of the kit is the honest fix; it has eight call
+sites across web, tv and mobile.
+
+## What is still rough
+
+- **The native half is built but unproven.** `kit:smoke` installs the tarball
+  into a Vite app, so the web build is exercised on every push; nothing yet
+  mounts the native one under Metro.
+- **`<KromaIntro>` is drawn from CSS.** Its 4K master and sting are stripped, so
+  the component falls back to the scene it already falls back to on a decoder
+  that cannot play HEVC.

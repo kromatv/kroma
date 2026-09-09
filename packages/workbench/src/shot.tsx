@@ -1,8 +1,8 @@
 // `?shot`: one story alone on the page, which is what the screenshot runner
 // opens - and, with no story named, the list of ids it walks.
 
-import { Box, Text } from '@kroma/ui/kit';
-import type { ColorToken } from '@kroma/ui/tokens';
+import { Box, Text } from '@kromatv/ui/kit';
+import type { ColorToken } from '@kromatv/ui/tokens';
 import type { ReactNode } from 'react';
 import type { StoryEntry } from './entry';
 import type { Story } from './story';

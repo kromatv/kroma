@@ -1,7 +1,7 @@
 // Admin AI page: register the LLM providers that power personalized home
 // sections and taste profiles. Backed by /api/admin/llm*.
-import type { LlmAdminConfig } from '@kroma/client/llm';
-import { useT } from '@kroma/ui';
+import type { LlmAdminConfig } from '@kromatv/client/llm';
+import { useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -13,7 +13,7 @@ import {
   Surface,
   Switch,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 import { ProviderCard, type ProviderForm } from '#web/features/admin/ai-providers';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';

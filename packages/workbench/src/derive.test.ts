@@ -1,4 +1,4 @@
-import { sv } from '@kroma/ui/kit';
+import { sv } from '@kromatv/ui/kit';
 import { describe, expect, it } from 'vitest';
 import { story } from './story';
 

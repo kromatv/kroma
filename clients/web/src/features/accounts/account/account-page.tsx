@@ -1,6 +1,6 @@
-import type { AccountPatch } from '@kroma/client/accounts';
-import { prefValue } from '@kroma/core/react';
-import { useT } from '@kroma/ui';
+import type { AccountPatch } from '@kromatv/client/accounts';
+import { prefValue } from '@kromatv/core/react';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -15,7 +15,7 @@ import {
   Surface,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { NotificationsCard } from '#web/features/accounts/account/notifications-card';
 import { PasskeysCard } from '#web/features/accounts/account/passkeys-card';

@@ -2,7 +2,7 @@
 // to encrypt (+ password); import detects an encrypted file from its magic bytes
 // and only then asks for a password, always confirming before it overwrites.
 
-import { useT } from '@kroma/ui';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   controlMetrics,
@@ -12,7 +12,7 @@ import {
   SwitchFace,
   sharedStyle,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAuth } from '#web/shared/lib/auth';

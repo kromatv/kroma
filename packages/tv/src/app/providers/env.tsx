@@ -5,8 +5,8 @@
 // webOS magic remote reports `(pointer: fine)` yet has no keyboard and emits
 // phantom pointermove events.
 
-import { isTizenRuntime, isWebOsRuntime } from '@kroma/core';
-import { webWindow } from '@kroma/ui/kit';
+import { isTizenRuntime, isWebOsRuntime } from '@kromatv/core';
+import { webWindow } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useMemo } from 'react';
 
@@ -32,7 +32,7 @@ function finePointer(): boolean {
   }
 }
 
-// webOS UA has two spellings and a global bridge, handled by @kroma/core;
+// webOS UA has two spellings and a global bridge, handled by @kromatv/core;
 // Android TV is a plain Android webview, so its UA is all there is to go on.
 const TV_RUNTIME: Record<string, (ua: string) => boolean> = {
   Tizen: isTizenRuntime,

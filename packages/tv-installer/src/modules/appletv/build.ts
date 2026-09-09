@@ -66,7 +66,7 @@ export async function buildAppleTvApp(udid: string, log: LogLine): Promise<strin
 
   log('building the tvOS app with Xcode, which takes tens of minutes on a cold checkout');
   log('Xcode signs it as it builds, so this set must already be in one of your profiles');
-  await runOk(['bun', 'run', '--filter', '@kroma/tv-native', 'ios', '--device', udid], {
+  await runOk(['bun', 'run', '--filter', '@kromatv/tv-native', 'ios', '--device', udid], {
     log,
     cwd: root,
     timeoutMs: BUILD_TIMEOUT_MS,

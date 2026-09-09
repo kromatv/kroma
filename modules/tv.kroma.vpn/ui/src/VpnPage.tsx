@@ -14,7 +14,7 @@ import {
   useCap,
   usePoll,
   useT,
-} from '@kroma/module-sdk';
+} from '@kromatv/module-sdk';
 import {
   Badge,
   Box,
@@ -28,7 +28,7 @@ import {
   Row,
   Surface,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useVpnApi } from './api';
 import { VpnBandwidthSection } from './bandwidth-panel';

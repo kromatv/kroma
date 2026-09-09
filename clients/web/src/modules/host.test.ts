@@ -18,9 +18,9 @@ import {
   t,
 } from '#web/modules/host.fixture';
 
-vi.mock('@kroma/core', () => ({ sessionToken, hasPermission }));
-vi.mock('@kroma/module-sdk', () => ({ createEventBus }));
-vi.mock('@kroma/ui', () => ({
+vi.mock('@kromatv/core', () => ({ sessionToken, hasPermission }));
+vi.mock('@kromatv/module-sdk', () => ({ createEventBus }));
+vi.mock('@kromatv/ui', () => ({
   useT: () => t,
   useLocale: () => locale.value,
 }));

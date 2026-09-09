@@ -1,12 +1,12 @@
 // How a notification row says when it arrived.
 //
-// The elapsed wording is the shared one from @kroma/core, so the panel and the
+// The elapsed wording is the shared one from @kromatv/core, so the panel and the
 // admin console count time the same way. It comes back lowercase, because it
 // also goes inside "De {first} à {last}"; the row sentence-cases it where it
 // stands on its own.
 
-import { sentenceCase } from '@kroma/core';
-import { useFormat, useLocale } from '@kroma/ui';
+import { sentenceCase } from '@kromatv/core';
+import { useFormat, useLocale } from '@kromatv/ui';
 
 /** A formatter for how long ago a row arrived, in the reader's language.
  *

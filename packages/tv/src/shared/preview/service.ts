@@ -2,8 +2,8 @@
 // background service (config.xml `use.preview = bg_service`) that cannot reach
 // KROMA itself, so this writes the tile JSON where that service can read it.
 
-import type { KromaClient } from '@kroma/client';
-import type { ContinueItem, MediaItem } from '@kroma/client/media';
+import type { KromaClient } from '@kromatv/client';
+import type { ContinueItem, MediaItem } from '@kromatv/client/media';
 import { buildPreviewData } from '#tv/shared/preview/cards';
 import { type Tizen, type TizenFile, tizen } from '#tv/shared/preview/tizen';
 

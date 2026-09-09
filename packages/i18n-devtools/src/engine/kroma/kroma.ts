@@ -5,7 +5,7 @@ import {
   installLocaleOverride,
   onOverridesChange,
   tokensIn,
-} from '@kroma/i18n';
+} from '@kromatv/i18n';
 import type { Engine } from '../engine';
 
 const NOTHING: readonly string[] = [];

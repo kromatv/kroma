@@ -1,4 +1,4 @@
-import { Icon, type IconName, useTheme } from '@kroma/ui/kit';
+import { Icon, type IconName, useTheme } from '@kromatv/ui/kit';
 import { Tabs } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
 import type { ColorValue } from 'react-native';

@@ -29,8 +29,8 @@ apps/        deployables have an entry point, ship
   web/         Web SPA
   tv/          10-foot TV app
 packages/    shared libraries imported by ≥2 apps
-  core/        @kroma/core: pure rules + outbound adapters (re-exports @kroma/client)
-  ui/          @kroma/ui: presentational primitives + shared hooks/providers
+  core/        @kromatv/core: pure rules + outbound adapters (re-exports @kromatv/client)
+  ui/          @kromatv/ui: presentational primitives + shared hooks/providers
 clients/     platform shells / packaging that wrap an app for a host
   tizen/  webos/  synology/
 ```
@@ -54,7 +54,7 @@ server/
     kroma-domain/       entities + PURE rules (serde only, no I/O)
     kroma-module-wire/  the JSON a module and the host exchange (serde only)
     kroma-config/       env-parsed Config
-    kroma-i18n/         translate + CLDR plurals (Rust port of @kroma/core i18n)
+    kroma-i18n/         translate + CLDR plurals (Rust port of @kromatv/core i18n)
     kroma-primitives/         timestamps · short hashes · random tokens (below db)
     kroma-whisper/   Whisper transcription (candle)   ── heavy/optional dep graphs,
     kroma-vector/        content embeddings (candle)      ── isolated behind features so
@@ -92,10 +92,10 @@ packages/tv/src/  app/(shell + providers + router)  features/{catalog,playback,a
 clients/web/src/  features/{catalog,playback,admin}/  routes/ = thin re-exports
 ```
 
-**Dependency rule:** `features/* → shared/* → @kroma/ui → @kroma/core`.
+**Dependency rule:** `features/* → shared/* → @kromatv/ui → @kromatv/core`.
 
-- A feature **must not import a sibling feature**. Shared code moves to `shared/` or up into `@kroma/ui`. (Biome-guarded.)
-- Wire types come only from `@kroma/core` (the generated barrel), never hand-redefined.
+- A feature **must not import a sibling feature**. Shared code moves to `shared/` or up into `@kromatv/ui`. (Biome-guarded.)
+- Wire types come only from `@kromatv/core` (the generated barrel), never hand-redefined.
 
 ## File-size policy
 

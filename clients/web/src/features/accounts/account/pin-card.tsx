@@ -1,8 +1,8 @@
 // Set / change / remove the account's profile-lock PIN, which gates switching
 // into this profile on a shared device. It is not the login credential.
 
-import { useT } from '@kroma/ui';
-import { Box, Button, IconWell, OtpField, Row, Surface, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Button, IconWell, OtpField, Row, Surface, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { StatusText, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';

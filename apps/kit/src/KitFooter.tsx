@@ -1,4 +1,4 @@
-import { Column, ThemeSwitch } from '@kroma/ui/kit';
+import { Column, ThemeSwitch } from '@kromatv/ui/kit';
 import { BuildStamp } from './BuildStamp';
 
 export function KitFooter() {

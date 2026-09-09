@@ -3,13 +3,13 @@
 // on unmount, so a swipe-away never loses more than a few seconds.
 //
 // Also listens for the admin TERMINATING this session, the same two ways the
-// shared service (@kroma/ui services/playback) does: the `playback.terminate`
+// shared service (@kromatv/ui services/playback) does: the `playback.terminate`
 // event on the live WS bus, and a 410 on the next ping as fallback.
 
-import { KromaApiError, type KromaClient } from '@kroma/client';
-import { KromaEvents } from '@kroma/client/events';
-import type { MediaItem } from '@kroma/client/media';
-import { PlaybackSessionId } from '@kroma/client/playback';
+import { KromaApiError, type KromaClient } from '@kromatv/client';
+import { KromaEvents } from '@kromatv/client/events';
+import type { MediaItem } from '@kromatv/client/media';
+import { PlaybackSessionId } from '@kromatv/client/playback';
 import * as Device from 'expo-device';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';

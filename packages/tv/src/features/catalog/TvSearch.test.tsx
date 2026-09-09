@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-import type { MediaItem, SearchResponse, Show } from '@kroma/client/media';
-import { fakeClient } from '@kroma/client/test';
-import { clearPressGuard } from '@kroma/ui/kit';
-import { onScreen } from '@kroma/ui/testing';
+import type { MediaItem, SearchResponse, Show } from '@kromatv/client/media';
+import { fakeClient } from '@kromatv/client/test';
+import { clearPressGuard } from '@kromatv/ui/kit';
+import { onScreen } from '@kromatv/ui/testing';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type Connection, ConnectionProvider } from '#tv/app/providers/connection';

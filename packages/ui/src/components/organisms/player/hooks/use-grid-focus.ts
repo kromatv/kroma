@@ -1,5 +1,5 @@
-import type { RemoteKey } from '@kroma/core';
 import { useCallback, useState } from 'react';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 
 export interface GridFocusOptions {
   count: number;

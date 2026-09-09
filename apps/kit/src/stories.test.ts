@@ -1,4 +1,4 @@
-import { GROUP_ORDER, slug } from '@kroma/workbench';
+import { GROUP_ORDER, slug } from '@kromatv/workbench';
 import { describe, expect, it } from 'vitest';
 import { STORIES } from './stories';
 

@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/client",
+  "name": "@kromatv/client",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -23,7 +23,7 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/registry": "workspace:*",
+    "@kromatv/registry": "workspace:*",
     "zod": "^4.5.4"
   },
   "devDependencies": {

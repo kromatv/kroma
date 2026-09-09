@@ -1,5 +1,5 @@
 import { ModuleFailed, ModuleLoading, useFetch, useModuleApi, useT } from '__SDK__';
-import { PageHeader, Surface, Text } from '@kroma/ui/kit';
+import { PageHeader, Surface, Text } from '@kromatv/ui/kit';
 import { Hello } from './schemas';
 
 export default function __PAGE__() {

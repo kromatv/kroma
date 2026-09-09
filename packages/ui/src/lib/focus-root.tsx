@@ -11,7 +11,7 @@
 // the WHOLE SCREEN - a focus candidate in every direction that caught any
 // press without a legitimate target.
 
-import { NavigatorRoot, NavigatorView } from '@kroma/spatial-nav/react';
+import { NavigatorRoot, NavigatorView } from '@kromatv/spatial-nav/react';
 import type { ReactNode } from 'react';
 import { Pressable, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { style } from '#ui/core';

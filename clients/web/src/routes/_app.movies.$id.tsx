@@ -1,6 +1,6 @@
-import { ItemId } from '@kroma/client/media';
-import { genreSlugs } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { ItemId } from '@kromatv/client/media';
+import { genreSlugs } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { TitleDetail } from '#web/features/catalog/title-detail';

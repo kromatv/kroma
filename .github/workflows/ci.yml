@@ -46,7 +46,7 @@ jobs:
         with:
           bun-version-file: .bun-version
           no-cache: true
-      - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       - id: lanes
         run: bun run ci lanes
         env:
@@ -259,7 +259,7 @@ jobs:
             caches/transforms-*
             caches/*/transforms*
       - run: bun install --frozen-lockfile
-      - run: bun run --filter '@kroma/tv-native' prebuild -- --platform android
+      - run: bun run --filter '@kromatv/tv-native' prebuild -- --platform android
       # --build-cache reuses task outputs keyed on their inputs, which the
       # dependency cache alone does not. The heap is raised because the
       # generated gradle.properties asks for 2 GB, a third of the runner.
@@ -328,7 +328,7 @@ jobs:
           cache-directories: ${{ github.workspace }}/target/kmod
           shared-key: rust
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       # Non-blocking: the codebase uses a custom import grouping, not rustfmt's.
       - run: cargo fmt --check
         working-directory: server

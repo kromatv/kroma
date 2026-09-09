@@ -1,4 +1,4 @@
-import { Box, Focusable, Text } from '@kroma/ui/kit';
+import { Box, Focusable, Text } from '@kromatv/ui/kit';
 import type { TablerIcon } from '@tabler/icons-react';
 import { useMatchRoute } from '@tanstack/react-router';
 import { createContext, type ReactNode, useContext } from 'react';

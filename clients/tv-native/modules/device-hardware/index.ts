@@ -2,7 +2,7 @@
 // has no Web API to read. Optional so a build without the native module yields
 // null rather than throwing.
 
-import type { DecoderFrameLimits, FrameSize } from '@kroma/core';
+import type { DecoderFrameLimits, FrameSize } from '@kromatv/core';
 import { type NativeModule, requireOptionalNativeModule } from 'expo';
 
 declare class DeviceHardwareNativeModule extends NativeModule {

@@ -1,4 +1,4 @@
-import { type NodeConfig, SpatialNavigator } from '@kroma/spatial-nav';
+import { type NodeConfig, SpatialNavigator } from '@kromatv/spatial-nav';
 
 type Callbacks = Pick<NodeConfig, 'onFocus' | 'onBlur' | 'onActive' | 'onInactive' | 'onSelect'>;
 

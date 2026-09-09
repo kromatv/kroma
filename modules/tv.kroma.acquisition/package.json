@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/module-acquisition",
+  "name": "@kromatv/module-acquisition",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -20,10 +20,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/client": "workspace:*",
-    "@kroma/core": "workspace:*",
-    "@kroma/module-sdk": "workspace:*",
-    "@kroma/ui": "workspace:*",
+    "@kromatv/client": "workspace:*",
+    "@kromatv/core": "workspace:*",
+    "@kromatv/i18n": "workspace:*",
+    "@kromatv/module-sdk": "workspace:*",
+    "@kromatv/ui": "workspace:*",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-router": "^1.170.29",
     "zod": "^4.5.4"

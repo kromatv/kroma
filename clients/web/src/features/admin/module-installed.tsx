@@ -3,11 +3,11 @@
 // chip and a chevron into the detail drawer. Configuration, dependencies and
 // uninstall live in the drawer, so the list stays scannable.
 
-import type { StoreCatalog } from '@kroma/client/modules';
-import type { MessageKey } from '@kroma/core';
-import { moduleIconUrl, Table } from '@kroma/module-sdk';
-import { useT } from '@kroma/ui';
-import { Badge, Box, EmptyState, Icon, Row, Switch, styles, Text, Tooltip } from '@kroma/ui/kit';
+import type { StoreCatalog } from '@kromatv/client/modules';
+import type { MessageKey } from '@kromatv/i18n';
+import { moduleIconUrl, Table } from '@kromatv/module-sdk';
+import { useT } from '@kromatv/ui';
+import { Badge, Box, EmptyState, Icon, Row, Switch, styles, Text, Tooltip } from '@kromatv/ui/kit';
 import { type AdminModule, type ModuleOrigin, matchesQuery } from '#web/features/admin/module-api';
 import { useModuleToggle } from '#web/features/admin/module-data';
 import { Pill } from '#web/features/admin/pill';

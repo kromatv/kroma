@@ -11,8 +11,8 @@
 //   the reason a picker can read "no televisions available" with one sitting in
 //   the room. Those rows are worth showing, with the one action that helps.
 
-import type { DiscoveredTv, LanBeacons, LanDiscoveryBridge } from '@kroma/core';
-import { watchLanBeacons } from '@kroma/core';
+import type { DiscoveredTv, LanBeacons, LanDiscoveryBridge } from '@kromatv/core';
+import { watchLanBeacons } from '@kromatv/core';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { AppState } from 'react-native';
 

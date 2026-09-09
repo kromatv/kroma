@@ -1,9 +1,9 @@
-import { Box, Row } from '@kroma/ui/kit/atoms/box';
-import { Button } from '@kroma/ui/kit/atoms/button';
-import { Icon } from '@kroma/ui/kit/atoms/icon';
-import { Text } from '@kroma/ui/kit/atoms/text';
-import { CopyButton } from '@kroma/ui/kit/molecules/copy-button';
-import { Tooltip } from '@kroma/ui/kit/molecules/tooltip';
+import { Box, Row } from '@kromatv/ui/kit/atoms/box';
+import { Button } from '@kromatv/ui/kit/atoms/button';
+import { Icon } from '@kromatv/ui/kit/atoms/icon';
+import { Text } from '@kromatv/ui/kit/atoms/text';
+import { CopyButton } from '@kromatv/ui/kit/molecules/copy-button';
+import { Tooltip } from '@kromatv/ui/kit/molecules/tooltip';
 import { useState } from 'react';
 import { ChannelBadge } from '#site/components/channel-badge';
 import { NotesAction } from '#site/components/notes-action';

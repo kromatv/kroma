@@ -1,5 +1,5 @@
-import { posterColors, posterGradient } from '@kroma/core';
-import { sharedStyle } from '@kroma/ui/kit';
+import { posterColors, posterGradient } from '@kromatv/core';
+import { sharedStyle } from '@kromatv/ui/kit';
 
 /** The two-stop key-art wash `posterColors` derives from an id, as a
  * registered style: one class per hue, shared by every tile in that hue. */

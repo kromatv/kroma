@@ -1,7 +1,7 @@
-import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
-import { Icon } from '@kroma/ui/kit/atoms/icon';
-import { Text } from '@kroma/ui/kit/atoms/text';
-import { CopyButton } from '@kroma/ui/kit/molecules/copy-button';
+import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
+import { Icon } from '@kromatv/ui/kit/atoms/icon';
+import { Text } from '@kromatv/ui/kit/atoms/text';
+import { CopyButton } from '@kromatv/ui/kit/molecules/copy-button';
 
 export interface RegistryUrlProps {
   url: string;

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import type { Marker } from '@kroma/client/media';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { PlayerMarker } from '../media-types';
 import { usePlayerCredits } from './use-player-credits';
 
 type Opts = Parameters<typeof usePlayerCredits>[0];
@@ -21,8 +21,8 @@ function base(over: Partial<Opts> = {}): Opts {
   };
 }
 
-const creditsAt = (startMs: number): Marker[] =>
-  [{ kind: 'credits', startMs, endMs: startMs + 1000 }] as unknown as Marker[];
+const creditsAt = (startMs: number): PlayerMarker[] =>
+  [{ kind: 'credits', startMs, endMs: startMs + 1000 }] as unknown as PlayerMarker[];
 
 beforeEach(() => {
   vi.useFakeTimers();

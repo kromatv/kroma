@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { fakeClient } from '@kroma/client/test';
-import { I18nProvider } from '@kroma/ui';
-import { clearPressGuard } from '@kroma/ui/kit';
+import { fakeClient } from '@kromatv/client/test';
+import { I18nProvider } from '@kromatv/ui';
+import { clearPressGuard } from '@kromatv/ui/kit';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';

@@ -10,7 +10,7 @@ import {
   KromaApiError,
   type KromaClient,
   sharedTokenExchange,
-} from '@kroma/client';
+} from '@kromatv/client';
 import {
   type AuthResult,
   clearSession,
@@ -21,7 +21,7 @@ import {
   saveSession,
   type User,
   type UserId,
-} from '@kroma/client/accounts';
+} from '@kromatv/client/accounts';
 import {
   type Dispatch,
   type SetStateAction,

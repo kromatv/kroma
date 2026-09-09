@@ -1,16 +1,16 @@
 // @vitest-environment jsdom
 
-import type { ReportCategory } from '@kroma/client/reports';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
+import type { PlayerReportCategory } from '../../media-types';
 import { SettingsPanel } from './settings-panel';
 import { APPEARANCE, controller, GEN } from './settings-panel.fixture';
 
 afterEach(cleanup);
 
-function panel(onReport?: (category: ReportCategory) => Promise<void>): ReactElement {
+function panel(onReport?: (category: PlayerReportCategory) => Promise<void>): ReactElement {
   return (
     <I18nProvider locale="en">
       <SettingsPanel

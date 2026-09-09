@@ -1,4 +1,4 @@
-import { Contribution, PointReq } from '@kroma/registry';
+import { Contribution, PointReq } from '@kromatv/registry';
 import { z } from 'zod';
 import { ModuleId } from './ids';
 

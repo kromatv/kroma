@@ -1,4 +1,3 @@
-import type { RemoteKey } from '@kroma/core';
 import {
   type SetStateAction,
   useCallback,
@@ -10,6 +9,7 @@ import {
 import type { ControlId, Overlay, Zone } from '#ui/components/organisms/player/lib/nav';
 import { handleDpadKey, handleMediaKey } from '#ui/components/organisms/player/lib/nav-keys';
 import type { PlayerCloseReason } from '#ui/components/organisms/player/types';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 
 const HIDE_MS = 3500;
 

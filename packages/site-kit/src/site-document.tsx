@@ -1,5 +1,5 @@
-import bricolageLatin from '@kroma/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
-import hankenLatin from '@kroma/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
+import bricolageLatin from '@kromatv/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
+import hankenLatin from '@kromatv/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
 import { HeadContent, Scripts } from '@tanstack/react-router';
 import type { JSX, ReactNode } from 'react';
 import { preload } from 'react-dom';

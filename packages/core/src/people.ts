@@ -1,5 +1,5 @@
-import type { CrewMember, Metadata } from '@kroma/client/media';
-import type { Translate } from './i18n';
+import type { CrewMember, Metadata } from '@kromatv/client/media';
+import type { Translate } from '@kromatv/i18n';
 import { slugify } from './slug';
 
 /** The crew credits that stand for a title's authorship: a film's directors, a

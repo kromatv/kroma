@@ -1,4 +1,4 @@
-import { withKitStyles, withTheme } from '@kroma/ui/ssr';
+import { withKitStyles, withTheme } from '@kromatv/ui/ssr';
 import handler from '@tanstack/react-start/server-entry';
 import { type ExecCtx, machineResponse } from '#site/lib/api';
 import type { Env } from '#site/lib/catalog';

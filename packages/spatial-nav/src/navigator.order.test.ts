@@ -1,4 +1,4 @@
-import { SpatialNavigator } from '@kroma/spatial-nav';
+import { SpatialNavigator } from '@kromatv/spatial-nav';
 import { describe, expect, it } from 'vitest';
 
 function strip(): SpatialNavigator {

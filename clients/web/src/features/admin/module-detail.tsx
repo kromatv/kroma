@@ -1,6 +1,6 @@
-import type { StoreModule } from '@kroma/client/modules';
-import { useT } from '@kroma/ui';
-import { Box, Button, EmptyState, Skeleton, Surface } from '@kroma/ui/kit';
+import type { StoreModule } from '@kromatv/client/modules';
+import { useT } from '@kromatv/ui';
+import { Box, Button, EmptyState, Skeleton, Surface } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { AdminModule } from '#web/features/admin/module-api';

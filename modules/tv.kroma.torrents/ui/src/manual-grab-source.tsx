@@ -1,9 +1,9 @@
 // Step one of a manual add: where the torrent comes from.
 
-import type { ManualReleaseView } from '@kroma/module-acquisition/schemas';
-import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
-import type { DropzoneRejection } from '@kroma/ui/kit';
-import { Box, Button, Callout, Dropzone, Field, SegmentGroup } from '@kroma/ui/kit';
+import type { ManualReleaseView } from '@kromatv/module-acquisition/schemas';
+import { apiErrorText, useAsyncAction, useT } from '@kromatv/module-sdk';
+import type { DropzoneRejection } from '@kromatv/ui/kit';
+import { Box, Button, Callout, Dropzone, Field, SegmentGroup } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useTorrentsApi } from './api';
 import { SearchPanel } from './manual-grab-search';

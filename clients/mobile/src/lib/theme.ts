@@ -1,4 +1,4 @@
-// The mobile app's design vocabulary, sourced entirely from @kroma/ui: this
+// The mobile app's design vocabulary, sourced entirely from @kromatv/ui: this
 // file only maps the design system's tokens onto the names the mobile screens
 // already use, so a colour never drifts between phone, TV and web.
 //
@@ -18,7 +18,7 @@ import {
   onPaper,
   type Theme,
   type ThemeOverrides,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 
 const FORM_FACTOR: ThemeOverrides = {
   typeSpec: { body: mobileTypeSpec.body, title: mobileTypeSpec.title },
@@ -32,7 +32,7 @@ const FORM_FACTOR: ThemeOverrides = {
  * `variant` against the TV role table, and `sizeFix` re-derives a line height
  * from the TV body's 1.55 ratio. The corners are the phone's for the same
  * reason - a kit control here should be shaped for a hand, not for a room, and
- * `@kroma/ui` already authors both scales (core/tokens/mobile).
+ * `@kromatv/ui` already authors both scales (core/tokens/mobile).
  *
  * Only the roles the two ramps SHARE are restated, which is the point of a
  * form-factor theme: on a phone, `body` and `title` mean the phone's sizes. The
@@ -62,7 +62,7 @@ export {
   mobileRadius as radius,
   mobileSpace as spacing,
   WHEEL_COLORS,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 
 /** The stops artwork fades into, on whichever ground is active. Not the kit's
  *  `SHADE`, which names the dark one and would band black across a hero on

@@ -4,8 +4,8 @@
 // only tracks the TV can actually switch to are ever offered.
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import type { CastTrack } from '@kroma/client/cast';
-import { Icon, styles, Text } from '@kroma/ui/kit';
+import type { CastTrack } from '@kromatv/client/cast';
+import { Icon, styles, Text } from '@kromatv/ui/kit';
 import { forwardRef } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import { SheetBody, SheetTitle, sheetChrome } from '#mobile/components/ui';

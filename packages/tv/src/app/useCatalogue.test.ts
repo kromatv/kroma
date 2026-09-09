@@ -34,14 +34,14 @@ interface StreamHooks {
   onEvent: (e: Record<string, unknown>) => void;
 }
 
-vi.mock('@kroma/client/accounts', () => ({
+vi.mock('@kromatv/client/accounts', () => ({
   loadSession: H.loadSession,
   forgetServer: H.forgetServer,
   saveServer: H.saveServer,
   normalizeServerUrl: H.norm,
 }));
 
-vi.mock('@kroma/client/events', () => ({
+vi.mock('@kromatv/client/events', () => ({
   KromaEvents: class {
     constructor(url: string, opts: unknown) {
       H.streams.push({ url, opts: opts as StreamHooks });
@@ -51,7 +51,7 @@ vi.mock('@kroma/client/events', () => ({
   },
 }));
 
-vi.mock('@kroma/client', () => ({
+vi.mock('@kromatv/client', () => ({
   createKromaClient: (opts: { baseUrl: string }) => {
     const client = {
       baseUrl: opts.baseUrl,
@@ -65,7 +65,7 @@ vi.mock('@kroma/client', () => ({
   },
 }));
 
-vi.mock('@kroma/core', () => ({
+vi.mock('@kromatv/core', () => ({
   activeLocale: () => 'fr',
   discoverServer: H.discoverServer,
   checkServerCompat: H.checkServerCompat,

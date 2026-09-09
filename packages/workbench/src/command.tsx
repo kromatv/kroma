@@ -12,7 +12,7 @@ import {
   useCommandResults,
   webDocument,
   webWindow,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useEffect } from 'react';
 import type { StoryEntry } from './entry';
 import type { Page } from './page';

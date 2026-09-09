@@ -1,4 +1,4 @@
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import { Button } from '#site/components/button';
 import { Container } from '#site/components/container';
 import { AccentHeading } from '#site/components/home/heading';

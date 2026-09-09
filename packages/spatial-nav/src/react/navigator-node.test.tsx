@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { NavigatorNode, NavigatorView } from '@kroma/spatial-nav/react';
+import { NavigatorNode, NavigatorView } from '@kromatv/spatial-nav/react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { Text } from 'react-native';
 import { afterEach, describe, expect, it } from 'vitest';

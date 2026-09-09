@@ -1,9 +1,9 @@
-// The published catalog as this site reads it: `@kroma/registry`'s model, with
+// The published catalog as this site reads it: `@kromatv/registry`'s model, with
 // the one narrowing the site needs. Kept out of `modules.ts` so the schema stays
 // build-time only - that module is bundled for the browser, and the pages read
 // the reduced `SiteCatalog`, never this.
 
-import { Manifest } from '@kroma/registry';
+import { Manifest } from '@kromatv/registry';
 import { z } from 'zod';
 
 // Only a data URI survives: the site is self-contained, so an icon that would

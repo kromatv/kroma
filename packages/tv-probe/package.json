@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/tv-probe",
+  "name": "@kromatv/tv-probe",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -15,8 +15,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/client": "workspace:*",
-    "@kroma/i18n": "workspace:*",
+    "@kromatv/client": "workspace:*",
+    "@kromatv/i18n": "workspace:*",
     "playwright": "1.62.1"
   },
   "devDependencies": {

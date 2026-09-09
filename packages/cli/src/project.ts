@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
-import { Manifest, MODULE_SCHEMA_VERSION, REVERSE_DNS_ID } from '@kroma/registry';
+import { Manifest, MODULE_SCHEMA_VERSION, REVERSE_DNS_ID } from '@kromatv/registry';
 import { parse as parseToml } from 'smol-toml';
 import { z } from 'zod';
 import { byCodeUnit } from './sort';

@@ -2,9 +2,9 @@
 // and the points it consumes (colored by whether each is answered), plus the
 // reverse edges (who depends on this module).
 
-import { depEntries } from '@kroma/module-sdk';
-import { useT } from '@kroma/ui';
-import { Badge, type BadgeTone, Box, Row, Text } from '@kroma/ui/kit';
+import { depEntries } from '@kromatv/module-sdk';
+import { useT } from '@kromatv/ui';
+import { Badge, type BadgeTone, Box, Row, Text } from '@kromatv/ui/kit';
 import type { AdminModule } from '#web/features/admin/module-api';
 
 export type DepState = 'ok' | 'missing' | 'disabled' | 'optional';

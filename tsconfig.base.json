@@ -8,7 +8,7 @@
     "paths": {
       "#tv/*": ["./packages/tv/src/*"],
       "#ui/*": ["./packages/ui/src/*"],
-      "@kroma/ui/bundler": ["./packages/ui/bundler/index.ts"],
+      "@kromatv/ui/bundler": ["./packages/ui/bundler/index.ts"],
       "#web/*": ["./clients/web/src/*"]
     },
     "allowImportingTsExtensions": true,

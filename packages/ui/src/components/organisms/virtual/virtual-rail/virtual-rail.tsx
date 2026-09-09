@@ -11,7 +11,7 @@
 // therefore GROWS and never shrinks: tiles are mounted from the start of the
 // data up to the furthest the selection has reached.
 
-import { NavigatorView } from '@kroma/spatial-nav/react';
+import { NavigatorView } from '@kromatv/spatial-nav/react';
 import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type LayoutChangeEvent,

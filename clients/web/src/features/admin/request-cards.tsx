@@ -2,8 +2,8 @@
 // approve/deny/delete controls and the deny note. Pure presentation, so the page
 // itself stays data + layout.
 
-import type { MediaRequest } from '@kroma/client/requests';
-import { useT } from '@kroma/ui';
+import type { MediaRequest } from '@kromatv/client/requests';
+import { useT } from '@kromatv/ui';
 import {
   Avatar,
   Box,
@@ -16,7 +16,7 @@ import {
   Skeleton,
   Surface,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { Pill } from '#web/features/admin/pill';
 import { kindMeta } from '#web/features/admin/pipeline-meta';
 import { posterScrim } from '#web/shared/lib/art-styles';

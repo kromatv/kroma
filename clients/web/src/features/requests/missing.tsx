@@ -1,9 +1,9 @@
 // "Manquants": episode-level rows grouped under their series (or a single movie
 // row), with the search actions that turn a library gap into a request.
 
-import { hasPermission } from '@kroma/client/accounts';
-import type { CalendarEntry } from '@kroma/client/requests';
-import { useT } from '@kroma/ui';
+import { hasPermission } from '@kromatv/client/accounts';
+import type { CalendarEntry } from '@kromatv/client/requests';
+import { useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -15,7 +15,7 @@ import {
   Row,
   Surface,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { MissingGroupCard } from '#web/features/requests/missing-group';

@@ -2,7 +2,7 @@
 // profile tiles. Presentation only; every tile's action arrives prebuilt from
 // the sign-in screen.
 
-import { AddTile, styles } from '@kroma/ui/kit';
+import { AddTile, styles } from '@kromatv/ui/kit';
 import { ScrollView } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { spacing } from '#mobile/lib/theme';

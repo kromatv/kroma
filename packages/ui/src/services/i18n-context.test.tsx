@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { DEFAULT_LOCALE } from '@kroma/core';
+import { DEFAULT_LOCALE } from '@kromatv/core';
 import { renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';

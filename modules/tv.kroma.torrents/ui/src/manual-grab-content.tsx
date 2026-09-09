@@ -1,6 +1,6 @@
 // What the torrent turns out to hold, read from its own file list.
 
-import type { TorrentAnalysis, TorrentFileView } from '@kroma/module-acquisition/schemas';
+import type { TorrentAnalysis, TorrentFileView } from '@kromatv/module-acquisition/schemas';
 import type { Kind } from './manual-grab-target';
 
 /** What the contents say the grab is for. */

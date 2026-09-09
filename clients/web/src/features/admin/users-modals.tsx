@@ -1,7 +1,12 @@
-import type { Invite, Permission, ResetCreated, VerificationCreated } from '@kroma/client/accounts';
-import type { AdminUser } from '@kroma/client/admin';
-import { PERMISSIONS } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import type {
+  Invite,
+  Permission,
+  ResetCreated,
+  VerificationCreated,
+} from '@kromatv/client/accounts';
+import type { AdminUser } from '@kromatv/client/admin';
+import { PERMISSIONS } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -16,7 +21,7 @@ import {
   Row,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useCallback, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';

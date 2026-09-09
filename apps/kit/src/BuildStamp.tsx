@@ -1,5 +1,5 @@
-import { commitLabel } from '@kroma/core';
-import { Box, Text } from '@kroma/ui/kit';
+import { commitLabel } from '@kromatv/core';
+import { Box, Text } from '@kromatv/ui/kit';
 import { BUILD } from './buildInfo';
 
 export function BuildStamp() {

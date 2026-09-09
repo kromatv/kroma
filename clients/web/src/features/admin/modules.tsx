@@ -3,8 +3,8 @@
 // install progress off the `module.op.*` stream, a detail page per module,
 // and registry management in its own drawer.
 
-import { useT } from '@kroma/ui';
-import { Box, Button, classes, Field, Row, SegmentGroup, styles, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Button, classes, Field, Row, SegmentGroup, styles, Text } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useMemo, useRef, useState } from 'react';
 

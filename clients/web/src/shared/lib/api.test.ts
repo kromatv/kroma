@@ -1,5 +1,5 @@
-import { createKromaClient, sessionToken, setSessionToken } from '@kroma/client';
-import { deviceLocale, setActiveLocale } from '@kroma/core';
+import { createKromaClient, sessionToken, setSessionToken } from '@kromatv/client';
+import { deviceLocale, setActiveLocale } from '@kromatv/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   apiBase,
@@ -16,13 +16,13 @@ const H = vi.hoisted(() => ({
   exchange: vi.fn(),
 }));
 
-vi.mock('@kroma/client/accounts', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@kroma/client/accounts')>()),
+vi.mock('@kromatv/client/accounts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kromatv/client/accounts')>()),
   loadSession: () => H.session,
 }));
 
-vi.mock('@kroma/client', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@kroma/client')>()),
+vi.mock('@kromatv/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kromatv/client')>()),
   sharedTokenExchange: (run: () => Promise<unknown>) => H.exchange(run),
 }));
 

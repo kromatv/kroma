@@ -1,5 +1,5 @@
-import type { KromaClient } from '@kroma/client';
-import type { ElementRow } from '@kroma/client/pipeline';
+import type { KromaClient } from '@kromatv/client';
+import type { ElementRow } from '@kromatv/client/pipeline';
 import { describe, expect, it, vi } from 'vitest';
 import { pipelineActions } from './pipeline-actions';
 

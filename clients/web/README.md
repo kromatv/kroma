@@ -1,9 +1,9 @@
-# @kroma/web
+# @kromatv/web
 
 > Part of the [KROMA](../../README.md) monorepo: the desktop browser client.
 
-KROMA desktop/browser client. Vite + React + TypeScript, composed from `@kroma/ui`
-(design system) and `@kroma/core` (API client, HEVC capability detection, direct-play).
+KROMA desktop/browser client. Vite + React + TypeScript, composed from `@kromatv/ui`
+(design system) and `@kromatv/core` (API client, HEVC capability detection, direct-play).
 
 ## Develop
 

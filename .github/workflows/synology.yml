@@ -44,7 +44,7 @@ jobs:
         with:
           bun-version-file: .bun-version
           no-cache: true
-      - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       - id: lanes
         run: bun run ci lanes
         env:
@@ -392,7 +392,7 @@ jobs:
         with:
           name: kroma-synology-spk
           path: dist
-      - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       # Retention (older than two weeks AND past the newest five of each kind)
       # lives in `bun run ci canary`, shared with the fleet's upload from
       # release.yml.

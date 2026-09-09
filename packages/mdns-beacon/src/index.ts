@@ -1,7 +1,7 @@
 // The beacon a television raises when it has no DNS-SD API of its own.
 //
 // Apple TV and Android TV publish `_kroma-tv._tcp` through the platform
-// (@kroma/lan-beacon). A webOS or Tizen set runs its UI in a browser, which has
+// (@kromatv/lan-beacon). A webOS or Tizen set runs its UI in a browser, which has
 // no such API at all - but both platforms let an app ship a service beside that
 // browser, and a service has a UDP socket. That is all multicast DNS is, so the
 // beacon is the same on every television and only the thing that HOSTS it

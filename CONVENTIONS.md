@@ -157,9 +157,9 @@ and they are already written.
 even when it resolves. Crossing a package boundary on a relative path defeats the
 workspace graph: the dependency is invisible to `package.json`, to knip, and to
 anyone reading the manifest to find out what this package needs. Write
-`import { tvShellConfig } from '@kroma/bundler'`.
+`import { tvShellConfig } from '@kromatv/bundler'`.
 
-Shared code lives in a real `@kroma/*` workspace package, depended on by name. If
+Shared code lives in a real `@kromatv/*` workspace package, depended on by name. If
 the code has no package, that is the work: give it one.
 
 ## The quality gate is not optional

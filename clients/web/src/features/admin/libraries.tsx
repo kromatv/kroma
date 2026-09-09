@@ -1,5 +1,5 @@
-import type { AdminLibrary } from '@kroma/client/library';
-import { useFormat, useT } from '@kroma/ui';
+import type { AdminLibrary } from '@kromatv/client/library';
+import { useFormat, useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -12,7 +12,7 @@ import {
   Row,
   Surface,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import {
   AddLibraryModal,

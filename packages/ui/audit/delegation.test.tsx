@@ -1,4 +1,4 @@
-import { record } from '@kroma/react-audit';
+import { record } from '@kromatv/react-audit';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';

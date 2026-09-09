@@ -1,7 +1,7 @@
 // Android TV only: tvOS exposes no audio input to third-party code (the Siri
 // Remote's mic is the system's, usable only as dictation into a focused field).
 
-import type { VoiceSearchBackend, VoiceSessionProps } from '@kroma/tv';
+import type { VoiceSearchBackend, VoiceSessionProps } from '@kromatv/tv';
 import { useEffect, useRef } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
 import { VoiceSearch } from '../../modules/voice-search';

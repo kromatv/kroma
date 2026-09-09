@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Box } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box } from '@kromatv/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { BrowseTitle } from '#web/features/catalog/browse-hero';

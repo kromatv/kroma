@@ -1,4 +1,4 @@
-import { type Catalog, catalogsByLocale } from '@kroma/i18n';
+import { type Catalog, catalogsByLocale } from '@kromatv/i18n';
 
 // The Metro half; `catalogs.web.ts` beside it is Vite's. A native bundle is one
 // file, so every namespace is read here at boot: `require.context` is Metro's

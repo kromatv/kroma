@@ -1,4 +1,4 @@
-import { styles } from '@kroma/ui/kit';
+import { styles } from '@kromatv/ui/kit';
 import { safeAreaTop } from '#web/shared/lib/safe-area';
 
 export const ADMIN_RAIL_WIDTH = 256;

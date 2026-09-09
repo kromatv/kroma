@@ -1,8 +1,8 @@
-import { Column } from '@kroma/ui/kit/atoms/box';
-import { Button } from '@kroma/ui/kit/atoms/button';
-import { Text } from '@kroma/ui/kit/atoms/text';
-import { ButtonGroup } from '@kroma/ui/kit/molecules/button-group';
-import { Menu } from '@kroma/ui/kit/organisms/menu';
+import { Column } from '@kromatv/ui/kit/atoms/box';
+import { Button } from '@kromatv/ui/kit/atoms/button';
+import { Text } from '@kromatv/ui/kit/atoms/text';
+import { ButtonGroup } from '@kromatv/ui/kit/molecules/button-group';
+import { Menu } from '@kromatv/ui/kit/organisms/menu';
 import { useState } from 'react';
 import type { Download } from '#site/lib/artifacts';
 import { mb, platformLabel } from '#site/lib/ui';

@@ -1,8 +1,8 @@
 // The single detail page for a title, owned or not. Fed a normalized `TitleView`
 
-import { ItemId, type SubjectId } from '@kroma/client/media';
-import { useCast, useT } from '@kroma/ui';
-import { classes, type HostElement, styles, Text } from '@kroma/ui/kit';
+import { ItemId, type SubjectId } from '@kromatv/client/media';
+import { useCast, useT } from '@kromatv/ui';
+import { classes, type HostElement, styles, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { AiSuggestRail } from '#web/features/catalog/ai-suggest-rail';

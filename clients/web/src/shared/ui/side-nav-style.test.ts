@@ -1,4 +1,4 @@
-import { CONTROL, color, radius, typeSpec } from '@kroma/ui/kit';
+import { CONTROL, color, radius, typeSpec } from '@kromatv/ui/kit';
 import { describe, expect, it } from 'vitest';
 import { SIDE_NAV_GUTTER, sideNavRow } from './side-nav-style';
 

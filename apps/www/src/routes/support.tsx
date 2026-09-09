@@ -1,4 +1,4 @@
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import { IconBook, IconBrandGithub, IconBug, IconCircleCheck, IconMail } from '@tabler/icons-react';
 import { createFileRoute } from '@tanstack/react-router';
 import { Button } from '#site/components/button';

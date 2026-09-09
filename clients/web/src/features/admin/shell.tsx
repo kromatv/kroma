@@ -1,6 +1,6 @@
-import { KromaEvents } from '@kroma/client/events';
-import { AdminHostProvider, ModuleSlotProvider } from '@kroma/module-sdk';
-import { Box, useBreakpoint } from '@kroma/ui/kit';
+import { KromaEvents } from '@kromatv/client/events';
+import { AdminHostProvider, ModuleSlotProvider } from '@kromatv/module-sdk';
+import { Box, useBreakpoint } from '@kromatv/ui/kit';
 import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useMemo } from 'react';
 import { ScrollView } from 'react-native';
@@ -15,7 +15,7 @@ import { useAuth } from '#web/shared/lib/auth';
 import { PageFrame } from '#web/shared/ui';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal';
 
-export { PageHeader } from '@kroma/ui/kit';
+export { PageHeader } from '@kromatv/ui/kit';
 export { Denied, isAnyAdmin, useAsyncAction, useCap, usePoll } from '#web/features/admin/hooks';
 export { useAdmin } from '#web/features/admin/shell-context';
 

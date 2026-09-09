@@ -1,4 +1,4 @@
-# @kroma/kit
+# @kromatv/kit
 
 The design system's workbench, as a website and as an app.
 

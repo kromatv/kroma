@@ -133,7 +133,7 @@ describe('buildAppleTvApp', () => {
       'bun',
       'run',
       '--filter',
-      '@kroma/tv-native',
+      '@kromatv/tv-native',
       'ios',
       '--device',
       '0000-1111',
@@ -147,7 +147,7 @@ describe('buildAppleTvApp', () => {
 
     await expect(buildAppleTvApp('0000-1111', log)).rejects.toThrow(
       'a build from source still needs CocoaPods (brew install cocoapods), ' +
-        "the Expo prebuild (bun run --filter '@kroma/tv-native' prebuild)",
+        "the Expo prebuild (bun run --filter '@kromatv/tv-native' prebuild)",
     );
     expect(vi.mocked(runOk)).not.toHaveBeenCalled();
   });

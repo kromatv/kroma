@@ -1,13 +1,18 @@
-import type { KromaClient } from '@kroma/client';
-import type { MediaItem } from '@kroma/client/media';
-import { GEN_LANGS, GenerationId, type SubCapabilities, SubtitleId } from '@kroma/client/subtitles';
-import { LANG_OFF } from '@kroma/core';
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem } from '@kromatv/client/media';
+import {
+  GEN_LANGS,
+  GenerationId,
+  type SubCapabilities,
+  SubtitleId,
+} from '@kromatv/client/subtitles';
+import { LANG_OFF } from '@kromatv/core';
 import {
   type PlayerSub,
   type SubtitleGenBundle,
   type SubtitleGenRequest,
   useSubtitleGenerations,
-} from '@kroma/ui';
+} from '@kromatv/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { LangPrefs } from '#tv/app/langPref';
 import { useSubtitleSelection } from '#tv/features/playback/player/useSubtitleSelection';

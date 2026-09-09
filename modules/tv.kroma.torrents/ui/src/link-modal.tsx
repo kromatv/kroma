@@ -1,6 +1,6 @@
 // "This download is for the wrong title": the picker that fixes it.
 
-import { useAsyncAction, useT } from '@kroma/module-sdk';
+import { useAsyncAction, useT } from '@kromatv/module-sdk';
 import {
   Box,
   Button,
@@ -12,7 +12,7 @@ import {
   Row,
   Spinner,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useCallback, useEffect, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useTorrentsApi } from './api';

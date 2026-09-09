@@ -11,8 +11,8 @@ import {
   usePoll,
   useServerEvents,
   useT,
-} from '@kroma/module-sdk';
-import type { VpnStatusEvent } from '@kroma/module-vpn/schemas';
+} from '@kromatv/module-sdk';
+import type { VpnStatusEvent } from '@kromatv/module-vpn/schemas';
 import {
   Box,
   Button,
@@ -24,7 +24,7 @@ import {
   Surface,
   Table,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTorrentsApi } from './api';
 import { ContentsModal } from './contents-modal';

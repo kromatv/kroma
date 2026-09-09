@@ -7,8 +7,8 @@ import type {
   StoreOptionalModule,
   StorePlan,
   StorePlanModule,
-} from '@kroma/client/modules';
-import { useFormat, useT } from '@kroma/ui';
+} from '@kromatv/client/modules';
+import { useFormat, useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -20,7 +20,7 @@ import {
   Row,
   Spinner,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 
 /** The dialog title already says the install failed, so the server's
  * `install failed:` prefix is dropped and the detail (which module, which

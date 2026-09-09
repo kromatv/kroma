@@ -1,5 +1,5 @@
-import { useT } from '@kroma/module-sdk';
-import { Dialog, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/module-sdk';
+import { Dialog, Text } from '@kromatv/ui/kit';
 import { type CSSProperties, useState } from 'react';
 import type { DownloadView } from './schemas';
 

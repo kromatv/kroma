@@ -11,7 +11,7 @@ import {
   styles,
   Text,
   type TypeRole,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 
 const PAD: Partial<Record<TypeRole, { px: number; py: number }>> = {

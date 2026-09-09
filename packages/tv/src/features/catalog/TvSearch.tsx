@@ -1,12 +1,12 @@
-import type { SearchHit } from '@kroma/client/media';
+import type { SearchHit } from '@kromatv/client/media';
 import {
   genreLabels,
   posterColors,
   qualityBadge,
   qualityBadgeForVideo,
   type TitleGenres,
-} from '@kroma/core';
-import { useT } from '@kroma/ui';
+} from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   BackButton,
   Box,
@@ -19,7 +19,7 @@ import {
   styles,
   Text,
   useFocusNav,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';

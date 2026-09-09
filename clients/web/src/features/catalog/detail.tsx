@@ -1,6 +1,6 @@
-import type { CrewMember, ItemId, MediaItem } from '@kroma/client/media';
-import { canDirectPlay, posterColors } from '@kroma/core';
-import { useT, useThemeAudio } from '@kroma/ui';
+import type { CrewMember, ItemId, MediaItem } from '@kromatv/client/media';
+import { canDirectPlay, posterColors } from '@kromatv/core';
+import { useT, useThemeAudio } from '@kromatv/ui';
 import {
   BackButton,
   Badge,
@@ -14,7 +14,7 @@ import {
   styles,
   Text,
   useBreakpoint,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useState } from 'react';
 import {
   DirectorsLine,

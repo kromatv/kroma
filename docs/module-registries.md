@@ -147,7 +147,7 @@ manifest contract the bundle was built against, copied out of its `module.json`;
 a module declaring another one is listed with the reason and never offered.
 
 Artifact URLs are absolute, so the metadata and the bytes may live on different
-hosts. `@kroma/registry` is the contract in code: the zod schemas,
+hosts. `@kromatv/registry` is the contract in code: the zod schemas,
 the document builders, and a typed client (`descriptor`, `index`, `module`,
 `search`, `resolve`) that any conforming registry answers.
 

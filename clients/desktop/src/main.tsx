@@ -1,6 +1,6 @@
 import 'virtual:kroma-tv.css';
-import { mountTv } from '@kroma/tv/mount';
-import { installStage } from '@kroma/tv/stage';
+import { mountTv } from '@kromatv/tv/mount';
+import { installStage } from '@kromatv/tv/stage';
 // Display-matched grade of the brand-intro film, bundled by THIS shell only:
 // 1080p60 is a quarter of the shared 4K60 film's decode work and
 // indistinguishable in a desktop window, and H.264 (not HEVC like the shared
@@ -17,7 +17,7 @@ import { installVideoHole, nativePlane } from './video-hole';
 // in fixed pixels against that canvas (PosterGrid's 8 x 203px columns, the nav row,
 // the episode column), so a free-size window narrower than 1920 does not shrink the
 // layout, it clips it. Fitted the same way as the Steam Deck panel and the browser
-// shell (`installStage`, @kroma/tv/stage). A genuinely fluid 10-foot
+// shell (`installStage`, @kromatv/tv/stage). A genuinely fluid 10-foot
 // layout is a design-system change, not a shell one.
 const fixedScreen = nativePlane();
 installStage();

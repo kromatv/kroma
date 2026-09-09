@@ -1,7 +1,7 @@
-import type { Section } from '@kroma/client/media';
-import { genreLabels, metaLine, posterColors } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Badge, Box, Button, classes, Row, styles, Text } from '@kroma/ui/kit';
+import type { Section } from '@kromatv/client/media';
+import { genreLabels, metaLine, posterColors } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Badge, Box, Button, classes, Row, styles, Text } from '@kromatv/ui/kit';
 import { memo } from 'react';
 import { VirtualTileGrid } from '#web/features/catalog/virtual-tile-grid';
 import type { MovieView, ShowView } from '#web/shared/lib/api';

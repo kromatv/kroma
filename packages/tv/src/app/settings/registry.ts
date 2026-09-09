@@ -2,17 +2,9 @@
 // presentation. Screens compose menus from these lists (plus screen-local
 // actionItems built inline, e.g. the PIN row which needs auth + nav context).
 
-import {
-  LANG_NO_PREF,
-  LANG_OFF,
-  LOCALES,
-  type Locale,
-  langKey,
-  langOptions,
-  type MessageKey,
-  type Translate,
-} from '@kroma/core';
-import { useLocale, useSetLocale } from '@kroma/ui';
+import { LANG_NO_PREF, LANG_OFF, LOCALES, langKey, langOptions } from '@kromatv/core';
+import type { Locale, MessageKey, Translate } from '@kromatv/i18n';
+import { useLocale, useSetLocale } from '@kromatv/ui';
 import { useEffect, useState } from 'react';
 import { canQuitApp, quitApp } from '#tv/app/appQuit';
 import { crashReportingPrefStore } from '#tv/app/crashReportingPref';

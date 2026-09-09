@@ -47,7 +47,7 @@ KROMA_PERF_ONLY=keyboard bun run kit:perf
 
 It presses ONE control per story view, which is its blind spot: nothing in it
 walks a row. `rail-cost.test.tsx` covers the case the sweep cannot reach, with
-`@kroma/react-audit` driving a real `<Rail.List>` under the D-pad. It is a gate:
+`@kromatv/react-audit` driving a real `<Rail.List>` under the D-pad. It is a gate:
 a press must leave the mounted window alone whether or not it translates the row,
 and the press that reaches the end of the window must add one tile rather than
 rebuild the tiles already there.
@@ -136,7 +136,7 @@ await scanTrees(at, root, ['packages/ui/src'], { ext: ['.tsx'] });
 
 `babelAt` walks its candidates in order and takes the first that resolves, so a
 repo that hoists its dependencies passes only its root; this one has to name
-`@kroma/bundler`, because that workspace alone declares the plugin. Reaching
+`@kromatv/bundler`, because that workspace alone declares the plugin. Reaching
 `@babel/core` through the compiler's own tree is what stops the two disagreeing
 on a version. When none of the candidates resolves it throws `NoCompiler`,
 naming every path it tried, rather than dying inside babel.

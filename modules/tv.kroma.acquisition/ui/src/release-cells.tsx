@@ -5,8 +5,8 @@
 // into -- but where it came from, how big it is and how many are seeding are the
 // same three facts in the same three columns. They were written twice.
 
-import { TABULAR, Table, useFormat, useT } from '@kroma/module-sdk';
-import { Icon, Row, Text } from '@kroma/ui/kit';
+import { TABULAR, Table, useFormat, useT } from '@kromatv/module-sdk';
+import { Icon, Row, Text } from '@kromatv/ui/kit';
 
 export function ReleaseFacts({
   indexerName,

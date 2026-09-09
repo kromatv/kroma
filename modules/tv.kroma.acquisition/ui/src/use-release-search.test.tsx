@@ -4,7 +4,7 @@ import {
   type InteractiveSearchView,
   RequestId,
   type ScoredReleaseView,
-} from '@kroma/client/requests';
+} from '@kromatv/client/requests';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useReleaseSearch } from './use-release-search';
@@ -13,7 +13,7 @@ const client = {
   requests: { searchReleases: vi.fn(), grab: vi.fn() },
 };
 
-vi.mock('@kroma/module-sdk', () => ({
+vi.mock('@kromatv/module-sdk', () => ({
   useT: () => (key: string) => key,
   useAdminHost: () => ({ client }),
 }));

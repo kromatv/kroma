@@ -1,9 +1,9 @@
-import type { StorySource } from '@kroma/workbench';
+import type { StorySource } from '@kromatv/workbench';
 import { BUILD } from './buildInfo';
 import { HISTORY } from './kitHistory';
 import { PAGES } from './stories';
 
-/** The kit's stories are @kroma/ui's own files, and the link to one is pinned to
+/** The kit's stories are @kromatv/ui's own files, and the link to one is pinned to
  * the revision this build was made from. The articles come along because the
  * workbench is handed its stories but never its pages, and an article's file is
  * what a link to one has to name. */

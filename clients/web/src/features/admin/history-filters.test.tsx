@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-import { UserId } from '@kroma/client/accounts';
-import type { AdminUser } from '@kroma/client/admin';
-import { LibraryId } from '@kroma/client/media';
-import { I18nProvider } from '@kroma/ui';
+import { UserId } from '@kromatv/client/accounts';
+import type { AdminUser } from '@kromatv/client/admin';
+import { LibraryId } from '@kromatv/client/media';
+import { I18nProvider } from '@kromatv/ui';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { HistoryFilters } from '#web/features/admin/history-filters';

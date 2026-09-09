@@ -1,6 +1,7 @@
-import type { MediaItem } from '@kroma/client/media';
-import type { ReportCategory } from '@kroma/client/reports';
-import { audioSupport, playerSubtitle, type Translate } from '@kroma/core';
+import type { MediaItem } from '@kromatv/client/media';
+import type { ReportCategory } from '@kromatv/client/reports';
+import { audioSupport, playerSubtitle } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import {
   Player,
   TV_FLAGS,
@@ -8,8 +9,8 @@ import {
   type UpNextItem,
   useSubtitleAppearance,
   useT,
-} from '@kroma/ui';
-import { Box, Button, Icon, style, Text } from '@kroma/ui/kit';
+} from '@kromatv/ui';
+import { Box, Button, Icon, style, Text } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -147,28 +148,27 @@ export function TvPlayer() {
   );
 
   return (
-    <Player.Root
-      controller={controller}
-      flags={playerFlags}
-      title={item.title}
-      subtitle={subtitle}
-      warn={warn}
-      markers={item.markers ?? undefined}
-      tileAt={tileAt}
-      appearance={appearance}
-      onAppearanceChange={setAppearance}
-      subtitleGen={subtitleGen}
-      onReport={onReport}
-      upNext={up.data}
-      onPlayItem={onPlayItem}
-      onPlayNext={next ? goNext : undefined}
-      nextTitle={nextTitle}
-      postPlay={up.postPlay}
-      onGoHome={nav.home}
-      introActive={introActive}
-      onSkipIntro={intro ? () => pb.seekTo(intro.endMs / 1000) : undefined}
-      onClose={nav.back}
-    >
+    <Player.Root controller={controller} flags={playerFlags} title={item.title} onClose={nav.back}>
+      <Player.Title>{item.title}</Player.Title>
+      {subtitle ? <Player.Subtitle>{subtitle}</Player.Subtitle> : null}
+      {warn ? <Player.Warning>{warn}</Player.Warning> : null}
+      <Player.Transport tileAt={tileAt} />
+      <Player.Subtitles
+        appearance={appearance}
+        onAppearanceChange={setAppearance}
+        gen={subtitleGen}
+      />
+      <Player.Report onReport={onReport} />
+      <Player.UpNext data={up.data} onPlay={onPlayItem} />
+      <Player.Credits
+        markers={item.markers ?? undefined}
+        next={nextTitle}
+        onPlay={next ? goNext : undefined}
+      />
+      <Player.PostPlay item={up.postPlay} onHome={nav.home} />
+      {intro ? (
+        <Player.SkipIntro active={introActive} onSkip={() => pb.seekTo(intro.endMs / 1000)} />
+      ) : null}
       <Player.Media>
         <PlayerSurface pb={pb} title={item.title} />
       </Player.Media>

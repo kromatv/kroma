@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { catalogsByLocale } from '@kroma/i18n';
+import { catalogsByLocale } from '@kromatv/i18n';
 
 const CATALOGS = fileURLToPath(new URL('../../core/src/locales/', import.meta.url));
 

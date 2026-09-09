@@ -1,7 +1,7 @@
-# @kroma/module-sdk
+# @kromatv/module-sdk
 
 The frontend module contract: the `KromaModule` manifest, the host context, the
-typed event bus, and the dependency-ordered registry every `@kroma/module-*`
+typed event bus, and the dependency-ordered registry every `@kromatv/module-*`
 package targets. It mirrors the Rust `kroma-module-sdk`, so a module's two halves
 describe themselves the same way.
 
@@ -20,7 +20,7 @@ permission wall.
 A component here earns its place by being needed by more than one module. One
 module's own screen stays in that module's `ui/`. An arrangement that would also
 serve the TV, the phone or the web client belongs in
-[`@kroma/ui`](../ui/README.md) instead, at whichever level
+[`@kromatv/ui`](../ui/README.md) instead, at whichever level
 [`components/README.md`](../ui/src/components/README.md) says it earns.
 
 ## Which import door
@@ -28,8 +28,8 @@ serve the TV, the phone or the web client belongs in
 The public ones:
 
 ```tsx
-import { Box, Field, PageHeader } from '@kroma/ui/kit';
-import { Button } from '@kroma/ui/kit/atoms/button';
+import { Box, Field, PageHeader } from '@kromatv/ui/kit';
+import { Button } from '@kromatv/ui/kit/atoms/button';
 ```
 
 `#ui/*` is the kit's own internal alias and is not for consumers. The two
@@ -42,8 +42,8 @@ and a separate frontend, and it consumes the kit exactly as an app does.
 ## What the host provides
 
 A module's frontend is built on its own (`kroma build`) and loaded by the web
-client at runtime. It does not carry React, this package, `@kroma/ui`,
-`@kroma/core`, `@kroma/client` or the query cache: the build rewrites those
+client at runtime. It does not carry React, this package, `@kromatv/ui`,
+`@kromatv/core`, `@kromatv/client` or the query cache: the build rewrites those
 imports to read the host's copy, so one React and one theme live on the page.
 The list is `SHARED_MODULES` here; the host fills `SHARED_GLOBAL` before it
 imports `remoteEntry.js`. Outside this repository this package and the kit ship

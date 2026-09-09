@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { I18nProvider } from '@kroma/ui';
+import { I18nProvider } from '@kromatv/ui';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { SeekBar } from './seek-bar';

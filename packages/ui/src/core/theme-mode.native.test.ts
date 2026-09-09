@@ -1,4 +1,4 @@
-import { setSessionStorage } from '@kroma/client';
+import { setSessionStorage } from '@kromatv/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-native', async (importOriginal) => ({

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requestDeepLink = vi.hoisted(() => vi.fn());
-vi.mock('@kroma/tv', () => ({ requestDeepLink }));
+vi.mock('@kromatv/tv', () => ({ requestDeepLink }));
 
 const linking = vi.hoisted(() => ({
   initial: null as string | null,

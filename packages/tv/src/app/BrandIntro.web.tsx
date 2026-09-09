@@ -1,4 +1,4 @@
-import { KromaIntro } from '@kroma/ui/kit';
+import { KromaIntro } from '@kromatv/ui/kit';
 import { useState } from 'react';
 
 export interface BrandIntroProps {

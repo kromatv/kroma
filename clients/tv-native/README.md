@@ -1,7 +1,7 @@
 # tv-native
 
 The Apple TV / Android TV shell. It is platform glue: the 10-foot experience
-itself lives in [`@kroma/tv`](../../packages/tv).
+itself lives in [`@kromatv/tv`](../../packages/tv).
 
 ## Testing the voice and launcher doors
 

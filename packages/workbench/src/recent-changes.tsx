@@ -5,8 +5,8 @@
 // article is the one place in the workbench wide enough to answer it. A host
 // puts it wherever it likes by rendering this in a `.page.mdx`.
 
-import { Box, ListRow, styles, Text } from '@kroma/ui/kit';
-import { space } from '@kroma/ui/tokens';
+import { Box, ListRow, styles, Text } from '@kromatv/ui/kit';
+import { space } from '@kromatv/ui/tokens';
 import { agoLabel, BUCKETS, bucketOf, dayLabel, type HistoryRow } from './history';
 import { useKitHistory } from './source';
 

@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/site-kit",
+  "name": "@kromatv/site-kit",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -22,8 +22,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/site-meta": "workspace:*",
-    "@kroma/ui": "workspace:*"
+    "@kromatv/site-meta": "workspace:*",
+    "@kromatv/ui": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-router": ">=1.170",

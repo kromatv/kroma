@@ -1,7 +1,7 @@
 // The registry: where a story sits, how the list is ordered, and how it is
 // searched. Everything here reads a story rather than building one.
 
-import type { IconName } from '@kroma/ui/kit';
+import type { IconName } from '@kromatv/ui/kit';
 import type { Story } from './story';
 
 function slug(name: string): string {

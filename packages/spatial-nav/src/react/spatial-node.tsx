@@ -1,4 +1,4 @@
-import type { Orientation } from '@kroma/spatial-nav';
+import type { Orientation } from '@kromatv/spatial-nav';
 import {
   type ReactNode,
   type Ref,

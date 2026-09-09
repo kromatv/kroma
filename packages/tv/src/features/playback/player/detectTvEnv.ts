@@ -1,4 +1,4 @@
-import type { PlayEnv } from '@kroma/core';
+import type { PlayEnv } from '@kromatv/core';
 import { getTauri, mpvAvailable } from '#tv/features/playback/player/engine';
 
 export function detectTvEnv(): PlayEnv {

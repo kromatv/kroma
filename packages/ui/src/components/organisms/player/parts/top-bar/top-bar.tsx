@@ -16,10 +16,10 @@ const sizeOf = (fontSize: number) => sharedStyle(`top-bar:size:${fontSize}`, { f
  * bar itself is click-through and only the back button captures the pointer.
  */
 export interface TopBarProps {
-  title: string;
-  subtitle?: string;
-  /** Pre-translated warning message, or null to hide the pill. */
-  warn?: string | null;
+  title: ReactNode;
+  subtitle?: ReactNode;
+  /** Pre-translated warning, or nothing to hide the pill. */
+  warn?: ReactNode;
   onBack: () => void;
   /** Whether the nav machine currently rests on the back button. */
   backFocused?: boolean;

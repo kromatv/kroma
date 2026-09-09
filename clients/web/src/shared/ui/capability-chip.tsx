@@ -1,6 +1,6 @@
-import { capabilities, type PlaybackCapabilities } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Badge, Row, Tooltip } from '@kroma/ui/kit';
+import { capabilities, type PlaybackCapabilities } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Badge, Row, Tooltip } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 
 /** Readout of what this device can direct-play, with a tooltip showing the

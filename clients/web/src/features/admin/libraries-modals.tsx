@@ -1,5 +1,5 @@
-import type { AdminLibrary } from '@kroma/client/library';
-import { useT } from '@kroma/ui';
+import type { AdminLibrary } from '@kromatv/client/library';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -10,7 +10,7 @@ import {
   SegmentGroup,
   Switch,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { FolderField, FolderListEditor } from '#web/features/admin/folder-field';

@@ -3,8 +3,8 @@
 // and finally that profile's password. Kept out of sign-in.tsx so the screen
 // stays state + presentation wiring.
 
-import { apiErrorText, KromaApiError } from '@kroma/client';
-import type { Translate } from '@kroma/core';
+import { apiErrorText, KromaApiError } from '@kromatv/client';
+import type { Translate } from '@kromatv/i18n';
 import { passProfileBiometricGate } from '#mobile/lib/biometricGate';
 import type { AuthSession } from '#mobile/lib/session';
 import {

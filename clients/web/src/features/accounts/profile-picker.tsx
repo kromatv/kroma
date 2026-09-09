@@ -1,5 +1,5 @@
-import type { StoredSession, UserId } from '@kroma/client/accounts';
-import { useT } from '@kroma/ui';
+import type { StoredSession, UserId } from '@kromatv/client/accounts';
+import { useT } from '@kromatv/ui';
 import {
   AddTile,
   Box,
@@ -9,7 +9,7 @@ import {
   styles,
   svFor,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { ProfileTile } from '#web/features/accounts/profile-tile';
 
 const forgetLink = svFor<{ root: StyleDecl; label: StyleDecl }>()({

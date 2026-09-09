@@ -12,7 +12,7 @@
 // `mdx-blocks.tsx`, marks and the rule that decides what a line is in
 // `mdx-marks.tsx`.
 
-import { Box, Table } from '@kroma/ui/kit';
+import { Box, Table } from '@kromatv/ui/kit';
 import {
   Aside,
   BulletList,

@@ -6,12 +6,12 @@ import {
   sessionToken,
   setSessionToken,
   sharedTokenExchange,
-} from '@kroma/client';
-import { loadSession } from '@kroma/client/accounts';
-import type { MediaItem, Show } from '@kroma/client/media';
-import { createQueryClient, type QueryClient } from '@kroma/client/query';
-import type { SubtitleId } from '@kroma/client/subtitles';
-import { activeLocale, isTextSubtitle, resolveImageUrl } from '@kroma/core';
+} from '@kromatv/client';
+import { loadSession } from '@kromatv/client/accounts';
+import type { MediaItem, Show } from '@kromatv/client/media';
+import { createQueryClient, type QueryClient } from '@kromatv/client/query';
+import type { SubtitleId } from '@kromatv/client/subtitles';
+import { activeLocale, isTextSubtitle, resolveImageUrl } from '@kromatv/core';
 
 declare global {
   interface Window {

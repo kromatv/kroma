@@ -1,4 +1,4 @@
-import { Box, placeUnder, Row, Surface, Text } from '@kroma/ui/kit';
+import { Box, placeUnder, Row, Surface, Text } from '@kromatv/ui/kit';
 import { useSyncExternalStore } from 'react';
 import { categoryOf } from '../engine/plural';
 import { Chord } from '../panel/chord';

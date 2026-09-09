@@ -18,7 +18,7 @@ import { join, relative, resolve } from 'node:path';
 const ROOT = new URL('../../../', import.meta.url).pathname;
 const SRC = resolve(ROOT, 'packages/ui/src');
 
-// The plugin belongs to @kroma/bundler (it is what the shells run), and babel
+// The plugin belongs to @kromatv/bundler (it is what the shells run), and babel
 // itself is only reachable through the plugin's own tree: neither this package
 // nor the bundler declares @babel/core directly.
 const bundlerRequire = createRequire(resolve(ROOT, 'packages/bundler/package.json'));

@@ -7,8 +7,8 @@
 // only where they mean something, and the line under the field says what the
 // indexers will actually be asked, because the numbers change that silently.
 
-import { apiErrorText } from '@kroma/client';
-import { useT } from '@kroma/module-sdk';
+import { apiErrorText } from '@kromatv/client';
+import { useT } from '@kromatv/module-sdk';
 import {
   Box,
   Button,
@@ -19,7 +19,7 @@ import {
   SegmentGroup,
   TableSkeleton,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAcquisitionApi } from './api';
 import { defaultTarget, needsEpisode, needsSeason, queryPreview } from './free-search-target';

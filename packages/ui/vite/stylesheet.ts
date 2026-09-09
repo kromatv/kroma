@@ -47,19 +47,19 @@ const isPart = (part: string): part is Part => PART_NAMES.includes(part as Part)
 
 const emit = (part: string, display: FontDisplay) => (isPart(part) ? parts(display)[part]() : null);
 
-// Under `/css`, because a bare `@kroma/ui` resolves to the TypeScript entry and
+// Under `/css`, because a bare `@kromatv/ui` resolves to the TypeScript entry and
 // Tailwind then tries to parse it as a stylesheet.
-const DIRECTIVE = /@import\s+["']@kroma\/ui\/css(\/[a-z]+)?["']\s*;/g;
+const DIRECTIVE = /@import\s+["']@kromatv\/ui\/css(\/[a-z]+)?["']\s*;/g;
 
 const specifier = (part: string) =>
-  part === AGGREGATE ? '@kroma/ui/css' : `@kroma/ui/css/${part}`;
+  part === AGGREGATE ? '@kromatv/ui/css' : `@kromatv/ui/css/${part}`;
 
 const expand = (code: string, display: FontDisplay) =>
   code.replace(DIRECTIVE, (_, which: string | undefined) => {
     const css = emit(which ? which.slice(1) : AGGREGATE, display);
     if (css === null) {
       const known = PART_NAMES.map(specifier).join(', ');
-      throw new Error(`[kroma-ui] no such stylesheet: @kroma/ui/css${which}. Known: ${known}`);
+      throw new Error(`[kroma-ui] no such stylesheet: @kromatv/ui/css${which}. Known: ${known}`);
     }
     return css;
   });
@@ -146,7 +146,7 @@ const TAILWIND = '@tailwindcss/vite:generate';
 
 const OUT_OF_ORDER =
   `[kroma-ui] kromaUI() must come before tailwindcss() in the Vite plugin list. ` +
-  `Tailwind resolves @import itself, so from there it swallows "@kroma/ui/css" and ` +
+  `Tailwind resolves @import itself, so from there it swallows "@kromatv/ui/css" and ` +
   `the build ships every custom property undefined.`;
 
 const SOURCES = [
@@ -163,7 +163,7 @@ const SOURCES = [
 
 /**
  * Serves the design system's stylesheets through either door: the
- * `@import "@kroma/ui/css"` a stylesheet writes, and
+ * `@import "@kromatv/ui/css"` a stylesheet writes, and
  * `virtual:kroma.css` for a target whose entry is TypeScript and has
  * no stylesheet at all. `?url` on the virtual id goes through Vite's own CSS
  * pipeline, so a `<link>` gets a hashed asset with its font `url()`s rewritten.
@@ -228,7 +228,7 @@ export function kromaTokens(): CssPlugin {
     generateBundle(_options, bundle) {
       for (const file of Object.values(bundle)) {
         if (file.type !== 'asset' || !file.fileName.endsWith('.css')) continue;
-        if (typeof file.source !== 'string' || !file.source.includes('@kroma/ui')) continue;
+        if (typeof file.source !== 'string' || !file.source.includes('@kromatv/ui')) continue;
         file.source = expand(file.source, display());
       }
     },

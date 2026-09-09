@@ -7,7 +7,7 @@
 // rather than a blank one. Nothing here is a limit: a grid handed more room
 // fills it with more columns.
 
-import { webDocument, webWindow } from '@kroma/ui/kit';
+import { webDocument, webWindow } from '@kromatv/ui/kit';
 
 /** The design canvas, in the pixels the layout is authored in. */
 export const STAGE_W = 1920;

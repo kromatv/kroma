@@ -1,6 +1,6 @@
-import type { MetricRange, MetricsSnapshot } from '@kroma/client/admin';
-import { useT } from '@kroma/ui';
-import { EmptyState, Row, Section } from '@kroma/ui/kit';
+import type { MetricRange, MetricsSnapshot } from '@kromatv/client/admin';
+import { useT } from '@kromatv/ui';
+import { EmptyState, Row, Section } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import {
   type ChartScope,

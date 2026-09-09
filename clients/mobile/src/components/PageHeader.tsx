@@ -2,7 +2,7 @@
 // The surrounding <Screen> already pads the top safe area (Dynamic Island /
 // status bar), so the header adds only its own breathing room.
 
-import { BackButton, Box, styles, Text } from '@kroma/ui/kit';
+import { BackButton, Box, styles, Text } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useT } from '#mobile/lib/i18n';

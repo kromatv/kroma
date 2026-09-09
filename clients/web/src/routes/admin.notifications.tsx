@@ -3,7 +3,7 @@
 // the relay for phones), so the composer reports the delivered count from the
 // send itself rather than a separate status section.
 
-import { useT } from '@kroma/ui';
+import { useT } from '@kromatv/ui';
 import { createFileRoute } from '@tanstack/react-router';
 import { NotificationBench } from '#web/features/admin/notifications-bench';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';

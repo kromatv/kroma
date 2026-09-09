@@ -1,5 +1,5 @@
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Chip,
@@ -11,7 +11,7 @@ import {
   Select,
   styles,
   useBreakpoint,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import {
   SAVED_SORTS,
   SAVED_TAB_COPY,

@@ -1,5 +1,5 @@
-import { useFormat, useLocale, useT } from '@kroma/module-sdk';
-import { Box, Chart } from '@kroma/ui/kit';
+import { useFormat, useLocale, useT } from '@kromatv/module-sdk';
+import { Box, Chart } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { type BandwidthDirection, bandwidthPoints } from './bandwidth-points';
 import type { VpnBandwidthView } from './schemas';

@@ -1,4 +1,4 @@
-import { tvShellConfig } from '@kroma/bundler/shell';
+import { tvShellConfig } from '@kromatv/bundler/shell';
 import type { ConfigEnv, UserConfig } from 'vite';
 import { target } from './tv.target.ts';
 

@@ -9,8 +9,8 @@
 // transparent `<object type="application/avplayer">` with the HTML chrome
 // and subtitle overlay on top.
 
-import { decodableAudioCodecs } from '@kroma/core';
-import type { AudioFilterMode, PlaneRect } from '@kroma/ui';
+import { decodableAudioCodecs } from '@kromatv/core';
+import type { AudioFilterMode, PlaneRect } from '@kromatv/ui';
 import {
   BaseTvEngine,
   type EngineOptions,

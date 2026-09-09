@@ -7,7 +7,7 @@ import { useLiveStats } from './use-live-stats';
 
 let listener: ((e: DownloadStatsEvent) => void) | null = null;
 
-vi.mock('@kroma/module-sdk', () => ({
+vi.mock('@kromatv/module-sdk', () => ({
   useServerEvents: (onEvent: (e: DownloadStatsEvent) => void) => {
     listener = onEvent;
   },

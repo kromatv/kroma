@@ -1,5 +1,5 @@
-import { useT } from '@kroma/module-sdk';
-import { Badge, Box, Button, Img, Row, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/module-sdk';
+import { Badge, Box, Button, Img, Row, Text } from '@kromatv/ui/kit';
 import type { MatchCandidateView } from './schemas';
 
 const POSTER_WIDTH = 46;

@@ -1,5 +1,5 @@
-import { type StoryMdxModule, storyFromMdx } from '@kroma/workbench';
-import type { Story } from '@kroma/workbench/story';
+import { type StoryMdxModule, storyFromMdx } from '@kromatv/workbench';
+import type { Story } from '@kromatv/workbench/story';
 import { cleanup, render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { onScreen } from '#ui/testing';

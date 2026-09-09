@@ -1,7 +1,7 @@
 // Reading a refused grant. What matters here: the four endings stay four, and
 // the two a person can act on stay apart from the two they cannot.
 
-import { KromaApiError } from '@kroma/client';
+import { KromaApiError } from '@kromatv/client';
 import { describe, expect, it } from 'vitest';
 import { checkRetryable, grantRefusal } from './grant';
 

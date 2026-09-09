@@ -1,7 +1,7 @@
 // An element here would become the containing block of the absolutely positioned
 // screen roots and collapse them, so this groups by node only and drops `style`.
 
-import { NavigatorNode, NavigatorRoot, PointerDeviceProvider } from '@kroma/spatial-nav/react';
+import { NavigatorNode, NavigatorRoot, PointerDeviceProvider } from '@kromatv/spatial-nav/react';
 import type { FocusRootProps } from './focus-root';
 
 export type { FocusRootProps };

@@ -1,5 +1,5 @@
-import { useFormat, useT } from '@kroma/module-sdk';
-import { Callout } from '@kroma/ui/kit';
+import { useFormat, useT } from '@kromatv/module-sdk';
+import { Callout } from '@kromatv/ui/kit';
 import type { VpnBandwidthView } from './schemas';
 import { bypassedBytes, type SealNote, sealNote } from './seal-note';
 

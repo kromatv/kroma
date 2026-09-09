@@ -1,4 +1,4 @@
-import type { KromaClient } from '@kroma/client';
+import type { KromaClient } from '@kromatv/client';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { buildCrashReport } from '#tv/app/crashReport';
 import { crashReportingPrefStore } from '#tv/app/crashReportingPref';

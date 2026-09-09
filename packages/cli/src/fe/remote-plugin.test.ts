@@ -97,23 +97,23 @@ describe('the shared plugin’s resolution', () => {
       id: 'virtual:kroma-shared:react',
       external: true,
     });
-    expect(resolve.call(ctx, '@kroma/ui/kit/atoms/button')).toEqual({
-      id: 'virtual:kroma-shared:@kroma/ui/kit',
+    expect(resolve.call(ctx, '@kromatv/ui/kit/atoms/button')).toEqual({
+      id: 'virtual:kroma-shared:@kromatv/ui/kit',
       external: true,
     });
-    expect(resolve.call(ctx, '@kroma/client/requests')).toEqual({
-      id: 'virtual:kroma-shared:@kroma/client/requests',
+    expect(resolve.call(ctx, '@kromatv/client/requests')).toEqual({
+      id: 'virtual:kroma-shared:@kromatv/client/requests',
       external: true,
     });
   });
 
-  it('refuses a @kroma package the host does not provide, and says what it does', () => {
+  it('refuses a @kromatv package the host does not provide, and says what it does', () => {
     const resolve = sharedPlugin().resolveId;
 
-    expect(() => resolve.call(ctx, '@kroma/registry', '/m/ui/src/page.tsx')).toThrow(
-      /\/m\/ui\/src\/page\.tsx imports '@kroma\/registry'/,
+    expect(() => resolve.call(ctx, '@kromatv/registry', '/m/ui/src/page.tsx')).toThrow(
+      /\/m\/ui\/src\/page\.tsx imports '@kromatv\/registry'/,
     );
-    expect(() => resolve.call(ctx, '@kroma/registry')).toThrow(/@kroma\/ui\/kit/);
+    expect(() => resolve.call(ctx, '@kromatv/registry')).toThrow(/@kromatv\/ui\/kit/);
   });
 
   it('leaves anything the bundle carries itself to Vite', () => {
@@ -181,8 +181,8 @@ describe('what the shared plugin refuses', () => {
 
   it('refuses `export * from` a package the host provides, which has nothing to name', async () => {
     await expect(
-      sharedPlugin().transform.call(ctx, "export * from '@kroma/ui/kit';", '/m/ui/src/kit.ts'),
-    ).rejects.toThrow(/`export \* from '@kroma\/ui\/kit'` is not supported/);
+      sharedPlugin().transform.call(ctx, "export * from '@kromatv/ui/kit';", '/m/ui/src/kit.ts'),
+    ).rejects.toThrow(/`export \* from '@kromatv\/ui\/kit'` is not supported/);
   });
 });
 

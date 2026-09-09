@@ -10,13 +10,13 @@ import { type Babel, babelAt } from '../audit/source-scan';
 
 const ROOT = new URL('../../../', import.meta.url).pathname;
 
-// babel-plugin-react-compiler is declared by @kroma/bundler alone, so nothing
+// babel-plugin-react-compiler is declared by @kromatv/bundler alone, so nothing
 // else in the tree can resolve it. The root is tried first anyway: a repo that
 // hoists its dependencies needs no second entry, and this one stops being true
 // the day the plugin moves.
 const COMPILER_AT = [resolve(ROOT, 'package.json'), resolve(ROOT, 'packages/bundler/package.json')];
 
-// Which shells put @kroma/ui through react-native-web. The phones and the two
+// Which shells put @kromatv/ui through react-native-web. The phones and the two
 // native TV clients compile it with React Native instead, where asking for the
 // native driver is simply correct.
 const RNW = new Set([

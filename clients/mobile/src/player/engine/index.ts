@@ -8,8 +8,8 @@
 // a rejected direct file falls back to the master once, and a failing
 // copy-audio master retries once as AAC.
 
-import type { KromaClient } from '@kroma/client';
-import type { MediaItem } from '@kroma/client/media';
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem } from '@kromatv/client/media';
 import { type AudioTrack, useVideoPlayer, type VideoPlayer } from 'expo-video';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { decideSource } from '#mobile/player/caps';
@@ -36,7 +36,7 @@ export function useKromaEngine(
   /** Local file to play instead of the server (offline download). */
   localUri?: string,
   /** The audio track the title OPENS on - the account's preferred language,
-   *  resolved by the caller (see @kroma/core preferredAudioIndex). */
+   *  resolved by the caller (see @kromatv/core preferredAudioIndex). */
   startAudioIndex = 0,
 ): Engine {
   const decision = useMemo(() => decideSource(item), [item]);

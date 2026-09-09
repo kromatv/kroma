@@ -1,4 +1,4 @@
-import type { TorrentFileView } from '@kroma/module-acquisition/schemas';
+import type { TorrentFileView } from '@kromatv/module-acquisition/schemas';
 import { describe, expect, it } from 'vitest';
 import { bytesOf, contentsLayout, groupContents, withFilesSelected } from './contents-files';
 

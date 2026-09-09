@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import type { MediaItem } from '@kroma/client/media';
-import { fakeClient } from '@kroma/client/test';
+import type { MediaItem } from '@kromatv/client/media';
+import { fakeClient } from '@kromatv/client/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AvplayEngine } from './avplayEngine';
 import type { EngineOptions } from './baseEngine';

@@ -2,7 +2,7 @@
 // profile tile of the "Who's watching?" gate. Code and PIN entry is the kit's
 // <OtpField>, and the trailing "add" tile its <AddTile>.
 
-import { Box, Spinner, StatusDot, styles, Text } from '@kroma/ui/kit';
+import { Box, Spinner, StatusDot, styles, Text } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';

@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { readPropDocs } from '@kroma/bundler/props-docs';
+import { readPropDocs } from '@kromatv/bundler/props-docs';
 import { describe, expect, it } from 'vitest';
 
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));

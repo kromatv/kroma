@@ -4,10 +4,10 @@
 // original file, or ask the server to remux it". See backend.web.ts for the
 // browser half; the hook that drives playback never learns which it got.
 
-import type { KromaClient } from '@kroma/client';
-import type { MediaItem } from '@kroma/client/media';
-import { beyondDecoder, nativeDirectPlayable, type PlayEnv } from '@kroma/core';
-import type { AudioFilterMode } from '@kroma/ui';
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem } from '@kromatv/client/media';
+import { beyondDecoder, nativeDirectPlayable, type PlayEnv } from '@kromatv/core';
+import type { AudioFilterMode } from '@kromatv/ui';
 import { Platform } from 'react-native';
 import type { EnginePref } from '#tv/app/enginePref';
 import type { EngineListeners, Surface, TvEngine } from '#tv/features/playback/player/engine';

@@ -102,7 +102,7 @@ export const lightColors: Record<keyof typeof colors, string> = {
  * name is legal everywhere a colour is written (`bg`, `border`, `color`, the
  * `/NN` alpha suffix) with the value supplied through `createTheme`.
  *
- *   declare module '@kroma/ui/tokens/colors' {
+ *   declare module '@kromatv/ui/tokens/colors' {
  *     interface ColorRegistry { brand: string }
  *   }
  */

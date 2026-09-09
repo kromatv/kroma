@@ -1,5 +1,5 @@
-import { apiErrorText, useT } from '@kroma/module-sdk';
-import { Badge, Button, Dialog, Field, ListRow, Row, Text } from '@kroma/ui/kit';
+import { apiErrorText, useT } from '@kromatv/module-sdk';
+import { Badge, Button, Dialog, Field, ListRow, Row, Text } from '@kromatv/ui/kit';
 import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useIndexerApi } from './api';

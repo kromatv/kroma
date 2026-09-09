@@ -8,7 +8,7 @@ of what a module written elsewhere depends on, and the only thing published.
 | `dist/cli.js`, the `kroma` bin | `packages/cli`, bundled with its workspace imports inlined |
 | `types/<pkg>/` declarations | `packages/{module-sdk,ui,core,client,registry,i18n,spatial-nav}` |
 | `types/react-native/` | the declaration files of the React Native fork the kit is typed against, so a module installs no React Native (it and its toolchain are most of a 250 MB `node_modules`; the runtime is the host's) |
-| `tsconfig.module.json` | `packages/cli/tsconfig.module.json` plus `paths` mapping every `@kroma/*` specifier and `react-native` onto `types/` |
+| `tsconfig.module.json` | `packages/cli/tsconfig.module.json` plus `paths` mapping every `@kromatv/*` specifier and `react-native` onto `types/` |
 | `rust/` | the ten crates a sidecar links, out of `server/crates` (400 KB: the SDK's own, not the server's) |
 | `templates/` | what `kroma create` renders |
 
@@ -17,13 +17,13 @@ the package under another name from their output.
 
 ## Types only: the KROMA app injects the runtime
 
-A module's page never carries React, the kit, the SDK, `@kroma/core` or
-`@kroma/client`. `kroma build` rewrites every import of a package the host
-provides (`SHARED_MODULES` in `@kroma/module-sdk`; `@kromatv/sdk` itself is read as
+A module's page never carries React, the kit, the SDK, `@kromatv/core` or
+`@kromatv/client`. `kroma build` rewrites every import of a package the host
+provides (`SHARED_MODULES` in `@kromatv/module-sdk`; `@kromatv/sdk` itself is read as
 the SDK) into a read of one global, and the KROMA app fills that global before
 it imports `remoteEntry.js`. So the package holds `.d.ts` files and nothing
 that runs: `tsc` reads the declarations through the preset's `paths`, Vite
-never resolves the packages, and a `@kroma/*` import the host does not provide
+never resolves the packages, and a `@kromatv/*` import the host does not provide
 fails the build with the list of what it does. The kit's `#ui/*` alias resolves
 through the package's `imports` map, also under a `types` condition.
 

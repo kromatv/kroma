@@ -2,11 +2,11 @@
 // visual language (icon rows, sub-views, same glyphs and shapes), but stays
 // touch-driven: a modal or bottom sheet, no focus engine.
 
-import type { MediaItem } from '@kroma/client/media';
-import { LANG_OFF, langName } from '@kroma/core';
-import type { SubtitleAppearance } from '@kroma/ui';
-import { AUDIO_FILTER_KEY } from '@kroma/ui';
-import { Box } from '@kroma/ui/kit';
+import type { MediaItem } from '@kromatv/client/media';
+import { LANG_OFF, langName } from '@kromatv/core';
+import type { SubtitleAppearance } from '@kromatv/ui';
+import { AUDIO_FILTER_KEY } from '@kromatv/ui';
+import { Box } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing } from 'react-native';

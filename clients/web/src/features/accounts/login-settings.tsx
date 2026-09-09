@@ -1,7 +1,7 @@
 import buildInfo from 'virtual:build-info';
-import type { Health } from '@kroma/client/media';
-import { LOCALES } from '@kroma/core';
-import { useLocale, useSetLocale, useT } from '@kroma/ui';
+import type { Health } from '@kromatv/client/media';
+import { LOCALES } from '@kromatv/core';
+import { useLocale, useSetLocale, useT } from '@kromatv/ui';
 import {
   Box,
   classes,
@@ -12,7 +12,7 @@ import {
   StatusDot,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 import { serverQueries } from '#web/shared/lib/queries';

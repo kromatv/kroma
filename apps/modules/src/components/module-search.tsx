@@ -1,5 +1,5 @@
-import { IconButton } from '@kroma/ui/kit/atoms/icon-button';
-import { Field } from '@kroma/ui/kit/molecules/field';
+import { IconButton } from '@kromatv/ui/kit/atoms/icon-button';
+import { Field } from '@kromatv/ui/kit/molecules/field';
 
 export interface ModuleSearchProps {
   value: string;

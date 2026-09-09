@@ -1,6 +1,6 @@
-import type { ElementCounts } from '@kroma/client/pipeline';
-import { useT } from '@kroma/ui';
-import { Box, Row } from '@kroma/ui/kit';
+import type { ElementCounts } from '@kromatv/client/pipeline';
+import { useT } from '@kromatv/ui';
+import { Box, Row } from '@kromatv/ui/kit';
 import { Chip } from '#web/features/admin/table-console';
 
 export function PipelineFilters({

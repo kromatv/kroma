@@ -4,7 +4,7 @@
 // react-native-web `<Text lines={1}>` actually ellipsize (a View there does not
 // shrink by default, so `max-width: 100%` never bites).
 
-import { type MessageKey, useFormat, useT } from '@kroma/module-sdk';
+import { type MessageKey, useFormat, useT } from '@kromatv/module-sdk';
 import {
   Badge,
   Box,
@@ -19,7 +19,7 @@ import {
   styles,
   Text,
   Tooltip,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import type { DownloadView } from './schemas';
 
 const POSTER_WIDTH = 34;

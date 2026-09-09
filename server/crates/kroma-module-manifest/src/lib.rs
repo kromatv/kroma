@@ -1,7 +1,7 @@
 //! The KROMA server module contract: a module describes itself and declares
 //! what it needs and answers. [`Registry`] resolves the dependency graph;
 //! [`ModuleManifest`]/[`Contribution`] is the wire shape the frontend
-//! `@kroma/module-sdk` mirrors.
+//! `@kromatv/module-sdk` mirrors.
 
 mod compat;
 mod embedded;

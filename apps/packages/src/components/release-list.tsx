@@ -1,8 +1,8 @@
-import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
-import { Divider } from '@kroma/ui/kit/atoms/divider';
-import { Text } from '@kroma/ui/kit/atoms/text';
-import { EmptyState } from '@kroma/ui/kit/molecules/empty-state';
-import { Pagination, paginate } from '@kroma/ui/kit/molecules/pagination';
+import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
+import { Divider } from '@kromatv/ui/kit/atoms/divider';
+import { Text } from '@kromatv/ui/kit/atoms/text';
+import { EmptyState } from '@kromatv/ui/kit/molecules/empty-state';
+import { Pagination, paginate } from '@kromatv/ui/kit/molecules/pagination';
 import { useState } from 'react';
 import { ReleaseRow } from '#site/components/release-row';
 import { ReleaseSearch } from '#site/components/release-search';

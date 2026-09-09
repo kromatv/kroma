@@ -1,4 +1,4 @@
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import type { ReactNode } from 'react';
 
 export const docs = {

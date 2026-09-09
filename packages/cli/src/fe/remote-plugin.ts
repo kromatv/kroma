@@ -5,7 +5,7 @@ import {
   SHARED_GLOBAL,
   SHARED_MODULES,
   sharedKey,
-} from '@kroma/module-sdk/shared';
+} from '@kromatv/module-sdk/shared';
 import { init, parse } from 'es-module-lexer';
 import MagicString from 'magic-string';
 import type { Plugin } from 'vite';
@@ -160,9 +160,9 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
       if (id === HELPER) return RESOLVED_HELPER;
       const key = sharedKey(id);
       if (key) return { id: `${HELPER}:${key}`, external: true };
-      if (id.startsWith('@kroma/')) {
+      if (id.startsWith('@kromatv/')) {
         this.error(
-          `${importer ?? 'a module file'} imports '${id}', which the host does not provide. The SDK packages carry types only; a page may import ${SHARED_MODULES.join(', ')} and any @kroma/client/<domain>.`,
+          `${importer ?? 'a module file'} imports '${id}', which the host does not provide. The SDK packages carry types only; a page may import ${SHARED_MODULES.join(', ')} and any @kromatv/client/<domain>.`,
         );
       }
       return null;

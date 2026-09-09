@@ -87,7 +87,7 @@ vi.mock('expo-file-system', () => {
 });
 
 const setSessionStorage = vi.hoisted(() => vi.fn());
-vi.mock('@kroma/client', () => ({ setSessionStorage }));
+vi.mock('@kromatv/client', () => ({ setSessionStorage }));
 
 // The store is a module-scope singleton - one per process, as one launch has -
 // so each case re-imports the module. Without that, a key written by an earlier

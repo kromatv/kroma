@@ -1,7 +1,7 @@
 // <FocusScroll> and <FocusSlot>: the page, scrolled by the focus, one ROW at a
 // time. A control that is in no row is its own row.
 
-import { NavigatorNode } from '@kroma/spatial-nav/react';
+import { NavigatorNode } from '@kromatv/spatial-nav/react';
 import {
   type Context,
   createContext,

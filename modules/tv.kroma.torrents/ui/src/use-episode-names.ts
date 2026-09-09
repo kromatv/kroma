@@ -1,4 +1,4 @@
-import { useFetch } from '@kroma/module-sdk';
+import { useFetch } from '@kromatv/module-sdk';
 import { useMemo } from 'react';
 import { useTorrentsApi } from './api';
 import type { EpisodeInfo } from './schemas';

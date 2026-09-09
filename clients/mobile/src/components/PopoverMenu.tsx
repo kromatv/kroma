@@ -2,7 +2,7 @@
 // from the trigger's position, with a press-through backdrop. Pure RN Animated,
 // reusable for any small option list (seasons, sort, ...).
 
-import { Box, Icon, styles, Text } from '@kroma/ui/kit';
+import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
 import { useEffect, useRef } from 'react';
 import { Animated, Modal, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { radius, spacing, type } from '#mobile/lib/theme';

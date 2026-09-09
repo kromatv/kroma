@@ -1,8 +1,8 @@
-import { PageMain } from '@kroma/ui/kit';
-import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
-import { Text } from '@kroma/ui/kit/atoms/text';
-import { EmptyState } from '@kroma/ui/kit/molecules/empty-state';
-import { Pagination } from '@kroma/ui/kit/molecules/pagination';
+import { PageMain } from '@kromatv/ui/kit';
+import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
+import { Text } from '@kromatv/ui/kit/atoms/text';
+import { EmptyState } from '@kromatv/ui/kit/molecules/empty-state';
+import { Pagination } from '@kromatv/ui/kit/molecules/pagination';
 import { createFileRoute } from '@tanstack/react-router';
 import { ModuleCard } from '#site/components/module-card';
 import { ModuleSearch } from '#site/components/module-search';

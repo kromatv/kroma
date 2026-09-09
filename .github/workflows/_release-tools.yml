@@ -53,7 +53,7 @@ jobs:
 
       # The installer's own dependencies and nothing else: it links no client.
       - name: Install dependencies
-        run: bun install --frozen-lockfile --filter '@kroma/tv-installer'
+        run: bun install --frozen-lockfile --filter '@kromatv/tv-installer'
 
       - name: Compile
         run: bun run build:tv-cli --target=${{ matrix.target }}

@@ -1,9 +1,18 @@
 // The two horizontal rails under a detail hero: the cast, and similar titles.
 
-import type { CastMember } from '@kroma/client/media';
-import { personSegment, posterColors } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, classes, color, Focusable, type HostElement, styles, sv, Text } from '@kroma/ui/kit';
+import type { CastMember } from '@kromatv/client/media';
+import { personSegment, posterColors } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import {
+  Box,
+  classes,
+  color,
+  Focusable,
+  type HostElement,
+  styles,
+  sv,
+  Text,
+} from '@kromatv/ui/kit';
 import { imageUrl } from '#web/shared/lib/api';
 import { wash } from '#web/shared/lib/art-styles';
 import { Image, Poster, PosterRail } from '#web/shared/ui';

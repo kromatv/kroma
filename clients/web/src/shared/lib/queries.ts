@@ -1,9 +1,9 @@
 // Central query-options factory: one place for every query key + fetcher, so
 // route loaders (`ensureQueryData`) and components (`useSuspenseQuery`/`useQuery`)
 // share the exact same cache entry.
-import type { DiscoverDetail, DiscoverType } from '@kroma/client/discovery';
-import type { ItemId, Show, ShowDetail, ShowId, UpNext } from '@kroma/client/media';
-import { genreSlugs } from '@kroma/core';
+import type { DiscoverDetail, DiscoverType } from '@kromatv/client/discovery';
+import type { ItemId, Show, ShowDetail, ShowId, UpNext } from '@kromatv/client/media';
+import { genreSlugs } from '@kromatv/core';
 import { queryOptions } from '@tanstack/react-query';
 import {
   kromaClient,

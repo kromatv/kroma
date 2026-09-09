@@ -1,4 +1,4 @@
-import { classes, styles } from '@kroma/ui/kit';
+import { classes, styles } from '@kromatv/ui/kit';
 import {
   Fragment,
   memo,

@@ -2,7 +2,7 @@
 // deterministic gradient with the person's initials, so a profile is never a
 // blank circle and always keeps the same colour everywhere it appears.
 
-import { hashString } from '@kroma/core';
+import { hashString } from '@kromatv/core';
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 import { Img } from '#ui/components/atoms/img';

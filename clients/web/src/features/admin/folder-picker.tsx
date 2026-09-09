@@ -1,8 +1,8 @@
 // A server-side folder browser: `value` is the committed path and `onChange`
 // fires on "use this folder"; browsing state is internal, seeded from `value`.
 // `onCancel` adds a cancel button for callers that show the browser on demand.
-import type { AdminFsList } from '@kroma/client/admin';
-import { useT } from '@kroma/ui';
+import type { AdminFsList } from '@kromatv/client/admin';
+import { useT } from '@kromatv/ui';
 import {
   Button,
   EmptyState,
@@ -13,7 +13,7 @@ import {
   Spinner,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { kromaClient } from '#web/shared/lib/api';

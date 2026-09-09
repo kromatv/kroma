@@ -10,7 +10,7 @@
 // the rounded clip of the view it sits in, so an unrounded blur pane would
 // poke out of the panel's rounded corners.
 
-import { Box, styles } from '@kroma/ui/kit';
+import { Box, styles } from '@kromatv/ui/kit';
 import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
 import {

@@ -1,7 +1,14 @@
 // Admin naming: edit the naming templates with a live sample, then preview and
 // apply a library-wide rename.
 
-import { apiErrorText, Denied, ModuleFailed, ModuleLoading, useCap, useT } from '@kroma/module-sdk';
+import {
+  apiErrorText,
+  Denied,
+  ModuleFailed,
+  ModuleLoading,
+  useCap,
+  useT,
+} from '@kromatv/module-sdk';
 import {
   Box,
   Button,
@@ -16,7 +23,7 @@ import {
   Surface,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import {
   type CSSProperties,
   type ReactNode,

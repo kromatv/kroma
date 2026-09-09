@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/core",
+  "name": "@kromatv/core",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -22,8 +22,8 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/client": "workspace:*",
-    "@kroma/i18n": "workspace:*",
+    "@kromatv/client": "workspace:*",
+    "@kromatv/i18n": "workspace:*",
     "zod": "^4.5.4"
   },
   "peerDependencies": {

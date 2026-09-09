@@ -3,8 +3,8 @@
 // the viewport while anything is picked, so the choice stays reachable however
 // far down the season the viewer has scrolled.
 
-import { useT } from '@kroma/ui';
-import { Button, classes, IconButton, Row, Surface, styles, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Button, classes, IconButton, Row, Surface, styles, Text } from '@kromatv/ui/kit';
 
 const s = styles({
   sticky: {

@@ -3,10 +3,10 @@
 // Changes persist immediately (optimistic) via PUT /api/admin/settings. Shared
 // by the built-in settings pages AND the VPN / Acquisition module pages.
 
-import { apiErrorText, type KromaClient } from '@kroma/client';
-import type { SettingGroup, SettingRow } from '@kroma/client/admin';
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { apiErrorText, type KromaClient } from '@kromatv/client';
+import type { SettingGroup, SettingRow } from '@kromatv/client/admin';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -21,7 +21,7 @@ import {
   styles,
   Text,
   useStableCallback,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { memo, useEffect, useState } from 'react';
 import { useAdminHost } from './context';
 import { Denied } from './denied';

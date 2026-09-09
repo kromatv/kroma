@@ -1,6 +1,6 @@
 // The service worker is a classic script, not a module, so these tests evaluate
 // it against a fake `self` and drive the listeners it registered.
-import { standaloneOptions } from '@kroma/bundler/standalone-script';
+import { standaloneOptions } from '@kromatv/bundler/standalone-script';
 import { build } from 'esbuild';
 import { swScript } from '../sw.build';
 

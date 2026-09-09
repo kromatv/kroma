@@ -1,7 +1,7 @@
-import { ArtifactRef, DescribedModule } from '@kroma/registry';
+import { ArtifactRef, DescribedModule } from '@kromatv/registry';
 import { z } from 'zod';
 
-// The shape is `@kroma/registry`'s; what is site-specific is the hardening. This
+// The shape is `@kromatv/registry`'s; what is site-specific is the hardening. This
 // catalog is rendered into a page with clickable download links and checksums
 // shown as fact, so a malformed upstream value becomes `null` (absent) rather
 // than reaching the DOM.

@@ -89,14 +89,14 @@
                 "deniedGlobals": {
                   "Audio": "Browser-only. React Native throws ReferenceError, which the runtime turns into SIGABRT. Add a `.web.ts` half and give the native side its own.",
                   "AudioContext": "Browser-only. Add a `.web.ts` half.",
-                  "IntersectionObserver": "Browser-only. Grow from a measured scroll position instead (see @kroma/ui useGrowingCount).",
+                  "IntersectionObserver": "Browser-only. Grow from a measured scroll position instead (see @kromatv/ui useGrowingCount).",
                   "MutationObserver": "Browser-only. Add a `.web.ts` half.",
                   "document": "Browser-only. React Native has no DOM: add a `.web.ts` half, or guard with `typeof document !== 'undefined'`.",
                   "getComputedStyle": "Browser-only. Measure with onLayout instead.",
                   "localStorage": "Browser-only. React Native has none: use the client's device store (see setSessionStorage).",
                   "matchMedia": "Browser-only. Use Platform / useWindowDimensions.",
                   "sessionStorage": "Browser-only. React Native has none.",
-                  "window": "The worst one: React Native DEFINES `window` (it is `global`), so `typeof window !== 'undefined'` passes and `window.addEventListener` is then undefined rather than absent - \"undefined is not a function\", at render, on a TV. Use `webWindow()` from @kroma/ui/kit, or add a `.web.ts` half."
+                  "window": "The worst one: React Native DEFINES `window` (it is `global`), so `typeof window !== 'undefined'` passes and `window.addEventListener` is then undefined rather than absent - \"undefined is not a function\", at render, on a TV. Use `webWindow()` from @kromatv/ui/kit, or add a `.web.ts` half."
                 }
               }
             }

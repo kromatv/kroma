@@ -1,6 +1,6 @@
-import { normalizeServerUrl as norm } from '@kroma/client/accounts';
-import { useT } from '@kroma/ui';
-import { Box, FocusColumn, Hint, Spinner, styles, Text, useFocusNav } from '@kroma/ui/kit';
+import { normalizeServerUrl as norm } from '@kromatv/client/accounts';
+import { useT } from '@kromatv/ui';
+import { Box, FocusColumn, Hint, Spinner, styles, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useEffect, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';

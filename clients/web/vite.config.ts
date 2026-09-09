@@ -1,6 +1,6 @@
-import { kroma } from '@kroma/bundler';
-import { standaloneScript } from '@kroma/bundler/standalone-script';
-import { kromaModule } from '@kroma/module-sdk/vite';
+import { kroma } from '@kromatv/bundler';
+import { standaloneScript } from '@kromatv/bundler/standalone-script';
+import { kromaModule } from '@kromatv/module-sdk/vite';
 import { defineConfig } from 'vite';
 import { swScript } from './sw.build.ts';
 

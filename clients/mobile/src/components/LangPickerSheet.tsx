@@ -9,8 +9,8 @@ import {
   BottomSheetModal,
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
-import { LANG_OFF, langOptions, offeredLang } from '@kroma/core';
-import { Box, color, Icon, styles, Text } from '@kroma/ui/kit';
+import { LANG_OFF, langOptions, offeredLang } from '@kromatv/core';
+import { Box, color, Icon, styles, Text } from '@kromatv/ui/kit';
 import { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

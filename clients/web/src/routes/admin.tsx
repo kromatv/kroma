@@ -1,6 +1,6 @@
-import { hasPermission } from '@kroma/client/accounts';
-import { useT } from '@kroma/ui';
-import { Box, classes, Text } from '@kroma/ui/kit';
+import { hasPermission } from '@kromatv/client/accounts';
+import { useT } from '@kromatv/ui';
+import { Box, classes, Text } from '@kromatv/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { GateLoading } from '#web/features/accounts/auth-gate';
 import { AdminLayout } from '#web/features/admin/shell';

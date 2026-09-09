@@ -2,9 +2,9 @@
 // servers, on one screen. Presentation lives in the shared onboarding
 // components; this file owns state, effects and auth calls.
 
-import { apiErrorText, KromaApiError } from '@kroma/client';
-import { sizedImageUrl } from '@kroma/core';
-import type { SplashCover } from '@kroma/ui/kit';
+import { apiErrorText, KromaApiError } from '@kromatv/client';
+import { sizedImageUrl } from '@kromatv/core';
+import type { SplashCover } from '@kromatv/ui/kit';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { CredentialsPhase, PinPhase } from '#mobile/components/authPhases';

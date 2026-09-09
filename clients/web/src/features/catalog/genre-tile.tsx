@@ -5,8 +5,8 @@ import {
   genreSegment,
   genreTint,
   sizedImageUrl,
-} from '@kroma/core';
-import { useT } from '@kroma/ui';
+} from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Focusable,
@@ -19,7 +19,7 @@ import {
   styles,
   svFor,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { View, type ViewStyle } from 'react-native';
 
 import { wash } from '#web/shared/lib/art-styles';

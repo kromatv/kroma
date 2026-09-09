@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requestSearch = vi.hoisted(() => vi.fn());
-vi.mock('@kroma/tv', () => ({ requestSearch }));
+vi.mock('@kromatv/tv', () => ({ requestSearch }));
 
 const linking = vi.hoisted(() => ({
   initial: null as string | null,

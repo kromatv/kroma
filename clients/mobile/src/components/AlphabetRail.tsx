@@ -3,8 +3,8 @@
 // letters, the lens and the scrubbing; this wrapper only decides where it
 // lives on a phone.
 
-import { TITLE_LETTERS } from '@kroma/core';
-import { Box, type LetterRange, AlphabetRail as Rail, styles } from '@kroma/ui/kit';
+import { TITLE_LETTERS } from '@kromatv/core';
+import { Box, type LetterRange, AlphabetRail as Rail, styles } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';

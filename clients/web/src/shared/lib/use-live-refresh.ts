@@ -7,8 +7,8 @@
 // Bursts are coalesced (an enrich pass emits many updates for the same
 // id) into a single refetch.
 
-import { KromaEvents } from '@kroma/client/events';
-import { ItemId, ShowId } from '@kroma/client/media';
+import { KromaEvents } from '@kromatv/client/events';
+import { ItemId, ShowId } from '@kromatv/client/media';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { apiBase } from '#web/shared/lib/api';

@@ -7,8 +7,8 @@ import {
   createKromaClient,
   type DeviceIdentity,
   type KromaClient,
-} from '@kroma/client';
-import { activeLocale } from '@kroma/core';
+} from '@kromatv/client';
+import { activeLocale } from '@kromatv/core';
 import { Platform } from 'react-native';
 import { buildInfo } from '#tv/app/clientBuild';
 

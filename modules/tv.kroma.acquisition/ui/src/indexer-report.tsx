@@ -3,8 +3,8 @@
 // one row per indexer, so "nothing found" and "the tracker is down" stop looking
 // like the same result.
 
-import { useT } from '@kroma/module-sdk';
-import { Box, Row, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/module-sdk';
+import { Box, Row, Text } from '@kromatv/ui/kit';
 
 /** What the strip needs of an indexer's answer. Structural rather than the
  *  branded `IndexerReport`, because the free-text sweep is a module's own wire

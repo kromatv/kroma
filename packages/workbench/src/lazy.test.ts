@@ -140,6 +140,37 @@ describe('a story, once it is asked for', () => {
     expect(button).toHaveBeenCalledTimes(2);
   });
 
+  it('tells a subscriber the story has landed, and stops once it unsubscribes', async () => {
+    const index = indexVite({ modules: modules(), codes: CODES });
+    const entry = entryAt(index, AT_BUTTON);
+    const onChange = vi.fn();
+
+    const stop = entry.subscribe(onChange);
+    await entry.load();
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(entry.ready()?.name).toBe('Button');
+
+    stop();
+    await entry.load();
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells a subscriber a load failed, so a pending view is not left waiting', async () => {
+    const loaders = modules();
+    const button = vi.fn(() => Promise.reject(new Error('chunk gone')));
+    const index = indexVite({ modules: { ...loaders, [BUTTON]: button }, codes: CODES });
+    const entry = entryAt(index, AT_BUTTON);
+    const onChange = vi.fn();
+    entry.subscribe(onChange);
+
+    await expect(entry.load()).rejects.toThrow('chunk gone');
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(entry.ready()).toBeUndefined();
+  });
+
   it('fetches a module once, however many views ask for it', async () => {
     const loaders = modules();
     const button = vi.fn(loaders[BUTTON] as () => Promise<unknown>);

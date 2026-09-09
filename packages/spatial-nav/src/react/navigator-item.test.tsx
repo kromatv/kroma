@@ -6,7 +6,7 @@ import {
   NavigatorRoot,
   NavigatorView,
   PointerDeviceProvider,
-} from '@kroma/spatial-nav/react';
+} from '@kromatv/spatial-nav/react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { View } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';

@@ -35,7 +35,7 @@ const OSES: [RegExp, string][] = [
   // Television platforms first: a Tizen or webOS set is Linux, and an Android
   // TV says Android.
   [/tizen/, 'Tizen'],
-  // Both spellings LG ships, as @kroma/core's `isWebOsRuntime` reads them.
+  // Both spellings LG ships, as @kromatv/core's `isWebOsRuntime` reads them.
   [/web0s|webos/, 'webOS'],
   [/android tv/, 'Android TV'],
   [/android/, 'Android'],

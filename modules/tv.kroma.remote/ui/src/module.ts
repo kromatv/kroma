@@ -1,4 +1,4 @@
-import { defineModule } from '@kroma/module-sdk';
+import { defineModule } from '@kromatv/module-sdk';
 import { lazy } from 'react';
 
 // The Remote access module (frontend half). Contributes the Remote access admin

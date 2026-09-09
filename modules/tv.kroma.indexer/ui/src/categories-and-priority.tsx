@@ -1,5 +1,5 @@
-import { useT } from '@kroma/module-sdk';
-import { Box, Field } from '@kroma/ui/kit';
+import { useT } from '@kromatv/module-sdk';
+import { Box, Field } from '@kromatv/ui/kit';
 
 export function CategoriesAndPriority({
   cats,

@@ -7,9 +7,9 @@
 // lights up while any of them holds focus, tracked here rather than asked
 // of the navigator, since a blur can arrive after the neighbour's focus.
 
-import type { MediaItem } from '@kroma/client/media';
-import { episodeTag, formatRuntime, posterColors } from '@kroma/core';
-import { endsAtClock, useLocale, useT } from '@kroma/ui';
+import type { MediaItem } from '@kromatv/client/media';
+import { episodeTag, formatRuntime, posterColors } from '@kromatv/core';
+import { endsAtClock, useLocale, useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -25,7 +25,7 @@ import {
   Text,
   tintGradient,
   WatchedBadge,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';
 
 export const EPISODE_W = 480;

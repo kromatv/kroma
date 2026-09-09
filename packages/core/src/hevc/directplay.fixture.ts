@@ -1,4 +1,4 @@
-import type { AudioTrack, MediaItem } from '@kroma/client/media';
+import type { AudioTrack, MediaItem } from '@kromatv/client/media';
 
 export function track(p: Partial<AudioTrack> & { index: number }): AudioTrack {
   return {

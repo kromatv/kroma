@@ -1,4 +1,4 @@
-// The kit's binding of @kroma/core's value formatters to the active locale, so
+// The kit's binding of @kromatv/core's value formatters to the active locale, so
 // a screen never has to carry one around. Lives here rather than in core
 // because this is where the locale context is, and it is what every shell and
 // every module already reaches for when it wants `useT`.
@@ -10,6 +10,7 @@
 // fallback `useTDefault` documents. That is the whole contract, and the test
 // beside this file holds it in place.
 
+import type { Locale, Translate } from '@kromatv/i18n';
 import {
   decimal,
   formatBytes,
@@ -20,8 +21,7 @@ import {
   formatStamp,
   formatTimecodeMs,
   formatUptime,
-} from '@kroma/core';
-import type { Locale, Translate } from '@kroma/i18n';
+} from '#ui/lib/intl';
 import { useLocaleDefault, useTDefault } from './i18n';
 
 export interface Format {

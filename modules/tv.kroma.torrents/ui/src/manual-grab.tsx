@@ -1,7 +1,7 @@
-import { useAcquisitionApi } from '@kroma/module-acquisition/api';
-import type { TorrentAnalysis } from '@kroma/module-acquisition/schemas';
-import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
-import { Box, Button, Callout, Dialog, Row, Stepper, Text, useStepper } from '@kroma/ui/kit';
+import { useAcquisitionApi } from '@kromatv/module-acquisition/api';
+import type { TorrentAnalysis } from '@kromatv/module-acquisition/schemas';
+import { apiErrorText, useAsyncAction, useT } from '@kromatv/module-sdk';
+import { Box, Button, Callout, Dialog, Row, Stepper, Text, useStepper } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { detect } from './manual-grab-content';
 import { useIndexerSearch } from './manual-grab-search';

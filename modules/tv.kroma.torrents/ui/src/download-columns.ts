@@ -1,5 +1,5 @@
-import type { SortedColumn } from '@kroma/module-sdk';
-import type { TableColumn } from '@kroma/ui/kit';
+import type { SortedColumn } from '@kromatv/module-sdk';
+import type { TableColumn } from '@kromatv/ui/kit';
 import type { DownloadSort, DownloadView } from './schemas';
 
 const TITLE_MIN = 160;

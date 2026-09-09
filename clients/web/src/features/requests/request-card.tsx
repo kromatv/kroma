@@ -1,5 +1,5 @@
-import { posterColors, sizedImageUrl } from '@kroma/core';
-import { Box, Focusable, Img, Row, Surface, styles, Text } from '@kroma/ui/kit';
+import { posterColors, sizedImageUrl } from '@kromatv/core';
+import { Box, Focusable, Img, Row, Surface, styles, Text } from '@kromatv/ui/kit';
 import { cloneElement, type ReactElement, type ReactNode } from 'react';
 import { Skeleton } from '#web/shared/ui';
 

@@ -2,9 +2,9 @@
 // lazily-generated section; while it generates we show a progress ring, and once
 // items arrive we render them in the same Poster/Rail as the home + similar rails.
 
-import type { ItemId } from '@kroma/client/media';
-import { useAiSuggest, useT } from '@kroma/ui';
-import { Box, classes, ProgressRing, Row, styles, Text } from '@kroma/ui/kit';
+import type { ItemId } from '@kromatv/client/media';
+import { useAiSuggest, useT } from '@kromatv/ui';
+import { Box, classes, ProgressRing, Row, styles, Text } from '@kromatv/ui/kit';
 import { SectionPoster } from '#web/features/catalog/cards';
 import { useAuth } from '#web/shared/lib/auth';
 import { PosterRail, page } from '#web/shared/ui';

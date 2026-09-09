@@ -29,7 +29,7 @@ export async function captureAndroid(
   file: string,
   metroPort: number,
 ): Promise<void> {
-  await assertMetro(metroPort, target.id, "bun run --filter '@kroma/tv-native' start");
+  await assertMetro(metroPort, target.id, "bun run --filter '@kromatv/tv-native' start");
   const sdk = androidSdk();
   const adb = join(sdk, 'platform-tools', 'adb');
   const appId = target.appId ?? '';
@@ -129,7 +129,7 @@ function assertInstalled(adb: string, serial: string, appId: string, target: Tar
   throw new Error(
     `${target.id}: "${appId}" is not installed on the emulator. ` +
       `This tool photographs a build, it does not make one - install it first with ` +
-      `\`bun run --filter '@kroma/tv-native' android\` (and leave Metro running).`,
+      `\`bun run --filter '@kromatv/tv-native' android\` (and leave Metro running).`,
   );
 }
 

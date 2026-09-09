@@ -3,8 +3,8 @@
 // does not.
 
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useCast } from '@kroma/ui';
-import { Icon, IconButton } from '@kroma/ui/kit';
+import { useCast } from '@kromatv/ui';
+import { Icon, IconButton } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
 import { CastSheet } from '#mobile/components/cast/CastSheet';

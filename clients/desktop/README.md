@@ -1,7 +1,7 @@
-# @kroma/desktop
+# @kromatv/desktop
 
 KROMA's native desktop client: a [Tauri](https://tauri.app) shell over the shared
-`@kroma/tv` 10-foot experience, with native mpv playback and a gamepad input bridge.
+`@kromatv/tv` 10-foot experience, with native mpv playback and a gamepad input bridge.
 The Steam Deck is the primary target, shipped as an AppImage, but the same shell is a
 native Linux app and the architecture is not Deck-specific.
 
@@ -15,8 +15,8 @@ client decodes" model, the desktop analog of the Tizen build's AVPlay.
 
 It rides KROMA's existing player-engine seam:
 
-- `selectEngine` (in `@kroma/core`) returns `desktop-mpv` for the `desktop` platform.
-- `MpvEngine` (in `@kroma/tv`) implements the same `TvEngine` interface as
+- `selectEngine` (in `@kromatv/core`) returns `desktop-mpv` for the `desktop` platform.
+- `MpvEngine` (in `@kromatv/tv`) implements the same `TvEngine` interface as
   `AvplayEngine` / `HtmlEngine`: direct-play the original file, native seeks, in-place
   audio switching (`aid`), with a direct→HLS-master fallback for anything mpv can't demux.
 - The Rust shell (`src-tauri/`) launches mpv once (idle, fullscreen, `hwdec=auto-safe`,
@@ -52,7 +52,7 @@ is exercised on Linux and the Deck, where it matters.
 ```
 clients/desktop/
   src/
-    main.tsx      # installs the stage + gamepad bridge, mounts @kroma/tv
+    main.tsx      # installs the stage + gamepad bridge, mounts @kromatv/tv
     stage.ts      # scales the 1920x1080 TV canvas to the screen (transparent under Tauri)
     gamepad.ts    # Gamepad API -> the TV nav's synthetic key events (D-pad + stick)
   src-tauri/

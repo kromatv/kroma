@@ -4,10 +4,10 @@
 
 import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { kroma } from '@kroma/bundler';
-import { legacyFinalize } from '@kroma/bundler/legacy-finalize';
-import { tvFrame } from '@kroma/bundler/tv-frame';
-import { tvShellHead } from '@kroma/bundler/tv-shell-head';
+import { kroma } from '@kromatv/bundler';
+import { legacyFinalize } from '@kromatv/bundler/legacy-finalize';
+import { tvFrame } from '@kromatv/bundler/tv-frame';
+import { tvShellHead } from '@kromatv/bundler/tv-shell-head';
 import type { ConfigEnv, UserConfig } from 'vite';
 
 export interface TvTarget {

@@ -1,11 +1,11 @@
 // Every story view in the kit, pressed once, and what that press cost.
 //
-// The measuring is @kroma/react-audit's; this is the part that is KROMA's: which
+// The measuring is @kromatv/react-audit's; this is the part that is KROMA's: which
 // views there are, and how a story is turned into an element. Mount cost is the
 // easy half, the same for everyone and unchanged by any memoisation. What breaks
 // a television is the SECOND render, the one a keypress causes.
 
-import { measure } from '@kroma/react-audit/react';
+import { measure } from '@kromatv/react-audit/react';
 import { cleanup } from '@testing-library/react';
 import { onScreen } from '#ui/testing';
 import { found, viewsOf } from './views';

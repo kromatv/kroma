@@ -2,9 +2,9 @@
 // request. The whole row is the control, so the trailing report / watched
 // buttons are actions inside it rather than a second stop beside it.
 
-import type { MediaItem } from '@kroma/client/media';
-import { formatRuntime, posterColors } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import type { MediaItem } from '@kromatv/client/media';
+import { formatRuntime, posterColors } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   backdropBlur,
@@ -16,7 +16,7 @@ import {
   sv,
   Text,
   WatchedBadge,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { IconPlayerPlayFilled } from '@tabler/icons-react';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
 import { kromaClient } from '#web/shared/lib/api';

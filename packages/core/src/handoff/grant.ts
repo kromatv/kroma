@@ -4,7 +4,7 @@
 // answers, so a client reading the text would work in English and stop working
 // in French.
 
-import { KromaApiError } from '@kroma/client';
+import { KromaApiError } from '@kromatv/client';
 
 /** How many characters a television prints as its check string. */
 export const HANDOFF_CHECK_LENGTH = 5;

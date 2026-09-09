@@ -1,7 +1,7 @@
 // The routing port the workbench shell navigates through, and the adapters that
 // implement it without a router dependency.
 
-import { webWindow } from '@kroma/ui/kit';
+import { webWindow } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseView, type View, viewPath } from './view';
 

@@ -1,8 +1,8 @@
 // The server has no mail service, so there is no email-based reset flow: this
 // self-service change is how an account rotates its own password.
 
-import { useT } from '@kroma/ui';
-import { Box, Button, Field, Progress, Row, Surface, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Button, Field, Progress, Row, Surface, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { passwordStrength, StatusText, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';

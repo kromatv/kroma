@@ -1,4 +1,4 @@
-# @kroma/shots
+# @kromatv/shots
 
 Captures the same screen across the shells a change touches, and hands back a
 markdown block a pull request or issue can carry.

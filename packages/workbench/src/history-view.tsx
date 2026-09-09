@@ -6,7 +6,7 @@
 // than by a list of rows this package would have to style itself - the workbench
 // is built out of the design system it shows.
 
-import { Box, Text, Timeline } from '@kroma/ui/kit';
+import { Box, Text, Timeline } from '@kromatv/ui/kit';
 import { agoLabel, commitUrl, dayLabel, type HistoryEntry } from './history';
 import { openWebLink } from './link';
 

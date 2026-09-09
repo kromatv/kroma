@@ -1,5 +1,10 @@
 // @vitest-environment jsdom
-import { PLAYER_PICTURE_ID, PLAYER_ROOT_ID, PLAYER_STAGE_ID, PLAYER_SUBTITLE_ID } from '@kroma/ui';
+import {
+  PLAYER_PICTURE_ID,
+  PLAYER_ROOT_ID,
+  PLAYER_STAGE_ID,
+  PLAYER_SUBTITLE_ID,
+} from '@kromatv/ui';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installVideoHole, nativePlane } from './video-hole';
 

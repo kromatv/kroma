@@ -1,16 +1,11 @@
 // Movie / episode detail: cinematic hero, Netflix-style action block, genre
 // chips, cast and similar rails.
 
-import { ItemId, type MediaItem, type ProgressEntry } from '@kroma/client/media';
-import {
-  episodeTag,
-  formatRuntime,
-  formatTimecode,
-  qualityBadge,
-  sizedImageUrl,
-  type Translate,
-} from '@kroma/core';
-import { Box, styles, Text } from '@kroma/ui/kit';
+import { ItemId, type MediaItem, type ProgressEntry } from '@kromatv/client/media';
+import { episodeTag, formatRuntime, qualityBadge, sizedImageUrl } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
+import { formatTimecode } from '@kromatv/ui/intl';
+import { Box, styles, Text } from '@kromatv/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useWindowDimensions } from 'react-native';

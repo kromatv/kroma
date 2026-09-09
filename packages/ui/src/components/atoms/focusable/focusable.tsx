@@ -5,7 +5,7 @@
 // with its element's transform: ring one view but scale a child and the outline
 // visibly detaches from the artwork it outlines.
 
-import { DefaultFocus } from '@kroma/spatial-nav/react';
+import { DefaultFocus } from '@kromatv/spatial-nav/react';
 import {
   type Ref,
   type RefObject,

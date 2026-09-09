@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 //
-// The palette itself is `@kroma/ui`'s <Command>, and is tested there. What is
+// The palette itself is `@kromatv/ui`'s <Command>, and is tested there. What is
 // left here is the mapping: a story and an article both have to arrive as rows
 // the palette can rank, and a chosen row has to say which of the two lists it
 // came from.
 
-import { onScreen } from '@kroma/ui/testing';
+import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CommandPalette, entriesOf, isPage } from './command';

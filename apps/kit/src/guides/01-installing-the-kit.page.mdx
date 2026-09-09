@@ -2,10 +2,10 @@ import { Figure } from './figure';
 import { WiringCheck } from './install-check';
 
 export const title = 'Installing the kit';
-export const summary = 'Consuming @kroma/ui as a package: what it ships, and what a Vite app and a Metro app each have to be told first.';
+export const summary = 'Consuming @kromatv/ui as a package: what it ships, and what a Vite app and a Metro app each have to be told first.';
 export const width = 'wide';
 
-`@kroma/ui` is one component library for every screen KROMA runs on: a browser, a
+`@kromatv/ui` is one component library for every screen KROMA runs on: a browser, a
 phone, a television.
 
 It ships as source. Its `build` script is `tsc --noEmit`, which type-checks and
@@ -35,24 +35,24 @@ nothing errors at all.
 | `react-native` | `*` | an alias everywhere here, see below |
 | `expo-video` | `~57.0.1` | optional; only `<Player>` reaches for it |
 
-What the package installs for itself needs no help: `@kroma/core`,
+What the package installs for itself needs no help: `@kromatv/core`,
 `@tabler/icons-react-native` (with `@tabler/icons-react` for the browser
-targets), `react-native-svg` and `@kroma/spatial-nav`.
+targets), `react-native-svg` and `@kromatv/spatial-nav`.
 
 ## The doors in
 
 | Specifier | Behind it |
 | --- | --- |
-| `@kroma/ui/kit` | every component, flat: `Button`, `ListRow`, `Rail`, and the registrations an app boots with: `ThemeProvider`, `setTheme`, `applyMode`, `OverlayHost`, `setEntryDefaults`, `setImageBackend` |
-| `@kroma/ui/kit/atoms/button` | one component, for a package that wants one |
-| `@kroma/ui` | the services half: `<Player>`, the service hooks, and `CastProvider` / `I18nProvider` / `LocaleProvider` |
-| `@kroma/ui/tokens` | the raw values, as TypeScript |
+| `@kromatv/ui/kit` | every component, flat: `Button`, `ListRow`, `Rail`, and the registrations an app boots with: `ThemeProvider`, `setTheme`, `applyMode`, `OverlayHost`, `setEntryDefaults`, `setImageBackend` |
+| `@kromatv/ui/kit/atoms/button` | one component, for a package that wants one |
+| `@kromatv/ui` | the services half: `<Player>`, the service hooks, and `CastProvider` / `I18nProvider` / `LocaleProvider` |
+| `@kromatv/ui/tokens` | the raw values, as TypeScript |
 | `virtual:kroma.css` | the same values as CSS custom properties, served by `kromaUI()` rather than exported |
-| `@kroma/ui/fonts` | `KIT_FONTS`, the Metro asset registrations |
-| `@kroma/ui/vite` | `kromaUI()`, the Vite plugin |
-| `@kroma/ui/bundler` | the icon pass, for a Metro config |
-| `@kroma/ui/ssr` | `withTheme()`, which grounds `<html>` before it is sent |
-| `@kroma/ui/testing` | a focus scope and a locale, so a test can render a control |
+| `@kromatv/ui/fonts` | `KIT_FONTS`, the Metro asset registrations |
+| `@kromatv/ui/vite` | `kromaUI()`, the Vite plugin |
+| `@kromatv/ui/bundler` | the icon pass, for a Metro config |
+| `@kromatv/ui/ssr` | `withTheme()`, which grounds `<html>` before it is sent |
+| `@kromatv/ui/testing` | a focus scope and a locale, so a test can render a control |
 
 The kit's own files say `#ui/...`. That is an internal alias declared in the
 package's `imports` field. A bundler has to be told how to follow it (below), but
@@ -61,11 +61,11 @@ no app should ever write it.
 ## A Vite app
 
 What a browser target needs is almost all resolution, and in this repo it lives in
-one shared helper (`webResolve`, `@kroma/bundler/rnw`) so that no two browser
+one shared helper (`webResolve`, `@kromatv/bundler/rnw`) so that no two browser
 shells drift into two setups. Written out, it is:
 
 ```ts
-import { kromaUI } from '@kroma/ui/vite';
+import { kromaUI } from '@kromatv/ui/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
@@ -114,12 +114,12 @@ import appCss from 'virtual:kroma.css?url';
 ```
 
 An app that keeps a stylesheet of its own, because Tailwind needs one, writes
-`@import "@kroma/ui/css";` in it and the plugin expands it in place, the way
+`@import "@kromatv/ui/css";` in it and the plugin expands it in place, the way
 `@import "tailwindcss"` expands into Tailwind.
 
 | Part | Emits |
 | --- | --- |
-| `virtual:kroma.css` / `@kroma/ui/css` | fonts + tokens + motion + base: what an app wants |
+| `virtual:kroma.css` / `@kromatv/ui/css` | fonts + tokens + motion + base: what an app wants |
 | `virtual:kroma-tv.css` | fonts + tokens + motion + reset: what a television wants |
 | `virtual:kroma-tokens.css` | the custom properties, both palettes |
 | `virtual:kroma-fonts.css` | the `@font-face` rules |
@@ -130,7 +130,7 @@ An app that keeps a stylesheet of its own, because Tailwind needs one, writes
 | `virtual:kroma-theme.css` | the Tailwind v4 bridge: `bg-accent`, `text-muted`, … |
 
 Every part answers to both doors: `virtual:kroma-<part>.css` from TypeScript, and
-`@kroma/ui/css/<part>` from a stylesheet.
+`@kromatv/ui/css/<part>` from a stylesheet.
 
 Take the parts where the whole would collide. A Tailwind app already has
 preflight, and a second unlayered reset outranks every utility it meets
@@ -164,7 +164,7 @@ the kit's internal `#ui` alias.
 ```js
 const path = require('node:path');
 const { getDefaultConfig } = require('expo/metro-config');
-const { kromaUi } = require('@kroma/ui/bundler');
+const { kromaUi } = require('@kromatv/ui/bundler');
 
 const workspaceRoot = path.resolve(__dirname, '../..');
 const config = getDefaultConfig(__dirname);
@@ -209,7 +209,7 @@ There is no CSS on a native target, so the two typefaces are loaded as assets an
 the app waits for them:
 
 ```tsx
-import { KIT_FONTS } from '@kroma/ui/fonts';
+import { KIT_FONTS } from '@kromatv/ui/fonts';
 import { useFonts } from 'expo-font';
 
 const [loaded, error] = useFonts(KIT_FONTS);
@@ -255,7 +255,7 @@ client's root, condensed:
 import {
   applyMode, OverlayHost, readMode, registerFrost, setEntryDefaults,
   setImageBackend, setTheme, ThemeProvider,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 
 applyMode(readMode());              // the stored ground: dark, light or system
 setTheme(mobileTheme());            // the app's vocabulary: ramp, corners, spacing
@@ -290,7 +290,7 @@ registerFrost(BlurView);            // what a frosted surface blurs with
 - [ ] A browser target aliases `react-native` to `react-native-web`, anchored, and
       puts `.web.*` first.
 - [ ] The entry stylesheet, the app's own rather than a nested one, imports
-      `@kroma/ui/css`, and `kromaUI()` sits before `tailwindcss()`.
+      `@kromatv/ui/css`, and `kromaUI()` sits before `tailwindcss()`.
 - [ ] A native target loads `KIT_FONTS` and gates its first screen on them.
 - [ ] Both bundlers, TypeScript and the test runner have been told about `#ui`.
 - [ ] The app states its form factor with `setEntryDefaults` before the first

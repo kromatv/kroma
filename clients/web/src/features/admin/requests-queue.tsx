@@ -2,11 +2,11 @@
 // table (mirroring the pipeline console's shape), with quick approve/deny and
 // a detail drawer. Backed by GET /api/requests + the request.updated WS event.
 
-import { KromaEvents } from '@kroma/client/events';
-import type { MediaRequest, RequestStatus } from '@kroma/client/requests';
-import { Table } from '@kroma/module-sdk';
-import { useT } from '@kroma/ui';
-import { Button, EmptyState, Row } from '@kroma/ui/kit';
+import { KromaEvents } from '@kromatv/client/events';
+import type { MediaRequest, RequestStatus } from '@kromatv/client/requests';
+import { Table } from '@kromatv/module-sdk';
+import { useT } from '@kromatv/ui';
+import { Button, EmptyState, Row } from '@kromatv/ui/kit';
 
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';

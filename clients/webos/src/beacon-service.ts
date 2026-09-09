@@ -7,7 +7,7 @@
  * ship a JS Service beside its UI, and that service is Node: it has a UDP
  * socket, which is all multicast DNS is. The app asks this service to publish,
  * and the record on the link is the same one an Apple TV or an Android TV
- * raises natively through @kroma/lan-beacon.
+ * raises natively through @kromatv/lan-beacon.
  *
  * Runtime notes: authored as a module and emitted as CommonJS by
  * scripts/build-service.ts, one self-contained file - the same shape the Tizen
@@ -16,8 +16,8 @@
  * dependency, and it is not on npm at all.
  */
 
-import type { Beacon } from '@kroma/mdns-beacon';
-import { publish } from '@kroma/mdns-beacon';
+import type { Beacon } from '@kromatv/mdns-beacon';
+import { publish } from '@kromatv/mdns-beacon';
 
 import Service from 'webos-service';
 

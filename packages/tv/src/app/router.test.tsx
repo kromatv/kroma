@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import type { MediaItem } from '@kroma/client/media';
-import { focusSettled, markFocusSettled } from '@kroma/ui/testing';
+import type { MediaItem } from '@kromatv/client/media';
+import { focusSettled, markFocusSettled } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { useEffect, useRef } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';

@@ -5,10 +5,10 @@
 // trailing button carries the row's busy and "search started" states. All
 // mutation state lives in `missing.tsx`.
 
-import type { CalendarEntry } from '@kroma/client/requests';
-import { relativeAirDate, sentenceCase } from '@kroma/core';
-import { useLocale, useT } from '@kroma/ui';
-import { Badge, Box, Button, Checkbox, Divider, Text } from '@kroma/ui/kit';
+import type { CalendarEntry } from '@kromatv/client/requests';
+import { relativeAirDate, sentenceCase } from '@kromatv/core';
+import { useLocale, useT } from '@kromatv/ui';
+import { Badge, Box, Button, Checkbox, Divider, Text } from '@kromatv/ui/kit';
 import { EpisodeList } from '#web/features/requests/missing-episodes';
 import { epKey, type MissingGroup } from '#web/features/requests/missing-model';
 import { RequestCard } from '#web/features/requests/request-card';

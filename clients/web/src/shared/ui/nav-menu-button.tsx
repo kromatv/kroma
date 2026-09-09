@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { IconButton } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { IconButton } from '@kromatv/ui/kit';
 
 /**
  * The control that opens a navigation sheet, in the one spelling every topbar

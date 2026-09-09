@@ -1,8 +1,8 @@
 // The form controls a library's folders are edited through: one card of rows
 // saying what is committed, and the [`FolderPicker`] opening under it rather
 // than in place of it, so the list stays readable while a folder is chosen.
-import { useT } from '@kroma/ui';
-import { Box, IconButton, ListRow } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, IconButton, ListRow } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { FolderPicker } from '#web/features/admin/folder-picker';
 

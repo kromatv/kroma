@@ -1,4 +1,4 @@
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import { Button } from '#site/components/button';
 import { Container } from '#site/components/container';
 import { docs, ProseLink } from '#site/components/download/links';

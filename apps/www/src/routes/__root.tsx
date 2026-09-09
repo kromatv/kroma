@@ -1,7 +1,7 @@
-import { site } from '@kroma/site-meta';
-import bricolageLatin from '@kroma/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
-import hankenLatin from '@kroma/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
-import { colors } from '@kroma/ui/tokens';
+import { site } from '@kromatv/site-meta';
+import bricolageLatin from '@kromatv/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
+import hankenLatin from '@kromatv/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
+import { colors } from '@kromatv/ui/tokens';
 import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { preload } from 'react-dom';

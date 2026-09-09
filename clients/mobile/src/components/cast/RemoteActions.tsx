@@ -1,5 +1,5 @@
-import type { useCast } from '@kroma/ui';
-import { Box, Icon, type IconName, styles, Text } from '@kroma/ui/kit';
+import type { useCast } from '@kromatv/ui';
+import { Box, Icon, type IconName, styles, Text } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { radius, spacing, type } from '#mobile/lib/theme';

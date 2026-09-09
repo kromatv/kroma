@@ -140,7 +140,7 @@ pub(crate) const MIGRATIONS: &[&str] = &[
     // recomputed logical id that orphaned on a title-parse mismatch; replaced
     // by `acq_file_tmdb(abs_path)` (created in SCHEMA above).
     "DROP TABLE IF EXISTS acq_tmdb",
-    // No backfill: the name -> id table lives in @kroma/core, not in SQL, so a
+    // No backfill: the name -> id table lives in @kromatv/core, not in SQL, so a
     // row keeps resolving by name until its next enrichment writes the ids.
     "ALTER TABLE metadata_core ADD COLUMN tmdb_genre_ids TEXT NOT NULL DEFAULT '[]'",
     // Fold the old watch_later queue into my_list, then drop it: My list now

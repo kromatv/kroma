@@ -1,4 +1,8 @@
-import { NavigatorItem, type NavigatorItemProps, type NodeHandle } from '@kroma/spatial-nav/react';
+import {
+  NavigatorItem,
+  type NavigatorItemProps,
+  type NodeHandle,
+} from '@kromatv/spatial-nav/react';
 import type { ReactNode, RefObject } from 'react';
 import { Animated, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import type { AnySv } from '#ui/core';

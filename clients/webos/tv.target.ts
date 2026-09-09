@@ -1,4 +1,4 @@
-import type { TvTarget } from '@kroma/bundler/shell';
+import type { TvTarget } from '@kromatv/bundler/shell';
 
 // LG freezes Chromium per webOS major: modern tier is webOS 24+ (Chromium 108),
 // legacy tier webOS 4.x-23 (Chromium 53-94). webOS 3.x (Chromium 38, no CSS

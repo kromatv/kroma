@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { onScreen } from '@kroma/ui/testing';
+import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, render as renderRaw, screen } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';

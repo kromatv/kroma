@@ -145,7 +145,7 @@ describe('templateVars', () => {
 
   it('points the crates at the workspace in the repository and at node_modules outside it', () => {
     expect(templateVars(answers({ inRepo: true }), V)).toMatchObject({
-      SDK: '@kroma/module-sdk',
+      SDK: '@kromatv/module-sdk',
       SDK_CRATES: '../../../server/crates',
     });
     expect(templateVars(answers(), V)).toMatchObject({
@@ -197,9 +197,9 @@ describe('packageJsonFor', () => {
     const pkg = packageJsonFor(answers({ inRepo: true }), V);
 
     expect(pkg).toMatchObject({
-      name: '@kroma/module-notes',
+      name: '@kromatv/module-notes',
       exports: { '.': './ui/src/module.tsx', './schemas': './ui/src/schemas.ts' },
-      dependencies: { '@kroma/module-sdk': 'workspace:*', '@kroma/ui': 'workspace:*' },
+      dependencies: { '@kromatv/module-sdk': 'workspace:*', '@kromatv/ui': 'workspace:*' },
     });
     expect(pkg?.overrides).toBeUndefined();
   });

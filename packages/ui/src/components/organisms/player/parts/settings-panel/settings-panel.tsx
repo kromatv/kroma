@@ -12,7 +12,6 @@
 // keeps no notion of focus of its own - two of those is what once lit a row and
 // the Back button at the same time.
 
-import type { ReportCategory } from '@kroma/client/reports';
 import {
   forwardRef,
   useCallback,
@@ -36,6 +35,7 @@ import { sharedStyle, styles } from '#ui/core';
 import { ease } from '#ui/lib/ease';
 import { WEB } from '#ui/lib/platform';
 import { useT } from '#ui/services/i18n';
+import type { PlayerReportCategory } from '../../media-types';
 import { menuEntries, movedEntries, panelTitle, type View } from './settings/entries';
 import type { SubtitleGenBundle } from './settings/gen';
 import { MenuList } from './settings/menu-list';
@@ -59,7 +59,7 @@ interface SettingsPanelProps {
   /** Report a problem with what is playing. The menu grows the row only when the
    *  host provides this, so a surface with its own reporting flow (or none) is
    *  unaffected. */
-  onReport?: (category: ReportCategory) => Promise<void>;
+  onReport?: (category: PlayerReportCategory) => Promise<void>;
   /** The panel's width in px, from `panelGeometry` - the whole stage once a 44%
    *  panel would be too narrow to read. */
   width?: number;

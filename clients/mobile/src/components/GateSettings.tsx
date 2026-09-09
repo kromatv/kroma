@@ -7,7 +7,7 @@
 // and a viewer who cannot read the sign-in screen cannot get to one.
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { IconButton } from '@kroma/ui/kit';
+import { IconButton } from '@kromatv/ui/kit';
 import { useRef } from 'react';
 import { useI18n, useT } from '#mobile/lib/i18n';
 import { LocalePicker } from './LocalePicker';

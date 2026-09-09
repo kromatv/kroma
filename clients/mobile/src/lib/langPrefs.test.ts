@@ -17,7 +17,7 @@ interface Host {
   updateAccount(patch: Record<string, unknown>): Promise<unknown>;
 }
 
-vi.mock('@kroma/core/react', () => ({ useLangPrefs: useSharedLangPrefs }));
+vi.mock('@kromatv/core/react', () => ({ useLangPrefs: useSharedLangPrefs }));
 
 const session = vi.hoisted(() => ({
   user: null as { id: string } | null,

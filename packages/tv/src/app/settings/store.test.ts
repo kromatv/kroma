@@ -121,7 +121,7 @@ describe('the artwork default', () => {
 
   const boot = async (gb: number | null) => {
     vi.resetModules();
-    const media = await import('@kroma/client/media');
+    const media = await import('@kromatv/client/media');
     const hardware = await import('#tv/app/clientHardware');
     hardware.setHardwareSource(reporting(gb));
     const store = await import('./store');
@@ -182,8 +182,8 @@ describe('a preference stored by an earlier run', () => {
 
   it('re-applies the artwork scale when the device store arrives late', async () => {
     vi.resetModules();
-    const media = await import('@kroma/client/media');
-    const { setSessionStorage } = await import('@kroma/client');
+    const media = await import('@kromatv/client/media');
+    const { setSessionStorage } = await import('@kromatv/client');
     await import('./store');
     const late = new Map([['kroma:artwork', 'medium']]);
     expect(media.artworkScaleValue()).toBe(1);

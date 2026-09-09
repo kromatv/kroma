@@ -27,8 +27,8 @@ const api = vi.hoisted(() => ({
 }));
 // `clientUserAgent` too: these hooks build their client through
 // `#mobile/lib/device`, which stamps the phone's own User-Agent onto it.
-vi.mock('@kroma/client/query', () => ({ createQueryClient }));
-vi.mock('@kroma/core', () => ({
+vi.mock('@kromatv/client/query', () => ({ createQueryClient }));
+vi.mock('@kromatv/core', () => ({
   discoverServers,
   activeLocale: () => 'fr',
   clientUserAgent: () => 'Kroma/test',

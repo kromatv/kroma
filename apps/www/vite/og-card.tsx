@@ -1,11 +1,11 @@
-// `@kroma/ui/tokens/colors`, not `@kroma/ui/tokens`: this module is loaded by
+// `@kromatv/ui/tokens/colors`, not `@kromatv/ui/tokens`: this module is loaded by
 // Vite config's own loader, which externalizes bare specifiers to Node, and
 // Node cannot resolve the extensionless re-exports inside that barrel. The
 // kit exports the token leaf as its own subpath for exactly this.
 //
 // `rich.ts` keeps its extension because Node needs one inside this package
 // (see `allowImportingTsExtensions` in tsconfig.json).
-import { colors, WHEEL_COLORS, withAlpha } from '@kroma/ui/tokens/colors';
+import { colors, WHEEL_COLORS, withAlpha } from '@kromatv/ui/tokens/colors';
 import { parseRich } from '../src/lib/rich.ts';
 
 // Rendered by Satori (JSX -> SVG) rather than a headless browser, so this is

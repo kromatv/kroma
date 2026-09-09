@@ -6,7 +6,7 @@
 // is what stops a television and a browser from disagreeing about how loud a
 // series page is.
 
-import { deviceStorage } from '@kroma/client';
+import { deviceStorage } from '@kromatv/client';
 
 const MUTE_KEY = 'kroma.theme.muted';
 

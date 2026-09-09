@@ -1,5 +1,5 @@
+import type { Translate } from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
-import type { Translate } from './i18n';
 import { departmentLabel, formatDay, personAge, personFacts } from './person-facts';
 
 // Echoes the key with its interpolations.

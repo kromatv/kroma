@@ -1,6 +1,7 @@
-import { commitLabel, formatBuildDate, repoLabel, type Translate } from '@kroma/core';
-import { useLocale, useT } from '@kroma/ui';
-import { Box, Hint, ListRow, styles, Text, useFocusNav } from '@kroma/ui/kit';
+import { commitLabel, formatBuildDate, repoLabel } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
+import { useLocale, useT } from '@kromatv/ui';
+import { Box, Hint, ListRow, styles, Text, useFocusNav } from '@kromatv/ui/kit';
 import { Platform } from 'react-native';
 import { buildInfo } from '#tv/app/clientBuild';
 import { type ClientHardware, clientHardware } from '#tv/app/clientHardware';

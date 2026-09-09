@@ -15,14 +15,14 @@ vi.mock('#web/features/playback/web-stats', () => ({
     return { mode: 'stub' };
   },
 }));
-vi.mock('@kroma/ui', () => ({
+vi.mock('@kromatv/ui', () => ({
   useAudioFilter: () => H.filter,
   useLocale: () => 'en',
   useT: () => (k: string) => k,
 }));
 // `refineTrackLang` stays REAL: a stubbed matcher would only assert the stub.
-vi.mock('@kroma/core', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@kroma/core')>()),
+vi.mock('@kromatv/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kromatv/core')>()),
   audioTrackLabel: () => 'English 5.1',
   qualityBadgeForVideo: () => H.badge,
 }));

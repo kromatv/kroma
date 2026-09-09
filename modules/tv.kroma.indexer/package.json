@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/module-indexer",
+  "name": "@kromatv/module-indexer",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -19,8 +19,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/module-sdk": "workspace:*",
-    "@kroma/ui": "workspace:*",
+    "@kromatv/module-sdk": "workspace:*",
+    "@kromatv/ui": "workspace:*",
     "@tabler/icons-react": "^3.46.0",
     "react-call": "^2.0.2",
     "zod": "^4.5.4"

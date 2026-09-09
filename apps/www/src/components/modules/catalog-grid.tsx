@@ -1,5 +1,5 @@
 import { catalog } from 'virtual:kroma-modules';
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import { IconArrowNarrowRight, IconShieldCheck } from '@tabler/icons-react';
 import { ModuleCard } from '#site/components/modules/module-card';
 import { Section } from '#site/components/section';

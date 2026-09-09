@@ -2,7 +2,7 @@
 //
 // Apart from the routing adapters that read and write it, because the story SDK
 // reads a view too: nothing here imports anything, so a `*.story.mdx` that
-// pulls in `@kroma/workbench/story` does not pull in the design system with it.
+// pulls in `@kromatv/workbench/story` does not pull in the design system with it.
 
 type View = 'preview' | 'docs' | 'matrix' | `scene:${number}` | `demo:${number}`;
 

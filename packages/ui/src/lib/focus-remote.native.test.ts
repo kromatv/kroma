@@ -35,7 +35,7 @@ interface RemoteConfig {
 
 const nav = vi.hoisted(() => ({ config: null as RemoteConfig | null }));
 
-vi.mock('@kroma/spatial-nav/react', () => ({
+vi.mock('@kromatv/spatial-nav/react', () => ({
   configureRemote: (config: RemoteConfig) => {
     nav.config = config;
   },

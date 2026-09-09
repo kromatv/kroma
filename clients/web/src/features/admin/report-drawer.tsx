@@ -2,8 +2,8 @@
 // reporter + date, the free-text message, a deep-link to the title's fiche, and
 // the triage actions (resolve / dismiss / reopen / delete).
 
-import type { Report, ReportStatus } from '@kroma/client/reports';
-import { useT } from '@kroma/ui';
+import type { Report, ReportStatus } from '@kromatv/client/reports';
+import { useT } from '@kromatv/ui';
 import {
   Avatar,
   Box,
@@ -14,7 +14,7 @@ import {
   Row,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { Pill } from '#web/features/admin/pill';

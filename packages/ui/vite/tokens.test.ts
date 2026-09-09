@@ -132,7 +132,11 @@ describe('fontsCss', () => {
   it('swaps a late face in on the dev server rather than dropping it', () => {
     const plugin = kromaTokens();
     plugin.configResolved({ plugins: [{ name: 'kroma-tokens' }], command: 'serve' });
-    const css = plugin.transform.call({}, '@import "@kroma/ui/css";', '/app/src/styles.css')?.code;
+    const css = plugin.transform.call(
+      {},
+      '@import "@kromatv/ui/css";',
+      '/app/src/styles.css',
+    )?.code;
 
     expect(css).toContain('font-display: swap;');
   });
@@ -140,7 +144,11 @@ describe('fontsCss', () => {
   it('leaves a build on `optional`, whatever the dev server does', () => {
     const plugin = kromaTokens();
     plugin.configResolved({ plugins: [{ name: 'kroma-tokens' }], command: 'build' });
-    const css = plugin.transform.call({}, '@import "@kroma/ui/css";', '/app/src/styles.css')?.code;
+    const css = plugin.transform.call(
+      {},
+      '@import "@kromatv/ui/css";',
+      '/app/src/styles.css',
+    )?.code;
 
     expect(css).toContain('font-display: optional;');
   });

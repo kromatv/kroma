@@ -3,10 +3,10 @@
 // an expandable run-history + log panel. Mirrors the server's job registry
 // (`services::jobs`) over `/api/admin/jobs`.
 
-import { KromaEvents } from '@kroma/client/events';
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, EmptyState, Section } from '@kroma/ui/kit';
+import { KromaEvents } from '@kromatv/client/events';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
+import { Box, EmptyState, Section } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 import { JobCard } from '#web/features/admin/job-card';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';

@@ -154,8 +154,8 @@ describe('createCommand inside a checkout', () => {
     expect(files).not.toContain('.cargo/config.toml');
     expect(files).not.toContain('.gitignore');
     expect(json(at, 'package.json')).toMatchObject({
-      name: '@kroma/module-notes',
-      dependencies: { '@kroma/module-sdk': 'workspace:*', '@kroma/ui': 'workspace:*' },
+      name: '@kromatv/module-notes',
+      dependencies: { '@kromatv/module-sdk': 'workspace:*', '@kromatv/ui': 'workspace:*' },
     });
     expect(json(at, 'tsconfig.json')).toMatchObject({ extends: '../../tsconfig.base.json' });
   });

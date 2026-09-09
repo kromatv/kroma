@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { UserId } from '@kroma/client/accounts';
-import type { TopUser } from '@kroma/client/admin';
-import { I18nProvider } from '@kroma/ui';
+import { UserId } from '@kromatv/client/accounts';
+import type { TopUser } from '@kromatv/client/admin';
+import { I18nProvider } from '@kromatv/ui';
 import {
   createMemoryHistory,
   createRootRoute,

@@ -1,7 +1,7 @@
 // Whole-surface states: what a screen shows instead of content while it is
 // loading, empty, or broken, plus the inline error banner forms use.
 
-import { Box, Button, Icon, Spinner, styles, Text } from '@kroma/ui/kit';
+import { Box, Button, Icon, Spinner, styles, Text } from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import { radius, spacing, type } from '#mobile/lib/theme';

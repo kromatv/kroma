@@ -2,8 +2,8 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMdx } from '@kroma/bundler/mdx';
-import { onScreen } from '@kroma/ui/testing';
+import { compileMdx } from '@kromatv/bundler/mdx';
+import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { Linking } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -114,7 +114,7 @@ describe('rendering a compiled document', () => {
   // Every newline hast keeps is a bug waiting on a television: between blocks a
   // string child of a view is an outright error, and inside a paragraph a soft
   // wrap is a hard line break rather than the space a browser collapses it to.
-  // The rehype pass in @kroma/bundler's mdx.mjs is what settles both.
+  // The rehype pass in @kromatv/bundler's mdx.mjs is what settles both.
   it('carries no newline outside a code block', async () => {
     const compiled = await compileMdx(readFileSync(FIXTURE, 'utf8'), FIXTURE);
     // The lazy run is bounded: unbounded, a fixture that never closes the child

@@ -5,7 +5,7 @@ import {
   type BottomSheetBackdropProps,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { styles, Text } from '@kroma/ui/kit';
+import { styles, Text } from '@kromatv/ui/kit';
 import { type ReactNode, useMemo } from 'react';
 import { type StyleProp, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

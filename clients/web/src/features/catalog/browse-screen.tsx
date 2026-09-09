@@ -5,14 +5,14 @@ import {
   hasGenre,
   type LetterMark,
   letterMarks,
-  type MessageKey,
   type Sortable,
   type SortMode,
   sortTitles,
   titleLetter,
-} from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, EmptyState, type IconName } from '@kroma/ui/kit';
+} from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
+import { Box, EmptyState, type IconName } from '@kromatv/ui/kit';
 import {
   type ReactElement,
   type RefObject,

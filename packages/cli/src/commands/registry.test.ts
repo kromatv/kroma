@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { schemaPath } from '@kroma/registry';
+import { schemaPath } from '@kromatv/registry';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { packBundle } from '../bundle/pack';
 import { registryCommand, resolveDir } from './registry';

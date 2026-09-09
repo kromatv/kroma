@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Avatar, Box, Hint, Text, useFocusNav } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Avatar, Box, Hint, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';

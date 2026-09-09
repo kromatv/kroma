@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import * as p from '@clack/prompts';
-import { REVERSE_DNS_ID } from '@kroma/registry';
+import { REVERSE_DNS_ID } from '@kromatv/registry';
 import { exec } from '../exec';
 import {
   type Answers,

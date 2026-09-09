@@ -3,8 +3,8 @@
 // queue carries the VPN module's status when that module is installed, which is
 // why this imports it by package name (see `optionalDependencies`).
 
-import { brandedId, ItemId, RequestId } from '@kroma/module-sdk';
-import { VpnStatusView } from '@kroma/module-vpn/schemas';
+import { brandedId, ItemId, RequestId } from '@kromatv/module-sdk';
+import { VpnStatusView } from '@kromatv/module-vpn/schemas';
 import { z } from 'zod';
 
 export const DownloadClientId = brandedId('DownloadClientId');
@@ -298,7 +298,7 @@ export type OrganizeResult = z.infer<typeof OrganizeResult>;
 // the shared `/api/events` socket, so its shape is a contract with every listener
 // rather than this package's private business. Re-exported so a caller reaching
 // for it here still finds it.
-export type { DownloadProgressEvent } from '@kroma/client/requests';
+export type { DownloadProgressEvent } from '@kromatv/client/requests';
 
 export interface DownloadCompletedEvent {
   type: 'download.completed';

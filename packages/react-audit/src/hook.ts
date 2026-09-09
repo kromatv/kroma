@@ -7,7 +7,7 @@
 // react-dom is enough. In a test runner, the reliable way to guarantee that is a
 // setup file:
 //
-//   setupFiles: ['@kroma/react-audit']
+//   setupFiles: ['@kromatv/react-audit']
 //
 // Installing is idempotent and never replaces an existing hook, so having React
 // DevTools open does not break it and vice versa.

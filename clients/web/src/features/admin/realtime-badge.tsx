@@ -1,8 +1,8 @@
 // The "live" chip a realtime console page pins beside its title, written inside
 // <PageHeader.Actions>.
 
-import { useT } from '@kroma/ui';
-import { Row, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Row, Text } from '@kromatv/ui/kit';
 import { PillDot } from '#web/features/admin/pill';
 
 export function RealtimeBadge() {

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { I18nProvider } from '@kroma/ui';
-import { pinDesignWidth, Table } from '@kroma/ui/kit';
+import { I18nProvider } from '@kromatv/ui';
+import { pinDesignWidth, Table } from '@kromatv/ui/kit';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { memo, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';

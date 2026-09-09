@@ -1,10 +1,10 @@
-import type { Marker } from '@kroma/client/media';
-import type { RemoteKey } from '@kroma/core';
 import { useEffect, useState } from 'react';
 import type { PostPlayFocus, PostPlayItem } from '#ui/components/organisms/player/parts/post-play';
 import type { UpNextItem } from '#ui/components/organisms/player/parts/up-next-sheet';
 import { handleCreditsKey, handlePostPlayKey } from '#ui/components/organisms/player/player-input';
 import type { PlayerController } from '#ui/components/organisms/player/types';
+import type { RemoteKey } from '#ui/lib/remote-keys';
+import type { PlayerMarker } from '../media-types';
 import { type CreditsState, usePlayerCredits } from './use-player-credits';
 import { usePlayerOutro } from './use-player-outro';
 
@@ -29,7 +29,7 @@ export interface PlayerEnding {
  */
 export function usePlayerEnding(opts: {
   controller: PlayerController;
-  markers?: readonly Marker[];
+  markers?: readonly PlayerMarker[];
   postPlay?: PostPlayItem | null;
   onPlayNext?: () => void;
   onPlayItem?: (item: UpNextItem) => void;

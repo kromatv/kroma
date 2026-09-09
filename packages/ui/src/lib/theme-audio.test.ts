@@ -1,4 +1,4 @@
-import { type SessionStorage, setSessionStorage } from '@kroma/client';
+import { type SessionStorage, setSessionStorage } from '@kromatv/client';
 import { afterEach, describe, expect, it } from 'vitest';
 import { readThemeMuted, writeThemeMuted } from './theme-audio';
 

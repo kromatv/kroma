@@ -24,7 +24,7 @@ beforeAll(() => {
 
 describe('the plugin', () => {
   it('expands the aggregate into type, tokens, motion and the reset', () => {
-    const css = transform('@import "@kroma/ui/css";');
+    const css = transform('@import "@kromatv/ui/css";');
     expect(css).toContain('@font-face');
     expect(css).toContain('--kroma-bg:');
     expect(css).toContain('@keyframes kroma-img-in');
@@ -32,21 +32,21 @@ describe('the plugin', () => {
   });
 
   it('expands each half on its own', () => {
-    expect(transform('@import "@kroma/ui/css/tokens";')).toBe(tokensCss());
-    expect(transform('@import "@kroma/ui/css/theme";')).toBe(themeCss());
-    expect(transform('@import "@kroma/ui/css/fonts";')).toBe(fontsCss());
-    expect(transform('@import "@kroma/ui/css/base";')).toBe(baseCss());
+    expect(transform('@import "@kromatv/ui/css/tokens";')).toBe(tokensCss());
+    expect(transform('@import "@kromatv/ui/css/theme";')).toBe(themeCss());
+    expect(transform('@import "@kromatv/ui/css/fonts";')).toBe(fontsCss());
+    expect(transform('@import "@kromatv/ui/css/base";')).toBe(baseCss());
   });
 
   it('leaves the reset out of the page furniture, for a target with its own', () => {
-    const page = transform('@import "@kroma/ui/css/page";') ?? '';
+    const page = transform('@import "@kromatv/ui/css/page";') ?? '';
     expect(page).toContain('::-webkit-scrollbar');
     expect(page).not.toContain('font-size: inherit');
-    expect(transform('@import "@kroma/ui/css/base";')).toContain('font-size: inherit');
+    expect(transform('@import "@kromatv/ui/css/base";')).toContain('font-size: inherit');
   });
 
   it('serves a television the reset with none of the page furniture on top', () => {
-    const tv = transform('@import "@kroma/ui/css/tv";') ?? '';
+    const tv = transform('@import "@kromatv/ui/css/tv";') ?? '';
 
     expect(tv).toContain('@font-face');
     expect(tv).toContain('--kroma-bg:');
@@ -56,7 +56,7 @@ describe('the plugin', () => {
   });
 
   it('accepts single quotes and stray whitespace', () => {
-    expect(transform("@import '@kroma/ui/css/tokens' ;")).toBe(tokensCss());
+    expect(transform("@import '@kromatv/ui/css/tokens' ;")).toBe(tokensCss());
   });
 
   it('leaves a stylesheet without a directive alone', () => {
@@ -64,15 +64,15 @@ describe('the plugin', () => {
   });
 
   it('ignores anything that is not CSS', () => {
-    expect(transform('@import "@kroma/ui/css";', '/app/src/main.tsx')).toBeNull();
+    expect(transform('@import "@kromatv/ui/css";', '/app/src/main.tsx')).toBeNull();
   });
 
   it('refuses a suffix it does not know rather than guessing', () => {
-    expect(() => transform('@import "@kroma/ui/css/tokns";')).toThrow(/no such stylesheet/);
+    expect(() => transform('@import "@kromatv/ui/css/tokns";')).toThrow(/no such stylesheet/);
   });
 
   it('expands every directive in one stylesheet', () => {
-    const css = transform('@import "@kroma/ui/css/tokens";\n@import "@kroma/ui/css/theme";');
+    const css = transform('@import "@kromatv/ui/css/tokens";\n@import "@kromatv/ui/css/theme";');
     expect(css).toContain('--kroma-bg:');
     expect(css).toContain('@theme');
   });
@@ -80,12 +80,12 @@ describe('the plugin', () => {
   it('sweeps an emitted asset the transform could not reach', () => {
     const plugin = kromaTokens();
     const bundle = {
-      'a.css': { type: 'asset', fileName: 'a.css', source: '@import "@kroma/ui/css/tokens";' },
-      'b.js': { type: 'chunk', fileName: 'b.js', source: '@import "@kroma/ui/css/tokens";' },
+      'a.css': { type: 'asset', fileName: 'a.css', source: '@import "@kromatv/ui/css/tokens";' },
+      'b.js': { type: 'chunk', fileName: 'b.js', source: '@import "@kromatv/ui/css/tokens";' },
     };
     plugin.generateBundle({}, bundle);
     expect(bundle['a.css'].source).toContain('--kroma-bg:');
-    expect(bundle['b.js'].source).toBe('@import "@kroma/ui/css/tokens";');
+    expect(bundle['b.js'].source).toBe('@import "@kromatv/ui/css/tokens";');
   });
 
   it('leaves an emitted stylesheet that names no directive exactly as it was', () => {
@@ -142,7 +142,7 @@ describe('a step written mid-session', () => {
   }
 
   const expand = (plugin: ReturnType<typeof kromaTokens>) =>
-    plugin.transform.call({}, '@import "@kroma/ui/css/tokens";', STYLES)?.code ?? '';
+    plugin.transform.call({}, '@import "@kromatv/ui/css/tokens";', STYLES)?.code ?? '';
 
   it('reaches the stylesheet, and the page, without a dev server restart', async () => {
     const plugin = kromaTokens();

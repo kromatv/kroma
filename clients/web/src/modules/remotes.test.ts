@@ -1,5 +1,5 @@
-import { setSessionToken } from '@kroma/client';
-import { ModuleRegistry, SHARED_GLOBAL } from '@kroma/module-sdk';
+import { setSessionToken } from '@kromatv/client';
+import { ModuleRegistry, SHARED_GLOBAL } from '@kromatv/module-sdk';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetRemote, isLoadedRemote, loadRuntimeRemotes, type RemoteLoaders } from './remotes';
 

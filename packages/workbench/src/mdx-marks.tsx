@@ -5,8 +5,8 @@
 // both `variant` and `color` rather than leaving them unset, so a nested mark has
 // to be TOLD what it sits in. That is what `Prose` publishes and `Mark` reads.
 
-import { Box, CheckboxFace, Img, styles, Text, type TextProps } from '@kroma/ui/kit';
-import { space } from '@kroma/ui/tokens';
+import { Box, CheckboxFace, Img, styles, Text, type TextProps } from '@kromatv/ui/kit';
+import { space } from '@kromatv/ui/tokens';
 import {
   Children,
   createContext,

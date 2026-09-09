@@ -63,7 +63,7 @@ afterEach(() => {
 
 describe('kromaI18nDevtools', () => {
   it('mounts the dev tools from the provider, which every shell renders', () => {
-    expect(transform(PROVIDER)).toContain('@kroma/i18n-devtools');
+    expect(transform(PROVIDER)).toContain('@kromatv/i18n-devtools');
   });
 
   it('disposes on a hot reload rather than binding the shortcut twice', () => {
@@ -76,7 +76,7 @@ describe('kromaI18nDevtools', () => {
   });
 
   it('reaches the provider through the query a dev server appends', () => {
-    expect(transform(`${PROVIDER}?t=1735689600000`)).toContain('@kroma/i18n-devtools');
+    expect(transform(`${PROVIDER}?t=1735689600000`)).toContain('@kromatv/i18n-devtools');
   });
 
   it('leaves the server pass alone, so a prerender renders the real copy', () => {
@@ -90,7 +90,7 @@ describe('kromaI18nDevtools', () => {
   });
 
   it('resolves the panel itself, since the module it injects into cannot', async () => {
-    expect(await aliases(kromaI18nDevtools())).toHaveProperty('@kroma/i18n-devtools');
+    expect(await aliases(kromaI18nDevtools())).toHaveProperty('@kromatv/i18n-devtools');
   });
 
   it('adds no alias where the panel is not installed beside the shell', async () => {
@@ -284,7 +284,7 @@ describe('what the panel needs to render at all', () => {
   it('redirects react-native at the web build, for a host that never asked for one', async () => {
     const found = await aliases(kromaI18nDevtools());
 
-    expect(Object.keys(found)).toContain('@kroma/i18n-devtools');
+    expect(Object.keys(found)).toContain('@kromatv/i18n-devtools');
   });
 
   it('asks for none of it where the panel is not installed beside the shell', async () => {
@@ -402,15 +402,15 @@ describe('which engine an app translates through', () => {
   });
 
   it('reads it out of devDependencies just the same', async () => {
-    const plugin = await speaking({ devDependencies: { '@kroma/i18n': 'workspace:*' } });
+    const plugin = await speaking({ devDependencies: { '@kromatv/i18n': 'workspace:*' } });
 
-    expect(inject(plugin, PROVIDER)).toContain('@kroma/i18n-devtools/kroma');
+    expect(inject(plugin, PROVIDER)).toContain('@kromatv/i18n-devtools/kroma');
   });
 
   it('falls back to the engine this repository ships where nothing says', async () => {
     const plugin = await speaking({ dependencies: { react: '^19' } });
 
-    expect(inject(plugin, PROVIDER)).toContain('@kroma/i18n-devtools/kroma');
+    expect(inject(plugin, PROVIDER)).toContain('@kromatv/i18n-devtools/kroma');
   });
 
   it('stays out of the way where the adapter is not installed beside the panel', async () => {
@@ -438,6 +438,6 @@ describe('finding the panel to inject', () => {
     vi.resetModules();
     const { kromaI18nDevtools: beside } = await import('./index.ts');
 
-    expect(inject(beside(), PROVIDER)).toContain('@kroma/i18n-devtools');
+    expect(inject(beside(), PROVIDER)).toContain('@kromatv/i18n-devtools');
   });
 });

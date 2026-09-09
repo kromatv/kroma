@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { EmptyState, Grid, Pagination, Row, Section } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { EmptyState, Grid, Pagination, Row, Section } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import {
   daysOf,

@@ -1,5 +1,5 @@
-import { ModuleFailed, ModuleLoading, usePoll, useT } from '@kroma/module-sdk';
-import { EmptyState, Row, Section, Select } from '@kroma/ui/kit';
+import { ModuleFailed, ModuleLoading, usePoll, useT } from '@kromatv/module-sdk';
+import { EmptyState, Row, Section, Select } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useVpnApi } from './api';
 import { BandwidthChart } from './bandwidth-chart';

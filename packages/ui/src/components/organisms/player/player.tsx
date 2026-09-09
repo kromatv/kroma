@@ -1,12 +1,9 @@
-import type { Marker } from '@kroma/client/media';
-import type { ReportCategory } from '@kroma/client/reports';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 import type { LayoutChangeEvent, View } from 'react-native';
 import { Dimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
 import { styles } from '#ui/core';
-import type { StoryboardTile } from '#ui/services/storyboard';
 import { PLAYER_ROOT_ID, useIdleCursor } from './hooks/use-idle-cursor';
 import { usePlayerEnding } from './hooks/use-player-ending';
 import { usePlayerKeys } from './hooks/use-player-keys';
@@ -16,10 +13,10 @@ import { clamp01, sliderToVolume, volumeToSlider } from './lib/fmt';
 import { chromeMetrics, panelGeometry, scaler, TRANSPORT_HEIGHT } from './lib/metrics';
 import { type ControlId, controlOrder, type PanelHandle } from './lib/nav';
 import { usePanelSlide } from './lib/panel-slide';
-import type { SubtitleAppearance } from './lib/subtitle-appearance';
+import { DEFAULT_SUB_APPEARANCE } from './lib/subtitle-appearance';
 import { surfaceShrink } from './lib/surface-shrink';
-import { CreditsCard, type CreditsCardItem } from './parts/credits-card';
-import { PostPlay, type PostPlayItem } from './parts/post-play';
+import { CreditsCard } from './parts/credits-card';
+import { PostPlay } from './parts/post-play';
 import { SettingsPanel } from './parts/settings-panel';
 import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
 import { SkipIntroButton } from './parts/skip-intro-button';
@@ -30,52 +27,53 @@ import { Transport } from './parts/transport';
 import { PEEK_HEIGHT, type UpNextData, type UpNextItem, UpNextSheet } from './parts/up-next-sheet';
 import { deriveChrome, initialSettingsView } from './player-chrome-state';
 import { playerInputHandlers } from './player-input';
-import { Actions, Media, Panel, PlayerSlotContext, sortSlots } from './player-parts';
-import type {
-  Chapter,
-  PlayerCloseDetails,
-  PlayerCloseReason,
-  PlayerController,
-  PlayerFlags,
-} from './types';
+import {
+  Actions,
+  Credits as CreditsSlot,
+  Media,
+  Panel,
+  PlayerSlotContext,
+  PostPlay as PostPlaySlot,
+  Report,
+  SkipIntro as SkipIntroSlot,
+  Subtitle,
+  Subtitles,
+  sortSlots,
+  Title,
+  Transport as TransportSlot,
+  UpNext as UpNextSlot,
+  Warning,
+} from './player-parts';
+import type { PlayerCloseDetails, PlayerCloseReason, PlayerController, PlayerFlags } from './types';
 
 export interface PlayerRootProps {
   controller: PlayerController;
   flags: PlayerFlags;
+  /** What is playing, as a name for assistive tech and for the end card. It
+   *  draws nothing: `<Player.Title>` is what puts it on screen. */
   title: string;
-  subtitle?: string;
-  /** Pre-translated warning, drawn as a pill in the top bar; null to hide it. */
-  warn?: string | null;
-  chapters?: Chapter[];
-  markers?: readonly Marker[];
-  tileAt: (sec: number) => StoryboardTile | null;
-  appearance: SubtitleAppearance;
-  onAppearanceChange: (next: Partial<SubtitleAppearance>) => void;
-  subtitleGen: SubtitleGenBundle;
-  upNext: UpNextData;
-  onReport?: (category: ReportCategory) => Promise<void>;
-  onPlayItem?: (item: UpNextItem) => void;
-  /** Given one, the chrome grows a "next" control and plays the credits card. */
-  onPlayNext?: () => void;
-  nextTitle?: CreditsCardItem | null;
-  /** The film offered when this one ends with no next episode queued. Given
-   *  one, the end raises the full-screen post-play; with none the player
-   *  leaves instead of parking on a dead frame. */
-  postPlay?: PostPlayItem | null;
-  /** Where the post-play's second action goes. Falls back to {@link onClose}. */
-  onGoHome?: () => void;
-  /** Whether the film is inside its detected intro window. The skip pill is only
-   *  offered while this is true AND `onSkipIntro` is given. */
-  introActive?: boolean;
-  onSkipIntro?: () => void;
   onCast?: () => void;
   onClose: (details: PlayerCloseDetails) => void;
   ref?: React.Ref<View>;
-  /** A <Player.Media>, then any of <Player.Actions> and <Player.Panel>. Only a
-   *  DIRECT child takes its slot; anything else is drawn over the chrome, in the
-   *  order it was written. */
+  /** The parts. A `<Player.Media>`, then any of the faces (`Title`, `Subtitle`,
+   *  `Warning`, `Actions`, `Panel`) and the settings (`Transport`, `UpNext`,
+   *  `Credits`, `PostPlay`, `SkipIntro`, `Subtitles`, `Report`). Only a DIRECT
+   *  child takes its slot; anything else is drawn over the chrome, in the order
+   *  it was written. */
   children?: ReactNode;
 }
+
+const NO_UP_NEXT: UpNextData = { nextEpisodes: [], recommendations: [] };
+const NO_TILE = () => null;
+const NO_APPEARANCE_CHANGE = () => undefined;
+const NO_SUBTITLE_GEN: SubtitleGenBundle = {
+  canCreate: false,
+  caps: null,
+  pending: [],
+  onCancel: () => undefined,
+  onDelete: () => undefined,
+  onStart: () => undefined,
+};
 
 const SKIP_GAP = 24;
 const SKIP_REST = 56;
@@ -93,29 +91,27 @@ function Root({
   controller: c,
   flags,
   title,
-  subtitle,
-  warn,
-  chapters: rawChapters,
-  markers,
-  tileAt,
-  appearance,
-  onAppearanceChange,
-  subtitleGen,
-  upNext,
-  onReport,
-  onPlayItem,
-  onPlayNext,
-  nextTitle,
-  postPlay,
-  onGoHome,
-  introActive,
-  onSkipIntro,
   onCast,
   onClose,
   ref,
   children,
 }: Readonly<PlayerRootProps>) {
   const slots = useMemo(() => sortSlots(children), [children]);
+  const upNext = slots.upNext?.data ?? NO_UP_NEXT;
+  const onPlayItem = slots.upNext?.onPlay;
+  const markers = slots.credits?.markers;
+  const nextTitle = slots.credits?.next ?? null;
+  const onPlayNext = slots.credits?.onPlay;
+  const postPlay = slots.postPlay?.item ?? null;
+  const onGoHome = slots.postPlay?.onHome;
+  const introActive = slots.skipIntro?.active;
+  const onSkipIntro = slots.skipIntro?.onSkip;
+  const appearance = slots.subtitles?.appearance ?? DEFAULT_SUB_APPEARANCE;
+  const onAppearanceChange = slots.subtitles?.onAppearanceChange ?? NO_APPEARANCE_CHANGE;
+  const subtitleGen = slots.subtitles?.gen ?? NO_SUBTITLE_GEN;
+  const onReport = slots.report?.onReport;
+  const rawChapters = slots.transport?.chapters;
+  const tileAt = slots.transport?.tileAt ?? NO_TILE;
   // Seeded from the window so the first frame is not measured at zero, then kept
   // honest by the root's own layout. Read once rather than through
   // `useWindowDimensions`, which would subscribe to every resize event.
@@ -288,9 +284,9 @@ function Root({
             style={chromeShown ? s.chromeLive : s.inert}
           >
             <TopBar
-              title={title}
-              subtitle={subtitle}
-              warn={warn}
+              title={slots.title}
+              subtitle={slots.subtitle}
+              warn={slots.warning}
               actions={slots.actions}
               scale={metrics.scale}
               backFocused={nav.zone === 'back'}
@@ -368,6 +364,21 @@ const s = styles({
   chromeLive: { pointerEvents: 'box-none' },
 });
 
-const Player = { Root, Media, Actions, Panel };
+const Player = {
+  Root,
+  Media,
+  Actions,
+  Panel,
+  Title,
+  Subtitle,
+  Warning,
+  Transport: TransportSlot,
+  UpNext: UpNextSlot,
+  Credits: CreditsSlot,
+  PostPlay: PostPlaySlot,
+  SkipIntro: SkipIntroSlot,
+  Subtitles,
+  Report,
+};
 
 export { Player };

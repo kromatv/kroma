@@ -1,6 +1,6 @@
 // Small time formatters shared by the jobs page + its detail panel.
 
-import type { Locale } from '@kroma/core';
+import type { Locale } from '@kromatv/i18n';
 
 /** Relative time in the READER's language, e.g. "dans 3 heures". The locale is
  *  passed rather than read from `Intl`'s default: the browser's language and the

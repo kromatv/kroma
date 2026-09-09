@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { I18nProvider } from '@kroma/ui';
-import { clearPressGuard } from '@kroma/ui/kit';
-import { onScreen } from '@kroma/ui/testing';
+import { I18nProvider } from '@kromatv/ui';
+import { clearPressGuard } from '@kromatv/ui/kit';
+import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { groupItem, PROFILE_SETTINGS, SETTINGS_GROUPS } from '#tv/app/settings/registry';

@@ -1,4 +1,4 @@
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import { defaultLocale, type Lang, locales, localizePath } from '#site/lib/i18n';
 import { m } from '#site/paraglide/messages';
 

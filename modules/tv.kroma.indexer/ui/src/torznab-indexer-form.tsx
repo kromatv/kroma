@@ -1,5 +1,5 @@
-import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
-import { Button, Dialog, Field, Text } from '@kroma/ui/kit';
+import { apiErrorText, useAsyncAction, useT } from '@kromatv/module-sdk';
+import { Button, Dialog, Field, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useIndexerApi } from './api';
 import { CategoriesAndPriority } from './categories-and-priority';

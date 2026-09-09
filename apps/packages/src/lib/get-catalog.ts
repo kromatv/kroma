@@ -1,4 +1,4 @@
-import { workerContext } from '@kroma/site-kit/worker-env';
+import { workerContext } from '@kromatv/site-kit/worker-env';
 import { createServerFn } from '@tanstack/react-start';
 import { DEFAULT_REPO, loadCatalog } from '#site/lib/catalog';
 import { type Release, toRelease } from '#site/lib/release';

@@ -1,4 +1,4 @@
-# @kroma/media3-ffmpeg
+# @kromatv/media3-ffmpeg
 
 Media3's FFmpeg audio decoders, prebuilt for Android and shipped with the app.
 

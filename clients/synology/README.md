@@ -51,7 +51,7 @@ on the SAME source and DSM rides whichever channel is newest (a canary uses a
 
 The dynamic worker is the only package source now (the old GitHub Pages static
 catalogs were retired). To self-host a static catalog anyway, the generator
-still exists: `bun run --filter @kroma/synology-repo gen` (see that package's
+still exists: `bun run --filter @kromatv/synology-repo gen` (see that package's
 README).
 
 ## Install on the NAS (manual `.spk`)
@@ -138,7 +138,7 @@ cross image is digest-pinned, so a warm push build takes minutes, not a cold
 tag. Modules release separately, from `.github/workflows/modules.yml`.
 
 To iterate on the store landing page without a build, run
-`bun run --filter @kroma/synology-repo preview` (live-reload, with
+`bun run --filter @kromatv/synology-repo preview` (live-reload, with
 `CATALOG_BETA=true` for the canary variant).
 
 **Version rule (do not regress this):** DSM installs a `.spk` over an existing one

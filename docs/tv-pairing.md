@@ -69,16 +69,16 @@ proof can only push *their own* account onto a television, never take one.
 
 | shell | publishes | browses | via |
 | --- | --- | --- | --- |
-| tv-native (Apple TV, Android TV) | yes | no | `@kroma/lan-beacon` (the platform's own DNS-SD) |
-| webos | yes | no | `@kroma/mdns-beacon`, hosted by the JS Service beside the app |
-| mobile (iOS, Android) | no | yes | `@kroma/lan-beacon` |
+| tv-native (Apple TV, Android TV) | yes | no | `@kromatv/lan-beacon` (the platform's own DNS-SD) |
+| webos | yes | no | `@kromatv/mdns-beacon`, hosted by the JS Service beside the app |
+| mobile (iOS, Android) | no | yes | `@kromatv/lan-beacon` |
 | web, tv-web, desktop | no | no | server source only |
 | tizen | cannot | no | server source only, and confirmed by the check string, see [below](#who-may-raise-a-beacon) |
 
 A browser has no DNS-SD API, so neither television shell can raise the record
 from its UI. webOS can host one anyway: it lets an app ship a **JS Service**
 (Node) beside the browser, and a UDP socket is all multicast DNS needs -
-`@kroma/mdns-beacon` is that responder, written on `node:dgram` alone, so the
+`@kromatv/mdns-beacon` is that responder, written on `node:dgram` alone, so the
 bundle a television carries has no dependency tree.
 
 Tizen is "cannot" rather than "not yet", and the SDK is where that is settled.

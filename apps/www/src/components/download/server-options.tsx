@@ -1,4 +1,4 @@
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import { IconBrandDocker, IconBrandRust, IconInfoCircle, IconServer } from '@tabler/icons-react';
 import { Callout } from '#site/components/download/callout';
 import { CodeBlock } from '#site/components/download/code-block';

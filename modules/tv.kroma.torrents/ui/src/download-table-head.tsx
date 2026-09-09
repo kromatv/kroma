@@ -1,5 +1,5 @@
-import { type TableHeading, useT } from '@kroma/module-sdk';
-import { Table } from '@kroma/ui/kit';
+import { type TableHeading, useT } from '@kromatv/module-sdk';
+import { Table } from '@kromatv/ui/kit';
 
 export function DownloadTableHead({ headings }: Readonly<{ headings: TableHeading[] }>) {
   const t = useT();

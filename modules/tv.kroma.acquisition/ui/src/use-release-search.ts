@@ -5,14 +5,14 @@
 // a picker, so it arrives whole and a search is never run against a half-chosen
 // target.
 
-import { apiErrorText } from '@kroma/client';
+import { apiErrorText } from '@kromatv/client';
 import type {
   InteractiveSearchView,
   RequestId,
   ScoredReleaseView,
   SearchScope,
-} from '@kroma/client/requests';
-import { useAdminHost, useT } from '@kroma/module-sdk';
+} from '@kromatv/client/requests';
+import { useAdminHost, useT } from '@kromatv/module-sdk';
 import { useCallback, useRef, useState } from 'react';
 
 export interface SearchState {

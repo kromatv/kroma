@@ -1,4 +1,4 @@
-import type { SortMode } from '@kroma/core';
+import type { SortMode } from '@kromatv/core';
 import type { IconName } from '#ui/lib/glyph';
 
 /** The glyph for a catalogue sort, so the same order reads the same on the web,

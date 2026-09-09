@@ -1,10 +1,10 @@
 // The fast half of "connect a device": the TVs waiting on this network, one tap
 // each. Everything it decides lives in `useNearbyTvs`; this brings the rows.
 
-import type { DiscoveredTv, GrantResult } from '@kroma/core';
-import { HANDOFF_CHECK_LENGTH } from '@kroma/core';
-import { useCheckPrompt, useHandoffPicker, useNearbyTvs } from '@kroma/core/react';
-import { useT } from '@kroma/ui';
+import type { DiscoveredTv, GrantResult } from '@kromatv/core';
+import { HANDOFF_CHECK_LENGTH } from '@kromatv/core';
+import { useCheckPrompt, useHandoffPicker, useNearbyTvs } from '@kromatv/core/react';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -12,7 +12,7 @@ import {
   OtpField,
   REGEXP_ONLY_DIGITS_AND_CHARS,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useAuth } from '#web/shared/lib/auth';
 
 export function NearbyTvs() {

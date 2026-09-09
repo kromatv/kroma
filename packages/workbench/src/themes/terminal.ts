@@ -10,7 +10,7 @@
 // its ground paints the same in either one rather than following the page into
 // a light it has no reading of.
 
-import { createTheme } from '@kroma/ui/kit';
+import { createTheme } from '@kromatv/ui/kit';
 
 const TYPE = {
   hero: { size: 54, ratio: 1.08 },

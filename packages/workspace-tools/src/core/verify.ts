@@ -1,4 +1,4 @@
-import { satisfies } from '@kroma/registry';
+import { satisfies } from '@kromatv/registry';
 import { byName, type Graph } from './graph';
 
 export type ViolationKind = 'missing-dep' | 'range' | 'min-server';

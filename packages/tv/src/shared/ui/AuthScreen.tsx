@@ -1,6 +1,6 @@
-import { createKromaClient } from '@kroma/client';
-import { sizedImageUrl } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { createKromaClient } from '@kromatv/client';
+import { sizedImageUrl } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   BackButton,
   Badge,
@@ -13,7 +13,7 @@ import {
   space,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { memo, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { AUTH_SCREENS } from '#tv/app/navPolicy';
 import { useConnectionMaybe } from '#tv/app/providers/connection';

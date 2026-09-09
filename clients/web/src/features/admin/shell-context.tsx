@@ -1,4 +1,4 @@
-import type { ServerInfo } from '@kroma/client/media';
+import type { ServerInfo } from '@kromatv/client/media';
 import { createContext, useContext } from 'react';
 
 export interface AdminCtx {

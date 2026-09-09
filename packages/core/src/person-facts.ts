@@ -1,7 +1,7 @@
 // A person's provider profile (from `GET /api/people/details`) turned into the
 // localized lines a client shows above their filmography.
 
-import type { Translate } from './i18n';
+import type { Translate } from '@kromatv/i18n';
 
 /** Whole years between two `YYYY-MM-DD` dates, null when unparseable. */
 export function personAge(

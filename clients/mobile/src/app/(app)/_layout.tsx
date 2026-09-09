@@ -1,4 +1,4 @@
-import { color } from '@kroma/ui/kit';
+import { color } from '@kromatv/ui/kit';
 import { Redirect, Stack } from 'expo-router';
 import { PLAYER_ORIENTATION, UPRIGHT } from '#mobile/lib/orientation';
 import { useSession } from '#mobile/lib/session';

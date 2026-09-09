@@ -5,8 +5,8 @@
 // nothing here needs one. Every entry is a `Focusable`, so the list is walked
 // with a D-pad exactly as the component tree is.
 
-import { Box, Focusable, styles, sv, Text } from '@kroma/ui/kit';
-import { space } from '@kroma/ui/tokens';
+import { Box, Focusable, styles, sv, Text } from '@kromatv/ui/kit';
+import { space } from '@kromatv/ui/tokens';
 import { ScrollView } from 'react-native';
 import type { Section } from './outline';
 

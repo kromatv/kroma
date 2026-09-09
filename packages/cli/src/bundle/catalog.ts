@@ -1,4 +1,4 @@
-import { ArtifactRef, DescribedModule } from '@kroma/registry';
+import { ArtifactRef, DescribedModule } from '@kromatv/registry';
 import { z } from 'zod';
 
 /** One downloadable `.kmod` build, as the packer records it. `contentHash` is

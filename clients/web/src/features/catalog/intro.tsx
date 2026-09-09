@@ -3,7 +3,7 @@
 // renders nothing until the first client effect decides whether it should
 // play (avoids a hydration mismatch).
 
-import { KromaIntro } from '@kroma/ui/kit';
+import { KromaIntro } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 
 const SEEN_KEY = 'kroma:intro-seen';

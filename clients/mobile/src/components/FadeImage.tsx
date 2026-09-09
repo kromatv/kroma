@@ -1,9 +1,9 @@
 // Artwork with the design system's fade, over the per-title gradient the other
-// clients use. Wraps @kroma/ui's <Img> with this app's call shape (`uri` +
+// clients use. Wraps @kromatv/ui's <Img> with this app's call shape (`uri` +
 // `seed`).
 
-import { posterColors } from '@kroma/core';
-import { Img, tintGradient } from '@kroma/ui/kit';
+import { posterColors } from '@kromatv/core';
+import { Img, tintGradient } from '@kromatv/ui/kit';
 import type { ImageContentFit } from 'expo-image';
 import type { StyleProp, ViewStyle } from 'react-native';
 

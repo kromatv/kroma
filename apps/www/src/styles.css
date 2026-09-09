@@ -1,4 +1,4 @@
-/* The kit in parts rather than through `@kroma/ui/css`: that aggregate carries
+/* The kit in parts rather than through `@kromatv/ui/css`: that aggregate carries
    the shared RESET, and a reset is exactly what Tailwind's preflight already
    is. Two of them is not redundancy but a fight, because the kit's is unlayered
    and every utility is layered - an unlayered `h1 { font-size: inherit }` or
@@ -6,11 +6,11 @@
    element. This site styles bare elements with utilities, so it takes the page
    furniture (body, focus ring, scrollbars) and leaves the reset to preflight. */
 @import "tailwindcss";
-@import "@kroma/ui/css/fonts";
-@import "@kroma/ui/css/tokens";
-@import "@kroma/ui/css/motion";
-@import "@kroma/ui/css/page";
-@import "@kroma/ui/css/theme";
+@import "@kromatv/ui/css/fonts";
+@import "@kromatv/ui/css/tokens";
+@import "@kromatv/ui/css/motion";
+@import "@kromatv/ui/css/page";
+@import "@kromatv/ui/css/theme";
 
 /* Tailwind v4 scans this app's own sources automatically; nothing outside
    apps/www contributes class names, so no extra @source is needed. */

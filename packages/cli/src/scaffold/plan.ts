@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { PUBLIC_NAME } from '@kroma/module-sdk/shared';
-import { MODULE_SCHEMA_VERSION } from '@kroma/registry';
+import { PUBLIC_NAME } from '@kromatv/module-sdk/shared';
+import { MODULE_SCHEMA_VERSION } from '@kromatv/registry';
 import { z } from 'zod';
 import type { Vars } from './render';
 
@@ -29,7 +29,7 @@ export interface Versions {
 }
 
 /** The workspace package here, or the published one it is bundled into. */
-const OWN_NAMES = new Set(['@kroma/cli', PUBLIC_NAME]);
+const OWN_NAMES = new Set(['@kromatv/cli', PUBLIC_NAME]);
 
 function packageRoot(from: string): string {
   let dir = from;
@@ -140,7 +140,7 @@ export function templateVars(a: Answers, v: Versions): Vars {
     : '';
   return {
     ID: a.id,
-    SDK: a.inRepo ? '@kroma/module-sdk' : PUBLIC_NAME,
+    SDK: a.inRepo ? '@kromatv/module-sdk' : PUBLIC_NAME,
     SLUG: slug,
     NAME: a.name,
     DESCRIPTION: a.description,
@@ -181,7 +181,7 @@ export function packageJsonFor(a: Answers, v: Versions): Record<string, unknown>
   const dep = sdkSpec(v, a.inRepo);
   const slug = slugOf(a.id);
   return {
-    name: a.inRepo ? `@kroma/module-${slug}` : a.id,
+    name: a.inRepo ? `@kromatv/module-${slug}` : a.id,
     version: '0.0.0',
     private: true,
     type: 'module',
@@ -194,7 +194,7 @@ export function packageJsonFor(a: Answers, v: Versions): Record<string, unknown>
       : { dev: 'kroma dev', build: 'kroma build', check: 'kroma check', typecheck: 'tsc --noEmit' },
     dependencies: {
       ...(a.inRepo
-        ? { '@kroma/module-sdk': 'workspace:*', '@kroma/ui': 'workspace:*' }
+        ? { '@kromatv/module-sdk': 'workspace:*', '@kromatv/ui': 'workspace:*' }
         : { [PUBLIC_NAME]: dep }),
       zod: '^4.5.4',
     },

@@ -1,7 +1,7 @@
-import type { ItemId, SectionItem } from '@kroma/client/media';
-import { genreLabels, posterColors } from '@kroma/core';
-import { useAiSuggest, useT } from '@kroma/ui';
-import { Box, MediaCard, ProgressRing, RAIL_GAP, Rail, styles, Text } from '@kroma/ui/kit';
+import type { ItemId, SectionItem } from '@kromatv/client/media';
+import { genreLabels, posterColors } from '@kromatv/core';
+import { useAiSuggest, useT } from '@kromatv/ui';
+import { Box, MediaCard, ProgressRing, RAIL_GAP, Rail, styles, Text } from '@kromatv/ui/kit';
 import { useClient, useNav } from '#tv/app/router';
 
 // The "Suggestions IA" rail on a TV detail screen. `useAiSuggest` polls the

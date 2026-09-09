@@ -1,4 +1,4 @@
-import { Select } from '@kroma/ui/kit';
+import { Select } from '@kromatv/ui/kit';
 import { useLocales } from '../engine/use-locales';
 
 export interface LocalePickerProps {

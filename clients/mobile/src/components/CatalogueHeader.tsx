@@ -1,14 +1,9 @@
 // The catalogue's masthead: the current view's best-rated backdrop fading into
 // the ground, the heading over it, and one strip of filters under it.
 
-import {
-  type GenreCount,
-  genreLabel,
-  type MessageKey,
-  SORT_MODES,
-  type SortMode,
-} from '@kroma/core';
-import { Box, Chip, genreIcon, Icon, SORT_ICON, styles, Text } from '@kroma/ui/kit';
+import { type GenreCount, genreLabel, SORT_MODES, type SortMode } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
+import { Box, Chip, genreIcon, Icon, SORT_ICON, styles, Text } from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, type View } from 'react-native';

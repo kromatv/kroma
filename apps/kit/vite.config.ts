@@ -1,9 +1,9 @@
 import { fileURLToPath } from 'node:url';
-import { kroma } from '@kroma/bundler';
-import { gitHistory } from '@kroma/bundler/git-history';
-import { propDocs } from '@kroma/bundler/props-docs';
-import { storyCode } from '@kroma/bundler/story-code';
-import { kromaIconCatalog } from '@kroma/ui/vite/icon-catalog';
+import { kroma } from '@kromatv/bundler';
+import { gitHistory } from '@kromatv/bundler/git-history';
+import { propDocs } from '@kromatv/bundler/props-docs';
+import { storyCode } from '@kromatv/bundler/story-code';
+import { kromaIconCatalog } from '@kromatv/ui/vite/icon-catalog';
 import { defineConfig } from 'vite';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));

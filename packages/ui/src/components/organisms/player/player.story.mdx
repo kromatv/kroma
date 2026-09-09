@@ -1,4 +1,4 @@
-import { defineStory } from '@kroma/workbench/story';
+import { defineStory } from '@kromatv/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Img } from '#ui/components/atoms/img';
@@ -31,18 +31,19 @@ export const story = defineStory({
         controller={fakeController({ playing, aspect: ASPECTS[String(format)] })}
         flags={tv ? TV : WEB}
         title="Blade Runner 2049"
-        subtitle="2017 · 2 h 44"
-        warn={warn ? String(warn) : null}
-        chapters={CHAPTERS}
-        tileAt={() => null}
-        appearance={DEFAULT_SUB_APPEARANCE}
-        onAppearanceChange={() => {}}
-        subtitleGen={NO_GEN}
-        upNext={UP_NEXT}
-        introActive={intro}
-        onSkipIntro={intro ? () => {} : undefined}
         onClose={() => {}}
       >
+        <Player.Title>Blade Runner 2049</Player.Title>
+        <Player.Subtitle>2017 · 2 h 44</Player.Subtitle>
+        {warn ? <Player.Warning>{String(warn)}</Player.Warning> : null}
+        <Player.Transport chapters={CHAPTERS} tileAt={() => null} />
+        <Player.Subtitles
+          appearance={DEFAULT_SUB_APPEARANCE}
+          onAppearanceChange={() => {}}
+          gen={NO_GEN}
+        />
+        <Player.UpNext data={UP_NEXT} />
+        {intro ? <Player.SkipIntro active={intro} onSkip={() => {}} /> : null}
         <Player.Media>
           <Surface />
         </Player.Media>
@@ -74,24 +75,26 @@ export const story = defineStory({
   ),
 });
 
-The whole chrome, assembled. `Player.Root` owns no playback of its own: it is handed a **`PlayerController`** and a `<Player.Media>`, and everything it draws (the top bar, the chapter bar, the transport, the panels, the up-next sheet) reads from that one object. That is what lets the same component draw over four different decoders (an in-page `<video>` on the web; AVPlay, mpv or ExoPlayer rendering to a native plane *behind* a transparent page on the televisions). `flags` is the other half: a TV has no volume slider, no PiP and no fullscreen, so those controls are absent rather than disabled. The three slots are `Media` (the picture), `Actions` (the host's own top-bar controls) and `Panel` (a notice that takes the stage over and locks the chrome); any other child is drawn over the chrome as it stands.
+The whole chrome, assembled. `Player.Root` owns no playback of its own: it is handed a **`PlayerController`** and a `<Player.Media>`, and everything it draws (the top bar, the chapter bar, the transport, the panels, the up-next sheet) reads from that one object. That is what lets the same component draw over four different decoders (an in-page `<video>` on the web; AVPlay, mpv or ExoPlayer rendering to a native plane *behind* a transparent page on the televisions). `flags` is the other half: a TV has no volume slider, no PiP and no fullscreen, so those controls are absent rather than disabled.
+
+The chrome is composed, not configured. A part is a direct child, and there are two kinds. A **face** draws its children where the Root puts them: `Media`, `Title`, `Subtitle`, `Warning`, `Actions`, `Panel`. A **setting** draws nothing and carries what a region of the Root's own furniture needs: `Transport`, `UpNext`, `Credits`, `PostPlay`, `SkipIntro`, `Subtitles`, `Report`. Write a setting and that region appears; leave it out and it does not. The transport row is the Root's rather than a slot a caller fills, because a row anyone could rearrange would break D-pad traversal.
+
+`title` stays on the Root and draws nothing: it names what is playing for assistive tech and for the end card, and `<Player.Title>` is what puts it on screen.
 
 ```tsx
 <Player.Root
   controller={controller}
   flags={WEB_FLAGS}
   title={item.title}
-  chapters={chapters}
-  tileAt={storyboard.tileAt}
-  appearance={appearance}
-  onAppearanceChange={setAppearance}
-  subtitleGen={subtitleGen}
-  upNext={upNext}
   onClose={({ reason }) => leave(reason)}
 >
   <Player.Media>
     <video ref={videoRef} />
   </Player.Media>
+  <Player.Title>{item.title}</Player.Title>
+  <Player.Transport chapters={chapters} tileAt={storyboard.tileAt} />
+  <Player.Subtitles appearance={appearance} onAppearanceChange={setAppearance} gen={subtitleGen} />
+  <Player.UpNext data={upNext} onPlay={play} />
 </Player.Root>
 ```
 
@@ -104,7 +107,7 @@ The whole chrome, assembled. `Player.Root` owns no playback of its own: it is ha
 </Scene>
 
 <Scene name="With a warning" args={{ warn: 'Transcoding: this device cannot direct-play HEVC' }}>
-  The pill that says the stream is not what was asked for.
+  A `<Player.Warning>` says the stream is not what was asked for. Write none and no pill is drawn.
 </Scene>
 
 <Scene name="Skip intro" args={{ intro: true }}>
@@ -130,4 +133,5 @@ The whole chrome, assembled. `Player.Root` owns no playback of its own: it is ha
 - Render two. It owns the remote, the key handling and the fullscreen element.
 - Wrap it in a fixed-width box: the chrome would size itself for a stage it isn't on.
 - Wrap `<Player.Media>` in a box of your own: the surface must stay a direct child of the stage.
+- Reach for a prop where a part exists: the top bar's words are `<Player.Title>`, not `title`.
 </Dont>

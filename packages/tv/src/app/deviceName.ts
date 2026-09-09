@@ -22,7 +22,7 @@
 // entitlement lands. A source that cannot do better answers null and the caller
 // keeps the platform label.
 
-import { safeLabel } from '@kroma/core';
+import { safeLabel } from '@kromatv/core';
 import { useCallback, useSyncExternalStore } from 'react';
 
 /** Where this shell's answer comes from. `subscribe` is optional only for a

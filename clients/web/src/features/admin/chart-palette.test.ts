@@ -1,4 +1,4 @@
-import { colors } from '@kroma/ui/tokens/colors';
+import { colors } from '@kromatv/ui/tokens/colors';
 import { describe, expect, it } from 'vitest';
 import { CHART_SERIES, KIND_SERIES } from './chart-palette';
 

@@ -20,7 +20,7 @@ const queue: Announced[] = [];
 let sink: ((announced: Announced) => void) | null = null;
 
 /** Hand a namespace to whichever engine drains the queue, now or later. Called
- *  by the module `@kroma/i18n/vite` generates per namespace. */
+ *  by the module `@kromatv/i18n/vite` generates per namespace. */
 export function announceCatalogs(namespace: string, catalogs: NamespaceCatalogs): void {
   const announced = { namespace, catalogs };
   if (sink) sink(announced);

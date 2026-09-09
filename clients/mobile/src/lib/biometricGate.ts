@@ -3,7 +3,7 @@
 // and SessionProvider mounts above I18nProvider: the device locale is resolved
 // directly here.
 
-import { createTranslator, DEFAULT_LOCALE, normalizeLocale } from '@kroma/core';
+import { createTranslator, DEFAULT_LOCALE, normalizeLocale } from '@kromatv/core';
 import { getLocales } from 'expo-localization';
 import { isBiometricLockEnabled, type MobileAccount, passBiometricLock } from './storage';
 

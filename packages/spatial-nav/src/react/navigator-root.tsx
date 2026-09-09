@@ -1,4 +1,4 @@
-import { type Direction, SpatialNavigator } from '@kroma/spatial-nav';
+import { type Direction, SpatialNavigator } from '@kromatv/spatial-nav';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { subscribeRemote } from './configure-remote';
 import { focusQueue } from './focus-queue';

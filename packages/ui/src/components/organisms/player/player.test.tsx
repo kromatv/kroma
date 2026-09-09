@@ -9,7 +9,7 @@ import { DEFAULT_SUB_APPEARANCE } from './lib/subtitle-appearance';
 import type { CreditsCardItem } from './parts/credits-card';
 import type { PostPlayItem } from './parts/post-play';
 import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
-import type { UpNextData } from './parts/up-next-sheet';
+import type { UpNextData, UpNextItem } from './parts/up-next-sheet';
 import { Player } from './player';
 import { fakeController } from './player.fixture';
 import { type PlayerCloseDetails, type PlayerController, WEB_FLAGS } from './types';
@@ -44,7 +44,7 @@ interface Over {
   upNext?: UpNextData;
   postPlay?: PostPlayItem;
   onGoHome?: () => void;
-  onPlayItem?: (item: { id: string }) => void;
+  onPlayItem?: (item: UpNextItem) => void;
 }
 
 function player(children: ReactNode, over: Over = {}) {
@@ -55,18 +55,18 @@ function player(children: ReactNode, over: Over = {}) {
         controller={over.controller ?? fakeController()}
         flags={WEB_FLAGS}
         title="Blade Runner 2049"
-        tileAt={() => null}
-        appearance={DEFAULT_SUB_APPEARANCE}
-        onAppearanceChange={() => {}}
-        subtitleGen={NO_GEN}
-        upNext={over.upNext ?? NO_UP_NEXT}
-        onPlayNext={over.onPlayNext}
-        nextTitle={over.nextTitle}
-        postPlay={over.postPlay}
-        onGoHome={over.onGoHome}
-        onPlayItem={over.onPlayItem}
         onClose={over.onClose ?? (() => {})}
       >
+        <Player.Title>Blade Runner 2049</Player.Title>
+        <Player.Transport tileAt={() => null} />
+        <Player.Subtitles
+          appearance={DEFAULT_SUB_APPEARANCE}
+          onAppearanceChange={() => {}}
+          gen={NO_GEN}
+        />
+        <Player.UpNext data={over.upNext ?? NO_UP_NEXT} onPlay={over.onPlayItem} />
+        <Player.Credits next={over.nextTitle} onPlay={over.onPlayNext} />
+        <Player.PostPlay item={over.postPlay ?? null} onHome={over.onGoHome} />
         {children}
       </Player.Root>
     </I18nProvider>
@@ -76,7 +76,22 @@ function player(children: ReactNode, over: Over = {}) {
 describe('<Player> as a compound', () => {
   it('is a namespace object whose bare name renders nothing', () => {
     expect(typeof Player).toBe('object');
-    expect(Object.keys(Player).sort()).toEqual(['Actions', 'Media', 'Panel', 'Root']);
+    expect(Object.keys(Player).sort()).toEqual([
+      'Actions',
+      'Credits',
+      'Media',
+      'Panel',
+      'PostPlay',
+      'Report',
+      'Root',
+      'SkipIntro',
+      'Subtitle',
+      'Subtitles',
+      'Title',
+      'Transport',
+      'UpNext',
+      'Warning',
+    ]);
   });
 
   it('mounts the media inside the stage, which is what sizes a browser surface', () => {
@@ -124,6 +139,65 @@ describe('<Player> as a compound', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() => render(<Player.Media>{null}</Player.Media>)).toThrow('<Player.Media>');
     quiet.mockRestore();
+  });
+
+  // A setting is never rendered while it is a child of the Root: `sortSlots`
+  // takes its props and the Root draws that region itself. Outside one it IS
+  // rendered, which is the only time its guard can fire, and the only way to
+  // find out it was written somewhere it does nothing.
+  it.each([
+    ['Title', <Player.Title key="t">x</Player.Title>],
+    ['Subtitle', <Player.Subtitle key="s">x</Player.Subtitle>],
+    ['Warning', <Player.Warning key="w">x</Player.Warning>],
+    ['Actions', <Player.Actions key="a">x</Player.Actions>],
+    ['Panel', <Player.Panel key="p">x</Player.Panel>],
+    ['Transport', <Player.Transport key="tr" tileAt={() => null} />],
+    ['UpNext', <Player.UpNext key="u" data={NO_UP_NEXT} />],
+    ['Credits', <Player.Credits key="c" />],
+    ['PostPlay', <Player.PostPlay key="pp" item={null} />],
+    ['SkipIntro', <Player.SkipIntro key="si" onSkip={() => {}} />],
+    [
+      'Subtitles',
+      <Player.Subtitles
+        key="su"
+        appearance={DEFAULT_SUB_APPEARANCE}
+        onAppearanceChange={() => {}}
+        gen={NO_GEN}
+      />,
+    ],
+    ['Report', <Player.Report key="r" onReport={async () => {}} />],
+  ])('refuses <Player.%s> outside the Root', (name, element) => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => render(element)).toThrow(`<Player.${name}>`);
+
+    quiet.mockRestore();
+  });
+
+  // Only a DIRECT child takes its slot. A setting wrapped in anything is missed
+  // by `sortSlots`, so React renders it where it was written, where it draws
+  // nothing: the region it was meant to configure never appears, and the misuse
+  // is silent rather than loud.
+  it('draws nothing for a setting that is not a direct child', () => {
+    render(
+      player(
+        <div key="wrapped">
+          <Player.Transport tileAt={() => null} />
+          <Player.UpNext data={NO_UP_NEXT} />
+          <Player.Credits />
+          <Player.PostPlay item={null} />
+          <Player.SkipIntro onSkip={() => {}} />
+          <Player.Subtitles
+            appearance={DEFAULT_SUB_APPEARANCE}
+            onAppearanceChange={() => {}}
+            gen={NO_GEN}
+          />
+          <Player.Report onReport={async () => {}} />
+        </div>,
+      ),
+    );
+
+    expect(screen.queryByTestId('surface')).toBeNull();
   });
 });
 

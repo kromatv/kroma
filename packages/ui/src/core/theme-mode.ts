@@ -1,4 +1,4 @@
-import { deviceStorage } from '@kroma/client';
+import { deviceStorage } from '@kromatv/client';
 import { Appearance } from 'react-native';
 import { webDocument } from '#ui/lib/dom';
 import { WEB } from '#ui/lib/platform';

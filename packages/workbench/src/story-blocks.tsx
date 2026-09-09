@@ -3,8 +3,8 @@
 // through the same components map as the element map, so a story file imports
 // nothing to use them.
 
-import { Box, Icon, styles, Text } from '@kroma/ui/kit';
-import { space } from '@kroma/ui/tokens';
+import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
+import { space } from '@kromatv/ui/tokens';
 import { createContext, type ReactNode, useContext } from 'react';
 import type { Args } from './derive';
 import { DocFigure, GuidelineToneContext, MEASURE } from './mdx-blocks';

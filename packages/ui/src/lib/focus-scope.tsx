@@ -3,7 +3,7 @@
 // native on purpose so behaviour can't drift between them (only the screen
 // root is forked, into focus-root.tsx / focus-root.web.tsx).
 
-import { NavigatorView, useLockNavigator } from '@kroma/spatial-nav/react';
+import { NavigatorView, useLockNavigator } from '@kromatv/spatial-nav/react';
 import { type ReactNode, useEffect } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { useFocusEntryScope } from './focus-entry';

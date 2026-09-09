@@ -2,10 +2,10 @@
 // decouvrir" (TMDB, gated), each a counted grid. Skeletons while loading, a
 // friendly empty state when nothing matches.
 
-import type { SearchHit } from '@kroma/client/media';
-import { episodeTag, posterColors } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, classes, EmptyState, Row, styles, Text } from '@kroma/ui/kit';
+import type { SearchHit } from '@kromatv/client/media';
+import { episodeTag, posterColors } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Box, classes, EmptyState, Row, styles, Text } from '@kromatv/ui/kit';
 
 import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';

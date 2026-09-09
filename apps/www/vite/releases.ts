@@ -1,4 +1,4 @@
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import type { Plugin } from 'vite';
 import { type ChannelBuild, toCanaryBuilds } from '../src/lib/channels.ts';
 import { Feed } from '../src/lib/release-feed.ts';

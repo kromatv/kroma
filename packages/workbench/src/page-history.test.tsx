@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { onScreen } from '@kroma/ui/testing';
+import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { KitHistory } from './history';

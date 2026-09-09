@@ -1,4 +1,4 @@
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import { Fragment, useRef } from 'react';
 import { Button } from '#site/components/button';
 import { Container } from '#site/components/container';

@@ -6,7 +6,7 @@ export interface CatalogTypesSource {
   readonly defaultLocale: string;
 }
 
-const HEADER = `// Written by @kroma/i18n/vite from the catalog files beside it, and ignored by
+const HEADER = `// Written by @kromatv/i18n/vite from the catalog files beside it, and ignored by
 // git. The Vite dev server refreshes it; \`bun run gen:types\` does without one.
 // Do not edit.`;
 
@@ -23,7 +23,7 @@ function binding(namespace: string): string {
 }
 
 /**
- * The declaration that teaches `@kroma/i18n` a folder of catalogs: `Register`
+ * The declaration that teaches `@kromatv/i18n` a folder of catalogs: `Register`
  * gains the locales and every namespace's messages folded into one map, so
  * `MessageKey` covers the whole folder without a line of hand-written code.
  * Pure, so a test can render it without a disk; the Vite plugin scans and
@@ -50,7 +50,7 @@ export function renderCatalogTypes({ files, defaultLocale }: CatalogTypesSource)
         `import type ${binding(namespace)} from './${defaultLocale}/${namespace}.json';`,
     ),
     '',
-    "declare module '@kroma/i18n' {",
+    "declare module '@kromatv/i18n' {",
     '  interface Register {',
     `    locale: ${union};`,
     '    messages:',

@@ -3,7 +3,7 @@
 // render the exact same avatar tile + email/username/password inputs, so that
 // block lives here once and is driven by controlled props.
 
-import { useT } from '@kroma/ui';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Field,
@@ -13,7 +13,7 @@ import {
   sharedStyle,
   svFor,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 import { Image } from '#web/shared/ui';
 import { avatarGradient, initials } from '#web/shared/ui/user-avatar';

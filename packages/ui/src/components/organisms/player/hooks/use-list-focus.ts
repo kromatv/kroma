@@ -1,6 +1,6 @@
-import type { RemoteKey } from '@kroma/core';
 import { useCallback, useEffect, useState } from 'react';
 import { usePanelHeader } from '#ui/components/organisms/player/lib/panel-header';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 
 /**
  * Reusable 1-D focus for a list of controls, driving BOTH the D-pad and the

@@ -1,4 +1,4 @@
-# @kroma/react-audit
+# @kromatv/react-audit
 
 What a React interaction actually costs: **which** components re-rendered, and
 which were destroyed and rebuilt.
@@ -12,7 +12,7 @@ hook React DevTools uses, so it names them.
 
 ```ts
 // vitest.config.ts
-setupFiles: ['@kroma/react-audit']
+setupFiles: ['@kromatv/react-audit']
 ```
 
 That has to happen before `react-dom` is imported by anything: the renderer reads
@@ -22,7 +22,7 @@ it. Naming it as a setup file is the only way to be sure of the order.
 ## Measure one interaction
 
 ```tsx
-import { measure } from '@kroma/react-audit/react';
+import { measure } from '@kromatv/react-audit/react';
 
 const result = measure(<Keyboard />);
 
@@ -43,7 +43,7 @@ The core knows nothing about any renderer or test library. Start it, do whatever
 you like, stop it.
 
 ```tsx
-import { record } from '@kroma/react-audit';
+import { record } from '@kromatv/react-audit';
 
 const run = record();       // BEFORE rendering: the first commit is the mount
 render(<Typing />);
@@ -69,7 +69,7 @@ expect(measure(<Keyboard />).churn).toEqual([]);
 ## Reading it
 
 ```ts
-import { formatResult } from '@kroma/react-audit';
+import { formatResult } from '@kromatv/react-audit';
 
 console.log(formatResult(result));
 // 2 commits  188 elements  42 churned  0 re-rendered

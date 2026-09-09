@@ -1,4 +1,4 @@
-import { useT } from '@kroma/ui';
+import { useT } from '@kromatv/ui';
 import { useMemo } from 'react';
 import { BrowseHero } from '#web/features/catalog/browse-hero';
 import {

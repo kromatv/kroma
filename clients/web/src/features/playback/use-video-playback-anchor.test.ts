@@ -10,8 +10,8 @@ import {
   settle,
 } from '#web/features/playback/use-video-playback.fixture';
 
-vi.mock('@kroma/core', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@kroma/core')>()),
+vi.mock('@kromatv/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kromatv/core')>()),
   audioTracksOf: () => H.tracks,
   capabilities: () => ({}),
   MSE_CAPS: H.mseCaps,

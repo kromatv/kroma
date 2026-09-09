@@ -42,9 +42,9 @@ describe('useCopy', () => {
     expect(result.current.available).toBe(true);
 
     await act(async () => {
-      result.current.copy('npm i @kroma/ui');
+      result.current.copy('npm i @kromatv/ui');
     });
-    expect(writeText).toHaveBeenCalledWith('npm i @kroma/ui');
+    expect(writeText).toHaveBeenCalledWith('npm i @kromatv/ui');
     expect(result.current.state).toBe('copied');
 
     act(() => {

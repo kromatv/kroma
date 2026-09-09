@@ -4,10 +4,10 @@
 // is optional: with nothing to show this renders nothing and the page keeps the
 // header-plus-grid it has always had.
 
-import type { PersonDetail } from '@kroma/client/media';
-import { personFacts } from '@kroma/core';
-import { useLocale, useT } from '@kroma/ui';
-import { Box, DataField, ExpandableText, styles, Text } from '@kroma/ui/kit';
+import type { PersonDetail } from '@kromatv/client/media';
+import { personFacts } from '@kromatv/core';
+import { useLocale, useT } from '@kromatv/ui';
+import { Box, DataField, ExpandableText, styles, Text } from '@kromatv/ui/kit';
 
 const s = styles({ rule: { borderBottomWidth: 1, borderBottomColor: 'border' } });
 

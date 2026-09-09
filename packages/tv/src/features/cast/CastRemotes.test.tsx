@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-import { type CastController, ControllerId } from '@kroma/client/cast';
-import { fakeClient } from '@kroma/client/test';
-import { clearPressGuard } from '@kroma/ui/kit';
-import { onScreen } from '@kroma/ui/testing';
+import { type CastController, ControllerId } from '@kromatv/client/cast';
+import { fakeClient } from '@kromatv/client/test';
+import { clearPressGuard } from '@kromatv/ui/kit';
+import { onScreen } from '@kromatv/ui/testing';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type Connection, ConnectionProvider } from '#tv/app/providers/connection';

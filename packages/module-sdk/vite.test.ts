@@ -10,7 +10,7 @@ function transform(id: string, code: string): TransformResult {
 }
 
 const ENTRY = '/repo/modules/tv.kroma.notes/ui/src/index.tsx';
-const SOURCE = "import { defineModule } from '@kroma/module-sdk';\ndefineModule({ id: 'x' });\n";
+const SOURCE = "import { defineModule } from '@kromatv/module-sdk';\ndefineModule({ id: 'x' });\n";
 
 describe('kromaModule', () => {
   it('runs before Vite expands import.meta.glob, or the injected glob stays a call', () => {

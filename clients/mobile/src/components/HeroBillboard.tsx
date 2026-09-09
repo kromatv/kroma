@@ -1,6 +1,6 @@
-import type { SectionItem } from '@kroma/client/media';
-import { sizedImageUrl } from '@kroma/core';
-import { ArtScrim, Box, Button, Icon, Progress, styles, Text } from '@kroma/ui/kit';
+import type { SectionItem } from '@kromatv/client/media';
+import { sizedImageUrl } from '@kromatv/core';
+import { ArtScrim, Box, Button, Icon, Progress, styles, Text } from '@kromatv/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';

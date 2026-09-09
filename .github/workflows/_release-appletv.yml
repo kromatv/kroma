@@ -186,7 +186,7 @@ jobs:
         run: |
           set -euo pipefail
           export KROMA_VERSION_CODE=${{ inputs.build }}
-          bun run --filter '@kroma/tv-native' prebuild -- --platform ios --no-install
+          bun run --filter '@kromatv/tv-native' prebuild -- --platform ios --no-install
           # REACT_NATIVE_NODE_MODULES_DIR: the Podfile resolves react-native from
           # wherever node does, and in this bun workspace the tvOS fork
           # (react-native-tvos) sits in the PACKAGE's node_modules, not the
@@ -325,7 +325,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          bun install --frozen-lockfile --filter '@kroma/ci-tools'
+          bun install --frozen-lockfile --filter '@kromatv/ci-tools'
           bun run ci cache prune --prefix dd-tvnative-v1- --keep 1
 
       - name: Validate for the App Store

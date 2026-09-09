@@ -1,4 +1,4 @@
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import { IconShieldLock } from '@tabler/icons-react';
 import { createFileRoute } from '@tanstack/react-router';
 import { ContactCard } from '#site/components/contact/contact-card';

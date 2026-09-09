@@ -1,4 +1,4 @@
-import { collectBuildInfo } from '@kroma/build-info';
+import { collectBuildInfo } from '@kromatv/build-info';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 export default function kitAppConfig({ config }: ConfigContext): Partial<ExpoConfig> {

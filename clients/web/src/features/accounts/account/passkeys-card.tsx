@@ -3,10 +3,10 @@
 // secure context (HTTPS or localhost), so on plain-HTTP LAN access the card
 // shows a notice instead of the add button.
 
-import { apiErrorText } from '@kroma/client';
-import type { PasskeyInfo } from '@kroma/client/accounts';
-import { useFormat, useT } from '@kroma/ui';
-import { Box, Button, Icon, IconWell, ListRow, Text } from '@kroma/ui/kit';
+import { apiErrorText } from '@kromatv/client';
+import type { PasskeyInfo } from '@kromatv/client/accounts';
+import { useFormat, useT } from '@kromatv/ui';
+import { Box, Button, Icon, IconWell, ListRow, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { kromaClient } from '#web/shared/lib/api';

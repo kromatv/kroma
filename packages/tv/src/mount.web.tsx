@@ -1,4 +1,4 @@
-// The DOM half of @kroma/tv, for a browser shell (Tizen, webOS, Android TV,
+// The DOM half of @kromatv/tv, for a browser shell (Tizen, webOS, Android TV,
 // desktop). It must stay a separate entry: a Metro bundle that reaches
 // `react-dom` ends up with two Reacts and dies before `AppRegistry` sees the app.
 

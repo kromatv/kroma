@@ -1,4 +1,4 @@
-import { DocFigure } from '@kroma/workbench';
+import { DocFigure } from '@kromatv/workbench';
 import { Icon } from '#ui/components/atoms/icon';
 import { Figure } from './figure';
 import { IconBrowser } from './icon-browser';
@@ -79,7 +79,7 @@ outline.
 ## Where the tags come from
 
 The catalogue is `@tabler/icons`' `icons.json`, read at BUILD time by
-`kromaIconCatalog()` (`@kroma/ui/vite/icon-catalog`) and registered with the kit
+`kromaIconCatalog()` (`@kromatv/ui/vite/icon-catalog`) and registered with the kit
 through `setIconCatalogLoader()`. Only a workbench adds that plugin. It is a
 megabyte of metadata for one page, and no product bundle should carry it, least of
 all a television's. Where it is absent the box searches names alone and the

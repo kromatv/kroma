@@ -2,9 +2,9 @@
 // shows name + type + default badge + model·host; expanded reveals the
 // editable fields and per-card Test / Set default / Remove. Backed by
 // /api/admin/llm*.
-import type { KromaClient } from '@kroma/client';
-import { useT } from '@kroma/ui';
-import { Badge, Box, Focusable, Icon, Row, Surface, styles, Text } from '@kroma/ui/kit';
+import type { KromaClient } from '@kromatv/client';
+import { useT } from '@kromatv/ui';
+import { Badge, Box, Focusable, Icon, Row, Surface, styles, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { ProviderBody } from '#web/features/admin/ai-provider-fields';
 import {

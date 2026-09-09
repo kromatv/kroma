@@ -2,9 +2,9 @@
 // immediately, the blur per device) plus the preferred audio and subtitle
 // languages, which the parent persists with `PATCH /auth/me`.
 
-import { LANG_NO_PREF, LOCALES, langName, langOptions } from '@kroma/core';
-import { useLocale, useSetLocale, useT } from '@kroma/ui';
-import { ListRow, Select, Switch } from '@kroma/ui/kit';
+import { LANG_NO_PREF, LOCALES, langName, langOptions } from '@kromatv/core';
+import { useLocale, useSetLocale, useT } from '@kromatv/ui';
+import { ListRow, Select, Switch } from '@kromatv/ui/kit';
 import { useMemo, useState } from 'react';
 import { PrefRow } from '#web/features/accounts/account/ui';
 import { getBlurPref, setBlurPref } from '#web/shared/lib/blur-pref';

@@ -3,7 +3,7 @@
 // full-filename presets and a separator helper. Clicking a token inserts it at
 // the cursor of the field being edited; clicking a preset replaces the field.
 
-import { useT } from '@kroma/module-sdk';
+import { useT } from '@kromatv/module-sdk';
 import {
   Box,
   Button,
@@ -17,7 +17,7 @@ import {
   sv,
   Text,
   useBreakpoint,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { type CSSProperties, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import type { NamingTemplatesView } from './schemas';

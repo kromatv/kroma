@@ -1,7 +1,7 @@
 import { BottomSheetFlatList, BottomSheetModal } from '@gorhom/bottom-sheet';
-import type { MediaItem, Show } from '@kroma/client/media';
-import { collectGenres, type GenreCount, genreLabel } from '@kroma/core';
-import { Box, genreIcon, Icon, styles, Text } from '@kroma/ui/kit';
+import type { MediaItem, Show } from '@kromatv/client/media';
+import { collectGenres, type GenreCount, genreLabel } from '@kromatv/core';
+import { Box, genreIcon, Icon, styles, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { forwardRef, useMemo, useState } from 'react';
 import { Pressable } from 'react-native';

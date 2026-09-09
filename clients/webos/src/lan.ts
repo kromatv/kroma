@@ -4,7 +4,7 @@
 // itself: it asks the JS Service packaged beside it (src/beacon-service.cts),
 // which is Node and therefore has the UDP socket that multicast DNS needs. What
 // lands on the link is the same `_kroma-tv._tcp` record an Apple TV or an
-// Android TV raises through @kroma/lan-beacon, so a phone browsing for
+// Android TV raises through @kromatv/lan-beacon, so a phone browsing for
 // televisions finds all three the same way (docs/tv-pairing.md).
 //
 // Reached through `PalmServiceBridge` rather than `webOS.service.request`, for
@@ -12,7 +12,7 @@
 // vendor script, so the `webOS` global that `webOSTV.js` defines is not there,
 // while the bus underneath it always is.
 
-import type { LanDiscoveryBridge, LanService } from '@kroma/core';
+import type { LanDiscoveryBridge, LanService } from '@kromatv/core';
 
 const SERVICE = 'luna://tv.kroma.webos.service';
 

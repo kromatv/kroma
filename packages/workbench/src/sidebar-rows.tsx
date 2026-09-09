@@ -4,7 +4,7 @@
 // Everything is a `Focusable` rather than a link, so the same tree works with a
 // mouse in a browser and a D-pad on a television.
 
-import { Box, Focusable, Icon, IconButton, Kbd, styles, sv, Text } from '@kroma/ui/kit';
+import { Box, Focusable, Icon, IconButton, Kbd, styles, sv, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { commandHint } from './command';
 import { glyphFor } from './registry';

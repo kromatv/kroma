@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { declarationOf, type PackageJson, pathsFor, sdkManifest, tsconfigPreset } from './manifest';
 
 const UI: PackageJson = {
-  name: '@kroma/ui',
+  name: '@kromatv/ui',
   version: '0.0.0',
   private: true,
   exports: {
@@ -12,7 +12,7 @@ const UI: PackageJson = {
     './vite': './vite/index.ts',
   },
   dependencies: {
-    '@kroma/core': 'workspace:*',
+    '@kromatv/core': 'workspace:*',
     'react-native-svg': '^15',
     '@tabler/icons-react-native': '^3',
   },
@@ -25,19 +25,19 @@ const UI: PackageJson = {
 };
 
 const CLIENT: PackageJson = {
-  name: '@kroma/client',
+  name: '@kromatv/client',
   version: '0.0.0',
   exports: { '.': './src/index.ts', './*': './src/api/*/index.ts' },
   dependencies: { zod: '^4' },
 };
 
 const SDK: PackageJson = {
-  name: '@kroma/module-sdk',
+  name: '@kromatv/module-sdk',
   version: '0.0.0',
   description: 'the contract',
   exports: { '.': './src/index.ts', './shared': './src/shared.ts', './vite': './vite.ts' },
   dependencies: {
-    '@kroma/ui': 'workspace:*',
+    '@kromatv/ui': 'workspace:*',
     '@tanstack/react-query': '^5',
     '@tanstack/react-table': '^8',
   },
@@ -45,10 +45,10 @@ const SDK: PackageJson = {
 };
 
 const CLI: PackageJson = {
-  name: '@kroma/cli',
+  name: '@kromatv/cli',
   version: '0.0.0',
   dependencies: {
-    '@kroma/module-sdk': 'workspace:*',
+    '@kromatv/module-sdk': 'workspace:*',
     '@clack/prompts': '1.7.0',
     citty: '0.2.2',
     'es-module-lexer': '^2',
@@ -88,16 +88,16 @@ describe('pathsFor', () => {
     ).toEqual({
       'react-native': ['./types/react-native/types/index.d.ts'],
       'react-native/*': ['./types/react-native/*'],
-      '@kroma/ui': ['./types/ui/src/index.d.ts'],
-      '@kroma/ui/kit': ['./types/ui/src/kit.d.ts'],
-      '@kroma/ui/kit/*': ['./types/ui/src/components/*/index.d.ts'],
-      '@kroma/client': ['./types/client/src/index.d.ts'],
-      '@kroma/client/*': ['./types/client/src/api/*/index.d.ts'],
+      '@kromatv/ui': ['./types/ui/src/index.d.ts'],
+      '@kromatv/ui/kit': ['./types/ui/src/kit.d.ts'],
+      '@kromatv/ui/kit/*': ['./types/ui/src/components/*/index.d.ts'],
+      '@kromatv/client': ['./types/client/src/index.d.ts'],
+      '@kromatv/client/*': ['./types/client/src/api/*/index.d.ts'],
     });
   });
 
   it('leaves out an export served from outside src', () => {
-    expect(pathsFor([['ui', UI]])).not.toHaveProperty('@kroma/ui/vite');
+    expect(pathsFor([['ui', UI]])).not.toHaveProperty('@kromatv/ui/vite');
   });
 });
 
@@ -106,7 +106,7 @@ describe('tsconfigPreset', () => {
     const preset = JSON.parse(tsconfigPreset('{"compilerOptions":{"strict":true}}', [['ui', UI]]));
 
     expect(preset.compilerOptions.strict).toBe(true);
-    expect(preset.compilerOptions.paths['@kroma/ui/kit']).toEqual(['./types/ui/src/kit.d.ts']);
+    expect(preset.compilerOptions.paths['@kromatv/ui/kit']).toEqual(['./types/ui/src/kit.d.ts']);
   });
 });
 

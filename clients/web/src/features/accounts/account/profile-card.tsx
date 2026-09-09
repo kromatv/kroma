@@ -3,8 +3,8 @@
 // into the auth session so the sidebar/picker update at once. (The server has no
 // avatar-removal endpoint, so there is no reset here.)
 
-import { useT } from '@kroma/ui';
-import { Box, Button, Icon, Row, Surface, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Button, Icon, Row, Surface, Text } from '@kromatv/ui/kit';
 import { useRef } from 'react';
 import { StatusText, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';

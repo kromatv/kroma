@@ -1,4 +1,4 @@
-import { useT } from '@kroma/ui';
+import { useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -12,7 +12,7 @@ import {
   Spinner,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { Permission, User } from '@kroma/client/accounts';
+import type { Permission, User } from '@kromatv/client/accounts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';

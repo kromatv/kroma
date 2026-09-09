@@ -3,8 +3,8 @@
 // typed JSON values to /api/admin/modules/:id/config (bool and number, not the
 // stringified values the old text-only form sent).
 
-import type { ConfigField } from '@kroma/module-sdk';
-import { useT } from '@kroma/ui';
+import type { ConfigField } from '@kromatv/module-sdk';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -16,7 +16,7 @@ import {
   Select,
   Switch,
   styles,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { adminApi } from '#web/features/admin/module-api';
 

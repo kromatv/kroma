@@ -1,4 +1,4 @@
-import type { NodeHandle } from '@kroma/spatial-nav/react';
+import type { NodeHandle } from '@kromatv/spatial-nav/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { focusSettled } from '#ui/lib/focus-entry';
 

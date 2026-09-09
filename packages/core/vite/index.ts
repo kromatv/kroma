@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { type CatalogsOptions, catalogs } from '@kroma/i18n/vite';
+import { type CatalogsOptions, catalogs } from '@kromatv/i18n/vite';
 import type { Plugin } from 'vite';
 import { DEFAULT_LOCALE_CODE } from '../src/locales/default-locale.ts';
 

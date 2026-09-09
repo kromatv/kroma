@@ -163,7 +163,7 @@ jobs:
         env:
           TIZEN_PROFILE: kroma-ci
         run: |
-          bun run --filter '@kroma/tizen' package:all
+          bun run --filter '@kromatv/tizen' package:all
           ls -l clients/tizen/out
 
       - name: Upload .wgt artifact
@@ -227,7 +227,7 @@ jobs:
       - name: Prebuild the Android project
         run: |
           export KROMA_VERSION_CODE=${{ inputs.build }}
-          bun run --filter '@kroma/tv-native' prebuild -- --platform android
+          bun run --filter '@kromatv/tv-native' prebuild -- --platform android
 
       # NOTE: this is signed with the Expo template's debug keystore, which is
       # what its `release` buildType is wired to. That is installable via adb /

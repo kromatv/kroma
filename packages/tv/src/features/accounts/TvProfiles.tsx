@@ -1,5 +1,5 @@
-import { normalizeServerUrl as norm, type StoredSession } from '@kroma/client/accounts';
-import { useT } from '@kroma/ui';
+import { normalizeServerUrl as norm, type StoredSession } from '@kromatv/client/accounts';
+import { useT } from '@kromatv/ui';
 import {
   AddTile,
   Avatar,
@@ -13,7 +13,7 @@ import {
   styles,
   Text,
   useFocusNav,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';

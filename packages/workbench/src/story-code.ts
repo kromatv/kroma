@@ -1,4 +1,4 @@
-// A story's identity, as @kroma/bundler's `storyCode` plugin read it out of the
+// A story's identity, as @kromatv/bundler's `storyCode` plugin read it out of the
 // `*.story.mdx` at build time. This is what lets an index list the library
 // without executing it; a story's source itself travels inside its own module
 // (see story-scenes.mjs), so there is nothing else to carry here.

@@ -1,13 +1,13 @@
-import type { KromaClient } from '@kroma/client';
-import type { MediaItem } from '@kroma/client/media';
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem } from '@kromatv/client/media';
 import {
   audioTracksOf,
   beyondDecoder,
   canDirectPlay,
   type DirectPlayVerdict,
   preferredAudioIndex,
-} from '@kroma/core';
-import { storedAudioFilter } from '@kroma/ui';
+} from '@kromatv/core';
+import { storedAudioFilter } from '@kromatv/ui';
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import {
   type EnginePref,

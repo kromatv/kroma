@@ -32,7 +32,7 @@
 # Signing locally, once a Developer ID Application cert is in your login
 # keychain:
 #   security find-identity -v -p codesigning     # copy the full identity string
-#   bun run --filter '@kroma/desktop' tauri:build:mac
+#   bun run --filter '@kromatv/desktop' tauri:build:mac
 #   bash clients/desktop/scripts/bundle-libmpv-macos.sh \
 #     clients/desktop/src-tauri/target/release/bundle/macos/KROMA.app
 #   SIGN=true APPLE_SIGNING_IDENTITY="Developer ID Application: … (TEAMID)" \

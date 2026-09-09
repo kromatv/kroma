@@ -1,4 +1,4 @@
-import { sharedStyle, styles } from '@kroma/ui/kit';
+import { sharedStyle, styles } from '@kromatv/ui/kit';
 import { SCRIM_Z } from '#web/shared/ui/page';
 
 const s = styles({

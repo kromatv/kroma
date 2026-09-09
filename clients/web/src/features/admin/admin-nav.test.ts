@@ -1,5 +1,5 @@
-import type { Permission } from '@kroma/client/accounts';
-import type { ModuleNav } from '@kroma/module-sdk';
+import type { Permission } from '@kromatv/client/accounts';
+import type { ModuleNav } from '@kromatv/module-sdk';
 import { describe, expect, it } from 'vitest';
 import { adminNavSections, NAV_GROUPS } from './admin-nav';
 

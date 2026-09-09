@@ -1,4 +1,4 @@
-import { webDocument } from '@kroma/ui/kit';
+import { webDocument } from '@kromatv/ui/kit';
 
 /**
  * Clears the page's background so a native video plane behind it (mpv, AVPlay)

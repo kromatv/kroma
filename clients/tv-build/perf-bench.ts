@@ -16,7 +16,7 @@
 // holding a remote.
 
 import { spawn } from 'node:child_process';
-import type { PerfReport } from '@kroma/ui/kit';
+import type { PerfReport } from '@kromatv/ui/kit';
 import { chromium } from 'playwright';
 
 const args = process.argv.slice(2);

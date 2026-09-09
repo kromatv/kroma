@@ -1,8 +1,8 @@
 // Account tab: identity, one card of destination rows, sign-out. Everything
 // else lives in dedicated pages.
 
-import { useFormat } from '@kroma/ui';
-import { Box, Button, Icon, styles, Text } from '@kroma/ui/kit';
+import { useFormat } from '@kromatv/ui';
+import { Box, Button, Icon, styles, Text } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

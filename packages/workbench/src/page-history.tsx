@@ -5,8 +5,8 @@
 // carries it at every window width - the list of sections beside a guide is a
 // wide-window luxury, and when a page was written is not.
 
-import { Box, Button, styles, Text } from '@kroma/ui/kit';
-import { space } from '@kroma/ui/tokens';
+import { Box, Button, styles, Text } from '@kromatv/ui/kit';
+import { space } from '@kromatv/ui/tokens';
 import { useState } from 'react';
 import { HistoryBlock, summaryOf } from './history-view';
 import { openWebLink } from './link';

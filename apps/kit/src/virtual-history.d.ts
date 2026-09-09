@@ -1,7 +1,7 @@
-// Served by the `gitHistory` plugin in @kroma/bundler; no file on disk.
+// Served by the `gitHistory` plugin in @kromatv/bundler; no file on disk.
 
 declare module 'virtual:kroma-history' {
-  import type { KitHistory } from '@kroma/workbench';
+  import type { KitHistory } from '@kromatv/workbench';
 
   export const HISTORY: KitHistory;
 }

@@ -1,8 +1,8 @@
 // Launcher tiles arrive as `kroma://item/<id>` or `kroma://show/<id>` through
-// React Native's `Linking`, which no code inside @kroma/tv can subscribe to.
+// React Native's `Linking`, which no code inside @kromatv/tv can subscribe to.
 // A launcher publishes the SHOW id for an episode, never the episode's own.
 
-import { requestDeepLink } from '@kroma/tv';
+import { requestDeepLink } from '@kromatv/tv';
 import { Linking } from 'react-native';
 
 type LauncherLink = { type: 'movie' | 'show'; id: string };

@@ -1,7 +1,7 @@
 // One person: who they are, then every movie and show they are credited in.
 
-import { personInvolvement, roleLabels } from '@kroma/core';
-import { Icon } from '@kroma/ui/kit';
+import { personInvolvement, roleLabels } from '@kromatv/core';
+import { Icon } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useWindowDimensions } from 'react-native';

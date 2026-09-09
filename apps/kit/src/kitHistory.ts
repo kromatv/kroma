@@ -2,6 +2,6 @@
 // workbench carries no history at all - the same bargain the prop docs make.
 // The Vite half of the pair is kitHistory.web.ts.
 
-import type { KitHistory } from '@kroma/workbench';
+import type { KitHistory } from '@kromatv/workbench';
 
 export const HISTORY: KitHistory | undefined = undefined;

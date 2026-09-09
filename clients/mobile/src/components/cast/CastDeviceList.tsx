@@ -4,17 +4,17 @@
 // (<CastPanel>): the player is a native fullScreenModal, and @gorhom's sheet
 // renders into a host that sits behind it.
 
-import type { DeviceId } from '@kroma/client';
-import type { CastReceiver } from '@kroma/client/cast';
+import type { DeviceId } from '@kromatv/client';
+import type { CastReceiver } from '@kromatv/client/cast';
 import {
   checkRetryable,
   type DiscoveredTv,
   type FinalRefusal,
   type GrantResult,
   grantRefusal,
-} from '@kroma/core';
-import { useCast } from '@kroma/ui';
-import { Badge, Box, Icon, styles, Text } from '@kroma/ui/kit';
+} from '@kromatv/core';
+import { useCast } from '@kromatv/ui';
+import { Badge, Box, Icon, styles, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable } from 'react-native';

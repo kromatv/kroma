@@ -1,6 +1,6 @@
-import type { SessionInfo } from '@kroma/client/accounts';
-import { useFormat, useT } from '@kroma/ui';
-import { Badge, Box, Button, Icon, type IconName, ListRow, Row, Text } from '@kroma/ui/kit';
+import type { SessionInfo } from '@kromatv/client/accounts';
+import { useFormat, useT } from '@kromatv/ui';
+import { Badge, Box, Button, Icon, type IconName, ListRow, Row, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { kromaClient } from '#web/shared/lib/api';

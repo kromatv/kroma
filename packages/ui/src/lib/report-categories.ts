@@ -5,8 +5,8 @@
 // user picked as "Problème vidéo" in one place must not be "Image" in another.
 // Labels stay message keys: this is data, translated where it is rendered.
 
-import type { ReportCategory } from '@kroma/client/reports';
-import type { MessageKey } from '@kroma/core';
+import type { ReportCategory } from '@kromatv/client/reports';
+import type { MessageKey } from '@kromatv/i18n';
 import type { IconName } from './glyph';
 
 export interface ReportCategoryMeta {

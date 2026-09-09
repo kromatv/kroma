@@ -2,9 +2,9 @@
 // through the cast bridge rather than props, so one arriving while the TV
 // sits on its home screen is a no-op instead of a crash.
 
-import type { KromaClient } from '@kroma/client';
-import type { CastCommand } from '@kroma/client/cast';
-import type { MediaItem } from '@kroma/client/media';
+import type { KromaClient } from '@kromatv/client';
+import type { CastCommand } from '@kromatv/client/cast';
+import type { MediaItem } from '@kromatv/client/media';
 import { castTarget, requestCastSeek } from '#tv/features/cast/castBridge';
 
 export interface CastRouter {

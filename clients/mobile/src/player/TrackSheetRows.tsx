@@ -1,4 +1,4 @@
-import { Box, Icon, type IconName, SwitchFace, styles, Text } from '@kroma/ui/kit';
+import { Box, Icon, type IconName, SwitchFace, styles, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { Pressable } from 'react-native';
 import { colors, spacing, type } from '#mobile/lib/theme';

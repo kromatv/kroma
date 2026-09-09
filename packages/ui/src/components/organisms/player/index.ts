@@ -9,7 +9,7 @@ export {
   useAudioFilter,
 } from './lib/audio-filter';
 export { currentChapter, currentChapterIndex, normalizeChapters } from './lib/chapters';
-// NOT `clamp01`: the kit already exports it, and `@kroma/ui` re-exports this
+// NOT `clamp01`: the kit already exports it, and `@kromatv/ui` re-exports this
 // barrel, so listing it here puts the same name on both entry points.
 export { endsAtClock, pct } from './lib/fmt';
 export {
@@ -33,6 +33,15 @@ export {
   useSubtitleAppearance,
   withOpacity,
 } from './lib/subtitle-appearance';
+export type {
+  PlayerAudioTrack,
+  PlayerMarker,
+  PlayerReportCategory,
+  PlayerStatsItem,
+  PlayerSubCapabilities,
+  PlayerSubtitleGeneration,
+  PlayerVideoTrack,
+} from './media-types';
 export type { CreditsCardItem } from './parts/credits-card';
 // The width the end-of-film hero is drawn at, so a host asks for art that size.
 export { POST_PLAY_ART_W, type PostPlayItem } from './parts/post-play';

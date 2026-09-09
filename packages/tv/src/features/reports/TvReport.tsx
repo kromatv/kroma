@@ -1,7 +1,7 @@
-import { apiErrorText } from '@kroma/client';
-import type { ReportCategory, ReportSubjectKind } from '@kroma/client/reports';
-import { useT } from '@kroma/ui';
-import { Box, Button, Field, ListRow, Text, useFocusNav } from '@kroma/ui/kit';
+import { apiErrorText } from '@kromatv/client';
+import type { ReportCategory, ReportSubjectKind } from '@kromatv/client/reports';
+import { useT } from '@kromatv/ui';
+import { Box, Button, Field, ListRow, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';

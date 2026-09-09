@@ -1,7 +1,7 @@
 // Shared primitives for the mobile screens, re-exporting the controls and state
 // views so every screen imports them from one place.
 
-import { Box, ExpandableText as KitExpandableText, styles, Text } from '@kroma/ui/kit';
+import { Box, ExpandableText as KitExpandableText, styles, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import type { ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

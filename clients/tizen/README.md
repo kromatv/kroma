@@ -1,8 +1,8 @@
-# @kroma/tizen: Samsung TV (Tizen)
+# @kromatv/tizen: Samsung TV (Tizen)
 
 > Part of the [KROMA](../../README.md) monorepo: the Samsung TV shell.
 
-Thin shell over `@kroma/tv`, the shared 10-foot experience. Tizen TVs decode
+Thin shell over `@kromatv/tv`, the shared 10-foot experience. Tizen TVs decode
 HEVC/H.265 (incl. 10-bit / HDR) in hardware, so playback is direct-play.
 
 ## Three bundles, one package (2017-2023 sets)
@@ -76,7 +76,7 @@ How it works:
   built to `dist/service/preview-service.js`) is declared in `config.xml`
   (`use.preview = bg_service`). The TV runs it on its
   own schedule to fetch the carousel data.
-- The foreground app ([`@kroma/tv` `shared/preview/`](../../packages/tv/src/shared/preview))
+- The foreground app ([`@kromatv/tv` `shared/preview/`](../../packages/tv/src/shared/preview))
   builds the tile JSON from the live catalog and writes it to the package-private
   `wgt-private/preview.json`; the service reads that file and calls
   `webapis.preview.setPreviewData()`.
@@ -132,7 +132,7 @@ TVs have weak CPUs/GPUs and slow storage, so the shell is tuned for that:
 - **Early connection warm-up** a `<link rel="preconnect">` to the media server
   is injected as soon as the client is created.
 
-These improvements live in `@kroma/ui` + `@kroma/tv`, so the LG/webOS app gets them too.
+These improvements live in `@kromatv/ui` + `@kromatv/tv`, so the LG/webOS app gets them too.
 
 ## Package + deploy to a real TV
 
@@ -148,7 +148,7 @@ make logs                         # watch the app's console output
 make redeploy                     # fast iteration after a code change
 ```
 
-Or via bun from the repo root: `bun run --filter @kroma/tizen deploy` (after a
+Or via bun from the repo root: `bun run --filter @kromatv/tizen deploy` (after a
 `.tizen.env` is configured).
 
 ## Publishing to Samsung Apps TV
@@ -166,7 +166,7 @@ Notes:
 - Retail Samsung TVs require a **Samsung** signing certificate tied to the TV's
   DUID see [SETUP.md](./SETUP.md) step 3. A self-signed cert only works on the
   emulator.
-- Media/colour remote keys are registered at runtime via `@kroma/core`'s
+- Media/colour remote keys are registered at runtime via `@kromatv/core`'s
   `registerTvMediaKeys()`; arrow keys + OK drive spatial focus navigation.
 - Set the server address on first launch (connection screen); it persists in
   `localStorage`.

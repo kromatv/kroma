@@ -1,8 +1,8 @@
 {
-  "name": "@kroma/tv-native",
+  "name": "@kromatv/tv-native",
   "version": "0.0.0",
   "private": true,
-  "description": "KROMA native TV client (Apple TV + Android TV): the shared @kroma/tv experience compiled by React Native instead of rendered in a WebView.",
+  "description": "KROMA native TV client (Apple TV + Android TV): the shared @kromatv/tv experience compiled by React Native instead of rendered in a WebView.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "license": "GPL-2.0-or-later",
   "repository": {
@@ -23,12 +23,12 @@
     "perf:androidtv": "bun ./scripts/perf-androidtv.ts"
   },
   "dependencies": {
-    "@kroma/client": "workspace:*",
-    "@kroma/core": "workspace:*",
-    "@kroma/lan-beacon": "workspace:*",
-    "@kroma/media3-ffmpeg": "workspace:*",
-    "@kroma/tv": "workspace:*",
-    "@kroma/ui": "workspace:*",
+    "@kromatv/client": "workspace:*",
+    "@kromatv/core": "workspace:*",
+    "@kromatv/lan-beacon": "workspace:*",
+    "@kromatv/media3-ffmpeg": "workspace:*",
+    "@kromatv/tv": "workspace:*",
+    "@kromatv/ui": "workspace:*",
     "expo": "~57.0.13",
     "expo-blur": "~57.0.2",
     "expo-constants": "~57.0.11",

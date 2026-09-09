@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { dispatchRemoteKey, registerTvMediaKeys, resolveRemoteKey } from './remote';
+import { dispatchRemoteKey, registerTvMediaKeys, resolveRemoteKey } from './remote-keys';
 
 function ev(p: { key?: string; keyCode?: number; repeat?: boolean }): KeyboardEvent {
   return {

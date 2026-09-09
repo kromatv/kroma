@@ -7,7 +7,7 @@ apps never load any of it. They consume the TypeScript tokens directly.
 `reset.ts`, `page.ts` and `motion.ts` are lists of `rule()`,
 `atMedia()` and `keyframes()` entries with colours read back through `cssRef`, and
 `sheet.ts` is the only thing that knows what CSS syntax looks like. `kromaUI()`
-(`@kroma/ui/vite`) compiles them, together with the tokens and the `@font-face`
+(`@kromatv/ui/vite`) compiles them, together with the tokens and the `@font-face`
 rules it generates from `src/core/tokens/`, into the stylesheet a build emits. One
 representation, so the two halves cannot drift.
 
@@ -30,7 +30,7 @@ An app that still has a stylesheet of its own (because Tailwind needs one) write
 the directive in it, and the plugin expands it in place:
 
 ```css
-@import "@kroma/ui/css";
+@import "@kromatv/ui/css";
 ```
 
 Where Tailwind runs, take the sheet in parts. Tailwind's own preflight is already
@@ -39,11 +39,11 @@ a reset, and a second unlayered one would outrank every utility it collides with
 
 ```css
 @import "tailwindcss";
-@import "@kroma/ui/css/fonts";
-@import "@kroma/ui/css/tokens";
-@import "@kroma/ui/css/motion";
-@import "@kroma/ui/css/page";
-@import "@kroma/ui/css/theme";
+@import "@kromatv/ui/css/fonts";
+@import "@kromatv/ui/css/tokens";
+@import "@kromatv/ui/css/motion";
+@import "@kromatv/ui/css/page";
+@import "@kromatv/ui/css/theme";
 ```
 
 | Part | Emits |
@@ -59,7 +59,7 @@ a reset, and a second unlayered one would outrank every utility it collides with
 | `base` | `reset` and `page` together |
 
 Both doors name the same parts: `virtual:kroma-<part>.css`, or
-`@kroma/ui/css/<part>` in a stylesheet (`virtual:kroma.css` and `@kroma/ui/css`
+`@kromatv/ui/css/<part>` in a stylesheet (`virtual:kroma.css` and `@kromatv/ui/css`
 for the aggregate). `tv` is
 there because a television wants the type, the tokens and the reset but none of the
 page furniture on top of it: it hides overflow, grounds itself dark and owns its
@@ -97,7 +97,7 @@ details are load-bearing:
   otherwise.
 
 A target that renders its own `<head>` instead of an `index.html` gets no such
-help. The TanStack sites carry the same two links by hand, in `@kroma/site-kit`'s
+help. The TanStack sites carry the same two links by hand, in `@kromatv/site-kit`'s
 `siteHead()` and in `apps/www`'s root route.
 
 The dev server declares `swap` rather than `optional`. There the sheet arrives with

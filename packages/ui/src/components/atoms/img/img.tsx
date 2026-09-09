@@ -2,7 +2,6 @@
 // change; `background` shows instantly as the fallback so the surface is never
 // blank.
 
-import { safeImageUrl } from '@kroma/core';
 import { type ReactNode, useLayoutEffect, useState } from 'react';
 import {
   Animated,
@@ -16,6 +15,7 @@ import type { CornerValue } from '#ui/core/tokens';
 import { coverRect, parsePosition } from '#ui/lib/cover-rect';
 import { gradient } from '#ui/lib/css';
 import { WEB } from '#ui/lib/platform';
+import { safeImageUrl } from '#ui/lib/safe-image-url';
 import { nativeLayers, type Size } from './native-layers';
 import { useCrossFade } from './use-cross-fade';
 import { webLayers } from './web-layers';

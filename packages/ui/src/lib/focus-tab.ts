@@ -8,7 +8,7 @@
 // step along the line, and when the line refuses, drop to the next one and
 // rewind it to its edge.
 
-import { type Direction, Directions } from '@kroma/spatial-nav';
+import { type Direction, Directions } from '@kromatv/spatial-nav';
 import type { FocusBox } from './focus-here';
 
 /** How the walk watches the focus: a counter to tell a move from a refusal, and

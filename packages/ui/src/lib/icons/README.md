@@ -44,7 +44,7 @@ every icon at runtime while compiling cleanly.
 
 A namespace import cannot be tree-shaken, so left alone the whole set ships: the
 kit site went from 258 KB to 741 KB gzipped. Every target gets the scanned subset
-from [`@kroma/ui/bundler`](../../../bundler), which walks the workspace for slug
+from [`@kromatv/ui/bundler`](../../../bundler), which walks the workspace for slug
 literals and rewrites this folder's `glyph-source.ts` down to the names it found,
 299 of 6,250 today. Measured on the repo's own Vite, `<Icon>` costs 49 KB gzipped
 with the subset against 573 KB with the full set.

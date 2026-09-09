@@ -1,5 +1,5 @@
 // The JS face of the DNS-SD beacon, shaped as the `LanDiscoveryBridge` that
-// `@kroma/core` defines and nothing else.
+// `@kromatv/core` defines and nothing else.
 //
 // `requireOptionalNativeModule`, like the server-discovery module beside it: a
 // build without the native half (a browser shell, a binary from before this
@@ -7,7 +7,7 @@
 // module, no link discovery, and handoff falls back to the server that has been
 // carrying it all along.
 
-import type { LanDiscoveryBridge, LanService } from '@kroma/core';
+import type { LanDiscoveryBridge, LanService } from '@kromatv/core';
 import { type NativeModule, requireOptionalNativeModule } from 'expo';
 import { PermissionsAndroid, Platform } from 'react-native';
 

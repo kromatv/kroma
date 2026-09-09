@@ -1,5 +1,5 @@
-import { type SortedTable, useSortedTable } from '@kroma/module-sdk';
-import type { SortColumn } from '@kroma/ui/kit';
+import { type SortedTable, useSortedTable } from '@kromatv/module-sdk';
+import type { SortColumn } from '@kromatv/ui/kit';
 import { useCallback, useMemo } from 'react';
 import { DOWNLOAD_COLUMNS } from './download-columns';
 import type { DownloadQuery, DownloadView, PageView } from './schemas';

@@ -1,12 +1,12 @@
-import type { KromaClient } from '@kroma/client';
-import type { AudioTrack, MediaItem } from '@kroma/client/media';
+import type { KromaClient } from '@kromatv/client';
+import type { AudioTrack, MediaItem } from '@kromatv/client/media';
 import {
   audioTrackLabel,
   audioTracksOf,
   type DirectPlayVerdict,
   declaredAspect,
-} from '@kroma/core';
-import { type AudioFilterMode, type PlaneRect, usePlaybackHeartbeat, useT } from '@kroma/ui';
+} from '@kromatv/core';
+import { type AudioFilterMode, type PlaneRect, usePlaybackHeartbeat, useT } from '@kromatv/ui';
 import { useCallback, useRef, useState } from 'react';
 import type { EnginePref } from '#tv/app/enginePref';
 import type { PlayerFailure, Surface, TvEngine } from '#tv/features/playback/player/engine';

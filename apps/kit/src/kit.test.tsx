@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { onScreen } from '@kroma/ui/testing';
-import { matches, type Story, slug } from '@kroma/workbench';
+import { onScreen } from '@kromatv/ui/testing';
+import { matches, type Story, slug } from '@kromatv/workbench';
 import { cleanup, fireEvent, render as renderRaw, screen, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -47,7 +47,7 @@ const at = (url: string) => history.replaceState(null, '', url);
 // A story's module is fetched when a reader opens it, so every entry is warmed
 // here: what these tests are about is the shell, and a shell reading a warm
 // index is what a second visit to any story already is. The cold path - the
-// busy stage, and the story replacing it - is pinned in @kroma/workbench.
+// busy stage, and the story replacing it - is pinned in @kromatv/workbench.
 beforeAll(async () => {
   await Promise.all(STORIES.map((entry) => entry.load()));
 });

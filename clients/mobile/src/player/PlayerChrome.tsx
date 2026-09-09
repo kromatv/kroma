@@ -1,15 +1,15 @@
 // Pure presentation over the Engine; all playback logic lives in engine/.
 
-import type { MediaItem } from '@kroma/client/media';
-import { audioTracksOf } from '@kroma/core';
+import type { MediaItem } from '@kromatv/client/media';
+import { audioTracksOf } from '@kromatv/core';
 import {
   audioFilterLabels,
   buildLeanStats,
   type PlayerStats,
   StatsPanel,
   type SubtitleAppearance,
-} from '@kroma/ui';
-import { Box, styles, Text } from '@kroma/ui/kit';
+} from '@kromatv/ui';
+import { Box, styles, Text } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';

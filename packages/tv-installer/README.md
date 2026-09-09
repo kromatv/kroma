@@ -1,4 +1,4 @@
-# @kroma/tv-installer
+# @kromatv/tv-installer
 
 Finds the televisions on this network, installs the toolchain each platform
 needs, then sideloads KROMA onto the sets you pick.
@@ -14,7 +14,7 @@ whatever is ticked. It installs the toolchain a set needs before touching it.
 Three platforms take a sideloaded package: Samsung (Tizen, `.wgt`), LG (webOS,
 `.ipk`) and Android TV (`.apk`, which covers Philips, Sony, TCL, Shield and
 Chromecast with Google TV). An Apple TV never appears in the list. Install one
-with `bun run --filter '@kroma/tv-native' ios`.
+with `bun run --filter '@kromatv/tv-native' ios`.
 
 ## What the scan probes
 

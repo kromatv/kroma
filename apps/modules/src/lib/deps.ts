@@ -1,4 +1,4 @@
-import { dependenciesOf } from '@kroma/registry';
+import { dependenciesOf } from '@kromatv/registry';
 import type { ModuleEntry } from '#site/catalog';
 
 export interface Dependency {

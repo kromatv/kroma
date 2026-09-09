@@ -1,8 +1,8 @@
 // A paginated grid of this week's trending movies OR shows, reached from the
 // discover rails. TMDB-gated on `requests.create`.
 
-import { hasPermission } from '@kroma/client/accounts';
-import { useT } from '@kroma/ui';
+import { hasPermission } from '@kromatv/client/accounts';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -13,7 +13,7 @@ import {
   Row,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';

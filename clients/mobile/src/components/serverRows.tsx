@@ -3,7 +3,7 @@
 // system's, so a phone's server list is the same object as the TV's and the
 // console's. What stays here is the section header and hint that frame it.
 
-import { Box, ListRow, Spinner, styles, Text } from '@kroma/ui/kit';
+import { Box, ListRow, Spinner, styles, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { spacing, type } from '#mobile/lib/theme';
 

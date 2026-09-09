@@ -1,11 +1,11 @@
-import type { MediaItem } from '@kroma/client/media';
+import type { MediaItem } from '@kromatv/client/media';
 import {
   audioTrackId,
   audioTracksOf,
   type DirectPlayVerdict,
   resolveAudioRelativeIndex,
-} from '@kroma/core';
-import type { AudioFilterMode, PlaneRect } from '@kroma/ui';
+} from '@kromatv/core';
+import type { AudioFilterMode, PlaneRect } from '@kromatv/ui';
 
 // A thin playback-engine abstraction for the TV player so the same hook/UI can
 // drive either a plain HTML `<video>` (+ hls.js) or Samsung's native AVPlay.
@@ -156,10 +156,10 @@ export function avplayAvailable(): boolean {
   return getAvplay() != null;
 }
 
-// Desktop mpv bridge (Tauri): the @kroma/desktop shell runs a native mpv
+// Desktop mpv bridge (Tauri): the @kromatv/desktop shell runs a native mpv
 // process for video and exposes a command surface + event stream to the
 // webview, reached through Tauri's injected `window.__TAURI__` globals, so
-// @kroma/tv needs no Tauri dependency, and this path stays inert in a plain
+// @kromatv/tv needs no Tauri dependency, and this path stays inert in a plain
 // browser (getTauri() → null → the HTML/AVPlay engines are used instead).
 
 /** The slice of Tauri's global API the mpv engine uses. */

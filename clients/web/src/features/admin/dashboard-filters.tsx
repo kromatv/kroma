@@ -1,6 +1,6 @@
-import type { MetricRange, WatchKind } from '@kroma/client/admin';
-import { useT } from '@kroma/ui';
-import { Select } from '@kroma/ui/kit';
+import type { MetricRange, WatchKind } from '@kromatv/client/admin';
+import { useT } from '@kromatv/ui';
+import { Select } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 

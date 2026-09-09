@@ -1,7 +1,7 @@
-import { ItemId, type SubjectId } from '@kroma/client/media';
-import { formatRuntime } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Button, type HostElement } from '@kroma/ui/kit';
+import { ItemId, type SubjectId } from '@kromatv/client/media';
+import { formatRuntime } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Button, type HostElement } from '@kromatv/ui/kit';
 import {
   audioFlagLabel,
   audioString,

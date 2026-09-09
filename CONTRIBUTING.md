@@ -11,8 +11,8 @@ KROMA is a [Bun](https://bun.sh) workspace monorepo with a Rust server alongside
 ```
 kroma/
 ├─ server/      Rust media server (axum) scan, SQLite, range streaming
-├─ packages/    @kroma/core · @kroma/ui · @kroma/tv  (shared logic, UI, 10-foot experience)
-└─ clients/     @kroma/web · @kroma/tizen · @kroma/webos  (thin platform shells)
+├─ packages/    @kromatv/core · @kromatv/ui · @kromatv/tv  (shared logic, UI, 10-foot experience)
+└─ clients/     @kromatv/web · @kromatv/tizen · @kromatv/webos  (thin platform shells)
 ```
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full architecture and each package's
@@ -62,8 +62,8 @@ cargo fmt                   # rustfmt is canonical; run before every PR
 - The quality gate (0 Sonar issues, 0% duplication, ~100% coverage on new
   logic) is part of done, not a follow-up: see
   [`CONVENTIONS.md`](CONVENTIONS.md#the-quality-gate-is-not-optional).
-- Keep clients **thin**: UI belongs in `@kroma/ui`, logic in `@kroma/core`, the
-  shared TV experience in `@kroma/tv`. Write platform code once.
+- Keep clients **thin**: UI belongs in `@kromatv/ui`, logic in `@kromatv/core`, the
+  shared TV experience in `@kromatv/tv`. Write platform code once.
 - Match the design language (deep-charcoal + amber, French copy, no emoji),
   documented in [`packages/ui/README.md`](packages/ui/README.md).
 - Keep the server's dependency graph **lean and Rust 1.81-friendly** (see the

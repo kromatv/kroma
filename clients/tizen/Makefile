@@ -102,7 +102,7 @@ dev-shell: connect ## One-time: install a live-dev shell (redirects the TV to th
 	# replaces it while developing; `make deploy` restores the real one.
 	# build:fast = vite build without the tsgo typecheck, so WIP type errors elsewhere
 	# in the tree never block getting a live-dev shell onto the TV.
-	cd $(REPO_ROOT) && bun run --filter '@kroma/tizen' build:fast
+	cd $(REPO_ROOT) && bun run --filter '@kromatv/tizen' build:fast
 	@rm -rf $(DEV_STAGE) && cp -R $(DIST) $(DEV_STAGE)
 	@rm -f $(DEV_STAGE)/*.wgt $(DEV_STAGE)/author-signature.xml $(DEV_STAGE)/signature1.xml
 	# Lives in scripts/, NOT public/: everything in public/ is copied verbatim into

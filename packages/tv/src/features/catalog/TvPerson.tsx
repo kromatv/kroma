@@ -1,7 +1,7 @@
-import type { Metadata } from '@kroma/client/media';
-import { creditsPerson, personInvolvement, posterColors, roleLabels } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, Text, useFocusNav } from '@kroma/ui/kit';
+import type { Metadata } from '@kromatv/client/media';
+import { creditsPerson, personInvolvement, posterColors, roleLabels } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Box, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav, useParams } from '#tv/app/router';

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { namespaceOf } from '@kroma/i18n/layout';
-import { LABEL_NAMESPACE } from '@kroma/i18n/locales';
+import { namespaceOf } from '@kromatv/i18n/layout';
+import { LABEL_NAMESPACE } from '@kromatv/i18n/locales';
 import type { Plugin } from 'vite';
 
 const KIT_SRC = fileURLToPath(new URL('../../ui/src', import.meta.url));
@@ -70,7 +70,7 @@ export interface MessageSubsetOptions {
 }
 
 /**
- * Ship only the part of `@kroma/core`'s message catalogs the bundle can reach:
+ * Ship only the part of `@kromatv/core`'s message catalogs the bundle can reach:
  * the design system's own keys, plus the literals found under `roots` and
  * whatever `keep` names.
  *

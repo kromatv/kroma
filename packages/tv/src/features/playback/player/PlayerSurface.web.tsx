@@ -1,7 +1,7 @@
 // The video surface on the browser targets: which element it is depends on the
 // backend the playback hook chose. PlayerSurface.tsx is the native half.
 
-import { classes, style } from '@kroma/ui/kit';
+import { classes, style } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
 

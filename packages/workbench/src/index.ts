@@ -1,4 +1,4 @@
-// @kroma/workbench: a component atelier, and the SDK for the stories it shows.
+// @kromatv/workbench: a component atelier, and the SDK for the stories it shows.
 //
 // A host mounts `Workbench` (or `defineWorkbench`); the sidebar, toolbar, panel
 // and canvas frames are internal and deliberately not exported.

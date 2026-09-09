@@ -1,8 +1,8 @@
 // A my-list id can name a movie OR a show, so the ids are resolved against both
 // catalogues, in the order the server returned them (newest first).
 
-import type { MediaItem, Show } from '@kroma/client/media';
-import { Box, Icon, styles, Text } from '@kroma/ui/kit';
+import type { MediaItem, Show } from '@kromatv/client/media';
+import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';

@@ -1,4 +1,4 @@
-import { KROMA_KR_PATH, KROMA_LOCKUP, KROMA_MA_PATH } from '@kroma/ui/lockup';
+import { KROMA_KR_PATH, KROMA_LOCKUP, KROMA_MA_PATH } from '@kromatv/ui/lockup';
 import { WheelMark } from '#site/components/wheel-mark';
 import { m } from '#site/paraglide/messages';
 

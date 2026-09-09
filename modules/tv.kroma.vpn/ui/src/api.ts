@@ -2,7 +2,7 @@
 // client: they are served by its sidecar under the mount the host derives from
 // its id, which `moduleApiHook` binds without the module naming itself.
 
-import { moduleApiHook } from '@kroma/module-sdk';
+import { moduleApiHook } from '@kromatv/module-sdk';
 import {
   type SaveVpnBody,
   SaveVpnResult,

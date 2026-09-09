@@ -1,6 +1,6 @@
 // Siri -> the app's search screen. Apple TV has no microphone an app may open,
 // so Siri is the voice input; `kroma://search?q=...` reaches the same door.
-import { requestSearch } from '@kroma/tv';
+import { requestSearch } from '@kromatv/tv';
 import { Linking } from 'react-native';
 import { SiriSearch } from '../../modules/siri-search';
 

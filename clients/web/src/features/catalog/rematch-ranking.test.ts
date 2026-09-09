@@ -1,4 +1,4 @@
-import type { MatchCandidate } from '@kroma/client/media';
+import type { MatchCandidate } from '@kromatv/client/media';
 import { describe, expect, it } from 'vitest';
 import {
   confidencePercent,

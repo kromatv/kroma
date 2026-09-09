@@ -1,5 +1,5 @@
-import type { WatchKind } from '@kroma/client/admin';
-import { colors } from '@kroma/ui/tokens/colors';
+import type { WatchKind } from '@kromatv/client/admin';
+import { colors } from '@kromatv/ui/tokens/colors';
 
 /**
  * Token VALUES rather than the custom properties everything else paints with:

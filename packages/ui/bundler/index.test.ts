@@ -369,7 +369,7 @@ describe('the scan', () => {
 
   it('keeps a name the source actually writes', () => {
     // The one failure that matters: an icon the app draws going missing. This
-    // name is written as a literal in @kroma/ui's own source.
+    // name is written as a literal in @kromatv/ui's own source.
     expect(loadGlyphSource().code).toContain(exportNameOf(A_NAME_THE_SOURCE_USES));
   });
 

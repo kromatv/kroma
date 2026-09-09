@@ -1,5 +1,5 @@
-import type { NotificationImage } from '@kroma/client/notifications';
-import { useT } from '@kroma/ui';
+import type { NotificationImage } from '@kromatv/client/notifications';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -17,7 +17,7 @@ import {
   Spinner,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 
 const s = styles({

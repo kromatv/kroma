@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import type { MediaItem } from '@kroma/client/media';
-import { I18nProvider } from '@kroma/ui';
-import { onScreen } from '@kroma/ui/testing';
+import type { MediaItem } from '@kromatv/client/media';
+import { I18nProvider } from '@kromatv/ui';
+import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EpisodeRow } from './EpisodeRow';

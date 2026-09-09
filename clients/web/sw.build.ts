@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import type { StandaloneScriptOptions } from '@kroma/bundler/standalone-script';
+import type { StandaloneScriptOptions } from '@kromatv/bundler/standalone-script';
 
 /**
  * How the Web Push service worker is compiled.

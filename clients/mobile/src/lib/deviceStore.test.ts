@@ -47,7 +47,7 @@ vi.mock('expo-file-system', () => ({
 }));
 
 const stored = vi.hoisted(() => ({ current: null as unknown }));
-vi.mock('@kroma/client', () => ({
+vi.mock('@kromatv/client', () => ({
   setSessionStorage: (s: unknown) => {
     stored.current = s;
   },
@@ -79,7 +79,7 @@ beforeEach(() => {
 });
 
 describe('installDeviceStore', () => {
-  it('hands @kroma/core a store that reads what it wrote', () => {
+  it('hands @kromatv/core a store that reads what it wrote', () => {
     const store = install();
     expect(store.getItem('kroma:theme')).toBeNull();
 

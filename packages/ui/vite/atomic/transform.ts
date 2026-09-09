@@ -22,8 +22,8 @@ const KIT_SOURCES = new Set([
   '#ui/core',
   '#ui/core/styles',
   '#ui/core/recipe',
-  '@kroma/ui/kit',
-  '@kroma/ui',
+  '@kromatv/ui/kit',
+  '@kromatv/ui',
 ]);
 
 const RUNTIME = '#ui/core/atomic';

@@ -1,4 +1,4 @@
-import { audioTracksOf, preferredAudioIndex } from '@kroma/core';
+import { audioTracksOf, preferredAudioIndex } from '@kromatv/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { setWebEnginePref, type WebEnginePref } from '#web/features/playback/engine-pref';
 import { bindMediaEvents } from '#web/features/playback/media-events';

@@ -1,6 +1,6 @@
-import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
-import { Text } from '@kroma/ui/kit/atoms/text';
-import { CopyButton } from '@kroma/ui/kit/molecules/copy-button';
+import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
+import { Text } from '@kromatv/ui/kit/atoms/text';
+import { CopyButton } from '@kromatv/ui/kit/molecules/copy-button';
 
 export function InstallCard({ url }: Readonly<{ url: string }>) {
   return (

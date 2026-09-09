@@ -1,9 +1,9 @@
 {
-  "name": "@kroma/workbench",
+  "name": "@kromatv/workbench",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "The component workbench: a Storybook-shaped atelier built out of @kroma/ui itself, plus the SDK for authoring the stories it shows. Knows no app - the brand, the stories and the extra lenses are all passed in.",
+  "description": "The component workbench: a Storybook-shaped atelier built out of @kromatv/ui itself, plus the SDK for authoring the stories it shows. Knows no app - the brand, the stories and the extra lenses are all passed in.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "license": "GPL-2.0-or-later",
   "repository": {
@@ -21,7 +21,7 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/ui": "workspace:*"
+    "@kromatv/ui": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18",
@@ -29,7 +29,7 @@
     "@tanstack/react-router": ">=1.170"
   },
   "devDependencies": {
-    "@kroma/bundler": "workspace:*",
+    "@kromatv/bundler": "workspace:*",
     "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",
     "react": "19.2.8",

@@ -1,9 +1,9 @@
 {
-  "name": "@kroma/site",
+  "name": "@kromatv/site",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "KROMA's public site (kroma.tv). TanStack Start, prerendered to static assets on Cloudflare. Marketing pages and an MD/MDX blog, styled from the @kroma/ui design tokens.",
+  "description": "KROMA's public site (kroma.tv). TanStack Start, prerendered to static assets on Cloudflare. Marketing pages and an MD/MDX blog, styled from the @kromatv/ui design tokens.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "license": "GPL-2.0-or-later",
   "repository": {
@@ -25,9 +25,9 @@
     "paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy url --emit-ts-declarations --silent"
   },
   "dependencies": {
-    "@kroma/registry": "workspace:*",
-    "@kroma/site-meta": "workspace:*",
-    "@kroma/ui": "workspace:*",
+    "@kromatv/registry": "workspace:*",
+    "@kromatv/site-meta": "workspace:*",
+    "@kromatv/ui": "workspace:*",
     "@mdx-js/react": "^3.1.1",
     "@tabler/icons-react": "^3.46.0",
     "@tanstack/react-router": "^1.170.29",

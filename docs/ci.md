@@ -206,5 +206,5 @@ and its token have to be created in the Cloudflare dashboard.
 `.bun-version` is the one pin (`1.4.0`), read by every `setup-bun` through
 `bun-version-file`, by `packageManager` in `package.json`, and by the server
 Dockerfile. Jobs that only need the CLI run
-`bun install --frozen-lockfile --filter '@kroma/ci-tools'`, a few packages
+`bun install --frozen-lockfile --filter '@kromatv/ci-tools'`, a few packages
 instead of the workspace.

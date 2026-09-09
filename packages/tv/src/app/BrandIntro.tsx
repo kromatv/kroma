@@ -1,8 +1,8 @@
 // Native (Apple TV / Android TV) brand intro, played via expo-video. No CSS
 // fallback: unlike the browser shells, a native TV always has an HEVC decoder.
 
-import { holdInput, styles } from '@kroma/ui/kit';
-import { EXIT_MS, SAFETY_SLACK_MS } from '@kroma/ui/kit/organisms/kroma-intro';
+import { holdInput, styles } from '@kromatv/ui/kit';
+import { EXIT_MS, SAFETY_SLACK_MS } from '@kromatv/ui/kit/organisms/kroma-intro';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, type HWEvent, StyleSheet, useTVEventHandler, View } from 'react-native';
@@ -16,7 +16,7 @@ export interface BrandIntroProps {
 //
 // `require`, not an import: Metro turns the asset into a registry entry, which
 // is what expo-video expects as a source.
-const FILM: number = require('@kroma/ui/src/assets/kroma-intro-hevc-1080.mp4');
+const FILM: number = require('@kromatv/ui/src/assets/kroma-intro-hevc-1080.mp4');
 
 const FALLBACK_HOLD_MS = 15_000;
 const AUDIO_FADE_STEPS = 8;

@@ -10,7 +10,7 @@
 // done, so one shell serves Metro - where every module is in the bundle whatever
 // anyone does about it - and Vite alike.
 
-import { useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import type { Story } from './story';
 
 /** One row of the index. */
@@ -27,12 +27,17 @@ interface StoryEntry {
   /** Compiles the story, loading its module the first time and handing back the
    * same promise after that, so two views of one story fetch it once. */
   load: () => Promise<Story>;
+  /** Calls back when `ready` starts answering differently. Returns the
+   * unsubscribe. */
+  subscribe: (onChange: () => void) => () => void;
 }
 
 /** A registry as either half of discovery builds one: `discoverVite` and
  * `discoverMetro` hand over compiled stories, `indexVite` hands over an index
  * that fetches them. */
 type Registry = readonly (Story | StoryEntry)[];
+
+const NOTHING = () => undefined;
 
 function isEntry(item: Story | StoryEntry): item is StoryEntry {
   return 'load' in item;
@@ -48,6 +53,7 @@ function held(story: Story): StoryEntry {
     path: story.path,
     ready: () => story,
     load: () => Promise.resolve(story),
+    subscribe: () => NOTHING,
   };
 }
 
@@ -60,23 +66,24 @@ function storyEntries(registry: Registry): readonly StoryEntry[] {
 /** Fetches what an entry names, and re-renders when it lands.
  *
  * Undefined only while a module is in flight: the answer is read from the entry
- * on every render rather than mirrored into state, so a story looked at a second
- * time never falls back through a pending frame. Pass a MEMOISED entry - a fresh
- * object each render would refetch each render. */
+ * rather than mirrored into state, so a story looked at a second time never
+ * falls back through a pending frame. An entry is a mutable object behind a
+ * stable identity, which is what `useSyncExternalStore` is for - deriving the
+ * story in render instead would let React Compiler cache the first answer and
+ * never ask again. Pass a MEMOISED entry - a fresh object each render would
+ * refetch each render. */
 function useStory(entry: StoryEntry | undefined): Story | undefined {
-  const [, arrived] = useReducer((count: number) => count + 1, 0);
+  const subscribe = useCallback(
+    (onChange: () => void) => entry?.subscribe(onChange) ?? NOTHING,
+    [entry],
+  );
+  const read = useCallback(() => entry?.ready(), [entry]);
+  const story = useSyncExternalStore(subscribe, read, read);
   useEffect(() => {
     if (!entry || entry.ready()) return;
-    let live = true;
-    const settled = () => {
-      if (live) arrived();
-    };
-    entry.load().then(settled, settled);
-    return () => {
-      live = false;
-    };
+    entry.load().catch(() => undefined);
   }, [entry]);
-  return entry?.ready();
+  return story;
 }
 
 export type { Registry, StoryEntry };

@@ -1,5 +1,5 @@
-import { apiErrorText, useFetch, useT } from '@kroma/module-sdk';
-import { Box, Callout, Dialog, Icon, Img, Row, Spinner, Text } from '@kroma/ui/kit';
+import { apiErrorText, useFetch, useT } from '@kromatv/module-sdk';
+import { Box, Callout, Dialog, Icon, Img, Row, Spinner, Text } from '@kromatv/ui/kit';
 import { createCallable } from 'react-call';
 import { useTorrentsApi } from './api';
 import type { DownloadView } from './schemas';

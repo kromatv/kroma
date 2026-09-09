@@ -13,8 +13,8 @@ import {
 // the transport/seek logic the hook owns against a hand-rolled fake <video>.
 // The language matcher is the real one (it IS what this test exercises); the
 // engine/capability surface stays stubbed.
-vi.mock('@kroma/core', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@kroma/core')>()),
+vi.mock('@kromatv/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kromatv/core')>()),
   audioTracksOf: () => H.tracks,
   capabilities: () => ({}),
   MSE_CAPS: H.mseCaps,

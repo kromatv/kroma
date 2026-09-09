@@ -13,7 +13,7 @@ import {
   type SortColumn,
   style,
   type TableColumn,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { Children, isValidElement, type ReactNode } from 'react';
 import { Pressable } from 'react-native';
 
@@ -143,6 +143,6 @@ function Action({ tone, icon, label, onPress, disabled = false }: Readonly<Table
  */
 const Table = { Root, Header, Row, Cell, Column, Action };
 
-export type { SortColumn, TableColumn } from '@kroma/ui/kit';
+export type { SortColumn, TableColumn } from '@kromatv/ui/kit';
 export type { TableActionProps, TableCellProps, TableColumnProps, TableRootProps, TableRowProps };
 export { Table };

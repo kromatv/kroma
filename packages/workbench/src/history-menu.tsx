@@ -2,7 +2,7 @@
 // moved, and the commits behind that. It sits beside the source link because
 // the two answer the same question - where this component came from.
 
-import { Box, styles, Text } from '@kroma/ui/kit';
+import { Box, styles, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { ScrollView } from 'react-native';
 import { useEscapeKey } from './command';

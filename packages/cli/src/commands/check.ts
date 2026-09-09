@@ -42,7 +42,7 @@ export function importProblems(file: string, code: string, projectDir: string): 
     const spec = specifierOf(line);
     if (spec === null) continue;
     if (spec.startsWith('#ui/')) {
-      out.push(`${label}: '${spec}' is the kit's private alias; import from '@kroma/ui/kit'`);
+      out.push(`${label}: '${spec}' is the kit's private alias; import from '@kromatv/ui/kit'`);
     } else if (spec.startsWith('.')) {
       const target = join(dirname(file), spec);
       if (relative(projectDir, target).startsWith('..')) {

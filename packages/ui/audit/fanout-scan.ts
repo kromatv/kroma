@@ -98,7 +98,7 @@ function* sources(dir: string): Generator<string> {
 }
 
 // Same trick as scripts/compiler-coverage.ts: the plugin belongs to
-// @kroma/bundler, and babel itself is only reachable through the plugin's tree.
+// @kromatv/bundler, and babel itself is only reachable through the plugin's tree.
 function babelOf(root: string) {
   const bundlerRequire = createRequire(resolve(root, 'packages/bundler/package.json'));
   const compiler = bundlerRequire.resolve('babel-plugin-react-compiler');

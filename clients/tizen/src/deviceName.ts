@@ -13,7 +13,7 @@
 // The model calls behind it are the fallback for a firmware that does not carry
 // the network API: "The Frame" still beats "Tizen".
 
-import { type DeviceNameSource, lateDeviceName } from '@kroma/tv';
+import { type DeviceNameSource, lateDeviceName } from '@kromatv/tv';
 import { z } from 'zod';
 
 interface TizenGlobals {

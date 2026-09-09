@@ -1,4 +1,4 @@
-// Hands @kroma/tv the libVLC plane, which only this shell builds.
+// Hands @kromatv/tv the libVLC plane, which only this shell builds.
 //
 // The engine exists for what the platform decoder refuses: Media3 falls back to
 // nothing, because its FFmpeg video renderer answers FORMAT_UNSUPPORTED for every
@@ -9,7 +9,7 @@
 // Apple builds no module, `VlcPlayerView` is null and nothing is registered -
 // the correct answer there, and what keeps the engine out of that picker.
 
-import { registerVlcPlane, type VlcPlaneProps } from '@kroma/tv';
+import { registerVlcPlane, type VlcPlaneProps } from '@kromatv/tv';
 import type { ComponentType } from 'react';
 import { releaseVlcPlayers, VlcPlayerView } from '../../modules/vlc-player';
 

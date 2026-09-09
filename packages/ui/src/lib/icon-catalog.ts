@@ -1,5 +1,5 @@
 // What Tabler publishes about a glyph beyond its name, handed in by a workbench
-// at startup. The kit never ships it: see @kroma/ui/vite/icon-catalog.
+// at startup. The kit never ships it: see @kromatv/ui/vite/icon-catalog.
 
 /** One glyph's place in Tabler's own catalogue. */
 interface IconEntry {

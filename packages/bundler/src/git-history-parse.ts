@@ -13,7 +13,7 @@ export interface HistoryCommit {
 /** What one component folder or one page file has been through. The dates are
  * absent for something that exists but has never been committed, which is a
  * state of its own and not the same as knowing nothing about it. Mirrors
- * `HistoryEntry` in @kroma/workbench; kept structural rather than imported so
+ * `HistoryEntry` in @kromatv/workbench; kept structural rather than imported so
  * this build-time module has no runtime dependency on the package. */
 export interface HistoryEntry {
   created?: string;

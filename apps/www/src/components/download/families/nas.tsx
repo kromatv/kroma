@@ -1,5 +1,5 @@
 import { release } from 'virtual:kroma-releases';
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import { IconInfoCircle, IconRefresh, IconServer, IconWorld } from '@tabler/icons-react';
 import { family } from '#site/components/download/families/meta';
 import { docs, ProseLink } from '#site/components/download/links';

@@ -4,9 +4,9 @@
 // closes on an ack rather than waiting for the new art (the fiche live-refreshes
 // on the update event). Gated on `library.manage` by the caller AND the server.
 
-import { apiErrorText } from '@kroma/client';
-import { ItemId, ShowId } from '@kroma/client/media';
-import { useT } from '@kroma/ui';
+import { apiErrorText } from '@kromatv/client';
+import { ItemId, ShowId } from '@kromatv/client/media';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -17,7 +17,7 @@ import {
   Spinner,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { createCallable } from 'react-call';

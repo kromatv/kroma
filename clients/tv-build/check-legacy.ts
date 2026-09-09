@@ -3,7 +3,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { syntaxAboveDeepFloor } from '@kroma/bundler/deep-tier';
+import { syntaxAboveDeepFloor } from '@kromatv/bundler/deep-tier';
 
 const dist = (p: string): string => join(process.cwd(), 'dist', p);
 

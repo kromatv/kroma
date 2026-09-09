@@ -1,5 +1,5 @@
-import { SessionResult, User } from '@kroma/client/accounts';
-import { MediaItem } from '@kroma/client/media';
+import { SessionResult, User } from '@kromatv/client/accounts';
+import { MediaItem } from '@kromatv/client/media';
 import type { Page } from 'playwright';
 
 const USER = User.parse({

@@ -11,7 +11,7 @@ import {
   sv,
   Text,
   useResizablePanel,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { RULE, RULE_TOP, TAB } from './chrome';

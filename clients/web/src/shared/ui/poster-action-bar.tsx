@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Box, IconButton, type IconName, Menu } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, IconButton, type IconName, Menu } from '@kromatv/ui/kit';
 
 export interface PosterAction {
   key: string;
@@ -58,7 +58,7 @@ export interface PosterActionBarProps {
  * Nothing at all when `actions` is empty. Hidden with opacity rather than by
  * unmounting, so the discs stay in the tab order. The opacity steps between 0 and
  * 1 rather than fading: a box under 1 is a backdrop root, so a fade would leave
- * the discs' frost blind for its whole duration (@kroma/ui lib/css.web).
+ * the discs' frost blind for its whole duration (@kromatv/ui lib/css.web).
  */
 export function PosterActionBar({ actions, shown }: Readonly<PosterActionBarProps>) {
   const t = useT();

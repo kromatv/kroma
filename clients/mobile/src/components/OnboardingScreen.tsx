@@ -9,7 +9,7 @@ import {
   type SplashCover,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, type KeyboardAvoidingViewProps, Platform } from 'react-native';

@@ -2,8 +2,8 @@
 // microphone. The platform half (the microphone itself, and how the words
 // arrive) is a backend the shell registers; see `#tv/app/voiceSearch`.
 
-import { useLocale, useT } from '@kroma/ui';
-import { Box, Button, Dialog, Icon, styles, Text, useLoop } from '@kroma/ui/kit';
+import { useLocale, useT } from '@kromatv/ui';
+import { Box, Button, Dialog, Icon, styles, Text, useLoop } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { Animated } from 'react-native';
 import type { VoiceSearchBackend } from '#tv/app/voiceSearch';

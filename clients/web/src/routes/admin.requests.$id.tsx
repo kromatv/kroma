@@ -1,4 +1,4 @@
-import { RequestId } from '@kroma/client/requests';
+import { RequestId } from '@kromatv/client/requests';
 import { createFileRoute } from '@tanstack/react-router';
 import { RequestDetailPage } from '#web/features/admin/request-detail';
 

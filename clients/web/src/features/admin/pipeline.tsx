@@ -1,7 +1,7 @@
-import type { ElementRow } from '@kroma/client/pipeline';
-import { Table } from '@kroma/module-sdk';
-import { useT } from '@kroma/ui';
-import { Box, Button, Callout, EmptyState, Row, styles } from '@kroma/ui/kit';
+import type { ElementRow } from '@kromatv/client/pipeline';
+import { Table } from '@kromatv/module-sdk';
+import { useT } from '@kromatv/ui';
+import { Box, Button, Callout, EmptyState, Row, styles } from '@kromatv/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 import { pipelineActions, usePipelineReloadEvents } from '#web/features/admin/pipeline-actions';
 import { PipelineDrawer } from '#web/features/admin/pipeline-drawer';

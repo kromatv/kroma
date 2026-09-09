@@ -1,7 +1,7 @@
-import type { MediaItem } from '@kroma/client/media';
-import { audioTracksOf, langCode, preferredAudioIndex } from '@kroma/core';
-import { useCast } from '@kroma/ui';
-import { Box, styles } from '@kroma/ui/kit';
+import type { MediaItem } from '@kromatv/client/media';
+import { audioTracksOf, langCode, preferredAudioIndex } from '@kromatv/core';
+import { useCast } from '@kromatv/ui';
+import { Box, styles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigation, useRouter } from 'expo-router';
 import type { VideoView as VideoViewRef } from 'expo-video';

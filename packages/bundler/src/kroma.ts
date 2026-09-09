@@ -1,21 +1,21 @@
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { collectBuildInfo, productVersion } from '@kroma/build-info';
-import { buildInfoPlugin } from '@kroma/bundler/build-info';
-import { depsWithoutMaps } from '@kroma/bundler/deps-without-maps';
-import { exitAfterBuild } from '@kroma/bundler/exit-after-build';
-import { kromaMdx } from '@kroma/bundler/mdx';
-import { reactCompiler } from '@kroma/bundler/react-compiler';
+import { collectBuildInfo, productVersion } from '@kromatv/build-info';
+import { buildInfoPlugin } from '@kromatv/bundler/build-info';
+import { depsWithoutMaps } from '@kromatv/bundler/deps-without-maps';
+import { exitAfterBuild } from '@kromatv/bundler/exit-after-build';
+import { kromaMdx } from '@kromatv/bundler/mdx';
+import { reactCompiler } from '@kromatv/bundler/react-compiler';
 import {
   KROMA_SOURCE_PACKAGES,
   RNW_DEFINE,
   RNW_OPTIMIZE_DEPS,
   RNW_SSR_NO_EXTERNAL,
   webResolve,
-} from '@kroma/bundler/rnw';
-import { kromaCatalogs } from '@kroma/core/vite';
-import { kromaI18nDevtools } from '@kroma/i18n-devtools/vite';
-import { kromaUI } from '@kroma/ui/vite';
+} from '@kromatv/bundler/rnw';
+import { kromaCatalogs } from '@kromatv/core/vite';
+import { kromaI18nDevtools } from '@kromatv/i18n-devtools/vite';
+import { kromaUI } from '@kromatv/ui/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import react from '@vitejs/plugin-react';
 import type { Plugin, PluginOption } from 'vite';

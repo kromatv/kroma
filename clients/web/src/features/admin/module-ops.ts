@@ -6,9 +6,9 @@
 // before it and one tab holds one extra connection, not three. Plus the
 // sidecar restart, the one module op the server answers in a single call.
 
-import { KromaEvents, type ServerEvent, type StoreOpEvent } from '@kroma/client/events';
-import type { ModuleId } from '@kroma/client/modules';
-import type { MessageKey } from '@kroma/core';
+import { KromaEvents, type ServerEvent, type StoreOpEvent } from '@kromatv/client/events';
+import type { ModuleId } from '@kromatv/client/modules';
+import type { MessageKey } from '@kromatv/i18n';
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { message, restartModule } from '#web/features/admin/module-api';
 import { apiBase } from '#web/shared/lib/api';

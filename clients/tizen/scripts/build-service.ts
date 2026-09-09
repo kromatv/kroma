@@ -2,7 +2,7 @@
 // dist/ after the Vite builds (which would otherwise wipe it). The platform
 // launches it separately from the path config.xml names, so Vite never sees it.
 
-import { lowerJs } from '@kroma/bundler/deep-tier';
+import { lowerJs } from '@kromatv/bundler/deep-tier';
 import { build } from 'esbuild';
 
 const CHROME = 47;

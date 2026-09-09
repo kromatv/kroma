@@ -12,8 +12,8 @@ import {
   styles,
   sv,
   Text,
-} from '@kroma/ui/kit';
-import type { ColorToken } from '@kroma/ui/tokens';
+} from '@kromatv/ui/kit';
+import type { ColorToken } from '@kromatv/ui/tokens';
 import type { ReactNode } from 'react';
 import { useEscapeKey } from './command';
 

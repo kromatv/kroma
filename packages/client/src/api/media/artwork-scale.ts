@@ -33,7 +33,7 @@ export function artworkWidth(displayWidth: number): number {
  * television with a weak SoC wants and a desktop does not. Clamped to a range
  * where the result is still artwork: past 1 nothing is gained on a panel that
  * draws at 1x, and below a quarter a poster is mush. Process-wide: `sizedImageUrl`
- * in `@kroma/core` reads it from a free function holding no client, so one
+ * in `@kromatv/core` reads it from a free function holding no client, so one
  * process must serve one device. */
 export function setArtworkScale(scale: number): void {
   artworkScale = Math.min(1, Math.max(0.25, scale));

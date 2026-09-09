@@ -22,7 +22,7 @@ on:
       - 'packages/tv/**'
       - 'packages/core/**'
       - 'packages/ui/**'
-      # The desktop frontend builds through @kroma/bundler.
+      # The desktop frontend builds through @kromatv/bundler.
       - 'packages/bundler/**'
       - '.github/workflows/desktop-autoupdate.yml'
   workflow_dispatch:

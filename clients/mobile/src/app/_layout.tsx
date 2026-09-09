@@ -1,7 +1,7 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { lanBeacon } from '@kroma/lan-beacon';
-import { CastProvider, I18nProvider as KitI18nProvider } from '@kroma/ui';
-import { expoImageBackend } from '@kroma/ui/expo-image';
+import { lanBeacon } from '@kromatv/lan-beacon';
+import { CastProvider, I18nProvider as KitI18nProvider } from '@kromatv/ui';
+import { expoImageBackend } from '@kromatv/ui/expo-image';
 import {
   applyMode,
   onPaper,
@@ -15,7 +15,7 @@ import {
   ThemeProvider,
   useSystemGround,
   useTheme,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BlurView } from 'expo-blur';
 import * as Device from 'expo-device';

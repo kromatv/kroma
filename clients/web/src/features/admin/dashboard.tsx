@@ -1,6 +1,6 @@
-import type { PlaybackSession } from '@kroma/client/admin';
-import { useT } from '@kroma/ui';
-import { Box, EmptyState, Section } from '@kroma/ui/kit';
+import type { PlaybackSession } from '@kromatv/client/admin';
+import { useT } from '@kromatv/ui';
+import { Box, EmptyState, Section } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { useAccountRoster } from '#web/features/admin/dashboard-accounts';
 import { BandwidthSection, CpuSection, RamSection } from '#web/features/admin/dashboard-metrics';

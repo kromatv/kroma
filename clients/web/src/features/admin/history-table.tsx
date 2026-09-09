@@ -1,8 +1,8 @@
-import type { PlayEntry } from '@kroma/client/admin';
-import type { MessageKey } from '@kroma/core';
-import { TABULAR } from '@kroma/module-sdk';
-import { useFormat, useT } from '@kroma/ui';
-import { Box, EmptyState, type SortColumn, Table, Text } from '@kroma/ui/kit';
+import type { PlayEntry } from '@kromatv/client/admin';
+import type { MessageKey } from '@kromatv/i18n';
+import { TABULAR } from '@kromatv/module-sdk';
+import { useFormat, useT } from '@kromatv/ui';
+import { Box, EmptyState, type SortColumn, Table, Text } from '@kromatv/ui/kit';
 import type { ComponentType } from 'react';
 import {
   type HistoryColumn,

@@ -3,9 +3,9 @@
 // accessToken is stored and exchanged on demand for a short-lived bearer kept
 // in memory; a 401 mid-flight silently re-exchanges.
 
-import { setSessionToken } from '@kroma/client';
-import { normalizeServerUrl, type User } from '@kroma/client/accounts';
-import type { QueryClient } from '@kroma/client/query';
+import { setSessionToken } from '@kromatv/client';
+import { normalizeServerUrl, type User } from '@kromatv/client/accounts';
+import type { QueryClient } from '@kromatv/client/query';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import { makeClient } from '#mobile/lib/device';
 import {

@@ -1,6 +1,6 @@
-import { useFormat, usePoll, useT } from '@kroma/module-sdk';
-import type { VpnBandwidthTotals } from '@kroma/module-vpn/schemas';
-import { Box, Callout } from '@kroma/ui/kit';
+import { useFormat, usePoll, useT } from '@kromatv/module-sdk';
+import type { VpnBandwidthTotals } from '@kromatv/module-vpn/schemas';
+import { Box, Callout } from '@kromatv/ui/kit';
 import { useTorrentsApi } from './api';
 
 const POLL_MS = 60000;

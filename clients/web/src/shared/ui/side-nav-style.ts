@@ -1,4 +1,4 @@
-import { CONTROL, type StyleDecl, styles, svFor, typeSpec } from '@kroma/ui/kit';
+import { CONTROL, type StyleDecl, styles, svFor, typeSpec } from '@kromatv/ui/kit';
 import { safeAreaBottom } from '#web/shared/lib/safe-area';
 
 const SHELL = CONTROL.sm;

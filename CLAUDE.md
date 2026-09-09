@@ -80,7 +80,7 @@ With no media configured the server seeds demo titles. Point it at real files wi
 
 Every root script is `<verb>:<target>` (`dev:` / `build:` / `deploy:` / `kit:`);
 `bun run` with no argument lists them all. Anything targeting one workspace is
-`bun run --filter '@kroma/<name>' <script>`.
+`bun run --filter '@kromatv/<name>' <script>`.
 
 ### Running a single test
 
@@ -209,8 +209,8 @@ bun run kroma release --dry-run --repo <owner/repo>   # CI's publish verdict
 ```
 
 A module's frontend is a bundle the web client loads at runtime. It takes
-`react`, `@kroma/ui`, `@kroma/module-sdk`, `@kroma/core`, `@kroma/client` and
-the query cache from the host (`SHARED_MODULES` in `@kroma/module-sdk`), so a
+`react`, `@kromatv/ui`, `@kromatv/module-sdk`, `@kromatv/core`, `@kromatv/client` and
+the query cache from the host (`SHARED_MODULES` in `@kromatv/module-sdk`), so a
 page renders inside the host's theme with one React on the page; nothing in
 `clients/web` names a module.
 
@@ -229,7 +229,7 @@ packages/  libraries, consumed by name and never by path
             schemas ARE the wire types; the transport and events in src/core/
   core/     the rules on top of the client: HEVC detection, direct-play, i18n,
             remote map. It re-exports nothing
-  ui/       @kroma/ui: the design system, authored against React Native
+  ui/       @kromatv/ui: the design system, authored against React Native
   tv/       the whole 10-foot experience (spatial focus nav, home, detail, player)
   workbench the component atelier + the story SDK the kit's stories are written in
   bundler   the shared Vite/Metro pipeline (rnw, mdx, shell, props-docs, site)
@@ -237,16 +237,16 @@ packages/  libraries, consumed by name and never by path
 clients/   the product's shells, thin: web · tizen · webos · tv-web · tv-native ·
            mobile · desktop (Tauri+mpv) · synology · tv-build + expo-build (pipelines)
 apps/      the web properties, deployed to Cloudflare
-  www/      @kroma/site: kroma.tv, prerendered marketing + blog
-  kit/      @kroma/kit: the workbench, as a site and as a phone/TV app
-  modules/  @kroma/modules-site: the official .kmod catalog
-  packages/ @kroma/package-source: the release listing DSM downloads from
+  www/      @kromatv/site: kroma.tv, prerendered marketing + blog
+  kit/      @kromatv/kit: the workbench, as a site and as a phone/TV app
+  modules/  @kromatv/modules-site: the official .kmod catalog
+  packages/ @kromatv/package-source: the release listing DSM downloads from
 ```
 
 A client ships the product; an app is a website about it. The two never import
-each other, and both reach a library by its `@kroma/*` name.
+each other, and both reach a library by its `@kromatv/*` name.
 
-- `@kroma/ui` is authored **against React Native** and renders natively on Apple TV /
+- `@kromatv/ui` is authored **against React Native** and renders natively on Apple TV /
   Android TV / iOS / Android, and through **react-native-web** on Tizen, webOS, the
   Tauri desktop shell and the web client. Components are consumed as source: no
   build step; `react`/`react-native` are peer deps. One component per file,
@@ -264,21 +264,21 @@ each other, and both reach a library by its `@kroma/*` name.
   D-pad stop, a pointer-sized hit area), so indicators are non-pressable faces;
   and a control's shape comes from the one shell table in `lib/field-shell`,
   never from its own paddings.
-- **Clients stay thin.** UI belongs in `@kroma/ui`, logic in `@kroma/core`, the TV
-  experience in `@kroma/tv`. Write platform code once.
+- **Clients stay thin.** UI belongs in `@kromatv/ui`, logic in `@kromatv/core`, the TV
+  experience in `@kromatv/tv`. Write platform code once.
 - Both `clients/web/src` and `packages/tv/src` are **feature-sliced**
   (`features/{catalog,playback,accounts,admin,…}` + `shared/` + `app`/`routes`).
-  Dependency rule: `features/* → shared/* → @kroma/ui → @kroma/core →
-  @kroma/client`. A feature **must not import a sibling feature**: lift shared
+  Dependency rule: `features/* → shared/* → @kromatv/ui → @kromatv/core →
+  @kromatv/client`. A feature **must not import a sibling feature**: lift shared
   code to `shared/`.
 - **Three doors, and each thing is behind exactly one.** Nothing re-exports
   another, so the import path says where a symbol comes from:
-  - `@kroma/client/<domain>` — what one domain owns: its zod schemas, its ids,
+  - `@kromatv/client/<domain>` — what one domain owns: its zod schemas, its ids,
     its response types. `ItemId` is media's, `CastReceiver` is cast's.
-  - `@kroma/client` — what no single domain owns: `KromaClient`, the transport,
+  - `@kromatv/client` — what no single domain owns: `KromaClient`, the transport,
     the session store, and the ids two domains share (`DeviceId` names a
     television on the cast roster AND on a handoff beacon).
-  - `@kroma/core` — what is not a wire type at all: the rules built on top,
+  - `@kromatv/core` — what is not a wire type at all: the rules built on top,
     and shapes derived from one (`DiscoveredTv` extends the handoff domain's
     `HandoffDevice` with fields the server never sends).
 
@@ -287,8 +287,8 @@ each other, and both reach a library by its `@kroma/*` name.
   the domains: the package's `exports` maps `./*` onto `src/api/*/index.ts`, so
   **adding a domain is adding a folder**.
 - Subpath imports: `#ui/*`, `#tv/*`, `#web/*` (see `tsconfig.base.json`).
-- Design tokens live in TypeScript only. `kromaUI()` (`@kroma/ui/vite`) expands
-  `@import "@kroma/ui/css"` into them at build time, so there is no generated CSS
+- Design tokens live in TypeScript only. `kromaUI()` (`@kromatv/ui/vite`) expands
+  `@import "@kromatv/ui/css"` into them at build time, so there is no generated CSS
   to commit and nothing to keep in step.
 - Static style declarations (`styles()`, `sv()`) compile ahead of time on the
   browser targets: `kromaUI()`'s `kroma-atomic` plugin emits atomic classes into

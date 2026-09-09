@@ -1,4 +1,4 @@
-import { Icon, Row, Text } from '@kroma/ui/kit';
+import { Icon, Row, Text } from '@kromatv/ui/kit';
 import { engine } from '../engine/engine';
 
 const GLYPH = 16;

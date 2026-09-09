@@ -19,7 +19,7 @@
 // The same televisions also appear in the cast picker (<CastDeviceList>), which
 // is where somebody already choosing a screen will look for them.
 
-import { Box, Icon, SegmentGroup, styles, Text } from '@kroma/ui/kit';
+import { Box, Icon, SegmentGroup, styles, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { NearbyTvs } from '#mobile/components/connect/NearbyTvs';
 import { ScanCode } from '#mobile/components/connect/ScanCode';

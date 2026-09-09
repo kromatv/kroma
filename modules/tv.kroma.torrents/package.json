@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/module-torrents",
+  "name": "@kromatv/module-torrents",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -19,11 +19,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/client": "workspace:*",
-    "@kroma/module-acquisition": "workspace:*",
-    "@kroma/module-sdk": "workspace:*",
-    "@kroma/module-vpn": "workspace:*",
-    "@kroma/ui": "workspace:*",
+    "@kromatv/client": "workspace:*",
+    "@kromatv/module-acquisition": "workspace:*",
+    "@kromatv/module-sdk": "workspace:*",
+    "@kromatv/module-vpn": "workspace:*",
+    "@kromatv/ui": "workspace:*",
     "@tabler/icons-react": "^3.46.0",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-router": "^1.170.29",

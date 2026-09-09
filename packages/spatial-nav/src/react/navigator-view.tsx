@@ -1,4 +1,4 @@
-import type { Orientation } from '@kroma/spatial-nav';
+import type { Orientation } from '@kromatv/spatial-nav';
 import type { ReactNode, Ref } from 'react';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useNavigatorHost } from './navigator-context';

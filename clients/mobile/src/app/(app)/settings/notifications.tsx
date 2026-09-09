@@ -8,9 +8,9 @@ import {
   enablePush,
   type NotificationCategory,
   type PushBlocker,
-} from '@kroma/client/notifications';
-import { blockerOf, NOTIFICATION_CATEGORY_LABEL, PUSH_BLOCKER_LABEL } from '@kroma/core';
-import { Box, color, Switch, styles, Text } from '@kroma/ui/kit';
+} from '@kromatv/client/notifications';
+import { blockerOf, NOTIFICATION_CATEGORY_LABEL, PUSH_BLOCKER_LABEL } from '@kromatv/core';
+import { Box, color, Switch, styles, Text } from '@kromatv/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView } from 'react-native';

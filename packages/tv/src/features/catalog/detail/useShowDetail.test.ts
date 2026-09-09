@@ -6,7 +6,7 @@ import {
   type ShowDetail,
   ShowId,
   type UpNext,
-} from '@kroma/client/media';
+} from '@kromatv/client/media';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

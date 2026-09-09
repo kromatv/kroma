@@ -1,4 +1,4 @@
-import { domainModules, sessionToken } from '@kroma/client';
+import { domainModules, sessionToken } from '@kromatv/client';
 import {
   depEntries,
   type KromaModule,
@@ -7,7 +7,7 @@ import {
   remoteEntryUrl,
   SHARED_GLOBAL,
   type SharedModule,
-} from '@kroma/module-sdk';
+} from '@kromatv/module-sdk';
 import { apiBase } from '#web/shared/lib/api';
 
 interface RemoteSpec {
@@ -23,16 +23,16 @@ const PROVIDERS: Record<SharedModule, () => Promise<unknown>> = {
   'react/jsx-dev-runtime': () => import('react/jsx-dev-runtime'),
   'react-dom': () => import('react-dom'),
   'react-native': () => import('react-native'),
-  '@kroma/module-sdk': () => import('@kroma/module-sdk'),
-  '@kroma/ui': () => import('@kroma/ui'),
-  '@kroma/ui/kit': () => import('@kroma/ui/kit'),
-  '@kroma/ui/tokens': () => import('@kroma/ui/tokens'),
-  '@kroma/core': () => import('@kroma/core'),
-  '@kroma/core/react': () => import('@kroma/core/react'),
-  '@kroma/client': () => import('@kroma/client'),
-  '@kroma/client/query': () => import('@kroma/client/query'),
-  '@kroma/i18n': () => import('@kroma/i18n'),
-  '@kroma/i18n/react': () => import('@kroma/i18n/react'),
+  '@kromatv/module-sdk': () => import('@kromatv/module-sdk'),
+  '@kromatv/ui': () => import('@kromatv/ui'),
+  '@kromatv/ui/kit': () => import('@kromatv/ui/kit'),
+  '@kromatv/ui/tokens': () => import('@kromatv/ui/tokens'),
+  '@kromatv/core': () => import('@kromatv/core'),
+  '@kromatv/core/react': () => import('@kromatv/core/react'),
+  '@kromatv/client': () => import('@kromatv/client'),
+  '@kromatv/client/query': () => import('@kromatv/client/query'),
+  '@kromatv/i18n': () => import('@kromatv/i18n'),
+  '@kromatv/i18n/react': () => import('@kromatv/i18n/react'),
   '@tanstack/react-query': () => import('@tanstack/react-query'),
   '@tanstack/react-router': () => import('@tanstack/react-router'),
   'react-call': () => import('react-call'),
@@ -44,7 +44,7 @@ async function provideShared(): Promise<Record<string, unknown>> {
   );
   const shared: Record<string, unknown> = Object.fromEntries(loaded);
   for (const [domain, mod] of Object.entries(domainModules)) {
-    shared[`@kroma/client/${domain}`] = mod;
+    shared[`@kromatv/client/${domain}`] = mod;
   }
   return shared;
 }
