@@ -10,7 +10,7 @@
   "modules.errorStatus": "HTTP {status}",
   "modules.loadFailed": "Cette page n'a pas pu être chargée",
   "modules.loadFailedHint": "Le module est installé ; ses données n'ont pas répondu.",
-  "modules.sectionDenied": "Tu n'as pas la permission d'accéder à cette section.",
+  "modules.sectionDenied": "Vous n'avez pas la permission d'accéder à cette section.",
   "modules.unavailable": "Module indisponible",
   "modules.unavailableHint": "Il n'est pas installé, ou il a été désactivé."
 }
