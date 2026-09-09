@@ -926,6 +926,7 @@
       "name": "@kromatv/ui",
       "version": "0.0.0",
       "dependencies": {
+        "@kromatv/client": "workspace:*",
         "@kromatv/core": "workspace:*",
         "@kromatv/i18n": "workspace:*",
         "@kromatv/spatial-nav": "workspace:*",

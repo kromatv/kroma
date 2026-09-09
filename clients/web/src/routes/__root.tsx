@@ -1,4 +1,4 @@
-import appCss from 'virtual:kroma.css?url';
+import appCss from '@kromatv/ui/css?url';
 import { ConfirmHost } from '@kromatv/ui/kit';
 import bricolageLatin from '@kromatv/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
 import hankenLatin from '@kromatv/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';

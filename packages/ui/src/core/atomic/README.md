@@ -54,7 +54,7 @@ server; the patch takes both out, since the rule a build wrote is the rule a
 dev server has to read.
 
 and the rules land in the token stylesheet the shell already loads
-(`virtual:kroma*.css` or `@import "@kromatv/ui/css"`), after everything
+(`@kromatv/ui/css`, imported or `@import`ed), after everything
 react-native-web injects at runtime, so a compiled class outranks the reset the
 renderer gives every view. A build that loads no token sheet is warned and
 paints its compiled styles with nothing.
