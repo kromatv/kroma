@@ -265,6 +265,8 @@ destroy history is a human who asks for it, on the admin surface ([`admin/`](../
 
 ## Not in scope
 
+Status: **AGREED**
+
 - **Acquisition.** Getting files onto disk, meaning downloads and indexers, is a module
   concern, [`modules/`](../modules/). The library observes what appears; it does not fetch it.
 - **What a matched title technically is**, meaning containers, codecs, streams and artwork

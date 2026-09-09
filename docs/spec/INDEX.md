@@ -3,7 +3,7 @@
 
 # Requirement index
 
-349 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+396 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -268,6 +268,56 @@
 - **MEDIA-44** (AGREED) - An undescribed stream is *not direct-playable*, because KROMA will
 - **MEDIA-45** (AGREED) - A file that will not open at all, a truncated or corrupt container,
 - **MEDIA-46** (AGREED) - Undescribed and unreadable are distinct states. The first is "we
+
+## MOD - [modules](modules/)
+
+- **MOD-1** (SHIPPED) - The base build ships **zero modules**. Everything past playback and
+- **MOD-2** (SHIPPED) - A module is a self-contained capability with a reverse-DNS id
+- **MOD-3** (SHIPPED) - Within its own process a module has wide latitude: it registers
+- **MOD-4** (SHIPPED) - A database is a **declared capability**, not something every module
+- **MOD-5** (SHIPPED) - It may not reach into the server's process or another module's
+- **MOD-6** (SHIPPED) - It may not replace core. Playback, catalogue, accounts and the
+- **MOD-7** (SHIPPED) - It may not claim a first-party module id it does not own.
+- **MOD-8** (SHIPPED) - It may not assume it is present. Because any module is uninstallable,
+- **MOD-9** (SHIPPED) - A module *may* depend on another module, hard or optional, and that
+- **MOD-10** (SHIPPED) - A module ships as a single `.kmod` file: a manifest, the native
+- **MOD-11** (SHIPPED) - **Identity and version.** The reverse-DNS id and a hand-set version.
+- **MOD-12** (SHIPPED) - The release process refuses to publish changed bytes under an
+- **MOD-13** (SHIPPED) - **`minServer`, the compatibility floor.** The minimum server version
+- **MOD-14** (SHIPPED) - **Dependencies.** Hard ones that must be installed alongside it, and
+- **MOD-15** (SHIPPED) - **Target.** Which platform the backend was built for. A library-only
+- **MOD-16** (SHIPPED) - The server checks the bytes it downloads against a published SHA-256
+- **MOD-17** (SHIPPED) - Integrity is not safety: a matching checksum proves the bytes are the
+- **MOD-18** (SHIPPED) - **From the Store**, by id. The server resolves hard dependencies
+- **MOD-19** (SHIPPED) - **By upload**, handing the server a `.kmod` by hand: same unpack,
+- **MOD-20** (SHIPPED) - Both are admin actions on the [`admin/`](../admin/) surface.
+- **MOD-21** (SHIPPED) - The Store (Admin → Modules) is the in-app browser over the configured
+- **MOD-22** (SHIPPED) - The official registry is pinned first and cannot be removed; operators
+- **MOD-23** (SHIPPED) - For each module the Store shows **this server's verdict**, not just the
+- **MOD-24** (DRAFT) - **First-party is trusted by default.** The official registry is
+- **MOD-25** (DRAFT) - **A third-party registry is an explicit operator opt-in.** Adding one
+- **MOD-26** (DRAFT) - The operator is told, in plain terms, that a module is a native binary
+- **MOD-27** (DRAFT) - **Checksums guarantee integrity, never safety**, and the server says so
+- **MOD-28** (SHIPPED) - **Enable.** The server spawns the sidecar and the module's routes,
+- **MOD-29** (SHIPPED) - **Disable.** The sidecar is stopped, the module stops running, and
+- **MOD-30** (SHIPPED) - **Update.** A newer version replaces the bundle and the sidecar is
+- **MOD-31** (SHIPPED) - `minServer` is re-checked on update, so an update that outgrows the
+- **MOD-32** (SHIPPED) - **Uninstall.** The module is removed entirely. It is the one
+- **MOD-33** (SHIPPED) - The server refuses to uninstall a module another enabled module still
+- **MOD-34** (SHIPPED) - Uninstalling a module never touches media on disk. A downloads module
+- **MOD-35** (SHIPPED) - **A crashed module cannot take down the server.** The sidecar is a
+- **MOD-36** (SHIPPED) - **An incompatible module never runs by accident.** `minServer` is
+- **MOD-37** (SHIPPED) - **Failure is visible, not silent.** A module that will not start or
+- **MOD-38** (SHIPPED) - The server is forward-compatible with older modules. A module declares
+- **MOD-39** (SHIPPED) - A module installed today keeps working as the server is updated,
+- **MOD-40** (SHIPPED) - A *newer* module may raise its `minServer`, and the Store says so
+- **MOD-41** (SHIPPED) - A module **may** ship UI, and the position is deliberate: a module's
+- **MOD-42** (AGREED) - A module renders **its own admin surface**: configuration, status and
+- **MOD-43** (SHIPPED) - A module's UI is served through the same reverse proxy as its backend
+- **MOD-44** (DRAFT) - **The compatibility gate is the early warning.** As the server moves
+- **MOD-45** (DRAFT) - **Data is retained.** An incompatible or abandoned module is not
+- **MOD-46** (DRAFT) - **The signal is honest.** The person is told the module has not kept
+- **MOD-47** (SHIPPED) - Every capability below could have been core and is a module instead,
 
 ## PLAY - [playback](playback/)
 
