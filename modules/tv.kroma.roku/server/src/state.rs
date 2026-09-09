@@ -220,6 +220,56 @@ mod tests {
     }
 
     #[test]
+    fn the_wire_shape_the_console_reads_is_camel_cased() {
+        let roku = Roku::new(PathBuf::from("/nowhere"));
+        roku.remember(
+            &found("P0A070000007"),
+            ecp::DeviceInfo {
+                serial: "P0A070000007".into(),
+                name: "Salon".into(),
+                model: "Roku Ultra".into(),
+                software_version: "13.1.4".into(),
+                developer_enabled: true,
+            },
+        );
+        roku.set_install(
+            "P0A070000007",
+            InstallStatus::Failed,
+            Some("password".into()),
+        );
+
+        let device = serde_json::to_value(roku.device("P0A070000007").unwrap()).unwrap();
+
+        let at = device["install"]["at"].clone();
+        assert_eq!(
+            device,
+            serde_json::json!({
+                "serial": "P0A070000007",
+                "name": "Salon",
+                "model": "Roku Ultra",
+                "ip": "192.168.1.134",
+                "softwareVersion": "13.1.4",
+                "developerEnabled": true,
+                "lastSeen": device["lastSeen"].clone(),
+                "install": { "status": "failed", "message": "password", "at": at },
+            })
+        );
+    }
+
+    #[tokio::test]
+    async fn a_serial_no_box_answered_under_is_neither_installed_on_nor_launched() {
+        let roku = Roku::new(PathBuf::from("/nowhere"));
+
+        roku.install("ghost", "http://192.168.1.20:4040".into())
+            .await;
+        roku.launch("ghost", "http://192.168.1.20:4040".into())
+            .await;
+
+        assert!(roku.device("ghost").is_none());
+        assert!(roku.devices().is_empty());
+    }
+
+    #[test]
     fn the_address_is_the_host_of_the_ecp_location() {
         assert_eq!(ip_of("http://192.168.1.134:8060"), "192.168.1.134");
         assert_eq!(ip_of("http://192.168.1.134:8060/"), "192.168.1.134");
