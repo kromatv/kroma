@@ -276,6 +276,15 @@ A module calls back into the core over the token-authed `/api/_host/*` API for
 settings, events, jobs and session lookup (`AuthUser` resolves through the
 host, so authenticating a caller costs no database).
 
+The settings callback reads and writes the operator's preferences, **not the
+core's own credentials**. The mail password, the LLM API key, the Web Push / APNs
+/ FCM private material and the registry list the Store installs from are the
+core's alone: a read answers the default you asked with, and a patch naming one
+is refused whole with a `403`. A credential a module is the thing that uses (the
+WireGuard config the bridge brings up, the tunnel token the connector runs on)
+stays readable and writable. For a vendor credential the operator configured, ask
+`GET /_host/secret?name=` by name.
+
 - **`dependencies`** is a hard dependency, as a `{ "<id>": "<range>" }` map.
   The backend enforces it, and the Store installs missing ones automatically.
 - **`optionalDependencies`** is ordered first when present, not required.

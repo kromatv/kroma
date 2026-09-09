@@ -8,20 +8,25 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware::from_fn_with_state;
 use axum::routing::{get, post};
-use axum::{Json, Router};
+use axum::{Extension, Json, Router};
 use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_host::{Event, HostCtx};
 use serde_json::{json, Value};
 
+mod settings;
+
+pub use settings::CoreOnlySettings;
+
 /// The `/_host/*` callback router modules call back into (mount under `/api`),
-/// guarded by the shared `token`.
-pub fn host_router<S>(token: String) -> Router<S>
+/// guarded by the shared `token`. `core_only` decides which settings keys the
+/// callback withholds.
+pub fn host_router<S>(token: String, core_only: CoreOnlySettings) -> Router<S>
 where
     S: HostCtx + Clone + Send + Sync + 'static,
 {
     Router::new()
-        .route("/_host/setting", get(get_setting::<S>))
-        .route("/_host/settings", post(set_settings::<S>))
+        .route("/_host/setting", get(settings::get_setting::<S>))
+        .route("/_host/settings", post(settings::set_settings::<S>))
         .route("/_host/events", post(publish_event::<S>))
         .route("/_host/events_to", post(publish_event_to::<S>))
         .route("/_host/notify", post(notify::<S>))
@@ -42,6 +47,7 @@ where
         // answers with whoever serves it. No module id crosses this wire.
         .route("/_host/contributions", get(contributions::<S>))
         .route_layer(from_fn_with_state(HostToken(token), require_host_token))
+        .layer(Extension(core_only))
 }
 
 #[derive(serde::Deserialize)]
@@ -73,38 +79,6 @@ async fn contributions<S: HostCtx>(
     axum::extract::Query(q): axum::extract::Query<PointQuery>,
 ) -> Json<Vec<kroma_module_host::Contribution>> {
     Json(host.contributions(&q.point))
-}
-
-#[derive(serde::Deserialize)]
-struct SettingQuery {
-    key: String,
-    kind: String,
-    default: String,
-}
-
-async fn get_setting<S: HostCtx>(
-    State(host): State<S>,
-    axum::extract::Query(q): axum::extract::Query<SettingQuery>,
-) -> Json<Value> {
-    let value = match q.kind.as_str() {
-        "bool" => json!(host.setting_bool(&q.key, q.default == "true")),
-        "i64" => json!(host.setting_i64(&q.key, q.default.parse().unwrap_or(0))),
-        _ => json!(host.setting_str(&q.key, &q.default)),
-    };
-    Json(json!({ "value": value }))
-}
-
-#[derive(serde::Deserialize)]
-struct SettingsPatch {
-    patch: std::collections::BTreeMap<String, Value>,
-}
-
-async fn set_settings<S: HostCtx>(
-    State(host): State<S>,
-    Json(body): Json<SettingsPatch>,
-) -> StatusCode {
-    host.set_settings(body.patch);
-    StatusCode::NO_CONTENT
 }
 
 #[derive(serde::Deserialize)]
