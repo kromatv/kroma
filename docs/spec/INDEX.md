@@ -3,7 +3,7 @@
 
 # Requirement index
 
-396 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+406 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -131,6 +131,11 @@
 - **ADMIN-86** (AGREED) - The owner sends a verification from the member editor, with the <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-87** (AGREED) - Changing the address clears the verified state: the proof belongs <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-88** (AGREED) - A user who cannot sign in can ask for a reset from the sign-in <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-89** (AGREED) - A server learns it is out of date by checking for a newer release and <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-90** (AGREED) - A server update migrates the persistent store forward <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-91** (AGREED) - Module updates are independent of the server and carry their own <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-92** (AGREED) - Active playback neither blocks an update nor is stopped by one <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-93** (AGREED) - The rule above is identical on every host. Only the delivery vehicle <sub>[README.md](admin/README.md)</sub>
 
 ## DISC - [discovery](discovery/)
 
@@ -210,15 +215,16 @@
 - **LIB-38** (AGREED) - With no internet, everything already matched browses and plays exactly
 - **LIB-39** (AGREED) - Offline, a brand-new file that needs a first provider lookup stays
 - **LIB-40** (AGREED) - Offline, a forced refresh queues rather than fails.
-- **LIB-41** (DRAFT) - A newly matched item fetches its metadata once.
-- **LIB-42** (DRAFT) - Running series are re-checked on a slow cadence, so a new episode's air
-- **LIB-43** (DRAFT) - A "Refresh metadata" action on any title, season or whole source
-- **LIB-44** (DRAFT) - A forced refresh **never** discards a manual match or user-chosen
+- **LIB-41** (SHIPPED) - A newly matched item fetches its metadata once.
+- **LIB-42** (AGREED) - Running series are re-checked on a slow cadence, so a new episode's air
+- **LIB-43** (AGREED) - A "Refresh metadata" action on any title, season or whole source
+- **LIB-44** (AGREED) - A forced refresh **never** discards a manual match or user-chosen
 - **LIB-45** (AGREED) - When a file disappears from a source, its title is **marked absent**:
 - **LIB-46** (AGREED) - Content that reappears, because a NAS remounts or a file is moved back
 - **LIB-47** (AGREED) - A **move** is therefore not a special case. It is an absent path plus a
 - **LIB-48** (AGREED) - A rescan **only ever marks absent**. It never deletes user data.
 - **LIB-49** (AGREED) - Permanently deleting a title's history is an explicit, person-initiated
+- **LIB-50** (SHIPPED) - Refreshing metadata and re-running identification are two actions, and
 
 ## MEDIA - [media](media/)
 
@@ -294,10 +300,10 @@
 - **MOD-21** (SHIPPED) - The Store (Admin → Modules) is the in-app browser over the configured
 - **MOD-22** (SHIPPED) - The official registry is pinned first and cannot be removed; operators
 - **MOD-23** (SHIPPED) - For each module the Store shows **this server's verdict**, not just the
-- **MOD-24** (DRAFT) - **First-party is trusted by default.** The official registry is
-- **MOD-25** (DRAFT) - **A third-party registry is an explicit operator opt-in.** Adding one
-- **MOD-26** (DRAFT) - The operator is told, in plain terms, that a module is a native binary
-- **MOD-27** (DRAFT) - **Checksums guarantee integrity, never safety**, and the server says so
+- **MOD-24** (AGREED) - **First-party is trusted by default.** The official registry is
+- **MOD-25** (AGREED) - **A third-party registry is an explicit operator opt-in.** Adding one
+- **MOD-26** (AGREED) - The operator is told, in plain terms, that a module is a native binary
+- **MOD-27** (AGREED) - **Checksums guarantee integrity, never safety**, and the server says so
 - **MOD-28** (SHIPPED) - **Enable.** The server spawns the sidecar and the module's routes,
 - **MOD-29** (SHIPPED) - **Disable.** The sidecar is stopped, the module stops running, and
 - **MOD-30** (SHIPPED) - **Update.** A newer version replaces the bundle and the sidecar is
@@ -314,10 +320,13 @@
 - **MOD-41** (SHIPPED) - A module **may** ship UI, and the position is deliberate: a module's
 - **MOD-42** (AGREED) - A module renders **its own admin surface**: configuration, status and
 - **MOD-43** (SHIPPED) - A module's UI is served through the same reverse proxy as its backend
-- **MOD-44** (DRAFT) - **The compatibility gate is the early warning.** As the server moves
-- **MOD-45** (DRAFT) - **Data is retained.** An incompatible or abandoned module is not
-- **MOD-46** (DRAFT) - **The signal is honest.** The person is told the module has not kept
+- **MOD-44** (AGREED) - **The compatibility gate is the early warning.** As the server moves
+- **MOD-45** (AGREED) - **Data is retained.** An incompatible or abandoned module is not
+- **MOD-46** (AGREED) - **The signal is honest.** The person is told the module has not kept
 - **MOD-47** (SHIPPED) - Every capability below could have been core and is a module instead,
+- **MOD-48** (AGREED) - The Store names the registry every module came from, on the listing and
+- **MOD-49** (AGREED) - Installing from a registry the operator added is gated once, per
+- **MOD-50** (AGREED) - A module that has disappeared from every configured registry is flagged
 
 ## PLAY - [playback](playback/)
 
@@ -398,9 +407,9 @@
 - **SURF-20** (SHIPPED) - **Native surfaces**, mobile, desktop and the native television
 - **SURF-21** (AGREED) - When a television's older decoder cannot play a file a modern phone
 - **SURF-22** (AGREED) - KROMA never papers over a generation gap by silently transcoding for
-- **SURF-23** (SHIPPED) - **Pointer**, on web and desktop, is the reference model: dense
+- **SURF-23** (SHIPPED) - **Pointer**, on web, is the reference model: dense layouts, hover
 - **SURF-24** (SHIPPED) - **Touch**, on mobile, means targets sized for a thumb, gestures for
-- **SURF-25** (SHIPPED) - **Remote, 10-foot**, on every television, is a directional focus
+- **SURF-25** (SHIPPED) - **Directional, 10-foot**, on every television and on desktop, is a
 - **SURF-26** (SHIPPED) - A television signs in through the pairing handshake precisely
 - **SURF-27** (AGREED) - A television build that ships a pointer-shaped screen has not met
 - **SURF-28** (AGREED) - A surface serving more than one model, such as a tablet with a
@@ -424,3 +433,4 @@
 - **SURF-46** (AGREED) - KROMA never claims a panel decodes a codec its generation predates.
 - **SURF-47** (SHIPPED) - The input model is the one thing a surface may *not* copy from web,
 - **SURF-48** (SHIPPED) - A download is a single progressive file: the raw original when the
+- **SURF-49** (SHIPPED) - A remote, a gamepad and a keyboard's arrow keys are the same input
