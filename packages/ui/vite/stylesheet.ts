@@ -47,45 +47,56 @@ const isPart = (part: string): part is Part => PART_NAMES.includes(part as Part)
 
 const emit = (part: string, display: FontDisplay) => (isPart(part) ? parts(display)[part]() : null);
 
-// Under `/css`, because a bare `@kromatv/ui` resolves to the TypeScript entry and
-// Tailwind then tries to parse it as a stylesheet.
+/**
+ * The one name either door uses: `import '@kromatv/ui/css'` from an entry that
+ * is TypeScript, `@import "@kromatv/ui/css"` from a stylesheet,
+ * `@kromatv/ui/css/<part>` for one part of it, and `?url` on the import for a
+ * `<link>`.
+ *
+ * Under `/css`, because a bare `@kromatv/ui` resolves to the TypeScript entry
+ * and Tailwind then tries to parse it as a stylesheet.
+ */
+const SPECIFIER = '@kromatv/ui/css';
+
 const DIRECTIVE = /@import\s+["']@kromatv\/ui\/css(\/[a-z]+)?["']\s*;/g;
 
-const specifier = (part: string) =>
-  part === AGGREGATE ? '@kromatv/ui/css' : `@kromatv/ui/css/${part}`;
+const specifier = (part: string) => (part === AGGREGATE ? SPECIFIER : `${SPECIFIER}/${part}`);
+
+const unknown = (asked: string) =>
+  new Error(
+    `[kroma-ui] no such stylesheet: ${asked}. Known: ${PART_NAMES.map(specifier).join(', ')}`,
+  );
 
 const expand = (code: string, display: FontDisplay) =>
   code.replace(DIRECTIVE, (_, which: string | undefined) => {
     const css = emit(which ? which.slice(1) : AGGREGATE, display);
-    if (css === null) {
-      const known = PART_NAMES.map(specifier).join(', ');
-      throw new Error(`[kroma-ui] no such stylesheet: @kromatv/ui/css${which}. Known: ${known}`);
-    }
+    if (css === null) throw unknown(`${SPECIFIER}${which}`);
     return css;
   });
 
-/** What an app imports when it has no stylesheet to write the directive in:
- *  `virtual:kroma.css` for the whole design system, `virtual:kroma-<part>.css`
- *  for one part, either of them with `?url` for a `<link>`. */
-export const VIRTUAL = 'virtual:kroma';
-
-// Rollup's convention for "this id belongs to a plugin, do not touch it".
-const RESOLVED = `\0${VIRTUAL}`;
+// Rollup's convention for "this id belongs to a plugin, do not touch it". The
+// name still ends in `.css`, which is how Vite knows to run its own CSS
+// pipeline over what `load` hands back.
+const RESOLVED = '\0kroma-css:';
 
 const SUFFIX = '.css';
 
 const queryless = (id: string) => id.split('?')[0] ?? id;
 
-const partOf = (id: string) => {
-  const named = queryless(id).slice(RESOLVED.length, -SUFFIX.length);
-  if (named === '') return AGGREGATE;
-  return named.startsWith('-') ? named.slice(1) : named;
-};
+const queryOf = (id: string) => id.slice(queryless(id).length);
 
-// A stylesheet and nothing else: `virtual:kroma-props` and the rest of the
-// `virtual:kroma-` family belong to other plugins, and the prefix alone would
-// take them.
-const isSource = (id: string) => queryless(id).endsWith(SUFFIX) && id.startsWith(VIRTUAL);
+const partOf = (id: string) => queryless(id).slice(RESOLVED.length, -SUFFIX.length);
+
+// The package specifier as an id of ours, or null for anything else. An unknown
+// part throws rather than falling through to Vite's resolver, whose "failed to
+// resolve import" says nothing about which parts exist.
+const claim = (source: string): string | null => {
+  const path = queryless(source);
+  if (path !== SPECIFIER && !path.startsWith(`${SPECIFIER}/`)) return null;
+  const part = path === SPECIFIER ? AGGREGATE : path.slice(SPECIFIER.length + 1);
+  if (!isPart(part)) throw unknown(path);
+  return `${RESOLVED}${part}${SUFFIX}${queryOf(source)}`;
+};
 
 const isResolved = (id: string) => queryless(id).endsWith(SUFFIX) && id.startsWith(RESOLVED);
 
@@ -162,11 +173,11 @@ const SOURCES = [
 ].map((path) => fileURLToPath(new URL(path, import.meta.url)));
 
 /**
- * Serves the design system's stylesheets through either door: the
- * `@import "@kromatv/ui/css"` a stylesheet writes, and
- * `virtual:kroma.css` for a target whose entry is TypeScript and has
- * no stylesheet at all. `?url` on the virtual id goes through Vite's own CSS
- * pipeline, so a `<link>` gets a hashed asset with its font `url()`s rewritten.
+ * Serves the design system's stylesheets through either door, both spelled
+ * {@link SPECIFIER}: the `@import "@kromatv/ui/css"` a stylesheet writes, and
+ * the `import '@kromatv/ui/css'` a target whose entry is TypeScript writes
+ * instead. `?url` on the import goes through Vite's own CSS pipeline, so a
+ * `<link>` gets a hashed asset with its font `url()`s rewritten.
  *
  * The directive needs two hooks: Vite inlines nested CSS `@import`s inside its
  * own plugin, so those never reach `transform` and `generateBundle` sweeps the
@@ -190,7 +201,7 @@ export function kromaTokens(): CssPlugin {
     },
     resolveId(source) {
       if (isResolved(source)) return source;
-      return isSource(source) ? `\0${source}` : null;
+      return claim(source);
     },
     load(id) {
       if (!isResolved(id)) return null;
@@ -200,10 +211,7 @@ export function kromaTokens(): CssPlugin {
       }
       const part = partOf(id);
       const css = emit(part, display());
-      if (css === null) {
-        const known = PART_NAMES.join(', ');
-        throw new Error(`[kroma-ui] no such stylesheet: ${queryless(id)}. Known: ${known}`);
-      }
+      if (css === null) throw unknown(specifier(part));
       for (const file of SOURCES) this.addWatchFile?.(file);
       expanded.add(id);
       return css;

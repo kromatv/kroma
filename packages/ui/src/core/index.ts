@@ -38,6 +38,7 @@ export {
   onPaper,
   onThemeChange,
   radiusValue,
+  scaledRadius,
   setTheme,
   themed,
   themedCache,

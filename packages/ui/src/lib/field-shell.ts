@@ -24,6 +24,7 @@ import {
   styles,
   useBreakpoint,
 } from '#ui/core';
+import type { Radius } from '#ui/core/tokens/layout';
 
 type ControlSize = 'sm' | 'md' | 'tv';
 
@@ -97,9 +98,9 @@ export const CONTROL: Record<ControlSize, ControlMetrics> = {
   },
 };
 
-/** A control's corner in px, against the ACTIVE theme. Read it at render time:
- *  a value copied out at module load keeps the theme it was read under. */
-export function controlRadius(metrics: ControlMetrics): number {
+/** A control's corner, against the ACTIVE theme. Read it at render time: a
+ *  value copied out at module load keeps the theme it was read under. */
+export function controlRadius(metrics: ControlMetrics): Radius {
   return radiusValue(metrics.radius);
 }
 

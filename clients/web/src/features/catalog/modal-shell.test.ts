@@ -1,4 +1,4 @@
-import { color, radius } from '@kromatv/ui/kit';
+import { color } from '@kromatv/ui/kit';
 import { describe, expect, it } from 'vitest';
 import { MODAL_SCRIM, SCRIM_Z } from '#web/shared/ui/page';
 import { FOOTER_RULE, HEADER_RULE, MODAL_BODY, MODAL_LAYER, modalPanel } from './modal-shell';
@@ -58,7 +58,7 @@ describe('the modal panel', () => {
   });
 
   it('takes its corner and its edge from the kit rather than a copy of them', () => {
-    expect(PANEL.borderRadius).toBe(radius.xl);
+    expect(PANEL.borderRadius).toBe('var(--radius-xl)');
     expect(PANEL.borderColor).toBe(color('white/10'));
     expect(PANEL.borderStyle).toBe('solid');
     expect(PANEL.borderWidth).toBe(1);

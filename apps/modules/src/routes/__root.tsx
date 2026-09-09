@@ -1,5 +1,5 @@
-import appCss from 'virtual:kroma.css?url';
 import { SiteDocument, siteHead } from '@kromatv/site-kit/site-document';
+import appCss from '@kromatv/ui/css?url';
 import { createRootRoute } from '@tanstack/react-router';
 
 export const Route = createRootRoute({

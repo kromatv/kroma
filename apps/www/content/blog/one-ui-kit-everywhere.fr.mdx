@@ -1,53 +1,54 @@
 ---
 title: "Un seul kit d’interface, six plateformes"
 date: "2026-02-03"
-excerpt: "Comment le même composant se rend sur un Apple TV, un panneau Samsung et dans un navigateur, sans jamais être réécrit."
+excerpt: "Comment le même composant s’affiche sur un Apple TV, sur une TV Samsung et dans un navigateur, sans jamais être réécrit."
 author: "Maxime Scharwath"
 tags: ["Design système", "Technique"]
 ---
 
-Une tuile de film a la même allure sur un Apple TV, sur un téléviseur Samsung et
-dans votre navigateur. C’est un seul composant, pas trois tenus en phase à la
-main.
+L’affiche d’un film est identique sur un Apple TV, sur une TV Samsung et dans
+votre navigateur. C’est un seul composant, pas trois qu’on garde synchronisés à
+la main.
 
-## Écrit une fois, contre React Native
+## Écrit une fois, pour React Native
 
-Le kit `@kromatv/ui` est écrit contre React Native. Sur Apple TV, Android TV,
-iPhone et Android il se rend nativement. Sur le web, sur les téléviseurs Tizen et
-webOS, dans l’app desktop Tauri et dans le client web, il passe par
-react-native-web. Un fichier, deux moteurs de rendu.
+Le kit `@kromatv/ui` est écrit pour React Native. Sur Apple TV, Android TV, iPhone
+et Android, il s’affiche en natif. Sur le web, sur les TV Tizen et webOS, dans
+l’app desktop Tauri et dans le client web, il passe par react-native-web. Un
+fichier, deux moteurs de rendu.
 
-Les couleurs, la typographie, les élévations et le focus vivent aussi une seule
-fois, en TypeScript, et génèrent les variables CSS que lisent les cibles web :
+Les couleurs, la typo, les ombres et le focus sont définis une seule fois eux
+aussi, en TypeScript. Ce sont eux qui génèrent les variables CSS que lisent les
+cibles web :
 
 ```ts
 import { colors, type } from '@kromatv/ui/tokens';
 
-colors.accent; // #F4B642, l'unique ambre chaud
-colors.bg;     // #0A0A0C, le charbon profond
+colors.accent; // #F4B642, le seul ambre du produit
+colors.bg;     // #0A0A0C, le gris charbon du fond
 type.hero;     // 66px / 700, Bricolage Grotesque
 ```
 
-Ce site ne définit aucune couleur propre. Il importe le thème Tailwind v4 du kit,
-et rend donc dans le même charbon et le même ambre que l’application.
+Ce site ne définit aucune couleur à lui. Il importe le thème Tailwind v4 du kit,
+donc il s’affiche dans le même charbon et le même ambre que l’application.
 
-## Le focus est la seule vraie coupure
+## Le focus, la seule vraie différence
 
-Ce qui diffère entre un téléviseur et un navigateur, c’est la navigation, pas
+Entre une TV et un navigateur, ce qui change c’est la navigation, pas
 l’apparence. Une télécommande n’a pas de curseur.
 
-En natif, le moteur de focus de l’OS gère les déplacements directionnels :
-UIFocusEngine sur tvOS, résolution `nextFocus` sur Android TV. Sur le web il n’y
-a aucun moteur de focus, donc le déplacement est géométrique. Le prochain
-focusable dans la direction pressée gagne, avec la dérive latérale pénalisée pour
-qu’un voisin en ligne droite batte un voisin sur le côté.
+En natif, c’est l’OS qui gère les déplacements directionnels : UIFocusEngine sur
+tvOS, la résolution `nextFocus` sur Android TV. Le web n’a aucun moteur de focus,
+donc le déplacement est calculé géométriquement. L’élément focusable le plus
+proche dans la direction pressée gagne, et l’écart latéral est pénalisé pour
+qu’un voisin aligné passe devant un voisin décalé.
 
-Cette coupure tient dans une poignée de fichiers `.web.ts`. Rien d’autre dans le
-kit n’en connaît l’existence.
+Toute cette différence tient dans quelques fichiers `.web.ts`. Rien d’autre dans
+le kit ne sait qu’elle existe.
 
 ## Ce que ça coûte, et ce que ça rapporte
 
-Écrire contre React Native coûte une étape de résolution dans chaque bundler et
-un second chemin de rendu à garder en état. Ce que ça rapporte : un changement sur
-la tuile de film est un seul commit, et tous les écrans que KROMA dessine
-l’ont le jour même. Six coquilles, un composant.
+Écrire pour React Native coûte une étape de résolution dans chaque bundler, et un
+deuxième moteur de rendu à tester. En échange, changer l’affiche d’un film est un
+seul commit, et tous les écrans de KROMA l’ont le jour même. Six apps, un
+composant.

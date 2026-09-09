@@ -27,7 +27,7 @@ import {
 
 // Registered, not spread: a role read straight off the theme is a plain object,
 // which react-native-web re-serialises onto every string it paints.
-const typeStyles = themed((theme) => StyleSheet.create({ ...theme.type }));
+const typeStyles = themed((theme) => StyleSheet.create(theme.type as Record<TypeRole, TextStyle>));
 
 const familyStyles = themed((theme) =>
   StyleSheet.create(

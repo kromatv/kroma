@@ -5,7 +5,7 @@ import { clamp01 } from '#ui/components/atoms/progress';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
 import { Text } from '#ui/components/atoms/text';
 import { scaler } from '#ui/components/organisms/player/lib/metrics';
-import { sharedStyle, styles, sv, useTheme } from '#ui/core';
+import { scaledRadius, sharedStyle, styles, sv, useTheme } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
 
@@ -79,13 +79,13 @@ export function CreditsCard({
       z={38}
       w={px(CARD_WIDTH)}
       maxW="100%"
-      radius={px(theme.radius['2xl'])}
+      radius={scaledRadius('2xl', scale)}
       borderWidth={1}
       border="white/12"
       bg="rgba(16, 16, 20, 0.9)"
       p={px(20)}
     >
-      <Box h={px(150)} mb={px(16)} radius={px(theme.radius.lg)} overflow="hidden">
+      <Box h={px(150)} mb={px(16)} radius={scaledRadius('lg', scale)} overflow="hidden">
         <Img src={item.posterUrl ?? null} background={ART_FILL} fill />
         <Box fill style={[s.vignette, gradient(VIGNETTE)]} />
         <Box absolute left={px(14)} bottom={px(14)} w={ring} h={ring} center>

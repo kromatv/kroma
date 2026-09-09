@@ -19,7 +19,7 @@ describe('styles', () => {
       gap: 6,
       paddingLeft: 8,
       paddingRight: 8,
-      borderRadius: 8,
+      borderRadius: 'var(--radius-sm)',
     });
   });
 

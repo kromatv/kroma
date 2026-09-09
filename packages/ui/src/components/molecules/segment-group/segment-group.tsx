@@ -6,6 +6,7 @@ import { Children, isValidElement, useEffect, useEffectEvent, useRef, useState }
 import { Animated, Easing, type StyleProp, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { sharedStyle, style } from '#ui/core';
+import type { Radius } from '#ui/core/tokens/layout';
 import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
 import { useStableCallback } from '#ui/lib/stable-callback';
@@ -131,7 +132,7 @@ function Root<T extends string>({
 }
 
 // One layer behind every segment, which is why a segment paints no fill.
-function Thumb({ at, radius }: Readonly<{ at: Box2D | null; radius: number }>) {
+function Thumb({ at, radius }: Readonly<{ at: Box2D | null; radius: Radius }>) {
   const [x] = useState(() => new Animated.Value(0));
   const [width] = useState(() => new Animated.Value(0));
   const placed = useRef(false);

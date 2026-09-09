@@ -19,7 +19,7 @@ import {
 } from '@kromatv/tv';
 import { expoImageBackend } from '@kromatv/ui/expo-image';
 import { KIT_FONTS } from '@kromatv/ui/fonts';
-import { registerFrost, setImageBackend, TvStage } from '@kromatv/ui/kit';
+import { configureKit, TvStage } from '@kromatv/ui/kit';
 import { BlurView } from 'expo-blur';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
@@ -78,17 +78,18 @@ setLauncherBackend(nativeLauncher);
 // DNS-SD, and it is the one route that finds a server on a port nothing would
 // have thought to scan - or behind a reverse proxy on 443 (see the module).
 setServerBrowse(browseForServers);
-setImageBackend(expoImageBackend);
-// The platform's backdrop blur, which frosts the kit's glass surfaces (episode
-// cards, glass buttons). tvOS composites UIVisualEffectView on the GPU, so the
-// shell hands it over; the kit itself stays free of the dependency (see Frost).
+// The decoder that draws artwork, and the platform's backdrop blur, which
+// frosts the kit's glass surfaces (episode cards, glass buttons). tvOS
+// composites UIVisualEffectView on the GPU, so the shell hands it over; the kit
+// itself stays free of the dependency (see Frost). The form factor is TvApp's
+// to state, and it does.
 //
 // Android is handed no blur TARGET, which expo-blur 57 would need to blur a
 // real backdrop there: pointed at the TV stage it sampled the wrong region
 // (the canvas is drawn through a scale the blur cannot see) and outside it,
 // nothing at all, at 21fps. What it draws instead is the tint, which is what
 // the design falls back to anyway.
-registerFrost(BlurView);
+configureKit({ image: expoImageBackend, frost: BlurView });
 
 // Android builds the libVLC plane; Apple has no module and registers nothing,
 // which is what keeps that engine out of its picker.

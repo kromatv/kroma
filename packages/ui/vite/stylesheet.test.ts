@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { kromaTokens, VIRTUAL } from './stylesheet';
+import { kromaTokens } from './stylesheet';
 import { baseCss, fontsCss, SOURCE_ROOTS, themeCss, tokensCss, tvCss } from './tokens';
 
 const transform = (code: string, id = '/app/src/styles.css') => {
@@ -8,7 +8,9 @@ const transform = (code: string, id = '/app/src/styles.css') => {
   return plugin.transform.call({}, code, id)?.code ?? null;
 };
 
-const resolved = (part?: string) => `\0${VIRTUAL}${part ? `-${part}` : ''}.css`;
+const source = (part?: string) => (part ? `@kromatv/ui/css/${part}` : '@kromatv/ui/css');
+
+const resolved = (part = 'kroma') => `\0kroma-css:${part}.css`;
 
 const served = (id: string, command: 'serve' | 'build' = 'build', base?: string) => {
   const plugin = kromaTokens();
@@ -219,9 +221,11 @@ describe('the virtual stylesheet', () => {
   it('claims its own specifier and leaves every other import alone', () => {
     const plugin = kromaTokens();
 
-    expect(plugin.resolveId(`${VIRTUAL}.css`)).toBe(resolved());
+    expect(plugin.resolveId(source())).toBe(resolved());
+    expect(plugin.resolveId(source('tv'))).toBe(resolved('tv'));
+    expect(plugin.resolveId(`${source()}?url`)).toBe(`${resolved()}?url`);
     expect(plugin.resolveId(resolved())).toBe(resolved());
-    expect(plugin.resolveId(VIRTUAL)).toBeNull();
+    expect(plugin.resolveId('@kromatv/ui')).toBeNull();
     expect(plugin.resolveId('./styles.css')).toBeNull();
   });
 
@@ -240,6 +244,9 @@ describe('the virtual stylesheet', () => {
 
   it('refuses a part it does not know rather than serving an empty sheet', () => {
     expect(() => served(resolved('tokns'))).toThrow(/no such stylesheet/);
+    expect(() => kromaTokens().resolveId(source('tokns'))).toThrow(
+      /no such stylesheet: @kromatv\/ui\/css\/tokns/,
+    );
   });
 
   it('hands `?url` back to Vite on a build, so the asset is emitted and hashed', () => {
@@ -248,7 +255,7 @@ describe('the virtual stylesheet', () => {
 
   it('points `?url` at the module the dev server serves, under its base', () => {
     expect(served(`${resolved()}?url`, 'serve')).toBe(
-      'export default "/@id/__x00__virtual:kroma.css";',
+      'export default "/@id/__x00__kroma-css:kroma.css";',
     );
     expect(served(`${resolved()}?url`, 'serve', '/kit/')).toContain('"/kit/@id/__x00__');
   });
