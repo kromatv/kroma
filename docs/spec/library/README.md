@@ -24,6 +24,12 @@ identity, not by folder. A source is just an input; it is not a category the use
 by. Filtering the catalogue by source is an admin/diagnostic view, not the primary
 navigation.
 
+A source tree may be assembled from symlinks. A curated folder of links into a shared
+pool of files is a source like any other: the link's own name is what the conventions
+below are read from, and the file it points at is what plays. A link the server cannot
+resolve is reported, never silently skipped, because a source built entirely from links
+into an unmounted pool would otherwise scan clean and empty.
+
 A source records the mount path, its content kind, and its scan schedule. Nothing about a
 source is destructive: removing a source removes its titles from the catalogue and stops
 watching the path, but touches no bytes on disk and, per the deletions rule below,
@@ -61,6 +67,13 @@ extras, artwork and sidecars grouped.
 Shows/Severance/Season 02/Severance - S02E01 - Hello, Ms. Cobel.mkv
 Shows/The Bear/Season 01/The Bear - S01E03.mkv
 ```
+
+The season folder is what makes the folder above it the show: with one present, that
+folder names the series and disagreeing filenames inside it still collapse to one show.
+Without one, the folder proves nothing (a flat pool holds many shows side by side) and
+the filename names the series instead; an episode whose filename is only its marker
+(`S01E01.mkv`) takes the name of the folder holding it, so a run of them is one series
+rather than one series per file.
 
 The show folder name and the `SxxEyy` marker are load-bearing; the human episode title
 after the second ` - ` is optional and ignored for matching. `Specials` is accepted as an

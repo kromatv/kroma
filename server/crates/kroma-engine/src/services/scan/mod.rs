@@ -31,6 +31,9 @@ pub struct ScanData {
     pub libraries: Vec<Library>,
     pub shows: Vec<Show>,
     pub items: Vec<MediaItem>,
+    /// Entries the walk could not read across every folder, so an empty scan can
+    /// say whether the library is genuinely empty or its symlinks dangle.
+    pub unreadable: usize,
     // `file_id -> mtime-secs` for every scanned file. Carried here (rather than
     // on `MediaFile`, which is the client JSON contract) so the DB sync can
     // detect changed files. Owned by this scan no shared global, so two
@@ -61,7 +64,7 @@ pub fn scan_all(defs: &[LibraryDef]) -> ScanData {
                 warn!(path = %root.display(), "media dir does not exist or is not a directory; skipping");
                 continue;
             }
-            scan_root(
+            data.unreadable += scan_root(
                 &def.id,
                 root,
                 &mut items,
@@ -130,6 +133,7 @@ pub fn rescan_sync(state: &crate::state::SharedState) -> anyhow::Result<Scanned>
         if !defs.is_empty() {
             warn!(
                 libraries = defs.len(),
+                unreadable = data.unreadable,
                 "configured libraries produced no items; keeping the stored index (mount offline?)"
             );
             return Ok(Scanned::MountOffline);
