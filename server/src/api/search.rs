@@ -12,9 +12,11 @@ use axum::Json;
 use serde::Deserialize;
 
 use crate::api::dto::{SearchHit, SearchResponse};
+use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
 use crate::i18n::ReqLocale;
+use crate::model::User;
 use crate::services::search::{Hit, HitKind};
 use crate::state::SharedState;
 use axum::routing::get;
@@ -40,6 +42,7 @@ pub struct SearchParams {
 /// `GET /api/search?q=&limit=&library=` → ranked [`SearchResponse`].
 pub async fn search(
     State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
     Query(p): Query<SearchParams>,
 ) -> Result<Response, Response> {
@@ -63,7 +66,7 @@ pub async fn search(
     let engine = state.search.clone();
     let resp = query(&state.db, move |pool| {
         let hits = engine.search(&q, limit);
-        let results = hydrate(&pool, hits, library.as_deref(), locale)?;
+        let results = hydrate(&pool, hits, library.as_deref(), locale, &user)?;
         Ok(SearchResponse { query: q, results })
     })
     .await?;
@@ -75,6 +78,7 @@ fn hydrate(
     hits: Vec<Hit>,
     library: Option<&str>,
     locale: &str,
+    user: &User,
 ) -> anyhow::Result<Vec<SearchHit>> {
     let item_ids: Vec<String> = hits
         .iter()
@@ -94,7 +98,7 @@ fn hydrate(
     db::localize::overlay_shows(pool, &mut show_vec, locale)?;
     let mut shows: HashMap<String, _> = show_vec.into_iter().map(|s| (s.id.clone(), s)).collect();
 
-    let in_library = |lib: &str| library.is_none_or(|want| lib == want);
+    let in_library = |lib: &str| library.is_none_or(|want| lib == want) && user.sees_library(lib);
 
     let mut out = Vec::with_capacity(hits.len());
     for hit in hits {

@@ -1,7 +1,7 @@
 # Accounts
 
-Status: **AGREED**. Sections carry their own status below, and requirements carry
-theirs, because much of this model already ships while library visibility does not.
+Status: **SHIPPED**. Sections carry their own status below, and requirements carry
+theirs, because the model ships while a few of its edges are still only agreed.
 
 Who is using the server, what they may see, and how a device proves it is them.
 
@@ -101,7 +101,7 @@ only the case that makes forced expiry obviously wrong.
 
 ## Authorisation
 
-Status: **SHIPPED** for the two roles, **AGREED** for library visibility.
+Status: **SHIPPED**, with owner-granted admin (ACCT-18) still **AGREED**.
 
 **ACCT-17** (SHIPPED) - An **owner or admin** runs the server: users, settings, jobs and
 modules. Admin rights are server-wide, never per-library.
@@ -112,11 +112,21 @@ account, and there is always at least one admin.
 **ACCT-19** (SHIPPED) - A **user** uses the server: browses and plays what they are permitted
 to see, owns their own watch state and preferences, and manages their own devices.
 
-**ACCT-20** (AGREED) - **Library visibility is per user.** An admin decides which libraries a
+**ACCT-20** (SHIPPED) - **Library visibility is per user.** An admin decides which libraries a
 given user may see; that user sees exactly those and cannot discover the rest.
 
-**ACCT-21** (AGREED) - Visibility gates browsing, search and playback alike. A title a user
+An account with no grant on record sees every library, which is what every account on an
+existing server reads as: narrowing is something an admin does, never something an upgrade
+does for them. A library nobody has been granted therefore stays visible to the unrestricted
+accounts and invisible to the narrowed ones.
+
+**ACCT-21** (SHIPPED) - Visibility gates browsing, search and playback alike. A title a user
 cannot see is a title they cannot play, resume or find.
+
+The one place this is weaker than it reads: the media byte routes are reachable without a
+session at all (a `<video>` element cannot carry a bearer), so they enforce the grant on a
+request that presents one and nothing on a request that presents none. Closing that needs a
+stream credential the player can carry, which is its own piece of work.
 
 **ACCT-22** (SHIPPED) - Installing a module is an **admin** right, because it runs new
 out-of-process code on the server ([`modules/`](../modules/)). A plain user may use whatever

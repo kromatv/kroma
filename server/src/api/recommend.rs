@@ -9,6 +9,7 @@ use serde::Deserialize;
 
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
+use crate::api::visibility;
 use crate::db;
 use crate::i18n::ReqLocale;
 use crate::model::MediaItem;
@@ -32,23 +33,31 @@ pub async fn for_you(
     AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
 ) -> Response {
+    let uid = user.id.clone();
     match query(&state.db, move |pool| {
-        let mut items = db::recommended_for(&pool, &user.id, ROW_LEN)?;
+        let mut items = db::recommended_for(&pool, &uid, ROW_LEN)?;
         db::localize::overlay_items(&pool, &mut items, locale)?;
         Ok(items)
     })
     .await
     {
-        Ok(items) => Json(items).into_response(),
+        Ok(mut items) => {
+            visibility::keep_items(&user, &mut items);
+            Json(items).into_response()
+        }
         Err(resp) => resp,
     }
 }
 
 pub async fn similar(
     State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
     Path(id): Path<String>,
 ) -> Response {
+    if let Err(resp) = visibility::gate_item(&state, &user, &id).await {
+        return resp;
+    }
     match query(&state.db, move |pool| {
         let mut items = db::similar_items(&pool, &id, ROW_LEN)?;
         db::localize::overlay_items(&pool, &mut items, locale)?;
@@ -56,7 +65,10 @@ pub async fn similar(
     })
     .await
     {
-        Ok(items) => Json(items).into_response(),
+        Ok(mut items) => {
+            visibility::keep_items(&user, &mut items);
+            Json(items).into_response()
+        }
         Err(resp) => resp,
     }
 }
@@ -71,6 +83,7 @@ pub struct ThemedParams {
 /// free-text phrase. An empty `q` yields an empty row, never "everything".
 pub async fn themed(
     State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
     Query(params): Query<ThemedParams>,
 ) -> Response {
@@ -89,7 +102,10 @@ pub async fn themed(
     })
     .await
     {
-        Ok(items) => Json(items).into_response(),
+        Ok(mut items) => {
+            visibility::keep_items(&user, &mut items);
+            Json(items).into_response()
+        }
         Err(resp) => resp,
     }
 }

@@ -11,7 +11,7 @@ use kroma_domain::User;
 pub fn recipients(conn: &Connection) -> rusqlite::Result<Vec<User>> {
     let mut stmt = conn.prepare(
         "SELECT id,email,username,avatar_url,created_at,permissions,language,\
-         (pin_hash IS NOT NULL),audio_language,subtitle_language FROM users ORDER BY created_at",
+         (pin_hash IS NOT NULL),audio_language,subtitle_language,libraries FROM users ORDER BY created_at",
     )?;
     let rows = stmt.query_map([], crate::row_to_user)?;
     rows.collect()

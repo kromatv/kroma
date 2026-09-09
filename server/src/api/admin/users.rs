@@ -1,8 +1,10 @@
-//! Member management: the full account list plus permission / username edits and
-//! account removal (the "Membres & partage" table). The reset and
-//! verification links the owner mints live in `users/links.rs`.
+//! Member management: the full account list plus permission, username and
+//! library-grant edits and account removal (the "Membres & partage" table). The
+//! reset and verification links the owner mints live in `users/links.rs`.
 
 mod links;
+
+use std::collections::BTreeSet;
 
 use axum::extract::{Path as AxPath, State};
 use axum::http::StatusCode;
@@ -15,7 +17,7 @@ use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
 use crate::infra::events::ServerEvent;
-use crate::model::{Permission, User};
+use crate::model::{LibraryScope, Permission, User};
 use crate::state::SharedState;
 use axum::routing::{get, patch, post};
 use axum::Router;
@@ -72,9 +74,23 @@ pub struct UpdateUserBody {
     pub permissions: Option<Vec<Permission>>,
     #[serde(default)]
     pub username: Option<String>,
+    #[serde(default, deserialize_with = "nullable")]
+    pub libraries: Option<Option<Vec<String>>>,
 }
 
-/// `PATCH /api/admin/users/:id` → update permissions and/or username.
+const MAX_GRANTED_LIBRARIES: usize = 256;
+
+fn nullable<'de, T, D>(de: D) -> Result<Option<T>, D::Error>
+where
+    T: Deserialize<'de>,
+    D: serde::Deserializer<'de>,
+{
+    T::deserialize(de).map(Some)
+}
+
+/// `PATCH /api/admin/users/:id` → update permissions, username and/or library
+/// grant. An absent `libraries` leaves the grant alone, `null` grants every
+/// library, and a list grants exactly those (ACCT-20).
 pub async fn update_user(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -138,8 +154,38 @@ pub async fn update_user(
         })
         .await?;
     }
+    if let Some(granted) = body.libraries {
+        let scope = library_scope(granted).ok_or_else(|| {
+            lerr(
+                super::user_locale(&user),
+                StatusCode::BAD_REQUEST,
+                "admin.tooManyLibraries",
+            )
+        })?;
+        let id3 = id.clone();
+        query(&state.db, move |pool| {
+            db::set_user_libraries(&pool, &id3, &scope)
+        })
+        .await?;
+    }
     state.events.publish(ServerEvent::LibraryUpdated);
     Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+fn library_scope(granted: Option<Vec<String>>) -> Option<LibraryScope> {
+    let Some(ids) = granted else {
+        return Some(LibraryScope::All);
+    };
+    if ids.len() > MAX_GRANTED_LIBRARIES {
+        return None;
+    }
+    let mut seen = BTreeSet::new();
+    Some(LibraryScope::Only(
+        ids.into_iter()
+            .filter(|id| !id.trim().is_empty())
+            .filter(|id| seen.insert(id.clone()))
+            .collect(),
+    ))
 }
 
 /// `DELETE /api/admin/users/:id` → remove an account.

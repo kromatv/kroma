@@ -16,6 +16,7 @@ pub struct AdminUser {
     #[serde(rename = "avatarUrl", skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
     pub permissions: Vec<Permission>,
+    pub libraries: crate::LibraryScope,
     pub role: String,
     #[serde(rename = "createdAt")]
     pub created_at: String,

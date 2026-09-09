@@ -9,6 +9,8 @@ use axum::response::{IntoResponse, Redirect, Response};
 use serde::Deserialize;
 
 use crate::api::error::json_error;
+use crate::api::extract::OptionalAuthUser;
+use crate::api::visibility;
 use crate::infra::hls::StreamMode;
 use crate::infra::metrics::ByteSink;
 use crate::infra::stream::metered_body;
@@ -39,6 +41,7 @@ pub struct HlsQuery {
 /// URLs, so switching language means reloading with a different `audio`.
 pub async fn hls_master(
     State(state): State<SharedState>,
+    OptionalAuthUser(caller): OptionalAuthUser,
     Path((id, mode, anchor, audio)): Path<(String, String, u64, u32)>,
     Query(q): Query<HlsQuery>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
@@ -47,8 +50,8 @@ pub async fn hls_master(
     let Some(mode) = StreamMode::parse(&mode) else {
         return json_error(StatusCode::BAD_REQUEST, "bad mode");
     };
-    let Some(item) = load_item(&state, id).await else {
-        return json_error(StatusCode::NOT_FOUND, "item not found");
+    let Some(item) = load_item(&state, caller.as_ref(), id).await else {
+        return visibility::out_of_scope();
     };
     // Redirected rather than served here: the effective mode owns the session and
     // its segment URLs, so master and segments never disagree. Both axes are
@@ -123,6 +126,7 @@ pub async fn hls_master(
 /// segment is polled for until ffmpeg flushes it.
 pub async fn hls_file(
     State(state): State<SharedState>,
+    OptionalAuthUser(caller): OptionalAuthUser,
     Path((id, mode, anchor, audio, file)): Path<(String, String, u64, u32, String)>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
@@ -130,6 +134,11 @@ pub async fn hls_file(
     let Some(mode) = StreamMode::parse(&mode) else {
         return json_error(StatusCode::BAD_REQUEST, "bad mode");
     };
+    if let Some(user) = caller.as_ref() {
+        if let Err(resp) = visibility::gate_item(&state, user, &id).await {
+            return resp;
+        }
+    }
     let immutable = !file.ends_with(".m3u8");
     match state.hls.file(&id, mode, anchor, audio, &file).await {
         Some((bytes, ct)) => {

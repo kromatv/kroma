@@ -26,8 +26,8 @@
 - **ACCT-17** (SHIPPED) - An **owner or admin** runs the server: users, settings, jobs and
 - **ACCT-18** (AGREED) - The owner is the founding admin, the owner may grant admin to another
 - **ACCT-19** (SHIPPED) - A **user** uses the server: browses and plays what they are permitted
-- **ACCT-20** (AGREED) - **Library visibility is per user.** An admin decides which libraries a
-- **ACCT-21** (AGREED) - Visibility gates browsing, search and playback alike. A title a user
+- **ACCT-20** (SHIPPED) - **Library visibility is per user.** An admin decides which libraries a
+- **ACCT-21** (SHIPPED) - Visibility gates browsing, search and playback alike. A title a user
 - **ACCT-22** (SHIPPED) - Installing a module is an **admin** right, because it runs new
 - **ACCT-23** (AGREED) - The matrix below is the whole of what each role may do. A user's power
 - **ACCT-24** (SHIPPED) - **Per-user**: watch state, meaning resume points, watched flags and

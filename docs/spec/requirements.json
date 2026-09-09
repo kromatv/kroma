@@ -194,7 +194,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 20,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "**Library visibility is per user.** An admin decides which libraries a",
     "file": "docs/spec/accounts/README.md",
     "line": 115
@@ -204,10 +204,10 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 21,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Visibility gates browsing, search and playback alike. A title a user",
     "file": "docs/spec/accounts/README.md",
-    "line": 118
+    "line": 123
   },
   {
     "id": "ACCT-22",
@@ -217,7 +217,7 @@
     "status": "SHIPPED",
     "text": "Installing a module is an **admin** right, because it runs new",
     "file": "docs/spec/accounts/README.md",
-    "line": 121
+    "line": 131
   },
   {
     "id": "ACCT-23",
@@ -227,7 +227,7 @@
     "status": "AGREED",
     "text": "The matrix below is the whole of what each role may do. A user's power",
     "file": "docs/spec/accounts/README.md",
-    "line": 130
+    "line": 140
   },
   {
     "id": "ACCT-24",
@@ -237,7 +237,7 @@
     "status": "SHIPPED",
     "text": "**Per-user**: watch state, meaning resume points, watched flags and",
     "file": "docs/spec/accounts/README.md",
-    "line": 157
+    "line": 167
   },
   {
     "id": "ACCT-25",
@@ -247,7 +247,7 @@
     "status": "SHIPPED",
     "text": "**Per-server**: the libraries and their contents, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 162
+    "line": 172
   },
   {
     "id": "ACCT-26",
@@ -257,7 +257,7 @@
     "status": "SHIPPED",
     "text": "Watch state is per user and never per device: resume a film on the",
     "file": "docs/spec/accounts/README.md",
-    "line": 166
+    "line": 176
   },
   {
     "id": "ACCT-27",
@@ -267,7 +267,7 @@
     "status": "SHIPPED",
     "text": "Deletion destroys the account's credentials, all of its sessions and",
     "file": "docs/spec/accounts/README.md",
-    "line": 176
+    "line": 186
   },
   {
     "id": "ACCT-28",
@@ -277,7 +277,7 @@
     "status": "SHIPPED",
     "text": "Everything per-server survives. Libraries, media, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 180
+    "line": 190
   },
   {
     "id": "ACCT-29",
@@ -287,7 +287,7 @@
     "status": "AGREED",
     "text": "The owner account cannot be deleted while it is the only admin.",
     "file": "docs/spec/accounts/README.md",
-    "line": 184
+    "line": 194
   },
   {
     "id": "ACCT-30",
@@ -297,7 +297,7 @@
     "status": "AGREED",
     "text": "A user may request deletion of their own account, which revokes their",
     "file": "docs/spec/accounts/README.md",
-    "line": 188
+    "line": 198
   },
   {
     "id": "ACCT-31",
@@ -307,7 +307,7 @@
     "status": "SHIPPED",
     "text": "Revocation stops a session doing anything new. It cannot fetch, refresh",
     "file": "docs/spec/accounts/README.md",
-    "line": 197
+    "line": 207
   },
   {
     "id": "ACCT-32",
@@ -317,7 +317,7 @@
     "status": "AGREED",
     "text": "Bytes already downloaded for offline viewing sit in local storage the",
     "file": "docs/spec/accounts/README.md",
-    "line": 200
+    "line": 210
   },
   {
     "id": "ACCT-33",
@@ -327,7 +327,7 @@
     "status": "AGREED",
     "text": "The guarantee is that a revoked device gains nothing new and loses its",
     "file": "docs/spec/accounts/README.md",
-    "line": 204
+    "line": 214
   },
   {
     "id": "ADMIN-1",

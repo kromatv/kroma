@@ -10,11 +10,12 @@ use axum::response::Response;
 use serde::Deserialize;
 
 use crate::api::error::json_error;
-use crate::api::util::{client_ip, query};
-use crate::db;
+use crate::api::extract::OptionalAuthUser;
+use crate::api::util::client_ip;
+use crate::api::visibility;
 use crate::infra::stream::stream_or_demo_error;
 use crate::infra::subtitles;
-use crate::model::MediaItem;
+use crate::model::{MediaItem, User};
 use crate::services::playback;
 use crate::services::settings;
 use crate::state::SharedState;
@@ -39,7 +40,8 @@ fn byte_sink(
 
 /// Direct-play streaming, HLS remux, storyboard previews and subtitle tracks.
 /// Unauthenticated: a `<video>` / hls.js element can't attach a bearer to the
-/// URLs it fetches, so these stay open under the LAN trust model.
+/// URLs it fetches, so these stay open under the LAN trust model. A request that
+/// does carry a session is still held to that account's library grant (ACCT-21).
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/items/{id}/stream", get(stream_item))
@@ -71,14 +73,15 @@ pub struct StreamQuery {
 /// original file. Without `?file`, the item's default/best file is served.
 pub async fn stream_item(
     State(state): State<SharedState>,
+    OptionalAuthUser(caller): OptionalAuthUser,
     Path(id): Path<String>,
     Query(q): Query<StreamQuery>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
 ) -> Result<Response, Response> {
-    let item = query(&state.db, move |pool| db::get_item(&pool, &id))
-        .await?
-        .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;
+    let item = load_item(&state, caller.as_ref(), id)
+        .await
+        .ok_or_else(visibility::out_of_scope)?;
     let abs_path = pick_file_path(&item, q.file.as_deref());
     let sink = byte_sink(&state, &headers, &addr);
     Ok(stream_or_demo_error(abs_path.as_deref(), &headers, sink).await)
@@ -93,18 +96,19 @@ fn pick_file_path(item: &MediaItem, file_id: Option<&str>) -> Option<String> {
     item.abs_path.clone()
 }
 
-async fn load_item(state: &SharedState, id: String) -> Option<MediaItem> {
-    query(&state.db, move |pool| db::get_item(&pool, &id))
-        .await
-        .ok()
-        .flatten()
+async fn load_item(state: &SharedState, caller: Option<&User>, id: String) -> Option<MediaItem> {
+    visibility::item_in_scope(state, caller, id).await
 }
 
 /// `GET /api/items/:id/storyboard` → the sprite-sheet manifest mapping a cursor
 /// time to a tile. 202 `{"status":"pending"}` while generating (the client polls).
-pub async fn storyboard(State(state): State<SharedState>, Path(id): Path<String>) -> Response {
-    let Some(item) = load_item(&state, id).await else {
-        return json_error(StatusCode::NOT_FOUND, "item not found");
+pub async fn storyboard(
+    State(state): State<SharedState>,
+    OptionalAuthUser(caller): OptionalAuthUser,
+    Path(id): Path<String>,
+) -> Response {
+    let Some(item) = load_item(&state, caller.as_ref(), id).await else {
+        return visibility::out_of_scope();
     };
     use crate::infra::storyboard::Status;
     match state.storyboard.get(&item).await {
@@ -120,10 +124,11 @@ pub async fn storyboard(State(state): State<SharedState>, Path(id): Path<String>
 /// generated. Cached immutably; the manifest's `?v=<key>` busts it.
 pub async fn storyboard_image(
     State(state): State<SharedState>,
+    OptionalAuthUser(caller): OptionalAuthUser,
     Path(id): Path<String>,
 ) -> Response {
-    let Some(item) = load_item(&state, id).await else {
-        return json_error(StatusCode::NOT_FOUND, "item not found");
+    let Some(item) = load_item(&state, caller.as_ref(), id).await else {
+        return visibility::out_of_scope();
     };
     match state.storyboard.sheet(&item).await {
         Some((bytes, content_type)) => Response::builder()
@@ -149,6 +154,7 @@ fn json_no_store(status: StatusCode, body: Vec<u8>) -> Response {
 /// image subtitles (PGS/VobSub) can't convert and return 404.
 pub async fn subtitles(
     State(state): State<SharedState>,
+    OptionalAuthUser(caller): OptionalAuthUser,
     Path((id, track)): Path<(String, String)>,
 ) -> Response {
     let index: usize = match track.trim_end_matches(".vtt").parse() {
@@ -156,10 +162,8 @@ pub async fn subtitles(
         Err(_) => return json_error(StatusCode::BAD_REQUEST, "invalid subtitle index"),
     };
 
-    let item = match query(&state.db, move |pool| db::get_item(&pool, &id)).await {
-        Ok(Some(item)) => item,
-        Ok(None) => return json_error(StatusCode::NOT_FOUND, "item not found"),
-        Err(resp) => return resp,
+    let Some(item) = load_item(&state, caller.as_ref(), id).await else {
+        return visibility::out_of_scope();
     };
     let Some(abs) = item.abs_path.clone() else {
         return json_error(StatusCode::NOT_FOUND, "no media file for item");
