@@ -349,11 +349,11 @@
 - **PLAY-17** (AGREED) - Transcode is always the lowest rung and is never the default for a
 - **PLAY-18** (AGREED) - An admin may **cap or disable** video transcode per server and per
 - **PLAY-19** (AGREED) - KROMA ships no adaptive multi-bitrate ladder, no quality knobs and no
-- **PLAY-20** (AGREED) - Any rung below direct play is a compromise, and the client always shows
+- **PLAY-20** (SHIPPED) - Any rung below direct play is a compromise, and the client always shows
 - **PLAY-21** (AGREED) - **Video transcode** and **subtitle burn-in** are shown as *reduced
 - **PLAY-22** (SHIPPED) - **Audio downmix** and **audio transcode** are shown as *audio
-- **PLAY-23** (AGREED) - **Remux** is shown as *repackaged*. Quality is untouched, so this is
-- **PLAY-24** (SHIPPED) - Direct play may announce itself, naming the codec it is playing
+- **PLAY-23** (SHIPPED) - **Remux** is shown as *repackaged*. Quality is untouched, so this is
+- **PLAY-24** (SHIPPED) - Direct play shows nothing. The absence of a notice *is* the signal
 - **PLAY-25** (AGREED) - KROMA never re-encodes video to save bandwidth unless the device
 - **PLAY-26** (AGREED) - KROMA never tone-maps HDR without saying so.
 - **PLAY-27** (AGREED) - KROMA never burns in subtitles the person did not ask to see.
@@ -381,7 +381,7 @@
 - **PLAY-49** (AGREED) - When a stream dies mid-playback, whether the network drops, a transcode
 - **PLAY-50** (AGREED) - A **transient** failure, a network drop or a brief server hiccup, is
 - **PLAY-51** (SHIPPED) - A **fatal** failure, a source gone, a transcode that cannot start, or
-- **PLAY-52** (AGREED) - When a television's older decoder cannot play a file a modern phone
+- **PLAY-52** (SHIPPED) - When a television's older decoder cannot play a file a modern phone
 - **PLAY-53** (AGREED) - A settled seek also reports, so jumping and then losing the client does
 
 ## SURF - [surfaces](surfaces/)
@@ -406,7 +406,7 @@
 - **SURF-18** (SHIPPED) - The matrix below is the record of what each surface must, may and may
 - **SURF-19** (SHIPPED) - **Browser-backed surfaces**, web and the sandboxed television
 - **SURF-20** (SHIPPED) - **Native surfaces**, mobile, desktop and the native television
-- **SURF-21** (AGREED) - When a television's older decoder cannot play a file a modern phone
+- **SURF-21** (SHIPPED) - When a television's older decoder cannot play a file a modern phone
 - **SURF-22** (AGREED) - KROMA never papers over a generation gap by silently transcoding for
 - **SURF-23** (SHIPPED) - **Pointer**, on web, is the reference model: dense layouts, hover
 - **SURF-24** (SHIPPED) - **Touch**, on mobile, means targets sized for a thumb, gestures for
