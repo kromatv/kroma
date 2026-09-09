@@ -89,7 +89,7 @@
   "admin.anonStats": "Statistiques d'utilisation anonymes",
   "admin.anonStatsHint": "Une fois par jour, envoie un relevé anonyme : un identifiant aléatoire, la version de ce serveur, sa plateforme et son mode d'installation. Aucun nom, aucune adresse, aucun titre. Activé par défaut ; le désactiver arrête aussi tout ce qui suit.",
   "admin.anonStatsStatistics": "Inclure quelle en est l'ampleur",
-  "admin.anonStatsStatisticsHint": "Ajoute le nombre de téléviseurs, téléphones et ordinateurs ayant utilisé ce serveur dans la semaine, et des tranches approximatives pour les comptes et les titres. Jamais un décompte exact.",
+  "admin.anonStatsStatisticsHint": "Ajoute le nombre de téléviseurs, téléphones et ordinateurs ayant utilisé ce serveur dans la semaine, ainsi que le nombre de comptes et de titres. Des nombres seulement : aucun compte ni aucun titre n'est nommé.",
   "admin.anonStatsUsage": "Inclure ce que ce serveur fait tourner",
   "admin.anonStatsUsageHint": "Ajoute les modules officiels activés et les langues que demandent les appareils d'ici. Jamais un module installé ailleurs. Désactivé, ces champs sont absents plutôt que vides.",
   "admin.appearance": "Apparence",

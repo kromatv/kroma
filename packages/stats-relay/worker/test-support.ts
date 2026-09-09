@@ -1,9 +1,11 @@
-import type { Ping } from './schemas';
+import { type Ping, size } from './schemas';
 import type { DailyRow, InstanceRow, Store } from './store';
 
-export function ping(overrides: Partial<Ping> = {}): Ping {
+type Current = Extract<Ping, { schema: 3 }>;
+
+export function ping(overrides: Partial<Current> = {}): Current {
   return {
-    schema: 2,
+    schema: 3,
     id: 'a'.repeat(64),
     version: '1.4.2',
     commit: 'cafed00d',
@@ -12,8 +14,8 @@ export function ping(overrides: Partial<Ping> = {}): Ping {
     clients: { tv: 1, mobile: 2, desktop: 0 },
     locales: ['fr-ch'],
     modules: ['tv.kroma.torrents'],
-    users: '2-5',
-    titles: '1k-4999',
+    users: 3,
+    titles: 1240,
     ...overrides,
   };
 }
@@ -30,8 +32,8 @@ export function row(overrides: Partial<InstanceRow> = {}): InstanceRow {
     clients: { tv: 1, mobile: 2, desktop: 0 },
     locales: ['fr-ch'],
     modules: ['tv.kroma.torrents'],
-    users: '2-5',
-    titles: '1k-4999',
+    users: 3,
+    titles: 1240,
     flagged: false,
     ...overrides,
   };
@@ -57,8 +59,7 @@ export function memoryStore(seed: InstanceRow[] = []): Store & { rows: Map<strin
         clients: p.clients,
         locales: p.locales === undefined ? undefined : [...p.locales],
         modules: p.modules === undefined ? undefined : [...p.modules],
-        users: p.users,
-        titles: p.titles,
+        ...size(p),
         flagged: existing?.flagged ?? false,
       });
     },

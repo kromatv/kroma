@@ -35,7 +35,7 @@ One JSON body, once a day. This is all of it:
 
 ```json
 {
-  "schema": 2,
+  "schema": 3,
   "id": "9f2c…",
   "version": "1.4.2",
   "commit": "cafed00d",
@@ -44,8 +44,8 @@ One JSON body, once a day. This is all of it:
   "locales": ["de-de", "fr-ch"],
   "modules": ["tv.kroma.torrents"],
   "clients": { "tv": 2, "mobile": 1, "desktop": 3 },
-  "users": "2-5",
-  "titles": "1k-4999"
+  "users": 4,
+  "titles": 1240
 }
 ```
 
@@ -71,15 +71,19 @@ One JSON body, once a day. This is all of it:
 | Field | What it is |
 |---|---|
 | `clients` | Devices that used this server in the last 7 days, by kind, each capped at 50. |
-| `users`, `titles` | Coarse bands, never counts: `1 / 2-5 / 6-20 / 21+` and `0-99 / 100-999 / 1k-4999 / 5k+`. |
+| `users`, `titles` | How many accounts this server has, and how many films and shows are in its library. Numbers only: no account and no title is named, and neither number is ever published against one install. |
+
+A server still on the previous shape keeps counting. It sized itself in bands,
+and a band is not read back as a number, so it has no size at the collector
+until it updates.
 
 ## What is never sent
 
 Your server's name. Its hostname, address, port or URL. Any IP (the collector
 reads a two-letter country code at Cloudflare's edge and the address is dropped
 with the request). Any title, file path, or anything about what you watch. Any
-user name, email or avatar. Any exact count of users or titles. The id of a
-module you installed from a third-party registry.
+user name, email or avatar. The id of a module you installed from a third-party
+registry.
 
 ## Checking rather than trusting
 

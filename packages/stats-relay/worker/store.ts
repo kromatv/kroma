@@ -1,7 +1,7 @@
 // Every SQL statement the collector runs, behind one narrow interface so the
 // routes and the rules can be tested against an in-memory stand-in.
 
-import type { Ping } from './schemas';
+import { type Ping, size } from './schemas';
 
 export interface InstanceRow {
   id: string;
@@ -15,8 +15,8 @@ export interface InstanceRow {
   clients?: { tv: number; mobile: number; desktop: number };
   locales?: string[];
   modules?: string[];
-  users?: string;
-  titles?: string;
+  users?: number;
+  titles?: number;
   flagged: boolean;
 }
 
@@ -73,8 +73,8 @@ interface StoredRow {
   clients_desktop: number | null;
   locales: string | null;
   modules: string | null;
-  users_bucket: string | null;
-  titles_bucket: string | null;
+  users: number | null;
+  titles: number | null;
   flagged: number;
 }
 
@@ -108,8 +108,8 @@ function toRow(row: StoredRow): InstanceRow {
       : undefined,
     locales: parseList(row.locales),
     modules: parseList(row.modules),
-    users: row.users_bucket ?? undefined,
-    titles: row.titles_bucket ?? undefined,
+    users: row.users ?? undefined,
+    titles: row.titles ?? undefined,
     flagged: row.flagged !== 0,
   };
 }
@@ -117,7 +117,7 @@ function toRow(row: StoredRow): InstanceRow {
 const UPSERT = `INSERT INTO instances
   (id, first_seen, last_seen, version, commit_hash, target, install, country,
    clients_tv, clients_mobile, clients_desktop, locales, modules,
-   users_bucket, titles_bucket, flagged)
+   users, titles, flagged)
   VALUES (?1, ?2, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, 0)
   ON CONFLICT(id) DO UPDATE SET
     last_seen = excluded.last_seen,
@@ -131,12 +131,13 @@ const UPSERT = `INSERT INTO instances
     clients_desktop = excluded.clients_desktop,
     locales = excluded.locales,
     modules = excluded.modules,
-    users_bucket = excluded.users_bucket,
-    titles_bucket = excluded.titles_bucket`;
+    users = excluded.users,
+    titles = excluded.titles`;
 
 export function d1Store(db: D1Database): Store {
   return {
     async upsert(ping, country, now) {
+      const reported = size(ping);
       await db
         .prepare(UPSERT)
         .bind(
@@ -152,8 +153,8 @@ export function d1Store(db: D1Database): Store {
           ping.clients?.desktop ?? null,
           ping.locales === undefined ? null : JSON.stringify(ping.locales),
           ping.modules === undefined ? null : JSON.stringify(ping.modules),
-          ping.users ?? null,
-          ping.titles ?? null,
+          reported.users ?? null,
+          reported.titles ?? null,
         )
         .run();
     },
@@ -169,7 +170,7 @@ export function d1Store(db: D1Database): Store {
         .prepare(
           `SELECT id, first_seen, last_seen, version, target, install, country,
                   clients_tv, clients_mobile, clients_desktop, locales, modules,
-                  users_bucket, titles_bucket, flagged
+                  users, titles, flagged
              FROM instances`,
         )
         .all<StoredRow>();

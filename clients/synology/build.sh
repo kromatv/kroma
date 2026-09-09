@@ -54,6 +54,10 @@ FFMPEG_URL="${FFMPEG_URL:-https://github.com/BtbN/FFmpeg-Builds/releases/downloa
 FFMPEG_FALLBACK_URL="${FFMPEG_FALLBACK_URL:-https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz}"
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+# Read here and handed to the cross-build: inside the container git sees a
+# checkout owned by nobody it knows and refuses to answer, which is why every
+# published build reported an unknown commit.
+GIT_HASH="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 SKEL="$ROOT/clients/synology/spk"
 OUT="$ROOT/clients/synology/dist"
 WORK="$(mktemp -d)"
@@ -91,6 +95,7 @@ if [ "${SKIP_RUST:-}" != "1" ]; then
   # server/, so anything narrower leaves a path dangling.
   docker run --rm -v "$ROOT":/home/rust/repo -w /home/rust/repo/server \
     -v "$CACHE/cargo":/root/.cargo/registry \
+    -e KROMA_GIT_HASH="$GIT_HASH" \
     "$RUST_IMAGE" cargo build --release --target "$TARGET"
 fi
 [ -f "$BIN" ] || { echo "musl binary missing: $BIN"; exit 1; }

@@ -27,13 +27,34 @@ const Clients = z.object({
   desktop: z.int().min(0).max(50),
 });
 
-/**
- * The payload shapes this collector understands. A new one is ADDED here, never
- * swapped in: a self-hosted server updates when its operator decides to, so
- * refusing the shape they still send drops them out of the count for as long as
- * they take.
- */
-export const SUPPORTED_SCHEMAS = [2] as const;
+// Bounded like every other field, and generously: the ceiling refuses nonsense
+// rather than rounding a real library down.
+const Count = z.int().min(0).max(10_000_000);
+
+const Base = z.object({
+  id: InstallId,
+  version: z.string().trim().min(1).max(32),
+  commit: z.string().trim().min(1).max(40),
+  target: z.string().trim().max(64),
+  install: z.enum(['docker', 'synology', 'binary', 'unknown']),
+  locales: z.array(Tag).max(32).optional(),
+  modules: z.array(ModuleId).max(64).optional(),
+  clients: Clients.optional(),
+});
+
+// Schema 2 sized a server in bands. A band is not a count and is never turned
+// into one, so a row written from one carries no size at all.
+const PingV2 = Base.extend({
+  schema: z.literal(2),
+  users: z.enum(['1', '2-5', '6-20', '21+']).optional(),
+  titles: z.enum(['0-99', '100-999', '1k-4999', '5k+']).optional(),
+});
+
+const PingV3 = Base.extend({
+  schema: z.literal(3),
+  users: Count.optional(),
+  titles: Count.optional(),
+});
 
 /**
  * `POST /v1/ping`: what one install says about itself, once a day.
@@ -47,21 +68,22 @@ export const SUPPORTED_SCHEMAS = [2] as const;
  * because a server whose operator dropped one omits its keys rather than
  * sending them empty, and "no modules enabled" has to stay distinguishable from
  * "not telling you".
+ *
+ * A shape is ADDED here, never swapped in: a self-hosted server updates when
+ * its operator decides to, so refusing the shape they still send drops them out
+ * of the count for as long as they take.
  */
-export const Ping = z.object({
-  schema: z.literal(SUPPORTED_SCHEMAS),
-  id: InstallId,
-  version: z.string().trim().min(1).max(32),
-  commit: z.string().trim().min(1).max(40),
-  target: z.string().trim().max(64),
-  install: z.enum(['docker', 'synology', 'binary', 'unknown']),
-  locales: z.array(Tag).max(32).optional(),
-  modules: z.array(ModuleId).max(64).optional(),
-  clients: Clients.optional(),
-  users: z.enum(['1', '2-5', '6-20', '21+']).optional(),
-  titles: z.enum(['0-99', '100-999', '1k-4999', '5k+']).optional(),
-});
+export const Ping = z.discriminatedUnion('schema', [PingV2, PingV3]);
 export type Ping = z.infer<typeof Ping>;
+
+/**
+ * How large this install said it is, or nothing where its shape could not say
+ * it precisely. A schema-2 band describes a range, and reading it back as a
+ * number would invent one.
+ */
+export function size(ping: Ping): { users?: number; titles?: number } {
+  return ping.schema === 3 ? { users: ping.users, titles: ping.titles } : {};
+}
 
 /**
  * `POST /v1/forget`: an install asks for its row to be deleted. Holding the id

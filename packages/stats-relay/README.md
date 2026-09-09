@@ -52,8 +52,13 @@ By hand, like the push relay. The database is created once:
 ```bash
 cd worker
 bunx wrangler d1 create kroma-stats          # paste the id into wrangler.jsonc
-bunx wrangler d1 migrations apply kroma-stats --remote
-bunx wrangler deploy
+```
+
+Then, from anywhere in the repository:
+
+```bash
+bun run --filter '@kromatv/stats-relay' migrate
+bun run --filter '@kromatv/stats-relay' deploy
 ```
 
 **Apply the migrations before deploying**, not after: a Worker whose schema the

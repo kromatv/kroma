@@ -6,15 +6,15 @@ use time::{Duration, OffsetDateTime};
 use crate::state::SharedState;
 
 use super::clients::{self, Clients};
+use super::locales;
 use super::preferences::Preferences;
-use super::{buckets, locales};
 
 // A device is "active" if it was seen inside this window.
 const ACTIVE_DAYS: i64 = 7;
 
 /// The payload's shape. Bumped whenever a field is added, removed or given a
 /// new meaning, in the same commit as `docs/anonymous-stats.md`.
-pub const SCHEMA: u32 = 2;
+pub const SCHEMA: u32 = 3;
 
 /// What one install says about itself. The base block is always there; a detail
 /// block is `None` when its switch is off, and `serde` leaves the key out
@@ -35,9 +35,9 @@ pub struct Payload {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub clients: Option<Clients>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub users: Option<&'static str>,
+    pub users: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub titles: Option<&'static str>,
+    pub titles: Option<i64>,
 }
 
 pub fn build(state: &SharedState, id: String, prefs: Preferences) -> Result<Payload> {
@@ -59,17 +59,14 @@ pub fn build(state: &SharedState, id: String, prefs: Preferences) -> Result<Payl
         clients: prefs.statistics.then(|| clients::tally(&devices)),
         users: prefs
             .statistics
-            .then(|| crate::db::user_count(&state.db).map(buckets::users))
+            .then(|| crate::db::user_count(&state.db))
             .transpose()?,
-        titles: prefs
-            .statistics
-            .then(|| library_size(state).map(buckets::titles))
-            .transpose()?,
+        titles: prefs.statistics.then(|| library_size(state)).transpose()?,
     })
 }
 
-// Films and shows, not every episode row: a library of 40 series would
-// otherwise report the top band and say nothing about its size.
+// Films and shows, not every episode row: a library of 40 series is 40 titles,
+// not the several hundred files they arrive in.
 fn library_size(state: &SharedState) -> Result<i64> {
     let (_, _, shows) = crate::db::counts(&state.db)?;
     Ok(crate::db::movie_count(&state.db)? + shows as i64)
@@ -135,7 +132,7 @@ mod tests {
 
         assert_eq!(payload.schema, SCHEMA);
         assert_eq!(payload.id, "an-id");
-        assert_eq!(payload.users, Some("1"));
+        assert_eq!(payload.users, Some(0));
         assert_eq!(payload.modules, Some(Vec::new()));
         let json = serde_json::to_string(&payload).unwrap();
         for forbidden in ["serverName", "hostname", "http://", "https://", "/"] {
@@ -218,7 +215,21 @@ mod tests {
         assert_eq!(payload.modules, None);
         assert_eq!(payload.locales, None);
         assert_eq!(payload.clients.unwrap().desktop, 1);
-        assert_eq!(payload.users, Some("1"));
+        assert_eq!(payload.users, Some(1));
+    }
+
+    #[test]
+    fn accounts_and_titles_are_reported_as_they_are_counted() {
+        let state = test_state();
+        with_devices(&state, &["fr"]);
+        crate::test_support::seed_movie(&state, "m1");
+        crate::test_support::seed_movie(&state, "m2");
+        crate::test_support::seed_show_episode(&state, "s1", "e1");
+
+        let payload = build(&state, "an-id".into(), EVERYTHING).unwrap();
+
+        assert_eq!(payload.users, Some(1));
+        assert_eq!(payload.titles, Some(3));
     }
 
     #[test]

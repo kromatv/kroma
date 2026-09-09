@@ -19,9 +19,9 @@ sign in) to nothing else at all.
 you can stop it.** The server software sends us a single anonymous payload a
 day: a random identifier that server minted for itself, its version and
 platform, how many devices used it in the last week, which languages those
-devices asked for, which official modules are on, and coarse size bands. It
-carries no name, no address, no titles and no exact counts, and it comes from
-the server, never from this app.
+devices asked for, which official modules are on, how many accounts it has and
+how many titles are in its library. It carries no name, no address and no title,
+and it comes from the server, never from this app.
 
 Admin → General → Privacy holds three switches, on by default. The first is the
 whole thing. Under it, *what this server runs* and *how much of it there is* can
