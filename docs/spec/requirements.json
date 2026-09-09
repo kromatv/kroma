@@ -878,5 +878,435 @@
     "text": "A user who cannot sign in can ask for a reset from the sign-in",
     "file": "docs/spec/admin/README.md",
     "line": 136
+  },
+  {
+    "id": "SURF-1",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 1,
+    "status": "SHIPPED",
+    "text": "Every client KROMA ships is one of the surfaces named here, and each",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 20
+  },
+  {
+    "id": "SURF-2",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 2,
+    "status": "AGREED",
+    "text": "A build that cannot do all six rungs below is a preview, not a",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 42
+  },
+  {
+    "id": "SURF-3",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 3,
+    "status": "SHIPPED",
+    "text": "**Sign in or pair.** A surface reaches a server and becomes an",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 45
+  },
+  {
+    "id": "SURF-4",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 4,
+    "status": "SHIPPED",
+    "text": "**Browse the library.** A surface moves through the titles the",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 49
+  },
+  {
+    "id": "SURF-5",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 5,
+    "status": "SHIPPED",
+    "text": "**View a title.** A surface shows a title's artwork, its metadata,",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 51
+  },
+  {
+    "id": "SURF-6",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 6,
+    "status": "SHIPPED",
+    "text": "**Start playback.** A surface plays the title, taking whatever rung",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 53
+  },
+  {
+    "id": "SURF-7",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 7,
+    "status": "SHIPPED",
+    "text": "**Resume.** A surface reopens an in-progress title at the",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 55
+  },
+  {
+    "id": "SURF-8",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 8,
+    "status": "SHIPPED",
+    "text": "**Sign out.** A surface ends the session and drops the server from",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 57
+  },
+  {
+    "id": "SURF-9",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 9,
+    "status": "AGREED",
+    "text": "Everything past the six rungs is a *may*, not a *must*. A surface that",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 60
+  },
+  {
+    "id": "SURF-10",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 10,
+    "status": "SHIPPED",
+    "text": "Web is the reference implementation. Where two surfaces disagree on",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 72
+  },
+  {
+    "id": "SURF-11",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 11,
+    "status": "AGREED",
+    "text": "A feature is not shipped until web has it.",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 76
+  },
+  {
+    "id": "SURF-12",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 12,
+    "status": "SHIPPED",
+    "text": "**First-class.** Web, mobile, desktop and the native television",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 78
+  },
+  {
+    "id": "SURF-13",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 13,
+    "status": "AGREED",
+    "text": "A baseline regression on a first-class surface blocks the release.",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 80
+  },
+  {
+    "id": "SURF-14",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 14,
+    "status": "AGREED",
+    "text": "A first-class surface may diverge from web where its input model",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 81
+  },
+  {
+    "id": "SURF-15",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 15,
+    "status": "SHIPPED",
+    "text": "**Best-effort.** The sandboxed television shells, Samsung and LG,",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 83
+  },
+  {
+    "id": "SURF-16",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 16,
+    "status": "AGREED",
+    "text": "A capability a best-effort surface's platform cannot express, such",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 86
+  },
+  {
+    "id": "SURF-17",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 17,
+    "status": "SHIPPED",
+    "text": "**The NAS package is not a surface.** It puts the *server* on a",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 89
+  },
+  {
+    "id": "SURF-18",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 18,
+    "status": "AGREED",
+    "text": "The matrix below is the record of what each surface must, may and may",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 97
+  },
+  {
+    "id": "SURF-19",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 19,
+    "status": "SHIPPED",
+    "text": "**Browser-backed surfaces**, web and the sandboxed television",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 123
+  },
+  {
+    "id": "SURF-20",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 20,
+    "status": "SHIPPED",
+    "text": "**Native surfaces**, mobile, desktop and the native television",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 127
+  },
+  {
+    "id": "SURF-21",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 21,
+    "status": "AGREED",
+    "text": "When a television's older decoder cannot play a file a modern phone",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 130
+  },
+  {
+    "id": "SURF-22",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 22,
+    "status": "AGREED",
+    "text": "KROMA never papers over a generation gap by silently transcoding for",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 133
+  },
+  {
+    "id": "SURF-23",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 23,
+    "status": "SHIPPED",
+    "text": "**Pointer**, on web and desktop, is the reference model: dense",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 148
+  },
+  {
+    "id": "SURF-24",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 24,
+    "status": "SHIPPED",
+    "text": "**Touch**, on mobile, means targets sized for a thumb, gestures for",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 151
+  },
+  {
+    "id": "SURF-25",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 25,
+    "status": "SHIPPED",
+    "text": "**Remote, 10-foot**, on every television, is a directional focus",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 154
+  },
+  {
+    "id": "SURF-26",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 26,
+    "status": "SHIPPED",
+    "text": "A television signs in through the pairing handshake precisely",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 157
+  },
+  {
+    "id": "SURF-27",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 27,
+    "status": "AGREED",
+    "text": "A television build that ships a pointer-shaped screen has not met",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 159
+  },
+  {
+    "id": "SURF-28",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 28,
+    "status": "AGREED",
+    "text": "A surface serving more than one model, such as a tablet with a",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 161
+  },
+  {
+    "id": "SURF-29",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 29,
+    "status": "SHIPPED",
+    "text": "**Only mobile is offline.** Web, desktop and every television hold no",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 168
+  },
+  {
+    "id": "SURF-30",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 30,
+    "status": "SHIPPED",
+    "text": "A download is a progressive file, the raw original when the device",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 175
+  },
+  {
+    "id": "SURF-31",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 31,
+    "status": "SHIPPED",
+    "text": "Downloads survive backgrounding and app kills, and are re-adopted",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 178
+  },
+  {
+    "id": "SURF-32",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 32,
+    "status": "SHIPPED",
+    "text": "Progress reports that could not be sent queue on the device and",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 180
+  },
+  {
+    "id": "SURF-33",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 33,
+    "status": "DESIGN, NOT IMPLEMENTED",
+    "text": "Per-title rows in the OS storage manager, deletable",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 188
+  },
+  {
+    "id": "SURF-34",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 34,
+    "status": "AGREED",
+    "text": "A surface stays current without asking a person to babysit it.",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 206
+  },
+  {
+    "id": "SURF-35",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 35,
+    "status": "SHIPPED",
+    "text": "**Web.** The server serves the web surface itself. There is no",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 208
+  },
+  {
+    "id": "SURF-36",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 36,
+    "status": "SHIPPED",
+    "text": "**Desktop.** The app checks for, fetches and applies updates in the",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 211
+  },
+  {
+    "id": "SURF-37",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 37,
+    "status": "AGREED",
+    "text": "**Mobile.** The app updates on the store's cadence, so a server",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 213
+  },
+  {
+    "id": "SURF-38",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 38,
+    "status": "AGREED",
+    "text": "**Televisions.** Each television updates through its own platform's",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 216
+  },
+  {
+    "id": "SURF-39",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 39,
+    "status": "SHIPPED",
+    "text": "**NAS.** The Synology package installs and updates through Package",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 218
+  },
+  {
+    "id": "SURF-40",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 40,
+    "status": "AGREED",
+    "text": "A surface is dropped when its host platform can no longer meet the",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 225
+  },
+  {
+    "id": "SURF-41",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 41,
+    "status": "AGREED",
+    "text": "**Notice first.** A surface entering deprecation tells its users *in",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 230
+  },
+  {
+    "id": "SURF-42",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 42,
+    "status": "AGREED",
+    "text": "**Sessions survive the app.** A deprecated surface's sessions are",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 233
+  },
+  {
+    "id": "SURF-43",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 43,
+    "status": "AGREED",
+    "text": "**The library outlives any surface.** Nothing about a person's",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 237
   }
 ]

@@ -3,7 +3,7 @@
 
 # Requirement index
 
-88 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+131 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ADMIN - [admin](admin/)
 
@@ -95,3 +95,49 @@
 - **ADMIN-86** (AGREED) - The owner sends a verification from the member editor, with the <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-87** (AGREED) - Changing the address clears the verified state: the proof belongs <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-88** (AGREED) - A user who cannot sign in can ask for a reset from the sign-in <sub>[README.md](admin/README.md)</sub>
+
+## SURF - [surfaces](surfaces/)
+
+- **SURF-1** (SHIPPED) - Every client KROMA ships is one of the surfaces named here, and each
+- **SURF-2** (AGREED) - A build that cannot do all six rungs below is a preview, not a
+- **SURF-3** (SHIPPED) - **Sign in or pair.** A surface reaches a server and becomes an
+- **SURF-4** (SHIPPED) - **Browse the library.** A surface moves through the titles the
+- **SURF-5** (SHIPPED) - **View a title.** A surface shows a title's artwork, its metadata,
+- **SURF-6** (SHIPPED) - **Start playback.** A surface plays the title, taking whatever rung
+- **SURF-7** (SHIPPED) - **Resume.** A surface reopens an in-progress title at the
+- **SURF-8** (SHIPPED) - **Sign out.** A surface ends the session and drops the server from
+- **SURF-9** (AGREED) - Everything past the six rungs is a *may*, not a *must*. A surface that
+- **SURF-10** (SHIPPED) - Web is the reference implementation. Where two surfaces disagree on
+- **SURF-11** (AGREED) - A feature is not shipped until web has it.
+- **SURF-12** (SHIPPED) - **First-class.** Web, mobile, desktop and the native television
+- **SURF-13** (AGREED) - A baseline regression on a first-class surface blocks the release.
+- **SURF-14** (AGREED) - A first-class surface may diverge from web where its input model
+- **SURF-15** (SHIPPED) - **Best-effort.** The sandboxed television shells, Samsung and LG,
+- **SURF-16** (AGREED) - A capability a best-effort surface's platform cannot express, such
+- **SURF-17** (SHIPPED) - **The NAS package is not a surface.** It puts the *server* on a
+- **SURF-18** (AGREED) - The matrix below is the record of what each surface must, may and may
+- **SURF-19** (SHIPPED) - **Browser-backed surfaces**, web and the sandboxed television
+- **SURF-20** (SHIPPED) - **Native surfaces**, mobile, desktop and the native television
+- **SURF-21** (AGREED) - When a television's older decoder cannot play a file a modern phone
+- **SURF-22** (AGREED) - KROMA never papers over a generation gap by silently transcoding for
+- **SURF-23** (SHIPPED) - **Pointer**, on web and desktop, is the reference model: dense
+- **SURF-24** (SHIPPED) - **Touch**, on mobile, means targets sized for a thumb, gestures for
+- **SURF-25** (SHIPPED) - **Remote, 10-foot**, on every television, is a directional focus
+- **SURF-26** (SHIPPED) - A television signs in through the pairing handshake precisely
+- **SURF-27** (AGREED) - A television build that ships a pointer-shaped screen has not met
+- **SURF-28** (AGREED) - A surface serving more than one model, such as a tablet with a
+- **SURF-29** (SHIPPED) - **Only mobile is offline.** Web, desktop and every television hold no
+- **SURF-30** (SHIPPED) - A download is a progressive file, the raw original when the device
+- **SURF-31** (SHIPPED) - Downloads survive backgrounding and app kills, and are re-adopted
+- **SURF-32** (SHIPPED) - Progress reports that could not be sent queue on the device and
+- **SURF-33** (DESIGN, NOT IMPLEMENTED) - Per-title rows in the OS storage manager, deletable
+- **SURF-34** (AGREED) - A surface stays current without asking a person to babysit it.
+- **SURF-35** (SHIPPED) - **Web.** The server serves the web surface itself. There is no
+- **SURF-36** (SHIPPED) - **Desktop.** The app checks for, fetches and applies updates in the
+- **SURF-37** (AGREED) - **Mobile.** The app updates on the store's cadence, so a server
+- **SURF-38** (AGREED) - **Televisions.** Each television updates through its own platform's
+- **SURF-39** (SHIPPED) - **NAS.** The Synology package installs and updates through Package
+- **SURF-40** (AGREED) - A surface is dropped when its host platform can no longer meet the
+- **SURF-41** (AGREED) - **Notice first.** A surface entering deprecation tells its users *in
+- **SURF-42** (AGREED) - **Sessions survive the app.** A deprecated surface's sessions are
+- **SURF-43** (AGREED) - **The library outlives any surface.** Nothing about a person's
