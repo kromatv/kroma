@@ -32,7 +32,7 @@ const STORIES: readonly Story[] = [
 ];
 
 const SOURCE: StorySource = {
-  repository: 'https://github.com/maxscharwath/kroma',
+  repository: 'https://github.com/kromatv/kroma',
   commit: 'c51eb485a1b2c3d4e5f60718293a4b5c6d7e8f90',
   dirty: false,
   root: ROOT,

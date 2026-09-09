@@ -435,7 +435,7 @@ docker run -d --name kroma \
   -v kroma-data:/data \
   -v /path/on/host/media:/media \
   -e KROMA_MEDIA_DIRS=/media \
-  ghcr.io/maxscharwath/kroma:latest
+  ghcr.io/kromatv/kroma:latest
 ```
 
 Or as compose. A ready-to-run [`docker-compose.yml`](../docker-compose.yml) sits
@@ -444,7 +444,7 @@ at the repo root, so `docker compose up -d` works from there:
 ```yaml
 services:
   kroma:
-    image: ghcr.io/maxscharwath/kroma:latest
+    image: ghcr.io/kromatv/kroma:latest
     ports: ["4040:4040"]
     environment:
       KROMA_MEDIA_DIRS: /media
@@ -471,7 +471,7 @@ docker run -d --name kroma \
   -v kroma-data:/data \
   -v /path/on/host/media:/media \
   -e KROMA_MEDIA_DIRS=/media \
-  ghcr.io/maxscharwath/kroma:latest
+  ghcr.io/kromatv/kroma:latest
 ```
 
 Or as compose:
@@ -479,7 +479,7 @@ Or as compose:
 ```yaml
 services:
   kroma:
-    image: ghcr.io/maxscharwath/kroma:latest
+    image: ghcr.io/kromatv/kroma:latest
     ports:
       - "4040:4040"
       - "4443:4443"

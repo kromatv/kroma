@@ -11,4 +11,4 @@ bunx kroma build                    # dist/modules/__ID__.kmod
 
 Layout: `module.json` is the manifest, `ui/` the page a KROMA client renders,
 `server/` the sidecar the server spawns, `locales/` the strings. See
-https://github.com/maxscharwath/kroma/blob/main/modules/README.md.
+https://github.com/kromatv/kroma/blob/main/modules/README.md.

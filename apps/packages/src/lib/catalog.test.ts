@@ -18,7 +18,7 @@ function entry(over: Partial<Entry> = {}): Entry {
     channel: 'stable',
     tag: 'v0.1.25',
     releaseName: 'KROMA 0.1.25',
-    releaseUrl: 'https://github.com/maxscharwath/kroma/releases/tag/v0.1.25',
+    releaseUrl: 'https://github.com/kromatv/kroma/releases/tag/v0.1.25',
     publishedAt: '2026-07-01T00:00:00Z',
     spkName: 'kroma-0.1.25-3439372-x86_64.spk',
     spkUrl: 'https://example/kroma.spk',
@@ -143,7 +143,7 @@ describe('dsmVersion', () => {
 
 describe('toDsmPackage', () => {
   it('fills defaults when there is no sidecar info', () => {
-    const pkg = toDsmPackage(entry(), 'https://pkg.kroma.tv', 'maxscharwath/kroma');
+    const pkg = toDsmPackage(entry(), 'https://pkg.kroma.tv', 'kromatv/kroma');
     expect(pkg.package).toBe('kroma');
     expect(pkg.version).toBe('0.1.25-3439372');
     expect(pkg.dname).toBe('KROMA');
@@ -154,7 +154,7 @@ describe('toDsmPackage', () => {
     // No `beta` field at all - DSM hides `beta:true` from a dynamic source.
     expect('beta' in pkg).toBe(false);
     expect(pkg.thumbnail).toEqual(['https://pkg.kroma.tv/icon.png']);
-    expect(pkg.maintainer_url).toBe('https://github.com/maxscharwath/kroma');
+    expect(pkg.maintainer_url).toBe('https://github.com/kromatv/kroma');
     expect(pkg.changelog).toBe(entry().releaseUrl);
   });
 
@@ -162,7 +162,7 @@ describe('toDsmPackage', () => {
     const pkg = toDsmPackage(
       entry({ info, channel: 'canary' }),
       'https://pkg.kroma.tv',
-      'maxscharwath/kroma',
+      'kromatv/kroma',
     );
     expect(pkg.version).toBe('0.1.25-3439372');
     expect(pkg.size).toBe(2097152); // sidecar size wins
@@ -174,7 +174,7 @@ describe('toDsmPackage', () => {
 
 describe('DEFAULT_REPO', () => {
   it('points at the kroma repo', () => {
-    expect(DEFAULT_REPO).toBe('maxscharwath/kroma');
+    expect(DEFAULT_REPO).toBe('kromatv/kroma');
   });
 });
 

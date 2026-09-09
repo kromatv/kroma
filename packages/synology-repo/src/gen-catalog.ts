@@ -44,10 +44,10 @@ const catalogName = env('CATALOG_NAME', 'catalog.json'); // e.g. nightly.json fo
 const beta = env('CATALOG_BETA', 'false') === 'true';
 const meta = {
   maintainer: env('CATALOG_MAINTAINER', 'KROMA'),
-  maintainerUrl: env('CATALOG_MAINTAINER_URL', 'https://github.com/maxscharwath/kroma'),
+  maintainerUrl: env('CATALOG_MAINTAINER_URL', 'https://github.com/kromatv/kroma'),
   distributor: env('CATALOG_DISTRIBUTOR', env('CATALOG_MAINTAINER', 'KROMA')),
-  distributorUrl: env('CATALOG_DISTRIBUTOR_URL', 'https://github.com/maxscharwath/kroma'),
-  changelogUrl: env('CATALOG_CHANGELOG_URL', 'https://github.com/maxscharwath/kroma/releases'),
+  distributorUrl: env('CATALOG_DISTRIBUTOR_URL', 'https://github.com/kromatv/kroma'),
+  changelogUrl: env('CATALOG_CHANGELOG_URL', 'https://github.com/kromatv/kroma/releases'),
 };
 
 const {

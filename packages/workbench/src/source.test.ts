@@ -4,7 +4,7 @@ import { type StorySource, sourceUrl } from './source';
 const SHA = 'c51eb485a1b2c3d4e5f60718293a4b5c6d7e8f90';
 
 const KROMA: StorySource = {
-  repository: 'https://github.com/maxscharwath/kroma',
+  repository: 'https://github.com/kromatv/kroma',
   commit: SHA,
   dirty: false,
   root: 'packages/ui/src',
@@ -15,7 +15,7 @@ const KROMA: StorySource = {
 // the context was opened on.
 const VITE = '../../packages/ui/src/components/atoms/button/button.stories.tsx';
 const METRO = './components/atoms/button/button.stories.tsx';
-const FOLDER = `https://github.com/maxscharwath/kroma/tree/${SHA}/packages/ui/src/components/atoms/button`;
+const FOLDER = `https://github.com/kromatv/kroma/tree/${SHA}/packages/ui/src/components/atoms/button`;
 
 describe('sourceUrl', () => {
   it('pins the folder the story was found in to the commit that was built', () => {
@@ -29,7 +29,7 @@ describe('sourceUrl', () => {
   it('takes an absolute path from the root onwards', () => {
     const absolute = '/Users/someone/kroma/packages/ui/src/foundations/colors.stories.tsx';
     expect(sourceUrl(KROMA, absolute)).toBe(
-      `https://github.com/maxscharwath/kroma/tree/${SHA}/packages/ui/src/foundations`,
+      `https://github.com/kromatv/kroma/tree/${SHA}/packages/ui/src/foundations`,
     );
   });
 
@@ -51,7 +51,7 @@ describe('sourceUrl', () => {
 
   it('accepts the short revision git also answers with', () => {
     expect(sourceUrl({ ...KROMA, commit: 'c51eb485' }, VITE)).toBe(
-      'https://github.com/maxscharwath/kroma/tree/c51eb485/packages/ui/src/components/atoms/button',
+      'https://github.com/kromatv/kroma/tree/c51eb485/packages/ui/src/components/atoms/button',
     );
   });
 
@@ -66,14 +66,12 @@ describe('sourceUrl', () => {
 
   it('refuses a remote the platform must not be handed', () => {
     expect(sourceUrl({ ...KROMA, repository: 'file:///Users/someone/kroma' }, VITE)).toBeNull();
-    expect(
-      sourceUrl({ ...KROMA, repository: 'git@github.com:maxscharwath/kroma' }, VITE),
-    ).toBeNull();
+    expect(sourceUrl({ ...KROMA, repository: 'git@github.com:kromatv/kroma' }, VITE)).toBeNull();
   });
 
   it('does not double the slash a remote may end on', () => {
-    expect(
-      sourceUrl({ ...KROMA, repository: 'https://github.com/maxscharwath/kroma/' }, VITE),
-    ).toBe(FOLDER);
+    expect(sourceUrl({ ...KROMA, repository: 'https://github.com/kromatv/kroma/' }, VITE)).toBe(
+      FOLDER,
+    );
   });
 });

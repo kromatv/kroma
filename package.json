@@ -5,9 +5,9 @@
   "description": "KROMA self-hosted, multi-platform video streaming (Rust server + web / Tizen / webOS clients). Direct-play HEVC everywhere.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "license": "GPL-2.0-or-later",
-  "repository": "https://github.com/maxscharwath/kroma",
+  "repository": "https://github.com/kromatv/kroma",
   "homepage": "https://kroma.tv",
-  "bugs": "https://github.com/maxscharwath/kroma/issues",
+  "bugs": "https://github.com/kromatv/kroma/issues",
   "workspaces": [
     "packages/*",
     "clients/*",
