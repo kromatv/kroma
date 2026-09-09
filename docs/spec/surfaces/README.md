@@ -30,7 +30,7 @@ looking for the code and is not part of the requirement; the mapping lives in
 | LG TV | `clients/webos` | 10-foot UI, remote-only input |
 | Other TV | `clients/tv-web`, `clients/tv-native` | Apple TV / Android TV native; generic web fallback |
 | Mobile | `clients/mobile` | Offline downloads |
-| Desktop | `clients/desktop` | Auto-update |
+| Desktop | `clients/desktop` | 10-foot UI, gamepad or remote; auto-update |
 | NAS | `clients/synology` | Packaging, not a client |
 
 ## The baseline
@@ -110,12 +110,12 @@ does not do something is a decision on record.
 | Capability | Web | Mobile | Desktop | TV native | TV sandboxed (Tizen/webOS) |
 |---|---|---|---|---|---|
 | Baseline (six above) | must | must | must | must | must |
-| Input model | pointer | touch | pointer | remote | remote |
+| Input model | pointer | touch | directional | directional | directional |
 | Browses for a server on the LAN | no | yes | no | yes | no |
 | Announces itself on the LAN | n/a | n/a | n/a | yes | Tizen no / webOS yes |
 | Approves a television's pairing | yes (code) | yes (code or scan) | yes (code) | is the TV | is the TV |
 | Offline downloads | no | yes | no | no | no |
-| Direct-play ceiling | browser codecs | device generation | browser codecs | panel generation | panel generation |
+| Direct-play ceiling | browser codecs | device generation | device generation | panel generation | panel generation |
 
 Browsing and announcing are the surface's *reach*. The per-shell truth, meaning who announces,
 who browses and why Samsung cannot, is [`discovery/`](../discovery/)'s, grounded in
@@ -155,15 +155,23 @@ Status: **SHIPPED**. The three models are built; SURF-27 and SURF-28 are **AGREE
 because copying it would break the surface. Each of the three models below rewrites the UI
 rather than only the event handling.
 
-- **SURF-23** (SHIPPED) - **Pointer**, on web and desktop, is the reference model: dense
-  layouts, hover affordances, a visible cursor, right-click and keyboard shortcuts. Every
-  other model is a deliberate departure from it.
+Desktop is a directional surface, not a pointer one. The shell renders the same 10-foot
+experience the televisions render, on a fixed stage, and bridges a gamepad onto the same
+events a remote raises. A window with a mouse attached does not make it a pointer app, and
+web is where the pointer model lives.
+
+- **SURF-23** (SHIPPED) - **Pointer**, on web, is the reference model: dense layouts, hover
+  affordances, a visible cursor, right-click and keyboard shortcuts. Every other model is a
+  deliberate departure from it. Web is the only pointer surface.
 - **SURF-24** (SHIPPED) - **Touch**, on mobile, means targets sized for a thumb, gestures for
   scrub and dismiss, no hover state to depend on, and layouts that reflow to a held phone.
   Anything that only works with a cursor is redesigned, not shrunk.
-- **SURF-25** (SHIPPED) - **Remote, 10-foot**, on every television, is a directional focus
-  ring rather than a cursor: everything reachable by up, down, left, right and OK, legible
-  across a room, and no interaction that assumes text entry the remote cannot supply.
+- **SURF-25** (SHIPPED) - **Directional, 10-foot**, on every television and on desktop, is a
+  focus ring rather than a cursor: everything reachable by up, down, left, right and OK,
+  legible across a room, and no interaction that assumes text entry the input cannot supply.
+- **SURF-49** (SHIPPED) - A remote, a gamepad and a keyboard's arrow keys are the same input
+  model, because each produces the same directional events. A surface serves the directional
+  model by answering those events, whatever device raised them.
 - **SURF-26** (SHIPPED) - A television signs in through the pairing handshake precisely
   because a television keyboard is unusable ([`discovery/`](../discovery/)).
 - **SURF-27** (AGREED) - A television build that ships a pointer-shaped screen has not met

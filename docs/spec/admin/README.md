@@ -1,7 +1,6 @@
 # Admin
 
-Status: **AGREED** overall, with the update mechanism still **DRAFT** where a delivery
-choice stays open. Every section carries its own status; the file-level label is the floor.
+Status: **AGREED**. Every section carries its own status; the file-level label is the floor.
 
 Running a KROMA server. The audience is one person with a NAS, not an operations team.
 That framing decides everything below: expose little, default sanely, and never add a knob
@@ -267,31 +266,34 @@ the backup remembers, so watch history reattaches to media the moment it is scan
 
 ## Updates
 
-Status: **DRAFT**, delivery mechanism provisional
+Status: **AGREED**
 
-A server learns it is out of date by checking for a newer release and saying so, quietly, in
-Admin, as a passive notice and never an automatic action. The owner decides when. Nothing on a
-self-hosted media server should update itself under the family mid-film.
+**ADMIN-89** (AGREED) - A server learns it is out of date by checking for a newer release and
+saying so, quietly, in Admin, as a passive notice and never an automatic action. The owner
+decides when. Nothing on a self-hosted media server updates itself under the family mid-film.
 
 The risk an update carries, and how KROMA bounds it:
 
-- **Server updates** may change the persistent store. The rule: an update migrates forward
-  automatically and a backup is the safety net, so the owner is nudged to have a current
-  backup before a server update, and a failed migration leaves the previous version
-  restorable rather than a half-migrated store.
-- **Module updates** are independent of the server and carry their own compatibility
-  promise ([`modules/`](../modules/)); a module update never requires a server update and a
-  server update never silently updates modules.
-- **Active playback is not a reason an update is blocked, and an update is not a reason
-  playback stops**, but because a server update means a restart, the owner is told an update
-  will interrupt streams and chooses the moment. Updates are the one deliberate exception to
-  the live-change guarantee below.
+- **ADMIN-90** (AGREED) - A server update migrates the persistent store forward
+  automatically, and a backup is the safety net: the owner is nudged to have a current backup
+  before one, and a failed migration leaves the previous version restorable rather than a
+  half-migrated store.
+- **ADMIN-91** (AGREED) - Module updates are independent of the server and carry their own
+  compatibility promise ([`modules/`](../modules/)). A module update never requires a server
+  update, and a server update never silently updates modules.
+- **ADMIN-92** (AGREED) - Active playback neither blocks an update nor is stopped by one
+  being available. Because a server update means a restart, the owner is told an update will
+  interrupt streams and chooses the moment. Updates are the one deliberate exception to the
+  live-change guarantee below.
 
-Open, with a recommendation: how the update actually arrives differs per host, a NAS
-package or a desktop auto-updater or a container image, and that delivery is
-[`surfaces/`](../surfaces/). Recommended answer: the product rule ("passive notice, owner
-chooses, backup first, migrate-forward-or-restore") is fixed here and identical everywhere;
-only the delivery vehicle varies by surface. This split is provisional pending review.
+**ADMIN-93** (AGREED) - The rule above is identical on every host. Only the delivery vehicle
+varies, a NAS package or a desktop auto-updater or a container image, and which vehicle a
+surface uses is [`surfaces/`](../surfaces/)'s (SURF-34 to SURF-39).
+
+The alternative was to let each host's packaging carry its own update policy, which is how a
+product ends up with a NAS that asks and a container that does not. Passive notice, owner
+chooses, backup first, migrate forward or restore: one rule, stated once, and a vehicle is
+only a vehicle.
 
 ## Changing settings while media plays
 

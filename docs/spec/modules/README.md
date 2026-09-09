@@ -2,9 +2,9 @@
 
 Status: **SHIPPED** overall. The out-of-process model, the `.kmod` bundle, the Store,
 install-by-id and by-upload, checksum verification, dependency resolution and the
-compatibility gate are all released. Two sections stay open and carry their own status:
-the trust model for third-party registries, and the abandonment story. Every section
-carries a status; the file-level label is the floor.
+compatibility gate are all released. The trust posture and the abandonment story are decided
+but not yet built, and say so. Every section carries a status; the file-level label is the
+floor.
 
 **MOD-1** (SHIPPED) - The base build ships **zero modules**. Everything past playback and
 catalogue, meaning downloads, indexers, acquisition, VPN, transcription, embeddings, network
@@ -126,26 +126,41 @@ duplicate ids and the empty-catalogue-is-a-failure rule are specified in
 
 ## Trust
 
-Status: **DRAFT**
+Status: **AGREED**
 
-The trust model for third-party registries is genuinely open. The shipped integrity
-guarantees are settled; the *safety* posture around untrusted publishers is not. The
-proposed position:
+**The registry is the trust boundary, not the module.** A module is a native binary the
+server executes, and nothing KROMA can check about the bytes changes that. So the one place
+consent is asked is where a source of modules is added, and it is asked in those terms.
 
-- **MOD-24** (DRAFT) - **First-party is trusted by default.** The official registry is
+- **MOD-24** (AGREED) - **First-party is trusted by default.** The official registry is
   pinned, first-party and curated, and a module from it installs without a trust prompt.
-- **MOD-25** (DRAFT) - **A third-party registry is an explicit operator opt-in.** Adding one
+- **MOD-25** (AGREED) - **A third-party registry is an explicit operator opt-in.** Adding one
   is admin-only and is *not* a trust grant to its modules; it only makes them visible.
-- **MOD-26** (DRAFT) - The operator is told, in plain terms, that a module is a native binary
+- **MOD-26** (AGREED) - The operator is told, in plain terms, that a module is a native binary
   the server will execute, so adding a registry they do not control is equivalent to trusting
   its operator with code execution on the host.
-- **MOD-27** (DRAFT) - **Checksums guarantee integrity, never safety**, and the server says so
+- **MOD-27** (AGREED) - **Checksums guarantee integrity, never safety**, and the server says so
   where it matters: on the add-registry flow and on installing a non-first-party module.
 
-Signing and a curated-versus-community distinction are candidates, not decided.
+**MOD-48** (AGREED) - The Store names the registry every module came from, on the listing and
+on the module's own page, so an operator can always see whose code they are about to run.
 
-Until this is resolved, the honest line the user is shown is: *the server verifies this is
-the file the registry published; it does not vouch for what the file does.*
+**MOD-49** (AGREED) - Installing from a registry the operator added is gated once, per
+registry, on an explicit acknowledgement that its modules run as native code on this host. The
+acknowledgement is recorded; it is not asked again per module.
+
+**KROMA does not sign modules, and the official catalogue has no curated-versus-community
+tier.** Both were candidates and both are declined. A signature proves a publisher is the same
+publisher as last time, which the registry already establishes, and it does not make a module
+safe: a signed malicious module is malicious. Paying for key management, a signing service and
+a barrier to every third-party author, to buy continuity the registry already gives, is the
+wrong trade for a product where the operator owns the machine and installs by choice. A
+curated tier is worse than nothing, because it puts KROMA's name on a safety claim about code
+KROMA did not write.
+
+The line the person is shown stays what it always was: *the server verifies this is the file
+the registry published; it does not vouch for what the file does.* That sentence is now the
+whole policy rather than a placeholder for one.
 
 ## Lifecycle
 
@@ -224,25 +239,33 @@ catalogue the server's alone.
 
 ## When a module stops being maintained
 
-Status: **DRAFT**
+Status: **AGREED**
 
-The abandonment story is not fully settled, but the user must never be left guessing, and
-their data must never be at risk. The designed visible signal:
+**Abandonment is inferred, never declared.** The person must never be left guessing, and their
+data must never be at risk:
 
-- **MOD-44** (DRAFT) - **The compatibility gate is the early warning.** As the server moves
+- **MOD-44** (AGREED) - **The compatibility gate is the early warning.** As the server moves
   forward, an unmaintained module eventually fails its `minServer` against a newer server it
   was never updated for, and that mismatch is surfaced by name on the Modules surface as an
   **incompatible or unmaintained** state rather than a silent failure to spawn.
-- **MOD-45** (DRAFT) - **Data is retained.** An incompatible or abandoned module is not
+- **MOD-45** (AGREED) - **Data is retained.** An incompatible or abandoned module is not
   auto-removed. It is stopped and flagged and its data kept, so a later fixed build, a
   downgrade or a fork can pick it back up. Only an explicit uninstall discards module data.
-- **MOD-46** (DRAFT) - **The signal is honest.** The person is told the module has not kept
+- **MOD-46** (AGREED) - **The signal is honest.** The person is told the module has not kept
   pace with the server and is not running, is pointed at its registry entry and version
   history, and keeps every option: leave it disabled, replace it, or uninstall it
   deliberately.
 
-Open: whether the registry should carry an explicit maintenance/deprecation flag a
-publisher sets, versus inferring abandonment purely from the compatibility gate.
+**MOD-50** (AGREED) - A module that has disappeared from every configured registry is flagged
+the same way a module that fails its floor is, and for the same reason: it is a signal the
+server can read without anyone's cooperation.
+
+**A registry carries no publisher-set deprecation flag.** It was the other candidate and it is
+declined, because a flag has to be set at exactly the moment the publisher has stopped caring.
+A signal that only conscientious publishers raise does not cover the case it exists for, and
+shipping it would let an unflagged abandoned module read as maintained. The compatibility gate
+and a vanished catalogue entry both fire on their own, so those are the two signals, and both
+are honest about being inferences rather than announcements.
 
 ## The first-party set, and why each is a module
 

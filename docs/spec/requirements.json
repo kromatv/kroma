@@ -1117,7 +1117,7 @@
     "status": "AGREED",
     "text": "A reset is a single-use, time-limited link plus a short one-time",
     "file": "docs/spec/admin/README.md",
-    "line": 112
+    "line": 111
   },
   {
     "id": "ADMIN-80",
@@ -1127,7 +1127,7 @@
     "status": "AGREED",
     "text": "The code is eight characters from a thirty-two-symbol alphabet with",
     "file": "docs/spec/admin/README.md",
-    "line": 118
+    "line": 117
   },
   {
     "id": "ADMIN-81",
@@ -1137,7 +1137,7 @@
     "status": "AGREED",
     "text": "A new reset invalidates any unused previous one for the same account.",
     "file": "docs/spec/admin/README.md",
-    "line": 122
+    "line": 121
   },
   {
     "id": "ADMIN-82",
@@ -1147,7 +1147,7 @@
     "status": "AGREED",
     "text": "Delivery is the owner's choice, per server: copy the link and code",
     "file": "docs/spec/admin/README.md",
-    "line": 126
+    "line": 125
   },
   {
     "id": "ADMIN-83",
@@ -1157,7 +1157,7 @@
     "status": "AGREED",
     "text": "The kroma.tv relay sees the destination address and the link, never",
     "file": "docs/spec/admin/README.md",
-    "line": 134
+    "line": 133
   },
   {
     "id": "ADMIN-84",
@@ -1167,7 +1167,7 @@
     "status": "AGREED",
     "text": "The owner can clear a user's profile PIN. Clearing is the only PIN",
     "file": "docs/spec/admin/README.md",
-    "line": 149
+    "line": 148
   },
   {
     "id": "ADMIN-85",
@@ -1177,7 +1177,7 @@
     "status": "AGREED",
     "text": "An address on an account is unverified until the mailbox proves",
     "file": "docs/spec/admin/README.md",
-    "line": 159
+    "line": 158
   },
   {
     "id": "ADMIN-86",
@@ -1187,7 +1187,7 @@
     "status": "AGREED",
     "text": "The owner sends a verification from the member editor, with the",
     "file": "docs/spec/admin/README.md",
-    "line": 164
+    "line": 163
   },
   {
     "id": "ADMIN-87",
@@ -1197,7 +1197,7 @@
     "status": "AGREED",
     "text": "Changing the address clears the verified state: the proof belongs",
     "file": "docs/spec/admin/README.md",
-    "line": 169
+    "line": 168
   },
   {
     "id": "ADMIN-88",
@@ -1207,7 +1207,57 @@
     "status": "AGREED",
     "text": "A user who cannot sign in can ask for a reset from the sign-in",
     "file": "docs/spec/admin/README.md",
-    "line": 138
+    "line": 137
+  },
+  {
+    "id": "ADMIN-89",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 89,
+    "status": "AGREED",
+    "text": "A server learns it is out of date by checking for a newer release and",
+    "file": "docs/spec/admin/README.md",
+    "line": 271
+  },
+  {
+    "id": "ADMIN-90",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 90,
+    "status": "AGREED",
+    "text": "A server update migrates the persistent store forward",
+    "file": "docs/spec/admin/README.md",
+    "line": 277
+  },
+  {
+    "id": "ADMIN-91",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 91,
+    "status": "AGREED",
+    "text": "Module updates are independent of the server and carry their own",
+    "file": "docs/spec/admin/README.md",
+    "line": 281
+  },
+  {
+    "id": "ADMIN-92",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 92,
+    "status": "AGREED",
+    "text": "Active playback neither blocks an update nor is stopped by one",
+    "file": "docs/spec/admin/README.md",
+    "line": 284
+  },
+  {
+    "id": "ADMIN-93",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 93,
+    "status": "AGREED",
+    "text": "The rule above is identical on every host. Only the delivery vehicle",
+    "file": "docs/spec/admin/README.md",
+    "line": 289
   },
   {
     "id": "DISC-1",
@@ -1547,7 +1597,7 @@
     "status": "AGREED",
     "text": "A **source** is a directory tree the server is told to watch, tagged",
     "file": "docs/spec/library/README.md",
-    "line": 15
+    "line": 14
   },
   {
     "id": "LIB-2",
@@ -1557,7 +1607,7 @@
     "status": "AGREED",
     "text": "A movie source never produces episodes and a show source never produces",
     "file": "docs/spec/library/README.md",
-    "line": 19
+    "line": 18
   },
   {
     "id": "LIB-3",
@@ -1567,7 +1617,7 @@
     "status": "AGREED",
     "text": "A server has zero or more sources, any number of them may point at the",
     "file": "docs/spec/library/README.md",
-    "line": 22
+    "line": 21
   },
   {
     "id": "LIB-4",
@@ -1577,7 +1627,7 @@
     "status": "AGREED",
     "text": "A source is an input, not a category a person browses by. Filtering the",
     "file": "docs/spec/library/README.md",
-    "line": 27
+    "line": 26
   },
   {
     "id": "LIB-5",
@@ -1587,7 +1637,7 @@
     "status": "SHIPPED",
     "text": "A source tree may be assembled from symlinks. A curated folder of links",
     "file": "docs/spec/library/README.md",
-    "line": 30
+    "line": 29
   },
   {
     "id": "LIB-6",
@@ -1597,7 +1647,7 @@
     "status": "SHIPPED",
     "text": "A link the server cannot resolve is reported, never silently skipped,",
     "file": "docs/spec/library/README.md",
-    "line": 34
+    "line": 33
   },
   {
     "id": "LIB-7",
@@ -1607,7 +1657,7 @@
     "status": "AGREED",
     "text": "A source records its mount path, its content kind and its scan schedule.",
     "file": "docs/spec/library/README.md",
-    "line": 38
+    "line": 37
   },
   {
     "id": "LIB-8",
@@ -1617,7 +1667,7 @@
     "status": "AGREED",
     "text": "Nothing about a source is destructive. Removing one drops its titles",
     "file": "docs/spec/library/README.md",
-    "line": 40
+    "line": 39
   },
   {
     "id": "LIB-9",
@@ -1627,7 +1677,7 @@
     "status": "AGREED",
     "text": "Matching is convention-first: a correctly named file matches offline,",
     "file": "docs/spec/library/README.md",
-    "line": 49
+    "line": 48
   },
   {
     "id": "LIB-10",
@@ -1637,7 +1687,7 @@
     "status": "SHIPPED",
     "text": "The `Title (Year)` stem is what is matched. The year is not",
     "file": "docs/spec/library/README.md",
-    "line": 60
+    "line": 59
   },
   {
     "id": "LIB-11",
@@ -1647,7 +1697,7 @@
     "status": "SHIPPED",
     "text": "A trailing tag after ` - `, a resolution, an edition or a source, is",
     "file": "docs/spec/library/README.md",
-    "line": 64
+    "line": 63
   },
   {
     "id": "LIB-12",
@@ -1657,7 +1707,7 @@
     "status": "SHIPPED",
     "text": "A loose file directly under the source root, with no folder, is",
     "file": "docs/spec/library/README.md",
-    "line": 68
+    "line": 67
   },
   {
     "id": "LIB-13",
@@ -1667,7 +1717,7 @@
     "status": "SHIPPED",
     "text": "A season folder is what makes the folder above it the show. With one",
     "file": "docs/spec/library/README.md",
-    "line": 80
+    "line": 79
   },
   {
     "id": "LIB-14",
@@ -1677,7 +1727,7 @@
     "status": "SHIPPED",
     "text": "Without a season folder the folder proves nothing, because a flat pool",
     "file": "docs/spec/library/README.md",
-    "line": 84
+    "line": 83
   },
   {
     "id": "LIB-15",
@@ -1687,7 +1737,7 @@
     "status": "SHIPPED",
     "text": "An episode whose filename is only its marker (`S01E01.mkv`) takes the",
     "file": "docs/spec/library/README.md",
-    "line": 87
+    "line": 86
   },
   {
     "id": "LIB-16",
@@ -1697,7 +1747,7 @@
     "status": "SHIPPED",
     "text": "The show folder name and the `SxxEyy` marker are load-bearing; the",
     "file": "docs/spec/library/README.md",
-    "line": 91
+    "line": 90
   },
   {
     "id": "LIB-17",
@@ -1707,7 +1757,7 @@
     "status": "SHIPPED",
     "text": "`Specials` is accepted as an alias for `Season 00`.",
     "file": "docs/spec/library/README.md",
-    "line": 94
+    "line": 93
   },
   {
     "id": "LIB-18",
@@ -1717,7 +1767,7 @@
     "status": "SHIPPED",
     "text": "A multi-episode file is named with a range (`S01E01-E02`) and matched",
     "file": "docs/spec/library/README.md",
-    "line": 96
+    "line": 95
   },
   {
     "id": "LIB-19",
@@ -1727,7 +1777,7 @@
     "status": "AGREED",
     "text": "A show folder MAY carry a `(Year)` for disambiguation",
     "file": "docs/spec/library/README.md",
-    "line": 99
+    "line": 98
   },
   {
     "id": "LIB-20",
@@ -1737,7 +1787,7 @@
     "status": "SHIPPED",
     "text": "Case is ignored, and separators may be spaces, dots or underscores.",
     "file": "docs/spec/library/README.md",
-    "line": 102
+    "line": 101
   },
   {
     "id": "LIB-21",
@@ -1747,7 +1797,7 @@
     "status": "SHIPPED",
     "text": "Only recognised video containers are considered files to match.",
     "file": "docs/spec/library/README.md",
-    "line": 104
+    "line": 103
   },
   {
     "id": "LIB-22",
@@ -1757,7 +1807,7 @@
     "status": "AGREED",
     "text": "The scheme is a convention rather than configuration, so a library is",
     "file": "docs/spec/library/README.md",
-    "line": 108
+    "line": 107
   },
   {
     "id": "LIB-23",
@@ -1767,7 +1817,7 @@
     "status": "SHIPPED",
     "text": "An **initial scan** runs when a source is added: the whole tree is",
     "file": "docs/spec/library/README.md",
-    "line": 117
+    "line": 116
   },
   {
     "id": "LIB-24",
@@ -1777,7 +1827,7 @@
     "status": "AGREED",
     "text": "An **incremental rescan** keeps the catalogue true to disk afterwards.",
     "file": "docs/spec/library/README.md",
-    "line": 122
+    "line": 121
   },
   {
     "id": "LIB-25",
@@ -1787,7 +1837,7 @@
     "status": "AGREED",
     "text": "An incremental rescan only reconsiders what changed, meaning new paths,",
     "file": "docs/spec/library/README.md",
-    "line": 128
+    "line": 127
   },
   {
     "id": "LIB-26",
@@ -1797,7 +1847,7 @@
     "status": "AGREED",
     "text": "Scanning is safe to run at any time, including while files are being",
     "file": "docs/spec/library/README.md",
-    "line": 132
+    "line": 131
   },
   {
     "id": "LIB-27",
@@ -1807,7 +1857,7 @@
     "status": "AGREED",
     "text": "A file is matched only once it looks **settled**, its size and",
     "file": "docs/spec/library/README.md",
-    "line": 135
+    "line": 134
   },
   {
     "id": "LIB-28",
@@ -1817,7 +1867,7 @@
     "status": "SHIPPED",
     "text": "Scanning **reads only**. It never writes, moves, renames or deletes",
     "file": "docs/spec/library/README.md",
-    "line": 140
+    "line": 139
   },
   {
     "id": "LIB-29",
@@ -1827,7 +1877,7 @@
     "status": "AGREED",
     "text": "KROMA never demands exclusive access to a library and never blocks the",
     "file": "docs/spec/library/README.md",
-    "line": 143
+    "line": 142
   },
   {
     "id": "LIB-30",
@@ -1837,7 +1887,7 @@
     "status": "AGREED",
     "text": "Matching resolves a settled file to an identity: a convention parse",
     "file": "docs/spec/library/README.md",
-    "line": 158
+    "line": 157
   },
   {
     "id": "LIB-31",
@@ -1847,7 +1897,7 @@
     "status": "AGREED",
     "text": "A file that parses to no confident identity, whether from an",
     "file": "docs/spec/library/README.md",
-    "line": 164
+    "line": 163
   },
   {
     "id": "LIB-32",
@@ -1857,7 +1907,7 @@
     "status": "AGREED",
     "text": "Unmatched items appear in a browsable **Unmatched** view in the library",
     "file": "docs/spec/library/README.md",
-    "line": 169
+    "line": 168
   },
   {
     "id": "LIB-33",
@@ -1867,7 +1917,7 @@
     "status": "AGREED",
     "text": "**Manual match.** A person searches the provider, picks the correct",
     "file": "docs/spec/library/README.md",
-    "line": 173
+    "line": 172
   },
   {
     "id": "LIB-34",
@@ -1877,7 +1927,7 @@
     "status": "AGREED",
     "text": "**Rename on disk.** A name fixed to the convention above matches",
     "file": "docs/spec/library/README.md",
-    "line": 177
+    "line": 176
   },
   {
     "id": "LIB-35",
@@ -1887,7 +1937,7 @@
     "status": "AGREED",
     "text": "A file that could be more than one identity, a title shared by a remake",
     "file": "docs/spec/library/README.md",
-    "line": 183
+    "line": 182
   },
   {
     "id": "LIB-36",
@@ -1897,7 +1947,7 @@
     "status": "AGREED",
     "text": "One unplaceable file never stalls a source. The catalogue is always the",
     "file": "docs/spec/library/README.md",
-    "line": 189
+    "line": 188
   },
   {
     "id": "LIB-37",
@@ -1907,7 +1957,7 @@
     "status": "AGREED",
     "text": "Every field and image a provider returns is written to the server's own",
     "file": "docs/spec/library/README.md",
-    "line": 199
+    "line": 198
   },
   {
     "id": "LIB-38",
@@ -1917,7 +1967,7 @@
     "status": "AGREED",
     "text": "With no internet, everything already matched browses and plays exactly",
     "file": "docs/spec/library/README.md",
-    "line": 204
+    "line": 203
   },
   {
     "id": "LIB-39",
@@ -1927,7 +1977,7 @@
     "status": "AGREED",
     "text": "Offline, a brand-new file that needs a first provider lookup stays",
     "file": "docs/spec/library/README.md",
-    "line": 207
+    "line": 206
   },
   {
     "id": "LIB-40",
@@ -1937,47 +1987,47 @@
     "status": "AGREED",
     "text": "Offline, a forced refresh queues rather than fails.",
     "file": "docs/spec/library/README.md",
-    "line": 211
+    "line": 210
   },
   {
     "id": "LIB-41",
     "domain": "LIB",
     "space": "library",
     "number": 41,
-    "status": "DRAFT",
+    "status": "SHIPPED",
     "text": "A newly matched item fetches its metadata once.",
     "file": "docs/spec/library/README.md",
-    "line": 220
+    "line": 219
   },
   {
     "id": "LIB-42",
     "domain": "LIB",
     "space": "library",
     "number": 42,
-    "status": "DRAFT",
+    "status": "AGREED",
     "text": "Running series are re-checked on a slow cadence, so a new episode's air",
     "file": "docs/spec/library/README.md",
-    "line": 222
+    "line": 221
   },
   {
     "id": "LIB-43",
     "domain": "LIB",
     "space": "library",
     "number": 43,
-    "status": "DRAFT",
+    "status": "AGREED",
     "text": "A \"Refresh metadata\" action on any title, season or whole source",
     "file": "docs/spec/library/README.md",
-    "line": 226
+    "line": 225
   },
   {
     "id": "LIB-44",
     "domain": "LIB",
     "space": "library",
     "number": 44,
-    "status": "DRAFT",
+    "status": "AGREED",
     "text": "A forced refresh **never** discards a manual match or user-chosen",
     "file": "docs/spec/library/README.md",
-    "line": 230
+    "line": 229
   },
   {
     "id": "LIB-45",
@@ -1987,7 +2037,7 @@
     "status": "AGREED",
     "text": "When a file disappears from a source, its title is **marked absent**:",
     "file": "docs/spec/library/README.md",
-    "line": 247
+    "line": 251
   },
   {
     "id": "LIB-46",
@@ -1997,7 +2047,7 @@
     "status": "AGREED",
     "text": "Content that reappears, because a NAS remounts or a file is moved back",
     "file": "docs/spec/library/README.md",
-    "line": 252
+    "line": 256
   },
   {
     "id": "LIB-47",
@@ -2007,7 +2057,7 @@
     "status": "AGREED",
     "text": "A **move** is therefore not a special case. It is an absent path plus a",
     "file": "docs/spec/library/README.md",
-    "line": 256
+    "line": 260
   },
   {
     "id": "LIB-48",
@@ -2017,7 +2067,7 @@
     "status": "AGREED",
     "text": "A rescan **only ever marks absent**. It never deletes user data.",
     "file": "docs/spec/library/README.md",
-    "line": 260
+    "line": 264
   },
   {
     "id": "LIB-49",
@@ -2027,7 +2077,17 @@
     "status": "AGREED",
     "text": "Permanently deleting a title's history is an explicit, person-initiated",
     "file": "docs/spec/library/README.md",
-    "line": 262
+    "line": 266
+  },
+  {
+    "id": "LIB-50",
+    "domain": "LIB",
+    "space": "library",
+    "number": 50,
+    "status": "SHIPPED",
+    "text": "Refreshing metadata and re-running identification are two actions, and",
+    "file": "docs/spec/library/README.md",
+    "line": 233
   },
   {
     "id": "MEDIA-1",
@@ -2724,7 +2784,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 24,
-    "status": "DRAFT",
+    "status": "AGREED",
     "text": "**First-party is trusted by default.** The official registry is",
     "file": "docs/spec/modules/README.md",
     "line": 135
@@ -2734,7 +2794,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 25,
-    "status": "DRAFT",
+    "status": "AGREED",
     "text": "**A third-party registry is an explicit operator opt-in.** Adding one",
     "file": "docs/spec/modules/README.md",
     "line": 137
@@ -2744,7 +2804,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 26,
-    "status": "DRAFT",
+    "status": "AGREED",
     "text": "The operator is told, in plain terms, that a module is a native binary",
     "file": "docs/spec/modules/README.md",
     "line": 139
@@ -2754,7 +2814,7 @@
     "domain": "MOD",
     "space": "modules",
     "number": 27,
-    "status": "DRAFT",
+    "status": "AGREED",
     "text": "**Checksums guarantee integrity, never safety**, and the server says so",
     "file": "docs/spec/modules/README.md",
     "line": 142
@@ -2767,7 +2827,7 @@
     "status": "SHIPPED",
     "text": "**Enable.** The server spawns the sidecar and the module's routes,",
     "file": "docs/spec/modules/README.md",
-    "line": 156
+    "line": 171
   },
   {
     "id": "MOD-29",
@@ -2777,7 +2837,7 @@
     "status": "SHIPPED",
     "text": "**Disable.** The sidecar is stopped, the module stops running, and",
     "file": "docs/spec/modules/README.md",
-    "line": 159
+    "line": 174
   },
   {
     "id": "MOD-30",
@@ -2787,7 +2847,7 @@
     "status": "SHIPPED",
     "text": "**Update.** A newer version replaces the bundle and the sidecar is",
     "file": "docs/spec/modules/README.md",
-    "line": 162
+    "line": 177
   },
   {
     "id": "MOD-31",
@@ -2797,7 +2857,7 @@
     "status": "SHIPPED",
     "text": "`minServer` is re-checked on update, so an update that outgrows the",
     "file": "docs/spec/modules/README.md",
-    "line": 165
+    "line": 180
   },
   {
     "id": "MOD-32",
@@ -2807,7 +2867,7 @@
     "status": "SHIPPED",
     "text": "**Uninstall.** The module is removed entirely. It is the one",
     "file": "docs/spec/modules/README.md",
-    "line": 167
+    "line": 182
   },
   {
     "id": "MOD-33",
@@ -2817,7 +2877,7 @@
     "status": "SHIPPED",
     "text": "The server refuses to uninstall a module another enabled module still",
     "file": "docs/spec/modules/README.md",
-    "line": 170
+    "line": 185
   },
   {
     "id": "MOD-34",
@@ -2827,7 +2887,7 @@
     "status": "SHIPPED",
     "text": "Uninstalling a module never touches media on disk. A downloads module",
     "file": "docs/spec/modules/README.md",
-    "line": 173
+    "line": 188
   },
   {
     "id": "MOD-35",
@@ -2837,7 +2897,7 @@
     "status": "SHIPPED",
     "text": "**A crashed module cannot take down the server.** The sidecar is a",
     "file": "docs/spec/modules/README.md",
-    "line": 183
+    "line": 198
   },
   {
     "id": "MOD-36",
@@ -2847,7 +2907,7 @@
     "status": "SHIPPED",
     "text": "**An incompatible module never runs by accident.** `minServer` is",
     "file": "docs/spec/modules/README.md",
-    "line": 186
+    "line": 201
   },
   {
     "id": "MOD-37",
@@ -2857,7 +2917,7 @@
     "status": "SHIPPED",
     "text": "**Failure is visible, not silent.** A module that will not start or",
     "file": "docs/spec/modules/README.md",
-    "line": 189
+    "line": 204
   },
   {
     "id": "MOD-38",
@@ -2867,7 +2927,7 @@
     "status": "SHIPPED",
     "text": "The server is forward-compatible with older modules. A module declares",
     "file": "docs/spec/modules/README.md",
-    "line": 197
+    "line": 212
   },
   {
     "id": "MOD-39",
@@ -2877,7 +2937,7 @@
     "status": "SHIPPED",
     "text": "A module installed today keeps working as the server is updated,",
     "file": "docs/spec/modules/README.md",
-    "line": 200
+    "line": 215
   },
   {
     "id": "MOD-40",
@@ -2887,7 +2947,7 @@
     "status": "SHIPPED",
     "text": "A *newer* module may raise its `minServer`, and the Store says so",
     "file": "docs/spec/modules/README.md",
-    "line": 203
+    "line": 218
   },
   {
     "id": "MOD-41",
@@ -2897,7 +2957,7 @@
     "status": "SHIPPED",
     "text": "A module **may** ship UI, and the position is deliberate: a module's",
     "file": "docs/spec/modules/README.md",
-    "line": 211
+    "line": 226
   },
   {
     "id": "MOD-42",
@@ -2907,7 +2967,7 @@
     "status": "AGREED",
     "text": "A module renders **its own admin surface**: configuration, status and",
     "file": "docs/spec/modules/README.md",
-    "line": 215
+    "line": 230
   },
   {
     "id": "MOD-43",
@@ -2917,37 +2977,37 @@
     "status": "SHIPPED",
     "text": "A module's UI is served through the same reverse proxy as its backend",
     "file": "docs/spec/modules/README.md",
-    "line": 218
+    "line": 233
   },
   {
     "id": "MOD-44",
     "domain": "MOD",
     "space": "modules",
     "number": 44,
-    "status": "DRAFT",
+    "status": "AGREED",
     "text": "**The compatibility gate is the early warning.** As the server moves",
     "file": "docs/spec/modules/README.md",
-    "line": 232
+    "line": 247
   },
   {
     "id": "MOD-45",
     "domain": "MOD",
     "space": "modules",
     "number": 45,
-    "status": "DRAFT",
+    "status": "AGREED",
     "text": "**Data is retained.** An incompatible or abandoned module is not",
     "file": "docs/spec/modules/README.md",
-    "line": 236
+    "line": 251
   },
   {
     "id": "MOD-46",
     "domain": "MOD",
     "space": "modules",
     "number": 46,
-    "status": "DRAFT",
+    "status": "AGREED",
     "text": "**The signal is honest.** The person is told the module has not kept",
     "file": "docs/spec/modules/README.md",
-    "line": 239
+    "line": 254
   },
   {
     "id": "MOD-47",
@@ -2957,7 +3017,37 @@
     "status": "SHIPPED",
     "text": "Every capability below could have been core and is a module instead,",
     "file": "docs/spec/modules/README.md",
-    "line": 251
+    "line": 274
+  },
+  {
+    "id": "MOD-48",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 48,
+    "status": "AGREED",
+    "text": "The Store names the registry every module came from, on the listing and",
+    "file": "docs/spec/modules/README.md",
+    "line": 145
+  },
+  {
+    "id": "MOD-49",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 49,
+    "status": "AGREED",
+    "text": "Installing from a registry the operator added is gated once, per",
+    "file": "docs/spec/modules/README.md",
+    "line": 148
+  },
+  {
+    "id": "MOD-50",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 50,
+    "status": "AGREED",
+    "text": "A module that has disappeared from every configured registry is flagged",
+    "file": "docs/spec/modules/README.md",
+    "line": 259
   },
   {
     "id": "PLAY-1",
@@ -3705,9 +3795,9 @@
     "space": "surfaces",
     "number": 23,
     "status": "SHIPPED",
-    "text": "**Pointer**, on web and desktop, is the reference model: dense",
+    "text": "**Pointer**, on web, is the reference model: dense layouts, hover",
     "file": "docs/spec/surfaces/README.md",
-    "line": 158
+    "line": 163
   },
   {
     "id": "SURF-24",
@@ -3717,7 +3807,7 @@
     "status": "SHIPPED",
     "text": "**Touch**, on mobile, means targets sized for a thumb, gestures for",
     "file": "docs/spec/surfaces/README.md",
-    "line": 161
+    "line": 166
   },
   {
     "id": "SURF-25",
@@ -3725,9 +3815,9 @@
     "space": "surfaces",
     "number": 25,
     "status": "SHIPPED",
-    "text": "**Remote, 10-foot**, on every television, is a directional focus",
+    "text": "**Directional, 10-foot**, on every television and on desktop, is a",
     "file": "docs/spec/surfaces/README.md",
-    "line": 164
+    "line": 169
   },
   {
     "id": "SURF-26",
@@ -3737,7 +3827,7 @@
     "status": "SHIPPED",
     "text": "A television signs in through the pairing handshake precisely",
     "file": "docs/spec/surfaces/README.md",
-    "line": 167
+    "line": 175
   },
   {
     "id": "SURF-27",
@@ -3747,7 +3837,7 @@
     "status": "AGREED",
     "text": "A television build that ships a pointer-shaped screen has not met",
     "file": "docs/spec/surfaces/README.md",
-    "line": 169
+    "line": 177
   },
   {
     "id": "SURF-28",
@@ -3757,7 +3847,7 @@
     "status": "AGREED",
     "text": "A surface serving more than one model, such as a tablet with a",
     "file": "docs/spec/surfaces/README.md",
-    "line": 171
+    "line": 179
   },
   {
     "id": "SURF-29",
@@ -3767,7 +3857,7 @@
     "status": "SHIPPED",
     "text": "**Only mobile is offline.** Web, desktop and every television hold no",
     "file": "docs/spec/surfaces/README.md",
-    "line": 178
+    "line": 186
   },
   {
     "id": "SURF-30",
@@ -3777,7 +3867,7 @@
     "status": "SHIPPED",
     "text": "A downloaded title plays with no server connection.",
     "file": "docs/spec/surfaces/README.md",
-    "line": 185
+    "line": 193
   },
   {
     "id": "SURF-31",
@@ -3787,7 +3877,7 @@
     "status": "SHIPPED",
     "text": "Downloads survive backgrounding and app kills, and are re-adopted",
     "file": "docs/spec/surfaces/README.md",
-    "line": 189
+    "line": 197
   },
   {
     "id": "SURF-32",
@@ -3797,7 +3887,7 @@
     "status": "SHIPPED",
     "text": "Progress reports that could not be sent queue on the device and",
     "file": "docs/spec/surfaces/README.md",
-    "line": 191
+    "line": 199
   },
   {
     "id": "SURF-33",
@@ -3807,7 +3897,7 @@
     "status": "DESIGN, NOT IMPLEMENTED",
     "text": "Per-title rows in the OS storage manager, deletable",
     "file": "docs/spec/surfaces/README.md",
-    "line": 199
+    "line": 207
   },
   {
     "id": "SURF-34",
@@ -3817,7 +3907,7 @@
     "status": "AGREED",
     "text": "A surface stays current without asking a person to babysit it.",
     "file": "docs/spec/surfaces/README.md",
-    "line": 217
+    "line": 225
   },
   {
     "id": "SURF-35",
@@ -3827,7 +3917,7 @@
     "status": "SHIPPED",
     "text": "**Web.** The server serves the web surface itself. There is no",
     "file": "docs/spec/surfaces/README.md",
-    "line": 219
+    "line": 227
   },
   {
     "id": "SURF-36",
@@ -3837,7 +3927,7 @@
     "status": "SHIPPED",
     "text": "**Desktop.** The app checks for, fetches and applies updates in the",
     "file": "docs/spec/surfaces/README.md",
-    "line": 222
+    "line": 230
   },
   {
     "id": "SURF-37",
@@ -3847,7 +3937,7 @@
     "status": "AGREED",
     "text": "**Mobile.** The app updates on the store's cadence, so a server",
     "file": "docs/spec/surfaces/README.md",
-    "line": 224
+    "line": 232
   },
   {
     "id": "SURF-38",
@@ -3857,7 +3947,7 @@
     "status": "AGREED",
     "text": "**Televisions.** Each television updates through its own platform's",
     "file": "docs/spec/surfaces/README.md",
-    "line": 227
+    "line": 235
   },
   {
     "id": "SURF-39",
@@ -3867,7 +3957,7 @@
     "status": "AGREED",
     "text": "**NAS.** The Synology package installs and updates through Package",
     "file": "docs/spec/surfaces/README.md",
-    "line": 229
+    "line": 237
   },
   {
     "id": "SURF-40",
@@ -3877,7 +3967,7 @@
     "status": "AGREED",
     "text": "A surface is dropped when its host platform can no longer meet the",
     "file": "docs/spec/surfaces/README.md",
-    "line": 238
+    "line": 246
   },
   {
     "id": "SURF-41",
@@ -3887,7 +3977,7 @@
     "status": "AGREED",
     "text": "**Notice first.** A surface entering deprecation tells its users *in",
     "file": "docs/spec/surfaces/README.md",
-    "line": 243
+    "line": 251
   },
   {
     "id": "SURF-42",
@@ -3897,7 +3987,7 @@
     "status": "AGREED",
     "text": "**Sessions survive the app.** A deprecated surface's sessions are",
     "file": "docs/spec/surfaces/README.md",
-    "line": 246
+    "line": 254
   },
   {
     "id": "SURF-43",
@@ -3907,7 +3997,7 @@
     "status": "AGREED",
     "text": "**The library outlives any surface.** Nothing about a person's",
     "file": "docs/spec/surfaces/README.md",
-    "line": 250
+    "line": 258
   },
   {
     "id": "SURF-44",
@@ -3957,6 +4047,16 @@
     "status": "SHIPPED",
     "text": "A download is a single progressive file: the raw original when the",
     "file": "docs/spec/surfaces/README.md",
-    "line": 186
+    "line": 194
+  },
+  {
+    "id": "SURF-49",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 49,
+    "status": "SHIPPED",
+    "text": "A remote, a gamepad and a keyboard's arrow keys are the same input",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 172
   }
 ]
