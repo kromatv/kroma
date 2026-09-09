@@ -14,7 +14,6 @@ use crate::api::extract::{AuthToken, AuthUser};
 use crate::api::util::{client_ip, query};
 use crate::db;
 use crate::i18n::{self, ReqLocale};
-use crate::model::Permission;
 use crate::services::auth;
 use crate::services::loginguard;
 use crate::state::SharedState;
@@ -33,7 +32,9 @@ pub struct RegisterBody {
 }
 
 /// `POST /api/auth/register` → `{ token, user }`. The first account ever created is
-/// the owner; after that a valid `inviteToken` is required and grants its permissions.
+/// the owner, granted in the insert itself so that two registrations in flight
+/// against an empty server cannot both claim it; after that a valid `inviteToken`
+/// is required and grants its permissions.
 pub async fn register(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -81,21 +82,31 @@ pub async fn register(
         Err(resp) => return resp,
     }
 
-    let permissions = if count == 0 {
-        Permission::all()
-    } else {
-        let Some(token) = body.invite_token.clone().filter(|t| !t.trim().is_empty()) else {
-            return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteOnly");
-        };
+    if count == 0 {
+        let hash = auth::hash_password(&body.password);
+        let (owner_email, owner_username) = (email.clone(), username.clone());
         match query(&state.db, move |pool| {
-            db::consume_invite(&pool, token.trim())
+            db::create_owner_if_first(&pool, &owner_email, &owner_username, &hash)
         })
         .await
         {
-            Ok(Some(perms)) => perms,
-            Ok(None) => return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteInvalid"),
+            Ok(Some(owner)) => return issue_tokens(state, owner, device_hints(&headers)).await,
+            Ok(None) => {}
             Err(resp) => return resp,
         }
+    }
+
+    let Some(token) = body.invite_token.clone().filter(|t| !t.trim().is_empty()) else {
+        return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteOnly");
+    };
+    let permissions = match query(&state.db, move |pool| {
+        db::consume_invite(&pool, token.trim())
+    })
+    .await
+    {
+        Ok(Some(perms)) => perms,
+        Ok(None) => return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteInvalid"),
+        Err(resp) => return resp,
     };
 
     let hash = auth::hash_password(&body.password);

@@ -42,32 +42,72 @@ pub fn create_user(
     permissions: &[Permission],
 ) -> Result<User> {
     let conn = pool.get()?;
-    let permissions = permissions.to_vec();
-    let perms_json =
-        serde_json::to_string(&permissions).unwrap_or_else(|_| "[\"playback\"]".into());
-    let id = kroma_primitives::short_hash(&format!(
-        "user|{email}|{}",
-        kroma_primitives::random_token()
-    ));
-    let created_at = now_or_blank();
+    let user = minted_user(email, username, permissions);
     conn.execute(
         "INSERT INTO users (id,email,username,password_hash,avatar_url,permissions,created_at) \
          VALUES (?1,?2,?3,?4,NULL,?5,?6)",
-        params![id, email, username, password_hash, perms_json, created_at],
+        params![
+            user.id,
+            user.email,
+            user.username,
+            password_hash,
+            permissions_json(&user.permissions),
+            user.created_at
+        ],
     )?;
-    Ok(User {
-        id,
+    Ok(user)
+}
+
+/// The owner of an empty server, with every permission: the emptiness test and
+/// the grant are one statement, so two first registrations racing a fresh
+/// database cannot both come out owner (ACCT-2).
+///
+/// `None` means another account got there first, which leaves this one an
+/// ordinary signup needing an invite (ACCT-3). Nothing was written.
+pub fn create_owner_if_first(
+    pool: &Pool,
+    email: &str,
+    username: &str,
+    password_hash: &str,
+) -> Result<Option<User>> {
+    let conn = pool.get()?;
+    let user = minted_user(email, username, &Permission::all());
+    let granted = conn.execute(
+        "INSERT INTO users (id,email,username,password_hash,avatar_url,permissions,created_at) \
+         SELECT ?1,?2,?3,?4,NULL,?5,?6 WHERE NOT EXISTS (SELECT 1 FROM users)",
+        params![
+            user.id,
+            user.email,
+            user.username,
+            password_hash,
+            permissions_json(&user.permissions),
+            user.created_at
+        ],
+    )?;
+    Ok((granted == 1).then_some(user))
+}
+
+fn minted_user(email: &str, username: &str, permissions: &[Permission]) -> User {
+    User {
+        id: kroma_primitives::short_hash(&format!(
+            "user|{email}|{}",
+            kroma_primitives::random_token()
+        )),
         email: email.to_string(),
         username: username.to_string(),
         avatar_url: None,
         language: None,
-        permissions,
+        permissions: permissions.to_vec(),
         libraries: kroma_domain::LibraryScope::All,
-        created_at,
+        created_at: now_or_blank(),
         has_pin: false,
         audio_language: None,
         subtitle_language: None,
-    })
+    }
+}
+
+fn permissions_json(permissions: &[Permission]) -> String {
+    serde_json::to_string(permissions).unwrap_or_else(|_| "[\"playback\"]".into())
 }
 
 pub fn user_count(pool: &Pool) -> Result<i64> {
@@ -221,6 +261,53 @@ mod tests {
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].username, "alice");
         assert!(!list[0].has_pin);
+    }
+
+    #[test]
+    fn an_account_arriving_after_the_first_is_not_granted_owner() {
+        let p = pool();
+
+        let owner = create_owner_if_first(&p, "first@test.dev", "first", "hash")
+            .unwrap()
+            .expect("the empty server is granted");
+        let latecomer = create_owner_if_first(&p, "second@test.dev", "second", "hash").unwrap();
+
+        assert_eq!(owner.permissions, Permission::all());
+        assert!(latecomer.is_none());
+        assert_eq!(user_count(&p).unwrap(), 1);
+    }
+
+    #[test]
+    fn threads_racing_one_empty_server_leave_a_single_owner() {
+        const RACERS: usize = 8;
+        let p = pool();
+        let shared = Pool::clone(&p);
+        let gate = std::sync::Arc::new(std::sync::Barrier::new(RACERS));
+
+        let racers: Vec<_> = (0..RACERS)
+            .map(|n| {
+                let pool = Pool::clone(&shared);
+                let gate = std::sync::Arc::clone(&gate);
+                std::thread::spawn(move || {
+                    gate.wait();
+                    create_owner_if_first(
+                        &pool,
+                        &format!("racer{n}@test.dev"),
+                        &format!("racer{n}"),
+                        "hash",
+                    )
+                    .unwrap()
+                })
+            })
+            .collect();
+        let granted: Vec<User> = racers
+            .into_iter()
+            .filter_map(|racer| racer.join().expect("a racer finished"))
+            .collect();
+
+        assert_eq!(granted.len(), 1, "{granted:?}");
+        assert_eq!(granted[0].permissions, Permission::all());
+        assert_eq!(user_count(&p).unwrap(), 1);
     }
 
     #[test]

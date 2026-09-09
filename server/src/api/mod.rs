@@ -68,6 +68,8 @@ mod it_content;
 #[cfg(test)]
 mod it_diagnostics;
 #[cfg(test)]
+mod it_first_run;
+#[cfg(test)]
 mod it_handoff;
 #[cfg(test)]
 mod it_host_settings;
