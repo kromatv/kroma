@@ -16,7 +16,7 @@
     "ios": "EXPO_TV=1 REACT_NATIVE_NODE_MODULES_DIR=\"$PWD/node_modules\" expo run:ios",
     "android": "EXPO_TV=1 expo run:android",
     "prebuild": "EXPO_TV=1 expo prebuild --clean",
-    "pod": "cd ios && REACT_NATIVE_NODE_MODULES_DIR=\"$PWD/../node_modules\" pod install",
+    "pod": "cd ios && RCT_BUILD_HERMES_FROM_SOURCE=true REACT_NATIVE_NODE_MODULES_DIR=\"$PWD/../node_modules\" pod install",
     "bundle:check": "bun ../expo-build/bundle-check.ts . EXPO_TV=1 --max 10",
     "typecheck": "tsc --noEmit",
     "focus:probe": "bun ./scripts/focus-probe.ts",

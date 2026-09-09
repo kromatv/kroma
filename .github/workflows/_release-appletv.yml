@@ -183,6 +183,10 @@ jobs:
         if: steps.signing.outputs.ready == 'true' && steps.ios-cache.outputs.cache-hit != 'true'
         env:
           KROMA_VERSION: ${{ inputs.triplet }}
+          # The nightly Hermes this react-native-tvos pins was purged from
+          # Sonatype, and the podspec parses the 404 page as XML. Building from
+          # the tag in sdks/.hermesversion asks Sonatype nothing.
+          RCT_BUILD_HERMES_FROM_SOURCE: 'true'
         run: |
           set -euo pipefail
           export KROMA_VERSION_CODE=${{ inputs.build }}

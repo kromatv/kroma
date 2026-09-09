@@ -302,6 +302,11 @@ jobs:
       - name: Prebuild the iOS project
         if: steps.signing.outputs.ready == 'true' && steps.ios-cache.outputs.cache-hit != 'true'
         working-directory: clients/mobile
+        env:
+          # The nightly Hermes this react-native-tvos pins was purged from
+          # Sonatype, and the podspec parses the 404 page as XML. Building from
+          # the tag in sdks/.hermesversion asks Sonatype nothing.
+          RCT_BUILD_HERMES_FROM_SOURCE: 'true'
         run: |
           npx expo prebuild --platform ios --no-install
           cd ios && pod install
