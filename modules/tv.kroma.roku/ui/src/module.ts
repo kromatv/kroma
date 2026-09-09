@@ -1,7 +1,7 @@
-import { defineModule } from '@kroma/module-sdk';
+import { defineModule } from '@kromatv/module-sdk';
 import { lazy } from 'react';
 
-export const rokuModule = defineModule({
+const rokuModule = defineModule({
   pages: [
     {
       path: 'roku',
@@ -10,3 +10,5 @@ export const rokuModule = defineModule({
     },
   ],
 });
+
+export default rokuModule;

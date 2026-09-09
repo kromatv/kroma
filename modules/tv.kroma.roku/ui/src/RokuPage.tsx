@@ -1,4 +1,4 @@
-import { Denied, ModuleFailed, ModuleLoading, useCap, useT } from '@kroma/module-sdk';
+import { Denied, ModuleFailed, ModuleLoading, useCap, useT } from '@kromatv/module-sdk';
 import {
   Badge,
   Box,
@@ -10,7 +10,7 @@ import {
   Section,
   Surface,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 import { useRokuApi } from './api';
 import type { RokuDevice, RokuView } from './schemas';

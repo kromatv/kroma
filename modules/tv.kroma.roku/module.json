@@ -7,5 +7,8 @@
   "description": "A KROMA channel for Roku boxes: found on the LAN, sideloaded from the console, paired like any television.",
   "engines": {
     "server": ">=0.1.39"
+  },
+  "feRemote": {
+    "module": "./remoteEntry.js"
   }
 }

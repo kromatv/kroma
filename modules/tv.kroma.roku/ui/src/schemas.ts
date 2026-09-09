@@ -1,6 +1,3 @@
-// This module's wire types. `@kroma/core` does not model a Roku: a module
-// owns the shape of its own API.
-
 import { z } from 'zod';
 
 export const InstallStatus = z.enum(['none', 'installing', 'installed', 'failed']).catch('none');

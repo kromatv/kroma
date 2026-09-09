@@ -1,6 +1,10 @@
 //! The Roku module: finds the boxes on the LAN, sideloads the KROMA channel
 //! onto any in developer mode, and serves that channel its screens.
 
+// The axum `Response` is the Err type of every request guard so handlers
+// short-circuit with `?`; boxing it would churn a dozen signatures for nothing.
+#![allow(clippy::result_large_err)]
+
 use std::sync::Arc;
 
 use axum::Router;

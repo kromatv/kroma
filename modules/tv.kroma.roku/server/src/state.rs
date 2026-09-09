@@ -253,14 +253,13 @@ mod tests {
 
     #[test]
     fn the_zip_is_written_once_and_rewritten_when_the_bytes_moved() {
-        let dir = std::env::temp_dir().join(format!("kroma-roku-{}", std::process::id()));
-        let roku = Roku::new(dir.clone());
+        let scratch = kroma_module_sdk::testing::temp_dir("roku-zip");
+        let roku = Roku::new(scratch.path().to_path_buf());
 
         let path = roku.ensure_zip().unwrap();
         std::fs::write(&path, b"stale").unwrap();
         roku.ensure_zip().unwrap();
 
         assert_eq!(std::fs::read(&path).unwrap(), CHANNEL_ZIP);
-        std::fs::remove_dir_all(dir).ok();
     }
 }

@@ -40,7 +40,8 @@ mod tests {
 
     #[test]
     fn the_password_survives_a_restart_and_a_blank_one_forgets_it() {
-        let dir = std::env::temp_dir().join(format!("kroma-roku-pw-{}", std::process::id()));
+        let scratch = kroma_module_sdk::testing::temp_dir("roku-pw");
+        let dir = scratch.path().to_path_buf();
         let roku = Roku::new(dir.clone());
         assert_eq!(roku.password(), "");
 
@@ -58,17 +59,16 @@ mod tests {
 
         roku.set_password("").unwrap();
         assert_eq!(roku.password(), "");
-        std::fs::remove_dir_all(dir).ok();
     }
 
     #[test]
     fn a_missing_or_broken_file_reads_as_no_password() {
-        let dir = std::env::temp_dir().join(format!("kroma-roku-cfg-{}", std::process::id()));
+        let scratch = kroma_module_sdk::testing::temp_dir("roku-cfg");
+        let dir = scratch.path().join("absent");
         assert_eq!(super::read(&dir).dev_password, "");
 
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join(super::FILE), b"{not json").unwrap();
         assert_eq!(super::read(&dir), super::Config::default());
-        std::fs::remove_dir_all(dir).ok();
     }
 }

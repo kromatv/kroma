@@ -30,7 +30,9 @@ anyhow = "1"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
-kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
+# The shared HostCtx double and the scratch dir, through the SDK's `testing`
+# feature rather than a second path into the host crate.
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
 
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =
 # "abort"`. Mirrors server/Cargo.toml's [profile.release]; a profile is only

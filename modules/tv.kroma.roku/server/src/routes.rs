@@ -47,7 +47,7 @@ async fn status<S: HostCtx + Clone>(
     Extension(roku): Extension<Arc<Roku>>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
-    state.require_any_admin(&user)?;
+    state.require(&user, Permission::SettingsManage)?;
     Ok(view(&roku))
 }
 
@@ -56,7 +56,7 @@ async fn scan<S: HostCtx + Clone>(
     Extension(roku): Extension<Arc<Roku>>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
-    state.require_any_admin(&user)?;
+    state.require(&user, Permission::SettingsManage)?;
     roku.scan().await;
     Ok(view(&roku))
 }
