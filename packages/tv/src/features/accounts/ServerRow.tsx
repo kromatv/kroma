@@ -1,5 +1,5 @@
-import type { Translate } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import type { Translate } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -11,7 +11,7 @@ import {
   Skeleton,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import type { ServerProbe } from '#tv/app/useServersHealth';
 import { ServerStatusPill } from '#tv/features/accounts/ServerStatus';
 

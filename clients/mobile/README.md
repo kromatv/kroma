@@ -1,7 +1,7 @@
-# @kroma/mobile
+# @kromatv/mobile
 
 KROMA mobile client for iPhone, iPad and Android, built with Expo (React
-Native, New Architecture) on top of the shared `@kroma/core` API client, wire
+Native, New Architecture) on top of the shared `@kromatv/core` API client, wire
 types and i18n catalogs.
 
 ## Run it
@@ -40,7 +40,7 @@ commands the chrome issues (transport, track, filter, rate, shutdown):
 - Failure ladder: direct falls back to the master once; a copy-audio master
   retries once as AAC; then the error surfaces.
 - Subtitles are fetched as WebVTT and rendered as an overlay with the shared
-  `parseVtt`/`activeCueText` from `@kroma/core` (same as the TV client).
+  `parseVtt`/`activeCueText` from `@kromatv/core` (same as the TV client).
 - Resume + the admin playback heartbeat ride one interval
   (`src/player/heartbeat.ts`).
 
@@ -79,7 +79,7 @@ commands the chrome issues (transport, track, filter, rate, shutdown):
   lists behind one write path; `boot.ts` is the cold start. Adding a server
   probes `/api/health` (https then http, so no one types a scheme) and the
   connect screen lists what answered on the LAN via `discoverServers` from
-  `@kroma/core`, which collapses one server reached through several origins on
+  `@kromatv/core`, which collapses one server reached through several origins on
   the `instanceId` it reports.
 - Profile lock (`src/lib/biometricGate.ts`): a profile with a server PIN is
   gated by the server itself; a profile without one can opt into a standalone
@@ -88,7 +88,7 @@ commands the chrome issues (transport, track, filter, rate, shutdown):
 - Icons come from the kit: `<Icon name="cast" />`, one name out of the shared
   set, the same glyphs the web client and the televisions draw. The app does not
   reach for `@tabler/icons-react-native` itself; it declares it because
-  `@kroma/ui` is consumed as source and imports it.
+  `@kromatv/ui` is consumed as source and imports it.
 
 Dev auto-login: put `EXPO_PUBLIC_KROMA_SERVER` and
 `EXPO_PUBLIC_KROMA_DEV_LOGIN=user:pass` in `.env.local` (gitignored) to boot

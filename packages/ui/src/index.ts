@@ -1,7 +1,16 @@
 // The SERVICES half of the design system: the hooks and providers, plus the
-// player. The components are `@kroma/ui/kit`.
+// player. The components are `@kromatv/ui/kit`.
 
 export * from './components/organisms/player';
+export { type DeviceStore, deviceStore, setDeviceStore } from './lib/device-store';
+export {
+  dispatchRemoteKey,
+  type RemoteKey,
+  type RemoteKeyHandler,
+  type RemoteKeyMap,
+  registerTvMediaKeys,
+  resolveRemoteKey,
+} from './lib/remote-keys';
 export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/aiSuggest';
 export { useAiSuggest } from './services/aiSuggest';
 export type { ActivateResult, AuthSession } from './services/auth';

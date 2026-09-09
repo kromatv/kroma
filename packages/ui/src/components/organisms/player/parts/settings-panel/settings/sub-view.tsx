@@ -7,11 +7,11 @@
 // Every panel takes the same ref - the open one owns the keys (PanelHandle) -
 // and the same `onBack`, which returns to the menu.
 
-import type { ReportCategory } from '@kroma/client/reports';
 import { forwardRef } from 'react';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import type { SubtitleAppearance } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import type { PlayerController } from '#ui/components/organisms/player/types';
+import type { PlayerReportCategory } from '../../../media-types';
 import { AudioFilterPanel } from './audio-filter-panel';
 import { AudioPanel } from './audio-panel';
 import type { View } from './entries';
@@ -28,7 +28,7 @@ export interface SubViewProps {
   appearance: SubtitleAppearance;
   onAppearanceChange: (p: Partial<SubtitleAppearance>) => void;
   subtitleGen: SubtitleGenBundle;
-  onReport?: (category: ReportCategory) => Promise<void>;
+  onReport?: (category: PlayerReportCategory) => Promise<void>;
   onBack: () => void;
 }
 

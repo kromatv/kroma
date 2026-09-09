@@ -1,13 +1,13 @@
 // The batteries-included wrapper, for callers already using
 // @testing-library/react.
 //
-//   import { measure } from '@kroma/react-audit/react';
+//   import { measure } from '@kromatv/react-audit/react';
 //
 //   const result = measure(<Keyboard />, { press: 'first' });
 //   expect(result.churn).toEqual([]);
 //
 // It renders, drives one interaction and reads the commits. The core in
-// `@kroma/react-audit` does the same without knowing about any renderer, which
+// `@kromatv/react-audit` does the same without knowing about any renderer, which
 // is what to reach for when the interaction is more than one press.
 //
 // It does NOT unmount: that is `afterEach(cleanup)`'s job, the same as any other

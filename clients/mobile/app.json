@@ -90,7 +90,7 @@
           "color": "#0A0A0C"
         }
       ],
-      "@kroma/media3-ffmpeg"
+      "@kromatv/media3-ffmpeg"
     ],
     "experiments": {
       "typedRoutes": true,

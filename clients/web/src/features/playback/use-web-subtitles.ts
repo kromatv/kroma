@@ -4,14 +4,15 @@ import {
   GenerationId,
   type SubCapabilities,
   SubtitleId,
-} from '@kroma/client/subtitles';
-import { LANG_OFF, langName, preferredSubIndex, type Translate } from '@kroma/core';
+} from '@kromatv/client/subtitles';
+import { LANG_OFF, langName, preferredSubIndex } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import {
   type PlayerSub,
   type SubtitleGenBundle,
   type SubtitleGenRequest,
   useSubtitleGenerations,
-} from '@kroma/ui';
+} from '@kromatv/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { kromaClient, type MovieView, type SubtitleView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';

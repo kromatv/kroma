@@ -3,9 +3,9 @@
 // Data comes from `GET /api/people/details` and is optional: with nothing to
 // show, the component renders nothing and the grid keeps its header-less look.
 
-import type { PersonDetail } from '@kroma/client/media';
-import { personFacts } from '@kroma/core';
-import { Box, DataField, styles, Text } from '@kroma/ui/kit';
+import type { PersonDetail } from '@kromatv/client/media';
+import { personFacts } from '@kromatv/core';
+import { Box, DataField, styles, Text } from '@kromatv/ui/kit';
 import { Avatar } from '#mobile/components/Avatar';
 import { ExpandableText } from '#mobile/components/ui';
 import { useI18n, useT } from '#mobile/lib/i18n';

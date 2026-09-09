@@ -2,7 +2,7 @@
 // and the admin bench's preview are the same card, so what an author sees
 // before sending is what recipients get.
 
-import type { KNOWN_NOTIFICATION_EVENTS, NotificationEvent } from '@kroma/client/notifications';
+import type { KNOWN_NOTIFICATION_EVENTS, NotificationEvent } from '@kromatv/client/notifications';
 import {
   Box,
   type ColorToken,
@@ -12,7 +12,7 @@ import {
   Row,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 
 const s = styles({

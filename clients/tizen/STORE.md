@@ -1,6 +1,6 @@
 # Publishing KROMA to Samsung Apps TV
 
-Everything needed to file `@kroma/tizen` with the **Samsung TV Seller Office**
+Everything needed to file `@kromatv/tizen` with the **Samsung TV Seller Office**
 (<https://seller.samsungapps.com/tv>). Rules quoted here come from Samsung's own
 Seller Office guides, the launch checklist, and the Seller Office Terms and
 Conditions effective 6 March 2025.
@@ -116,8 +116,8 @@ application to a model group subject to FCC regulations."* The US is the **only*
 country a Public Seller can ship to, so this is not optional for a first release.
 
 - **Captions: covered, and now actually.** Declare the solution as
-  **Application UI**: KROMA renders its own cues (parsed in `@kroma/core`, drawn
-  by `@kroma/ui`'s `SubtitleRenderer`), because cross-origin `<track>` cues never
+  **Application UI**: KROMA renders its own cues (parsed in `@kromatv/core`, drawn
+  by `@kromatv/ui`'s `SubtitleRenderer`), because cross-origin `<track>` cues never
   load. Declaring App UI means owning CEA-708's attribute matrix in your own
   settings, and the app now offers all of it: the **eight** colours, for text,
   background **and** caption window alike; the **eight** font styles; the

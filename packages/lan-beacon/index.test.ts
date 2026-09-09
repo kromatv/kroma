@@ -9,7 +9,7 @@
 // stopped browse still reporting from a worker parked in a resolve - so none of
 // it shows up as an error, only as a television that is never listed.
 
-import type { LanDiscoveryBridge, LanService } from '@kroma/core';
+import type { LanDiscoveryBridge, LanService } from '@kromatv/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type FoundEvent = { services: LanService[]; epoch: number };

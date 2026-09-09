@@ -1,5 +1,5 @@
 // This module's wire types: what a manual grab searches, analyses and adds.
-// They live here rather than in `@kroma/core`, which has no business knowing
+// They live here rather than in `@kromatv/core`, which has no business knowing
 // what a torrent is.
 
 import { z } from 'zod';

@@ -1,8 +1,8 @@
-import { Box, Row } from '@kroma/ui/kit/atoms/box';
-import { Divider } from '@kroma/ui/kit/atoms/divider';
-import { Logo } from '@kroma/ui/kit/atoms/logo';
-import { Text } from '@kroma/ui/kit/atoms/text';
-import { ThemeSwitch } from '@kroma/ui/kit/molecules/theme-switch';
+import { Box, Row } from '@kromatv/ui/kit/atoms/box';
+import { Divider } from '@kromatv/ui/kit/atoms/divider';
+import { Logo } from '@kromatv/ui/kit/atoms/logo';
+import { Text } from '@kromatv/ui/kit/atoms/text';
+import { ThemeSwitch } from '@kromatv/ui/kit/molecules/theme-switch';
 import type { ReactNode } from 'react';
 
 const EN = { system: 'Auto', light: 'Light', dark: 'Dark' };

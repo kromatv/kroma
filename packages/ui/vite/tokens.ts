@@ -228,7 +228,7 @@ export const baseCss = () => [resetCss(), pageCss()].join('\n\n');
 export type FontDisplay = 'optional' | 'swap';
 
 /** The whole design system, framework-free: type, tokens, motion and the reset.
- *  A Tailwind app adds `@import "tailwindcss"` and `@kroma/ui/css/theme`. */
+ *  A Tailwind app adds `@import "tailwindcss"` and `@kromatv/ui/css/theme`. */
 export function kromaCss(display: FontDisplay = 'optional'): string {
   return [fontsCss(display), tokensCss(), motionCss(), baseCss()].join('\n\n');
 }

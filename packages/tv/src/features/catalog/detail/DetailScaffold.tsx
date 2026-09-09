@@ -1,4 +1,4 @@
-import { posterColors } from '@kroma/core';
+import { posterColors } from '@kromatv/core';
 import {
   Badge,
   Box,
@@ -11,7 +11,7 @@ import {
   styles,
   Text,
   tintGradient,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 
 // Two layers rather than one comma-separated background-image: multi-value

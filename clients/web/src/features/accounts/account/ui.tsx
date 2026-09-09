@@ -2,10 +2,10 @@
 // icon-led preference row, the password-strength estimate, and the small
 // async-save state machine every section reuses.
 
-import { apiErrorText } from '@kroma/client';
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { type ColorValue, type IconName, IconWell, ListRow, Text } from '@kroma/ui/kit';
+import { apiErrorText } from '@kromatv/client';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
+import { type ColorValue, type IconName, IconWell, ListRow, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 

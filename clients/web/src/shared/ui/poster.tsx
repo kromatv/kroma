@@ -1,5 +1,6 @@
-import { sizedImageUrl, type Translate } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { sizedImageUrl } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
 import {
   ArtScrim,
   Box,
@@ -10,7 +11,7 @@ import {
   styles,
   Text,
   VirtualRail,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { type ReactElement, type ReactNode, useState } from 'react';
 import type { PosterAction } from '#web/shared/ui/poster-action-bar';
 import { ART_FADE, PosterTile } from '#web/shared/ui/poster-tile';

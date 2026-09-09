@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import type { HandoffBeaconView } from '@kroma/core';
-import { configureRemote, Focusable } from '@kroma/ui/kit';
-import { onScreen, wearsRing } from '@kroma/ui/testing';
+import type { HandoffBeaconView } from '@kromatv/core';
+import { configureRemote, Focusable } from '@kromatv/ui/kit';
+import { onScreen, wearsRing } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { type ReactNode, useEffect } from 'react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';

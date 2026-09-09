@@ -1,7 +1,7 @@
 // The login gate, rendered as a full-screen overlay whenever no session is
 // active so the catalogue underneath stays unusable until an account is chosen.
 
-import { Box, classes, Logo, styles } from '@kroma/ui/kit';
+import { Box, classes, Logo, styles } from '@kromatv/ui/kit';
 import { GateBody } from '#web/features/accounts/gate-body';
 import { LoginBackdrop } from '#web/features/accounts/login-backdrop';
 import { LoginSettings } from '#web/features/accounts/login-settings';

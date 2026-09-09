@@ -2,9 +2,9 @@
 // library + TMDB (Overseerr-style). A prominent search hero, trending rails as
 // the empty state, and counted result grids. TMDB is gated on requests.create.
 
-import { hasPermission } from '@kroma/client/accounts';
-import type { DiscoverType } from '@kroma/client/discovery';
-import { useT } from '@kroma/ui';
+import { hasPermission } from '@kromatv/client/accounts';
+import type { DiscoverType } from '@kromatv/client/discovery';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   classes,
@@ -14,7 +14,7 @@ import {
   PageHeader,
   SegmentGroup,
   styles,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { SearchResults } from '#web/features/requests/search-results';
 import { TrendingBrowse } from '#web/features/requests/trending';

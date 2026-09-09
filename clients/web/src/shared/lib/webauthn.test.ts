@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { WebAuthnOptions } from '@kroma/client/accounts';
+import type { WebAuthnOptions } from '@kromatv/client/accounts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPasskey, getPasskey, passkeysSupported } from './webauthn';
 

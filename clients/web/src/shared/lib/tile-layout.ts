@@ -1,4 +1,4 @@
-import { cellWidth, columnsFor } from '@kroma/ui/kit';
+import { cellWidth, columnsFor } from '@kromatv/ui/kit';
 
 export const TILE_GAP = 18;
 

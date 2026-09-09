@@ -1,4 +1,4 @@
-import type { PersonDetail } from '@kroma/client/media';
+import type { PersonDetail } from '@kromatv/client/media';
 import { useEffect, useState } from 'react';
 import { useClient } from '#tv/app/router';
 

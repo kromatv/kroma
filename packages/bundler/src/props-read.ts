@@ -33,7 +33,7 @@ import {
 import { API, SignatureKind } from 'typescript/unstable/async';
 
 /** One documented prop, as the workbench's panel shows it. Mirrors
- * `PropDoc` in @kroma/workbench; kept structural rather than imported so this
+ * `PropDoc` in @kromatv/workbench; kept structural rather than imported so this
  * build-time module has no runtime dependency on the package. */
 export interface PropDoc {
   name: string;

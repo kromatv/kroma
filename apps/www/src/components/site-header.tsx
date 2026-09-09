@@ -1,4 +1,4 @@
-import { site } from '@kroma/site-meta';
+import { site } from '@kromatv/site-meta';
 import { IconBrandGithub, IconMenu2 } from '@tabler/icons-react';
 import { Button } from '#site/components/button';
 import { LangSwitcher } from '#site/components/lang-switcher';

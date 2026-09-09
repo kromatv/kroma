@@ -2,10 +2,10 @@
 // scoped by whatever the target block above it says (a season/episode there
 // makes this a TV search), and the picked row pre-fills the magnet + title.
 
-import { useAcquisitionApi } from '@kroma/module-acquisition/api';
-import type { ManualReleaseView } from '@kroma/module-acquisition/schemas';
-import { apiErrorText, useFormat, useT } from '@kroma/module-sdk';
-import { Box, Button, Field, Focusable, Icon, Row, sv, Text } from '@kroma/ui/kit';
+import { useAcquisitionApi } from '@kromatv/module-acquisition/api';
+import type { ManualReleaseView } from '@kromatv/module-acquisition/schemas';
+import { apiErrorText, useFormat, useT } from '@kromatv/module-sdk';
+import { Box, Button, Field, Focusable, Icon, Row, sv, Text } from '@kromatv/ui/kit';
 import { type CSSProperties, useState } from 'react';
 
 /** The indexer sweep, scoped by whatever the target step says: a season or an
@@ -43,7 +43,7 @@ export function useIndexerSearch(kind: string, season: string, episode: string) 
 }
 
 // The card the result rows are flush inside, which is why it clips their focus
-// ring inward (`data-focus-ring-inset`, in @kroma/ui's styles/base.css).
+// ring inward (`data-focus-ring-inset`, in @kromatv/ui's styles/base.css).
 const RESULT_LIST: CSSProperties = {
   marginTop: 8,
   maxHeight: 176,

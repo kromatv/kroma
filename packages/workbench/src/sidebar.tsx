@@ -4,7 +4,7 @@
 // people editing the kit, and a tree that nested them scattered every kind of
 // input across three branches. The rows themselves are in `sidebar-rows.tsx`.
 
-import { Box, styles } from '@kroma/ui/kit';
+import { Box, styles } from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { RULE_TOP } from './chrome';

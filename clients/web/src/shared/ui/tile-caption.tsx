@@ -1,6 +1,6 @@
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, Icon, Row, Text } from '@kroma/ui/kit';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
+import { Box, Icon, Row, Text } from '@kromatv/ui/kit';
 
 const KIND_KEY: Record<'movie' | 'show', MessageKey> = {
   movie: 'discover.kindMovie',

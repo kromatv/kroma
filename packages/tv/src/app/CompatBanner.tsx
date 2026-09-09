@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Box, Icon, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Icon, Text } from '@kromatv/ui/kit';
 import { CLIENT_BUILD } from '#tv/app/clientBuild';
 import { useConnection } from '#tv/app/providers/connection';
 

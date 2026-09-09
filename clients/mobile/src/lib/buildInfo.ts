@@ -3,7 +3,7 @@
 // Nothing here runs git or touches the filesystem. Git-derived fields are
 // nullable when the build was made outside a checkout.
 
-import { commitLabel as coreCommitLabel, repoLabel as coreRepoLabel } from '@kroma/core';
+import { commitLabel as coreCommitLabel, repoLabel as coreRepoLabel } from '@kromatv/core';
 import Constants from 'expo-constants';
 
 export interface BuildInfo {

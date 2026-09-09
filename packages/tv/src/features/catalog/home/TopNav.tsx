@@ -1,4 +1,4 @@
-import { useT } from '@kroma/ui';
+import { useT } from '@kromatv/ui';
 import {
   Avatar,
   BackButton,
@@ -15,7 +15,7 @@ import {
   style,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';

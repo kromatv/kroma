@@ -14,7 +14,7 @@
 // ESM exports of the `.page.mdx`, and there are seven of them.
 
 import { STORY_CODE } from 'virtual:kroma-story-code';
-import { discoverPagesVite, indexVite, withPageHistory } from '@kroma/workbench';
+import { discoverPagesVite, indexVite, withPageHistory } from '@kromatv/workbench';
 
 export const STORIES = indexVite({
   modules: import.meta.glob('#ui/**/*.{story.mdx,demo.tsx}'),

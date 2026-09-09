@@ -1,4 +1,4 @@
-import type { Notification } from '@kroma/client/notifications';
+import type { Notification } from '@kromatv/client/notifications';
 
 // A link this server minted before the catalogue routes were renamed. The link
 // is PERSISTED with the notification, so a row written by an older build - or by

@@ -1,6 +1,6 @@
-import { hasPermission, type Invite, type Permission } from '@kroma/client/accounts';
-import { PERMISSIONS } from '@kroma/core';
-import { useLocale, useT } from '@kroma/ui';
+import { hasPermission, type Invite, type Permission } from '@kromatv/client/accounts';
+import { PERMISSIONS } from '@kromatv/core';
+import { useLocale, useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -18,7 +18,7 @@ import {
   SegmentGroup,
   Surface,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
 import { PageFrame } from '#web/shared/ui';

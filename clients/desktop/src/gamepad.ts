@@ -9,7 +9,7 @@ import {
 } from './gamepad-map';
 
 // Gamepad -> TV navigation bridge. The 10-foot input model is keyboard-shaped
-// (@kroma/tv resolves `keydown`/`keyup` on `window`), so this polls the Gamepad
+// (@kromatv/tv resolves `keydown`/`keyup` on `window`), so this polls the Gamepad
 // API and dispatches the matching synthetic key events.
 //
 // Debug: `localStorage.setItem('kroma.gamepadDebug', '1')` then reload.

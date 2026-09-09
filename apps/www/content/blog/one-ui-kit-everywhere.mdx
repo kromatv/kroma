@@ -11,7 +11,7 @@ browser. It is one component, not three kept in step by hand.
 
 ## Written once, against React Native
 
-The `@kroma/ui` kit is written against React Native. On Apple TV, Android TV,
+The `@kromatv/ui` kit is written against React Native. On Apple TV, Android TV,
 iPhone and Android it renders natively. On the web, on Tizen and webOS
 televisions, in the Tauri desktop app and in the web client it goes through
 react-native-web. One file, two rendering engines.
@@ -20,7 +20,7 @@ Colors, typography, elevations and focus live once too, in TypeScript, and
 generate the CSS variables the web targets read:
 
 ```ts
-import { colors, type } from '@kroma/ui/tokens';
+import { colors, type } from '@kromatv/ui/tokens';
 
 colors.accent; // #F4B642, the one warm amber
 colors.bg;     // #0A0A0C, the deep charcoal

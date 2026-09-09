@@ -1,4 +1,4 @@
-import type { CastMember } from '@kroma/client/media';
+import type { CastMember } from '@kromatv/client/media';
 import {
   genreLabels,
   genreSegment,
@@ -6,8 +6,8 @@ import {
   posterColors,
   sizedImageUrl,
   type TitleGenres,
-} from '@kroma/core';
-import { BackButton, Box, Chip, PersonCard, styles, Text, tintGradient } from '@kroma/ui/kit';
+} from '@kromatv/core';
+import { BackButton, Box, Chip, PersonCard, styles, Text, tintGradient } from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';

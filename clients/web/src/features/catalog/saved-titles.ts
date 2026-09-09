@@ -1,6 +1,6 @@
-import type { DiscoverEntry } from '@kroma/client/discovery';
-import type { MessageKey } from '@kroma/core';
-import type { IconName } from '@kroma/ui/kit';
+import type { DiscoverEntry } from '@kromatv/client/discovery';
+import type { MessageKey } from '@kromatv/i18n';
+import type { IconName } from '@kromatv/ui/kit';
 import type { MovieView, ShowView } from '#web/shared/lib/api';
 
 export const SAVED_SORTS = ['recent', 'title', 'year', 'rating'] as const;

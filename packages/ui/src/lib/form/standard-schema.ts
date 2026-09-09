@@ -1,6 +1,6 @@
 // The Standard Schema v1 contract (https://standardschema.dev), vendored as
 // types because it is a specification and not a runtime. Speaking it is what
-// lets `useForm` take a zod, valibot or arktype schema while @kroma/ui depends
+// lets `useForm` take a zod, valibot or arktype schema while @kromatv/ui depends
 // on none of them.
 
 type StandardPathSegment = PropertyKey | { readonly key: PropertyKey };

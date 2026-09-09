@@ -28,8 +28,8 @@ const createQueryClient = vi.hoisted(() =>
   })),
 );
 
-vi.mock('@kroma/client/query', () => ({ createQueryClient }));
-vi.mock('@kroma/core', () => ({ activeLocale: () => 'fr', clientUserAgent: () => 'Kroma/test' }));
+vi.mock('@kromatv/client/query', () => ({ createQueryClient }));
+vi.mock('@kromatv/core', () => ({ activeLocale: () => 'fr', clientUserAgent: () => 'Kroma/test' }));
 
 const renameServer = vi.hoisted(() => vi.fn());
 vi.mock('./session', () => ({ useSession: () => ({ renameServer }) }));

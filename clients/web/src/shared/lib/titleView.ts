@@ -1,9 +1,9 @@
 // One normalized "title" model that both the library fiche (owned) and the
 // discover fiche (TMDB / request flow) render through.
 
-import type { KromaClient } from '@kroma/client';
-import { hasPermission, type User } from '@kroma/client/accounts';
-import type { DiscoverDetail, DiscoverEntry } from '@kroma/client/discovery';
+import type { KromaClient } from '@kromatv/client';
+import { hasPermission, type User } from '@kromatv/client/accounts';
+import type { DiscoverDetail, DiscoverEntry } from '@kromatv/client/discovery';
 import type {
   CastMember,
   CrewMember,
@@ -13,9 +13,10 @@ import type {
   ShowDetail,
   UpNext,
   VideoTrack,
-} from '@kroma/client/media';
-import type { RequestStatus } from '@kroma/client/requests';
-import { directorsOf, formatRuntime, genreLabels, type Translate } from '@kroma/core';
+} from '@kromatv/client/media';
+import type { RequestStatus } from '@kromatv/client/requests';
+import { directorsOf, formatRuntime, genreLabels } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import { imageUrl } from '#web/shared/lib/api';
 
 /** A season in the unified model: owned playable episodes merged with TMDB

@@ -1,7 +1,7 @@
-import type { KromaClient } from '@kroma/client';
-import type { MediaItem } from '@kroma/client/media';
-import type { DownloadedSub, SubtitleId } from '@kroma/client/subtitles';
-import { isTextSubtitle, preferredSubIndex } from '@kroma/core';
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem } from '@kromatv/client/media';
+import type { DownloadedSub, SubtitleId } from '@kromatv/client/subtitles';
+import { isTextSubtitle, preferredSubIndex } from '@kromatv/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface SubView {

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { HandoffHandle } from '@kroma/client/handoff';
-import type { Translate } from '@kroma/core';
+import { HandoffHandle } from '@kromatv/client/handoff';
+import type { Translate } from '@kromatv/i18n';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DiscoveredTv, GrantResult } from '../handoff';

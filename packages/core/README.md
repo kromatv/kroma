@@ -1,6 +1,6 @@
 <div align="center">
   <img src="../../.github/assets/logo.svg" alt="KROMA" height="56">
-  <h1>@kroma/core</h1>
+  <h1>@kromatv/core</h1>
   <p><i>Shared, framework-agnostic core for every KROMA client.</i></p>
 </div>
 
@@ -12,7 +12,7 @@
 
 ```ts
 // workspace dependency already wired in clients
-import { canDirectPlay, detectCapabilities } from '@kroma/core';
+import { canDirectPlay, detectCapabilities } from '@kromatv/core';
 ```
 
 Pure TypeScript, no build step: the workspace consumes it as source. The root
@@ -21,17 +21,17 @@ built on these rules.
 
 ## What this package is not
 
-`@kroma/core` re-exports nothing. Three doors, and each thing is behind exactly
+`@kromatv/core` re-exports nothing. Three doors, and each thing is behind exactly
 one, so an import path says where a symbol came from:
 
-- `@kroma/client/<domain>` is what one domain owns: its zod schemas, its ids, its
+- `@kromatv/client/<domain>` is what one domain owns: its zod schemas, its ids, its
   response types. `MediaItem`, `Show`, `ShowDetail`, `Season`, `Library`,
   `VideoTrack`, `AudioTrack`, `SubtitleTrack`, `Metadata`, `CastMember`, `User`,
   `Permission` and `hasPermission` all live there.
-- `@kroma/client` is what no single domain owns: `createKromaClient`,
+- `@kromatv/client` is what no single domain owns: `createKromaClient`,
   `KromaClient`, `KromaApiError`, `KromaClientOptions`, the transport, the
   WebSocket events and the remembered-session store.
-- `@kroma/core` is what is not a wire type at all: the rules built on top.
+- `@kromatv/core` is what is not a wire type at all: the rules built on top.
 
 Adding or changing a payload means editing the zod schema in
 `packages/client/src/api/<domain>/`, never redefining a wire type here.
@@ -59,7 +59,7 @@ play on its own decoder. What it cannot decode goes through the server's HLS
 path instead.
 
 ```ts
-import { capabilities, canDirectPlay, audioSupport } from '@kroma/core';
+import { capabilities, canDirectPlay, audioSupport } from '@kromatv/core';
 
 const caps = capabilities();              // cached device probe
 const verdict = canDirectPlay(item, caps);
@@ -78,10 +78,10 @@ Safari / HW-Chromium, no AC3) each get the right path.
 
 ## Talking to the server
 
-The client is `@kroma/client`, and it is a factory rather than a class:
+The client is `@kromatv/client`, and it is a factory rather than a class:
 
 ```ts
-import { createKromaClient } from '@kroma/client';
+import { createKromaClient } from '@kromatv/client';
 
 const client = createKromaClient({ baseUrl: 'http://nas.local:4040' });
 
@@ -93,7 +93,7 @@ const poster  = client.media.artwork.posterFor(item);  // resolved TMDB/cached a
 
 ## See also
 
-- `@kroma/client` (`../client/src/api/`): the transport and every wire type
-- [`@kroma/ui`](../ui/README.md): design-system components built on these types
-- [`@kroma/tv`](../tv/README.md): the 10-foot experience that ties it together
+- `@kromatv/client` (`../client/src/api/`): the transport and every wire type
+- [`@kromatv/ui`](../ui/README.md): design-system components built on these types
+- [`@kromatv/tv`](../tv/README.md): the 10-foot experience that ties it together
 - [server/README.md](../../server/README.md): the API this client speaks to

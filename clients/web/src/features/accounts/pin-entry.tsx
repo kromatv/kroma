@@ -1,6 +1,6 @@
-import type { StoredSession } from '@kroma/client/accounts';
-import { type ActivateResult, useT } from '@kroma/ui';
-import { Box, Spinner as BusyRing, Button, OtpField, Row, Text, useShake } from '@kroma/ui/kit';
+import type { StoredSession } from '@kromatv/client/accounts';
+import { type ActivateResult, useT } from '@kromatv/ui';
+import { Box, Spinner as BusyRing, Button, OtpField, Row, Text, useShake } from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Animated } from 'react-native';
 import { UserAvatar } from '#web/shared/ui/user-avatar';

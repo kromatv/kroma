@@ -1,5 +1,5 @@
-import { sizedImageUrl } from '@kroma/core';
-import { Box, styles } from '@kroma/ui/kit';
+import { sizedImageUrl } from '@kromatv/core';
+import { Box, styles } from '@kromatv/ui/kit';
 import { Image } from '#web/shared/ui';
 
 // Reading frost light + wide so the backdrop still reads through. The mask

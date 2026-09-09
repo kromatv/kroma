@@ -1,4 +1,4 @@
-import { setSessionToken } from '@kroma/client';
+import { setSessionToken } from '@kromatv/client';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 export const calls: Array<{ url: string; init: RequestInit }> = [];

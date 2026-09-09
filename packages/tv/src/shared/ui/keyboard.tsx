@@ -1,5 +1,5 @@
 // The TV's binding of the kit's two remote keyboards: everything the keyboards
-// themselves do lives in @kroma/ui/kit, and this supplies the two things that
+// themselves do lives in @kromatv/ui/kit, and this supplies the two things that
 // are this app's, not the design system's: the device's persisted letter
 // order and whether a real keyboard is attached.
 
@@ -8,7 +8,7 @@ import {
   UrlKeyboard as KitUrlKeyboard,
   type SearchKeyboardProps,
   type UrlKeyboardProps,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { getKeyboardLayoutPref } from '#tv/app/keyboardLayoutPref';
 import { useEnv } from '#tv/app/providers/env';

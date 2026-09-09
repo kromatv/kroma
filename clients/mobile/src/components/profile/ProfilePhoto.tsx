@@ -1,4 +1,4 @@
-import { Box, Icon, Spinner, styles, Text } from '@kroma/ui/kit';
+import { Box, Icon, Spinner, styles, Text } from '@kromatv/ui/kit';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { Pressable } from 'react-native';

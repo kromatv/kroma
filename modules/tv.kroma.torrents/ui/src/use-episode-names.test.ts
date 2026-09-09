@@ -9,7 +9,7 @@ const keys: (readonly unknown[] | null)[] = [];
 const episodes = vi.fn();
 let answer: EpisodeInfo[] | null = null;
 
-vi.mock('@kroma/module-sdk', () => ({
+vi.mock('@kromatv/module-sdk', () => ({
   useFetch: (key: readonly unknown[] | null, fn: () => Promise<unknown>) => {
     keys.push(key);
     if (key) void fn();

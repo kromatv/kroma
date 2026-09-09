@@ -59,7 +59,7 @@ theme, and React components (it is MDX). Article styling comes from the
 ## Preview
 
 ```bash
-bun run --filter '@kroma/site' dev      # http://localhost:3100/blog
+bun run --filter '@kromatv/site' dev      # http://localhost:3100/blog
 ```
 
 Drafts are visible in dev and hidden in the production build. That's it: writing

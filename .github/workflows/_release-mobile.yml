@@ -88,7 +88,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       # Read the checkout's state BEFORE the stamp below rewrites the tracked
-      # app.json, or @kroma/build-info (called from app.config.ts during
+      # app.json, or @kromatv/build-info (called from app.config.ts during
       # prebuild) marks every official build `-dirty` for a change the version
       # it stamped already reports.
       - name: Record tree state before stamping
@@ -458,7 +458,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          bun install --frozen-lockfile --filter '@kroma/ci-tools'
+          bun install --frozen-lockfile --filter '@kromatv/ci-tools'
           bun run ci cache prune --prefix dd-mobile-v1- --keep 1
 
       - name: Validate for the App Store

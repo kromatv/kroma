@@ -2,9 +2,9 @@
 // it and who calls it. Without it, a module that is installed, enabled and
 // answering nothing looks exactly like one that is working.
 
-import { Table } from '@kroma/module-sdk';
-import { useT } from '@kroma/ui';
-import { Badge, Box, EmptyState, Row, Text } from '@kroma/ui/kit';
+import { Table } from '@kromatv/module-sdk';
+import { useT } from '@kromatv/ui';
+import { Badge, Box, EmptyState, Row, Text } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import type { AdminModule } from '#web/features/admin/module-api';
 import { type Point, pointGraph } from '#web/features/admin/module-points';

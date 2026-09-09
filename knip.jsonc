@@ -57,7 +57,7 @@
     // by `import.meta.glob` / `require.context` (see `src/api/discover*.ts`),
     // and the Vite half of that discovery is picked by extension precedence. A
     // domain index is an entry because consumers reach it by subpath
-    // (`@kroma/client/media`), which the package's exports pattern resolves.
+    // (`@kromatv/client/media`), which the package's exports pattern resolves.
     "packages/client": {
       "entry": ["src/api/*/index.ts", "src/api/*/client.ts", "src/api/discover.web.ts"]
     },

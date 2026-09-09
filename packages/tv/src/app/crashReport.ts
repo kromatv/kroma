@@ -1,4 +1,4 @@
-import type { CrashReport } from '@kroma/client/diagnostics';
+import type { CrashReport } from '@kromatv/client/diagnostics';
 import { tvIdentity } from '#tv/app/apiClient';
 import { buildInfo } from '#tv/app/clientBuild';
 

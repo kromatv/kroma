@@ -89,7 +89,7 @@ if (!activity?.includes('/')) {
   console.error(
     `${PACKAGE} is not installed on ${devices.length > 1 ? 'these devices' : 'this device'}.`,
   );
-  console.error('Build it first: bun run --filter @kroma/tv-native android');
+  console.error('Build it first: bun run --filter @kromatv/tv-native android');
   process.exit(2);
 }
 

@@ -22,8 +22,8 @@ module it sees, the plugin looks for the kit's `styles`, `style`, `sv` and
 `svFor` bindings and reads each declaration they are handed without running
 the module: literals, the module's own constants, arithmetic on them, spreads,
 `as const`, and a constant imported from another workspace file through
-`#ui/`, `#tv/`, `#web/`, a relative path, `@kroma/ui/tokens` or
-`@kroma/ui/kit`, re-exports followed. A value it reads goes through the same
+`#ui/`, `#tv/`, `#web/`, a relative path, `@kromatv/ui/tokens` or
+`@kromatv/ui/kit`, re-exports followed. A value it reads goes through the same
 `split()` and `normalize()` the runtime uses, under a theme whose colours and
 shadows are the custom properties the browser reads, then through
 react-native-web's own atomic compiler for its rules. The classes a build
@@ -54,7 +54,7 @@ server; the patch takes both out, since the rule a build wrote is the rule a
 dev server has to read.
 
 and the rules land in the token stylesheet the shell already loads
-(`virtual:kroma*.css` or `@import "@kroma/ui/css"`), after everything
+(`virtual:kroma*.css` or `@import "@kromatv/ui/css"`), after everything
 react-native-web injects at runtime, so a compiled class outranks the reset the
 renderer gives every view. A build that loads no token sheet is warned and
 paints its compiled styles with nothing.
@@ -216,11 +216,11 @@ Two more habits paint inline, and both are handled:
   there, and the press and focus scales are registered per scale value.
 - a router. TanStack's `createLink` spreads the style it is handed into its
   own active-state style, so the object that reaches the anchor is registered
-  by nothing. `registered(style)` from `@kroma/ui/kit` registers it again by
+  by nothing. `registered(style)` from `@kromatv/ui/kit` registers it again by
   its content, and the web client's `RouteLink` anchor wears the result.
 
 An element react-native-web never renders (a glyph's `<svg>`, an `<img>`, a
-client's own `<div>` or `<a>`) takes `classes(...styles)` from `@kroma/ui/kit`:
+client's own `<div>` or `<a>`) takes `classes(...styles)` from `@kromatv/ui/kit`:
 the resolver hands back the classes the registered styles compile to and the
 element wears those. A value a render computes but that takes few distinct
 values (a control's size, a title's key-art wash, a scale) goes through
@@ -239,7 +239,7 @@ deliberate exception, a framework-free scene that renders before the kit's
 sheet exists.
 
 A test reads a control's paint with `declared(el, property)` from
-`@kroma/ui/testing`, which follows the classes into the stylesheets, and asks
+`@kromatv/ui/testing`, which follows the classes into the stylesheets, and asks
 for the ring with `wearsRing(el)`; `el.style` reads nothing of a class, and
 jsdom's computed style drops `z-index` and every `var()`.
 

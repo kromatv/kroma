@@ -15,7 +15,7 @@ export const APPLETV_TOOLS: Record<AppleTvToolId, { label: string; source: strin
   cocoapods: { label: 'CocoaPods', source: 'brew install cocoapods' },
   prebuild: {
     label: 'the Expo prebuild',
-    source: "bun run --filter '@kroma/tv-native' prebuild",
+    source: "bun run --filter '@kromatv/tv-native' prebuild",
   },
 };
 

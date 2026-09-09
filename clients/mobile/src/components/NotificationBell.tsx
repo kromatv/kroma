@@ -1,4 +1,4 @@
-import { Box, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
+import { Box, Icon, IconButton, styles, Text } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useT } from '#mobile/lib/i18n';
 import { useUnreadCount } from '#mobile/lib/notifications';

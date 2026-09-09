@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { EngineDecision } from '@kroma/core';
+import type { EngineDecision } from '@kromatv/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeVideo } from '#web/features/playback/fake-video.fixture';
 import type { MovieView } from '#web/shared/lib/api';

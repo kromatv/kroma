@@ -29,7 +29,7 @@ async function read(files: Record<string, string>): Promise<StoryCodes> {
 }
 
 const DECLARED = [
-  "import { defineStory } from '@kroma/workbench/story';",
+  "import { defineStory } from '@kromatv/workbench/story';",
   '',
   "export const story = defineStory({ name: 'ListRow', group: 'Layout', args: { a: 1 } });",
   '',

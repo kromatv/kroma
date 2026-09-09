@@ -1,7 +1,7 @@
-import type { PersonDetail } from '@kroma/client/media';
-import { personFacts } from '@kroma/core';
-import { useLocale, useT } from '@kroma/ui';
-import { Avatar, Box, Chip, DataField, styles, Text } from '@kroma/ui/kit';
+import type { PersonDetail } from '@kromatv/client/media';
+import { personFacts } from '@kromatv/core';
+import { useLocale, useT } from '@kromatv/ui';
+import { Avatar, Box, Chip, DataField, styles, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { TITLE } from '#tv/features/catalog/screenStyle';
 

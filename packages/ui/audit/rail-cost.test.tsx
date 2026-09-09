@@ -1,4 +1,4 @@
-import { record } from '@kroma/react-audit';
+import { record } from '@kromatv/react-audit';
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';

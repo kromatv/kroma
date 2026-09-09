@@ -5,9 +5,9 @@
 // not offered, and `enabled` defaults to true while the module list is still
 // loading, so add-flows don't blink off on every page load.
 
-import { type EngineField, ModuleId, type ModuleInfo } from '@kroma/client/modules';
-import { I18nProvider } from '@kroma/ui';
-import { clearPressGuard, setEntryDefaults } from '@kroma/ui/kit';
+import { type EngineField, ModuleId, type ModuleInfo } from '@kromatv/client/modules';
+import { I18nProvider } from '@kromatv/ui';
+import { clearPressGuard, setEntryDefaults } from '@kromatv/ui/kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   act,

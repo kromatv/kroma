@@ -14,7 +14,7 @@
 // A platform that ships no module (a future shell, a test) yields
 // `TvLauncher === null` and registers no backend - the correct answer there.
 
-import type { LauncherBackend } from '@kroma/tv';
+import type { LauncherBackend } from '@kromatv/tv';
 import { TvLauncher } from '../../modules/tv-launcher';
 
 function launcherFor(module: NonNullable<typeof TvLauncher>): LauncherBackend {

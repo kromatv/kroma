@@ -1,5 +1,5 @@
-import type { LanDiscoveryBridge } from '@kroma/core';
-import { configureRemote, OverlayHost, setEntryDefaults, Toaster } from '@kroma/ui/kit';
+import type { LanDiscoveryBridge } from '@kromatv/core';
+import { configureRemote, OverlayHost, setEntryDefaults, Toaster } from '@kromatv/ui/kit';
 import { useEffect } from 'react';
 import { BrandIntro } from '#tv/app/BrandIntro';
 import { CompatBanner } from '#tv/app/CompatBanner';
@@ -122,7 +122,7 @@ export function TvApp({
                             <HandoffBeaconProvider client={client} lan={lan} name={name}>
                               {/* A television cannot use React Native's <Modal>: its
                               view controller never receives a press from a remote
-                              (see @kroma/ui lib/overlay-host). */}
+                              (see @kromatv/ui lib/overlay-host). */}
                               <OverlayHost>
                                 <TvRouterGuard />
                                 {/* Above the router so notices survive a screen

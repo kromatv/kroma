@@ -60,7 +60,7 @@ describe('kroma', () => {
     expect(alias.find((entry) => entry.find === '#web')?.replacement).toBe(resolve('/app/web/src'));
     expect(config.define).toMatchObject({ global: 'globalThis' });
     expect(config.define?.__KROMA_VERSION__).toBeTypeOf('string');
-    expect(config.ssr?.noExternal).toContain('@kroma/ui');
+    expect(config.ssr?.noExternal).toContain('@kromatv/ui');
     expect(config.optimizeDeps?.include).toContain('react-native-web');
   });
 });

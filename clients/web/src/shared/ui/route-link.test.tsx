@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { Focusable } from '@kroma/ui/kit';
+import { Focusable } from '@kromatv/ui/kit';
 import {
   createMemoryHistory,
   createRootRoute,

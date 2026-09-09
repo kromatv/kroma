@@ -1,7 +1,7 @@
 // Language codes, normalized once for the whole app: the matcher, the option
 // list, and the two track pickers every client shares.
 
-import type { MessageKey, Translate } from './i18n';
+import type { MessageKey, Translate } from '@kromatv/i18n';
 import { LANG_ALIAS, type LangCode, PREF_LANGS } from './lang-table';
 
 export { type LangCode, PREF_LANGS } from './lang-table';

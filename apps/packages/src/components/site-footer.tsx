@@ -1,5 +1,5 @@
-import { SiteFooter as Footer, footerColumns } from '@kroma/site-kit/site-footer';
-import { site } from '@kroma/site-meta';
+import { SiteFooter as Footer, footerColumns } from '@kromatv/site-kit/site-footer';
+import { site } from '@kromatv/site-meta';
 
 const BLURB =
   'The Synology package source for KROMA: every release, stable and canary, served straight to DSM Package Center.';

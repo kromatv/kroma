@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Field } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Field } from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { TokenScreen, useTokenLink } from '#web/features/accounts/token-page';

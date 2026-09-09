@@ -8,7 +8,7 @@
 // page's data, which would silently void the padlock the origin promises. There
 // is no opt-in a page can make; only the viewer can override it per site.
 //
-// So `@kroma/core`'s discovery, whose default candidate is
+// So `@kromatv/core`'s discovery, whose default candidate is
 // `http://kroma.local:4040` and whose `resolveScheme` probes https then http,
 // finds nothing here: the https probe is refused by a LAN server that speaks
 // plaintext, and the http probe is blocked before it leaves the browser. Both

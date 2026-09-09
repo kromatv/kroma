@@ -6,8 +6,8 @@ import {
   genreLabel,
   genreShowcases,
   genreTint,
-} from '@kroma/core';
-import { useT } from '@kroma/ui';
+} from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   CategoryTile,
@@ -18,7 +18,7 @@ import {
   Text,
   tintGradient,
   useFocusNav,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useCallback, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav } from '#tv/app/router';

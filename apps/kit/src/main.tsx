@@ -1,5 +1,5 @@
 import 'virtual:kroma.css';
-import { setIconCatalogLoader } from '@kroma/ui/kit';
+import { setIconCatalogLoader } from '@kromatv/ui/kit';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Kit } from './config';

@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
-import { kroma } from '@kroma/bundler';
-import { messageSubset } from '@kroma/bundler/message-subset';
+import { kroma } from '@kromatv/bundler';
+import { messageSubset } from '@kromatv/bundler/message-subset';
 import type { Plugin, UserConfig } from 'vite';
 
 const WORKERD_ONLY = 'cloudflare:workers';

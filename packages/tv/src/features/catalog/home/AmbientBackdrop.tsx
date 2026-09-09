@@ -1,6 +1,6 @@
-import type { KromaClient } from '@kroma/client';
-import type { MediaItem, Show } from '@kroma/client/media';
-import { posterColors } from '@kroma/core';
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem, Show } from '@kromatv/client/media';
+import { posterColors } from '@kromatv/core';
 import {
   Box,
   colors,
@@ -11,7 +11,7 @@ import {
   shade,
   tintGradient,
   useSettledValue,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { memo } from 'react';
 import { useClient } from '#tv/app/router';
 import { STAGE_W } from '#tv/shared/stage';

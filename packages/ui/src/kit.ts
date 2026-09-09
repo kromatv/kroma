@@ -1,7 +1,7 @@
 /// <reference path="lib/types/react-native-tv.d.ts" />
 /// <reference path="lib/types/react-native-web.d.ts" />
-// @kroma/ui/kit: the universal component library. Services and `Player` ship
-// from `@kroma/ui` instead, so the two entry points share no symbols.
+// @kromatv/ui/kit: the universal component library. Services and `Player` ship
+// from `@kromatv/ui` instead, so the two entry points share no symbols.
 export * from './components/atoms';
 export * from './components/common';
 export * from './components/molecules';
@@ -97,7 +97,9 @@ export type {
 } from './lib/form';
 export { msg, useForm } from './lib/form';
 export { genreIcon } from './lib/genre-icon';
+export type { GlyphExports } from './lib/glyph';
 export {
+  addGlyphs,
   DEFAULT_ICON_SIZE,
   DEFAULT_ICON_THICKNESS,
   hasGlyph,
@@ -151,3 +153,5 @@ export {
   WHEEL_SPIN_MS,
   WHEEL_VIEWBOX,
 } from './lib/wheel-paths';
+export type { KitI18n } from './services/i18n-instance';
+export { setKitI18n } from './services/i18n-instance';

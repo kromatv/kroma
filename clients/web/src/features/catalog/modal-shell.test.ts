@@ -1,4 +1,4 @@
-import { color, radius } from '@kroma/ui/kit';
+import { color, radius } from '@kromatv/ui/kit';
 import { describe, expect, it } from 'vitest';
 import { MODAL_SCRIM, SCRIM_Z } from '#web/shared/ui/page';
 import { FOOTER_RULE, HEADER_RULE, MODAL_BODY, MODAL_LAYER, modalPanel } from './modal-shell';

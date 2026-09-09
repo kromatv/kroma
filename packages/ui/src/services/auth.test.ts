@@ -8,15 +8,15 @@
 // them wrong strands somebody at a login screen with a token that is fine, or
 // - worse - leaves a "signed in" state whose every request 401s.
 
-import { KromaApiError, type KromaClient, setSessionStorage } from '@kroma/client';
+import { KromaApiError, type KromaClient, setSessionStorage } from '@kromatv/client';
 import {
   clearSession,
   type StoredSession,
   saveSession,
   type User,
   UserId,
-} from '@kroma/client/accounts';
-import { fakeClient } from '@kroma/client/test';
+} from '@kromatv/client/accounts';
+import { fakeClient } from '@kromatv/client/test';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAuthSession } from './auth';

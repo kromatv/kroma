@@ -1,13 +1,14 @@
-import type { KromaClient } from '@kroma/client';
-import { ItemId, type MediaItem } from '@kroma/client/media';
-import { formatRuntime, genreLabels, metaLine, type Translate } from '@kroma/core';
+import type { KromaClient } from '@kromatv/client';
+import { ItemId, type MediaItem } from '@kromatv/client/media';
+import { formatRuntime, genreLabels, metaLine } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import {
   POST_PLAY_ART_W,
   type PostPlayItem,
   UP_NEXT_ART_W,
   type UpNextData,
   type UpNextItem,
-} from '@kroma/ui';
+} from '@kromatv/ui';
 import { useEffect, useMemo, useState } from 'react';
 
 function toCard(client: KromaClient, t: Translate, item: MediaItem): UpNextItem {

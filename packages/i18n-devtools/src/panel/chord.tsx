@@ -1,5 +1,5 @@
-import type { IconName } from '@kroma/ui/kit';
-import { Icon, Kbd, Row, Text } from '@kroma/ui/kit';
+import type { IconName } from '@kromatv/ui/kit';
+import { Icon, Kbd, Row, Text } from '@kromatv/ui/kit';
 import { isApplePlatform, type Modifier, modifierLabel } from './shortcut';
 
 export interface ChordProps {

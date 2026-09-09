@@ -15,7 +15,7 @@ let repo = '';
 
 function badge(group: string): string {
   return [
-    "import { defineStory } from '@kroma/workbench/story';",
+    "import { defineStory } from '@kromatv/workbench/story';",
     '',
     `export const story = defineStory({ group: '${group}' });`,
     '',

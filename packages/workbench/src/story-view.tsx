@@ -5,8 +5,8 @@
 // needs is READ from it rather than held beside it - the body, the prose, the
 // sample and the script are four answers to the same question.
 
-import { applyTheme, Box, CodeBlock, Focusable, Icon, styles, sv, Text } from '@kroma/ui/kit';
-import type { ColorToken } from '@kroma/ui/tokens';
+import { applyTheme, Box, CodeBlock, Focusable, Icon, styles, sv, Text } from '@kromatv/ui/kit';
+import type { ColorToken } from '@kromatv/ui/tokens';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Matrix, ViewportFrame } from './canvas';
 import { CanvasTabs } from './canvas-tabs';

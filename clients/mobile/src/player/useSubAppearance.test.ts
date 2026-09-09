@@ -13,7 +13,7 @@ const loadPref = vi.hoisted(() => vi.fn(async (_key: string) => null as string |
 const savePref = vi.hoisted(() => vi.fn(async (_key: string, _value: string) => undefined));
 vi.mock('#mobile/lib/storage', () => ({ loadPref, savePref }));
 
-import { DEFAULT_SUB_APPEARANCE } from '@kroma/ui';
+import { DEFAULT_SUB_APPEARANCE } from '@kromatv/ui';
 import { useSubAppearance } from './useSubAppearance';
 
 const KEY = 'subtitleStyle';

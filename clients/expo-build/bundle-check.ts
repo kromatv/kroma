@@ -2,7 +2,7 @@
 // Bundle an Expo client for both native platforms and fail if either breaks.
 //
 // Shared by the native TV app and the mobile app, because they need the same
-// gate for the same reason: both render the shared @kroma/ui design system,
+// gate for the same reason: both render the shared @kromatv/ui design system,
 // both are EDITED almost entirely while looking at a browser shell, and nothing
 // else in the pipeline would notice a DOM element or a browser-only API sneaking
 // back in. Metro would, at the worst possible moment.

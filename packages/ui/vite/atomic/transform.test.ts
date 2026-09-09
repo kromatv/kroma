@@ -35,7 +35,7 @@ const s = styles({
   });
 
   it('compiles the single form and a recipe with its states', () => {
-    const out = run(`import { style, sv } from '@kroma/ui/kit';
+    const out = run(`import { style, sv } from '@kromatv/ui/kit';
 const one = style({ p: 4 });
 const chip = sv({
   base: { radius: 'pill', _hover: { bg: 'tint/10' } },

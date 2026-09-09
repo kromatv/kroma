@@ -8,9 +8,9 @@
 // must fire exactly once - it shows the viewer a message and halts playback, so
 // a second firing on the next ping would talk over itself.
 
-import { KromaApiError, type KromaClient } from '@kroma/client';
-import { ItemId } from '@kroma/client/media';
-import { fakeClient } from '@kroma/client/test';
+import { KromaApiError, type KromaClient } from '@kromatv/client';
+import { ItemId } from '@kromatv/client/media';
+import { fakeClient } from '@kromatv/client/test';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePlaybackHeartbeat } from './playback';
@@ -21,7 +21,7 @@ const events = vi.hoisted(() => ({
   onEvent: undefined as unknown,
 }));
 
-vi.mock('@kroma/client/events', async (real) => {
+vi.mock('@kromatv/client/events', async (real) => {
   const actual = (await real()) as Record<string, unknown>;
   return {
     ...actual,

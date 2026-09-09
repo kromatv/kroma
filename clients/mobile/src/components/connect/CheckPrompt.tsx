@@ -9,10 +9,10 @@
 // It asks for what only a screen in the room can show. A page wearing the same
 // unplaceable origin can mint a beacon, but it has nowhere to print the code.
 
-import type { DiscoveredTv, GrantResult } from '@kroma/core';
-import { HANDOFF_CHECK_LENGTH } from '@kroma/core';
-import { useCheckPrompt } from '@kroma/core/react';
-import { Box, Button, OtpField, REGEXP_ONLY_DIGITS_AND_CHARS, styles, Text } from '@kroma/ui/kit';
+import type { DiscoveredTv, GrantResult } from '@kromatv/core';
+import { HANDOFF_CHECK_LENGTH } from '@kromatv/core';
+import { useCheckPrompt } from '@kromatv/core/react';
+import { Box, Button, OtpField, REGEXP_ONLY_DIGITS_AND_CHARS, styles, Text } from '@kromatv/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { spacing, type } from '#mobile/lib/theme';
 

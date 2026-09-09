@@ -23,7 +23,7 @@
 // host's own UI - moves the canvas. That is the one thing the plain adapter
 // cannot do.
 //
-// Imported from a subpath (`@kroma/workbench/tanstack`) rather than the barrel, so
+// Imported from a subpath (`@kromatv/workbench/tanstack`) rather than the barrel, so
 // a native build - which has no router and no use for one - never pulls
 // @tanstack/react-router into its bundle to find out it was not needed.
 //

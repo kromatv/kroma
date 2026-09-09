@@ -1,7 +1,7 @@
-import { SiteHeader } from '@kroma/site-kit/site-header';
-import { PageMain } from '@kroma/ui/kit';
-import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
-import { Text } from '@kroma/ui/kit/atoms/text';
+import { SiteHeader } from '@kromatv/site-kit/site-header';
+import { PageMain } from '@kromatv/ui/kit';
+import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
+import { Text } from '@kromatv/ui/kit/atoms/text';
 import { createFileRoute } from '@tanstack/react-router';
 import { InstallCard } from '#site/components/install-card';
 import { ReleaseHeadline } from '#site/components/release-headline';

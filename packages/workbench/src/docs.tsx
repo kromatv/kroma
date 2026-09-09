@@ -3,7 +3,7 @@
 // Parsed by `markdown.ts` and drawn through the same components as a compiled
 // document, so the two spellings cannot drift.
 
-import { Box, type TextProps } from '@kroma/ui/kit';
+import { Box, type TextProps } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { blocks, segments } from './markdown';
 import { MDX_COMPONENTS } from './mdx';

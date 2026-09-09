@@ -1,4 +1,4 @@
-import { WHEEL_COLORS } from '@kroma/ui/tokens';
+import { WHEEL_COLORS } from '@kromatv/ui/tokens';
 
 // The chromatic wheel, the "O" of the KROMA lockup, lifted from the official
 // mark (.github/assets/logo.svg) and recentred to a 100×100 box so it stands on

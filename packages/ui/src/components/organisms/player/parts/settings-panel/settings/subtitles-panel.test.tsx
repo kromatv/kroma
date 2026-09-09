@@ -6,10 +6,10 @@
 // the list is [Off, ...subs, (create?)], so an off-by-one would hand the
 // viewer the wrong language.
 
-import { GenerationId, type SubtitleGeneration } from '@kroma/client/subtitles';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { PlayerSubtitleGeneration } from '#ui/components/organisms/player/media-types';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
 import { I18nProvider } from '#ui/services/i18n';
 import type { SubtitleGenBundle } from './gen';
@@ -46,8 +46,8 @@ const bundle = (over: Partial<SubtitleGenBundle> = {}): SubtitleGenBundle => ({
   ...over,
 });
 
-const generation = (over: Partial<SubtitleGeneration> = {}): SubtitleGeneration => ({
-  id: GenerationId.parse('g1'),
+const generation = (over: Partial<PlayerSubtitleGeneration> = {}): PlayerSubtitleGeneration => ({
+  id: 'g1',
   mode: 'transcribe',
   lang: 'French',
   stage: 'transcribe',
@@ -196,7 +196,7 @@ describe('SubtitlesPanel', () => {
     // The ENGINE prefix is what differs; the stage label beside it is its own
     // string and can legitimately mention Whisper either way, so asserting on
     // the whole row would pass for the wrong reason.
-    const row = (mode: SubtitleGeneration['mode']) =>
+    const row = (mode: PlayerSubtitleGeneration['mode']) =>
       show(
         <SubtitlesPanel
           subs={[]}
@@ -239,7 +239,7 @@ describe('SubtitlesPanel', () => {
         subs={[]}
         current={null}
         onSelect={vi.fn()}
-        gen={bundle({ pending: [generation({ id: GenerationId.parse('gen-9') })], onCancel })}
+        gen={bundle({ pending: [generation({ id: 'gen-9' })], onCancel })}
         onBack={vi.fn()}
       />,
     );

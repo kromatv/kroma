@@ -67,13 +67,13 @@ CLI drives one module and the KROMA repository's twelve.
 
 ## What a frontend may import
 
-`@kromatv/sdk` (the SDK, also reachable as `@kroma/module-sdk`), `@kroma/ui/kit` and
-`@kroma/ui/tokens`, `@kroma/core`, `@kroma/client` and every
-`@kroma/client/<domain>`, `@kroma/i18n`, `react`, `react-dom`,
+`@kromatv/sdk` (the SDK, also reachable as `@kromatv/module-sdk`), `@kromatv/ui/kit` and
+`@kromatv/ui/tokens`, `@kromatv/core`, `@kromatv/client` and every
+`@kromatv/client/<domain>`, `@kromatv/i18n`, `react`, `react-dom`,
 `react-native`, `@tanstack/react-query`, `@tanstack/react-router`,
 `react-call`. The host provides all of them and the bundle never carries
-them; a deep kit import (`@kroma/ui/kit/atoms/button`) is folded onto
-`@kroma/ui/kit`, and any other `@kroma/*` import fails the build. Anything
+them; a deep kit import (`@kromatv/ui/kit/atoms/button`) is folded onto
+`@kromatv/ui/kit`, and any other `@kromatv/*` import fails the build. Anything
 else (`zod`, an icon set, your own code) is bundled.
 
 See [`modules/README.md`](https://github.com/maxscharwath/kroma/blob/main/modules/README.md)

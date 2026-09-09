@@ -1,4 +1,4 @@
-import { useT } from '@kroma/ui';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -11,7 +11,7 @@ import {
   Switch,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { CardActions } from '#web/features/admin/ai-provider-actions';
 import {

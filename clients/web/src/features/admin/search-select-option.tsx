@@ -1,4 +1,4 @@
-import { Box, classes, Icon, styles, Text } from '@kroma/ui/kit';
+import { Box, classes, Icon, styles, Text } from '@kromatv/ui/kit';
 import { type MouseEvent, memo } from 'react';
 
 // A <button> left without a background paints the UA's `buttonface`.

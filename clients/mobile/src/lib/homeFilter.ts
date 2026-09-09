@@ -1,4 +1,4 @@
-import type { ContinueItem, MediaItem, SectionItem } from '@kroma/client/media';
+import type { ContinueItem, MediaItem, SectionItem } from '@kromatv/client/media';
 
 /** What the home feed is narrowed to, or null for the whole catalogue. */
 export type TitleFilter = 'movie' | 'show' | null;

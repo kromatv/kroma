@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { MDX_COMPONENTS } from '@kroma/workbench';
+import { MDX_COMPONENTS } from '@kromatv/workbench';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setIconCatalog } from '#ui/lib/icon-catalog';

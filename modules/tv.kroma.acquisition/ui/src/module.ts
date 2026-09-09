@@ -1,4 +1,4 @@
-import { defineModule } from '@kroma/module-sdk';
+import { defineModule } from '@kromatv/module-sdk';
 import { lazy } from 'react';
 
 // The Acquisition module, frontend half: a settings view plus the release-search

@@ -131,7 +131,7 @@ jobs:
         with:
           bun-version-file: .bun-version
           no-cache: true
-      - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       - id: v
         run: bun run ci version
         env:
@@ -268,7 +268,7 @@ jobs:
 
   # ------------------------------------------------------------------- SDK ---
 
-  # `@kroma/module-sdk`, the one public package: the declarations of the SDK,
+  # `@kromatv/module-sdk`, the one public package: the declarations of the SDK,
   # the kit and their closure, the Rust crates a sidecar links, and the `kroma`
   # CLI, all built into one tarball stamped with this run's version. A
   # candidate publishes under the `canary` dist-tag, a stable tag under
@@ -319,6 +319,62 @@ jobs:
           bun run ci sdk publish --provenance
           --tag "${{ needs.version.outputs.channel == 'candidate' && 'canary' || 'latest' }}"
 
+  # ------------------------------------------------------------------- Kit ---
+
+  # `@kromatv/ui`, the design system, as a package a project that is not KROMA
+  # can install. Two builds of one source: the web one resolves React Native
+  # onto react-native-web and `.web.*` over its native sibling, the native one
+  # keeps both for Metro. Same channel rules as the SDK above, and the same
+  # reason for staying out of the candidate gate: a consumer's toolchain must
+  # not hold a server release.
+  #
+  # The smoke step is the whole point. Every fault this package has had lived in
+  # the artifact rather than the source and was invisible from inside the
+  # workspace: glyph imports rewritten to a path in the builder's bun store,
+  # `@font-face` naming woff2 files on that disk, a stylesheet that existed only
+  # as a Vite plugin. So the tarball is installed into a Vite app and built.
+  kit:
+    name: Design system
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    timeout-minutes: 20
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: bun install --frozen-lockfile
+      - name: Stage the package
+        run: >-
+          bun run kit:stage
+          --version "${{ needs.version.outputs.channel == 'candidate' && needs.version.outputs.canary || needs.version.outputs.version }}"
+      - name: A project outside this repo builds against it
+        run: bun run kit:smoke
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kroma-ui
+          path: packages/ui/dist/*.tgz
+          if-no-files-found: error
+      # Skipped, not failed, without the secret: the tarball stays on the run
+      # for a hand publish, exactly as the SDK's does.
+      - name: Publish
+        if: needs.version.outputs.channel != 'none' && env.HAS_NPM_TOKEN == 'true'
+        working-directory: packages/ui/dist
+        run: >-
+          npm publish --provenance --access public
+          --tag "${{ needs.version.outputs.channel == 'candidate' && 'canary' || 'latest' }}"
+
   # ---------------------------------------------------------------- Canary ---
 
   # The sideloadable half of what this push built, on the rolling `canary`
@@ -350,7 +406,7 @@ jobs:
         with:
           bun-version-file: .bun-version
           no-cache: true
-      - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: kroma-{tizen-wgt,webos-ipk,androidtv-apk,mobile-apk,desktop-macos,desktop-windows,desktop-linux}

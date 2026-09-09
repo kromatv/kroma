@@ -1,8 +1,8 @@
 // The native playback backend (Apple TV, Android TV): expo-video is the platform
 // player, so the only decision is direct playback versus a server remux.
 
-import type { MediaItem } from '@kroma/client/media';
-import type { PlayEnv } from '@kroma/core';
+import type { MediaItem } from '@kromatv/client/media';
+import type { PlayEnv } from '@kromatv/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EnginePref } from '#tv/app/enginePref';
 
@@ -21,7 +21,7 @@ const OVERSIZED = {
   frame: { width: 3840, height: 2160 },
   limit: { width: 1920, height: 1920 },
 } as never;
-vi.mock('@kroma/core', () => ({ beyondDecoder, nativeDirectPlayable }));
+vi.mock('@kromatv/core', () => ({ beyondDecoder, nativeDirectPlayable }));
 
 const built = vi.hoisted(() => ({ args: [] as unknown[] }));
 vi.mock('#tv/features/playback/player/expoVideoEngine', () => ({

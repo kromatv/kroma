@@ -1,9 +1,9 @@
 // The kit site's own `.page.mdx` guides, as the bundlers compile them. Mirrors the
-// declaration in @kroma/workbench, which a consumer of that package gets from
+// declaration in @kromatv/workbench, which a consumer of that package gets from
 // its own source and this one does not.
 
 declare module '*.mdx' {
-  import type { PageMeta } from '@kroma/workbench';
+  import type { PageMeta } from '@kromatv/workbench';
   import type { ComponentType } from 'react';
 
   const MDXContent: ComponentType<{ components?: Record<string, unknown> }>;

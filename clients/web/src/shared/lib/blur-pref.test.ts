@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const setFrostEnabled = vi.hoisted(() => vi.fn());
-vi.mock('@kroma/ui/kit', () => ({ setFrostEnabled }));
+vi.mock('@kromatv/ui/kit', () => ({ setFrostEnabled }));
 
 const KEY = 'kroma:blur';
 

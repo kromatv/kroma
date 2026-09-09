@@ -331,7 +331,7 @@ impl CoreScope {
 ///
 /// This is the serde shape served at `GET /api/modules` and mirrored by the
 /// frontend registry, so it holds no runtime handles - only data. The `id` is
-/// the join key across the backend crate and the `@kroma/module-<id>` frontend
+/// the join key across the backend crate and the `@kromatv/module-<id>` frontend
 /// package. Serialized camelCase so `dependencies` reaches the frontend (and a
 /// wasm plugin's JSON) as `dependencies`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

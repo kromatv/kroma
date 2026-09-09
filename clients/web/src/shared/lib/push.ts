@@ -1,13 +1,13 @@
 // The browser-specific half of push: capability check, service worker
 // registration, and `PushSubscription` → `SubscribeBody`. The shared flow lives
-// in `enablePush` / `disablePush` in `@kroma/client/notifications`.
+// in `enablePush` / `disablePush` in `@kromatv/client/notifications`.
 
 import type {
   PushBlocker,
   PushCapability,
   PushSubscribeContext,
   SubscribeBody,
-} from '@kroma/client/notifications';
+} from '@kromatv/client/notifications';
 import { base64UrlToBytes, bytesToBase64Url } from '#web/shared/lib/base64url';
 import { deviceInfo } from '#web/shared/lib/device';
 

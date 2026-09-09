@@ -1,4 +1,4 @@
-import type { SpatialNavigator } from '@kroma/spatial-nav';
+import type { SpatialNavigator } from '@kromatv/spatial-nav';
 import { createContext, useContext } from 'react';
 
 interface NavigatorHost {

@@ -2,10 +2,10 @@
 // recent-output panel: the scrolling pane, the day marks that break it up and
 // the per-line grid. The filters and the follow toggle stay with the console.
 
-import type { LogEntry } from '@kroma/client/admin';
-import { TABULAR } from '@kroma/module-sdk';
-import { useLocaleDefault } from '@kroma/ui';
-import { Box, type ColorValue, classes, Row, sharedStyle, styles, Text } from '@kroma/ui/kit';
+import type { LogEntry } from '@kromatv/client/admin';
+import { TABULAR } from '@kromatv/module-sdk';
+import { useLocaleDefault } from '@kromatv/ui';
+import { Box, type ColorValue, classes, Row, sharedStyle, styles, Text } from '@kromatv/ui/kit';
 import { Fragment, useEffect, useRef } from 'react';
 
 // A capped height, a single-axis scroll and a CSS grid have no React Native

@@ -6,7 +6,7 @@ import {
   NavigatorRoot,
   NavigatorView,
   type NodeHandle,
-} from '@kroma/spatial-nav/react';
+} from '@kromatv/spatial-nav/react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { useEffect, useRef } from 'react';
 import { View } from 'react-native';

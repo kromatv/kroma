@@ -1,4 +1,4 @@
-import { Box, Button, Field, styles } from '@kroma/ui/kit';
+import { Box, Button, Field, styles } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { type Note, ProfileNote } from '#mobile/components/profile/ProfileNote';
 import { useT } from '#mobile/lib/i18n';

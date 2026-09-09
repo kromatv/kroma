@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compareRaw, parse } from '@kroma/registry';
+import { compareRaw, parse } from '@kromatv/registry';
 import { Catalog, type Entry } from '../bundle/catalog';
 import { type Bundle, readBundles, toEntries } from '../bundle/read';
 import { byCodeUnit } from '../sort';

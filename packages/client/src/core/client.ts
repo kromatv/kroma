@@ -3,7 +3,7 @@ import type { RequestContext } from './http';
 // What a domain's `client.ts` takes from the transport, re-exported so this is
 // the one module it imports: `declare module` resolves only against a module
 // already in the program, and a consumer that imports nothing but
-// `@kroma/client/media` reaches this file only through that import.
+// `@kromatv/client/media` reaches this file only through that import.
 export type { Query, RequestContext } from './http';
 
 /**

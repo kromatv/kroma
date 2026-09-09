@@ -12,8 +12,8 @@ import type {
   RequestId,
   ScoredReleaseView,
   SearchScope,
-} from '@kroma/client/requests';
-import { type SlotProps, useAdminHost, useLocale, useT } from '@kroma/module-sdk';
+} from '@kromatv/client/requests';
+import { type SlotProps, useAdminHost, useLocale, useT } from '@kromatv/module-sdk';
 import {
   Box,
   Button,
@@ -24,7 +24,7 @@ import {
   Surface,
   TableSkeleton,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';

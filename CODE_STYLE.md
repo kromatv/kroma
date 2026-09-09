@@ -62,7 +62,7 @@ const end = Math.min(requestedEnd, size - 1);
   constants get no doc comment.** Name them so they do not need one. A field
   called `expiresAtMs` does not need `/** Expiry timestamp in ms. */`.
 - **One exception: a kit component's props.** The props of a component exported
-  from `@kroma/ui` ARE its public API: a caller outside the file reads nothing
+  from `@kromatv/ui` ARE its public API: a caller outside the file reads nothing
   else, and the workbench renders them as the component's help. A prop gets ONE
   line when its contract is not visible from its name and its type: a default, a
   unit, a fallback chain, or how it interacts with another prop. A prop whose

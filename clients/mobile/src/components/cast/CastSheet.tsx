@@ -2,7 +2,7 @@
 // its content: a household has a handful of TVs, not a hundred languages.
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { styles } from '@kroma/ui/kit';
+import { styles } from '@kromatv/ui/kit';
 import { forwardRef } from 'react';
 import { CastDeviceList, type CastDeviceListProps } from '#mobile/components/cast/CastDeviceList';
 import { SheetBody, sheetChrome } from '#mobile/components/ui';

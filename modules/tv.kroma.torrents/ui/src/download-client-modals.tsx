@@ -4,8 +4,8 @@
 // add-engine dialog, driven by the enabled download-client engines. The embedded
 // engine has no form (configured from the Acquisition settings page).
 
-import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
-import { Box, Button, Dialog, Field, Text } from '@kroma/ui/kit';
+import { apiErrorText, useAsyncAction, useT } from '@kromatv/module-sdk';
+import { Box, Button, Dialog, Field, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useTorrentsApi } from './api';

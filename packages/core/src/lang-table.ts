@@ -1,6 +1,6 @@
 // The CLDR-derived tables the language matcher and the pickers read.
 
-import type { MessageKey } from './i18n';
+import type { MessageKey } from '@kromatv/i18n';
 
 // Generated from CLDR: ISO 639-2/B and /T, 639-3 macrolanguage members, and the
 // deprecated two-letter tags still in the wild.

@@ -1,5 +1,5 @@
-import type { AudioTrack, MediaItem } from '@kroma/client/media';
-import type { MessageKey, TVars } from '../i18n';
+import type { AudioTrack, MediaItem } from '@kromatv/client/media';
+import type { MessageKey, TVars } from '@kromatv/i18n';
 import { capabilities, type PlaybackCapabilities } from './capabilities';
 import { canDirectPlay } from './directplay';
 

@@ -2,12 +2,12 @@
 // socket and applies remote commands, with an HTTP polling fallback for
 // when the socket won't come up. Renders nothing.
 
-import type { KromaClient } from '@kroma/client';
-import type { CastCommand, CastController } from '@kroma/client/cast';
-import { KromaEvents } from '@kroma/client/events';
-import { beaconTxt, type LanDiscoveryBridge } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Avatar, toast } from '@kroma/ui/kit';
+import type { KromaClient } from '@kromatv/client';
+import type { CastCommand, CastController } from '@kromatv/client/cast';
+import { KromaEvents } from '@kromatv/client/events';
+import { beaconTxt, type LanDiscoveryBridge } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Avatar, toast } from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useEnv } from '#tv/app/providers/env';

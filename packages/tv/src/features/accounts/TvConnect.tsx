@@ -1,6 +1,6 @@
-import { type ResolvedOrigin, resolveServerOrigin } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, Field, Hint, Icon, type IconName, Text, useFocusNav } from '@kroma/ui/kit';
+import { type ResolvedOrigin, resolveServerOrigin } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Box, Field, Hint, Icon, type IconName, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';

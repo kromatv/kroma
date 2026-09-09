@@ -3,9 +3,9 @@
 // `defaultNotFoundComponent` (unmatched routes → 404). Styled to the KROMA
 // design: deep charcoal, a single amber accent, a big cinematic status number.
 
-import { apiErrorText, KromaApiError } from '@kroma/client';
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { apiErrorText, KromaApiError } from '@kromatv/client';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -18,7 +18,7 @@ import {
   Row,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useRouter, useRouterState } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
 import { PAGE_RADIAL } from '#web/shared/ui';

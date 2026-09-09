@@ -1,8 +1,8 @@
 // Shared subtitle-generation poll loop, behind each client's player.
 
-import type { KromaClient } from '@kroma/client';
-import type { ItemId } from '@kroma/client/media';
-import type { GenerationId, SubtitleGeneration, SubtitleId } from '@kroma/client/subtitles';
+import type { KromaClient } from '@kromatv/client';
+import type { ItemId } from '@kromatv/client/media';
+import type { GenerationId, SubtitleGeneration, SubtitleId } from '@kromatv/client/subtitles';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 
 export interface SubtitleGenerationsOptions {

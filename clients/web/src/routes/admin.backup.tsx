@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Box, Button, classes, Icon, Section, Surface, styles, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Button, classes, Icon, Section, Surface, styles, Text } from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { ExportModal, ImportModal, isEncryptedFile } from '#web/features/admin/backup-modals';

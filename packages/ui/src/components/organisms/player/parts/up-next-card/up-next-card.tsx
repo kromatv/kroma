@@ -1,4 +1,4 @@
-import { hashString } from '@kroma/core';
+import { hashString } from '@kromatv/core';
 import { type ReactNode, useMemo } from 'react';
 import { Animated, type DimensionValue } from 'react-native';
 import { Box } from '#ui/components/atoms/box';

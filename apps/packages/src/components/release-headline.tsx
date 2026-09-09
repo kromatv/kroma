@@ -1,6 +1,6 @@
-import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
-import { Button } from '@kroma/ui/kit/atoms/button';
-import { Text } from '@kroma/ui/kit/atoms/text';
+import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
+import { Button } from '@kromatv/ui/kit/atoms/button';
+import { Text } from '@kromatv/ui/kit/atoms/text';
 import { ChannelBadge } from '#site/components/channel-badge';
 import { NotesAction } from '#site/components/notes-action';
 import type { Release } from '#site/lib/release';

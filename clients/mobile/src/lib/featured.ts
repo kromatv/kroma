@@ -1,5 +1,6 @@
-import type { ContinueItem, SectionItem } from '@kroma/client/media';
-import { formatRuntime, genreLabels, type Translate } from '@kroma/core';
+import type { ContinueItem, SectionItem } from '@kromatv/client/media';
+import { formatRuntime, genreLabels } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 
 const MAX_GENRES = 2;
 const SHOW_PROGRESS_SCALE = 100;

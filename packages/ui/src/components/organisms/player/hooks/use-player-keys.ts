@@ -3,7 +3,6 @@
 // OS focus, see usePlayerNav) because `window` is UNDEFINED in React Native,
 // unlike the web half which listens on it.
 
-import type { RemoteKey } from '@kroma/core';
 import { useEffect, useEffectEvent, useRef } from 'react';
 import { BackHandler, type HWEvent, Platform, useTVEventHandler } from 'react-native';
 import {
@@ -11,6 +10,7 @@ import {
   routeRemoteKey,
 } from '#ui/components/organisms/player/lib/player-keys';
 import { useRemoteKeys } from '#ui/lib/focus-remote';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 import { holdMenuKey, isRemoteKeyUp, releaseMenuKey } from '#ui/lib/tv-remote';
 
 // Both the clickpad (up/down/left/right) and the touch-surface swipes

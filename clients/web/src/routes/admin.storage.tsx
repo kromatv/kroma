@@ -1,5 +1,5 @@
-import type { Volume } from '@kroma/client/admin';
-import { useFormat, useT } from '@kroma/ui';
+import type { Volume } from '@kromatv/client/admin';
+import { useFormat, useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -15,7 +15,7 @@ import {
   Surface,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { PageHeader, usePoll } from '#web/features/admin/shell';

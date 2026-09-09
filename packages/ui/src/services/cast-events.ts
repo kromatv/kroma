@@ -1,6 +1,6 @@
-import type { DeviceId } from '@kroma/client';
-import type { CastReceiver } from '@kroma/client/cast';
-import type { ServerEvent } from '@kroma/client/events';
+import type { DeviceId } from '@kromatv/client';
+import type { CastReceiver } from '@kromatv/client/cast';
+import type { ServerEvent } from '@kromatv/client/events';
 import type { Dispatch, SetStateAction } from 'react';
 import type { Cast } from './cast-context';
 import type { PositionBase } from './cast-position';

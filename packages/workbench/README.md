@@ -1,4 +1,4 @@
-# @kroma/workbench
+# @kromatv/workbench
 
 A component atelier, and the SDK for the stories it shows.
 
@@ -45,7 +45,7 @@ export const Kit = defineWorkbench({
 ```
 
 `<Kit />` is the whole site. In KROMA the standing half of that (`title`, `brand`,
-`provider`) is a plain object in `@kroma/ui/workbench-config` that every host
+`provider`) is a plain object in `@kromatv/ui/workbench-config` that every host
 spreads, so `apps/kit/src/config.tsx` is down to the discovery, the router and a
 footer. Four seams make the package app-agnostic.
 
@@ -92,8 +92,8 @@ remains the spelling for a host with nothing to gain from splitting, meaning the
 shells, whose bundle is a file on the television.
 
 A story is in the module glob, not the text one. Both bundlers compile a
-`.story.mdx` to a module (`@kroma/bundler/mdx` on Vite,
-`@kroma/bundler/mdx-transformer` on Metro), so a host has to load the MDX plugin
+`.story.mdx` to a module (`@kromatv/bundler/mdx` on Vite,
+`@kromatv/bundler/mdx-transformer` on Metro), so a host has to load the MDX plugin
 (see *The document* below).
 
 `discoverVite` / `discoverMetro` do everything that happens to the result:
@@ -131,7 +131,7 @@ the host plugs in an adapter:
 | --- | --- |
 | `pathRouter()` | the default. Real paths (`/story/button/matrix`) on the History API alone, no router dependency. Degrades to memory off the web |
 | `memoryRouter()` | never touches the address bar. For a guest mount, for native, for tests |
-| `tanstackRouter()` | `@kroma/workbench/tanstack`. Real paths through the *host's* router rather than a second one, so there is only ever one in the tree |
+| `tanstackRouter()` | `@kromatv/workbench/tanstack`. Real paths through the *host's* router rather than a second one, so there is only ever one in the tree |
 | `searchParamsRouter()` | `?story=&view=`. Only for a shell that cannot do path routing: a TV app loaded off the filesystem, where there is no server to fall back to `index.html` and a reload of `/story/button` is a 404 |
 
 A host with an idea of its own writes about fifteen lines and plugs that in.
@@ -186,7 +186,7 @@ matrix are derived from it. The variant map IS the design, so neither can drift.
 Nothing registers a story: the registries discover `*.story.mdx`.
 
 ```mdx
-import { defineStory } from '@kroma/workbench/story';
+import { defineStory } from '@kromatv/workbench/story';
 import { Chip } from './chip';
 
 export const story = defineStory({ group: 'Actions', component: Chip, args: { label: 'HDR' } });
@@ -281,7 +281,7 @@ the table set) and React Native has none of them, so `mdx.tsx` maps every one to
 kit component and `mdx.test.tsx` derives the list of elements from a real compile and
 fails if the map has a hole.
 
-A host has to compile `.mdx`: `kromaMdx()` from `@kroma/bundler/mdx` in a Vite
+A host has to compile `.mdx`: `kromaMdx()` from `@kromatv/bundler/mdx` in a Vite
 config (before `react()`), and `expoWorkspaceConfig` already wires Metro's half.
 
 ## What derives itself
@@ -294,7 +294,7 @@ Four things are read rather than declared, which is the theme of the folder:
 | The atomic level (search + palette) | the story file's PATH (`tierFor`) |
 | A demo's name, prose and code | its file name, doc comment and text |
 | Every prop, with its documentation | the component's props interface, and a compound one's parts off its namespace object (`props.ts`) |
-| The code under a scene, and under the preview | the document's own JSX, lifted at compile time by the remark plugin in `@kroma/bundler/mdx` |
+| The code under a scene, and under the preview | the document's own JSX, lifted at compile time by the remark plugin in `@kromatv/bundler/mdx` |
 | A story's name and group, before its module is fetched | its declaration, read at build time (`storyCode`, served as `virtual:kroma-story-code`) |
 
 ### The code drawer
@@ -371,7 +371,7 @@ viewport started, and that edge lives inside the zoom transform (a 1pt hairline 
 - `layout.ts` is one pure function turning a window size into wide / medium /
   compact. It says the size each region OPENS at; what a reader has dragged is
   `<Resizable>`'s, which owns the floors and the wish surviving a smaller screen.
-  The seams themselves are the kit's now (`@kroma/ui`), not this package's.
+  The seams themselves are the kit's now (`@kromatv/ui`), not this package's.
 - `page.ts` and `page-view.tsx` are articles: a whole `.page.mdx` shown as its own
   page, for what belongs to no component (installing the kit, making a theme, how it
   works). The file's name and folder say what it is and where it sits, and the
@@ -419,15 +419,15 @@ than stale on both.
 
 Prop docs are `props`: a thunk on the lazy index, fetched with the first story, and
 the third argument to `discoverVite`. They are DATA either way. A host reads them at
-build time (`propDocs` from `@kroma/bundler/props-docs`, driving TypeScript's own
+build time (`propDocs` from `@kromatv/bundler/props-docs`, driving TypeScript's own
 checker, served as `virtual:kroma-props`) rather than shipping every component's
 source to the browser for a regex to read. That is what lets the panel follow
 `extends`.
 
-Nothing here is exported from `@kroma/ui/kit`: it is a tool, and it pulls in every
+Nothing here is exported from `@kromatv/ui/kit`: it is a tool, and it pulls in every
 story. Each KROMA host configures its own: `apps/kit` (the site, and the phone/TV
 app of the same name), `packages/tv/src/workbench{,.web}.tsx` (`?workbench` on the
 TV shells), and `clients/mobile/src/app/workbench.tsx`.
 
-The story SDK has its own subpath, `@kroma/workbench/story`, so a `*.story.mdx`
+The story SDK has its own subpath, `@kromatv/workbench/story`, so a `*.story.mdx`
 declaring itself does not drag the whole tool into a bundle.

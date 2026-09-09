@@ -107,7 +107,7 @@ impl Builder {
         // Default locale leads the ordering.
         locales.sort_by_key(|l| l.code != default);
         // `$t(key)` references expand once, here, so translating stays a single
-        // interpolation pass. Mirrors `expandRefs` in @kroma/i18n. The default
+        // interpolation pass. Mirrors `expandRefs` in @kromatv/i18n. The default
         // locale leads the ordering, so the rest borrow its entries as the
         // fallback rather than each taking a copy of a few thousand strings.
         if let Some((first, rest)) = locales.split_first_mut() {

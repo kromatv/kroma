@@ -1,6 +1,6 @@
 import { cloudflare } from '@cloudflare/vite-plugin';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
-import { kroma } from '@kroma/bundler';
+import { kroma } from '@kromatv/bundler';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import { mdxPlugin } from './vite/mdx.ts';

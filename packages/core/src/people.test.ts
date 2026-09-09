@@ -1,6 +1,6 @@
-import type { Metadata } from '@kroma/client/media';
+import type { Metadata } from '@kromatv/client/media';
+import type { Translate } from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
-import type { Translate } from './i18n';
 import {
   creditsPerson,
   directorsOf,

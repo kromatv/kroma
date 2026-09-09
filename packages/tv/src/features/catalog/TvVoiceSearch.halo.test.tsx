@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { declared, onScreen } from '@kroma/ui/testing';
+import { declared, onScreen } from '@kromatv/ui/testing';
 import { cleanup, render } from '@testing-library/react';
 import { Animated } from 'react-native';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';

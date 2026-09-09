@@ -6,8 +6,13 @@
 // `/story/button` is a 404. `workbench.tsx` beside this is the Metro half, because
 // Metro cannot transform `import.meta.glob`.
 
-import { KROMA_WORKBENCH } from '@kroma/ui/workbench-config';
-import { defineWorkbench, discoverVite, type GlobHost, searchParamsRouter } from '@kroma/workbench';
+import { KROMA_WORKBENCH } from '@kromatv/ui/workbench-config';
+import {
+  defineWorkbench,
+  discoverVite,
+  type GlobHost,
+  searchParamsRouter,
+} from '@kromatv/workbench';
 
 // Written out in full and cast in place: Vite finds `import.meta.glob(...)` by
 // matching the literal text, so hoisting the host or options into a local

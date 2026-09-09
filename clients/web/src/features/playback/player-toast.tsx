@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Box, backdropBlur, IconButton, Row, styles, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, backdropBlur, IconButton, Row, styles, Text } from '@kromatv/ui/kit';
 
 /** Centered top toast for transient player notices (audio re-encode, resume, errors). */
 export function Toast({

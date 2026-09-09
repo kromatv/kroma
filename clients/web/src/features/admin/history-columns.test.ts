@@ -1,5 +1,5 @@
-import type { PlayEntry } from '@kroma/client/admin';
-import { ItemId, ShowId } from '@kroma/client/media';
+import type { PlayEntry } from '@kromatv/client/admin';
+import { ItemId, ShowId } from '@kromatv/client/media';
 import { describe, expect, it } from 'vitest';
 import {
   HISTORY_COLUMNS,

@@ -4,9 +4,9 @@
 // torrents module's manual-grab flow, so the hook binds an explicit id rather
 // than the rendering page's. This is the one place the id is written down, and
 // it is the right one: a module publishing the address others reach it at.
-// Import from `@kroma/module-acquisition/api`.
+// Import from `@kromatv/module-acquisition/api`.
 
-import { moduleApiHook } from '@kroma/module-sdk';
+import { moduleApiHook } from '@kromatv/module-sdk';
 import {
   type ManualAddBody,
   ManualAddResult,

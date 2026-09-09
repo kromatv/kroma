@@ -1,12 +1,12 @@
 import { fileURLToPath } from 'node:url';
-import { gitHistory } from '@kroma/bundler/git-history';
-import { kromaMdx } from '@kroma/bundler/mdx';
-import { propDocs } from '@kroma/bundler/props-docs';
-import { reactCompiler } from '@kroma/bundler/react-compiler';
-import { WEB_EXTENSIONS } from '@kroma/bundler/rnw';
-import { storyCode } from '@kroma/bundler/story-code';
-import { kromaCatalogs } from '@kroma/core/vite';
-import { kromaModule } from '@kroma/module-sdk/vite';
+import { gitHistory } from '@kromatv/bundler/git-history';
+import { kromaMdx } from '@kromatv/bundler/mdx';
+import { propDocs } from '@kromatv/bundler/props-docs';
+import { reactCompiler } from '@kromatv/bundler/react-compiler';
+import { WEB_EXTENSIONS } from '@kromatv/bundler/rnw';
+import { storyCode } from '@kromatv/bundler/story-code';
+import { kromaCatalogs } from '@kromatv/core/vite';
+import { kromaModule } from '@kromatv/module-sdk/vite';
 import react from '@vitejs/plugin-react';
 import { configDefaults, defineConfig } from 'vitest/config';
 
@@ -36,7 +36,7 @@ const alias = [
   { find: /^#tv\//, replacement: dir('./packages/tv/src/') },
   { find: /^#ui\//, replacement: dir('./packages/ui/src/') },
   { find: /^#web\//, replacement: dir('./clients/web/src/') },
-  // @kroma/ui is written against React Native, which under the test runner
+  // @kromatv/ui is written against React Native, which under the test runner
   // (as in every browser target) resolves to react-native-web.
   { find: /^react-native$/, replacement: 'react-native-web' },
   // Mirrors packages/bundler/src/rnw.ts.
@@ -74,7 +74,7 @@ const environment = 'node';
 const setupFiles = [dir('./vitest.setup.ts')];
 
 // Every workspace, at the four places a test is allowed to live: the package
-// root (`@kroma/lan-beacon`, whose entry point IS its root), its source tree,
+// root (`@kromatv/lan-beacon`, whose entry point IS its root), its source tree,
 // and the build-time trees beside it (`worker/`, `bundler/`, `vite/`, `audit/`).
 const include = [
   '{apps,packages,clients}/*/*.test.ts',
@@ -123,7 +123,7 @@ export default defineConfig({
         // other.
         resolve: {
           alias: [
-            // @kroma/client discovers its domains per bundler: `discover.web.ts`
+            // @kromatv/client discovers its domains per bundler: `discover.web.ts`
             // is Vite's glob, `discover.ts` is Metro's `require.context`, which
             // the runner has not got. This project resolves the plain file, so
             // point it at the Vite half rather than shim a bundler global.

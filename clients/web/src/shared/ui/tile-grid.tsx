@@ -1,4 +1,4 @@
-import { Box, Grid } from '@kroma/ui/kit';
+import { Box, Grid } from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { TILE_GAP, TILE_ROW_GAP, tileCell, tileColumns } from '#web/shared/lib/tile-layout';

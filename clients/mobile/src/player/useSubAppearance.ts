@@ -1,9 +1,9 @@
-// Subtitle appearance on the phone: the same @kroma/ui SubtitleAppearance the
+// Subtitle appearance on the phone: the same @kromatv/ui SubtitleAppearance the
 // web and TV keep in localStorage, hydrated through the app's async pref store
 // instead, because React Native has no synchronous storage.
 
-import type { SubtitleAppearance } from '@kroma/ui';
-import { DEFAULT_SUB_APPEARANCE, migrateAppearance } from '@kroma/ui';
+import type { SubtitleAppearance } from '@kromatv/ui';
+import { DEFAULT_SUB_APPEARANCE, migrateAppearance } from '@kromatv/ui';
 import { useCallback, useEffect, useState } from 'react';
 import { loadPref, savePref } from '#mobile/lib/storage';
 

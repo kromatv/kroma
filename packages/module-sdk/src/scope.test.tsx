@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { addCatalogs } from '@kroma/core';
-import { I18nProvider } from '@kroma/ui';
+import { addCatalogs } from '@kromatv/core';
+import { I18nProvider } from '@kromatv/ui';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';

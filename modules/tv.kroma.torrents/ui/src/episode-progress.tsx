@@ -4,8 +4,8 @@
 // stuck, and the queue is the only thing that knows better -- which is exactly
 // why the core cannot draw it.
 
-import { ModuleId, type SlotProps, useAdminHost } from '@kroma/module-sdk';
-import { Box, Progress, Row, Text } from '@kroma/ui/kit';
+import { ModuleId, type SlotProps, useAdminHost } from '@kromatv/module-sdk';
+import { Box, Progress, Row, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { DownloadsView } from './schemas';
 

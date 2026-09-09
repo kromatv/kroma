@@ -5,10 +5,10 @@
 // Routing itself belongs to lib/player-keys; what is pinned here is the
 // vocabulary, the key-up filter and the Menu claim.
 
-import type { RemoteKey } from '@kroma/core';
 import { act, renderHook } from '@testing-library/react';
 import type { HWEvent } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 
 const rn = vi.hoisted(() => ({
   os: 'ios' as 'ios' | 'android',

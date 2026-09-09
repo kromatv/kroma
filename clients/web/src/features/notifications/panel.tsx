@@ -5,8 +5,8 @@
 // the queue those decisions belong to, so the drawer stays a list of what
 // happened, not a console.
 
-import { useT } from '@kroma/ui';
-import { Box, Drawer, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Drawer, Icon, IconButton, styles, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { PanelBody } from '#web/features/notifications/panel-body';
 import { PanelHeader } from '#web/features/notifications/panel-header';

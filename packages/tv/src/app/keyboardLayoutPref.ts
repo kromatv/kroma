@@ -7,8 +7,8 @@
 //  - qwerty : US/UK typewriter order.
 //  - qwertz : German/Swiss typewriter order.
 
-import type { MessageKey } from '@kroma/core';
-import { KEYBOARD_LAYOUTS, type KeyboardLayout } from '@kroma/ui/kit';
+import type { MessageKey } from '@kromatv/i18n';
+import { KEYBOARD_LAYOUTS, type KeyboardLayout } from '@kromatv/ui/kit';
 import { reactivePref } from '#tv/app/settings/store';
 
 // The letter orders themselves are the kit's (its <SearchKeyboard> and

@@ -1,6 +1,6 @@
-import type { MediaItem, SectionItem, Show } from '@kroma/client/media';
-import { episodeTag, genreLabels, posterColors } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import type { MediaItem, SectionItem, Show } from '@kromatv/client/media';
+import { episodeTag, genreLabels, posterColors } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   FocusScroll,
@@ -11,7 +11,7 @@ import {
   styles,
   useFocusNav,
   useGrowingCount,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useContinue } from '#tv/app/providers/continue';

@@ -1,7 +1,7 @@
 // Settings dialog for a choice with too many answers to cycle on OK.
 // Virtualised: a TV's cost follows the number of mounted focusables.
 
-import { useT } from '@kroma/ui';
+import { useT } from '@kromatv/ui';
 import {
   CONTROL,
   DIALOG_PAD,
@@ -12,7 +12,7 @@ import {
   SURFACE_WIDTH,
   styles,
   VirtualGrid,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import type { ChoiceItem } from '#tv/app/settings/items';
 
 const ROW_HEIGHT = CONTROL.tv.height;

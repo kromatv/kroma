@@ -1,5 +1,5 @@
-import { Badge } from '@kroma/ui/kit/atoms/badge';
-import { Box } from '@kroma/ui/kit/atoms/box';
+import { Badge } from '@kromatv/ui/kit/atoms/badge';
+import { Box } from '@kromatv/ui/kit/atoms/box';
 import type { Release } from '#site/lib/release';
 
 export interface ChannelBadgeProps {

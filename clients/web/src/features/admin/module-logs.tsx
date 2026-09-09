@@ -2,8 +2,8 @@
 // process wrote, from the same in-memory ring the "Journaux" console reads,
 // with the way through to that console already filtered to this module.
 
-import { useT } from '@kroma/ui';
-import { Box, Button, Row, Surface, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Button, Row, Surface, Text } from '@kromatv/ui/kit';
 import { LogLines } from '#web/features/admin/log-lines';
 import { Label } from '#web/features/admin/module-detail-sections';
 import { usePoll } from '#web/features/admin/shell';

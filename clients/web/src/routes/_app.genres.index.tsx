@@ -1,6 +1,6 @@
-import { collectGenres, genreShowcases } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, EmptyState, Grid, PageHeader } from '@kroma/ui/kit';
+import { collectGenres, genreShowcases } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Box, EmptyState, Grid, PageHeader } from '@kromatv/ui/kit';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';

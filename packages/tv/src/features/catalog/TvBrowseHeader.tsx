@@ -3,14 +3,13 @@ import {
   type GenreCount,
   genreLabel,
   genreLabels,
-  type MessageKey,
   qualityBadge,
   qualityBadgeForVideo,
   SORT_MODES,
   type SortMode,
-  type Translate,
-} from '@kroma/core';
-import { useT } from '@kroma/ui';
+} from '@kromatv/core';
+import type { MessageKey, Translate } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -22,7 +21,7 @@ import {
   SORT_ICON,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { memo } from 'react';
 import type { CatalogEntry } from '#tv/features/catalog/home/AmbientBackdrop';
 

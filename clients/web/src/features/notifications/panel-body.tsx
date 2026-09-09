@@ -2,9 +2,9 @@ import {
   groupNotificationRepeats,
   groupNotificationsByDay,
   NOTIFICATION_DAY_LABEL,
-} from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, classes, EmptyState, ListRow, Row, Skeleton, styles, Text } from '@kroma/ui/kit';
+} from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Box, classes, EmptyState, ListRow, Row, Skeleton, styles, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { NotificationEntry } from '#web/features/notifications/notification-row';

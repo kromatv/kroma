@@ -1,6 +1,6 @@
-import { KIT_FONTS } from '@kroma/ui/fonts';
-import { OverlayHost, ThemeProvider, TvStage } from '@kroma/ui/kit';
-import { colors } from '@kroma/ui/tokens';
+import { KIT_FONTS } from '@kromatv/ui/fonts';
+import { OverlayHost, ThemeProvider, TvStage } from '@kromatv/ui/kit';
+import { colors } from '@kromatv/ui/tokens';
 import { useFonts } from 'expo-font';
 import { useKeepAwake } from 'expo-keep-awake';
 import type { ReactNode } from 'react';

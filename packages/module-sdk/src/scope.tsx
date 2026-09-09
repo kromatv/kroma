@@ -6,8 +6,8 @@
 // its API through `useModuleApi()` without ever spelling the id out. Naming a
 // module is then reserved for what it should mean: addressing a DIFFERENT one.
 
-import { type ModuleApi, ModuleId } from '@kroma/client/modules';
-import { useScopedT } from '@kroma/ui';
+import { type ModuleApi, ModuleId } from '@kromatv/client/modules';
+import { useScopedT } from '@kromatv/ui';
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
 import { useAdminHost } from './admin/context';
 

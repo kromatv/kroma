@@ -13,7 +13,7 @@ import {
   Row,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useCallback, useRef, useState } from 'react';
 
 /** Coalesce event-driven reloads to at most one call per 1.5 s. */

@@ -103,7 +103,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       # Read the checkout's state BEFORE anything stamps it, and hand the answer
-      # to @kroma/build-info. The stamp below rewrites tauri.conf.json, so git
+      # to @kromatv/build-info. The stamp below rewrites tauri.conf.json, so git
       # would otherwise mark every official installer `-dirty` for a change the
       # About screen's `version` row already reports.
       - name: Record tree state before stamping
@@ -179,7 +179,7 @@ jobs:
           $json | ConvertTo-Json -Depth 30 | Set-Content $conf
           Write-Host "Signing with thumbprint $($cert.Thumbprint)"
 
-      # beforeBuildCommand builds the @kroma/tv frontend to dist, then Tauri bundles the
+      # beforeBuildCommand builds the @kromatv/tv frontend to dist, then Tauri bundles the
       # shell + frontend into the platform installer(s). Signing is driven by repo
       # secrets: on macOS Tauri imports APPLE_CERTIFICATE + notarizes with APPLE_ID/etc;
       # on Windows the step above injects the cert. With NO secrets set the bundles are

@@ -13,11 +13,11 @@ function write(rel: string, body: string | object): void {
 }
 
 write('server/Cargo.toml', '[package]\nname = "kroma-server"\nversion = "0.1.38"\n');
-write('packages/ui/package.json', { name: '@kroma/ui', version: '1.2.0' });
+write('packages/ui/package.json', { name: '@kromatv/ui', version: '1.2.0' });
 write('packages/core/package.json', {
-  name: '@kroma/core',
+  name: '@kromatv/core',
   version: '1.0.0',
-  dependencies: { '@kroma/ui': 'workspace:*', zod: '^4' },
+  dependencies: { '@kromatv/ui': 'workspace:*', zod: '^4' },
   devDependencies: { vitest: '^4' },
 });
 write('packages/broken/package.json', '{ not json');
@@ -57,7 +57,7 @@ describe('the JS workspace projects', () => {
   const named = (name: string) => graph.projects.find((p) => p.name === name);
 
   it('keeps only the dependencies that name another project in this graph', () => {
-    expect(named('@kroma/core')?.deps).toEqual(['@kroma/ui']);
+    expect(named('@kromatv/core')?.deps).toEqual(['@kromatv/ui']);
   });
 
   it('skips a package.json that does not parse rather than failing the load', () => {

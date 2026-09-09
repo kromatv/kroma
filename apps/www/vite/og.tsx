@@ -15,7 +15,7 @@ import { OG_CARDS } from './og-cards.ts';
 // package. Based on this package's own package.json rather than
 // `import.meta.url`, which the config loader rewrites for the config file only.
 const kitFont = (root: string, file: string) =>
-  createRequire(join(root, 'package.json')).resolve(`@kroma/ui/src/assets/fonts/${file}`);
+  createRequire(join(root, 'package.json')).resolve(`@kromatv/ui/src/assets/fonts/${file}`);
 
 function rendererFactory(getRoot: () => string) {
   let ready: Promise<Renderer> | undefined;

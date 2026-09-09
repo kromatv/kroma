@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { setSessionStorage } from '@kroma/client';
+
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { setDeviceStore } from '#ui/lib/device-store';
 import {
   DEFAULT_SUB_APPEARANCE,
   migrateAppearance,
@@ -230,7 +231,7 @@ const KEY = 'kroma.subtitleStyle';
 
 function deviceStore(initial: Record<string, string> = {}) {
   const map = new Map(Object.entries(initial));
-  setSessionStorage({
+  setDeviceStore({
     getItem: (k) => map.get(k) ?? null,
     setItem: (k, v) => void map.set(k, v),
     removeItem: (k) => void map.delete(k),
@@ -238,7 +239,7 @@ function deviceStore(initial: Record<string, string> = {}) {
   return map;
 }
 
-afterEach(() => setSessionStorage(null));
+afterEach(() => setDeviceStore(null));
 
 describe('useSubtitleAppearance', () => {
   it('starts from the defaults, so a server render and the client agree', () => {
@@ -267,7 +268,7 @@ describe('useSubtitleAppearance', () => {
   });
 
   it('honours the change even when the device store refuses to keep it', () => {
-    setSessionStorage({
+    setDeviceStore({
       getItem: () => null,
       setItem: () => {
         throw new Error('quota');

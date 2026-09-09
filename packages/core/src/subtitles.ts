@@ -94,7 +94,7 @@ export function activeCueText(cues: Cue[], t: number, hint: number): CueHit {
   return binarySearchCue(cues, t);
 }
 
-import type { MessageKey } from './i18n';
+import type { MessageKey } from '@kromatv/i18n';
 
 /** `stage` values come from the server's GenRegistry. */
 export function subtitleStageKey(stage: string): MessageKey {

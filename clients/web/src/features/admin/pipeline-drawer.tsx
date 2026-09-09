@@ -1,8 +1,8 @@
-import { ItemId, ShowId } from '@kroma/client/media';
-import type { ElementRow } from '@kroma/client/pipeline';
-import type { MessageKey } from '@kroma/core';
-import { useFormat, useT } from '@kroma/ui';
-import { Box, Button, Callout, Drawer, IconButton, Row, styles, Text } from '@kroma/ui/kit';
+import { ItemId, ShowId } from '@kromatv/client/media';
+import type { ElementRow } from '@kromatv/client/pipeline';
+import type { MessageKey } from '@kromatv/i18n';
+import { useFormat, useT } from '@kromatv/ui';
+import { Box, Button, Callout, Drawer, IconButton, Row, styles, Text } from '@kromatv/ui/kit';
 import { createCallable } from 'react-call';
 import { Pill, PillDot } from '#web/features/admin/pill';
 import { kindMeta, statusMeta } from '#web/features/admin/pipeline-meta';

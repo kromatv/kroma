@@ -1,9 +1,9 @@
-// TV adapter over the shared <LocaleProvider> (@kroma/ui): the client is passed in
+// TV adapter over the shared <LocaleProvider> (@kromatv/ui): the client is passed in
 // (null on the `connect` screen, before a server is reached) and wired together
 // with the signed-in account's preference.
-import type { KromaClient } from '@kroma/client';
-import type { Locale } from '@kroma/core';
-import { LocaleProvider as UiLocaleProvider } from '@kroma/ui';
+import type { KromaClient } from '@kromatv/client';
+import type { Locale } from '@kromatv/i18n';
+import { LocaleProvider as UiLocaleProvider } from '@kromatv/ui';
 import type { ReactNode } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 

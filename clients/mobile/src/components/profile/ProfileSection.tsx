@@ -1,4 +1,4 @@
-import { Box, styles, Text } from '@kroma/ui/kit';
+import { Box, styles, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { spacing, type } from '#mobile/lib/theme';
 

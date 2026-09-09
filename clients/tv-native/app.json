@@ -62,7 +62,7 @@
       "./plugins/with-tv-blur-link",
       "./plugins/with-conscrypt",
       "expo-video",
-      "@kroma/media3-ffmpeg"
+      "@kromatv/media3-ffmpeg"
     ],
     "experiments": {
       "tsconfigPaths": true,

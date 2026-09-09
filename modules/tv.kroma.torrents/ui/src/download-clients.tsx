@@ -2,7 +2,7 @@
 // engine (embedded / Transmission / qBittorrent) with enable toggle, live
 // connection test and the add/edit modal.
 
-import { addEngine, apiErrorText, useEnabledEngines, usePoll, useT } from '@kroma/module-sdk';
+import { addEngine, apiErrorText, useEnabledEngines, usePoll, useT } from '@kromatv/module-sdk';
 import {
   Badge,
   Box,
@@ -19,7 +19,7 @@ import {
   styles,
   TableSkeleton,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useTorrentsApi } from './api';
 import { DownloadClientModal } from './download-client-modals';

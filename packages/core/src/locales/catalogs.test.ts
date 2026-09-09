@@ -6,7 +6,7 @@ import {
   type MessageKey,
   namespaceOf,
   SCHEMA_KEY,
-} from '@kroma/i18n';
+} from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
 import { i18n } from '../i18n';
 import { catalogs, lazy } from './catalogs';

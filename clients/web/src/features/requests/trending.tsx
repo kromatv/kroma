@@ -2,9 +2,9 @@
 // so the discovery page is a place to browse, not just a search box. Filtered
 // by the active type chip.
 
-import type { DiscoverEntry, DiscoverType } from '@kroma/client/discovery';
-import { useT } from '@kroma/ui';
-import { Box, classes, Icon, Row, styles, Text } from '@kroma/ui/kit';
+import type { DiscoverEntry, DiscoverType } from '@kromatv/client/discovery';
+import { useT } from '@kromatv/ui';
+import { Box, classes, Icon, Row, styles, Text } from '@kromatv/ui/kit';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';

@@ -2,8 +2,8 @@
 // a variant matrix derived from the component's `sv`. The frame table and the
 // arithmetic under all of it are in `viewport.ts`.
 
-import { Box, styles, Text, useTheme } from '@kroma/ui/kit';
-import { type ColorToken, colors, nestedRadius } from '@kroma/ui/tokens';
+import { Box, styles, Text, useTheme } from '@kromatv/ui/kit';
+import { type ColorToken, colors, nestedRadius } from '@kromatv/ui/tokens';
 import { useCallback, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { ScrollView } from 'react-native';

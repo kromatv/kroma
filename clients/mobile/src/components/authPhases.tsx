@@ -1,6 +1,6 @@
 // Presentation only; auth calls and phase switching stay in sign-in.
 
-import { Box, Button, Field, OtpField, Spinner, styles, Text } from '@kroma/ui/kit';
+import { Box, Button, Field, OtpField, Spinner, styles, Text } from '@kromatv/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { spacing, type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';

@@ -1,6 +1,6 @@
 // What a React interaction actually costs.
 //
-//   import { record } from '@kroma/react-audit';
+//   import { record } from '@kromatv/react-audit';
 //
 //   const run = record();
 //   render(<Keyboard />);
@@ -14,7 +14,7 @@
 // Importing this installs the devtools hook React publishes its fiber tree
 // through, which has to happen before react-dom initialises. In a test runner,
 // name the package as a setup file. There is a batteries-included wrapper for
-// @testing-library users in `@kroma/react-audit/react`.
+// @testing-library users in `@kromatv/react-audit/react`.
 
 export type { Commit, Work } from './analyse';
 export { churn, components, hosts, rerenders } from './analyse';

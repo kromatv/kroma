@@ -1,5 +1,5 @@
-import { useT } from '@kroma/module-sdk';
-import { CONTROL, type ColorValue, Menu, Row, Table } from '@kroma/ui/kit';
+import { useT } from '@kromatv/module-sdk';
+import { CONTROL, type ColorValue, Menu, Row, Table } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import {
   RowAddedCell,

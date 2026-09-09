@@ -1,9 +1,9 @@
 {
-  "name": "@kroma/desktop",
+  "name": "@kromatv/desktop",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "KROMA native desktop client: Tauri shell over @kroma/tv with native mpv playback + gamepad input. Steam Deck is the primary target.",
+  "description": "KROMA native desktop client: Tauri shell over @kromatv/tv with native mpv playback + gamepad input. Steam Deck is the primary target.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "license": "GPL-2.0-or-later",
   "repository": {
@@ -25,9 +25,9 @@
     "tauri:icon": "tauri icon src-tauri/icons/icon.png"
   },
   "dependencies": {
-    "@kroma/core": "workspace:*",
-    "@kroma/tv": "workspace:*",
-    "@kroma/ui": "workspace:*",
+    "@kromatv/core": "workspace:*",
+    "@kromatv/tv": "workspace:*",
+    "@kromatv/ui": "workspace:*",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.11.0",
@@ -36,7 +36,7 @@
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
-    "@kroma/bundler": "workspace:*",
+    "@kromatv/bundler": "workspace:*",
     "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",

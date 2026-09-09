@@ -13,7 +13,7 @@
 // The bus answers through a callback, so the answer lands after the app has
 // mounted and the shell hands it over then (see `lateDeviceName`).
 
-import { type DeviceNameSource, lateDeviceName } from '@kroma/tv';
+import { type DeviceNameSource, lateDeviceName } from '@kromatv/tv';
 import { z } from 'zod';
 
 const SERVICE = 'luna://com.webos.service.preferences/systemProperties';

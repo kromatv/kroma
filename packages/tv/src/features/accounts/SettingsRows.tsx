@@ -1,5 +1,5 @@
-import { useLocale, useT } from '@kroma/ui';
-import { ListRow, Text } from '@kroma/ui/kit';
+import { useLocale, useT } from '@kromatv/ui';
+import { ListRow, Text } from '@kromatv/ui/kit';
 import { useMemo, useState } from 'react';
 import type {
   ActionItem,

@@ -4,8 +4,8 @@
 // installed state, and a live `module.op.*` stream replaces the action with a
 // download/install progress bar.
 
-import type { StoreCatalog, StoreModule } from '@kroma/client/modules';
-import { useFormat, useT } from '@kroma/ui';
+import type { StoreCatalog, StoreModule } from '@kromatv/client/modules';
+import { useFormat, useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -19,7 +19,7 @@ import {
   Row,
   Surface,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useId } from 'react';
 import { Pressable } from 'react-native';
 import { matchesQuery } from '#web/features/admin/module-api';

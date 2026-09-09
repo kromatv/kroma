@@ -1,4 +1,4 @@
-import { registered } from '@kroma/ui/kit';
+import { registered } from '@kromatv/ui/kit';
 import { createLink, type LinkProps } from '@tanstack/react-router';
 import { View, type ViewProps } from 'react-native';
 

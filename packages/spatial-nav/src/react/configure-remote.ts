@@ -1,4 +1,4 @@
-import type { Direction } from '@kroma/spatial-nav';
+import type { Direction } from '@kromatv/spatial-nav';
 
 type RemoteHandler = (direction: Direction) => void;
 type Unsubscribe = () => void;

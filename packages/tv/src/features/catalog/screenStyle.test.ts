@@ -1,7 +1,7 @@
 // The browse screens' shared text metrics are RESOLVED values, not tokens: the
 // stage every TV shell renders into is always 1080 tall.
 
-import { tracking } from '@kroma/ui/kit';
+import { tracking } from '@kromatv/ui/kit';
 import { describe, expect, it } from 'vitest';
 import { EMPTY, TITLE } from './screenStyle';
 

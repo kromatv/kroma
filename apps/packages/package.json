@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/package-source",
+  "name": "@kromatv/package-source",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -22,16 +22,16 @@
     "deploy": "bun run build && bunx wrangler@4 deploy"
   },
   "dependencies": {
-    "@kroma/site-kit": "workspace:*",
-    "@kroma/site-meta": "workspace:*",
-    "@kroma/ui": "workspace:*",
+    "@kromatv/site-kit": "workspace:*",
+    "@kromatv/site-meta": "workspace:*",
+    "@kromatv/ui": "workspace:*",
     "@tanstack/react-router": "^1.170.29",
     "@tanstack/react-start": "^1.168.46",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@kroma/bundler": "workspace:*",
+    "@kromatv/bundler": "workspace:*",
     "@tanstack/router-cli": "^1.167.30",
     "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",

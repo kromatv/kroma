@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { Box, Button, Chip, Text } from '@kroma/ui/kit';
-import { onScreen } from '@kroma/ui/testing';
+import { Box, Button, Chip, Text } from '@kromatv/ui/kit';
+import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, render } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { View } from 'react-native';

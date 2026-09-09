@@ -1,4 +1,4 @@
-import type { ScoredReleaseView } from '@kroma/client/requests';
+import type { ScoredReleaseView } from '@kromatv/client/requests';
 import { describe, expect, it } from 'vitest';
 import { filterReleases, sortReleases, targetLabel } from './release-sort';
 

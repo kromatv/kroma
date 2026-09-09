@@ -1,6 +1,6 @@
-import { useT } from '@kroma/module-sdk';
-import type { IconName } from '@kroma/ui/kit';
-import { Button, Field, Icon, Row, Select, Text } from '@kroma/ui/kit';
+import { useT } from '@kromatv/module-sdk';
+import type { IconName } from '@kromatv/ui/kit';
+import { Button, Field, Icon, Row, Select, Text } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import type { DownloadClientView, DownloadQuery, DownloadStatsView } from './schemas';
 

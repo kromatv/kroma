@@ -1,11 +1,11 @@
 <div align="center">
   <img src="../../.github/assets/logo.svg" alt="KROMA" height="52">
-  <h1>@kroma/site</h1>
+  <h1>@kromatv/site</h1>
   <p><i>The KROMA showcase site, kroma.tv. Marketing pages + an MD/MDX blog, prerendered to static HTML on Cloudflare.</i></p>
 </div>
 
 > Part of the [KROMA](../../README.md) monorepo. It reuses the design system from
-> [`@kroma/ui`](../../packages/ui/README.md): the same deep-charcoal + amber
+> [`@kromatv/ui`](../../packages/ui/README.md): the same deep-charcoal + amber
 > tokens, the same two type families, so the site renders in the exact brand of
 > the app, with no second source of truth.
 
@@ -19,7 +19,7 @@ Chosen because it matches the house web stack ([`clients/web`](../../clients/web
 TanStack Start) while giving a marketing site the SEO of real per-page HTML.
 
 - **Framework:** TanStack Start + TanStack Router (file-based routes in `src/routes`).
-- **Styling:** Tailwind v4, importing `@kroma/ui/css` (the kit's
+- **Styling:** Tailwind v4, importing `@kromatv/ui/css` (the kit's
   `@theme`): utilities like `bg-bg`, `text-accent`, `font-display` are the KROMA tokens.
 - **Blog:** `.mdx` files in [`content/blog/`](./content/blog), compiled with
   `@mdx-js/rollup` (frontmatter, GFM, anchored headings, Shiki code). See the
@@ -32,10 +32,10 @@ TanStack Start) while giving a marketing site the SEO of real per-page HTML.
 
 ```bash
 bun install                          # from the repo root, once
-bun run --filter '@kroma/site' dev   # http://localhost:3100
+bun run --filter '@kromatv/site' dev   # http://localhost:3100
 ```
 
-Other scripts (run with `bun run --filter '@kroma/site' <script>`):
+Other scripts (run with `bun run --filter '@kromatv/site' <script>`):
 
 | Script | What it does |
 | --- | --- |
@@ -143,7 +143,7 @@ a reader gets the page rather than a 404. See the
 a TSX component ([`vite/og-card.tsx`](./vite/og-card.tsx)) with
 [Takumi](https://github.com/kane50613/takumi) (`takumi-js`), a Rust renderer that
 goes JSX → PNG in one step. No
-browser and no network: the brand faces are read from `@kroma/ui`'s own font files,
+browser and no network: the brand faces are read from `@kromatv/ui`'s own font files,
 and the colours come from its tokens, so a card cannot drift from the design.
 
 A card is an image, so it cannot be translated at request time. One per locale is
@@ -158,7 +158,7 @@ The site is static assets plus a worker for `/api/*`
 domains on deploy.
 
 ```bash
-bun run --filter '@kroma/site' deploy
+bun run --filter '@kromatv/site' deploy
 # or, if dist/ is already built:
 cd apps/www && bunx wrangler@4 deploy -c dist/server/wrangler.json
 ```
@@ -185,12 +185,12 @@ apps/www/
 │  │  ├─ legal.ts      resolves content/legal into a per-locale component
 │  │  ├─ blog.ts       resolves content/blog into typed posts
 │  │  └─ seo.ts        the <head> helper (title, canonical, OG, hreflang)
-│  │                   (the domain, addresses and nav are @kroma/site-meta's)
+│  │                   (the domain, addresses and nav are @kromatv/site-meta's)
 │  ├─ routes/          file-based routes (home, download, blog, modules, privacy,
 │  │                   support, 404)
 │  ├─ server/          what the worker answers under /api/*
 │  ├─ router.tsx       the router the prerender and the worker share
-│  └─ styles.css       imports @kroma/ui/css + site-only @utility/@theme
+│  └─ styles.css       imports @kromatv/ui/css + site-only @utility/@theme
 ├─ worker.ts           the /api/* worker entry
 ├─ vite.config.ts      TanStack Start (static prerender) + MDX pipeline
 └─ wrangler.jsonc      static assets + the /api/* worker (kroma.tv)

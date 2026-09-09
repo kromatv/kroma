@@ -5,7 +5,7 @@
 // instead and reads them from the catalogs, because the words belong to
 // whoever writes the language, not to this file.
 
-import type { Locale, Translate } from '@kroma/i18n';
+import type { Locale, Translate } from '@kromatv/i18n';
 
 const BYTE_UNITS: Record<Locale, readonly string[]> = {
   fr: ['o', 'Ko', 'Mo', 'Go', 'To', 'Po'],

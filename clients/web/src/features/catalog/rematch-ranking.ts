@@ -1,5 +1,5 @@
-import type { MatchCandidate } from '@kroma/client/media';
-import type { ColorValue } from '@kroma/ui/kit';
+import type { MatchCandidate } from '@kromatv/client/media';
+import type { ColorValue } from '@kromatv/ui/kit';
 
 /** At or above this the matcher agrees with the file on disk. */
 export const STRONG_SCORE = 0.7;

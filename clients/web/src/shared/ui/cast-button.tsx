@@ -4,9 +4,9 @@
 // no action at all, so with an empty roster this renders nothing rather than an
 // enabled button that opens an empty picker.
 
-import type { ItemId } from '@kroma/client/media';
-import { useCast, useT } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
+import type { ItemId } from '@kromatv/client/media';
+import { useCast, useT } from '@kromatv/ui';
+import { Button } from '@kromatv/ui/kit';
 import { castPicker } from '#web/shared/ui/cast-picker';
 
 export function CastButton({ itemId }: Readonly<{ itemId: ItemId }>) {

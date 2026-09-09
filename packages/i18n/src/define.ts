@@ -31,7 +31,7 @@ function endonyms(catalogs: Readonly<Record<string, Catalog>>): Record<string, s
 /**
  * The app's one instance, typed by the registry rather than by what is passed
  * in: with catalogs discovered from a folder, the values say `string` and the
- * `@kroma/i18n/vite` plugin's declaration says which locales and keys exist.
+ * `@kromatv/i18n/vite` plugin's declaration says which locales and keys exist.
  *
  * ```ts
  * export const { i18n, translate, LOCALES, DEFAULT_LOCALE } = defineI18n({

@@ -1,7 +1,7 @@
+import type { Catalogs } from '@kromatv/i18n';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   addCatalogs,
-  type Catalogs,
   createTranslator,
   detectLocale,
   isLocale,

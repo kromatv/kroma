@@ -32,6 +32,6 @@ function everyIndex(): Record<string, unknown> {
   return found;
 }
 
-/** Every domain's public module (`@kroma/client/<domain>`) by domain name, for
+/** Every domain's public module (`@kromatv/client/<domain>`) by domain name, for
  *  a host that hands them to code it loads at runtime. */
 export const domainModules: Readonly<Record<string, unknown>> = everyIndex();

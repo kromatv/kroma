@@ -13,8 +13,8 @@ import {
   styles,
   useCopy,
   webWindow,
-} from '@kroma/ui/kit';
-import { type ColorToken, colors } from '@kroma/ui/tokens';
+} from '@kromatv/ui/kit';
+import { type ColorToken, colors } from '@kromatv/ui/tokens';
 import { useCallback, useState } from 'react';
 import { RULE } from './chrome';
 import { StoryHistory } from './history-menu';

@@ -29,7 +29,7 @@ const native = requireOptionalNativeModule<ServerDiscoveryNativeModule>('ServerD
  * Ask the network where the servers are, or null on a target without the module.
  *
  * Shaped as the `browse` hook `discoverServer` takes, so the shell can hand it
- * over without @kroma/tv or @kroma/core ever importing a native module.
+ * over without @kromatv/tv or @kromatv/core ever importing a native module.
  */
 export const browseForServers: ((timeoutMs: number) => Promise<BrowsedServer[]>) | null = native
   ? (timeoutMs: number) => native.browse(timeoutMs)

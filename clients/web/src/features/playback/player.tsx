@@ -1,13 +1,14 @@
-import type { MediaItem } from '@kroma/client/media';
-import { audioSupport, formatTimecode as fmtTime, playerSubtitle } from '@kroma/core';
+import type { MediaItem } from '@kromatv/client/media';
+import { audioSupport, playerSubtitle } from '@kromatv/core';
 import {
   Player as UnifiedPlayer,
   useCast,
   useSubtitleAppearance,
   useT,
   WEB_FLAGS,
-} from '@kroma/ui';
-import { Box, Button, backdropBlur, classes, Icon, styles, Text } from '@kroma/ui/kit';
+} from '@kromatv/ui';
+import { formatTimecode as fmtTime } from '@kromatv/ui/intl';
+import { Box, Button, backdropBlur, classes, Icon, styles, Text } from '@kromatv/ui/kit';
 import type { Ref } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import type { View } from 'react-native';
@@ -123,32 +124,39 @@ export function Player({
       controller={controller}
       flags={flags}
       title={item.title}
-      subtitle={playerSubtitle(item)}
-      warn={warn}
       onCast={async () => {
         const picked = await castPicker();
         if (!picked) return;
         const ok = await cast.playOn(picked, item.id, Math.round(pb.getPosition() * 1000));
         if (ok) onClose();
       }}
-      markers={item.markers ?? undefined}
-      tileAt={tileAt}
-      appearance={appearance}
-      onAppearanceChange={setAppearance}
-      subtitleGen={subtitleGen}
-      upNext={upNext.data}
-      onPlayItem={(i) => onPlayItem?.(i.id)}
-      onPlayNext={onPlayNext}
-      nextTitle={nextTitle}
-      postPlay={upNext.postPlay}
-      onGoHome={onGoHome}
-      introActive={introActive}
-      onSkipIntro={intro ? () => pb.seekTo(intro.endMs / 1000) : undefined}
       // The shared chrome is typed against React Native, but under
       // react-native-web this ref receives the DOM node (requestFullscreen).
       ref={containerRef as unknown as Ref<View>}
       onClose={onClose}
     >
+      <UnifiedPlayer.Title>{item.title}</UnifiedPlayer.Title>
+      <UnifiedPlayer.Subtitle>{playerSubtitle(item)}</UnifiedPlayer.Subtitle>
+      {warn ? <UnifiedPlayer.Warning>{warn}</UnifiedPlayer.Warning> : null}
+      <UnifiedPlayer.Transport tileAt={tileAt} />
+      <UnifiedPlayer.Subtitles
+        appearance={appearance}
+        onAppearanceChange={setAppearance}
+        gen={subtitleGen}
+      />
+      <UnifiedPlayer.UpNext data={upNext.data} onPlay={(i) => onPlayItem?.(i.id)} />
+      <UnifiedPlayer.Credits
+        markers={item.markers ?? undefined}
+        next={nextTitle}
+        onPlay={onPlayNext}
+      />
+      <UnifiedPlayer.PostPlay item={upNext.postPlay} onHome={onGoHome} />
+      {intro ? (
+        <UnifiedPlayer.SkipIntro
+          active={introActive}
+          onSkip={() => pb.seekTo(intro.endMs / 1000)}
+        />
+      ) : null}
       <UnifiedPlayer.Media>{surface}</UnifiedPlayer.Media>
       {terminated ? (
         <UnifiedPlayer.Panel>

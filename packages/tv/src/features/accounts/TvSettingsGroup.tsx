@@ -1,5 +1,5 @@
-import { useT } from '@kroma/ui';
-import { Box, Hint, Text, useFocusNav } from '@kroma/ui/kit';
+import { useT } from '@kromatv/ui';
+import { Box, Hint, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useNav, useParams } from '#tv/app/router';
 import { SETTINGS_GROUPS } from '#tv/app/settings/registry';
 import { AuthScreen } from '#tv/shared/ui';

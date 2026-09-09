@@ -1,3 +1,3 @@
-import { kromaSite } from '@kroma/bundler/site';
+import { kromaSite } from '@kromatv/bundler/site';
 
 export default kromaSite(import.meta.url);

@@ -6,7 +6,7 @@
 // `Field`s, so the panel is D-pad navigable and the whole workbench runs on
 // an actual television, next to the components it is inspecting.
 
-import { ARROW, Box, Chip, Divider, Field, HAND, Switch, style, Text } from '@kroma/ui/kit';
+import { ARROW, Box, Chip, Divider, Field, HAND, Switch, style, Text } from '@kromatv/ui/kit';
 import { memo } from 'react';
 import type { Control, ResolvedControl } from './derive';
 

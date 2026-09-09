@@ -1,5 +1,5 @@
-import { matches } from '@kroma/registry';
-import { type Page, paginate } from '@kroma/ui/kit/molecules/pagination';
+import { matches } from '@kromatv/registry';
+import { type Page, paginate } from '@kromatv/ui/kit/molecules/pagination';
 import { useMemo, useState } from 'react';
 import type { ModuleEntry } from '#site/catalog';
 

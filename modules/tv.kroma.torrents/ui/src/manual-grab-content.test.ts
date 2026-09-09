@@ -1,4 +1,4 @@
-import type { TorrentAnalysis, TorrentFileView } from '@kroma/module-acquisition/schemas';
+import type { TorrentAnalysis, TorrentFileView } from '@kromatv/module-acquisition/schemas';
 import { describe, expect, it } from 'vitest';
 import { detect } from './manual-grab-content';
 

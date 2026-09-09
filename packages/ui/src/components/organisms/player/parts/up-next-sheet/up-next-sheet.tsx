@@ -1,4 +1,4 @@
-import type { RemoteKey, Translate } from '@kroma/core';
+import type { Translate } from '@kromatv/i18n';
 import { forwardRef, memo, type ReactNode, useImperativeHandle, useMemo, useState } from 'react';
 import { Animated, Pressable, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -20,6 +20,7 @@ import { gradient, maskImage } from '#ui/lib/css';
 import { FocusColumn, FocusRegion, FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { FocusScroll } from '#ui/lib/focus-scroll';
 import { pointerDriving } from '#ui/lib/input-source';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 import { useT } from '#ui/services/i18n';
 import { useSheetSlide } from './slide';
 

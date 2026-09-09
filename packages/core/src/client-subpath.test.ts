@@ -1,5 +1,5 @@
-import { createKromaClient } from '@kroma/client';
-import { ItemId, MediaItem } from '@kroma/client/media';
+import { createKromaClient } from '@kromatv/client';
+import { ItemId, MediaItem } from '@kromatv/client/media';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 describe('a domain subpath', () => {

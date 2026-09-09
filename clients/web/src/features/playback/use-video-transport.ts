@@ -1,4 +1,4 @@
-import { type EngineDecision, isPlayableAt } from '@kroma/core';
+import { type EngineDecision, isPlayableAt } from '@kromatv/core';
 import { useCallback, useRef, useState } from 'react';
 import type { VideoPlayback } from '#web/features/playback/video-engine';
 

@@ -47,7 +47,7 @@ export interface ClientControls {
 export type KromaClient = Domains & ClientControls;
 
 /** The two halves a client is made of: the transport its domains fetch through,
- * and the members that are not a domain. Exported so `@kroma/client/query` can
+ * and the members that are not a domain. Exported so `@kromatv/client/query` can
  * build a client AND a second context over the same bearer and locale. */
 export function kromaClientParts(options: KromaClientOptions): {
   config: TransportConfig;

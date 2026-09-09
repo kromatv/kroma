@@ -1,8 +1,8 @@
-import { Box, classes, PageMain, PosterSkeleton, rhythm, Skeleton, styles } from '@kroma/ui/kit';
+import { Box, classes, PageMain, PosterSkeleton, rhythm, Skeleton, styles } from '@kromatv/ui/kit';
 import { PAGE_GUTTER, PageFrame } from '#web/shared/ui/page';
 import { TileGrid } from '#web/shared/ui/tile-grid';
 
-export { CardSkeleton, Skeleton, TableSkeleton } from '@kroma/ui/kit';
+export { CardSkeleton, Skeleton, TableSkeleton } from '@kromatv/ui/kit';
 
 const s = styles({
   homeBand: { width: '100%', height: '46vh', minHeight: 320 },

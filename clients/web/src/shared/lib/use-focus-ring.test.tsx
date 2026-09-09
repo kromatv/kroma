@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { activeTheme, styles } from '@kroma/ui/kit';
-import { declared } from '@kroma/ui/testing';
+import { activeTheme, styles } from '@kromatv/ui/kit';
+import { declared } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useFocusRing } from '#web/shared/lib/use-focus-ring';

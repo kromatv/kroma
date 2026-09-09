@@ -1,9 +1,9 @@
 // Circular progress ring (downloads), from the design system. Wraps
-// @kroma/ui's <ProgressRing> with this app's own contract: a negative value
+// @kromatv/ui's <ProgressRing> with this app's own contract: a negative value
 // means "indeterminate", shown as the platform spinner instead of a ring
 // stuck at zero.
 
-import { color, ProgressRing as Ring, Spinner } from '@kroma/ui/kit';
+import { color, ProgressRing as Ring, Spinner } from '@kromatv/ui/kit';
 
 export function ProgressRing({
   progress,

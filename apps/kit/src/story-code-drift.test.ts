@@ -1,7 +1,7 @@
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readStoryMdxCode } from '@kroma/bundler/story-code';
+import { readStoryMdxCode } from '@kromatv/bundler/story-code';
 import { describe, expect, it } from 'vitest';
 import { STORIES } from './stories';
 

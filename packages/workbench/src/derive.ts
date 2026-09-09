@@ -1,7 +1,7 @@
 // The control model: a component's `sv` and a story's args become the editors
 // in the panel and the rows in the matrix. Nothing here knows about a story.
 
-import type { VariantSource } from '@kroma/ui/kit';
+import type { VariantSource } from '@kromatv/ui/kit';
 
 type Args = Record<string, unknown>;
 

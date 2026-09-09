@@ -6,7 +6,7 @@
 // Every asset carries a `digest` GitHub computed itself, so integrity comes off
 // the listing and the published `.sha256` sidecars never have to be fetched.
 
-import { base64, type KnownVersions } from '@kroma/registry';
+import { base64, type KnownVersions } from '@kromatv/registry';
 import { z } from 'zod';
 import { DEFAULT_REPO, type Env, edgeCache, githubHeaders, jsonResponse } from '#site/lib/source';
 

@@ -1,8 +1,8 @@
-import type { UserId } from '@kroma/client/accounts';
-import type { AdminUser } from '@kroma/client/admin';
-import { resolveImageUrl } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Avatar } from '@kroma/ui/kit';
+import type { UserId } from '@kromatv/client/accounts';
+import type { AdminUser } from '@kromatv/client/admin';
+import { resolveImageUrl } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+import { Avatar } from '@kromatv/ui/kit';
 import { EVERYONE, type FilterOption } from '#web/features/admin/dashboard-filters';
 import { useCap, usePoll } from '#web/features/admin/shell';
 import { apiBase } from '#web/shared/lib/api';

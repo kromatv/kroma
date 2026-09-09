@@ -4,10 +4,10 @@
 // the account, and what it does when that tap arrives a moment too late or
 // carries the wrong code.
 
-import { KromaApiError } from '@kroma/client';
-import { HandoffHandle } from '@kroma/client/handoff';
-import type { Health } from '@kroma/client/media';
-import { fakeClient } from '@kroma/client/test';
+import { KromaApiError } from '@kromatv/client';
+import { HandoffHandle } from '@kromatv/client/handoff';
+import type { Health } from '@kromatv/client/media';
+import { fakeClient } from '@kromatv/client/test';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DiscoveredTv, LanService } from '../handoff';

@@ -1,8 +1,8 @@
 // The row of views across the top of the canvas: the preview, the variant
 // matrix, each hand-written scene and each worked example.
 
-import { Box, Focusable, Icon, type IconName, styles, sv, Text } from '@kroma/ui/kit';
-import type { ColorToken } from '@kroma/ui/tokens';
+import { Box, Focusable, Icon, type IconName, styles, sv, Text } from '@kromatv/ui/kit';
+import type { ColorToken } from '@kromatv/ui/tokens';
 import { ScrollView } from 'react-native';
 import { RULE, TAB } from './chrome';
 import type { WorkbenchLayout } from './layout';

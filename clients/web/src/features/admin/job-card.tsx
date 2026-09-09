@@ -1,7 +1,7 @@
-import type { JobInfo } from '@kroma/client/jobs';
-import type { MessageKey } from '@kroma/core';
-import { TABULAR } from '@kroma/module-sdk';
-import { useLocale, useT } from '@kroma/ui';
+import type { JobInfo } from '@kromatv/client/jobs';
+import type { MessageKey } from '@kromatv/i18n';
+import { TABULAR } from '@kromatv/module-sdk';
+import { useLocale, useT } from '@kromatv/ui';
 import {
   Badge,
   type BadgeTone,
@@ -16,7 +16,7 @@ import {
   Switch,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { JobDetailPanel } from '#web/features/admin/jobs-detail';
 import { dur, rel } from '#web/features/admin/jobs-format';

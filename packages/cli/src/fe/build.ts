@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { REMOTE_ENTRY, REMOTE_STYLES } from '@kroma/module-sdk/shared';
+import { REMOTE_ENTRY, REMOTE_STYLES } from '@kromatv/module-sdk/shared';
 import { build } from 'vite';
 import type { Project } from '../project';
 import { kromaRemote } from './remote-plugin';

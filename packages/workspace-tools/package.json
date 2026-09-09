@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/workspace-tools",
+  "name": "@kromatv/workspace-tools",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -26,6 +26,6 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@kroma/registry": "workspace:*"
+    "@kromatv/registry": "workspace:*"
   }
 }

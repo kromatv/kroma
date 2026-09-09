@@ -1,6 +1,6 @@
 import 'virtual:kroma-tv.css';
-import { mountTv } from '@kroma/tv/mount';
-import { installStage } from '@kroma/tv/stage';
+import { mountTv } from '@kromatv/tv/mount';
+import { installStage } from '@kromatv/tv/stage';
 import { warnIfMixedContent } from './mixed-content';
 
 // The 10-foot layout is fixed-px against a 1920-wide canvas, so a browser window
@@ -8,7 +8,7 @@ import { warnIfMixedContent } from './mixed-content';
 installStage();
 
 // A browser is a desktop input environment, not a television: `Desktop` is what
-// arms the real mouse pointer and the typeable text fields (see @kroma/tv
+// arms the real mouse pointer and the typeable text fields (see @kromatv/tv
 // providers/env). Arrow keys + Enter still drive the same spatial navigator, so
 // a remote-shaped browser (a TV stick, a Chromecast keyboard) works too.
 mountTv({ platform: 'Desktop' });

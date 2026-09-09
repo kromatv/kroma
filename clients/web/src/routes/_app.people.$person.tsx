@@ -1,6 +1,6 @@
-import type { TmdbCredit } from '@kroma/client/media';
-import { personInvolvement, posterColors, roleLabels } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import type { TmdbCredit } from '@kromatv/client/media';
+import { personInvolvement, posterColors, roleLabels } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   classes,
@@ -11,7 +11,7 @@ import {
   Row,
   styles,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';

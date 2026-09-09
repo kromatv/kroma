@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { TYPES_FILE } from '@kroma/i18n/vite';
+import { TYPES_FILE } from '@kromatv/i18n/vite';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_LOCALE_CODE } from '../src/locales/default-locale.ts';
 import { CORE_LOCALES, kromaCatalogs } from './index.ts';

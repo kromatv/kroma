@@ -1,4 +1,4 @@
-import { DocFigure } from '@kroma/workbench';
+import { DocFigure } from '@kromatv/workbench';
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';

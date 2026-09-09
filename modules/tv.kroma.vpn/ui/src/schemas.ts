@@ -1,4 +1,4 @@
-// This module's wire types. They live here, not in `@kroma/core`, because the
+// This module's wire types. They live here, not in `@kromatv/core`, because the
 // core client has no business knowing what a VPN is: a module owns the shape
 // of its own API. Modules that read this one's status (the downloads module
 // shows it beside the queue) import it from this package by name.

@@ -1,8 +1,8 @@
-import { collectBuildInfo } from '@kroma/build-info';
+import { collectBuildInfo } from '@kromatv/build-info';
 import type { Plugin } from 'vite';
 
 /**
- * Build metadata as the browser sees it. Unlike `@kroma/build-info`, git's
+ * Build metadata as the browser sees it. Unlike `@kromatv/build-info`, git's
  * absent fields are `'unknown'` rather than `null`, because this is displayed.
  */
 export interface BuildInfo {

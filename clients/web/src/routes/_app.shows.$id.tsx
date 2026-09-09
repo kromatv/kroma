@@ -1,5 +1,5 @@
-import { ShowId } from '@kroma/client/media';
-import { useT } from '@kroma/ui';
+import { ShowId } from '@kromatv/client/media';
+import { useT } from '@kromatv/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { TitleDetail } from '#web/features/catalog/title-detail';

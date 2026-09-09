@@ -1,5 +1,5 @@
 // The libVLC plane is a native view that only the Android shell builds, so it is
-// registered rather than imported: @kroma/tv must not reach into clients/.
+// registered rather than imported: @kromatv/tv must not reach into clients/.
 // Registered nowhere (Apple, Tizen, webOS, the browser), `vlcAvailable()` is
 // false and the engine never appears in the picker.
 

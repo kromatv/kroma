@@ -39,7 +39,7 @@ function expoWorkspaceConfig(projectRoot, aliases = {}, ui = {}) {
   // to a component. Appended last, so it can never win a resolution a `.ts` or
   // a `.tsx` was going to.
   //
-  // The transformer lives in @kroma/bundler because `@mdx-js/mdx` is ESM-only
+  // The transformer lives in @kromatv/bundler because `@mdx-js/mdx` is ESM-only
   // and resolves from the file importing it, and this directory is not a
   // package. Reached by path rather than by specifier for the same reason.
   config.resolver.sourceExts = [...config.resolver.sourceExts, 'mdx'];
@@ -53,7 +53,7 @@ function expoWorkspaceConfig(projectRoot, aliases = {}, ui = {}) {
   assertReactNativeMatches(projectRoot, reactNative);
 
   const pinned = {
-    // `@kroma/ui`'s internal subpath alias, declared in its package.json
+    // `@kromatv/ui`'s internal subpath alias, declared in its package.json
     // `imports` and mirrored here because Metro does not read that field.
     '#ui': path.join(workspaceRoot, 'packages', 'ui', 'src'),
     ...aliases,
@@ -72,9 +72,9 @@ function expoWorkspaceConfig(projectRoot, aliases = {}, ui = {}) {
   };
 
   // What the kit needs a bundler to know, shared with the Vite shells: today,
-  // the icon subset (@kroma/ui otherwise ships all 6167 Tabler glyphs, because
+  // the icon subset (@kromatv/ui otherwise ships all 6167 Tabler glyphs, because
   // they resolve by name).
-  const { kromaUi } = clientRequire('@kroma/ui/bundler');
+  const { kromaUi } = clientRequire('@kromatv/ui/bundler');
   return kromaUi.metro(config, { repoRoot: workspaceRoot, icons: ui.icons });
 }
 

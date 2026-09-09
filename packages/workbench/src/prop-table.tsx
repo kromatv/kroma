@@ -3,7 +3,7 @@
 // is written here is what a PROP is - its name, whether it is required, its type
 // as written, and the line of prose under it.
 
-import { Box, styles, Table, Text } from '@kroma/ui/kit';
+import { Box, styles, Table, Text } from '@kromatv/ui/kit';
 import { RichText } from './docs';
 import type { PropDoc, PropSection } from './props';
 

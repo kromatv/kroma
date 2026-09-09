@@ -2,8 +2,8 @@
 // nothing here has a target to be scored against. What the row carries instead
 // is what the parser read off the name, which is what the grab will import it as.
 
-import { Table, type TableColumn, useT } from '@kroma/module-sdk';
-import { Box, EmptyState, Row, Text } from '@kroma/ui/kit';
+import { Table, type TableColumn, useT } from '@kromatv/module-sdk';
+import { Box, EmptyState, Row, Text } from '@kromatv/ui/kit';
 import { ReleaseFacts } from './release-cells';
 import type { ManualReleaseView } from './schemas';
 

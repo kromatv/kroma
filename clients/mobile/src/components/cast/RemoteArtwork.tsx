@@ -1,6 +1,6 @@
-import type { MediaItem } from '@kroma/client/media';
-import { sizedImageUrl } from '@kroma/core';
-import { Box, Icon, styles, Text } from '@kroma/ui/kit';
+import type { MediaItem } from '@kromatv/client/media';
+import { sizedImageUrl } from '@kromatv/core';
+import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
 import { Image } from 'expo-image';
 import { useWindowDimensions } from 'react-native';
 import { useClient } from '#mobile/lib/session';

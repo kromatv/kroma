@@ -2,7 +2,7 @@
 // and owns the fade, cross-fade, fallback and sanitising. `fill` stretches the
 // box itself to a positioned parent.
 
-import { Box, Img, type ImgProps, styles } from '@kroma/ui/kit';
+import { Box, Img, type ImgProps, styles } from '@kromatv/ui/kit';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 export interface ImageProps extends Omit<ImgProps, 'fill' | 'style'> {

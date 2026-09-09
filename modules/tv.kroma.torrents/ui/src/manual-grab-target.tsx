@@ -1,8 +1,8 @@
 // Step two of a manual add: which title this torrent is for.
 
-import type { TorrentAnalysis } from '@kroma/module-acquisition/schemas';
-import { useT } from '@kroma/module-sdk';
-import { Badge, Box, Button, Callout, Field, Row, Spinner, Surface, Text } from '@kroma/ui/kit';
+import type { TorrentAnalysis } from '@kromatv/module-acquisition/schemas';
+import { useT } from '@kromatv/module-sdk';
+import { Badge, Box, Button, Callout, Field, Row, Spinner, Surface, Text } from '@kromatv/ui/kit';
 import { detect } from './manual-grab-content';
 import type { MatchCandidateView } from './schemas';
 import { TitlePicker } from './title-picker';

@@ -1,4 +1,4 @@
-import { driveStallRecovery, reachableBufferEnd, recoverMse, STALL_NUDGE_SEC } from '@kroma/core';
+import { driveStallRecovery, reachableBufferEnd, recoverMse, STALL_NUDGE_SEC } from '@kromatv/core';
 import { useEffect, useState } from 'react';
 import type { HlsInstance, ShakaPlayerLike } from '#web/features/playback/video-engine';
 

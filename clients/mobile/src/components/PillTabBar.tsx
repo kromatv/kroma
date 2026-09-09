@@ -1,4 +1,4 @@
-import { Box, NavPill, styles } from '@kroma/ui/kit';
+import { Box, NavPill, styles } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 // expo-router vendors react-navigation and does not re-export this type from its root.
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';

@@ -4,9 +4,9 @@
 // shared answers, so a module page is never a black screen and every one of
 // them waits the same way.
 
-import { apiErrorText, KromaApiError } from '@kroma/client';
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { apiErrorText, KromaApiError } from '@kromatv/client';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
@@ -15,7 +15,7 @@ import {
   type IconName,
   Skeleton,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import type { ViewStyle } from 'react-native';
 
 /**

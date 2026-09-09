@@ -1,4 +1,4 @@
-# @kroma/i18n
+# @kromatv/i18n
 
 A small, fully typed message engine for TypeScript apps, with optional React
 bindings and a Vite plugin. Catalogs are flat JSON files, one per language and
@@ -42,7 +42,7 @@ the result to `defineI18n`:
 ```ts
 // src/i18n.ts
 /// <reference path="./locales/messages.d.ts" />
-import { catalogsByLocale, defineI18n, sourcesByNamespace } from '@kroma/i18n';
+import { catalogsByLocale, defineI18n, sourcesByNamespace } from '@kromatv/i18n';
 
 export const { i18n, translate, LOCALES, DEFAULT_LOCALE, detectLocale } = defineI18n({
   // Shipped up front: only the language names, which the locale set needs
@@ -61,7 +61,7 @@ and it bundles each namespace with the code that reads it (see below):
 
 ```ts
 // vite.config.ts
-import { catalogs } from '@kroma/i18n/vite';
+import { catalogs } from '@kromatv/i18n/vite';
 
 export default {
   plugins: [catalogs({ dir: 'src/locales', defaultLocale: 'en' })],
@@ -75,7 +75,7 @@ first typecheck on a fresh clone.
 **The provider.** For React, wrap the tree once and translate anywhere:
 
 ```tsx
-import { I18nProvider, useT } from '@kroma/i18n/react';
+import { I18nProvider, useT } from '@kromatv/i18n/react';
 
 <I18nProvider i18n={i18n} locale={locale} onLocaleChange={setLocale}>
   <App />
@@ -139,7 +139,7 @@ Each is a few lines of test over the glob; KROMA's live in
 
 ## Dev tools
 
-`@kroma/i18n-devtools` mounts a panel in dev that switches the locale for the
+`@kromatv/i18n-devtools` mounts a panel in dev that switches the locale for the
 session, marks every string with the catalog that answered it, and names the
 key and source line behind the one under the pointer. It reads the engine
 through `installKeyInspector` and `installLocaleOverride`, exported here.

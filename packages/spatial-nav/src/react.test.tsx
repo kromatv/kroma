@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { Direction, SpatialNavigator } from '@kroma/spatial-nav';
+import type { Direction, SpatialNavigator } from '@kromatv/spatial-nav';
 import {
   DefaultFocus,
   NavigatorItem,
@@ -9,7 +9,7 @@ import {
   NavigatorView,
   useLockNavigator,
   useNavigator,
-} from '@kroma/spatial-nav/react';
+} from '@kromatv/spatial-nav/react';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { View } from 'react-native';

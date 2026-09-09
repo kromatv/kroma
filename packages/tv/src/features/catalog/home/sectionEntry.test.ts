@@ -1,4 +1,4 @@
-import type { MediaItem, SectionItem, Show } from '@kroma/client/media';
+import type { MediaItem, SectionItem, Show } from '@kromatv/client/media';
 import { describe, expect, it } from 'vitest';
 import { entryId, entryMetadata } from './sectionEntry';
 

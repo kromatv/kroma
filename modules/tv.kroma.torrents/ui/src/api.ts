@@ -2,9 +2,9 @@
 // the naming/organize tools. `moduleApiHook` binds it to the module the host is
 // rendering, so the id is never repeated here.
 
-import { TorrentAnalysis } from '@kroma/module-acquisition/schemas';
-import { moduleApiHook } from '@kroma/module-sdk';
-import { type VpnBandwidthRange, VpnBandwidthView } from '@kroma/module-vpn/schemas';
+import { TorrentAnalysis } from '@kromatv/module-acquisition/schemas';
+import { moduleApiHook } from '@kromatv/module-sdk';
+import { type VpnBandwidthRange, VpnBandwidthView } from '@kromatv/module-vpn/schemas';
 import {
   BulkActionResult,
   ClientTestResult,

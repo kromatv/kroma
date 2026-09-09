@@ -6,7 +6,7 @@
 // height the real one occupies: a busy mark centred in a `flex` box, never a
 // wrapper that collapses to nothing and reads as a component drawn black.
 
-import { Box, Spinner } from '@kroma/ui/kit';
+import { Box, Spinner } from '@kromatv/ui/kit';
 import type { StoryEntry } from './entry';
 import type { WorkbenchLayout } from './layout';
 import { StageToolbar, type StageView, StoryHeading } from './story-view';

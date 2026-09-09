@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/ui",
+  "name": "@kromatv/ui",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -29,6 +29,9 @@
     "./kit": "./src/kit.ts",
     "./kit/*": "./src/components/*/index.ts",
     "./atomic": "./src/core/atomic/index.ts",
+    "./intl": "./src/lib/intl.ts",
+    "./device-store": "./src/lib/device-store.ts",
+    "./remote-keys": "./src/lib/remote-keys.ts",
     "./ssr": "./src/ssr.ts",
     "./expo-image": "./src/lib/expo-image-backend.tsx",
     "./testing": "./src/testing.tsx",
@@ -50,9 +53,10 @@
     "subset-fonts": "python3 ./scripts/subset-fonts.py"
   },
   "dependencies": {
-    "@kroma/core": "workspace:*",
-    "@kroma/i18n": "workspace:*",
-    "@kroma/spatial-nav": "workspace:*",
+    "@kromatv/client": "workspace:*",
+    "@kromatv/core": "workspace:*",
+    "@kromatv/i18n": "workspace:*",
+    "@kromatv/spatial-nav": "workspace:*",
     "@tabler/icons-react": "^3.46.0",
     "@tabler/icons-react-native": "^3.46.0",
     "react-native-svg": "^15.15.5"
@@ -65,9 +69,9 @@
     "expo-video": "~57.0.2"
   },
   "devDependencies": {
-    "@kroma/client": "workspace:*",
-    "@kroma/react-audit": "workspace:*",
-    "@kroma/workbench": "workspace:*",
+    "@kromatv/client": "workspace:*",
+    "@kromatv/react-audit": "workspace:*",
+    "@kromatv/workbench": "workspace:*",
     "@tabler/icons": "^3.46.0",
     "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",

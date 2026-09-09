@@ -1,10 +1,10 @@
 // The candidate grid of the rematch modal: the probable matches, then the long
 // shots, each band an even grid of same-sized cards.
 
-import type { MatchCandidate } from '@kroma/client/media';
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
-import { Box, Section } from '@kroma/ui/kit';
+import type { MatchCandidate } from '@kromatv/client/media';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
+import { Box, Section } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { CandidateCard } from '#web/features/catalog/rematch-card';
 import { type CandidateBand, rankCandidates } from '#web/features/catalog/rematch-ranking';

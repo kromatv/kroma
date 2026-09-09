@@ -1,4 +1,4 @@
-import { useT } from '@kroma/ui';
+import { useT } from '@kromatv/ui';
 import { createFileRoute } from '@tanstack/react-router';
 import { TokenScreen, useTokenLink } from '#web/features/accounts/token-page';
 import { useAuth } from '#web/shared/lib/auth';

@@ -1,5 +1,5 @@
-import type { LetterMark } from '@kroma/core';
-import type { LetterRange } from '@kroma/ui/kit';
+import type { LetterMark } from '@kromatv/core';
+import type { LetterRange } from '@kromatv/ui/kit';
 
 /** Where a poster grid's rows sit in its scroll content: the header above
  * them, the gap under each, and how many items share a row. */

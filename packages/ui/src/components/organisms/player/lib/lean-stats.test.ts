@@ -1,6 +1,6 @@
-import type { AudioTrack, MediaItem } from '@kroma/client/media';
-import type { Translate } from '@kroma/core';
+import type { Translate } from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
+import type { PlayerAudioTrack } from '../media-types';
 import { buildLeanStats, type LeanStatsInput } from './lean-stats';
 
 const t: Translate = ((key: string, vars?: unknown) =>
@@ -10,11 +10,11 @@ const item = {
   title: 'Interstellar',
   container: 'mkv',
   video: { codec: 'hevc', bitDepth: 10, hdr: true, width: 3840, height: 1600 },
-} as unknown as MediaItem;
+};
 
-const audioTracks: AudioTrack[] = [
-  { index: 0, codec: 'eac3', channels: 6, language: 'en', default: true } as AudioTrack,
-  { index: 5, codec: 'ac3', channels: 2, language: 'fr', default: false } as AudioTrack,
+const audioTracks: PlayerAudioTrack[] = [
+  { index: 0, codec: 'eac3', channels: 6, language: 'en', default: true } as PlayerAudioTrack,
+  { index: 5, codec: 'ac3', channels: 2, language: 'fr', default: false } as PlayerAudioTrack,
 ];
 
 const input = (over: Partial<LeanStatsInput> = {}): LeanStatsInput =>
@@ -60,7 +60,7 @@ describe('buildLeanStats', () => {
   });
 
   it('omits resolution / codec when the item carries no video metadata', () => {
-    const noVideo = { ...item, video: null } as unknown as MediaItem;
+    const noVideo = { ...item, video: null };
     const s = buildLeanStats(input({ item: noVideo }));
     expect(s.resolution).toBeUndefined();
     expect(s.videoCodec).toBeUndefined();
@@ -76,14 +76,14 @@ describe('buildLeanStats', () => {
   it('names a plain 8-bit SDR stream without inventing depth or HDR', () => {
     const plain = {
       ...item,
-      video: { codec: 'h264', width: 1920, height: 1080 },
-    } as unknown as MediaItem;
+      video: { codec: 'h264', width: 1920, height: 1080, hdr: false, bitDepth: null },
+    };
     const s = buildLeanStats(input({ item: plain }));
     expect(s.videoCodec).toBe('H264');
   });
 
   it('names an audio track that says nothing but its codec', () => {
-    const bare = [{ index: 0, codec: 'aac', default: true }] as unknown as AudioTrack[];
+    const bare = [{ index: 0, codec: 'aac', default: true }] as unknown as PlayerAudioTrack[];
     expect(buildLeanStats(input({ audioTracks: bare })).audioFormat).toBe('AAC');
   });
 
@@ -99,7 +99,7 @@ describe('buildLeanStats', () => {
   });
 
   it('leaves the container row blank rather than saying "undefined"', () => {
-    const noContainer = { ...item, container: null } as unknown as MediaItem;
+    const noContainer = { ...item, container: null };
     const rows = buildLeanStats(input({ item: noContainer })).extra ?? [];
     expect(rows.find((r) => r.label === 'stats.container')?.value).toBe('');
   });

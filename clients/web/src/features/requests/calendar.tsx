@@ -4,7 +4,7 @@
 // Releases landing within the week get the accent date treatment so the
 // imminent stuff pops out of the list.
 
-import type { CalendarEntry } from '@kroma/client/requests';
+import type { CalendarEntry } from '@kromatv/client/requests';
 import {
   daysFromToday,
   episodeTag,
@@ -13,9 +13,9 @@ import {
   relativeAirDate,
   sentenceCase,
   shortDayLabel,
-} from '@kroma/core';
-import { useLocale, useT } from '@kroma/ui';
-import { Box, classes, EmptyState, Icon, PageHeader, Row, styles, Text } from '@kroma/ui/kit';
+} from '@kromatv/core';
+import { useLocale, useT } from '@kromatv/ui';
+import { Box, classes, EmptyState, Icon, PageHeader, Row, styles, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { RequestCard, RequestCardSkeleton } from '#web/features/requests/request-card';
 import { userQueries } from '#web/shared/lib/queries';

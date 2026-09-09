@@ -1,4 +1,4 @@
-import { Box, type BoxProps, PageMain, styles } from '@kroma/ui/kit';
+import { Box, type BoxProps, PageMain, styles } from '@kromatv/ui/kit';
 
 export const PAGE_GUTTER = { base: 16, md: 24, lg: 40, tv: 56 } as const;
 

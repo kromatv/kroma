@@ -3,8 +3,8 @@
 // text filters and a follow-tail toggle. Polls; the ring is the source of
 // truth so a page load shows history, not just what streams in afterwards.
 
-import type { MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
 import {
   EmptyState,
   Field,
@@ -15,7 +15,7 @@ import {
   Surface,
   Switch,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 import { LogLines } from '#web/features/admin/log-lines';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';

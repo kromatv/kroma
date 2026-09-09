@@ -7,25 +7,25 @@ describe('sharedKey', () => {
   });
 
   it('reads the public package name as the SDK itself', () => {
-    expect(sharedKey('@kromatv/sdk')).toBe('@kroma/module-sdk');
+    expect(sharedKey('@kromatv/sdk')).toBe('@kromatv/module-sdk');
     expect(sharedKey('@kromatv/sdk/shared')).toBeNull();
   });
 
   it('provides every client domain without listing them', () => {
-    expect(sharedKey('@kroma/client/requests')).toBe('@kroma/client/requests');
-    expect(sharedKey('@kroma/client/media')).toBe('@kroma/client/media');
-    expect(sharedKey('@kroma/client/Requests')).toBeNull();
+    expect(sharedKey('@kromatv/client/requests')).toBe('@kromatv/client/requests');
+    expect(sharedKey('@kromatv/client/media')).toBe('@kromatv/client/media');
+    expect(sharedKey('@kromatv/client/Requests')).toBeNull();
   });
 
   it('folds a deep kit import onto the barrel the host holds', () => {
-    expect(sharedKey('@kroma/ui/kit/atoms/button')).toBe('@kroma/ui/kit');
-    expect(sharedKey('@kroma/ui/kit/molecules/field')).toBe('@kroma/ui/kit');
+    expect(sharedKey('@kromatv/ui/kit/atoms/button')).toBe('@kromatv/ui/kit');
+    expect(sharedKey('@kromatv/ui/kit/molecules/field')).toBe('@kromatv/ui/kit');
   });
 
   it('leaves a package the bundle carries itself alone', () => {
     expect(sharedKey('zod')).toBeNull();
     expect(sharedKey('@tabler/icons-react')).toBeNull();
-    expect(sharedKey('@kroma/ui/tokens/colors')).toBeNull();
+    expect(sharedKey('@kromatv/ui/tokens/colors')).toBeNull();
     expect(sharedKey('./local')).toBeNull();
   });
 });

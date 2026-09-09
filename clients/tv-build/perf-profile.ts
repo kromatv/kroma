@@ -45,7 +45,7 @@ const SESSION = flag('session', process.env.KROMA_SESSION ?? '');
 const RECORD_MS = Number(flag('ms', '12000'));
 // Pretend to BE the television, not just to be as slow as one: the app asks the
 // user agent what it is running on and changes behaviour on the answer (see
-// @kroma/tv's env provider), so profiling the desktop paths and calling it a TV
+// @kromatv/tv's env provider), so profiling the desktop paths and calling it a TV
 // measurement is how the wrong thing gets optimised.
 const UA_PRESETS: Record<string, string> = {
   tizen:

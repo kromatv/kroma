@@ -3,7 +3,7 @@
 // very differently and decide identically, so the deciding lives here and each
 // shell brings only the rows its platform can find.
 
-import type { KromaClient } from '@kroma/client';
+import type { KromaClient } from '@kromatv/client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DiscoveredTv, GrantResult, LanDiscoveryBridge } from '../handoff';
 import { grantRefusal, lanSource, serverSource, watchNearbyTvs } from '../handoff';

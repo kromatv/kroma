@@ -12,7 +12,7 @@
 // own remembered key, so Down from 3 went to 4 and every vertical press read
 // as a diagonal.
 
-import { NavigatorNode } from '@kroma/spatial-nav/react';
+import { NavigatorNode } from '@kromatv/spatial-nav/react';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { useFrostCoat } from '#ui/components/atoms/frost';

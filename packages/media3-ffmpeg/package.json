@@ -1,5 +1,5 @@
 {
-  "name": "@kroma/media3-ffmpeg",
+  "name": "@kromatv/media3-ffmpeg",
   "version": "0.0.0",
   "private": true,
   "description": "Media3's FFmpeg audio decoders, prebuilt for Android: the software fallback that lets a television direct-play DTS, TrueHD and unlicensed E-AC3 instead of asking the server to transcode them.",

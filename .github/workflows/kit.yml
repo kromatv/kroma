@@ -1,6 +1,6 @@
 name: Kit site
 
-# Builds the @kroma/ui workbench as a standalone site and deploys it to
+# Builds the @kromatv/ui workbench as a standalone site and deploys it to
 # ui.kroma.tv (the `kroma-ui` assets-only Worker, apps/kit/wrangler.jsonc).
 #
 # The build runs on PRs too, so a change that breaks the showcase fails before
@@ -22,7 +22,7 @@ on:
       - 'apps/kit/**'
       - 'packages/ui/**'
       - 'packages/core/**'
-      # vite.config.ts imports @kroma/bundler/props-docs.
+      # vite.config.ts imports @kromatv/bundler/props-docs.
       - 'packages/bundler/**'
       - 'clients/tv-build/rnw.ts'
       - '.github/workflows/kit.yml'

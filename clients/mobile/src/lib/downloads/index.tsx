@@ -4,8 +4,8 @@
 // force-quit, so those are requeued on launch.
 
 import { setConfig } from '@kesha-antonov/react-native-background-downloader';
-import type { KromaClient } from '@kroma/client';
-import type { MediaItem } from '@kroma/client/media';
+import type { KromaClient } from '@kromatv/client';
+import type { MediaItem } from '@kromatv/client/media';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useT } from '#mobile/lib/i18n';
 import { useTransferQueue } from './queue';

@@ -1,4 +1,4 @@
-import type { ClientBuild } from '@kroma/core';
+import type { ClientBuild } from '@kromatv/core';
 
 // Which build of the TV client this is, and what server it needs. Vite replaces
 // `__KROMA_BUILD__` with a literal; Metro has no `define` and the native shell

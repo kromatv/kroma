@@ -5,9 +5,10 @@
 // card, so its width is whatever is left over, and a grid of fixed columns spent
 // that width on headings until the episode title had none.
 
-import type { LedgerEpisode, LedgerSeason, RequestId } from '@kroma/client/requests';
-import { datedDayLabel, type MessageKey, qualityBadgeForVideo } from '@kroma/core';
-import { ModuleSlot, TABULAR, Table, useT } from '@kroma/module-sdk';
+import type { LedgerEpisode, LedgerSeason, RequestId } from '@kromatv/client/requests';
+import { datedDayLabel, qualityBadgeForVideo } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
+import { ModuleSlot, TABULAR, Table, useT } from '@kromatv/module-sdk';
 import {
   Box,
   Button,
@@ -21,7 +22,7 @@ import {
   Skeleton,
   Surface,
   Text,
-} from '@kroma/ui/kit';
+} from '@kromatv/ui/kit';
 import { type CoverageDraft, covers, type SeasonCoverage, seasonCoverage } from './coverage-draft';
 import { type EpisodeState, episodeState, isRequested } from './request-ledger-state';
 

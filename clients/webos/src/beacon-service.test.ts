@@ -28,7 +28,7 @@ vi.mock('webos-service', () => ({
   },
 }));
 
-vi.mock('@kroma/mdns-beacon', () => ({
+vi.mock('@kromatv/mdns-beacon', () => ({
   publish: (options: PublishOptions) => {
     raised.push(options);
     return {

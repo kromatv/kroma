@@ -1,4 +1,4 @@
-import { NavigatorNode, type NodeHandle } from '@kroma/spatial-nav/react';
+import { NavigatorNode, type NodeHandle } from '@kromatv/spatial-nav/react';
 import { memo, type ReactElement, useCallback } from 'react';
 import { View, type ViewStyle } from 'react-native';
 

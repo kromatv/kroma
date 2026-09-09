@@ -1,4 +1,4 @@
-import { kroma } from '@kroma/bundler';
+import { kroma } from '@kromatv/bundler';
 import { defineConfig, type UserConfig } from 'vite';
 
 export default defineConfig(
