@@ -49,8 +49,7 @@ else is transient and must not cost a reader their registration.
 ## Deploy
 
 ```sh
-cd packages/push-relay/worker
-bunx wrangler deploy
+bun run --filter '@kromatv/push-relay' deploy
 ```
 
 ## Secrets
