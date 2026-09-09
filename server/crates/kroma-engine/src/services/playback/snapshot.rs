@@ -145,6 +145,7 @@ mod tests {
             metadata: None,
             abs_path: None,
             files: Vec::new(),
+            editions: Vec::new(),
             default_file_id: None,
             markers: Vec::new(),
             audio_analysis: None,
@@ -267,6 +268,7 @@ mod tests {
             edition: None,
             probed: true,
             unreadable: None,
+            edition_id: None,
             abs_path: None,
         }];
         it.default_file_id = Some("f1".into());

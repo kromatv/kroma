@@ -3,8 +3,14 @@
 // subtitle stream ffprobe found. All of this already rides on the item DTO the
 // fiche loaded, so the modal reads from cache and adds no request.
 
-import { ItemId, type MediaFile, MediaFileId, type MediaItem } from '@kromatv/client/media';
-import { useT } from '@kromatv/ui';
+import {
+  type Edition,
+  ItemId,
+  type MediaFile,
+  MediaFileId,
+  type MediaItem,
+} from '@kromatv/client/media';
+import { useFormat, useT } from '@kromatv/ui';
 import { Box, Dialog, IconButton, Row, Spinner, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { createCallable } from 'react-call';
@@ -52,14 +58,58 @@ export const MediaInfoModal = createCallable<{ id: string; title: string }, void
               {t('mediaInfo.noFile')}
             </Text>
           ) : null}
-          {files.map((f, i) => (
-            <FileCard key={f.id} file={f} index={i} multi={files.length > 1} />
-          ))}
+          <FileCards item={item} files={files} />
         </Dialog.Panel>
       </Dialog.Root>
     );
   },
 );
+
+// One cut's cards under its own heading. A title with a single cut has nothing to
+// separate, so the headings only appear once there are two.
+function FileCards({ item, files }: Readonly<{ item?: MediaItem; files: MediaFile[] }>) {
+  const groups = item ? editionGroups(item, files) : [];
+  if (groups.length < 2) {
+    return files.map((file, index) => (
+      <FileCard key={file.id} file={file} index={index} multi={files.length > 1} />
+    ));
+  }
+  return groups.map(({ edition, files: cards }) => (
+    <Box key={edition.id} gap={10} mb={20}>
+      <EditionHeading edition={edition} />
+      {cards.map(({ file, index }) => (
+        <FileCard key={file.id} file={file} index={index} multi />
+      ))}
+    </Box>
+  ));
+}
+
+function EditionHeading({ edition }: Readonly<{ edition: Edition }>) {
+  const t = useT();
+  const fmt = useFormat();
+  return (
+    <Row align="baseline" gap={8}>
+      <Text variant="overline" color="accent">
+        {edition.name ?? t('mediaInfo.editionUnnamed')}
+      </Text>
+      {edition.durationMs != null ? (
+        <Text variant="meta" color="white/35">
+          {fmt.duration(edition.durationMs)}
+        </Text>
+      ) : null}
+    </Row>
+  );
+}
+
+function editionGroups(item: MediaItem, files: MediaFile[]) {
+  const numbered = files.map((file, index) => ({ file, index }));
+  return (item.editions ?? [])
+    .map((edition) => ({
+      edition,
+      files: numbered.filter(({ file }) => file.editionId === edition.id),
+    }))
+    .filter(({ files: cards }) => cards.length > 0);
+}
 
 // A synthetic single-file result from the top-level fields, for legacy rows
 // that predate the per-file list.
@@ -79,6 +129,7 @@ function filesOf(item: MediaItem): MediaFile[] {
       edition: null,
       probed: item.video != null,
       unreadable: null,
+      editionId: null,
     },
   ];
 }

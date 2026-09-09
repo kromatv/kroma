@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MediaFileId } from './ids';
+import { EditionId, MediaFileId } from './ids';
 
 /** The HDR system a stream carries. Each has its own client support, so a device
  * that renders HDR10 and one that also renders Dolby Vision are not the same
@@ -82,8 +82,19 @@ export const MediaFile = Tracks.extend({
   edition: z.string().nullish(),
   probed: z.boolean(),
   unreadable: z.string().nullish(),
+  editionId: EditionId.nullish(),
 });
 export type MediaFile = z.infer<typeof MediaFile>;
+
+/** One named cut of a title: its own runtime, its own content. Two files of one
+ * cut at different fidelities are two media files of THIS, never two editions.
+ * `name` is absent for the one unnamed edition a single-cut title has. */
+export const Edition = z.object({
+  id: EditionId,
+  name: z.string().nullish(),
+  durationMs: z.number().nullish(),
+});
+export type Edition = z.infer<typeof Edition>;
 
 export const MarkerKind = z.enum(['intro', 'credits']);
 export type MarkerKind = z.infer<typeof MarkerKind>;

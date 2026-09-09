@@ -119,6 +119,7 @@ pub(super) fn scan_root(
             edition,
             probed: false,
             unreadable: None,
+            edition_id: None,
             abs_path: Some(abs.to_string_lossy().to_string()),
         };
         index_parsed(
@@ -236,6 +237,7 @@ fn index_parsed(
                 metadata: None,
                 abs_path: None,
                 files: Vec::new(),
+                editions: Vec::new(),
                 default_file_id: None,
                 markers: Vec::new(),
                 audio_analysis: None,
@@ -301,6 +303,7 @@ fn index_parsed(
                 metadata: None,
                 abs_path: None,
                 files: Vec::new(),
+                editions: Vec::new(),
                 default_file_id: None,
                 markers: Vec::new(),
                 audio_analysis: None,

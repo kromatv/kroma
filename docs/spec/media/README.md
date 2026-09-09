@@ -1,7 +1,7 @@
 # Media
 
-Status: **AGREED**, with the codec and stream truth **SHIPPED**. The model's edition level is
-decided and not built. Per-section and per-requirement status is called out where it differs.
+Status: **SHIPPED** in part, with the model and the stream truth **SHIPPED**. Per-section and
+per-requirement status is called out where it differs.
 
 What a title *is* once KROMA knows about it: the technical truth about its streams. That
 truth is the input to every playback decision. If a file direct-plays, it is because its
@@ -21,7 +21,7 @@ Five nouns, nested, each the child of the one before:
 - **MEDIA-1** (SHIPPED) - **Title.** The work a person searches for: a film, or one episode
   of a series. It is the unit [`library/`](../library/) matches to metadata, and it carries
   no bytes.
-- **MEDIA-2** (AGREED) - **Edition.** A named cut of a title: theatrical, director's,
+- **MEDIA-2** (SHIPPED) - **Edition.** A named cut of a title: theatrical, director's,
   extended, remastered. Different runtimes, different content. A title with one cut has one
   unnamed edition.
 - **MEDIA-3** (SHIPPED) - **Media file.** One physical file on disk that realises an edition
@@ -34,12 +34,15 @@ Five nouns, nested, each the child of the one before:
   resolution, bit depth, channel layout, language, disposition. These are what a client is
   matched against.
 
-**MEDIA-6** (AGREED) - The nesting is strict and total: every stream belongs to exactly one
+**MEDIA-6** (SHIPPED) - The nesting is strict and total: every stream belongs to exactly one
 media file, every media file to exactly one edition, every edition to exactly one title.
 Nothing floats.
 
-Today a media file hangs off a title directly and names its edition as a tag rather than
-belonging to one, so the middle level of this nesting is the part still AGREED.
+An edition is **derived** from the cut a file's name carries rather than stored beside it. That
+is what makes the nesting total: the mapping from file to edition is a function, so there is no
+state to drift and no file that can end up in none. A title whose files name only quality tiers
+has exactly one unnamed edition holding all of them, and renaming a file on disk moves it,
+because the name is where the cut was always declared.
 
 ## Versions of one title
 
@@ -49,7 +52,7 @@ Status: **SHIPPED** in part; each requirement carries its own.. This resolves th
 one edition**. They are never modelled as separate titles, and the library never shows a
 duplicate. A person picks a title and a cut; the fidelity is chosen for them.
 
-- **MEDIA-8** (AGREED) - KROMA ranks a title's media files and keeps a **preferred** one.
+- **MEDIA-8** (SHIPPED) - KROMA ranks a title's media files and keeps a **preferred** one.
   Rank order: resolution, then HDR over SDR, then bit depth, then audio channel count, then
   bitrate. The preferred file is the default source for a play request.
 - **MEDIA-9** (AGREED) - The preference is a *default*, not a lock. The model enumerates a
@@ -58,7 +61,10 @@ duplicate. A person picks a title and a cut; the fidelity is chosen for them.
   Which file a client actually receives is [`playback/`](../playback/)'s decision.
 - **MEDIA-10** (AGREED) - Editions are surfaced to the person, because they are different
   content; fidelity variants are not, because they are the same content at different quality.
-  A person chooses a cut, never a resolution.
+  A person chooses a cut, never a resolution. Editions are enumerated on the wire and shown
+  where a person looks at a title's files, and no surface ever offers a resolution. **Choosing
+  a cut is the part not built**: `/stream` takes a file id but `/hls` does not, so a picker
+  would play the chosen cut unmodified and the default cut whenever a transcode is needed.
 
 ## Containers and codecs
 

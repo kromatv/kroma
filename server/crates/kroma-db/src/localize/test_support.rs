@@ -61,6 +61,7 @@ pub(super) fn item(id: &str, kind: Kind) -> MediaItem {
         metadata: Some(meta("Original")),
         abs_path: None,
         files: Vec::new(),
+        editions: Vec::new(),
         default_file_id: None,
         markers: Vec::new(),
         audio_analysis: None,
