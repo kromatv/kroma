@@ -7,6 +7,11 @@
 # under packages/, and the web SPA lives under clients/):
 #     docker build -f server/Dockerfile -t kroma .
 #
+# `.git` is not in the build context, so the commit the admin page and the
+# anonymous heartbeat report comes from a build argument or not at all:
+#     docker build -f server/Dockerfile \
+#       --build-arg KROMA_GIT_HASH="$(git rev-parse --short HEAD)" -t kroma .
+#
 # Run: a data volume + media bind-mounts, KROMA_MEDIA_DIRS pointing at them.
 # Mount media READ-WRITE if you use the built-in requests/downloads (the import
 # step writes into the library); :ro is fine for a purely pre-existing library:
@@ -71,6 +76,7 @@ WORKDIR /src
 COPY packages ./packages
 COPY server ./server
 WORKDIR /src/server
+ARG KROMA_GIT_HASH=unknown
 RUN touch src/main.rs && cargo build --locked --release
 # → /src/server/target/release/kroma-server
 
