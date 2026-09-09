@@ -116,6 +116,7 @@ pub(crate) fn row_to_file(r: &Row) -> rusqlite::Result<MediaFile> {
         subtitles,
         abs_path: r.get(16)?,
         unreadable: r.get(18)?,
+        edition_id: None,
     })
 }
 
@@ -152,6 +153,7 @@ pub(crate) fn row_to_item(r: &Row) -> rusqlite::Result<MediaItem> {
         added_at: r.get(24)?,
         metadata,
         files: Vec::new(),
+        editions: Vec::new(),
         default_file_id: None,
         markers: Vec::new(),
         audio_analysis: None,

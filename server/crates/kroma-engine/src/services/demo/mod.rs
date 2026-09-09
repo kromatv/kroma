@@ -29,6 +29,7 @@ fn demo_file(item: &MediaItem) -> MediaFile {
         edition: None,
         probed: true,
         unreadable: None,
+        edition_id: None,
         // No real path on disk; a synthetic URI satisfies the DB's NOT NULL
         // UNIQUE `abs_path` column. Can't be streamed, matching demo behaviour.
         abs_path: Some(format!("demo://{fid}")),
@@ -287,6 +288,7 @@ fn movie(
         metadata: None,
         abs_path: None,
         files: Vec::new(),
+        editions: Vec::new(),
         default_file_id: None,
         markers: Vec::new(),
         audio_analysis: None,
@@ -333,6 +335,7 @@ fn episode(
         metadata: None,
         abs_path: None,
         files: Vec::new(),
+        editions: Vec::new(),
         default_file_id: None,
         markers: Vec::new(),
         audio_analysis: None,

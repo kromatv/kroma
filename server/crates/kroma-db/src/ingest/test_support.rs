@@ -45,6 +45,7 @@ pub(super) fn file(id: &str, abs: &str, probed: bool) -> MediaFile {
         edition: None,
         probed,
         unreadable: None,
+        edition_id: None,
         abs_path: Some(abs.into()),
     }
 }
@@ -73,6 +74,7 @@ pub(super) fn movie(id: &str, title: &str, library: &str, files: Vec<MediaFile>)
         metadata: None,
         abs_path: None,
         files,
+        editions: Vec::new(),
         default_file_id: None,
         markers: Vec::new(),
         audio_analysis: None,

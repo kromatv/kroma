@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { CastMember, Metadata } from './credits';
 import { ItemId, LibraryId, MediaFileId, ShowId } from './ids';
-import { AudioAnalysis, Marker, MediaFile, Tracks, VideoTrack } from './tracks';
+import { AudioAnalysis, Edition, Marker, MediaFile, Tracks, VideoTrack } from './tracks';
 
 export const MediaKind = z.enum(['movie', 'episode', 'video']);
 export type MediaKind = z.infer<typeof MediaKind>;
@@ -48,6 +48,10 @@ const CatalogEntry = z.object({
   metadata: Metadata.nullish(),
 });
 
+/** `files` arrives ranked best-first, so `files[0]` is the preferred file of the
+ * preferred edition and `defaultFileId` names it. `editions` lists the cuts those
+ * files realise, the preferred one first; every file names exactly one of them in
+ * `editionId`. */
 export const MediaItem = CatalogEntry.extend(Tracks.shape).extend({
   id: ItemId,
   kind: MediaKind,
@@ -58,6 +62,7 @@ export const MediaItem = CatalogEntry.extend(Tracks.shape).extend({
   episodeEnd: z.number().nullable(),
   episodeTitle: z.string().nullable(),
   files: z.array(MediaFile),
+  editions: z.array(Edition).default([]),
   defaultFileId: MediaFileId.nullish(),
   markers: z.array(Marker).nullish(),
   audioAnalysis: AudioAnalysis.nullish(),

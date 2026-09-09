@@ -5,6 +5,7 @@
   "mediaInfo.container": "Container",
   "mediaInfo.default": "Default",
   "mediaInfo.duration": "Duration",
+  "mediaInfo.editionUnnamed": "Standard edition",
   "mediaInfo.noFile": "No file for this element.",
   "mediaInfo.noSubs": "None",
   "mediaInfo.size": "Size",

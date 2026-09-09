@@ -1,13 +1,16 @@
 //! The media catalog's entities: kinds, files, items, shows and seasons.
-//! A track's own description is in [`streams`], edition labels in [`edition`].
+//! A track's own description is in [`streams`], the edition level in [`edition`],
+//! and which of a title's files is preferred in [`preference`].
 //!
 //! The JSON shape here is a public contract web/TV clients depend on it, so
 //! field names and casing must not drift.
 
 mod edition;
+mod preference;
 mod streams;
 
 pub use edition::*;
+pub use preference::*;
 pub use streams::*;
 
 use serde::{Deserialize, Serialize};
@@ -48,6 +51,10 @@ pub struct MediaFile {
     // ffprobe's own reason the container would not open.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unreadable: Option<String>,
+    // Which of the owning item's editions this file realises. Filled by the read
+    // path, which knows the item; a scan does not yet.
+    #[serde(rename = "editionId", default, skip_serializing_if = "Option::is_none")]
+    pub edition_id: Option<String>,
     #[serde(skip)]
     pub abs_path: Option<String>,
 }
@@ -57,7 +64,7 @@ pub struct MediaFile {
 ///
 /// An item can be backed by multiple physical [`MediaFile`]s; the top-level
 /// `video`/`audio`/`duration_ms`/`container`/`subtitles`/`abs_path` fields
-/// mirror the highest-resolution probed file, for clients that read
+/// mirror the preferred one ([`by_preference`]), for clients that read
 /// `item.video.codec` directly.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MediaItem {
@@ -95,8 +102,14 @@ pub struct MediaItem {
     // Mirrors the representative file's path so `/stream` keeps working.
     #[serde(skip)]
     pub abs_path: Option<String>,
+    // Best-first: MEDIA-8's rank, so `files[0]` is the preferred file of the
+    // preferred edition.
     #[serde(default)]
     pub files: Vec<MediaFile>,
+    // The cuts this title has, the one holding the preferred file first. Every
+    // entry exists because a file named it, and every file names exactly one.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub editions: Vec<Edition>,
     // Id of the representative file `/stream` serves and whose stream info
     // populates the top-level fields above. `None` until a file exists.
     #[serde(

@@ -1,5 +1,6 @@
 //! Hydrating items: their files, markers and audio analysis.
 
+mod editions;
 mod representative;
 
 use rusqlite::{params, Connection};
@@ -9,10 +10,9 @@ use kroma_domain::{Kind, MediaFile, MediaItem};
 use self::representative::apply_files;
 use crate::{audio_analysis, markers, row_to_file, row_to_item, FILE_COLS, IN_CHUNK, ITEM_COLS};
 
-// The one order every file read uses: a broken file last, then probed before
-// unprobed, then widest first.
-const FILE_ORDER: &str = "ORDER BY (unreadable IS NULL) DESC, (probed=1) DESC, \
-     v_width DESC NULLS LAST, id";
+// Only so the rows arrive in a fixed order: the rank a client sees is MEDIA-8's,
+// applied in Rust, because bitrate is a division SQL does not hold a column for.
+const FILE_ORDER: &str = "ORDER BY id";
 
 fn files_for_item(conn: &Connection, item_id: &str) -> rusqlite::Result<Vec<MediaFile>> {
     let mut stmt = conn.prepare(&format!(

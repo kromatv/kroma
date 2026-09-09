@@ -72,6 +72,7 @@ pub(super) fn movie(
             metadata: m,
             abs_path: None,
             files: Vec::new(),
+            editions: Vec::new(),
             default_file_id: None,
             markers: Vec::new(),
             audio_analysis: None,
