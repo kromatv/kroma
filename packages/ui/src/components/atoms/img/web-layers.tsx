@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { sharedStyle, styles } from '#ui/core';
+import type { Radius } from '#ui/core/tokens/layout';
 import { classes } from '#ui/lib/classed';
 
 interface WebLayersArgs {
@@ -8,7 +9,7 @@ interface WebLayersArgs {
   alt: string;
   fit: 'cover' | 'contain';
   position: string;
-  radius: number | undefined;
+  radius: Radius | undefined;
   priority: boolean;
   duration: number;
   errored: boolean;

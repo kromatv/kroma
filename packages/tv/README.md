@@ -14,7 +14,7 @@
 
 ```ts
 import { mountTv } from '@kromatv/tv/mount';
-import 'virtual:kroma-tv.css';   // the kit's stylesheet, served by kromaUI()
+import '@kromatv/ui/css/tv';   // the kit's stylesheet, served by kromaUI()
 
 mountTv();          // renders the whole TV app into #root
 ```

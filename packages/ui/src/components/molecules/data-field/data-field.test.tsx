@@ -2,12 +2,22 @@
 
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { type TypeRole, typeSpec } from '#ui/core/tokens';
 import type { ControlSize } from '#ui/lib/field-shell';
 import { DataField } from './data-field';
 
 afterEach(cleanup);
 
 const SIZES: readonly ControlSize[] = ['sm', 'md', 'tv'];
+
+// jsdom leaves a `var()` unresolved, so a size is read back off the role the
+// property names.
+const roleSize = (fontSize: string): number => {
+  const role = /--type-([a-z0-9-]+)-size/.exec(fontSize)?.[1];
+  if (!role) return Number.parseFloat(fontSize);
+  const camel = role.replace(/-([a-z0-9])/g, (_, c: string) => c.toUpperCase()) as TypeRole;
+  return typeSpec[camel].size;
+};
 
 describe('<DataField>', () => {
   it('renders the pair from its parts', () => {
@@ -33,7 +43,7 @@ describe('<DataField>', () => {
       const value = getComputedStyle(screen.getByText('2 h 04'));
       expect(label.textTransform).toBe('uppercase');
       expect(value.textTransform).not.toBe('uppercase');
-      expect(Number.parseFloat(label.fontSize)).toBeLessThan(Number.parseFloat(value.fontSize));
+      expect(roleSize(label.fontSize)).toBeLessThan(roleSize(value.fontSize));
       cleanup();
     }
   });

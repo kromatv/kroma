@@ -118,7 +118,7 @@ export function kromaAtomic({ repoRoot }: AtomicOptions): AtomicPlugin {
         // A server bundle owns no stylesheet; the client's carries the rules.
         if (!landed && this.environment?.config?.consumer !== 'server') {
           this.warn?.(
-            `[kroma-atomic] ${sheet.size} compiled rules found no token stylesheet to land in: this bundle loads neither virtual:kroma*.css nor @kromatv/ui/css, so its compiled styles paint nothing`,
+            `[kroma-atomic] ${sheet.size} compiled rules found no token stylesheet to land in: this bundle imports neither "@kromatv/ui/css" nor one of its parts, so its compiled styles paint nothing`,
           );
         }
       },

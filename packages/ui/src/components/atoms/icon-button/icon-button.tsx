@@ -14,6 +14,7 @@ import {
   useTheme,
   type Variant,
 } from '#ui/core';
+import type { Radius } from '#ui/core/tokens/layout';
 import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import { useGroupMember } from '#ui/lib/group-shape';
 
@@ -212,7 +213,7 @@ function IconButton({
  *  button asking for the same box. */
 const boxes = new Map<string, ViewStyle>();
 
-function metrics(size: number, radius?: number): ViewStyle {
+function metrics(size: number, radius?: Radius): ViewStyle {
   const key = `${size}:${radius ?? ''}`;
   const hit = boxes.get(key);
   if (hit) return hit;

@@ -1,4 +1,4 @@
-import 'virtual:kroma-tv.css';
+import '@kromatv/ui/css/tv';
 import { mountTv } from '@kromatv/tv/mount';
 import { resolveTizenDeviceName } from './deviceName';
 

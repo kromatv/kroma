@@ -41,6 +41,6 @@ describe('<ArtScrim>', () => {
   });
 
   it('rounds itself to the corner it was given, because the parent cannot clip it', () => {
-    expect(paint().borderTopLeftRadius).toBe('13px');
+    expect(paint().borderTopLeftRadius).toBe('var(--radius-lg)');
   });
 });

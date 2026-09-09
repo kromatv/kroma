@@ -105,10 +105,38 @@ describe('publishing a theme', () => {
     expect(themeVersion()).toBe(before);
   });
 
-  it('bumps for a theme that moves what no property can carry', () => {
+  it('carries a radius through the cascade without bumping the version', () => {
     const before = themeVersion();
 
     applyTheme(createTheme({ radius: { md: 0 } }));
+
+    expect(sheet()).toContain('--radius-md:0px');
+    expect(themeVersion()).toBe(before);
+  });
+
+  it('carries a face and a restated role through the cascade without bumping', () => {
+    const before = themeVersion();
+
+    applyTheme(createTheme({ fonts: { ui: 'Courier New' } }));
+
+    expect(sheet()).toContain('--font-ui:Courier New');
+    expect(sheet()).not.toContain('--font-display');
+    expect(themeVersion()).toBe(before);
+  });
+
+  it('publishes every part of a role a theme restates', () => {
+    applyTheme(createTheme({ typeSpec: { body: { size: 18 } } }));
+
+    expect(sheet()).toContain('--type-body-size:18px');
+    expect(sheet()).toContain('--type-body-line:28px');
+    expect(sheet()).toContain('--type-body-family:var(--font-ui)');
+    expect(sheet()).not.toContain('--type-label-size');
+  });
+
+  it('bumps for a theme that moves what no property can carry', () => {
+    const before = themeVersion();
+
+    applyTheme(createTheme({ typeSpec: { body: { size: 17 } } }));
 
     expect(themeVersion()).toBeGreaterThan(before);
   });

@@ -47,7 +47,7 @@ const chip = sv({
     expect(out?.compiled).toBe(5);
     expect(out?.code).toMatch(/const one = style\(__kromaStatic\(/);
     expect(out?.code).toContain(
-      'base: __kromaStatic({"borderRadius":999},{hover:__kromaStatic({"backgroundColor":"var(--kroma-tint-10)"})})',
+      'base: __kromaStatic({"borderRadius":"var(--radius-pill)"},{hover:__kromaStatic({"backgroundColor":"var(--kroma-tint-10)"})})',
     );
     expect(out?.code).toContain("when: { tone: 'accent' }, style: __kromaStatic(");
     expect(out?.code).toContain("defaults: { tone: 'neutral' }");

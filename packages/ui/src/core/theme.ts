@@ -6,14 +6,30 @@
 
 import { KROMA, KROMA_LIGHT, type Theme } from '#ui/core/theme-create';
 import { splitAlpha, withAlpha } from '#ui/core/tokens/colors';
-import { CSS_COLORS } from '#ui/core/tokens/css-palette';
+import {
+  CSS_COLORS,
+  CSS_FONTS,
+  CSS_RADIUS,
+  CSS_TYPE,
+  typeProperty,
+} from '#ui/core/tokens/css-palette';
 import { cssName, cssVar } from '#ui/core/tokens/css-var';
-import { CIRCLE_RADIUS, type CornerValue } from '#ui/core/tokens/layout';
+import {
+  CIRCLE_RADIUS,
+  type CornerValue,
+  type Radius,
+  type RadiusToken,
+} from '#ui/core/tokens/layout';
+import { fontStack, type RoleStyle } from '#ui/core/tokens/typography';
 import { webDocument } from '#ui/lib/dom';
 
 export * from '#ui/core/theme-create';
 
 let active: Theme = KROMA;
+// The theme as it was handed over, for telling a swap that moves the store's
+// own tokens from one the cascade absorbs: `active` reads restated values back
+// as properties, so it cannot be the one compared.
+let applied: Theme = KROMA;
 // Starts at 1 so a consumer can use 0 (or -1) as "never resolved".
 let version = 1;
 const listeners = new Set<() => void>();
@@ -43,15 +59,26 @@ export function groundShade(alpha: number): string {
   return withAlpha(active.colors.bg, alpha);
 }
 
+const isRadiusToken = (corner: string): corner is RadiusToken => corner in active.radius;
+
 /**
- * A corner in px, for the places that need the number rather than a style
- * declaration: a <Frost> layer clipping itself, a nested corner, an animated
- * value. `side` is the box's own side and only `'circle'` reads it.
+ * A corner as a style takes it, for the places that hold the value rather than
+ * a declaration: a <Frost> layer clipping itself, a nested corner, a group's
+ * ends. On a browser a token is the custom property the theme rewrites, so
+ * derive from it with {@link nestedRadius} or {@link scaledRadius} rather than
+ * arithmetic. `side` is the box's own side and only `'circle'` reads it.
  */
-export function radiusValue(corner: CornerValue, side?: number): number {
+export function radiusValue(corner: CornerValue, side?: number): Radius {
   if (typeof corner === 'number') return corner;
   if (corner === 'circle') return side === undefined ? CIRCLE_RADIUS : side / 2;
-  return active.radius[corner];
+  return isRadiusToken(corner) ? active.radius[corner] : corner;
+}
+
+/** A corner scaled with the chrome it sits in (see the player's `scaler`). */
+export function scaledRadius(corner: CornerValue, factor: number): Radius {
+  const value = radiusValue(corner);
+  if (typeof value === 'number') return Math.round(value * factor);
+  return factor === 1 ? value : `calc(${value} * ${factor})`;
 }
 
 /** Monotonic; bumped by every `setTheme`. Anything that caches resolved styles
@@ -128,7 +155,32 @@ function restated(theme: Theme, doc: Document): readonly (readonly [string, stri
   const shadows = Object.entries(theme.shadow)
     .filter(([, value]) => !value.startsWith('var('))
     .map(([token, value]) => [`--shadow-${token}`, value] as const);
-  return [...colors, ...shadows];
+  const radii = Object.entries(theme.radius)
+    .filter((entry): entry is [string, number] => typeof entry[1] === 'number')
+    .map(([token, value]) => [`--radius-${token}`, `${value}px`] as const);
+  const fonts = Object.entries(theme.fonts)
+    .filter(([, value]) => !value.startsWith('var('))
+    .map(([token, value]) => [`--font-${token}`, fontStack(value)] as const);
+  const roles = Object.entries(theme.type)
+    .filter(([, style]) => typeof style.fontSize === 'number')
+    .flatMap(([role, style]) => roleProperties(role, style));
+  return [...colors, ...shadows, ...radii, ...fonts, ...roles];
+}
+
+// A restated role, derived to px by the theme, under the properties every
+// untouched role already reads.
+function roleProperties(role: string, style: RoleStyle): (readonly [string, string])[] {
+  const family = style.fontFamily ?? '';
+  const out: (readonly [string, string])[] = [
+    [typeProperty(role, 'family'), family.startsWith('var(') ? family : fontStack(family)],
+    [typeProperty(role, 'weight'), String(style.fontWeight)],
+    [typeProperty(role, 'size'), `${style.fontSize}px`],
+    [typeProperty(role, 'line'), `${style.lineHeight}px`],
+  ];
+  if (style.letterSpacing !== undefined) {
+    out.push([typeProperty(role, 'spacing'), `${style.letterSpacing}px`]);
+  }
+  return out;
 }
 
 const block = (selector: string, theme: Theme | undefined, doc: Document): string => {
@@ -183,22 +235,30 @@ function publish(theme: Theme, light: Theme | undefined): void {
 // would be the one value that could not follow the switch.
 function cascading(theme: Theme): Theme {
   if (!CSS_COLORS) return theme;
-  return Object.freeze({ ...theme, colors: { ...theme.colors, ...CSS_COLORS } });
+  return Object.freeze({
+    ...theme,
+    colors: { ...theme.colors, ...CSS_COLORS },
+    ...(CSS_RADIUS ? { radius: { ...theme.radius, ...CSS_RADIUS } } : null),
+    ...(CSS_FONTS ? { fonts: { ...theme.fonts, ...CSS_FONTS } } : null),
+    ...(CSS_TYPE ? { type: { ...theme.type, ...CSS_TYPE } } : null),
+  });
 }
 
-// What the STORE owns, because no custom property can carry it: a radius is a
-// number React Native lays out with, a face is a family a text node is measured
-// in. Everything else about a theme is colour, and colour is the cascade's.
-const STORE_TOKENS = [
-  'radius',
-  'fonts',
+// What the STORE owns, because no custom property can carry it: the numbers
+// layout is done with. Off the browser that is every radius and face as well;
+// on one those are the cascade's, like colour. A type spec stays the store's
+// everywhere: a text node's rhythm is measured from its numbers.
+const CARRIED_BY_STORE: readonly (keyof Theme)[] = [
   'typeSpec',
   'motion',
   'gutter',
   'space',
   'rhythm',
   'tracking',
-] as const;
+];
+const STORE_TOKENS: readonly (keyof Theme)[] = CSS_RADIUS
+  ? CARRIED_BY_STORE
+  : ['radius', 'fonts', ...CARRIED_BY_STORE];
 
 function sameShape(a: Theme, b: Theme): boolean {
   return STORE_TOKENS.every((group) => JSON.stringify(a[group]) === JSON.stringify(b[group]));
@@ -214,6 +274,7 @@ function sameShape(a: Theme, b: Theme): boolean {
  */
 export function setTheme(theme: Theme, light?: Theme): void {
   if (theme === active) return;
+  applied = theme;
   active = theme;
   version += 1;
   publish(theme, light);
@@ -224,11 +285,11 @@ export function setTheme(theme: Theme, light?: Theme): void {
  * Applies a theme through the CASCADE where there is one, which on a browser is
  * every token but the handful the store owns (see `STORE_TOKENS`).
  *
- * A theme that restates nothing but colour therefore costs one stylesheet write
- * and NOTHING else - no version bump, no re-render, no remount - because the
- * properties it redefines are the same ones every resolved style already points
- * at. Only a theme that moves a radius, a face or a type scale reaches the
- * store, and only that theme pays for the tree to render again.
+ * A theme that restates nothing but colour, radius or a face therefore costs
+ * one stylesheet write and NOTHING else - no version bump, no re-render, no
+ * remount - because the properties it redefines are the same ones every
+ * resolved style already points at. Only a theme that moves a type scale
+ * reaches the store, and only that theme pays for the tree to render again.
  *
  * `light` is the theme's paper half, for one that restates the ground itself;
  * without it the theme paints the same values in both grounds. Off the browser
@@ -244,7 +305,8 @@ export function applyTheme(theme: Theme, light?: Theme): void {
   // cascade, or a literal here would be the one value a ground switch under
   // this theme could not reach.
   const next = cascading(theme);
-  if (sameShape(active, theme)) return;
+  if (sameShape(applied, theme)) return;
+  applied = theme;
   active = next;
   version += 1;
   for (const listener of listeners) listener();

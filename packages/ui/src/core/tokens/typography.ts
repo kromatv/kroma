@@ -15,6 +15,12 @@ export const fonts = {
  *  system stack, so there is no file to name, fingerprint or preload. */
 export const SELF_HOSTED: readonly string[] = [fonts.display, fonts.ui];
 
+/** What a family paints with: a self-hosted face carries the system fallbacks
+ *  it is served beside, any other family is written as given. */
+export function fontStack(family: string): string {
+  return SELF_HOSTED.includes(family) ? `"${family}", system-ui, sans-serif` : family;
+}
+
 /** Families a theme adds. Augment it and the name is legal wherever a family is
  *  written: a `font:` shorthand, a role's `family` (see `ColorRegistry`). */
 // biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
@@ -41,6 +47,18 @@ export interface TypeSpec {
   em?: number;
   uppercase?: boolean;
 }
+
+/** A role's finished style: px off the browser, and on one the custom
+ *  properties the token sheet publishes it as, which a theme rewrites. */
+export type RoleStyle = Omit<
+  TextStyle,
+  'fontSize' | 'lineHeight' | 'fontWeight' | 'letterSpacing'
+> & {
+  fontSize?: number | string;
+  lineHeight?: number | string;
+  fontWeight?: TextStyle['fontWeight'] | string;
+  letterSpacing?: number | string;
+};
 
 export const typeSpec = {
   hero: { family: 'display', weight: '700', size: 66, ratio: 0.98, em: tracking.display },

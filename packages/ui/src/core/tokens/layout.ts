@@ -55,11 +55,18 @@ export const radius = {
   pill: 999,
 } as const;
 
+/** A corner as a style takes it: px, or on a browser the custom property a
+ *  theme rewrites and what {@link nestedRadius} derives from one. */
+export type Radius = number | `var(${string})` | `calc(${string})`;
+
 /** The radius of a box nested inside another, given the space between their
  *  edges: corners are concentric only when the inner one is the outer minus
- *  the inset. */
-export function nestedRadius(outer: number, inset: number): number {
-  return Math.max(0, outer - inset);
+ *  the inset. Through the cascade the difference is a `calc()`, and one that
+ *  goes negative is a length the browser drops, which is the square corner the
+ *  clamp gives a number. */
+export function nestedRadius(outer: Radius, inset: number): Radius {
+  if (typeof outer === 'number') return Math.max(0, outer - inset);
+  return `calc(${outer} - ${inset}px)`;
 }
 
 /** Radii a theme adds. Augment it and the name is legal wherever a radius is
@@ -81,7 +88,7 @@ export const CIRCLE_RADIUS = 9999;
  * above: a theme restating every radius may square a button, but it must not
  * flatten a spinner, a radio or an avatar into a box.
  */
-export type CornerValue = RadiusToken | 'circle' | number;
+export type CornerValue = RadiusToken | 'circle' | Radius;
 
 /** Layout gutters. `tv` is the 10-foot side padding (overscan-safe on every
  * panel we ship to). */

@@ -1,0 +1,300 @@
+export const title = 'The style engine';
+export const summary = 'What you write, what the browser gets, and the four moments in between.';
+export const width = 'wide';
+
+Tailwind, cva and tailwind-variants all end in the same place: a string of class
+names on an element. React Native has no `className`, and this kit is written
+against React Native so that one component renders on a television, on a phone
+and in a browser. So the kit resolves its own styles.
+
+On a browser target it does that mostly at **build time**. You write a
+declaration in the kit's vocabulary; a Vite plugin turns it into CSS classes and
+rewrites your call to point at them. Nothing resolves anything while the page is
+running.
+
+Here is the whole thing in one example. You write:
+
+```tsx
+const s = styles({ row: { row: true, gap: 6 } });
+
+<Box style={s.row} />
+```
+
+The browser gets:
+
+```html
+<div class="cHL1BB byCsXf">
+```
+
+```css
+.cHL1BB{flex-direction:row;}
+.byCsXf{gap:6px;}
+```
+
+Two class names and two rules that every other `row: true, gap: 6` in the app
+shares. This page is how that happens, and what the engine does when it cannot do
+it ahead of time.
+
+## The four moments
+
+| Moment | What runs | What it costs at runtime |
+| --- | --- | --- |
+| You write | `styles()` and `sv()`, in the kit's vocabulary | nothing |
+| Module load | `split()` normalises the declaration | once per declaration |
+| Build (browser only) | `kroma-atomic` writes the CSS and rewrites the call | nothing |
+| Render | the recipe picks a cascade and reads a cache | a map lookup |
+
+React Native skips the build column. Metro never runs the plugin, and the same
+source resolves at render as it always did.
+
+## 1. What you write
+
+`styles()` is for shapes one file reuses. It has no props and no states.
+
+```tsx
+const s = styles({
+  row: { row: true, align: 'center', gap: 6, px: 8, radius: 'sm' },
+  label: { fontSize: 13, color: 'textMuted' },
+});
+```
+
+`sv()` is for a component's design: what changes with a prop or an interaction.
+
+```tsx
+const chipVariants = sv({
+  base: { row: true, center: true, radius: 'pill' },
+  variants: {
+    tone: { neutral: { bg: 'white/10' }, accent: { bg: 'accentSoft' } },
+    size: { sm: { py: 6, px: 12 }, tv: { py: 9, px: 18 } },
+    active: { true: { bg: 'accent' } },
+  },
+  compound: [{ when: { tone: 'accent', active: true }, style: { border: 'accentWash/45' } }],
+  defaults: { tone: 'neutral', size: 'sm', active: false },
+});
+```
+
+Ask it for a combination:
+
+```tsx
+chipVariants({ tone: 'accent', size: 'sm' });
+```
+
+and on a browser you get nine class names:
+
+```
+cHL1BB cPd2ps cBSJXY a3sIku cop7vB clU1_B a2XjwU beVaVM dAV1B9
+```
+
+```css
+.cHL1BB{flex-direction:row;}
+.cPd2ps{align-items:center;}
+.cBSJXY{justify-content:center;}
+.a3sIku{border-top-left-radius:var(--radius-pill); /* and the three others */}
+.cop7vB{padding-top:6px;}
+.clU1_B{padding-bottom:6px;}
+.a2XjwU{padding-left:12px;}
+.beVaVM{padding-right:12px;}
+.dAV1B9{background-color:var(--kroma-accent-soft);}
+```
+
+Three rules govern what you may write there.
+
+**Interaction states live inside the layer they change**, under a `_` prefix.
+
+```tsx
+base: { bg: 'white/10', _hover: { bg: 'white/16' } },
+```
+
+A variant's `_hover` beats the base's, so a variant given a resting fill cannot
+be forgotten in a separate hover table. There is no separate hover table.
+
+**There are four states and no more**: `_hover`, `_focus`, `_press`,
+`_disabled`. `<Focusable>` owns the live state and passes it to the recipe.
+Nothing else in a component reads hover or focus.
+
+**`active` is a variant, not a state.** A toggle's pressed-in look comes from its
+props rather than from the pointer. Being a variant is also what lets it carry a
+`_hover` of its own.
+
+## 2. Module load: `split()` runs once
+
+You write shorthands, colour tokens and responsive objects. None of them reach
+render.
+
+```tsx
+{ px: 12, bg: 'accent', radius: 'sm' }
+```
+
+`split()` leaves:
+
+```tsx
+{
+  paddingLeft: 12,
+  paddingRight: 12,
+  backgroundColor: 'var(--kroma-accent)',
+  borderTopLeftRadius: 'var(--radius-sm)',  // and the three others
+}
+```
+
+It runs once per declaration, at module load. It reads no store, which is what
+lets the same function run under Node during a build.
+
+It throws on an unknown `_`-prefixed key. TypeScript only guards those on an
+inline literal, so a layer built from a variable would otherwise carry `_active`
+out as a style key React Native ignores in silence.
+
+## 3. Build: the CSS is written before the page loads
+
+`kromaUI()` carries the `kroma-atomic` plugin. It reads every `styles()`, `sv()`,
+`style()` and `svFor()` **without executing the module**: literals, the module's
+own constants, arithmetic on them, spreads, `as const`, and constants imported
+from another workspace file.
+
+It then rewrites the call in place:
+
+```ts
+const s = styles({ row: { row: true, gap: 6 } });
+// becomes
+const s = styles({ row: __kromaStatic({ flexDirection: 'row', gap: 6 }) });
+```
+
+What it read went through the same `split()` the runtime uses, then through
+react-native-web's own atomic compiler. So a class the build writes and a class
+the runtime would mint for the same value are the same class, and the two can
+never disagree about a rule.
+
+A class name is six characters: a 32-bit murmurhash of the property and the
+value, in a 64-symbol alphabet, with the two leftover bits picking the first
+letter from `a` to `d` so the name is legal CSS with no prefix. Same name on a
+dev server and in a build.
+
+The rules land in the token stylesheet the shell already loads
+(`@kromatv/ui/css`), after everything react-native-web injects at runtime, so a
+compiled class outranks the reset the renderer gives every view.
+
+### Breakpoints
+
+```tsx
+styles({ page: { px: { base: 8, md: 12 } } });
+```
+
+The build resolves the layer at every step and diffs. A value that never moves is
+written flat. A value that moves reads a custom property whose fallback is its
+base, and each further step restates only that property:
+
+```css
+.dtf4ZV{padding-left:var(--kc3zcbh,8px);}
+:root[data-kroma-bp~="md"] .dtf4ZV{--kc3zcbh:12px;}
+```
+
+One property, one class, however many steps. That is what keeps the merge
+correct: a later `px` replaces every step of an earlier one, because the loser's
+rules name a class the element no longer wears.
+
+Those are attribute selectors, not media queries, because the store's width is
+not always the window's. `<TvStage>` paints a fixed 1920 canvas at whatever scale
+the panel gives it. A media query would put the compiled classes on one step
+while `<Box>` resolved at another. One store decides and writes `data-kroma-bp`
+on the root, carrying every step reached (`base md lg` at `lg`), so `~=` matches
+from a step upwards as the cascade does.
+
+## 4. Render: a cascade, then a cache key
+
+Asking a recipe for a combination builds one cascade, in a fixed order:
+
+```
+base
+  -> the layer of each picked variant, in declaration order
+  -> every compound whose condition holds
+  -> each active state, sweeping all of the above again
+```
+
+The last sweep is why a variant's `_hover` lands after the base's.
+
+That work is cached per recipe. The key is a combination plus a state suffix, and
+the suffix is where the care went. A caller always passes all four states, so a
+recipe declaring no `_hover` would mint separate hovered and unhovered entries
+holding identical objects. Each recipe therefore computes a mask of the states it
+actually declares:
+
+```ts
+export function maskOf(declared: Iterable<SvStateName>): number {
+  let mask = 0;
+  for (const name of declared) mask |= STATE_BIT[name];
+  return mask;
+}
+```
+
+Only masked states reach the key. The suffix itself is one of sixteen strings
+precomputed at module load, because this code runs on cache hits too and a hit
+must not allocate. The cache holds 1024 entries, keyed on the theme version, so a
+theme swap empties it instead of serving the previous palette.
+
+## 5. What a theme can still change
+
+Colour, elevation, radius, families and type roles reach a compiled rule as
+custom properties:
+
+```css
+.dAV1B9{background-color:var(--kroma-accent-soft);}
+```
+
+So swapping a theme is a stylesheet write and nothing else:
+
+```css
+:root{--kroma-accent:#4AF6A3;--radius-pill:0px;--font-ui:Courier New;}
+```
+
+Every compiled class repaints. No re-render, no resolver pass. A theme that
+restates only colour, corners or a typeface costs exactly that one write.
+
+Spacing, gutters and motion are the exception. They are **not** custom
+properties: the build writes their numbers straight into the class.
+
+```tsx
+gap: space[4]   // compiles to  .byCsXf{gap:16px;}   not  gap:var(--space-4)
+```
+
+A theme that redefined `space[4]` to `20` would leave that class at 16. No KROMA
+theme touches those numbers, so it never comes up here. A kit consumer whose
+theme does turns the compiler off with `kromaUI({ atomic: false })` and gets
+runtime resolution back.
+
+## 6. What falls back to the runtime
+
+The build can only read a declaration a reader can see. These stay on the
+runtime, and resolve exactly as they always did:
+
+```tsx
+styles({ key: { width: keyRowWidth(index) } });   // a call
+<Box style={{ height: measured }} />              // bound at render
+```
+
+A style the renderer never registered paints **inline**, which is the one thing
+this engine cannot share between elements. On a dev server the resolver names
+each one, once per shape:
+
+```
+[kroma] a style painted inline instead of as classes: {paddingVertical}
+```
+
+Properties a render legitimately computes pass that guard: `width`, `height`, the
+four edges, `maxHeight`, `minWidth`, `paddingTop`, `transform`, `opacity`,
+`borderRadius`, and the background image, position and size. Anything else in
+that message is a declaration that belongs in `styles()`.
+
+An element react-native-web never renders (an `<svg>`, an `<img>`, a client's own
+`<div>`) takes `classes(...styles)` from `@kromatv/ui/kit` instead, which hands
+back the classes those registered styles compile to.
+
+## 7. Seeing what the engine did
+
+- `KROMA_ATOMIC=0` turns the compiler off for one build or dev server. If a bug
+  survives that, it is not the compiler's.
+- `KROMA_ATOMIC_REPORT=1` prints every declaration left to the runtime, with the
+  file, the line and the reason. A build's summary counts them.
+- `bun run kit:compiler` reports how much of the kit compiles ahead of time.
+- In a test, read a control's paint with `declared(el, property)` from
+  `@kromatv/ui/testing`, and ask for the focus ring with `wearsRing(el)`.
+  `el.style` reads nothing of a class, and jsdom's computed style drops
+  `z-index` and every `var()`.

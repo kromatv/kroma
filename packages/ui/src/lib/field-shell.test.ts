@@ -62,9 +62,9 @@ describe('the control table', () => {
     expect(built).toEqual({ sm: CONTROL.sm.px, md: CONTROL.md.px, tv: CONTROL.tv.px });
   });
 
-  it('resolves a corner against the active theme rather than at module load', () => {
-    expect(controlRadius(CONTROL.sm)).toBeGreaterThan(0);
-    expect(controlRadius(CONTROL.tv)).toBeGreaterThan(controlRadius(CONTROL.sm));
+  it('resolves a corner to the property a theme rewrites', () => {
+    expect(controlRadius(CONTROL.sm)).toBe(`var(--radius-${CONTROL.sm.radius})`);
+    expect(controlRadius(CONTROL.tv)).toBe(`var(--radius-${CONTROL.tv.radius})`);
   });
 });
 

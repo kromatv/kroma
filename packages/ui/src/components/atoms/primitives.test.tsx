@@ -11,7 +11,7 @@ import { act, cleanup, fireEvent, render as renderRaw, screen } from '@testing-l
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Field } from '#ui/components/molecules/field';
 import { Dialog } from '#ui/components/organisms/dialog';
-import { radius, typeSpec } from '#ui/core/tokens';
+import { typeSpec } from '#ui/core/tokens';
 import { CONTROL } from '#ui/lib/field-shell';
 import { clearPressGuard } from '#ui/lib/press-guard';
 import { onScreen } from '#ui/testing';
@@ -428,7 +428,7 @@ describe('Skeleton', () => {
     const block = disc(container);
     expect(css(block).width).toBe('220px');
     expect(css(block).height).toBe('22px');
-    expect(css(block).borderTopLeftRadius).toBe(`${radius.sm}px`);
+    expect(css(block).borderTopLeftRadius).toBe('var(--radius-sm)');
     expect(block.children).toHaveLength(0);
   });
 
@@ -470,7 +470,7 @@ describe('Skeleton', () => {
 
   it('lets a caller override the shape it was handed', () => {
     const { container } = render(<Skeleton shape="poster" w={140} radius="pill" />);
-    expect(css(disc(container)).borderTopLeftRadius).toBe(`${radius.pill}px`);
+    expect(css(disc(container)).borderTopLeftRadius).toBe('var(--radius-pill)');
   });
 });
 
@@ -482,7 +482,7 @@ describe('Text', () => {
       </Text>,
     );
     const el = screen.getByText('Films');
-    expect(css(el).fontSize).toBe('38px');
+    expect(css(el).fontSize).toBe('var(--type-h1-size)');
     expect(css(el).color).toBe('var(--kroma-accent)');
   });
 
@@ -568,6 +568,6 @@ describe('Dialog', () => {
   it('rounds the panel with the design radius', () => {
     render(<Dialog.Root open title="Titre" />);
     const panel = document.querySelector('[data-focus-scope]') as HTMLElement;
-    expect(css(panel).borderTopLeftRadius).toBe(`${radius.xl}px`);
+    expect(css(panel).borderTopLeftRadius).toBe('var(--radius-xl)');
   });
 });

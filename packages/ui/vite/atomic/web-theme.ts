@@ -1,23 +1,28 @@
 import { createTheme, KROMA, setTheme, type Theme } from '../../src/core/theme.ts';
 import { colors } from '../../src/core/tokens/colors.ts';
-import { customProperties } from '../../src/core/tokens/css-palette.ts';
+import { customProperties, typeCascade } from '../../src/core/tokens/css-palette.ts';
 import { cssVar } from '../../src/core/tokens/css-var.ts';
 import { shadow } from '../../src/core/tokens/effects.ts';
+import { radius } from '../../src/core/tokens/layout.ts';
+import { fonts, typeSpec } from '../../src/core/tokens/typography.ts';
 
 /**
- * The theme a browser resolves declarations under: every colour and shadow a
- * custom property, exactly what `css-palette.ts` hands the runtime there. The
- * store this process runs the engine against has no browser to read that off,
- * so the build states it.
+ * The theme a browser resolves declarations under: every colour, shadow,
+ * radius, face and type role a custom property, exactly what `css-palette.ts`
+ * hands the runtime there. The store this process runs the engine against has
+ * no browser to read that off, so the build states it.
  */
 export function webTheme(): Theme {
-  return createTheme(
+  const theme = createTheme(
     {
       colors: customProperties(colors, cssVar),
       shadow: customProperties(shadow, (k) => `--shadow-${k}`),
+      radius: customProperties(radius, (k) => `--radius-${k}`),
+      fonts: customProperties(fonts, (k) => `--font-${k}`),
     },
     KROMA,
   );
+  return Object.freeze({ ...theme, type: typeCascade(typeSpec) });
 }
 
 /** Points the engine's store at {@link webTheme}, once per build process. */

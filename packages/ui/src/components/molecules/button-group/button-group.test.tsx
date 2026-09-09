@@ -13,7 +13,7 @@ const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
 afterEach(cleanup);
 
-const R = `${controlRadius(CONTROL.md)}px`;
+const R = String(controlRadius(CONTROL.md));
 const O = '0px';
 
 // Clockwise from the top left, which is how the four corners read as a shape.
@@ -172,7 +172,7 @@ describe('a nested ButtonGroup', () => {
   });
 
   it('inherits the size and the corner of the group around it', () => {
-    const SM = `${controlRadius(CONTROL.sm)}px`;
+    const SM = String(controlRadius(CONTROL.sm));
     render(
       <ButtonGroup.Root label="Barre d’outils" size="sm">
         <ButtonGroup.Root label="Zoom">

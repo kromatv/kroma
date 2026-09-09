@@ -16,6 +16,7 @@ import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
 import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field';
 import { type BoxStyleProps, sharedStyle, styles } from '#ui/core';
 import { nestedRadius } from '#ui/core/tokens';
+import type { Radius } from '#ui/core/tokens/layout';
 import { controlRadius } from '#ui/lib/field-shell';
 import {
   type AddonAlign,
@@ -174,7 +175,7 @@ function slotKey(child: ReactNode, index: number): string {
 
 /** What a control inside the shell measures: the shell's height minus its
  *  inset, the concentric corner, and the pull-in an inline addon needs. */
-function useInShell(part: string): { box: number; radius: number; pull: ViewStyle } {
+function useInShell(part: string): { box: number; radius: Radius; pull: ViewStyle } {
   const { metrics } = useInputGroup(part);
   const slot = useAddonSlot();
   return useMemo(() => {

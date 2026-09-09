@@ -91,7 +91,7 @@ describe('sv shorthands', () => {
       justifyContent: 'center',
       paddingLeft: 18,
       paddingRight: 18,
-      borderRadius: 999,
+      borderRadius: 'var(--radius-pill)',
       backgroundColor: 'var(--kroma-surface-2)',
     });
   });
@@ -152,7 +152,7 @@ describe('sv states', () => {
     expect(iconButton().root).toEqual({
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 999,
+      borderRadius: 'var(--radius-pill)',
       backgroundColor: 'rgba(255, 255, 255, 0.12)',
     });
   });
@@ -226,7 +226,7 @@ describe('sv flat form', () => {
   it('resolves under `root`, so nothing downstream knows which form was used', () => {
     expect(pill().root).toMatchObject({
       flexDirection: 'row',
-      borderRadius: 999,
+      borderRadius: 'var(--radius-pill)',
       paddingLeft: 12,
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
     });

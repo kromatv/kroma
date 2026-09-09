@@ -2,7 +2,7 @@ export type { ColorRegistry, ColorToken } from './colors';
 export { colors, SERIES_COLORS, SHADE, shade, WHEEL_COLORS } from './colors';
 export type { RingStyle, ShadowRegistry, ShadowToken } from './effects';
 export { glow, motion, RING_GAP, RING_ROOM, RING_WIDTH, ring, shadow } from './effects';
-export type { BreakpointName, CornerValue, RadiusRegistry, RadiusToken } from './layout';
+export type { BreakpointName, CornerValue, Radius, RadiusRegistry, RadiusToken } from './layout';
 export {
   absoluteFill,
   BREAKPOINTS,

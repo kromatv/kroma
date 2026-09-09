@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { sourceRoots } from '../bundler/index.ts';
 import { colors, lightColors, splitAlpha, withAlpha } from '../src/core/tokens/colors.ts';
+import { typeProperty } from '../src/core/tokens/css-palette.ts';
 import { cssName, cssVar } from '../src/core/tokens/css-var.ts';
 import {
   glow,
@@ -12,7 +13,14 @@ import {
   WASH_ALPHA,
 } from '../src/core/tokens/effects.ts';
 import { gutter, radius, rhythm, space } from '../src/core/tokens/layout.ts';
-import { fonts, SELF_HOSTED, tracking, typeSpec } from '../src/core/tokens/typography.ts';
+import {
+  fontStack,
+  fonts,
+  SELF_HOSTED,
+  toType,
+  tracking,
+  typeSpec,
+} from '../src/core/tokens/typography.ts';
 import { MOTION } from '../src/styles/motion.ts';
 import { PAGE } from '../src/styles/page.ts';
 import { RESET } from '../src/styles/reset.ts';
@@ -78,16 +86,30 @@ const ALIASES = [
   '--brand-ink: var(--kroma-accent-ink);',
 ];
 
-const stack = (family: string) =>
-  SELF_HOSTED.includes(family) ? `"${family}", system-ui, sans-serif` : family;
-
-const typography = () => [
-  ...Object.entries(fonts).map(([k, v]) => `--font-${k}: ${stack(v)};`),
-  ...Object.entries(typeSpec).map(
-    ([k, s]) => `--type-${kebab(k)}: ${s.weight} ${s.size}px / ${s.ratio} var(--font-${s.family});`,
-  ),
-  ...Object.entries(tracking).map(([k, v]) => `--tracking-${kebab(k)}: ${v}em;`),
-];
+// Each role twice: as the `font` shorthand a stylesheet reads, and part by part
+// as the properties the kit's own text reads back (see css-palette.ts), derived
+// by the same arithmetic React Native lays the role out with.
+const typography = () => {
+  const derived = toType(typeSpec, fonts);
+  return [
+    ...Object.entries(fonts).map(([k, v]) => `--font-${k}: ${fontStack(v)};`),
+    ...Object.entries(typeSpec).flatMap(([k, s]) => {
+      const role = derived[k];
+      if (!role) return [];
+      return [
+        `--type-${kebab(k)}: ${s.weight} ${s.size}px / ${s.ratio} var(--font-${s.family});`,
+        `${typeProperty(k, 'family')}: var(--font-${s.family});`,
+        `${typeProperty(k, 'weight')}: ${s.weight};`,
+        `${typeProperty(k, 'size')}: ${role.fontSize}px;`,
+        `${typeProperty(k, 'line')}: ${role.lineHeight}px;`,
+        ...(role.letterSpacing === undefined
+          ? []
+          : [`${typeProperty(k, 'spacing')}: ${role.letterSpacing}px;`]),
+      ];
+    }),
+    ...Object.entries(tracking).map(([k, v]) => `--tracking-${kebab(k)}: ${v}em;`),
+  ];
+};
 
 const spacing = () => [
   ...Object.entries(space).map(([k, v]) => `--space-${k}: ${v}px;`),

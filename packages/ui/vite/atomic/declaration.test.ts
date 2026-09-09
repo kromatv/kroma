@@ -26,7 +26,7 @@ describe('compileDeclaration', () => {
       paddingLeft: 8,
       paddingRight: 8,
       backgroundColor: 'var(--kroma-accent)',
-      borderRadius: 8,
+      borderRadius: 'var(--radius-sm)',
     });
     expect(leaf.rules.map((rule) => rule.css)).toContainEqual(
       expect.stringContaining('{background-color:var(--kroma-accent);}'),

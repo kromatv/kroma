@@ -17,7 +17,7 @@ import {
   styles,
   sv,
 } from '#ui/core';
-import { breakpoint, CANVAS, radius } from '#ui/core/tokens';
+import { breakpoint, CANVAS } from '#ui/core/tokens';
 
 afterEach(() => {
   cleanup();
@@ -126,10 +126,10 @@ describe('a token inside a breakpoint object', () => {
 
   it('follows a theme swap at every step', () => {
     const corner = { base: 'sm', lg: 'lg' } as const;
-    expect(boxStyle({ radius: corner }, 2).borderRadius).toBe(radius.lg);
+    expect(boxStyle({ radius: corner }, 2).borderRadius).toBe('var(--radius-lg)');
     setTheme(createTheme({ radius: { lg: 18 } }));
     expect(boxStyle({ radius: corner }, 2).borderRadius).toBe(18);
-    expect(boxStyle({ radius: corner }, 0).borderRadius).toBe(radius.sm);
+    expect(boxStyle({ radius: corner }, 0).borderRadius).toBe('var(--radius-sm)');
   });
 
   it('clamps a circle stated per breakpoint against the side stated with it', () => {

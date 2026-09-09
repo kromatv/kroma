@@ -1,8 +1,8 @@
-import { setEntryDefaults } from '@kromatv/ui/kit';
+import { configureKit } from '@kromatv/ui/kit';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { routeTree } from '#site/routeTree.gen';
 
-setEntryDefaults({ physicalKeyboard: true });
+configureKit({ formFactor: 'browser', entry: { size: 'md' } });
 
 export function getRouter() {
   return createTanStackRouter({ routeTree, defaultPreload: 'intent', scrollRestoration: true });

@@ -16,14 +16,14 @@ representation, so the two halves cannot drift.
 An app whose entry is TypeScript imports the sheet and Vite injects it:
 
 ```ts
-import 'virtual:kroma.css';
+import '@kromatv/ui/css';
 ```
 
 A page that must be styled at first paint links it instead, which is a real
 request for an emitted, content-hashed asset:
 
 ```tsx
-import appCss from 'virtual:kroma.css?url';
+import appCss from '@kromatv/ui/css?url';
 ```
 
 An app that still has a stylesheet of its own (because Tailwind needs one) writes
@@ -58,9 +58,9 @@ a reset, and a second unlayered one would outrank every utility it collides with
 | `page` | body, focus ring, scrollbars, admin tables, with the reset left out |
 | `base` | `reset` and `page` together |
 
-Both doors name the same parts: `virtual:kroma-<part>.css`, or
-`@kromatv/ui/css/<part>` in a stylesheet (`virtual:kroma.css` and `@kromatv/ui/css`
-for the aggregate). `tv` is
+One name either way: `@kromatv/ui/css/<part>`, imported from an entry that is
+TypeScript or `@import`ed from a stylesheet, and `@kromatv/ui/css` for the
+aggregate. `tv` is
 there because a television wants the type, the tokens and the reset but none of the
 page furniture on top of it: it hides overflow, grounds itself dark and owns its
 focus visuals. The single parts are for `apps/www`, which wants the furniture

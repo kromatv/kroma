@@ -8,7 +8,7 @@ import {
   splitShorthand,
   TEXT_STYLE_PROPS,
 } from '#ui/core';
-import { CIRCLE_RADIUS, radius } from '#ui/core/tokens';
+import { CIRCLE_RADIUS } from '#ui/core/tokens';
 
 afterEach(() => setTheme(KROMA));
 
@@ -67,8 +67,8 @@ describe('boxStyle paint', () => {
     expect(color('surface1')).toBe('var(--kroma-surface-1)');
   });
 
-  it('resolves a radius token but passes a raw number through', () => {
-    expect(boxStyle({ radius: 'lg' }, 0).borderRadius).toBe(radius.lg);
+  it('resolves a radius token to its property but passes a raw number through', () => {
+    expect(boxStyle({ radius: 'lg' }, 0).borderRadius).toBe('var(--radius-lg)');
     expect(boxStyle({ radius: 7 }, 0).borderRadius).toBe(7);
   });
 

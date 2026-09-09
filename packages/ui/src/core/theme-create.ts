@@ -10,9 +10,14 @@
 // the value in `createTheme`, which is what types the name everywhere the
 // vocabulary reaches.
 
-import type { TextStyle } from 'react-native';
 import { type ColorToken, colors, lightColors, withAlpha } from '#ui/core/tokens/colors';
-import { CSS_COLORS, CSS_SHADOWS } from '#ui/core/tokens/css-palette';
+import {
+  CSS_COLORS,
+  CSS_FONTS,
+  CSS_RADIUS,
+  CSS_SHADOWS,
+  CSS_TYPE,
+} from '#ui/core/tokens/css-palette';
 import {
   lightShadow,
   motion,
@@ -24,10 +29,18 @@ import {
   standoffInside,
   WASH_ALPHA,
 } from '#ui/core/tokens/effects';
-import { gutter, type RadiusToken, radius, rhythm, space } from '#ui/core/tokens/layout';
+import {
+  gutter,
+  type Radius,
+  type RadiusToken,
+  radius,
+  rhythm,
+  space,
+} from '#ui/core/tokens/layout';
 import {
   type FontToken,
   fonts,
+  type RoleStyle,
   type TypeRole,
   type TypeSpec,
   toType,
@@ -47,7 +60,7 @@ type Widen<T> = T extends number
 
 export interface ThemeTokens {
   colors: Record<ColorToken, string>;
-  radius: Record<RadiusToken, number>;
+  radius: Record<RadiusToken, Radius>;
   shadow: Record<ShadowToken, string>;
   fonts: Record<FontToken, string>;
   typeSpec: Record<TypeRole, TypeSpec>;
@@ -73,7 +86,7 @@ const GROUPS: readonly (keyof ThemeTokens)[] = [
 
 export interface Theme extends ThemeTokens {
   /** Derived from `typeSpec` + `fonts`; never authored directly. */
-  type: Record<TypeRole, TextStyle>;
+  type: Record<TypeRole, RoleStyle>;
   /** Derived from the accent; never authored directly. The glow pairs carry the
    *  accent bloom the player's focus treatment adds to the plain ring. */
   ring: {
@@ -127,15 +140,33 @@ function merge<T>(base: T, over: DeepPartial<T> | undefined): T {
 
 // Only a token still holding its built-in value may resolve to a custom property:
 // an override is a decision the cascade knows nothing about.
-function paint<K extends string>(
-  group: Record<K, string>,
-  builtin: Record<K, string>,
-  vars: Readonly<Record<K, string>> | null,
-): Record<K, string> {
+function paint<K extends string, V>(
+  group: Record<K, V>,
+  builtin: Record<K, V>,
+  vars: Readonly<Record<K, V>> | null,
+): Record<K, V> {
   if (!vars) return group;
-  const out = {} as Record<K, string>;
+  const out = {} as Record<K, V>;
   for (const key of Object.keys(group) as K[]) {
     out[key] = group[key] === builtin[key] ? vars[key] : group[key];
+  }
+  return out;
+}
+
+const sameSpec = (a: TypeSpec, b: TypeSpec | undefined) =>
+  b !== undefined && JSON.stringify(a) === JSON.stringify(b);
+
+// A role still authored as built in reads itself off the cascade; a restated
+// one is derived to px, which `applyTheme` publishes under the same properties.
+function paintType(
+  spec: Record<TypeRole, TypeSpec>,
+  families: Record<FontToken, string>,
+): Record<TypeRole, RoleStyle> {
+  const derived = toType(spec, families) as Record<TypeRole, RoleStyle>;
+  if (!CSS_TYPE) return derived;
+  const out = {} as Record<TypeRole, RoleStyle>;
+  for (const role of Object.keys(spec) as TypeRole[]) {
+    out[role] = sameSpec(spec[role], typeSpec[role]) ? CSS_TYPE[role] : derived[role];
   }
   return out;
 }
@@ -145,6 +176,8 @@ function derive(base: ThemeTokens): Theme {
     ...base,
     colors: paint(base.colors, colors, CSS_COLORS),
     shadow: paint(base.shadow, shadow, CSS_SHADOWS),
+    radius: paint<RadiusToken, Radius>(base.radius, radius, CSS_RADIUS),
+    fonts: paint(base.fonts, fonts, CSS_FONTS),
   };
   const accent = tokens.colors.accent;
   const glow = {
@@ -153,7 +186,7 @@ function derive(base: ThemeTokens): Theme {
   };
   return Object.freeze({
     ...tokens,
-    type: toType(tokens.typeSpec, tokens.fonts) as Record<TypeRole, TextStyle>,
+    type: paintType(tokens.typeSpec, tokens.fonts),
     // Every ring is one width standing one gap off the control (see
     // tokens/effects): a themed accent retints them, it does not get to
     // re-decide how thick focus is or how far off it sits.

@@ -1,6 +1,7 @@
 // What the group tells its segments, and the geometry both sides measure against.
 
 import { nestedRadius } from '#ui/core/tokens';
+import type { Radius } from '#ui/core/tokens/layout';
 import { CONTROL, type ControlSize, controlRadius } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
 
@@ -23,7 +24,7 @@ interface SegmentGroupContext {
 
 const [Context, useSegmentGroup] = partContext<SegmentGroupContext>('SegmentGroup.Root');
 
-function segmentRadius(size: ControlSize): number {
+function segmentRadius(size: ControlSize): Radius {
   return nestedRadius(controlRadius(CONTROL[size]), GROUP_PAD);
 }
 

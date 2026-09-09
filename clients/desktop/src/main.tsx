@@ -1,4 +1,4 @@
-import 'virtual:kroma-tv.css';
+import '@kromatv/ui/css/tv';
 import { mountTv } from '@kromatv/tv/mount';
 import { installStage } from '@kromatv/tv/stage';
 // Display-matched grade of the brand-intro film, bundled by THIS shell only:
