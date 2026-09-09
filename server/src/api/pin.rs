@@ -5,9 +5,6 @@
 //! access) it only gates the local switch-in UX. Hashed with the same PBKDF2 as
 //! passwords (its own random salt); the plaintext is never stored or logged.
 
-use std::collections::HashMap;
-use std::sync::{LazyLock, Mutex};
-
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -40,54 +37,44 @@ fn is_valid_pin(pin: &str) -> bool {
     pin.len() == PIN_LEN && pin.bytes().all(|b| b.is_ascii_digit())
 }
 
-// In-memory brute-force guard for `/auth/pin/verify`, keyed by user id: after
-// `PIN_MAX_FAILS` wrong tries, locks out for a fixed cooldown. Process-local
-// (resets on restart) is fine here since the bearer token remains the real
-// credential; the PIN only gates the local profile switch-in UX.
-struct PinAttempt {
-    fails: u32,
-    locked_until: i64,
-}
-const PIN_MAX_FAILS: u32 = 5;
+const PIN_MAX_FAILS: i64 = 5;
 const PIN_COOLDOWN_SECS: i64 = 30;
-static PIN_ATTEMPTS: LazyLock<Mutex<HashMap<String, PinAttempt>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 fn now_secs() -> i64 {
     time::OffsetDateTime::now_utc().unix_timestamp()
 }
 
-fn pin_lock_remaining(uid: &str) -> Option<i64> {
-    let map = PIN_ATTEMPTS.lock().ok()?;
-    let rem = map.get(uid)?.locked_until - now_secs();
-    (rem > 0).then_some(rem)
+/// Seconds left on the account's cooldown, read from the row the guesses are
+/// counted in rather than from this process's memory.
+pub(crate) async fn lock_remaining(
+    state: &SharedState,
+    uid: &str,
+) -> Result<Option<i64>, Response> {
+    let uid = uid.to_string();
+    let recorded = query(&state.db, move |pool| db::pin_attempts(&pool, &uid)).await?;
+    let rem = recorded.locked_until - now_secs();
+    Ok((rem > 0).then_some(rem))
 }
 
-// Returns the lockout window in seconds (0 = none yet).
-fn pin_record_fail(uid: &str) -> i64 {
-    let Ok(mut map) = PIN_ATTEMPTS.lock() else {
-        return 0;
-    };
-    let a = map.entry(uid.to_string()).or_insert(PinAttempt {
-        fails: 0,
-        locked_until: 0,
-    });
-    a.fails += 1;
-    if a.fails >= PIN_MAX_FAILS {
-        // Fixed cooldown after N consecutive wrong PINs (no escalating backoff).
-        a.locked_until = now_secs() + PIN_COOLDOWN_SECS;
-        return PIN_COOLDOWN_SECS;
-    }
-    0
+/// Counts one wrong guess and answers with the cooldown window it earned, in
+/// seconds (`0` = none yet). A fixed window once the count reaches
+/// `PIN_MAX_FAILS`, with no escalating backoff.
+pub(crate) async fn record_fail(state: &SharedState, uid: &str) -> Result<i64, Response> {
+    let now = now_secs();
+    let uid = uid.to_string();
+    let recorded = query(&state.db, move |pool| {
+        db::record_pin_fail(&pool, &uid, PIN_MAX_FAILS, now + PIN_COOLDOWN_SECS)
+    })
+    .await?;
+    Ok((recorded.locked_until - now).max(0))
 }
 
-fn pin_reset(uid: &str) {
-    if let Ok(mut map) = PIN_ATTEMPTS.lock() {
-        map.remove(uid);
-    }
+pub(crate) async fn reset(state: &SharedState, uid: &str) {
+    let uid = uid.to_string();
+    let _ = query(&state.db, move |pool| db::clear_pin_attempts(&pool, &uid)).await;
 }
 
-fn pin_locked_response(loc: &str, secs: i64) -> Response {
+pub(crate) fn locked_response(loc: &str, secs: i64) -> Response {
     (
         StatusCode::TOO_MANY_REQUESTS,
         Json(json!({ "error": i18n::t(loc, "auth.pinLocked", &[]), "retryAfter": secs })),
@@ -95,7 +82,7 @@ fn pin_locked_response(loc: &str, secs: i64) -> Response {
         .into_response()
 }
 
-async fn fetch_pin_hash(state: &SharedState, uid: &str) -> Result<Option<String>, Response> {
+pub(crate) async fn fetch_hash(state: &SharedState, uid: &str) -> Result<Option<String>, Response> {
     let uid = uid.to_string();
     match query(&state.db, move |pool| db::user_pin_hash(&pool, &uid)).await {
         Ok(h) => Ok(h),
@@ -116,24 +103,6 @@ fn check_current_pin(
     Ok(())
 }
 
-// Thin `pub(crate)` aliases so the token-exchange handler (`api::accounts`) can
-// reuse this module's PIN lockout guard + hash lookup without duplicating them.
-pub(crate) fn lock_remaining(uid: &str) -> Option<i64> {
-    pin_lock_remaining(uid)
-}
-pub(crate) fn record_fail(uid: &str) -> i64 {
-    pin_record_fail(uid)
-}
-pub(crate) fn reset(uid: &str) {
-    pin_reset(uid);
-}
-pub(crate) fn locked_response(loc: &str, secs: i64) -> Response {
-    pin_locked_response(loc, secs)
-}
-pub(crate) async fn fetch_hash(state: &SharedState, uid: &str) -> Result<Option<String>, Response> {
-    fetch_pin_hash(state, uid).await
-}
-
 #[derive(Debug, Deserialize)]
 pub struct VerifyPinBody {
     pub pin: String,
@@ -148,29 +117,29 @@ pub async fn verify_pin(
     AuthUser(user): AuthUser,
     Json(body): Json<VerifyPinBody>,
 ) -> Response {
-    if let Some(secs) = pin_lock_remaining(&user.id) {
-        return pin_locked_response(loc, secs);
+    match lock_remaining(&state, &user.id).await {
+        Ok(Some(secs)) => return locked_response(loc, secs),
+        Ok(None) => {}
+        Err(resp) => return resp,
     }
-    let stored = match fetch_pin_hash(&state, &user.id).await {
+    let stored = match fetch_hash(&state, &user.id).await {
         Ok(h) => h,
         Err(resp) => return resp,
     };
     // No PIN set → nothing to gate; succeed so a PIN cleared elsewhere never
     // strands a profile the TV still thinks is locked.
     let Some(hash) = stored else {
-        pin_reset(&user.id);
+        reset(&state, &user.id).await;
         return StatusCode::NO_CONTENT.into_response();
     };
     if auth::verify_password(&body.pin, &hash) {
-        pin_reset(&user.id);
-        StatusCode::NO_CONTENT.into_response()
-    } else {
-        let locked = pin_record_fail(&user.id);
-        if locked > 0 {
-            pin_locked_response(loc, locked)
-        } else {
-            lerr(loc, StatusCode::UNAUTHORIZED, "auth.pinIncorrect")
-        }
+        reset(&state, &user.id).await;
+        return StatusCode::NO_CONTENT.into_response();
+    }
+    match record_fail(&state, &user.id).await {
+        Ok(0) => lerr(loc, StatusCode::UNAUTHORIZED, "auth.pinIncorrect"),
+        Ok(secs) => locked_response(loc, secs),
+        Err(resp) => resp,
     }
 }
 
@@ -192,7 +161,7 @@ pub async fn set_pin(
     if !is_valid_pin(&body.pin) {
         return lerr(loc, StatusCode::BAD_REQUEST, "auth.pinInvalid");
     }
-    let existing = match fetch_pin_hash(&state, &user.id).await {
+    let existing = match fetch_hash(&state, &user.id).await {
         Ok(h) => h,
         Err(resp) => return resp,
     };
@@ -215,7 +184,7 @@ pub async fn set_pin(
         db::reset_access_pin_verified(&pool, &uid)
     })
     .await;
-    pin_reset(&user.id);
+    reset(&state, &user.id).await;
     user.has_pin = true;
     Json(json!({ "user": user })).into_response()
 }
@@ -233,7 +202,7 @@ pub async fn delete_pin(
     AuthUser(mut user): AuthUser,
     Json(body): Json<DeletePinBody>,
 ) -> Response {
-    let existing = match fetch_pin_hash(&state, &user.id).await {
+    let existing = match fetch_hash(&state, &user.id).await {
         Ok(h) => h,
         Err(resp) => return resp,
     };
@@ -245,28 +214,8 @@ pub async fn delete_pin(
         if let Err(resp) = query(&state.db, move |pool| db::set_user_pin(&pool, &uid, None)).await {
             return resp;
         }
-        pin_reset(&user.id);
+        reset(&state, &user.id).await;
     }
     user.has_pin = false;
     Json(json!({ "user": user })).into_response()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fixed_cooldown_after_max_fails_then_reset() {
-        // Unique uid so the process-global attempt map can't collide with peers.
-        let uid = "test-pin-fixed-cooldown";
-        pin_reset(uid);
-        for _ in 0..PIN_MAX_FAILS - 1 {
-            assert_eq!(pin_record_fail(uid), 0);
-        }
-        assert_eq!(pin_record_fail(uid), PIN_COOLDOWN_SECS);
-        let rem = pin_lock_remaining(uid).expect("should be locked");
-        assert!(rem > 0 && rem <= PIN_COOLDOWN_SECS);
-        pin_reset(uid);
-        assert!(pin_lock_remaining(uid).is_none());
-    }
 }

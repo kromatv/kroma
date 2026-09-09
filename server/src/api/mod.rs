@@ -88,6 +88,8 @@ mod it_notifications;
 #[cfg(test)]
 mod it_pin;
 #[cfg(test)]
+mod it_pin_lockout;
+#[cfg(test)]
 mod it_playback;
 #[cfg(test)]
 mod it_playback_faults;

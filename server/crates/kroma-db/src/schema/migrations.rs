@@ -276,4 +276,10 @@ pub(crate) const MIGRATIONS: &[&str] = &[
     "ALTER TABLE files ADD COLUMN v_color_primaries TEXT",
     "ALTER TABLE files ADD COLUMN v_color_transfer TEXT",
     "ALTER TABLE files ADD COLUMN v_color_matrix TEXT",
+    // The wrong PIN guesses behind the profile-switch cooldown. On record rather
+    // than in memory, so a restart is not a fresh allowance.
+    "CREATE TABLE IF NOT EXISTS pin_attempts (\
+        user_id      TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,\
+        fails        INTEGER NOT NULL DEFAULT 0,\
+        locked_until INTEGER NOT NULL DEFAULT 0)",
 ];
