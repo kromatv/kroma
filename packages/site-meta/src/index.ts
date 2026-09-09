@@ -1,5 +1,5 @@
 const url = 'https://kroma.tv';
-const repo = 'https://github.com/maxscharwath/kroma';
+const repo = 'https://github.com/kromatv/kroma';
 
 /**
  * The facts every KROMA web property repeats. Language-invariant only:

@@ -14,7 +14,7 @@ const flag = (name: string) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 const limit = Number.parseInt(flag('--limit') ?? '1000', 10);
-const repo = flag('--repo') ?? 'maxscharwath/kroma';
+const repo = flag('--repo') ?? 'kromatv/kroma';
 
 const gh = (ghArgs: string[]) =>
   execFileSync('gh', [...ghArgs, '--repo', repo], {

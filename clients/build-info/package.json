@@ -8,7 +8,7 @@
   "license": "GPL-2.0-or-later",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "url": "git+https://github.com/kromatv/kroma.git",
     "directory": "clients/build-info"
   },
   "//type": "ESM, even though an Expo app.config.ts reaches this through a CommonJS `require`. Node's type stripping does not rewrite modules, so an ESM `import` inside a \"commonjs\" package fails with \"Cannot use import statement outside a module\"; declaring it a module instead lets require(esm) - supported since Node 22.12 - do the interop.",

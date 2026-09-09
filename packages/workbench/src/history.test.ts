@@ -13,7 +13,7 @@ import {
 } from './history';
 
 const SHA = 'c51eb485a1b2c3d4e5f60718293a4b5c6d7e8f90';
-const REPO = 'https://github.com/maxscharwath/kroma';
+const REPO = 'https://github.com/kromatv/kroma';
 const ROOT = 'packages/ui/src';
 
 const BUTTON = `${ROOT}/components/atoms/button/button.stories.tsx`;

@@ -6,7 +6,7 @@ const entry = (over: Partial<Entry> = {}): Entry => ({
   channel: 'stable',
   tag: 'v0.1.25',
   releaseName: 'KROMA 0.1.25',
-  releaseUrl: 'https://github.com/maxscharwath/kroma/releases/tag/v0.1.25',
+  releaseUrl: 'https://github.com/kromatv/kroma/releases/tag/v0.1.25',
   publishedAt: '2026-03-04T09:12:33Z',
   spkName: 'kroma-0.1.25-3439372-x86_64.spk',
   spkUrl: 'https://dl.test/kroma-0.1.25-3439372-x86_64.spk',
@@ -45,7 +45,7 @@ describe('toRelease', () => {
       day: '2026-03-04',
       size: '50.0 MB',
       spk: 'https://dl.test/kroma-0.1.25-3439372-x86_64.spk',
-      release: 'https://github.com/maxscharwath/kroma/releases/tag/v0.1.25',
+      release: 'https://github.com/kromatv/kroma/releases/tag/v0.1.25',
       notes: 'Fixes the thing.',
       md5: null,
     });

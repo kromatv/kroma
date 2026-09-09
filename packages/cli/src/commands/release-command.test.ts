@@ -7,7 +7,7 @@ import { packBundle } from '../bundle/pack';
 import type { Plan } from './release';
 import { releaseCommand } from './release';
 
-const REPO = 'maxscharwath/kroma';
+const REPO = 'kromatv/kroma';
 
 let dir: string;
 

@@ -3,7 +3,7 @@ export type Env = {
   GITHUB_TOKEN?: string;
 };
 
-export const DEFAULT_REPO = 'maxscharwath/kroma';
+export const DEFAULT_REPO = 'kromatv/kroma';
 
 const CACHE_FRESH = 'https://kroma-modules.cache/catalog-fresh';
 const CACHE_STALE = 'https://kroma-modules.cache/catalog-stale';
