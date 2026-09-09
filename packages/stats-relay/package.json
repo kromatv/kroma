@@ -14,7 +14,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "deploy": "wrangler deploy",
-    "migrate": "wrangler d1 execute kroma-stats --remote --file worker/schema.sql"
+    "migrate": "wrangler d1 migrations apply kroma-stats --remote",
+    "migrate:local": "wrangler d1 migrations apply kroma-stats --local"
   },
   "dependencies": {
     "hono": "^4.13.2",

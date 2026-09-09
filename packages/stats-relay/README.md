@@ -52,17 +52,25 @@ By hand, like the push relay. The database is created once:
 ```bash
 cd worker
 bunx wrangler d1 create kroma-stats          # paste the id into wrangler.jsonc
-bunx wrangler d1 execute kroma-stats --remote --file schema.sql
+bunx wrangler d1 migrations apply kroma-stats --remote
 bunx wrangler deploy
 ```
 
-Re-running `schema.sql` is safe: every statement in it is `IF NOT EXISTS`.
+**Apply the migrations before deploying**, not after: a Worker whose schema the
+database has not caught up with writes rows it cannot write, and a constraint
+that fails at insert time reaches a server as a 500, which it reads as the
+collector being briefly unwell and retries daily forever.
+
+Schema changes are numbered files under `worker/migrations/`, applied in order
+and recorded in D1 so applying twice is a no-op. There is no `schema.sql`: a
+file of `CREATE TABLE IF NOT EXISTS` can create a database and can never alter
+one, so it silently does nothing to the database it wrote.
 
 ## Running it locally
 
 ```bash
 cd worker
-bunx wrangler d1 execute kroma-stats --local --file schema.sql
+bunx wrangler d1 migrations apply kroma-stats --local
 bunx wrangler dev
 ```
 

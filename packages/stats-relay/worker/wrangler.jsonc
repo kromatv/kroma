@@ -3,7 +3,7 @@
   //   bunx wrangler deploy
   // The database was created once, in Western Europe, and its id pasted below:
   //   bunx wrangler d1 create kroma-stats --location weur
-  //   bunx wrangler d1 execute kroma-stats --remote --file schema.sql
+  //   bunx wrangler d1 migrations apply kroma-stats --remote
   // There are no secrets here on purpose: a ping carries nothing worth
   // stealing, and there is nobody to authenticate (see index.ts).
   "$schema": "node_modules/wrangler/config-schema.json",
@@ -30,7 +30,13 @@
     {
       "binding": "STATS_DB",
       "database_name": "kroma-stats",
-      "database_id": "d84dac7b-bb36-424b-8e25-00141f7aefc5"
+      "database_id": "d84dac7b-bb36-424b-8e25-00141f7aefc5",
+      // Schema changes are numbered files here, applied in order with
+      // `wrangler d1 migrations apply` and recorded in the database so
+      // applying twice is a no-op. There is no `schema.sql`: a file of
+      // `CREATE TABLE IF NOT EXISTS` can create a database and can never
+      // alter one, so it silently did nothing to the database it wrote.
+      "migrations_dir": "migrations"
     }
   ],
   // Two different questions, so two different limiters. The binding accepts a
