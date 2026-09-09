@@ -3,7 +3,7 @@
 
 # Requirement index
 
-407 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+409 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -27,7 +27,7 @@
 - **ACCT-18** (AGREED) - The owner is the founding admin, the owner may grant admin to another
 - **ACCT-19** (SHIPPED) - A **user** uses the server: browses and plays what they are permitted
 - **ACCT-20** (SHIPPED) - **Library visibility is per user.** An admin decides which libraries a
-- **ACCT-21** (SHIPPED) - Visibility gates browsing, search and playback alike. A title a user
+- **ACCT-21** (AGREED) - Visibility gates browsing, search and playback alike. A title a user
 - **ACCT-22** (SHIPPED) - Installing a module is an **admin** right, because it runs new
 - **ACCT-23** (AGREED) - The matrix below is the whole of what each role may do. A user's power
 - **ACCT-24** (SHIPPED) - **Per-user**: watch state, meaning resume points, watched flags and
@@ -40,6 +40,8 @@
 - **ACCT-31** (SHIPPED) - Revocation stops a session doing anything new. It cannot fetch, refresh
 - **ACCT-32** (AGREED) - Bytes already downloaded for offline viewing sit in local storage the
 - **ACCT-33** (AGREED) - The guarantee is that a revoked device gains nothing new and loses its
+- **ACCT-34** (SHIPPED) - A title outside a person's grant is absent from browse, search, every
+- **ACCT-35** (AGREED) - Every request for media bytes carries a credential the grant can be
 
 ## ADMIN - [admin](admin/)
 

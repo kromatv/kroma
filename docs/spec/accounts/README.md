@@ -1,6 +1,6 @@
 # Accounts
 
-Status: **SHIPPED**. Sections carry their own status below, and requirements carry
+Status: **SHIPPED** in part. Sections carry their own status below, and requirements carry
 theirs, because the model ships while a few of its edges are still only agreed.
 
 Who is using the server, what they may see, and how a device proves it is them.
@@ -101,7 +101,7 @@ only the case that makes forced expiry obviously wrong.
 
 ## Authorisation
 
-Status: **SHIPPED**, with owner-granted admin (ACCT-18) still **AGREED**.
+Status: **SHIPPED** in part; each requirement carries its own.
 
 **ACCT-17** (SHIPPED) - An **owner or admin** runs the server: users, settings, jobs and
 modules. Admin rights are server-wide, never per-library.
@@ -120,13 +120,23 @@ existing server reads as: narrowing is something an admin does, never something 
 does for them. A library nobody has been granted therefore stays visible to the unrestricted
 accounts and invisible to the narrowed ones.
 
-**ACCT-21** (SHIPPED) - Visibility gates browsing, search and playback alike. A title a user
+**ACCT-21** (AGREED) - Visibility gates browsing, search and playback alike. A title a user
 cannot see is a title they cannot play, resume or find.
 
-The one place this is weaker than it reads: the media byte routes are reachable without a
-session at all (a `<video>` element cannot carry a bearer), so they enforce the grant on a
-request that presents one and nothing on a request that presents none. Closing that needs a
-stream credential the player can carry, which is its own piece of work.
+That full rule is not true yet, and the two requirements below are the halves it breaks into.
+The catalogue half ships; the bytes do not, so ACCT-21 stays agreed until ACCT-35 lands rather
+than shipping with a caveat only this paragraph carries.
+
+**ACCT-34** (SHIPPED) - A title outside a person's grant is absent from browse, search, every
+home row and their watch state, and is refused by its id on every endpoint that presents a
+session. An unknown id and an ungranted one refuse identically, so probing cannot tell a title
+that is hidden from one that was never scanned.
+
+**ACCT-35** (AGREED) - Every request for media bytes carries a credential the grant can be
+enforced against. Today those routes are reachable with no session at all, because a `<video>`
+element cannot attach a bearer, so they enforce the grant on a request that presents one and
+nothing on a request that presents none. A person who knows an id and drops their session
+reaches the bytes, which is why ACCT-21 is not shipped.
 
 **ACCT-22** (SHIPPED) - Installing a module is an **admin** right, because it runs new
 out-of-process code on the server ([`modules/`](../modules/)). A plain user may use whatever
