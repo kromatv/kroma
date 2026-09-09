@@ -1,12 +1,14 @@
-//! The settings store: in-memory key/value map, typed accessors, persist-on-patch
-//! writes, and the built-in defaults.
+//! The settings store: in-memory key/value map, typed accessors and
+//! persist-on-patch writes, over the keys [`super::keys`] declares.
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
 
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::db::Pool;
+
+use super::keys::defaults;
 
 /// Shared, cheap-to-clone handle to the live settings map.
 #[derive(Clone)]
@@ -116,184 +118,15 @@ impl Settings {
     }
 }
 
-fn defaults() -> BTreeMap<String, Value> {
-    let mut m = BTreeMap::new();
-    m.insert("serverName".into(), json!("KROMA"));
-    // One key for the whole blob: `{ "<id>": { "enabled": bool, "config": {..} } }`
-    // (module ids are not known at compile time, so they can't be allow-listed).
-    m.insert("moduleStates".into(), json!({}));
-    // Empty = the built-in catalog (modules.json on this repo's GitHub Releases).
-    // This is the OFFICIAL slot: it stays pinned first and wins on an id clash.
-    m.insert("moduleRegistryUrl".into(), json!(""));
-    // Operator-added registries beyond the official one, as
-    // `[{ "name": str, "url": str, "enabled": bool }]`. Validated on read (see
-    // api/admin/store/registries.rs): the list is operator input pointing at
-    // third-party catalogs of native code.
-    m.insert("moduleRegistries".into(), json!([]));
-    m.insert("uiLanguage".into(), json!("Français"));
-    // Empty → the env-configured `KROMA_TMDB_LANGUAGE` (default "en-US").
-    m.insert("tmdbLanguage".into(), json!(super::TMDB_LANGUAGE_AUTO));
-    m.insert("timezone".into(), json!("Europe/Zurich (UTC+1)"));
-    m.insert("autoUpdate".into(), json!(true));
-    m.insert("updateChannel".into(), json!("Stable"));
-    // Periodic re-scan cadence, the only path that catches NAS/SMB edits (they
-    // emit no FS events). `-1` = `KROMA_WATCH_INTERVAL` or 300s, `0` = FS events only.
-    m.insert("watchAutoScan".into(), json!(true));
-    m.insert("watchIntervalSecs".into(), json!(-1));
-    // On, and an operator turns it off in Admin -> General -> Privacy. What it
-    // sends, and why this is legitimate interest rather than consent, is
-    // docs/anonymous-stats-gdpr.md. The two below are the detail blocks the base
-    // switch carries, each droppable on its own and each silent without it.
-    m.insert("anonStats".into(), json!(true));
-    m.insert("anonStatsUsage".into(), json!(true));
-    m.insert("anonStatsStatistics".into(), json!(true));
-    m.insert("showRecentHome".into(), json!(true));
-    // Security: exposes the account roster on the login screen. Off by default so
-    // knowing the server URL does not reveal who has an account; when off,
-    // `GET /api/users` returns an empty list.
-    m.insert("publicUserList".into(), json!(false));
-    m.insert("themeSongs".into(), json!(false));
-    // off | chapters (free, from embedded chapters) | fingerprint (heavy audio job).
-    m.insert("introDetection".into(), json!("chapters"));
-    m.insert("theme".into(), json!("Sombre (Kroma)"));
-    m.insert("dateFormat".into(), json!("JJ/MM/AAAA"));
-    m.insert("moduleAutoUpdate".into(), json!(true));
-    m.insert("remoteAccess".into(), json!(false));
-    m.insert("remoteUrl".into(), json!(""));
-    // Cloudflare Tunnel token for the supervised `cloudflared` child
-    // (services::remote). A secret: never returned to clients.
-    m.insert("remoteAccessToken".into(), json!(""));
-    m.insert("upLimit".into(), json!("Illimité"));
-    m.insert("https".into(), json!("Préférées"));
-    // Self-signed HTTPS listener: browsers only expose Web Crypto (passkeys) on a
-    // secure origin. Applied at boot, so a change needs a restart; `KROMA_HTTPS` /
-    // `KROMA_HTTPS_PORT` override the stored values. See src/tls.rs.
-    m.insert("httpsEnabled".into(), json!(false));
-    m.insert("httpsPort".into(), json!("4443"));
-    m.insert("httpsRedirect".into(), json!(false));
-    m.insert("ipv6".into(), json!(false));
-    m.insert("localDiscovery".into(), json!(true));
-    m.insert(
-        "localNetworks".into(),
-        json!("192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12"),
-    );
-    m.insert("hwAccel".into(), json!(false));
-    m.insert("hwDevice".into(), json!("Auto"));
-    m.insert("hevcEncode".into(), json!(false));
-    m.insert("transcoderSpeed".into(), json!("Automatique"));
-    m.insert("bgQuality".into(), json!("Préférer la vitesse"));
-    m.insert("maxConcurrent".into(), json!("8"));
-    // Concurrent CPU-heavy background ffmpeg passes; "0" = auto (cores - 1).
-    m.insert("mediaConcurrency".into(), json!("0"));
-    m.insert("pipelinePaused".into(), json!(false));
-    m.insert("deleteAfter".into(), json!(true));
-    m.insert("cacheLimit".into(), json!("80 Go"));
-    m.insert("transcodeCacheLimit".into(), json!("20 Go"));
-    // Scheduler timezone offset in minutes from UTC (60 = UTC+1, -300 = UTC-5).
-    m.insert("jobsUtcOffset".into(), json!(0));
-    // Keyword lists are comma-separated, matched as whole tokens against release names.
-    m.insert("acqEnabled".into(), json!(false));
-    m.insert("acqAutoApprove".into(), json!(false));
-    m.insert("acqDeleteAfterImport".into(), json!(false));
-    m.insert("acqReplaceOnUpgrade".into(), json!(true));
-    m.insert("acqResolution".into(), json!("1080p"));
-    m.insert("acqPreferHevc".into(), json!(true));
-    m.insert("acqMinSeeders".into(), json!(2));
-    m.insert("acqMaxSizeGbMovie".into(), json!(15));
-    m.insert("acqMaxSizeGbEpisode".into(), json!(3));
-    m.insert("acqRequiredKeywords".into(), json!(""));
-    m.insert(
-        "acqForbiddenKeywords".into(),
-        json!("cam, hdcam, ts, telesync, telecine, screener, dvdscr, workprint"),
-    );
-    // Embedded torrent engine knobs (0 = ephemeral port / unlimited rate).
-    m.insert("rqbitPort".into(), json!(0));
-    m.insert("rqbitDownKbps".into(), json!(0));
-    m.insert("rqbitUpKbps".into(), json!(0));
-    // How many downloads may hold an engine slot at once (0 = no cap); the rest
-    // wait in the queue.
-    m.insert("torrentMaxActive".into(), json!(0));
-    // `vpnWgConfig` is a secret: written via /api/admin/vpn, never returned in a
-    // settings view.
-    m.insert("vpnWgConfig".into(), json!(""));
-    m.insert("vpnLocalPort".into(), json!(25345));
-    m.insert("vpnKillSwitch".into(), json!(false));
-    m.insert("vpnCheckUrl".into(), json!("https://api.ipify.org"));
-    // Library new downloads land in, by name; "Auto" = first of the matching kind.
-    m.insert("acqMovieLibrary".into(), json!("Auto"));
-    m.insert("acqSeriesLibrary".into(), json!("Auto"));
-    // Sonarr/Radarr-style tokens; see kroma_torrent::organize::naming.
-    m.insert("namingMovieFolder".into(), json!("{Title} ({Year})"));
-    m.insert(
-        "namingMovieFile".into(),
-        json!("{Title} ({Year}) {Quality Full}"),
-    );
-    m.insert("namingSeriesFolder".into(), json!("{Title} ({Year})"));
-    m.insert("namingSeasonFolder".into(), json!("Season {season:00}"));
-    m.insert(
-        "namingEpisodeFile".into(),
-        json!("{Title} - S{season:00}E{episode:00} - {Episode Title} {Quality Full}"),
-    );
-    // MUST stay registered: `set_patch` silently drops unknown keys, so without
-    // this line `save_naming` answers `{"ok": true}` and throws the value away.
-    m.insert("namingCase".into(), json!("default"));
-    // openai = any OpenAI-compatible server (Ollama, llama.cpp, LM Studio, …);
-    // anthropic = Claude.
-    m.insert("llmEnabled".into(), json!(true));
-    m.insert("llmProvider".into(), json!("openai"));
-    m.insert("llmBaseUrl".into(), json!(""));
-    m.insert("llmModel".into(), json!(""));
-    m.insert("llmApiKey".into(), json!(""));
-    m.insert("llmTemperature".into(), json!(0.7));
-    m.insert("llmMaxTokens".into(), json!(900));
-    m.insert("llmReasoning".into(), json!(false));
-    // Seeded from the flat `llm*` keys above on first read when empty.
-    m.insert("llmProviders".into(), json!([]));
-    m.insert("llmDefaultProvider".into(), json!(""));
-    m.insert("libraries".into(), json!(null));
-    // ISO-8601 `items.added_at` the digest has reported up to. Empty = never run:
-    // the first pass adopts the current library as its baseline and stays silent.
-    m.insert("notifications.digest.since".into(), json!(""));
-    // Web Push (RFC 8292) VAPID identity, minted on the first subscription and
-    // then left alone: rotating it invalidates every subscribed browser.
-    m.insert("notifications.vapid.publicKey".into(), json!(""));
-    m.insert("notifications.vapid.privateKey".into(), json!(""));
-    // Apple/Google only accept keys they issued to whoever PUBLISHES the app, so
-    // these normally arrive with the build (`KROMA_APNS_*` /
-    // `KROMA_FCM_SERVICE_ACCOUNT`); the rows are the fallback for a fork shipping
-    // its own app. Empty = that platform's push stays off.
-    m.insert("notifications.apns.keyP8".into(), json!(""));
-    m.insert("notifications.apns.keyId".into(), json!(""));
-    m.insert("notifications.apns.teamId".into(), json!(""));
-    m.insert("notifications.fcm.serviceAccount".into(), json!(""));
-    // Operator SMTP for credential-reset email. The password is a secret: never
-    // returned in a settings view.
-    m.insert("smtpEnabled".into(), json!(false));
-    m.insert("smtpHost".into(), json!(""));
-    m.insert("smtpPort".into(), json!(587));
-    m.insert("smtpUsername".into(), json!(""));
-    m.insert("smtpFrom".into(), json!(""));
-    m.insert("smtpPassword".into(), json!(""));
-    m
-}
-
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
     use crate::db::testing::TempPool;
 
     fn test_pool() -> TempPool {
         crate::db::testing::temp_pool("settings-store")
-    }
-
-    #[test]
-    fn defaults_carry_known_keys() {
-        let d = defaults();
-        assert_eq!(d.get("serverName"), Some(&json!("KROMA")));
-        assert_eq!(d.get("moduleStates"), Some(&json!({})));
-        assert_eq!(d.get("watchIntervalSecs"), Some(&json!(-1)));
-        assert_eq!(d.get("llmTemperature"), Some(&json!(0.7)));
-        assert!(!d.contains_key("nonexistentKey"));
     }
 
     #[test]

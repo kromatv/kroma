@@ -237,10 +237,20 @@ under `ports/` and should not have been.
 
 ## What the host offers a module
 
-Shipped and generic: settings read/write, its own SQLite file plus a declared and
-authorizer-enforced slice of the core database, event publish, notifications,
-session lookup and permission checks, i18n with the module's own catalogue first,
-admin routes reverse-proxied under `/api/module/<id>/*`, a frontend remote.
+Shipped and generic: settings read/write (the core's own credentials excepted,
+see below), its own SQLite file plus a declared and authorizer-enforced slice of
+the core database, event publish, notifications, session lookup and permission
+checks, i18n with the module's own catalogue first, admin routes reverse-proxied
+under `/api/module/<id>/*`, a frontend remote.
+
+**The settings callback is not a way into the operator's credentials.** The keys
+only the core consumes (mail, LLM, the push private material) and the registry
+list the Store installs from are withheld on both directions of
+`/_host/setting{,s}`: a read answers the caller's own default, a patch naming one
+is refused. The core decides which keys those are, beside the defaults that
+declare them; the supervisor only asks, so it still knows nothing about what any
+module is for. A credential whose consumer IS a sidecar stays readable, because
+the callback is how it reaches the process that uses it.
 
 Four gaps stand between that and "a module can do whatever we want":
 
