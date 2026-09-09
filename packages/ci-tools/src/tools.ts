@@ -14,7 +14,13 @@ async function present(binary: string): Promise<boolean> {
   return (await $`command -v ${binary}`.quiet().nothrow()).exitCode === 0;
 }
 
+const IMAGE_EXTRA_SOURCES = [
+  '/etc/apt/sources.list.d/google-chrome.list',
+  '/etc/apt/sources.list.d/microsoft-prod.list',
+];
+
 async function apt(packages: readonly string[], attempts = 3): Promise<void> {
+  await $`sudo rm -f ${IMAGE_EXTRA_SOURCES}`.quiet().nothrow();
   for (let attempt = 1; attempt <= attempts; attempt++) {
     const update = await $`timeout 120 sudo apt-get update`.nothrow();
     const install =
