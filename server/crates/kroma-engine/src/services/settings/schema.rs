@@ -13,26 +13,96 @@ use super::store::Settings;
 
 // Must come from the server binary: `env!("CARGO_PKG_VERSION")` here would be the
 // engine crate's stale version, not the released server's.
-static BUILD_INFO: OnceLock<(String, String, String)> = OnceLock::new();
+static BUILD_INFO: OnceLock<Build> = OnceLock::new();
+
+/// What the running binary is: its released version, the commit it was built
+/// from, when it was built, and the target triple it was built for.
+#[derive(Debug, Clone)]
+pub struct Build {
+    pub version: String,
+    pub commit: String,
+    pub built: String,
+    pub target: String,
+}
 
 /// Call once from the server binary; later calls are ignored.
 pub fn set_build_info(
     version: impl Into<String>,
     commit: impl Into<String>,
     built: impl Into<String>,
+    target: impl Into<String>,
 ) {
-    let _ = BUILD_INFO.set((version.into(), commit.into(), built.into()));
+    let _ = BUILD_INFO.set(Build {
+        version: version.into(),
+        commit: commit.into(),
+        built: built.into(),
+        target: target.into(),
+    });
+}
+
+/// What the binary reported at startup, or an "unknown" stand-in in a test or a
+/// unit build where nothing called [`set_build_info`].
+pub fn build_info() -> Build {
+    BUILD_INFO.get().cloned().unwrap_or_else(|| Build {
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        commit: "unknown".to_string(),
+        built: "unknown".to_string(),
+        target: "unknown".to_string(),
+    })
 }
 
 fn version_label() -> String {
-    let (version, commit, built) = BUILD_INFO.get().cloned().unwrap_or_else(|| {
+    let b = build_info();
+    format!("{} ({} · {})", b.version, b.commit, b.built)
+}
+
+// The identifier is shown only once it exists, because a server that has never
+// reported has nothing minted and nothing to erase. Seeing it is what lets an
+// operator have that row deleted.
+fn privacy_rows(settings: &Settings, t: &impl Fn(&str) -> String) -> Vec<SettingRow> {
+    // The base switch first, then what it carries. The two detail switches send
+    // nothing while the base one is off, which is why they read as its parts
+    // rather than as three independent settings.
+    let toggles = [
+        ("anonStats", "admin.anonStats", "admin.anonStatsHint"),
         (
-            env!("CARGO_PKG_VERSION").to_string(),
-            "unknown".to_string(),
-            "unknown".to_string(),
-        )
-    });
-    format!("{version} ({commit} · {built})")
+            "anonStatsUsage",
+            "admin.anonStatsUsage",
+            "admin.anonStatsUsageHint",
+        ),
+        (
+            "anonStatsStatistics",
+            "admin.anonStatsStatistics",
+            "admin.anonStatsStatisticsHint",
+        ),
+    ];
+    let mut rows: Vec<SettingRow> = toggles
+        .into_iter()
+        .map(|(key, label, hint)| {
+            row(
+                key,
+                t(label),
+                Some(t(hint)),
+                "toggle",
+                &[],
+                settings.get(key),
+                true,
+            )
+        })
+        .collect();
+    let id = settings.get_str("statsId", "");
+    if !id.trim().is_empty() {
+        rows.push(row(
+            "statsId",
+            t("admin.statsId"),
+            Some(t("admin.statsIdHint")),
+            "value",
+            &[],
+            json!(id),
+            true,
+        ));
+    }
+    rows
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -169,6 +239,11 @@ pub fn groups(
                         true,
                     ),
                 ],
+            ),
+            group(
+                "admin.privacy",
+                Some("admin.privacyDesc"),
+                privacy_rows(settings, &t),
             ),
         ],
         "network" => vec![
@@ -662,6 +737,52 @@ mod tests {
     }
 
     #[test]
+    fn the_general_view_offers_anonymous_statistics_and_offers_them_on() {
+        let pool = test_pool();
+        let s = Settings::load(&pool);
+
+        let groups = groups("general", &s, &test_config(), "en");
+
+        let row = find_row(&groups, "anonStats").expect("the privacy group carries the switch");
+        assert_eq!(row.kind, "toggle");
+        assert_eq!(
+            row.value,
+            json!(true),
+            "on by default, and one switch stops it"
+        );
+        assert!(row.applied);
+    }
+
+    #[test]
+    fn the_privacy_group_offers_the_feature_and_the_two_blocks_it_carries() {
+        let pool = test_pool();
+        let s = Settings::load(&pool);
+
+        let groups = groups("general", &s, &test_config(), "en");
+
+        for key in ["anonStats", "anonStatsUsage", "anonStatsStatistics"] {
+            let row = find_row(&groups, key).unwrap_or_else(|| panic!("{key} is not offered"));
+            assert_eq!(row.kind, "toggle", "{key}");
+            assert_eq!(row.value, json!(true), "{key} starts on");
+        }
+    }
+
+    #[test]
+    fn the_identifier_is_shown_once_it_exists_and_not_before() {
+        let pool = test_pool();
+        let s = Settings::load(&pool);
+        assert!(find_row(&groups("general", &s, &test_config(), "en"), "statsId").is_none());
+
+        s.set_internal(&pool, "statsId", json!("a-minted-id"));
+
+        let after = groups("general", &s, &test_config(), "en");
+        let shown = find_row(&after, "statsId")
+            .expect("the privacy group names the identifier once one exists");
+        assert_eq!(shown.kind, "value");
+        assert_eq!(shown.value, json!("a-minted-id"));
+    }
+
+    #[test]
     fn general_view_overlays_stored_value_and_version() {
         let pool = test_pool();
         let s = Settings::load(&pool);
@@ -670,7 +791,7 @@ mod tests {
             std::collections::BTreeMap::from([("serverName".to_string(), json!("MyBox"))]),
         );
         let groups = groups("general", &s, &test_config(), "en");
-        assert_eq!(groups.len(), 2);
+        assert_eq!(groups.len(), 3);
         assert_eq!(
             find_row(&groups, "serverName").unwrap().value,
             json!("MyBox")

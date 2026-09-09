@@ -79,7 +79,7 @@ impl Supervisor {
         &self,
         bytes: &[u8],
         expected_id: Option<&str>,
-        origin: (&str, Option<&str>),
+        origin: crate::Source<'_>,
     ) -> anyhow::Result<ModuleManifest> {
         let tar_bytes = decompressed_tar(bytes)?;
 
@@ -108,7 +108,7 @@ impl Supervisor {
                     std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o700))?;
                 }
             }
-            self.write_origin(&id, origin.0, origin.1);
+            self.write_origin(&id, origin);
             if self.has_binary(&id) {
                 self.spawn(&id)?;
             } else {

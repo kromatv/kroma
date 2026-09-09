@@ -50,6 +50,7 @@ async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Resul
     let mut installed = Vec::new();
     for p in plan {
         let entry = p.entry;
+        let official = entry.official;
         let (url, bytes) = {
             // Throttled: one frame per ~1% (floor 64 KiB), plus the final byte count.
             let last = AtomicU64::new(0);
@@ -69,7 +70,15 @@ async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Resul
             let sup = sup.clone();
             let expected = entry.id.clone();
             tokio::task::spawn_blocking(move || {
-                sup.install(&bytes, Some(&expected), ("registry", Some(&url)))
+                sup.install(
+                    &bytes,
+                    Some(&expected),
+                    kroma_module_supervisor::Source {
+                        kind: "registry",
+                        url: Some(&url),
+                        official,
+                    },
+                )
             })
             .await
             .map_err(|_| anyhow!("install task panicked"))?
@@ -131,12 +140,21 @@ pub async fn reinstall(state: &SharedState, sup: &Arc<Supervisor>, id: &str) -> 
     let entry = modules.iter().find(|m| m.id == id).ok_or_else(|| {
         anyhow!("'{id}' is not in any configured registry, so it cannot be verified")
     })?;
+    let official = entry.official;
     let (url, bytes) = verified_artifact(sup, entry, &|_, _| {}).await?;
     let manifest = {
         let sup = sup.clone();
         let expected = id.to_string();
         tokio::task::spawn_blocking(move || {
-            sup.install(&bytes, Some(&expected), ("registry", Some(&url)))
+            sup.install(
+                &bytes,
+                Some(&expected),
+                kroma_module_supervisor::Source {
+                    kind: "registry",
+                    url: Some(&url),
+                    official,
+                },
+            )
         })
         .await
         .map_err(|_| anyhow!("reinstall task panicked"))?

@@ -17,7 +17,7 @@ use webauthn_rs::prelude::{
     PublicKeyCredential, RegisterPublicKeyCredential, Url, Uuid, Webauthn, WebauthnBuilder,
 };
 
-use crate::api::accounts::{issue_tokens, user_agent};
+use crate::api::accounts::{device_hints, issue_tokens};
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
@@ -357,5 +357,5 @@ pub async fn authenticate_finish(
         Ok(None) => return lerr(loc, StatusCode::UNAUTHORIZED, "passkey.authFailed"),
         Err(resp) => return resp,
     };
-    issue_tokens(state, user, user_agent(&headers)).await
+    issue_tokens(state, user, device_hints(&headers)).await
 }

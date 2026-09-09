@@ -1,0 +1,59 @@
+name: Stats snapshot
+
+# The published aggregate, committed once a day to its own branch.
+#
+# Two jobs in one file, because they are the same file: it is the record of how
+# the numbers moved, and it is the only copy of them that is not at Cloudflare.
+# `daily` in D1 is the collector's own history and nothing backs it up; raw rows
+# are pruned after 90 days, so a lost database would take the series with it.
+#
+# The branch is orphaned on purpose. Committing to `main` nightly would cancel
+# whatever CI run was in flight, and this is data rather than source.
+
+on:
+  schedule:
+    - cron: '41 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stats-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: stats-data
+          fetch-depth: 1
+        continue-on-error: true
+
+      - name: Start the branch if it is not there yet
+        run: |
+          if [ ! -d .git ]; then
+            git init -q .
+            git checkout -q --orphan stats-data
+          fi
+
+      - name: Fetch the published aggregate
+        run: |
+          curl --fail --show-error --silent --max-time 30 \
+            https://stats.kroma.tv/v1/stats -o next.json
+          # A collector that answers something other than the aggregate must not
+          # overwrite the last good copy with it.
+          jq -e '.instances | numbers' next.json > /dev/null
+          jq -S . next.json > data.json
+          rm next.json
+
+      - name: Commit it, if it moved
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data.json
+          git diff --cached --quiet && echo 'unchanged' && exit 0
+          git commit -m "chore(stats): snapshot $(date -u +%Y-%m-%d)"
+          git push origin HEAD:stats-data

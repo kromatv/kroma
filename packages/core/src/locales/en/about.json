@@ -9,7 +9,7 @@
   "about.memoryFree": "{free} GB free of {total} GB",
   "about.memorySize": "{gb} GB",
   "about.platform": "Platform",
-  "about.privacyBody": "KROMA collects nothing. There is no account with us, no analytics and no tracking: the app talks to the server you configure, and shows only what that server serves.",
+  "about.privacyBody": "The app collects nothing. There is no account with us, no analytics and no tracking: it talks to the server you configure, and shows only what that server serves. Your server can be asked to be counted among the KROMA installs running in the world, anonymously, and is not unless its owner switches that on.",
   "about.privacyTitle": "Privacy",
   "about.privacyUrl": "Full policy: kroma.tv/privacy",
   "about.repository": "Repository",

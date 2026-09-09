@@ -61,6 +61,23 @@ const TABLES: &[&str] = &[
     "my_list",
 ];
 
+// Settings that name this machine at the statistics collector rather than
+// describing the server. `statsId` is the whole authorisation over one row
+// there, so restoring a backup onto a second box would have two servers
+// reporting as one and would hand the erasure token to whoever holds the file;
+// `stats.lastSentAt` is the schedule of a machine that is not this one. The
+// `anonStats` switch itself DOES travel: it is an operator's objection, and an
+// objection that a restore throws away is not one.
+const NOT_PORTABLE: &[&str] = &["statsId", "stats.lastSentAt"];
+
+fn not_portable_list() -> String {
+    NOT_PORTABLE
+        .iter()
+        .map(|k| format!("'{k}'"))
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
 /// A portable backup: one row-set per exported table, plus metadata. Serde-only
 /// (the clients treat the file as an opaque blob), so no ts-rs wire type.
 #[derive(Debug, Serialize, Deserialize)]
@@ -91,10 +108,18 @@ pub fn export_portable(pool: &Pool, data_dir: &std::path::Path) -> Result<Backup
         if !table_exists(&conn, t)? {
             continue;
         }
-        tables.insert(
-            t.to_string(),
-            dump_query(&conn, &format!("SELECT * FROM {t}"))?,
-        );
+        let rows = if t == "settings" {
+            dump_query(
+                &conn,
+                &format!(
+                    "SELECT * FROM settings WHERE key NOT IN ({})",
+                    not_portable_list()
+                ),
+            )?
+        } else {
+            dump_query(&conn, &format!("SELECT * FROM {t}"))?
+        };
+        tables.insert(t.to_string(), rows);
     }
     let mut modules = BTreeMap::new();
     for (id, path) in module_stores(data_dir) {
@@ -170,9 +195,22 @@ fn restore_all(
     let tx = conn.transaction()?;
     if reset {
         for &t in TABLES {
-            if table_exists(&tx, t)? {
-                tx.execute(&format!("DELETE FROM {t}"), [])?;
+            if !table_exists(&tx, t)? {
+                continue;
             }
+            // A key a backup never carries is one this machine owns, so a
+            // restore must not take it away either: wiping `statsId` would
+            // leave the row already written at the collector with nobody able
+            // to name it, which is the erasure right gone.
+            let sql = if t == "settings" {
+                format!(
+                    "DELETE FROM settings WHERE key NOT IN ({})",
+                    not_portable_list()
+                )
+            } else {
+                format!("DELETE FROM {t}")
+            };
+            tx.execute(&sql, [])?;
         }
     }
     let mut summary = Vec::new();
@@ -205,6 +243,13 @@ mod tests {
             c.execute("INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('it1','movie','Film','mkv','lib','t')", []).unwrap();
             c.execute("INSERT INTO users (id,email,username,password_hash,created_at) VALUES ('u1','a@b.c','Al','ph','t')", []).unwrap();
             c.execute("INSERT INTO settings (key,value,updated_at) VALUES ('serverName','\"My KROMA\"','t')", []).unwrap();
+            for key in NOT_PORTABLE {
+                c.execute(
+                    "INSERT INTO settings (key,value,updated_at) VALUES (?1,'\"x\"','t')",
+                    [key],
+                )
+                .unwrap();
+            }
             c.execute("INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) VALUES ('u1','it1',1000,5000,'t')", []).unwrap();
             c.execute("INSERT INTO play_history (id,kind,title,started_at,ended_at) VALUES ('h1','movie','Film',1,2)", []).unwrap();
             c.execute(
@@ -302,5 +347,87 @@ mod tests {
         let summary = import_portable(&dst, &data_dir(&dst), &doc, true).unwrap();
         assert_eq!(summary, vec![("users".to_string(), 1)]);
         assert_eq!(count(&dst, "users"), 1);
+    }
+}
+
+#[cfg(test)]
+mod stats_identity_tests {
+    use super::*;
+
+    fn seeded(name: &str) -> (kroma_testing::TempDir, Pool) {
+        let dir = kroma_testing::temp_dir(name);
+        let pool = crate::init(&dir.path().join("kroma.db")).unwrap();
+        {
+            let conn = pool.get().unwrap();
+            for (key, value) in [
+                ("serverName", "\"My KROMA\""),
+                ("statsId", "\"a-minted-token\""),
+                ("anonStats", "true"),
+                ("stats.lastSentAt", "\"2026-08-26T00:00:00Z\""),
+            ] {
+                conn.execute(
+                    "INSERT OR REPLACE INTO settings (key,value,updated_at) VALUES (?1,?2,'t')",
+                    [key, value],
+                )
+                .unwrap();
+            }
+        }
+        (dir, pool)
+    }
+
+    fn setting(pool: &Pool, key: &str) -> Option<String> {
+        pool.get()
+            .unwrap()
+            .query_row("SELECT value FROM settings WHERE key = ?1", [key], |r| {
+                r.get::<_, String>(0)
+            })
+            .ok()
+    }
+
+    #[test]
+    fn a_backup_carries_the_switch_an_operator_set_and_never_the_identifier_behind_it() {
+        let (dir, pool) = seeded("backup-stats");
+
+        let doc = export_portable(&pool, dir.path()).unwrap();
+
+        let keys: Vec<String> = doc.tables["settings"]
+            .iter()
+            .filter_map(|row| row.get("key").and_then(|v| v.as_str()).map(str::to_string))
+            .collect();
+        assert!(keys.contains(&"serverName".to_string()));
+        assert!(
+            keys.contains(&"anonStats".to_string()),
+            "an operator who switched it off would find it on again after a restore"
+        );
+        for absent in NOT_PORTABLE {
+            assert!(!keys.contains(&(*absent).to_string()), "{absent} travelled");
+        }
+    }
+
+    #[test]
+    fn a_restore_that_empties_the_tables_leaves_this_machine_its_own_identifier() {
+        let (source_dir, source) = seeded("backup-stats-src");
+        let doc = export_portable(&source, source_dir.path()).unwrap();
+        let (target_dir, target) = seeded("backup-stats-dst");
+        target
+            .get()
+            .unwrap()
+            .execute(
+                "UPDATE settings SET value = '\"the-target-token\"' WHERE key = 'statsId'",
+                [],
+            )
+            .unwrap();
+
+        import_portable(&target, target_dir.path(), &doc, true).unwrap();
+
+        assert_eq!(
+            setting(&target, "statsId").as_deref(),
+            Some("\"the-target-token\""),
+            "the row already written at the collector would have nobody able to name it"
+        );
+        assert_eq!(
+            setting(&target, "serverName").as_deref(),
+            Some("\"My KROMA\"")
+        );
     }
 }

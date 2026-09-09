@@ -23,9 +23,15 @@ fn the_console_reports_the_build_the_binary_handed_it_and_only_the_first_one() {
         ..Default::default()
     };
 
-    settings::set_build_info("9.9.9", "cafed00d", "2026-08-10");
-    settings::set_build_info("0.0.0", "ffffffff", "1970-01-01");
+    settings::set_build_info(
+        "9.9.9",
+        "cafed00d",
+        "2026-08-10",
+        "x86_64-unknown-linux-gnu",
+    );
+    settings::set_build_info("0.0.0", "ffffffff", "1970-01-01", "aarch64-apple-darwin");
 
     let shown = version_row(&settings::groups("general", &store, &config, "en"));
     assert_eq!(shown, "9.9.9 (cafed00d · 2026-08-10)");
+    assert_eq!(settings::build_info().target, "x86_64-unknown-linux-gnu");
 }

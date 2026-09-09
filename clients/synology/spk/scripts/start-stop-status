@@ -67,6 +67,7 @@ start_daemon() {
     KROMA_MEDIA_DIRS="${KROMA_MEDIA_DIRS}" \
     KROMA_DATA_DIR="${DATA_DIR}" \
     KROMA_WEB_DIR="${TARGET}/web" \
+    KROMA_INSTALL="synology" \
     "${BIN}" >> "${LOG}" 2>&1 &
     echo $! > "${PID}"
 }

@@ -29,6 +29,23 @@ pub struct Origin {
     /// this module is NOT running the artifact it was installed from.
     #[serde(default)]
     pub local_build: bool,
+    /// Came from the official catalog. Recorded here at install time because
+    /// `url` is the artifact's address, which names a release host rather than
+    /// the catalog that listed it. Absent in a record written before this
+    /// existed, which reads as "not known to be official".
+    #[serde(default)]
+    pub official: bool,
+}
+
+/// Where a module being installed came from, as the caller knows it.
+#[derive(Debug, Clone, Copy)]
+pub struct Source<'a> {
+    /// `registry` | `upload` | `url`.
+    pub kind: &'a str,
+    /// The artifact's address, when there was one.
+    pub url: Option<&'a str>,
+    /// The catalog that listed it was the official one.
+    pub official: bool,
 }
 
 /// Identity of an installed binary, enough to notice it was replaced.
@@ -48,6 +65,7 @@ impl Origin {
             installed_at: 0,
             bin: None,
             local_build: false,
+            official: false,
         }
     }
 }
@@ -87,13 +105,14 @@ impl Supervisor {
         origin
     }
 
-    pub(crate) fn write_origin(&self, id: &str, kind: &str, url: Option<&str>) {
+    pub(crate) fn write_origin(&self, id: &str, source: Source<'_>) {
         let origin = Origin {
-            kind: kind.to_string(),
-            url: url.map(str::to_string),
+            kind: source.kind.to_string(),
+            url: source.url.map(str::to_string),
             installed_at: unix_secs(std::time::SystemTime::now()),
             bin: stamp_of(&self.dir(id).join(MODULE_BIN)),
             local_build: false,
+            official: source.official,
         };
         if let Ok(body) = serde_json::to_string(&origin) {
             let _ = std::fs::write(self.dir(id).join(ORIGIN_FILE), body);

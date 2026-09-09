@@ -61,6 +61,8 @@
   "jobs.sections.curate.name": "Editorial collections (AI)",
   "jobs.sections.personalize.desc": "Analyzes each user's taste and has the configured LLM name their home sections.",
   "jobs.sections.personalize.name": "Personalized sections (AI)",
+  "jobs.stats.report.desc": "Sends this server's anonymous usage payload once a day, and only while anonymous statistics are on. Running it by hand sends it, and prints the exact bytes that left.",
+  "jobs.stats.report.name": "Anonymous statistics",
   "jobs.status.cancelled": "Cancelled",
   "jobs.status.failed": "Failed",
   "jobs.status.running": "Running",

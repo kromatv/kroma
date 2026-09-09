@@ -18,7 +18,7 @@ use crate::model::User;
 use crate::services::auth;
 use crate::state::SharedState;
 
-use super::user_agent;
+use super::device_hints;
 
 // Tagged `tokenInvalid` so the client can tell a dead token from a retryable
 // wrong-PIN 401 and send the user to re-login instead of looping on the PIN screen.
@@ -114,13 +114,14 @@ pub async fn exchange_token(
         }
     }
 
-    // Also refreshes the device's label: the UA captured at sign-in may be unnameable.
+    // Also refreshes the device's labels: the UA captured at sign-in may be
+    // unnameable, and a reader can change the device's language after it.
     let uid = user.id.clone();
-    let ua = user_agent(&headers);
+    let hints = device_hints(&headers);
     let seen = access.clone();
     let _ = query(&state.db, move |pool| {
         let _ = db::touch_last_seen(&pool, &uid);
-        let _ = db::touch_access_token(&pool, &seen, ua.as_deref());
+        let _ = db::touch_access_token(&pool, &seen, &hints);
         Ok(())
     })
     .await;
@@ -237,7 +238,7 @@ pub async fn revoke_session(
 pub(in crate::api) async fn mint_device_tokens(
     state: &SharedState,
     user_id: &str,
-    user_agent: Option<String>,
+    hints: db::DeviceHints,
 ) -> Result<(String, String), Response> {
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
 
@@ -245,27 +246,20 @@ pub(in crate::api) async fn mint_device_tokens(
     let access_db = access.clone();
     let uid = user_id.to_string();
     let access_exp = now + auth::ACCESS_TTL_SECS;
-    let ua = user_agent;
-    if let Err(resp) = query(&state.db, move |pool| {
-        db::create_access_token(&pool, &access_db, &uid, access_exp, true, ua.as_deref())
+    query(&state.db, move |pool| {
+        db::create_access_token(&pool, &access_db, &uid, access_exp, true, &hints)
     })
-    .await
-    {
-        return Err(resp);
-    }
+    .await?;
 
     let token = auth::random_token();
     let token_db = token.clone();
     let uid = user_id.to_string();
     let session_exp = now + auth::SESSION_TTL_SECS;
     let sess_access = access.clone();
-    if let Err(resp) = query(&state.db, move |pool| {
+    query(&state.db, move |pool| {
         db::create_session(&pool, &token_db, &uid, session_exp, Some(&sess_access))
     })
-    .await
-    {
-        return Err(resp);
-    }
+    .await?;
 
     Ok((token, access))
 }
@@ -276,9 +270,9 @@ pub(in crate::api) async fn mint_device_tokens(
 pub(crate) async fn issue_tokens(
     state: SharedState,
     user: User,
-    user_agent: Option<String>,
+    hints: db::DeviceHints,
 ) -> Response {
-    let (token, access) = match mint_device_tokens(&state, &user.id, user_agent).await {
+    let (token, access) = match mint_device_tokens(&state, &user.id, hints).await {
         Ok(pair) => pair,
         Err(resp) => return resp,
     };

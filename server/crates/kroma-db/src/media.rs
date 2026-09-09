@@ -31,6 +31,17 @@ pub fn counts(pool: &Pool) -> Result<(usize, usize, usize)> {
     Ok((libs as usize, items as usize, shows as usize))
 }
 
+/// How many of those items are not episodes, for a caller that wants a library's
+/// size rather than its contents.
+pub fn movie_count(pool: &Pool) -> Result<i64> {
+    let conn = pool.get()?;
+    Ok(conn.query_row(
+        "SELECT COUNT(*) FROM items WHERE kind != 'episode'",
+        [],
+        |r| r.get(0),
+    )?)
+}
+
 /// Movies (and loose videos) everything that isn't an episode.
 pub fn list_movies(pool: &Pool, library: Option<&str>) -> Result<Vec<MediaItem>> {
     query_items(

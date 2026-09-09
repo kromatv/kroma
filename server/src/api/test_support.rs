@@ -123,6 +123,7 @@ fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)]) -> TestApp {
             services: HashMap::new(),
             jobs: &[],
             contributions: std::sync::Arc::new(|_| Vec::new()),
+            official_modules: std::sync::Arc::new(Vec::new),
         },
     );
 
@@ -164,7 +165,10 @@ pub fn seed_session(
         &user.id,
         FUTURE,
         true,
-        Some("integration-test"),
+        &db::DeviceHints {
+            user_agent: Some("integration-test".to_string()),
+            language: Some("fr".to_string()),
+        },
     )
     .expect("create access token");
     let token = format!("session-{}-{n}", std::process::id());
@@ -192,7 +196,10 @@ pub fn seed_session_pw(
         &user.id,
         FUTURE,
         true,
-        Some("integration-test"),
+        &db::DeviceHints {
+            user_agent: Some("integration-test".to_string()),
+            language: Some("fr".to_string()),
+        },
     )
     .expect("create access token");
     let token = format!("session-{}-{n}", std::process::id());
@@ -211,7 +218,10 @@ pub fn seed_access_token(state: &SharedState, user_id: &str, pin_verified: bool)
         user_id,
         FUTURE,
         pin_verified,
-        Some("integration-test"),
+        &db::DeviceHints {
+            user_agent: Some("integration-test".to_string()),
+            language: Some("fr".to_string()),
+        },
     )
     .expect("create access token");
     access

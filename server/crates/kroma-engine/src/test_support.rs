@@ -37,6 +37,14 @@ fn test_config(data_dir: PathBuf) -> Config {
 // goes rather than when the test body ends - jobs the test triggers keep
 // writing into it from their own threads.
 fn build_state(embedder: Point, tmdb_api_key: Option<&str>) -> SharedState {
+    build_state_with_official_modules(embedder, tmdb_api_key, Vec::new())
+}
+
+fn build_state_with_official_modules(
+    embedder: Point,
+    tmdb_api_key: Option<&str>,
+    official: Vec<String>,
+) -> SharedState {
     let scratch = kroma_testing::temp_dir("engine-test");
     let db = db::init(&scratch.path().join("kroma.db")).expect("init db");
     let mut config = test_config(scratch.path().to_path_buf());
@@ -46,10 +54,21 @@ fn build_state(embedder: Point, tmdb_api_key: Option<&str>) -> SharedState {
         services: HashMap::new(),
         jobs: &[],
         contributions: Arc::new(|_| Vec::new()),
+        official_modules: Arc::new(move || official.clone()),
     };
     let state = AppState::new(config, false, db, settings, embedder, wiring);
     state.own_scratch_dir(scratch);
     state
+}
+
+/// Like [`test_state`], but with the supervisor reporting `ids` as installed
+/// from the official catalog.
+pub(crate) fn test_state_with_official_modules(ids: &[&str]) -> SharedState {
+    build_state_with_official_modules(
+        Point::absent("embedder"),
+        None,
+        ids.iter().map(|id| (*id).to_string()).collect(),
+    )
 }
 
 /// Like [`test_state`], but with a TMDB key in the config.

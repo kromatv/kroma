@@ -77,10 +77,20 @@ async fn install_url(
     let url = body.url.clone();
     let manifest = {
         let sup = sup.clone();
-        tokio::task::spawn_blocking(move || sup.install(&bytes, None, ("url", Some(&url))))
-            .await
-            .map_err(|_| bad("install task panicked"))?
-            .map_err(|e| bad(&format!("install failed: {e:#}")))?
+        tokio::task::spawn_blocking(move || {
+            sup.install(
+                &bytes,
+                None,
+                kroma_module_supervisor::Source {
+                    kind: "url",
+                    url: Some(&url),
+                    official: false,
+                },
+            )
+        })
+        .await
+        .map_err(|_| bad("install task panicked"))?
+        .map_err(|e| bad(&format!("install failed: {e:#}")))?
     };
     Ok(installed_json(&manifest).into_response())
 }
@@ -218,10 +228,20 @@ async fn install_upload(
         return Err(bad("empty bundle"));
     }
     // Unpack + spawn is blocking; keep it off the async runtime.
-    let manifest = tokio::task::spawn_blocking(move || sup.install(&body, None, ("upload", None)))
-        .await
-        .map_err(|_| bad("install task panicked"))?
-        .map_err(|e| bad(&format!("install failed: {e:#}")))?;
+    let manifest = tokio::task::spawn_blocking(move || {
+        sup.install(
+            &body,
+            None,
+            kroma_module_supervisor::Source {
+                kind: "upload",
+                url: None,
+                official: false,
+            },
+        )
+    })
+    .await
+    .map_err(|_| bad("install task panicked"))?
+    .map_err(|e| bad(&format!("install failed: {e:#}")))?;
     Ok(installed_json(&manifest).into_response())
 }
 

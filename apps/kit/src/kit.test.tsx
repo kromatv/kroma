@@ -48,9 +48,15 @@ const at = (url: string) => history.replaceState(null, '', url);
 // here: what these tests are about is the shell, and a shell reading a warm
 // index is what a second visit to any story already is. The cold path - the
 // busy stage, and the story replacing it - is pinned in @kromatv/workbench.
+// Every story module, so the budget is the whole kit rather than one import.
+// The default 10s is enough on a developer's machine and not on a CI runner
+// sharing two cores with three other shards, which is a slow suite rather than
+// a broken one.
+const WARM_TIMEOUT_MS = 60_000;
+
 beforeAll(async () => {
   await Promise.all(STORIES.map((entry) => entry.load()));
-});
+}, WARM_TIMEOUT_MS);
 
 beforeEach(() => at('/story/colors'));
 

@@ -25,17 +25,88 @@ journaux sont éphémères et ne servent ni à vous profiler, ni à vous reconta
 L’application KROMA s’exécute sur du matériel que vous possédez, votre NAS, un hôte
 Docker, un Raspberry Pi. Votre bibliothèque, vos fichiers, vos comptes et profils,
 votre historique de lecture et vos statistiques y sont stockés localement et n’en
-sortent pas. Nous n’y avons aucun accès, et l’application ne nous envoie aucune
-télémétrie : il n’existe pas de service central vers lequel remonter quoi que ce
-soit.
+sortent pas. Nous n’y avons aucun accès, et l’application elle-même ne nous envoie
+rien : un téléviseur, un téléphone ou un navigateur parle à votre serveur et à rien
+d’autre.
 
 Vous opérez le serveur, donc vous maîtrisez ces données. Vous décidez qui y accède,
 où elles résident et quand les effacer.
 
+## Être compté, et comment l’arrêter
+
+Le logiciel serveur compte votre installation parmi les serveurs KROMA qui tournent
+dans le monde. Cela part de votre serveur, pas de l’application : tout ce qui précède
+reste donc vrai des applications dans un cas comme dans l’autre. Les nombres ainsi
+alimentés sont publics sur [kroma.tv/stats](/stats).
+
+**Base légale : notre intérêt légitime** à savoir quelles versions, plateformes,
+modules et langues sont réellement utilisés, afin qu’une version soit retirée, un
+module maintenu et une traduction choisie sur des faits plutôt qu’au jugé. Pas votre
+consentement : c’est activé par défaut, et appeler un réglage par défaut un
+« consentement » serait faux.
+
+**Vous pouvez vous y opposer à tout moment**, avec un interrupteur dans
+Administration → Général → Confidentialité, immédiatement et sans avoir à vous
+justifier. Nous ne demandons rien et vous ne devez aucune explication. Vous
+pouvez aussi vous opposer à une partie : sous cet interrupteur se trouvent *ce
+que ce serveur fait tourner* et *quelle en est l’ampleur*, que vous pouvez
+abandonner séparément pendant que votre serveur continue de se compter. Ce que
+vous désactivez est absent du relevé, pas envoyé vide.
+
+Tant que c’est activé, votre serveur envoie un relevé par jour. Le voici en
+entier, la dernière colonne indiquant de quel interrupteur relève chaque
+ligne :
+
+| Quoi | Pourquoi | Interrupteur |
+|---|---|---|
+| Un identifiant aléatoire que votre serveur s’est attribué | Pour être compté une fois plutôt qu’une fois par jour. Il ne dérive pas de votre matériel et n’est rattaché à rien d’autre. | Le premier |
+| Sa version et le commit dont il est issu | Pour qu’une version cesse d’être maintenue quand plus personne ne l’utilise. | Le premier |
+| Son système d’exploitation et son mode d’installation | Pour savoir quelles plateformes servent encore. | Le premier |
+| Un code pays de deux lettres | Lu depuis votre connexion à la bordure Cloudflare, pour que la carte ait un sens. Votre adresse n’est pas conservée. | Le premier |
+| Les langues que vos appareils demandent | Pour savoir dans quelle langue traduire KROMA ensuite. Un ensemble, jamais compté, jamais par appareil. | Ce qu’il fait tourner |
+| Les modules officiels activés | Pour savoir lesquels valent la peine d’être maintenus. Un module installé ailleurs n’est jamais nommé. | Ce qu’il fait tourner |
+| Le nombre de téléviseurs, téléphones et ordinateurs qui l’ont utilisé dans la semaine | L’autre moitié de la question. Plafonné à 50 par catégorie. | Quelle ampleur |
+| Approximativement combien de comptes et de titres, par tranches comme « 2-5 » ou « 1k-4999 » | Pour qu’aucun nombre ne soit assez précis pour vous désigner. | Quelle ampleur |
+
+**Jamais rien de ceci :** votre adresse IP, le nom de votre serveur, son nom d’hôte
+ou son adresse web, un titre, un chemin de fichier, ce que vous avez regardé ou
+cherché, un nom de compte, une adresse e-mail, un avatar, un compte exact, ni le nom
+d’un module installé ailleurs que depuis le catalogue officiel.
+
+Il n’y a ni profilage ni décision automatisée. C’est compté, et rien d’autre ne lui
+arrive.
+
+**Où cela va.** À Cloudflare, qui exploite le collecteur et héberge la base pour nous
+en Europe de l’Ouest, et à personne d’autre. Ce n’est ni vendu, ni partagé, ni
+utilisé à des fins publicitaires.
+
+**Combien de temps.** Votre ligne vit tant que votre serveur envoie des relevés, puis
+quatre-vingt-dix jours après le dernier, avant d’être supprimée. Elle cesse de
+compter dans les nombres publiés trente jours après le dernier relevé. Les totaux
+publiés ne portent aucun identifiant.
+
+**Ce que vous pouvez faire, sans nous le demander.** Votre serveur affiche le relevé
+exact dans son propre journal de tâches avant de l’envoyer : vous pouvez donc lire ce
+qui part plutôt que nous croire sur parole, et Administration → Général →
+Confidentialité affiche l’identifiant sous lequel votre ligne existe. Citez-le pour
+supprimer la ligne vous-même :
+
+```
+curl -X POST https://stats.kroma.tv/v1/forget \
+  -H 'content-type: application/json' \
+  -d '{"id":"<l’identifiant affiché dans votre page d’administration>"}'
+```
+
+Elle disparaît immédiatement. Désactivez d’abord l’interrupteur : un serveur qui
+envoie encore des relevés réécrit la ligne le lendemain. Vous pouvez aussi écrire à
+privacy@kroma.tv et nous le ferons, et vous avez le droit d’introduire une
+réclamation auprès d’une autorité de contrôle : en Suisse le PFPDT, et dans l’Union
+européenne l’autorité de votre pays.
+
 ## Notifications push via le relais Cloudflare
 
-C’est le seul composant qui touche un service que nous opérons, et nous préférons le
-dire franchement. Les applications mobile et TV peuvent recevoir des notifications
+C’est la seule partie de l’**application** qui touche un service que nous opérons,
+et nous préférons le dire franchement. Les applications mobile et TV peuvent recevoir des notifications
 push, par exemple « votre téléchargement est prêt ». Apple et Google exigent pour
 cela des identifiants confidentiels qui ne peuvent pas vivre dans un code source
 public et auto-hébergé. Un petit relais que nous exécutons sur Cloudflare les détient
