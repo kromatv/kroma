@@ -107,6 +107,86 @@ async fn stop_will_not_end_another_viewers_session() {
 }
 
 #[tokio::test]
+async fn a_heartbeat_will_not_take_over_another_viewers_live_row() {
+    let t = test_app();
+    let item = demo_item_id("The Matrix");
+    let (_id, intruder) = seed_session(
+        &t.state,
+        "intruder@test.dev",
+        "intruder",
+        &[Permission::Playback],
+    );
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/playback/ping",
+        Some(&t.token),
+        Some(json!({
+            "sessionId": "sess-shared",
+            "itemId": item,
+            "positionMs": 1000,
+            "device": "Salon",
+        })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/playback/ping",
+        Some(&intruder),
+        Some(json!({
+            "sessionId": "sess-shared",
+            "itemId": item,
+            "positionMs": 7_200_000,
+            "state": "paused",
+            "device": "Bureau",
+        })),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, admin) = get(&t.app, "/api/admin/sessions", Some(&t.token)).await;
+    let sessions = admin["sessions"].as_array().expect("sessions array");
+    assert_eq!(sessions.len(), 1, "the beat opened a second row");
+    assert_eq!(sessions[0]["username"], json!("owner"));
+    assert_eq!(sessions[0]["positionMs"], json!(1000));
+    assert_eq!(sessions[0]["state"], json!("playing"));
+    assert_eq!(sessions[0]["device"], json!("Salon"));
+}
+
+#[tokio::test]
+async fn two_viewers_each_get_their_own_live_row() {
+    let t = test_app();
+    let item = demo_item_id("The Matrix");
+    let (_id, guest) = seed_session(&t.state, "guest@test.dev", "guest", &[Permission::Playback]);
+
+    for (token, session) in [(&t.token, "sess-owner"), (&guest, "sess-guest")] {
+        let (status, _) = send(
+            &t.app,
+            "POST",
+            "/api/playback/ping",
+            Some(token),
+            Some(json!({ "sessionId": session, "itemId": item, "positionMs": 1000 })),
+        )
+        .await;
+        assert_eq!(status, StatusCode::NO_CONTENT);
+    }
+
+    let (_, admin) = get(&t.app, "/api/admin/sessions", Some(&t.token)).await;
+    let sessions = admin["sessions"].as_array().expect("sessions array");
+    assert_eq!(sessions.len(), 2);
+    let mut names: Vec<&str> = sessions
+        .iter()
+        .map(|s| s["username"].as_str().expect("username"))
+        .collect();
+    names.sort_unstable();
+    assert_eq!(names, ["guest", "owner"]);
+}
+
+#[tokio::test]
 async fn progress_clamps_negative_positions_to_zero() {
     let t = test_app();
     let item = demo_item_id("Sintel");
