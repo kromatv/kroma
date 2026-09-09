@@ -27,6 +27,7 @@
   "roku.pairHint": "Une fois la chaîne ouverte sur le boîtier, elle affiche un code. Approuvez-le depuis un téléphone ou un navigateur connecté à ce serveur, comme pour toute télévision.",
   "roku.address": "Adresse",
   "roku.addressHint": "Pour un réseau où la recherche n'entend rien : le boîtier affiche son adresse dans Paramètres, Réseau, À propos.",
+  "roku.addressPlaceholder": "192.168.1.50",
   "roku.add": "Ajouter ce boîtier",
   "roku.addFailed": "Rien à cette adresse n'a répondu comme un Roku."
 }

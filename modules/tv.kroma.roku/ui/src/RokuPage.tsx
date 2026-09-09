@@ -130,7 +130,7 @@ export default function RokuPage() {
         </Text>
         <Surface elevated border="border" pad="none" px={22} py={20} mb={12}>
           <Field.Root label={t('roku.address')} value={address} onValueChange={setAddress} mb={12}>
-            <Field.Input placeholder="192.168.1.50" />
+            <Field.Input placeholder={t('roku.addressPlaceholder')} />
             <Field.Hint>{t('roku.addressHint')}</Field.Hint>
           </Field.Root>
           <Row wrap gap={12}>
