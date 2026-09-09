@@ -1,5 +1,5 @@
 import type { LanDiscoveryBridge } from '@kromatv/core';
-import { configureRemote, OverlayHost, setEntryDefaults, Toaster } from '@kromatv/ui/kit';
+import { configureKit, configureRemote, OverlayHost, Toaster } from '@kromatv/ui/kit';
 import { useEffect } from 'react';
 import { BrandIntro } from '#tv/app/BrandIntro';
 import { CompatBanner } from '#tv/app/CompatBanner';
@@ -68,7 +68,7 @@ configureRemote();
 // This app's form factor, stated once instead of at every control: a television
 // is read across a room and driven by a D-pad, so its entries take the shell's
 // ten-foot size and never the physical-keyboard spelling (see lib/field-shell).
-setEntryDefaults({ size: 'tv' });
+configureKit({ formFactor: 'tv' });
 
 // The layers the outlet keeps mounted across a route set: the browse top bar,
 // and the gate's artwork beneath every sign-in screen.
