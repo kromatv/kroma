@@ -9,7 +9,8 @@
 pub mod media;
 
 use crate::model::{
-    AudioStream, Kind, Library, LibraryKind, MediaFile, MediaItem, Show, SubtitleTrack, VideoStream,
+    AudioStream, ColorInfo, HdrFormat, Kind, Library, LibraryKind, MediaFile, MediaItem, Show,
+    SubtitleTrack, VideoStream,
 };
 use crate::services::scan::{now_iso8601, short_hash, ScanData};
 
@@ -27,6 +28,7 @@ fn demo_file(item: &MediaItem) -> MediaFile {
         size: None,
         edition: None,
         probed: true,
+        unreadable: None,
         // No real path on disk; a synthetic URI satisfies the DB's NOT NULL
         // UNIQUE `abs_path` column. Can't be streamed, matching demo behaviour.
         abs_path: Some(format!("demo://{fid}")),
@@ -56,7 +58,7 @@ pub fn demo_data() -> ScanData {
             Some(2017),
             Some(9_780_000),
             "mkv",
-            video("hevc", 3840, 2160, true, 10),
+            video("hevc", 3840, 2160, Some(HdrFormat::Hdr10), 10),
             vec![
                 audio("truehd", 8, Some("eng")),
                 audio("eac3", 6, Some("fra")),
@@ -72,7 +74,7 @@ pub fn demo_data() -> ScanData {
             Some(2024),
             Some(9_960_000),
             "mkv",
-            video("hevc", 3840, 2160, true, 10),
+            video("hevc", 3840, 2160, Some(HdrFormat::Hdr10), 10),
             vec![audio("eac3", 6, Some("eng")), audio("ac3", 6, Some("fra"))],
             vec![sub(Some("eng"), "subrip")],
             &movies_lib,
@@ -84,7 +86,7 @@ pub fn demo_data() -> ScanData {
             Some(1999),
             Some(8_160_000),
             "mp4",
-            video("h264", 1920, 1080, false, 8),
+            video("h264", 1920, 1080, None, 8),
             vec![audio("ac3", 6, Some("eng")), audio("aac", 2, Some("fra"))],
             vec![sub(Some("eng"), "mov_text")],
             &movies_lib,
@@ -96,7 +98,7 @@ pub fn demo_data() -> ScanData {
             Some(2001),
             Some(7_500_000),
             "mkv",
-            video("h264", 1920, 1040, false, 8),
+            video("h264", 1920, 1040, None, 8),
             vec![audio("flac", 2, Some("jpn")), audio("aac", 2, Some("eng"))],
             vec![sub(Some("eng"), "ass"), sub(Some("jpn"), "ass")],
             &movies_lib,
@@ -108,7 +110,7 @@ pub fn demo_data() -> ScanData {
             Some(2008),
             Some(596_000),
             "webm",
-            video("vp9", 1280, 720, false, 8),
+            video("vp9", 1280, 720, None, 8),
             vec![audio("opus", 2, None)],
             vec![],
             &movies_lib,
@@ -120,7 +122,7 @@ pub fn demo_data() -> ScanData {
             Some(2010),
             Some(888_000),
             "mp4",
-            video("av1", 4096, 1744, false, 10),
+            video("av1", 4096, 1744, None, 10),
             vec![audio("aac", 2, Some("eng"))],
             vec![sub(Some("eng"), "subrip")],
             &movies_lib,
@@ -136,7 +138,7 @@ pub fn demo_data() -> ScanData {
             Some(2016),
             Some(2_940_000),
             "mkv",
-            video("hevc", 3840, 2160, true, 10),
+            video("hevc", 3840, 2160, Some(HdrFormat::Hdr10), 10),
             vec![audio("eac3", 6, Some("eng")), audio("aac", 2, Some("fra"))],
             &shows_lib,
             &added,
@@ -151,7 +153,7 @@ pub fn demo_data() -> ScanData {
             Some(2016),
             Some(2_940_000),
             "mkv",
-            video("hevc", 3840, 2160, true, 10),
+            video("hevc", 3840, 2160, Some(HdrFormat::Hdr10), 10),
             vec![audio("eac3", 6, Some("eng"))],
             &shows_lib,
             &added,
@@ -166,7 +168,7 @@ pub fn demo_data() -> ScanData {
             Some(2005),
             Some(1_320_000),
             "mp4",
-            video("h264", 1280, 720, false, 8),
+            video("h264", 1280, 720, None, 8),
             vec![audio("aac", 2, Some("eng"))],
             &shows_lib,
             &added,
@@ -181,7 +183,7 @@ pub fn demo_data() -> ScanData {
             Some(2005),
             Some(1_320_000),
             "mp4",
-            video("h264", 1280, 720, false, 8),
+            video("h264", 1280, 720, None, 8),
             vec![audio("aac", 2, Some("eng"))],
             &shows_lib,
             &added,
@@ -337,14 +339,37 @@ fn episode(
     })
 }
 
-fn video(codec: &str, width: u32, height: u32, hdr: bool, bit_depth: u32) -> Option<VideoStream> {
+fn video(
+    codec: &str,
+    width: u32,
+    height: u32,
+    hdr_format: Option<HdrFormat>,
+    bit_depth: u32,
+) -> Option<VideoStream> {
     Some(VideoStream {
         codec: codec.into(),
         width: Some(width),
         height: Some(height),
-        hdr,
+        hdr: hdr_format.is_some(),
         bit_depth: Some(bit_depth),
+        hdr_format,
+        dolby_vision_profile: None,
+        color: Some(demo_color(hdr_format)),
     })
+}
+
+// What a probe of the generated file would read back: the HDR titles really are
+// encoded PQ / bt2020 (see `demo::media`), so the colour columns must agree.
+fn demo_color(hdr_format: Option<HdrFormat>) -> ColorInfo {
+    let (primaries, transfer, matrix) = match hdr_format {
+        Some(_) => ("bt2020", "smpte2084", "bt2020nc"),
+        None => ("bt709", "bt709", "bt709"),
+    };
+    ColorInfo {
+        primaries: Some(primaries.into()),
+        transfer: Some(transfer.into()),
+        matrix: Some(matrix.into()),
+    }
 }
 
 fn audio(codec: &str, channels: u32, language: Option<&str>) -> AudioStream {
@@ -495,7 +520,7 @@ mod tests {
 
     #[test]
     fn video_and_sub_helpers() {
-        let v = video("hevc", 3840, 2160, true, 10).unwrap();
+        let v = video("hevc", 3840, 2160, Some(HdrFormat::Hdr10), 10).unwrap();
         assert_eq!(v.codec, "hevc");
         assert_eq!(v.width, Some(3840));
         assert!(v.hdr);

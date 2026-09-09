@@ -15,6 +15,9 @@ pub(super) fn video() -> VideoStream {
         height: Some(2160),
         hdr: false,
         bit_depth: Some(10),
+        hdr_format: None,
+        dolby_vision_profile: None,
+        color: None,
     }
 }
 
@@ -41,6 +44,7 @@ pub(super) fn file(id: &str, abs: &str, probed: bool) -> MediaFile {
         size: Some(1000),
         edition: None,
         probed,
+        unreadable: None,
         abs_path: Some(abs.into()),
     }
 }

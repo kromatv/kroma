@@ -1,12 +1,33 @@
 import { z } from 'zod';
 import { MediaFileId } from './ids';
 
+/** The HDR system a stream carries. Each has its own client support, so a device
+ * that renders HDR10 and one that also renders Dolby Vision are not the same
+ * device. */
+export const HdrFormat = z.enum(['hdr10', 'hdr10Plus', 'dolbyVision', 'hlg']);
+export type HdrFormat = z.infer<typeof HdrFormat>;
+
+/** Colour signalling in the container's own spelling (`bt2020`, `smpte2084`,
+ * `bt709`, ...), which is what a client is matched against. */
+export const ColorInfo = z.object({
+  primaries: z.string().nullish(),
+  transfer: z.string().nullish(),
+  matrix: z.string().nullish(),
+});
+export type ColorInfo = z.infer<typeof ColorInfo>;
+
+/** `hdr` is what a client that predates `hdrFormat` reads: true for any variant,
+ * and still true where the variant itself was never recorded, so `hdr` without
+ * `hdrFormat` means "HDR, variant unknown" and never SDR. */
 export const VideoTrack = z.object({
   codec: z.string(),
   width: z.number().nullable(),
   height: z.number().nullable(),
   hdr: z.boolean(),
   bitDepth: z.number().nullable(),
+  hdrFormat: HdrFormat.nullish(),
+  dolbyVisionProfile: z.number().nullish(),
+  color: ColorInfo.nullish(),
 });
 export type VideoTrack = z.infer<typeof VideoTrack>;
 
@@ -52,12 +73,15 @@ export const Tracks = z.object({
 });
 
 /** One physical file backing a logical [`MediaItem`]. `id` is a `short_hash` of
- * the absolute path, not a media-item id. */
+ * the absolute path, not a media-item id. `unreadable` carries ffprobe's reason
+ * the container would not open, which is not the same as `probed: false`: one is
+ * a broken file, the other is a file nothing has looked at yet. */
 export const MediaFile = Tracks.extend({
   id: MediaFileId,
   size: z.number().nullable(),
   edition: z.string().nullish(),
   probed: z.boolean(),
+  unreadable: z.string().nullish(),
 });
 export type MediaFile = z.infer<typeof MediaFile>;
 
