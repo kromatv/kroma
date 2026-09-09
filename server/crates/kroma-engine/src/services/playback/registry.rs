@@ -82,6 +82,14 @@ pub struct Session {
     played_ms: i64,
 }
 
+/// What one heartbeat did to the live map.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Beat {
+    Opened,
+    Refreshed,
+    Refused,
+}
+
 // Long enough that in-flight heartbeats can't re-register a terminated session.
 const TERMINATE_GRACE: Duration = Duration::from_secs(60);
 
@@ -116,6 +124,11 @@ impl Registry {
         map.contains_key(session_id)
     }
 
+    /// Opens the session on first sight, then refreshes it. The row belongs to
+    /// the account that opened it: a beat from anyone else is [`Beat::Refused`]
+    /// and writes nothing, under the one write lock the check shares with the
+    /// write, so the viewer the dashboard names cannot be whoever beat last.
+    ///
     /// `item` is only read on first sight, to build the title/streams snapshot.
     pub fn upsert(
         &self,
@@ -125,10 +138,14 @@ impl Registry {
         ip: String,
         network: String,
         item: Option<&MediaItem>,
-    ) -> bool {
+    ) -> Beat {
         let now = Instant::now();
         let mut map = self.inner.write().unwrap();
-        let is_new = !map.contains_key(&ping.session_id);
+        let live = map.get(&ping.session_id);
+        if live.is_some_and(|s| s.user_id != user_id) {
+            return Beat::Refused;
+        }
+        let is_new = live.is_none();
         let entry = map.entry(ping.session_id.clone()).or_insert_with(|| {
             let snap = item.map(snapshot).unwrap_or_default();
             Session {
@@ -183,7 +200,11 @@ impl Registry {
             entry.subtitle = s;
         }
         entry.last_seen = now;
-        is_new
+        if is_new {
+            Beat::Opened
+        } else {
+            Beat::Refreshed
+        }
     }
 
     pub fn contains(&self, session_id: &str) -> bool {
@@ -342,22 +363,28 @@ mod tests {
     #[test]
     fn upsert_creates_then_refreshes() {
         let reg = Registry::default();
-        assert!(reg.upsert(
-            ping("s1", 1000, "playing"),
-            Some("u1".into()),
-            "Alice".into(),
-            "1.2.3.4".into(),
-            "WAN".into(),
-            None
-        ));
-        assert!(!reg.upsert(
-            ping("s1", 5000, "paused"),
-            Some("u1".into()),
-            "Alice".into(),
-            "1.2.3.4".into(),
-            "LAN".into(),
-            None
-        ));
+        assert_eq!(
+            reg.upsert(
+                ping("s1", 1000, "playing"),
+                Some("u1".into()),
+                "Alice".into(),
+                "1.2.3.4".into(),
+                "WAN".into(),
+                None
+            ),
+            Beat::Opened
+        );
+        assert_eq!(
+            reg.upsert(
+                ping("s1", 5000, "paused"),
+                Some("u1".into()),
+                "Alice".into(),
+                "1.2.3.4".into(),
+                "LAN".into(),
+                None
+            ),
+            Beat::Refreshed
+        );
         let list = reg.list();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].position_ms, 5000);
@@ -706,6 +733,55 @@ mod tests {
         );
         assert!(reg.remove_owned("s1", "u1").is_none());
         assert!(reg.contains("anon"));
+    }
+
+    #[test]
+    fn only_the_viewer_of_a_session_can_refresh_it() {
+        let reg = Registry::new();
+        reg.upsert(
+            ping("s1", 1000, "playing"),
+            Some("u1".into()),
+            "Alice".into(),
+            "10.0.0.1".into(),
+            "LAN".into(),
+            None,
+        );
+        reg.upsert(
+            ping("anon", 0, "playing"),
+            None,
+            "Anon".into(),
+            "10.0.0.2".into(),
+            "LAN".into(),
+            None,
+        );
+
+        let stolen = reg.upsert(
+            ping("s1", 9000, "paused"),
+            Some("u2".into()),
+            "Bob".into(),
+            "8.8.8.8".into(),
+            "WAN".into(),
+            None,
+        );
+        let claimed = reg.upsert(
+            ping("anon", 9000, "paused"),
+            Some("u1".into()),
+            "Alice".into(),
+            "8.8.8.8".into(),
+            "WAN".into(),
+            None,
+        );
+
+        assert_eq!(stolen, Beat::Refused, "another account wrote it");
+        assert_eq!(claimed, Beat::Refused, "a signed-out session was claimed");
+        let live = reg.inner.read().unwrap();
+        let mine = &live["s1"];
+        assert_eq!(mine.username, "Alice");
+        assert_eq!(mine.position_ms, 1000);
+        assert_eq!(mine.state, "playing");
+        assert_eq!(mine.ip, "10.0.0.1");
+        assert_eq!(mine.network, "LAN");
+        assert_eq!(live["anon"].position_ms, 0);
     }
 
     async fn let_the_reaper_sweep() {
