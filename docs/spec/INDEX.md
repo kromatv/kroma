@@ -3,7 +3,43 @@
 
 # Requirement index
 
-226 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+311 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+
+## ACCT - [accounts](accounts/)
+
+- **ACCT-1** (SHIPPED) - An **account** is a person. It has credentials, its own watch state,
+- **ACCT-2** (SHIPPED) - The first account created at first-run is the **owner**, an account
+- **ACCT-3** (SHIPPED) - Every subsequent account is an ordinary **user**, created by invitation
+- **ACCT-4** (SHIPPED) - There are no profiles under an account, and there will not be. A person
+- **ACCT-5** (SHIPPED) - A person proves who they are with a **username and password**. That is
+- **ACCT-6** (SHIPPED) - A successful authentication mints a **session**: a long-lived,
+- **ACCT-7** (SHIPPED) - **Sessions do not expire on a clock.** A session lives until it is
+- **ACCT-8** (SHIPPED) - A session is per device, not per account, so one can be revoked without
+- **ACCT-9** (SHIPPED) - A **device** is where a session lives. Signing in on a phone, a browser
+- **ACCT-10** (AGREED) - Every session appears in the account's **device list** with enough to
+- **ACCT-11** (SHIPPED) - A television binds to an account through the pairing handshake rather
+- **ACCT-12** (AGREED) - A paired television is not a special class of trust. It lands in the
+- **ACCT-13** (SHIPPED) - **Unbinding is revocation.** Revoking a device's session ends its
+- **ACCT-14** (SHIPPED) - A revoked device that returns must pair or sign in afresh.
+- **ACCT-15** (SHIPPED) - A television session is long-lived and revocable, and is **never
+- **ACCT-16** (AGREED) - The device list is the control that replaces expiry: security comes
+- **ACCT-17** (SHIPPED) - An **owner or admin** runs the server: users, settings, jobs and
+- **ACCT-18** (AGREED) - The owner is the founding admin, the owner may grant admin to another
+- **ACCT-19** (SHIPPED) - A **user** uses the server: browses and plays what they are permitted
+- **ACCT-20** (AGREED) - **Library visibility is per user.** An admin decides which libraries a
+- **ACCT-21** (AGREED) - Visibility gates browsing, search and playback alike. A title a user
+- **ACCT-22** (SHIPPED) - Installing a module is an **admin** right, because it runs new
+- **ACCT-23** (AGREED) - The matrix below is the whole of what each role may do. A user's power
+- **ACCT-24** (SHIPPED) - **Per-user**: watch state, meaning resume points, watched flags and
+- **ACCT-25** (SHIPPED) - **Per-server**: the libraries and their contents, metadata and
+- **ACCT-26** (SHIPPED) - Watch state is per user and never per device: resume a film on the
+- **ACCT-27** (SHIPPED) - Deletion destroys the account's credentials, all of its sessions and
+- **ACCT-28** (SHIPPED) - Everything per-server survives. Libraries, media, metadata and
+- **ACCT-29** (AGREED) - The owner account cannot be deleted while it is the only admin.
+- **ACCT-30** (AGREED) - A user may request deletion of their own account, which revokes their
+- **ACCT-31** (SHIPPED) - Revocation stops a session doing anything new. It cannot fetch, refresh
+- **ACCT-32** (AGREED) - Bytes already downloaded for offline viewing sit in local storage the
+- **ACCT-33** (AGREED) - The guarantee is that a revoked device gains nothing new and loses its
 
 ## ADMIN - [admin](admin/)
 
@@ -196,6 +232,61 @@
 - **MEDIA-44** (AGREED) - An undescribed stream is *not direct-playable*, because KROMA will
 - **MEDIA-45** (AGREED) - A file that will not open at all, a truncated or corrupt container,
 - **MEDIA-46** (AGREED) - Undescribed and unreadable are distinct states. The first is "we
+
+## PLAY - [playback](playback/)
+
+- **PLAY-1** (SHIPPED) - Direct play means the client fetches the original file, byte for byte,
+- **PLAY-2** (AGREED) - The client declares it can demux the **container**
+- **PLAY-3** (AGREED) - The client can decode the **video stream**, meaning codec, profile,
+- **PLAY-4** (AGREED) - Every **audio stream the person might select** is decodable by the
+- **PLAY-5** (AGREED) - The chosen **subtitle**, if any, is either a format the client renders
+- **PLAY-6** (AGREED) - The **link** sustains the file's peak bitrate. On a local network this
+- **PLAY-7** (AGREED) - When a title cannot direct-play, KROMA walks a fixed ladder and stops at
+- **PLAY-8** (AGREED) - Change the least: the video stream is never touched while a cheaper
+- **PLAY-9** (SHIPPED) - Rung 1, **direct play**. The original file, untouched. No compromise.
+- **PLAY-10** (SHIPPED) - Rung 2, **remux**, also called direct stream. The video and audio
+- **PLAY-11** (SHIPPED) - Rung 3, **audio-only fallback**. The video is still copied and one
+- **PLAY-12** (AGREED) - Video is never touched to solve an audio problem.
+- **PLAY-13** (AGREED) - Rung 4, **subtitle burn-in**. Only when a selected subtitle can
+- **PLAY-14** (SHIPPED) - Rung 5, **video transcode**, the last resort. The video stream is
+- **PLAY-15** (AGREED) - KROMA takes the highest rung that satisfies the client and does not
+- **PLAY-16** (AGREED) - Transcode is a tolerated last resort, not a headline feature. KROMA is
+- **PLAY-17** (AGREED) - Transcode is always the lowest rung and is never the default for a
+- **PLAY-18** (AGREED) - An admin may **cap or disable** video transcode per server and per
+- **PLAY-19** (AGREED) - KROMA ships no adaptive multi-bitrate ladder, no quality knobs and no
+- **PLAY-20** (AGREED) - Any rung below direct play is a compromise, and the client always shows
+- **PLAY-21** (AGREED) - **Video transcode** and **subtitle burn-in** are shown as *reduced
+- **PLAY-22** (AGREED) - **Audio downmix** and **audio transcode** are shown as *audio
+- **PLAY-23** (AGREED) - **Remux** is shown as *repackaged*. Quality is untouched, so this is
+- **PLAY-24** (AGREED) - Direct play shows nothing. The absence of a badge *is* the signal
+- **PLAY-25** (AGREED) - KROMA never re-encodes video to save bandwidth unless the device
+- **PLAY-26** (AGREED) - KROMA never tone-maps HDR without saying so.
+- **PLAY-27** (AGREED) - KROMA never burns in subtitles the person did not ask to see.
+- **PLAY-28** (AGREED) - When the only playable path is one a person or an admin has disabled,
+- **PLAY-29** (SHIPPED) - Under **direct play and remux**, seeking is instant and exact. The
+- **PLAY-30** (AGREED) - Under **transcode**, the stream is produced live from a play position,
+- **PLAY-31** (AGREED) - KROMA anchors at the requested position rather than pre-producing the
+- **PLAY-32** (AGREED) - Seeking accuracy is never silently coarsened. A transcoded seek lands
+- **PLAY-33** (SHIPPED) - Progress is **per person, per media version**, stored on the server. It
+- **PLAY-34** (SHIPPED) - The playing client reports position on a steady heartbeat while
+- **PLAY-35** (AGREED) - The write is idempotent on the person, the version, the position and
+- **PLAY-36** (SHIPPED) - Reopening a title in progress offers *Resume* from the stored position
+- **PLAY-37** (AGREED) - A title is **watched** at **90% of runtime or more**, or at reaching a
+- **PLAY-38** (SHIPPED) - At the watched threshold, continue-watching drops the title and, for
+- **PLAY-39** (AGREED) - Below the threshold, progress is retained and the title stays in
+- **PLAY-40** (AGREED) - Starting a watched title again resets it to unwatched and clears the
+- **PLAY-41** (SHIPPED) - A device watching offline queues its unsent progress reports and, on
+- **PLAY-42** (AGREED) - When queued reports from two offline sessions land for the same person
+- **PLAY-43** (AGREED) - An explicit **reset to start**, from finishing a title or choosing
+- **PLAY-44** (AGREED) - If either device crossed the watched threshold, the title is watched.
+- **PLAY-45** (AGREED) - One account may play on several clients at once. KROMA enforces no
+- **PLAY-46** (AGREED) - Each playing client is an independent session with its own fallback
+- **PLAY-47** (AGREED) - Sessions interleave into one continue-watching state under the
+- **PLAY-48** (AGREED) - KROMA does not hand off an active session between devices as a
+- **PLAY-49** (AGREED) - When a stream dies mid-playback, whether the network drops, a transcode
+- **PLAY-50** (AGREED) - A **transient** failure, a network drop or a brief server hiccup, is
+- **PLAY-51** (AGREED) - A **fatal** failure, a source gone, a transcode that cannot start, or
+- **PLAY-52** (AGREED) - When a television's older decoder cannot play a file a modern phone
 
 ## SURF - [surfaces](surfaces/)
 

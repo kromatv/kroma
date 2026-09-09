@@ -1,201 +1,234 @@
 # Playback
 
-Status: **DRAFT**. Sections carry their own status below.
+Status: **AGREED**. Sections carry their own status below.
 
 The core promise: the file plays, unmodified, wherever possible. Everything else is a
 fallback, and every fallback is a compromise that is made visible and explained. KROMA
 never quietly degrades a stream and hopes nobody notices.
 
-Codec truth, what a stream actually is, lives in [`media.md`](../media/README.md). The per-device
-capability matrix lives in [`surfaces.md`](../surfaces/README.md). Who is allowed to watch a title at
-all lives in [`accounts.md`](../accounts/README.md). This file owns the *decision*: given a file, a
+Codec truth, what a stream actually is, lives in [`media/`](../media/). The per-device
+capability matrix lives in [`surfaces/`](../surfaces/). Who is allowed to watch a title at
+all lives in [`accounts/`](../accounts/). This file owns the *decision*: given a file, a
 client and a network, what gets sent, and what is given up to send it.
 
 ## Direct play
 
 Status: **AGREED**
 
-Direct play means the client fetches the original file, byte for byte, and decodes it
-itself. The server does nothing but serve bytes and honour range requests. This is the
-default, the goal, and the only path with no compromise.
+**PLAY-1** (SHIPPED) - Direct play means the client fetches the original file, byte for byte,
+and decodes it itself. The server does nothing but serve bytes and honour range requests.
+This is the default, the goal, and the only path with no compromise.
 
 A file direct-plays when **all** of the following hold:
 
-1. The client declares it can demux the **container** (per [`surfaces.md`](../surfaces/README.md)).
-2. The client can decode the **video stream**, meaning codec, profile, level, bit depth
-   and HDR variant, in hardware, as declared for that device generation.
-3. Every **audio stream the user might select** is decodable by the client, at its native
-   channel layout, or is passthrough-capable to a connected receiver.
-4. The chosen **subtitle**, if any, is either a format the client renders itself or is a
-   sidecar it can fetch alongside.
-5. The **link** sustains the file's peak bitrate. Local network: always assumed. Remote:
-   only when measured throughput clears peak with headroom.
+- **PLAY-2** (AGREED) - The client declares it can demux the **container**
+  ([`surfaces/`](../surfaces/)).
+- **PLAY-3** (AGREED) - The client can decode the **video stream**, meaning codec, profile,
+  level, bit depth and HDR variant, in hardware, as declared for that device generation.
+- **PLAY-4** (AGREED) - Every **audio stream the person might select** is decodable by the
+  client at its native channel layout, or is passthrough-capable to a connected receiver.
+- **PLAY-5** (AGREED) - The chosen **subtitle**, if any, is either a format the client renders
+  itself or a sidecar it can fetch alongside.
+- **PLAY-6** (AGREED) - The **link** sustains the file's peak bitrate. On a local network this
+  is assumed; on a remote one it holds only when measured throughput clears peak with
+  headroom.
 
-The capability inputs (1–4) are surface facts and are not restated here; KROMA reads them
-from the device profile. The decision below is what KROMA does with them.
+The capability inputs are surface facts and are not restated here; KROMA reads them from the
+device profile. The decision below is what KROMA does with them.
 
 ## The fallback ladder
 
 Status: **AGREED**
 
-When a title cannot direct-play, KROMA walks a fixed ladder and stops at the first rung
-that works. Each rung gives up strictly more than the one above it. The rule: **change the
-least, and never touch the video stream while a cheaper change on another stream would do.**
+**PLAY-7** (AGREED) - When a title cannot direct-play, KROMA walks a fixed ladder and stops at
+the first rung that works. Each rung gives up strictly more than the one above it.
 
-1. **Direct play.** The original file, untouched. No compromise.
-2. **Remux (direct stream).** The video and audio *bitstreams* are copied unchanged into a
-   container the client can demux (e.g. an unsupported container holding a supported codec).
-   Nothing is re-encoded; picture and sound are bit-identical. Cheap, near-instant, no
-   quality loss.
-3. **Audio-only fallback.** The video is still copied, but one audio stream is dealt with:
-   - **passthrough** to a receiver if the client can pass the bitstream on; else
-   - **downmix** a multichannel track to stereo when the client cannot decode the layout;
-     else
-   - **transcode the audio** to a codec the client decodes. Video is never touched to solve
-     an audio problem.
-4. **Subtitle burn-in.** Only when a selected subtitle cannot be rendered by the client and
-   cannot be delivered as a sidecar (e.g. bitmap subs on a client without an overlay). This
-   forces re-encoding the video, so it sits below audio fixes: a subtitle preference must
-   not silently cost picture quality. See *What is never done silently*.
-5. **Video transcode.** The last resort. The video stream is re-encoded to a codec, profile
-   and bitrate the client can decode, downscaling resolution and tone-mapping HDR to SDR only
-   as far as required. Everything above has failed; this rung always loses quality and costs
-   the server real work.
+**PLAY-8** (AGREED) - Change the least: the video stream is never touched while a cheaper
+change on another stream would do.
 
-KROMA takes the highest rung that satisfies the client. It does not skip rungs for
-convenience: if remux suffices, it remuxes; it does not transcode because a session is
-already warm.
+- **PLAY-9** (SHIPPED) - Rung 1, **direct play**. The original file, untouched. No compromise.
+- **PLAY-10** (SHIPPED) - Rung 2, **remux**, also called direct stream. The video and audio
+  *bitstreams* are copied unchanged into a container the client can demux. Nothing is
+  re-encoded, picture and sound are bit-identical, and it is cheap and near-instant.
+- **PLAY-11** (SHIPPED) - Rung 3, **audio-only fallback**. The video is still copied and one
+  audio stream is dealt with: passthrough to a receiver if the client can pass the bitstream
+  on, else a downmix of a multichannel track to stereo when the client cannot decode the
+  layout, else transcoding the audio to a codec the client decodes.
+- **PLAY-12** (AGREED) - Video is never touched to solve an audio problem.
+- **PLAY-13** (AGREED) - Rung 4, **subtitle burn-in**. Only when a selected subtitle can
+  neither be rendered by the client nor delivered as a sidecar, such as bitmap subs on a client
+  with no overlay. It forces re-encoding the video, so it sits below audio fixes: a subtitle
+  preference must not silently cost picture quality.
+- **PLAY-14** (SHIPPED) - Rung 5, **video transcode**, the last resort. The video stream is
+  re-encoded to a codec, profile and bitrate the client can decode, downscaling resolution and
+  tone-mapping HDR to SDR only as far as required. This rung always loses quality and costs
+  the server real work.
+
+**PLAY-15** (AGREED) - KROMA takes the highest rung that satisfies the client and does not
+skip rungs for convenience. If remux suffices it remuxes; it does not transcode because a
+session is already warm.
 
 ### Is transcoding a feature or a last resort?
 
-**Decision:** a tolerated last resort, not a headline feature. KROMA is built so the original
-plays; transcode exists so a title is *never unplayable* on a client the user actually owns,
-not so KROMA can pretend any file suits any screen. Consequences on record:
+Status: **AGREED**
 
-- Transcode is always the lowest rung and is never the default for a capable client.
-- An admin may **cap or disable** video transcode per server and per user
-  ([`accounts.md`](../accounts/README.md), [`admin.md`](../admin/README.md)); disabling it means an incompatible
-  file reports as unplayable on that client rather than degrading.
-- We do not invest in adaptive multi-bitrate ladders, quality knobs, or bandwidth-based
-  auto-transcode. The product's answer to "it won't play" is "get a client that direct-plays
-  it", and the honest message below says exactly that.
+**PLAY-16** (AGREED) - Transcode is a tolerated last resort, not a headline feature. KROMA is
+built so the original plays, and transcode exists so a title is never unplayable on a client a
+person actually owns, not so KROMA can pretend any file suits any screen.
+
+- **PLAY-17** (AGREED) - Transcode is always the lowest rung and is never the default for a
+  capable client.
+- **PLAY-18** (AGREED) - An admin may **cap or disable** video transcode per server and per
+  person ([`accounts/`](../accounts/), [`admin/`](../admin/)). Disabling it means an
+  incompatible file reports as unplayable on that client rather than degrading.
+- **PLAY-19** (AGREED) - KROMA ships no adaptive multi-bitrate ladder, no quality knobs and no
+  bandwidth-based auto-transcode. The product's answer to "it won't play" is "use a client that
+  direct-plays it", and the honest message below says exactly that.
 
 ## What is never done silently
 
 Status: **AGREED**
 
-Any rung below direct play is a compromise, and the client always shows which one is active
-before or at the moment playback starts, as a small honest badge rather than a buried log line:
+**PLAY-20** (AGREED) - Any rung below direct play is a compromise, and the client always shows
+which one is active before or at the moment playback starts, as a small honest badge rather
+than a buried log line.
 
-- **Video transcode** and **subtitle burn-in** are shown as *reduced quality* with the reason
-  (codec / resolution / HDR / subtitle). These change the picture and are the loudest.
-- **Audio downmix** and **audio transcode** are shown as *audio adjusted*.
-- **Remux** is shown as *repackaged*. Quality is untouched, so this is informational, not a
-  warning.
-- Direct play shows nothing; the absence of a badge *is* the signal that the file is pristine.
+- **PLAY-21** (AGREED) - **Video transcode** and **subtitle burn-in** are shown as *reduced
+  quality* with the reason, meaning codec, resolution, HDR or subtitle. These change the
+  picture and are the loudest.
+- **PLAY-22** (AGREED) - **Audio downmix** and **audio transcode** are shown as *audio
+  adjusted*.
+- **PLAY-23** (AGREED) - **Remux** is shown as *repackaged*. Quality is untouched, so this is
+  informational rather than a warning.
+- **PLAY-24** (AGREED) - Direct play shows nothing. The absence of a badge *is* the signal
+  that the file is pristine.
 
-KROMA never re-encodes video to save bandwidth without the user's device profile forcing it,
-never tone-maps HDR without saying so, and never burns in subtitles the user did not ask to
-see. If the only playable path is one the user or admin has disabled, playback fails loudly
-(see *Failure*) rather than falling further down the ladder.
+**PLAY-25** (AGREED) - KROMA never re-encodes video to save bandwidth unless the device
+profile forces it.
+
+**PLAY-26** (AGREED) - KROMA never tone-maps HDR without saying so.
+
+**PLAY-27** (AGREED) - KROMA never burns in subtitles the person did not ask to see.
+
+**PLAY-28** (AGREED) - When the only playable path is one a person or an admin has disabled,
+playback fails loudly rather than falling further down the ladder.
 
 ## Seeking
 
 Status: **AGREED**
 
-- **Direct play and remux:** seeking is instant and exact. The client issues a range request
-  against a fully-known file; any position is reachable immediately, including scrubbing.
-- **Transcode (audio or video):** the stream is produced live from a play position, so a seek
-  outside the buffered window **re-anchors** the transcode at the target and resumes there.
-  This costs a short re-buffer, and backward seeks are as expensive as forward ones. KROMA
-  favours anchoring at the requested position over pre-producing the whole file, so a user who
-  jumps around pays a small pause each time rather than waiting once for a full encode.
-
-Seeking accuracy is never silently coarsened; a transcoded seek lands on the requested frame's
-keyframe, not a rounded chapter.
+- **PLAY-29** (SHIPPED) - Under **direct play and remux**, seeking is instant and exact. The
+  client issues a range request against a fully-known file, so any position is reachable
+  immediately, scrubbing included.
+- **PLAY-30** (AGREED) - Under **transcode**, the stream is produced live from a play position,
+  so a seek outside the buffered window **re-anchors** the transcode at the target and resumes
+  there. That costs a short re-buffer, and a backward seek is as expensive as a forward one.
+- **PLAY-31** (AGREED) - KROMA anchors at the requested position rather than pre-producing the
+  whole file, so a person who jumps around pays a small pause each time instead of waiting once
+  for a full encode.
+- **PLAY-32** (AGREED) - Seeking accuracy is never silently coarsened. A transcoded seek lands
+  on the requested frame's keyframe, not a rounded chapter.
 
 ## Resume and continue watching
 
 Status: **AGREED**
 
-Progress is **per user, per media version**, stored on the server. It is the server's watch
-state, not a device's ([`accounts.md`](../accounts/README.md)). Any client the user signs into sees the
-same resume point.
+**PLAY-33** (SHIPPED) - Progress is **per person, per media version**, stored on the server. It
+is the server's watch state, not a device's ([`accounts/`](../accounts/)), so any client the
+person signs into sees the same resume point.
 
-**When progress is written.** The playing client reports position on a steady heartbeat while
-playing (a small fixed interval), on pause, on seek settling, and on stop. A crash loses at
-most one heartbeat interval. The write is idempotent on `(user, version, position, wall-clock
-time)` so a replayed or offline-queued report cannot move progress backwards.
+**PLAY-34** (SHIPPED) - The playing client reports position on a steady heartbeat while
+playing, on pause, on a settled seek, and on stop, so a crash loses at most one heartbeat
+interval.
 
-**Resume point.** Reopening a title in progress offers *Resume* from the stored position and
-*Play from start*; resume is the default. The stored position is the reported one, not a
+**PLAY-35** (AGREED) - The write is idempotent on the person, the version, the position and
+the wall-clock time, so a replayed or offline-queued report cannot move progress backwards.
+
+**PLAY-36** (SHIPPED) - Reopening a title in progress offers *Resume* from the stored position
+and *Play from start*, with resume the default. The stored position is the reported one, not a
 rounded chapter.
 
-**The "watched" threshold.** A title is **watched** at **≥ 90% of runtime**, or at reaching a
-credits/end marker if the media has one. At that point continue-watching drops the title and,
-for episodic content, surfaces the next episode instead. 90% is chosen because trailing credits
+**PLAY-37** (AGREED) - A title is **watched** at **90% of runtime or more**, or at reaching a
+credits or end marker where the media has one. 90% is chosen because trailing credits
 routinely run the last several minutes: requiring 100% would strand finished titles in the row
-forever, and a fixed "last N minutes" misjudges both a 22-minute episode and a 200-minute film.
-Below 90%, progress is retained and the title stays in continue-watching. Starting a watched
-title again resets it to unwatched and clears the stored position.
+forever, and a fixed "last N minutes" misjudges both a 22-minute episode and a 200-minute
+film.
 
-**Offline reconciliation.** Mobile downloads let a user watch with no server connection, and two
-devices can each accrue progress offline against the same version. Downloads survive app kills
-and are re-adopted on launch (see
-[`../architecture/mobile-offline-system-storage.md`](../../architecture/mobile-offline-system-storage.md)),
-and so does the **queue of unsent progress reports**. On reconnect each device flushes its queue,
-every report stamped with the **wall-clock time the user was actually at that position**.
+**PLAY-38** (SHIPPED) - At the watched threshold, continue-watching drops the title and, for
+episodic content, surfaces the next episode instead.
+
+**PLAY-39** (AGREED) - Below the threshold, progress is retained and the title stays in
+continue-watching.
+
+**PLAY-40** (AGREED) - Starting a watched title again resets it to unwatched and clears the
+stored position.
+
+**PLAY-41** (SHIPPED) - A device watching offline queues its unsent progress reports and, on
+reconnect, flushes the queue with every report stamped with the wall-clock time the person was
+actually at that position
+([`../architecture/mobile-offline-system-storage.md`](../../architecture/mobile-offline-system-storage.md)).
 
 ### Who wins when two devices disagree?
 
-**Decision: furthest-position-wins, not last-writer-wins.** When queued reports from two offline
-sessions land for the same `(user, version)`, KROMA keeps the **furthest position reached**, not
-the one whose report arrived or was stamped last. Rationale: watch progress is monotonic in
-intent: a user who watched to 0:55 on a plane and to 0:20 on a phone has *seen* up to 0:55, and
-resuming there loses nothing, whereas last-writer-wins would rewind them to 0:20 because that
-sync happened to flush second. The one exception is an explicit **reset to start** (finishing a
-title, or "play from start"), which is an intent, not a position, and always wins over a stale
-higher position. If either device crossed the watched threshold, the title is watched.
+Status: **AGREED**
+
+**PLAY-42** (AGREED) - When queued reports from two offline sessions land for the same person
+and version, KROMA keeps the **furthest position reached**, not the report that arrived or was
+stamped last. Watch progress is monotonic in intent: a person who watched to 0:55 on a plane
+and to 0:20 on a phone has *seen* up to 0:55, and last-writer-wins would rewind them because
+that sync happened to flush second.
+
+**PLAY-43** (AGREED) - An explicit **reset to start**, from finishing a title or choosing
+"play from start", is an intent rather than a position, and always wins over a stale higher
+position.
+
+**PLAY-44** (AGREED) - If either device crossed the watched threshold, the title is watched.
 
 ## Multiple clients at once
 
 Status: **AGREED**
 
-One account may play on several clients simultaneously; KROMA does not enforce a concurrent-stream
-limit as a product rule (an admin may cap server load, [`admin.md`](../admin/README.md)). Each playing
-client is an independent session with its own fallback decision: the same title may direct-play on
-a phone and transcode on a television at the same moment, because the decision is per device, not
-per title.
+**PLAY-45** (AGREED) - One account may play on several clients at once. KROMA enforces no
+concurrent-stream limit as a product rule, though an admin may cap server load
+([`admin/`](../admin/)).
 
-Shared progress means the sessions interleave into one continue-watching state under the
-furthest-position rule above; two devices on the same title do not fight, they simply both advance
-it. KROMA does not "hand off" an active session between devices as a first-class gesture. A user
-resumes on the second device from shared progress, which achieves the same end without a pairing
-dance.
+**PLAY-46** (AGREED) - Each playing client is an independent session with its own fallback
+decision, so the same title may direct-play on a phone and transcode on a television at the
+same moment. The decision is per device, not per title.
+
+**PLAY-47** (AGREED) - Sessions interleave into one continue-watching state under the
+furthest-position rule, so two devices on the same title do not fight; they both advance it.
+
+**PLAY-48** (AGREED) - KROMA does not hand off an active session between devices as a
+first-class gesture. A person resumes on the second device from shared progress, which
+achieves the same end without a pairing dance.
 
 ## Failure
 
 Status: **AGREED**
 
-When a stream dies mid-playback, whether the network drops, a transcode process fails or the
-source file becomes unreadable, the client shows a plain, specific message and keeps the last known position
-so the user resumes exactly where they were, never from the start.
+**PLAY-49** (AGREED) - When a stream dies mid-playback, whether the network drops, a transcode
+process fails or the source file becomes unreadable, the client shows a plain, specific message
+and keeps the last known position, so the person resumes exactly where they were rather than
+from the start.
 
-- **Transient (network, brief server hiccup):** the client retries quietly for a few seconds
-  behind the scrubber before surfacing anything; most recover invisibly.
-- **Fatal (source gone, transcode cannot start, path disabled by policy):** playback stops with a
-  reason, either *This file can't be played on this device* or *This title is no longer available*,
-  never a raw error code.
+- **PLAY-50** (AGREED) - A **transient** failure, a network drop or a brief server hiccup, is
+  retried quietly for a few seconds behind the scrubber before anything surfaces. Most recover
+  invisibly.
+- **PLAY-51** (AGREED) - A **fatal** failure, a source gone, a transcode that cannot start, or
+  a path a policy has disabled, stops playback with a reason, either *This file can't be played
+  on this device* or *This title is no longer available*, never a raw error code.
 
 ### When the television can't play what the phone can
 
-This is the common, honest case: a modern phone direct-plays a file a television's older decoder
-cannot, and the server is configured not to transcode it (or the admin disabled transcode). The
-television must not fail with a blank error. It says, plainly:
+Status: **AGREED**
+
+**PLAY-52** (AGREED) - When a television's older decoder cannot play a file a modern phone
+can, and the server is configured not to transcode it, the television names the device as the
+cause, points at a surface that does play it, and names the one lever that would fix it. It
+never blames the person and never implies the file is broken.
 
 > **Can't play this here.** This TV can't decode this file. It plays fine on the KROMA phone and
 > web apps, or ask the server owner to enable conversion for this device.
 
-The message names the real cause (the device, not the file), points at a surface that *does* work,
-and names the one lever that would fix it (admin-enabled transcode). It never blames the user, and
-it never pretends the file is broken. The file is fine; this screen just can't decode it.
+The file is fine; this screen just cannot decode it.

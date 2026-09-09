@@ -1,5 +1,335 @@
 [
   {
+    "id": "ACCT-1",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 1,
+    "status": "SHIPPED",
+    "text": "An **account** is a person. It has credentials, its own watch state,",
+    "file": "docs/spec/accounts/README.md",
+    "line": 16
+  },
+  {
+    "id": "ACCT-2",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 2,
+    "status": "SHIPPED",
+    "text": "The first account created at first-run is the **owner**, an account",
+    "file": "docs/spec/accounts/README.md",
+    "line": 19
+  },
+  {
+    "id": "ACCT-3",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 3,
+    "status": "SHIPPED",
+    "text": "Every subsequent account is an ordinary **user**, created by invitation",
+    "file": "docs/spec/accounts/README.md",
+    "line": 22
+  },
+  {
+    "id": "ACCT-4",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 4,
+    "status": "SHIPPED",
+    "text": "There are no profiles under an account, and there will not be. A person",
+    "file": "docs/spec/accounts/README.md",
+    "line": 25
+  },
+  {
+    "id": "ACCT-5",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 5,
+    "status": "SHIPPED",
+    "text": "A person proves who they are with a **username and password**. That is",
+    "file": "docs/spec/accounts/README.md",
+    "line": 44
+  },
+  {
+    "id": "ACCT-6",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 6,
+    "status": "SHIPPED",
+    "text": "A successful authentication mints a **session**: a long-lived,",
+    "file": "docs/spec/accounts/README.md",
+    "line": 49
+  },
+  {
+    "id": "ACCT-7",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 7,
+    "status": "SHIPPED",
+    "text": "**Sessions do not expire on a clock.** A session lives until it is",
+    "file": "docs/spec/accounts/README.md",
+    "line": 53
+  },
+  {
+    "id": "ACCT-8",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 8,
+    "status": "SHIPPED",
+    "text": "A session is per device, not per account, so one can be revoked without",
+    "file": "docs/spec/accounts/README.md",
+    "line": 57
+  },
+  {
+    "id": "ACCT-9",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 9,
+    "status": "SHIPPED",
+    "text": "A **device** is where a session lives. Signing in on a phone, a browser",
+    "file": "docs/spec/accounts/README.md",
+    "line": 66
+  },
+  {
+    "id": "ACCT-10",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 10,
+    "status": "AGREED",
+    "text": "Every session appears in the account's **device list** with enough to",
+    "file": "docs/spec/accounts/README.md",
+    "line": 69
+  },
+  {
+    "id": "ACCT-11",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 11,
+    "status": "SHIPPED",
+    "text": "A television binds to an account through the pairing handshake rather",
+    "file": "docs/spec/accounts/README.md",
+    "line": 72
+  },
+  {
+    "id": "ACCT-12",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 12,
+    "status": "AGREED",
+    "text": "A paired television is not a special class of trust. It lands in the",
+    "file": "docs/spec/accounts/README.md",
+    "line": 76
+  },
+  {
+    "id": "ACCT-13",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 13,
+    "status": "SHIPPED",
+    "text": "**Unbinding is revocation.** Revoking a device's session ends its",
+    "file": "docs/spec/accounts/README.md",
+    "line": 80
+  },
+  {
+    "id": "ACCT-14",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 14,
+    "status": "SHIPPED",
+    "text": "A revoked device that returns must pair or sign in afresh.",
+    "file": "docs/spec/accounts/README.md",
+    "line": 84
+  },
+  {
+    "id": "ACCT-15",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 15,
+    "status": "SHIPPED",
+    "text": "A television session is long-lived and revocable, and is **never",
+    "file": "docs/spec/accounts/README.md",
+    "line": 90
+  },
+  {
+    "id": "ACCT-16",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 16,
+    "status": "AGREED",
+    "text": "The device list is the control that replaces expiry: security comes",
+    "file": "docs/spec/accounts/README.md",
+    "line": 93
+  },
+  {
+    "id": "ACCT-17",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 17,
+    "status": "SHIPPED",
+    "text": "An **owner or admin** runs the server: users, settings, jobs and",
+    "file": "docs/spec/accounts/README.md",
+    "line": 106
+  },
+  {
+    "id": "ACCT-18",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 18,
+    "status": "AGREED",
+    "text": "The owner is the founding admin, the owner may grant admin to another",
+    "file": "docs/spec/accounts/README.md",
+    "line": 109
+  },
+  {
+    "id": "ACCT-19",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 19,
+    "status": "SHIPPED",
+    "text": "A **user** uses the server: browses and plays what they are permitted",
+    "file": "docs/spec/accounts/README.md",
+    "line": 112
+  },
+  {
+    "id": "ACCT-20",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 20,
+    "status": "AGREED",
+    "text": "**Library visibility is per user.** An admin decides which libraries a",
+    "file": "docs/spec/accounts/README.md",
+    "line": 115
+  },
+  {
+    "id": "ACCT-21",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 21,
+    "status": "AGREED",
+    "text": "Visibility gates browsing, search and playback alike. A title a user",
+    "file": "docs/spec/accounts/README.md",
+    "line": 118
+  },
+  {
+    "id": "ACCT-22",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 22,
+    "status": "SHIPPED",
+    "text": "Installing a module is an **admin** right, because it runs new",
+    "file": "docs/spec/accounts/README.md",
+    "line": 121
+  },
+  {
+    "id": "ACCT-23",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 23,
+    "status": "AGREED",
+    "text": "The matrix below is the whole of what each role may do. A user's power",
+    "file": "docs/spec/accounts/README.md",
+    "line": 130
+  },
+  {
+    "id": "ACCT-24",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 24,
+    "status": "SHIPPED",
+    "text": "**Per-user**: watch state, meaning resume points, watched flags and",
+    "file": "docs/spec/accounts/README.md",
+    "line": 157
+  },
+  {
+    "id": "ACCT-25",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 25,
+    "status": "SHIPPED",
+    "text": "**Per-server**: the libraries and their contents, metadata and",
+    "file": "docs/spec/accounts/README.md",
+    "line": 162
+  },
+  {
+    "id": "ACCT-26",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 26,
+    "status": "SHIPPED",
+    "text": "Watch state is per user and never per device: resume a film on the",
+    "file": "docs/spec/accounts/README.md",
+    "line": 166
+  },
+  {
+    "id": "ACCT-27",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 27,
+    "status": "SHIPPED",
+    "text": "Deletion destroys the account's credentials, all of its sessions and",
+    "file": "docs/spec/accounts/README.md",
+    "line": 176
+  },
+  {
+    "id": "ACCT-28",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 28,
+    "status": "SHIPPED",
+    "text": "Everything per-server survives. Libraries, media, metadata and",
+    "file": "docs/spec/accounts/README.md",
+    "line": 180
+  },
+  {
+    "id": "ACCT-29",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 29,
+    "status": "AGREED",
+    "text": "The owner account cannot be deleted while it is the only admin.",
+    "file": "docs/spec/accounts/README.md",
+    "line": 184
+  },
+  {
+    "id": "ACCT-30",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 30,
+    "status": "AGREED",
+    "text": "A user may request deletion of their own account, which revokes their",
+    "file": "docs/spec/accounts/README.md",
+    "line": 188
+  },
+  {
+    "id": "ACCT-31",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 31,
+    "status": "SHIPPED",
+    "text": "Revocation stops a session doing anything new. It cannot fetch, refresh",
+    "file": "docs/spec/accounts/README.md",
+    "line": 197
+  },
+  {
+    "id": "ACCT-32",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 32,
+    "status": "AGREED",
+    "text": "Bytes already downloaded for offline viewing sit in local storage the",
+    "file": "docs/spec/accounts/README.md",
+    "line": 200
+  },
+  {
+    "id": "ACCT-33",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 33,
+    "status": "AGREED",
+    "text": "The guarantee is that a revoked device gains nothing new and loses its",
+    "file": "docs/spec/accounts/README.md",
+    "line": 204
+  },
+  {
     "id": "ADMIN-1",
     "domain": "ADMIN",
     "space": "admin",
@@ -1828,6 +2158,526 @@
     "text": "Undescribed and unreadable are distinct states. The first is \"we",
     "file": "docs/spec/media/README.md",
     "line": 205
+  },
+  {
+    "id": "PLAY-1",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 1,
+    "status": "SHIPPED",
+    "text": "Direct play means the client fetches the original file, byte for byte,",
+    "file": "docs/spec/playback/README.md",
+    "line": 18
+  },
+  {
+    "id": "PLAY-2",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 2,
+    "status": "AGREED",
+    "text": "The client declares it can demux the **container**",
+    "file": "docs/spec/playback/README.md",
+    "line": 24
+  },
+  {
+    "id": "PLAY-3",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 3,
+    "status": "AGREED",
+    "text": "The client can decode the **video stream**, meaning codec, profile,",
+    "file": "docs/spec/playback/README.md",
+    "line": 26
+  },
+  {
+    "id": "PLAY-4",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 4,
+    "status": "AGREED",
+    "text": "Every **audio stream the person might select** is decodable by the",
+    "file": "docs/spec/playback/README.md",
+    "line": 28
+  },
+  {
+    "id": "PLAY-5",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 5,
+    "status": "AGREED",
+    "text": "The chosen **subtitle**, if any, is either a format the client renders",
+    "file": "docs/spec/playback/README.md",
+    "line": 30
+  },
+  {
+    "id": "PLAY-6",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 6,
+    "status": "AGREED",
+    "text": "The **link** sustains the file's peak bitrate. On a local network this",
+    "file": "docs/spec/playback/README.md",
+    "line": 32
+  },
+  {
+    "id": "PLAY-7",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 7,
+    "status": "AGREED",
+    "text": "When a title cannot direct-play, KROMA walks a fixed ladder and stops at",
+    "file": "docs/spec/playback/README.md",
+    "line": 43
+  },
+  {
+    "id": "PLAY-8",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 8,
+    "status": "AGREED",
+    "text": "Change the least: the video stream is never touched while a cheaper",
+    "file": "docs/spec/playback/README.md",
+    "line": 46
+  },
+  {
+    "id": "PLAY-9",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 9,
+    "status": "SHIPPED",
+    "text": "Rung 1, **direct play**. The original file, untouched. No compromise.",
+    "file": "docs/spec/playback/README.md",
+    "line": 49
+  },
+  {
+    "id": "PLAY-10",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 10,
+    "status": "SHIPPED",
+    "text": "Rung 2, **remux**, also called direct stream. The video and audio",
+    "file": "docs/spec/playback/README.md",
+    "line": 50
+  },
+  {
+    "id": "PLAY-11",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 11,
+    "status": "SHIPPED",
+    "text": "Rung 3, **audio-only fallback**. The video is still copied and one",
+    "file": "docs/spec/playback/README.md",
+    "line": 53
+  },
+  {
+    "id": "PLAY-12",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 12,
+    "status": "AGREED",
+    "text": "Video is never touched to solve an audio problem.",
+    "file": "docs/spec/playback/README.md",
+    "line": 57
+  },
+  {
+    "id": "PLAY-13",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 13,
+    "status": "AGREED",
+    "text": "Rung 4, **subtitle burn-in**. Only when a selected subtitle can",
+    "file": "docs/spec/playback/README.md",
+    "line": 58
+  },
+  {
+    "id": "PLAY-14",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 14,
+    "status": "SHIPPED",
+    "text": "Rung 5, **video transcode**, the last resort. The video stream is",
+    "file": "docs/spec/playback/README.md",
+    "line": 62
+  },
+  {
+    "id": "PLAY-15",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 15,
+    "status": "AGREED",
+    "text": "KROMA takes the highest rung that satisfies the client and does not",
+    "file": "docs/spec/playback/README.md",
+    "line": 67
+  },
+  {
+    "id": "PLAY-16",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 16,
+    "status": "AGREED",
+    "text": "Transcode is a tolerated last resort, not a headline feature. KROMA is",
+    "file": "docs/spec/playback/README.md",
+    "line": 75
+  },
+  {
+    "id": "PLAY-17",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 17,
+    "status": "AGREED",
+    "text": "Transcode is always the lowest rung and is never the default for a",
+    "file": "docs/spec/playback/README.md",
+    "line": 79
+  },
+  {
+    "id": "PLAY-18",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 18,
+    "status": "AGREED",
+    "text": "An admin may **cap or disable** video transcode per server and per",
+    "file": "docs/spec/playback/README.md",
+    "line": 81
+  },
+  {
+    "id": "PLAY-19",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 19,
+    "status": "AGREED",
+    "text": "KROMA ships no adaptive multi-bitrate ladder, no quality knobs and no",
+    "file": "docs/spec/playback/README.md",
+    "line": 84
+  },
+  {
+    "id": "PLAY-20",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 20,
+    "status": "AGREED",
+    "text": "Any rung below direct play is a compromise, and the client always shows",
+    "file": "docs/spec/playback/README.md",
+    "line": 92
+  },
+  {
+    "id": "PLAY-21",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 21,
+    "status": "AGREED",
+    "text": "**Video transcode** and **subtitle burn-in** are shown as *reduced",
+    "file": "docs/spec/playback/README.md",
+    "line": 96
+  },
+  {
+    "id": "PLAY-22",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 22,
+    "status": "AGREED",
+    "text": "**Audio downmix** and **audio transcode** are shown as *audio",
+    "file": "docs/spec/playback/README.md",
+    "line": 99
+  },
+  {
+    "id": "PLAY-23",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 23,
+    "status": "AGREED",
+    "text": "**Remux** is shown as *repackaged*. Quality is untouched, so this is",
+    "file": "docs/spec/playback/README.md",
+    "line": 101
+  },
+  {
+    "id": "PLAY-24",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 24,
+    "status": "AGREED",
+    "text": "Direct play shows nothing. The absence of a badge *is* the signal",
+    "file": "docs/spec/playback/README.md",
+    "line": 103
+  },
+  {
+    "id": "PLAY-25",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 25,
+    "status": "AGREED",
+    "text": "KROMA never re-encodes video to save bandwidth unless the device",
+    "file": "docs/spec/playback/README.md",
+    "line": 106
+  },
+  {
+    "id": "PLAY-26",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 26,
+    "status": "AGREED",
+    "text": "KROMA never tone-maps HDR without saying so.",
+    "file": "docs/spec/playback/README.md",
+    "line": 109
+  },
+  {
+    "id": "PLAY-27",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 27,
+    "status": "AGREED",
+    "text": "KROMA never burns in subtitles the person did not ask to see.",
+    "file": "docs/spec/playback/README.md",
+    "line": 111
+  },
+  {
+    "id": "PLAY-28",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 28,
+    "status": "AGREED",
+    "text": "When the only playable path is one a person or an admin has disabled,",
+    "file": "docs/spec/playback/README.md",
+    "line": 113
+  },
+  {
+    "id": "PLAY-29",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 29,
+    "status": "SHIPPED",
+    "text": "Under **direct play and remux**, seeking is instant and exact. The",
+    "file": "docs/spec/playback/README.md",
+    "line": 120
+  },
+  {
+    "id": "PLAY-30",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 30,
+    "status": "AGREED",
+    "text": "Under **transcode**, the stream is produced live from a play position,",
+    "file": "docs/spec/playback/README.md",
+    "line": 123
+  },
+  {
+    "id": "PLAY-31",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 31,
+    "status": "AGREED",
+    "text": "KROMA anchors at the requested position rather than pre-producing the",
+    "file": "docs/spec/playback/README.md",
+    "line": 126
+  },
+  {
+    "id": "PLAY-32",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 32,
+    "status": "AGREED",
+    "text": "Seeking accuracy is never silently coarsened. A transcoded seek lands",
+    "file": "docs/spec/playback/README.md",
+    "line": 129
+  },
+  {
+    "id": "PLAY-33",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 33,
+    "status": "SHIPPED",
+    "text": "Progress is **per person, per media version**, stored on the server. It",
+    "file": "docs/spec/playback/README.md",
+    "line": 136
+  },
+  {
+    "id": "PLAY-34",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 34,
+    "status": "SHIPPED",
+    "text": "The playing client reports position on a steady heartbeat while",
+    "file": "docs/spec/playback/README.md",
+    "line": 140
+  },
+  {
+    "id": "PLAY-35",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 35,
+    "status": "AGREED",
+    "text": "The write is idempotent on the person, the version, the position and",
+    "file": "docs/spec/playback/README.md",
+    "line": 144
+  },
+  {
+    "id": "PLAY-36",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 36,
+    "status": "SHIPPED",
+    "text": "Reopening a title in progress offers *Resume* from the stored position",
+    "file": "docs/spec/playback/README.md",
+    "line": 147
+  },
+  {
+    "id": "PLAY-37",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 37,
+    "status": "AGREED",
+    "text": "A title is **watched** at **90% of runtime or more**, or at reaching a",
+    "file": "docs/spec/playback/README.md",
+    "line": 151
+  },
+  {
+    "id": "PLAY-38",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 38,
+    "status": "SHIPPED",
+    "text": "At the watched threshold, continue-watching drops the title and, for",
+    "file": "docs/spec/playback/README.md",
+    "line": 157
+  },
+  {
+    "id": "PLAY-39",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 39,
+    "status": "AGREED",
+    "text": "Below the threshold, progress is retained and the title stays in",
+    "file": "docs/spec/playback/README.md",
+    "line": 160
+  },
+  {
+    "id": "PLAY-40",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 40,
+    "status": "AGREED",
+    "text": "Starting a watched title again resets it to unwatched and clears the",
+    "file": "docs/spec/playback/README.md",
+    "line": 163
+  },
+  {
+    "id": "PLAY-41",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 41,
+    "status": "SHIPPED",
+    "text": "A device watching offline queues its unsent progress reports and, on",
+    "file": "docs/spec/playback/README.md",
+    "line": 166
+  },
+  {
+    "id": "PLAY-42",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 42,
+    "status": "AGREED",
+    "text": "When queued reports from two offline sessions land for the same person",
+    "file": "docs/spec/playback/README.md",
+    "line": 175
+  },
+  {
+    "id": "PLAY-43",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 43,
+    "status": "AGREED",
+    "text": "An explicit **reset to start**, from finishing a title or choosing",
+    "file": "docs/spec/playback/README.md",
+    "line": 181
+  },
+  {
+    "id": "PLAY-44",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 44,
+    "status": "AGREED",
+    "text": "If either device crossed the watched threshold, the title is watched.",
+    "file": "docs/spec/playback/README.md",
+    "line": 185
+  },
+  {
+    "id": "PLAY-45",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 45,
+    "status": "AGREED",
+    "text": "One account may play on several clients at once. KROMA enforces no",
+    "file": "docs/spec/playback/README.md",
+    "line": 191
+  },
+  {
+    "id": "PLAY-46",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 46,
+    "status": "AGREED",
+    "text": "Each playing client is an independent session with its own fallback",
+    "file": "docs/spec/playback/README.md",
+    "line": 195
+  },
+  {
+    "id": "PLAY-47",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 47,
+    "status": "AGREED",
+    "text": "Sessions interleave into one continue-watching state under the",
+    "file": "docs/spec/playback/README.md",
+    "line": 199
+  },
+  {
+    "id": "PLAY-48",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 48,
+    "status": "AGREED",
+    "text": "KROMA does not hand off an active session between devices as a",
+    "file": "docs/spec/playback/README.md",
+    "line": 202
+  },
+  {
+    "id": "PLAY-49",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 49,
+    "status": "AGREED",
+    "text": "When a stream dies mid-playback, whether the network drops, a transcode",
+    "file": "docs/spec/playback/README.md",
+    "line": 210
+  },
+  {
+    "id": "PLAY-50",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 50,
+    "status": "AGREED",
+    "text": "A **transient** failure, a network drop or a brief server hiccup, is",
+    "file": "docs/spec/playback/README.md",
+    "line": 215
+  },
+  {
+    "id": "PLAY-51",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 51,
+    "status": "AGREED",
+    "text": "A **fatal** failure, a source gone, a transcode that cannot start, or",
+    "file": "docs/spec/playback/README.md",
+    "line": 218
+  },
+  {
+    "id": "PLAY-52",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 52,
+    "status": "AGREED",
+    "text": "When a television's older decoder cannot play a file a modern phone",
+    "file": "docs/spec/playback/README.md",
+    "line": 226
   },
   {
     "id": "SURF-1",
