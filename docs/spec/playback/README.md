@@ -1,6 +1,8 @@
 # Playback
 
-Status: **AGREED**. Sections carry their own status below.
+Status: **SHIPPED** in part. Direct play, the rungs, resume and the failure messages are
+built; the compromise badges and the reconciliation rules are decided. Sections and
+requirements carry their own status below.
 
 The core promise: the file plays, unmodified, wherever possible. Everything else is a
 fallback, and every fallback is a compromise that is made visible and explained. KROMA
@@ -87,7 +89,7 @@ person actually owns, not so KROMA can pretend any file suits any screen.
 
 ## What is never done silently
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 **PLAY-20** (AGREED) - Any rung below direct play is a compromise, and the client always shows
 which one is active before or at the moment playback starts, as a small honest badge rather
@@ -96,12 +98,17 @@ than a buried log line.
 - **PLAY-21** (AGREED) - **Video transcode** and **subtitle burn-in** are shown as *reduced
   quality* with the reason, meaning codec, resolution, HDR or subtitle. These change the
   picture and are the loudest.
-- **PLAY-22** (AGREED) - **Audio downmix** and **audio transcode** are shown as *audio
-  adjusted*.
+- **PLAY-22** (SHIPPED) - **Audio downmix** and **audio transcode** are shown as *audio
+  adjusted*, naming the codec that was re-encoded.
 - **PLAY-23** (AGREED) - **Remux** is shown as *repackaged*. Quality is untouched, so this is
   informational rather than a warning.
-- **PLAY-24** (AGREED) - Direct play shows nothing. The absence of a badge *is* the signal
-  that the file is pristine.
+- **PLAY-24** (SHIPPED) - Direct play may announce itself, naming the codec it is playing
+  untouched. The guarantee is the absence of a *compromise* notice, not the absence of all
+  notice: a badge that says a compromise is active is the thing that must never be missing.
+
+Direct play announcing itself is deliberate rather than noise. Playing the file unmodified is
+the product's whole claim, so saying "direct play in H.265" is the product showing its work. The
+rule that carries weight is that a compromise is never silent, not that a success always is.
 
 **PLAY-25** (AGREED) - KROMA never re-encodes video to save bandwidth unless the device
 profile forces it.
@@ -138,8 +145,10 @@ is the server's watch state, not a device's ([`accounts/`](../accounts/)), so an
 person signs into sees the same resume point.
 
 **PLAY-34** (SHIPPED) - The playing client reports position on a steady heartbeat while
-playing, on pause, on a settled seek, and on stop, so a crash loses at most one heartbeat
-interval.
+playing, on pause, and on stop, so a crash loses at most one heartbeat interval.
+
+**PLAY-53** (AGREED) - A settled seek also reports, so jumping and then losing the client does
+not roll the position back to the last heartbeat.
 
 **PLAY-35** (AGREED) - The write is idempotent on the person, the version, the position and
 the wall-clock time, so a replayed or offline-queued report cannot move progress backwards.
@@ -148,11 +157,14 @@ the wall-clock time, so a replayed or offline-queued report cannot move progress
 and *Play from start*, with resume the default. The stored position is the reported one, not a
 rounded chapter.
 
-**PLAY-37** (AGREED) - A title is **watched** at **90% of runtime or more**, or at reaching a
-credits or end marker where the media has one. 90% is chosen because trailing credits
-routinely run the last several minutes: requiring 100% would strand finished titles in the row
-forever, and a fixed "last N minutes" misjudges both a 22-minute episode and a 200-minute
-film.
+**PLAY-37** (SHIPPED) - A title is **watched** at a credits or end marker where the media has
+one, and otherwise at **97% of runtime or more**.
+
+The marker is the real signal and the percentage is only the fallback for media without one,
+which is why the fallback errs tight rather than generous. Requiring 100% would strand finished
+titles in the row forever. Going the other way, a loose threshold marks a long film watched
+while twenty minutes are left, and losing a person's place in a film they had not finished is a
+worse failure than leaving a finished episode in a row they can dismiss.
 
 **PLAY-38** (SHIPPED) - At the watched threshold, continue-watching drops the title and, for
 episodic content, surfaces the next episode instead.
@@ -205,7 +217,7 @@ achieves the same end without a pairing dance.
 
 ## Failure
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 **PLAY-49** (AGREED) - When a stream dies mid-playback, whether the network drops, a transcode
 process fails or the source file becomes unreadable, the client shows a plain, specific message
@@ -215,7 +227,7 @@ from the start.
 - **PLAY-50** (AGREED) - A **transient** failure, a network drop or a brief server hiccup, is
   retried quietly for a few seconds behind the scrubber before anything surfaces. Most recover
   invisibly.
-- **PLAY-51** (AGREED) - A **fatal** failure, a source gone, a transcode that cannot start, or
+- **PLAY-51** (SHIPPED) - A **fatal** failure, a source gone, a transcode that cannot start, or
   a path a policy has disabled, stops playback with a reason, either *This file can't be played
   on this device* or *This title is no longer available*, never a raw error code.
 
@@ -226,7 +238,9 @@ Status: **AGREED**
 **PLAY-52** (AGREED) - When a television's older decoder cannot play a file a modern phone
 can, and the server is configured not to transcode it, the television names the device as the
 cause, points at a surface that does play it, and names the one lever that would fix it. It
-never blames the person and never implies the file is broken.
+never blames the person and never implies the file is broken. Today the codec refusal points at
+"another device" without naming one, which is the part still AGREED; the audio refusal already
+names two.
 
 > **Can't play this here.** This TV can't decode this file. It plays fine on the KROMA phone and
 > web apps, or ask the server owner to enable conversion for this device.

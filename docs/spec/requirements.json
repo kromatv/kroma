@@ -374,7 +374,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 5,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Every resource chart carries a **scope** control naming which series",
     "file": "docs/spec/admin/dashboard-live.md",
     "line": 34
@@ -384,7 +384,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 6,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Every resource chart carries a footer stating the mean of each series",
     "file": "docs/spec/admin/dashboard-live.md",
     "line": 38
@@ -394,7 +394,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 7,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Hovering any point reveals every series' value at that instant,",
     "file": "docs/spec/admin/dashboard-live.md",
     "line": 41
@@ -404,7 +404,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 8,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The range control offers, in this order: live, the last 12 hours,",
     "file": "docs/spec/admin/dashboard-live.md",
     "line": 44
@@ -414,7 +414,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 9,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "\"Live\" is the rolling in-memory window the server samples at its own",
     "file": "docs/spec/admin/dashboard-live.md",
     "line": 48
@@ -434,7 +434,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 11,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Persisted samples are downsampled as they age, so a year of history",
     "file": "docs/spec/admin/dashboard-live.md",
     "line": 56
@@ -464,7 +464,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 14,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The bandwidth scope control offers all traffic, local only, or",
     "file": "docs/spec/admin/dashboard-live.md",
     "line": 72
@@ -484,7 +484,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 16,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The processor chart draws two series, what KROMA costs and what the",
     "file": "docs/spec/admin/dashboard-resources.md",
     "line": 17
@@ -504,7 +504,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 18,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The processor scope control offers both series, KROMA alone, or the",
     "file": "docs/spec/admin/dashboard-resources.md",
     "line": 25
@@ -524,7 +524,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 20,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The memory chart draws the same two series as the processor chart,",
     "file": "docs/spec/admin/dashboard-resources.md",
     "line": 35
@@ -544,7 +544,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 22,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The memory scope control offers both series, KROMA alone, or the",
     "file": "docs/spec/admin/dashboard-resources.md",
     "line": 41
@@ -554,7 +554,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 23,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Each series keeps one colour for the life of the product. A reader",
     "file": "docs/spec/admin/dashboard-resources.md",
     "line": 44
@@ -584,7 +584,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 26,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The panel ranks accounts by time watched over a chosen window, most",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 14
@@ -594,7 +594,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 27,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Each card breaks its total down by kind of media, one row for movies",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 17
@@ -614,7 +614,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 29,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The window control offers the last 24 hours, 7 days, 30 days, 90",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 25
@@ -624,7 +624,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 30,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "With more accounts than fit, the panel pages through them rather",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 28
@@ -634,7 +634,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 31,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Each card carries the account's avatar where it has one, and falls",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 31
@@ -644,7 +644,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 32,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The panel plots time watched per bucket over a chosen window,",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 45
@@ -654,7 +654,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 33,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The bucket width is chosen from the window so the chart always",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 49
@@ -664,7 +664,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 34,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The panel carries three independent filters: kind of media, account,",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 53
@@ -674,7 +674,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 35,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The account filter lists every account with history in the window,",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 56
@@ -684,7 +684,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 36,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A footer states the total time for each kind of media over the whole",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 59
@@ -694,7 +694,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 37,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The panel links to the full history screen",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 62
@@ -704,7 +704,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 38,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Each kind of media keeps one colour across this panel, the top-viewer",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 66
@@ -714,7 +714,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 39,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The panel ranks titles by number of plays over a chosen window, most",
     "file": "docs/spec/admin/dashboard-most-watched.md",
     "line": 13
@@ -724,7 +724,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 40,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Each column is headed by the artwork of its own top title, labelled",
     "file": "docs/spec/admin/dashboard-most-watched.md",
     "line": 21
@@ -734,7 +734,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 41,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Each entry names the title, its play count, and how many distinct",
     "file": "docs/spec/admin/dashboard-most-watched.md",
     "line": 24
@@ -754,7 +754,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 43,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Each entry carries its poster, and falls back to a title-seeded",
     "file": "docs/spec/admin/dashboard-most-watched.md",
     "line": 32
@@ -774,7 +774,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 45,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The panel carries two filters, account and window, defaulting to",
     "file": "docs/spec/admin/dashboard-most-watched.md",
     "line": 39
@@ -784,7 +784,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 46,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Selecting an entry opens that title's own watch history",
     "file": "docs/spec/admin/dashboard-most-watched.md",
     "line": 42
@@ -814,7 +814,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 49,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The view is the full history screen ([`watch-history.md`](watch-history.md))",
     "file": "docs/spec/admin/watch-history-item.md",
     "line": 13
@@ -824,7 +824,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 50,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The header names the title beside the number of plays in scope, so",
     "file": "docs/spec/admin/watch-history-item.md",
     "line": 18
@@ -844,7 +844,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 52,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Rows are ordered by when they were watched, most recent first, and",
     "file": "docs/spec/admin/watch-history-item.md",
     "line": 24
@@ -874,7 +874,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 55,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The view has its own address. An owner can send it to someone, or",
     "file": "docs/spec/admin/watch-history-item.md",
     "line": 38
@@ -894,7 +894,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 57,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Watch history is a first-class admin screen with its own entry in",
     "file": "docs/spec/admin/watch-history.md",
     "line": 14
@@ -904,7 +904,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 58,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The screen shows every session in scope as a table, one row per",
     "file": "docs/spec/admin/watch-history.md",
     "line": 17
@@ -914,7 +914,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 59,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The header states how many rows the current filters match, before",
     "file": "docs/spec/admin/watch-history.md",
     "line": 20
@@ -924,7 +924,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 60,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The columns are the account, the kind of media, the title, the",
     "file": "docs/spec/admin/watch-history.md",
     "line": 24
@@ -944,7 +944,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 62,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Any column can order the table, ascending or descending, and the",
     "file": "docs/spec/admin/watch-history.md",
     "line": 33
@@ -954,7 +954,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 63,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The table pages or virtualises rather than rendering everything.",
     "file": "docs/spec/admin/watch-history.md",
     "line": 45
@@ -964,7 +964,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 64,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The screen filters by library, by account, and by window, each",
     "file": "docs/spec/admin/watch-history.md",
     "line": 53
@@ -974,7 +974,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 65,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The window control offers the same choices as the dashboard's, plus",
     "file": "docs/spec/admin/watch-history.md",
     "line": 56
@@ -984,7 +984,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 66,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Filters live in the address, so a filtered view can be sent to",
     "file": "docs/spec/admin/watch-history.md",
     "line": 60
@@ -994,7 +994,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 67,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Arriving from a dashboard panel applies the filters that panel sent,",
     "file": "docs/spec/admin/watch-history.md",
     "line": 63
@@ -1044,7 +1044,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 72,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The screen requires the permission to manage users. A watch history",
     "file": "docs/spec/admin/watch-history.md",
     "line": 95
@@ -1074,7 +1074,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 75,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A card opens the full history screen",
     "file": "docs/spec/admin/dashboard-audience.md",
     "line": 34
@@ -1084,7 +1084,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 76,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A screen narrowed to one title names that title in the filter row",
     "file": "docs/spec/admin/watch-history.md",
     "line": 66
@@ -1117,7 +1117,7 @@
     "status": "AGREED",
     "text": "A reset is a single-use, time-limited link plus a short one-time",
     "file": "docs/spec/admin/README.md",
-    "line": 111
+    "line": 113
   },
   {
     "id": "ADMIN-80",
@@ -1127,7 +1127,7 @@
     "status": "AGREED",
     "text": "The code is eight characters from a thirty-two-symbol alphabet with",
     "file": "docs/spec/admin/README.md",
-    "line": 117
+    "line": 119
   },
   {
     "id": "ADMIN-81",
@@ -1137,7 +1137,7 @@
     "status": "AGREED",
     "text": "A new reset invalidates any unused previous one for the same account.",
     "file": "docs/spec/admin/README.md",
-    "line": 121
+    "line": 123
   },
   {
     "id": "ADMIN-82",
@@ -1147,7 +1147,7 @@
     "status": "AGREED",
     "text": "Delivery is the owner's choice, per server: copy the link and code",
     "file": "docs/spec/admin/README.md",
-    "line": 125
+    "line": 127
   },
   {
     "id": "ADMIN-83",
@@ -1157,7 +1157,7 @@
     "status": "AGREED",
     "text": "The kroma.tv relay sees the destination address and the link, never",
     "file": "docs/spec/admin/README.md",
-    "line": 133
+    "line": 135
   },
   {
     "id": "ADMIN-84",
@@ -1167,7 +1167,7 @@
     "status": "AGREED",
     "text": "The owner can clear a user's profile PIN. Clearing is the only PIN",
     "file": "docs/spec/admin/README.md",
-    "line": 148
+    "line": 150
   },
   {
     "id": "ADMIN-85",
@@ -1177,7 +1177,7 @@
     "status": "AGREED",
     "text": "An address on an account is unverified until the mailbox proves",
     "file": "docs/spec/admin/README.md",
-    "line": 158
+    "line": 160
   },
   {
     "id": "ADMIN-86",
@@ -1187,7 +1187,7 @@
     "status": "AGREED",
     "text": "The owner sends a verification from the member editor, with the",
     "file": "docs/spec/admin/README.md",
-    "line": 163
+    "line": 165
   },
   {
     "id": "ADMIN-87",
@@ -1197,7 +1197,7 @@
     "status": "AGREED",
     "text": "Changing the address clears the verified state: the proof belongs",
     "file": "docs/spec/admin/README.md",
-    "line": 168
+    "line": 170
   },
   {
     "id": "ADMIN-88",
@@ -1207,7 +1207,7 @@
     "status": "AGREED",
     "text": "A user who cannot sign in can ask for a reset from the sign-in",
     "file": "docs/spec/admin/README.md",
-    "line": 137
+    "line": 139
   },
   {
     "id": "ADMIN-89",
@@ -1217,7 +1217,7 @@
     "status": "AGREED",
     "text": "A server learns it is out of date by checking for a newer release and",
     "file": "docs/spec/admin/README.md",
-    "line": 271
+    "line": 273
   },
   {
     "id": "ADMIN-90",
@@ -1227,7 +1227,7 @@
     "status": "AGREED",
     "text": "A server update migrates the persistent store forward",
     "file": "docs/spec/admin/README.md",
-    "line": 277
+    "line": 279
   },
   {
     "id": "ADMIN-91",
@@ -1237,7 +1237,7 @@
     "status": "AGREED",
     "text": "Module updates are independent of the server and carry their own",
     "file": "docs/spec/admin/README.md",
-    "line": 281
+    "line": 283
   },
   {
     "id": "ADMIN-92",
@@ -1247,7 +1247,7 @@
     "status": "AGREED",
     "text": "Active playback neither blocks an update nor is stopped by one",
     "file": "docs/spec/admin/README.md",
-    "line": 284
+    "line": 286
   },
   {
     "id": "ADMIN-93",
@@ -1257,7 +1257,7 @@
     "status": "AGREED",
     "text": "The rule above is identical on every host. Only the delivery vehicle",
     "file": "docs/spec/admin/README.md",
-    "line": 289
+    "line": 291
   },
   {
     "id": "DISC-1",
@@ -1597,7 +1597,7 @@
     "status": "AGREED",
     "text": "A **source** is a directory tree the server is told to watch, tagged",
     "file": "docs/spec/library/README.md",
-    "line": 14
+    "line": 15
   },
   {
     "id": "LIB-2",
@@ -1607,7 +1607,7 @@
     "status": "AGREED",
     "text": "A movie source never produces episodes and a show source never produces",
     "file": "docs/spec/library/README.md",
-    "line": 18
+    "line": 19
   },
   {
     "id": "LIB-3",
@@ -1617,7 +1617,7 @@
     "status": "AGREED",
     "text": "A server has zero or more sources, any number of them may point at the",
     "file": "docs/spec/library/README.md",
-    "line": 21
+    "line": 22
   },
   {
     "id": "LIB-4",
@@ -1627,7 +1627,7 @@
     "status": "AGREED",
     "text": "A source is an input, not a category a person browses by. Filtering the",
     "file": "docs/spec/library/README.md",
-    "line": 26
+    "line": 27
   },
   {
     "id": "LIB-5",
@@ -1637,7 +1637,7 @@
     "status": "SHIPPED",
     "text": "A source tree may be assembled from symlinks. A curated folder of links",
     "file": "docs/spec/library/README.md",
-    "line": 29
+    "line": 30
   },
   {
     "id": "LIB-6",
@@ -1647,7 +1647,7 @@
     "status": "SHIPPED",
     "text": "A link the server cannot resolve is reported, never silently skipped,",
     "file": "docs/spec/library/README.md",
-    "line": 33
+    "line": 34
   },
   {
     "id": "LIB-7",
@@ -1657,7 +1657,7 @@
     "status": "AGREED",
     "text": "A source records its mount path, its content kind and its scan schedule.",
     "file": "docs/spec/library/README.md",
-    "line": 37
+    "line": 38
   },
   {
     "id": "LIB-8",
@@ -1667,7 +1667,7 @@
     "status": "AGREED",
     "text": "Nothing about a source is destructive. Removing one drops its titles",
     "file": "docs/spec/library/README.md",
-    "line": 39
+    "line": 40
   },
   {
     "id": "LIB-9",
@@ -1677,7 +1677,7 @@
     "status": "AGREED",
     "text": "Matching is convention-first: a correctly named file matches offline,",
     "file": "docs/spec/library/README.md",
-    "line": 48
+    "line": 49
   },
   {
     "id": "LIB-10",
@@ -1687,7 +1687,7 @@
     "status": "SHIPPED",
     "text": "The `Title (Year)` stem is what is matched. The year is not",
     "file": "docs/spec/library/README.md",
-    "line": 59
+    "line": 60
   },
   {
     "id": "LIB-11",
@@ -1697,7 +1697,7 @@
     "status": "SHIPPED",
     "text": "A trailing tag after ` - `, a resolution, an edition or a source, is",
     "file": "docs/spec/library/README.md",
-    "line": 63
+    "line": 64
   },
   {
     "id": "LIB-12",
@@ -1707,7 +1707,7 @@
     "status": "SHIPPED",
     "text": "A loose file directly under the source root, with no folder, is",
     "file": "docs/spec/library/README.md",
-    "line": 67
+    "line": 68
   },
   {
     "id": "LIB-13",
@@ -1717,7 +1717,7 @@
     "status": "SHIPPED",
     "text": "A season folder is what makes the folder above it the show. With one",
     "file": "docs/spec/library/README.md",
-    "line": 79
+    "line": 80
   },
   {
     "id": "LIB-14",
@@ -1727,7 +1727,7 @@
     "status": "SHIPPED",
     "text": "Without a season folder the folder proves nothing, because a flat pool",
     "file": "docs/spec/library/README.md",
-    "line": 83
+    "line": 84
   },
   {
     "id": "LIB-15",
@@ -1737,7 +1737,7 @@
     "status": "SHIPPED",
     "text": "An episode whose filename is only its marker (`S01E01.mkv`) takes the",
     "file": "docs/spec/library/README.md",
-    "line": 86
+    "line": 87
   },
   {
     "id": "LIB-16",
@@ -1747,7 +1747,7 @@
     "status": "SHIPPED",
     "text": "The show folder name and the `SxxEyy` marker are load-bearing; the",
     "file": "docs/spec/library/README.md",
-    "line": 90
+    "line": 91
   },
   {
     "id": "LIB-17",
@@ -1757,7 +1757,7 @@
     "status": "SHIPPED",
     "text": "`Specials` is accepted as an alias for `Season 00`.",
     "file": "docs/spec/library/README.md",
-    "line": 93
+    "line": 94
   },
   {
     "id": "LIB-18",
@@ -1767,7 +1767,7 @@
     "status": "SHIPPED",
     "text": "A multi-episode file is named with a range (`S01E01-E02`) and matched",
     "file": "docs/spec/library/README.md",
-    "line": 95
+    "line": 96
   },
   {
     "id": "LIB-19",
@@ -1777,7 +1777,7 @@
     "status": "AGREED",
     "text": "A show folder MAY carry a `(Year)` for disambiguation",
     "file": "docs/spec/library/README.md",
-    "line": 98
+    "line": 99
   },
   {
     "id": "LIB-20",
@@ -1787,7 +1787,7 @@
     "status": "SHIPPED",
     "text": "Case is ignored, and separators may be spaces, dots or underscores.",
     "file": "docs/spec/library/README.md",
-    "line": 101
+    "line": 102
   },
   {
     "id": "LIB-21",
@@ -1797,7 +1797,7 @@
     "status": "SHIPPED",
     "text": "Only recognised video containers are considered files to match.",
     "file": "docs/spec/library/README.md",
-    "line": 103
+    "line": 104
   },
   {
     "id": "LIB-22",
@@ -1807,7 +1807,7 @@
     "status": "AGREED",
     "text": "The scheme is a convention rather than configuration, so a library is",
     "file": "docs/spec/library/README.md",
-    "line": 107
+    "line": 108
   },
   {
     "id": "LIB-23",
@@ -1817,7 +1817,7 @@
     "status": "SHIPPED",
     "text": "An **initial scan** runs when a source is added: the whole tree is",
     "file": "docs/spec/library/README.md",
-    "line": 116
+    "line": 117
   },
   {
     "id": "LIB-24",
@@ -1827,7 +1827,7 @@
     "status": "AGREED",
     "text": "An **incremental rescan** keeps the catalogue true to disk afterwards.",
     "file": "docs/spec/library/README.md",
-    "line": 121
+    "line": 122
   },
   {
     "id": "LIB-25",
@@ -1837,7 +1837,7 @@
     "status": "AGREED",
     "text": "An incremental rescan only reconsiders what changed, meaning new paths,",
     "file": "docs/spec/library/README.md",
-    "line": 127
+    "line": 128
   },
   {
     "id": "LIB-26",
@@ -1847,7 +1847,7 @@
     "status": "AGREED",
     "text": "Scanning is safe to run at any time, including while files are being",
     "file": "docs/spec/library/README.md",
-    "line": 131
+    "line": 132
   },
   {
     "id": "LIB-27",
@@ -1857,7 +1857,7 @@
     "status": "AGREED",
     "text": "A file is matched only once it looks **settled**, its size and",
     "file": "docs/spec/library/README.md",
-    "line": 134
+    "line": 135
   },
   {
     "id": "LIB-28",
@@ -1867,7 +1867,7 @@
     "status": "SHIPPED",
     "text": "Scanning **reads only**. It never writes, moves, renames or deletes",
     "file": "docs/spec/library/README.md",
-    "line": 139
+    "line": 140
   },
   {
     "id": "LIB-29",
@@ -1877,7 +1877,7 @@
     "status": "AGREED",
     "text": "KROMA never demands exclusive access to a library and never blocks the",
     "file": "docs/spec/library/README.md",
-    "line": 142
+    "line": 143
   },
   {
     "id": "LIB-30",
@@ -1887,7 +1887,7 @@
     "status": "AGREED",
     "text": "Matching resolves a settled file to an identity: a convention parse",
     "file": "docs/spec/library/README.md",
-    "line": 157
+    "line": 158
   },
   {
     "id": "LIB-31",
@@ -1897,7 +1897,7 @@
     "status": "AGREED",
     "text": "A file that parses to no confident identity, whether from an",
     "file": "docs/spec/library/README.md",
-    "line": 163
+    "line": 164
   },
   {
     "id": "LIB-32",
@@ -1907,7 +1907,7 @@
     "status": "AGREED",
     "text": "Unmatched items appear in a browsable **Unmatched** view in the library",
     "file": "docs/spec/library/README.md",
-    "line": 168
+    "line": 169
   },
   {
     "id": "LIB-33",
@@ -1917,7 +1917,7 @@
     "status": "AGREED",
     "text": "**Manual match.** A person searches the provider, picks the correct",
     "file": "docs/spec/library/README.md",
-    "line": 172
+    "line": 173
   },
   {
     "id": "LIB-34",
@@ -1927,7 +1927,7 @@
     "status": "AGREED",
     "text": "**Rename on disk.** A name fixed to the convention above matches",
     "file": "docs/spec/library/README.md",
-    "line": 176
+    "line": 177
   },
   {
     "id": "LIB-35",
@@ -1937,7 +1937,7 @@
     "status": "AGREED",
     "text": "A file that could be more than one identity, a title shared by a remake",
     "file": "docs/spec/library/README.md",
-    "line": 182
+    "line": 183
   },
   {
     "id": "LIB-36",
@@ -1947,7 +1947,7 @@
     "status": "AGREED",
     "text": "One unplaceable file never stalls a source. The catalogue is always the",
     "file": "docs/spec/library/README.md",
-    "line": 188
+    "line": 189
   },
   {
     "id": "LIB-37",
@@ -1957,7 +1957,7 @@
     "status": "AGREED",
     "text": "Every field and image a provider returns is written to the server's own",
     "file": "docs/spec/library/README.md",
-    "line": 198
+    "line": 199
   },
   {
     "id": "LIB-38",
@@ -1967,7 +1967,7 @@
     "status": "AGREED",
     "text": "With no internet, everything already matched browses and plays exactly",
     "file": "docs/spec/library/README.md",
-    "line": 203
+    "line": 204
   },
   {
     "id": "LIB-39",
@@ -1977,7 +1977,7 @@
     "status": "AGREED",
     "text": "Offline, a brand-new file that needs a first provider lookup stays",
     "file": "docs/spec/library/README.md",
-    "line": 206
+    "line": 207
   },
   {
     "id": "LIB-40",
@@ -1987,7 +1987,7 @@
     "status": "AGREED",
     "text": "Offline, a forced refresh queues rather than fails.",
     "file": "docs/spec/library/README.md",
-    "line": 210
+    "line": 211
   },
   {
     "id": "LIB-41",
@@ -1997,7 +1997,7 @@
     "status": "SHIPPED",
     "text": "A newly matched item fetches its metadata once.",
     "file": "docs/spec/library/README.md",
-    "line": 219
+    "line": 220
   },
   {
     "id": "LIB-42",
@@ -2007,7 +2007,7 @@
     "status": "AGREED",
     "text": "Running series are re-checked on a slow cadence, so a new episode's air",
     "file": "docs/spec/library/README.md",
-    "line": 221
+    "line": 222
   },
   {
     "id": "LIB-43",
@@ -2017,7 +2017,7 @@
     "status": "AGREED",
     "text": "A \"Refresh metadata\" action on any title, season or whole source",
     "file": "docs/spec/library/README.md",
-    "line": 225
+    "line": 226
   },
   {
     "id": "LIB-44",
@@ -2027,7 +2027,7 @@
     "status": "AGREED",
     "text": "A forced refresh **never** discards a manual match or user-chosen",
     "file": "docs/spec/library/README.md",
-    "line": 229
+    "line": 230
   },
   {
     "id": "LIB-45",
@@ -2037,7 +2037,7 @@
     "status": "AGREED",
     "text": "When a file disappears from a source, its title is **marked absent**:",
     "file": "docs/spec/library/README.md",
-    "line": 251
+    "line": 252
   },
   {
     "id": "LIB-46",
@@ -2047,7 +2047,7 @@
     "status": "AGREED",
     "text": "Content that reappears, because a NAS remounts or a file is moved back",
     "file": "docs/spec/library/README.md",
-    "line": 256
+    "line": 257
   },
   {
     "id": "LIB-47",
@@ -2057,7 +2057,7 @@
     "status": "AGREED",
     "text": "A **move** is therefore not a special case. It is an absent path plus a",
     "file": "docs/spec/library/README.md",
-    "line": 260
+    "line": 261
   },
   {
     "id": "LIB-48",
@@ -2067,7 +2067,7 @@
     "status": "AGREED",
     "text": "A rescan **only ever marks absent**. It never deletes user data.",
     "file": "docs/spec/library/README.md",
-    "line": 264
+    "line": 265
   },
   {
     "id": "LIB-49",
@@ -2077,7 +2077,7 @@
     "status": "AGREED",
     "text": "Permanently deleting a title's history is an explicit, person-initiated",
     "file": "docs/spec/library/README.md",
-    "line": 266
+    "line": 267
   },
   {
     "id": "LIB-50",
@@ -2087,14 +2087,14 @@
     "status": "SHIPPED",
     "text": "Refreshing metadata and re-running identification are two actions, and",
     "file": "docs/spec/library/README.md",
-    "line": 233
+    "line": 234
   },
   {
     "id": "MEDIA-1",
     "domain": "MEDIA",
     "space": "media",
     "number": 1,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "**Title.** The work a person searches for: a film, or one episode",
     "file": "docs/spec/media/README.md",
     "line": 21
@@ -2114,7 +2114,7 @@
     "domain": "MEDIA",
     "space": "media",
     "number": 3,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "**Media file.** One physical file on disk that realises an edition",
     "file": "docs/spec/media/README.md",
     "line": 27
@@ -2154,10 +2154,10 @@
     "domain": "MEDIA",
     "space": "media",
     "number": 7,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A 1080p file and a 4K file of the same cut are **two media files of",
     "file": "docs/spec/media/README.md",
-    "line": 45
+    "line": 48
   },
   {
     "id": "MEDIA-8",
@@ -2167,7 +2167,7 @@
     "status": "AGREED",
     "text": "KROMA ranks a title's media files and keeps a **preferred** one.",
     "file": "docs/spec/media/README.md",
-    "line": 49
+    "line": 52
   },
   {
     "id": "MEDIA-9",
@@ -2177,7 +2177,7 @@
     "status": "AGREED",
     "text": "The preference is a *default*, not a lock. The model enumerates a",
     "file": "docs/spec/media/README.md",
-    "line": 52
+    "line": 55
   },
   {
     "id": "MEDIA-10",
@@ -2187,77 +2187,77 @@
     "status": "AGREED",
     "text": "Editions are surfaced to the person, because they are different",
     "file": "docs/spec/media/README.md",
-    "line": 56
+    "line": 59
   },
   {
     "id": "MEDIA-11",
     "domain": "MEDIA",
     "space": "media",
     "number": 11,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "First-class means KROMA fully describes the format, preserves it end",
     "file": "docs/spec/media/README.md",
-    "line": 64
+    "line": 67
   },
   {
     "id": "MEDIA-12",
     "domain": "MEDIA",
     "space": "media",
     "number": 12,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The first-class containers are **MP4**, **MKV** and **WebM**.",
     "file": "docs/spec/media/README.md",
-    "line": 68
+    "line": 71
   },
   {
     "id": "MEDIA-13",
     "domain": "MEDIA",
     "space": "media",
     "number": 13,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "**HEVC / H.265** is the priority codec. 8-bit and 10-bit, SDR and",
     "file": "docs/spec/media/README.md",
-    "line": 72
+    "line": 75
   },
   {
     "id": "MEDIA-14",
     "domain": "MEDIA",
     "space": "media",
     "number": 14,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "**H.264 / AVC** is the universal floor, assumed playable",
     "file": "docs/spec/media/README.md",
-    "line": 74
+    "line": 77
   },
   {
     "id": "MEDIA-15",
     "domain": "MEDIA",
     "space": "media",
     "number": 15,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "**AV1** is first-class media truth whatever the client generation,",
     "file": "docs/spec/media/README.md",
-    "line": 76
+    "line": 79
   },
   {
     "id": "MEDIA-16",
     "domain": "MEDIA",
     "space": "media",
     "number": 16,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "**VP9** is first-class within WebM, chiefly for the browser",
     "file": "docs/spec/media/README.md",
-    "line": 78
+    "line": 81
   },
   {
     "id": "MEDIA-17",
     "domain": "MEDIA",
     "space": "media",
     "number": 17,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A codec being first-class states how *KROMA* handles it, never that a",
     "file": "docs/spec/media/README.md",
-    "line": 81
+    "line": 84
   },
   {
     "id": "MEDIA-18",
@@ -2267,17 +2267,17 @@
     "status": "AGREED",
     "text": "HDR is preserved end to end or it is not offered. KROMA never",
     "file": "docs/spec/media/README.md",
-    "line": 90
+    "line": 93
   },
   {
     "id": "MEDIA-19",
     "domain": "MEDIA",
     "space": "media",
     "number": 19,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "**Bit depth.** 8-bit and 10-bit are first-class, and 10-bit is",
     "file": "docs/spec/media/README.md",
-    "line": 94
+    "line": 97
   },
   {
     "id": "MEDIA-20",
@@ -2287,7 +2287,7 @@
     "status": "AGREED",
     "text": "KROMA distinguishes **HDR10**, **HDR10+**, **Dolby Vision** and",
     "file": "docs/spec/media/README.md",
-    "line": 96
+    "line": 99
   },
   {
     "id": "MEDIA-21",
@@ -2297,7 +2297,7 @@
     "status": "AGREED",
     "text": "Colour primaries, transfer characteristics and matrix coefficients",
     "file": "docs/spec/media/README.md",
-    "line": 100
+    "line": 103
   },
   {
     "id": "MEDIA-22",
@@ -2307,7 +2307,7 @@
     "status": "AGREED",
     "text": "Where dynamic metadata, HDR10+ or Dolby Vision, cannot be carried",
     "file": "docs/spec/media/README.md",
-    "line": 103
+    "line": 106
   },
   {
     "id": "MEDIA-23",
@@ -2317,7 +2317,7 @@
     "status": "AGREED",
     "text": "The first-class audio codecs are **AAC**, **AC-3** and **E-AC-3**",
     "file": "docs/spec/media/README.md",
-    "line": 111
+    "line": 114
   },
   {
     "id": "MEDIA-24",
@@ -2327,17 +2327,17 @@
     "status": "AGREED",
     "text": "An audio stream's **channel layout**, stereo, 5.1, 7.1 or Atmos",
     "file": "docs/spec/media/README.md",
-    "line": 114
+    "line": 118
   },
   {
     "id": "MEDIA-25",
     "domain": "MEDIA",
     "space": "media",
     "number": 25,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "**Passthrough** is the default for multichannel and lossless audio:",
     "file": "docs/spec/media/README.md",
-    "line": 117
+    "line": 121
   },
   {
     "id": "MEDIA-26",
@@ -2347,17 +2347,17 @@
     "status": "AGREED",
     "text": "**Downmixing** to stereo happens only when the target cannot render",
     "file": "docs/spec/media/README.md",
-    "line": 120
+    "line": 124
   },
   {
     "id": "MEDIA-27",
     "domain": "MEDIA",
     "space": "media",
     "number": 27,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Multiple audio streams, languages and commentary alike, are all",
     "file": "docs/spec/media/README.md",
-    "line": 124
+    "line": 128
   },
   {
     "id": "MEDIA-28",
@@ -2367,7 +2367,7 @@
     "status": "AGREED",
     "text": "A subtitle stream is either **embedded**, a track inside the media",
     "file": "docs/spec/media/README.md",
-    "line": 132
+    "line": 136
   },
   {
     "id": "MEDIA-29",
@@ -2377,7 +2377,7 @@
     "status": "AGREED",
     "text": "The first-class subtitle formats are **SRT**, **WebVTT** and",
     "file": "docs/spec/media/README.md",
-    "line": 136
+    "line": 140
   },
   {
     "id": "MEDIA-30",
@@ -2387,7 +2387,7 @@
     "status": "AGREED",
     "text": "The **forced** disposition, only the foreign-language lines a",
     "file": "docs/spec/media/README.md",
-    "line": 140
+    "line": 144
   },
   {
     "id": "MEDIA-31",
@@ -2397,17 +2397,17 @@
     "status": "AGREED",
     "text": "**Burning in**, rendering a subtitle permanently into the video, is",
     "file": "docs/spec/media/README.md",
-    "line": 143
+    "line": 147
   },
   {
     "id": "MEDIA-32",
     "domain": "MEDIA",
     "space": "media",
     "number": 32,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Every title carries a **poster**, a **backdrop**, a **logo** and, per",
     "file": "docs/spec/media/README.md",
-    "line": 153
+    "line": 157
   },
   {
     "id": "MEDIA-33",
@@ -2417,7 +2417,7 @@
     "status": "AGREED",
     "text": "Image sources rank by trust: embedded in the media file, then a",
     "file": "docs/spec/media/README.md",
-    "line": 156
+    "line": 160
   },
   {
     "id": "MEDIA-34",
@@ -2427,7 +2427,7 @@
     "status": "AGREED",
     "text": "KROMA derives a fixed set of sizes per image, a small grid",
     "file": "docs/spec/media/README.md",
-    "line": 159
+    "line": 163
   },
   {
     "id": "MEDIA-35",
@@ -2437,7 +2437,7 @@
     "status": "AGREED",
     "text": "Derived sizes are cached and served without re-deriving, and a",
     "file": "docs/spec/media/README.md",
-    "line": 162
+    "line": 166
   },
   {
     "id": "MEDIA-36",
@@ -2447,17 +2447,17 @@
     "status": "AGREED",
     "text": "Artwork is never a reason a title fails to appear. A title with no",
     "file": "docs/spec/media/README.md",
-    "line": 164
+    "line": 168
   },
   {
     "id": "MEDIA-37",
     "domain": "MEDIA",
     "space": "media",
     "number": 37,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "KROMA learns a file's streams by **probing** it once, when the",
     "file": "docs/spec/media/README.md",
-    "line": 171
+    "line": 175
   },
   {
     "id": "MEDIA-38",
@@ -2467,7 +2467,7 @@
     "status": "AGREED",
     "text": "A probe is the authoritative stream truth until the file's bytes",
     "file": "docs/spec/media/README.md",
-    "line": 175
+    "line": 179
   },
   {
     "id": "MEDIA-39",
@@ -2477,7 +2477,7 @@
     "status": "AGREED",
     "text": "When a direct play fails in a way that implicates the stream",
     "file": "docs/spec/media/README.md",
-    "line": 178
+    "line": 182
   },
   {
     "id": "MEDIA-40",
@@ -2487,7 +2487,7 @@
     "status": "AGREED",
     "text": "Trust is per-file and durable: a corrected probe is written back,",
     "file": "docs/spec/media/README.md",
-    "line": 183
+    "line": 187
   },
   {
     "id": "MEDIA-41",
@@ -2497,7 +2497,7 @@
     "status": "AGREED",
     "text": "A file whose container opens and whose streams enumerate, but which",
     "file": "docs/spec/media/README.md",
-    "line": 190
+    "line": 194
   },
   {
     "id": "MEDIA-42",
@@ -2507,7 +2507,7 @@
     "status": "AGREED",
     "text": "The title **appears** in the library with whatever *is* known. A",
     "file": "docs/spec/media/README.md",
-    "line": 194
+    "line": 198
   },
   {
     "id": "MEDIA-43",
@@ -2517,7 +2517,7 @@
     "status": "AGREED",
     "text": "The unknown stream is marked **undescribed** and carries its raw",
     "file": "docs/spec/media/README.md",
-    "line": 197
+    "line": 201
   },
   {
     "id": "MEDIA-44",
@@ -2527,7 +2527,7 @@
     "status": "AGREED",
     "text": "An undescribed stream is *not direct-playable*, because KROMA will",
     "file": "docs/spec/media/README.md",
-    "line": 199
+    "line": 203
   },
   {
     "id": "MEDIA-45",
@@ -2537,7 +2537,7 @@
     "status": "AGREED",
     "text": "A file that will not open at all, a truncated or corrupt container,",
     "file": "docs/spec/media/README.md",
-    "line": 202
+    "line": 206
   },
   {
     "id": "MEDIA-46",
@@ -2547,7 +2547,7 @@
     "status": "AGREED",
     "text": "Undescribed and unreadable are distinct states. The first is \"we",
     "file": "docs/spec/media/README.md",
-    "line": 205
+    "line": 209
   },
   {
     "id": "MOD-1",
@@ -3057,7 +3057,7 @@
     "status": "SHIPPED",
     "text": "Direct play means the client fetches the original file, byte for byte,",
     "file": "docs/spec/playback/README.md",
-    "line": 18
+    "line": 20
   },
   {
     "id": "PLAY-2",
@@ -3067,7 +3067,7 @@
     "status": "AGREED",
     "text": "The client declares it can demux the **container**",
     "file": "docs/spec/playback/README.md",
-    "line": 24
+    "line": 26
   },
   {
     "id": "PLAY-3",
@@ -3077,7 +3077,7 @@
     "status": "AGREED",
     "text": "The client can decode the **video stream**, meaning codec, profile,",
     "file": "docs/spec/playback/README.md",
-    "line": 26
+    "line": 28
   },
   {
     "id": "PLAY-4",
@@ -3087,7 +3087,7 @@
     "status": "AGREED",
     "text": "Every **audio stream the person might select** is decodable by the",
     "file": "docs/spec/playback/README.md",
-    "line": 28
+    "line": 30
   },
   {
     "id": "PLAY-5",
@@ -3097,7 +3097,7 @@
     "status": "AGREED",
     "text": "The chosen **subtitle**, if any, is either a format the client renders",
     "file": "docs/spec/playback/README.md",
-    "line": 30
+    "line": 32
   },
   {
     "id": "PLAY-6",
@@ -3107,7 +3107,7 @@
     "status": "AGREED",
     "text": "The **link** sustains the file's peak bitrate. On a local network this",
     "file": "docs/spec/playback/README.md",
-    "line": 32
+    "line": 34
   },
   {
     "id": "PLAY-7",
@@ -3117,7 +3117,7 @@
     "status": "AGREED",
     "text": "When a title cannot direct-play, KROMA walks a fixed ladder and stops at",
     "file": "docs/spec/playback/README.md",
-    "line": 43
+    "line": 45
   },
   {
     "id": "PLAY-8",
@@ -3127,7 +3127,7 @@
     "status": "AGREED",
     "text": "Change the least: the video stream is never touched while a cheaper",
     "file": "docs/spec/playback/README.md",
-    "line": 46
+    "line": 48
   },
   {
     "id": "PLAY-9",
@@ -3137,7 +3137,7 @@
     "status": "SHIPPED",
     "text": "Rung 1, **direct play**. The original file, untouched. No compromise.",
     "file": "docs/spec/playback/README.md",
-    "line": 49
+    "line": 51
   },
   {
     "id": "PLAY-10",
@@ -3147,7 +3147,7 @@
     "status": "SHIPPED",
     "text": "Rung 2, **remux**, also called direct stream. The video and audio",
     "file": "docs/spec/playback/README.md",
-    "line": 50
+    "line": 52
   },
   {
     "id": "PLAY-11",
@@ -3157,7 +3157,7 @@
     "status": "SHIPPED",
     "text": "Rung 3, **audio-only fallback**. The video is still copied and one",
     "file": "docs/spec/playback/README.md",
-    "line": 53
+    "line": 55
   },
   {
     "id": "PLAY-12",
@@ -3167,7 +3167,7 @@
     "status": "AGREED",
     "text": "Video is never touched to solve an audio problem.",
     "file": "docs/spec/playback/README.md",
-    "line": 57
+    "line": 59
   },
   {
     "id": "PLAY-13",
@@ -3177,7 +3177,7 @@
     "status": "AGREED",
     "text": "Rung 4, **subtitle burn-in**. Only when a selected subtitle can",
     "file": "docs/spec/playback/README.md",
-    "line": 58
+    "line": 60
   },
   {
     "id": "PLAY-14",
@@ -3187,7 +3187,7 @@
     "status": "SHIPPED",
     "text": "Rung 5, **video transcode**, the last resort. The video stream is",
     "file": "docs/spec/playback/README.md",
-    "line": 62
+    "line": 64
   },
   {
     "id": "PLAY-15",
@@ -3197,7 +3197,7 @@
     "status": "AGREED",
     "text": "KROMA takes the highest rung that satisfies the client and does not",
     "file": "docs/spec/playback/README.md",
-    "line": 67
+    "line": 69
   },
   {
     "id": "PLAY-16",
@@ -3207,7 +3207,7 @@
     "status": "AGREED",
     "text": "Transcode is a tolerated last resort, not a headline feature. KROMA is",
     "file": "docs/spec/playback/README.md",
-    "line": 75
+    "line": 77
   },
   {
     "id": "PLAY-17",
@@ -3217,7 +3217,7 @@
     "status": "AGREED",
     "text": "Transcode is always the lowest rung and is never the default for a",
     "file": "docs/spec/playback/README.md",
-    "line": 79
+    "line": 81
   },
   {
     "id": "PLAY-18",
@@ -3227,7 +3227,7 @@
     "status": "AGREED",
     "text": "An admin may **cap or disable** video transcode per server and per",
     "file": "docs/spec/playback/README.md",
-    "line": 81
+    "line": 83
   },
   {
     "id": "PLAY-19",
@@ -3237,7 +3237,7 @@
     "status": "AGREED",
     "text": "KROMA ships no adaptive multi-bitrate ladder, no quality knobs and no",
     "file": "docs/spec/playback/README.md",
-    "line": 84
+    "line": 86
   },
   {
     "id": "PLAY-20",
@@ -3247,7 +3247,7 @@
     "status": "AGREED",
     "text": "Any rung below direct play is a compromise, and the client always shows",
     "file": "docs/spec/playback/README.md",
-    "line": 92
+    "line": 94
   },
   {
     "id": "PLAY-21",
@@ -3257,17 +3257,17 @@
     "status": "AGREED",
     "text": "**Video transcode** and **subtitle burn-in** are shown as *reduced",
     "file": "docs/spec/playback/README.md",
-    "line": 96
+    "line": 98
   },
   {
     "id": "PLAY-22",
     "domain": "PLAY",
     "space": "playback",
     "number": 22,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "**Audio downmix** and **audio transcode** are shown as *audio",
     "file": "docs/spec/playback/README.md",
-    "line": 99
+    "line": 101
   },
   {
     "id": "PLAY-23",
@@ -3277,17 +3277,17 @@
     "status": "AGREED",
     "text": "**Remux** is shown as *repackaged*. Quality is untouched, so this is",
     "file": "docs/spec/playback/README.md",
-    "line": 101
+    "line": 103
   },
   {
     "id": "PLAY-24",
     "domain": "PLAY",
     "space": "playback",
     "number": 24,
-    "status": "AGREED",
-    "text": "Direct play shows nothing. The absence of a badge *is* the signal",
+    "status": "SHIPPED",
+    "text": "Direct play may announce itself, naming the codec it is playing",
     "file": "docs/spec/playback/README.md",
-    "line": 103
+    "line": 105
   },
   {
     "id": "PLAY-25",
@@ -3297,7 +3297,7 @@
     "status": "AGREED",
     "text": "KROMA never re-encodes video to save bandwidth unless the device",
     "file": "docs/spec/playback/README.md",
-    "line": 106
+    "line": 113
   },
   {
     "id": "PLAY-26",
@@ -3307,7 +3307,7 @@
     "status": "AGREED",
     "text": "KROMA never tone-maps HDR without saying so.",
     "file": "docs/spec/playback/README.md",
-    "line": 109
+    "line": 116
   },
   {
     "id": "PLAY-27",
@@ -3317,7 +3317,7 @@
     "status": "AGREED",
     "text": "KROMA never burns in subtitles the person did not ask to see.",
     "file": "docs/spec/playback/README.md",
-    "line": 111
+    "line": 118
   },
   {
     "id": "PLAY-28",
@@ -3327,7 +3327,7 @@
     "status": "AGREED",
     "text": "When the only playable path is one a person or an admin has disabled,",
     "file": "docs/spec/playback/README.md",
-    "line": 113
+    "line": 120
   },
   {
     "id": "PLAY-29",
@@ -3337,7 +3337,7 @@
     "status": "SHIPPED",
     "text": "Under **direct play and remux**, seeking is instant and exact. The",
     "file": "docs/spec/playback/README.md",
-    "line": 120
+    "line": 127
   },
   {
     "id": "PLAY-30",
@@ -3347,7 +3347,7 @@
     "status": "AGREED",
     "text": "Under **transcode**, the stream is produced live from a play position,",
     "file": "docs/spec/playback/README.md",
-    "line": 123
+    "line": 130
   },
   {
     "id": "PLAY-31",
@@ -3357,7 +3357,7 @@
     "status": "AGREED",
     "text": "KROMA anchors at the requested position rather than pre-producing the",
     "file": "docs/spec/playback/README.md",
-    "line": 126
+    "line": 133
   },
   {
     "id": "PLAY-32",
@@ -3367,7 +3367,7 @@
     "status": "AGREED",
     "text": "Seeking accuracy is never silently coarsened. A transcoded seek lands",
     "file": "docs/spec/playback/README.md",
-    "line": 129
+    "line": 136
   },
   {
     "id": "PLAY-33",
@@ -3377,7 +3377,7 @@
     "status": "SHIPPED",
     "text": "Progress is **per person, per media version**, stored on the server. It",
     "file": "docs/spec/playback/README.md",
-    "line": 136
+    "line": 143
   },
   {
     "id": "PLAY-34",
@@ -3387,7 +3387,7 @@
     "status": "SHIPPED",
     "text": "The playing client reports position on a steady heartbeat while",
     "file": "docs/spec/playback/README.md",
-    "line": 140
+    "line": 147
   },
   {
     "id": "PLAY-35",
@@ -3397,7 +3397,7 @@
     "status": "AGREED",
     "text": "The write is idempotent on the person, the version, the position and",
     "file": "docs/spec/playback/README.md",
-    "line": 144
+    "line": 153
   },
   {
     "id": "PLAY-36",
@@ -3407,17 +3407,17 @@
     "status": "SHIPPED",
     "text": "Reopening a title in progress offers *Resume* from the stored position",
     "file": "docs/spec/playback/README.md",
-    "line": 147
+    "line": 156
   },
   {
     "id": "PLAY-37",
     "domain": "PLAY",
     "space": "playback",
     "number": 37,
-    "status": "AGREED",
-    "text": "A title is **watched** at **90% of runtime or more**, or at reaching a",
+    "status": "SHIPPED",
+    "text": "A title is **watched** at a credits or end marker where the media has",
     "file": "docs/spec/playback/README.md",
-    "line": 151
+    "line": 160
   },
   {
     "id": "PLAY-38",
@@ -3427,7 +3427,7 @@
     "status": "SHIPPED",
     "text": "At the watched threshold, continue-watching drops the title and, for",
     "file": "docs/spec/playback/README.md",
-    "line": 157
+    "line": 169
   },
   {
     "id": "PLAY-39",
@@ -3437,7 +3437,7 @@
     "status": "AGREED",
     "text": "Below the threshold, progress is retained and the title stays in",
     "file": "docs/spec/playback/README.md",
-    "line": 160
+    "line": 172
   },
   {
     "id": "PLAY-40",
@@ -3447,7 +3447,7 @@
     "status": "AGREED",
     "text": "Starting a watched title again resets it to unwatched and clears the",
     "file": "docs/spec/playback/README.md",
-    "line": 163
+    "line": 175
   },
   {
     "id": "PLAY-41",
@@ -3457,7 +3457,7 @@
     "status": "SHIPPED",
     "text": "A device watching offline queues its unsent progress reports and, on",
     "file": "docs/spec/playback/README.md",
-    "line": 166
+    "line": 178
   },
   {
     "id": "PLAY-42",
@@ -3467,7 +3467,7 @@
     "status": "AGREED",
     "text": "When queued reports from two offline sessions land for the same person",
     "file": "docs/spec/playback/README.md",
-    "line": 175
+    "line": 187
   },
   {
     "id": "PLAY-43",
@@ -3477,7 +3477,7 @@
     "status": "AGREED",
     "text": "An explicit **reset to start**, from finishing a title or choosing",
     "file": "docs/spec/playback/README.md",
-    "line": 181
+    "line": 193
   },
   {
     "id": "PLAY-44",
@@ -3487,7 +3487,7 @@
     "status": "AGREED",
     "text": "If either device crossed the watched threshold, the title is watched.",
     "file": "docs/spec/playback/README.md",
-    "line": 185
+    "line": 197
   },
   {
     "id": "PLAY-45",
@@ -3497,7 +3497,7 @@
     "status": "AGREED",
     "text": "One account may play on several clients at once. KROMA enforces no",
     "file": "docs/spec/playback/README.md",
-    "line": 191
+    "line": 203
   },
   {
     "id": "PLAY-46",
@@ -3507,7 +3507,7 @@
     "status": "AGREED",
     "text": "Each playing client is an independent session with its own fallback",
     "file": "docs/spec/playback/README.md",
-    "line": 195
+    "line": 207
   },
   {
     "id": "PLAY-47",
@@ -3517,7 +3517,7 @@
     "status": "AGREED",
     "text": "Sessions interleave into one continue-watching state under the",
     "file": "docs/spec/playback/README.md",
-    "line": 199
+    "line": 211
   },
   {
     "id": "PLAY-48",
@@ -3527,7 +3527,7 @@
     "status": "AGREED",
     "text": "KROMA does not hand off an active session between devices as a",
     "file": "docs/spec/playback/README.md",
-    "line": 202
+    "line": 214
   },
   {
     "id": "PLAY-49",
@@ -3537,7 +3537,7 @@
     "status": "AGREED",
     "text": "When a stream dies mid-playback, whether the network drops, a transcode",
     "file": "docs/spec/playback/README.md",
-    "line": 210
+    "line": 222
   },
   {
     "id": "PLAY-50",
@@ -3547,17 +3547,17 @@
     "status": "AGREED",
     "text": "A **transient** failure, a network drop or a brief server hiccup, is",
     "file": "docs/spec/playback/README.md",
-    "line": 215
+    "line": 227
   },
   {
     "id": "PLAY-51",
     "domain": "PLAY",
     "space": "playback",
     "number": 51,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A **fatal** failure, a source gone, a transcode that cannot start, or",
     "file": "docs/spec/playback/README.md",
-    "line": 218
+    "line": 230
   },
   {
     "id": "PLAY-52",
@@ -3567,7 +3567,17 @@
     "status": "AGREED",
     "text": "When a television's older decoder cannot play a file a modern phone",
     "file": "docs/spec/playback/README.md",
-    "line": 226
+    "line": 238
+  },
+  {
+    "id": "PLAY-53",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 53,
+    "status": "AGREED",
+    "text": "A settled seek also reports, so jumping and then losing the client does",
+    "file": "docs/spec/playback/README.md",
+    "line": 150
   },
   {
     "id": "SURF-1",

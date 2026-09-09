@@ -1,6 +1,7 @@
 # Library
 
-Status: **AGREED**. Every section carries its own status; the file-level label is the floor.
+Status: **SHIPPED** in part. The scan, the walk and most of the naming conventions are built;
+the rest is decided. Every section and every requirement carries its own status.
 
 Sources on disk become titles you can browse. Everything upstream of "there is something
 to play". What a title *is* once matched, meaning streams, codecs and artwork, is
@@ -9,7 +10,7 @@ to play". What a title *is* once matched, meaning streams, codecs and artwork, i
 
 ## Sources
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 **LIB-1** (AGREED) - A **source** is a directory tree the server is told to watch, tagged
 with exactly one content kind, **movies** or **shows**. The kind is chosen when the source
@@ -43,7 +44,7 @@ removing sources is an admin surface, [`admin/`](../admin/).
 
 ## Naming conventions understood
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 **LIB-9** (AGREED) - Matching is convention-first: a correctly named file matches offline,
 with no provider call. A file that follows the conventions below is guaranteed to match to
@@ -109,7 +110,7 @@ portable between servers and a rename on disk is a reliable repair rather than a
 
 ## Scanning
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 Two scans, one code path, different triggers.
 
@@ -214,7 +215,7 @@ architecture rather than product rules, and are not fixed here.
 
 ## Refresh
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 **LIB-41** (SHIPPED) - A newly matched item fetches its metadata once.
 

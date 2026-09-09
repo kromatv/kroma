@@ -14,7 +14,7 @@ only what is particular to the two resource charts.
 
 Status: **SHIPPED** for the live window, scope and ranges **AGREED**
 
-**ADMIN-16** (AGREED) - The processor chart draws two series, what KROMA costs and what the
+**ADMIN-16** (SHIPPED) - The processor chart draws two series, what KROMA costs and what the
 whole machine costs, on a scale of nought to a hundred percent of the host.
 
 **ADMIN-17** (SHIPPED) - KROMA's figure is the whole process tree, the server and every
@@ -22,7 +22,7 @@ child it spawned. A transcode is a child ffmpeg, so a figure that counted only t
 process reported single digits while the machine was saturated, which is worse than no
 figure at all.
 
-**ADMIN-18** (AGREED) - The processor scope control offers both series, KROMA alone, or the
+**ADMIN-18** (SHIPPED) - The processor scope control offers both series, KROMA alone, or the
 system alone.
 
 **ADMIN-19** (SHIPPED) - A third series names the share of KROMA's own figure that is media
@@ -32,16 +32,16 @@ work, so a box at a hundred percent names its culprit rather than only its size.
 
 Status: **SHIPPED** for the live window, scope and ranges **AGREED**
 
-**ADMIN-20** (AGREED) - The memory chart draws the same two series as the processor chart,
+**ADMIN-20** (SHIPPED) - The memory chart draws the same two series as the processor chart,
 as a percentage of the host's total memory, so the two read the same way.
 
 **ADMIN-21** (SHIPPED) - KROMA's memory is the resident set of the whole process tree, for
 the reason given in ADMIN-17.
 
-**ADMIN-22** (AGREED) - The memory scope control offers both series, KROMA alone, or the
+**ADMIN-22** (SHIPPED) - The memory scope control offers both series, KROMA alone, or the
 system alone.
 
-**ADMIN-23** (AGREED) - Each series keeps one colour for the life of the product. A reader
+**ADMIN-23** (SHIPPED) - Each series keeps one colour for the life of the product. A reader
 who learned that one hue means the system does not find it repainted on the next release,
 and a series dropping out never shifts another series' colour.
 

@@ -190,7 +190,7 @@ access on the spot. An admin deleting another user is an [`admin/`](../admin/) a
 
 ### Does a revoked or deleted device lose downloaded content?
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 Honestly: not immediately, and the server cannot make it.
 

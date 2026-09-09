@@ -124,7 +124,7 @@ mechanism.
 
 ### Direct-play by device generation
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 Whether a file direct-plays is decided per session by [`playback/`](../playback/) against a
 device profile. The *class* of media a surface can decode is a surface fact, and it is the
