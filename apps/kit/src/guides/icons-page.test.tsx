@@ -5,7 +5,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setIconCatalog } from '#ui/lib/icon-catalog';
 import { setIconCatalogLoader } from '#ui/lib/icons/library';
-import IconsPage, { summary, title } from './05-icons.page.mdx';
+import IconsPage, { summary, title } from './06-icons.page.mdx';
 
 // The runner already resolves every Tabler name, so the glyph half of the
 // library has nothing to add here and the page's wait is the catalogue's.

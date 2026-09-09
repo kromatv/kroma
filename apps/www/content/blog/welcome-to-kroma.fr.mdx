@@ -1,52 +1,50 @@
 ---
 title: "Bienvenue sur KROMA"
 date: "2026-01-14"
-excerpt: "Pourquoi nous avons collapsé six conteneurs en un seul binaire Rust, et ce que ça change pour votre médiathèque."
+excerpt: "Pourquoi on a réduit six conteneurs à un seul binaire Rust, et ce que ça change pour votre médiathèque."
 author: "Maxime Scharwath"
 tags: ["Annonce", "Coulisses"]
 ---
 
-Monter une médiathèque auto-hébergée aujourd’hui, c’est assembler une demi-douzaine
+Monter une médiathèque auto-hébergée aujourd’hui, c’est empiler une demi-douzaine
 de services : un indexeur, un agrégateur de trackers, un client BitTorrent, un
-wrapper VPN, un serveur média, une interface de requêtes. Six conteneurs, six
-fichiers de configuration, six choses qui cassent, chacune à sa manière, et
-jamais au même moment.
+VPN, un serveur média, une interface de requêtes. Six conteneurs, six fichiers de
+config, six trucs qui cassent, chacun à sa façon, et jamais en même temps.
 
-KROMA refuse la prémisse. Rien de tout ça ne devrait être votre problème.
+KROMA part du principe que rien de tout ça ne devrait être votre problème.
 
 ## Un seul serveur, écrit en Rust
 
-Une installation classique boulonne ensemble Sonarr, Radarr, Prowlarr,
-qBittorrent, Gluetun et Jellyfin. KROMA est un seul serveur, et il démarre en
-quelques millisecondes. L’indexeur, le moteur de téléchargement, le pont VPN avec
-son kill-switch et le lecteur tournent tous sous lui. Le serveur s’installe une
-fois ; tout ce qui dépasse la lecture et le catalogue arrive en module, pas en
+Une install classique fait tenir ensemble Sonarr, Radarr, Prowlarr, qBittorrent,
+Gluetun et Jellyfin. KROMA est un seul serveur, et il démarre en quelques
+millisecondes. L’indexeur, le moteur de téléchargement, le VPN avec son
+kill-switch et le lecteur tournent tous dedans. Vous l’installez une fois. Tout
+ce qui dépasse la lecture et le catalogue arrive sous forme de module, pas d’un
 conteneur de plus à câbler.
 
-Pas de ferme de transcodage à garder au chaud non plus. Le serveur diffuse les
-fichiers originaux par plages d’octets, et chaque client décode le HEVC/H.265
-lui-même, en matériel sur les téléviseurs Samsung et LG. Votre NAS reste au repos.
+Pas de transcodage à faire tourner en permanence non plus. Le serveur envoie les
+fichiers d’origine en range requests, et c’est le client qui décode le HEVC/H.265,
+en hardware sur les TV Samsung et LG. Votre NAS ne fait presque rien.
 
 ## Le même design, partout
 
-L’autre parti-pris est visuel. KROMA parle un seul langage de design, charbon
-profond et ambre chaud, deux familles typographiques, aucun emoji, et le tient
-sur le web, sur le mobile, et sur l’expérience « 10 pieds » pilotée à la
-télécommande dans le salon.
+L’autre parti pris est visuel. KROMA a un seul langage de design : gris charbon,
+ambre, deux polices, zéro emoji. Le même sur le web, sur mobile, et sur
+l’interface salon qu’on pilote à la télécommande.
 
-Les composants et les jetons de design existent une seule fois, dans un kit
-partagé, et se rendent nativement sur React Native comme dans le navigateur via
-react-native-web. Une tuile a la même allure sur un Apple TV et sur un panneau
-Samsung parce que c’est *la même* tuile.
+Les composants et les tokens de design n’existent qu’une fois, dans un kit
+partagé, et s’affichent en natif via React Native comme dans le navigateur via
+react-native-web. Une affiche a la même tête sur un Apple TV et sur une TV
+Samsung parce que c’est *la même* affiche.
 
-## Libre, et pensé pour être possédé
+## Libre, et fait pour vous appartenir
 
-KROMA est open source, sous licence GPL-2.0. Votre bibliothèque et votre activité
-ne quittent jamais votre réseau. Il n’y a pas de compte à créer, pas d’abonnement,
-pas de service central qui pourrait fermer.
+KROMA est open source, sous licence GPL-2.0. Votre bibliothèque et ce que vous en
+faites ne quittent jamais votre réseau. Pas de compte à créer, pas d’abonnement,
+pas de service central qui peut fermer du jour au lendemain.
 
-> Conçu pour être possédé, pas loué.
+> Fait pour vous appartenir, pas pour être loué.
 
-Les prochains articles prendront les choix techniques un par un : le moteur de
-focus spatial pour la télécommande, le décodage direct-play, le pont WireGuard, et
-la manière dont un même kit d’UI sert six plateformes.
+Les prochains articles reprendront les choix techniques un par un : le moteur de
+focus pour la télécommande, le direct play, le pont WireGuard, et comment un même
+kit d’UI sert six plateformes.
