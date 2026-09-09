@@ -8,8 +8,8 @@ truth is the input to every playback decision. If a file direct-plays, it is bec
 streams match what a client can render; if it cannot, this is where the reason comes from.
 
 This file owns the *vocabulary* of media: the model, the containers, the codecs, the
-stream properties. The per-device capability matrix lives in [`surfaces.md`](../surfaces/README.md)
-and the decision of what to send lives in [`playback.md`](../playback/README.md). Both consume the
+stream properties. The per-device capability matrix lives in [`surfaces/`](../surfaces/)
+and the decision of what to send lives in [`playback/`](../playback/). Both consume the
 terms defined here; neither is redefined here.
 
 ## The media model
@@ -18,171 +18,190 @@ Status: **AGREED**
 
 Five nouns, nested, each the child of the one before:
 
-- **Title.** The work a person searches for: a film, or one episode of a series. The unit
-  the [`library.md`](../library/README.md) matches to metadata. A title carries no bytes.
-- **Edition.** A named cut of a title: theatrical, director's, extended, remastered.
-  Different runtimes, different content. A title with one cut has one unnamed edition.
-- **Media file.** One physical file on disk that realises an edition at a given fidelity.
-  An edition may have several: a 1080p file and a 4K file are two media files of the same
-  edition, not two titles and not two editions.
-- **Stream.** One track inside a media file: exactly one of video, audio, or subtitle.
-  A media file has one or more video streams (usually one), zero or more audio streams,
-  and zero or more subtitle streams.
-- **Stream properties.** The describable facts about a stream (codec, resolution, bit
-  depth, channel layout, language, disposition). These are what a client is matched against.
+- **MEDIA-1** (AGREED) - **Title.** The work a person searches for: a film, or one episode
+  of a series. It is the unit [`library/`](../library/) matches to metadata, and it carries
+  no bytes.
+- **MEDIA-2** (AGREED) - **Edition.** A named cut of a title: theatrical, director's,
+  extended, remastered. Different runtimes, different content. A title with one cut has one
+  unnamed edition.
+- **MEDIA-3** (AGREED) - **Media file.** One physical file on disk that realises an edition
+  at a given fidelity. An edition may have several: a 1080p file and a 4K file are two media
+  files of the same edition, not two titles and not two editions.
+- **MEDIA-4** (AGREED) - **Stream.** One track inside a media file, exactly one of video,
+  audio or subtitle. A media file has one or more video streams (usually one), zero or more
+  audio streams, and zero or more subtitle streams.
+- **MEDIA-5** (AGREED) - **Stream properties.** The describable facts about a stream: codec,
+  resolution, bit depth, channel layout, language, disposition. These are what a client is
+  matched against.
 
-The nesting is strict and total: every stream belongs to exactly one media file, every
-media file to exactly one edition, every edition to exactly one title. Nothing floats.
+**MEDIA-6** (AGREED) - The nesting is strict and total: every stream belongs to exactly one
+media file, every media file to exactly one edition, every edition to exactly one title.
+Nothing floats.
 
 ## Versions of one title
 
 Status: **AGREED**. This resolves the open question on multiple versions.
 
-A 1080p file and a 4K file of the same cut are **two media files of one edition**. They are
-never modelled as separate titles, and the library never shows a duplicate. A person picks
-a title and a cut; the fidelity is chosen for them.
+**MEDIA-7** (AGREED) - A 1080p file and a 4K file of the same cut are **two media files of
+one edition**. They are never modelled as separate titles, and the library never shows a
+duplicate. A person picks a title and a cut; the fidelity is chosen for them.
 
-- KROMA ranks a title's media files and keeps a **preferred** one. Rank order: resolution,
-  then HDR over SDR, then bit depth, then audio channel count, then bitrate. The preferred
-  file is the default source for a play request.
-- The preference is a *default*, not a lock. A client that cannot render the preferred file
-  may be served a lesser file of the same edition instead of falling back to transcoding,
-  a genuinely better outcome, so the model must make the alternative reachable. Which file
-  a given client actually receives is [`playback.md`](../playback/README.md)'s decision; media.md only
-  guarantees the alternatives are enumerated and comparable.
-- Editions are surfaced to the person (they are different content); fidelity variants are
-  not (they are the same content at different quality). A person chooses a cut, never a
-  resolution.
+- **MEDIA-8** (AGREED) - KROMA ranks a title's media files and keeps a **preferred** one.
+  Rank order: resolution, then HDR over SDR, then bit depth, then audio channel count, then
+  bitrate. The preferred file is the default source for a play request.
+- **MEDIA-9** (AGREED) - The preference is a *default*, not a lock. The model enumerates a
+  title's media files and makes them comparable, so a client that cannot render the preferred
+  file can be served a lesser file of the same edition instead of falling back to transcoding.
+  Which file a client actually receives is [`playback/`](../playback/)'s decision.
+- **MEDIA-10** (AGREED) - Editions are surfaced to the person, because they are different
+  content; fidelity variants are not, because they are the same content at different quality.
+  A person chooses a cut, never a resolution.
 
 ## Containers and codecs
 
 Status: **AGREED**
 
-First-class means: KROMA fully describes it, preserves it end to end, and expects direct
-play wherever a client can render it. Everything else is *readable* but not privileged.
+**MEDIA-11** (AGREED) - First-class means KROMA fully describes the format, preserves it end
+to end, and expects direct play wherever a client can render it. Everything else is
+*readable* but not privileged.
 
-First-class containers: **MP4**, **MKV**, **WebM**. First-class video codecs, HEVC first:
+**MEDIA-12** (AGREED) - The first-class containers are **MP4**, **MKV** and **WebM**.
 
-- **HEVC / H.265.** The priority codec. 8-bit and 10-bit, SDR and HDR, are all first-class.
-- **H.264 / AVC.** The universal floor; assumed playable everywhere.
-- **AV1.** First-class where the client generation can render it; treated as first-class
-  media truth regardless, so a capable client direct-plays it.
-- **VP9.** First-class within WebM, chiefly for the browser surface.
+The first-class video codecs, HEVC first:
 
-First-class audio and subtitle codecs are named in their sections below. A codec being
-first-class is a statement about *KROMA's* handling; whether a *particular* device renders
-it is the matrix in [`surfaces.md`](../surfaces/README.md).
+- **MEDIA-13** (AGREED) - **HEVC / H.265** is the priority codec. 8-bit and 10-bit, SDR and
+  HDR, are all first-class.
+- **MEDIA-14** (AGREED) - **H.264 / AVC** is the universal floor, assumed playable
+  everywhere.
+- **MEDIA-15** (AGREED) - **AV1** is first-class media truth whatever the client generation,
+  so a capable client direct-plays it.
+- **MEDIA-16** (AGREED) - **VP9** is first-class within WebM, chiefly for the browser
+  surface.
+
+**MEDIA-17** (AGREED) - A codec being first-class states how *KROMA* handles it, never that a
+particular device renders it. That is the matrix in [`surfaces/`](../surfaces/).
+
+First-class audio and subtitle codecs are named in their sections below.
 
 ## Bit depth and HDR
 
 Status: **AGREED**
 
-HDR is preserved end to end or it is not offered. KROMA never silently flattens HDR to SDR
-as if nothing happened. A tone-mapped picture is a compromise and is surfaced as one by
-[`playback.md`](../playback/README.md).
+**MEDIA-18** (AGREED) - HDR is preserved end to end or it is not offered. KROMA never
+silently flattens HDR to SDR, and a tone-mapped picture is surfaced as the compromise it is
+by [`playback/`](../playback/).
 
-- **Bit depth.** 8-bit and 10-bit are first-class. 10-bit is retained as a first-class
-  property of the video stream, never rounded away in the model.
-- **HDR variants** KROMA distinguishes: **HDR10**, **HDR10+**, **Dolby Vision**, **HLG**.
-  Each is a distinct property, because each has distinct client support. Dolby Vision's
-  profile is recorded, because a profile a client cannot decode is not the same as one it
+- **MEDIA-19** (AGREED) - **Bit depth.** 8-bit and 10-bit are first-class, and 10-bit is
+  retained as a property of the video stream rather than rounded away in the model.
+- **MEDIA-20** (AGREED) - KROMA distinguishes **HDR10**, **HDR10+**, **Dolby Vision** and
+  **HLG** as separate properties, because each has distinct client support, and it records
+  Dolby Vision's profile, because a profile a client cannot decode is not the same as one it
   can.
-- **What is preserved**: colour primaries, transfer characteristics, and matrix
-  coefficients travel with the video stream. A client is matched against the exact HDR
-  variant, not a generic "HDR" flag. Where dynamic metadata (HDR10+, Dolby Vision) cannot
-  be carried to a client, KROMA's position is that the base HDR10 layer is preserved rather
-  than discarding HDR entirely, a fallback [`playback.md`](../playback/README.md) makes visible.
+- **MEDIA-21** (AGREED) - Colour primaries, transfer characteristics and matrix coefficients
+  travel with the video stream, and a client is matched against the exact HDR variant rather
+  than a generic "HDR" flag.
+- **MEDIA-22** (AGREED) - Where dynamic metadata, HDR10+ or Dolby Vision, cannot be carried
+  to a client, the base HDR10 layer is preserved rather than HDR discarded entirely. It is a
+  fallback [`playback/`](../playback/) makes visible.
 
 ## Audio
 
 Status: **AGREED**
 
-First-class audio codecs: **AAC**, **AC-3** and **E-AC-3** (Dolby Digital / Plus),
-**TrueHD**, **DTS** and **DTS-HD**, **FLAC**, **Opus**. Each audio stream's **channel
-layout** (stereo, 5.1, 7.1, Atmos objects) is a first-class property.
+**MEDIA-23** (AGREED) - The first-class audio codecs are **AAC**, **AC-3** and **E-AC-3**
+(Dolby Digital and Plus), **TrueHD**, **DTS** and **DTS-HD**, **FLAC** and **Opus**.
 
-- **Passthrough** is the default for multichannel and lossless audio: the bitstream is sent
-  untouched to a device or receiver that can decode it. This is direct play for audio and is
-  always preferred.
-- **Downmixing** to stereo happens only when the target cannot render the source layout, and
-  only as an explicit fallback, never silently. When it happens, [`playback.md`](../playback/README.md)
-  owns telling the person; media.md defines *what* downmix means (a channel-count reduction
-  that is a compromise) and guarantees the original stream is retained unchanged as the
-  source.
-- Multiple audio streams (languages, commentary) are all enumerated and selectable. The
-  default follows the file's own disposition flags, then profile language preference.
+**MEDIA-24** (AGREED) - An audio stream's **channel layout**, stereo, 5.1, 7.1 or Atmos
+objects, is a first-class property.
+
+- **MEDIA-25** (AGREED) - **Passthrough** is the default for multichannel and lossless audio:
+  the bitstream reaches a device or receiver that can decode it untouched. This is direct play
+  for audio and is always preferred.
+- **MEDIA-26** (AGREED) - **Downmixing** to stereo happens only when the target cannot render
+  the source layout, only as an explicit fallback, and never silently. A downmix is a
+  channel-count reduction and therefore a compromise; the original stream is retained
+  unchanged as the source, and telling the person is [`playback/`](../playback/)'s job.
+- **MEDIA-27** (AGREED) - Multiple audio streams, languages and commentary alike, are all
+  enumerated and selectable. The default follows the file's own disposition flags, then the
+  profile's language preference.
 
 ## Subtitles
 
 Status: **AGREED**
 
-A subtitle stream is either **embedded** (a track inside the media file) or **sidecar** (a
-separate file the library associates with the media file). Both are first-class and both are
-enumerated the same way once known.
+**MEDIA-28** (AGREED) - A subtitle stream is either **embedded**, a track inside the media
+file, or **sidecar**, a separate file the library associates with it. Both are first-class
+and both enumerate the same way once known.
 
-- First-class text formats: **SRT**, **WebVTT**, **ASS/SSA**. First-class image formats:
-  **PGS** and **VobSub**. Text subtitles are the default because they overlay without
-  touching the video; image subtitles are heavier and sometimes force a compromise.
-- **Dispositions** are recorded and honoured: **forced** (only the foreign-language lines a
-  viewer needs) and **SDH** (for the deaf and hard of hearing). These are distinct
-  properties; a person picking "forced" gets forced, not full.
-- **Burning in**, meaning rendering a subtitle permanently into the video, is a last resort, used
-  only when a subtitle cannot be delivered as a selectable overlay to the target. It is
-  never the default and never silent. media.md's rule: the original subtitle stream is
-  always preserved; the burn is a derived output, not a replacement. *When* it happens is
-  [`playback.md`](../playback/README.md).
+- **MEDIA-29** (AGREED) - The first-class subtitle formats are **SRT**, **WebVTT** and
+  **ASS/SSA** as text, **PGS** and **VobSub** as images. Text is the default because it
+  overlays without touching the video; image subtitles are heavier and sometimes force a
+  compromise.
+- **MEDIA-30** (AGREED) - The **forced** disposition, only the foreign-language lines a
+  viewer needs, and the **SDH** disposition, for the deaf and hard of hearing, are recorded
+  and honoured as distinct properties. A person picking forced gets forced, not full.
+- **MEDIA-31** (AGREED) - **Burning in**, rendering a subtitle permanently into the video, is
+  a last resort used only when a subtitle cannot reach the target as a selectable overlay. It
+  is never the default and never silent, the original subtitle stream is always preserved, and
+  the burn is a derived output rather than a replacement. *When* it happens is
+  [`playback/`](../playback/).
 
 ## Artwork and images
 
 Status: **AGREED**
 
-Every title carries images: **poster**, **backdrop**, **logo**, and per-episode **thumb**.
-These are media too, and are treated with the same discipline.
+**MEDIA-32** (AGREED) - Every title carries a **poster**, a **backdrop**, a **logo** and, per
+episode, a **thumb**. These are media too, and are treated with the same discipline.
 
-- **Sources**, in order of trust: images embedded in the media file, sidecar image files
-  next to it, then images fetched by the [`library.md`](../library/README.md) metadata refresh. A
-  local image outranks a fetched one; a person's explicit choice outranks both.
-- **Sizes.** KROMA derives and caches a fixed set of sizes per image (a small grid
-  thumbnail through a full-bleed backdrop) so a client requests a size, never the original.
+- **MEDIA-33** (AGREED) - Image sources rank by trust: embedded in the media file, then a
+  sidecar file next to it, then fetched by the [`library/`](../library/) metadata refresh. A
+  local image outranks a fetched one, and a person's explicit choice outranks both.
+- **MEDIA-34** (AGREED) - KROMA derives a fixed set of sizes per image, a small grid
+  thumbnail through a full-bleed backdrop, so a client requests a size and never the original.
   The original is retained as the master.
-- **Caching.** Derived sizes are cached and served without re-deriving. A source image
-  changing invalidates its derivatives; nothing else. Artwork is never a reason a title
-  fails to appear. A title with no image shows a typed placeholder, never a broken one.
+- **MEDIA-35** (AGREED) - Derived sizes are cached and served without re-deriving, and a
+  source image changing invalidates its own derivatives and nothing else.
+- **MEDIA-36** (AGREED) - Artwork is never a reason a title fails to appear. A title with no
+  image shows a typed placeholder, never a broken one.
 
 ## Probing and trust
 
 Status: **AGREED**. This resolves the open question on probe trust.
 
-KROMA learns a file's streams by **probing** it once, when the library first sees it, and
-**trusts that probe** for playback decisions. Re-probing on every play would tax the server
-for a fact that rarely changes.
+**MEDIA-37** (AGREED) - KROMA learns a file's streams by **probing** it once, when the
+library first sees it, and **trusts that probe** for playback decisions. Re-probing on every
+play would tax the server for a fact that rarely changes.
 
-- The probe result is the authoritative stream truth until the file's bytes change (size or
-  modification time), which invalidates it and schedules a re-probe.
-- **Re-probe on playback failure**: when a direct play fails in a way that implicates the
-  stream description (a codec the probe named but the client could not initialise), KROMA
-  re-probes that file once and records the corrected truth, so the same failure does not
-  recur. A failure that does not implicate the description (network, disk) does not trigger a
+- **MEDIA-38** (AGREED) - A probe is the authoritative stream truth until the file's bytes
+  change, meaning its size or modification time, which invalidates the probe and schedules a
   re-probe.
-- Trust is per-file and durable: a corrected probe is written back, not held in memory for
-  one session.
+- **MEDIA-39** (AGREED) - When a direct play fails in a way that implicates the stream
+  description, such as a codec the probe named but the client could not initialise, KROMA
+  re-probes that file once and records the corrected truth, so the same failure does not
+  recur. A failure that implicates the network or the disk instead does not trigger a
+  re-probe.
+- **MEDIA-40** (AGREED) - Trust is per-file and durable: a corrected probe is written back,
+  not held in memory for one session.
 
 ## Files KROMA can read but not fully describe
 
 Status: **AGREED**. This resolves the "read but not describe" must-answer.
 
-A file whose container opens and whose streams enumerate, but which contains a stream KROMA
-cannot fully describe (an unknown codec, absent or contradictory metadata), is **partially
-known**, never hidden and never silently dropped.
+**MEDIA-41** (AGREED) - A file whose container opens and whose streams enumerate, but which
+carries a stream KROMA cannot fully describe, an unknown codec or absent or contradictory
+metadata, is **partially known**. It is never hidden and never silently dropped.
 
-- The title **appears** in the library with whatever *is* known. A single indescribable
-  stream does not disqualify the file; the describable streams remain first-class.
-- The unknown stream is marked **undescribed** and carries its raw identifier so a person and
-  a diagnostician can see exactly what was not understood. An undescribed stream is treated
-  as *not direct-playable* by [`playback.md`](../playback/README.md), because KROMA will not gamble that a
-  client can render what KROMA itself cannot name.
-- A file that will not open at all, a truncated or corrupt container, is **unreadable**,
-  surfaced as a typed error against the title with the reason, and excluded from play until
-  it is re-scanned. It is a visible fault, not an absence.
-- Undescribed and unreadable are distinct states. The first is "we see it but cannot vouch
-  for it"; the second is "we cannot see it". Both are on record; neither is a blank.
+- **MEDIA-42** (AGREED) - The title **appears** in the library with whatever *is* known. A
+  single indescribable stream does not disqualify the file, and the describable streams remain
+  first-class.
+- **MEDIA-43** (AGREED) - The unknown stream is marked **undescribed** and carries its raw
+  identifier, so a person and a diagnostician can see exactly what was not understood.
+- **MEDIA-44** (AGREED) - An undescribed stream is *not direct-playable*, because KROMA will
+  not gamble that a client renders what KROMA itself cannot name
+  ([`playback/`](../playback/)).
+- **MEDIA-45** (AGREED) - A file that will not open at all, a truncated or corrupt container,
+  is **unreadable**: surfaced as a typed error against the title with the reason, and excluded
+  from play until it is re-scanned. It is a visible fault, not an absence.
+- **MEDIA-46** (AGREED) - Undescribed and unreadable are distinct states. The first is "we
+  see it but cannot vouch for it", the second is "we cannot see it". Both are on record;
+  neither is a blank.

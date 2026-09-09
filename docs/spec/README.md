@@ -66,11 +66,10 @@ copying it.
 
 Example:
 
-> **LIB-4** (AGREED) - A rescan never deletes user data. A file that disappears is
-> marked absent; its watch history survives.
+> **LIB-48** (AGREED) - A rescan **only ever marks absent**. It never deletes user data.
 
 The ID is the join key between the spec and the board: an epic or story writes
-`Implements: LIB-4, LIB-7` rather than restating the rule. This keeps the earlier
+`Implements: LIB-45, LIB-48` rather than restating the rule. This keeps the earlier
 promise, *never copy spec text into an issue*, while still letting work trace
 back to exactly what it satisfies.
 
