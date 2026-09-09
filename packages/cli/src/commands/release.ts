@@ -14,6 +14,18 @@ export function tagFor(id: string, version: string): string {
   return `${id}@${version}`;
 }
 
+const RELEASE_DOWNLOAD = /^(https:\/\/github\.com\/)[^/]+\/[^/]+(\/releases\/download\/)/;
+
+function underRepo(entry: Entry, repo: string): Entry {
+  const move = (url: string): string =>
+    url.replace(RELEASE_DOWNLOAD, (_, host: string, tail: string) => `${host}${repo}${tail}`);
+  return {
+    ...entry,
+    url: move(entry.url),
+    artifacts: entry.artifacts.map((a) => ({ ...a, url: move(a.url) })),
+  };
+}
+
 export type Verdict =
   | { kind: 'new' }
   | { kind: 'publish'; from: string }
@@ -127,7 +139,7 @@ export function decide(
         break;
       case 'unchanged':
         plan.unchanged.push(entry.id);
-        entries.push(live.get(entry.id) as Entry);
+        entries.push(underRepo(live.get(entry.id) as Entry, repo));
         break;
       case 'stale':
         stale.push(
@@ -138,13 +150,13 @@ export function decide(
             `    Bump the module's version past ${verdict.published} and re-push.`,
           ].join('\n'),
         );
-        entries.push(live.get(entry.id) as Entry);
+        entries.push(underRepo(live.get(entry.id) as Entry, repo));
         break;
       case 'backwards':
         errors.push(
           `${entry.id}: version ${entry.version} is OLDER than the published ${verdict.published}; a release cannot go backwards`,
         );
-        entries.push(live.get(entry.id) as Entry);
+        entries.push(underRepo(live.get(entry.id) as Entry, repo));
         break;
     }
   }
@@ -153,7 +165,7 @@ export function decide(
   for (const [id, entry] of live) {
     if (!packed.has(id)) {
       plan.carried.push(id);
-      entries.push(entry);
+      entries.push(underRepo(entry, repo));
     }
   }
 

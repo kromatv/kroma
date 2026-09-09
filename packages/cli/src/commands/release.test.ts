@@ -43,6 +43,12 @@ function bundle(id: string, version: string, target: string, contentHash: string
 
 const catalog = (...modules: Entry[]): Catalog => ({ schema: 2, modules });
 
+const cutUnder = (e: Entry, owner: string): Entry => ({
+  ...e,
+  url: e.url.replace(REPO, owner),
+  artifacts: e.artifacts.map((a) => ({ ...a, url: a.url.replace(REPO, owner) })),
+});
+
 describe('tagFor', () => {
   it('cuts a module its own tag, id and version joined', () => {
     expect(tagFor('tv.kroma.indexer', '0.1.3')).toBe('tv.kroma.indexer@0.1.3');
@@ -256,5 +262,42 @@ describe('decide', () => {
     const one = decide(bundles, catalog(), REPO, NOW);
     const two = decide([...bundles].reverse(), catalog(), REPO, NOW);
     expect(JSON.stringify(one.catalog)).toBe(JSON.stringify(two.catalog));
+  });
+
+  it('moves a carried entry onto the repository the catalog is published from', () => {
+    const live = cutUnder(entry('tv.kroma.whisper', '0.2.0', { mac: 'w' }), 'someone/kroma');
+
+    const { plan, catalog: out } = decide([], catalog(live), REPO, NOW);
+
+    expect(plan.carried).toEqual(['tv.kroma.whisper']);
+    expect(out.modules[0]?.url).toContain(`github.com/${REPO}/releases/download/`);
+    expect(JSON.stringify(out.modules)).not.toContain('someone/kroma');
+  });
+
+  it('moves an unchanged module’s published entry onto the current repository', () => {
+    const live = cutUnder(entry('tv.kroma.indexer', '0.1.0', { mac: 'a' }), 'someone/kroma');
+
+    const { plan, catalog: out } = decide(
+      [bundle('tv.kroma.indexer', '0.1.0', 'mac', 'a')],
+      catalog(live),
+      REPO,
+      NOW,
+    );
+
+    expect(plan.unchanged).toEqual(['tv.kroma.indexer']);
+    expect(out.modules[0]?.artifacts[0]?.url).toContain(`github.com/${REPO}/releases/download/`);
+  });
+
+  it('leaves a download URL that is not a GitHub release alone', () => {
+    const live = entry('tv.kroma.whisper', '0.2.0', { mac: 'w' });
+    live.url = 'https://cdn.example.com/whisper-mac.kmod';
+    live.artifacts = live.artifacts.map((a) => ({
+      ...a,
+      url: 'https://cdn.example.com/whisper-mac.kmod',
+    }));
+
+    const { catalog: out } = decide([], catalog(live), REPO, NOW);
+
+    expect(out.modules[0]?.url).toBe('https://cdn.example.com/whisper-mac.kmod');
   });
 });
