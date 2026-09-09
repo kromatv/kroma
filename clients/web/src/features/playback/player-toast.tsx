@@ -6,16 +6,18 @@ export function Toast({
   variant,
   onDismiss,
   action,
+  top = 24,
   children,
 }: Readonly<{
   variant: 'info' | 'danger';
   onDismiss: () => void;
   action?: React.ReactNode;
+  top?: number;
   children: React.ReactNode;
 }>) {
   const t = useT();
   return (
-    <Box absolute top={24} left={0} right={0} z={40} align="center" pointerEvents="box-none">
+    <Box absolute top={top} left={0} right={0} z={40} align="center" pointerEvents="box-none">
       <Row
         maxW={640}
         gap={12}

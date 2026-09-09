@@ -91,24 +91,21 @@ person actually owns, not so KROMA can pretend any file suits any screen.
 
 Status: **SHIPPED** in part; each requirement carries its own.
 
-**PLAY-20** (AGREED) - Any rung below direct play is a compromise, and the client always shows
+**PLAY-20** (SHIPPED) - Any rung below direct play is a compromise, and the client always shows
 which one is active before or at the moment playback starts, as a small honest badge rather
 than a buried log line.
 
 - **PLAY-21** (AGREED) - **Video transcode** and **subtitle burn-in** are shown as *reduced
-  quality* with the reason, meaning codec, resolution, HDR or subtitle. These change the
-  picture and are the loudest.
+  quality* with the reason, meaning codec, resolution, HDR or subtitle. These change the picture
+  and are the loudest. Neither rung is reachable on a browser-backed surface today, which refuses
+  a codec it cannot decode rather than asking for a re-encode, so this is the half still waiting
+  on the surfaces that can reach it.
 - **PLAY-22** (SHIPPED) - **Audio downmix** and **audio transcode** are shown as *audio
   adjusted*, naming the codec that was re-encoded.
-- **PLAY-23** (AGREED) - **Remux** is shown as *repackaged*. Quality is untouched, so this is
+- **PLAY-23** (SHIPPED) - **Remux** is shown as *repackaged*. Quality is untouched, so this is
   informational rather than a warning.
-- **PLAY-24** (SHIPPED) - Direct play may announce itself, naming the codec it is playing
-  untouched. The guarantee is the absence of a *compromise* notice, not the absence of all
-  notice: a badge that says a compromise is active is the thing that must never be missing.
-
-Direct play announcing itself is deliberate rather than noise. Playing the file unmodified is
-the product's whole claim, so saying "direct play in H.265" is the product showing its work. The
-rule that carries weight is that a compromise is never silent, not that a success always is.
+- **PLAY-24** (SHIPPED) - Direct play shows nothing. The absence of a notice *is* the signal
+  that the file is pristine.
 
 **PLAY-25** (AGREED) - KROMA never re-encodes video to save bandwidth unless the device
 profile forces it.
@@ -235,12 +232,10 @@ from the start.
 
 Status: **AGREED**
 
-**PLAY-52** (AGREED) - When a television's older decoder cannot play a file a modern phone
+**PLAY-52** (SHIPPED) - When a television's older decoder cannot play a file a modern phone
 can, and the server is configured not to transcode it, the television names the device as the
 cause, points at a surface that does play it, and names the one lever that would fix it. It
-never blames the person and never implies the file is broken. Today the codec refusal points at
-"another device" without naming one, which is the part still AGREED; the audio refusal already
-names two.
+never blames the person and never implies the file is broken.
 
 > **Can't play this here.** This TV can't decode this file. It plays fine on the KROMA phone and
 > web apps, or ask the server owner to enable conversion for this device.

@@ -3244,7 +3244,7 @@
     "domain": "PLAY",
     "space": "playback",
     "number": 20,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Any rung below direct play is a compromise, and the client always shows",
     "file": "docs/spec/playback/README.md",
     "line": 94
@@ -3267,17 +3267,17 @@
     "status": "SHIPPED",
     "text": "**Audio downmix** and **audio transcode** are shown as *audio",
     "file": "docs/spec/playback/README.md",
-    "line": 101
+    "line": 103
   },
   {
     "id": "PLAY-23",
     "domain": "PLAY",
     "space": "playback",
     "number": 23,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "**Remux** is shown as *repackaged*. Quality is untouched, so this is",
     "file": "docs/spec/playback/README.md",
-    "line": 103
+    "line": 105
   },
   {
     "id": "PLAY-24",
@@ -3285,9 +3285,9 @@
     "space": "playback",
     "number": 24,
     "status": "SHIPPED",
-    "text": "Direct play may announce itself, naming the codec it is playing",
+    "text": "Direct play shows nothing. The absence of a notice *is* the signal",
     "file": "docs/spec/playback/README.md",
-    "line": 105
+    "line": 107
   },
   {
     "id": "PLAY-25",
@@ -3297,7 +3297,7 @@
     "status": "AGREED",
     "text": "KROMA never re-encodes video to save bandwidth unless the device",
     "file": "docs/spec/playback/README.md",
-    "line": 113
+    "line": 110
   },
   {
     "id": "PLAY-26",
@@ -3307,7 +3307,7 @@
     "status": "AGREED",
     "text": "KROMA never tone-maps HDR without saying so.",
     "file": "docs/spec/playback/README.md",
-    "line": 116
+    "line": 113
   },
   {
     "id": "PLAY-27",
@@ -3317,7 +3317,7 @@
     "status": "AGREED",
     "text": "KROMA never burns in subtitles the person did not ask to see.",
     "file": "docs/spec/playback/README.md",
-    "line": 118
+    "line": 115
   },
   {
     "id": "PLAY-28",
@@ -3327,7 +3327,7 @@
     "status": "AGREED",
     "text": "When the only playable path is one a person or an admin has disabled,",
     "file": "docs/spec/playback/README.md",
-    "line": 120
+    "line": 117
   },
   {
     "id": "PLAY-29",
@@ -3337,7 +3337,7 @@
     "status": "SHIPPED",
     "text": "Under **direct play and remux**, seeking is instant and exact. The",
     "file": "docs/spec/playback/README.md",
-    "line": 127
+    "line": 124
   },
   {
     "id": "PLAY-30",
@@ -3347,7 +3347,7 @@
     "status": "AGREED",
     "text": "Under **transcode**, the stream is produced live from a play position,",
     "file": "docs/spec/playback/README.md",
-    "line": 130
+    "line": 127
   },
   {
     "id": "PLAY-31",
@@ -3357,7 +3357,7 @@
     "status": "AGREED",
     "text": "KROMA anchors at the requested position rather than pre-producing the",
     "file": "docs/spec/playback/README.md",
-    "line": 133
+    "line": 130
   },
   {
     "id": "PLAY-32",
@@ -3367,7 +3367,7 @@
     "status": "AGREED",
     "text": "Seeking accuracy is never silently coarsened. A transcoded seek lands",
     "file": "docs/spec/playback/README.md",
-    "line": 136
+    "line": 133
   },
   {
     "id": "PLAY-33",
@@ -3377,7 +3377,7 @@
     "status": "SHIPPED",
     "text": "Progress is **per person, per media version**, stored on the server. It",
     "file": "docs/spec/playback/README.md",
-    "line": 143
+    "line": 140
   },
   {
     "id": "PLAY-34",
@@ -3387,7 +3387,7 @@
     "status": "SHIPPED",
     "text": "The playing client reports position on a steady heartbeat while",
     "file": "docs/spec/playback/README.md",
-    "line": 147
+    "line": 144
   },
   {
     "id": "PLAY-35",
@@ -3397,7 +3397,7 @@
     "status": "AGREED",
     "text": "The write is idempotent on the person, the version, the position and",
     "file": "docs/spec/playback/README.md",
-    "line": 153
+    "line": 150
   },
   {
     "id": "PLAY-36",
@@ -3407,7 +3407,7 @@
     "status": "SHIPPED",
     "text": "Reopening a title in progress offers *Resume* from the stored position",
     "file": "docs/spec/playback/README.md",
-    "line": 156
+    "line": 153
   },
   {
     "id": "PLAY-37",
@@ -3417,7 +3417,7 @@
     "status": "SHIPPED",
     "text": "A title is **watched** at a credits or end marker where the media has",
     "file": "docs/spec/playback/README.md",
-    "line": 160
+    "line": 157
   },
   {
     "id": "PLAY-38",
@@ -3427,7 +3427,7 @@
     "status": "SHIPPED",
     "text": "At the watched threshold, continue-watching drops the title and, for",
     "file": "docs/spec/playback/README.md",
-    "line": 169
+    "line": 166
   },
   {
     "id": "PLAY-39",
@@ -3437,7 +3437,7 @@
     "status": "AGREED",
     "text": "Below the threshold, progress is retained and the title stays in",
     "file": "docs/spec/playback/README.md",
-    "line": 172
+    "line": 169
   },
   {
     "id": "PLAY-40",
@@ -3447,7 +3447,7 @@
     "status": "AGREED",
     "text": "Starting a watched title again resets it to unwatched and clears the",
     "file": "docs/spec/playback/README.md",
-    "line": 175
+    "line": 172
   },
   {
     "id": "PLAY-41",
@@ -3457,7 +3457,7 @@
     "status": "SHIPPED",
     "text": "A device watching offline queues its unsent progress reports and, on",
     "file": "docs/spec/playback/README.md",
-    "line": 178
+    "line": 175
   },
   {
     "id": "PLAY-42",
@@ -3467,7 +3467,7 @@
     "status": "AGREED",
     "text": "When queued reports from two offline sessions land for the same person",
     "file": "docs/spec/playback/README.md",
-    "line": 187
+    "line": 184
   },
   {
     "id": "PLAY-43",
@@ -3477,7 +3477,7 @@
     "status": "AGREED",
     "text": "An explicit **reset to start**, from finishing a title or choosing",
     "file": "docs/spec/playback/README.md",
-    "line": 193
+    "line": 190
   },
   {
     "id": "PLAY-44",
@@ -3487,7 +3487,7 @@
     "status": "AGREED",
     "text": "If either device crossed the watched threshold, the title is watched.",
     "file": "docs/spec/playback/README.md",
-    "line": 197
+    "line": 194
   },
   {
     "id": "PLAY-45",
@@ -3497,7 +3497,7 @@
     "status": "AGREED",
     "text": "One account may play on several clients at once. KROMA enforces no",
     "file": "docs/spec/playback/README.md",
-    "line": 203
+    "line": 200
   },
   {
     "id": "PLAY-46",
@@ -3507,7 +3507,7 @@
     "status": "AGREED",
     "text": "Each playing client is an independent session with its own fallback",
     "file": "docs/spec/playback/README.md",
-    "line": 207
+    "line": 204
   },
   {
     "id": "PLAY-47",
@@ -3517,7 +3517,7 @@
     "status": "AGREED",
     "text": "Sessions interleave into one continue-watching state under the",
     "file": "docs/spec/playback/README.md",
-    "line": 211
+    "line": 208
   },
   {
     "id": "PLAY-48",
@@ -3527,7 +3527,7 @@
     "status": "AGREED",
     "text": "KROMA does not hand off an active session between devices as a",
     "file": "docs/spec/playback/README.md",
-    "line": 214
+    "line": 211
   },
   {
     "id": "PLAY-49",
@@ -3537,7 +3537,7 @@
     "status": "AGREED",
     "text": "When a stream dies mid-playback, whether the network drops, a transcode",
     "file": "docs/spec/playback/README.md",
-    "line": 222
+    "line": 219
   },
   {
     "id": "PLAY-50",
@@ -3547,7 +3547,7 @@
     "status": "AGREED",
     "text": "A **transient** failure, a network drop or a brief server hiccup, is",
     "file": "docs/spec/playback/README.md",
-    "line": 227
+    "line": 224
   },
   {
     "id": "PLAY-51",
@@ -3557,17 +3557,17 @@
     "status": "SHIPPED",
     "text": "A **fatal** failure, a source gone, a transcode that cannot start, or",
     "file": "docs/spec/playback/README.md",
-    "line": 230
+    "line": 227
   },
   {
     "id": "PLAY-52",
     "domain": "PLAY",
     "space": "playback",
     "number": 52,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "When a television's older decoder cannot play a file a modern phone",
     "file": "docs/spec/playback/README.md",
-    "line": 238
+    "line": 235
   },
   {
     "id": "PLAY-53",
@@ -3577,7 +3577,7 @@
     "status": "AGREED",
     "text": "A settled seek also reports, so jumping and then losing the client does",
     "file": "docs/spec/playback/README.md",
-    "line": 150
+    "line": 147
   },
   {
     "id": "SURF-1",
@@ -3784,7 +3784,7 @@
     "domain": "SURF",
     "space": "surfaces",
     "number": 21,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "When a television's older decoder cannot play a file a modern phone",
     "file": "docs/spec/surfaces/README.md",
     "line": 140
