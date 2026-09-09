@@ -5,6 +5,7 @@ import type {
   VerificationCreated,
 } from '@kromatv/client/accounts';
 import type { AdminUser } from '@kromatv/client/admin';
+import type { LibraryId } from '@kromatv/client/media';
 import { PERMISSIONS } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import {
@@ -24,6 +25,7 @@ import {
 } from '@kromatv/ui/kit';
 import { useCallback, useState } from 'react';
 import { createCallable } from 'react-call';
+import { LibraryVisibility } from '#web/features/admin/library-visibility';
 import { useAsyncAction } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -209,14 +211,15 @@ function usePermissionSet(
   return [perms, toggle];
 }
 
-/** Edit a user (name + permissions, email verification, access recovery, with a
- * guarded delete). Resolves `true` when the user was saved or deleted (the
- * caller refreshes), `false` on dismiss. */
+/** Edit a user (name, permissions, library visibility, email verification,
+ * access recovery, with a guarded delete). Resolves `true` when the user was
+ * saved or deleted (the caller refreshes), `false` on dismiss. */
 export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ call, user }) => {
   const t = useT();
   const { client, user: me } = useAuth();
   const [name, setName] = useState(user.username);
   const [perms, toggle] = usePermissionSet(user.permissions);
+  const [granted, setGranted] = useState<readonly LibraryId[] | null>(user.libraries);
   const { busy, error, run } = useAsyncAction();
   const isSelf = me?.id === user.id;
   const [reset, setReset] = useState<ResetCreated | null>(null);
@@ -226,7 +229,11 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
   const save = () =>
     run(
       async () => {
-        await client.admin.updateUser(user.id, { permissions: [...perms], username: name.trim() });
+        await client.admin.updateUser(user.id, {
+          permissions: [...perms],
+          username: name.trim(),
+          libraries: granted === null ? null : [...granted],
+        });
         call.end(true);
       },
       () => t('admin.updateFailed'),
@@ -309,6 +316,8 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
           </Text>
         ) : null}
       </Box>
+
+      <LibraryVisibility granted={granted} onChange={setGranted} />
 
       <Box>
         <Text variant="overline" color="textDim" mb={8}>

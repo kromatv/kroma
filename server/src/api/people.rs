@@ -4,11 +4,12 @@ use axum::Json;
 use serde::Deserialize;
 
 use crate::api::dto::{PersonDetailResponse, PersonResponse, SearchHit};
+use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
 use crate::db;
 use crate::i18n::{AskedLocale, ReqLocale};
 use crate::infra::{image, metadata};
-use crate::model::{MediaItem, Metadata, Show};
+use crate::model::{MediaItem, Metadata, Show, User};
 use crate::services::settings;
 use crate::state::SharedState;
 use axum::routing::get;
@@ -30,6 +31,7 @@ pub struct PersonParams {
 /// id, a slug or a display name.
 pub async fn person(
     State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
     Query(p): Query<PersonParams>,
 ) -> Result<Response, Response> {
@@ -56,7 +58,7 @@ pub async fn person(
         db::localize::overlay_shows(&pool, &mut shows, locale)?;
         Ok(PersonResponse {
             name: found.name,
-            results: hits_best_known_first(movies, shows, library.as_deref()),
+            results: hits_best_known_first(movies, shows, library.as_deref(), &user),
         })
     })
     .await?;
@@ -137,8 +139,9 @@ fn hits_best_known_first(
     movies: Vec<MediaItem>,
     shows: Vec<Show>,
     library: Option<&str>,
+    user: &User,
 ) -> Vec<SearchHit> {
-    let in_library = |lib: &str| library.is_none_or(|want| lib == want);
+    let in_library = |lib: &str| library.is_none_or(|want| lib == want) && user.sees_library(lib);
 
     let mut rows: Vec<((f32, i32), SearchHit)> = Vec::with_capacity(movies.len() + shows.len());
     for m in movies {

@@ -8,6 +8,7 @@ use axum::Json;
 
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
+use crate::api::visibility;
 use crate::i18n::ReqLocale;
 use crate::services::sections;
 use crate::state::SharedState;
@@ -34,7 +35,10 @@ pub async fn home(
     })
     .await
     {
-        Ok(list) => Json(list).into_response(),
+        Ok(mut list) => {
+            visibility::keep_sections(&user, &mut list);
+            Json(list).into_response()
+        }
         Err(resp) => resp,
     }
 }
@@ -56,7 +60,7 @@ pub async fn featured(
     })
     .await
     {
-        Ok(hero) => Json(hero).into_response(),
+        Ok(hero) => Json(visibility::keep_section_item(&user, hero)).into_response(),
         Err(resp) => resp,
     }
 }

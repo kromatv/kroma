@@ -104,6 +104,7 @@ mod tests {
             username: id.into(),
             avatar_url: None,
             permissions: permissions.to_vec(),
+            libraries: crate::model::LibraryScope::All,
             created_at: "2026-01-01".into(),
             language: None,
             has_pin: false,

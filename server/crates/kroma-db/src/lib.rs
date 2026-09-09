@@ -55,6 +55,7 @@ mod home;
 pub mod localize;
 pub mod metadata_core;
 mod schema;
+mod visibility;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 pub mod tmdb_pin;
@@ -89,6 +90,7 @@ pub(crate) use schema::{FILE_COLS, ITEM_COLS};
 pub use suggest::*;
 pub use taste::*;
 pub use vectors::*;
+pub use visibility::*;
 
 pub(crate) fn now_or_blank() -> String {
     kroma_primitives::now_iso8601()

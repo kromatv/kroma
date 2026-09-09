@@ -70,15 +70,15 @@ pub fn admin_users(pool: &Pool) -> Result<Vec<kroma_domain::AdminUser>> {
     .format(&time::format_description::well_known::Rfc3339)
     .unwrap_or_default();
     let mut stmt = conn.prepare(
-        "SELECT users.id,email,username,avatar_url,users.created_at,permissions,last_seen,(pin_hash IS NOT NULL),audio_language,subtitle_language,(email_verified_at IS NOT NULL),(rr.created_at IS NOT NULL) \
+        "SELECT users.id,email,username,avatar_url,users.created_at,permissions,last_seen,(pin_hash IS NOT NULL),audio_language,subtitle_language,libraries,(email_verified_at IS NOT NULL),(rr.created_at IS NOT NULL) \
          FROM users LEFT JOIN reset_requests rr ON rr.user_id = users.id AND rr.created_at > ?1 \
          ORDER BY users.created_at",
     )?;
     let rows = stmt.query_map([cutoff], |r| {
         let user = row_to_admin_user(r)?;
         let last_seen: Option<String> = r.get(6)?;
-        let email_verified: bool = r.get(10)?;
-        let reset_requested: bool = r.get(11)?;
+        let email_verified: bool = r.get(11)?;
+        let reset_requested: bool = r.get(12)?;
         Ok((user, last_seen, email_verified, reset_requested))
     })?;
     let mut out = Vec::new();
@@ -91,6 +91,7 @@ pub fn admin_users(pool: &Pool) -> Result<Vec<kroma_domain::AdminUser>> {
             username: u.username,
             avatar_url: u.avatar_url,
             permissions: u.permissions,
+            libraries: u.libraries,
             created_at: u.created_at,
             last_seen,
             online: false,
@@ -112,7 +113,7 @@ pub fn get_user(pool: &Pool, id: &str) -> Result<Option<User>> {
     let conn = pool.get()?;
     let user = conn
         .query_row(
-            "SELECT id,email,username,avatar_url,created_at,permissions,language,(pin_hash IS NOT NULL),audio_language,subtitle_language FROM users WHERE id = ?1",
+            "SELECT id,email,username,avatar_url,created_at,permissions,language,(pin_hash IS NOT NULL),audio_language,subtitle_language,libraries FROM users WHERE id = ?1",
             params![id],
             row_to_user,
         )

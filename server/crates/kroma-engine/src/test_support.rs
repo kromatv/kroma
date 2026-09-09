@@ -260,6 +260,7 @@ pub(crate) fn test_user(
         audio_language: None,
         subtitle_language: None,
         permissions,
+        libraries: crate::model::LibraryScope::All,
         created_at: "now".into(),
         has_pin: false,
     }

@@ -261,4 +261,7 @@ pub(crate) const MIGRATIONS: &[&str] = &[
     // The language tag the device asked for, beside the label it goes by. Read
     // only in aggregate, by the anonymous statistics.
     "ALTER TABLE access_tokens ADD COLUMN language TEXT",
+    // Which libraries an account may see, as a JSON array of library ids. NULL =
+    // every library, so an upgrade never narrows anyone (ACCT-20).
+    "ALTER TABLE users ADD COLUMN libraries TEXT",
 ];
