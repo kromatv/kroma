@@ -1,6 +1,7 @@
 # Surfaces
 
-Status: **AGREED**. Sections carry their own status below.
+Status: **SHIPPED** overall. Sections carry their own status below, and so does every
+requirement, because the tiering rules are decided while most of the behaviour already ships.
 
 KROMA runs on a television, a phone, a browser, a desktop and a NAS. This file says what
 every surface must do, what each may do differently, and what a surface is explicitly
@@ -11,15 +12,16 @@ media each can direct-play. It does not own the codec decision. Given a file, a 
 a network, what gets sent is [`playback/`](../playback/)'s job, and what a stream *is* comes
 from [`media/`](../media/). This file reads those as facts and states the consequence per
 surface. The shared component kit that makes the surfaces look alike is architecture, not
-spec. See [`packages/ui`](../../../packages/ui).
+spec.
 
 ## The surfaces
 
 Status: **SHIPPED**
 
-**SURF-1** (SHIPPED) - Every client KROMA ships is one of the surfaces named here, and each
-surface names the shell that implements it. A client that is not in this table is a
-prototype, and adding or retiring a surface is a change to this section.
+**SURF-1** (SHIPPED) - Every client KROMA ships is one of the surfaces named here. A client
+that is not in this table is a prototype. The Shell column is a convenience for a reader
+looking for the code and is not part of the requirement; the mapping lives in
+[`ARCHITECTURE.md`](../../../ARCHITECTURE.md).
 
 | Surface | Shell | Notes |
 |---|---|---|
@@ -33,14 +35,15 @@ prototype, and adding or retiring a surface is a change to this section.
 
 ## The baseline
 
-Status: **AGREED**
+Status: **SHIPPED**. The six rungs are built; the rules about them are **AGREED**.
 
 There is one baseline, and it is the whole definition of the word *KROMA* on a surface.
 Every first-class surface does all six rungs; a best-effort surface that drops one says so
 here rather than failing silently.
 
-**SURF-2** (AGREED) - A build that cannot do all six rungs below is a preview, not a
-surface, and the capability matrix records exactly which rung it is missing.
+**SURF-2** (AGREED) - A build that cannot do all six rungs below is a **preview**, not a
+surface. A preview does not appear in the surfaces table and makes none of this file's
+promises.
 
 - **SURF-3** (SHIPPED) - **Sign in or pair.** A surface reaches a server and becomes an
   account on it. Where there is a keyboard this is address plus credentials; on a television
@@ -48,8 +51,9 @@ surface, and the capability matrix records exactly which rung it is missing.
   [`docs/tv-pairing.md`](../../tv-pairing.md)).
 - **SURF-4** (SHIPPED) - **Browse the library.** A surface moves through the titles the
   account may see, by section and by search.
-- **SURF-5** (SHIPPED) - **View a title.** A surface shows a title's artwork, its metadata,
-  its editions and its available fidelities.
+- **SURF-5** (SHIPPED) - **View a title.** A surface shows a title's artwork, its metadata
+  and its editions. Fidelity variants are not offered to a person to choose between
+  (MEDIA-10).
 - **SURF-6** (SHIPPED) - **Start playback.** A surface plays the title, taking whatever rung
   the device needs ([`playback/`](../playback/)).
 - **SURF-7** (SHIPPED) - **Resume.** A surface reopens an in-progress title at the
@@ -57,23 +61,26 @@ surface, and the capability matrix records exactly which rung it is missing.
 - **SURF-8** (SHIPPED) - **Sign out.** A surface ends the session and drops the server from
   the device, revocably.
 
-**SURF-9** (AGREED) - Everything past the six rungs is a *may*, not a *must*. A surface that
-lacks one of them records the absence in the capability matrix, so "not on TV yet" is
-answered by naming the rung rather than by argument.
+**SURF-9** (AGREED) - Every capability past the six rungs is a *may*, not a *must*, and a
+surface that lacks one records the absence in the capability matrix. The six rungs themselves
+are never optional, so "not on TV yet" is answered either by naming the missing capability in
+the matrix or, for a rung, by admitting the build is a preview.
 
 ## First-class and best-effort
 
-Status: **AGREED**
+Status: **SHIPPED** for who is in which tier, **AGREED** for what a tier commits to.
 
-Surfaces are tiered, and the tier is a commitment, not a description of current polish. Web
-is where the baseline is *defined*, so web is first-class by construction and cannot regress
-below it.
+Surfaces are tiered, and the tier is a commitment, not a description of current polish.
 
-**SURF-10** (SHIPPED) - Web is the reference implementation. Where two surfaces disagree on
-a behaviour, web's is the correct one, unless the other surface's input model forbids
-copying it.
+**SURF-10** (AGREED) - Web is the reference implementation. Where two surfaces disagree on a
+behaviour, web's is the correct one, unless the other surface's input model forbids copying it.
 
-**SURF-11** (AGREED) - A feature is not shipped until web has it.
+**SURF-11** (AGREED) - A feature that belongs on more than one surface is not shipped until
+web has it. A feature only one surface can carry, offline downloads on mobile or pairing on a
+television, is exempt.
+
+**SURF-44** (AGREED) - Web is where the baseline is defined, so web is first-class by
+construction and can never regress below it.
 
 - **SURF-12** (SHIPPED) - **First-class.** Web, mobile, desktop and the native television
   shells carry the whole baseline and ship on the release train.
@@ -84,17 +91,19 @@ copying it.
   and the generic web fallback for other televisions carry the baseline but are held to their
   platform's ceiling rather than to web's.
 - **SURF-16** (AGREED) - A capability a best-effort surface's platform cannot express, such
-  as LAN discovery on Samsung or a codec the panel's decoder lacks, is a recorded absence
-  here rather than a defect, and such a surface may ship behind the release train.
+  as LAN discovery on Samsung or a codec the panel's decoder lacks, is a recorded absence here
+  rather than a defect.
+- **SURF-45** (AGREED) - A best-effort surface ships when its platform allows and may lag the
+  release train.
 - **SURF-17** (SHIPPED) - **The NAS package is not a surface.** It puts the *server* on a
   Synology box. Its users reach KROMA through one of the surfaces above; it has no UI of its
   own and no baseline to meet. It appears here so the reader stops looking for one.
 
 ## Capability matrix
 
-Status: **AGREED**
+Status: **SHIPPED**. The table records what the surfaces do today.
 
-**SURF-18** (AGREED) - The matrix below is the record of what each surface must, may and may
+**SURF-18** (SHIPPED) - The matrix below is the record of what each surface must, may and may
 not do beyond the baseline. A surface that fails a cell is a defect; a cell saying a surface
 does not do something is a decision on record.
 
@@ -102,15 +111,16 @@ does not do something is a decision on record.
 |---|---|---|---|---|---|
 | Baseline (six above) | must | must | must | must | must |
 | Input model | pointer | touch | pointer | remote | remote |
-| Discover a server on the LAN | no | browses | no | publishes | Tizen no / webOS publishes |
-| Pair a television *to* this surface | n/a | yes (scanner) | n/a | is the TV | is the TV |
+| Browses for a server on the LAN | no | yes | no | yes | no |
+| Announces itself on the LAN | n/a | n/a | n/a | yes | Tizen no / webOS yes |
+| Approves a television's pairing | yes (code) | yes (code or scan) | yes (code) | is the TV | is the TV |
 | Offline downloads | no | yes | no | no | no |
 | Direct-play ceiling | browser codecs | device generation | browser codecs | panel generation | panel generation |
 
-"Discover" and "pair" are the surface's *reach*. The per-shell truth, meaning who publishes,
+Browsing and announcing are the surface's *reach*. The per-shell truth, meaning who announces,
 who browses and why Samsung cannot, is [`discovery/`](../discovery/)'s, grounded in
-[`docs/tv-pairing.md`](../../tv-pairing.md). This table names the outcome; that file names
-the mechanism.
+[`docs/tv-pairing.md`](../../tv-pairing.md). This table names the outcome; that file names the
+mechanism.
 
 ### Direct-play by device generation
 
@@ -131,19 +141,19 @@ device's generation, not the surface's brand, that sets it.
   can, and transcode is capped or disabled, the television says so plainly and names a surface
   that does play it ([`playback/`](../playback/)).
 - **SURF-22** (AGREED) - KROMA never papers over a generation gap by silently transcoding for
-  a surface that could direct-play, and never claims a panel decodes a codec its generation
-  predates.
+  a surface that could direct-play.
+- **SURF-46** (AGREED) - KROMA never claims a panel decodes a codec its generation predates.
 
 The first-class media truth, which codecs, containers and HDR variants exist, is
 [`media/`](../media/); this section only says which surface can take it unmodified.
 
 ## Input models
 
-Status: **AGREED**
+Status: **SHIPPED**. The three models are built; SURF-27 and SURF-28 are **AGREED**.
 
-The input model is the one thing a surface may *not* copy from web, because copying it would
-break the surface. Three models, and each rewrites the UI rather than only the event
-handling.
+**SURF-47** (SHIPPED) - The input model is the one thing a surface may *not* copy from web,
+because copying it would break the surface. Each of the three models below rewrites the UI
+rather than only the event handling.
 
 - **SURF-23** (SHIPPED) - **Pointer**, on web and desktop, is the reference model: dense
   layouts, hover affordances, a visible cursor, right-click and keyboard shortcuts. Every
@@ -163,7 +173,7 @@ handling.
 
 ## Offline
 
-Status: **AGREED**
+Status: **SHIPPED**, with the OS-managed rows below deliberately deferred.
 
 **SURF-29** (SHIPPED) - **Only mobile is offline.** Web, desktop and every television hold no
 library on the device and do nothing without a reachable server.
@@ -172,9 +182,10 @@ That is a decision, not a gap. A browser tab and a shared living-room television
 wrong places to accrue gigabytes of a personal library, and the storage, eviction and
 reconciliation cost is not worth paying five times.
 
-- **SURF-30** (SHIPPED) - A download is a progressive file, the raw original when the device
-  direct-plays it and otherwise a server-side remux to a single fMP4, and it plays with no
-  server connection.
+- **SURF-30** (SHIPPED) - A downloaded title plays with no server connection.
+- **SURF-48** (SHIPPED) - A download is a single progressive file: the raw original when the
+  device direct-plays it, and otherwise one the server produces without re-encoding the picture
+  ([`playback/`](../playback/)).
 - **SURF-31** (SHIPPED) - Downloads survive backgrounding and app kills, and are re-adopted
   on the next launch.
 - **SURF-32** (SHIPPED) - Progress reports that could not be sent queue on the device and
@@ -198,7 +209,7 @@ deferred as a unit rather than half-built. The full record, and what it would ta
 
 ## Packaging and updates
 
-Status: **AGREED**
+Status: **SHIPPED** for web, desktop and the NAS package; **AGREED** for the stores.
 
 Each surface ships and updates the way its host expects. Deploy mechanics are
 [`admin/`](../admin/)'s; here is the product-level shape.
@@ -215,8 +226,10 @@ Each surface ships and updates the way its host expects. Deploy mechanics are
   schedule.
 - **SURF-38** (AGREED) - **Televisions.** Each television updates through its own platform's
   channel. KROMA never self-updates a television; the platform does, on its terms.
-- **SURF-39** (SHIPPED) - **NAS.** The Synology package installs and updates through Package
-  Center. It ships the *server*, so everything it serves follows the web rule above.
+- **SURF-39** (AGREED) - **NAS.** The Synology package installs and updates through Package
+  Center. It ships the *server*, so everything it serves follows the web rule above. Today a
+  person installs it by hand from a downloaded package ([`INSTALL.md`](../../../INSTALL.md));
+  a published source URL is what turns this SHIPPED.
 
 ## Deprecation
 

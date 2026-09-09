@@ -1210,6 +1210,336 @@
     "line": 136
   },
   {
+    "id": "DISC-1",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 1,
+    "status": "SHIPPED",
+    "text": "A client on the same network as a server is never told the server's",
+    "file": "docs/spec/discovery/README.md",
+    "line": 19
+  },
+  {
+    "id": "DISC-2",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 2,
+    "status": "SHIPPED",
+    "text": "On a private network the server sits inside, \"the same network\" means",
+    "file": "docs/spec/discovery/README.md",
+    "line": 29
+  },
+  {
+    "id": "DISC-3",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 3,
+    "status": "SHIPPED",
+    "text": "When the server is reached from outside, it means the *exact* same",
+    "file": "docs/spec/discovery/README.md",
+    "line": 31
+  },
+  {
+    "id": "DISC-4",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 4,
+    "status": "SHIPPED",
+    "text": "Over IPv6, it means the same delegated prefix: one home's allocation.",
+    "file": "docs/spec/discovery/README.md",
+    "line": 34
+  },
+  {
+    "id": "DISC-5",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 5,
+    "status": "SHIPPED",
+    "text": "A home this cannot place, split across subnets, dual-stack with the two",
+    "file": "docs/spec/discovery/README.md",
+    "line": 36
+  },
+  {
+    "id": "DISC-6",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 6,
+    "status": "SHIPPED",
+    "text": "Native mobile shells, iOS and Android, can *browse*: they find nearby",
+    "file": "docs/spec/discovery/README.md",
+    "line": 49
+  },
+  {
+    "id": "DISC-7",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 7,
+    "status": "SHIPPED",
+    "text": "Native TV shells, Apple TV and Android TV, and webOS can *announce*:",
+    "file": "docs/spec/discovery/README.md",
+    "line": 51
+  },
+  {
+    "id": "DISC-8",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 8,
+    "status": "SHIPPED",
+    "text": "Web, desktop and TV-web shells can do neither from the browser",
+    "file": "docs/spec/discovery/README.md",
+    "line": 56
+  },
+  {
+    "id": "DISC-9",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 9,
+    "status": "SHIPPED",
+    "text": "Tizen cannot announce at all, because its TV profile ships no way to.",
+    "file": "docs/spec/discovery/README.md",
+    "line": 59
+  },
+  {
+    "id": "DISC-10",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 10,
+    "status": "SHIPPED",
+    "text": "Browsing and announcing settle *reach*, whether two devices are near",
+    "file": "docs/spec/discovery/README.md",
+    "line": 63
+  },
+  {
+    "id": "DISC-11",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 11,
+    "status": "SHIPPED",
+    "text": "Every shell offers a manual path: a person can always type an address,",
+    "file": "docs/spec/discovery/README.md",
+    "line": 72
+  },
+  {
+    "id": "DISC-12",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 12,
+    "status": "SHIPPED",
+    "text": "Manual connection is the only supported path from *outside* the local",
+    "file": "docs/spec/discovery/README.md",
+    "line": 77
+  },
+  {
+    "id": "DISC-13",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 13,
+    "status": "SHIPPED",
+    "text": "Once an address is reachable, every sign-in road below works over it,",
+    "file": "docs/spec/discovery/README.md",
+    "line": 83
+  },
+  {
+    "id": "DISC-14",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 14,
+    "status": "SHIPPED",
+    "text": "All three roads end in the same place. The server holds a pending",
+    "file": "docs/spec/discovery/README.md",
+    "line": 94
+  },
+  {
+    "id": "DISC-15",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 15,
+    "status": "SHIPPED",
+    "text": "**Quick Connect is the floor.** The television prints a short code; the",
+    "file": "docs/spec/discovery/README.md",
+    "line": 99
+  },
+  {
+    "id": "DISC-16",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 16,
+    "status": "SHIPPED",
+    "text": "**Nearby handoff** is the shortcut for televisions the platform lets us",
+    "file": "docs/spec/discovery/README.md",
+    "line": 108
+  },
+  {
+    "id": "DISC-17",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 17,
+    "status": "SHIPPED",
+    "text": "**Confirmed handoff** covers the listed television a server cannot",
+    "file": "docs/spec/discovery/README.md",
+    "line": 112
+  },
+  {
+    "id": "DISC-18",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 18,
+    "status": "SHIPPED",
+    "text": "Discovery finding nothing is a normal state, not an error, and every",
+    "file": "docs/spec/discovery/README.md",
+    "line": 121
+  },
+  {
+    "id": "DISC-19",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 19,
+    "status": "SHIPPED",
+    "text": "A TV shell that can announce but not browse is *already* showing its",
+    "file": "docs/spec/discovery/README.md",
+    "line": 124
+  },
+  {
+    "id": "DISC-20",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 20,
+    "status": "SHIPPED",
+    "text": "A TV shell that cannot announce shows Quick Connect and, when it is",
+    "file": "docs/spec/discovery/README.md",
+    "line": 126
+  },
+  {
+    "id": "DISC-21",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 21,
+    "status": "SHIPPED",
+    "text": "A mobile shell that browses and sees an empty list offers, in that",
+    "file": "docs/spec/discovery/README.md",
+    "line": 129
+  },
+  {
+    "id": "DISC-22",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 22,
+    "status": "SHIPPED",
+    "text": "Web and desktop, which never browse, present the manual address field",
+    "file": "docs/spec/discovery/README.md",
+    "line": 132
+  },
+  {
+    "id": "DISC-23",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 23,
+    "status": "SHIPPED",
+    "text": "No shell ever traps a person on a road that failed. There is always a",
+    "file": "docs/spec/discovery/README.md",
+    "line": 135
+  },
+  {
+    "id": "DISC-24",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 24,
+    "status": "SHIPPED",
+    "text": "A Quick Connect or handoff code is valid for **five minutes**, because",
+    "file": "docs/spec/discovery/README.md",
+    "line": 142
+  },
+  {
+    "id": "DISC-25",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 25,
+    "status": "SHIPPED",
+    "text": "A code that expires mid-flow is replaced on the television by a clear",
+    "file": "docs/spec/discovery/README.md",
+    "line": 146
+  },
+  {
+    "id": "DISC-26",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 26,
+    "status": "SHIPPED",
+    "text": "A code already consumed by a successful sign-in vanishes rather than",
+    "file": "docs/spec/discovery/README.md",
+    "line": 150
+  },
+  {
+    "id": "DISC-27",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 27,
+    "status": "SHIPPED",
+    "text": "An expired code is visibly dead and one tap from being alive again,",
+    "file": "docs/spec/discovery/README.md",
+    "line": 153
+  },
+  {
+    "id": "DISC-28",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 28,
+    "status": "SHIPPED",
+    "text": "Approval is one-time. The moment an account approves a pairing, the",
+    "file": "docs/spec/discovery/README.md",
+    "line": 160
+  },
+  {
+    "id": "DISC-29",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 29,
+    "status": "SHIPPED",
+    "text": "A paired television is a *device*, not a second key to the account. It",
+    "file": "docs/spec/discovery/README.md",
+    "line": 165
+  },
+  {
+    "id": "DISC-30",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 30,
+    "status": "SHIPPED",
+    "text": "Revocation is symmetrical with every other device. The account sees the",
+    "file": "docs/spec/discovery/README.md",
+    "line": 169
+  },
+  {
+    "id": "DISC-31",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 31,
+    "status": "DESIGN, NOT IMPLEMENTED",
+    "text": "Samsung and LG televisions do not reach the deeper",
+    "file": "docs/spec/discovery/README.md",
+    "line": 177
+  },
+  {
+    "id": "DISC-32",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 32,
+    "status": "SHIPPED",
+    "text": "Native TV shells also *browse* for a server, so a television that was",
+    "file": "docs/spec/discovery/README.md",
+    "line": 53
+  },
+  {
+    "id": "DISC-33",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 33,
+    "status": "SHIPPED",
+    "text": "A client with a camera may read the code from the television's QR",
+    "file": "docs/spec/discovery/README.md",
+    "line": 104
+  },
+  {
     "id": "LIB-1",
     "domain": "LIB",
     "space": "library",
@@ -2685,9 +3015,9 @@
     "space": "surfaces",
     "number": 1,
     "status": "SHIPPED",
-    "text": "Every client KROMA ships is one of the surfaces named here, and each",
+    "text": "Every client KROMA ships is one of the surfaces named here. A client",
     "file": "docs/spec/surfaces/README.md",
-    "line": 20
+    "line": 21
   },
   {
     "id": "SURF-2",
@@ -2695,9 +3025,9 @@
     "space": "surfaces",
     "number": 2,
     "status": "AGREED",
-    "text": "A build that cannot do all six rungs below is a preview, not a",
+    "text": "A build that cannot do all six rungs below is a **preview**, not a",
     "file": "docs/spec/surfaces/README.md",
-    "line": 42
+    "line": 44
   },
   {
     "id": "SURF-3",
@@ -2707,7 +3037,7 @@
     "status": "SHIPPED",
     "text": "**Sign in or pair.** A surface reaches a server and becomes an",
     "file": "docs/spec/surfaces/README.md",
-    "line": 45
+    "line": 48
   },
   {
     "id": "SURF-4",
@@ -2717,7 +3047,7 @@
     "status": "SHIPPED",
     "text": "**Browse the library.** A surface moves through the titles the",
     "file": "docs/spec/surfaces/README.md",
-    "line": 49
+    "line": 52
   },
   {
     "id": "SURF-5",
@@ -2725,9 +3055,9 @@
     "space": "surfaces",
     "number": 5,
     "status": "SHIPPED",
-    "text": "**View a title.** A surface shows a title's artwork, its metadata,",
+    "text": "**View a title.** A surface shows a title's artwork, its metadata",
     "file": "docs/spec/surfaces/README.md",
-    "line": 51
+    "line": 54
   },
   {
     "id": "SURF-6",
@@ -2737,7 +3067,7 @@
     "status": "SHIPPED",
     "text": "**Start playback.** A surface plays the title, taking whatever rung",
     "file": "docs/spec/surfaces/README.md",
-    "line": 53
+    "line": 57
   },
   {
     "id": "SURF-7",
@@ -2747,7 +3077,7 @@
     "status": "SHIPPED",
     "text": "**Resume.** A surface reopens an in-progress title at the",
     "file": "docs/spec/surfaces/README.md",
-    "line": 55
+    "line": 59
   },
   {
     "id": "SURF-8",
@@ -2757,7 +3087,7 @@
     "status": "SHIPPED",
     "text": "**Sign out.** A surface ends the session and drops the server from",
     "file": "docs/spec/surfaces/README.md",
-    "line": 57
+    "line": 61
   },
   {
     "id": "SURF-9",
@@ -2765,19 +3095,19 @@
     "space": "surfaces",
     "number": 9,
     "status": "AGREED",
-    "text": "Everything past the six rungs is a *may*, not a *must*. A surface that",
+    "text": "Every capability past the six rungs is a *may*, not a *must*, and a",
     "file": "docs/spec/surfaces/README.md",
-    "line": 60
+    "line": 64
   },
   {
     "id": "SURF-10",
     "domain": "SURF",
     "space": "surfaces",
     "number": 10,
-    "status": "SHIPPED",
-    "text": "Web is the reference implementation. Where two surfaces disagree on",
+    "status": "AGREED",
+    "text": "Web is the reference implementation. Where two surfaces disagree on a",
     "file": "docs/spec/surfaces/README.md",
-    "line": 72
+    "line": 75
   },
   {
     "id": "SURF-11",
@@ -2785,9 +3115,9 @@
     "space": "surfaces",
     "number": 11,
     "status": "AGREED",
-    "text": "A feature is not shipped until web has it.",
+    "text": "A feature that belongs on more than one surface is not shipped until",
     "file": "docs/spec/surfaces/README.md",
-    "line": 76
+    "line": 78
   },
   {
     "id": "SURF-12",
@@ -2797,7 +3127,7 @@
     "status": "SHIPPED",
     "text": "**First-class.** Web, mobile, desktop and the native television",
     "file": "docs/spec/surfaces/README.md",
-    "line": 78
+    "line": 85
   },
   {
     "id": "SURF-13",
@@ -2807,7 +3137,7 @@
     "status": "AGREED",
     "text": "A baseline regression on a first-class surface blocks the release.",
     "file": "docs/spec/surfaces/README.md",
-    "line": 80
+    "line": 87
   },
   {
     "id": "SURF-14",
@@ -2817,7 +3147,7 @@
     "status": "AGREED",
     "text": "A first-class surface may diverge from web where its input model",
     "file": "docs/spec/surfaces/README.md",
-    "line": 81
+    "line": 88
   },
   {
     "id": "SURF-15",
@@ -2827,7 +3157,7 @@
     "status": "SHIPPED",
     "text": "**Best-effort.** The sandboxed television shells, Samsung and LG,",
     "file": "docs/spec/surfaces/README.md",
-    "line": 83
+    "line": 90
   },
   {
     "id": "SURF-16",
@@ -2837,7 +3167,7 @@
     "status": "AGREED",
     "text": "A capability a best-effort surface's platform cannot express, such",
     "file": "docs/spec/surfaces/README.md",
-    "line": 86
+    "line": 93
   },
   {
     "id": "SURF-17",
@@ -2847,17 +3177,17 @@
     "status": "SHIPPED",
     "text": "**The NAS package is not a surface.** It puts the *server* on a",
     "file": "docs/spec/surfaces/README.md",
-    "line": 89
+    "line": 98
   },
   {
     "id": "SURF-18",
     "domain": "SURF",
     "space": "surfaces",
     "number": 18,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The matrix below is the record of what each surface must, may and may",
     "file": "docs/spec/surfaces/README.md",
-    "line": 97
+    "line": 106
   },
   {
     "id": "SURF-19",
@@ -2867,7 +3197,7 @@
     "status": "SHIPPED",
     "text": "**Browser-backed surfaces**, web and the sandboxed television",
     "file": "docs/spec/surfaces/README.md",
-    "line": 123
+    "line": 133
   },
   {
     "id": "SURF-20",
@@ -2877,7 +3207,7 @@
     "status": "SHIPPED",
     "text": "**Native surfaces**, mobile, desktop and the native television",
     "file": "docs/spec/surfaces/README.md",
-    "line": 127
+    "line": 137
   },
   {
     "id": "SURF-21",
@@ -2887,7 +3217,7 @@
     "status": "AGREED",
     "text": "When a television's older decoder cannot play a file a modern phone",
     "file": "docs/spec/surfaces/README.md",
-    "line": 130
+    "line": 140
   },
   {
     "id": "SURF-22",
@@ -2897,7 +3227,7 @@
     "status": "AGREED",
     "text": "KROMA never papers over a generation gap by silently transcoding for",
     "file": "docs/spec/surfaces/README.md",
-    "line": 133
+    "line": 143
   },
   {
     "id": "SURF-23",
@@ -2907,7 +3237,7 @@
     "status": "SHIPPED",
     "text": "**Pointer**, on web and desktop, is the reference model: dense",
     "file": "docs/spec/surfaces/README.md",
-    "line": 148
+    "line": 158
   },
   {
     "id": "SURF-24",
@@ -2917,7 +3247,7 @@
     "status": "SHIPPED",
     "text": "**Touch**, on mobile, means targets sized for a thumb, gestures for",
     "file": "docs/spec/surfaces/README.md",
-    "line": 151
+    "line": 161
   },
   {
     "id": "SURF-25",
@@ -2927,7 +3257,7 @@
     "status": "SHIPPED",
     "text": "**Remote, 10-foot**, on every television, is a directional focus",
     "file": "docs/spec/surfaces/README.md",
-    "line": 154
+    "line": 164
   },
   {
     "id": "SURF-26",
@@ -2937,7 +3267,7 @@
     "status": "SHIPPED",
     "text": "A television signs in through the pairing handshake precisely",
     "file": "docs/spec/surfaces/README.md",
-    "line": 157
+    "line": 167
   },
   {
     "id": "SURF-27",
@@ -2947,7 +3277,7 @@
     "status": "AGREED",
     "text": "A television build that ships a pointer-shaped screen has not met",
     "file": "docs/spec/surfaces/README.md",
-    "line": 159
+    "line": 169
   },
   {
     "id": "SURF-28",
@@ -2957,7 +3287,7 @@
     "status": "AGREED",
     "text": "A surface serving more than one model, such as a tablet with a",
     "file": "docs/spec/surfaces/README.md",
-    "line": 161
+    "line": 171
   },
   {
     "id": "SURF-29",
@@ -2967,7 +3297,7 @@
     "status": "SHIPPED",
     "text": "**Only mobile is offline.** Web, desktop and every television hold no",
     "file": "docs/spec/surfaces/README.md",
-    "line": 168
+    "line": 178
   },
   {
     "id": "SURF-30",
@@ -2975,9 +3305,9 @@
     "space": "surfaces",
     "number": 30,
     "status": "SHIPPED",
-    "text": "A download is a progressive file, the raw original when the device",
+    "text": "A downloaded title plays with no server connection.",
     "file": "docs/spec/surfaces/README.md",
-    "line": 175
+    "line": 185
   },
   {
     "id": "SURF-31",
@@ -2987,7 +3317,7 @@
     "status": "SHIPPED",
     "text": "Downloads survive backgrounding and app kills, and are re-adopted",
     "file": "docs/spec/surfaces/README.md",
-    "line": 178
+    "line": 189
   },
   {
     "id": "SURF-32",
@@ -2997,7 +3327,7 @@
     "status": "SHIPPED",
     "text": "Progress reports that could not be sent queue on the device and",
     "file": "docs/spec/surfaces/README.md",
-    "line": 180
+    "line": 191
   },
   {
     "id": "SURF-33",
@@ -3007,7 +3337,7 @@
     "status": "DESIGN, NOT IMPLEMENTED",
     "text": "Per-title rows in the OS storage manager, deletable",
     "file": "docs/spec/surfaces/README.md",
-    "line": 188
+    "line": 199
   },
   {
     "id": "SURF-34",
@@ -3017,7 +3347,7 @@
     "status": "AGREED",
     "text": "A surface stays current without asking a person to babysit it.",
     "file": "docs/spec/surfaces/README.md",
-    "line": 206
+    "line": 217
   },
   {
     "id": "SURF-35",
@@ -3027,7 +3357,7 @@
     "status": "SHIPPED",
     "text": "**Web.** The server serves the web surface itself. There is no",
     "file": "docs/spec/surfaces/README.md",
-    "line": 208
+    "line": 219
   },
   {
     "id": "SURF-36",
@@ -3037,7 +3367,7 @@
     "status": "SHIPPED",
     "text": "**Desktop.** The app checks for, fetches and applies updates in the",
     "file": "docs/spec/surfaces/README.md",
-    "line": 211
+    "line": 222
   },
   {
     "id": "SURF-37",
@@ -3047,7 +3377,7 @@
     "status": "AGREED",
     "text": "**Mobile.** The app updates on the store's cadence, so a server",
     "file": "docs/spec/surfaces/README.md",
-    "line": 213
+    "line": 224
   },
   {
     "id": "SURF-38",
@@ -3057,17 +3387,17 @@
     "status": "AGREED",
     "text": "**Televisions.** Each television updates through its own platform's",
     "file": "docs/spec/surfaces/README.md",
-    "line": 216
+    "line": 227
   },
   {
     "id": "SURF-39",
     "domain": "SURF",
     "space": "surfaces",
     "number": 39,
-    "status": "SHIPPED",
+    "status": "AGREED",
     "text": "**NAS.** The Synology package installs and updates through Package",
     "file": "docs/spec/surfaces/README.md",
-    "line": 218
+    "line": 229
   },
   {
     "id": "SURF-40",
@@ -3077,7 +3407,7 @@
     "status": "AGREED",
     "text": "A surface is dropped when its host platform can no longer meet the",
     "file": "docs/spec/surfaces/README.md",
-    "line": 225
+    "line": 238
   },
   {
     "id": "SURF-41",
@@ -3087,7 +3417,7 @@
     "status": "AGREED",
     "text": "**Notice first.** A surface entering deprecation tells its users *in",
     "file": "docs/spec/surfaces/README.md",
-    "line": 230
+    "line": 243
   },
   {
     "id": "SURF-42",
@@ -3097,7 +3427,7 @@
     "status": "AGREED",
     "text": "**Sessions survive the app.** A deprecated surface's sessions are",
     "file": "docs/spec/surfaces/README.md",
-    "line": 233
+    "line": 246
   },
   {
     "id": "SURF-43",
@@ -3107,6 +3437,56 @@
     "status": "AGREED",
     "text": "**The library outlives any surface.** Nothing about a person's",
     "file": "docs/spec/surfaces/README.md",
-    "line": 237
+    "line": 250
+  },
+  {
+    "id": "SURF-44",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 44,
+    "status": "AGREED",
+    "text": "Web is where the baseline is defined, so web is first-class by",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 82
+  },
+  {
+    "id": "SURF-45",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 45,
+    "status": "AGREED",
+    "text": "A best-effort surface ships when its platform allows and may lag the",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 96
+  },
+  {
+    "id": "SURF-46",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 46,
+    "status": "AGREED",
+    "text": "KROMA never claims a panel decodes a codec its generation predates.",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 145
+  },
+  {
+    "id": "SURF-47",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 47,
+    "status": "SHIPPED",
+    "text": "The input model is the one thing a surface may *not* copy from web,",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 154
+  },
+  {
+    "id": "SURF-48",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 48,
+    "status": "SHIPPED",
+    "text": "A download is a single progressive file: the raw original when the",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 186
   }
 ]

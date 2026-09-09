@@ -13,7 +13,7 @@ client and a network, what gets sent, and what is given up to send it.
 
 ## Direct play
 
-Status: **AGREED**
+Status: **SHIPPED**. The path is built; the conditions it tests are **AGREED**.
 
 **PLAY-1** (SHIPPED) - Direct play means the client fetches the original file, byte for byte,
 and decodes it itself. The server does nothing but serve bytes and honour range requests.
@@ -38,7 +38,7 @@ device profile. The decision below is what KROMA does with them.
 
 ## The fallback ladder
 
-Status: **AGREED**
+Status: **SHIPPED** for the rungs, **AGREED** for the rules about choosing one.
 
 **PLAY-7** (AGREED) - When a title cannot direct-play, KROMA walks a fixed ladder and stops at
 the first rung that works. Each rung gives up strictly more than the one above it.
@@ -115,7 +115,7 @@ playback fails loudly rather than falling further down the ladder.
 
 ## Seeking
 
-Status: **AGREED**
+Status: **SHIPPED** under direct play and remux, **AGREED** under transcode.
 
 - **PLAY-29** (SHIPPED) - Under **direct play and remux**, seeking is instant and exact. The
   client issues a range request against a fully-known file, so any position is reachable
@@ -131,7 +131,7 @@ Status: **AGREED**
 
 ## Resume and continue watching
 
-Status: **AGREED**
+Status: **SHIPPED**, with the reconciliation rules **AGREED**.
 
 **PLAY-33** (SHIPPED) - Progress is **per person, per media version**, stored on the server. It
 is the server's watch state, not a device's ([`accounts/`](../accounts/)), so any client the

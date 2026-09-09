@@ -11,7 +11,7 @@ grander is a cost this product declines to pay.
 
 ## The account model
 
-Status: **AGREED**
+Status: **SHIPPED**
 
 **ACCT-1** (SHIPPED) - An **account** is a person. It has credentials, its own watch state,
 its own settings, and a set of signed-in devices. Nothing else hangs off it.
@@ -39,7 +39,7 @@ accounts on the device, not inventing passwordless sub-identities to avoid it.
 
 ## Authentication
 
-Status: **AGREED**
+Status: **SHIPPED**
 
 **ACCT-5** (SHIPPED) - A person proves who they are with a **username and password**. That is
 the only credential the server stores, and it stores only a verifier for it, never the
@@ -61,7 +61,7 @@ The television rule below is the hard case this policy is built around.
 
 ## Devices and pairing
 
-Status: **AGREED**
+Status: **SHIPPED**, with the device list itself **AGREED**.
 
 **ACCT-9** (SHIPPED) - A **device** is where a session lives. Signing in on a phone, a browser
 or a television each produces one session.
@@ -85,7 +85,7 @@ the server simply stops honouring its token.
 
 ### Session lifetime on a television
 
-Status: **AGREED**
+Status: **SHIPPED**
 
 **ACCT-15** (SHIPPED) - A television session is long-lived and revocable, and is **never
 forced to re-authenticate on a schedule**. It keeps its session until a human revokes it.
@@ -101,7 +101,7 @@ only the case that makes forced expiry obviously wrong.
 
 ## Authorisation
 
-Status: **AGREED**
+Status: **SHIPPED** for the two roles, **AGREED** for library visibility.
 
 **ACCT-17** (SHIPPED) - An **owner or admin** runs the server: users, settings, jobs and
 modules. Admin rights are server-wide, never per-library.
@@ -150,7 +150,7 @@ Everything in the admin column is [`admin/`](../admin/)'s subject in depth.
 
 ## Per-user versus per-server
 
-Status: **AGREED**
+Status: **SHIPPED**
 
 The dividing line is ownership of the experience versus ownership of the machine.
 
@@ -169,7 +169,7 @@ kept.
 
 ## Account deletion
 
-Status: **AGREED**
+Status: **SHIPPED**
 
 Deleting an account destroys the person, not the media.
 

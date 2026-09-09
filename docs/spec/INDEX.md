@@ -3,7 +3,7 @@
 
 # Requirement index
 
-311 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+349 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -131,6 +131,42 @@
 - **ADMIN-86** (AGREED) - The owner sends a verification from the member editor, with the <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-87** (AGREED) - Changing the address clears the verified state: the proof belongs <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-88** (AGREED) - A user who cannot sign in can ask for a reset from the sign-in <sub>[README.md](admin/README.md)</sub>
+
+## DISC - [discovery](discovery/)
+
+- **DISC-1** (SHIPPED) - A client on the same network as a server is never told the server's
+- **DISC-2** (SHIPPED) - On a private network the server sits inside, "the same network" means
+- **DISC-3** (SHIPPED) - When the server is reached from outside, it means the *exact* same
+- **DISC-4** (SHIPPED) - Over IPv6, it means the same delegated prefix: one home's allocation.
+- **DISC-5** (SHIPPED) - A home this cannot place, split across subnets, dual-stack with the two
+- **DISC-6** (SHIPPED) - Native mobile shells, iOS and Android, can *browse*: they find nearby
+- **DISC-7** (SHIPPED) - Native TV shells, Apple TV and Android TV, and webOS can *announce*:
+- **DISC-8** (SHIPPED) - Web, desktop and TV-web shells can do neither from the browser
+- **DISC-9** (SHIPPED) - Tizen cannot announce at all, because its TV profile ships no way to.
+- **DISC-10** (SHIPPED) - Browsing and announcing settle *reach*, whether two devices are near
+- **DISC-11** (SHIPPED) - Every shell offers a manual path: a person can always type an address,
+- **DISC-12** (SHIPPED) - Manual connection is the only supported path from *outside* the local
+- **DISC-13** (SHIPPED) - Once an address is reachable, every sign-in road below works over it,
+- **DISC-14** (SHIPPED) - All three roads end in the same place. The server holds a pending
+- **DISC-15** (SHIPPED) - **Quick Connect is the floor.** The television prints a short code; the
+- **DISC-16** (SHIPPED) - **Nearby handoff** is the shortcut for televisions the platform lets us
+- **DISC-17** (SHIPPED) - **Confirmed handoff** covers the listed television a server cannot
+- **DISC-18** (SHIPPED) - Discovery finding nothing is a normal state, not an error, and every
+- **DISC-19** (SHIPPED) - A TV shell that can announce but not browse is *already* showing its
+- **DISC-20** (SHIPPED) - A TV shell that cannot announce shows Quick Connect and, when it is
+- **DISC-21** (SHIPPED) - A mobile shell that browses and sees an empty list offers, in that
+- **DISC-22** (SHIPPED) - Web and desktop, which never browse, present the manual address field
+- **DISC-23** (SHIPPED) - No shell ever traps a person on a road that failed. There is always a
+- **DISC-24** (SHIPPED) - A Quick Connect or handoff code is valid for **five minutes**, because
+- **DISC-25** (SHIPPED) - A code that expires mid-flow is replaced on the television by a clear
+- **DISC-26** (SHIPPED) - A code already consumed by a successful sign-in vanishes rather than
+- **DISC-27** (SHIPPED) - An expired code is visibly dead and one tap from being alive again,
+- **DISC-28** (SHIPPED) - Approval is one-time. The moment an account approves a pairing, the
+- **DISC-29** (SHIPPED) - A paired television is a *device*, not a second key to the account. It
+- **DISC-30** (SHIPPED) - Revocation is symmetrical with every other device. The account sees the
+- **DISC-31** (DESIGN, NOT IMPLEMENTED) - Samsung and LG televisions do not reach the deeper
+- **DISC-32** (SHIPPED) - Native TV shells also *browse* for a server, so a television that was
+- **DISC-33** (SHIPPED) - A client with a camera may read the code from the television's QR
 
 ## LIB - [library](library/)
 
@@ -290,24 +326,24 @@
 
 ## SURF - [surfaces](surfaces/)
 
-- **SURF-1** (SHIPPED) - Every client KROMA ships is one of the surfaces named here, and each
-- **SURF-2** (AGREED) - A build that cannot do all six rungs below is a preview, not a
+- **SURF-1** (SHIPPED) - Every client KROMA ships is one of the surfaces named here. A client
+- **SURF-2** (AGREED) - A build that cannot do all six rungs below is a **preview**, not a
 - **SURF-3** (SHIPPED) - **Sign in or pair.** A surface reaches a server and becomes an
 - **SURF-4** (SHIPPED) - **Browse the library.** A surface moves through the titles the
-- **SURF-5** (SHIPPED) - **View a title.** A surface shows a title's artwork, its metadata,
+- **SURF-5** (SHIPPED) - **View a title.** A surface shows a title's artwork, its metadata
 - **SURF-6** (SHIPPED) - **Start playback.** A surface plays the title, taking whatever rung
 - **SURF-7** (SHIPPED) - **Resume.** A surface reopens an in-progress title at the
 - **SURF-8** (SHIPPED) - **Sign out.** A surface ends the session and drops the server from
-- **SURF-9** (AGREED) - Everything past the six rungs is a *may*, not a *must*. A surface that
-- **SURF-10** (SHIPPED) - Web is the reference implementation. Where two surfaces disagree on
-- **SURF-11** (AGREED) - A feature is not shipped until web has it.
+- **SURF-9** (AGREED) - Every capability past the six rungs is a *may*, not a *must*, and a
+- **SURF-10** (AGREED) - Web is the reference implementation. Where two surfaces disagree on a
+- **SURF-11** (AGREED) - A feature that belongs on more than one surface is not shipped until
 - **SURF-12** (SHIPPED) - **First-class.** Web, mobile, desktop and the native television
 - **SURF-13** (AGREED) - A baseline regression on a first-class surface blocks the release.
 - **SURF-14** (AGREED) - A first-class surface may diverge from web where its input model
 - **SURF-15** (SHIPPED) - **Best-effort.** The sandboxed television shells, Samsung and LG,
 - **SURF-16** (AGREED) - A capability a best-effort surface's platform cannot express, such
 - **SURF-17** (SHIPPED) - **The NAS package is not a surface.** It puts the *server* on a
-- **SURF-18** (AGREED) - The matrix below is the record of what each surface must, may and may
+- **SURF-18** (SHIPPED) - The matrix below is the record of what each surface must, may and may
 - **SURF-19** (SHIPPED) - **Browser-backed surfaces**, web and the sandboxed television
 - **SURF-20** (SHIPPED) - **Native surfaces**, mobile, desktop and the native television
 - **SURF-21** (AGREED) - When a television's older decoder cannot play a file a modern phone
@@ -319,7 +355,7 @@
 - **SURF-27** (AGREED) - A television build that ships a pointer-shaped screen has not met
 - **SURF-28** (AGREED) - A surface serving more than one model, such as a tablet with a
 - **SURF-29** (SHIPPED) - **Only mobile is offline.** Web, desktop and every television hold no
-- **SURF-30** (SHIPPED) - A download is a progressive file, the raw original when the device
+- **SURF-30** (SHIPPED) - A downloaded title plays with no server connection.
 - **SURF-31** (SHIPPED) - Downloads survive backgrounding and app kills, and are re-adopted
 - **SURF-32** (SHIPPED) - Progress reports that could not be sent queue on the device and
 - **SURF-33** (DESIGN, NOT IMPLEMENTED) - Per-title rows in the OS storage manager, deletable
@@ -328,8 +364,13 @@
 - **SURF-36** (SHIPPED) - **Desktop.** The app checks for, fetches and applies updates in the
 - **SURF-37** (AGREED) - **Mobile.** The app updates on the store's cadence, so a server
 - **SURF-38** (AGREED) - **Televisions.** Each television updates through its own platform's
-- **SURF-39** (SHIPPED) - **NAS.** The Synology package installs and updates through Package
+- **SURF-39** (AGREED) - **NAS.** The Synology package installs and updates through Package
 - **SURF-40** (AGREED) - A surface is dropped when its host platform can no longer meet the
 - **SURF-41** (AGREED) - **Notice first.** A surface entering deprecation tells its users *in
 - **SURF-42** (AGREED) - **Sessions survive the app.** A deprecated surface's sessions are
 - **SURF-43** (AGREED) - **The library outlives any surface.** Nothing about a person's
+- **SURF-44** (AGREED) - Web is where the baseline is defined, so web is first-class by
+- **SURF-45** (AGREED) - A best-effort surface ships when its platform allows and may lag the
+- **SURF-46** (AGREED) - KROMA never claims a panel decodes a codec its generation predates.
+- **SURF-47** (SHIPPED) - The input model is the one thing a surface may *not* copy from web,
+- **SURF-48** (SHIPPED) - A download is a single progressive file: the raw original when the
