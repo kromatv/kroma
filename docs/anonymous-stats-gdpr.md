@@ -14,8 +14,8 @@ kroma.tv/privacy. Where they disagree, they are wrong and should be fixed.
 Probably not, and it is treated as though it might be.
 
 A payload names a server, not a person. It carries no name, no email, no address,
-no IP, no file path, no title, and no exact count of anything. Set beside a
-million installs it is a row of versions and bands.
+no IP, no file path and no title. Set beside a million installs it is a row of
+versions and counts.
 
 But a KROMA server is often run by one person on hardware in their home, and the
 payload carries a persistent random identifier alongside a country and a set of
@@ -61,8 +61,8 @@ has no answer at all. That is a real and present interest of the project, not a
 speculative one.
 
 **Necessity.** The processing is limited to what answers those four questions.
-Every field maps to one of them (see the table below), and the fields that would
-answer them more precisely, exact counts and an install's address, are the ones
+Every field maps to one of them (see the table below), and what none of them
+needs, an install's address and anything naming what is in its library, is
 deliberately left out. There is no less intrusive way to learn how many servers
 are running than to have servers say so.
 
@@ -71,16 +71,16 @@ by the project or by anyone else it reaches: no address is stored, no account
 exists, no third party holds a mapping from the identifier to a human. The
 identifier is minted locally, at random, by the software. Nothing is sold,
 shared, profiled or used to make a decision about anyone. Against that, the
-intrusion is one HTTP request a day carrying a version string and some coarse
-bands.
+intrusion is one HTTP request a day carrying a version string and a handful of
+numbers.
 
 An operator who disagrees is not asked to justify it: the switch is in the
 settings page, it takes effect at once, and the row can be erased outright with
 a single request that needs nobody's permission.
 
-**Safeguards**, each of which exists because of this balance: coarse bands
-instead of counts, a device ceiling, a set of language tags rather than
-per-device values, only official module ids, no address stored, a floor of five
+**Safeguards**, each of which exists because of this balance: a device ceiling, a
+set of language tags rather than per-device values, only official module ids, no
+address stored, no size published against any single install, a floor of five
 before any breakdown is published, and deletion ninety days after a server goes
 quiet.
 
@@ -101,7 +101,7 @@ so the description here can be checked rather than believed.
 | Base | Approximate location | derived country | A two-letter code Cloudflare derives at the edge from the connection. Never sent by the server, and the address it came from is not stored. |
 | What it runs | Language preference | `locales` | To know which languages to translate into. The set of tags devices asked for, never per-device and never counted. |
 | What it runs | Enabled modules | `modules` | To know which official modules are worth maintaining. Modules from any other catalog are never named. |
-| How much | Usage scale | `clients`, `users`, `titles` | To know how many devices a server serves. Device counts are capped at 50; users and titles are coarse bands, never counts. |
+| How much | Usage scale | `clients`, `users`, `titles` | To know how many devices a server serves and how large a library it holds. Device counts are capped at 50; accounts and titles are counted, never named, and no size is published against one install. |
 
 The two lower blocks are absent entirely from the payload of a server whose
 operator switched them off. The published aggregate carries the number of
@@ -109,8 +109,8 @@ servers that supplied each, so a breakdown is read against its own denominator.
 
 **Not processed, at all:** IP addresses, server names, hostnames, URLs, ports,
 media titles, file paths, watch history, search queries, account names, email
-addresses, avatars, exact user or title counts, and the ids of modules installed
-from a third-party registry.
+addresses, avatars, and the ids of modules installed from a third-party
+registry.
 
 There is no profiling and no automated decision-making within the meaning of
 Article 22. The data is counted and nothing else is done with it.

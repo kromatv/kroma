@@ -196,6 +196,7 @@ jobs:
             -v "$PWD":/home/rust/repo \
             -w /home/rust/repo/server \
             -v "$PWD/.cargo-registry":/root/.cargo/registry \
+            -e KROMA_GIT_HASH="$(git rev-parse --short HEAD)" \
             "$RUST_IMAGE" \
             cargo build --release --locked --target "$TARGET"
 

@@ -1,11 +1,11 @@
 //! The anonymous heartbeat.
 //!
 //! One payload a day describing this install and nothing else: no name, no
-//! address, no titles, no exact counts. It is sent while `anonStats` is on,
-//! which it is until an operator switches it off. What every field means, and
-//! what is deliberately absent, is written down in `docs/anonymous-stats.md`.
+//! address, no titles, nothing about what is watched. It is sent while
+//! `anonStats` is on, which it is until an operator switches it off. What every
+//! field means, and what is deliberately absent, is written down in
+//! `docs/anonymous-stats.md`.
 
-mod buckets;
 mod clients;
 mod locales;
 mod payload;

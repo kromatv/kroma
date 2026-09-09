@@ -85,6 +85,20 @@ describe('POST /v1/ping', () => {
     }
   });
 
+  it('still counts a server on the shape before this one, and stores no size for it', async () => {
+    const store = memoryStore();
+    const older = { ...ping(), schema: 2, users: '2-5', titles: '1k-4999' };
+
+    const res = await send(store, post(older));
+
+    expect(res.status).toBe(200);
+    const stored = store.rows.get(older.id);
+    expect(stored?.version).toBe(older.version);
+    expect(stored?.clients).toEqual(older.clients);
+    expect(stored?.users).toBeUndefined();
+    expect(stored?.titles).toBeUndefined();
+  });
+
   it('refuses a payload shape it has not been taught', async () => {
     const store = memoryStore();
 
