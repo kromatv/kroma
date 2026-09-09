@@ -180,6 +180,7 @@ mod tests {
     use crate::ingest::test_support::*;
     use crate::{
         item_has_probed_file, item_probed, set_file_probe, set_item_metadata, unprobed_files,
+        FileProbe,
     };
 
     #[test]
@@ -234,7 +235,16 @@ mod tests {
         )];
         sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 100)).unwrap();
 
-        set_file_probe(&p, "f1", Some(7_200_000), Some(&video()), None, &[], &[]).unwrap();
+        set_file_probe(
+            &p,
+            "f1",
+            &FileProbe {
+                duration_ms: Some(7_200_000),
+                video: Some(&video()),
+                ..FileProbe::default()
+            },
+        )
+        .unwrap();
         set_item_metadata(&p, "m1", &meta(603, "Dune")).unwrap();
         assert!(item_has_probed_file(&p, "m1").unwrap());
 

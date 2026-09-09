@@ -2,7 +2,7 @@
 //! movies and video streams plus the fixed clock the scoring assertions reason
 //! against. One copy, so `score` and the orchestrator test the same shapes.
 
-use crate::model::{Kind, MediaItem, Metadata, SectionItem, VideoStream};
+use crate::model::{HdrFormat, Kind, MediaItem, Metadata, SectionItem, VideoStream};
 use crate::state::SharedState;
 
 /// Fixed "now" for the scoring tests (no wall clock in an assertion).
@@ -87,6 +87,9 @@ pub(super) fn stream(width: u32, hdr: bool) -> VideoStream {
         height: None,
         hdr,
         bit_depth: None,
+        hdr_format: hdr.then_some(HdrFormat::Hdr10),
+        dolby_vision_profile: None,
+        color: None,
     }
 }
 

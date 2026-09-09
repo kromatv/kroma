@@ -1,4 +1,4 @@
-import type { AudioTrack, MediaItem } from '@kromatv/client/media';
+import type { AudioTrack, HdrFormat, MediaItem } from '@kromatv/client/media';
 
 export function track(p: Partial<AudioTrack> & { index: number }): AudioTrack {
   return {
@@ -17,6 +17,8 @@ export function makeItem(p: {
   bitDepth?: number;
   width?: number;
   height?: number;
+  hdrFormat?: HdrFormat;
+  dolbyVisionProfile?: number;
   audio: AudioTrack[];
 }): MediaItem {
   return {
@@ -26,10 +28,28 @@ export function makeItem(p: {
       bitDepth: p.bitDepth ?? 8,
       width: p.width ?? null,
       height: p.height ?? null,
+      hdr: p.hdrFormat != null,
+      hdrFormat: p.hdrFormat ?? null,
+      dolbyVisionProfile: p.dolbyVisionProfile ?? null,
     },
     audio: p.audio[0] ?? null,
     audioTracks: p.audio,
     durationMs: 1000,
+  } as unknown as MediaItem;
+}
+
+/** An item whose one file has been probed, so a missing codec means the probe
+ *  could not name one rather than that nothing has looked at it yet. */
+export function probedItem(p: { videoCodec?: string; unreadable?: string }): MediaItem {
+  return {
+    container: 'mkv',
+    video: p.videoCodec ? { codec: p.videoCodec, bitDepth: 8, width: null, height: null } : null,
+    audio: null,
+    audioTracks: [],
+    subtitles: [],
+    durationMs: null,
+    defaultFileId: 'f1',
+    files: [{ id: 'f1', probed: true, unreadable: p.unreadable ?? null }],
   } as unknown as MediaItem;
 }
 

@@ -78,6 +78,7 @@ function filesOf(item: MediaItem): MediaFile[] {
       size: null,
       edition: null,
       probed: item.video != null,
+      unreadable: null,
     },
   ];
 }

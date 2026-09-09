@@ -118,6 +118,7 @@ pub(super) fn scan_root(
             size,
             edition,
             probed: false,
+            unreadable: None,
             abs_path: Some(abs.to_string_lossy().to_string()),
         };
         index_parsed(

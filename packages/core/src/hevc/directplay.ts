@@ -1,9 +1,10 @@
-import type { MediaItem } from '@kromatv/client/media';
+import type { MediaFile, MediaItem } from '@kromatv/client/media';
 import type { MessageKey, TVars } from '@kromatv/i18n';
 import {
   type AudioCapabilities,
   capabilities,
   type FrameSize,
+  type HdrCapabilities,
   type PlaybackCapabilities,
 } from './capabilities';
 
@@ -53,6 +54,11 @@ const TIERS: ReadonlyArray<readonly [string, FrameSize]> = [
 const SMALLEST = '480p';
 
 const H264 = 'h264';
+
+/** What a probed stream's codec reads as when nothing could name it. A stream
+ *  KROMA cannot name is never direct-played, because that would be a guess that
+ *  the client renders what KROMA itself could not identify. */
+export const UNNAMED_CODEC = 'unknown';
 
 /**
  * How a picture reads to a viewer: the tier the catalogue already names it by.
@@ -125,11 +131,55 @@ function undecodable(messageKey: MessageKey): DirectPlayVerdict {
   return { canDirectPlay: false, messageKey, hintKey: 'player.codecUnsupportedHint' };
 }
 
+// The file an item's own stream fields mirror, and the one a play request serves
+// when it names none.
+function representativeFile(item: MediaItem): MediaFile | undefined {
+  const files = item.files ?? [];
+  return files.find((f) => f.id === item.defaultFileId) ?? files[0];
+}
+
+// A probe that ran and still could not name the video stream. A file nothing has
+// probed yet is not this, and is still worth trying.
+function nameless(item: MediaItem, file: MediaFile | undefined): boolean {
+  const probed = file ? file.probed : item.video != null;
+  return probed && (item.video?.codec ?? UNNAMED_CODEC) === UNNAMED_CODEC;
+}
+
+// Dolby Vision profiles whose base layer is not a picture on its own. A device
+// with no Dolby Vision decoder draws 5 and 7 in the wrong colours rather than
+// merely without the dynamic metadata, which 8 and 9 degrade to cleanly.
+const DV_WITHOUT_A_BASE_LAYER: ReadonlySet<number> = new Set([5, 7]);
+
+/**
+ * Whether this device can draw the stream's exact HDR variant, which is not the
+ * same question as whether it can decode the codec. Only Dolby Vision without a
+ * compatible base layer answers false: every other variant has one, so a device
+ * that cannot read the dynamic metadata still draws the picture.
+ */
+export function canRenderHdr(
+  item: MediaItem,
+  caps: PlaybackCapabilities = capabilities(),
+): boolean {
+  const video = item.video;
+  if (video?.hdrFormat !== 'dolbyVision' || caps.hdr.dolbyVision) return true;
+  const profile = video.dolbyVisionProfile;
+  return profile == null || !DV_WITHOUT_A_BASE_LAYER.has(profile);
+}
+
 export function canDirectPlay(
   item: MediaItem,
   caps: PlaybackCapabilities = capabilities(),
 ): DirectPlayVerdict {
-  const codec = item.video?.codec ?? 'unknown';
+  const file = representativeFile(item);
+  if (file?.unreadable)
+    return {
+      canDirectPlay: false,
+      messageKey: 'player.fileUnreadable',
+      messageVars: { reason: file.unreadable },
+      hintKey: 'player.fileUnreadableHint',
+    };
+
+  const codec = item.video?.codec ?? UNNAMED_CODEC;
   const tenBit = (item.video?.bitDepth ?? 8) >= 10;
 
   const over = beyondDecoder(item, caps);
@@ -140,6 +190,8 @@ export function canDirectPlay(
       messageVars: overrunLabels(over),
       hintKey: 'player.frameTooLargeHint',
     };
+
+  if (!canRenderHdr(item, caps)) return undecodable('player.dolbyVisionUnsupported');
 
   switch (codec) {
     case 'hevc':
@@ -159,7 +211,13 @@ export function canDirectPlay(
         ? { canDirectPlay: true, messageKey: 'player.directPlayVp9' }
         : undecodable('player.vp9Unsupported');
     default:
-      return { canDirectPlay: true, messageKey: 'player.directPlayUnknown' };
+      return nameless(item, file)
+        ? {
+            canDirectPlay: false,
+            messageKey: 'player.streamUndescribed',
+            hintKey: 'player.streamUndescribedHint',
+          }
+        : { canDirectPlay: true, messageKey: 'player.directPlayUnknown' };
   }
 }
 
@@ -175,6 +233,15 @@ const MSE_AUDIO: AudioCapabilities = {
   vorbis: true,
 };
 
+// Chromium draws an HDR10 or HLG picture on a wide display but has no Dolby
+// Vision decoder, so a profile-5 stream arrives with the wrong colours.
+const MSE_HDR: HdrCapabilities = {
+  hdr10: true,
+  hdr10Plus: false,
+  dolbyVision: false,
+  hlg: true,
+};
+
 /** Chromium MSE (hls.js on Chrome/Firefox/webOS): no AC3/EAC3/DTS audio, so
  * those masters must be AAC. */
 export const MSE_CAPS: PlaybackCapabilities = {
@@ -183,17 +250,19 @@ export const MSE_CAPS: PlaybackCapabilities = {
   h264: true,
   av1: true,
   vp9: true,
-  hdr: false,
+  hdr: MSE_HDR,
   audio: MSE_AUDIO,
   source: 'mediaSource',
 };
 
 /** Safari native HLS: AC3/EAC3 decode natively, so surround masters can be
- * stream-copied. AV1 in Safari / WKWebView is hardware-only (Apple Silicon M3+)
- * with no software fallback, hence `av1: false`; mpv is the AV1 path there. */
+ * stream-copied, and Apple's video stack decodes Dolby Vision. AV1 in Safari /
+ * WKWebView is hardware-only (Apple Silicon M3+) with no software fallback, hence
+ * `av1: false`; mpv is the AV1 path there. */
 export const SAFARI_CAPS: PlaybackCapabilities = {
   ...MSE_CAPS,
   av1: false,
+  hdr: { ...MSE_HDR, dolbyVision: true },
   audio: { ...MSE_AUDIO, ac3: true, eac3: true },
   source: 'videoElement',
 };
@@ -218,7 +287,7 @@ export const NATIVE_TV_CAPS: PlaybackCapabilities = {
   h264: true,
   av1: false,
   vp9: true,
-  hdr: true,
+  hdr: { hdr10: true, hdr10Plus: true, dolbyVision: true, hlg: true },
   audio: TV_AUDIO,
   source: 'platform-tv',
 };

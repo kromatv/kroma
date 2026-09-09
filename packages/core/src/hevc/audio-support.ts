@@ -1,7 +1,7 @@
 import type { AudioTrack, MediaItem } from '@kromatv/client/media';
 import type { MessageKey, TVars } from '@kromatv/i18n';
 import { capabilities, type PlaybackCapabilities } from './capabilities';
-import { canDirectPlay } from './directplay';
+import { canDirectPlay, UNNAMED_CODEC } from './directplay';
 
 /** Browsers cannot decode AC3/EAC3/DTS/TrueHD, which plays as video with no
  * sound; `messageKey` is null when audio plays fine. */
@@ -36,12 +36,14 @@ export function audioTracksOf(item: MediaItem): AudioTrack[] {
   return item.audio ? [{ ...item.audio, index: item.audio.index ?? 0 }] : [];
 }
 
-/** Unknown codecs are assumed decodable. */
+/** A codec the table does not list is assumed decodable; one the probe could not
+ *  name is not, because there is nothing to assume about. */
 export function canDecodeAudioCodec(
   codec: string | undefined,
   caps: PlaybackCapabilities = capabilities(),
 ): boolean {
   if (!codec) return true;
+  if (codec === UNNAMED_CODEC) return false;
   const known = Object.entries(caps.audio).find(([name]) => name === codec);
   return known === undefined || known[1];
 }

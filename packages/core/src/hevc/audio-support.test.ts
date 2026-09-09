@@ -46,6 +46,11 @@ describe('canDecodeAudioCodec', () => {
     expect(canDecodeAudioCodec('eac3', MSE_CAPS)).toBe(false);
     expect(canDecodeAudioCodec('eac3', SAFARI_CAPS)).toBe(true);
   });
+
+  it('refuses a codec the probe itself could not name', () => {
+    expect(canDecodeAudioCodec('unknown', MSE_CAPS)).toBe(false);
+    expect(canDecodeAudioCodec('unknown', SAFARI_CAPS)).toBe(false);
+  });
 });
 
 describe('audioTracksOf', () => {

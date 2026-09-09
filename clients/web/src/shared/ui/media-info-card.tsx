@@ -44,9 +44,14 @@ export function FileCard({
         </Grid>
       </Box>
 
-      {file.probed ? <FileTracks file={file} /> : <Unprobed />}
+      <FileStreams file={file} />
     </Box>
   );
+}
+
+function FileStreams({ file }: Readonly<{ file: MediaFile }>) {
+  if (file.unreadable) return <Unreadable reason={file.unreadable} />;
+  return file.probed ? <FileTracks file={file} /> : <Unprobed />;
 }
 
 function FileHeader({
@@ -85,6 +90,20 @@ function Unprobed() {
     <Box px={16} py={12} style={s.topRule}>
       <Text variant="meta" color="accent/80">
         {t('mediaInfo.unprobed')}
+      </Text>
+    </Box>
+  );
+}
+
+function Unreadable({ reason }: Readonly<{ reason: string }>) {
+  const t = useT();
+  return (
+    <Box px={16} py={12} gap={4} style={s.topRule}>
+      <Text variant="meta" color="danger">
+        {t('mediaInfo.unreadable')}
+      </Text>
+      <Text variant="meta" font="mono" color="white/55">
+        {reason}
       </Text>
     </Box>
   );

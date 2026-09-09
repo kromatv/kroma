@@ -1,10 +1,9 @@
-//! Parse ffprobe's JSON output into our best-effort [`ProbeResult`] model:
-//! stream selection, codec normalization, HDR/bit-depth heuristics.
+//! Map ffprobe's output onto our best-effort [`ProbeResult`]: stream selection,
+//! codec normalization, bit-depth and HDR-variant heuristics.
 
-use serde::Deserialize;
+use crate::model::{AudioStream, ColorInfo, HdrFormat, SubtitleTrack, VideoStream};
 
-use crate::model::{AudioStream, SubtitleTrack, VideoStream};
-
+use super::ffprobe_output::{FfChapter, FfStream, FfprobeOutput};
 use super::{Chapter, ProbeResult};
 
 pub(super) fn build_result(raw: FfprobeOutput) -> ProbeResult {
@@ -44,6 +43,7 @@ pub(super) fn build_result(raw: FfprobeOutput) -> ProbeResult {
             })
             .collect(),
         chapters: raw.chapters.iter().filter_map(build_chapter).collect(),
+        unreadable: None,
     }
 }
 
@@ -80,14 +80,23 @@ fn build_video(stream: &FfStream) -> VideoStream {
         .and_then(|s| s.parse::<u32>().ok())
         .or_else(|| pixel_format_bit_depth(stream.pix_fmt.as_deref()));
 
-    let hdr = is_hdr(stream, bit_depth);
+    let dovi = stream.dovi();
+    let hdr_format = hdr_format(stream, bit_depth, dovi.is_some());
+    let color = ColorInfo {
+        primaries: stream.color_primaries.clone(),
+        transfer: stream.color_transfer.clone(),
+        matrix: stream.color_space.clone(),
+    };
 
     VideoStream {
         codec: normalize_codec(stream.codec_name.as_deref()),
         width: stream.width,
         height: stream.height,
-        hdr,
+        hdr: hdr_format.is_some(),
         bit_depth,
+        hdr_format,
+        dolby_vision_profile: dovi.and_then(|d| d.dv_profile),
+        color: (!color.is_empty()).then_some(color),
     }
 }
 
@@ -105,14 +114,22 @@ fn build_audio(stream: &FfStream, index: u32) -> AudioStream {
     }
 }
 
-// PQ / HLG transfer, or 10-bit+ with a wide-gamut primary.
-fn is_hdr(stream: &FfStream, bit_depth: Option<u32>) -> bool {
-    let transfer = stream.color_transfer.as_deref().unwrap_or("");
-    if matches!(transfer, "smpte2084" | "arib-std-b67") {
-        return true;
+// The DOVI record outranks the transfer function, because a Dolby Vision stream
+// can signal any transfer or none at all. HDR10+ is absent on purpose: its
+// metadata is per-frame SEI that a header read cannot see, so a file carrying it
+// is recorded as the HDR10 it also is.
+fn hdr_format(stream: &FfStream, bit_depth: Option<u32>, dolby_vision: bool) -> Option<HdrFormat> {
+    if dolby_vision {
+        return Some(HdrFormat::DolbyVision);
+    }
+    match stream.color_transfer.as_deref().unwrap_or("") {
+        "smpte2084" => return Some(HdrFormat::Hdr10),
+        "arib-std-b67" => return Some(HdrFormat::Hlg),
+        _ => {}
     }
     let wide_gamut = matches!(stream.color_primaries.as_deref().unwrap_or(""), "bt2020");
-    bit_depth.map(|b| b >= 10).unwrap_or(false) && wide_gamut
+    let deep = bit_depth.is_some_and(|b| b >= 10);
+    (deep && wide_gamut).then_some(HdrFormat::Hdr10)
 }
 
 fn pixel_format_bit_depth(pix_fmt: Option<&str>) -> Option<u32> {
@@ -157,75 +174,77 @@ pub fn normalize_codec(name: Option<&str>) -> String {
     .to_string()
 }
 
-#[derive(Debug, Deserialize)]
-pub(super) struct FfprobeOutput {
-    #[serde(default)]
-    streams: Vec<FfStream>,
-    #[serde(default)]
-    format: Option<FfFormat>,
-    #[serde(default)]
-    chapters: Vec<FfChapter>,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-// `start_time`/`end_time` are seconds, as strings.
-#[derive(Debug, Deserialize)]
-struct FfChapter {
-    start_time: Option<String>,
-    end_time: Option<String>,
-    #[serde(default)]
-    tags: Option<FfChapterTags>,
-}
-
-#[derive(Debug, Deserialize)]
-struct FfChapterTags {
-    title: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct FfFormat {
-    duration: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct FfStream {
-    codec_type: Option<String>,
-    codec_name: Option<String>,
-    width: Option<u32>,
-    height: Option<u32>,
-    channels: Option<u32>,
-    pix_fmt: Option<String>,
-    color_transfer: Option<String>,
-    color_primaries: Option<String>,
-    bits_per_raw_sample: Option<String>,
-    #[serde(default)]
-    tags: Option<FfTags>,
-    #[serde(default)]
-    disposition: Option<FfDisposition>,
-}
-
-#[derive(Debug, Deserialize)]
-struct FfTags {
-    language: Option<String>,
-    title: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct FfDisposition {
-    default: Option<u8>,
-}
-
-impl FfStream {
-    fn language(&self) -> Option<String> {
-        self.tags
-            .as_ref()
-            .and_then(|t| t.language.clone())
-            .filter(|l| !l.is_empty() && l != "und")
+    fn video_of(stream_json: &str) -> VideoStream {
+        let raw: FfprobeOutput =
+            serde_json::from_str(&format!(r#"{{"streams":[{stream_json}]}}"#)).unwrap();
+        build_result(raw)
+            .video
+            .expect("the fixture describes one video stream")
     }
 
-    fn title(&self) -> Option<String> {
-        self.tags
-            .as_ref()
-            .and_then(|t| t.title.clone())
-            .filter(|t| !t.trim().is_empty())
+    #[test]
+    fn a_dolby_vision_record_outranks_the_transfer_and_keeps_its_profile() {
+        let video = video_of(
+            r#"{"codec_type":"video","codec_name":"hevc","pix_fmt":"yuv420p10le",
+                "color_transfer":"smpte2084","color_primaries":"bt2020","color_space":"bt2020nc",
+                "side_data_list":[{"side_data_type":"DOVI configuration record","dv_profile":5}]}"#,
+        );
+
+        assert_eq!(video.hdr_format, Some(HdrFormat::DolbyVision));
+        assert_eq!(video.dolby_vision_profile, Some(5));
+        assert!(video.hdr);
+    }
+
+    #[test]
+    fn pq_reads_as_hdr10_and_the_arib_transfer_as_hlg() {
+        let pq =
+            video_of(r#"{"codec_type":"video","codec_name":"hevc","color_transfer":"smpte2084"}"#);
+        let hlg = video_of(
+            r#"{"codec_type":"video","codec_name":"hevc","color_transfer":"arib-std-b67"}"#,
+        );
+
+        assert_eq!(pq.hdr_format, Some(HdrFormat::Hdr10));
+        assert_eq!(hlg.hdr_format, Some(HdrFormat::Hlg));
+        assert!(pq.dolby_vision_profile.is_none());
+    }
+
+    #[test]
+    fn ten_bit_bt2020_with_no_transfer_stated_still_reads_as_hdr10() {
+        let video = video_of(
+            r#"{"codec_type":"video","codec_name":"hevc","pix_fmt":"yuv420p10le",
+                "color_primaries":"bt2020"}"#,
+        );
+
+        assert_eq!(video.hdr_format, Some(HdrFormat::Hdr10));
+        assert_eq!(video.bit_depth, Some(10));
+    }
+
+    #[test]
+    fn an_sdr_stream_names_no_variant_and_its_colour_still_travels() {
+        let video = video_of(
+            r#"{"codec_type":"video","codec_name":"h264","pix_fmt":"yuv420p",
+                "color_transfer":"bt709","color_primaries":"bt709","color_space":"bt709"}"#,
+        );
+
+        assert!(video.hdr_format.is_none());
+        assert!(!video.hdr);
+        let color = video
+            .color
+            .expect("bt709 is colour metadata like any other");
+        assert_eq!(color.primaries.as_deref(), Some("bt709"));
+        assert_eq!(color.transfer.as_deref(), Some("bt709"));
+        assert_eq!(color.matrix.as_deref(), Some("bt709"));
+    }
+
+    #[test]
+    fn a_stream_that_states_no_colour_at_all_carries_none() {
+        let video = video_of(r#"{"codec_type":"video","codec_name":"h264"}"#);
+
+        assert!(video.color.is_none());
+        assert!(video.hdr_format.is_none());
     }
 }

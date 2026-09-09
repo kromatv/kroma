@@ -1,7 +1,14 @@
-//! Media catalog types: kinds, stream descriptions, files, items and shows.
+//! The media catalog's entities: kinds, files, items, shows and seasons.
+//! A track's own description is in [`streams`], edition labels in [`edition`].
 //!
 //! The JSON shape here is a public contract web/TV clients depend on it, so
 //! field names and casing must not drift.
+
+mod edition;
+mod streams;
+
+pub use edition::*;
+pub use streams::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -13,123 +20,6 @@ pub enum Kind {
     Movie,
     Episode,
     Video,
-}
-
-// (needle, label) cut/edition labels first, then source/quality.
-const EDITION_TABLE: &[(&str, &str)] = &[
-    ("director's cut", "Director's Cut"),
-    ("directors cut", "Director's Cut"),
-    ("director.cut", "Director's Cut"),
-    ("extended", "Extended"),
-    ("uncut", "Uncut"),
-    ("unrated", "Unrated"),
-    ("theatrical", "Theatrical"),
-    ("remastered", "Remastered"),
-    ("imax", "IMAX"),
-    ("remux", "Remux"),
-    ("2160p", "4K"),
-    ("4k", "4K"),
-    ("uhd", "4K"),
-    ("1080p", "1080p"),
-    ("720p", "720p"),
-    ("480p", "480p"),
-];
-
-/// The labels that name a distinct CUT of a title rather than a quality tier.
-/// Two files sharing a cut are the same content: one can replace the other.
-/// Two files differing in cut are different content and never replace one
-/// another, however their quality compares.
-pub const EDITION_CUTS: &[&str] = &[
-    "Director's Cut",
-    "Extended",
-    "Uncut",
-    "Unrated",
-    "Theatrical",
-    "Remastered",
-    "IMAX",
-];
-
-/// The edition label a file name carries, e.g. `Extended` or `4K`.
-pub fn detect_edition(file_name: &str) -> Option<String> {
-    let lower = file_name.to_ascii_lowercase();
-    EDITION_TABLE
-        .iter()
-        .find(|(needle, _)| lower.contains(needle))
-        .map(|(_, label)| label.to_string())
-}
-
-/// The cut an edition names, or `None` when it only names a quality tier
-/// (`4K`, `1080p`, `Remux`, ...) or nothing at all.
-pub fn edition_cut(edition: Option<&str>) -> Option<&'static str> {
-    let edition = edition?;
-    EDITION_CUTS
-        .iter()
-        .copied()
-        .find(|cut| cut.eq_ignore_ascii_case(edition))
-}
-
-/// Video stream description (best-effort; fields may be null when unknown).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VideoStream {
-    pub codec: String,
-    pub width: Option<u32>,
-    pub height: Option<u32>,
-    pub hdr: bool,
-    #[serde(rename = "bitDepth")]
-    pub bit_depth: Option<u32>,
-}
-
-/// One audio stream/track. An item can carry several (e.g. EN + FR, or a
-/// director's commentary); `index` is the audio-relative position (0-based
-/// among audio streams only), matching ffmpeg's `-map 0:a:<index>` selector
-/// used when remuxing a chosen track.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AudioStream {
-    #[serde(default)]
-    pub index: u32,
-    pub codec: String,
-    pub channels: Option<u32>,
-    pub language: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub title: Option<String>,
-    #[serde(default)]
-    pub default: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SubtitleTrack {
-    pub language: Option<String>,
-    pub codec: String,
-}
-
-/// Outcome of the EBU R128 loudness analysis of an audio track.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum AudioVerdict {
-    Ok,
-    HighDynamics,
-    QuietDialog,
-}
-
-/// EBU R128 loudness measurement of an item's default audio track, produced by
-/// the `pipeline.loudness` stage.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AudioAnalysis {
-    #[serde(rename = "lufsI")]
-    pub lufs_i: f64,
-    // Loudness range (LU); > ~15 is the classic "quiet dialogue, loud
-    // explosions" mix.
-    pub lra: f64,
-    #[serde(rename = "truePeak")]
-    pub true_peak: f64,
-    // Centre-channel loudness (LUFS), measured for 5.1+ tracks only.
-    #[serde(
-        rename = "dialogLufs",
-        default,
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub dialog_lufs: Option<f64>,
-    pub verdict: AudioVerdict,
 }
 
 /// One physical file backing a logical [`MediaItem`]. A single item can have
@@ -155,6 +45,9 @@ pub struct MediaFile {
     // `false` until ffprobe has run (phase 2); the stream fields above are
     // null until then.
     pub probed: bool,
+    // ffprobe's own reason the container would not open.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unreadable: Option<String>,
     #[serde(skip)]
     pub abs_path: Option<String>,
 }

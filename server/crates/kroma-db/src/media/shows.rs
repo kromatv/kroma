@@ -3,7 +3,7 @@
 use anyhow::Result;
 use rusqlite::{params, Row};
 
-use kroma_domain::{Show, VideoStream};
+use kroma_domain::{ColorInfo, HdrFormat, Show, VideoStream};
 
 use crate::{parse_metadata, Pool, IN_CHUNK};
 
@@ -45,14 +45,30 @@ pub(super) fn row_to_show_bare(r: &Row) -> rusqlite::Result<Show> {
     })
 }
 
-// `base` is the index of `v_codec`; the five stream columns follow it in order.
+// The stream columns a representative-video SELECT projects, in order and under
+// the `files` alias both callers below give it.
+const VIDEO_COLS: &str = "f.v_codec,f.v_width,f.v_height,f.v_hdr,f.v_bit_depth,\
+    f.v_hdr_format,f.v_dv_profile,f.v_color_primaries,f.v_color_transfer,f.v_color_matrix";
+
+// `base` is the index of `v_codec`; [`VIDEO_COLS`] follows it in order.
 fn row_to_video_at(r: &Row, base: usize) -> rusqlite::Result<VideoStream> {
+    let color = ColorInfo {
+        primaries: r.get(base + 7)?,
+        transfer: r.get(base + 8)?,
+        matrix: r.get(base + 9)?,
+    };
     Ok(VideoStream {
         codec: r.get::<_, String>(base)?,
         width: r.get(base + 1)?,
         height: r.get(base + 2)?,
         hdr: r.get::<_, Option<i64>>(base + 3)?.unwrap_or(0) != 0,
         bit_depth: r.get(base + 4)?,
+        hdr_format: r
+            .get::<_, Option<String>>(base + 5)?
+            .as_deref()
+            .and_then(HdrFormat::parse),
+        dolby_vision_profile: r.get(base + 6)?,
+        color: (!color.is_empty()).then_some(color),
     })
 }
 
@@ -115,7 +131,7 @@ pub(super) fn apply_representative_videos(
     for chunk in ids.chunks(IN_CHUNK) {
         let ph = vec!["?"; chunk.len()].join(",");
         let mut stmt = conn.prepare(&format!(
-            "SELECT i.show_id,f.v_codec,f.v_width,f.v_height,f.v_hdr,f.v_bit_depth \
+            "SELECT i.show_id,{VIDEO_COLS} \
              FROM files f JOIN items i ON f.item_id = i.id \
              WHERE i.show_id IN ({ph}) AND f.probed = 1 AND f.v_codec IS NOT NULL \
              ORDER BY f.v_width DESC NULLS LAST",
@@ -138,12 +154,12 @@ pub(super) fn representative_video(
     conn: &rusqlite::Connection,
     show_id: &str,
 ) -> Result<Option<VideoStream>> {
-    let mut stmt = conn.prepare(
-        "SELECT f.v_codec,f.v_width,f.v_height,f.v_hdr,f.v_bit_depth \
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {VIDEO_COLS} \
          FROM files f JOIN items i ON f.item_id = i.id \
          WHERE i.show_id = ?1 AND f.probed = 1 AND f.v_codec IS NOT NULL \
          ORDER BY f.v_width DESC NULLS LAST LIMIT 1",
-    )?;
+    ))?;
     let mut rows = stmt.query_map(params![show_id], |r| row_to_video_at(r, 0))?;
     match rows.next() {
         Some(v) => Ok(Some(v?)),

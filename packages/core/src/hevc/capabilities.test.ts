@@ -15,6 +15,7 @@ import {
   decodableAudioCodecs,
   decodableVideoCodecs,
   detectCapabilities,
+  type HdrCapabilities,
   type PlaybackCapabilities,
   setDecoderFrameLimits,
 } from './capabilities';
@@ -67,6 +68,13 @@ const ALL_AUDIO: AudioCapabilities = {
   vorbis: true,
 };
 
+const NO_HDR: HdrCapabilities = {
+  hdr10: false,
+  hdr10Plus: false,
+  dolbyVision: false,
+  hlg: false,
+};
+
 const FFPROBE_NAMES = ['aac', 'ac3', 'eac3', 'dts', 'truehd', 'flac', 'opus', 'mp3', 'vorbis'];
 
 const caps = (audio: Partial<AudioCapabilities>): PlaybackCapabilities => ({
@@ -75,7 +83,7 @@ const caps = (audio: Partial<AudioCapabilities>): PlaybackCapabilities => ({
   h264: false,
   av1: false,
   vp9: false,
-  hdr: false,
+  hdr: NO_HDR,
   audio: { ...NO_AUDIO, ...audio },
   source: 'unknown',
 });
@@ -92,7 +100,7 @@ describe('detectCapabilities (node baseline: no DOM, no MediaSource)', () => {
     expect(caps.hevc10bit).toBe(false);
     expect(caps.h264).toBe(false);
     expect(caps.av1).toBe(false);
-    expect(caps.hdr).toBe(false);
+    expect(caps.hdr).toEqual(NO_HDR);
     expect(caps.source).toBe('videoElement');
     expect(caps.audio.aac).toBe(false);
     expect(caps.audio.dts).toBe(false);
@@ -120,7 +128,7 @@ describe('detectCapabilities (TV platforms)', () => {
       h264: true,
       av1: false,
       vp9: true,
-      hdr: true,
+      hdr: { hdr10: true, hdr10Plus: true, dolbyVision: true, hlg: true },
     });
     expect(caps.audio).toMatchObject({ aac: true, ac3: true, eac3: true, dts: true, truehd: true });
   });
@@ -238,7 +246,7 @@ describe('decodableVideoCodecs', () => {
       h264: true,
       av1: true,
       vp9: true,
-      hdr: true,
+      hdr: { hdr10: true, hdr10Plus: true, dolbyVision: true, hlg: true },
     });
     expect(decodableVideoCodecs(all)).not.toContain('hevc10bit');
     expect(decodableVideoCodecs(all)).not.toContain('hdr');
@@ -282,17 +290,32 @@ describe('detectCapabilities (browser detection paths)', () => {
 
   it('detects HDR through matchMedia', () => {
     g.matchMedia = (q: string) => ({ matches: q.includes('dynamic-range: high') });
-    expect(detectCapabilities().hdr).toBe(true);
+    expect(detectCapabilities().hdr).toEqual({
+      hdr10: true,
+      hdr10Plus: false,
+      dolbyVision: false,
+      hlg: true,
+    });
   });
 
   it('accepts the video-dynamic-range spelling a TV browser answers instead', () => {
     g.matchMedia = (q: string) => ({ matches: q.includes('video-dynamic-range: high') });
-    expect(detectCapabilities().hdr).toBe(true);
+    expect(detectCapabilities().hdr.hdr10).toBe(true);
   });
 
   it('reports no HDR when neither query matches', () => {
     g.matchMedia = () => ({ matches: false });
-    expect(detectCapabilities().hdr).toBe(false);
+    expect(detectCapabilities().hdr).toEqual(NO_HDR);
+  });
+
+  it('probes Dolby Vision like a codec, because it needs a decoder and not a panel', () => {
+    g.matchMedia = () => ({ matches: false });
+    g.MediaSource = { isTypeSupported: (t: string) => t.includes('dvh1') };
+
+    const caps = detectCapabilities();
+
+    expect(caps.hdr.dolbyVision).toBe(true);
+    expect(caps.hdr.hdr10).toBe(false);
   });
 });
 

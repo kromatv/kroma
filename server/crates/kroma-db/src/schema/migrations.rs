@@ -264,4 +264,16 @@ pub(crate) const MIGRATIONS: &[&str] = &[
     // Which libraries an account may see, as a JSON array of library ids. NULL =
     // every library, so an upgrade never narrows anyone (ACCT-20).
     "ALTER TABLE users ADD COLUMN libraries TEXT",
+    // ffprobe's reason a file would not open, so a corrupt container is a fault
+    // on record rather than a codec guessed from its extension.
+    "ALTER TABLE files ADD COLUMN unreadable TEXT",
+    // Which HDR system a stream carries, beside the older `v_hdr` boolean, plus
+    // the colour signalling a client is matched against. NULL on a row probed
+    // before these existed: `v_hdr` still answers "HDR or not" there, and the
+    // variant arrives with the next re-probe.
+    "ALTER TABLE files ADD COLUMN v_hdr_format TEXT",
+    "ALTER TABLE files ADD COLUMN v_dv_profile INTEGER",
+    "ALTER TABLE files ADD COLUMN v_color_primaries TEXT",
+    "ALTER TABLE files ADD COLUMN v_color_transfer TEXT",
+    "ALTER TABLE files ADD COLUMN v_color_matrix TEXT",
 ];

@@ -1,17 +1,21 @@
-//! Metadata extraction via the `ffprobe` CLI, never transcoding. When ffprobe is
-//! missing or fails on a file, the codec is inferred from the container extension
-//! and unknown fields are left null.
+//! Metadata extraction via the `ffprobe` CLI, never transcoding. A missing
+//! ffprobe or output KROMA cannot parse falls back to a container-extension
+//! guess; a file ffprobe itself refused is recorded as unreadable instead.
 
+mod ffprobe_output;
 mod markers;
 mod parse;
+mod pass;
 mod run;
 
 use crate::model::{AudioStream, SubtitleTrack, VideoStream};
 
 pub use markers::markers_from_chapters;
+pub use pass::*;
 pub use run::*;
 
-/// All fields are best-effort.
+/// All fields are best-effort. A set `unreadable` carries ffprobe's reason the
+/// container would not open, and every other field is then empty.
 #[derive(Debug, Default)]
 pub struct ProbeResult {
     pub duration_ms: Option<u64>,
@@ -21,6 +25,7 @@ pub struct ProbeResult {
     pub audio_tracks: Vec<AudioStream>,
     pub subtitles: Vec<SubtitleTrack>,
     pub chapters: Vec<Chapter>,
+    pub unreadable: Option<String>,
 }
 
 #[derive(Debug, Clone)]

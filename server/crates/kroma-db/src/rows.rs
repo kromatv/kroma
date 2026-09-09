@@ -3,8 +3,8 @@
 use rusqlite::Row;
 
 use kroma_domain::{
-    AudioStream, Kind, LibraryScope, MediaFile, MediaItem, Metadata, Permission, SubtitleTrack,
-    User, VideoStream,
+    AudioStream, ColorInfo, HdrFormat, Kind, LibraryScope, MediaFile, MediaItem, Metadata,
+    Permission, SubtitleTrack, User, VideoStream,
 };
 
 /// Parse a stored `metadata` JSON blob into [`Metadata`]; tolerant of nulls and
@@ -61,12 +61,25 @@ pub(crate) fn parse_permissions(json: &str) -> Vec<Permission> {
 pub(crate) fn row_to_file(r: &Row) -> rusqlite::Result<MediaFile> {
     let probed: i64 = r.get(5)?;
     let v_codec: Option<String> = r.get(7)?;
+    let color = ColorInfo {
+        primaries: r.get(21).ok().flatten(),
+        transfer: r.get(22).ok().flatten(),
+        matrix: r.get(23).ok().flatten(),
+    };
     let video = v_codec.map(|codec| VideoStream {
         codec,
         width: r.get(8).ok().flatten(),
         height: r.get(9).ok().flatten(),
         hdr: r.get::<_, Option<i64>>(10).ok().flatten().unwrap_or(0) != 0,
         bit_depth: r.get(11).ok().flatten(),
+        hdr_format: r
+            .get::<_, Option<String>>(19)
+            .ok()
+            .flatten()
+            .as_deref()
+            .and_then(HdrFormat::parse),
+        dolby_vision_profile: r.get(20).ok().flatten(),
+        color: (!color.is_empty()).then_some(color),
     });
     let subs_json: String = r.get(15)?;
     let subtitles: Vec<SubtitleTrack> = serde_json::from_str(&subs_json).unwrap_or_default();
@@ -102,6 +115,7 @@ pub(crate) fn row_to_file(r: &Row) -> rusqlite::Result<MediaFile> {
         audio_tracks,
         subtitles,
         abs_path: r.get(16)?,
+        unreadable: r.get(18)?,
     })
 }
 
