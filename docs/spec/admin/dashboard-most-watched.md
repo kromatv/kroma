@@ -8,9 +8,9 @@ and what to add.
 
 ## The panel
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
-**ADMIN-39** (AGREED) - The panel ranks titles by number of plays over a chosen window, most
+**ADMIN-39** (SHIPPED) - The panel ranks titles by number of plays over a chosen window, most
 first, in one column for movies and one for shows. Equal play counts rank alphabetically by
 title, so two readers of the same window see the same order.
 
@@ -18,10 +18,10 @@ title, so two readers of the same window see the same order.
 panel keeps its size whatever the ranking holds, and a reader reaches every entry in it
 rather than the first few.
 
-**ADMIN-40** (AGREED) - Each column is headed by the artwork of its own top title, labelled
+**ADMIN-40** (SHIPPED) - Each column is headed by the artwork of its own top title, labelled
 with the kind of media, so a reader recognises the column before reading a word of it.
 
-**ADMIN-41** (AGREED) - Each entry names the title, its play count, and how many distinct
+**ADMIN-41** (SHIPPED) - Each entry names the title, its play count, and how many distinct
 accounts played it. One person watching a series eight times and eight people watching it
 once are different facts about a household, and the panel must not collapse them.
 
@@ -29,17 +29,17 @@ once are different facts about a household, and the panel must not collapse them
 episode. A household watches a show, and a chart that lists nine episodes of one show has
 buried the answer.
 
-**ADMIN-43** (AGREED) - Each entry carries its poster, and falls back to a title-seeded
+**ADMIN-43** (SHIPPED) - Each entry carries its poster, and falls back to a title-seeded
 gradient rather than a blank or a broken image.
 
 **ADMIN-44** (AGREED) - A column with no plays in the window says so in its own words rather
 than disappearing. A missing column reads as a broken panel; an empty one reads as an
 answer.
 
-**ADMIN-45** (AGREED) - The panel carries two filters, account and window, defaulting to
+**ADMIN-45** (SHIPPED) - The panel carries two filters, account and window, defaulting to
 everyone over the last 30 days.
 
-**ADMIN-46** (AGREED) - Selecting an entry opens that title's own watch history
+**ADMIN-46** (SHIPPED) - Selecting an entry opens that title's own watch history
 ([`watch-history.md`](watch-history.md)), because "who watched this, and on what" is the
 next question every time.
 
