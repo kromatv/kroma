@@ -163,14 +163,15 @@ not. So does a longhand one step states and another does not, which is what
 
 ## Themes
 
-Colour and elevation go through the cascade, as they already did on a browser:
-a compiled rule says `var(--kroma-accent)`, and `applyTheme` or a
-`[data-theme]` swap repaints it for free. Radius, families and type roles are
+Colour, elevation, radius, families and type roles go through the cascade, as
+colour already did on a browser: a compiled rule says `var(--kroma-accent)`,
+`var(--radius-md)` or `var(--type-body-size)`, and `applyTheme` or a
+`[data-theme]` swap repaints it for free. Spacing, gutters and motion are
 literals at build time, as they are literals at runtime today. The difference
 is what happens to a theme that restates one of those: a runtime-resolved
 declaration rebuilds on `setTheme`, a compiled one keeps the built-in value.
-No shell of ours ships such a theme; a kit consumer that does can turn the
-compiler off with `kromaUI({ atomic: false })`.
+No theme of ours restates them; a kit consumer that does can turn the compiler
+off with `kromaUI({ atomic: false })`.
 
 ## The dev server
 
