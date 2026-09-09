@@ -3,7 +3,7 @@
 
 # Requirement index
 
-406 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+407 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -47,78 +47,78 @@
 - **ADMIN-2** (SHIPPED) - With nothing playing, the section says so in one sentence rather <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
 - **ADMIN-3** (SHIPPED) - Each session names the viewer, the title, the position against the <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
 - **ADMIN-4** (SHIPPED) - An owner with permission to manage users can end any session, and <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
-- **ADMIN-5** (AGREED) - Every resource chart carries a **scope** control naming which series <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
-- **ADMIN-6** (AGREED) - Every resource chart carries a footer stating the mean of each series <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
-- **ADMIN-7** (AGREED) - Hovering any point reveals every series' value at that instant, <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
-- **ADMIN-8** (AGREED) - The range control offers, in this order: live, the last 12 hours, <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
-- **ADMIN-9** (AGREED) - "Live" is the rolling in-memory window the server samples at its own <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
+- **ADMIN-5** (SHIPPED) - Every resource chart carries a **scope** control naming which series <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
+- **ADMIN-6** (SHIPPED) - Every resource chart carries a footer stating the mean of each series <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
+- **ADMIN-7** (SHIPPED) - Hovering any point reveals every series' value at that instant, <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
+- **ADMIN-8** (SHIPPED) - The range control offers, in this order: live, the last 12 hours, <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
+- **ADMIN-9** (SHIPPED) - "Live" is the rolling in-memory window the server samples at its own <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
 - **ADMIN-10** (AGREED) - A range with no stored samples says the server has not been running <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
-- **ADMIN-11** (AGREED) - Persisted samples are downsampled as they age, so a year of history <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
+- **ADMIN-11** (SHIPPED) - Persisted samples are downsampled as they age, so a year of history <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
 - **ADMIN-12** (SHIPPED) - The bandwidth chart draws two series, traffic to clients on the <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
 - **ADMIN-13** (SHIPPED) - Bandwidth is measured from bytes the delivery handlers actually <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
-- **ADMIN-14** (AGREED) - The bandwidth scope control offers all traffic, local only, or <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
+- **ADMIN-14** (SHIPPED) - The bandwidth scope control offers all traffic, local only, or <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
 - **ADMIN-15** (AGREED) - The vertical scale is chosen from the data in the window and <sub>[dashboard-live.md](admin/dashboard-live.md)</sub>
-- **ADMIN-16** (AGREED) - The processor chart draws two series, what KROMA costs and what the <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
+- **ADMIN-16** (SHIPPED) - The processor chart draws two series, what KROMA costs and what the <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
 - **ADMIN-17** (SHIPPED) - KROMA's figure is the whole process tree, the server and every <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
-- **ADMIN-18** (AGREED) - The processor scope control offers both series, KROMA alone, or the <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
+- **ADMIN-18** (SHIPPED) - The processor scope control offers both series, KROMA alone, or the <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
 - **ADMIN-19** (SHIPPED) - A third series names the share of KROMA's own figure that is media <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
-- **ADMIN-20** (AGREED) - The memory chart draws the same two series as the processor chart, <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
+- **ADMIN-20** (SHIPPED) - The memory chart draws the same two series as the processor chart, <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
 - **ADMIN-21** (SHIPPED) - KROMA's memory is the resident set of the whole process tree, for <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
-- **ADMIN-22** (AGREED) - The memory scope control offers both series, KROMA alone, or the <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
-- **ADMIN-23** (AGREED) - Each series keeps one colour for the life of the product. A reader <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
+- **ADMIN-22** (SHIPPED) - The memory scope control offers both series, KROMA alone, or the <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
+- **ADMIN-23** (SHIPPED) - Each series keeps one colour for the life of the product. A reader <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
 - **ADMIN-24** (AGREED) - Sampling runs whether or not anyone is looking, because the history <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
 - **ADMIN-25** (AGREED) - The server states its own sample interval alongside the data, so a <sub>[dashboard-resources.md](admin/dashboard-resources.md)</sub>
-- **ADMIN-26** (AGREED) - The panel ranks accounts by time watched over a chosen window, most <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-27** (AGREED) - Each card breaks its total down by kind of media, one row for movies <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-26** (SHIPPED) - The panel ranks accounts by time watched over a chosen window, most <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-27** (SHIPPED) - Each card breaks its total down by kind of media, one row for movies <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
 - **ADMIN-28** (AGREED) - An account that watched nothing in the window still appears, with <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-29** (AGREED) - The window control offers the last 24 hours, 7 days, 30 days, 90 <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-30** (AGREED) - With more accounts than fit, the panel pages through them rather <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-31** (AGREED) - Each card carries the account's avatar where it has one, and falls <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-32** (AGREED) - The panel plots time watched per bucket over a chosen window, <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-33** (AGREED) - The bucket width is chosen from the window so the chart always <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-34** (AGREED) - The panel carries three independent filters: kind of media, account, <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-35** (AGREED) - The account filter lists every account with history in the window, <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-36** (AGREED) - A footer states the total time for each kind of media over the whole <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-37** (AGREED) - The panel links to the full history screen <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-38** (AGREED) - Each kind of media keeps one colour across this panel, the top-viewer <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-39** (AGREED) - The panel ranks titles by number of plays over a chosen window, most <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
-- **ADMIN-40** (AGREED) - Each column is headed by the artwork of its own top title, labelled <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
-- **ADMIN-41** (AGREED) - Each entry names the title, its play count, and how many distinct <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
+- **ADMIN-29** (SHIPPED) - The window control offers the last 24 hours, 7 days, 30 days, 90 <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-30** (SHIPPED) - With more accounts than fit, the panel pages through them rather <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-31** (SHIPPED) - Each card carries the account's avatar where it has one, and falls <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-32** (SHIPPED) - The panel plots time watched per bucket over a chosen window, <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-33** (SHIPPED) - The bucket width is chosen from the window so the chart always <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-34** (SHIPPED) - The panel carries three independent filters: kind of media, account, <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-35** (SHIPPED) - The account filter lists every account with history in the window, <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-36** (SHIPPED) - A footer states the total time for each kind of media over the whole <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-37** (SHIPPED) - The panel links to the full history screen <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-38** (SHIPPED) - Each kind of media keeps one colour across this panel, the top-viewer <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-39** (SHIPPED) - The panel ranks titles by number of plays over a chosen window, most <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
+- **ADMIN-40** (SHIPPED) - Each column is headed by the artwork of its own top title, labelled <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
+- **ADMIN-41** (SHIPPED) - Each entry names the title, its play count, and how many distinct <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
 - **ADMIN-42** (AGREED) - An entry is a series where the plays were episodes, not a row per <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
-- **ADMIN-43** (AGREED) - Each entry carries its poster, and falls back to a title-seeded <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
+- **ADMIN-43** (SHIPPED) - Each entry carries its poster, and falls back to a title-seeded <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
 - **ADMIN-44** (AGREED) - A column with no plays in the window says so in its own words rather <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
-- **ADMIN-45** (AGREED) - The panel carries two filters, account and window, defaulting to <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
-- **ADMIN-46** (AGREED) - Selecting an entry opens that title's own watch history <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
+- **ADMIN-45** (SHIPPED) - The panel carries two filters, account and window, defaulting to <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
+- **ADMIN-46** (SHIPPED) - Selecting an entry opens that title's own watch history <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
 - **ADMIN-47** (AGREED) - A play is one finished session in the log, whatever fraction of the <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
 - **ADMIN-48** (AGREED) - Two sessions of the same title by the same account count as two <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
-- **ADMIN-49** (AGREED) - The view is the full history screen ([`watch-history.md`](watch-history.md)) <sub>[watch-history-item.md](admin/watch-history-item.md)</sub>
-- **ADMIN-50** (AGREED) - The header names the title beside the number of plays in scope, so <sub>[watch-history-item.md](admin/watch-history-item.md)</sub>
+- **ADMIN-49** (SHIPPED) - The view is the full history screen ([`watch-history.md`](watch-history.md)) <sub>[watch-history-item.md](admin/watch-history-item.md)</sub>
+- **ADMIN-50** (SHIPPED) - The header names the title beside the number of plays in scope, so <sub>[watch-history-item.md](admin/watch-history-item.md)</sub>
 - **ADMIN-51** (AGREED) - The table drops the title column, which is the same on every row, <sub>[watch-history-item.md](admin/watch-history-item.md)</sub>
-- **ADMIN-52** (AGREED) - Rows are ordered by when they were watched, most recent first, and <sub>[watch-history-item.md](admin/watch-history-item.md)</sub>
+- **ADMIN-52** (SHIPPED) - Rows are ordered by when they were watched, most recent first, and <sub>[watch-history-item.md](admin/watch-history-item.md)</sub>
 - **ADMIN-53** (AGREED) - A title nobody has played says so, rather than showing an empty <sub>[watch-history-item.md](admin/watch-history-item.md)</sub>
 - **ADMIN-54** (AGREED) - The view is reachable from every surface that names a title with a <sub>[watch-history-item.md](admin/watch-history-item.md)</sub>
-- **ADMIN-55** (AGREED) - The view has its own address. An owner can send it to someone, or <sub>[watch-history-item.md](admin/watch-history-item.md)</sub>
+- **ADMIN-55** (SHIPPED) - The view has its own address. An owner can send it to someone, or <sub>[watch-history-item.md](admin/watch-history-item.md)</sub>
 - **ADMIN-56** (AGREED) - For a series, the view covers every episode of that series, and <sub>[watch-history-item.md](admin/watch-history-item.md)</sub>
-- **ADMIN-57** (AGREED) - Watch history is a first-class admin screen with its own entry in <sub>[watch-history.md](admin/watch-history.md)</sub>
-- **ADMIN-58** (AGREED) - The screen shows every session in scope as a table, one row per <sub>[watch-history.md](admin/watch-history.md)</sub>
-- **ADMIN-59** (AGREED) - The header states how many rows the current filters match, before <sub>[watch-history.md](admin/watch-history.md)</sub>
-- **ADMIN-60** (AGREED) - The columns are the account, the kind of media, the title, the <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-57** (SHIPPED) - Watch history is a first-class admin screen with its own entry in <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-58** (SHIPPED) - The screen shows every session in scope as a table, one row per <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-59** (SHIPPED) - The header states how many rows the current filters match, before <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-60** (SHIPPED) - The columns are the account, the kind of media, the title, the <sub>[watch-history.md](admin/watch-history.md)</sub>
 - **ADMIN-61** (AGREED) - An episode's title names its series, its season, its episode number <sub>[watch-history.md](admin/watch-history.md)</sub>
-- **ADMIN-62** (AGREED) - Any column can order the table, ascending or descending, and the <sub>[watch-history.md](admin/watch-history.md)</sub>
-- **ADMIN-63** (AGREED) - The table pages or virtualises rather than rendering everything. <sub>[watch-history.md](admin/watch-history.md)</sub>
-- **ADMIN-64** (AGREED) - The screen filters by library, by account, and by window, each <sub>[watch-history.md](admin/watch-history.md)</sub>
-- **ADMIN-65** (AGREED) - The window control offers the same choices as the dashboard's, plus <sub>[watch-history.md](admin/watch-history.md)</sub>
-- **ADMIN-66** (AGREED) - Filters live in the address, so a filtered view can be sent to <sub>[watch-history.md](admin/watch-history.md)</sub>
-- **ADMIN-67** (AGREED) - Arriving from a dashboard panel applies the filters that panel sent, <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-62** (SHIPPED) - Any column can order the table, ascending or descending, and the <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-63** (SHIPPED) - The table pages or virtualises rather than rendering everything. <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-64** (SHIPPED) - The screen filters by library, by account, and by window, each <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-65** (SHIPPED) - The window control offers the same choices as the dashboard's, plus <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-66** (SHIPPED) - Filters live in the address, so a filtered view can be sent to <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-67** (SHIPPED) - Arriving from a dashboard panel applies the filters that panel sent, <sub>[watch-history.md](admin/watch-history.md)</sub>
 - **ADMIN-68** (AGREED) - A session is written to the log when it ends, carrying everything <sub>[watch-history.md](admin/watch-history.md)</sub>
 - **ADMIN-69** (AGREED) - The log is kept indefinitely by default. It is small, it is the only <sub>[watch-history.md](admin/watch-history.md)</sub>
 - **ADMIN-70** (AGREED) - The log survives a backup and restore, because a restored server <sub>[watch-history.md](admin/watch-history.md)</sub>
 - **ADMIN-71** (AGREED) - An account deleted from the server keeps its rows, attributed to the <sub>[watch-history.md](admin/watch-history.md)</sub>
-- **ADMIN-72** (AGREED) - The screen requires the permission to manage users. A watch history <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-72** (SHIPPED) - The screen requires the permission to manage users. A watch history <sub>[watch-history.md](admin/watch-history.md)</sub>
 - **ADMIN-73** (AGREED) - A member can always read their own history. What the product does <sub>[watch-history.md](admin/watch-history.md)</sub>
 - **ADMIN-74** (AGREED) - A column is bounded in height and scrolls inside that bound. The <sub>[dashboard-most-watched.md](admin/dashboard-most-watched.md)</sub>
-- **ADMIN-75** (AGREED) - A card opens the full history screen <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
-- **ADMIN-76** (AGREED) - A screen narrowed to one title names that title in the filter row <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-75** (SHIPPED) - A card opens the full history screen <sub>[dashboard-audience.md](admin/dashboard-audience.md)</sub>
+- **ADMIN-76** (SHIPPED) - A screen narrowed to one title names that title in the filter row <sub>[watch-history.md](admin/watch-history.md)</sub>
 - **ADMIN-77** (AGREED) - When a session was watched is written out in full, the date and the <sub>[watch-history.md](admin/watch-history.md)</sub>
 - **ADMIN-78** (AGREED) - A row opens the title it names, at that title's own page, wherever <sub>[watch-history.md](admin/watch-history.md)</sub>
 - **ADMIN-79** (AGREED) - A reset is a single-use, time-limited link plus a short one-time <sub>[README.md](admin/README.md)</sub>
@@ -228,43 +228,43 @@
 
 ## MEDIA - [media](media/)
 
-- **MEDIA-1** (AGREED) - **Title.** The work a person searches for: a film, or one episode
+- **MEDIA-1** (SHIPPED) - **Title.** The work a person searches for: a film, or one episode
 - **MEDIA-2** (AGREED) - **Edition.** A named cut of a title: theatrical, director's,
-- **MEDIA-3** (AGREED) - **Media file.** One physical file on disk that realises an edition
+- **MEDIA-3** (SHIPPED) - **Media file.** One physical file on disk that realises an edition
 - **MEDIA-4** (AGREED) - **Stream.** One track inside a media file, exactly one of video,
 - **MEDIA-5** (AGREED) - **Stream properties.** The describable facts about a stream: codec,
 - **MEDIA-6** (AGREED) - The nesting is strict and total: every stream belongs to exactly one
-- **MEDIA-7** (AGREED) - A 1080p file and a 4K file of the same cut are **two media files of
+- **MEDIA-7** (SHIPPED) - A 1080p file and a 4K file of the same cut are **two media files of
 - **MEDIA-8** (AGREED) - KROMA ranks a title's media files and keeps a **preferred** one.
 - **MEDIA-9** (AGREED) - The preference is a *default*, not a lock. The model enumerates a
 - **MEDIA-10** (AGREED) - Editions are surfaced to the person, because they are different
-- **MEDIA-11** (AGREED) - First-class means KROMA fully describes the format, preserves it end
-- **MEDIA-12** (AGREED) - The first-class containers are **MP4**, **MKV** and **WebM**.
-- **MEDIA-13** (AGREED) - **HEVC / H.265** is the priority codec. 8-bit and 10-bit, SDR and
-- **MEDIA-14** (AGREED) - **H.264 / AVC** is the universal floor, assumed playable
-- **MEDIA-15** (AGREED) - **AV1** is first-class media truth whatever the client generation,
-- **MEDIA-16** (AGREED) - **VP9** is first-class within WebM, chiefly for the browser
-- **MEDIA-17** (AGREED) - A codec being first-class states how *KROMA* handles it, never that a
+- **MEDIA-11** (SHIPPED) - First-class means KROMA fully describes the format, preserves it end
+- **MEDIA-12** (SHIPPED) - The first-class containers are **MP4**, **MKV** and **WebM**.
+- **MEDIA-13** (SHIPPED) - **HEVC / H.265** is the priority codec. 8-bit and 10-bit, SDR and
+- **MEDIA-14** (SHIPPED) - **H.264 / AVC** is the universal floor, assumed playable
+- **MEDIA-15** (SHIPPED) - **AV1** is first-class media truth whatever the client generation,
+- **MEDIA-16** (SHIPPED) - **VP9** is first-class within WebM, chiefly for the browser
+- **MEDIA-17** (SHIPPED) - A codec being first-class states how *KROMA* handles it, never that a
 - **MEDIA-18** (AGREED) - HDR is preserved end to end or it is not offered. KROMA never
-- **MEDIA-19** (AGREED) - **Bit depth.** 8-bit and 10-bit are first-class, and 10-bit is
+- **MEDIA-19** (SHIPPED) - **Bit depth.** 8-bit and 10-bit are first-class, and 10-bit is
 - **MEDIA-20** (AGREED) - KROMA distinguishes **HDR10**, **HDR10+**, **Dolby Vision** and
 - **MEDIA-21** (AGREED) - Colour primaries, transfer characteristics and matrix coefficients
 - **MEDIA-22** (AGREED) - Where dynamic metadata, HDR10+ or Dolby Vision, cannot be carried
 - **MEDIA-23** (AGREED) - The first-class audio codecs are **AAC**, **AC-3** and **E-AC-3**
 - **MEDIA-24** (AGREED) - An audio stream's **channel layout**, stereo, 5.1, 7.1 or Atmos
-- **MEDIA-25** (AGREED) - **Passthrough** is the default for multichannel and lossless audio:
+- **MEDIA-25** (SHIPPED) - **Passthrough** is the default for multichannel and lossless audio:
 - **MEDIA-26** (AGREED) - **Downmixing** to stereo happens only when the target cannot render
-- **MEDIA-27** (AGREED) - Multiple audio streams, languages and commentary alike, are all
+- **MEDIA-27** (SHIPPED) - Multiple audio streams, languages and commentary alike, are all
 - **MEDIA-28** (AGREED) - A subtitle stream is either **embedded**, a track inside the media
 - **MEDIA-29** (AGREED) - The first-class subtitle formats are **SRT**, **WebVTT** and
 - **MEDIA-30** (AGREED) - The **forced** disposition, only the foreign-language lines a
 - **MEDIA-31** (AGREED) - **Burning in**, rendering a subtitle permanently into the video, is
-- **MEDIA-32** (AGREED) - Every title carries a **poster**, a **backdrop**, a **logo** and, per
+- **MEDIA-32** (SHIPPED) - Every title carries a **poster**, a **backdrop**, a **logo** and, per
 - **MEDIA-33** (AGREED) - Image sources rank by trust: embedded in the media file, then a
 - **MEDIA-34** (AGREED) - KROMA derives a fixed set of sizes per image, a small grid
 - **MEDIA-35** (AGREED) - Derived sizes are cached and served without re-deriving, and a
 - **MEDIA-36** (AGREED) - Artwork is never a reason a title fails to appear. A title with no
-- **MEDIA-37** (AGREED) - KROMA learns a file's streams by **probing** it once, when the
+- **MEDIA-37** (SHIPPED) - KROMA learns a file's streams by **probing** it once, when the
 - **MEDIA-38** (AGREED) - A probe is the authoritative stream truth until the file's bytes
 - **MEDIA-39** (AGREED) - When a direct play fails in a way that implicates the stream
 - **MEDIA-40** (AGREED) - Trust is per-file and durable: a corrected probe is written back,
@@ -351,9 +351,9 @@
 - **PLAY-19** (AGREED) - KROMA ships no adaptive multi-bitrate ladder, no quality knobs and no
 - **PLAY-20** (AGREED) - Any rung below direct play is a compromise, and the client always shows
 - **PLAY-21** (AGREED) - **Video transcode** and **subtitle burn-in** are shown as *reduced
-- **PLAY-22** (AGREED) - **Audio downmix** and **audio transcode** are shown as *audio
+- **PLAY-22** (SHIPPED) - **Audio downmix** and **audio transcode** are shown as *audio
 - **PLAY-23** (AGREED) - **Remux** is shown as *repackaged*. Quality is untouched, so this is
-- **PLAY-24** (AGREED) - Direct play shows nothing. The absence of a badge *is* the signal
+- **PLAY-24** (SHIPPED) - Direct play may announce itself, naming the codec it is playing
 - **PLAY-25** (AGREED) - KROMA never re-encodes video to save bandwidth unless the device
 - **PLAY-26** (AGREED) - KROMA never tone-maps HDR without saying so.
 - **PLAY-27** (AGREED) - KROMA never burns in subtitles the person did not ask to see.
@@ -366,7 +366,7 @@
 - **PLAY-34** (SHIPPED) - The playing client reports position on a steady heartbeat while
 - **PLAY-35** (AGREED) - The write is idempotent on the person, the version, the position and
 - **PLAY-36** (SHIPPED) - Reopening a title in progress offers *Resume* from the stored position
-- **PLAY-37** (AGREED) - A title is **watched** at **90% of runtime or more**, or at reaching a
+- **PLAY-37** (SHIPPED) - A title is **watched** at a credits or end marker where the media has
 - **PLAY-38** (SHIPPED) - At the watched threshold, continue-watching drops the title and, for
 - **PLAY-39** (AGREED) - Below the threshold, progress is retained and the title stays in
 - **PLAY-40** (AGREED) - Starting a watched title again resets it to unwatched and clears the
@@ -380,8 +380,9 @@
 - **PLAY-48** (AGREED) - KROMA does not hand off an active session between devices as a
 - **PLAY-49** (AGREED) - When a stream dies mid-playback, whether the network drops, a transcode
 - **PLAY-50** (AGREED) - A **transient** failure, a network drop or a brief server hiccup, is
-- **PLAY-51** (AGREED) - A **fatal** failure, a source gone, a transcode that cannot start, or
+- **PLAY-51** (SHIPPED) - A **fatal** failure, a source gone, a transcode that cannot start, or
 - **PLAY-52** (AGREED) - When a television's older decoder cannot play a file a modern phone
+- **PLAY-53** (AGREED) - A settled seek also reports, so jumping and then losing the client does
 
 ## SURF - [surfaces](surfaces/)
 

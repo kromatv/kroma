@@ -1,7 +1,7 @@
 # Media
 
-Status: **AGREED**. The media model and the first-class codec/stream truth are decided.
-Per-section status is called out where it differs.
+Status: **AGREED**, with the codec and stream truth **SHIPPED**. The model's edition level is
+decided and not built. Per-section and per-requirement status is called out where it differs.
 
 What a title *is* once KROMA knows about it: the technical truth about its streams. That
 truth is the input to every playback decision. If a file direct-plays, it is because its
@@ -14,17 +14,17 @@ terms defined here; neither is redefined here.
 
 ## The media model
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 Five nouns, nested, each the child of the one before:
 
-- **MEDIA-1** (AGREED) - **Title.** The work a person searches for: a film, or one episode
+- **MEDIA-1** (SHIPPED) - **Title.** The work a person searches for: a film, or one episode
   of a series. It is the unit [`library/`](../library/) matches to metadata, and it carries
   no bytes.
 - **MEDIA-2** (AGREED) - **Edition.** A named cut of a title: theatrical, director's,
   extended, remastered. Different runtimes, different content. A title with one cut has one
   unnamed edition.
-- **MEDIA-3** (AGREED) - **Media file.** One physical file on disk that realises an edition
+- **MEDIA-3** (SHIPPED) - **Media file.** One physical file on disk that realises an edition
   at a given fidelity. An edition may have several: a 1080p file and a 4K file are two media
   files of the same edition, not two titles and not two editions.
 - **MEDIA-4** (AGREED) - **Stream.** One track inside a media file, exactly one of video,
@@ -38,11 +38,14 @@ Five nouns, nested, each the child of the one before:
 media file, every media file to exactly one edition, every edition to exactly one title.
 Nothing floats.
 
+Today a media file hangs off a title directly and names its edition as a tag rather than
+belonging to one, so the middle level of this nesting is the part still AGREED.
+
 ## Versions of one title
 
-Status: **AGREED**. This resolves the open question on multiple versions.
+Status: **SHIPPED** in part; each requirement carries its own.. This resolves the open question on multiple versions.
 
-**MEDIA-7** (AGREED) - A 1080p file and a 4K file of the same cut are **two media files of
+**MEDIA-7** (SHIPPED) - A 1080p file and a 4K file of the same cut are **two media files of
 one edition**. They are never modelled as separate titles, and the library never shows a
 duplicate. A person picks a title and a cut; the fidelity is chosen for them.
 
@@ -59,44 +62,44 @@ duplicate. A person picks a title and a cut; the fidelity is chosen for them.
 
 ## Containers and codecs
 
-Status: **AGREED**
+Status: **SHIPPED**
 
-**MEDIA-11** (AGREED) - First-class means KROMA fully describes the format, preserves it end
+**MEDIA-11** (SHIPPED) - First-class means KROMA fully describes the format, preserves it end
 to end, and expects direct play wherever a client can render it. Everything else is
 *readable* but not privileged.
 
-**MEDIA-12** (AGREED) - The first-class containers are **MP4**, **MKV** and **WebM**.
+**MEDIA-12** (SHIPPED) - The first-class containers are **MP4**, **MKV** and **WebM**.
 
 The first-class video codecs, HEVC first:
 
-- **MEDIA-13** (AGREED) - **HEVC / H.265** is the priority codec. 8-bit and 10-bit, SDR and
+- **MEDIA-13** (SHIPPED) - **HEVC / H.265** is the priority codec. 8-bit and 10-bit, SDR and
   HDR, are all first-class.
-- **MEDIA-14** (AGREED) - **H.264 / AVC** is the universal floor, assumed playable
+- **MEDIA-14** (SHIPPED) - **H.264 / AVC** is the universal floor, assumed playable
   everywhere.
-- **MEDIA-15** (AGREED) - **AV1** is first-class media truth whatever the client generation,
+- **MEDIA-15** (SHIPPED) - **AV1** is first-class media truth whatever the client generation,
   so a capable client direct-plays it.
-- **MEDIA-16** (AGREED) - **VP9** is first-class within WebM, chiefly for the browser
+- **MEDIA-16** (SHIPPED) - **VP9** is first-class within WebM, chiefly for the browser
   surface.
 
-**MEDIA-17** (AGREED) - A codec being first-class states how *KROMA* handles it, never that a
+**MEDIA-17** (SHIPPED) - A codec being first-class states how *KROMA* handles it, never that a
 particular device renders it. That is the matrix in [`surfaces/`](../surfaces/).
 
 First-class audio and subtitle codecs are named in their sections below.
 
 ## Bit depth and HDR
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 **MEDIA-18** (AGREED) - HDR is preserved end to end or it is not offered. KROMA never
 silently flattens HDR to SDR, and a tone-mapped picture is surfaced as the compromise it is
 by [`playback/`](../playback/).
 
-- **MEDIA-19** (AGREED) - **Bit depth.** 8-bit and 10-bit are first-class, and 10-bit is
+- **MEDIA-19** (SHIPPED) - **Bit depth.** 8-bit and 10-bit are first-class, and 10-bit is
   retained as a property of the video stream rather than rounded away in the model.
 - **MEDIA-20** (AGREED) - KROMA distinguishes **HDR10**, **HDR10+**, **Dolby Vision** and
   **HLG** as separate properties, because each has distinct client support, and it records
   Dolby Vision's profile, because a profile a client cannot decode is not the same as one it
-  can.
+  can. Today a video stream carries one HDR flag, so the variants are the part not built.
 - **MEDIA-21** (AGREED) - Colour primaries, transfer characteristics and matrix coefficients
   travel with the video stream, and a client is matched against the exact HDR variant rather
   than a generic "HDR" flag.
@@ -106,22 +109,23 @@ by [`playback/`](../playback/).
 
 ## Audio
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 **MEDIA-23** (AGREED) - The first-class audio codecs are **AAC**, **AC-3** and **E-AC-3**
-(Dolby Digital and Plus), **TrueHD**, **DTS** and **DTS-HD**, **FLAC** and **Opus**.
+(Dolby Digital and Plus), **TrueHD**, **DTS** and **DTS-HD**, **FLAC** and **Opus**. Only the
+first three and Opus are handled first-class today; the rest are the part still AGREED.
 
 **MEDIA-24** (AGREED) - An audio stream's **channel layout**, stereo, 5.1, 7.1 or Atmos
 objects, is a first-class property.
 
-- **MEDIA-25** (AGREED) - **Passthrough** is the default for multichannel and lossless audio:
+- **MEDIA-25** (SHIPPED) - **Passthrough** is the default for multichannel and lossless audio:
   the bitstream reaches a device or receiver that can decode it untouched. This is direct play
   for audio and is always preferred.
 - **MEDIA-26** (AGREED) - **Downmixing** to stereo happens only when the target cannot render
   the source layout, only as an explicit fallback, and never silently. A downmix is a
   channel-count reduction and therefore a compromise; the original stream is retained
   unchanged as the source, and telling the person is [`playback/`](../playback/)'s job.
-- **MEDIA-27** (AGREED) - Multiple audio streams, languages and commentary alike, are all
+- **MEDIA-27** (SHIPPED) - Multiple audio streams, languages and commentary alike, are all
   enumerated and selectable. The default follows the file's own disposition flags, then the
   profile's language preference.
 
@@ -148,9 +152,9 @@ and both enumerate the same way once known.
 
 ## Artwork and images
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
-**MEDIA-32** (AGREED) - Every title carries a **poster**, a **backdrop**, a **logo** and, per
+**MEDIA-32** (SHIPPED) - Every title carries a **poster**, a **backdrop**, a **logo** and, per
 episode, a **thumb**. These are media too, and are treated with the same discipline.
 
 - **MEDIA-33** (AGREED) - Image sources rank by trust: embedded in the media file, then a
@@ -166,9 +170,9 @@ episode, a **thumb**. These are media too, and are treated with the same discipl
 
 ## Probing and trust
 
-Status: **AGREED**. This resolves the open question on probe trust.
+Status: **SHIPPED** in part; each requirement carries its own.. This resolves the open question on probe trust.
 
-**MEDIA-37** (AGREED) - KROMA learns a file's streams by **probing** it once, when the
+**MEDIA-37** (SHIPPED) - KROMA learns a file's streams by **probing** it once, when the
 library first sees it, and **trusts that probe** for playback decisions. Re-probing on every
 play would tax the server for a fact that rarely changes.
 

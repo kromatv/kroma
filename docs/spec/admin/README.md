@@ -1,6 +1,8 @@
 # Admin
 
-Status: **AGREED**. Every section carries its own status; the file-level label is the floor.
+Status: **SHIPPED** in part. The dashboard and the watch-history screens are built; the
+verbs around sources, users, jobs, backup and updates are decided. Every section and every
+requirement carries its own status.
 
 Running a KROMA server. The audience is one person with a NAS, not an operations team.
 That framing decides everything below: expose little, default sanely, and never add a knob

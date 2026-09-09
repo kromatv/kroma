@@ -26,26 +26,26 @@ is offered a message the viewer will see.
 
 ## The three resource charts share one shape
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 Bandwidth, processor and memory are the same plot over different series. They therefore
 share one contract, and a reader who learns to read one has learned all three.
 
-**ADMIN-5** (AGREED) - Every resource chart carries a **scope** control naming which series
+**ADMIN-5** (SHIPPED) - Every resource chart carries a **scope** control naming which series
 are drawn, and a **range** control naming the window of time drawn. The two are
 independent: changing one never resets the other.
 
-**ADMIN-6** (AGREED) - Every resource chart carries a footer stating the mean of each series
+**ADMIN-6** (SHIPPED) - Every resource chart carries a footer stating the mean of each series
 over the window on screen, so a reader gets a number without hovering.
 
-**ADMIN-7** (AGREED) - Hovering any point reveals every series' value at that instant,
+**ADMIN-7** (SHIPPED) - Hovering any point reveals every series' value at that instant,
 labelled by how long ago it was.
 
-**ADMIN-8** (AGREED) - The range control offers, in this order: live, the last 12 hours,
+**ADMIN-8** (SHIPPED) - The range control offers, in this order: live, the last 12 hours,
 the last 24 hours, the last 7 days, the last 30 days, the last 90 days, the last year, and
 everything the server has kept. Live is the default.
 
-**ADMIN-9** (AGREED) - "Live" is the rolling in-memory window the server samples at its own
+**ADMIN-9** (SHIPPED) - "Live" is the rolling in-memory window the server samples at its own
 interval. Every other range is read from samples the server has persisted, so it survives a
 restart. An owner asking what happened last Tuesday gets an answer.
 
@@ -53,7 +53,7 @@ restart. An owner asking what happened last Tuesday gets an answer.
 long enough, rather than drawing a flat line at zero. A gap in the record is not a period of
 inactivity and must never be drawn as one.
 
-**ADMIN-11** (AGREED) - Persisted samples are downsampled as they age, so a year of history
+**ADMIN-11** (SHIPPED) - Persisted samples are downsampled as they age, so a year of history
 costs a bounded amount of disk. The product promises the shape of the past, not every
 sample of it.
 
@@ -69,7 +69,7 @@ that costs the owner's uplink.
 put on the wire, not from a title's nominal bitrate. What the chart shows is what left the
 machine.
 
-**ADMIN-14** (AGREED) - The bandwidth scope control offers all traffic, local only, or
+**ADMIN-14** (SHIPPED) - The bandwidth scope control offers all traffic, local only, or
 remote only.
 
 **ADMIN-15** (AGREED) - The vertical scale is chosen from the data in the window and

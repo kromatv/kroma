@@ -9,19 +9,19 @@ household's whole history is not something to scroll past on the way to a chart.
 
 ## The screen
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
-**ADMIN-57** (AGREED) - Watch history is a first-class admin screen with its own entry in
+**ADMIN-57** (SHIPPED) - Watch history is a first-class admin screen with its own entry in
 the navigation and its own address, not a section of the dashboard.
 
-**ADMIN-58** (AGREED) - The screen shows every session in scope as a table, one row per
+**ADMIN-58** (SHIPPED) - The screen shows every session in scope as a table, one row per
 session, ordered by when it was watched with the most recent first.
 
-**ADMIN-59** (AGREED) - The header states how many rows the current filters match, before
+**ADMIN-59** (SHIPPED) - The header states how many rows the current filters match, before
 paging. A reader narrowing filters watches that number move, which is how they know the
 filter did anything.
 
-**ADMIN-60** (AGREED) - The columns are the account, the kind of media, the title, the
+**ADMIN-60** (SHIPPED) - The columns are the account, the kind of media, the title, the
 player, the platform, and when it was watched. Every one of these was known while the
 session was live, and none of it can be recovered afterwards, so the log records all of it.
 
@@ -30,7 +30,7 @@ and its own name in one cell, including a row logged before the log kept any of 
 long as the catalog still holds the title. A row that said only "Chikhai Bardo" would make
 the reader go and look it up.
 
-**ADMIN-62** (AGREED) - Any column can order the table, ascending or descending, and the
+**ADMIN-62** (SHIPPED) - Any column can order the table, ascending or descending, and the
 column currently ordering it says which way.
 
 **ADMIN-77** (AGREED) - When a session was watched is written out in full, the date and the
@@ -42,28 +42,28 @@ the catalog still holds it. An episode opens its series, which is the page a ser
 row whose title has left the catalog offers nothing rather than a link to a page that is
 gone, because the log outlives the library.
 
-**ADMIN-63** (AGREED) - The table pages or virtualises rather than rendering everything.
+**ADMIN-63** (SHIPPED) - The table pages or virtualises rather than rendering everything.
 A server with years of history holds tens of thousands of rows, and the screen must open in
 the same time on the last day as on the first.
 
 ## Filters
 
-Status: **AGREED**
+Status: **SHIPPED**
 
-**ADMIN-64** (AGREED) - The screen filters by library, by account, and by window, each
+**ADMIN-64** (SHIPPED) - The screen filters by library, by account, and by window, each
 independent of the others, each with an "all" entry, and all three defaulting to everything.
 
-**ADMIN-65** (AGREED) - The window control offers the same choices as the dashboard's, plus
+**ADMIN-65** (SHIPPED) - The window control offers the same choices as the dashboard's, plus
 everything the log holds, which is the default here. The dashboard is about now; this screen
 is about the record.
 
-**ADMIN-66** (AGREED) - Filters live in the address, so a filtered view can be sent to
+**ADMIN-66** (SHIPPED) - Filters live in the address, so a filtered view can be sent to
 someone or reloaded without being rebuilt.
 
-**ADMIN-67** (AGREED) - Arriving from a dashboard panel applies the filters that panel sent,
+**ADMIN-67** (SHIPPED) - Arriving from a dashboard panel applies the filters that panel sent,
 as ADMIN-37 and ADMIN-75 require.
 
-**ADMIN-76** (AGREED) - A screen narrowed to one title names that title in the filter row
+**ADMIN-76** (SHIPPED) - A screen narrowed to one title names that title in the filter row
 beside the other three, and drops it in one action, returning to the whole log with the
 library, account and window the reader had chosen still applied. A filter a reader can
 enter and never leave is a trap.
@@ -90,9 +90,9 @@ removing their access.
 
 ## Who may read it
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
-**ADMIN-72** (AGREED) - The screen requires the permission to manage users. A watch history
+**ADMIN-72** (SHIPPED) - The screen requires the permission to manage users. A watch history
 is the most personal record the server holds, and it is the owner's to read, not every
 member's.
 
