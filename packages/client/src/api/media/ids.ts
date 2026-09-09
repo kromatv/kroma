@@ -14,5 +14,8 @@ export type SubjectId = ItemId | ShowId;
 export const MediaFileId = brandedId('MediaFileId');
 export type MediaFileId = z.infer<typeof MediaFileId>;
 
+export const EditionId = brandedId('EditionId');
+export type EditionId = z.infer<typeof EditionId>;
+
 export const LibraryId = brandedId('LibraryId');
 export type LibraryId = z.infer<typeof LibraryId>;

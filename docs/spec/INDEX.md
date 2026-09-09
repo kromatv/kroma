@@ -231,13 +231,13 @@
 ## MEDIA - [media](media/)
 
 - **MEDIA-1** (SHIPPED) - **Title.** The work a person searches for: a film, or one episode
-- **MEDIA-2** (AGREED) - **Edition.** A named cut of a title: theatrical, director's,
+- **MEDIA-2** (SHIPPED) - **Edition.** A named cut of a title: theatrical, director's,
 - **MEDIA-3** (SHIPPED) - **Media file.** One physical file on disk that realises an edition
 - **MEDIA-4** (AGREED) - **Stream.** One track inside a media file, exactly one of video,
 - **MEDIA-5** (AGREED) - **Stream properties.** The describable facts about a stream: codec,
-- **MEDIA-6** (AGREED) - The nesting is strict and total: every stream belongs to exactly one
+- **MEDIA-6** (SHIPPED) - The nesting is strict and total: every stream belongs to exactly one
 - **MEDIA-7** (SHIPPED) - A 1080p file and a 4K file of the same cut are **two media files of
-- **MEDIA-8** (AGREED) - KROMA ranks a title's media files and keeps a **preferred** one.
+- **MEDIA-8** (SHIPPED) - KROMA ranks a title's media files and keeps a **preferred** one.
 - **MEDIA-9** (AGREED) - The preference is a *default*, not a lock. The model enumerates a
 - **MEDIA-10** (AGREED) - Editions are surfaced to the person, because they are different
 - **MEDIA-11** (SHIPPED) - First-class means KROMA fully describes the format, preserves it end

@@ -72,7 +72,7 @@ fn recompute_item_representative(conn: &Connection, item_id: &str) -> Result<()>
     let best: Option<(String, String, Option<String>, Option<i64>)> = conn
         .query_row(
             "SELECT abs_path, container, rel_path, duration_ms FROM files \
-             WHERE item_id = ?1 AND probed = 1 \
+             WHERE item_id = ?1 AND probed = 1 AND unreadable IS NULL \
              ORDER BY v_width DESC NULLS LAST, id LIMIT 1",
             params![item_id],
             |r| {

@@ -117,6 +117,7 @@ mod tests {
             metadata: None,
             abs_path: abs_path.map(str::to_string),
             files: Vec::new(),
+            editions: Vec::new(),
             default_file_id: None,
             markers: Vec::new(),
             audio_analysis: None,

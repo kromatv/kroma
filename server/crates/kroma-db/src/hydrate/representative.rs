@@ -3,9 +3,10 @@
 
 use kroma_domain::{MediaFile, MediaItem};
 
-// Mirror the representative file into the item's top-level fields (the shared
-// tail of [`attach_files`] / [`attach_files_batch`]).
+// Rank and group the files, then mirror the representative one into the item's
+// top-level fields (the shared tail of [`attach_files`] / [`attach_files_batch`]).
 pub(super) fn apply_files(item: &mut MediaItem, files: Vec<MediaFile>) {
+    let files = super::editions::apply_editions(item, files);
     // Representative = the first probed file that opened, else the first file.
     let rep = files
         .iter()
@@ -65,6 +66,7 @@ mod apply_files_tests {
             edition: None,
             probed,
             unreadable: None,
+            edition_id: None,
             abs_path: Some(abs.into()),
         }
     }
@@ -94,6 +96,7 @@ mod apply_files_tests {
             metadata: None,
             abs_path: None,
             files: Vec::new(),
+            editions: Vec::new(),
             default_file_id: None,
             markers: Vec::new(),
             audio_analysis: None,

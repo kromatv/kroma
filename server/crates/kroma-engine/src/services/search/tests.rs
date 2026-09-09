@@ -58,6 +58,7 @@ fn movie(id: &str, title: &str, m: Option<Metadata>) -> MediaItem {
         metadata: m,
         abs_path: None,
         files: Vec::new(),
+        editions: Vec::new(),
         default_file_id: None,
         markers: Vec::new(),
         audio_analysis: None,
