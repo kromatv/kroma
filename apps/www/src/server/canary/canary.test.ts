@@ -5,7 +5,7 @@ import type { Artifact, Run } from './github';
 const run = (over: Partial<Run> = {}): Run => ({
   id: 3490258,
   head_sha: 'a'.repeat(40),
-  html_url: 'https://github.com/maxscharwath/kroma/actions/runs/3490258',
+  html_url: 'https://github.com/kromatv/kroma/actions/runs/3490258',
   updated_at: '2026-08-20T19:14:00Z',
   display_title: 'feat: the thing',
   ...over,

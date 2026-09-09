@@ -19,7 +19,7 @@ import { assertPng, assetName, outDirFor, type Screen, type Shot } from './shot'
 import { DEFAULT_TARGETS, type Target, targetsFrom } from './targets';
 
 const REPO_DIR = new URL('../../..', import.meta.url).pathname;
-const DEFAULT_REPO = 'maxscharwath/kroma';
+const DEFAULT_REPO = 'kromatv/kroma';
 const DEFAULT_SETTLE_MS = 600;
 
 const USAGE = `usage: bun run shots:pr <slug> [options]

@@ -7,7 +7,7 @@
   "license": "GPL-2.0-or-later",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "url": "git+https://github.com/kromatv/kroma.git",
     "directory": "clients/tv-native"
   },
   "main": "index.ts",

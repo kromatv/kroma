@@ -7,7 +7,7 @@ export type Env = {
   GITHUB_TOKEN?: string;
 };
 
-export const DEFAULT_REPO = 'maxscharwath/kroma';
+export const DEFAULT_REPO = 'kromatv/kroma';
 
 export const repoOf = (env: Env) => env.GITHUB_REPO || DEFAULT_REPO;
 

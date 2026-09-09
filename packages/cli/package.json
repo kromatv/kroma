@@ -9,7 +9,7 @@
   "homepage": "https://kroma.tv",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "url": "git+https://github.com/kromatv/kroma.git",
     "directory": "packages/cli"
   },
   "keywords": [

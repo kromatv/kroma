@@ -31,7 +31,7 @@ const FULL = {
       branch: 'main',
       dirty: false,
       buildDate: '2026-07-01T10:00:00Z',
-      repository: 'https://github.com/maxscharwath/kroma',
+      repository: 'https://github.com/kromatv/kroma',
     },
   },
 };

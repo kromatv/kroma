@@ -5,7 +5,7 @@ import { Release } from './release-feed.ts';
 const asset = (name: string, createdAt: string, size = 1024) => ({
   name,
   size,
-  browser_download_url: `https://github.com/maxscharwath/kroma/releases/download/canary/${name}`,
+  browser_download_url: `https://github.com/kromatv/kroma/releases/download/canary/${name}`,
   digest: null,
   created_at: createdAt,
 });
@@ -15,7 +15,7 @@ const rolling = (tag: string, assets: ReturnType<typeof asset>[]) =>
     tag_name: tag,
     prerelease: true,
     published_at: '2026-07-10T19:42:27Z',
-    html_url: `https://github.com/maxscharwath/kroma/releases/tag/${tag}`,
+    html_url: `https://github.com/kromatv/kroma/releases/tag/${tag}`,
     assets,
   });
 

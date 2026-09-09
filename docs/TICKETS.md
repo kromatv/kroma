@@ -75,7 +75,7 @@ is how boards die.
 
 ## The board
 
-Project: **KROMA** (Projects v2, `maxscharwath/kroma`). Every issue and PR is added
+Project: **KROMA** (Projects v2, `kromatv/kroma`). Every issue and PR is added
 automatically; nothing is tracked in someone's head.
 
 | Column | Means | Leaves when |

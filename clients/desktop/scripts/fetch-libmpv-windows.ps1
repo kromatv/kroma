@@ -52,7 +52,7 @@ function Get-Sha256($path) {
 }
 
 if (-not (Test-Path $archive) -or (Get-Sha256 $archive) -ne $Sha256) {
-  $url = "https://github.com/maxscharwath/kroma/releases/download/$VendorTag/$Asset"
+  $url = "https://github.com/kromatv/kroma/releases/download/$VendorTag/$Asset"
   Write-Host "fetch-libmpv-windows: downloading $Asset"
   Invoke-WebRequest -Uri $url -OutFile $archive
   # A mismatch is usually not a tampered archive, it is not an archive at all:

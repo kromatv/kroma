@@ -13,7 +13,7 @@ One Rust binary scans your files and streams them to the web, your phone, your T
 Everything past playback and catalog is a module you install from inside the app.
 </p>
 
-[![CI](https://github.com/maxscharwath/kroma/actions/workflows/ci.yml/badge.svg)](https://github.com/maxscharwath/kroma/actions/workflows/ci.yml) [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=maxscharwath_kroma&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maxscharwath_kroma) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=maxscharwath_kroma&metric=coverage)](https://sonarcloud.io/component_measures?id=maxscharwath_kroma&metric=coverage) [![Release](https://img.shields.io/github/v/release/maxscharwath/kroma?style=flat-square&color=F4B642&labelColor=0A0A0C)](https://github.com/maxscharwath/kroma/releases)<br/>
+[![CI](https://github.com/kromatv/kroma/actions/workflows/ci.yml/badge.svg)](https://github.com/kromatv/kroma/actions/workflows/ci.yml) [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=maxscharwath_kroma&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maxscharwath_kroma) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=maxscharwath_kroma&metric=coverage)](https://sonarcloud.io/component_measures?id=maxscharwath_kroma&metric=coverage) [![Release](https://img.shields.io/github/v/release/kromatv/kroma?style=flat-square&color=F4B642&labelColor=0A0A0C)](https://github.com/kromatv/kroma/releases)<br/>
 [![Rust](https://img.shields.io/badge/Rust-1.88-0A0A0C.svg?style=flat-square&logo=rust&logoColor=F4B642)](rust-toolchain.toml) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-0A0A0C.svg?style=flat-square&logo=typescript&logoColor=3178C6)](tsconfig.base.json) [![Bun](https://img.shields.io/badge/Bun-1.4-0A0A0C.svg?style=flat-square&logo=bun&logoColor=F4B642)](https://bun.sh) [![License: GPL-2.0](https://img.shields.io/badge/License-GPL--2.0-F4B642.svg?style=flat-square)](LICENSE)
 
 <p>
@@ -66,7 +66,7 @@ Everything past playback and catalog is a module you install from inside the app
 | --- | --- |
 | **Any Linux host** | the container image below, amd64 and arm64 (a Raspberry Pi 4 or 5 works) |
 | **Synology** | the `.spk` from the package source, see [INSTALL.md](INSTALL.md) |
-| **TVs, phones, desktops** | the installers on [kroma.tv/download](https://kroma.tv/download) or [GitHub Releases](https://github.com/maxscharwath/kroma/releases) |
+| **TVs, phones, desktops** | the installers on [kroma.tv/download](https://kroma.tv/download) or [GitHub Releases](https://github.com/kromatv/kroma/releases) |
 | **Testers** | [BETA.md](BETA.md), written for non-technical users |
 
 ```bash
@@ -74,7 +74,7 @@ docker run -d -p 4040:4040 \
   -e KROMA_MEDIA_DIRS=/media \
   -v /volume1/video:/media \
   -v kroma-data:/data \
-  ghcr.io/maxscharwath/kroma:latest
+  ghcr.io/kromatv/kroma:latest
 ```
 
 Open `http://<host>:4040`. With no media configured the server seeds demo

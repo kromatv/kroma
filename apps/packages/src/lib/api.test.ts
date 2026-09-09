@@ -3,7 +3,7 @@ import { type ExecCtx, machineResponse } from './api';
 import type { Env } from './catalog';
 
 const ICON_SRC =
-  'https://raw.githubusercontent.com/maxscharwath/kroma/main/clients/synology/spk/PACKAGE_ICON_256.PNG';
+  'https://raw.githubusercontent.com/kromatv/kroma/main/clients/synology/spk/PACKAGE_ICON_256.PNG';
 
 const ctx = () => ({ waitUntil: vi.fn() });
 
@@ -177,7 +177,7 @@ describe('machineResponse', () => {
       repo: string;
       packages: { channel: string; version: string; link: string; release: string }[];
     };
-    expect(body.repo).toBe('maxscharwath/kroma');
+    expect(body.repo).toBe('kromatv/kroma');
     expect(body.fetchedAt).toBeTruthy();
     expect(body.packages.map((p) => p.channel)).toEqual(['canary', 'stable']);
     expect(body.packages[1]).toMatchObject({

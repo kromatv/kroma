@@ -8,7 +8,7 @@
 # bind-mount below. See server/README.md for the full option reference.
 services:
   kroma:
-    image: ghcr.io/maxscharwath/kroma:latest
+    image: ghcr.io/kromatv/kroma:latest
     container_name: kroma
     restart: unless-stopped
     ports:

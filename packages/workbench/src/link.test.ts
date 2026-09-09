@@ -6,7 +6,7 @@ import { openWebLink, permalink, WEB_LINK } from './link';
 
 afterEach(() => vi.restoreAllMocks());
 
-const REPO = 'https://github.com/maxscharwath/kroma';
+const REPO = 'https://github.com/kromatv/kroma';
 const SHA = '9db893fe1a4e0b1c2d3f4a5b6c7d8e9f0a1b2c3d';
 
 describe('permalink', () => {
@@ -44,7 +44,7 @@ describe('permalink', () => {
   it('refuses a remote that is not a web address', () => {
     // The link is handed to `openWebLink`, which opens http(s) alone; a `file:`
     // or an ssh remote would be a button that does nothing.
-    expect(permalink('git@github.com:maxscharwath/kroma', 'commit', SHA)).toBeNull();
+    expect(permalink('git@github.com:kromatv/kroma', 'commit', SHA)).toBeNull();
     expect(permalink('file:///Users/someone/kroma', 'commit', SHA)).toBeNull();
   });
 
@@ -58,8 +58,8 @@ describe('openWebLink', () => {
 
   it('hands an http(s) address to the platform', () => {
     const openURL = opener();
-    openWebLink('https://github.com/maxscharwath/kroma');
-    expect(openURL).toHaveBeenCalledWith('https://github.com/maxscharwath/kroma');
+    openWebLink('https://github.com/kromatv/kroma');
+    expect(openURL).toHaveBeenCalledWith('https://github.com/kromatv/kroma');
   });
 
   it('opens nothing at all for any other scheme', () => {

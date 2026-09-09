@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Report privately through GitHub: **Security → Advisories → Report a vulnerability**
-([direct link](https://github.com/maxscharwath/kroma/security/advisories/new)). Private
+([direct link](https://github.com/kromatv/kroma/security/advisories/new)). Private
 reporting is enabled here, so the report stays between you and the maintainer until a
 fix ships.
 

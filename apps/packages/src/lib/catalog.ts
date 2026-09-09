@@ -55,7 +55,7 @@ type GhRelease = {
   assets: GhAsset[];
 };
 
-export const DEFAULT_REPO = 'maxscharwath/kroma';
+export const DEFAULT_REPO = 'kromatv/kroma';
 const CACHE_FRESH = 'https://kroma-packages.cache/catalog-fresh';
 const CACHE_STALE = 'https://kroma-packages.cache/catalog-stale';
 const MAX_SIDECARS = 60;

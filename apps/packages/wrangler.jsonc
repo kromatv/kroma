@@ -6,7 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   "vars": {
-    "GITHUB_REPO": "maxscharwath/kroma"
+    "GITHUB_REPO": "kromatv/kroma"
   },
   "assets": {
     "directory": "./dist/client",

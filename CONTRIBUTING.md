@@ -27,7 +27,7 @@ own README for details.
 ## Getting started
 
 ```bash
-git clone https://github.com/maxscharwath/kroma.git
+git clone https://github.com/kromatv/kroma.git
 cd kroma
 bun install
 bun run dev      # media server (:4040) + web client (:3000) together

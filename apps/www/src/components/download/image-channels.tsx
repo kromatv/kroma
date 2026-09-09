@@ -3,7 +3,7 @@ import { IconGitBranch, IconTag } from '@tabler/icons-react';
 import type { IconComponent } from '#site/components/download/icon';
 import { m } from '#site/paraglide/messages';
 
-export const IMAGE = 'ghcr.io/maxscharwath/kroma';
+export const IMAGE = 'ghcr.io/kromatv/kroma';
 
 export function ImageChannels() {
   return (

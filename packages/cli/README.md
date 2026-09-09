@@ -76,5 +76,5 @@ them; a deep kit import (`@kromatv/ui/kit/atoms/button`) is folded onto
 `@kromatv/ui/kit`, and any other `@kromatv/*` import fails the build. Anything
 else (`zod`, an icon set, your own code) is bundled.
 
-See [`modules/README.md`](https://github.com/maxscharwath/kroma/blob/main/modules/README.md)
+See [`modules/README.md`](https://github.com/kromatv/kroma/blob/main/modules/README.md)
 for the module model: points, storage, events, the runtime contract.

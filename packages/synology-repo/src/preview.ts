@@ -27,8 +27,8 @@ const sampleSubs: Subs = {
   VERSION: '0.1.4.3431188-3431188',
   ARCH: 'x86_64',
   DSM_FLOOR: '7.0',
-  CATALOG_URL: `https://maxscharwath.github.io/kroma/${beta ? 'nightly.json' : 'catalog.json'}`,
-  DOWNLOAD_URL: 'https://github.com/maxscharwath/kroma/releases/latest',
+  CATALOG_URL: `https://kromatv.github.io/kroma/${beta ? 'nightly.json' : 'catalog.json'}`,
+  DOWNLOAD_URL: 'https://github.com/kromatv/kroma/releases/latest',
   ...channelSubs(beta, 'KROMA'),
 };
 

@@ -131,7 +131,7 @@ the TV's network (`bun run server` on the host, or the Docker image on your NAS)
 KROMA targets **Tizen 3.0 (2017 models) and newer**. `config.xml` sets
 `required_version="3.0"`, and a retail set refuses a widget that demands a
 platform newer than its own with an opaque `install failed[118]`, which was the
-whole of [#86](https://github.com/maxscharwath/kroma/issues/86).
+whole of [#86](https://github.com/kromatv/kroma/issues/86).
 
 Reaching that far down is what the **deep tier** is for. Chromium is frozen per
 Tizen major (3.0 = M47, 4.0 = M56, 5.0 = M63, 5.5 = M69, 6.0 = M76, 6.5 = M85,

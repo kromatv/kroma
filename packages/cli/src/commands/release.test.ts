@@ -3,7 +3,7 @@ import type { Catalog, Entry } from '../bundle/catalog';
 import type { Bundle } from '../bundle/read';
 import { decide, tagFor, verdictFor } from './release';
 
-const REPO = 'maxscharwath/kroma';
+const REPO = 'kromatv/kroma';
 const NOW = '2026-08-14T00:00:00.000Z';
 
 function entry(id: string, version: string, hashes: Record<string, string>): Entry {

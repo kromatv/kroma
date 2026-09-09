@@ -13,7 +13,7 @@ const HEX = 'bbc124ee97eedce6f94b6e9baaacb56301f2e968466ca5c3ec74b78a376e9b35';
 const asset = (name: string, size = 1024, extra: Record<string, unknown> = {}) => ({
   name,
   size,
-  browser_download_url: `https://github.com/maxscharwath/kroma/releases/download/v0.1.38/${name}`,
+  browser_download_url: `https://github.com/kromatv/kroma/releases/download/v0.1.38/${name}`,
   digest: `sha256:${HEX}`,
   created_at: '2026-08-14T00:17:26Z',
   ...extra,
@@ -22,7 +22,7 @@ const asset = (name: string, size = 1024, extra: Record<string, unknown> = {}) =
 const bare = (tag: string) => ({
   tag_name: tag,
   published_at: '2026-08-14T00:17:31Z',
-  html_url: `https://github.com/maxscharwath/kroma/releases/tag/${tag}`,
+  html_url: `https://github.com/kromatv/kroma/releases/tag/${tag}`,
   assets: [],
 });
 
@@ -30,7 +30,7 @@ const raw = (fields: Record<string, unknown>) =>
   Release.parse({
     tag_name: 'v0.1.38',
     published_at: '2026-08-14T00:17:31Z',
-    html_url: 'https://github.com/maxscharwath/kroma/releases/tag/v0.1.38',
+    html_url: 'https://github.com/kromatv/kroma/releases/tag/v0.1.38',
     assets: [],
     ...fields,
   });
@@ -43,12 +43,12 @@ describe('toSiteRelease', () => {
       version: '0.1.38',
       tag: 'v0.1.38',
       publishedAt: '2026-08-14T00:17:31Z',
-      notesUrl: 'https://github.com/maxscharwath/kroma/releases/tag/v0.1.38',
+      notesUrl: 'https://github.com/kromatv/kroma/releases/tag/v0.1.38',
       downloads: [
         {
           target: 'macos',
           name: 'KROMA_0.1.38_aarch64.dmg',
-          url: 'https://github.com/maxscharwath/kroma/releases/download/v0.1.38/KROMA_0.1.38_aarch64.dmg',
+          url: 'https://github.com/kromatv/kroma/releases/download/v0.1.38/KROMA_0.1.38_aarch64.dmg',
           bytes: 52807435,
           sha256: HEX,
           builtAt: '2026-08-14T00:17:26Z',

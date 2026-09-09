@@ -73,7 +73,7 @@ Nvidia Shield boxes.
 You need your Android phone and the beamer on the same Wi-Fi network.
 
 1. On the **phone**, download the `.apk` file: open
-   https://github.com/maxscharwath/kroma/releases/latest and tap the file whose
+   https://github.com/kromatv/kroma/releases/latest and tap the file whose
    name starts with `KROMA-androidtv`.
 2. Install the free **Send Files to TV** app on both the phone **and** the
    beamer (it exists in both app stores).
@@ -88,7 +88,7 @@ You need your Android phone and the beamer on the same Wi-Fi network.
 2. Open Downloader and type this address into the URL field:
 
    ```
-   https://github.com/maxscharwath/kroma/releases/latest
+   https://github.com/kromatv/kroma/releases/latest
    ```
 
 3. On the page that opens, scroll down to the list of files and select the one
@@ -157,7 +157,7 @@ the main row automatically.
   taken from inside the app.
 - Android: from the App Tester app.
 - By email: beta@kroma.tv
-- Or open an issue at https://github.com/maxscharwath/kroma/issues.
+- Or open an issue at https://github.com/kromatv/kroma/issues.
 
 Please mention the device, the KROMA version and what you were doing when the
 problem happened. Screenshots help a lot.

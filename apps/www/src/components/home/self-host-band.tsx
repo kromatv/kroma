@@ -97,7 +97,7 @@ export function SelfHostBand() {
                   <span className="text-accent-text">$</span> docker run -d -p 4040:4040 \{'\n'}
                   {'    '}-v /volume1/video:/media \{'\n'}
                   {'    '}-v kroma-data:/data \{'\n'}
-                  {'    '}ghcr.io/maxscharwath/kroma
+                  {'    '}ghcr.io/kromatv/kroma
                 </code>
               </pre>
             </div>
