@@ -264,4 +264,7 @@ pub(crate) const MIGRATIONS: &[&str] = &[
     // Which libraries an account may see, as a JSON array of library ids. NULL =
     // every library, so an upgrade never narrows anyone (ACCT-20).
     "ALTER TABLE users ADD COLUMN libraries TEXT",
+    // ffprobe's reason a file would not open, so a corrupt container is a fault
+    // on record rather than a codec guessed from its extension.
+    "ALTER TABLE files ADD COLUMN unreadable TEXT",
 ];

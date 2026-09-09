@@ -263,6 +263,7 @@ mod tests {
             size: Some(1_000_000), // 1 MB -> 8 Mbit over 1 s = 8 Mb/s
             edition: None,
             probed: true,
+            unreadable: None,
             abs_path: None,
         }];
         it.default_file_id = Some("f1".into());

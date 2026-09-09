@@ -2487,7 +2487,7 @@
     "status": "AGREED",
     "text": "A probe is the authoritative stream truth until the file's bytes",
     "file": "docs/spec/media/README.md",
-    "line": 179
+    "line": 185
   },
   {
     "id": "MEDIA-39",
@@ -2497,7 +2497,7 @@
     "status": "AGREED",
     "text": "When a direct play fails in a way that implicates the stream",
     "file": "docs/spec/media/README.md",
-    "line": 182
+    "line": 188
   },
   {
     "id": "MEDIA-40",
@@ -2507,7 +2507,7 @@
     "status": "AGREED",
     "text": "Trust is per-file and durable: a corrected probe is written back,",
     "file": "docs/spec/media/README.md",
-    "line": 187
+    "line": 193
   },
   {
     "id": "MEDIA-41",
@@ -2517,7 +2517,7 @@
     "status": "AGREED",
     "text": "A file whose container opens and whose streams enumerate, but which",
     "file": "docs/spec/media/README.md",
-    "line": 194
+    "line": 207
   },
   {
     "id": "MEDIA-42",
@@ -2527,7 +2527,7 @@
     "status": "AGREED",
     "text": "The title **appears** in the library with whatever *is* known. A",
     "file": "docs/spec/media/README.md",
-    "line": 198
+    "line": 211
   },
   {
     "id": "MEDIA-43",
@@ -2537,27 +2537,27 @@
     "status": "AGREED",
     "text": "The unknown stream is marked **undescribed** and carries its raw",
     "file": "docs/spec/media/README.md",
-    "line": 201
+    "line": 214
   },
   {
     "id": "MEDIA-44",
     "domain": "MEDIA",
     "space": "media",
     "number": 44,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "An undescribed stream is *not direct-playable*, because KROMA will",
     "file": "docs/spec/media/README.md",
-    "line": 203
+    "line": 216
   },
   {
     "id": "MEDIA-45",
     "domain": "MEDIA",
     "space": "media",
     "number": 45,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A file that will not open at all, a truncated or corrupt container,",
     "file": "docs/spec/media/README.md",
-    "line": 206
+    "line": 219
   },
   {
     "id": "MEDIA-46",
@@ -2567,7 +2567,7 @@
     "status": "AGREED",
     "text": "Undescribed and unreadable are distinct states. The first is \"we",
     "file": "docs/spec/media/README.md",
-    "line": 209
+    "line": 222
   },
   {
     "id": "MOD-1",

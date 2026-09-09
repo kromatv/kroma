@@ -12,5 +12,6 @@
   "mediaInfo.title": "Media details",
   "mediaInfo.unknownFile": "Unknown file",
   "mediaInfo.unprobed": "File analysis pending.",
+  "mediaInfo.unreadable": "This file will not open.",
   "mediaInfo.video": "Video"
 }

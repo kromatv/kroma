@@ -7,27 +7,33 @@ use kroma_domain::{AudioStream, SubtitleTrack, VideoStream};
 
 use crate::Pool;
 
+/// What one probe learned about a file, as [`set_file_probe`] writes it. A set
+/// `unreadable` arrives with no streams: the container never opened.
+#[derive(Debug, Default)]
+pub struct FileProbe<'a> {
+    pub duration_ms: Option<u64>,
+    pub video: Option<&'a VideoStream>,
+    pub audio: Option<&'a AudioStream>,
+    pub audio_tracks: &'a [AudioStream],
+    pub subtitles: &'a [SubtitleTrack],
+    pub unreadable: Option<&'a str>,
+}
+
 /// Persists one file's probe result, then recomputes the owning item's representative columns.
-pub fn set_file_probe(
-    pool: &Pool,
-    file_id: &str,
-    duration_ms: Option<u64>,
-    video: Option<&VideoStream>,
-    audio: Option<&AudioStream>,
-    audio_tracks: &[AudioStream],
-    subtitles: &[SubtitleTrack],
-) -> Result<()> {
+pub fn set_file_probe(pool: &Pool, file_id: &str, probe: &FileProbe) -> Result<()> {
     let conn = pool.get()?;
-    let subs = serde_json::to_string(subtitles).unwrap_or_else(|_| "[]".into());
-    let a_tracks = serde_json::to_string(audio_tracks).unwrap_or_else(|_| "[]".into());
+    let subs = serde_json::to_string(probe.subtitles).unwrap_or_else(|_| "[]".into());
+    let a_tracks = serde_json::to_string(probe.audio_tracks).unwrap_or_else(|_| "[]".into());
+    let (video, audio) = (probe.video, probe.audio);
     conn.execute(
         "UPDATE files SET probed=1, duration_ms=?2, \
             v_codec=?3, v_width=?4, v_height=?5, v_hdr=?6, v_bit_depth=?7, \
-            a_codec=?8, a_channels=?9, a_language=?10, subtitles=?11, audio_tracks=?12 \
+            a_codec=?8, a_channels=?9, a_language=?10, subtitles=?11, audio_tracks=?12, \
+            unreadable=?13 \
          WHERE id = ?1",
         params![
             file_id,
-            duration_ms.map(|d| d as i64),
+            probe.duration_ms.map(|d| d as i64),
             video.map(|v| v.codec.clone()),
             video.and_then(|v| v.width),
             video.and_then(|v| v.height),
@@ -38,6 +44,7 @@ pub fn set_file_probe(
             audio.and_then(|a| a.language.clone()),
             subs,
             a_tracks,
+            probe.unreadable,
         ],
     )?;
 
@@ -119,6 +126,20 @@ mod tests {
         p
     }
 
+    fn one_ms() -> FileProbe<'static> {
+        FileProbe {
+            duration_ms: Some(1),
+            ..FileProbe::default()
+        }
+    }
+
+    fn broken() -> FileProbe<'static> {
+        FileProbe {
+            unreadable: Some("Invalid data found when processing input"),
+            ..FileProbe::default()
+        }
+    }
+
     #[test]
     fn a_refused_file_write_fails_the_probe_rather_than_reporting_success() {
         let p = pool_with_probed_movie();
@@ -130,7 +151,7 @@ mod tests {
             )
             .unwrap();
 
-        assert!(set_file_probe(&p, "f1", Some(1), None, None, &[], &[]).is_err());
+        assert!(set_file_probe(&p, "f1", &one_ms()).is_err());
     }
 
     #[test]
@@ -144,13 +165,13 @@ mod tests {
             )
             .unwrap();
 
-        assert!(set_file_probe(&p, "f1", Some(1), None, None, &[], &[]).is_err());
+        assert!(set_file_probe(&p, "f1", &one_ms()).is_err());
     }
 
     #[test]
     fn a_probe_result_for_a_file_that_is_gone_is_recorded_against_no_item() {
         let p = pool_with_probed_movie();
-        set_file_probe(&p, "no-such-file", Some(1), None, None, &[], &[]).unwrap();
+        set_file_probe(&p, "no-such-file", &one_ms()).unwrap();
 
         let container: String = p
             .get()
@@ -174,5 +195,67 @@ mod tests {
             })
             .unwrap();
         assert_eq!(container, "mkv");
+    }
+
+    #[test]
+    fn an_unreadable_file_never_represents_an_item_that_has_a_readable_one() {
+        let p = pool();
+        sync_all(
+            &p,
+            &[lib("lib")],
+            &[],
+            &[movie(
+                "m1",
+                "Dune",
+                "lib",
+                vec![
+                    file("f1", "/media/broken.mkv", false),
+                    file("f2", "/media/good.mkv", false),
+                ],
+            )],
+            &HashMap::new(),
+        )
+        .unwrap();
+
+        set_file_probe(&p, "f1", &broken()).unwrap();
+        set_file_probe(
+            &p,
+            "f2",
+            &FileProbe {
+                duration_ms: Some(7_200_000),
+                video: Some(&video()),
+                ..FileProbe::default()
+            },
+        )
+        .unwrap();
+
+        let item = crate::get_item(&p, "m1").unwrap().unwrap();
+        assert_eq!(item.default_file_id.as_deref(), Some("f2"));
+        assert_eq!(item.duration_ms, Some(7_200_000));
+        let fault = item.files.iter().find(|f| f.id == "f1").unwrap();
+        assert_eq!(
+            fault.unreadable.as_deref(),
+            Some("Invalid data found when processing input")
+        );
+    }
+
+    #[test]
+    fn a_file_that_opens_on_a_re_probe_clears_the_fault_it_carried() {
+        let p = pool_with_probed_movie();
+        set_file_probe(&p, "f1", &broken()).unwrap();
+        set_file_probe(
+            &p,
+            "f1",
+            &FileProbe {
+                duration_ms: Some(100),
+                video: Some(&video()),
+                ..FileProbe::default()
+            },
+        )
+        .unwrap();
+
+        let item = crate::get_item(&p, "m1").unwrap().unwrap();
+        assert!(item.files[0].unreadable.is_none());
+        assert_eq!(item.default_file_id.as_deref(), Some("f1"));
     }
 }

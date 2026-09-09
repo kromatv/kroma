@@ -176,6 +176,12 @@ Status: **SHIPPED** in part; each requirement carries its own.. This resolves th
 library first sees it, and **trusts that probe** for playback decisions. Re-probing on every
 play would tax the server for a fact that rarely changes.
 
+A probe answers in one of three ways, and they are not the same answer. A file it
+described is described. A file it opened and refused is unreadable (MEDIA-45), and its
+reason is kept. A probe that could not run at all, no ffprobe on the box or output KROMA
+could not parse, is neither: nothing has been learned about the file, so the container
+extension stands in for the video codec until something can look properly.
+
 - **MEDIA-38** (AGREED) - A probe is the authoritative stream truth until the file's bytes
   change, meaning its size or modification time, which invalidates the probe and schedules a
   re-probe.
@@ -189,7 +195,14 @@ play would tax the server for a fact that rarely changes.
 
 ## Files KROMA can read but not fully describe
 
-Status: **AGREED**. This resolves the "read but not describe" must-answer.
+Status: **SHIPPED** in part; each requirement carries its own. This resolves the
+"read but not describe" must-answer.
+
+The fault is recorded against the **media file**, not against the title, and travels
+with the title because a file list travels with it. A title with one good copy and one
+truncated copy is not a broken title: the good copy represents it, and the broken one
+shows its reason where a person is looking at files. The reason is the probe's own
+words, which is why it is not a translated string.
 
 **MEDIA-41** (AGREED) - A file whose container opens and whose streams enumerate, but which
 carries a stream KROMA cannot fully describe, an unknown codec or absent or contradictory
@@ -200,10 +213,10 @@ metadata, is **partially known**. It is never hidden and never silently dropped.
   first-class.
 - **MEDIA-43** (AGREED) - The unknown stream is marked **undescribed** and carries its raw
   identifier, so a person and a diagnostician can see exactly what was not understood.
-- **MEDIA-44** (AGREED) - An undescribed stream is *not direct-playable*, because KROMA will
+- **MEDIA-44** (SHIPPED) - An undescribed stream is *not direct-playable*, because KROMA will
   not gamble that a client renders what KROMA itself cannot name
   ([`playback/`](../playback/)).
-- **MEDIA-45** (AGREED) - A file that will not open at all, a truncated or corrupt container,
+- **MEDIA-45** (SHIPPED) - A file that will not open at all, a truncated or corrupt container,
   is **unreadable**: surfaced as a typed error against the title with the reason, and excluded
   from play until it is re-scanned. It is a visible fault, not an absence.
 - **MEDIA-46** (AGREED) - Undescribed and unreadable are distinct states. The first is "we

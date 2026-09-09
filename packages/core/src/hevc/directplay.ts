@@ -1,4 +1,4 @@
-import type { MediaItem } from '@kromatv/client/media';
+import type { MediaFile, MediaItem } from '@kromatv/client/media';
 import type { MessageKey, TVars } from '@kromatv/i18n';
 import {
   type AudioCapabilities,
@@ -53,6 +53,11 @@ const TIERS: ReadonlyArray<readonly [string, FrameSize]> = [
 const SMALLEST = '480p';
 
 const H264 = 'h264';
+
+/** What a probed stream's codec reads as when nothing could name it. A stream
+ *  KROMA cannot name is never direct-played, because that would be a guess that
+ *  the client renders what KROMA itself could not identify. */
+export const UNNAMED_CODEC = 'unknown';
 
 /**
  * How a picture reads to a viewer: the tier the catalogue already names it by.
@@ -125,11 +130,34 @@ function undecodable(messageKey: MessageKey): DirectPlayVerdict {
   return { canDirectPlay: false, messageKey, hintKey: 'player.codecUnsupportedHint' };
 }
 
+// The file an item's own stream fields mirror, and the one a play request serves
+// when it names none.
+function representativeFile(item: MediaItem): MediaFile | undefined {
+  const files = item.files ?? [];
+  return files.find((f) => f.id === item.defaultFileId) ?? files[0];
+}
+
+// A probe that ran and still could not name the video stream. A file nothing has
+// probed yet is not this, and is still worth trying.
+function nameless(item: MediaItem, file: MediaFile | undefined): boolean {
+  const probed = file ? file.probed : item.video != null;
+  return probed && (item.video?.codec ?? UNNAMED_CODEC) === UNNAMED_CODEC;
+}
+
 export function canDirectPlay(
   item: MediaItem,
   caps: PlaybackCapabilities = capabilities(),
 ): DirectPlayVerdict {
-  const codec = item.video?.codec ?? 'unknown';
+  const file = representativeFile(item);
+  if (file?.unreadable)
+    return {
+      canDirectPlay: false,
+      messageKey: 'player.fileUnreadable',
+      messageVars: { reason: file.unreadable },
+      hintKey: 'player.fileUnreadableHint',
+    };
+
+  const codec = item.video?.codec ?? UNNAMED_CODEC;
   const tenBit = (item.video?.bitDepth ?? 8) >= 10;
 
   const over = beyondDecoder(item, caps);
@@ -159,7 +187,13 @@ export function canDirectPlay(
         ? { canDirectPlay: true, messageKey: 'player.directPlayVp9' }
         : undecodable('player.vp9Unsupported');
     default:
-      return { canDirectPlay: true, messageKey: 'player.directPlayUnknown' };
+      return nameless(item, file)
+        ? {
+            canDirectPlay: false,
+            messageKey: 'player.streamUndescribed',
+            hintKey: 'player.streamUndescribedHint',
+          }
+        : { canDirectPlay: true, messageKey: 'player.directPlayUnknown' };
   }
 }
 

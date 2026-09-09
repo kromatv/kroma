@@ -41,6 +41,7 @@ pub(super) fn file(id: &str, abs: &str, probed: bool) -> MediaFile {
         size: Some(1000),
         edition: None,
         probed,
+        unreadable: None,
         abs_path: Some(abs.into()),
     }
 }

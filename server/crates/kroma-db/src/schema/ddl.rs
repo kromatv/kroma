@@ -65,7 +65,8 @@ pub(crate) const SCHEMA: &str = "
         a_language  TEXT,
         audio_tracks TEXT NOT NULL DEFAULT '[]',
         subtitles   TEXT NOT NULL DEFAULT '[]',
-        probed      INTEGER NOT NULL DEFAULT 0
+        probed      INTEGER NOT NULL DEFAULT 0,
+        unreadable  TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_items_library ON items(library);
     CREATE INDEX IF NOT EXISTS idx_items_kind    ON items(kind);
@@ -656,7 +657,7 @@ pub(crate) const SCHEMA: &str = "
 /// Explicit column list for file SELECTs keeps [`crate::row_to_file`] index-stable.
 pub(crate) const FILE_COLS: &str = "id,rel_path,container,size,edition,probed,\
     duration_ms,v_codec,v_width,v_height,v_hdr,v_bit_depth,\
-    a_codec,a_channels,a_language,subtitles,abs_path,audio_tracks";
+    a_codec,a_channels,a_language,subtitles,abs_path,audio_tracks,unreadable";
 
 /// Explicit column list for item SELECTs keeps [`crate::row_to_item`] index-stable.
 /// `metadata` is appended last (index 25).

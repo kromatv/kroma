@@ -102,6 +102,7 @@ pub(crate) fn row_to_file(r: &Row) -> rusqlite::Result<MediaFile> {
         audio_tracks,
         subtitles,
         abs_path: r.get(16)?,
+        unreadable: r.get(18)?,
     })
 }
 

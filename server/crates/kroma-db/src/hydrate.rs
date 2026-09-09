@@ -6,12 +6,14 @@ use kroma_domain::{Kind, MediaFile, MediaItem};
 
 use super::{audio_analysis, markers, row_to_file, row_to_item, FILE_COLS, IN_CHUNK, ITEM_COLS};
 
-// Load every file for one item, ordered best-first (highest resolution).
+// The one order every file read uses: a broken file last, then probed before
+// unprobed, then widest first.
+const FILE_ORDER: &str = "ORDER BY (unreadable IS NULL) DESC, (probed=1) DESC, \
+     v_width DESC NULLS LAST, id";
+
 fn files_for_item(conn: &Connection, item_id: &str) -> rusqlite::Result<Vec<MediaFile>> {
-    let mut stmt = conn.prepare(&format!(
-        "SELECT {FILE_COLS} FROM files WHERE item_id = ?1 \
-         ORDER BY (probed=1) DESC, v_width DESC NULLS LAST, id",
-    ))?;
+    let mut stmt =
+        conn.prepare(&format!("SELECT {FILE_COLS} FROM files WHERE item_id = ?1 {FILE_ORDER}"))?;
     let files = stmt
         .query_map(params![item_id], row_to_file)?
         .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -54,14 +56,12 @@ pub(crate) fn attach_files_batch(
     for chunk in ids.chunks(IN_CHUNK) {
         let ph = vec!["?"; chunk.len()].join(",");
         // Appending item_id after FILE_COLS keeps row_to_file's indices stable.
-        // The ORDER BY matches files_for_item, so each per-item group arrives
-        // best-first and pushing preserves that order.
         let mut stmt = conn.prepare(&format!(
-            "SELECT {FILE_COLS},item_id FROM files WHERE item_id IN ({ph}) \
-             ORDER BY (probed=1) DESC, v_width DESC NULLS LAST, id",
+            "SELECT {FILE_COLS},item_id FROM files WHERE item_id IN ({ph}) {FILE_ORDER}",
         ))?;
+        let item_id_index = FILE_COLS.split(',').count();
         let rows = stmt.query_map(rusqlite::params_from_iter(chunk.iter()), |r| {
-            Ok((r.get::<_, String>(18)?, row_to_file(r)?))
+            Ok((r.get::<_, String>(item_id_index)?, row_to_file(r)?))
         })?;
         for row in rows {
             let (item_id, file) = row?;
@@ -101,9 +101,11 @@ pub(crate) fn attach_files_batch(
 // Mirror the representative file into the item's top-level fields (the shared
 // tail of [`attach_files`] / [`attach_files_batch`]).
 fn apply_files(item: &mut MediaItem, files: Vec<MediaFile>) {
-    // Representative = first probed file (files are ordered probed-first,
-    // highest-res-first), else the first file.
-    let rep = files.iter().find(|f| f.probed).or_else(|| files.first());
+    // Representative = the first probed file that opened, else the first file.
+    let rep = files
+        .iter()
+        .find(|f| f.probed && f.unreadable.is_none())
+        .or_else(|| files.first());
     if let Some(rep) = rep {
         item.default_file_id = Some(rep.id.clone());
         // Demo files carry a synthetic `demo://` path and aren't streamable; keep
@@ -180,6 +182,7 @@ mod apply_files_tests {
             size: Some(1000),
             edition: None,
             probed,
+            unreadable: None,
             abs_path: Some(abs.into()),
         }
     }

@@ -1,36 +1,17 @@
-//! Invoke the `ffprobe` CLI: availability check, the phase-2 background probing
-//! pass, the per-file run, and the extension-guess fallback.
+//! Invoke the `ffprobe` CLI on one file: availability check, the per-file run,
+//! and what a refusal means against an extension guess.
 
 use std::path::Path;
 use std::process::Command;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
-use std::thread;
 
-use tracing::{debug, info, warn};
+use tracing::debug;
 
-use crate::db::{self, Pool};
-use crate::infra::events::{Bus, ServerEvent};
 use crate::model::VideoStream;
-use crate::services::activity::{self, Shared as Activity};
 
 use super::parse::build_result;
 use super::ProbeResult;
 
-// Half the cores, clamped to 2..4: each ffprobe is a real process, and more at
-// once starves interactive work on a small NAS. `KROMA_PROBE_WORKERS` overrides.
-fn probe_workers() -> usize {
-    if let Some(n) = std::env::var("KROMA_PROBE_WORKERS")
-        .ok()
-        .and_then(|s| s.parse().ok())
-    {
-        return n;
-    }
-    let cores = std::thread::available_parallelism()
-        .map(std::num::NonZeroUsize::get)
-        .unwrap_or(4);
-    (cores / 2).clamp(2, 4)
-}
+const REASON_CHARS: usize = 200;
 
 pub fn ffprobe_available() -> bool {
     Command::new("ffprobe")
@@ -63,170 +44,34 @@ pub fn probe_duration_ms(path: &Path) -> Option<u64> {
     (secs > 0.0).then_some((secs * 1000.0) as u64)
 }
 
-/// Best effort: on any failure this falls back to a container-extension guess
-/// for the video codec.
+/// Best effort in one direction only: a missing ffprobe or output KROMA cannot
+/// parse falls back to a container-extension guess, because neither is the
+/// file's fault. A file ffprobe opened and refused comes back carrying its
+/// reason and no invented streams.
 pub fn probe_file(path: &Path, ffprobe_present: bool) -> ProbeResult {
-    if ffprobe_present {
-        if let Some(result) = run_ffprobe(path) {
-            return result;
-        }
+    if !ffprobe_present {
+        return fallback_from_extension(path);
     }
-    fallback_from_extension(path)
-}
-
-struct ProbeJob {
-    file_id: String,
-    abs_path: String,
-    item_id: String,
-}
-
-/// ffprobe every file with `probed=0`, write the result, and emit live events so
-/// clients fill in codec/HDR badges. Returns immediately; work runs on a small
-/// pool of detached threads. A no-op when there are no unprobed files.
-pub fn spawn_probe_pass(pool: Pool, ffprobe_present: bool, bus: Bus, activity: Activity) {
-    let unprobed = match db::unprobed_files(&pool) {
-        Ok(v) => v,
-        Err(e) => {
-            warn!(error = %e, "failed to list unprobed files; skipping probe pass");
-            return;
-        }
-    };
-    if unprobed.is_empty() {
-        info!("phase-2 probe: nothing to probe (mtime cache hit)");
-        return;
-    }
-
-    let total = unprobed.len();
-    info!(files = total, "starting phase-2 background probing");
-    activity::probe_started(&activity, total);
-
-    let jobs: Vec<ProbeJob> = unprobed
-        .into_iter()
-        .map(|(file_id, abs_path, item_id)| ProbeJob {
-            file_id,
-            abs_path,
-            item_id,
-        })
-        .collect();
-    let queue = Arc::new(Mutex::new(jobs));
-    let done = Arc::new(AtomicUsize::new(0));
-
-    thread::spawn(move || run_probe_pass(pool, ffprobe_present, bus, activity, queue, done, total));
-}
-
-#[allow(clippy::too_many_arguments)]
-fn run_probe_pass(
-    pool: Pool,
-    ffprobe_present: bool,
-    bus: Bus,
-    activity: Activity,
-    queue: Arc<Mutex<Vec<ProbeJob>>>,
-    done: Arc<AtomicUsize>,
-    total: usize,
-) {
-    let worker_count = probe_workers().min(total.max(1));
-    let mut handles = Vec::with_capacity(worker_count);
-    for _ in 0..worker_count {
-        let pool = pool.clone();
-        let queue = queue.clone();
-        let done = done.clone();
-        let bus = bus.clone();
-        let activity = activity.clone();
-        handles.push(thread::spawn(move || {
-            probe_worker_loop(
-                &pool,
-                ffprobe_present,
-                &queue,
-                &done,
-                &bus,
-                &activity,
-                total,
-            )
-        }));
-    }
-    for h in handles {
-        let _ = h.join();
-    }
-    let done = done.load(Ordering::Relaxed);
-    activity::probe_completed(&activity);
-    info!(probed = done, total, "phase-2 probing complete");
-    bus.publish(ServerEvent::ProbeProgress { done, total });
-    bus.publish(ServerEvent::ProbeCompleted { total });
-    bus.publish(ServerEvent::LibraryUpdated);
-}
-
-#[allow(clippy::too_many_arguments)]
-fn probe_worker_loop(
-    pool: &Pool,
-    ffprobe_present: bool,
-    queue: &Arc<Mutex<Vec<ProbeJob>>>,
-    done: &Arc<AtomicUsize>,
-    bus: &Bus,
-    activity: &Activity,
-    total: usize,
-) {
-    loop {
-        let job = match queue.lock().unwrap().pop() {
-            Some(j) => j,
-            None => break,
-        };
-        if let Err(e) = probe_one(
-            pool,
-            ffprobe_present,
-            bus,
-            &job.file_id,
-            &job.abs_path,
-            &job.item_id,
-        ) {
-            warn!(file = %job.file_id, error = %e, "failed to store probe result");
-        }
-        let n = done.fetch_add(1, Ordering::Relaxed) + 1;
-        activity::probe_progress(activity, n);
-        if n.is_multiple_of(25) {
-            bus.publish(ServerEvent::ProbeProgress { done: n, total });
-        }
+    match run_ffprobe(path) {
+        Outcome::Read(result) => *result,
+        Outcome::Unreadable(reason) => ProbeResult {
+            unreadable: Some(reason),
+            ..ProbeResult::default()
+        },
+        Outcome::NotProbed => fallback_from_extension(path),
     }
 }
 
-/// Store the stream columns (+ `probed=1`), derive intro/credits markers from any
-/// embedded chapters, and emit `ItemUpdated` when this is the item's first probed
-/// file. Shared by the background probe pass and the `pipeline.probe` stage.
-pub fn probe_one(
-    pool: &Pool,
-    ffprobe: bool,
-    bus: &Bus,
-    file_id: &str,
-    abs_path: &str,
-    item_id: &str,
-) -> anyhow::Result<()> {
-    let first_for_item = db::item_has_probed_file(pool, item_id)
-        .map(|has| !has)
-        .unwrap_or(true);
-    let result = probe_file(Path::new(abs_path), ffprobe);
-    db::set_file_probe(
-        pool,
-        file_id,
-        result.duration_ms,
-        result.video.as_ref(),
-        result.audio.as_ref(),
-        &result.audio_tracks,
-        &result.subtitles,
-    )?;
-    for (kind, start, end) in super::markers_from_chapters(&result.chapters, result.duration_ms) {
-        let _ = db::set_marker(pool, item_id, kind, start, end, "chapters");
-    }
-    if first_for_item {
-        bus.publish(ServerEvent::ItemUpdated {
-            id: item_id.to_string(),
-        });
-    }
-    Ok(())
+enum Outcome {
+    Read(Box<ProbeResult>),
+    Unreadable(String),
+    NotProbed,
 }
 
 // Failures log at DEBUG, not WARN: every worker probing every file would flood
 // the default log, and a wholesale degradation still shows up as `probed` ≪
 // `total` in the phase-2 summary.
-fn run_ffprobe(path: &Path) -> Option<ProbeResult> {
+fn run_ffprobe(path: &Path) -> Outcome {
     let output = match Command::new("ffprobe")
         .args([
             "-v",
@@ -243,27 +88,45 @@ fn run_ffprobe(path: &Path) -> Option<ProbeResult> {
         Ok(output) => output,
         Err(e) => {
             debug!(file = %path.display(), error = %e, "ffprobe failed to spawn; using extension guess");
-            return None;
+            return Outcome::NotProbed;
         }
     };
+    outcome_of(path, output.status.code(), &output.stdout, &output.stderr)
+}
 
-    if !output.status.success() {
-        debug!(
-            file = %path.display(),
-            code = output.status.code().unwrap_or(-1),
-            detail = %String::from_utf8_lossy(&output.stderr).trim(),
-            "ffprobe errored; using extension guess",
-        );
-        return None;
+fn outcome_of(path: &Path, exit_code: Option<i32>, stdout: &[u8], stderr: &[u8]) -> Outcome {
+    if exit_code != Some(0) {
+        let reason = failure_reason(path, exit_code, stderr);
+        debug!(file = %path.display(), code = exit_code.unwrap_or(-1), %reason, "ffprobe refused the file");
+        return Outcome::Unreadable(reason);
     }
-
-    match serde_json::from_slice(&output.stdout) {
-        Ok(parsed) => Some(build_result(parsed)),
+    match serde_json::from_slice(stdout) {
+        Ok(parsed) => Outcome::Read(Box::new(build_result(parsed))),
         Err(e) => {
             debug!(file = %path.display(), error = %e, "failed to parse ffprobe JSON; using extension guess");
-            None
+            Outcome::NotProbed
         }
     }
+}
+
+fn failure_reason(path: &Path, exit_code: Option<i32>, stderr: &[u8]) -> String {
+    let text = String::from_utf8_lossy(stderr);
+    // The reason reaches clients, which are never told a file's absolute path.
+    let prefix = format!("{}: ", path.display());
+    let said = text
+        .lines()
+        .rev()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .map(|line| line.strip_prefix(prefix.as_str()).unwrap_or(line))
+        .unwrap_or_default();
+    if said.is_empty() {
+        return match exit_code {
+            Some(code) => format!("ffprobe exited with status {code}"),
+            None => "ffprobe was killed before it answered".to_string(),
+        };
+    }
+    said.chars().take(REASON_CHARS).collect()
 }
 
 fn fallback_from_extension(path: &Path) -> ProbeResult {
@@ -281,7 +144,6 @@ fn fallback_from_extension(path: &Path) -> ProbeResult {
     };
 
     ProbeResult {
-        duration_ms: None,
         video: Some(VideoStream {
             codec: codec.to_string(),
             width: None,
@@ -289,9 +151,98 @@ fn fallback_from_extension(path: &Path) -> ProbeResult {
             hdr: false,
             bit_depth: None,
         }),
-        audio: None,
-        audio_tracks: Vec::new(),
-        subtitles: Vec::new(),
-        chapters: Vec::new(),
+        ..ProbeResult::default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn reason_of(outcome: Outcome) -> String {
+        match outcome {
+            Outcome::Unreadable(reason) => reason,
+            Outcome::Read(_) => panic!("a refusal must not read as a description"),
+            Outcome::NotProbed => panic!("a refusal must not read as a missing probe"),
+        }
+    }
+
+    #[test]
+    fn a_file_ffprobe_refuses_is_unreadable_and_keeps_ffprobes_own_reason() {
+        let path = Path::new("/media/Dune (2021)/dune.mkv");
+        let stderr = b"/media/Dune (2021)/dune.mkv: Invalid data found when processing input\n";
+
+        let reason = reason_of(outcome_of(path, Some(1), b"", stderr));
+
+        assert_eq!(reason, "Invalid data found when processing input");
+    }
+
+    #[test]
+    fn the_reason_never_carries_the_path_the_client_is_not_shown() {
+        let path = Path::new("/srv/media/private/x.mkv");
+        let stderr = b"/srv/media/private/x.mkv: moov atom not found\n";
+
+        let reason = reason_of(outcome_of(path, Some(1), b"", stderr));
+
+        assert!(!reason.contains("/srv/media"), "{reason}");
+    }
+
+    #[test]
+    fn a_refusal_with_nothing_to_say_still_names_the_status_it_failed_with() {
+        let path = Path::new("/media/x.mkv");
+
+        assert_eq!(
+            reason_of(outcome_of(path, Some(183), b"", b"  \n")),
+            "ffprobe exited with status 183"
+        );
+        assert_eq!(
+            reason_of(outcome_of(path, None, b"", b"")),
+            "ffprobe was killed before it answered"
+        );
+    }
+
+    #[test]
+    fn a_reason_longer_than_the_cap_is_cut_to_it() {
+        let path = Path::new("/media/x.mkv");
+        let stderr = "e".repeat(REASON_CHARS * 2).into_bytes();
+
+        let reason = reason_of(outcome_of(path, Some(1), b"", &stderr));
+
+        assert_eq!(reason.chars().count(), REASON_CHARS);
+    }
+
+    #[test]
+    fn output_kroma_cannot_parse_is_not_the_files_fault() {
+        let outcome = outcome_of(Path::new("/media/x.mkv"), Some(0), b"not json", b"");
+
+        assert!(matches!(outcome, Outcome::NotProbed));
+    }
+
+    #[test]
+    fn a_described_file_comes_back_with_its_streams_and_no_fault() {
+        let stdout = br#"{"streams":[{"codec_type":"video","codec_name":"hevc","width":3840,"height":2160}]}"#;
+
+        let outcome = outcome_of(Path::new("/media/x.mkv"), Some(0), stdout, b"");
+
+        let Outcome::Read(result) = outcome else {
+            panic!("a parsable description must read as one");
+        };
+        assert_eq!(result.video.as_ref().map(|v| v.codec.as_str()), Some("hevc"));
+        assert!(result.unreadable.is_none());
+    }
+
+    #[test]
+    fn without_ffprobe_the_container_extension_still_names_a_codec() {
+        let guessed = probe_file(Path::new("/media/x.webm"), false);
+
+        assert_eq!(guessed.video.map(|v| v.codec), Some("vp9".to_string()));
+        assert!(guessed.unreadable.is_none());
+    }
+
+    #[test]
+    fn a_container_nothing_recognises_guesses_nothing() {
+        let guessed = probe_file(Path::new("/media/x.bin"), false);
+
+        assert_eq!(guessed.video.map(|v| v.codec), Some("unknown".to_string()));
     }
 }

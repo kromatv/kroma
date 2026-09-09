@@ -27,6 +27,7 @@ fn demo_file(item: &MediaItem) -> MediaFile {
         size: None,
         edition: None,
         probed: true,
+        unreadable: None,
         // No real path on disk; a synthetic URI satisfies the DB's NOT NULL
         // UNIQUE `abs_path` column. Can't be streamed, matching demo behaviour.
         abs_path: Some(format!("demo://{fid}")),

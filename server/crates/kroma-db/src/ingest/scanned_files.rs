@@ -38,7 +38,7 @@ pub(super) fn sync_files(
              container=excluded.container, size=excluded.size, mtime=excluded.mtime, \
              edition=excluded.edition, probed=0, duration_ms=NULL, v_codec=NULL, v_width=NULL, \
              v_height=NULL, v_hdr=NULL, v_bit_depth=NULL, a_codec=NULL, a_channels=NULL, \
-             a_language=NULL, subtitles='[]', audio_tracks='[]'",
+             a_language=NULL, subtitles='[]', audio_tracks='[]', unreadable=NULL",
     )?;
     // Pre-probed files (demo/seed content) skip the phase-2 probe pass.
     let mut preprobed_stmt = tx.prepare(
@@ -52,7 +52,7 @@ pub(super) fn sync_files(
              v_codec=excluded.v_codec, v_width=excluded.v_width, v_height=excluded.v_height, \
              v_hdr=excluded.v_hdr, v_bit_depth=excluded.v_bit_depth, a_codec=excluded.a_codec, \
              a_channels=excluded.a_channels, a_language=excluded.a_language, subtitles=excluded.subtitles, \
-             audio_tracks=excluded.audio_tracks",
+             audio_tracks=excluded.audio_tracks, unreadable=NULL",
     )?;
 
     for i in items {

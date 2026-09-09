@@ -44,6 +44,7 @@ pub(super) fn build_result(raw: FfprobeOutput) -> ProbeResult {
             })
             .collect(),
         chapters: raw.chapters.iter().filter_map(build_chapter).collect(),
+        unreadable: None,
     }
 }
 

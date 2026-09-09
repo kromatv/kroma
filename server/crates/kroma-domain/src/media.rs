@@ -155,6 +155,9 @@ pub struct MediaFile {
     // `false` until ffprobe has run (phase 2); the stream fields above are
     // null until then.
     pub probed: bool,
+    // ffprobe's own reason the container would not open.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unreadable: Option<String>,
     #[serde(skip)]
     pub abs_path: Option<String>,
 }

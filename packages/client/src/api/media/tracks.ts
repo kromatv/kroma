@@ -52,12 +52,15 @@ export const Tracks = z.object({
 });
 
 /** One physical file backing a logical [`MediaItem`]. `id` is a `short_hash` of
- * the absolute path, not a media-item id. */
+ * the absolute path, not a media-item id. `unreadable` carries ffprobe's reason
+ * the container would not open, which is not the same as `probed: false`: one is
+ * a broken file, the other is a file nothing has looked at yet. */
 export const MediaFile = Tracks.extend({
   id: MediaFileId,
   size: z.number().nullable(),
   edition: z.string().nullish(),
   probed: z.boolean(),
+  unreadable: z.string().nullish(),
 });
 export type MediaFile = z.infer<typeof MediaFile>;
 

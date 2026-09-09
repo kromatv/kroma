@@ -15,7 +15,7 @@ import {
   MSE_CAPS,
   overrunLabels,
 } from './directplay';
-import { makeItem, track } from './directplay.fixture';
+import { makeItem, probedItem, track } from './directplay.fixture';
 
 describe('canDirectPlay', () => {
   it('refuses 10-bit HEVC on an engine that only decodes 8-bit', () => {
@@ -79,6 +79,51 @@ describe('canDirectPlay', () => {
       messageKey: 'player.h264Unsupported',
       hintKey: 'player.codecUnsupportedHint',
     });
+  });
+
+  it('refuses a file that would not open and hands back the reason it gave', () => {
+    const broken = probedItem({ unreadable: 'Invalid data found when processing input' });
+
+    expect(canDirectPlay(broken, MSE_CAPS)).toEqual({
+      canDirectPlay: false,
+      messageKey: 'player.fileUnreadable',
+      messageVars: { reason: 'Invalid data found when processing input' },
+      hintKey: 'player.fileUnreadableHint',
+    });
+  });
+
+  it('refuses a probed stream nothing could name, and still tries an unprobed one', () => {
+    const noVideoStream = probedItem({});
+    const namelessCodec = probedItem({ videoCodec: 'unknown' });
+    const unprobed = {
+      container: 'mkv',
+      audioTracks: [],
+      defaultFileId: 'f1',
+      files: [{ id: 'f1', probed: false }],
+    } as unknown as MediaItem;
+
+    expect(canDirectPlay(noVideoStream, MSE_CAPS)).toEqual({
+      canDirectPlay: false,
+      messageKey: 'player.streamUndescribed',
+      hintKey: 'player.streamUndescribedHint',
+    });
+    expect(canDirectPlay(namelessCodec, MSE_CAPS).messageKey).toBe('player.streamUndescribed');
+    expect(canDirectPlay(unprobed, MSE_CAPS).messageKey).toBe('player.directPlayUnknown');
+  });
+
+  it('judges the file a play request serves, not whichever one is listed first', () => {
+    const item = {
+      container: 'mkv',
+      video: { codec: 'h264', bitDepth: 8, width: null, height: null },
+      audioTracks: [],
+      defaultFileId: 'good',
+      files: [
+        { id: 'broken', probed: true, unreadable: 'moov atom not found' },
+        { id: 'good', probed: true, unreadable: null },
+      ],
+    } as unknown as MediaItem;
+
+    expect(canDirectPlay(item, MSE_CAPS).canDirectPlay).toBe(true);
   });
 });
 

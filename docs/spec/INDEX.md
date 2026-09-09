@@ -273,8 +273,8 @@
 - **MEDIA-41** (AGREED) - A file whose container opens and whose streams enumerate, but which
 - **MEDIA-42** (AGREED) - The title **appears** in the library with whatever *is* known. A
 - **MEDIA-43** (AGREED) - The unknown stream is marked **undescribed** and carries its raw
-- **MEDIA-44** (AGREED) - An undescribed stream is *not direct-playable*, because KROMA will
-- **MEDIA-45** (AGREED) - A file that will not open at all, a truncated or corrupt container,
+- **MEDIA-44** (SHIPPED) - An undescribed stream is *not direct-playable*, because KROMA will
+- **MEDIA-45** (SHIPPED) - A file that will not open at all, a truncated or corrupt container,
 - **MEDIA-46** (AGREED) - Undescribed and unreadable are distinct states. The first is "we
 
 ## MOD - [modules](modules/)
