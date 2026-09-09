@@ -3,7 +3,7 @@
 
 # Requirement index
 
-131 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+226 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ADMIN - [admin](admin/)
 
@@ -95,6 +95,107 @@
 - **ADMIN-86** (AGREED) - The owner sends a verification from the member editor, with the <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-87** (AGREED) - Changing the address clears the verified state: the proof belongs <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-88** (AGREED) - A user who cannot sign in can ask for a reset from the sign-in <sub>[README.md](admin/README.md)</sub>
+
+## LIB - [library](library/)
+
+- **LIB-1** (AGREED) - A **source** is a directory tree the server is told to watch, tagged
+- **LIB-2** (AGREED) - A movie source never produces episodes and a show source never produces
+- **LIB-3** (AGREED) - A server has zero or more sources, any number of them may point at the
+- **LIB-4** (AGREED) - A source is an input, not a category a person browses by. Filtering the
+- **LIB-5** (SHIPPED) - A source tree may be assembled from symlinks. A curated folder of links
+- **LIB-6** (SHIPPED) - A link the server cannot resolve is reported, never silently skipped,
+- **LIB-7** (AGREED) - A source records its mount path, its content kind and its scan schedule.
+- **LIB-8** (AGREED) - Nothing about a source is destructive. Removing one drops its titles
+- **LIB-9** (AGREED) - Matching is convention-first: a correctly named file matches offline,
+- **LIB-10** (SHIPPED) - The `Title (Year)` stem is what is matched. The year is not
+- **LIB-11** (SHIPPED) - A trailing tag after ` - `, a resolution, an edition or a source, is
+- **LIB-12** (SHIPPED) - A loose file directly under the source root, with no folder, is
+- **LIB-13** (SHIPPED) - A season folder is what makes the folder above it the show. With one
+- **LIB-14** (SHIPPED) - Without a season folder the folder proves nothing, because a flat pool
+- **LIB-15** (SHIPPED) - An episode whose filename is only its marker (`S01E01.mkv`) takes the
+- **LIB-16** (SHIPPED) - The show folder name and the `SxxEyy` marker are load-bearing; the
+- **LIB-17** (SHIPPED) - `Specials` is accepted as an alias for `Season 00`.
+- **LIB-18** (SHIPPED) - A multi-episode file is named with a range (`S01E01-E02`) and matched
+- **LIB-19** (AGREED) - A show folder MAY carry a `(Year)` for disambiguation
+- **LIB-20** (SHIPPED) - Case is ignored, and separators may be spaces, dots or underscores.
+- **LIB-21** (SHIPPED) - Only recognised video containers are considered files to match.
+- **LIB-22** (AGREED) - The scheme is a convention rather than configuration, so a library is
+- **LIB-23** (SHIPPED) - An **initial scan** runs when a source is added: the whole tree is
+- **LIB-24** (AGREED) - An **incremental rescan** keeps the catalogue true to disk afterwards.
+- **LIB-25** (AGREED) - An incremental rescan only reconsiders what changed, meaning new paths,
+- **LIB-26** (AGREED) - Scanning is safe to run at any time, including while files are being
+- **LIB-27** (AGREED) - A file is matched only once it looks **settled**, its size and
+- **LIB-28** (SHIPPED) - Scanning **reads only**. It never writes, moves, renames or deletes
+- **LIB-29** (AGREED) - KROMA never demands exclusive access to a library and never blocks the
+- **LIB-30** (AGREED) - Matching resolves a settled file to an identity: a convention parse
+- **LIB-31** (AGREED) - A file that parses to no confident identity, whether from an
+- **LIB-32** (AGREED) - Unmatched items appear in a browsable **Unmatched** view in the library
+- **LIB-33** (AGREED) - **Manual match.** A person searches the provider, picks the correct
+- **LIB-34** (AGREED) - **Rename on disk.** A name fixed to the convention above matches
+- **LIB-35** (AGREED) - A file that could be more than one identity, a title shared by a remake
+- **LIB-36** (AGREED) - One unplaceable file never stalls a source. The catalogue is always the
+- **LIB-37** (AGREED) - Every field and image a provider returns is written to the server's own
+- **LIB-38** (AGREED) - With no internet, everything already matched browses and plays exactly
+- **LIB-39** (AGREED) - Offline, a brand-new file that needs a first provider lookup stays
+- **LIB-40** (AGREED) - Offline, a forced refresh queues rather than fails.
+- **LIB-41** (DRAFT) - A newly matched item fetches its metadata once.
+- **LIB-42** (DRAFT) - Running series are re-checked on a slow cadence, so a new episode's air
+- **LIB-43** (DRAFT) - A "Refresh metadata" action on any title, season or whole source
+- **LIB-44** (DRAFT) - A forced refresh **never** discards a manual match or user-chosen
+- **LIB-45** (AGREED) - When a file disappears from a source, its title is **marked absent**:
+- **LIB-46** (AGREED) - Content that reappears, because a NAS remounts or a file is moved back
+- **LIB-47** (AGREED) - A **move** is therefore not a special case. It is an absent path plus a
+- **LIB-48** (AGREED) - A rescan **only ever marks absent**. It never deletes user data.
+- **LIB-49** (AGREED) - Permanently deleting a title's history is an explicit, person-initiated
+
+## MEDIA - [media](media/)
+
+- **MEDIA-1** (AGREED) - **Title.** The work a person searches for: a film, or one episode
+- **MEDIA-2** (AGREED) - **Edition.** A named cut of a title: theatrical, director's,
+- **MEDIA-3** (AGREED) - **Media file.** One physical file on disk that realises an edition
+- **MEDIA-4** (AGREED) - **Stream.** One track inside a media file, exactly one of video,
+- **MEDIA-5** (AGREED) - **Stream properties.** The describable facts about a stream: codec,
+- **MEDIA-6** (AGREED) - The nesting is strict and total: every stream belongs to exactly one
+- **MEDIA-7** (AGREED) - A 1080p file and a 4K file of the same cut are **two media files of
+- **MEDIA-8** (AGREED) - KROMA ranks a title's media files and keeps a **preferred** one.
+- **MEDIA-9** (AGREED) - The preference is a *default*, not a lock. The model enumerates a
+- **MEDIA-10** (AGREED) - Editions are surfaced to the person, because they are different
+- **MEDIA-11** (AGREED) - First-class means KROMA fully describes the format, preserves it end
+- **MEDIA-12** (AGREED) - The first-class containers are **MP4**, **MKV** and **WebM**.
+- **MEDIA-13** (AGREED) - **HEVC / H.265** is the priority codec. 8-bit and 10-bit, SDR and
+- **MEDIA-14** (AGREED) - **H.264 / AVC** is the universal floor, assumed playable
+- **MEDIA-15** (AGREED) - **AV1** is first-class media truth whatever the client generation,
+- **MEDIA-16** (AGREED) - **VP9** is first-class within WebM, chiefly for the browser
+- **MEDIA-17** (AGREED) - A codec being first-class states how *KROMA* handles it, never that a
+- **MEDIA-18** (AGREED) - HDR is preserved end to end or it is not offered. KROMA never
+- **MEDIA-19** (AGREED) - **Bit depth.** 8-bit and 10-bit are first-class, and 10-bit is
+- **MEDIA-20** (AGREED) - KROMA distinguishes **HDR10**, **HDR10+**, **Dolby Vision** and
+- **MEDIA-21** (AGREED) - Colour primaries, transfer characteristics and matrix coefficients
+- **MEDIA-22** (AGREED) - Where dynamic metadata, HDR10+ or Dolby Vision, cannot be carried
+- **MEDIA-23** (AGREED) - The first-class audio codecs are **AAC**, **AC-3** and **E-AC-3**
+- **MEDIA-24** (AGREED) - An audio stream's **channel layout**, stereo, 5.1, 7.1 or Atmos
+- **MEDIA-25** (AGREED) - **Passthrough** is the default for multichannel and lossless audio:
+- **MEDIA-26** (AGREED) - **Downmixing** to stereo happens only when the target cannot render
+- **MEDIA-27** (AGREED) - Multiple audio streams, languages and commentary alike, are all
+- **MEDIA-28** (AGREED) - A subtitle stream is either **embedded**, a track inside the media
+- **MEDIA-29** (AGREED) - The first-class subtitle formats are **SRT**, **WebVTT** and
+- **MEDIA-30** (AGREED) - The **forced** disposition, only the foreign-language lines a
+- **MEDIA-31** (AGREED) - **Burning in**, rendering a subtitle permanently into the video, is
+- **MEDIA-32** (AGREED) - Every title carries a **poster**, a **backdrop**, a **logo** and, per
+- **MEDIA-33** (AGREED) - Image sources rank by trust: embedded in the media file, then a
+- **MEDIA-34** (AGREED) - KROMA derives a fixed set of sizes per image, a small grid
+- **MEDIA-35** (AGREED) - Derived sizes are cached and served without re-deriving, and a
+- **MEDIA-36** (AGREED) - Artwork is never a reason a title fails to appear. A title with no
+- **MEDIA-37** (AGREED) - KROMA learns a file's streams by **probing** it once, when the
+- **MEDIA-38** (AGREED) - A probe is the authoritative stream truth until the file's bytes
+- **MEDIA-39** (AGREED) - When a direct play fails in a way that implicates the stream
+- **MEDIA-40** (AGREED) - Trust is per-file and durable: a corrected probe is written back,
+- **MEDIA-41** (AGREED) - A file whose container opens and whose streams enumerate, but which
+- **MEDIA-42** (AGREED) - The title **appears** in the library with whatever *is* known. A
+- **MEDIA-43** (AGREED) - The unknown stream is marked **undescribed** and carries its raw
+- **MEDIA-44** (AGREED) - An undescribed stream is *not direct-playable*, because KROMA will
+- **MEDIA-45** (AGREED) - A file that will not open at all, a truncated or corrupt container,
+- **MEDIA-46** (AGREED) - Undescribed and unreadable are distinct states. The first is "we
 
 ## SURF - [surfaces](surfaces/)
 
