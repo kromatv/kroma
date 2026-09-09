@@ -222,10 +222,10 @@ pub async fn clear_user_pin(
     let id3 = id.clone();
     query(&state.db, move |pool| {
         db::set_user_pin(&pool, &id3, None)?;
+        db::clear_pin_attempts(&pool, &id3)?;
         db::reset_access_pin_verified(&pool, &id3)
     })
     .await?;
-    crate::api::pin::reset(&id);
     state.events.publish(ServerEvent::LibraryUpdated);
     Ok(StatusCode::NO_CONTENT.into_response())
 }

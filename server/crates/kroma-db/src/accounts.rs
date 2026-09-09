@@ -3,8 +3,8 @@
 //! Re-exported flat here so the public `db::<item>` paths resolve unchanged:
 //! [`invites`] holds the token an account is created against, [`preferences`]
 //! what the user chose, [`credentials`] the password and PIN hashes,
-//! [`sessions`] a signed-in session and [`access_tokens`] the device credential
-//! behind it.
+//! [`sessions`] a signed-in session, [`access_tokens`] the device credential
+//! behind it and [`pin_attempts`] the guesses the PIN gate counts.
 
 use super::*;
 
@@ -15,6 +15,7 @@ use kroma_domain::PublicUser;
 mod access_tokens;
 mod credentials;
 mod invites;
+mod pin_attempts;
 mod preferences;
 mod resets;
 mod sessions;
@@ -26,6 +27,7 @@ mod test_support;
 pub use access_tokens::*;
 pub use credentials::*;
 pub use invites::*;
+pub use pin_attempts::*;
 pub use preferences::*;
 pub use resets::*;
 pub use sessions::*;

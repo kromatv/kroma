@@ -147,7 +147,7 @@ async fn enforce_pin_gate(
     access: &str,
     supplied_pin: Option<&str>,
 ) -> Result<(), Response> {
-    if let Some(secs) = pin::lock_remaining(&user.id) {
+    if let Some(secs) = pin::lock_remaining(state, &user.id).await? {
         return Err(pin::locked_response(loc, secs));
     }
     let stored = pin::fetch_hash(state, &user.id).await?;
@@ -168,7 +168,7 @@ async fn enforce_pin_gate(
         }
         (Some(pin), Some(hash)) => {
             if !auth::verify_password(pin, hash) {
-                let locked = pin::record_fail(&user.id);
+                let locked = pin::record_fail(state, &user.id).await?;
                 if locked > 0 {
                     return Err(pin::locked_response(loc, locked));
                 }
@@ -176,7 +176,7 @@ async fn enforce_pin_gate(
             }
         }
     }
-    pin::reset(&user.id);
+    pin::reset(state, &user.id).await;
     let tok = access.to_string();
     let _ = query(&state.db, move |pool| {
         db::set_access_pin_verified(&pool, &tok, true)
