@@ -54,12 +54,26 @@ pub fn build(
         supervisor.clone() as Arc<dyn std::any::Any + Send + Sync>,
     );
 
-    // The ONE thing the core knows about modules: how to reach whoever contributes
-    // a named point. Which module that is, or whether one is installed at all, it
-    // never learns.
+    // The first of the two things the core knows about modules: how to reach
+    // whoever contributes a named point. Which module that is, or whether one is
+    // installed at all, it never learns.
     let contributions: state::Contributions = {
         let supervisor = supervisor.clone();
         Arc::new(move |point: &str| supervisor.contributions(point))
+    };
+
+    // And the second: which installed modules came from the official catalog, so
+    // the statistics can name them without a third-party id ever leaving the box.
+    // Still a function, still no roster.
+    let official_modules: state::OfficialModules = {
+        let supervisor = supervisor.clone();
+        Arc::new(move || {
+            supervisor
+                .installed_ids()
+                .into_iter()
+                .filter(|id| supervisor.origin(id).official)
+                .collect()
+        })
     };
 
     // Transcription is long-running and rides a DB row for progress, so the core
@@ -82,6 +96,7 @@ pub fn build(
             services,
             jobs: &[],
             contributions,
+            official_modules,
         },
     );
     (state, supervisor)

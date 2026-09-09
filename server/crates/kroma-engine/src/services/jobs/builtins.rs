@@ -17,6 +17,7 @@ mod reembed;
 mod search_reindex;
 mod sections_curate;
 mod sections_personalize;
+mod stats_report;
 
 /// A built-in job descriptor: identity ([`JobKey`]) + metadata + handler.
 /// Constructed as a `const SPEC` in the handler's own file; this is just the
@@ -47,6 +48,7 @@ const JOBS: &[Builtin] = &[
     metadata_enrich::SPEC,
     search_reindex::SPEC,
     notifications_digest::SPEC,
+    stats_report::SPEC,
     // Acquisition jobs (search/import/match) moved to the tv.kroma.torrents
     // crate; the binary registers them separately via `AppState::new`.
     // Per-element pipeline stages: each drains its `pipeline_tasks` queue via

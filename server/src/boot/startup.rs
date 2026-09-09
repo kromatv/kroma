@@ -17,6 +17,7 @@ pub fn announce(config: &Config) -> bool {
         env!("CARGO_PKG_VERSION"),
         env!("KROMA_GIT_HASH"),
         env!("KROMA_BUILD_DATE"),
+        env!("KROMA_BUILD_TARGET"),
     );
     info!(
         host = %config.host,

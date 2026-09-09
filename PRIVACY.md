@@ -1,6 +1,6 @@
 # KROMA Privacy Policy
 
-**Last updated: 29 July 2026**
+**Last updated: 26 August 2026**
 
 KROMA is a client for a media server **you** run. It is not a streaming service:
 we host no catalogue, we hold no account for you, and the films and series you
@@ -10,10 +10,27 @@ and desktop apps, and the web client.
 
 ## The short version
 
-**We do not collect anything.** KROMA contains no analytics, no telemetry, no
-advertising and no tracking of any kind. There is no KROMA account to create, so
-there is nothing for us to hold. The app talks to the server you point it at, and
-(unless you sign in) to nothing else at all.
+**The apps collect nothing.** KROMA contains no analytics, no advertising and no
+tracking of any kind. There is no KROMA account to create, so there is nothing
+for us to hold. The app talks to the server you point it at, and (unless you
+sign in) to nothing else at all.
+
+**Your server counts itself among the KROMA installs running in the world, and
+you can stop it.** The server software sends us a single anonymous payload a
+day: a random identifier that server minted for itself, its version and
+platform, how many devices used it in the last week, which languages those
+devices asked for, which official modules are on, and coarse size bands. It
+carries no name, no address, no titles and no exact counts, and it comes from
+the server, never from this app.
+
+Admin → General → Privacy holds three switches, on by default. The first is the
+whole thing. Under it, *what this server runs* and *how much of it there is* can
+each be dropped on their own, and a part you switch off is left out of the
+payload rather than sent empty. Every field is listed in
+[`docs/anonymous-stats.md`](docs/anonymous-stats.md), the numbers are published
+at [kroma.tv/stats](https://kroma.tv/stats) and readable as raw JSON at
+`stats.kroma.tv/v1/stats`, and the server prints the exact payload in its own
+job log before sending it.
 
 Crash reporting is **off by default**. If you turn it on, a crash sends a stack
 trace and your app build and device model to **your own KROMA server** and to
@@ -40,6 +57,12 @@ request.
 updates when it starts and every six hours after that, by fetching a release file
 from GitHub. GitHub therefore sees the request's IP address and user-agent. The
 TV, mobile and web clients do not do this.
+
+Two things your **server** reaches, which are its connections and not the app's.
+It fetches the official module catalog from `modules.kroma.tv` at every start, so
+an installed module can be kept up to date; an operator can turn that off in
+Admin → Modules. And, unless the switch above has been turned off, it posts the
+anonymous statistics described above to `stats.kroma.tv`.
 
 The typefaces are bundled inside the app rather than fetched from a font CDN, so
 a television with no route to the internet runs KROMA normally against a server
@@ -80,8 +103,28 @@ see is decided on your server, which supports per-profile PIN locks.
 
 Your data is in two places, both of which you control: this device, and your
 server. Uninstalling the app clears the first. For the second, the operator of
-that server (normally you) decides what is kept and can delete it. We hold
-nothing about you to disclose, correct or erase.
+that server (normally you) decides what is kept and can delete it.
+
+Unless you switched anonymous statistics off, we hold one row naming your server
+by a random identifier, on the basis of our legitimate interest in knowing what
+is running. You can object with that same switch, at once and without giving a
+reason, read the exact payload in your server's own job log, and erase the row
+yourself with the identifier shown in Admin → General → Privacy:
+
+```
+curl -X POST https://stats.kroma.tv/v1/forget \
+  -H 'content-type: application/json' \
+  -d '{"id":"<the identifier from your admin page>"}'
+```
+
+Turn the switch off before erasing: a server still reporting writes the row again
+the next day. Or write to privacy@kroma.tv and we will do it. The compliance
+record, including the legal basis, the processors and the retention periods, is
+[`docs/anonymous-stats-gdpr.md`](docs/anonymous-stats-gdpr.md). You have the
+right to complain to a supervisory authority: in Switzerland the FDPIC, in the EU
+the authority for your country.
+
+If you switched it off before its first report, we hold nothing about you at all.
 
 ## Changes to this policy
 

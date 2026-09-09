@@ -20,7 +20,7 @@ mod registry;
 mod watch;
 
 pub use host_api::host_router;
-pub use origin::{BinStamp, Origin};
+pub use origin::{BinStamp, Origin, Source};
 pub use proxy::proxy_to;
 pub use registry::{sibling_url, verify_sha256, FetchProgress, DESCRIPTOR_PATH, MAX_BUNDLE_BYTES};
 

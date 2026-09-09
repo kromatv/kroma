@@ -10,6 +10,7 @@ use serde::Deserialize;
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::util::{drop_orphans, SecretQuery};
+use crate::db;
 use crate::i18n::ReqLocale;
 use crate::services::pairing::Orphaned;
 use crate::state::SharedState;
@@ -74,10 +75,11 @@ pub async fn quick_authorize(
 
     // PIN-verified: the approver is already signed in and vouches for the device.
     // That device isn't the caller, so its UA is unknown here (NULL) until use.
-    let (token, access) = match mint_device_tokens(&state, &user.id, None).await {
-        Ok(pair) => pair,
-        Err(resp) => return resp,
-    };
+    let (token, access) =
+        match mint_device_tokens(&state, &user.id, db::DeviceHints::default()).await {
+            Ok(pair) => pair,
+            Err(resp) => return resp,
+        };
 
     let approved = state
         .quickconnect

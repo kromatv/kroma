@@ -50,6 +50,11 @@ pub struct CatalogModule {
     // the install planner suggests providers for the unsatisfied ones.
     pub consumes: Vec<(String, Option<String>)>,
     pub artifacts: Vec<Artifact>,
+    /// Whether the registry this row came from is the official one. Set when
+    /// the fetched registries are merged, and recorded at install time so a
+    /// module's provenance is a fact rather than something re-derived later
+    /// from an artifact URL that names a release host, not a catalog.
+    pub official: bool,
 }
 
 /// The `moduleRegistryUrl` setting, or the built-in default when unset/blank.
@@ -129,6 +134,7 @@ fn parse_module(m: &Value) -> Option<CatalogModule> {
         .filter(|s| s.starts_with("data:image/") && s.len() <= 128 * 1024)
         .map(str::to_string);
     Some(CatalogModule {
+        official: false,
         schema_version: m.get("schemaVersion").and_then(Value::as_u64).unwrap_or(0),
         id,
         name: str_of("name"),
@@ -339,6 +345,7 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
 #[cfg(test)]
 pub(super) fn test_module(id: &str, version: &str) -> CatalogModule {
     CatalogModule {
+        official: false,
         schema_version: u64::from(kroma_module_manifest::MODULE_SCHEMA_VERSION),
         id: id.into(),
         name: id.into(),

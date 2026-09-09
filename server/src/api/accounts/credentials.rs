@@ -19,7 +19,7 @@ use crate::services::auth;
 use crate::services::loginguard;
 use crate::state::SharedState;
 
-use super::{issue_tokens, user_agent};
+use super::{device_hints, issue_tokens};
 
 pub(crate) const MIN_PASSWORD_LEN: usize = 8;
 
@@ -107,7 +107,7 @@ pub async fn register(
         Ok(u) => u,
         Err(resp) => return resp,
     };
-    issue_tokens(state, user, user_agent(&headers)).await
+    issue_tokens(state, user, device_hints(&headers)).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -149,7 +149,7 @@ pub async fn login(
         return login_failed(&ip, loc);
     }
     loginguard::reset(&ip);
-    issue_tokens(state, user, user_agent(&headers)).await
+    issue_tokens(state, user, device_hints(&headers)).await
 }
 
 fn login_failed(ip: &str, loc: &str) -> Response {

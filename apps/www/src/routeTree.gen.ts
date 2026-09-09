@@ -14,6 +14,7 @@ import { Route as R404RouteImport } from './routes/404';
 import { Route as DownloadRouteImport } from './routes/download';
 import { Route as ModulesRouteImport } from './routes/modules';
 import { Route as PrivacyRouteImport } from './routes/privacy';
+import { Route as StatsRouteImport } from './routes/stats';
 import { Route as SupportRouteImport } from './routes/support';
 import { Route as BlogIndexRouteImport } from './routes/blog/index';
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug';
@@ -44,6 +45,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any);
+const StatsRoute = StatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const SupportRoute = SupportRouteImport.update({
   id: '/support',
   path: '/support',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/download': typeof DownloadRoute;
   '/modules': typeof ModulesRoute;
   '/privacy': typeof PrivacyRoute;
+  '/stats': typeof StatsRoute;
   '/support': typeof SupportRoute;
   '/blog/$slug': typeof BlogSlugRoute;
   '/download/archive': typeof DownloadArchiveRoute;
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/download': typeof DownloadRoute;
   '/modules': typeof ModulesRoute;
   '/privacy': typeof PrivacyRoute;
+  '/stats': typeof StatsRoute;
   '/support': typeof SupportRoute;
   '/blog/$slug': typeof BlogSlugRoute;
   '/download/archive': typeof DownloadArchiveRoute;
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/download': typeof DownloadRoute;
   '/modules': typeof ModulesRoute;
   '/privacy': typeof PrivacyRoute;
+  '/stats': typeof StatsRoute;
   '/support': typeof SupportRoute;
   '/blog/$slug': typeof BlogSlugRoute;
   '/download_/archive': typeof DownloadArchiveRoute;
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/modules'
     | '/privacy'
+    | '/stats'
     | '/support'
     | '/blog/$slug'
     | '/download/archive'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/modules'
     | '/privacy'
+    | '/stats'
     | '/support'
     | '/blog/$slug'
     | '/download/archive'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/modules'
     | '/privacy'
+    | '/stats'
     | '/support'
     | '/blog/$slug'
     | '/download_/archive'
@@ -141,6 +153,7 @@ export interface RootRouteChildren {
   DownloadRoute: typeof DownloadRoute;
   ModulesRoute: typeof ModulesRoute;
   PrivacyRoute: typeof PrivacyRoute;
+  StatsRoute: typeof StatsRoute;
   SupportRoute: typeof SupportRoute;
   BlogSlugRoute: typeof BlogSlugRoute;
   DownloadArchiveRoute: typeof DownloadArchiveRoute;
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/stats': {
+      id: '/stats';
+      path: '/stats';
+      fullPath: '/stats';
+      preLoaderRoute: typeof StatsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/support': {
       id: '/support';
       path: '/support';
@@ -221,6 +241,7 @@ const rootRouteChildren: RootRouteChildren = {
   DownloadRoute: DownloadRoute,
   ModulesRoute: ModulesRoute,
   PrivacyRoute: PrivacyRoute,
+  StatsRoute: StatsRoute,
   SupportRoute: SupportRoute,
   BlogSlugRoute: BlogSlugRoute,
   DownloadArchiveRoute: DownloadArchiveRoute,

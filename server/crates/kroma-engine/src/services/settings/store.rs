@@ -140,7 +140,13 @@ fn defaults() -> BTreeMap<String, Value> {
     // emit no FS events). `-1` = `KROMA_WATCH_INTERVAL` or 300s, `0` = FS events only.
     m.insert("watchAutoScan".into(), json!(true));
     m.insert("watchIntervalSecs".into(), json!(-1));
-    m.insert("anonStats".into(), json!(false));
+    // On, and an operator turns it off in Admin -> General -> Privacy. What it
+    // sends, and why this is legitimate interest rather than consent, is
+    // docs/anonymous-stats-gdpr.md. The two below are the detail blocks the base
+    // switch carries, each droppable on its own and each silent without it.
+    m.insert("anonStats".into(), json!(true));
+    m.insert("anonStatsUsage".into(), json!(true));
+    m.insert("anonStatsStatistics".into(), json!(true));
     m.insert("showRecentHome".into(), json!(true));
     // Security: exposes the account roster on the login screen. Off by default so
     // knowing the server URL does not reveal who has an account; when off,
@@ -303,7 +309,7 @@ mod tests {
         let pool = test_pool();
         let s = Settings::load(&pool);
         assert!(s.get_bool("watchAutoScan", false));
-        assert!(!s.get_bool("anonStats", true));
+        assert!(s.get_bool("anonStats", false));
         assert!(s.get_bool("missingBool", true));
         assert!(s.get_bool("serverName", true));
         assert_eq!(s.get_str("serverName", "x"), "KROMA");

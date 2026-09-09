@@ -1,0 +1,28 @@
+{
+  "name": "@kromatv/stats-relay",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "KROMA statistics collector: the Cloudflare Worker at stats.kroma.tv that counts running installs from the heartbeat each one sends unless its operator switched it off, and serves the aggregate the public page reads.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "packages/stats-relay"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "deploy": "wrangler deploy",
+    "migrate": "wrangler d1 migrations apply kroma-stats --remote",
+    "migrate:local": "wrangler d1 migrations apply kroma-stats --local"
+  },
+  "dependencies": {
+    "hono": "^4.13.2",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "wrangler": "^4.123.0"
+  }
+}
