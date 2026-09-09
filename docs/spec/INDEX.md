@@ -3,7 +3,43 @@
 
 # Requirement index
 
-88 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+396 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+
+## ACCT - [accounts](accounts/)
+
+- **ACCT-1** (SHIPPED) - An **account** is a person. It has credentials, its own watch state,
+- **ACCT-2** (SHIPPED) - The first account created at first-run is the **owner**, an account
+- **ACCT-3** (SHIPPED) - Every subsequent account is an ordinary **user**, created by invitation
+- **ACCT-4** (SHIPPED) - There are no profiles under an account, and there will not be. A person
+- **ACCT-5** (SHIPPED) - A person proves who they are with a **username and password**. That is
+- **ACCT-6** (SHIPPED) - A successful authentication mints a **session**: a long-lived,
+- **ACCT-7** (SHIPPED) - **Sessions do not expire on a clock.** A session lives until it is
+- **ACCT-8** (SHIPPED) - A session is per device, not per account, so one can be revoked without
+- **ACCT-9** (SHIPPED) - A **device** is where a session lives. Signing in on a phone, a browser
+- **ACCT-10** (AGREED) - Every session appears in the account's **device list** with enough to
+- **ACCT-11** (SHIPPED) - A television binds to an account through the pairing handshake rather
+- **ACCT-12** (AGREED) - A paired television is not a special class of trust. It lands in the
+- **ACCT-13** (SHIPPED) - **Unbinding is revocation.** Revoking a device's session ends its
+- **ACCT-14** (SHIPPED) - A revoked device that returns must pair or sign in afresh.
+- **ACCT-15** (SHIPPED) - A television session is long-lived and revocable, and is **never
+- **ACCT-16** (AGREED) - The device list is the control that replaces expiry: security comes
+- **ACCT-17** (SHIPPED) - An **owner or admin** runs the server: users, settings, jobs and
+- **ACCT-18** (AGREED) - The owner is the founding admin, the owner may grant admin to another
+- **ACCT-19** (SHIPPED) - A **user** uses the server: browses and plays what they are permitted
+- **ACCT-20** (AGREED) - **Library visibility is per user.** An admin decides which libraries a
+- **ACCT-21** (AGREED) - Visibility gates browsing, search and playback alike. A title a user
+- **ACCT-22** (SHIPPED) - Installing a module is an **admin** right, because it runs new
+- **ACCT-23** (AGREED) - The matrix below is the whole of what each role may do. A user's power
+- **ACCT-24** (SHIPPED) - **Per-user**: watch state, meaning resume points, watched flags and
+- **ACCT-25** (SHIPPED) - **Per-server**: the libraries and their contents, metadata and
+- **ACCT-26** (SHIPPED) - Watch state is per user and never per device: resume a film on the
+- **ACCT-27** (SHIPPED) - Deletion destroys the account's credentials, all of its sessions and
+- **ACCT-28** (SHIPPED) - Everything per-server survives. Libraries, media, metadata and
+- **ACCT-29** (AGREED) - The owner account cannot be deleted while it is the only admin.
+- **ACCT-30** (AGREED) - A user may request deletion of their own account, which revokes their
+- **ACCT-31** (SHIPPED) - Revocation stops a session doing anything new. It cannot fetch, refresh
+- **ACCT-32** (AGREED) - Bytes already downloaded for offline viewing sit in local storage the
+- **ACCT-33** (AGREED) - The guarantee is that a revoked device gains nothing new and loses its
 
 ## ADMIN - [admin](admin/)
 
@@ -95,3 +131,296 @@
 - **ADMIN-86** (AGREED) - The owner sends a verification from the member editor, with the <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-87** (AGREED) - Changing the address clears the verified state: the proof belongs <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-88** (AGREED) - A user who cannot sign in can ask for a reset from the sign-in <sub>[README.md](admin/README.md)</sub>
+
+## DISC - [discovery](discovery/)
+
+- **DISC-1** (SHIPPED) - A client on the same network as a server is never told the server's
+- **DISC-2** (SHIPPED) - On a private network the server sits inside, "the same network" means
+- **DISC-3** (SHIPPED) - When the server is reached from outside, it means the *exact* same
+- **DISC-4** (SHIPPED) - Over IPv6, it means the same delegated prefix: one home's allocation.
+- **DISC-5** (SHIPPED) - A home this cannot place, split across subnets, dual-stack with the two
+- **DISC-6** (SHIPPED) - Native mobile shells, iOS and Android, can *browse*: they find nearby
+- **DISC-7** (SHIPPED) - Native TV shells, Apple TV and Android TV, and webOS can *announce*:
+- **DISC-8** (SHIPPED) - Web, desktop and TV-web shells can do neither from the browser
+- **DISC-9** (SHIPPED) - Tizen cannot announce at all, because its TV profile ships no way to.
+- **DISC-10** (SHIPPED) - Browsing and announcing settle *reach*, whether two devices are near
+- **DISC-11** (SHIPPED) - Every shell offers a manual path: a person can always type an address,
+- **DISC-12** (SHIPPED) - Manual connection is the only supported path from *outside* the local
+- **DISC-13** (SHIPPED) - Once an address is reachable, every sign-in road below works over it,
+- **DISC-14** (SHIPPED) - All three roads end in the same place. The server holds a pending
+- **DISC-15** (SHIPPED) - **Quick Connect is the floor.** The television prints a short code; the
+- **DISC-16** (SHIPPED) - **Nearby handoff** is the shortcut for televisions the platform lets us
+- **DISC-17** (SHIPPED) - **Confirmed handoff** covers the listed television a server cannot
+- **DISC-18** (SHIPPED) - Discovery finding nothing is a normal state, not an error, and every
+- **DISC-19** (SHIPPED) - A TV shell that can announce but not browse is *already* showing its
+- **DISC-20** (SHIPPED) - A TV shell that cannot announce shows Quick Connect and, when it is
+- **DISC-21** (SHIPPED) - A mobile shell that browses and sees an empty list offers, in that
+- **DISC-22** (SHIPPED) - Web and desktop, which never browse, present the manual address field
+- **DISC-23** (SHIPPED) - No shell ever traps a person on a road that failed. There is always a
+- **DISC-24** (SHIPPED) - A Quick Connect or handoff code is valid for **five minutes**, because
+- **DISC-25** (SHIPPED) - A code that expires mid-flow is replaced on the television by a clear
+- **DISC-26** (SHIPPED) - A code already consumed by a successful sign-in vanishes rather than
+- **DISC-27** (SHIPPED) - An expired code is visibly dead and one tap from being alive again,
+- **DISC-28** (SHIPPED) - Approval is one-time. The moment an account approves a pairing, the
+- **DISC-29** (SHIPPED) - A paired television is a *device*, not a second key to the account. It
+- **DISC-30** (SHIPPED) - Revocation is symmetrical with every other device. The account sees the
+- **DISC-31** (DESIGN, NOT IMPLEMENTED) - Samsung and LG televisions do not reach the deeper
+- **DISC-32** (SHIPPED) - Native TV shells also *browse* for a server, so a television that was
+- **DISC-33** (SHIPPED) - A client with a camera may read the code from the television's QR
+
+## LIB - [library](library/)
+
+- **LIB-1** (AGREED) - A **source** is a directory tree the server is told to watch, tagged
+- **LIB-2** (AGREED) - A movie source never produces episodes and a show source never produces
+- **LIB-3** (AGREED) - A server has zero or more sources, any number of them may point at the
+- **LIB-4** (AGREED) - A source is an input, not a category a person browses by. Filtering the
+- **LIB-5** (SHIPPED) - A source tree may be assembled from symlinks. A curated folder of links
+- **LIB-6** (SHIPPED) - A link the server cannot resolve is reported, never silently skipped,
+- **LIB-7** (AGREED) - A source records its mount path, its content kind and its scan schedule.
+- **LIB-8** (AGREED) - Nothing about a source is destructive. Removing one drops its titles
+- **LIB-9** (AGREED) - Matching is convention-first: a correctly named file matches offline,
+- **LIB-10** (SHIPPED) - The `Title (Year)` stem is what is matched. The year is not
+- **LIB-11** (SHIPPED) - A trailing tag after ` - `, a resolution, an edition or a source, is
+- **LIB-12** (SHIPPED) - A loose file directly under the source root, with no folder, is
+- **LIB-13** (SHIPPED) - A season folder is what makes the folder above it the show. With one
+- **LIB-14** (SHIPPED) - Without a season folder the folder proves nothing, because a flat pool
+- **LIB-15** (SHIPPED) - An episode whose filename is only its marker (`S01E01.mkv`) takes the
+- **LIB-16** (SHIPPED) - The show folder name and the `SxxEyy` marker are load-bearing; the
+- **LIB-17** (SHIPPED) - `Specials` is accepted as an alias for `Season 00`.
+- **LIB-18** (SHIPPED) - A multi-episode file is named with a range (`S01E01-E02`) and matched
+- **LIB-19** (AGREED) - A show folder MAY carry a `(Year)` for disambiguation
+- **LIB-20** (SHIPPED) - Case is ignored, and separators may be spaces, dots or underscores.
+- **LIB-21** (SHIPPED) - Only recognised video containers are considered files to match.
+- **LIB-22** (AGREED) - The scheme is a convention rather than configuration, so a library is
+- **LIB-23** (SHIPPED) - An **initial scan** runs when a source is added: the whole tree is
+- **LIB-24** (AGREED) - An **incremental rescan** keeps the catalogue true to disk afterwards.
+- **LIB-25** (AGREED) - An incremental rescan only reconsiders what changed, meaning new paths,
+- **LIB-26** (AGREED) - Scanning is safe to run at any time, including while files are being
+- **LIB-27** (AGREED) - A file is matched only once it looks **settled**, its size and
+- **LIB-28** (SHIPPED) - Scanning **reads only**. It never writes, moves, renames or deletes
+- **LIB-29** (AGREED) - KROMA never demands exclusive access to a library and never blocks the
+- **LIB-30** (AGREED) - Matching resolves a settled file to an identity: a convention parse
+- **LIB-31** (AGREED) - A file that parses to no confident identity, whether from an
+- **LIB-32** (AGREED) - Unmatched items appear in a browsable **Unmatched** view in the library
+- **LIB-33** (AGREED) - **Manual match.** A person searches the provider, picks the correct
+- **LIB-34** (AGREED) - **Rename on disk.** A name fixed to the convention above matches
+- **LIB-35** (AGREED) - A file that could be more than one identity, a title shared by a remake
+- **LIB-36** (AGREED) - One unplaceable file never stalls a source. The catalogue is always the
+- **LIB-37** (AGREED) - Every field and image a provider returns is written to the server's own
+- **LIB-38** (AGREED) - With no internet, everything already matched browses and plays exactly
+- **LIB-39** (AGREED) - Offline, a brand-new file that needs a first provider lookup stays
+- **LIB-40** (AGREED) - Offline, a forced refresh queues rather than fails.
+- **LIB-41** (DRAFT) - A newly matched item fetches its metadata once.
+- **LIB-42** (DRAFT) - Running series are re-checked on a slow cadence, so a new episode's air
+- **LIB-43** (DRAFT) - A "Refresh metadata" action on any title, season or whole source
+- **LIB-44** (DRAFT) - A forced refresh **never** discards a manual match or user-chosen
+- **LIB-45** (AGREED) - When a file disappears from a source, its title is **marked absent**:
+- **LIB-46** (AGREED) - Content that reappears, because a NAS remounts or a file is moved back
+- **LIB-47** (AGREED) - A **move** is therefore not a special case. It is an absent path plus a
+- **LIB-48** (AGREED) - A rescan **only ever marks absent**. It never deletes user data.
+- **LIB-49** (AGREED) - Permanently deleting a title's history is an explicit, person-initiated
+
+## MEDIA - [media](media/)
+
+- **MEDIA-1** (AGREED) - **Title.** The work a person searches for: a film, or one episode
+- **MEDIA-2** (AGREED) - **Edition.** A named cut of a title: theatrical, director's,
+- **MEDIA-3** (AGREED) - **Media file.** One physical file on disk that realises an edition
+- **MEDIA-4** (AGREED) - **Stream.** One track inside a media file, exactly one of video,
+- **MEDIA-5** (AGREED) - **Stream properties.** The describable facts about a stream: codec,
+- **MEDIA-6** (AGREED) - The nesting is strict and total: every stream belongs to exactly one
+- **MEDIA-7** (AGREED) - A 1080p file and a 4K file of the same cut are **two media files of
+- **MEDIA-8** (AGREED) - KROMA ranks a title's media files and keeps a **preferred** one.
+- **MEDIA-9** (AGREED) - The preference is a *default*, not a lock. The model enumerates a
+- **MEDIA-10** (AGREED) - Editions are surfaced to the person, because they are different
+- **MEDIA-11** (AGREED) - First-class means KROMA fully describes the format, preserves it end
+- **MEDIA-12** (AGREED) - The first-class containers are **MP4**, **MKV** and **WebM**.
+- **MEDIA-13** (AGREED) - **HEVC / H.265** is the priority codec. 8-bit and 10-bit, SDR and
+- **MEDIA-14** (AGREED) - **H.264 / AVC** is the universal floor, assumed playable
+- **MEDIA-15** (AGREED) - **AV1** is first-class media truth whatever the client generation,
+- **MEDIA-16** (AGREED) - **VP9** is first-class within WebM, chiefly for the browser
+- **MEDIA-17** (AGREED) - A codec being first-class states how *KROMA* handles it, never that a
+- **MEDIA-18** (AGREED) - HDR is preserved end to end or it is not offered. KROMA never
+- **MEDIA-19** (AGREED) - **Bit depth.** 8-bit and 10-bit are first-class, and 10-bit is
+- **MEDIA-20** (AGREED) - KROMA distinguishes **HDR10**, **HDR10+**, **Dolby Vision** and
+- **MEDIA-21** (AGREED) - Colour primaries, transfer characteristics and matrix coefficients
+- **MEDIA-22** (AGREED) - Where dynamic metadata, HDR10+ or Dolby Vision, cannot be carried
+- **MEDIA-23** (AGREED) - The first-class audio codecs are **AAC**, **AC-3** and **E-AC-3**
+- **MEDIA-24** (AGREED) - An audio stream's **channel layout**, stereo, 5.1, 7.1 or Atmos
+- **MEDIA-25** (AGREED) - **Passthrough** is the default for multichannel and lossless audio:
+- **MEDIA-26** (AGREED) - **Downmixing** to stereo happens only when the target cannot render
+- **MEDIA-27** (AGREED) - Multiple audio streams, languages and commentary alike, are all
+- **MEDIA-28** (AGREED) - A subtitle stream is either **embedded**, a track inside the media
+- **MEDIA-29** (AGREED) - The first-class subtitle formats are **SRT**, **WebVTT** and
+- **MEDIA-30** (AGREED) - The **forced** disposition, only the foreign-language lines a
+- **MEDIA-31** (AGREED) - **Burning in**, rendering a subtitle permanently into the video, is
+- **MEDIA-32** (AGREED) - Every title carries a **poster**, a **backdrop**, a **logo** and, per
+- **MEDIA-33** (AGREED) - Image sources rank by trust: embedded in the media file, then a
+- **MEDIA-34** (AGREED) - KROMA derives a fixed set of sizes per image, a small grid
+- **MEDIA-35** (AGREED) - Derived sizes are cached and served without re-deriving, and a
+- **MEDIA-36** (AGREED) - Artwork is never a reason a title fails to appear. A title with no
+- **MEDIA-37** (AGREED) - KROMA learns a file's streams by **probing** it once, when the
+- **MEDIA-38** (AGREED) - A probe is the authoritative stream truth until the file's bytes
+- **MEDIA-39** (AGREED) - When a direct play fails in a way that implicates the stream
+- **MEDIA-40** (AGREED) - Trust is per-file and durable: a corrected probe is written back,
+- **MEDIA-41** (AGREED) - A file whose container opens and whose streams enumerate, but which
+- **MEDIA-42** (AGREED) - The title **appears** in the library with whatever *is* known. A
+- **MEDIA-43** (AGREED) - The unknown stream is marked **undescribed** and carries its raw
+- **MEDIA-44** (AGREED) - An undescribed stream is *not direct-playable*, because KROMA will
+- **MEDIA-45** (AGREED) - A file that will not open at all, a truncated or corrupt container,
+- **MEDIA-46** (AGREED) - Undescribed and unreadable are distinct states. The first is "we
+
+## MOD - [modules](modules/)
+
+- **MOD-1** (SHIPPED) - The base build ships **zero modules**. Everything past playback and
+- **MOD-2** (SHIPPED) - A module is a self-contained capability with a reverse-DNS id
+- **MOD-3** (SHIPPED) - Within its own process a module has wide latitude: it registers
+- **MOD-4** (SHIPPED) - A database is a **declared capability**, not something every module
+- **MOD-5** (SHIPPED) - It may not reach into the server's process or another module's
+- **MOD-6** (SHIPPED) - It may not replace core. Playback, catalogue, accounts and the
+- **MOD-7** (SHIPPED) - It may not claim a first-party module id it does not own.
+- **MOD-8** (SHIPPED) - It may not assume it is present. Because any module is uninstallable,
+- **MOD-9** (SHIPPED) - A module *may* depend on another module, hard or optional, and that
+- **MOD-10** (SHIPPED) - A module ships as a single `.kmod` file: a manifest, the native
+- **MOD-11** (SHIPPED) - **Identity and version.** The reverse-DNS id and a hand-set version.
+- **MOD-12** (SHIPPED) - The release process refuses to publish changed bytes under an
+- **MOD-13** (SHIPPED) - **`minServer`, the compatibility floor.** The minimum server version
+- **MOD-14** (SHIPPED) - **Dependencies.** Hard ones that must be installed alongside it, and
+- **MOD-15** (SHIPPED) - **Target.** Which platform the backend was built for. A library-only
+- **MOD-16** (SHIPPED) - The server checks the bytes it downloads against a published SHA-256
+- **MOD-17** (SHIPPED) - Integrity is not safety: a matching checksum proves the bytes are the
+- **MOD-18** (SHIPPED) - **From the Store**, by id. The server resolves hard dependencies
+- **MOD-19** (SHIPPED) - **By upload**, handing the server a `.kmod` by hand: same unpack,
+- **MOD-20** (SHIPPED) - Both are admin actions on the [`admin/`](../admin/) surface.
+- **MOD-21** (SHIPPED) - The Store (Admin → Modules) is the in-app browser over the configured
+- **MOD-22** (SHIPPED) - The official registry is pinned first and cannot be removed; operators
+- **MOD-23** (SHIPPED) - For each module the Store shows **this server's verdict**, not just the
+- **MOD-24** (DRAFT) - **First-party is trusted by default.** The official registry is
+- **MOD-25** (DRAFT) - **A third-party registry is an explicit operator opt-in.** Adding one
+- **MOD-26** (DRAFT) - The operator is told, in plain terms, that a module is a native binary
+- **MOD-27** (DRAFT) - **Checksums guarantee integrity, never safety**, and the server says so
+- **MOD-28** (SHIPPED) - **Enable.** The server spawns the sidecar and the module's routes,
+- **MOD-29** (SHIPPED) - **Disable.** The sidecar is stopped, the module stops running, and
+- **MOD-30** (SHIPPED) - **Update.** A newer version replaces the bundle and the sidecar is
+- **MOD-31** (SHIPPED) - `minServer` is re-checked on update, so an update that outgrows the
+- **MOD-32** (SHIPPED) - **Uninstall.** The module is removed entirely. It is the one
+- **MOD-33** (SHIPPED) - The server refuses to uninstall a module another enabled module still
+- **MOD-34** (SHIPPED) - Uninstalling a module never touches media on disk. A downloads module
+- **MOD-35** (SHIPPED) - **A crashed module cannot take down the server.** The sidecar is a
+- **MOD-36** (SHIPPED) - **An incompatible module never runs by accident.** `minServer` is
+- **MOD-37** (SHIPPED) - **Failure is visible, not silent.** A module that will not start or
+- **MOD-38** (SHIPPED) - The server is forward-compatible with older modules. A module declares
+- **MOD-39** (SHIPPED) - A module installed today keeps working as the server is updated,
+- **MOD-40** (SHIPPED) - A *newer* module may raise its `minServer`, and the Store says so
+- **MOD-41** (SHIPPED) - A module **may** ship UI, and the position is deliberate: a module's
+- **MOD-42** (AGREED) - A module renders **its own admin surface**: configuration, status and
+- **MOD-43** (SHIPPED) - A module's UI is served through the same reverse proxy as its backend
+- **MOD-44** (DRAFT) - **The compatibility gate is the early warning.** As the server moves
+- **MOD-45** (DRAFT) - **Data is retained.** An incompatible or abandoned module is not
+- **MOD-46** (DRAFT) - **The signal is honest.** The person is told the module has not kept
+- **MOD-47** (SHIPPED) - Every capability below could have been core and is a module instead,
+
+## PLAY - [playback](playback/)
+
+- **PLAY-1** (SHIPPED) - Direct play means the client fetches the original file, byte for byte,
+- **PLAY-2** (AGREED) - The client declares it can demux the **container**
+- **PLAY-3** (AGREED) - The client can decode the **video stream**, meaning codec, profile,
+- **PLAY-4** (AGREED) - Every **audio stream the person might select** is decodable by the
+- **PLAY-5** (AGREED) - The chosen **subtitle**, if any, is either a format the client renders
+- **PLAY-6** (AGREED) - The **link** sustains the file's peak bitrate. On a local network this
+- **PLAY-7** (AGREED) - When a title cannot direct-play, KROMA walks a fixed ladder and stops at
+- **PLAY-8** (AGREED) - Change the least: the video stream is never touched while a cheaper
+- **PLAY-9** (SHIPPED) - Rung 1, **direct play**. The original file, untouched. No compromise.
+- **PLAY-10** (SHIPPED) - Rung 2, **remux**, also called direct stream. The video and audio
+- **PLAY-11** (SHIPPED) - Rung 3, **audio-only fallback**. The video is still copied and one
+- **PLAY-12** (AGREED) - Video is never touched to solve an audio problem.
+- **PLAY-13** (AGREED) - Rung 4, **subtitle burn-in**. Only when a selected subtitle can
+- **PLAY-14** (SHIPPED) - Rung 5, **video transcode**, the last resort. The video stream is
+- **PLAY-15** (AGREED) - KROMA takes the highest rung that satisfies the client and does not
+- **PLAY-16** (AGREED) - Transcode is a tolerated last resort, not a headline feature. KROMA is
+- **PLAY-17** (AGREED) - Transcode is always the lowest rung and is never the default for a
+- **PLAY-18** (AGREED) - An admin may **cap or disable** video transcode per server and per
+- **PLAY-19** (AGREED) - KROMA ships no adaptive multi-bitrate ladder, no quality knobs and no
+- **PLAY-20** (AGREED) - Any rung below direct play is a compromise, and the client always shows
+- **PLAY-21** (AGREED) - **Video transcode** and **subtitle burn-in** are shown as *reduced
+- **PLAY-22** (AGREED) - **Audio downmix** and **audio transcode** are shown as *audio
+- **PLAY-23** (AGREED) - **Remux** is shown as *repackaged*. Quality is untouched, so this is
+- **PLAY-24** (AGREED) - Direct play shows nothing. The absence of a badge *is* the signal
+- **PLAY-25** (AGREED) - KROMA never re-encodes video to save bandwidth unless the device
+- **PLAY-26** (AGREED) - KROMA never tone-maps HDR without saying so.
+- **PLAY-27** (AGREED) - KROMA never burns in subtitles the person did not ask to see.
+- **PLAY-28** (AGREED) - When the only playable path is one a person or an admin has disabled,
+- **PLAY-29** (SHIPPED) - Under **direct play and remux**, seeking is instant and exact. The
+- **PLAY-30** (AGREED) - Under **transcode**, the stream is produced live from a play position,
+- **PLAY-31** (AGREED) - KROMA anchors at the requested position rather than pre-producing the
+- **PLAY-32** (AGREED) - Seeking accuracy is never silently coarsened. A transcoded seek lands
+- **PLAY-33** (SHIPPED) - Progress is **per person, per media version**, stored on the server. It
+- **PLAY-34** (SHIPPED) - The playing client reports position on a steady heartbeat while
+- **PLAY-35** (AGREED) - The write is idempotent on the person, the version, the position and
+- **PLAY-36** (SHIPPED) - Reopening a title in progress offers *Resume* from the stored position
+- **PLAY-37** (AGREED) - A title is **watched** at **90% of runtime or more**, or at reaching a
+- **PLAY-38** (SHIPPED) - At the watched threshold, continue-watching drops the title and, for
+- **PLAY-39** (AGREED) - Below the threshold, progress is retained and the title stays in
+- **PLAY-40** (AGREED) - Starting a watched title again resets it to unwatched and clears the
+- **PLAY-41** (SHIPPED) - A device watching offline queues its unsent progress reports and, on
+- **PLAY-42** (AGREED) - When queued reports from two offline sessions land for the same person
+- **PLAY-43** (AGREED) - An explicit **reset to start**, from finishing a title or choosing
+- **PLAY-44** (AGREED) - If either device crossed the watched threshold, the title is watched.
+- **PLAY-45** (AGREED) - One account may play on several clients at once. KROMA enforces no
+- **PLAY-46** (AGREED) - Each playing client is an independent session with its own fallback
+- **PLAY-47** (AGREED) - Sessions interleave into one continue-watching state under the
+- **PLAY-48** (AGREED) - KROMA does not hand off an active session between devices as a
+- **PLAY-49** (AGREED) - When a stream dies mid-playback, whether the network drops, a transcode
+- **PLAY-50** (AGREED) - A **transient** failure, a network drop or a brief server hiccup, is
+- **PLAY-51** (AGREED) - A **fatal** failure, a source gone, a transcode that cannot start, or
+- **PLAY-52** (AGREED) - When a television's older decoder cannot play a file a modern phone
+
+## SURF - [surfaces](surfaces/)
+
+- **SURF-1** (SHIPPED) - Every client KROMA ships is one of the surfaces named here. A client
+- **SURF-2** (AGREED) - A build that cannot do all six rungs below is a **preview**, not a
+- **SURF-3** (SHIPPED) - **Sign in or pair.** A surface reaches a server and becomes an
+- **SURF-4** (SHIPPED) - **Browse the library.** A surface moves through the titles the
+- **SURF-5** (SHIPPED) - **View a title.** A surface shows a title's artwork, its metadata
+- **SURF-6** (SHIPPED) - **Start playback.** A surface plays the title, taking whatever rung
+- **SURF-7** (SHIPPED) - **Resume.** A surface reopens an in-progress title at the
+- **SURF-8** (SHIPPED) - **Sign out.** A surface ends the session and drops the server from
+- **SURF-9** (AGREED) - Every capability past the six rungs is a *may*, not a *must*, and a
+- **SURF-10** (AGREED) - Web is the reference implementation. Where two surfaces disagree on a
+- **SURF-11** (AGREED) - A feature that belongs on more than one surface is not shipped until
+- **SURF-12** (SHIPPED) - **First-class.** Web, mobile, desktop and the native television
+- **SURF-13** (AGREED) - A baseline regression on a first-class surface blocks the release.
+- **SURF-14** (AGREED) - A first-class surface may diverge from web where its input model
+- **SURF-15** (SHIPPED) - **Best-effort.** The sandboxed television shells, Samsung and LG,
+- **SURF-16** (AGREED) - A capability a best-effort surface's platform cannot express, such
+- **SURF-17** (SHIPPED) - **The NAS package is not a surface.** It puts the *server* on a
+- **SURF-18** (SHIPPED) - The matrix below is the record of what each surface must, may and may
+- **SURF-19** (SHIPPED) - **Browser-backed surfaces**, web and the sandboxed television
+- **SURF-20** (SHIPPED) - **Native surfaces**, mobile, desktop and the native television
+- **SURF-21** (AGREED) - When a television's older decoder cannot play a file a modern phone
+- **SURF-22** (AGREED) - KROMA never papers over a generation gap by silently transcoding for
+- **SURF-23** (SHIPPED) - **Pointer**, on web and desktop, is the reference model: dense
+- **SURF-24** (SHIPPED) - **Touch**, on mobile, means targets sized for a thumb, gestures for
+- **SURF-25** (SHIPPED) - **Remote, 10-foot**, on every television, is a directional focus
+- **SURF-26** (SHIPPED) - A television signs in through the pairing handshake precisely
+- **SURF-27** (AGREED) - A television build that ships a pointer-shaped screen has not met
+- **SURF-28** (AGREED) - A surface serving more than one model, such as a tablet with a
+- **SURF-29** (SHIPPED) - **Only mobile is offline.** Web, desktop and every television hold no
+- **SURF-30** (SHIPPED) - A downloaded title plays with no server connection.
+- **SURF-31** (SHIPPED) - Downloads survive backgrounding and app kills, and are re-adopted
+- **SURF-32** (SHIPPED) - Progress reports that could not be sent queue on the device and
+- **SURF-33** (DESIGN, NOT IMPLEMENTED) - Per-title rows in the OS storage manager, deletable
+- **SURF-34** (AGREED) - A surface stays current without asking a person to babysit it.
+- **SURF-35** (SHIPPED) - **Web.** The server serves the web surface itself. There is no
+- **SURF-36** (SHIPPED) - **Desktop.** The app checks for, fetches and applies updates in the
+- **SURF-37** (AGREED) - **Mobile.** The app updates on the store's cadence, so a server
+- **SURF-38** (AGREED) - **Televisions.** Each television updates through its own platform's
+- **SURF-39** (AGREED) - **NAS.** The Synology package installs and updates through Package
+- **SURF-40** (AGREED) - A surface is dropped when its host platform can no longer meet the
+- **SURF-41** (AGREED) - **Notice first.** A surface entering deprecation tells its users *in
+- **SURF-42** (AGREED) - **Sessions survive the app.** A deprecated surface's sessions are
+- **SURF-43** (AGREED) - **The library outlives any surface.** Nothing about a person's
+- **SURF-44** (AGREED) - Web is where the baseline is defined, so web is first-class by
+- **SURF-45** (AGREED) - A best-effort surface ships when its platform allows and may lag the
+- **SURF-46** (AGREED) - KROMA never claims a panel decodes a codec its generation predates.
+- **SURF-47** (SHIPPED) - The input model is the one thing a surface may *not* copy from web,
+- **SURF-48** (SHIPPED) - A download is a single progressive file: the raw original when the

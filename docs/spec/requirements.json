@@ -1,5 +1,335 @@
 [
   {
+    "id": "ACCT-1",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 1,
+    "status": "SHIPPED",
+    "text": "An **account** is a person. It has credentials, its own watch state,",
+    "file": "docs/spec/accounts/README.md",
+    "line": 16
+  },
+  {
+    "id": "ACCT-2",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 2,
+    "status": "SHIPPED",
+    "text": "The first account created at first-run is the **owner**, an account",
+    "file": "docs/spec/accounts/README.md",
+    "line": 19
+  },
+  {
+    "id": "ACCT-3",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 3,
+    "status": "SHIPPED",
+    "text": "Every subsequent account is an ordinary **user**, created by invitation",
+    "file": "docs/spec/accounts/README.md",
+    "line": 22
+  },
+  {
+    "id": "ACCT-4",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 4,
+    "status": "SHIPPED",
+    "text": "There are no profiles under an account, and there will not be. A person",
+    "file": "docs/spec/accounts/README.md",
+    "line": 25
+  },
+  {
+    "id": "ACCT-5",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 5,
+    "status": "SHIPPED",
+    "text": "A person proves who they are with a **username and password**. That is",
+    "file": "docs/spec/accounts/README.md",
+    "line": 44
+  },
+  {
+    "id": "ACCT-6",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 6,
+    "status": "SHIPPED",
+    "text": "A successful authentication mints a **session**: a long-lived,",
+    "file": "docs/spec/accounts/README.md",
+    "line": 49
+  },
+  {
+    "id": "ACCT-7",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 7,
+    "status": "SHIPPED",
+    "text": "**Sessions do not expire on a clock.** A session lives until it is",
+    "file": "docs/spec/accounts/README.md",
+    "line": 53
+  },
+  {
+    "id": "ACCT-8",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 8,
+    "status": "SHIPPED",
+    "text": "A session is per device, not per account, so one can be revoked without",
+    "file": "docs/spec/accounts/README.md",
+    "line": 57
+  },
+  {
+    "id": "ACCT-9",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 9,
+    "status": "SHIPPED",
+    "text": "A **device** is where a session lives. Signing in on a phone, a browser",
+    "file": "docs/spec/accounts/README.md",
+    "line": 66
+  },
+  {
+    "id": "ACCT-10",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 10,
+    "status": "AGREED",
+    "text": "Every session appears in the account's **device list** with enough to",
+    "file": "docs/spec/accounts/README.md",
+    "line": 69
+  },
+  {
+    "id": "ACCT-11",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 11,
+    "status": "SHIPPED",
+    "text": "A television binds to an account through the pairing handshake rather",
+    "file": "docs/spec/accounts/README.md",
+    "line": 72
+  },
+  {
+    "id": "ACCT-12",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 12,
+    "status": "AGREED",
+    "text": "A paired television is not a special class of trust. It lands in the",
+    "file": "docs/spec/accounts/README.md",
+    "line": 76
+  },
+  {
+    "id": "ACCT-13",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 13,
+    "status": "SHIPPED",
+    "text": "**Unbinding is revocation.** Revoking a device's session ends its",
+    "file": "docs/spec/accounts/README.md",
+    "line": 80
+  },
+  {
+    "id": "ACCT-14",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 14,
+    "status": "SHIPPED",
+    "text": "A revoked device that returns must pair or sign in afresh.",
+    "file": "docs/spec/accounts/README.md",
+    "line": 84
+  },
+  {
+    "id": "ACCT-15",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 15,
+    "status": "SHIPPED",
+    "text": "A television session is long-lived and revocable, and is **never",
+    "file": "docs/spec/accounts/README.md",
+    "line": 90
+  },
+  {
+    "id": "ACCT-16",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 16,
+    "status": "AGREED",
+    "text": "The device list is the control that replaces expiry: security comes",
+    "file": "docs/spec/accounts/README.md",
+    "line": 93
+  },
+  {
+    "id": "ACCT-17",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 17,
+    "status": "SHIPPED",
+    "text": "An **owner or admin** runs the server: users, settings, jobs and",
+    "file": "docs/spec/accounts/README.md",
+    "line": 106
+  },
+  {
+    "id": "ACCT-18",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 18,
+    "status": "AGREED",
+    "text": "The owner is the founding admin, the owner may grant admin to another",
+    "file": "docs/spec/accounts/README.md",
+    "line": 109
+  },
+  {
+    "id": "ACCT-19",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 19,
+    "status": "SHIPPED",
+    "text": "A **user** uses the server: browses and plays what they are permitted",
+    "file": "docs/spec/accounts/README.md",
+    "line": 112
+  },
+  {
+    "id": "ACCT-20",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 20,
+    "status": "AGREED",
+    "text": "**Library visibility is per user.** An admin decides which libraries a",
+    "file": "docs/spec/accounts/README.md",
+    "line": 115
+  },
+  {
+    "id": "ACCT-21",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 21,
+    "status": "AGREED",
+    "text": "Visibility gates browsing, search and playback alike. A title a user",
+    "file": "docs/spec/accounts/README.md",
+    "line": 118
+  },
+  {
+    "id": "ACCT-22",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 22,
+    "status": "SHIPPED",
+    "text": "Installing a module is an **admin** right, because it runs new",
+    "file": "docs/spec/accounts/README.md",
+    "line": 121
+  },
+  {
+    "id": "ACCT-23",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 23,
+    "status": "AGREED",
+    "text": "The matrix below is the whole of what each role may do. A user's power",
+    "file": "docs/spec/accounts/README.md",
+    "line": 130
+  },
+  {
+    "id": "ACCT-24",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 24,
+    "status": "SHIPPED",
+    "text": "**Per-user**: watch state, meaning resume points, watched flags and",
+    "file": "docs/spec/accounts/README.md",
+    "line": 157
+  },
+  {
+    "id": "ACCT-25",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 25,
+    "status": "SHIPPED",
+    "text": "**Per-server**: the libraries and their contents, metadata and",
+    "file": "docs/spec/accounts/README.md",
+    "line": 162
+  },
+  {
+    "id": "ACCT-26",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 26,
+    "status": "SHIPPED",
+    "text": "Watch state is per user and never per device: resume a film on the",
+    "file": "docs/spec/accounts/README.md",
+    "line": 166
+  },
+  {
+    "id": "ACCT-27",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 27,
+    "status": "SHIPPED",
+    "text": "Deletion destroys the account's credentials, all of its sessions and",
+    "file": "docs/spec/accounts/README.md",
+    "line": 176
+  },
+  {
+    "id": "ACCT-28",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 28,
+    "status": "SHIPPED",
+    "text": "Everything per-server survives. Libraries, media, metadata and",
+    "file": "docs/spec/accounts/README.md",
+    "line": 180
+  },
+  {
+    "id": "ACCT-29",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 29,
+    "status": "AGREED",
+    "text": "The owner account cannot be deleted while it is the only admin.",
+    "file": "docs/spec/accounts/README.md",
+    "line": 184
+  },
+  {
+    "id": "ACCT-30",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 30,
+    "status": "AGREED",
+    "text": "A user may request deletion of their own account, which revokes their",
+    "file": "docs/spec/accounts/README.md",
+    "line": 188
+  },
+  {
+    "id": "ACCT-31",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 31,
+    "status": "SHIPPED",
+    "text": "Revocation stops a session doing anything new. It cannot fetch, refresh",
+    "file": "docs/spec/accounts/README.md",
+    "line": 197
+  },
+  {
+    "id": "ACCT-32",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 32,
+    "status": "AGREED",
+    "text": "Bytes already downloaded for offline viewing sit in local storage the",
+    "file": "docs/spec/accounts/README.md",
+    "line": 200
+  },
+  {
+    "id": "ACCT-33",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 33,
+    "status": "AGREED",
+    "text": "The guarantee is that a revoked device gains nothing new and loses its",
+    "file": "docs/spec/accounts/README.md",
+    "line": 204
+  },
+  {
     "id": "ADMIN-1",
     "domain": "ADMIN",
     "space": "admin",
@@ -787,7 +1117,7 @@
     "status": "AGREED",
     "text": "A reset is a single-use, time-limited link plus a short one-time",
     "file": "docs/spec/admin/README.md",
-    "line": 110
+    "line": 112
   },
   {
     "id": "ADMIN-80",
@@ -797,7 +1127,7 @@
     "status": "AGREED",
     "text": "The code is eight characters from a thirty-two-symbol alphabet with",
     "file": "docs/spec/admin/README.md",
-    "line": 116
+    "line": 118
   },
   {
     "id": "ADMIN-81",
@@ -807,7 +1137,7 @@
     "status": "AGREED",
     "text": "A new reset invalidates any unused previous one for the same account.",
     "file": "docs/spec/admin/README.md",
-    "line": 120
+    "line": 122
   },
   {
     "id": "ADMIN-82",
@@ -817,7 +1147,7 @@
     "status": "AGREED",
     "text": "Delivery is the owner's choice, per server: copy the link and code",
     "file": "docs/spec/admin/README.md",
-    "line": 124
+    "line": 126
   },
   {
     "id": "ADMIN-83",
@@ -827,7 +1157,7 @@
     "status": "AGREED",
     "text": "The kroma.tv relay sees the destination address and the link, never",
     "file": "docs/spec/admin/README.md",
-    "line": 132
+    "line": 134
   },
   {
     "id": "ADMIN-84",
@@ -837,7 +1167,7 @@
     "status": "AGREED",
     "text": "The owner can clear a user's profile PIN. Clearing is the only PIN",
     "file": "docs/spec/admin/README.md",
-    "line": 147
+    "line": 149
   },
   {
     "id": "ADMIN-85",
@@ -847,7 +1177,7 @@
     "status": "AGREED",
     "text": "An address on an account is unverified until the mailbox proves",
     "file": "docs/spec/admin/README.md",
-    "line": 157
+    "line": 159
   },
   {
     "id": "ADMIN-86",
@@ -857,7 +1187,7 @@
     "status": "AGREED",
     "text": "The owner sends a verification from the member editor, with the",
     "file": "docs/spec/admin/README.md",
-    "line": 162
+    "line": 164
   },
   {
     "id": "ADMIN-87",
@@ -867,7 +1197,7 @@
     "status": "AGREED",
     "text": "Changing the address clears the verified state: the proof belongs",
     "file": "docs/spec/admin/README.md",
-    "line": 167
+    "line": 169
   },
   {
     "id": "ADMIN-88",
@@ -877,6 +1207,2756 @@
     "status": "AGREED",
     "text": "A user who cannot sign in can ask for a reset from the sign-in",
     "file": "docs/spec/admin/README.md",
+    "line": 138
+  },
+  {
+    "id": "DISC-1",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 1,
+    "status": "SHIPPED",
+    "text": "A client on the same network as a server is never told the server's",
+    "file": "docs/spec/discovery/README.md",
+    "line": 19
+  },
+  {
+    "id": "DISC-2",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 2,
+    "status": "SHIPPED",
+    "text": "On a private network the server sits inside, \"the same network\" means",
+    "file": "docs/spec/discovery/README.md",
+    "line": 29
+  },
+  {
+    "id": "DISC-3",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 3,
+    "status": "SHIPPED",
+    "text": "When the server is reached from outside, it means the *exact* same",
+    "file": "docs/spec/discovery/README.md",
+    "line": 31
+  },
+  {
+    "id": "DISC-4",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 4,
+    "status": "SHIPPED",
+    "text": "Over IPv6, it means the same delegated prefix: one home's allocation.",
+    "file": "docs/spec/discovery/README.md",
+    "line": 34
+  },
+  {
+    "id": "DISC-5",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 5,
+    "status": "SHIPPED",
+    "text": "A home this cannot place, split across subnets, dual-stack with the two",
+    "file": "docs/spec/discovery/README.md",
+    "line": 36
+  },
+  {
+    "id": "DISC-6",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 6,
+    "status": "SHIPPED",
+    "text": "Native mobile shells, iOS and Android, can *browse*: they find nearby",
+    "file": "docs/spec/discovery/README.md",
+    "line": 49
+  },
+  {
+    "id": "DISC-7",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 7,
+    "status": "SHIPPED",
+    "text": "Native TV shells, Apple TV and Android TV, and webOS can *announce*:",
+    "file": "docs/spec/discovery/README.md",
+    "line": 51
+  },
+  {
+    "id": "DISC-8",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 8,
+    "status": "SHIPPED",
+    "text": "Web, desktop and TV-web shells can do neither from the browser",
+    "file": "docs/spec/discovery/README.md",
+    "line": 56
+  },
+  {
+    "id": "DISC-9",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 9,
+    "status": "SHIPPED",
+    "text": "Tizen cannot announce at all, because its TV profile ships no way to.",
+    "file": "docs/spec/discovery/README.md",
+    "line": 59
+  },
+  {
+    "id": "DISC-10",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 10,
+    "status": "SHIPPED",
+    "text": "Browsing and announcing settle *reach*, whether two devices are near",
+    "file": "docs/spec/discovery/README.md",
+    "line": 63
+  },
+  {
+    "id": "DISC-11",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 11,
+    "status": "SHIPPED",
+    "text": "Every shell offers a manual path: a person can always type an address,",
+    "file": "docs/spec/discovery/README.md",
+    "line": 72
+  },
+  {
+    "id": "DISC-12",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 12,
+    "status": "SHIPPED",
+    "text": "Manual connection is the only supported path from *outside* the local",
+    "file": "docs/spec/discovery/README.md",
+    "line": 77
+  },
+  {
+    "id": "DISC-13",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 13,
+    "status": "SHIPPED",
+    "text": "Once an address is reachable, every sign-in road below works over it,",
+    "file": "docs/spec/discovery/README.md",
+    "line": 83
+  },
+  {
+    "id": "DISC-14",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 14,
+    "status": "SHIPPED",
+    "text": "All three roads end in the same place. The server holds a pending",
+    "file": "docs/spec/discovery/README.md",
+    "line": 94
+  },
+  {
+    "id": "DISC-15",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 15,
+    "status": "SHIPPED",
+    "text": "**Quick Connect is the floor.** The television prints a short code; the",
+    "file": "docs/spec/discovery/README.md",
+    "line": 99
+  },
+  {
+    "id": "DISC-16",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 16,
+    "status": "SHIPPED",
+    "text": "**Nearby handoff** is the shortcut for televisions the platform lets us",
+    "file": "docs/spec/discovery/README.md",
+    "line": 108
+  },
+  {
+    "id": "DISC-17",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 17,
+    "status": "SHIPPED",
+    "text": "**Confirmed handoff** covers the listed television a server cannot",
+    "file": "docs/spec/discovery/README.md",
+    "line": 112
+  },
+  {
+    "id": "DISC-18",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 18,
+    "status": "SHIPPED",
+    "text": "Discovery finding nothing is a normal state, not an error, and every",
+    "file": "docs/spec/discovery/README.md",
+    "line": 121
+  },
+  {
+    "id": "DISC-19",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 19,
+    "status": "SHIPPED",
+    "text": "A TV shell that can announce but not browse is *already* showing its",
+    "file": "docs/spec/discovery/README.md",
+    "line": 124
+  },
+  {
+    "id": "DISC-20",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 20,
+    "status": "SHIPPED",
+    "text": "A TV shell that cannot announce shows Quick Connect and, when it is",
+    "file": "docs/spec/discovery/README.md",
+    "line": 126
+  },
+  {
+    "id": "DISC-21",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 21,
+    "status": "SHIPPED",
+    "text": "A mobile shell that browses and sees an empty list offers, in that",
+    "file": "docs/spec/discovery/README.md",
+    "line": 129
+  },
+  {
+    "id": "DISC-22",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 22,
+    "status": "SHIPPED",
+    "text": "Web and desktop, which never browse, present the manual address field",
+    "file": "docs/spec/discovery/README.md",
+    "line": 132
+  },
+  {
+    "id": "DISC-23",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 23,
+    "status": "SHIPPED",
+    "text": "No shell ever traps a person on a road that failed. There is always a",
+    "file": "docs/spec/discovery/README.md",
+    "line": 135
+  },
+  {
+    "id": "DISC-24",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 24,
+    "status": "SHIPPED",
+    "text": "A Quick Connect or handoff code is valid for **five minutes**, because",
+    "file": "docs/spec/discovery/README.md",
+    "line": 142
+  },
+  {
+    "id": "DISC-25",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 25,
+    "status": "SHIPPED",
+    "text": "A code that expires mid-flow is replaced on the television by a clear",
+    "file": "docs/spec/discovery/README.md",
+    "line": 146
+  },
+  {
+    "id": "DISC-26",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 26,
+    "status": "SHIPPED",
+    "text": "A code already consumed by a successful sign-in vanishes rather than",
+    "file": "docs/spec/discovery/README.md",
+    "line": 150
+  },
+  {
+    "id": "DISC-27",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 27,
+    "status": "SHIPPED",
+    "text": "An expired code is visibly dead and one tap from being alive again,",
+    "file": "docs/spec/discovery/README.md",
+    "line": 153
+  },
+  {
+    "id": "DISC-28",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 28,
+    "status": "SHIPPED",
+    "text": "Approval is one-time. The moment an account approves a pairing, the",
+    "file": "docs/spec/discovery/README.md",
+    "line": 160
+  },
+  {
+    "id": "DISC-29",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 29,
+    "status": "SHIPPED",
+    "text": "A paired television is a *device*, not a second key to the account. It",
+    "file": "docs/spec/discovery/README.md",
+    "line": 165
+  },
+  {
+    "id": "DISC-30",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 30,
+    "status": "SHIPPED",
+    "text": "Revocation is symmetrical with every other device. The account sees the",
+    "file": "docs/spec/discovery/README.md",
+    "line": 169
+  },
+  {
+    "id": "DISC-31",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 31,
+    "status": "DESIGN, NOT IMPLEMENTED",
+    "text": "Samsung and LG televisions do not reach the deeper",
+    "file": "docs/spec/discovery/README.md",
+    "line": 177
+  },
+  {
+    "id": "DISC-32",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 32,
+    "status": "SHIPPED",
+    "text": "Native TV shells also *browse* for a server, so a television that was",
+    "file": "docs/spec/discovery/README.md",
+    "line": 53
+  },
+  {
+    "id": "DISC-33",
+    "domain": "DISC",
+    "space": "discovery",
+    "number": 33,
+    "status": "SHIPPED",
+    "text": "A client with a camera may read the code from the television's QR",
+    "file": "docs/spec/discovery/README.md",
+    "line": 104
+  },
+  {
+    "id": "LIB-1",
+    "domain": "LIB",
+    "space": "library",
+    "number": 1,
+    "status": "AGREED",
+    "text": "A **source** is a directory tree the server is told to watch, tagged",
+    "file": "docs/spec/library/README.md",
+    "line": 15
+  },
+  {
+    "id": "LIB-2",
+    "domain": "LIB",
+    "space": "library",
+    "number": 2,
+    "status": "AGREED",
+    "text": "A movie source never produces episodes and a show source never produces",
+    "file": "docs/spec/library/README.md",
+    "line": 19
+  },
+  {
+    "id": "LIB-3",
+    "domain": "LIB",
+    "space": "library",
+    "number": 3,
+    "status": "AGREED",
+    "text": "A server has zero or more sources, any number of them may point at the",
+    "file": "docs/spec/library/README.md",
+    "line": 22
+  },
+  {
+    "id": "LIB-4",
+    "domain": "LIB",
+    "space": "library",
+    "number": 4,
+    "status": "AGREED",
+    "text": "A source is an input, not a category a person browses by. Filtering the",
+    "file": "docs/spec/library/README.md",
+    "line": 27
+  },
+  {
+    "id": "LIB-5",
+    "domain": "LIB",
+    "space": "library",
+    "number": 5,
+    "status": "SHIPPED",
+    "text": "A source tree may be assembled from symlinks. A curated folder of links",
+    "file": "docs/spec/library/README.md",
+    "line": 30
+  },
+  {
+    "id": "LIB-6",
+    "domain": "LIB",
+    "space": "library",
+    "number": 6,
+    "status": "SHIPPED",
+    "text": "A link the server cannot resolve is reported, never silently skipped,",
+    "file": "docs/spec/library/README.md",
+    "line": 34
+  },
+  {
+    "id": "LIB-7",
+    "domain": "LIB",
+    "space": "library",
+    "number": 7,
+    "status": "AGREED",
+    "text": "A source records its mount path, its content kind and its scan schedule.",
+    "file": "docs/spec/library/README.md",
+    "line": 38
+  },
+  {
+    "id": "LIB-8",
+    "domain": "LIB",
+    "space": "library",
+    "number": 8,
+    "status": "AGREED",
+    "text": "Nothing about a source is destructive. Removing one drops its titles",
+    "file": "docs/spec/library/README.md",
+    "line": 40
+  },
+  {
+    "id": "LIB-9",
+    "domain": "LIB",
+    "space": "library",
+    "number": 9,
+    "status": "AGREED",
+    "text": "Matching is convention-first: a correctly named file matches offline,",
+    "file": "docs/spec/library/README.md",
+    "line": 49
+  },
+  {
+    "id": "LIB-10",
+    "domain": "LIB",
+    "space": "library",
+    "number": 10,
+    "status": "SHIPPED",
+    "text": "The `Title (Year)` stem is what is matched. The year is not",
+    "file": "docs/spec/library/README.md",
+    "line": 60
+  },
+  {
+    "id": "LIB-11",
+    "domain": "LIB",
+    "space": "library",
+    "number": 11,
+    "status": "SHIPPED",
+    "text": "A trailing tag after ` - `, a resolution, an edition or a source, is",
+    "file": "docs/spec/library/README.md",
+    "line": 64
+  },
+  {
+    "id": "LIB-12",
+    "domain": "LIB",
+    "space": "library",
+    "number": 12,
+    "status": "SHIPPED",
+    "text": "A loose file directly under the source root, with no folder, is",
+    "file": "docs/spec/library/README.md",
+    "line": 68
+  },
+  {
+    "id": "LIB-13",
+    "domain": "LIB",
+    "space": "library",
+    "number": 13,
+    "status": "SHIPPED",
+    "text": "A season folder is what makes the folder above it the show. With one",
+    "file": "docs/spec/library/README.md",
+    "line": 80
+  },
+  {
+    "id": "LIB-14",
+    "domain": "LIB",
+    "space": "library",
+    "number": 14,
+    "status": "SHIPPED",
+    "text": "Without a season folder the folder proves nothing, because a flat pool",
+    "file": "docs/spec/library/README.md",
+    "line": 84
+  },
+  {
+    "id": "LIB-15",
+    "domain": "LIB",
+    "space": "library",
+    "number": 15,
+    "status": "SHIPPED",
+    "text": "An episode whose filename is only its marker (`S01E01.mkv`) takes the",
+    "file": "docs/spec/library/README.md",
+    "line": 87
+  },
+  {
+    "id": "LIB-16",
+    "domain": "LIB",
+    "space": "library",
+    "number": 16,
+    "status": "SHIPPED",
+    "text": "The show folder name and the `SxxEyy` marker are load-bearing; the",
+    "file": "docs/spec/library/README.md",
+    "line": 91
+  },
+  {
+    "id": "LIB-17",
+    "domain": "LIB",
+    "space": "library",
+    "number": 17,
+    "status": "SHIPPED",
+    "text": "`Specials` is accepted as an alias for `Season 00`.",
+    "file": "docs/spec/library/README.md",
+    "line": 94
+  },
+  {
+    "id": "LIB-18",
+    "domain": "LIB",
+    "space": "library",
+    "number": 18,
+    "status": "SHIPPED",
+    "text": "A multi-episode file is named with a range (`S01E01-E02`) and matched",
+    "file": "docs/spec/library/README.md",
+    "line": 96
+  },
+  {
+    "id": "LIB-19",
+    "domain": "LIB",
+    "space": "library",
+    "number": 19,
+    "status": "AGREED",
+    "text": "A show folder MAY carry a `(Year)` for disambiguation",
+    "file": "docs/spec/library/README.md",
+    "line": 99
+  },
+  {
+    "id": "LIB-20",
+    "domain": "LIB",
+    "space": "library",
+    "number": 20,
+    "status": "SHIPPED",
+    "text": "Case is ignored, and separators may be spaces, dots or underscores.",
+    "file": "docs/spec/library/README.md",
+    "line": 102
+  },
+  {
+    "id": "LIB-21",
+    "domain": "LIB",
+    "space": "library",
+    "number": 21,
+    "status": "SHIPPED",
+    "text": "Only recognised video containers are considered files to match.",
+    "file": "docs/spec/library/README.md",
+    "line": 104
+  },
+  {
+    "id": "LIB-22",
+    "domain": "LIB",
+    "space": "library",
+    "number": 22,
+    "status": "AGREED",
+    "text": "The scheme is a convention rather than configuration, so a library is",
+    "file": "docs/spec/library/README.md",
+    "line": 108
+  },
+  {
+    "id": "LIB-23",
+    "domain": "LIB",
+    "space": "library",
+    "number": 23,
+    "status": "SHIPPED",
+    "text": "An **initial scan** runs when a source is added: the whole tree is",
+    "file": "docs/spec/library/README.md",
+    "line": 117
+  },
+  {
+    "id": "LIB-24",
+    "domain": "LIB",
+    "space": "library",
+    "number": 24,
+    "status": "AGREED",
+    "text": "An **incremental rescan** keeps the catalogue true to disk afterwards.",
+    "file": "docs/spec/library/README.md",
+    "line": 122
+  },
+  {
+    "id": "LIB-25",
+    "domain": "LIB",
+    "space": "library",
+    "number": 25,
+    "status": "AGREED",
+    "text": "An incremental rescan only reconsiders what changed, meaning new paths,",
+    "file": "docs/spec/library/README.md",
+    "line": 128
+  },
+  {
+    "id": "LIB-26",
+    "domain": "LIB",
+    "space": "library",
+    "number": 26,
+    "status": "AGREED",
+    "text": "Scanning is safe to run at any time, including while files are being",
+    "file": "docs/spec/library/README.md",
+    "line": 132
+  },
+  {
+    "id": "LIB-27",
+    "domain": "LIB",
+    "space": "library",
+    "number": 27,
+    "status": "AGREED",
+    "text": "A file is matched only once it looks **settled**, its size and",
+    "file": "docs/spec/library/README.md",
+    "line": 135
+  },
+  {
+    "id": "LIB-28",
+    "domain": "LIB",
+    "space": "library",
+    "number": 28,
+    "status": "SHIPPED",
+    "text": "Scanning **reads only**. It never writes, moves, renames or deletes",
+    "file": "docs/spec/library/README.md",
+    "line": 140
+  },
+  {
+    "id": "LIB-29",
+    "domain": "LIB",
+    "space": "library",
+    "number": 29,
+    "status": "AGREED",
+    "text": "KROMA never demands exclusive access to a library and never blocks the",
+    "file": "docs/spec/library/README.md",
+    "line": 143
+  },
+  {
+    "id": "LIB-30",
+    "domain": "LIB",
+    "space": "library",
+    "number": 30,
+    "status": "AGREED",
+    "text": "Matching resolves a settled file to an identity: a convention parse",
+    "file": "docs/spec/library/README.md",
+    "line": 158
+  },
+  {
+    "id": "LIB-31",
+    "domain": "LIB",
+    "space": "library",
+    "number": 31,
+    "status": "AGREED",
+    "text": "A file that parses to no confident identity, whether from an",
+    "file": "docs/spec/library/README.md",
+    "line": 164
+  },
+  {
+    "id": "LIB-32",
+    "domain": "LIB",
+    "space": "library",
+    "number": 32,
+    "status": "AGREED",
+    "text": "Unmatched items appear in a browsable **Unmatched** view in the library",
+    "file": "docs/spec/library/README.md",
+    "line": 169
+  },
+  {
+    "id": "LIB-33",
+    "domain": "LIB",
+    "space": "library",
+    "number": 33,
+    "status": "AGREED",
+    "text": "**Manual match.** A person searches the provider, picks the correct",
+    "file": "docs/spec/library/README.md",
+    "line": 173
+  },
+  {
+    "id": "LIB-34",
+    "domain": "LIB",
+    "space": "library",
+    "number": 34,
+    "status": "AGREED",
+    "text": "**Rename on disk.** A name fixed to the convention above matches",
+    "file": "docs/spec/library/README.md",
+    "line": 177
+  },
+  {
+    "id": "LIB-35",
+    "domain": "LIB",
+    "space": "library",
+    "number": 35,
+    "status": "AGREED",
+    "text": "A file that could be more than one identity, a title shared by a remake",
+    "file": "docs/spec/library/README.md",
+    "line": 183
+  },
+  {
+    "id": "LIB-36",
+    "domain": "LIB",
+    "space": "library",
+    "number": 36,
+    "status": "AGREED",
+    "text": "One unplaceable file never stalls a source. The catalogue is always the",
+    "file": "docs/spec/library/README.md",
+    "line": 189
+  },
+  {
+    "id": "LIB-37",
+    "domain": "LIB",
+    "space": "library",
+    "number": 37,
+    "status": "AGREED",
+    "text": "Every field and image a provider returns is written to the server's own",
+    "file": "docs/spec/library/README.md",
+    "line": 199
+  },
+  {
+    "id": "LIB-38",
+    "domain": "LIB",
+    "space": "library",
+    "number": 38,
+    "status": "AGREED",
+    "text": "With no internet, everything already matched browses and plays exactly",
+    "file": "docs/spec/library/README.md",
+    "line": 204
+  },
+  {
+    "id": "LIB-39",
+    "domain": "LIB",
+    "space": "library",
+    "number": 39,
+    "status": "AGREED",
+    "text": "Offline, a brand-new file that needs a first provider lookup stays",
+    "file": "docs/spec/library/README.md",
+    "line": 207
+  },
+  {
+    "id": "LIB-40",
+    "domain": "LIB",
+    "space": "library",
+    "number": 40,
+    "status": "AGREED",
+    "text": "Offline, a forced refresh queues rather than fails.",
+    "file": "docs/spec/library/README.md",
+    "line": 211
+  },
+  {
+    "id": "LIB-41",
+    "domain": "LIB",
+    "space": "library",
+    "number": 41,
+    "status": "DRAFT",
+    "text": "A newly matched item fetches its metadata once.",
+    "file": "docs/spec/library/README.md",
+    "line": 220
+  },
+  {
+    "id": "LIB-42",
+    "domain": "LIB",
+    "space": "library",
+    "number": 42,
+    "status": "DRAFT",
+    "text": "Running series are re-checked on a slow cadence, so a new episode's air",
+    "file": "docs/spec/library/README.md",
+    "line": 222
+  },
+  {
+    "id": "LIB-43",
+    "domain": "LIB",
+    "space": "library",
+    "number": 43,
+    "status": "DRAFT",
+    "text": "A \"Refresh metadata\" action on any title, season or whole source",
+    "file": "docs/spec/library/README.md",
+    "line": 226
+  },
+  {
+    "id": "LIB-44",
+    "domain": "LIB",
+    "space": "library",
+    "number": 44,
+    "status": "DRAFT",
+    "text": "A forced refresh **never** discards a manual match or user-chosen",
+    "file": "docs/spec/library/README.md",
+    "line": 230
+  },
+  {
+    "id": "LIB-45",
+    "domain": "LIB",
+    "space": "library",
+    "number": 45,
+    "status": "AGREED",
+    "text": "When a file disappears from a source, its title is **marked absent**:",
+    "file": "docs/spec/library/README.md",
+    "line": 247
+  },
+  {
+    "id": "LIB-46",
+    "domain": "LIB",
+    "space": "library",
+    "number": 46,
+    "status": "AGREED",
+    "text": "Content that reappears, because a NAS remounts or a file is moved back",
+    "file": "docs/spec/library/README.md",
+    "line": 252
+  },
+  {
+    "id": "LIB-47",
+    "domain": "LIB",
+    "space": "library",
+    "number": 47,
+    "status": "AGREED",
+    "text": "A **move** is therefore not a special case. It is an absent path plus a",
+    "file": "docs/spec/library/README.md",
+    "line": 256
+  },
+  {
+    "id": "LIB-48",
+    "domain": "LIB",
+    "space": "library",
+    "number": 48,
+    "status": "AGREED",
+    "text": "A rescan **only ever marks absent**. It never deletes user data.",
+    "file": "docs/spec/library/README.md",
+    "line": 260
+  },
+  {
+    "id": "LIB-49",
+    "domain": "LIB",
+    "space": "library",
+    "number": 49,
+    "status": "AGREED",
+    "text": "Permanently deleting a title's history is an explicit, person-initiated",
+    "file": "docs/spec/library/README.md",
+    "line": 262
+  },
+  {
+    "id": "MEDIA-1",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 1,
+    "status": "AGREED",
+    "text": "**Title.** The work a person searches for: a film, or one episode",
+    "file": "docs/spec/media/README.md",
+    "line": 21
+  },
+  {
+    "id": "MEDIA-2",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 2,
+    "status": "AGREED",
+    "text": "**Edition.** A named cut of a title: theatrical, director's,",
+    "file": "docs/spec/media/README.md",
+    "line": 24
+  },
+  {
+    "id": "MEDIA-3",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 3,
+    "status": "AGREED",
+    "text": "**Media file.** One physical file on disk that realises an edition",
+    "file": "docs/spec/media/README.md",
+    "line": 27
+  },
+  {
+    "id": "MEDIA-4",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 4,
+    "status": "AGREED",
+    "text": "**Stream.** One track inside a media file, exactly one of video,",
+    "file": "docs/spec/media/README.md",
+    "line": 30
+  },
+  {
+    "id": "MEDIA-5",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 5,
+    "status": "AGREED",
+    "text": "**Stream properties.** The describable facts about a stream: codec,",
+    "file": "docs/spec/media/README.md",
+    "line": 33
+  },
+  {
+    "id": "MEDIA-6",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 6,
+    "status": "AGREED",
+    "text": "The nesting is strict and total: every stream belongs to exactly one",
+    "file": "docs/spec/media/README.md",
+    "line": 37
+  },
+  {
+    "id": "MEDIA-7",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 7,
+    "status": "AGREED",
+    "text": "A 1080p file and a 4K file of the same cut are **two media files of",
+    "file": "docs/spec/media/README.md",
+    "line": 45
+  },
+  {
+    "id": "MEDIA-8",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 8,
+    "status": "AGREED",
+    "text": "KROMA ranks a title's media files and keeps a **preferred** one.",
+    "file": "docs/spec/media/README.md",
+    "line": 49
+  },
+  {
+    "id": "MEDIA-9",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 9,
+    "status": "AGREED",
+    "text": "The preference is a *default*, not a lock. The model enumerates a",
+    "file": "docs/spec/media/README.md",
+    "line": 52
+  },
+  {
+    "id": "MEDIA-10",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 10,
+    "status": "AGREED",
+    "text": "Editions are surfaced to the person, because they are different",
+    "file": "docs/spec/media/README.md",
+    "line": 56
+  },
+  {
+    "id": "MEDIA-11",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 11,
+    "status": "AGREED",
+    "text": "First-class means KROMA fully describes the format, preserves it end",
+    "file": "docs/spec/media/README.md",
+    "line": 64
+  },
+  {
+    "id": "MEDIA-12",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 12,
+    "status": "AGREED",
+    "text": "The first-class containers are **MP4**, **MKV** and **WebM**.",
+    "file": "docs/spec/media/README.md",
+    "line": 68
+  },
+  {
+    "id": "MEDIA-13",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 13,
+    "status": "AGREED",
+    "text": "**HEVC / H.265** is the priority codec. 8-bit and 10-bit, SDR and",
+    "file": "docs/spec/media/README.md",
+    "line": 72
+  },
+  {
+    "id": "MEDIA-14",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 14,
+    "status": "AGREED",
+    "text": "**H.264 / AVC** is the universal floor, assumed playable",
+    "file": "docs/spec/media/README.md",
+    "line": 74
+  },
+  {
+    "id": "MEDIA-15",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 15,
+    "status": "AGREED",
+    "text": "**AV1** is first-class media truth whatever the client generation,",
+    "file": "docs/spec/media/README.md",
+    "line": 76
+  },
+  {
+    "id": "MEDIA-16",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 16,
+    "status": "AGREED",
+    "text": "**VP9** is first-class within WebM, chiefly for the browser",
+    "file": "docs/spec/media/README.md",
+    "line": 78
+  },
+  {
+    "id": "MEDIA-17",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 17,
+    "status": "AGREED",
+    "text": "A codec being first-class states how *KROMA* handles it, never that a",
+    "file": "docs/spec/media/README.md",
+    "line": 81
+  },
+  {
+    "id": "MEDIA-18",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 18,
+    "status": "AGREED",
+    "text": "HDR is preserved end to end or it is not offered. KROMA never",
+    "file": "docs/spec/media/README.md",
+    "line": 90
+  },
+  {
+    "id": "MEDIA-19",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 19,
+    "status": "AGREED",
+    "text": "**Bit depth.** 8-bit and 10-bit are first-class, and 10-bit is",
+    "file": "docs/spec/media/README.md",
+    "line": 94
+  },
+  {
+    "id": "MEDIA-20",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 20,
+    "status": "AGREED",
+    "text": "KROMA distinguishes **HDR10**, **HDR10+**, **Dolby Vision** and",
+    "file": "docs/spec/media/README.md",
+    "line": 96
+  },
+  {
+    "id": "MEDIA-21",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 21,
+    "status": "AGREED",
+    "text": "Colour primaries, transfer characteristics and matrix coefficients",
+    "file": "docs/spec/media/README.md",
+    "line": 100
+  },
+  {
+    "id": "MEDIA-22",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 22,
+    "status": "AGREED",
+    "text": "Where dynamic metadata, HDR10+ or Dolby Vision, cannot be carried",
+    "file": "docs/spec/media/README.md",
+    "line": 103
+  },
+  {
+    "id": "MEDIA-23",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 23,
+    "status": "AGREED",
+    "text": "The first-class audio codecs are **AAC**, **AC-3** and **E-AC-3**",
+    "file": "docs/spec/media/README.md",
+    "line": 111
+  },
+  {
+    "id": "MEDIA-24",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 24,
+    "status": "AGREED",
+    "text": "An audio stream's **channel layout**, stereo, 5.1, 7.1 or Atmos",
+    "file": "docs/spec/media/README.md",
+    "line": 114
+  },
+  {
+    "id": "MEDIA-25",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 25,
+    "status": "AGREED",
+    "text": "**Passthrough** is the default for multichannel and lossless audio:",
+    "file": "docs/spec/media/README.md",
+    "line": 117
+  },
+  {
+    "id": "MEDIA-26",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 26,
+    "status": "AGREED",
+    "text": "**Downmixing** to stereo happens only when the target cannot render",
+    "file": "docs/spec/media/README.md",
+    "line": 120
+  },
+  {
+    "id": "MEDIA-27",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 27,
+    "status": "AGREED",
+    "text": "Multiple audio streams, languages and commentary alike, are all",
+    "file": "docs/spec/media/README.md",
+    "line": 124
+  },
+  {
+    "id": "MEDIA-28",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 28,
+    "status": "AGREED",
+    "text": "A subtitle stream is either **embedded**, a track inside the media",
+    "file": "docs/spec/media/README.md",
+    "line": 132
+  },
+  {
+    "id": "MEDIA-29",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 29,
+    "status": "AGREED",
+    "text": "The first-class subtitle formats are **SRT**, **WebVTT** and",
+    "file": "docs/spec/media/README.md",
     "line": 136
+  },
+  {
+    "id": "MEDIA-30",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 30,
+    "status": "AGREED",
+    "text": "The **forced** disposition, only the foreign-language lines a",
+    "file": "docs/spec/media/README.md",
+    "line": 140
+  },
+  {
+    "id": "MEDIA-31",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 31,
+    "status": "AGREED",
+    "text": "**Burning in**, rendering a subtitle permanently into the video, is",
+    "file": "docs/spec/media/README.md",
+    "line": 143
+  },
+  {
+    "id": "MEDIA-32",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 32,
+    "status": "AGREED",
+    "text": "Every title carries a **poster**, a **backdrop**, a **logo** and, per",
+    "file": "docs/spec/media/README.md",
+    "line": 153
+  },
+  {
+    "id": "MEDIA-33",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 33,
+    "status": "AGREED",
+    "text": "Image sources rank by trust: embedded in the media file, then a",
+    "file": "docs/spec/media/README.md",
+    "line": 156
+  },
+  {
+    "id": "MEDIA-34",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 34,
+    "status": "AGREED",
+    "text": "KROMA derives a fixed set of sizes per image, a small grid",
+    "file": "docs/spec/media/README.md",
+    "line": 159
+  },
+  {
+    "id": "MEDIA-35",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 35,
+    "status": "AGREED",
+    "text": "Derived sizes are cached and served without re-deriving, and a",
+    "file": "docs/spec/media/README.md",
+    "line": 162
+  },
+  {
+    "id": "MEDIA-36",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 36,
+    "status": "AGREED",
+    "text": "Artwork is never a reason a title fails to appear. A title with no",
+    "file": "docs/spec/media/README.md",
+    "line": 164
+  },
+  {
+    "id": "MEDIA-37",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 37,
+    "status": "AGREED",
+    "text": "KROMA learns a file's streams by **probing** it once, when the",
+    "file": "docs/spec/media/README.md",
+    "line": 171
+  },
+  {
+    "id": "MEDIA-38",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 38,
+    "status": "AGREED",
+    "text": "A probe is the authoritative stream truth until the file's bytes",
+    "file": "docs/spec/media/README.md",
+    "line": 175
+  },
+  {
+    "id": "MEDIA-39",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 39,
+    "status": "AGREED",
+    "text": "When a direct play fails in a way that implicates the stream",
+    "file": "docs/spec/media/README.md",
+    "line": 178
+  },
+  {
+    "id": "MEDIA-40",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 40,
+    "status": "AGREED",
+    "text": "Trust is per-file and durable: a corrected probe is written back,",
+    "file": "docs/spec/media/README.md",
+    "line": 183
+  },
+  {
+    "id": "MEDIA-41",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 41,
+    "status": "AGREED",
+    "text": "A file whose container opens and whose streams enumerate, but which",
+    "file": "docs/spec/media/README.md",
+    "line": 190
+  },
+  {
+    "id": "MEDIA-42",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 42,
+    "status": "AGREED",
+    "text": "The title **appears** in the library with whatever *is* known. A",
+    "file": "docs/spec/media/README.md",
+    "line": 194
+  },
+  {
+    "id": "MEDIA-43",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 43,
+    "status": "AGREED",
+    "text": "The unknown stream is marked **undescribed** and carries its raw",
+    "file": "docs/spec/media/README.md",
+    "line": 197
+  },
+  {
+    "id": "MEDIA-44",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 44,
+    "status": "AGREED",
+    "text": "An undescribed stream is *not direct-playable*, because KROMA will",
+    "file": "docs/spec/media/README.md",
+    "line": 199
+  },
+  {
+    "id": "MEDIA-45",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 45,
+    "status": "AGREED",
+    "text": "A file that will not open at all, a truncated or corrupt container,",
+    "file": "docs/spec/media/README.md",
+    "line": 202
+  },
+  {
+    "id": "MEDIA-46",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 46,
+    "status": "AGREED",
+    "text": "Undescribed and unreadable are distinct states. The first is \"we",
+    "file": "docs/spec/media/README.md",
+    "line": 205
+  },
+  {
+    "id": "MOD-1",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 1,
+    "status": "SHIPPED",
+    "text": "The base build ships **zero modules**. Everything past playback and",
+    "file": "docs/spec/modules/README.md",
+    "line": 9
+  },
+  {
+    "id": "MOD-2",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 2,
+    "status": "SHIPPED",
+    "text": "A module is a self-contained capability with a reverse-DNS id",
+    "file": "docs/spec/modules/README.md",
+    "line": 33
+  },
+  {
+    "id": "MOD-3",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 3,
+    "status": "SHIPPED",
+    "text": "Within its own process a module has wide latitude: it registers",
+    "file": "docs/spec/modules/README.md",
+    "line": 37
+  },
+  {
+    "id": "MOD-4",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 4,
+    "status": "SHIPPED",
+    "text": "A database is a **declared capability**, not something every module",
+    "file": "docs/spec/modules/README.md",
+    "line": 40
+  },
+  {
+    "id": "MOD-5",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 5,
+    "status": "SHIPPED",
+    "text": "It may not reach into the server's process or another module's",
+    "file": "docs/spec/modules/README.md",
+    "line": 46
+  },
+  {
+    "id": "MOD-6",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 6,
+    "status": "SHIPPED",
+    "text": "It may not replace core. Playback, catalogue, accounts and the",
+    "file": "docs/spec/modules/README.md",
+    "line": 50
+  },
+  {
+    "id": "MOD-7",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 7,
+    "status": "SHIPPED",
+    "text": "It may not claim a first-party module id it does not own.",
+    "file": "docs/spec/modules/README.md",
+    "line": 53
+  },
+  {
+    "id": "MOD-8",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 8,
+    "status": "SHIPPED",
+    "text": "It may not assume it is present. Because any module is uninstallable,",
+    "file": "docs/spec/modules/README.md",
+    "line": 54
+  },
+  {
+    "id": "MOD-9",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 9,
+    "status": "SHIPPED",
+    "text": "A module *may* depend on another module, hard or optional, and that",
+    "file": "docs/spec/modules/README.md",
+    "line": 58
+  },
+  {
+    "id": "MOD-10",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 10,
+    "status": "SHIPPED",
+    "text": "A module ships as a single `.kmod` file: a manifest, the native",
+    "file": "docs/spec/modules/README.md",
+    "line": 65
+  },
+  {
+    "id": "MOD-11",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 11,
+    "status": "SHIPPED",
+    "text": "**Identity and version.** The reverse-DNS id and a hand-set version.",
+    "file": "docs/spec/modules/README.md",
+    "line": 71
+  },
+  {
+    "id": "MOD-12",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 12,
+    "status": "SHIPPED",
+    "text": "The release process refuses to publish changed bytes under an",
+    "file": "docs/spec/modules/README.md",
+    "line": 73
+  },
+  {
+    "id": "MOD-13",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 13,
+    "status": "SHIPPED",
+    "text": "**`minServer`, the compatibility floor.** The minimum server version",
+    "file": "docs/spec/modules/README.md",
+    "line": 76
+  },
+  {
+    "id": "MOD-14",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 14,
+    "status": "SHIPPED",
+    "text": "**Dependencies.** Hard ones that must be installed alongside it, and",
+    "file": "docs/spec/modules/README.md",
+    "line": 78
+  },
+  {
+    "id": "MOD-15",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 15,
+    "status": "SHIPPED",
+    "text": "**Target.** Which platform the backend was built for. A library-only",
+    "file": "docs/spec/modules/README.md",
+    "line": 80
+  },
+  {
+    "id": "MOD-16",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 16,
+    "status": "SHIPPED",
+    "text": "The server checks the bytes it downloads against a published SHA-256",
+    "file": "docs/spec/modules/README.md",
+    "line": 84
+  },
+  {
+    "id": "MOD-17",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 17,
+    "status": "SHIPPED",
+    "text": "Integrity is not safety: a matching checksum proves the bytes are the",
+    "file": "docs/spec/modules/README.md",
+    "line": 87
+  },
+  {
+    "id": "MOD-18",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 18,
+    "status": "SHIPPED",
+    "text": "**From the Store**, by id. The server resolves hard dependencies",
+    "file": "docs/spec/modules/README.md",
+    "line": 97
+  },
+  {
+    "id": "MOD-19",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 19,
+    "status": "SHIPPED",
+    "text": "**By upload**, handing the server a `.kmod` by hand: same unpack,",
+    "file": "docs/spec/modules/README.md",
+    "line": 101
+  },
+  {
+    "id": "MOD-20",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 20,
+    "status": "SHIPPED",
+    "text": "Both are admin actions on the [`admin/`](../admin/) surface.",
+    "file": "docs/spec/modules/README.md",
+    "line": 105
+  },
+  {
+    "id": "MOD-21",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 21,
+    "status": "SHIPPED",
+    "text": "The Store (Admin → Modules) is the in-app browser over the configured",
+    "file": "docs/spec/modules/README.md",
+    "line": 111
+  },
+  {
+    "id": "MOD-22",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 22,
+    "status": "SHIPPED",
+    "text": "The official registry is pinned first and cannot be removed; operators",
+    "file": "docs/spec/modules/README.md",
+    "line": 114
+  },
+  {
+    "id": "MOD-23",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 23,
+    "status": "SHIPPED",
+    "text": "For each module the Store shows **this server's verdict**, not just the",
+    "file": "docs/spec/modules/README.md",
+    "line": 117
+  },
+  {
+    "id": "MOD-24",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 24,
+    "status": "DRAFT",
+    "text": "**First-party is trusted by default.** The official registry is",
+    "file": "docs/spec/modules/README.md",
+    "line": 135
+  },
+  {
+    "id": "MOD-25",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 25,
+    "status": "DRAFT",
+    "text": "**A third-party registry is an explicit operator opt-in.** Adding one",
+    "file": "docs/spec/modules/README.md",
+    "line": 137
+  },
+  {
+    "id": "MOD-26",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 26,
+    "status": "DRAFT",
+    "text": "The operator is told, in plain terms, that a module is a native binary",
+    "file": "docs/spec/modules/README.md",
+    "line": 139
+  },
+  {
+    "id": "MOD-27",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 27,
+    "status": "DRAFT",
+    "text": "**Checksums guarantee integrity, never safety**, and the server says so",
+    "file": "docs/spec/modules/README.md",
+    "line": 142
+  },
+  {
+    "id": "MOD-28",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 28,
+    "status": "SHIPPED",
+    "text": "**Enable.** The server spawns the sidecar and the module's routes,",
+    "file": "docs/spec/modules/README.md",
+    "line": 156
+  },
+  {
+    "id": "MOD-29",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 29,
+    "status": "SHIPPED",
+    "text": "**Disable.** The sidecar is stopped, the module stops running, and",
+    "file": "docs/spec/modules/README.md",
+    "line": 159
+  },
+  {
+    "id": "MOD-30",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 30,
+    "status": "SHIPPED",
+    "text": "**Update.** A newer version replaces the bundle and the sidecar is",
+    "file": "docs/spec/modules/README.md",
+    "line": 162
+  },
+  {
+    "id": "MOD-31",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 31,
+    "status": "SHIPPED",
+    "text": "`minServer` is re-checked on update, so an update that outgrows the",
+    "file": "docs/spec/modules/README.md",
+    "line": 165
+  },
+  {
+    "id": "MOD-32",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 32,
+    "status": "SHIPPED",
+    "text": "**Uninstall.** The module is removed entirely. It is the one",
+    "file": "docs/spec/modules/README.md",
+    "line": 167
+  },
+  {
+    "id": "MOD-33",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 33,
+    "status": "SHIPPED",
+    "text": "The server refuses to uninstall a module another enabled module still",
+    "file": "docs/spec/modules/README.md",
+    "line": 170
+  },
+  {
+    "id": "MOD-34",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 34,
+    "status": "SHIPPED",
+    "text": "Uninstalling a module never touches media on disk. A downloads module",
+    "file": "docs/spec/modules/README.md",
+    "line": 173
+  },
+  {
+    "id": "MOD-35",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 35,
+    "status": "SHIPPED",
+    "text": "**A crashed module cannot take down the server.** The sidecar is a",
+    "file": "docs/spec/modules/README.md",
+    "line": 183
+  },
+  {
+    "id": "MOD-36",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 36,
+    "status": "SHIPPED",
+    "text": "**An incompatible module never runs by accident.** `minServer` is",
+    "file": "docs/spec/modules/README.md",
+    "line": 186
+  },
+  {
+    "id": "MOD-37",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 37,
+    "status": "SHIPPED",
+    "text": "**Failure is visible, not silent.** A module that will not start or",
+    "file": "docs/spec/modules/README.md",
+    "line": 189
+  },
+  {
+    "id": "MOD-38",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 38,
+    "status": "SHIPPED",
+    "text": "The server is forward-compatible with older modules. A module declares",
+    "file": "docs/spec/modules/README.md",
+    "line": 197
+  },
+  {
+    "id": "MOD-39",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 39,
+    "status": "SHIPPED",
+    "text": "A module installed today keeps working as the server is updated,",
+    "file": "docs/spec/modules/README.md",
+    "line": 200
+  },
+  {
+    "id": "MOD-40",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 40,
+    "status": "SHIPPED",
+    "text": "A *newer* module may raise its `minServer`, and the Store says so",
+    "file": "docs/spec/modules/README.md",
+    "line": 203
+  },
+  {
+    "id": "MOD-41",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 41,
+    "status": "SHIPPED",
+    "text": "A module **may** ship UI, and the position is deliberate: a module's",
+    "file": "docs/spec/modules/README.md",
+    "line": 211
+  },
+  {
+    "id": "MOD-42",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 42,
+    "status": "AGREED",
+    "text": "A module renders **its own admin surface**: configuration, status and",
+    "file": "docs/spec/modules/README.md",
+    "line": 215
+  },
+  {
+    "id": "MOD-43",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 43,
+    "status": "SHIPPED",
+    "text": "A module's UI is served through the same reverse proxy as its backend",
+    "file": "docs/spec/modules/README.md",
+    "line": 218
+  },
+  {
+    "id": "MOD-44",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 44,
+    "status": "DRAFT",
+    "text": "**The compatibility gate is the early warning.** As the server moves",
+    "file": "docs/spec/modules/README.md",
+    "line": 232
+  },
+  {
+    "id": "MOD-45",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 45,
+    "status": "DRAFT",
+    "text": "**Data is retained.** An incompatible or abandoned module is not",
+    "file": "docs/spec/modules/README.md",
+    "line": 236
+  },
+  {
+    "id": "MOD-46",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 46,
+    "status": "DRAFT",
+    "text": "**The signal is honest.** The person is told the module has not kept",
+    "file": "docs/spec/modules/README.md",
+    "line": 239
+  },
+  {
+    "id": "MOD-47",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 47,
+    "status": "SHIPPED",
+    "text": "Every capability below could have been core and is a module instead,",
+    "file": "docs/spec/modules/README.md",
+    "line": 251
+  },
+  {
+    "id": "PLAY-1",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 1,
+    "status": "SHIPPED",
+    "text": "Direct play means the client fetches the original file, byte for byte,",
+    "file": "docs/spec/playback/README.md",
+    "line": 18
+  },
+  {
+    "id": "PLAY-2",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 2,
+    "status": "AGREED",
+    "text": "The client declares it can demux the **container**",
+    "file": "docs/spec/playback/README.md",
+    "line": 24
+  },
+  {
+    "id": "PLAY-3",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 3,
+    "status": "AGREED",
+    "text": "The client can decode the **video stream**, meaning codec, profile,",
+    "file": "docs/spec/playback/README.md",
+    "line": 26
+  },
+  {
+    "id": "PLAY-4",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 4,
+    "status": "AGREED",
+    "text": "Every **audio stream the person might select** is decodable by the",
+    "file": "docs/spec/playback/README.md",
+    "line": 28
+  },
+  {
+    "id": "PLAY-5",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 5,
+    "status": "AGREED",
+    "text": "The chosen **subtitle**, if any, is either a format the client renders",
+    "file": "docs/spec/playback/README.md",
+    "line": 30
+  },
+  {
+    "id": "PLAY-6",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 6,
+    "status": "AGREED",
+    "text": "The **link** sustains the file's peak bitrate. On a local network this",
+    "file": "docs/spec/playback/README.md",
+    "line": 32
+  },
+  {
+    "id": "PLAY-7",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 7,
+    "status": "AGREED",
+    "text": "When a title cannot direct-play, KROMA walks a fixed ladder and stops at",
+    "file": "docs/spec/playback/README.md",
+    "line": 43
+  },
+  {
+    "id": "PLAY-8",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 8,
+    "status": "AGREED",
+    "text": "Change the least: the video stream is never touched while a cheaper",
+    "file": "docs/spec/playback/README.md",
+    "line": 46
+  },
+  {
+    "id": "PLAY-9",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 9,
+    "status": "SHIPPED",
+    "text": "Rung 1, **direct play**. The original file, untouched. No compromise.",
+    "file": "docs/spec/playback/README.md",
+    "line": 49
+  },
+  {
+    "id": "PLAY-10",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 10,
+    "status": "SHIPPED",
+    "text": "Rung 2, **remux**, also called direct stream. The video and audio",
+    "file": "docs/spec/playback/README.md",
+    "line": 50
+  },
+  {
+    "id": "PLAY-11",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 11,
+    "status": "SHIPPED",
+    "text": "Rung 3, **audio-only fallback**. The video is still copied and one",
+    "file": "docs/spec/playback/README.md",
+    "line": 53
+  },
+  {
+    "id": "PLAY-12",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 12,
+    "status": "AGREED",
+    "text": "Video is never touched to solve an audio problem.",
+    "file": "docs/spec/playback/README.md",
+    "line": 57
+  },
+  {
+    "id": "PLAY-13",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 13,
+    "status": "AGREED",
+    "text": "Rung 4, **subtitle burn-in**. Only when a selected subtitle can",
+    "file": "docs/spec/playback/README.md",
+    "line": 58
+  },
+  {
+    "id": "PLAY-14",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 14,
+    "status": "SHIPPED",
+    "text": "Rung 5, **video transcode**, the last resort. The video stream is",
+    "file": "docs/spec/playback/README.md",
+    "line": 62
+  },
+  {
+    "id": "PLAY-15",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 15,
+    "status": "AGREED",
+    "text": "KROMA takes the highest rung that satisfies the client and does not",
+    "file": "docs/spec/playback/README.md",
+    "line": 67
+  },
+  {
+    "id": "PLAY-16",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 16,
+    "status": "AGREED",
+    "text": "Transcode is a tolerated last resort, not a headline feature. KROMA is",
+    "file": "docs/spec/playback/README.md",
+    "line": 75
+  },
+  {
+    "id": "PLAY-17",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 17,
+    "status": "AGREED",
+    "text": "Transcode is always the lowest rung and is never the default for a",
+    "file": "docs/spec/playback/README.md",
+    "line": 79
+  },
+  {
+    "id": "PLAY-18",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 18,
+    "status": "AGREED",
+    "text": "An admin may **cap or disable** video transcode per server and per",
+    "file": "docs/spec/playback/README.md",
+    "line": 81
+  },
+  {
+    "id": "PLAY-19",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 19,
+    "status": "AGREED",
+    "text": "KROMA ships no adaptive multi-bitrate ladder, no quality knobs and no",
+    "file": "docs/spec/playback/README.md",
+    "line": 84
+  },
+  {
+    "id": "PLAY-20",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 20,
+    "status": "AGREED",
+    "text": "Any rung below direct play is a compromise, and the client always shows",
+    "file": "docs/spec/playback/README.md",
+    "line": 92
+  },
+  {
+    "id": "PLAY-21",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 21,
+    "status": "AGREED",
+    "text": "**Video transcode** and **subtitle burn-in** are shown as *reduced",
+    "file": "docs/spec/playback/README.md",
+    "line": 96
+  },
+  {
+    "id": "PLAY-22",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 22,
+    "status": "AGREED",
+    "text": "**Audio downmix** and **audio transcode** are shown as *audio",
+    "file": "docs/spec/playback/README.md",
+    "line": 99
+  },
+  {
+    "id": "PLAY-23",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 23,
+    "status": "AGREED",
+    "text": "**Remux** is shown as *repackaged*. Quality is untouched, so this is",
+    "file": "docs/spec/playback/README.md",
+    "line": 101
+  },
+  {
+    "id": "PLAY-24",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 24,
+    "status": "AGREED",
+    "text": "Direct play shows nothing. The absence of a badge *is* the signal",
+    "file": "docs/spec/playback/README.md",
+    "line": 103
+  },
+  {
+    "id": "PLAY-25",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 25,
+    "status": "AGREED",
+    "text": "KROMA never re-encodes video to save bandwidth unless the device",
+    "file": "docs/spec/playback/README.md",
+    "line": 106
+  },
+  {
+    "id": "PLAY-26",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 26,
+    "status": "AGREED",
+    "text": "KROMA never tone-maps HDR without saying so.",
+    "file": "docs/spec/playback/README.md",
+    "line": 109
+  },
+  {
+    "id": "PLAY-27",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 27,
+    "status": "AGREED",
+    "text": "KROMA never burns in subtitles the person did not ask to see.",
+    "file": "docs/spec/playback/README.md",
+    "line": 111
+  },
+  {
+    "id": "PLAY-28",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 28,
+    "status": "AGREED",
+    "text": "When the only playable path is one a person or an admin has disabled,",
+    "file": "docs/spec/playback/README.md",
+    "line": 113
+  },
+  {
+    "id": "PLAY-29",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 29,
+    "status": "SHIPPED",
+    "text": "Under **direct play and remux**, seeking is instant and exact. The",
+    "file": "docs/spec/playback/README.md",
+    "line": 120
+  },
+  {
+    "id": "PLAY-30",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 30,
+    "status": "AGREED",
+    "text": "Under **transcode**, the stream is produced live from a play position,",
+    "file": "docs/spec/playback/README.md",
+    "line": 123
+  },
+  {
+    "id": "PLAY-31",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 31,
+    "status": "AGREED",
+    "text": "KROMA anchors at the requested position rather than pre-producing the",
+    "file": "docs/spec/playback/README.md",
+    "line": 126
+  },
+  {
+    "id": "PLAY-32",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 32,
+    "status": "AGREED",
+    "text": "Seeking accuracy is never silently coarsened. A transcoded seek lands",
+    "file": "docs/spec/playback/README.md",
+    "line": 129
+  },
+  {
+    "id": "PLAY-33",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 33,
+    "status": "SHIPPED",
+    "text": "Progress is **per person, per media version**, stored on the server. It",
+    "file": "docs/spec/playback/README.md",
+    "line": 136
+  },
+  {
+    "id": "PLAY-34",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 34,
+    "status": "SHIPPED",
+    "text": "The playing client reports position on a steady heartbeat while",
+    "file": "docs/spec/playback/README.md",
+    "line": 140
+  },
+  {
+    "id": "PLAY-35",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 35,
+    "status": "AGREED",
+    "text": "The write is idempotent on the person, the version, the position and",
+    "file": "docs/spec/playback/README.md",
+    "line": 144
+  },
+  {
+    "id": "PLAY-36",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 36,
+    "status": "SHIPPED",
+    "text": "Reopening a title in progress offers *Resume* from the stored position",
+    "file": "docs/spec/playback/README.md",
+    "line": 147
+  },
+  {
+    "id": "PLAY-37",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 37,
+    "status": "AGREED",
+    "text": "A title is **watched** at **90% of runtime or more**, or at reaching a",
+    "file": "docs/spec/playback/README.md",
+    "line": 151
+  },
+  {
+    "id": "PLAY-38",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 38,
+    "status": "SHIPPED",
+    "text": "At the watched threshold, continue-watching drops the title and, for",
+    "file": "docs/spec/playback/README.md",
+    "line": 157
+  },
+  {
+    "id": "PLAY-39",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 39,
+    "status": "AGREED",
+    "text": "Below the threshold, progress is retained and the title stays in",
+    "file": "docs/spec/playback/README.md",
+    "line": 160
+  },
+  {
+    "id": "PLAY-40",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 40,
+    "status": "AGREED",
+    "text": "Starting a watched title again resets it to unwatched and clears the",
+    "file": "docs/spec/playback/README.md",
+    "line": 163
+  },
+  {
+    "id": "PLAY-41",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 41,
+    "status": "SHIPPED",
+    "text": "A device watching offline queues its unsent progress reports and, on",
+    "file": "docs/spec/playback/README.md",
+    "line": 166
+  },
+  {
+    "id": "PLAY-42",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 42,
+    "status": "AGREED",
+    "text": "When queued reports from two offline sessions land for the same person",
+    "file": "docs/spec/playback/README.md",
+    "line": 175
+  },
+  {
+    "id": "PLAY-43",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 43,
+    "status": "AGREED",
+    "text": "An explicit **reset to start**, from finishing a title or choosing",
+    "file": "docs/spec/playback/README.md",
+    "line": 181
+  },
+  {
+    "id": "PLAY-44",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 44,
+    "status": "AGREED",
+    "text": "If either device crossed the watched threshold, the title is watched.",
+    "file": "docs/spec/playback/README.md",
+    "line": 185
+  },
+  {
+    "id": "PLAY-45",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 45,
+    "status": "AGREED",
+    "text": "One account may play on several clients at once. KROMA enforces no",
+    "file": "docs/spec/playback/README.md",
+    "line": 191
+  },
+  {
+    "id": "PLAY-46",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 46,
+    "status": "AGREED",
+    "text": "Each playing client is an independent session with its own fallback",
+    "file": "docs/spec/playback/README.md",
+    "line": 195
+  },
+  {
+    "id": "PLAY-47",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 47,
+    "status": "AGREED",
+    "text": "Sessions interleave into one continue-watching state under the",
+    "file": "docs/spec/playback/README.md",
+    "line": 199
+  },
+  {
+    "id": "PLAY-48",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 48,
+    "status": "AGREED",
+    "text": "KROMA does not hand off an active session between devices as a",
+    "file": "docs/spec/playback/README.md",
+    "line": 202
+  },
+  {
+    "id": "PLAY-49",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 49,
+    "status": "AGREED",
+    "text": "When a stream dies mid-playback, whether the network drops, a transcode",
+    "file": "docs/spec/playback/README.md",
+    "line": 210
+  },
+  {
+    "id": "PLAY-50",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 50,
+    "status": "AGREED",
+    "text": "A **transient** failure, a network drop or a brief server hiccup, is",
+    "file": "docs/spec/playback/README.md",
+    "line": 215
+  },
+  {
+    "id": "PLAY-51",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 51,
+    "status": "AGREED",
+    "text": "A **fatal** failure, a source gone, a transcode that cannot start, or",
+    "file": "docs/spec/playback/README.md",
+    "line": 218
+  },
+  {
+    "id": "PLAY-52",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 52,
+    "status": "AGREED",
+    "text": "When a television's older decoder cannot play a file a modern phone",
+    "file": "docs/spec/playback/README.md",
+    "line": 226
+  },
+  {
+    "id": "SURF-1",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 1,
+    "status": "SHIPPED",
+    "text": "Every client KROMA ships is one of the surfaces named here. A client",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 21
+  },
+  {
+    "id": "SURF-2",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 2,
+    "status": "AGREED",
+    "text": "A build that cannot do all six rungs below is a **preview**, not a",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 44
+  },
+  {
+    "id": "SURF-3",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 3,
+    "status": "SHIPPED",
+    "text": "**Sign in or pair.** A surface reaches a server and becomes an",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 48
+  },
+  {
+    "id": "SURF-4",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 4,
+    "status": "SHIPPED",
+    "text": "**Browse the library.** A surface moves through the titles the",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 52
+  },
+  {
+    "id": "SURF-5",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 5,
+    "status": "SHIPPED",
+    "text": "**View a title.** A surface shows a title's artwork, its metadata",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 54
+  },
+  {
+    "id": "SURF-6",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 6,
+    "status": "SHIPPED",
+    "text": "**Start playback.** A surface plays the title, taking whatever rung",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 57
+  },
+  {
+    "id": "SURF-7",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 7,
+    "status": "SHIPPED",
+    "text": "**Resume.** A surface reopens an in-progress title at the",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 59
+  },
+  {
+    "id": "SURF-8",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 8,
+    "status": "SHIPPED",
+    "text": "**Sign out.** A surface ends the session and drops the server from",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 61
+  },
+  {
+    "id": "SURF-9",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 9,
+    "status": "AGREED",
+    "text": "Every capability past the six rungs is a *may*, not a *must*, and a",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 64
+  },
+  {
+    "id": "SURF-10",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 10,
+    "status": "AGREED",
+    "text": "Web is the reference implementation. Where two surfaces disagree on a",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 75
+  },
+  {
+    "id": "SURF-11",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 11,
+    "status": "AGREED",
+    "text": "A feature that belongs on more than one surface is not shipped until",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 78
+  },
+  {
+    "id": "SURF-12",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 12,
+    "status": "SHIPPED",
+    "text": "**First-class.** Web, mobile, desktop and the native television",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 85
+  },
+  {
+    "id": "SURF-13",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 13,
+    "status": "AGREED",
+    "text": "A baseline regression on a first-class surface blocks the release.",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 87
+  },
+  {
+    "id": "SURF-14",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 14,
+    "status": "AGREED",
+    "text": "A first-class surface may diverge from web where its input model",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 88
+  },
+  {
+    "id": "SURF-15",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 15,
+    "status": "SHIPPED",
+    "text": "**Best-effort.** The sandboxed television shells, Samsung and LG,",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 90
+  },
+  {
+    "id": "SURF-16",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 16,
+    "status": "AGREED",
+    "text": "A capability a best-effort surface's platform cannot express, such",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 93
+  },
+  {
+    "id": "SURF-17",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 17,
+    "status": "SHIPPED",
+    "text": "**The NAS package is not a surface.** It puts the *server* on a",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 98
+  },
+  {
+    "id": "SURF-18",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 18,
+    "status": "SHIPPED",
+    "text": "The matrix below is the record of what each surface must, may and may",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 106
+  },
+  {
+    "id": "SURF-19",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 19,
+    "status": "SHIPPED",
+    "text": "**Browser-backed surfaces**, web and the sandboxed television",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 133
+  },
+  {
+    "id": "SURF-20",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 20,
+    "status": "SHIPPED",
+    "text": "**Native surfaces**, mobile, desktop and the native television",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 137
+  },
+  {
+    "id": "SURF-21",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 21,
+    "status": "AGREED",
+    "text": "When a television's older decoder cannot play a file a modern phone",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 140
+  },
+  {
+    "id": "SURF-22",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 22,
+    "status": "AGREED",
+    "text": "KROMA never papers over a generation gap by silently transcoding for",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 143
+  },
+  {
+    "id": "SURF-23",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 23,
+    "status": "SHIPPED",
+    "text": "**Pointer**, on web and desktop, is the reference model: dense",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 158
+  },
+  {
+    "id": "SURF-24",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 24,
+    "status": "SHIPPED",
+    "text": "**Touch**, on mobile, means targets sized for a thumb, gestures for",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 161
+  },
+  {
+    "id": "SURF-25",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 25,
+    "status": "SHIPPED",
+    "text": "**Remote, 10-foot**, on every television, is a directional focus",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 164
+  },
+  {
+    "id": "SURF-26",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 26,
+    "status": "SHIPPED",
+    "text": "A television signs in through the pairing handshake precisely",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 167
+  },
+  {
+    "id": "SURF-27",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 27,
+    "status": "AGREED",
+    "text": "A television build that ships a pointer-shaped screen has not met",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 169
+  },
+  {
+    "id": "SURF-28",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 28,
+    "status": "AGREED",
+    "text": "A surface serving more than one model, such as a tablet with a",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 171
+  },
+  {
+    "id": "SURF-29",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 29,
+    "status": "SHIPPED",
+    "text": "**Only mobile is offline.** Web, desktop and every television hold no",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 178
+  },
+  {
+    "id": "SURF-30",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 30,
+    "status": "SHIPPED",
+    "text": "A downloaded title plays with no server connection.",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 185
+  },
+  {
+    "id": "SURF-31",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 31,
+    "status": "SHIPPED",
+    "text": "Downloads survive backgrounding and app kills, and are re-adopted",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 189
+  },
+  {
+    "id": "SURF-32",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 32,
+    "status": "SHIPPED",
+    "text": "Progress reports that could not be sent queue on the device and",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 191
+  },
+  {
+    "id": "SURF-33",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 33,
+    "status": "DESIGN, NOT IMPLEMENTED",
+    "text": "Per-title rows in the OS storage manager, deletable",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 199
+  },
+  {
+    "id": "SURF-34",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 34,
+    "status": "AGREED",
+    "text": "A surface stays current without asking a person to babysit it.",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 217
+  },
+  {
+    "id": "SURF-35",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 35,
+    "status": "SHIPPED",
+    "text": "**Web.** The server serves the web surface itself. There is no",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 219
+  },
+  {
+    "id": "SURF-36",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 36,
+    "status": "SHIPPED",
+    "text": "**Desktop.** The app checks for, fetches and applies updates in the",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 222
+  },
+  {
+    "id": "SURF-37",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 37,
+    "status": "AGREED",
+    "text": "**Mobile.** The app updates on the store's cadence, so a server",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 224
+  },
+  {
+    "id": "SURF-38",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 38,
+    "status": "AGREED",
+    "text": "**Televisions.** Each television updates through its own platform's",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 227
+  },
+  {
+    "id": "SURF-39",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 39,
+    "status": "AGREED",
+    "text": "**NAS.** The Synology package installs and updates through Package",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 229
+  },
+  {
+    "id": "SURF-40",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 40,
+    "status": "AGREED",
+    "text": "A surface is dropped when its host platform can no longer meet the",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 238
+  },
+  {
+    "id": "SURF-41",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 41,
+    "status": "AGREED",
+    "text": "**Notice first.** A surface entering deprecation tells its users *in",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 243
+  },
+  {
+    "id": "SURF-42",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 42,
+    "status": "AGREED",
+    "text": "**Sessions survive the app.** A deprecated surface's sessions are",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 246
+  },
+  {
+    "id": "SURF-43",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 43,
+    "status": "AGREED",
+    "text": "**The library outlives any surface.** Nothing about a person's",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 250
+  },
+  {
+    "id": "SURF-44",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 44,
+    "status": "AGREED",
+    "text": "Web is where the baseline is defined, so web is first-class by",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 82
+  },
+  {
+    "id": "SURF-45",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 45,
+    "status": "AGREED",
+    "text": "A best-effort surface ships when its platform allows and may lag the",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 96
+  },
+  {
+    "id": "SURF-46",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 46,
+    "status": "AGREED",
+    "text": "KROMA never claims a panel decodes a codec its generation predates.",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 145
+  },
+  {
+    "id": "SURF-47",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 47,
+    "status": "SHIPPED",
+    "text": "The input model is the one thing a surface may *not* copy from web,",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 154
+  },
+  {
+    "id": "SURF-48",
+    "domain": "SURF",
+    "space": "surfaces",
+    "number": 48,
+    "status": "SHIPPED",
+    "text": "A download is a single progressive file: the raw original when the",
+    "file": "docs/spec/surfaces/README.md",
+    "line": 186
   }
 ]

@@ -11,6 +11,8 @@ should ask nothing of them the rest of the time.
 
 ## Chapters
 
+Status: **SHIPPED**
+
 The dashboard and the record it reads have their own chapters. Each states what one screen
 must do; this file stays the landing page for running a server at all.
 
@@ -34,10 +36,10 @@ server the owner can explore at leisure. The minimum path, in exact order:
    exists yet, so the server presents the owner-creation step and nothing else.
 2. **Create the owner.** One account: a name and a credential. This account is the owner
    from the moment it exists. There is no separate "make me admin" step, and roles are
-   [`accounts.md`](../accounts/README.md), not asked here.
+   [`accounts/`](../accounts/), not asked here.
 3. **Add one source.** Point the server at one directory of movies or shows and tag its
    content kind. The initial scan starts immediately as a background job with visible
-   progress, [`library.md`](../library/README.md); the catalogue fills as it goes.
+   progress, [`library/`](../library/); the catalogue fills as it goes.
 4. **Play.** As soon as the first title matches, it is playable. First-run is over. The
    owner did not wait for the whole scan to finish.
 
@@ -57,9 +59,9 @@ person to break their own server at 1am, so the default posture is *no setting*.
 earns its place only when a real hobbyist has a real reason to turn it and no default can
 serve both sides of that reason.
 
-What is exposed: **sources** and their scan schedules ([`library.md`](../library/README.md));
+What is exposed: **sources** and their scan schedules ([`library/`](../library/));
 **users** and invitations (below); **metadata provider** credentials where a provider needs
-a key; **modules** and their configuration ([`modules.md`](../modules/README.md)); **server identity**
+a key; **modules** and their configuration ([`modules/`](../modules/)); **server identity**
 (a display name for the server on the network); and the **backup** controls (below).
 
 What is deliberately not exposed: transcoding ladders, cache sizes and eviction policy,
@@ -81,7 +83,7 @@ owner reconstructing a config file by hand.
 Deploy-time is reserved for the few things that genuinely cannot change safely while the
 server runs: where the server's own data lives, what address and port it binds, and the
 identity of the persistent store itself. These are the parameters a restart is *for*. They
-are set once by whatever packaged KROMA for the host, [`surfaces.md`](../surfaces/README.md), and
+are set once by whatever packaged KROMA for the host, [`surfaces/`](../surfaces/), and
 are not surfaced as settings, because changing them is a redeploy, not a preference.
 
 ## Users
@@ -92,16 +94,16 @@ The owner manages who else may use the server. Three actions, kept deliberately 
 
 - **Invite.** The owner creates an invitation the new user redeems to set their own
   credential; the owner never sets or sees another user's password. Whether an invite is a
-  link or a code is [`surfaces.md`](../surfaces/README.md); that a user sets their own secret is the
+  link or a code is [`surfaces/`](../surfaces/); that a user sets their own secret is the
   product rule.
 - **Remove.** The owner removes a user. This revokes that user's sessions and devices and
-  destroys their account per [`accounts.md`](../accounts/README.md), but touches no media and does not
+  destroys their account per [`accounts/`](../accounts/), but touches no media and does not
   affect anyone else's watch state.
 - **Reset.** The owner triggers a credential reset for a user who is locked out; the user
   re-establishes their own secret. The owner resets access, never impersonates.
 
 Roles, per-user library visibility, session lifetime and what survives an account deletion
-are all [`accounts.md`](../accounts/README.md). This section is only the admin verbs.
+are all [`accounts/`](../accounts/). This section is only the admin verbs.
 
 ### Credential reset
 
@@ -190,16 +192,16 @@ Background work, meaning scans, metadata refreshes, transcodes and module tasks,
 and interruptible. The owner should never wonder whether the server is doing something.
 
 - **Visibility.** Every running and queued job is listed with what it is, what it is working
-  on and its progress; scans and refreshes are [`library.md`](../library/README.md), module jobs are
-  [`modules.md`](../modules/README.md). A finished job leaves a short trace (succeeded, failed, or
+  on and its progress; scans and refreshes are [`library/`](../library/), module jobs are
+  [`modules/`](../modules/). A finished job leaves a short trace (succeeded, failed, or
   cancelled) so a failure is not silent.
 - **Cancellation.** Any job the owner started, the owner can cancel. Cancellation is safe:
   a cancelled scan leaves the catalogue consistent with what it had already matched, a
   cancelled transcode discards its partial output, and nothing a cancel touches corrupts
-  the library on disk. Scans are read-only ([`library.md`](../library/README.md)) and transcodes
+  the library on disk. Scans are read-only ([`library/`](../library/)) and transcodes
   write only to regenerable cache.
 - **Scheduling.** The little scheduling that exists is per-source scan cadence
-  ([`library.md`](../library/README.md)) and the metadata staleness sweep. These have sane defaults
+  ([`library/`](../library/)) and the metadata staleness sweep. These have sane defaults
   and rarely need touching. The server also declines to pile work on itself: heavy jobs are
   bounded so a large library does not saturate a NAS, and this bound is chosen, not
   configured.
@@ -211,7 +213,7 @@ Status: **AGREED**
 When something is wrong, the owner needs to see it and hand it to someone who can fix it.
 
 - **Health.** A single view answers "is the server well?": are sources reachable, are
-  modules running or crashed ([`modules.md`](../modules/README.md)), is there room on disk, is the
+  modules running or crashed ([`modules/`](../modules/)), is there room on disk, is the
   metadata provider reachable. Green is the normal state; anything else names the specific
   thing that is wrong and, where possible, the action that fixes it.
 - **Logs.** The server keeps a rolling log the owner can read and export. Routine operation
@@ -242,17 +244,17 @@ accounts, the same history and the same settings, without re-teaching it anythin
 
 What a backup **must** contain, because it cannot be regenerated:
 
-- **Accounts.** Owner and users, their bindings and access ([`accounts.md`](../accounts/README.md)).
+- **Accounts.** Owner and users, their bindings and access ([`accounts/`](../accounts/)).
 - **Watch state.** History, resume positions, ratings, and the manual-match bindings the
-  library keeps against files ([`library.md`](../library/README.md)). This is the irreplaceable heart:
+  library keeps against files ([`library/`](../library/)). This is the irreplaceable heart:
   history that outlives the bytes it describes must outlive the server too.
 - **Settings.** Sources, schedules, provider credentials, server identity.
-- **Module data.** Each installed module's own persisted state ([`modules.md`](../modules/README.md)),
+- **Module data.** Each installed module's own persisted state ([`modules/`](../modules/)),
   so a restore brings modules back as they were, not as blank installs.
 
 What a backup **must not** contain, because including it is waste, not safety:
 
-- **Media files.** KROMA never owns the bytes ([`library.md`](../library/README.md)); the library is
+- **Media files.** KROMA never owns the bytes ([`library/`](../library/)); the library is
   the owner's, backed up by the owner however they back up a NAS. A KROMA backup is small.
 - **Regenerable caches and artwork.** Fetched metadata, generated images and transcode
   output all rebuild themselves from the sources and providers after a restore. A backup
@@ -278,7 +280,7 @@ The risk an update carries, and how KROMA bounds it:
   backup before a server update, and a failed migration leaves the previous version
   restorable rather than a half-migrated store.
 - **Module updates** are independent of the server and carry their own compatibility
-  promise ([`modules.md`](../modules/README.md)); a module update never requires a server update and a
+  promise ([`modules/`](../modules/)); a module update never requires a server update and a
   server update never silently updates modules.
 - **Active playback is not a reason an update is blocked, and an update is not a reason
   playback stops**, but because a server update means a restart, the owner is told an update
@@ -287,7 +289,7 @@ The risk an update carries, and how KROMA bounds it:
 
 Open, with a recommendation: how the update actually arrives differs per host, a NAS
 package or a desktop auto-updater or a container image, and that delivery is
-[`surfaces.md`](../surfaces/README.md). Recommended answer: the product rule ("passive notice, owner
+[`surfaces/`](../surfaces/). Recommended answer: the product rule ("passive notice, owner
 chooses, backup first, migrate-forward-or-restore") is fixed here and identical everywhere;
 only the delivery vehicle varies by surface. This split is provisional pending review.
 
@@ -307,7 +309,7 @@ The exceptions are few, honest, and all involve a restart the owner initiates:
 - **Deploy-time parameters** (bind address, store location) cannot change without a restart,
   which is why they are not runtime settings at all (above).
 - **Removing a user or revoking a device** intentionally ends *that* person's sessions
-  immediately ([`accounts.md`](../accounts/README.md)); it is a security action, not a preference, and
+  immediately ([`accounts/`](../accounts/)); it is a security action, not a preference, and
   interrupting the revoked stream is the point. Everyone else plays on.
 
 Everything reachable as an ordinary runtime setting is safe to change at any time, including
@@ -315,8 +317,10 @@ while media is playing. If a change is not safe to make live, it is not a runtim
 
 ## Not in scope
 
-- **Roles, sessions, device binding and account deletion** are [`accounts.md`](../accounts/README.md).
-- **Module lifecycle, the Store and sidecar failure** are [`modules.md`](../modules/README.md).
-- **Scan and refresh behaviour** is [`library.md`](../library/README.md); Admin only starts, shows and
+Status: **AGREED**
+
+- **Roles, sessions, device binding and account deletion** are [`accounts/`](../accounts/).
+- **Module lifecycle, the Store and sidecar failure** are [`modules/`](../modules/).
+- **Scan and refresh behaviour** is [`library/`](../library/); Admin only starts, shows and
   cancels those jobs.
-- **Per-platform packaging and the update delivery vehicle** are [`surfaces.md`](../surfaces/README.md).
+- **Per-platform packaging and the update delivery vehicle** are [`surfaces/`](../surfaces/).
