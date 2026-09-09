@@ -14,7 +14,7 @@
   "handoff.otherWays": "Autres façons de se connecter",
   "handoff.rowDone": "Connectée",
   "handoff.tooManyHere": "Trop de TV attendent déjà sur ce réseau",
-  "handoff.tooOften": "Cette TV s’est annoncée trop souvent. Elle réessaiera dans un instant.",
+  "handoff.tooOften": "Cette TV s'est annoncée trop souvent. Elle réessaiera dans un instant.",
   "handoff.tvBeacon": "Sur ton téléphone, cette TV apparaît sous le nom {name}",
   "handoff.tvCheck": "Code {check}"
 }
