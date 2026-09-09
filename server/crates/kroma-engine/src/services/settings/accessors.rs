@@ -268,9 +268,6 @@ pub fn library_defs(settings: &Settings, config: &crate::config::Config) -> Vec<
             auto_scan: true,
         });
     }
-    if defs.is_empty() {
-        return demo_defs(config);
-    }
     defs.extend(config.media_dirs.iter().map(|dir| {
         let path = dir.to_string_lossy().to_string();
         let name = dir
@@ -286,6 +283,9 @@ pub fn library_defs(settings: &Settings, config: &crate::config::Config) -> Vec<
             auto_scan: true,
         }
     }));
+    if defs.is_empty() {
+        return demo_defs(config);
+    }
     defs
 }
 
@@ -698,6 +698,24 @@ mod tests {
         assert_eq!(defs.len(), 1);
         assert_eq!(defs[0].name, "Films");
         assert_eq!(defs[0].folders, vec!["/media/films".to_string()]);
+    }
+
+    #[test]
+    fn an_untyped_media_dir_is_a_library_on_its_own() {
+        let pool = test_pool();
+        let s = settings(&pool);
+        let dir = kroma_testing::temp_dir("media-dirs-only");
+        let (movies, _) = crate::services::demo::media::roots(dir.path());
+        std::fs::create_dir_all(&movies).unwrap();
+        let mut cfg = test_config();
+        cfg.data_dir = dir.path().to_path_buf();
+        cfg.media_dirs = vec![PathBuf::from("/media/4k Shows")];
+
+        let defs = library_defs(&s, &cfg);
+
+        assert_eq!(defs.len(), 1, "KROMA_MEDIA_DIRS alone configures a library");
+        assert_eq!(defs[0].name, "4k Shows");
+        assert_eq!(defs[0].folders, vec!["/media/4k Shows".to_string()]);
     }
 
     #[test]
