@@ -1,5 +1,4 @@
 {
-  "player.aacReencoded": "réencodé en AAC stéréo pour ce navigateur",
   "player.activityArtwork": "Affiches {done}/{total}",
   "player.activityScanning": "Analyse de la bibliothèque…",
   "player.audioFilterBoost": "Amplification",
@@ -23,7 +22,7 @@
   "player.cancel": "Annuler",
   "player.cantPlay": "Cette vidéo ne peut pas être lue",
   "player.cantPlayHint": "Le fichier est indisponible, ou cet appareil ne sait pas lire son format.",
-  "player.codecUnsupportedHint": "Essayez de lire ce titre sur un autre appareil.",
+  "player.codecUnsupportedHint": "Il se lit dans les apps KROMA téléphone, TV et ordinateur, qui décodent sur l'appareil. Ou demandez au propriétaire du serveur d'activer la conversion pour celui-ci.",
   "player.currentChapterOf": "Chapitre {n} / {total}",
   "player.directPlayAv1": "Lecture directe en AV1.",
   "player.directPlayH264": "Lecture directe en H.264.",
@@ -61,6 +60,7 @@
   "player.quality": "Qualité",
   "player.qualityAuto": "Auto",
   "player.recommendations": "Recommandations",
+  "player.repackagedToast": "Reconditionné pour ce navigateur. L'image et le son sont intacts.",
   "player.restart": "Recommencer",
   "player.resume": "Reprendre",
   "player.resumeAt": "Reprise à {time}",

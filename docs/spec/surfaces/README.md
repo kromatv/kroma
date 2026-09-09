@@ -137,7 +137,7 @@ device's generation, not the surface's brand, that sets it.
 - **SURF-20** (SHIPPED) - **Native surfaces**, mobile, desktop and the native television
   shells, direct-play to the *device's* own decoder. KROMA reads the generation from the
   device profile and never assumes a newer one than it measures.
-- **SURF-21** (AGREED) - When a television's older decoder cannot play a file a modern phone
+- **SURF-21** (SHIPPED) - When a television's older decoder cannot play a file a modern phone
   can, and transcode is capped or disabled, the television says so plainly and names a surface
   that does play it ([`playback/`](../playback/)).
 - **SURF-22** (AGREED) - KROMA never papers over a generation gap by silently transcoding for
