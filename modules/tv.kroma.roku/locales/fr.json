@@ -29,5 +29,18 @@
   "roku.addressHint": "Pour un réseau où la recherche n'entend rien : le boîtier affiche son adresse dans Paramètres, Réseau, À propos. Ce doit être une adresse de ce réseau, pas un nom.",
   "roku.addressPlaceholder": "192.168.1.50",
   "roku.add": "Ajouter ce boîtier",
-  "roku.addFailed": "Aucun Roku de ce réseau n'a répondu à cette adresse."
+  "roku.addFailed": "Aucun Roku de ce réseau n'a répondu à cette adresse.",
+  "roku.channel.continueWatching": "Reprendre",
+  "roku.channel.movies": "Films",
+  "roku.channel.shows": "Séries",
+  "roku.channel.episodes_one": "{count} épisode",
+  "roku.channel.episodes_other": "{count} épisodes",
+  "roku.channel.pairTitle": "Associer ce Roku",
+  "roku.channel.pairHint": "Ouvrez KROMA sur votre téléphone ou dans un navigateur, allez dans Quick Connect et saisissez ce code.",
+  "roku.channel.pairServer": "Serveur",
+  "roku.channel.pairUnreachable": "Impossible de joindre le serveur à",
+  "roku.channel.loading": "Chargement",
+  "roku.channel.loadFailed": "Impossible de charger la bibliothèque.",
+  "roku.channel.play": "Lire",
+  "roku.channel.resumeAt": "Reprendre à"
 }

@@ -1337,6 +1337,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "kroma-i18n"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "kroma-module-host"
 version = "0.1.0"
 dependencies = [
@@ -1392,6 +1399,7 @@ dependencies = [
  "axum",
  "kroma-db",
  "kroma-http",
+ "kroma-i18n",
  "kroma-module-host",
  "kroma-module-macros",
  "kroma-module-manifest",

@@ -3,7 +3,7 @@ name = "kroma-module-sdk"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
-description = "The KROMA module SDK: the single crate every server module depends on. Re-exports the manifest layer plus the engine/host/domain/http/db surface, so modules never depend on core crates directly."
+description = "The KROMA module SDK: the single crate every server module depends on. Re-exports the manifest layer plus the engine/host/domain/http/i18n/db surface, so modules never depend on core crates directly."
 license.workspace = true
 
 [dependencies]
@@ -19,9 +19,11 @@ kroma-module-host = { workspace = true }
 kroma-engine = { workspace = true, optional = true }
 kroma-domain = { workspace = true, optional = true }
 kroma-db = { workspace = true, optional = true }
-# What a sidecar links: the wire types, the HTTP client, the SQLite pool.
+# What a sidecar links: the wire types, the HTTP client, the i18n engine its
+# own catalogs resolve against, the SQLite pool.
 kroma-module-wire = { workspace = true }
 kroma-http = { workspace = true }
+kroma-i18n = { workspace = true }
 kroma-sqlite = { workspace = true, optional = true }
 kroma-primitives = { workspace = true }
 # `testing::{TempDir, temp_dir}`, the scratch dir every module test writes in.

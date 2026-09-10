@@ -17,7 +17,7 @@ use kroma_module_sdk::host::{bearer_from_headers, json_error, AuthUser, HostCtx}
 use crate::address::DeviceAddress;
 use crate::core::Core;
 use crate::state::Roku;
-use crate::{channel, detail, lan};
+use crate::{detail, lan, rows, strings};
 
 pub fn routes<S>(roku: Arc<Roku>) -> Router<S>
 where
@@ -144,43 +144,17 @@ fn core_for(headers: &HeaderMap) -> Result<Core, Response> {
         .map_err(|e| json_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("{e:#}")))
 }
 
-struct Labels {
-    continuing: &'static str,
-    movies: &'static str,
-    shows: &'static str,
-}
-
-fn labels(user: &kroma_module_sdk::domain::User) -> Labels {
-    match user.language.as_deref() {
-        Some(l) if l.starts_with("fr") => Labels {
-            continuing: "Reprendre",
-            movies: "Films",
-            shows: "Séries",
-        },
-        _ => Labels {
-            continuing: "Continue watching",
-            movies: "Movies",
-            shows: "Shows",
-        },
-    }
-}
-
 async fn home(AuthUser(user): AuthUser, headers: HeaderMap) -> Result<Response, Response> {
     let core = core_for(&headers)?;
-    let labels = labels(&user);
+    let strings = strings::for_user(&user);
     let (continuing, sections) =
         tokio::join!(core.get_or_null("/continue"), core.get_or_null("/home"));
-    let mut rows = channel::home_rows(labels.continuing, &continuing, &sections);
-    if rows.len() <= 1 {
+    let mut screen = rows::home(strings, &continuing, &sections);
+    if screen.len() <= 1 {
         let (movies, shows) = tokio::join!(core.get_or_null("/movies"), core.get_or_null("/shows"));
-        rows.extend(channel::library_rows(
-            labels.movies,
-            labels.shows,
-            &movies,
-            &shows,
-        ));
+        screen.extend(rows::library(strings, &movies, &shows));
     }
-    Ok(Json(json!({ "rows": rows })).into_response())
+    Ok(Json(json!({ "rows": screen })).into_response())
 }
 
 async fn resume_ms(core: &Core, item_id: &str) -> i64 {
@@ -192,11 +166,12 @@ async fn resume_ms(core: &Core, item_id: &str) -> i64 {
 }
 
 async fn detail(
-    AuthUser(_user): AuthUser,
+    AuthUser(user): AuthUser,
     headers: HeaderMap,
     Path((kind, id)): Path<(String, String)>,
 ) -> Result<Response, Response> {
     let core = core_for(&headers)?;
+    let strings = strings::for_user(&user);
     let not_found = || json_error(StatusCode::NOT_FOUND, "unknown item");
     let detail = if kind == "show" {
         let show = core
@@ -212,7 +187,7 @@ async fn detail(
             Some(item_id) => resume_ms(&core, item_id).await,
             None => 0,
         };
-        detail::show_detail(&show, &up_next, resume)
+        detail::show_detail(strings, &show, &up_next, resume)
     } else {
         let item = core
             .get(&format!("/items/{id}"))
@@ -231,29 +206,14 @@ mod tests {
     use axum::http::Request;
     use tower::ServiceExt;
 
-    use kroma_module_sdk::domain::{LibraryScope, User};
     use kroma_module_sdk::host::testing::StubHost;
+
+    use crate::test_support::user;
 
     use super::*;
 
-    fn operator() -> User {
-        User {
-            id: "u1".into(),
-            email: "ana@kroma.tv".into(),
-            username: "ana".into(),
-            avatar_url: None,
-            language: None,
-            audio_language: None,
-            subtitle_language: None,
-            permissions: Vec::new(),
-            libraries: LibraryScope::All,
-            created_at: "2026-01-01T00:00:00Z".into(),
-            has_pin: false,
-        }
-    }
-
     async fn add_by_hand(ip: &str) -> StatusCode {
-        let host = StubHost::new().with_session("tok", operator());
+        let host = StubHost::new().with_session("tok", user(None));
         let app = routes::<StubHost>(crate::roku_service(std::path::Path::new("/nowhere")))
             .with_state(host);
         let request = Request::post("/roku/add")
