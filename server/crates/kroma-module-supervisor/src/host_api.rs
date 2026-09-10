@@ -15,12 +15,12 @@ use serde_json::{json, Value};
 
 mod settings;
 
-pub use settings::CoreOnlySettings;
+pub use settings::WithheldSettings;
 
 /// The `/_host/*` callback router modules call back into (mount under `/api`),
-/// guarded by the shared `token`. `core_only` decides which settings keys the
-/// callback withholds.
-pub fn host_router<S>(token: String, core_only: CoreOnlySettings) -> Router<S>
+/// guarded by the shared `token`. `withheld` decides which settings keys the
+/// callback keeps from a module.
+pub fn host_router<S>(token: String, withheld: WithheldSettings) -> Router<S>
 where
     S: HostCtx + Clone + Send + Sync + 'static,
 {
@@ -47,7 +47,7 @@ where
         // answers with whoever serves it. No module id crosses this wire.
         .route("/_host/contributions", get(contributions::<S>))
         .route_layer(from_fn_with_state(HostToken(token), require_host_token))
-        .layer(Extension(core_only))
+        .layer(Extension(withheld))
 }
 
 #[derive(serde::Deserialize)]

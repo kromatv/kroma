@@ -329,7 +329,7 @@
 - **MOD-48** (AGREED) - The Store names the registry every module came from, on the listing and
 - **MOD-49** (AGREED) - Installing from a registry the operator added is gated once, per
 - **MOD-50** (AGREED) - A module that has disappeared from every configured registry is flagged
-- **MOD-51** (SHIPPED) - It may not read or write the server's own credentials. The settings
+- **MOD-51** (SHIPPED) - It may not read or write the server's own credentials. A settings key
 - **MOD-52** (SHIPPED) - The server refuses to **update** a module past the range an enabled
 
 ## PLAY - [playback](playback/)

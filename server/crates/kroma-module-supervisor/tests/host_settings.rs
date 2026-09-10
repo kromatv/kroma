@@ -4,15 +4,15 @@
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use kroma_module_host::testing::StubHost;
-use kroma_module_supervisor::CoreOnlySettings;
+use kroma_module_supervisor::WithheldSettings;
 use serde_json::json;
 use tower::ServiceExt;
 
 const TOKEN: &str = "host-token";
-const CORE_ONLY: CoreOnlySettings = CoreOnlySettings(|key| key == "smtpPassword");
+const WITHHELD: WithheldSettings = WithheldSettings(|key| key == "smtpPassword");
 
 async fn send(host: StubHost, req: Request<Body>) -> (StatusCode, String) {
-    let res = kroma_module_supervisor::host_router::<StubHost>(TOKEN.into(), CORE_ONLY)
+    let res = kroma_module_supervisor::host_router::<StubHost>(TOKEN.into(), WITHHELD)
         .with_state(host)
         .oneshot(req)
         .await

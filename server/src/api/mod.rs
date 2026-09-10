@@ -232,7 +232,9 @@ pub fn router(
         .merge(content)
         .merge(kroma_module_supervisor::host_router::<SharedState>(
             supervisor.host_token().to_string(),
-            kroma_module_supervisor::CoreOnlySettings(crate::services::settings::core_only),
+            kroma_module_supervisor::WithheldSettings(
+                crate::services::settings::withheld_from_modules,
+            ),
         ))
         // A sidecar registers its scheduled jobs with the core JobManager here, so
         // they appear in admin Tâches like in-core jobs (same host-token guard).

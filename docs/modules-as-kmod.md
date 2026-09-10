@@ -44,11 +44,11 @@ it, supervises it, and reverse-proxies its HTTP.**
   module declared under `storage.adopt` out of the core database and into the
   module's own file -- the core does it, because the module no longer holds the
   rights to. `proxy_to` reverse-proxies a request to a module process.
-  `host_router::<HostCtx>(token, core_only)` serves `/api/_host/*` (setting /
+  `host_router::<HostCtx>(token, withheld)` serves `/api/_host/*` (setting /
   settings / events / job / enabled / session / ...), token-authed, resolved
-  against the core's real state. `core_only` is the core's own predicate over
-  settings keys: the ones it answers for itself are read back as the caller's
-  default and refused on write.
+  against the core's real state. `withheld` is the core's own predicate over
+  settings keys: one it answers for itself is read back as the caller's default
+  and refused on write, and a key no declaration hands out is withheld too.
 - **Core integration**: `main.rs` builds the supervisor and `spawn_enabled`s
   installed modules at boot; `api/mod.rs` mounts the callback API and a
   `/api/module/<id>/*` reverse proxy.
