@@ -13,9 +13,9 @@
 //! enforce; those are marked `applied: false` in the schema so the UI can be
 //! honest about it.
 //!
-//! Split into the declared [`keys`] (defaults + which of them the core keeps to
-//! itself), the [`store`] (map + persistence), the typed functional [`accessors`]
-//! (+ library defs), and the admin view-model [`schema`].
+//! Split into the declared [`keys`] (defaults + who may reach each one), the
+//! [`store`] (map + persistence), the typed functional [`accessors`] (+ library
+//! defs), and the admin view-model [`schema`].
 
 /// The dropdown value that means "no explicit choice": the fallback language
 /// defers to the server's own default.
@@ -28,7 +28,7 @@ mod schema;
 mod store;
 
 pub use accessors::*;
-pub use keys::core_only;
+pub use keys::withheld_from_modules;
 pub use llm::*;
 pub use schema::*;
 pub use store::*;
