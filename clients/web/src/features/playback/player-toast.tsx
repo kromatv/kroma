@@ -1,23 +1,21 @@
 import { useT } from '@kromatv/ui';
 import { Box, backdropBlur, IconButton, Row, styles, Text } from '@kromatv/ui/kit';
 
-/** Centered top toast for transient player notices (audio re-encode, resume, errors). */
+/** Centered top toast for transient player notices (resume, errors). */
 export function Toast({
   variant,
   onDismiss,
   action,
-  top = 24,
   children,
 }: Readonly<{
   variant: 'info' | 'danger';
   onDismiss: () => void;
   action?: React.ReactNode;
-  top?: number;
   children: React.ReactNode;
 }>) {
   const t = useT();
   return (
-    <Box absolute top={top} left={0} right={0} z={40} align="center" pointerEvents="box-none">
+    <Box absolute top={24} left={0} right={0} z={40} align="center" pointerEvents="box-none">
       <Row
         maxW={640}
         gap={12}

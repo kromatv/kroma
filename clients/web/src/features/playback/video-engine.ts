@@ -6,14 +6,17 @@
 // keyframe start the server reports rather than the anchor that was asked for.
 
 import type { AudioTrack } from '@kromatv/client/media';
+import type { PlaybackMode } from '@kromatv/client/playback';
 import {
   attachHlsRecovery,
   type EngineDecision,
   hlsBufferConfig,
   itemBufferPlan,
   shakaStreamingConfig,
+  type WaitReason,
 } from '@kromatv/core';
 import type { WebEnginePref } from '#web/features/playback/engine-pref';
+import { type StreamFailure, shakaHttpStatus } from '#web/features/playback/stream-failure';
 import { kromaClient, type MovieView } from '#web/shared/lib/api';
 
 export type HlsInstance = import('hls.js').default;
@@ -52,6 +55,9 @@ export interface VideoPlayback {
   barRef: React.RefObject<HTMLDivElement | null>;
   playing: boolean;
   waiting: boolean;
+  waitReason: WaitReason | null;
+  failure: StreamFailure | null;
+  mode: PlaybackMode;
   ready: boolean;
   cur: number;
   dur: number;
@@ -105,6 +111,7 @@ export interface AttachSourceOptions {
   /** Called when an engine has failed past its own recovery, so the caller can
    * re-anchor onto a fresh stream at wherever the picture froze. */
   onGiveUp: () => void;
+  onRefused: (status: number) => void;
 }
 
 function seekToAnchor(v: HTMLVideoElement, startSec: number): void {
@@ -142,12 +149,13 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
     setUseHls,
     setReady,
     onGiveUp,
+    onRefused,
   } = opts;
   setReady(false);
 
   if (decision.kind === 'direct') {
     setUseHls(false);
-    v.src = item.stream;
+    v.src = kromaClient().media.streamUrl(item.id);
     v.preload = 'auto';
     seekToAnchor(v, startSec);
     return () => {
@@ -183,7 +191,10 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
       player
         .attach(v)
         .then(() => player.load(url))
-        .catch(() => undefined);
+        .catch((e: unknown) => {
+          const status = shakaHttpStatus(e);
+          if (!destroyed && status !== null) onRefused(status);
+        });
     });
     return () => {
       destroyed = true;
@@ -217,7 +228,7 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
       ...hlsBufferConfig(plan),
     });
     hlsRef.current = hls;
-    attachHlsRecovery(Hls, hls, onGiveUp);
+    attachHlsRecovery(Hls, hls, onGiveUp, onRefused);
     hls.loadSource(url);
     hls.attachMedia(v);
   });

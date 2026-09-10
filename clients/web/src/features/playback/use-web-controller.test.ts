@@ -102,17 +102,40 @@ describe('useWebController audio preference', () => {
 });
 
 describe('useWebController playbackMode', () => {
-  it('is "direct" for a bare <video src>', () => {
-    H.pb = makePb({ useHls: false });
-    expect(render().result.current.playbackMode).toBe('direct');
+  it('is what the engine decided, not what has attached so far', () => {
+    for (const mode of ['direct', 'remux', 'transcode'] as const) {
+      H.pb = makePb({ mode, useHls: false });
+      expect(render().result.current.playbackMode).toBe(mode);
+    }
   });
-  it('is "transcode" for an AAC-master HLS stream', () => {
-    H.pb = makePb({ useHls: true, aac: true });
-    expect(render().result.current.playbackMode).toBe('transcode');
+});
+
+describe('useWebController notices and failures', () => {
+  it('says what a remux did under Quality, and nothing for a direct play', () => {
+    H.pb = makePb({ mode: 'remux' });
+    expect(render().result.current.controller.qualities[0]?.note).toBe('player.repackaged');
+
+    H.pb = makePb({ mode: 'direct' });
+    expect(render().result.current.controller.qualities[0]?.note).toBeUndefined();
   });
-  it('is "remux" for a stream-copy HLS master', () => {
-    H.pb = makePb({ useHls: true, aac: false });
-    expect(render().result.current.playbackMode).toBe('remux');
+
+  it('prints a refused stream across the stage, with what to do about it', () => {
+    H.pb = makePb({ failure: 'denied' });
+
+    const c = render().result.current.controller;
+
+    expect(c.error).toBe('player.streamDenied');
+    expect(c.errorHint).toBe('player.streamDeniedHint');
+  });
+
+  it('tells the chrome what a wait is on', () => {
+    H.pb = makePb({ waiting: true, waitReason: 'buffering' });
+
+    const c = render().result.current.controller;
+
+    expect(c.waiting).toBe(true);
+    expect(c.waitReason).toBe('buffering');
+    expect(c.error).toBeNull();
   });
 });
 

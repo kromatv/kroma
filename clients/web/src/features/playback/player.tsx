@@ -1,5 +1,5 @@
 import type { MediaItem } from '@kromatv/client/media';
-import { audioSupport, playerSubtitle, streamNotice } from '@kromatv/core';
+import { audioSupport, playerSubtitle } from '@kromatv/core';
 import {
   Player as UnifiedPlayer,
   useCast,
@@ -85,12 +85,9 @@ export function Player({
 
   const audio = audioSupport(item);
   const warn =
-    !audio.canPlay && !pb.useHls && audio.messageKey
+    !audio.canPlay && wc.playbackMode === 'direct' && audio.messageKey
       ? t(audio.messageKey, audio.messageVars)
       : null;
-
-  const notice = useMemo(() => streamNotice(item, wc.playbackMode), [item, wc.playbackMode]);
-  const [noticeSeen, setNoticeSeen] = useState(false);
 
   const intro = useMemo(() => (item.markers ?? []).find((m) => m.kind === 'intro'), [item.markers]);
   const introActive =
@@ -178,15 +175,9 @@ export function Player({
           </Box>
         </UnifiedPlayer.Panel>
       ) : null}
-      {notice && !noticeSeen ? (
-        <Toast variant="info" onDismiss={() => setNoticeSeen(true)}>
-          {t(notice.messageKey, notice.messageVars)}
-        </Toast>
-      ) : null}
       {showResume && resumeAt != null ? (
         <Toast
           variant="info"
-          top={notice && !noticeSeen ? 88 : 24}
           onDismiss={() => setShowResume(false)}
           action={
             <Button
