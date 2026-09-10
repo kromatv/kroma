@@ -110,6 +110,7 @@ function StoreCard({
         p={16}
         gap={12}
         row
+        flex
         align="flex-start"
         opacity={m.compatible ? 1 : 0.7}
       >
