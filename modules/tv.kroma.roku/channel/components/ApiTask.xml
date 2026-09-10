@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="ApiTask" extends="Task">
+  <interface>
+    <field id="server" type="string"/>
+    <field id="token" type="string"/>
+    <field id="secret" type="string"/>
+    <field id="method" type="string" value="GET"/>
+    <field id="path" type="string"/>
+    <field id="body" type="string"/>
+    <field id="tag" type="string"/>
+    <field id="response" type="assocarray"/>
+  </interface>
+  <script type="text/brightscript" uri="pkg:/components/ApiTask.brs"/>
+</component>

@@ -74,6 +74,7 @@ proof can only push *their own* account onto a television, never take one.
 | mobile (iOS, Android) | no | yes | `@kromatv/lan-beacon` |
 | web, tv-web, desktop | no | no | server source only |
 | tizen | cannot | no | server source only, and confirmed by the check string, see [below](#who-may-raise-a-beacon) |
+| roku (`tv.kroma.roku`) | no | no | Quick Connect only: the sidecar that sideloads the channel hands it the server's address at launch |
 
 A browser has no DNS-SD API, so neither television shell can raise the record
 from its UI. webOS can host one anyway: it lets an app ship a **JS Service**

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="PlayerScreen" extends="Group">
+  <interface>
+    <field id="play" type="assocarray" onChange="onPlay"/>
+    <field id="done" type="boolean"/>
+    <field id="active" type="boolean" value="true" onChange="onActive"/>
+  </interface>
+  <script type="text/brightscript" uri="pkg:/components/Api.brs"/>
+  <script type="text/brightscript" uri="pkg:/components/PlayerScreen.brs"/>
+  <children>
+    <Video id="video" width="1920" height="1080"/>
+  </children>
+</component>
