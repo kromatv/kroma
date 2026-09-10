@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="PosterTile" extends="Group">
+  <interface>
+    <field id="itemContent" type="node" onChange="onContent"/>
+    <field id="focusPercent" type="float" onChange="onFocus"/>
+  </interface>
+  <script type="text/brightscript" uri="pkg:/components/PosterTile.brs"/>
+  <children>
+    <Rectangle id="frame" width="228" height="338" translation="[-4,-4]" color="#ffffff" opacity="0"/>
+    <Rectangle id="backdrop" width="220" height="330" color="#1c1c24"/>
+    <Poster id="poster" width="220" height="330" loadDisplayMode="scaleToFill"/>
+    <Rectangle id="track" width="220" height="6" translation="[0,324]" color="#3a3a46" visible="false"/>
+    <Rectangle id="bar" width="0" height="6" translation="[0,324]" color="#e6394a" visible="false"/>
+    <Label id="title" width="220" translation="[0,340]" font="font:SmallBoldSystemFont" color="#ffffff" maxLines="1"/>
+    <Label id="subtitle" width="220" translation="[0,368]" font="font:SmallestSystemFont" color="#9a9aa6" maxLines="1"/>
+  </children>
+</component>

@@ -459,6 +459,22 @@
         "react": "^19.2.8",
       },
     },
+    "modules/tv.kroma.roku": {
+      "name": "@kromatv/module-roku",
+      "version": "0.0.0",
+      "dependencies": {
+        "@kromatv/module-sdk": "workspace:*",
+        "@kromatv/ui": "workspace:*",
+        "zod": "^4.5.4",
+      },
+      "devDependencies": {
+        "@types/react": "^19.2.18",
+        "typescript": "^7.0.2",
+      },
+      "peerDependencies": {
+        "react": "^19.2.8",
+      },
+    },
     "modules/tv.kroma.torrents": {
       "name": "@kromatv/module-torrents",
       "version": "0.0.0",
@@ -1557,6 +1573,8 @@
     "@kromatv/module-indexer": ["@kromatv/module-indexer@workspace:modules/tv.kroma.indexer"],
 
     "@kromatv/module-remote": ["@kromatv/module-remote@workspace:modules/tv.kroma.remote"],
+
+    "@kromatv/module-roku": ["@kromatv/module-roku@workspace:modules/tv.kroma.roku"],
 
     "@kromatv/module-sdk": ["@kromatv/module-sdk@workspace:packages/module-sdk"],
 

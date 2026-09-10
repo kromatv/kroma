@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="DetailScreen" extends="Group">
+  <interface>
+    <field id="target" type="assocarray" onChange="onTarget"/>
+    <field id="play" type="assocarray"/>
+    <field id="active" type="boolean" value="true"/>
+  </interface>
+  <script type="text/brightscript" uri="pkg:/components/Api.brs"/>
+  <script type="text/brightscript" uri="pkg:/components/Strings.brs"/>
+  <script type="text/brightscript" uri="pkg:/components/DetailScreen.brs"/>
+  <children>
+    <Poster id="backdrop" width="1920" height="1080" loadDisplayMode="scaleToFill" opacity="0.25"/>
+    <Poster id="poster" width="360" height="540" translation="[96,120]" loadDisplayMode="scaleToFill"/>
+    <Label id="title" translation="[520,120]" width="1300" font="font:LargeBoldSystemFont" color="#ffffff" maxLines="2"/>
+    <Label id="subtitle" translation="[520,230]" width="1300" font="font:MediumSystemFont" color="#9a9aa6"/>
+    <Label id="overview" translation="[520,290]" width="1300" wrap="true" maxLines="5" font="font:SmallSystemFont" color="#d0d0da"/>
+    <Label id="status" translation="[520,520]" font="font:SmallSystemFont" color="#9a9aa6"/>
+    <LabelList id="actions" translation="[520,520]" itemSize="[1300,64]" numRows="7" color="#d0d0da" focusedColor="#ffffff" font="font:MediumSystemFont" focusedFont="font:MediumBoldSystemFont"/>
+  </children>
+</component>

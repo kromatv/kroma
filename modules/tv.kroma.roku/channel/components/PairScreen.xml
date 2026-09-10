@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="PairScreen" extends="Group">
+  <interface>
+    <field id="paired" type="assocarray"/>
+    <field id="active" type="boolean" value="true" onChange="onActive"/>
+  </interface>
+  <script type="text/brightscript" uri="pkg:/components/Api.brs"/>
+  <script type="text/brightscript" uri="pkg:/components/Strings.brs"/>
+  <script type="text/brightscript" uri="pkg:/components/PairScreen.brs"/>
+  <children>
+    <Label id="brand" text="KROMA" translation="[160,140]" font="font:LargeBoldSystemFont" color="#ffffff"/>
+    <Label id="title" translation="[160,260]" font="font:MediumBoldSystemFont" color="#ffffff"/>
+    <Label id="hint" translation="[160,330]" width="1000" wrap="true" font="font:MediumSystemFont" color="#9a9aa6"/>
+    <Label id="code" translation="[160,470]" font="font:LargeBoldSystemFont" color="#ffffff"/>
+    <Label id="serverLabel" translation="[160,880]" font="font:SmallestSystemFont" color="#5c5c6b"/>
+    <Timer id="poll" repeat="true" duration="3"/>
+  </children>
+</component>

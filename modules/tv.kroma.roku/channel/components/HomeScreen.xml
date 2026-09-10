@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="HomeScreen" extends="Group">
+  <interface>
+    <field id="selected" type="assocarray"/>
+    <field id="active" type="boolean" value="true"/>
+  </interface>
+  <script type="text/brightscript" uri="pkg:/components/Api.brs"/>
+  <script type="text/brightscript" uri="pkg:/components/Strings.brs"/>
+  <script type="text/brightscript" uri="pkg:/components/HomeScreen.brs"/>
+  <children>
+    <Label id="brand" text="KROMA" translation="[96,48]" font="font:MediumBoldSystemFont" color="#ffffff"/>
+    <Label id="status" translation="[96,120]" font="font:SmallSystemFont" color="#9a9aa6"/>
+    <RowList id="rows" translation="[96,150]" itemComponentName="PosterTile" numRows="2"
+      itemSize="[1760,440]" rowItemSize="[[220,400]]" rowItemSpacing="[[24,0]]" itemSpacing="[0,24]"
+      rowLabelOffset="[[0,16]]" showRowLabel="[true]" rowLabelColor="#ffffff" rowLabelFont="font:SmallBoldSystemFont"
+      rowFocusAnimationStyle="floatingFocus" focusBitmapUri="" drawFocusFeedback="false"/>
+  </children>
+</component>

@@ -296,6 +296,9 @@ a curated library has no need to carry any of it.
   running, so it is opt-in.
 - **Remote access** (`tv.kroma.remote`). Reaching the server from outside the LAN, a
   security-relevant surface that should be an explicit, removable choice, not always-on.
+- **Roku** (`tv.kroma.roku`). A Roku runs no shared client code, so its channel is a second
+  UI written in BrightScript, sideloaded through the box's developer installer. A shell that
+  only some homes own, with a sideload flow the console has no other reason to carry.
 - **Scene parsing** (`tv.kroma.scene`). A shared library the acquisition and downloads
   sidecars co-link, rather than a spawned sidecar, because it sits on a hot path that must
   not become a network hop.
