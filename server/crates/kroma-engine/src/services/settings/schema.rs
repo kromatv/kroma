@@ -625,6 +625,15 @@ pub fn groups(
                     g("acqIndexersUseVpn"),
                     true,
                 ),
+                row(
+                    "acqFlaresolverrUrl",
+                    t("admin.acqFlaresolverr"),
+                    Some(t("admin.acqFlaresolverrHint")),
+                    "text",
+                    &[],
+                    g("acqFlaresolverrUrl"),
+                    true,
+                ),
             ],
         )],
         _ => Vec::new(),
@@ -734,6 +743,41 @@ mod tests {
 
     fn find_row<'a>(groups: &'a [SettingGroup], key: &str) -> Option<&'a SettingRow> {
         groups.iter().flat_map(|g| &g.rows).find(|r| r.key == key)
+    }
+
+    /// Every view the admin console can ask for. A view missing here is a view
+    /// this file's guarantees are never checked against.
+    const VIEWS: &[&str] = &[
+        "general",
+        "network",
+        "transcoder",
+        "acquisition",
+        "vpn",
+    ];
+
+    #[test]
+    fn every_row_the_console_offers_is_a_key_the_store_will_keep() {
+        let pool = test_pool();
+        let s = Settings::load(&pool);
+        let known = super::super::keys::defaults();
+
+        let orphans: Vec<String> = VIEWS
+            .iter()
+            .flat_map(|view| groups(view, &s, &test_config(), "en"))
+            .flat_map(|g| g.rows)
+            // `value` displays what the server was started with and `action` is a
+            // button: neither is a control a person can change, so neither belongs
+            // in the store.
+            .filter(|r| r.kind != "action" && r.kind != "value")
+            .map(|r| r.key)
+            .filter(|key| !known.contains_key(key))
+            .collect();
+
+        assert!(
+            orphans.is_empty(),
+            "the console offers a control whose value set_patch throws away, \
+             so the save reports success and changes nothing: {orphans:?}"
+        );
     }
 
     #[test]

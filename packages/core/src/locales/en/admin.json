@@ -8,6 +8,8 @@
   "admin.acqEnabledHint": "Without this, only manual downloads (interactive search) work.",
   "admin.acqEngine": "Embedded engine",
   "admin.acqEngineDesc": "The BitTorrent engine built into KROMA (librqbit). Restarted automatically when these settings change.",
+  "admin.acqFlaresolverr": "FlareSolverr address",
+  "admin.acqFlaresolverrHint": "Solves an indexer's Cloudflare challenge through FlareSolverr instead of letting the search fail. Leave empty to use none.",
   "admin.acqForbiddenKeywords": "Forbidden keywords",
   "admin.acqForbiddenKeywordsHint": "Any release containing one of these words is rejected.",
   "admin.acqGeneral": "Automatic acquisition",

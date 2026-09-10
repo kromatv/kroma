@@ -143,6 +143,8 @@ fn declared() -> Declared {
     // Scheduler timezone offset in minutes from UTC (60 = UTC+1, -300 = UTC-5).
     m.public("jobsUtcOffset", json!(0));
     // Keyword lists are comma-separated, matched as whole tokens against release names.
+    m.public("acqIndexersUseVpn", json!(false));
+    m.public("acqFlaresolverrUrl", json!(""));
     m.public("acqEnabled", json!(false));
     m.public("acqAutoApprove", json!(false));
     m.public("acqDeleteAfterImport", json!(false));

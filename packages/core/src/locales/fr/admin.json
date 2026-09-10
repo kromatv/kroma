@@ -8,6 +8,8 @@
   "admin.acqEnabledHint": "Sans ce réglage, seuls les téléchargements manuels (recherche interactive) fonctionnent.",
   "admin.acqEngine": "Moteur intégré",
   "admin.acqEngineDesc": "Le moteur BitTorrent embarqué dans KROMA (librqbit). Redémarré automatiquement quand ces réglages changent.",
+  "admin.acqFlaresolverr": "Adresse FlareSolverr",
+  "admin.acqFlaresolverrHint": "Résout les protections Cloudflare des indexeurs via FlareSolverr, au lieu de laisser la recherche échouer. Laissez vide pour ne pas en utiliser.",
   "admin.acqForbiddenKeywords": "Mots-clés interdits",
   "admin.acqForbiddenKeywordsHint": "Toute release contenant l'un de ces mots est rejetée.",
   "admin.acqGeneral": "Acquisition automatique",
