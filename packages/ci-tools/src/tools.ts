@@ -17,10 +17,13 @@ async function present(binary: string): Promise<boolean> {
 async function apt(packages: readonly string[], attempts = 3): Promise<void> {
   for (let attempt = 1; attempt <= attempts; attempt++) {
     const update = await $`timeout 120 sudo apt-get update`.nothrow();
+    if (update.exitCode !== 0) {
+      warning(
+        `apt-get update failed a source on attempt ${attempt}; installing from what it fetched`,
+      );
+    }
     const install =
-      update.exitCode === 0
-        ? await $`timeout 180 sudo apt-get install -y --no-install-recommends ${packages}`.nothrow()
-        : update;
+      await $`timeout 180 sudo apt-get install -y --no-install-recommends ${packages}`.nothrow();
     if (install.exitCode === 0) return;
     warning(`apt attempt ${attempt} for ${packages.join(' ')} stalled or failed`);
     await Bun.sleep(10_000);
