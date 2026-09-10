@@ -7,7 +7,12 @@ import {
   type TransportConfig,
   withUserAgent,
 } from './core/http';
-import { setSessionRefresh, setSessionToken } from './core/session';
+import {
+  sessionMediaTicket,
+  setSessionMediaTicket,
+  setSessionRefresh,
+  setSessionToken,
+} from './core/session';
 
 /** What the client carries beyond its domains: the bearer, the locale, and the
  * few things a platform needs to reach the server without the transport. */
@@ -58,12 +63,11 @@ export function kromaClientParts(options: KromaClientOptions): {
   const base = options.fetch ?? globalThis.fetch.bind(globalThis);
   let authToken = options.authToken;
   let locale = options.locale;
-  let mediaTicket: string | undefined;
   let refreshHandler: (() => Promise<string | undefined>) | undefined;
 
   const setAuthToken = (token?: string): void => {
     authToken = token;
-    if (!token) mediaTicket = undefined;
+    if (!token) setSessionMediaTicket(undefined);
     setSessionToken(token);
   };
 
@@ -79,10 +83,8 @@ export function kromaClientParts(options: KromaClientOptions): {
     token: () => authToken,
     locale: () => locale,
     refresh: refreshSession,
-    mediaTicket: () => mediaTicket,
-    setMediaTicket: (ticket) => {
-      mediaTicket = ticket;
-    },
+    mediaTicket: sessionMediaTicket,
+    setMediaTicket: setSessionMediaTicket,
   };
   preconnect(baseUrl);
 

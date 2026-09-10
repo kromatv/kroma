@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { setSessionMediaTicket } from '../../core/session';
 import { checkEndpoint, type Endpoint } from '../../endpoints.fixture';
 import { recordingClient } from '../../kroma-client.fixture';
 import { ItemId, LibraryId, ShowId } from './ids';
+
+afterEach(() => setSessionMediaTicket(undefined));
 
 const item = ItemId.parse('i1');
 const spaced = ItemId.parse('i 1');

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { setSessionMediaTicket } from '../../core/session';
 import { recordingClient } from '../../kroma-client.fixture';
 import { artworkScaleValue, artworkWidth, setArtworkScale } from './artwork-scale';
 import { ItemId, ShowId } from './ids';
@@ -8,7 +9,10 @@ const artwork = client.media.artwork;
 const item = ItemId.parse('a b');
 const show = ShowId.parse('s 1');
 
-afterEach(() => setArtworkScale(1));
+afterEach(() => {
+  setArtworkScale(1);
+  setSessionMediaTicket(undefined);
+});
 
 describe('artwork resolution setting', () => {
   it('scales every width a caller asks for', () => {
