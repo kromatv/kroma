@@ -36,6 +36,52 @@ describe('artwork resolution setting', () => {
   });
 });
 
+describe('a media-byte path the server composed itself', () => {
+  const SIGNED_IN_USER = {
+    id: 'u1',
+    email: 'a@b.c',
+    username: 'alice',
+    permissions: ['playback'],
+    createdAt: '2026-01-01T00:00:00Z',
+    hasPin: false,
+  };
+
+  async function ticketed() {
+    const { client: signedIn } = recordingClient(() => ({
+      json: { token: 'tok', mediaTicket: 'dev.999.sig', user: SIGNED_IN_USER },
+    }));
+    await signedIn.accounts.exchangeToken('access-token');
+    return signedIn.media.artwork;
+  }
+
+  it('gains the media ticket, keeping the query the server already wrote', async () => {
+    const art = await ticketed();
+
+    expect(art.resolve('/api/items/i1/storyboard.img?v=k')).toBe(
+      'http://kroma.test/api/items/i1/storyboard.img?v=k&t=dev.999.sig',
+    );
+    expect(art.resolve('/api/items/i1/subtitles/dl/d1.vtt')).toBe(
+      'http://kroma.test/api/items/i1/subtitles/dl/d1.vtt?t=dev.999.sig',
+    );
+  });
+
+  it('does not put the ticket on art, which is not library bytes', async () => {
+    const art = await ticketed();
+
+    expect(art.resolve('/api/images/p.webp', 480)).toBe(
+      'http://kroma.test/api/images/p.webp?w=480',
+    );
+    expect(art.resolve('/api/themes/1234.mp3')).toBe('http://kroma.test/api/themes/1234.mp3');
+    expect(art.resolve('https://image.tmdb.org/b.jpg')).toBe('https://image.tmdb.org/b.jpg');
+  });
+
+  it('is left ticketless before a sign-in has handed one over', () => {
+    expect(artwork.resolve('/api/items/i1/storyboard.img?v=k')).toBe(
+      'http://kroma.test/api/items/i1/storyboard.img?v=k',
+    );
+  });
+});
+
 describe('artworkWidth', () => {
   it('snaps to the ladder, so neighbouring cell widths share one URL', () => {
     expect(artworkWidth(203)).toBe(artworkWidth(219));

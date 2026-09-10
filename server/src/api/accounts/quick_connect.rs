@@ -120,7 +120,10 @@ pub async fn quick_poll(
         .map(str::to_string)
         .or(q.secret)
         .unwrap_or_default();
-    let status = crate::api::dto::PairingPoll::from(state.quickconnect.poll(&secret));
+    let status = crate::api::dto::PairingPoll::of(
+        state.quickconnect.poll(&secret),
+        &state.media_ticket_key,
+    );
     // A code that lapsed after it was approved still has rows behind it.
     drop_orphans(&state, state.quickconnect.take_orphans()).await;
     Json(status).into_response()

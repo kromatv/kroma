@@ -133,6 +133,32 @@ pub fn access_token_user(pool: &Pool, token: &str) -> Result<Option<(User, bool)
     }
 }
 
+/// The user behind a live device credential named by its non-secret
+/// `short_hash(token)` id, the form a credential carried in a URL can spell.
+/// `None` once the device is revoked, its credential has lapsed, or the account
+/// is gone, so a URL-borne ticket stops working the moment the device does.
+///
+/// Tokens are only reversible by hashing, so the live rows are scanned; there is
+/// one per signed-in device on the server.
+pub fn access_token_user_by_id(pool: &Pool, id: &str) -> Result<Option<User>> {
+    let conn = pool.get()?;
+    let now = time::OffsetDateTime::now_utc().unix_timestamp();
+    let mut stmt = conn.prepare(
+        "SELECT u.id,u.email,u.username,u.avatar_url,u.created_at,u.permissions,u.language,(u.pin_hash IS NOT NULL),u.audio_language,u.subtitle_language,u.libraries,a.token \
+         FROM access_tokens a JOIN users u ON u.id = a.user_id WHERE a.expires_at > ?1",
+    )?;
+    let rows = stmt.query_map(params![now], |r| {
+        Ok((row_to_user(r)?, r.get::<_, String>(11)?))
+    })?;
+    for row in rows {
+        let (user, token) = row?;
+        if kroma_primitives::short_hash(&token) == id {
+            return Ok(Some(user));
+        }
+    }
+    Ok(None)
+}
+
 /// Stamp a device credential as seen now, re-labelling it with whatever the
 /// caller sent this time; an absent header keeps the stored label rather than
 /// blanking it.
@@ -245,6 +271,29 @@ mod tests {
 
         delete_access_token(&p, "at1").unwrap();
         assert!(access_token_user(&p, "at1").unwrap().is_none());
+    }
+
+    #[test]
+    fn a_device_id_resolves_to_its_account_until_the_device_is_revoked() {
+        let p = pool();
+        let alice = mk_user(&p, "a@b.c", "alice");
+        create_access_token(&p, "at-alice", &alice.id, FUTURE, true, &ua("iPhone")).unwrap();
+        create_access_token(&p, "lapsed", &alice.id, 1, true, &ua("Tizen")).unwrap();
+        let id = kroma_primitives::short_hash("at-alice");
+
+        let found = access_token_user_by_id(&p, &id).unwrap();
+
+        assert_eq!(found.map(|u| u.id), Some(alice.id.clone()));
+        assert!(access_token_user_by_id(&p, "deadbeefdeadbeef")
+            .unwrap()
+            .is_none());
+        assert!(
+            access_token_user_by_id(&p, &kroma_primitives::short_hash("lapsed"))
+                .unwrap()
+                .is_none()
+        );
+        delete_access_token(&p, "at-alice").unwrap();
+        assert!(access_token_user_by_id(&p, &id).unwrap().is_none());
     }
 
     #[test]

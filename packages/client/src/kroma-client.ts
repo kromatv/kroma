@@ -34,9 +34,10 @@ export interface ClientControls {
    * carries it as a subprotocol. */
   readonly sessionToken: string | undefined;
   /** For requests that bypass the transport because the platform owns the
-   * socket (the native downloader behind `media.downloadUrl`); media-element
-   * URLs need nothing, since those routes are public because a `<video>` cannot
-   * send a header. */
+   * socket (the native downloader behind `media.downloadUrl`). A media-element
+   * URL needs nothing here: `media.streamUrl` and its siblings carry the
+   * account's media ticket in the URL instead, because a `<video>` cannot send
+   * a header. */
   authHeaders(): Record<string, string>;
 }
 
@@ -57,10 +58,12 @@ export function kromaClientParts(options: KromaClientOptions): {
   const base = options.fetch ?? globalThis.fetch.bind(globalThis);
   let authToken = options.authToken;
   let locale = options.locale;
+  let mediaTicket: string | undefined;
   let refreshHandler: (() => Promise<string | undefined>) | undefined;
 
   const setAuthToken = (token?: string): void => {
     authToken = token;
+    if (!token) mediaTicket = undefined;
     setSessionToken(token);
   };
 
@@ -76,6 +79,10 @@ export function kromaClientParts(options: KromaClientOptions): {
     token: () => authToken,
     locale: () => locale,
     refresh: refreshSession,
+    mediaTicket: () => mediaTicket,
+    setMediaTicket: (ticket) => {
+      mediaTicket = ticket;
+    },
   };
   preconnect(baseUrl);
 

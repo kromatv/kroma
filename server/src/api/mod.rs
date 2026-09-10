@@ -23,6 +23,7 @@ mod host_jobs;
 mod images;
 mod invites;
 mod media;
+pub mod media_ticket;
 mod metadata;
 mod modules;
 mod notifications;
@@ -81,6 +82,8 @@ mod it_invites;
 mod it_library_visibility;
 #[cfg(test)]
 mod it_media;
+#[cfg(test)]
+mod it_media_ticket;
 #[cfg(test)]
 mod it_notification_images;
 #[cfg(test)]
@@ -175,8 +178,9 @@ pub fn router(
 ) -> Router {
     // Public endpoints reachable before (or without) a session: the auth
     // handshake + roster + invites, uploaded avatars/art, liveness, and the media
-    // byte streams (a `<video>`/hls element can't attach a bearer these carry no
-    // catalogue listing and stay open under the LAN trust model).
+    // byte streams. The byte routes sit outside this middleware because a
+    // `<video>`/hls element can't attach a bearer, and carry their own credential
+    // in the URL instead (see `media_ticket`); they are not open.
     let public = Router::new()
         .merge(accounts::routes())
         .merge(passkeys::routes())
@@ -194,9 +198,9 @@ pub fn router(
 
     // Content endpoints require a valid session: the catalogue listing + detail,
     // search, people, metadata, discovery/requests, home rows and per-user
-    // playback. Knowing the URL no longer lists the library. `themes` +
-    // downloaded-subtitle bytes are served publicly above they're fetched by an
-    // <audio> element / plain fetch that can't attach a bearer.
+    // playback. Knowing the URL no longer lists the library. `themes` is served
+    // publicly above: an <audio> element can't attach a bearer and a theme song
+    // is not library bytes.
     let content = Router::new()
         .merge(media::routes())
         .merge(stream::protected_routes())

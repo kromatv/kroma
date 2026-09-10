@@ -49,6 +49,43 @@ async fn a_stored_operator_credential_never_reaches_a_sidecar() {
 }
 
 #[tokio::test]
+async fn the_key_that_signs_a_media_ticket_never_reaches_a_sidecar() {
+    let t = test_app();
+    let minted = t.state.media_ticket_key.clone();
+    let key = crate::services::media_ticket::SIGNING_KEY_SETTING;
+
+    let uri = format!("/api/_host/setting?key={key}&kind=str&default=");
+    let (status, body) = get(&t.app, &uri, Some(HOST_TOKEN)).await;
+
+    assert!(!minted.is_empty(), "the key is minted at boot");
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body, json!({ "value": "" }));
+    assert!(
+        !body.to_string().contains(&minted),
+        "a sidecar holding it forges a ticket for any device"
+    );
+}
+
+#[tokio::test]
+async fn a_sidecar_cannot_put_a_signing_key_of_its_own_choosing_in_place() {
+    let t = test_app();
+    let minted = t.state.media_ticket_key.clone();
+    let key = crate::services::media_ticket::SIGNING_KEY_SETTING;
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/_host/settings",
+        Some(HOST_TOKEN),
+        Some(json!({ "patch": { key: "a-key-the-module-knows" } })),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(t.state.settings.get_str(key, ""), minted);
+}
+
+#[tokio::test]
 async fn the_settings_a_module_runs_on_still_come_back_stored() {
     let t = test_app();
     t.state.settings.set_patch(

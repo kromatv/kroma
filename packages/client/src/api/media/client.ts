@@ -47,6 +47,8 @@ export function streamQuery({ copyCodecs, videoCodecs, maxFrame }: HlsMasterDecl
 const forMode = (mode: string, declaration: HlsMasterDeclaration) =>
   mode === 'copy' ? declaration : { ...declaration, copyCodecs: undefined };
 
+const ticket = (ctx: RequestContext): Query => ({ t: ctx.mediaTicket() });
+
 /** The catalogue: what the library holds, and the URLs that play it. */
 export default function mediaApi(ctx: RequestContext) {
   const artwork = artworkApi(ctx);
@@ -136,8 +138,10 @@ export default function mediaApi(ctx: RequestContext) {
     /** URL of the server's recent log lines (text/plain). */
     logsUrl: (tail = 200) => ctx.url('/logs', { query: { tail } }),
 
-    /** Direct-play stream URL for a `<video>` src. Range requests are served. */
-    streamUrl: (id: ItemId) => ctx.url('/items/:id/stream', { params: { id } }),
+    /** Direct-play stream URL for a `<video>` src. Range requests are served.
+     * Carries the account's media ticket, because the element fetching it cannot
+     * send a header. */
+    streamUrl: (id: ItemId) => ctx.url('/items/:id/stream', { params: { id }, query: ticket(ctx) }),
 
     /** One-file offline download: video stream-copied, every audio track copied
      * or AAC-transcoded server-side. `copyCodecs`/`videoCodecs` must distinguish
@@ -169,17 +173,18 @@ export default function mediaApi(ctx: RequestContext) {
           anchor: Math.max(0, Math.round(startSec)),
           audio: Math.max(0, Math.round(audio)),
         },
-        query: streamQuery(forMode(mode, declaration)),
+        query: { ...streamQuery(forMode(mode, declaration)), ...ticket(ctx) },
       });
     },
 
     /** WebVTT URL for the n-th embedded subtitle track. The server extracts text
      * subtitles on demand. */
     subtitleUrl: (id: ItemId, index: number) =>
-      ctx.url('/items/:id/subtitles/:index.vtt', { params: { id, index } }),
+      ctx.url('/items/:id/subtitles/:index.vtt', { params: { id, index }, query: ticket(ctx) }),
 
     /** Manifest endpoint for an item's storyboard. */
-    storyboardUrl: (id: ItemId) => ctx.url('/items/:id/storyboard', { params: { id } }),
+    storyboardUrl: (id: ItemId) =>
+      ctx.url('/items/:id/storyboard', { params: { id }, query: ticket(ctx) }),
 
     /** The storyboard manifest. The server generates the sheet lazily, so this
      * answers `'pending'` (HTTP 202) while it is being built and `null` when the

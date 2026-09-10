@@ -10,7 +10,7 @@ use axum::response::Response;
 use serde::Deserialize;
 
 use crate::api::error::json_error;
-use crate::api::extract::OptionalAuthUser;
+use crate::api::media_ticket::MediaViewer;
 use crate::api::util::client_ip;
 use crate::api::visibility;
 use crate::infra::stream::stream_or_demo_error;
@@ -24,6 +24,7 @@ use axum::Router;
 
 mod download;
 mod hls;
+mod hls_playlist;
 
 use download::download_item;
 use hls::{hls_file, hls_master};
@@ -39,9 +40,10 @@ fn byte_sink(
 }
 
 /// Direct-play streaming, HLS remux, storyboard previews and subtitle tracks.
-/// Unauthenticated: a `<video>` / hls.js element can't attach a bearer to the
-/// URLs it fetches, so these stay open under the LAN trust model. A request that
-/// does carry a session is still held to that account's library grant (ACCT-21).
+/// Outside the session middleware because a `<video>` / hls.js element can't
+/// attach a bearer to the URLs it fetches, and gated instead by
+/// [`MediaViewer`]: every request names an account, and that account's library
+/// grant decides what it may read (ACCT-35).
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/items/{id}/stream", get(stream_item))
@@ -73,13 +75,13 @@ pub struct StreamQuery {
 /// original file. Without `?file`, the item's default/best file is served.
 pub async fn stream_item(
     State(state): State<SharedState>,
-    OptionalAuthUser(caller): OptionalAuthUser,
+    MediaViewer(viewer): MediaViewer,
     Path(id): Path<String>,
     Query(q): Query<StreamQuery>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
 ) -> Result<Response, Response> {
-    let item = load_item(&state, caller.as_ref(), id)
+    let item = load_item(&state, &viewer, id)
         .await
         .ok_or_else(visibility::out_of_scope)?;
     let abs_path = pick_file_path(&item, q.file.as_deref());
@@ -96,18 +98,18 @@ fn pick_file_path(item: &MediaItem, file_id: Option<&str>) -> Option<String> {
     item.abs_path.clone()
 }
 
-async fn load_item(state: &SharedState, caller: Option<&User>, id: String) -> Option<MediaItem> {
-    visibility::item_in_scope(state, caller, id).await
+pub(super) async fn load_item(state: &SharedState, viewer: &User, id: String) -> Option<MediaItem> {
+    visibility::item_in_scope(state, Some(viewer), id).await
 }
 
 /// `GET /api/items/:id/storyboard` → the sprite-sheet manifest mapping a cursor
 /// time to a tile. 202 `{"status":"pending"}` while generating (the client polls).
 pub async fn storyboard(
     State(state): State<SharedState>,
-    OptionalAuthUser(caller): OptionalAuthUser,
+    MediaViewer(viewer): MediaViewer,
     Path(id): Path<String>,
 ) -> Response {
-    let Some(item) = load_item(&state, caller.as_ref(), id).await else {
+    let Some(item) = load_item(&state, &viewer, id).await else {
         return visibility::out_of_scope();
     };
     use crate::infra::storyboard::Status;
@@ -124,10 +126,10 @@ pub async fn storyboard(
 /// generated. Cached immutably; the manifest's `?v=<key>` busts it.
 pub async fn storyboard_image(
     State(state): State<SharedState>,
-    OptionalAuthUser(caller): OptionalAuthUser,
+    MediaViewer(viewer): MediaViewer,
     Path(id): Path<String>,
 ) -> Response {
-    let Some(item) = load_item(&state, caller.as_ref(), id).await else {
+    let Some(item) = load_item(&state, &viewer, id).await else {
         return visibility::out_of_scope();
     };
     match state.storyboard.sheet(&item).await {
@@ -154,7 +156,7 @@ fn json_no_store(status: StatusCode, body: Vec<u8>) -> Response {
 /// image subtitles (PGS/VobSub) can't convert and return 404.
 pub async fn subtitles(
     State(state): State<SharedState>,
-    OptionalAuthUser(caller): OptionalAuthUser,
+    MediaViewer(viewer): MediaViewer,
     Path((id, track)): Path<(String, String)>,
 ) -> Response {
     let index: usize = match track.trim_end_matches(".vtt").parse() {
@@ -162,7 +164,7 @@ pub async fn subtitles(
         Err(_) => return json_error(StatusCode::BAD_REQUEST, "invalid subtitle index"),
     };
 
-    let Some(item) = load_item(&state, caller.as_ref(), id).await else {
+    let Some(item) = load_item(&state, &viewer, id).await else {
         return visibility::out_of_scope();
     };
     let Some(abs) = item.abs_path.clone() else {

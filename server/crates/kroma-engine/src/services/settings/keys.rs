@@ -215,6 +215,10 @@ fn declared() -> Declared {
     m.core_only("notifications.apns.keyId", json!(""));
     m.core_only("notifications.apns.teamId", json!(""));
     m.core_only("notifications.fcm.serviceAccount", json!(""));
+    // Signs the media tickets the byte routes accept in a URL (ACCT-35). Minted on
+    // first boot, and the core's alone: a sidecar holding it forges a ticket for
+    // any device and reads any library.
+    m.core_only("mediaTicketKey", json!(""));
     // Operator SMTP for credential-reset email.
     m.insert("smtpEnabled".into(), json!(false));
     m.insert("smtpHost".into(), json!(""));

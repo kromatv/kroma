@@ -120,23 +120,46 @@ existing server reads as: narrowing is something an admin does, never something 
 does for them. A library nobody has been granted therefore stays visible to the unrestricted
 accounts and invisible to the narrowed ones.
 
-**ACCT-21** (AGREED) - Visibility gates browsing, search and playback alike. A title a user
+**ACCT-21** (SHIPPED) - Visibility gates browsing, search and playback alike. A title a user
 cannot see is a title they cannot play, resume or find.
 
-That full rule is not true yet, and the two requirements below are the halves it breaks into.
-The catalogue half ships; the bytes do not, so ACCT-21 stays agreed until ACCT-35 lands rather
-than shipping with a caveat only this paragraph carries.
+The rule holds in two halves, and both of them ship: the catalogue below, and the bytes behind
+it.
 
 **ACCT-34** (SHIPPED) - A title outside a person's grant is absent from browse, search, every
 home row and their watch state, and is refused by its id on every endpoint that presents a
 session. An unknown id and an ungranted one refuse identically, so probing cannot tell a title
 that is hidden from one that was never scanned.
 
-**ACCT-35** (AGREED) - Every request for media bytes carries a credential the grant can be
-enforced against. Today those routes are reachable with no session at all, because a `<video>`
-element cannot attach a bearer, so they enforce the grant on a request that presents one and
-nothing on a request that presents none. A person who knows an id and drops their session
-reaches the bytes, which is why ACCT-21 is not shipped.
+**ACCT-35** (SHIPPED) - Every request for media bytes carries a credential the grant can be
+enforced against, and one carrying none is refused before the id is read. A `<video>` element,
+hls.js, a television's own player and the mpv a desktop shell hands a URL to can none of them
+send a header, so the credential rides in the URL: a **media ticket**, handed over beside every
+session token and naming the signed-in device it belongs to. The server reads the account off
+the ticket and the grant out of the database, so narrowing a grant bites on the next request
+rather than when the ticket lapses, and revoking the device stops every ticket it left behind.
+
+A ticket is scoped to an account rather than to one title, so a URL that escapes reaches
+whatever that account may see until the ticket runs out. Twelve hours is that limit: longer
+than a feature film and shorter than a day, which is what a credential written into an access
+log and a browser history can be trusted with. The cost is that a title left paused longer than
+that needs its source rebuilt, which a reload does. Scoping each ticket to one title instead
+would buy a narrower leak for a round trip before every playback URL, and those URLs are built
+in one synchronous step by six players that are handed nothing but a string.
+
+One thing is deliberately left open, and it is the bytes this requirement covers that bound it:
+a title's **artwork** stays reachable by id (`/items/<id>/poster`, `/items/<id>/card`,
+`/images/<hash>`), because the sign-in screen's slideshow and a television's launcher cards are
+drawn before there is any account to hold. Someone who already has an id learns a hidden
+title's name and cover that way. They reach none of its bytes.
+
+That is a real edge on **ACCT-20**, which says a narrowed account cannot discover the rest: for
+an id already in hand, artwork confirms the title exists and shows its cover. The id is the
+gated half, and ACCT-34 closed every path that hands one out, so the leak needs an id carried in
+from outside the product. This is how artwork has always been served and nothing here changed
+it; it is written down so neither ACCT-20 nor ACCT-21 has to be read charitably to be true.
+Closing it means a credential on the art routes too, which costs the sign-in slideshow and the
+launcher cards, and that trade has not been made.
 
 **ACCT-22** (SHIPPED) - Installing a module is an **admin** right, because it runs new
 out-of-process code on the server ([`modules/`](../modules/)). A plain user may use whatever

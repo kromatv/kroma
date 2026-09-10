@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { RequestContext } from '../../core/client';
+import { adoptMediaTicket } from '../../core/http';
 import type { InviteToken, SessionId } from './ids';
 import { passkeysApi } from './passkeys';
 import { quickConnectApi } from './quick-connect';
@@ -31,24 +32,33 @@ export default function accountsApi(ctx: RequestContext) {
      * `inviteToken` is required registration is invite-only. Does NOT set the
      * token; the caller persists it, then calls `setAuthToken`. */
     register: (email: string, username: string, password: string, inviteToken?: InviteToken) =>
-      ctx.post('/auth/register', AuthResult, {
-        auth: 'public',
-        body: { email, username, password, inviteToken },
-      }),
+      adoptMediaTicket(
+        ctx,
+        ctx.post('/auth/register', AuthResult, {
+          auth: 'public',
+          body: { email, username, password, inviteToken },
+        }),
+      ),
 
     /** Log in with email-or-username + password. */
     login: (identifier: string, password: string) =>
-      ctx.post('/auth/login', AuthResult, {
-        auth: 'public',
-        body: { email: identifier, password },
-      }),
+      adoptMediaTicket(
+        ctx,
+        ctx.post('/auth/login', AuthResult, {
+          auth: 'public',
+          body: { email: identifier, password },
+        }),
+      ),
 
     /** Exchange the long-lived access token for a short-lived session token. Pass
      * `pin` when switching into a PIN-locked profile (required on the first
      * exchange; silent refreshes omit it). Throws `KromaApiError` 401 when the PIN
      * is needed or the access token is invalid/expired. */
     exchangeToken: (accessToken: string, pin?: string) =>
-      ctx.post('/auth/token', SessionResult, { auth: 'public', body: { accessToken, pin } }),
+      adoptMediaTicket(
+        ctx,
+        ctx.post('/auth/token', SessionResult, { auth: 'public', body: { accessToken, pin } }),
+      ),
 
     /** Re-lock an access token (clear its PIN-verified flag) so the next exchange
      * re-prompts for the PIN. Called when returning to the profile picker. */
@@ -57,7 +67,10 @@ export default function accountsApi(ctx: RequestContext) {
 
     /** Invalidate the current session server-side and revoke the device's access
      * token, a full disconnect. */
-    logout: (accessToken?: string) => ctx.post('/auth/logout', { body: { accessToken } }),
+    logout: async (accessToken?: string) => {
+      ctx.setMediaTicket(undefined);
+      await ctx.post('/auth/logout', { body: { accessToken } });
+    },
 
     /** The currently-authenticated user (requires a token). */
     me: () => ctx.get('/auth/me', Me),

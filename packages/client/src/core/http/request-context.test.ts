@@ -44,12 +44,17 @@ function transport(
     } as unknown as Response;
   }) as typeof globalThis.fetch;
 
+  let ticket: string | undefined;
   const ctx = createRequestContext({
     baseUrl: 'http://kroma.test',
     fetchFn,
     token: () => 'tok',
     locale: () => 'fr',
     refresh: async () => undefined,
+    mediaTicket: () => ticket,
+    setMediaTicket: (next) => {
+      ticket = next;
+    },
     ...config,
   });
   return { ctx, calls };
@@ -234,6 +239,8 @@ describe('an abort signal', () => {
       token: () => undefined,
       locale: () => undefined,
       refresh: async () => undefined,
+      mediaTicket: () => undefined,
+      setMediaTicket: () => undefined,
     });
 
     await ctx.get('/items/:id', Item, { params: { id: 'i1' }, signal: controller.signal });
@@ -258,6 +265,8 @@ describe('concurrency policy', () => {
       token: () => undefined,
       locale: () => undefined,
       refresh: async () => undefined,
+      mediaTicket: () => undefined,
+      setMediaTicket: () => undefined,
     });
     return { ctx, aborted, calls: () => calls };
   }
