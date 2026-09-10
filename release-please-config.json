@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "include-component-in-tag": true,
+  "separate-pull-requests": true,
+  "pull-request-title-pattern": "chore(release): ${component} ${version}",
+  "changelog-sections": [
+    { "type": "feat", "section": "Features" },
+    { "type": "fix", "section": "Bug Fixes" },
+    { "type": "perf", "section": "Performance" },
+    { "type": "refactor", "section": "Refactoring", "hidden": true },
+    { "type": "docs", "section": "Documentation" },
+    { "type": "chore", "section": "Chores", "hidden": true },
+    { "type": "test", "section": "Tests", "hidden": true },
+    { "type": "ci", "section": "CI", "hidden": true }
+  ],
+  "packages": {
+    "server": { "release-type": "rust", "package-name": "kroma-server", "component": "server" },
+    "clients/web": { "release-type": "node", "component": "web" },
+    "clients/tizen": { "release-type": "node", "component": "tizen" },
+    "clients/webos": { "release-type": "node", "component": "webos" },
+    "clients/tv-native": { "release-type": "node", "component": "tv-native" },
+    "clients/desktop": { "release-type": "node", "component": "desktop" },
+    "clients/mobile": { "release-type": "node", "component": "mobile" }
+  }
+}
