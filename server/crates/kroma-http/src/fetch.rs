@@ -7,6 +7,7 @@ use serde::de::DeserializeOwned;
 
 use crate::config::{header_line, option_line};
 use crate::curl::run;
+use crate::multipart::{part_line, FormPart};
 use crate::response::Response;
 
 /// A prepared request: builder-style options, then one of the executors
@@ -17,6 +18,7 @@ pub struct Fetch {
     query: Vec<(String, String)>,
     socks5: Option<String>,
     cookie_jar: Option<PathBuf>,
+    digest: Option<(String, String)>,
     max_time_secs: u32,
     http2: bool,
 }
@@ -28,6 +30,7 @@ impl Default for Fetch {
             query: Vec::new(),
             socks5: None,
             cookie_jar: None,
+            digest: None,
             max_time_secs: 30,
             http2: false,
         }
@@ -54,6 +57,14 @@ impl Fetch {
     /// Read + write cookies at `jar` across calls (qBittorrent's SID auth).
     pub fn cookie_jar(mut self, jar: impl Into<PathBuf>) -> Self {
         self.cookie_jar = Some(jar.into());
+        self
+    }
+
+    /// Answer an HTTP digest challenge as `user` (Roku's developer installer
+    /// serves one). The credentials travel in the config on curl's stdin, so
+    /// they never reach argv.
+    pub fn digest(mut self, user: &str, password: impl Into<String>) -> Self {
+        self.digest = Some((user.to_string(), password.into()));
         self
     }
 
@@ -114,18 +125,46 @@ impl Fetch {
     }
 
     /// `application/x-www-form-urlencoded` POST (qBittorrent login/actions).
+    /// With no fields it is a POST with an empty body rather than a GET, which
+    /// is what Roku's ECP wants: the arguments in the query string, nothing else.
     pub fn post_form(&self, url: &str, fields: &[(&str, &str)]) -> Result<Response> {
-        let mut config = self.base_config();
-        for (k, v) in fields {
-            config.push_str(&option_line("data-urlencode", &format!("{k}={v}")));
-        }
-        config.push_str(&option_line("url", url));
-        run(config)
+        run(self.form_config(url, fields))
+    }
+
+    /// `multipart/form-data` POST (Roku's developer installer takes the channel
+    /// zip this way).
+    pub fn post_multipart(&self, url: &str, parts: &[(&str, FormPart<'_>)]) -> Result<Response> {
+        run(self.multipart_config(url, parts))
     }
 
     /// GET expecting a 2xx JSON body; the common happy path in one call.
     pub fn get_json<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
         self.get(url)?.ensure_ok()?.json()
+    }
+
+    fn form_config(&self, url: &str, fields: &[(&str, &str)]) -> String {
+        let mut config = self.base_config();
+        // Only with no fields: a data line is what makes curl POST, and naming
+        // the method outright would also make it re-POST to a redirect instead
+        // of following with GET, which an indexer's HTML login form expects.
+        if fields.is_empty() {
+            config.push_str(&option_line("request", "POST"));
+            config.push_str(&option_line("data", ""));
+        }
+        for (k, v) in fields {
+            config.push_str(&option_line("data-urlencode", &format!("{k}={v}")));
+        }
+        config.push_str(&option_line("url", url));
+        config
+    }
+
+    fn multipart_config(&self, url: &str, parts: &[(&str, FormPart<'_>)]) -> String {
+        let mut config = self.base_config();
+        for (name, part) in parts {
+            config.push_str(&part_line(name, *part));
+        }
+        config.push_str(&option_line("url", url));
+        config
     }
 
     fn base_config(&self) -> String {
@@ -142,6 +181,10 @@ impl Fetch {
             config.push_str("ipv4\n");
             config.push_str(&option_line("socks5-hostname", proxy));
         }
+        if let Some((user, password)) = &self.digest {
+            config.push_str("digest\n");
+            config.push_str(&option_line("user", &format!("{user}:{password}")));
+        }
         if let Some(jar) = &self.cookie_jar {
             let jar = jar.to_string_lossy();
             config.push_str(&option_line("cookie-jar", &jar));
@@ -156,6 +199,8 @@ impl Fetch {
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use super::*;
 
     #[test]
@@ -208,6 +253,61 @@ mod tests {
             "{config}"
         );
         assert!(options[4].ends_with(r#"X-Injected: 1\\""#), "{config}");
+    }
+
+    #[test]
+    fn only_a_form_post_with_no_fields_names_the_method_itself() {
+        let empty = Fetch::new().form_config("http://box:8060/launch/dev?server=x", &[]);
+        assert!(empty.contains("request = \"POST\"\n"), "{empty}");
+        assert!(empty.contains("data = \"\"\n"), "{empty}");
+
+        let filled = Fetch::new().form_config("http://box/api", &[("user", "ana")]);
+        assert!(!filled.contains("request = "), "{filled}");
+        assert!(!filled.contains("data = \"\"\n"), "{filled}");
+        assert!(
+            filled.contains("data-urlencode = \"user=ana\"\n"),
+            "{filled}"
+        );
+    }
+
+    #[test]
+    fn a_multipart_post_carries_one_line_per_part_and_the_url_last() {
+        let config = Fetch::new().multipart_config(
+            "http://box/plugin_install",
+            &[
+                ("mysubmit", FormPart::Text("Replace")),
+                ("archive", FormPart::File(Path::new("/data/channel.zip"))),
+            ],
+        );
+
+        let options: Vec<&str> = config.lines().collect();
+        assert_eq!(
+            options[4], r#"form-string = "mysubmit=Replace""#,
+            "{config}"
+        );
+        assert_eq!(
+            options[5], r#"form = "archive=@\"/data/channel.zip\"""#,
+            "{config}"
+        );
+        assert_eq!(
+            options[6], r#"url = "http://box/plugin_install""#,
+            "{config}"
+        );
+    }
+
+    #[test]
+    fn a_digest_password_cannot_smuggle_a_second_curl_option() {
+        let smuggled = "pa\"ss\nurl = \"http://evil\"";
+        let config = Fetch::new().digest("rokudev", smuggled).base_config();
+
+        let options: Vec<&str> = config.lines().collect();
+        assert_eq!(options.len(), 6, "one line per option: {config}");
+        assert_eq!(options[4], "digest", "{config}");
+        assert!(
+            options[5].starts_with(r#"user = "rokudev:pa\"ss\nurl"#),
+            "{config}"
+        );
+        assert!(!Fetch::new().base_config().contains("digest"));
     }
 
     #[test]
