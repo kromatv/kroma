@@ -29,22 +29,28 @@ pub struct Health {
     pub shows: usize,
 }
 
-/// `{ token, accessToken, user }` returned by register/login. `token` is the
-/// short-lived session bearer; `accessToken` is the long-lived device credential
-/// the client stores and later exchanges (see `/auth/token`).
+/// `{ token, accessToken, mediaTicket, user }` returned by register/login.
+/// `token` is the short-lived session bearer; `accessToken` is the long-lived
+/// device credential the client stores and later exchanges (see `/auth/token`);
+/// `mediaTicket` is what the byte routes take in a URL, for the players that
+/// cannot send a header.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthResult {
     pub token: String,
     pub access_token: String,
+    pub media_ticket: String,
     pub user: User,
 }
 
-/// `{ token, user }` from `/auth/token` a fresh session minted from an access
-/// token (the access token itself is unchanged, so it isn't echoed back).
+/// `{ token, mediaTicket, user }` from `/auth/token` a fresh session minted from
+/// an access token (the access token itself is unchanged, so it isn't echoed
+/// back).
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SessionResult {
     pub token: String,
+    pub media_ticket: String,
     pub user: User,
 }
 
@@ -148,18 +154,25 @@ pub enum PairingPoll {
     Authorized {
         token: String,
         access_token: String,
+        media_ticket: String,
         user: Box<User>,
     },
 }
 
-impl From<PollState> for PairingPoll {
-    fn from(state: PollState) -> Self {
-        match state {
+impl PairingPoll {
+    /// The answer a waiting device gets, carrying a media ticket for the device
+    /// this grant belongs to once there is a grant to collect.
+    pub fn of(poll: PollState, signing_key: &str) -> Self {
+        match poll {
             PollState::Authorized {
                 token,
                 access_token,
                 user,
             } => Self::Authorized {
+                media_ticket: crate::services::media_ticket::for_access_token(
+                    signing_key,
+                    &access_token,
+                ),
                 token,
                 access_token,
                 user,

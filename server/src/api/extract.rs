@@ -7,7 +7,7 @@ use axum::http::StatusCode;
 use axum::response::Response;
 use kroma_module_host::json_error;
 
-pub use kroma_module_host::{bearer_from_headers, AuthUser, OptionalAuthUser};
+pub use kroma_module_host::{bearer_from_headers, AuthUser};
 
 /// The token a request authenticated with, for the handlers that must name the
 /// caller's own session rather than merely its user - revoking every *other*

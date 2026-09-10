@@ -225,7 +225,8 @@ pub async fn leave(State(state): State<SharedState>, Json(body): Json<SecretBody
 /// past (`TraceLayer`'s span records the uri, and every reverse proxy logs it by
 /// default), which is not where a credential redeeming a 90-day token belongs.
 pub async fn poll(State(state): State<SharedState>, Json(body): Json<SecretBody>) -> Response {
-    let status = super::dto::PairingPoll::from(state.handoff.poll(&body.secret));
+    let status =
+        super::dto::PairingPoll::of(state.handoff.poll(&body.secret), &state.media_ticket_key);
     sweep(&state, []).await;
     Json(status).into_response()
 }

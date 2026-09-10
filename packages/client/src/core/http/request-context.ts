@@ -67,6 +67,13 @@ export interface RequestContext {
   /** The absolute URL, for what fetches itself: a `<video>` src, an `<img>`, the
    * native downloader, a link the user opens. */
   url<const P extends string>(path: P, ...args: PathArgs<P>): string;
+  /** The credential the media byte routes take in a URL, for the players that
+   * cannot send a header. Undefined until a sign-in has handed one over, and
+   * against a server too old to mint one. */
+  mediaTicket(): string | undefined;
+  /** Adopt the ticket a sign-in answered with, or clear it with `undefined`. The
+   * accounts domain calls this; nothing else does. */
+  setMediaTicket(ticket: string | undefined): void;
   get: Verb;
   post: Verb;
   put: Verb;
@@ -100,6 +107,8 @@ export interface TransportConfig {
   locale(): string | undefined;
   /** Mint a fresh bearer after a 401, or resolve undefined to give up. */
   refresh(): Promise<string | undefined>;
+  mediaTicket(): string | undefined;
+  setMediaTicket(ticket: string | undefined): void;
   /** Aborts every request this context makes unless the call named its own.
    * A query adapter builds one context per fetch and hands it the runner's
    * signal, so an endpoint needs no signal parameter of its own. */
@@ -212,6 +221,8 @@ export function createRequestContext(config: TransportConfig): RequestContext {
   return {
     baseUrl,
     url: (template, ...args) => `${baseUrl}/api${resolve(template, args[0])}`,
+    mediaTicket: config.mediaTicket,
+    setMediaTicket: config.setMediaTicket,
     get: ((path: string, ...rest: unknown[]) => {
       const { response, options } = split(rest);
       const target = resolve(path, options);

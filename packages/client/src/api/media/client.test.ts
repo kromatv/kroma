@@ -117,6 +117,56 @@ describe('the URL builders, which make no request', () => {
   });
 });
 
+const SIGNED_IN_USER = {
+  id: 'u1',
+  email: 'a@b.c',
+  username: 'alice',
+  permissions: ['playback'],
+  createdAt: '2026-01-01T00:00:00Z',
+  hasPin: false,
+};
+
+/** A client that has signed in and so holds the media ticket its byte URLs carry. */
+async function ticketedClient(ticket = 'dev.999.sig') {
+  const { client } = recordingClient(() => ({
+    json: { token: 'tok', mediaTicket: ticket, user: SIGNED_IN_USER },
+  }));
+  await client.accounts.exchangeToken('access-token');
+  return client;
+}
+
+describe('the URLs a player fetches for itself', () => {
+  it('carries the account media ticket, because the element cannot send a header', async () => {
+    const client = await ticketedClient();
+
+    expect(client.media.streamUrl(item)).toBe(
+      'http://kroma.test/api/items/i1/stream?t=dev.999.sig',
+    );
+    expect(client.media.subtitleUrl(item, 2)).toBe(
+      'http://kroma.test/api/items/i1/subtitles/2.vtt?t=dev.999.sig',
+    );
+    expect(client.media.storyboardUrl(item)).toBe(
+      'http://kroma.test/api/items/i1/storyboard?t=dev.999.sig',
+    );
+    expect(client.media.hlsMasterUrl(item, false, 0, 0, { copyCodecs: ['aac'] })).toBe(
+      'http://kroma.test/api/items/i1/hls/copy/0/0/index.m3u8?copy=aac&t=dev.999.sig',
+    );
+  });
+
+  it('leaves the download alone: a plain fetch sends the bearer as a header', async () => {
+    const client = await ticketedClient();
+
+    expect(client.media.downloadUrl(item)).toBe('http://kroma.test/api/items/i1/download');
+  });
+
+  it('drops the ticket from every URL once the session is cleared', async () => {
+    const client = await ticketedClient();
+    client.setAuthToken(undefined);
+
+    expect(client.media.streamUrl(item)).toBe('http://kroma.test/api/items/i1/stream');
+  });
+});
+
 const SPLASH = {
   kind: 'movie',
   title: 'Dune',

@@ -207,6 +207,56 @@ pub fn seed_session_pw(
     (user.id, token)
 }
 
+/// A title backed by real bytes on disk, alongside the demo catalogue, so the
+/// byte routes can answer something a demo entry cannot. Returns its item id.
+pub fn seed_playable_item(state: &SharedState, title: &str, bytes: &[u8]) -> String {
+    let data = crate::services::demo::demo_data();
+    let mut item = data
+        .items
+        .iter()
+        .find(|i| i.show_id.is_none())
+        .cloned()
+        .expect("a demo movie to stand in for");
+    let path = state.config.data_dir.join(format!("{title}.mp4"));
+    std::fs::write(&path, bytes).expect("write media file");
+    let abs = path.to_string_lossy().into_owned();
+
+    item.id = crate::services::scan::short_hash(&abs);
+    item.title = title.to_string();
+    item.abs_path = Some(abs.clone());
+    let mut file = item.files[0].clone();
+    file.id = crate::services::scan::short_hash(&format!("{abs}|file"));
+    file.abs_path = Some(abs);
+    file.size = Some(bytes.len() as u64);
+    item.default_file_id = Some(file.id.clone());
+    item.files = vec![file];
+
+    let mut items = data.items.clone();
+    items.push(item.clone());
+    db::sync_all(
+        &state.db,
+        &data.libraries,
+        &data.shows,
+        &items,
+        &data.mtimes,
+    )
+    .expect("seed a playable item");
+    item.id
+}
+
+/// The media ticket a session's device would be handed, for driving the byte
+/// routes the way a `<video>` element does.
+pub fn media_ticket_for(state: &SharedState, session_token: &str) -> String {
+    let device = db::session_device_id(&state.db, session_token)
+        .expect("read session device")
+        .expect("a session minted from an access token");
+    crate::services::media_ticket::mint(
+        &state.media_ticket_key,
+        &device,
+        time::OffsetDateTime::now_utc().unix_timestamp(),
+    )
+}
+
 /// Mint a bare access token (no session) with the given `pin_verified` flag,
 /// so a test can drive `POST /auth/token` through the PIN gate.
 pub fn seed_access_token(state: &SharedState, user_id: &str, pin_verified: bool) -> String {

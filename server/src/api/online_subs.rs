@@ -12,7 +12,9 @@ use axum::Json;
 use serde::Serialize;
 
 use crate::api::error::json_error;
+use crate::api::media_ticket::MediaViewer;
 use crate::api::util::query;
+use crate::api::visibility;
 use crate::boot::transcriber::TranscriberClient;
 use crate::db;
 use crate::services::settings;
@@ -42,9 +44,9 @@ pub fn routes() -> Router<SharedState> {
         )
 }
 
-/// Public: serve a generated/downloaded subtitle's WebVTT bytes. The player
-/// fetches this URL as a plain `fetch()` (and can't attach a bearer), so like
-/// the embedded-subtitle + stream byte routes it stays outside the session gate.
+/// Outside the session middleware because the player fetches this URL itself and
+/// cannot attach a bearer; gated instead by the media credential, like the other
+/// byte routes (ACCT-35).
 pub fn public_routes() -> Router<SharedState> {
     Router::new().route("/items/{id}/subtitles/dl/{dl}", get(file))
 }
@@ -148,8 +150,12 @@ pub async fn delete_downloaded(
 /// `GET /api/items/:id/subtitles/dl/:dl.vtt` → serve a cached generated WebVTT.
 pub async fn file(
     State(state): State<SharedState>,
-    Path((_id, dl)): Path<(String, String)>,
+    MediaViewer(viewer): MediaViewer,
+    Path((id, dl)): Path<(String, String)>,
 ) -> Response {
+    if let Err(resp) = visibility::gate_item(&state, &viewer, &id).await {
+        return resp;
+    }
     let dl_id = dl.trim_end_matches(".vtt").to_string();
     let sub = match query(&state.db, move |pool| {
         let conn = pool.get()?;

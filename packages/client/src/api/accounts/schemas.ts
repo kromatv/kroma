@@ -52,15 +52,18 @@ export const AuthConfig = z.object({
 });
 export type AuthConfig = z.infer<typeof AuthConfig>;
 
-/** `{ token, accessToken, user }` from register/login. */
+/** `{ token, accessToken, mediaTicket, user }` from register/login.
+ * `mediaTicket` is what the media byte routes take in a URL, for the players
+ * that cannot send a header; absent from a server too old to mint one. */
 export const AuthResult = z.object({
   token: z.string(),
   accessToken: z.string(),
+  mediaTicket: z.string().optional(),
   user: User,
 });
 export type AuthResult = z.infer<typeof AuthResult>;
 
-/** `{ token, user }` from `/auth/token` (session refresh/exchange). */
+/** `{ token, mediaTicket, user }` from `/auth/token` (session refresh/exchange). */
 export const SessionResult = AuthResult.omit({ accessToken: true });
 export type SessionResult = z.infer<typeof SessionResult>;
 
