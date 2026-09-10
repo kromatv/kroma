@@ -21,11 +21,11 @@ export function streamNotice(
   caps: PlaybackCapabilities = capabilities(),
 ): StreamNotice | null {
   if (mode === 'direct') return null;
-  if (mode === 'remux') return { messageKey: 'player.repackagedToast' };
+  if (mode === 'remux') return { messageKey: 'player.repackaged' };
   const codec = replacedAudioCodec(item, caps);
   if (!codec) return null;
   return {
-    messageKey: 'player.audioReencodedToast',
+    messageKey: 'player.audioAdjusted',
     messageVars: { codec: codec.toUpperCase() },
   };
 }

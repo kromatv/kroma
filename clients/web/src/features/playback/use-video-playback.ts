@@ -1,16 +1,26 @@
-import { audioTracksOf, preferredAudioIndex } from '@kromatv/core';
+import type { PlaybackMode } from '@kromatv/client/playback';
+import { audioTracksOf, type EngineDecision, preferredAudioIndex } from '@kromatv/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { setWebEnginePref, type WebEnginePref } from '#web/features/playback/engine-pref';
 import { bindMediaEvents } from '#web/features/playback/media-events';
 import { useEngineDecision } from '#web/features/playback/use-engine-decision';
 import { useResumeAnchor } from '#web/features/playback/use-resume-anchor';
 import { useStallRecovery } from '#web/features/playback/use-stall-recovery';
+import { useStreamProbe } from '#web/features/playback/use-stream-probe';
 import { useVideoTransport } from '#web/features/playback/use-video-transport';
+import { useWaitReason } from '#web/features/playback/use-wait-reason';
 import { attachMediaSource, type VideoPlayback } from '#web/features/playback/video-engine';
-import { kromaClient, type MovieView } from '#web/shared/lib/api';
+import type { MovieView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 
 export type { VideoPlayback } from '#web/features/playback/video-engine';
+
+const MAX_GIVE_UPS = 2;
+
+function modeOf(decision: EngineDecision): PlaybackMode {
+  if (decision.kind === 'direct') return 'direct';
+  return decision.aacMaster ? 'transcode' : 'remux';
+}
 
 /** Owns the `<video>` element: playback state, source decision (direct-play vs
  * HLS remux), fullscreen, and every transport action. The underlying HLS clock
@@ -20,8 +30,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   const containerRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
 
-  const [playing, setPlaying] = useState(false);
-  const [waiting, setWaiting] = useState(false);
+  const [playing, setPlaying] = useState(true);
   const [ready, setReady] = useState(false);
   const [cur, setCur] = useState(0);
   const [dur, setDur] = useState(item.durationMs ? item.durationMs / 1000 : 0);
@@ -40,6 +49,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   const audioIndexRef = useRef(0);
   audioIndexRef.current = audioIndex;
   const wantPlay = useRef(true);
+  const giveUps = useRef(0);
 
   const audioTracks = audioTracksOf(item);
 
@@ -57,46 +67,15 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     null,
   );
 
-  // `-noaccurate_seek` starts the HLS stream at the keyframe at-or-before the
-  // anchor, so the real start can be earlier than requested; the server reports it
-  // via `X-Hls-Start`. `srcReady` gates the attach until that offset is known.
-  const [baseSec, setBaseSec] = useState(0);
-  const [srcReady, setSrcReady] = useState(false);
-  // `X-Media-Duration`: the server's true duration for an unprobed catalog row,
-  // whose growing HLS playlist would otherwise cap the shown total at its live edge.
-  const [serverDurSec, setServerDurSec] = useState(0);
-  useEffect(() => {
-    if (bootAnchor === null) return; // wait until resume has picked the anchor
-    setSrcReady(false);
-    if (decision.kind === 'direct') {
-      setBaseSec(0);
-      setSrcReady(true);
-      return;
-    }
-    let cancelled = false;
-    const url = kromaClient().media.hlsMasterUrl(item.id, decision.aacMaster, anchor, audioIndex);
-    fetch(url)
-      .then((r) => {
-        const start = r.headers.get('X-Hls-Start');
-        const k = start === null ? Number.NaN : Number(start);
-        const dur = r.headers.get('X-Media-Duration');
-        const d = dur === null ? Number.NaN : Number(dur);
-        if (!cancelled) {
-          setBaseSec(Number.isFinite(k) ? k : anchor);
-          if (Number.isFinite(d) && d > 0) setServerDurSec(d);
-          setSrcReady(true);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setBaseSec(anchor);
-          setSrcReady(true);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [item.id, decision, anchor, audioIndex, bootAnchor]);
+  const restartAt = useCallback((absSec: number) => setAnchor(Math.max(0, absSec)), [setAnchor]);
+  const { baseSec, srcReady, serverDurSec, failure, refused, fail } = useStreamProbe({
+    itemId: item.id,
+    decision,
+    anchor,
+    audioIndex,
+    booted: bootAnchor !== null,
+    restartAt,
+  });
 
   const knownDurationMs =
     item.durationMs || (serverDurSec > 0 ? Math.round(serverDurSec * 1000) : 0);
@@ -121,7 +100,9 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
           wantPlay.current = on;
           setPlaying(on);
         },
-        setWaiting,
+        onPlaying: () => {
+          giveUps.current = 0;
+        },
         setVolume,
         setMuted,
         setRate,
@@ -134,8 +115,12 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   }, [item, anchor, audioIndex, baseSec, knownDurationMs]);
 
   const absNow = useCallback(() => baseSec + (videoRef.current?.currentTime ?? 0), [baseSec]);
-  const restartAt = useCallback((absSec: number) => setAnchor(Math.max(0, absSec)), [setAnchor]);
-  const giveUp = useCallback(() => restartAt(absNow()), [absNow, restartAt]);
+  const onRefused = useCallback((status: number) => refused(status, absNow()), [refused, absNow]);
+  const giveUp = useCallback(() => {
+    giveUps.current += 1;
+    if (giveUps.current > MAX_GIVE_UPS) fail('broken');
+    else restartAt(absNow());
+  }, [absNow, restartAt, fail]);
 
   // The chosen audio is muxed into the stream URL, so a language change remounts
   // the element rather than switching renditions in place.
@@ -158,8 +143,20 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
       setUseHls,
       setReady,
       onGiveUp: giveUp,
+      onRefused,
     });
-  }, [item, decision, env.safari, enginePref, anchor, audioIndex, bootAnchor, srcReady, giveUp]);
+  }, [
+    item,
+    decision,
+    env.safari,
+    enginePref,
+    anchor,
+    audioIndex,
+    bootAnchor,
+    srcReady,
+    giveUp,
+    onRefused,
+  ]);
 
   const stalled = useStallRecovery({
     videoRef,
@@ -168,6 +165,14 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     baseSec,
     active: ready && srcReady && playing,
     onRestart: restartAt,
+  });
+
+  const reason = useWaitReason({
+    videoRef,
+    intent: playing,
+    attaching: bootAnchor === null || !srcReady,
+    stuck: stalled,
+    remount: `${anchor}:${audioIndex}`,
   });
 
   useEffect(() => {
@@ -225,14 +230,18 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     [absNow, setAnchor, setForceHls, setEnginePrefState],
   );
 
+  const healthy = failure === null;
   return {
     videoRef,
     containerRef,
     barRef,
     enginePref,
     setEnginePref,
-    playing,
-    waiting: waiting || stalled,
+    playing: playing && healthy,
+    waiting: healthy && reason !== null,
+    waitReason: healthy ? reason : null,
+    failure,
+    mode: modeOf(decision),
     ready,
     cur,
     dur,

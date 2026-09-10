@@ -189,6 +189,9 @@ export interface PlayerController {
 
   playing: boolean;
   waiting: boolean;
+  /** What the wait is on, where the engine can tell: `loading` until the frame
+   *  asked for arrives, `buffering` when a playing film ran out of data. */
+  waitReason?: 'loading' | 'buffering';
   ready: boolean;
   /** Already-localized warning/error string, or null. */
   error: string | null;

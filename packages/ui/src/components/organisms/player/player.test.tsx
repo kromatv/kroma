@@ -217,10 +217,10 @@ describe('<Player> with a title that will not play', () => {
     expect(screen.queryByRole('progressbar')).toBeNull();
   });
 
-  it('still spins for a title that is merely slow to arrive', () => {
+  it('still spins for a title that is merely slow to arrive', async () => {
     render(player(media, { controller: loading }));
 
-    expect(screen.getByRole('progressbar')).toBeTruthy();
+    expect(await screen.findByRole('progressbar')).toBeTruthy();
   });
 });
 

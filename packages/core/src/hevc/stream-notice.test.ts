@@ -14,7 +14,7 @@ describe('streamNotice', () => {
     const item = makeItem({ container: 'mkv', audio: [track({ index: 0, codec: 'ac3' })] });
 
     expect(streamNotice(item, 'remux', MSE_CAPS)).toEqual({
-      messageKey: 'player.repackagedToast',
+      messageKey: 'player.repackaged',
     });
   });
 
@@ -22,7 +22,7 @@ describe('streamNotice', () => {
     const item = makeItem({ audio: [track({ index: 0, codec: 'truehd', channels: 8 })] });
 
     expect(streamNotice(item, 'transcode', MSE_CAPS)).toEqual({
-      messageKey: 'player.audioReencodedToast',
+      messageKey: 'player.audioAdjusted',
       messageVars: { codec: 'TRUEHD' },
     });
   });
