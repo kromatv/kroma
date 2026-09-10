@@ -73,6 +73,17 @@ fn the_mail_llm_push_and_registry_keys_are_the_cores_alone() {
     }
 }
 
+// The word sweep above cannot reach this one: "mediaTicketKey" carries no
+// password, token, secret or credential word, so only a named case keeps it
+// declared.
+#[test]
+fn the_key_that_signs_a_media_ticket_is_the_cores_alone() {
+    let key = crate::services::media_ticket::SIGNING_KEY_SETTING;
+
+    assert!(core_only(key), "{key} forges a ticket for any device");
+    assert!(!reads_like_a_credential(key), "the sweep would cover it");
+}
+
 #[test]
 fn a_credential_the_sidecar_that_uses_it_configures_stays_reachable() {
     assert!(!core_only("vpnWgConfig"));

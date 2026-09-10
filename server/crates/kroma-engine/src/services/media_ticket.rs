@@ -17,19 +17,23 @@ use super::settings::Settings;
 /// same day.
 pub const TTL_SECS: i64 = 12 * 3600;
 
-const KEY_SETTING: &str = "mediaTicketKey";
+/// Where the signing key is persisted. Declared `core_only` in
+/// [`super::settings::keys`], which is what keeps the module host callback from
+/// handing it to a sidecar: anyone holding it forges a ticket for any device.
+pub const SIGNING_KEY_SETTING: &str = "mediaTicketKey";
+
 const SIG_HEX_LEN: usize = 32;
 
 /// The per-install signing key, minted on first use and persisted with the
-/// settings. Never served: it is stored through [`Settings::set_internal`], so no
-/// admin response and no settings patch can read or write it.
+/// settings. It reaches no response: it sits in no admin settings group, and the
+/// module host callback withholds it.
 pub fn signing_key(settings: &Settings, pool: &Pool) -> String {
-    let existing = settings.get_str(KEY_SETTING, "");
+    let existing = settings.get_str(SIGNING_KEY_SETTING, "");
     if !existing.trim().is_empty() {
         return existing;
     }
     let key = super::auth::random_token();
-    settings.set_internal(pool, KEY_SETTING, json!(key.clone()));
+    settings.set_internal(pool, SIGNING_KEY_SETTING, json!(key.clone()));
     key
 }
 

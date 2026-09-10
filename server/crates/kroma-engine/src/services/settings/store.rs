@@ -75,8 +75,9 @@ impl Settings {
     ///
     /// [`Self::set_patch`] takes its keys from an HTTP body, so it writes only
     /// what `defaults` declares. Identity the server mints for itself is not a
-    /// preference and must not be settable by a caller, so it is stored through
-    /// here and stays out of `defaults` on purpose.
+    /// preference, so it is written through here and cannot be lost to a missing
+    /// declaration. A minted value that must also be withheld from a sidecar
+    /// still declares its reach in [`super::keys`]; writing it here does not.
     pub fn set_internal(&self, pool: &Pool, key: &str, value: Value) {
         let _ = crate::db::settings_set(pool, key, &value);
         self.inner.write().unwrap().insert(key.to_string(), value);

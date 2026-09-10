@@ -147,11 +147,19 @@ that needs its source rebuilt, which a reload does. Scoping each ticket to one t
 would buy a narrower leak for a round trip before every playback URL, and those URLs are built
 in one synchronous step by six players that are handed nothing but a string.
 
-One thing is deliberately left open, named here so this requirement is not read as covering it:
+One thing is deliberately left open, and it is the bytes this requirement covers that bound it:
 a title's **artwork** stays reachable by id (`/items/<id>/poster`, `/items/<id>/card`,
 `/images/<hash>`), because the sign-in screen's slideshow and a television's launcher cards are
 drawn before there is any account to hold. Someone who already has an id learns a hidden
 title's name and cover that way. They reach none of its bytes.
+
+That is a real edge on **ACCT-20**, which says a narrowed account cannot discover the rest: for
+an id already in hand, artwork confirms the title exists and shows its cover. The id is the
+gated half, and ACCT-34 closed every path that hands one out, so the leak needs an id carried in
+from outside the product. This is how artwork has always been served and nothing here changed
+it; it is written down so neither ACCT-20 nor ACCT-21 has to be read charitably to be true.
+Closing it means a credential on the art routes too, which costs the sign-in slideshow and the
+launcher cards, and that trade has not been made.
 
 **ACCT-22** (SHIPPED) - Installing a module is an **admin** right, because it runs new
 out-of-process code on the server ([`modules/`](../modules/)). A plain user may use whatever
