@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
+import { dependenciesOf, optionalDependenciesOf, satisfies } from '@kromatv/registry';
 import { cargo, targetDir } from '../cargo';
 import { exec } from '../exec';
 import { findProjects, type Project } from '../project';
@@ -68,6 +69,24 @@ async function checkTs(project: Project): Promise<string[]> {
   return problems;
 }
 
+/** A declared range no peer in this tree satisfies. A module's real contract is
+ *  the point it consumes, but a range is what the Store resolves an install
+ *  against, so one that has rotted past its peer blocks the update rather than
+ *  the peer. Peers ship on their own tags, so nothing else notices. */
+export function unsatisfiableRanges(projects: readonly Project[]): string[] {
+  const version = new Map(projects.map((p) => [p.manifest.id, p.manifest.version]));
+  const problems: string[] = [];
+  for (const p of projects) {
+    const declared = { ...dependenciesOf(p.manifest), ...optionalDependenciesOf(p.manifest) };
+    for (const [dep, range] of Object.entries(declared)) {
+      const have = version.get(dep);
+      if (have === undefined || satisfies(have, range)) continue;
+      problems.push(`${p.manifest.id}: needs ${dep}@${range} but this tree has ${have}`);
+    }
+  }
+  return problems;
+}
+
 /** `kroma check`: every manifest valid and unique, the frontend typed and its
  *  imports in bounds, the crate clean under clippy. */
 export async function checkCommand(options: CheckOptions): Promise<number> {
@@ -82,6 +101,7 @@ export async function checkCommand(options: CheckOptions): Promise<number> {
     if (first) problems.push(`duplicate module id "${p.manifest.id}" in ${first} and ${p.dir}`);
     seen.set(p.manifest.id, p.dir);
   }
+  problems.push(...unsatisfiableRanges(projects));
 
   for (const project of projects) {
     console.log(`\n${style.bold(project.manifest.id)}`);
