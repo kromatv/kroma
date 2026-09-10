@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 const API = 'https://sonarcloud.io/api';
 const TRANSITION = 'accept';
-const PROJECT = 'maxscharwath_kroma';
+const PROJECT = 'kromatv_kroma';
 const PAGE_SIZE = 100;
 
 const Issues = z.object({
