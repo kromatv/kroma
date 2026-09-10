@@ -3,8 +3,8 @@ sub init()
     m.hint = m.top.findNode("hint")
     m.timer = m.top.findNode("poll")
     m.timer.observeField("fire", "onPoll")
-    m.top.findNode("title").text = t("pairTitle")
-    m.top.findNode("serverLabel").text = t("pairServer") + ": " + m.global.server
+    m.top.findNode("title").text = t("roku.channel.pairTitle")
+    m.top.findNode("serverLabel").text = t("roku.channel.pairServer") + ": " + m.global.server
     m.tasks = []
     m.secret = ""
     initiate()
@@ -12,7 +12,7 @@ end sub
 
 sub initiate()
     m.secret = ""
-    m.hint.text = t("pairHint")
+    m.hint.text = t("roku.channel.pairHint")
     m.code.text = "····"
     m.tasks.push(apiRequest({ method: "POST", path: "/api/auth/quickconnect/initiate", body: "{}" }, "onInitiated"))
 end sub
@@ -24,7 +24,7 @@ sub onInitiated(event as object)
         m.code.text = reply.json.code
         m.timer.control = "start"
     else
-        m.hint.text = t("pairUnreachable") + " " + m.global.server
+        m.hint.text = t("roku.channel.pairUnreachable") + " " + m.global.server
         m.code.text = ""
     end if
 end sub

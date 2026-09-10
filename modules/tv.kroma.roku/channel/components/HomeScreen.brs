@@ -8,14 +8,14 @@ sub init()
 end sub
 
 sub load()
-    m.status.text = t("loading")
+    m.status.text = t("roku.channel.loading")
     m.tasks.push(apiRequest({ path: "/api/module/tv.kroma.roku/channel/home" }, "onHome"))
 end sub
 
 sub onHome(event as object)
     reply = event.getData()
     if reply.status <> 200 or reply.json = invalid or reply.json.rows = invalid then
-        m.status.text = t("loadFailed")
+        m.status.text = t("roku.channel.loadFailed")
         return
     end if
     content = CreateObject("roSGNode", "ContentNode")

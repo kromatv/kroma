@@ -13,6 +13,7 @@ export const CLOSURE = [
   'kroma-module-wire',
   'kroma-sqlite',
   'kroma-http',
+  'kroma-i18n',
   'kroma-primitives',
   'kroma-testing',
 ] as const;

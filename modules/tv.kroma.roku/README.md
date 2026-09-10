@@ -6,7 +6,7 @@ The backend (`server/`, `kroma-roku`) finds boxes on the LAN over SSDP, reads wh
 
 A box is at the address its SSDP packet came from, never at the one its reply's `Location` header names, and that address has to be one nothing routes across the internet (RFC1918, loopback, link-local, or the IPv6 equivalents). Anything else is not listed and not installed to, by hand or otherwise: the developer installer is handed the operator's Roku password, so whoever answers gets it.
 
-The channel (`channel/`) pairs itself with Quick Connect, like a television: it shows a code, the viewer approves it from a phone or browser, and the box keeps a device session of its own. `build.rs` zips the tree into the sidecar at compile time, so a `.kmod` carries the channel it installs.
+The channel (`channel/`) pairs itself with Quick Connect, like a television: it shows a code, the viewer approves it from a phone or browser, and the box keeps a device session of its own. `build.rs` zips the tree into the sidecar at compile time, with `locales/` beside it, so a `.kmod` carries the channel it installs and the channel reads the same catalogue the console page and the sidecar do.
 
 The console page (`ui/`) lists the boxes, takes the developer password once, and installs or relaunches the channel on each.
 

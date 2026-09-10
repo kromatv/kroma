@@ -22,7 +22,11 @@ mod ecp;
 mod installer;
 mod lan;
 mod routes;
+pub mod rows;
 pub mod state;
+mod strings;
+#[cfg(test)]
+mod test_support;
 
 pub use state::Roku;
 

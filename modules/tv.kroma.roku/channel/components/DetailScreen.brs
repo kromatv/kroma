@@ -14,7 +14,7 @@ end sub
 
 sub onTarget()
     target = m.top.target
-    m.status.text = t("loading")
+    m.status.text = t("roku.channel.loading")
     path = "/api/module/tv.kroma.roku/channel/detail/" + target.kind + "/" + target.id
     m.tasks.push(apiRequest({ path: path, tag: "detail" }, "onDetail"))
 end sub
@@ -22,7 +22,7 @@ end sub
 sub onDetail(event as object)
     reply = event.getData()
     if reply.status <> 200 or reply.json = invalid then
-        m.status.text = t("loadFailed")
+        m.status.text = t("roku.channel.loadFailed")
         return
     end if
     if reply.tag = "episode" then
@@ -43,9 +43,9 @@ end sub
 sub fillActions()
     content = CreateObject("roSGNode", "ContentNode")
     if m.detail.play <> invalid then
-        label = t("play")
+        label = t("roku.channel.play")
         if m.detail.play.resumeMs > 0 then
-            label = t("resumeAt") + " " + formatClock(m.detail.play.resumeMs)
+            label = t("roku.channel.resumeAt") + " " + formatClock(m.detail.play.resumeMs)
         end if
         if m.detail.kind = "show" then label = label + "  ·  " + m.detail.play.title
         content.createChild("ContentNode").title = label

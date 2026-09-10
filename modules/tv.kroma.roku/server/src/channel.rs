@@ -6,6 +6,8 @@
 use serde::Serialize;
 use serde_json::Value;
 
+use kroma_module_sdk::i18n::Translator;
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Tile {
@@ -123,129 +125,28 @@ pub fn item_tile(item: &Value, progress: f64) -> Tile {
     }
 }
 
-pub fn show_tile(show: &Value) -> Tile {
+pub fn show_tile(strings: Translator<'_>, show: &Value) -> Tile {
     let id = str(show, "id");
-    let episodes = num(show, "episodeCount").unwrap_or_default();
+    let count = num(show, "episodeCount").unwrap_or_default().to_string();
+    let episodes = strings.t("roku.channel.episodes", &[("count", &count)]);
     Tile {
         poster: format!("/api/shows/{id}/poster"),
         id,
         kind: "show".into(),
         title: str(show, "title"),
-        subtitle: join([&year(show), &format!("{episodes} episodes")]),
+        subtitle: join([&year(show), &episodes]),
         progress: 0.0,
     }
-}
-
-fn hit_tile(hit: &Value) -> Option<Tile> {
-    match str(hit, "type").as_str() {
-        "movie" | "episode" => hit.get("item").map(|i| item_tile(i, 0.0)),
-        "show" => hit.get("show").map(show_tile),
-        _ => None,
-    }
-}
-
-fn fraction(position: Option<i64>, duration: Option<i64>) -> f64 {
-    match (position, duration) {
-        (Some(p), Some(d)) if d > 0 => (p as f64 / d as f64).clamp(0.0, 1.0),
-        _ => 0.0,
-    }
-}
-
-pub fn home_rows(continue_title: &str, continuing: &Value, sections: &Value) -> Vec<Row> {
-    let mut rows = Vec::new();
-    let resume: Vec<Tile> = continuing
-        .as_array()
-        .map(|entries| {
-            entries
-                .iter()
-                .filter_map(|e| {
-                    let progress = fraction(num(e, "positionMs"), num(e, "durationMs"));
-                    e.get("item").map(|i| item_tile(i, progress))
-                })
-                .collect()
-        })
-        .unwrap_or_default();
-    if !resume.is_empty() {
-        rows.push(Row {
-            title: continue_title.to_string(),
-            tiles: resume,
-        });
-    }
-    for section in sections.as_array().into_iter().flatten() {
-        let tiles: Vec<Tile> = section
-            .get("items")
-            .and_then(Value::as_array)
-            .map(|items| items.iter().filter_map(hit_tile).collect())
-            .unwrap_or_default();
-        if !tiles.is_empty() {
-            rows.push(Row {
-                title: str(section, "title"),
-                tiles,
-            });
-        }
-    }
-    rows
-}
-
-const LIBRARY_ROW_CAP: usize = 60;
-
-pub fn library_rows(
-    movies_title: &str,
-    shows_title: &str,
-    movies: &Value,
-    shows: &Value,
-) -> Vec<Row> {
-    let mut rows = Vec::new();
-    let movie_tiles: Vec<Tile> = movies
-        .as_array()
-        .map(|items| {
-            items
-                .iter()
-                .take(LIBRARY_ROW_CAP)
-                .map(|i| item_tile(i, 0.0))
-                .collect()
-        })
-        .unwrap_or_default();
-    if !movie_tiles.is_empty() {
-        rows.push(Row {
-            title: movies_title.to_string(),
-            tiles: movie_tiles,
-        });
-    }
-    let show_tiles: Vec<Tile> = shows
-        .as_array()
-        .map(|items| items.iter().take(LIBRARY_ROW_CAP).map(show_tile).collect())
-        .unwrap_or_default();
-    if !show_tiles.is_empty() {
-        rows.push(Row {
-            title: shows_title.to_string(),
-            tiles: show_tiles,
-        });
-    }
-    rows
 }
 
 #[cfg(test)]
 mod tests {
     use serde_json::json;
 
+    use crate::strings;
+    use crate::test_support::{episode, movie, show};
+
     use super::*;
-
-    fn movie() -> Value {
-        json!({
-            "id": "m1", "kind": "movie", "title": "Dune", "year": 2021,
-            "container": "mov,mp4,m4a,3gp,3g2,mj2",
-            "metadata": { "overview": "Spice.", "backdropUrl": "https://img/dune.jpg" }
-        })
-    }
-
-    fn episode() -> Value {
-        json!({
-            "id": "e3", "kind": "episode", "title": "Chapter 3", "showId": "s1",
-            "showTitle": "Andor", "season": 1, "episode": 3, "episodeTitle": "Reckoning",
-            "container": "matroska,webm"
-        })
-    }
 
     #[test]
     fn a_movie_tile_names_the_title_and_the_year() {
@@ -268,35 +169,27 @@ mod tests {
     }
 
     #[test]
-    fn the_home_starts_with_what_is_in_progress_and_skips_empty_rows() {
-        let continuing =
-            json!([{ "positionMs": 600000, "durationMs": 2400000, "item": episode() }]);
-        let sections = json!([
-            { "title": "Empty", "items": [] },
-            { "title": "Films", "items": [{ "type": "movie", "item": movie() }, { "type": "show", "show": { "id": "s1", "title": "Andor", "year": 2022, "episodeCount": 12 } }] }
-        ]);
+    fn a_show_tile_counts_its_episodes_in_the_language_the_viewer_reads() {
+        let english = show_tile(strings::for_locale("en"), &show());
+        let french = show_tile(strings::for_locale("fr"), &show());
 
-        let rows = home_rows("Reprendre", &continuing, &sections);
-
-        assert_eq!(rows.len(), 2);
-        assert_eq!(rows[0].title, "Reprendre");
-        assert_eq!(rows[0].tiles[0].progress, 0.25);
-        assert_eq!(rows[1].title, "Films");
-        assert_eq!(rows[1].tiles[1].subtitle, "2022 · 12 episodes");
-        assert_eq!(rows[1].tiles[1].poster, "/api/shows/s1/poster");
+        assert_eq!(english.subtitle, "2022 · 12 episodes");
+        assert_eq!(french.subtitle, "2022 · 12 épisodes");
+        assert_eq!(french.poster, "/api/shows/s1/poster");
     }
 
     #[test]
-    fn a_library_with_nothing_curated_still_fills_two_rows() {
-        let movies = json!([movie()]);
-        let shows = json!([{ "id": "s1", "title": "Andor", "episodeCount": 12 }]);
+    fn a_show_with_one_episode_is_not_told_it_has_several() {
+        let one = json!({ "id": "s1", "title": "Andor", "episodeCount": 1 });
 
-        let rows = library_rows("Films", "Séries", &movies, &shows);
-
-        assert_eq!(rows.len(), 2);
-        assert_eq!(rows[0].tiles[0].title, "Dune");
-        assert_eq!(rows[1].tiles[0].subtitle, "12 episodes");
-        assert!(library_rows("Films", "Séries", &Value::Null, &json!([])).is_empty());
+        assert_eq!(
+            show_tile(strings::for_locale("en"), &one).subtitle,
+            "1 episode"
+        );
+        assert_eq!(
+            show_tile(strings::for_locale("fr"), &one).subtitle,
+            "1 épisode"
+        );
     }
 
     #[test]
