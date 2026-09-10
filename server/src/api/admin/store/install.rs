@@ -188,6 +188,34 @@ pub struct UpdateOutcome {
     pub failed: Vec<FailedUpdate>,
 }
 
+/// The enabled modules a candidate version would strand: they hard-depend on
+/// `id` and declare a range the candidate does not satisfy.
+///
+/// Installing a dependent enforces its range against the registry, and
+/// uninstalling a dependency asks who needs it, but updating a dependency
+/// checked neither, so a peer could move out from under its dependents and
+/// leave them unable to update in turn.
+fn stranded_dependents(
+    installed: &[kroma_module_manifest::ModuleManifest],
+    enabled: &dyn Fn(&str) -> bool,
+    id: &str,
+    candidate: &str,
+) -> Vec<String> {
+    installed
+        .iter()
+        .filter(|m| m.id != id && enabled(&m.id))
+        .filter(|m| {
+            m.dependencies.iter().any(|d| {
+                d.id == id
+                    && d.version
+                        .as_deref()
+                        .is_some_and(|range| !kroma_module_manifest::range_matches(range, candidate))
+            })
+        })
+        .map(|m| m.id.clone())
+        .collect()
+}
+
 /// Update every runtime-installed module (or the `only` subset) to the newest
 /// compatible catalog version, off ONE catalog fetch. One `module.op.*` stream
 /// covers the whole batch. `Err` only when the catalog itself is unreachable.
@@ -204,7 +232,8 @@ pub async fn update_all(
         failed: Vec::new(),
     };
     let mut targets: Vec<(&CatalogModule, String)> = Vec::new();
-    for manifest in sup.installed_manifests() {
+    let installed = sup.installed_manifests();
+    for manifest in &installed {
         let (id, cur) = (manifest.id.as_str(), manifest.version.as_str());
         if only.is_some_and(|ids| !ids.iter().any(|x| x == id)) {
             continue;
@@ -219,6 +248,23 @@ pub async fn update_all(
             outcome.failed.push(FailedUpdate {
                 id: id.to_string(),
                 error: reason,
+            });
+            continue;
+        }
+        let stranded = stranded_dependents(
+            &installed,
+            &|dep_id| kroma_engine::modules::module_enabled(&state.settings, dep_id),
+            id,
+            &entry.version,
+        );
+        if !stranded.is_empty() {
+            outcome.failed.push(FailedUpdate {
+                id: id.to_string(),
+                error: format!(
+                    "{} needs a version of '{id}' this one is not: update {} first, or raise its range",
+                    stranded.join(", "),
+                    stranded.join(", "),
+                ),
             });
             continue;
         }
@@ -278,5 +324,71 @@ pub async fn auto_update(state: &SharedState, sup: &Arc<Supervisor>) -> Vec<Upda
             tracing::warn!(error = %format!("{e:#}"), "module auto-update: catalog fetch failed");
             Vec::new()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::stranded_dependents;
+    use kroma_module_manifest::{Dependency, ModuleManifest};
+
+    fn module(id: &str, deps: &[(&str, Option<&str>)]) -> ModuleManifest {
+        let mut m = ModuleManifest::new(id, id, "1.0.0");
+        m.dependencies = deps
+            .iter()
+            .map(|(dep, range)| Dependency {
+                id: (*dep).to_string(),
+                version: range.map(str::to_string),
+            })
+            .collect();
+        m
+    }
+
+    #[test]
+    fn a_peer_moving_past_a_dependents_range_strands_it() {
+        let installed = [
+            module("tv.kroma.torrents", &[]),
+            module("tv.kroma.acquisition", &[("tv.kroma.torrents", Some("^0.3.0"))]),
+        ];
+
+        let stranded = stranded_dependents(&installed, &|_| true, "tv.kroma.torrents", "0.6.6");
+
+        assert_eq!(stranded, ["tv.kroma.acquisition"]);
+    }
+
+    #[test]
+    fn a_floor_the_candidate_clears_strands_nobody() {
+        let installed = [
+            module("tv.kroma.torrents", &[]),
+            module("tv.kroma.acquisition", &[("tv.kroma.torrents", Some(">=0.3.0"))]),
+        ];
+
+        let stranded = stranded_dependents(&installed, &|_| true, "tv.kroma.torrents", "0.6.6");
+
+        assert!(stranded.is_empty());
+    }
+
+    #[test]
+    fn a_dependent_that_is_disabled_is_not_stranded() {
+        let installed = [
+            module("tv.kroma.torrents", &[]),
+            module("tv.kroma.acquisition", &[("tv.kroma.torrents", Some("^0.3.0"))]),
+        ];
+
+        let stranded = stranded_dependents(&installed, &|_| false, "tv.kroma.torrents", "0.6.6");
+
+        assert!(stranded.is_empty());
+    }
+
+    #[test]
+    fn a_dependency_declared_with_no_range_accepts_every_version() {
+        let installed = [
+            module("tv.kroma.torrents", &[]),
+            module("tv.kroma.acquisition", &[("tv.kroma.torrents", None)]),
+        ];
+
+        let stranded = stranded_dependents(&installed, &|_| true, "tv.kroma.torrents", "9.9.9");
+
+        assert!(stranded.is_empty());
     }
 }

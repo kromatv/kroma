@@ -2907,7 +2907,7 @@
     "status": "SHIPPED",
     "text": "Uninstalling a module never touches media on disk. A downloads module",
     "file": "docs/spec/modules/README.md",
-    "line": 193
+    "line": 197
   },
   {
     "id": "MOD-35",
@@ -2917,7 +2917,7 @@
     "status": "SHIPPED",
     "text": "**A crashed module cannot take down the server.** The sidecar is a",
     "file": "docs/spec/modules/README.md",
-    "line": 203
+    "line": 207
   },
   {
     "id": "MOD-36",
@@ -2927,7 +2927,7 @@
     "status": "SHIPPED",
     "text": "**An incompatible module never runs by accident.** `minServer` is",
     "file": "docs/spec/modules/README.md",
-    "line": 206
+    "line": 210
   },
   {
     "id": "MOD-37",
@@ -2937,7 +2937,7 @@
     "status": "SHIPPED",
     "text": "**Failure is visible, not silent.** A module that will not start or",
     "file": "docs/spec/modules/README.md",
-    "line": 209
+    "line": 213
   },
   {
     "id": "MOD-38",
@@ -2947,7 +2947,7 @@
     "status": "SHIPPED",
     "text": "The server is forward-compatible with older modules. A module declares",
     "file": "docs/spec/modules/README.md",
-    "line": 217
+    "line": 221
   },
   {
     "id": "MOD-39",
@@ -2957,7 +2957,7 @@
     "status": "SHIPPED",
     "text": "A module installed today keeps working as the server is updated,",
     "file": "docs/spec/modules/README.md",
-    "line": 220
+    "line": 224
   },
   {
     "id": "MOD-40",
@@ -2967,7 +2967,7 @@
     "status": "SHIPPED",
     "text": "A *newer* module may raise its `minServer`, and the Store says so",
     "file": "docs/spec/modules/README.md",
-    "line": 223
+    "line": 227
   },
   {
     "id": "MOD-41",
@@ -2977,7 +2977,7 @@
     "status": "SHIPPED",
     "text": "A module **may** ship UI, and the position is deliberate: a module's",
     "file": "docs/spec/modules/README.md",
-    "line": 231
+    "line": 235
   },
   {
     "id": "MOD-42",
@@ -2987,7 +2987,7 @@
     "status": "AGREED",
     "text": "A module renders **its own admin surface**: configuration, status and",
     "file": "docs/spec/modules/README.md",
-    "line": 235
+    "line": 239
   },
   {
     "id": "MOD-43",
@@ -2997,7 +2997,7 @@
     "status": "SHIPPED",
     "text": "A module's UI is served through the same reverse proxy as its backend",
     "file": "docs/spec/modules/README.md",
-    "line": 238
+    "line": 242
   },
   {
     "id": "MOD-44",
@@ -3007,7 +3007,7 @@
     "status": "AGREED",
     "text": "**The compatibility gate is the early warning.** As the server moves",
     "file": "docs/spec/modules/README.md",
-    "line": 252
+    "line": 256
   },
   {
     "id": "MOD-45",
@@ -3017,7 +3017,7 @@
     "status": "AGREED",
     "text": "**Data is retained.** An incompatible or abandoned module is not",
     "file": "docs/spec/modules/README.md",
-    "line": 256
+    "line": 260
   },
   {
     "id": "MOD-46",
@@ -3027,7 +3027,7 @@
     "status": "AGREED",
     "text": "**The signal is honest.** The person is told the module has not kept",
     "file": "docs/spec/modules/README.md",
-    "line": 259
+    "line": 263
   },
   {
     "id": "MOD-47",
@@ -3037,7 +3037,7 @@
     "status": "SHIPPED",
     "text": "Every capability below could have been core and is a module instead,",
     "file": "docs/spec/modules/README.md",
-    "line": 279
+    "line": 283
   },
   {
     "id": "MOD-48",
@@ -3067,7 +3067,7 @@
     "status": "AGREED",
     "text": "A module that has disappeared from every configured registry is flagged",
     "file": "docs/spec/modules/README.md",
-    "line": 264
+    "line": 268
   },
   {
     "id": "MOD-51",
@@ -3078,6 +3078,16 @@
     "text": "It may not read or write the server's own credentials. The settings",
     "file": "docs/spec/modules/README.md",
     "line": 57
+  },
+  {
+    "id": "MOD-52",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 52,
+    "status": "SHIPPED",
+    "text": "The server refuses to **update** a module past the range an enabled",
+    "file": "docs/spec/modules/README.md",
+    "line": 192
   },
   {
     "id": "PLAY-1",
