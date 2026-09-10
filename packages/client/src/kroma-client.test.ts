@@ -1,8 +1,47 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ItemId } from './api/media';
-import { sessionToken } from './core/session';
+import { sessionToken, setSessionMediaTicket } from './core/session';
 import { createKromaClient } from './kroma-client';
 import { fakeClient, recordingClient } from './kroma-client.fixture';
+
+describe('the media ticket', () => {
+  const user = {
+    id: 'u1',
+    email: 'a@b.c',
+    username: 'alice',
+    permissions: ['playback'],
+    createdAt: '2026-01-01T00:00:00Z',
+    hasPin: false,
+  };
+  const item = ItemId.parse('i1');
+
+  afterEach(() => setSessionMediaTicket(undefined));
+
+  async function signInElsewhere() {
+    const { client } = recordingClient(() => ({
+      json: { token: 'tok', mediaTicket: 'dev.999.sig', user },
+    }));
+    await client.accounts.exchangeToken('access-token');
+    return client;
+  }
+
+  it('stamps the URLs of a client built after another one signed in', async () => {
+    await signInElsewhere();
+
+    const later = createKromaClient({ baseUrl: 'http://kroma.test' });
+
+    expect(later.media.streamUrl(item)).toBe('http://kroma.test/api/items/i1/stream?t=dev.999.sig');
+  });
+
+  it('leaves every client once one of them clears the session', async () => {
+    const signedIn = await signInElsewhere();
+    const other = createKromaClient({ baseUrl: 'http://kroma.test' });
+
+    signedIn.setAuthToken(undefined);
+
+    expect(other.media.streamUrl(item)).toBe('http://kroma.test/api/items/i1/stream');
+  });
+});
 
 describe('baseUrl normalization', () => {
   it('strips trailing slashes while preserving the scheme separator', () => {
