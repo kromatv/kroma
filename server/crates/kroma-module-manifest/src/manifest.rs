@@ -327,6 +327,36 @@ impl CoreScope {
     }
 }
 
+/// The CORE settings keys a module reads and writes, as the keys themselves.
+///
+/// The core decides which keys a module may reach at all; this narrows that to
+/// the caller. A key the core hands out only to the module that consumes it
+/// reaches a module that named it here and no other, which is the difference
+/// between a credential reaching the tunnel and reaching everything installed.
+///
+/// Additive, so it cost no [`MODULE_SCHEMA_VERSION`] bump, and absent is not the
+/// same as empty: a manifest with no `settings` object predates the field, so it
+/// keeps every ordinary preference and reaches none of the keys that want a
+/// declaration. One that declares reaches exactly what it lists.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SettingsScope {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub read: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub write: Vec<String>,
+}
+
+impl SettingsScope {
+    pub fn reads(&self, key: &str) -> bool {
+        self.read.iter().any(|k| k == key)
+    }
+
+    pub fn writes(&self, key: &str) -> bool {
+        self.write.iter().any(|k| k == key)
+    }
+}
+
 /// The public description of a module.
 ///
 /// This is the serde shape served at `GET /api/modules` and mirrored by the
@@ -372,6 +402,9 @@ pub struct ModuleManifest {
     /// Absent for a module that touches no database, which is most of them.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub storage: Option<Storage>,
+    /// Absent for a module that predates the field, which keeps the reach it had.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub settings: Option<SettingsScope>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub library: bool,
 }
@@ -399,6 +432,7 @@ impl ModuleManifest {
             config: Vec::new(),
             fe_remote: None,
             storage: None,
+            settings: None,
             library: false,
         }
     }
@@ -453,6 +487,45 @@ mod tests {
         let back: ModuleManifest =
             serde_json::from_value(serde_json::to_value(&scoped).unwrap()).unwrap();
         assert_eq!(back.storage, scoped.storage);
+    }
+
+    #[test]
+    fn a_settings_declaration_is_absent_unless_written_and_round_trips_when_it_is() {
+        let plain: ModuleManifest =
+            serde_json::from_str(r#"{ "id": "a", "name": "A", "version": "1.0.0" }"#).unwrap();
+        assert!(
+            plain.settings.is_none(),
+            "a manifest predating the field keeps the reach it had"
+        );
+        assert!(serde_json::to_value(&plain)
+            .unwrap()
+            .get("settings")
+            .is_none());
+
+        // An empty object is NOT the same as an absent one: it declares, and
+        // declares nothing.
+        let nothing: ModuleManifest = serde_json::from_str(
+            r#"{ "id": "a", "name": "A", "version": "1.0.0", "settings": {} }"#,
+        )
+        .unwrap();
+        assert_eq!(nothing.settings, Some(SettingsScope::default()));
+
+        let scoped: ModuleManifest = serde_json::from_str(
+            r#"{ "id": "a", "name": "A", "version": "1.0.0",
+                 "settings": { "read": ["vpnWgConfig", "vpnLocalPort"],
+                               "write": ["vpnWgConfig"] } }"#,
+        )
+        .unwrap();
+        let settings = scoped.settings.as_ref().unwrap();
+        assert!(settings.reads("vpnWgConfig"));
+        assert!(settings.reads("vpnLocalPort"));
+        assert!(settings.writes("vpnWgConfig"));
+        assert!(!settings.writes("vpnLocalPort"), "a read is not a write");
+        assert!(!settings.reads("remoteAccessToken"));
+
+        let back: ModuleManifest =
+            serde_json::from_value(serde_json::to_value(&scoped).unwrap()).unwrap();
+        assert_eq!(back.settings, scoped.settings);
     }
 
     #[test]

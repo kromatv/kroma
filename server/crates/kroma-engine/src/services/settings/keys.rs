@@ -1,48 +1,36 @@
 //! The built-in settings keys: every default value, and who may reach each one.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
+use kroma_module_host::SettingReach;
 use serde_json::{json, Value};
 
 #[cfg(test)]
 mod tests;
 
-/// Whether the module host callback withholds `key` from every sidecar: a read
-/// answers the default the caller asked with, and a write naming it is refused.
+/// How far `key` reaches out of the core, for the module host callback to apply.
 ///
-/// Withheld unless a declaration in this module hands it out, so a key that
-/// reaches the store with no declared reach is withheld rather than served. An
-/// identity the server mints for itself is in that position, and so is the next
-/// key someone adds without thinking about who reads it.
-pub fn withheld_from_modules(key: &str) -> bool {
-    static REACHABLE: OnceLock<BTreeSet<&'static str>> = OnceLock::new();
-    !REACHABLE
-        .get_or_init(|| {
-            declared()
-                .reach
-                .into_iter()
-                .filter(|(_, reach)| *reach != Reach::CoreOnly)
-                .map(|(key, _)| key)
-                .collect()
-        })
-        .contains(key)
+/// Withheld unless a declaration in this module hands the key out, so a key that
+/// reaches the store with no declared reach is [`SettingReach::Unknown`] rather
+/// than served. An identity the server mints for itself is declared
+/// [`SettingReach::CoreOnly`], and the next key someone adds without thinking
+/// about who reads it is withheld either way.
+pub fn reach_of_setting(key: &str) -> SettingReach {
+    static REACH: OnceLock<BTreeMap<&'static str, SettingReach>> = OnceLock::new();
+    *REACH
+        .get_or_init(|| declared().reach)
+        .get(key)
+        .unwrap_or(&SettingReach::Unknown)
 }
 
 pub(super) fn defaults() -> BTreeMap<String, Value> {
     declared().values
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Reach {
-    CoreOnly,
-    Sidecar,
-    Public,
-}
-
 struct Declared {
     values: BTreeMap<String, Value>,
-    reach: BTreeMap<&'static str, Reach>,
+    reach: BTreeMap<&'static str, SettingReach>,
 }
 
 impl Declared {
@@ -54,22 +42,22 @@ impl Declared {
     }
 
     fn public(&mut self, key: &'static str, value: Value) {
-        self.declare(key, Reach::Public, value);
+        self.declare(key, SettingReach::Any, value);
     }
 
     fn core_only(&mut self, key: &'static str, value: Value) {
-        self.declare(key, Reach::CoreOnly, value);
+        self.declare(key, SettingReach::CoreOnly, value);
     }
 
     fn sidecar_credential(&mut self, key: &'static str, value: Value) {
-        self.declare(key, Reach::Sidecar, value);
+        self.declare(key, SettingReach::Declared, value);
     }
 
     fn minted(&mut self, key: &'static str) {
-        self.reach.insert(key, Reach::CoreOnly);
+        self.reach.insert(key, SettingReach::CoreOnly);
     }
 
-    fn declare(&mut self, key: &'static str, reach: Reach, value: Value) {
+    fn declare(&mut self, key: &'static str, reach: SettingReach, value: Value) {
         self.reach.insert(key, reach);
         self.values.insert(key.to_string(), value);
     }
@@ -79,9 +67,10 @@ fn declared() -> Declared {
     let mut m = Declared::new();
     m.public("serverName", json!("KROMA"));
     m.minted("instanceId");
-    // One key for the whole blob: `{ "<id>": { "enabled": bool, "config": {..} } }`
-    // (module ids are not known at compile time, so they can't be allow-listed).
-    m.public("moduleStates", json!({}));
+    // One key for the whole blob: `{ "<id>": { "enabled": bool, "config": {..} } }`.
+    // A module reads its own config out of the point call that carries it, never
+    // out of here, so the blob holding every other module's stays the core's.
+    m.core_only("moduleStates", json!({}));
     // Empty = the built-in catalog (modules.json on this repo's GitHub Releases).
     // This is the OFFICIAL slot: it stays pinned first and wins on an id clash.
     m.core_only("moduleRegistryUrl", json!(""));

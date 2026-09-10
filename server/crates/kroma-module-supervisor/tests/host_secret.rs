@@ -10,18 +10,19 @@
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use kroma_module_host::testing::StubHost;
-use kroma_module_supervisor::WithheldSettings;
 use tower::ServiceExt;
 
-const TOKEN: &str = "host-token";
-const NOTHING_WITHHELD: WithheldSettings = WithheldSettings(|_| false);
+mod test_support;
+
+use test_support::{Modules, FABRIC, NOTHING_WITHHELD};
 
 async fn get(host: StubHost, uri: &str, token: Option<&str>) -> (StatusCode, String) {
     let mut req = Request::builder().method("GET").uri(uri);
     if let Some(t) = token {
         req = req.header("authorization", format!("Bearer {t}"));
     }
-    let res = kroma_module_supervisor::host_router::<StubHost>(TOKEN.into(), NOTHING_WITHHELD)
+    let res = Modules::new("host-secret")
+        .router::<StubHost>(NOTHING_WITHHELD)
         .with_state(host)
         .oneshot(req.body(Body::empty()).unwrap())
         .await
@@ -37,7 +38,7 @@ async fn get(host: StubHost, uri: &str, token: Option<&str>) -> (StatusCode, Str
 async fn a_configured_secret_comes_back_by_name() {
     let host = StubHost::new().with_tmdb_key("abc123");
 
-    let (status, body) = get(host, "/_host/secret?name=tmdb", Some(TOKEN)).await;
+    let (status, body) = get(host, "/_host/secret?name=tmdb", Some(FABRIC)).await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body, r#""abc123""#);
@@ -49,7 +50,7 @@ async fn a_configured_secret_comes_back_by_name() {
 async fn a_name_the_host_does_not_know_is_null_and_not_another_secret() {
     let host = StubHost::new().with_tmdb_key("abc123");
 
-    let (status, body) = get(host, "/_host/secret?name=invented", Some(TOKEN)).await;
+    let (status, body) = get(host, "/_host/secret?name=invented", Some(FABRIC)).await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body, "null");
@@ -57,7 +58,7 @@ async fn a_name_the_host_does_not_know_is_null_and_not_another_secret() {
 
 #[tokio::test]
 async fn a_secret_the_operator_never_set_is_null() {
-    let (status, body) = get(StubHost::new(), "/_host/secret?name=tmdb", Some(TOKEN)).await;
+    let (status, body) = get(StubHost::new(), "/_host/secret?name=tmdb", Some(FABRIC)).await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body, "null");
@@ -78,7 +79,7 @@ async fn a_caller_with_no_host_token_gets_nothing() {
 
 #[tokio::test]
 async fn asking_with_no_name_at_all_is_rejected() {
-    let (status, _) = get(StubHost::new(), "/_host/secret", Some(TOKEN)).await;
+    let (status, _) = get(StubHost::new(), "/_host/secret", Some(FABRIC)).await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
@@ -89,7 +90,7 @@ async fn asking_with_no_name_at_all_is_rejected() {
 async fn the_metadata_language_is_served_beside_it() {
     let host = StubHost::new().with_metadata_language("fr-FR");
 
-    let (status, body) = get(host, "/_host/metadata-language", Some(TOKEN)).await;
+    let (status, body) = get(host, "/_host/metadata-language", Some(FABRIC)).await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body, r#""fr-FR""#);

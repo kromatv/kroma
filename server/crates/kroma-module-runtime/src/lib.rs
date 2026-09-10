@@ -24,6 +24,7 @@ struct Env {
     port: u16,
     core_url: String,
     host_token: String,
+    module_token: String,
     // Only read under `storage`: a module that declares none never learns where
     // the core database is, which is the capability said in one more place.
     #[cfg(feature = "storage")]
@@ -39,6 +40,11 @@ impl Env {
             port: get("KROMA_MODULE_PORT")?.parse()?,
             core_url: get("KROMA_CORE_URL")?,
             host_token: get("KROMA_HOST_TOKEN")?,
+            // A host that predates per-module tokens sends none, and the fabric
+            // token still authenticates; it just does not name this module, so
+            // the callback answers it nothing that wants a declaration.
+            module_token: std::env::var("KROMA_MODULE_TOKEN")
+                .or_else(|_| get("KROMA_HOST_TOKEN"))?,
             #[cfg(feature = "storage")]
             db_path: PathBuf::from(get("KROMA_DB_PATH")?),
             data_dir: PathBuf::from(get("KROMA_DATA_DIR")?),
@@ -86,7 +92,7 @@ struct Inner {
     #[cfg(feature = "storage")]
     core: kroma_sqlite::Pool,
     core_url: String,
-    host_token: String,
+    module_token: String,
     services: RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
     // The metadata language, cached: it is one env-derived string, and every
     // caller that renames a file asks for it.
@@ -106,7 +112,7 @@ impl RemoteHost {
                 #[cfg(feature = "storage")]
                 core: kroma_sqlite::init_scoped(&env.db_path, &env.module_id, &env.grant())?,
                 core_url: env.core_url.clone(),
-                host_token: env.host_token.clone(),
+                module_token: env.module_token.clone(),
                 services: RwLock::new(HashMap::new()),
                 language: RwLock::new(None),
             }),
@@ -129,8 +135,10 @@ impl RemoteHost {
     }
 
     fn callback(&self) -> kroma_http::Loopback {
-        kroma_http::Loopback::new()
-            .header("authorization", format!("Bearer {}", self.inner.host_token))
+        kroma_http::Loopback::new().header(
+            "authorization",
+            format!("Bearer {}", self.inner.module_token),
+        )
     }
 
     fn host_url(&self, path: &str) -> String {

@@ -2,25 +2,28 @@
 //! settings, events, notifications, jobs and session lookups.
 
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::middleware::from_fn_with_state;
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router};
-use kroma_module_host::host_token::{require_host_token, HostToken};
-use kroma_module_host::{Event, HostCtx};
+use kroma_module_host::{Event, HostCtx, SettingReachOf};
 use serde_json::{json, Value};
 
+use super::Supervisor;
+
+mod caller;
 mod settings;
 
-pub use settings::WithheldSettings;
+use caller::{resolve_caller, Caller};
 
-/// The `/_host/*` callback router modules call back into (mount under `/api`),
-/// guarded by the shared `token`. `withheld` decides which settings keys the
-/// callback keeps from a module.
-pub fn host_router<S>(token: String, withheld: WithheldSettings) -> Router<S>
+/// The `/_host/*` callback router modules call back into (mount under `/api`).
+/// Every route is behind a token the `supervisor` minted, which is what names the
+/// calling module; `reach` is the core's answer for how far one settings key
+/// reaches out of it.
+pub fn host_router<S>(supervisor: Arc<Supervisor>, reach: SettingReachOf) -> Router<S>
 where
     S: HostCtx + Clone + Send + Sync + 'static,
 {
@@ -46,8 +49,8 @@ where
         // How a module reaches a peer: it asks for a CONTRACT and the core
         // answers with whoever serves it. No module id crosses this wire.
         .route("/_host/contributions", get(contributions::<S>))
-        .route_layer(from_fn_with_state(HostToken(token), require_host_token))
-        .layer(Extension(withheld))
+        .route_layer(from_fn_with_state(supervisor, resolve_caller))
+        .layer(Extension(reach))
 }
 
 #[derive(serde::Deserialize)]

@@ -3,10 +3,38 @@
   "schemaVersion": 2,
   "id": "tv.kroma.torrents",
   "name": "Torrent downloads",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "The embedded librqbit download engine + the downloads queue. Transmission and qBittorrent are their own engine sub-modules that plug into this one.",
   "engines": {
     "server": ">=0.1.39"
+  },
+  "settings": {
+    "read": [
+      "namingCase",
+      "namingEpisodeFile",
+      "namingMovieFile",
+      "namingMovieFolder",
+      "namingSeasonFolder",
+      "namingSeriesFolder",
+      "rqbitDownKbps",
+      "rqbitPort",
+      "rqbitUpKbps",
+      "torrentMaxActive",
+      "vpnCheckUrl",
+      "vpnKillSwitch",
+      "vpnWgConfig"
+    ],
+    "write": [
+      "namingCase",
+      "namingEpisodeFile",
+      "namingMovieFile",
+      "namingMovieFolder",
+      "namingSeasonFolder",
+      "namingSeriesFolder",
+      "rqbitDownKbps",
+      "rqbitUpKbps",
+      "torrentMaxActive"
+    ]
   },
   "feRemote": {
     "module": "./remoteEntry.js"

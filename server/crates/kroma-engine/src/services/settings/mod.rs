@@ -28,7 +28,7 @@ mod schema;
 mod store;
 
 pub use accessors::*;
-pub use keys::withheld_from_modules;
+pub use keys::reach_of_setting;
 pub use llm::*;
 pub use schema::*;
 pub use store::*;

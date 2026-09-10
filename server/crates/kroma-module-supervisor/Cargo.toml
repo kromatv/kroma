@@ -10,6 +10,8 @@ license.workspace = true
 # The host contract the callback endpoints resolve against (any HostCtx state).
 kroma-module-host = { workspace = true }
 kroma-module-manifest = { workspace = true }
+# The per-module host token every callback names its caller with.
+kroma-primitives = { workspace = true }
 # The `User` the session callback answers with.
 kroma-domain = { workspace = true }
 # Moving a module's tables out of the core database, before it is spawned.

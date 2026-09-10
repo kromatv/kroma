@@ -51,6 +51,27 @@ export const CoreScope = z.object({
 });
 export type CoreScope = z.infer<typeof CoreScope>;
 
+// A core settings key: camelCase, or dotted for the namespaced ones
+// (`notifications.vapid.publicKey`). Matched exactly, so the spelling has to be.
+const SettingKey = z.string().regex(/^[A-Za-z][\w]*(?:\.[A-Za-z][\w]*)*$/);
+
+/** The CORE settings keys a module reads and writes. */
+export const SettingsScope = z.object({
+  read: z
+    .array(SettingKey)
+    .nullish()
+    .describe(
+      'Core settings keys this module reads through the host callback. A key the server hands only to the module that consumes it reaches a module that named it here and no other.',
+    ),
+  write: z
+    .array(SettingKey)
+    .nullish()
+    .describe(
+      'Core settings keys this module writes. A read declaration is not a write declaration, and a patch naming a key this list omits is refused whole.',
+    ),
+});
+export type SettingsScope = z.infer<typeof SettingsScope>;
+
 /** A module's databases, and the capability itself. */
 export const Storage = z.object({
   core: CoreScope.nullish().describe(
@@ -140,6 +161,9 @@ export const Manifest = z.object({
     .describe('Admin-configurable settings this module exposes, rendered as a form.'),
   storage: Storage.nullish().describe(
     "This module's databases, and the capability itself: without a storage object the module gets no database and its binary does not link SQLite. Its presence alone grants it its own file at <data>/modules/<id>/module.sqlite, where its migrations run and which it owns outright.",
+  ),
+  settings: SettingsScope.nullish().describe(
+    'The core settings keys this module reads and writes. Absent is not the same as empty: a manifest with no settings object predates the field, so it keeps every ordinary preference and reaches none of the credentials a module has to declare.',
   ),
   feRemote: z
     .object({ module: z.string() })

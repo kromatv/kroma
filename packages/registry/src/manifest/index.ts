@@ -30,6 +30,7 @@ export {
   Manifest,
   optionalDependenciesOf,
   REVERSE_DNS_ID,
+  SettingsScope,
   Storage,
   speaksCurrentSchema,
 } from './v2.ts';
