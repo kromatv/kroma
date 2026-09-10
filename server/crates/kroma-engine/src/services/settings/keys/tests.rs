@@ -43,20 +43,20 @@ fn every_key_that_carries_a_default_declares_who_may_reach_it() {
 }
 
 #[test]
-fn a_key_that_reads_like_a_credential_is_never_declared_public() {
+fn a_key_that_reads_like_a_credential_is_never_reachable_by_any_module() {
     let declared = declared();
 
     let served: Vec<&&str> = declared
         .reach
         .iter()
-        .filter(|(key, reach)| reads_like_a_credential(key) && **reach == Reach::Public)
+        .filter(|(key, reach)| reads_like_a_credential(key) && **reach == SettingReach::Any)
         .map(|(key, _)| key)
         .collect();
 
     assert!(
         served.is_empty(),
-        "a credential is the core's alone unless a sidecar configures it; \
-         declare these with core_only() or sidecar_credential(): {served:?}"
+        "a credential is the core's alone unless the module that uses it declared \
+         it; declare these with core_only() or sidecar_credential(): {served:?}"
     );
 }
 
@@ -86,8 +86,18 @@ fn the_mail_llm_push_and_registry_keys_are_the_cores_alone() {
         "moduleRegistries",
         "moduleRegistryUrl",
     ] {
-        assert!(withheld_from_modules(key), "{key} must be the core's alone");
+        assert_eq!(
+            reach_of_setting(key),
+            SettingReach::CoreOnly,
+            "{key} must be the core's alone"
+        );
     }
+}
+
+#[test]
+fn the_blob_holding_every_modules_config_is_the_cores_alone() {
+    assert_eq!(reach_of_setting("moduleStates"), SettingReach::CoreOnly);
+    assert!(defaults().contains_key("moduleStates"));
 }
 
 // The word sweep cannot reach this one: "mediaTicketKey" carries no password,
@@ -97,12 +107,12 @@ fn the_mail_llm_push_and_registry_keys_are_the_cores_alone() {
 fn the_key_that_signs_a_media_ticket_is_the_cores_alone() {
     let key = crate::services::media_ticket::SIGNING_KEY_SETTING;
 
-    assert!(
-        withheld_from_modules(key),
+    assert_eq!(
+        reach_of_setting(key),
+        SettingReach::CoreOnly,
         "{key} forges a ticket for any device"
     );
     assert!(!reads_like_a_credential(key), "the sweep would cover it");
-    assert_eq!(declared().reach.get(key), Some(&Reach::CoreOnly));
 }
 
 #[test]
@@ -116,36 +126,44 @@ fn the_identities_the_server_mints_for_itself_are_declared_and_withheld() {
     ] {
         assert_eq!(
             declared.reach.get(key),
-            Some(&Reach::CoreOnly),
+            Some(&SettingReach::CoreOnly),
             "{key} is minted, not configured"
         );
         assert!(
             !declared.values.contains_key(key),
             "{key} carries no default, so no patch off the wire writes it"
         );
-        assert!(withheld_from_modules(key), "{key} is no module's business");
     }
 }
 
 #[test]
-fn a_credential_the_sidecar_that_uses_it_configures_stays_reachable() {
-    assert!(!withheld_from_modules("vpnWgConfig"));
-    assert!(!withheld_from_modules("remoteAccessToken"));
+fn a_credential_the_sidecar_that_uses_it_configures_wants_a_declaration() {
+    assert_eq!(reach_of_setting("vpnWgConfig"), SettingReach::Declared);
+    assert_eq!(
+        reach_of_setting("remoteAccessToken"),
+        SettingReach::Declared
+    );
 }
 
 #[test]
-fn an_ordinary_preference_is_reachable() {
-    assert!(!withheld_from_modules("acqEnabled"));
-    assert!(!withheld_from_modules("namingEpisodeFile"));
-    assert!(!withheld_from_modules("notifications.vapid.publicKey"));
-    assert!(!withheld_from_modules("smtpHost"));
+fn an_ordinary_preference_reaches_any_module() {
+    for key in [
+        "acqEnabled",
+        "namingEpisodeFile",
+        "notifications.vapid.publicKey",
+        "smtpHost",
+        "vpnLocalPort",
+        "localDiscovery",
+    ] {
+        assert_eq!(reach_of_setting(key), SettingReach::Any, "{key}");
+    }
 }
 
 #[test]
-fn a_key_nothing_declares_is_withheld_whatever_it_is_called() {
-    assert!(withheld_from_modules("neverDeclared"));
-    assert!(withheld_from_modules("aPlausiblePreference"));
-    assert!(withheld_from_modules(""));
+fn a_key_nothing_declares_reaches_no_module_whatever_it_is_called() {
+    for key in ["neverDeclared", "aPlausiblePreference", ""] {
+        assert_eq!(reach_of_setting(key), SettingReach::Unknown, "{key}");
+    }
 }
 
 #[test]

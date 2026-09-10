@@ -2,11 +2,11 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use kroma_domain::metadata::{EpisodeInfo, MatchCandidate};
 use kroma_module_host::testing::StubHost;
-use kroma_module_supervisor::WithheldSettings;
 use tower::ServiceExt;
 
-const TOKEN: &str = "host-token";
-const NOTHING_WITHHELD: WithheldSettings = WithheldSettings(|_| false);
+mod test_support;
+
+use test_support::{Modules, FABRIC, NOTHING_WITHHELD};
 
 fn dune() -> MatchCandidate {
     MatchCandidate {
@@ -37,7 +37,8 @@ async fn get(host: StubHost, uri: &str, token: Option<&str>) -> (StatusCode, Str
     if let Some(t) = token {
         req = req.header("authorization", format!("Bearer {t}"));
     }
-    let res = kroma_module_supervisor::host_router::<StubHost>(TOKEN.into(), NOTHING_WITHHELD)
+    let res = Modules::new("host-metadata")
+        .router::<StubHost>(NOTHING_WITHHELD)
         .with_state(host)
         .oneshot(req.body(Body::empty()).unwrap())
         .await
@@ -56,7 +57,7 @@ async fn a_search_comes_back_as_the_candidates_the_core_ranked() {
     let (status, body) = get(
         host,
         "/_host/metadata-search?q=Dune&kind=movie&year=2021",
-        Some(TOKEN),
+        Some(FABRIC),
     )
     .await;
 
@@ -71,7 +72,7 @@ async fn a_search_comes_back_as_the_candidates_the_core_ranked() {
 async fn a_search_needs_only_the_query_text() {
     let host = StubHost::new().with_metadata_candidates(vec![dune()]);
 
-    let (status, body) = get(host, "/_host/metadata-search?q=Dune", Some(TOKEN)).await;
+    let (status, body) = get(host, "/_host/metadata-search?q=Dune", Some(FABRIC)).await;
 
     assert_eq!(status, StatusCode::OK);
     let found: Vec<MatchCandidate> = serde_json::from_str(&body).expect("candidates came back");
@@ -83,7 +84,7 @@ async fn a_search_with_no_query_text_is_rejected() {
     let (status, _) = get(
         StubHost::new(),
         "/_host/metadata-search?kind=movie",
-        Some(TOKEN),
+        Some(FABRIC),
     )
     .await;
 
@@ -97,7 +98,7 @@ async fn a_season_comes_back_as_the_episodes_the_provider_names() {
     let (status, body) = get(
         host,
         "/_host/metadata-episodes?tmdbId=1399&season=1",
-        Some(TOKEN),
+        Some(FABRIC),
     )
     .await;
 
@@ -115,7 +116,7 @@ async fn a_season_lookup_takes_its_title_id_in_camel_case_only() {
     let (status, _) = get(
         host,
         "/_host/metadata-episodes?tmdb_id=1399&season=1",
-        Some(TOKEN),
+        Some(FABRIC),
     )
     .await;
 

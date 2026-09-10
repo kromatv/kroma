@@ -34,6 +34,7 @@ pub struct TestApp {
     pub state: SharedState,
     pub token: String,
     pub user_id: String,
+    pub supervisor: Arc<kroma_module_supervisor::Supervisor>,
     // Owns the temp `data_dir`: dropping the harness removes it. Keep this last
     // so the DB pool and the router let go of the files before the dir goes.
     _data_dir: TempDir,
@@ -135,7 +136,7 @@ fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)]) -> TestApp {
     // No delivery task: a handler test publishes nothing a module would hear, and
     // spawning one would need a runtime the plain `#[test]` cases do not have.
     let subscriptions = std::sync::Arc::new(crate::api::host_events::Subscriptions::default());
-    let app = crate::api::router(state.clone(), supervisor, subscriptions);
+    let app = crate::api::router(state.clone(), supervisor.clone(), subscriptions);
 
     let (user_id, token) = seed_session(&state, "owner@test.dev", "owner", &Permission::all());
     TestApp {
@@ -143,6 +144,7 @@ fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)]) -> TestApp {
         state,
         token,
         user_id,
+        supervisor,
         _data_dir: tmp,
     }
 }

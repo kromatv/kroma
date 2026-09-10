@@ -231,10 +231,8 @@ pub fn router(
     let api = public
         .merge(content)
         .merge(kroma_module_supervisor::host_router::<SharedState>(
-            supervisor.host_token().to_string(),
-            kroma_module_supervisor::WithheldSettings(
-                crate::services::settings::withheld_from_modules,
-            ),
+            supervisor.clone(),
+            kroma_module_host::SettingReachOf(crate::services::settings::reach_of_setting),
         ))
         // A sidecar registers its scheduled jobs with the core JobManager here, so
         // they appear in admin Tâches like in-core jobs (same host-token guard).

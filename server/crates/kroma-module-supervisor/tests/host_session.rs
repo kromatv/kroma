@@ -9,11 +9,11 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use kroma_domain::User;
 use kroma_module_host::testing::StubHost;
-use kroma_module_supervisor::WithheldSettings;
 use tower::ServiceExt;
 
-const TOKEN: &str = "host-token";
-const NOTHING_WITHHELD: WithheldSettings = WithheldSettings(|_| false);
+mod test_support;
+
+use test_support::{Modules, FABRIC, NOTHING_WITHHELD};
 
 fn ana() -> User {
     User {
@@ -32,7 +32,8 @@ fn ana() -> User {
 }
 
 fn app(host: StubHost) -> axum::Router {
-    kroma_module_supervisor::host_router::<StubHost>(TOKEN.into(), NOTHING_WITHHELD)
+    Modules::new("host-session")
+        .router::<StubHost>(NOTHING_WITHHELD)
         .with_state(host)
 }
 
@@ -61,7 +62,7 @@ async fn a_live_token_comes_back_as_the_whole_account() {
     // The whole `User`, because the sidecar gates on its permissions and
     // localizes for it; a bare id would cost a second round-trip per request.
     let host = StubHost::new().with_session("sess-1", ana());
-    let (status, body) = post(host, Some(TOKEN), r#"{"token":"sess-1"}"#).await;
+    let (status, body) = post(host, Some(FABRIC), r#"{"token":"sess-1"}"#).await;
 
     assert_eq!(status, StatusCode::OK);
     let user: User = serde_json::from_str(&body).expect("a User came back");
@@ -73,7 +74,7 @@ async fn a_live_token_comes_back_as_the_whole_account() {
 async fn an_unknown_token_is_null_rather_than_an_error() {
     // `OptionalAuthUser` never rejects, so "no session" has to be a value.
     let host = StubHost::new().with_session("sess-1", ana());
-    let (status, body) = post(host, Some(TOKEN), r#"{"token":"not-a-session"}"#).await;
+    let (status, body) = post(host, Some(FABRIC), r#"{"token":"not-a-session"}"#).await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body, "null");

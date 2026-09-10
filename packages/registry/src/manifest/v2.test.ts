@@ -89,6 +89,45 @@ describe('storage', () => {
   });
 });
 
+describe('settings', () => {
+  it('is absent for a module that predates it, which keeps the reach it had', () => {
+    expect(Manifest.parse(base).settings).toBeUndefined();
+  });
+
+  it('reads an empty object as a module that declares and declares nothing', () => {
+    expect(Manifest.parse({ ...base, settings: {} }).settings).toEqual({});
+  });
+
+  it('keeps the read and write lists apart', () => {
+    const parsed = Manifest.parse({
+      ...base,
+      settings: { read: ['vpnWgConfig', 'vpnLocalPort'], write: ['vpnWgConfig'] },
+    });
+    expect(parsed.settings).toEqual({
+      read: ['vpnWgConfig', 'vpnLocalPort'],
+      write: ['vpnWgConfig'],
+    });
+  });
+
+  it('refuses an entry that is not a settings key', () => {
+    const bad = (read: string[]) => () => Manifest.parse({ ...base, settings: { read } });
+    expect(bad(['*'])).toThrow();
+    expect(bad([''])).toThrow();
+    expect(bad(['vpnWgConfig; DROP TABLE users'])).toThrow();
+    expect(bad(['.leading'])).toThrow();
+    // ...and the dotted namespaced keys are fine.
+    expect(
+      Manifest.parse({ ...base, settings: { read: ['notifications.vapid.publicKey'] } }).settings
+        ?.read,
+    ).toEqual(['notifications.vapid.publicKey']);
+  });
+
+  it('is additive: a manifest that predates it still parses', () => {
+    expect(speaksCurrentSchema({ schemaVersion: 2 })).toBe(true);
+    expect(Manifest.parse({ ...base, schemaVersion: 2 }).settings).toBeUndefined();
+  });
+});
+
 describe('the shape a real manifest declares', () => {
   // Every property a manifest may carry. zod STRIPS what it does not declare,
   // so a field missing here is a field the published catalog would lose without
@@ -117,6 +156,7 @@ describe('the shape a real manifest declares', () => {
       core: { read: ['downloads', 'requests'], write: ['downloads'] },
       adopt: ['download_clients'],
     },
+    settings: { read: ['rqbitPort', 'vpnWgConfig'], write: ['rqbitPort'] },
   };
 
   it('keeps every one of them', () => {

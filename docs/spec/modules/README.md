@@ -61,6 +61,11 @@ What a module may **not** do:
   who reads it: a read answers the module's own default and a write naming one is refused. A
   credential whose consumer *is* a module stays reachable, because that callback is how it
   reaches the process that uses it.
+- **MOD-53** (SHIPPED) - A credential whose consumer *is* a module reaches the module that
+  declared it and no other. The manifest says which core settings keys the module reads and
+  writes, the callback answers within that declaration, and a refusal is logged. A module whose
+  manifest predates the declaration keeps every ordinary preference and reaches none of these
+  credentials, so the reach an operator was never shown is the one that is refused.
 
 **MOD-9** (SHIPPED) - A module *may* depend on another module, hard or optional, and that
 dependency is declared, resolved and enforced rather than discovered at runtime.
