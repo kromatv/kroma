@@ -18,7 +18,9 @@ async function apt(packages: readonly string[], attempts = 3): Promise<void> {
   for (let attempt = 1; attempt <= attempts; attempt++) {
     const update = await $`timeout 120 sudo apt-get update`.nothrow();
     if (update.exitCode !== 0) {
-      warning(`apt-get update failed a source on attempt ${attempt}; installing from what it fetched`);
+      warning(
+        `apt-get update failed a source on attempt ${attempt}; installing from what it fetched`,
+      );
     }
     const install =
       await $`timeout 180 sudo apt-get install -y --no-install-recommends ${packages}`.nothrow();
