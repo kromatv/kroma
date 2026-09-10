@@ -49,9 +49,9 @@ function render(item = movie()) {
 }
 
 describe('useVideoPlayback initial state', () => {
-  it('derives duration from the item and picks the default audio track', () => {
+  it('derives duration from the item, picks the default audio track, and means to play', () => {
     const { result } = render();
-    expect(result.current.playing).toBe(false);
+    expect(result.current.playing).toBe(true);
     expect(result.current.cur).toBe(0);
     expect(result.current.dur).toBe(100);
     expect(result.current.audioIndex).toBe(0);

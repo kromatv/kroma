@@ -288,7 +288,14 @@ function Stage({
             appearance={appearance}
             raised={raised}
           />
-          {locked ? null : <StageOverlay error={c.error} hint={c.errorHint} waiting={c.waiting} />}
+          {locked ? null : (
+            <StageOverlay
+              error={c.error}
+              hint={c.errorHint}
+              waiting={c.waiting}
+              reason={c.waitReason}
+            />
+          )}
         </Animated.View>
       </AnimatedPressable>
 

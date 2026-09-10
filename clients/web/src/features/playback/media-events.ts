@@ -9,7 +9,7 @@ export interface MediaEventSetters {
   setDur: (n: number) => void;
   setBufEnd: (n: number) => void;
   setPlaying: (b: boolean) => void;
-  setWaiting: (b: boolean) => void;
+  onPlaying: () => void;
   setVolume: (n: number) => void;
   setMuted: (b: boolean) => void;
   setRate: (n: number) => void;
@@ -39,7 +39,7 @@ export function bindMediaEvents(
     setDur,
     setBufEnd,
     setPlaying,
-    setWaiting,
+    onPlaying,
     setVolume,
     setMuted,
     setRate,
@@ -57,8 +57,6 @@ export function bindMediaEvents(
     setBufEnd(end > 0 ? baseSec + end : 0);
   };
   const onPause = () => setPlaying(false);
-  const onWaiting = () => setWaiting(true);
-  const onPlaying = () => setWaiting(false);
   const onVol = () => {
     setVolume(v.volume);
     setMuted(v.muted);
@@ -70,8 +68,9 @@ export function bindMediaEvents(
   const onReady = () => {
     setReady(true);
     if (started || !autoplay || !v.paused) return;
-    const p = v.play();
-    p?.catch(() => undefined);
+    v.play()?.catch((e: unknown) => {
+      if (e instanceof DOMException && e.name === 'NotAllowedError') setPlaying(false);
+    });
   };
   const onStarted = () => {
     started = true;
@@ -86,7 +85,6 @@ export function bindMediaEvents(
   v.addEventListener('timeupdate', onProg);
   v.addEventListener('play', onStarted);
   v.addEventListener('pause', onPause);
-  v.addEventListener('waiting', onWaiting);
   v.addEventListener('playing', onPlaying);
   v.addEventListener('volumechange', onVol);
   v.addEventListener('ratechange', onRate);
@@ -100,7 +98,6 @@ export function bindMediaEvents(
     v.removeEventListener('timeupdate', onProg);
     v.removeEventListener('play', onStarted);
     v.removeEventListener('pause', onPause);
-    v.removeEventListener('waiting', onWaiting);
     v.removeEventListener('playing', onPlaying);
     v.removeEventListener('volumechange', onVol);
     v.removeEventListener('ratechange', onRate);

@@ -8,6 +8,7 @@ import {
   type StallStep,
   type StallWatch,
   stallWatch,
+  streamRefusal,
 } from './playback-stall';
 
 function playing(over: Partial<StallSample> = {}): StallSample {
@@ -38,8 +39,10 @@ const HLS_CLASS: HlsClassLike = {
   ErrorTypes: { NETWORK_ERROR: 'networkError', MEDIA_ERROR: 'mediaError' },
 };
 
+type HlsErrorData = { type: string; fatal: boolean; response?: { code?: number } };
+
 function fakeHls() {
-  let listener: (event: string, data: { type: string; fatal: boolean }) => void = () => undefined;
+  let listener: (event: string, data: HlsErrorData) => void = () => undefined;
   const hls = {
     on: (_event: string, fn: typeof listener) => {
       listener = fn;
@@ -50,7 +53,8 @@ function fakeHls() {
 
   return {
     hls,
-    fire: (type: string, fatal = true) => listener('hlsError', { type, fatal }),
+    fire: (type: string, fatal = true, code?: number) =>
+      listener('hlsError', { type, fatal, response: code === undefined ? undefined : { code } }),
   };
 }
 
@@ -202,6 +206,47 @@ describe('attachHlsRecovery', () => {
     expect(hls.recoverMediaError).toHaveBeenCalledTimes(3);
     expect(giveUp).not.toHaveBeenCalled();
     clock.mockRestore();
+  });
+
+  it('hands a request the server refused to the caller instead of reloading it', () => {
+    const giveUp = vi.fn();
+    const refused = vi.fn();
+    const { hls, fire } = fakeHls();
+    attachHlsRecovery(HLS_CLASS, hls, giveUp, refused);
+
+    fire('networkError', true, 401);
+
+    expect(refused).toHaveBeenCalledWith(401);
+    expect(hls.startLoad).not.toHaveBeenCalled();
+    expect(giveUp).not.toHaveBeenCalled();
+  });
+
+  it('still reloads a server error, which a retry may get past', () => {
+    const refused = vi.fn();
+    const { hls, fire } = fakeHls();
+    attachHlsRecovery(HLS_CLASS, hls, vi.fn(), refused);
+
+    fire('networkError', true, 503);
+
+    expect(hls.startLoad).toHaveBeenCalledTimes(1);
+    expect(refused).not.toHaveBeenCalled();
+  });
+});
+
+describe('streamRefusal', () => {
+  it('calls a refused credential denied and a vanished title missing', () => {
+    expect([401, 403].map((s) => streamRefusal(s))).toEqual(['denied', 'denied']);
+    expect([404, 410].map((s) => streamRefusal(s))).toEqual(['missing', 'missing']);
+  });
+
+  it('leaves a status a retry may get past alone', () => {
+    expect([200, 206, 429, 500, 503].map((s) => streamRefusal(s))).toEqual([
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
   });
 });
 

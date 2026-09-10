@@ -3,7 +3,9 @@ import {
   declaredAspect,
   qualityBadgeForVideo,
   refineTrackLang,
+  streamNotice,
 } from '@kromatv/core';
+import type { Translate } from '@kromatv/i18n';
 import {
   type PlayerController,
   type PlayerStats,
@@ -15,11 +17,22 @@ import {
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isWebEnginePref } from '#web/features/playback/engine-pref';
 import { makeFpsSampler, readEngineStats } from '#web/features/playback/engine-stats';
+import type { StreamFailure } from '#web/features/playback/stream-failure';
 import { useVideoPlayback } from '#web/features/playback/use-video-playback';
 import { useWebSubtitles } from '#web/features/playback/use-web-subtitles';
 import { buildWebStats } from '#web/features/playback/web-stats';
-import type { MovieView } from '#web/shared/lib/api';
+import { kromaClient, type MovieView } from '#web/shared/lib/api';
 import { useLangPrefs } from '#web/shared/lib/lang-pref';
+
+function failureCopy(t: Translate, failure: StreamFailure): { error: string; hint: string } {
+  if (failure === 'denied') {
+    return { error: t('player.streamDenied'), hint: t('player.streamDeniedHint') };
+  }
+  if (failure === 'missing') {
+    return { error: t('player.streamMissing'), hint: t('player.streamMissingHint') };
+  }
+  return { error: t('player.cantPlay'), hint: t('player.cantPlayHint') };
+}
 
 export interface WebController {
   controller: PlayerController;
@@ -134,7 +147,7 @@ export function useWebController(item: MovieView): WebController {
   const [bytes, setBytes] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    fetch(item.stream, { headers: { Range: 'bytes=0-1' } })
+    fetch(kromaClient().media.streamUrl(item.id), { headers: { Range: 'bytes=0-1' } })
       .then((r) => {
         const cr = r.headers.get('Content-Range');
         const total = cr ? Number(cr.split('/')[1]) : Number(r.headers.get('Content-Length') ?? 0);
@@ -144,7 +157,7 @@ export function useWebController(item: MovieView): WebController {
     return () => {
       cancelled = true;
     };
-  }, [item.stream]);
+  }, [item.id]);
 
   const fpsSamplerRef = useRef(makeFpsSampler());
   const statsRef = useRef<() => PlayerStats>(() => ({}));
@@ -172,8 +185,17 @@ export function useWebController(item: MovieView): WebController {
   const qualities = useMemo(() => {
     const badge = qualityBadgeForVideo(item.video);
     const badgeSuffix = badge ? ` · ${badge}` : '';
-    return [{ id: 'auto', label: `${t('player.qualityAuto')}${badgeSuffix}` }];
-  }, [item.video, t]);
+    const notice = streamNotice(item, pb.mode);
+    return [
+      {
+        id: 'auto',
+        label: `${t('player.qualityAuto')}${badgeSuffix}`,
+        note: notice ? t(notice.messageKey, notice.messageVars) : undefined,
+      },
+    ];
+  }, [item, pb.mode, t]);
+
+  const failure = pb.failure ? failureCopy(t, pb.failure) : null;
 
   const engines = useMemo(
     () => [
@@ -192,8 +214,10 @@ export function useWebController(item: MovieView): WebController {
     seekPreview: scrubSec,
     playing: pb.playing,
     waiting: pb.waiting,
+    waitReason: pb.waitReason ?? undefined,
     ready: pb.ready,
-    error: null,
+    error: failure?.error ?? null,
+    errorHint: failure?.hint ?? null,
     endedNonce,
     surface: 'video',
     aspect: decodedAspect ?? declaredAspect(item),
@@ -236,10 +260,7 @@ export function useWebController(item: MovieView): WebController {
     t,
     pb.audioTracks.find((a) => a.index === pb.audioIndex),
   );
-  let playbackMode: 'direct' | 'remux' | 'transcode';
-  if (!pb.useHls) playbackMode = 'direct';
-  else if (pb.aac) playbackMode = 'transcode';
-  else playbackMode = 'remux';
+  const playbackMode = pb.mode;
 
   return {
     controller,

@@ -12,6 +12,7 @@ export const H = {
   user: null as { audioLanguage?: string | null } | null,
   itemProgress,
   masterNeedsAac: vi.fn(),
+  refreshSession: vi.fn(async (): Promise<string | undefined> => 'fresh'),
   mseCaps: { caps: 'mse' },
   safariCaps: { caps: 'safari' },
   // A STABLE client reference: the resume effect keys on client identity, so a
@@ -22,6 +23,7 @@ export const H = {
 export function kromaClientStub() {
   return {
     media: { hlsMasterUrl: (_id: string, _aac: boolean, anchor: number) => `hls://${anchor}` },
+    refreshSession: H.refreshSession,
   };
 }
 
@@ -90,6 +92,8 @@ export function installHarness(): void {
     H.user = null;
     H.itemProgress.mockResolvedValue(null);
     H.masterNeedsAac.mockReturnValue(false);
+    H.refreshSession.mockClear();
+    H.refreshSession.mockResolvedValue('fresh');
   });
   afterEach(() => {
     cleanup();

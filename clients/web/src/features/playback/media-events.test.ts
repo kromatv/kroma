@@ -10,7 +10,7 @@ function mkSetters(): MediaEventSetters {
     setDur: vi.fn(),
     setBufEnd: vi.fn(),
     setPlaying: vi.fn(),
-    setWaiting: vi.fn(),
+    onPlaying: vi.fn(),
     setVolume: vi.fn(),
     setMuted: vi.fn(),
     setRate: vi.fn(),
@@ -107,16 +107,14 @@ describe('bindMediaEvents', () => {
     expect(s.setBufEnd).toHaveBeenCalledWith(130);
   });
 
-  it('maps pause / waiting / playing / volume / rate events', () => {
+  it('maps pause / playing / volume / rate events', () => {
     const fv = fakeVideo();
     const s = mkSetters();
     bindMediaEvents(fv.el, item, s, 0);
     fv.fire('pause');
     expect(s.setPlaying).toHaveBeenCalledWith(false);
-    fv.fire('waiting');
-    expect(s.setWaiting).toHaveBeenCalledWith(true);
     fv.fire('playing');
-    expect(s.setWaiting).toHaveBeenCalledWith(false);
+    expect(s.onPlaying).toHaveBeenCalledOnce();
     fv.set('volume', 0.5);
     fv.set('muted', true);
     fv.fire('volumechange');
@@ -175,6 +173,30 @@ describe('bindMediaEvents', () => {
     bindMediaEvents(fv.el, item, s, 0);
     expect(() => fv.fire('canplay')).not.toThrow();
     expect(s.setReady).toHaveBeenCalledWith(true);
+  });
+
+  it('drops the wish to play when the browser blocks autoplay', async () => {
+    const blocked = new DOMException('blocked', 'NotAllowedError');
+    const fv = fakeVideo({ play: () => Promise.reject(blocked) });
+    const s = mkSetters();
+    bindMediaEvents(fv.el, item, s, 0);
+
+    fv.fire('canplay');
+
+    await vi.waitFor(() => expect(s.setPlaying).toHaveBeenCalledWith(false));
+  });
+
+  it('keeps the wish to play when a new source interrupts the start', async () => {
+    const aborted = new DOMException('interrupted', 'AbortError');
+    const fv = fakeVideo({ play: () => Promise.reject(aborted) });
+    const s = mkSetters();
+    bindMediaEvents(fv.el, item, s, 0);
+
+    fv.fire('canplay');
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(s.setPlaying).not.toHaveBeenCalled();
   });
 
   it('cleanup detaches every listener', () => {

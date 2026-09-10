@@ -61,7 +61,9 @@ const H = vi.hoisted(() => {
 });
 
 vi.mock('#web/shared/lib/api', () => ({
-  kromaClient: () => ({ media: { hlsMasterUrl: H.hlsMasterUrl } }),
+  kromaClient: () => ({
+    media: { hlsMasterUrl: H.hlsMasterUrl, streamUrl: (id: string) => `stream://${id}` },
+  }),
 }));
 vi.mock('hls.js', () => ({ default: H.FakeHls }));
 vi.mock('shaka-player/dist/shaka-player.compiled.js', () => ({ default: H.FakeShaka }));
@@ -94,6 +96,7 @@ describe('attachMediaSource direct-play', () => {
       setUseHls: vi.fn(),
       setReady: vi.fn(),
       onGiveUp: vi.fn(),
+      onRefused: vi.fn(),
       ...over,
     };
   }
@@ -145,6 +148,7 @@ describe('attachMediaSource HLS master', () => {
       setUseHls: vi.fn(),
       setReady: vi.fn(),
       onGiveUp: vi.fn(),
+      onRefused: vi.fn(),
       ...over,
     };
   }
@@ -215,6 +219,7 @@ describe('attachMediaSource HLS master via Shaka', () => {
       setUseHls: vi.fn(),
       setReady: vi.fn(),
       onGiveUp: vi.fn(),
+      onRefused: vi.fn(),
       ...over,
     };
   }

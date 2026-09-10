@@ -186,22 +186,38 @@ export interface HlsClassLike {
 export interface HlsInstanceLike {
   on(
     event: string,
-    listener: (event: string, data: { type: string; fatal: boolean }) => void,
+    listener: (
+      event: string,
+      data: { type: string; fatal: boolean; response?: { code?: number } },
+    ) => void,
   ): void;
   startLoad(): void;
   recoverMediaError(): void;
+}
+
+/** What a server's refusal to hand over a stream amounts to. */
+export type StreamRefusal = 'denied' | 'missing';
+
+/** The refusal an HTTP status is, or null for one a retry may still get past. */
+export function streamRefusal(status: number): StreamRefusal | null {
+  if (status === 401 || status === 403) return 'denied';
+  if (status === 404 || status === 410) return 'missing';
+  return null;
 }
 
 /**
  * Recover the fatal errors hls.js hands back to its caller. Its own action for a
  * stalled buffer is to do nothing, so an unhandled `bufferStalledError` is a
  * frozen picture over a full buffer, permanently. `onGiveUp` runs once the same
- * class of failure has survived `MAX_RECOVERIES` attempts inside a minute.
+ * class of failure has survived `MAX_RECOVERIES` attempts inside a minute. A
+ * request the server refused (see `streamRefusal`) goes to `onRefused` instead,
+ * since reloading it would only be refused again.
  */
 export function attachHlsRecovery(
   hlsClass: HlsClassLike,
   hls: HlsInstanceLike,
   onGiveUp: () => void,
+  onRefused?: (status: number) => void,
 ): void {
   let network = 0;
   let media = 0;
@@ -209,6 +225,11 @@ export function attachHlsRecovery(
 
   hls.on(hlsClass.Events.ERROR, (_event, data) => {
     if (!data.fatal) return;
+    const status = data.response?.code;
+    if (onRefused && status !== undefined && streamRefusal(status)) {
+      onRefused(status);
+      return;
+    }
     const now = Date.now();
     if (now - last > RECOVERY_WINDOW_MS) {
       network = 0;
