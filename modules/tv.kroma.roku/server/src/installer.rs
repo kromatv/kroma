@@ -5,8 +5,9 @@ use std::path::Path;
 
 use anyhow::Result;
 
+use kroma_module_sdk::http::{Fetch, FormPart};
+
 use crate::address::DeviceAddress;
-use crate::curl::CurlConfig;
 
 const INSTALLER_PORT: u16 = 80;
 const USER: &str = "rokudev";
@@ -22,12 +23,17 @@ pub enum Outcome {
 
 pub fn install(address: DeviceAddress, password: &str, zip: &Path) -> Result<Outcome> {
     let base = address.url(INSTALLER_PORT);
-    let reply = CurlConfig::new(&format!("{base}/plugin_install"), TIMEOUT_SECS)
+    let reply = Fetch::new()
+        .max_time(TIMEOUT_SECS)
         .digest(USER, password)
-        .form("mysubmit", "Replace")
-        .form("archive", &format!("@{}", zip.display()))
-        .run()?;
-    Ok(read_outcome(reply.status, &reply.body))
+        .post_multipart(
+            &format!("{base}/plugin_install"),
+            &[
+                ("mysubmit", FormPart::Text("Replace")),
+                ("archive", FormPart::File(zip)),
+            ],
+        )?;
+    Ok(read_outcome(reply.status, &reply.text()))
 }
 
 pub fn read_outcome(status: u16, body: &str) -> Outcome {

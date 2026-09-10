@@ -16,7 +16,6 @@ mod address;
 pub mod channel;
 mod config;
 mod core;
-mod curl;
 mod detail;
 mod discovery;
 mod ecp;

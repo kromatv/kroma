@@ -4,8 +4,9 @@
 use anyhow::{bail, Result};
 use serde::Serialize;
 
+use kroma_module_sdk::http::Fetch;
+
 use crate::address::DeviceAddress;
-use crate::curl::CurlConfig;
 
 const ECP_PORT: u16 = 8060;
 const TIMEOUT_SECS: u32 = 5;
@@ -20,20 +21,24 @@ pub struct DeviceInfo {
     pub developer_enabled: bool,
 }
 
+fn ecp() -> Fetch {
+    Fetch::new().max_time(TIMEOUT_SECS)
+}
+
 pub fn device_info(address: DeviceAddress) -> Result<DeviceInfo> {
     let base = address.url(ECP_PORT);
-    let reply = CurlConfig::new(&format!("{base}/query/device-info"), TIMEOUT_SECS).run()?;
+    let reply = ecp().get(&format!("{base}/query/device-info"))?;
     if reply.status != 200 {
         bail!("device-info answered {}", reply.status);
     }
-    Ok(parse_device_info(&reply.body))
+    Ok(parse_device_info(&reply.text()))
 }
 
 pub fn launch_dev(address: DeviceAddress, server_url: &str) -> Result<()> {
     let base = address.url(ECP_PORT);
     let url = format!("{base}/launch/dev?server={}", encode(server_url));
-    let reply = CurlConfig::new(&url, TIMEOUT_SECS).post_empty().run()?;
-    if reply.status < 200 || reply.status >= 300 {
+    let reply = ecp().post_form(&url, &[])?;
+    if !(200..300).contains(&reply.status) {
         bail!("launch answered {}", reply.status);
     }
     Ok(())
