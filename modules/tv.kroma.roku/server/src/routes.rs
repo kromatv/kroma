@@ -14,6 +14,7 @@ use serde_json::json;
 use kroma_module_sdk::domain::Permission;
 use kroma_module_sdk::host::{bearer_from_headers, json_error, AuthUser, HostCtx};
 
+use crate::address::DeviceAddress;
 use crate::core::Core;
 use crate::state::Roku;
 use crate::{channel, detail, lan};
@@ -74,15 +75,9 @@ async fn add<S: HostCtx + Clone>(
     Json(body): Json<AddBody>,
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
-    let ip = body.ip.trim();
-    if ip.is_empty()
-        || !ip
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || ".-:".contains(c))
-    {
-        return Err(json_error(StatusCode::BAD_REQUEST, "not an address"));
-    }
-    roku.add(ip)
+    let address = DeviceAddress::parse(&body.ip)
+        .ok_or_else(|| json_error(StatusCode::BAD_REQUEST, "not an address on this network"))?;
+    roku.add(address)
         .await
         .map_err(|e| json_error(StatusCode::BAD_GATEWAY, &format!("{e:#}")))?;
     Ok(view(&roku))
@@ -227,4 +222,58 @@ async fn detail(
         detail::item_detail(&item, resume)
     };
     Ok(Json(detail).into_response())
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::body::Body;
+    use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
+    use axum::http::Request;
+    use tower::ServiceExt;
+
+    use kroma_module_sdk::domain::{LibraryScope, User};
+    use kroma_module_sdk::host::testing::StubHost;
+
+    use super::*;
+
+    fn operator() -> User {
+        User {
+            id: "u1".into(),
+            email: "ana@kroma.tv".into(),
+            username: "ana".into(),
+            avatar_url: None,
+            language: None,
+            audio_language: None,
+            subtitle_language: None,
+            permissions: Vec::new(),
+            libraries: LibraryScope::All,
+            created_at: "2026-01-01T00:00:00Z".into(),
+            has_pin: false,
+        }
+    }
+
+    async fn add_by_hand(ip: &str) -> StatusCode {
+        let host = StubHost::new().with_session("tok", operator());
+        let app = routes::<StubHost>(crate::roku_service(std::path::Path::new("/nowhere")))
+            .with_state(host);
+        let request = Request::post("/roku/add")
+            .header(AUTHORIZATION, "Bearer tok")
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(json!({ "ip": ip }).to_string()))
+            .unwrap();
+
+        app.oneshot(request).await.unwrap().status()
+    }
+
+    #[tokio::test]
+    async fn adding_a_box_by_hand_takes_an_address_on_this_network_and_nothing_else() {
+        assert_eq!(add_by_hand("roku.local").await, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            add_by_hand("attacker.example.com").await,
+            StatusCode::BAD_REQUEST
+        );
+        assert_eq!(add_by_hand("203.0.113.7").await, StatusCode::BAD_REQUEST);
+        assert_eq!(add_by_hand("100.64.0.1").await, StatusCode::BAD_REQUEST);
+        assert_eq!(add_by_hand("").await, StatusCode::BAD_REQUEST);
+    }
 }

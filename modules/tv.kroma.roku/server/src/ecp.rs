@@ -4,8 +4,10 @@
 use anyhow::{bail, Result};
 use serde::Serialize;
 
+use crate::address::DeviceAddress;
 use crate::curl::CurlConfig;
 
+const ECP_PORT: u16 = 8060;
 const TIMEOUT_SECS: u32 = 5;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
@@ -18,7 +20,8 @@ pub struct DeviceInfo {
     pub developer_enabled: bool,
 }
 
-pub fn device_info(base: &str) -> Result<DeviceInfo> {
+pub fn device_info(address: DeviceAddress) -> Result<DeviceInfo> {
+    let base = address.url(ECP_PORT);
     let reply = CurlConfig::new(&format!("{base}/query/device-info"), TIMEOUT_SECS).run()?;
     if reply.status != 200 {
         bail!("device-info answered {}", reply.status);
@@ -26,7 +29,8 @@ pub fn device_info(base: &str) -> Result<DeviceInfo> {
     Ok(parse_device_info(&reply.body))
 }
 
-pub fn launch_dev(base: &str, server_url: &str) -> Result<()> {
+pub fn launch_dev(address: DeviceAddress, server_url: &str) -> Result<()> {
+    let base = address.url(ECP_PORT);
     let url = format!("{base}/launch/dev?server={}", encode(server_url));
     let reply = CurlConfig::new(&url, TIMEOUT_SECS).post_empty().run()?;
     if reply.status < 200 || reply.status >= 300 {

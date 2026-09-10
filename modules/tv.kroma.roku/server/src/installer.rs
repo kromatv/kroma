@@ -5,8 +5,10 @@ use std::path::Path;
 
 use anyhow::Result;
 
+use crate::address::DeviceAddress;
 use crate::curl::CurlConfig;
 
+const INSTALLER_PORT: u16 = 80;
 const USER: &str = "rokudev";
 const TIMEOUT_SECS: u32 = 90;
 
@@ -18,8 +20,9 @@ pub enum Outcome {
     Refused(String),
 }
 
-pub fn install(ip: &str, password: &str, zip: &Path) -> Result<Outcome> {
-    let reply = CurlConfig::new(&format!("http://{ip}/plugin_install"), TIMEOUT_SECS)
+pub fn install(address: DeviceAddress, password: &str, zip: &Path) -> Result<Outcome> {
+    let base = address.url(INSTALLER_PORT);
+    let reply = CurlConfig::new(&format!("{base}/plugin_install"), TIMEOUT_SECS)
         .digest(USER, password)
         .form("mysubmit", "Replace")
         .form("archive", &format!("@{}", zip.display()))

@@ -12,6 +12,7 @@ use axum::Router;
 use kroma_module_sdk::host::{async_trait, service, HostCtx, ServerModule};
 use kroma_module_sdk::EmbeddedModule;
 
+mod address;
 pub mod channel;
 mod config;
 mod core;

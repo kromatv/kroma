@@ -9,6 +9,7 @@ use tracing::{info, warn};
 
 use kroma_module_sdk::primitives::now_iso8601;
 
+use crate::address::DeviceAddress;
 use crate::installer::Outcome;
 use crate::{config, discovery, ecp, installer};
 
@@ -38,7 +39,8 @@ pub struct Device {
     pub serial: String,
     pub name: String,
     pub model: String,
-    pub ip: String,
+    #[serde(rename = "ip")]
+    pub address: DeviceAddress,
     pub software_version: String,
     pub developer_enabled: bool,
     pub last_seen: String,
@@ -48,16 +50,6 @@ pub struct Device {
 pub struct Roku {
     devices: Mutex<BTreeMap<String, Device>>,
     dir: PathBuf,
-}
-
-pub fn ip_of(location: &str) -> String {
-    let host = location
-        .trim_start_matches("http://")
-        .trim_start_matches("https://");
-    host.split(['/', ':'])
-        .next()
-        .unwrap_or_default()
-        .to_string()
 }
 
 impl Roku {
@@ -97,7 +89,7 @@ impl Roku {
                 serial: found.serial.clone(),
                 name: info.name,
                 model: info.model,
-                ip: ip_of(&found.location),
+                address: found.address,
                 software_version: info.software_version,
                 developer_enabled: info.developer_enabled,
                 last_seen: now_iso8601(),
@@ -115,8 +107,8 @@ impl Roku {
             }
         };
         for f in found {
-            let base = f.location.clone();
-            let info = tokio::task::spawn_blocking(move || ecp::device_info(&base)).await;
+            let address = f.address;
+            let info = tokio::task::spawn_blocking(move || ecp::device_info(address)).await;
             match info {
                 Ok(Ok(info)) => self.remember(&f, info),
                 Ok(Err(e)) => {
@@ -127,15 +119,14 @@ impl Roku {
         }
     }
 
-    pub async fn add(&self, ip: &str) -> anyhow::Result<Device> {
-        let base = format!("http://{ip}:8060");
-        let info = tokio::task::spawn_blocking(move || ecp::device_info(&base)).await??;
+    pub async fn add(&self, address: DeviceAddress) -> anyhow::Result<Device> {
+        let info = tokio::task::spawn_blocking(move || ecp::device_info(address)).await??;
         if info.serial.is_empty() {
-            anyhow::bail!("{ip} answered without a serial number");
+            anyhow::bail!("{address} answered without a serial number");
         }
         let found = discovery::Found {
             serial: info.serial.clone(),
-            location: format!("http://{ip}:8060"),
+            address,
         };
         self.remember(&found, info);
         Ok(self.device(&found.serial).expect("just remembered"))
@@ -177,9 +168,9 @@ impl Roku {
                 return;
             }
         };
-        let ip = device.ip.clone();
+        let address = device.address;
         let outcome =
-            tokio::task::spawn_blocking(move || installer::install(&ip, &password, &zip)).await;
+            tokio::task::spawn_blocking(move || installer::install(address, &password, &zip)).await;
         let (status, message) = match outcome {
             Ok(Ok(Outcome::Installed)) | Ok(Ok(Outcome::Unchanged)) => {
                 (InstallStatus::Installed, None)
@@ -200,8 +191,9 @@ impl Roku {
         let Some(device) = self.device(serial) else {
             return;
         };
-        let base = format!("http://{}:8060", device.ip);
-        let result = tokio::task::spawn_blocking(move || ecp::launch_dev(&base, &server_url)).await;
+        let address = device.address;
+        let result =
+            tokio::task::spawn_blocking(move || ecp::launch_dev(address, &server_url)).await;
         if let Ok(Err(e)) = result {
             warn!(serial, error = %format!("{e:#}"), "roku: launch failed");
         }
@@ -215,7 +207,7 @@ mod tests {
     fn found(serial: &str) -> discovery::Found {
         discovery::Found {
             serial: serial.into(),
-            location: "http://192.168.1.134:8060".into(),
+            address: DeviceAddress::parse("192.168.1.134").expect("a private address"),
         }
     }
 
@@ -270,12 +262,6 @@ mod tests {
     }
 
     #[test]
-    fn the_address_is_the_host_of_the_ecp_location() {
-        assert_eq!(ip_of("http://192.168.1.134:8060"), "192.168.1.134");
-        assert_eq!(ip_of("http://192.168.1.134:8060/"), "192.168.1.134");
-    }
-
-    #[test]
     fn a_box_seen_again_keeps_what_the_installer_did_to_it() {
         let roku = Roku::new(PathBuf::from("/nowhere"));
         roku.remember(&found("A1"), ecp::DeviceInfo::default());
@@ -291,7 +277,7 @@ mod tests {
 
         let device = roku.device("A1").unwrap();
         assert_eq!(device.name, "Salon");
-        assert_eq!(device.ip, "192.168.1.134");
+        assert_eq!(device.address.to_string(), "192.168.1.134");
         assert_eq!(device.install.status, InstallStatus::Installed);
     }
 

@@ -26,8 +26,8 @@
   "roku.lastSeen": "Seen {when}",
   "roku.pairHint": "Once the channel opens on the box it shows a code. Approve it from a phone or browser signed in to this server, like any television.",
   "roku.address": "Address",
-  "roku.addressHint": "For a network where the scan hears nothing: the box shows its address under Settings, Network, About.",
+  "roku.addressHint": "For a network where the scan hears nothing: the box shows its address under Settings, Network, About. It has to be an address on this network, not a name.",
   "roku.addressPlaceholder": "192.168.1.50",
   "roku.add": "Add this box",
-  "roku.addFailed": "Nothing at that address answered like a Roku."
+  "roku.addFailed": "No Roku on this network answered at that address."
 }
