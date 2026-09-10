@@ -8,6 +8,28 @@
   "engines": {
     "server": ">=0.1.39"
   },
+  "settings": {
+    "read": [
+      "acqDeleteAfterImport",
+      "acqEnabled",
+      "acqForbiddenKeywords",
+      "acqMaxSizeGbEpisode",
+      "acqMaxSizeGbMovie",
+      "acqMinSeeders",
+      "acqMovieLibrary",
+      "acqPreferHevc",
+      "acqReplaceOnUpgrade",
+      "acqRequiredKeywords",
+      "acqResolution",
+      "acqSeriesLibrary",
+      "namingCase",
+      "namingEpisodeFile",
+      "namingMovieFile",
+      "namingMovieFolder",
+      "namingSeasonFolder",
+      "namingSeriesFolder"
+    ]
+  },
   "feRemote": {
     "module": "./remoteEntry.js"
   },

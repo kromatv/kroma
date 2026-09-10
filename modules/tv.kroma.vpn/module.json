@@ -3,10 +3,14 @@
   "schemaVersion": 2,
   "id": "tv.kroma.vpn",
   "name": "VPN",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Managed WireGuard bridge (any provider) that torrent traffic routes through, with a live seal test. Disable it to stop the bridge and hide its page + routes.",
   "engines": {
     "server": ">=0.1.39"
+  },
+  "settings": {
+    "read": ["vpnLocalPort", "vpnWgConfig"],
+    "write": ["vpnLocalPort", "vpnWgConfig"]
   },
   "feRemote": {
     "module": "./remoteEntry.js"

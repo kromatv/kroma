@@ -1,14 +1,32 @@
 //! The `/api/_host/*` settings callbacks against the real wiring: which keys a
-//! sidecar holding the host token reads and writes.
+//! sidecar reads and writes, by what the core declared about the key and what the
+//! calling module declared about itself.
 
 use std::collections::BTreeMap;
 
 use axum::http::StatusCode;
 use serde_json::json;
 
-use crate::api::test_support::{get, send, test_app};
+use crate::api::test_support::{get, send, test_app, TestApp};
 
 const HOST_TOKEN: &str = "test-host-token";
+
+const BRIDGE: &str = "tv.kroma.bridge";
+
+fn bridge_declaring(t: &TestApp, settings: &str) -> String {
+    let dir = t.state.config.data_dir.join("modules").join(BRIDGE);
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(
+        dir.join("module.json"),
+        format!(
+            r#"{{ "schemaVersion": {}, "id": "{BRIDGE}", "name": "Bridge", "version": "1.0.0",
+                  "settings": {settings} }}"#,
+            kroma_module_manifest::MODULE_SCHEMA_VERSION,
+        ),
+    )
+    .unwrap();
+    t.supervisor.module_token(BRIDGE)
+}
 
 #[tokio::test]
 async fn a_stored_operator_credential_never_reaches_a_sidecar() {
@@ -88,6 +106,7 @@ async fn a_sidecar_cannot_put_a_signing_key_of_its_own_choosing_in_place() {
 #[tokio::test]
 async fn the_settings_a_module_runs_on_still_come_back_stored() {
     let t = test_app();
+    let token = bridge_declaring(&t, r#"{ "read": ["vpnWgConfig", "remoteAccessToken"] }"#);
     t.state.settings.set_patch(
         &t.state.db,
         BTreeMap::from([
@@ -100,19 +119,19 @@ async fn the_settings_a_module_runs_on_still_come_back_stored() {
     let (acq_status, acq) = get(
         &t.app,
         "/api/_host/setting?key=acqEnabled&kind=bool&default=false",
-        Some(HOST_TOKEN),
+        Some(&token),
     )
     .await;
     let (wg_status, wg) = get(
         &t.app,
         "/api/_host/setting?key=vpnWgConfig&kind=str&default=",
-        Some(HOST_TOKEN),
+        Some(&token),
     )
     .await;
     let (tunnel_status, tunnel) = get(
         &t.app,
         "/api/_host/setting?key=remoteAccessToken&kind=str&default=",
-        Some(HOST_TOKEN),
+        Some(&token),
     )
     .await;
 
@@ -122,6 +141,39 @@ async fn the_settings_a_module_runs_on_still_come_back_stored() {
     assert_eq!(wg, json!({ "value": "[Interface]" }));
     assert_eq!(tunnel_status, StatusCode::OK);
     assert_eq!(tunnel, json!({ "value": "tunnel-token" }));
+}
+
+#[tokio::test]
+async fn an_operator_credential_reaches_no_module_but_the_one_that_declared_it() {
+    let t = test_app();
+    let token = bridge_declaring(&t, r#"{ "read": ["remoteAccessToken"] }"#);
+    t.state.settings.set_patch(
+        &t.state.db,
+        BTreeMap::from([("vpnWgConfig".to_string(), json!("[Interface]"))]),
+    );
+
+    let (declared_elsewhere, by_bridge) = get(
+        &t.app,
+        "/api/_host/setting?key=vpnWgConfig&kind=str&default=",
+        Some(&token),
+    )
+    .await;
+    let (unnamed, by_fabric) = get(
+        &t.app,
+        "/api/_host/setting?key=vpnWgConfig&kind=str&default=",
+        Some(HOST_TOKEN),
+    )
+    .await;
+
+    assert_eq!(declared_elsewhere, StatusCode::OK);
+    assert_eq!(by_bridge, json!({ "value": "" }));
+    assert_eq!(unnamed, StatusCode::OK);
+    assert_eq!(by_fabric, json!({ "value": "" }));
+    assert_eq!(
+        t.state.settings.get_str("vpnWgConfig", ""),
+        "[Interface]",
+        "the value is stored; it just does not cross the callback"
+    );
 }
 
 #[tokio::test]
@@ -162,12 +214,13 @@ async fn a_sidecar_cannot_write_a_credential_or_retarget_the_registries() {
 #[tokio::test]
 async fn a_sidecar_still_saves_the_settings_it_owns() {
     let t = test_app();
+    let token = bridge_declaring(&t, r#"{ "write": ["vpnWgConfig"] }"#);
 
     let (status, _) = send(
         &t.app,
         "POST",
         "/api/_host/settings",
-        Some(HOST_TOKEN),
+        Some(&token),
         Some(json!({ "patch": { "acqEnabled": true, "vpnWgConfig": "[Interface]" } })),
     )
     .await;
@@ -175,6 +228,28 @@ async fn a_sidecar_still_saves_the_settings_it_owns() {
     assert_eq!(status, StatusCode::NO_CONTENT);
     assert_eq!(t.state.settings.get("acqEnabled"), json!(true));
     assert_eq!(t.state.settings.get("vpnWgConfig"), json!("[Interface]"));
+}
+
+#[tokio::test]
+async fn a_sidecar_cannot_write_a_credential_it_did_not_declare() {
+    let t = test_app();
+    let token = bridge_declaring(&t, r#"{ "read": ["vpnWgConfig"] }"#);
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/_host/settings",
+        Some(&token),
+        Some(json!({ "patch": { "vpnWgConfig": "[Interface] mine" } })),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(
+        t.state.settings.get("vpnWgConfig"),
+        json!(""),
+        "a read declaration is not a write declaration"
+    );
 }
 
 #[tokio::test]

@@ -19,7 +19,7 @@ mod proxy;
 mod registry;
 mod watch;
 
-pub use host_api::{host_router, WithheldSettings};
+pub use host_api::host_router;
 pub use origin::{BinStamp, Origin, Source};
 pub use proxy::proxy_to;
 pub use registry::{sibling_url, verify_sha256, FetchProgress, DESCRIPTOR_PATH, MAX_BUNDLE_BYTES};
@@ -52,6 +52,7 @@ pub struct SupervisorConfig {
 pub struct Supervisor {
     cfg: SupervisorConfig,
     procs: RwLock<HashMap<String, Proc>>,
+    module_tokens: RwLock<HashMap<String, String>>,
     manifests_cache: RwLock<Option<Vec<ModuleManifest>>>,
     // Short-TTL catalog cache: the admin flow sweeps EVERY registry from the
     // catalog view, the plan dialog (once per opt-in toggle) and the install
@@ -68,6 +69,7 @@ impl Supervisor {
         Arc::new(Self {
             cfg,
             procs: RwLock::new(HashMap::new()),
+            module_tokens: RwLock::new(HashMap::new()),
             manifests_cache: RwLock::new(None),
             catalog_cache: RwLock::new(HashMap::new()),
             catalog_client: std::sync::OnceLock::new(),
@@ -177,6 +179,47 @@ impl Supervisor {
 
     pub fn host_token(&self) -> &str {
         &self.cfg.host_token
+    }
+
+    /// The token `id`'s process calls back with, minted on first ask and then
+    /// stable for the life of this server. It names its holder, which is what lets
+    /// a callback answer for the module that made it rather than for "a module".
+    ///
+    /// A sidecar's own routes are NOT guarded by this: a peer reaching one holds
+    /// the fabric token from [`Self::host_token`], and handing it this instead
+    /// would hand one module another's identity.
+    pub fn module_token(&self, id: &str) -> String {
+        if let Some(token) = self.module_tokens.read().unwrap().get(id) {
+            return token.clone();
+        }
+        let mut tokens = self.module_tokens.write().unwrap();
+        tokens
+            .entry(id.to_string())
+            .or_insert_with(kroma_primitives::random_token)
+            .clone()
+    }
+
+    /// The module `token` was minted for, or `None` for the fabric token and for
+    /// anything else: a caller the callback cannot name holds no declaration, so it
+    /// reaches nothing that wants one.
+    pub fn module_of_token(&self, token: &str) -> Option<String> {
+        self.module_tokens
+            .read()
+            .unwrap()
+            .iter()
+            .find(|(_, minted)| {
+                kroma_module_host::host_token::ct_eq(minted.as_bytes(), token.as_bytes())
+            })
+            .map(|(id, _)| id.clone())
+    }
+
+    /// What `id` declared under `settings`, or `None` when its manifest predates
+    /// the field, which is a module that keeps the reach it had.
+    pub fn settings_scope(&self, id: &str) -> Option<kroma_module_manifest::SettingsScope> {
+        self.installed_manifests()
+            .into_iter()
+            .find(|m| m.id == id)?
+            .settings
     }
 }
 

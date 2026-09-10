@@ -282,10 +282,27 @@ may: the mail password, the LLM API key, the Web Push / APNs / FCM private
 material and the registry list the Store installs from are the core's alone, and
 so is every key no declaration mentions, which is what an identity the server
 minted for itself is. A read answers the default you asked with, and a patch
-naming one is refused whole with a `403`. A credential a module is the thing that
-uses (the WireGuard config the bridge brings up, the tunnel token the connector
-runs on) stays readable and writable. For a vendor credential the operator
+naming one is refused whole with a `403`. For a vendor credential the operator
 configured, ask `GET /_host/secret?name=` by name.
+
+A credential a module is the thing that uses (the WireGuard config the bridge
+brings up, the tunnel token the connector runs on) reaches **the module that
+declared it**, because the core knows which module is calling: every sidecar is
+spawned with its own `KROMA_MODULE_TOKEN` and the callback resolves it. Declare
+yours in `module.json`:
+
+```jsonc
+"settings": {
+  "read": ["vpnLocalPort", "vpnWgConfig"],
+  "write": ["vpnLocalPort", "vpnWgConfig"]
+}
+```
+
+A read declaration is not a write declaration, and a bundle that declares nothing
+keeps every ordinary preference and reaches none of these credentials. Ordinary
+preferences are not scoped by the declaration yet, so write down the full truth
+today: reaching a key you did not declare logs a line at `debug` level, which is
+the reach that will be refused when it is.
 
 - **`dependencies`** is a hard dependency, as a `{ "<id>": "<range>" }` map.
   The backend enforces it, and the Store installs missing ones automatically.
@@ -296,6 +313,9 @@ configured, ask `GET /_host/secret?name=` by name.
 - **`engines`** is what the module needs from its host (`{ "server": ">=0.1.4" }`),
   enforced at install **and** at spawn, so a stale bundle fails with a clear
   message instead of proxy errors.
+- **`settings`** is the core settings keys you read and write, as
+  `{ "read": [...], "write": [...] }`. Absent is not empty: a manifest without it
+  predates the field and keeps the reach it had.
 
 ## Storage
 

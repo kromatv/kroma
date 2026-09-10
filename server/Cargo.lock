@@ -1981,6 +1981,7 @@ dependencies = [
  "kroma-domain",
  "kroma-module-host",
  "kroma-module-manifest",
+ "kroma-primitives",
  "kroma-testing",
  "libc",
  "rand 0.10.2",

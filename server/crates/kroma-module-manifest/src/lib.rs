@@ -20,7 +20,7 @@ pub use kroma_module_macros::embedded_module;
 pub use manifest::MODULE_SCHEMA_VERSION;
 pub use manifest::{
     ConfigField, Contribution, CoreScope, Dependency, FeRemote, ModuleManifest, PointDef, PointReq,
-    Storage, Version,
+    SettingsScope, Storage, Version,
 };
 pub use registry::{ModuleRegistration, Registry, ResolveError};
 

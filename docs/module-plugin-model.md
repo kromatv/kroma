@@ -192,7 +192,7 @@ opinion about any of it.
 
 ```
 POST http://127.0.0.1:<port>/_port/<point>/<method>
-Authorization: Bearer <per-process host token>
+Authorization: Bearer <the fabric host token>
 { ...request json... }
 ->  { "Ok": ...json... } | { "Err": "message" }
 ```
@@ -209,6 +209,11 @@ generic.
 The path carries the point's FULL name, which is the same string the caller
 resolved with (`call_point` builds it), so nothing has to hold a point name and
 an unrelated URL prefix and keep the two in step.
+
+One token, not a module's own, and deliberately: a caller holds it to reach a
+peer, so a token that also NAMED its holder would hand one module another's
+identity. Identity belongs on the hop where it changes the answer, which is the
+module-to-core callback, and that hop has `KROMA_MODULE_TOKEN` instead.
 
 What holds the wire together instead:
 
@@ -250,10 +255,21 @@ a read answers the caller's own default, a patch naming one is refused. So the
 keys only the core consumes (mail, LLM, the push private material, the ticket
 signing key) and the registry list the Store installs from are withheld because
 they say so, and an identity the server mints for itself is withheld because
-nothing hands it out. The core owns that decision; the supervisor only asks, so
-it still knows nothing about what any module is for. A credential whose consumer
-IS a sidecar stays readable, because the callback is how it reaches the process
-that uses it.
+nothing hands it out. A key nothing declares at all is withheld too, and said so
+at `debug` rather than as a warning, because it is a typo or a feature that left
+rather than something an operator has to act on. The core owns that decision; the supervisor only asks, so
+it still knows nothing about what any module is for.
+
+A credential whose consumer IS a sidecar is the third case, and it reaches **the
+sidecar that declared it**. The supervisor spawns every module with its own
+`KROMA_MODULE_TOKEN`, so a callback names its caller, and `settings: { read, write }`
+in that module's manifest says which core keys it uses. The WireGuard config goes
+to the module that brings the tunnel up and to the one that has to know whether
+the tunnel is up, because both named it, and to nothing else installed. A caller
+the core cannot name holds no declaration and reaches none of these, which is what
+a bundle built before the field is: it keeps every ordinary preference and loses
+the credentials. Preferences are not scoped by the declaration yet; reaching one
+a manifest omits logs it, and that log is the migration for when they are.
 
 Withholding by default is what makes this survive the next key. The guard used to
 be a deny-list plus a test that swept key NAMES for `password`, `token`, `secret`

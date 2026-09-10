@@ -1,9 +1,14 @@
-//! The shared-host-token guard.
+//! The host-token guard.
 //!
-//! Every hop of the module IPC authenticates with the SAME random token the
-//! supervisor mints at boot: the core's `/api/_host/*` callbacks, the core's
-//! `/_host/register-job` endpoint, and a sidecar's `/_job/run/*` + `/_port/*`
-//! routes. It lives in the host seam they all already depend on.
+//! One random token the supervisor mints at boot authenticates the hops where
+//! the caller's identity does not change the answer: the core's
+//! `/_host/register-job` and `/_host/register-events` endpoints, and a sidecar's
+//! `/_job/run/*`, `/_event/*` and `/_port/*` routes. A peer holds it too, which
+//! is why it cannot also name its holder.
+//!
+//! The `/api/_host/*` callbacks are the exception and are guarded by the
+//! supervisor instead, against a token minted per module process, because what a
+//! module may read of the settings store depends on which module is asking.
 
 use axum::extract::{Request, State};
 use axum::http::{HeaderMap, StatusCode};
@@ -34,9 +39,10 @@ pub async fn require_host_token(
     }
 }
 
-// Constant-time, so matching the shared host token never leaks a shared
-// prefix through timing.
-fn ct_eq(a: &[u8], b: &[u8]) -> bool {
+/// Constant-time byte equality, so matching a host token never leaks a shared
+/// prefix through timing. Length is compared first and in the clear, which a
+/// token's length already is.
+pub fn ct_eq(a: &[u8], b: &[u8]) -> bool {
     if a.len() != b.len() {
         return false;
     }
