@@ -1,0 +1,27 @@
+{
+  "clients": {
+    "desktop": 0,
+    "mobile": 0,
+    "total": 0,
+    "tv": 0
+  },
+  "countries": [],
+  "history": [
+    {
+      "clients": 0,
+      "day": "2026-09-10",
+      "instances": 0
+    }
+  ],
+  "installs": [],
+  "instances": 0,
+  "locales": [],
+  "modules": [],
+  "platforms": [],
+  "reports": {
+    "statistics": 0,
+    "usage": 0
+  },
+  "updatedAt": 1789031301,
+  "versions": []
+}
