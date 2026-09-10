@@ -14,6 +14,20 @@ export function setSessionToken(token: string | undefined): void {
   memorySessionToken = token;
 }
 
+let memoryMediaTicket: string | undefined;
+
+/** The media ticket the last sign-in answered with. Shared like the bearer, so
+ *  a client built after the exchange stamps it on its media URLs too. */
+export function sessionMediaTicket(): string | undefined {
+  return memoryMediaTicket;
+}
+
+/** Set (or clear, with `undefined`) the shared media ticket. The transport's
+ *  `setMediaTicket` calls this; callers do not. */
+export function setSessionMediaTicket(ticket: string | undefined): void {
+  memoryMediaTicket = ticket;
+}
+
 let memorySessionRefresh: (() => Promise<string | undefined>) | undefined;
 
 /** How to mint a fresh session bearer, or undefined when nothing registered one. */
