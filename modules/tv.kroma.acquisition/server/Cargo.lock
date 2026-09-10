@@ -1428,6 +1428,7 @@ dependencies = [
  "kroma-domain",
  "kroma-engine",
  "kroma-http",
+ "kroma-i18n",
  "kroma-module-host",
  "kroma-module-macros",
  "kroma-module-manifest",

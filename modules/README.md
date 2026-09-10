@@ -265,8 +265,39 @@ declarations only, and a `@kromatv/*` import the host does not provide fails the
 build. Anything else a page imports (`zod`, an icon set) is bundled. Import
 components from `@kromatv/ui/kit`; a deeper kit path is folded onto it.
 
+### Strings
+
 Every user-visible string is a key. Ship `locales/{en,fr}.json`; they resolve
 against the module's own catalog first, then the core ones.
+
+The sidecar reads those same files, so a module has one store and not one per
+half. `embedded_locales!()` finds every `locales/<code>.json` at compile time
+and `i18n::engine` resolves them with the engine the core resolves its own
+with, which is what makes a plural and a `{name}` behave the same in a row
+title a backend shapes as on a page:
+
+```rust
+use std::sync::OnceLock;
+
+use kroma_module_sdk::i18n::{self, I18n, Translator};
+
+const CATALOGS: &[(&str, &str)] = kroma_module_sdk::embedded_locales!();
+
+fn strings(locale: &str) -> Translator<'static> {
+    static ENGINE: OnceLock<I18n> = OnceLock::new();
+    ENGINE
+        .get_or_init(|| i18n::engine(CATALOGS).expect("this module's catalogs"))
+        .translator(locale)
+}
+```
+
+`en.json` is the authoritative catalog: a key another locale has no entry for
+falls back to it, and then to the key itself. Resolve for a person with the
+session user's `language`, which is what every other surface reads.
+
+A module whose strings also have to reach something that is not the web
+frontend or the sidecar, a device channel it installs, ships the same JSON
+there rather than restating it in that language.
 
 ## Runtime contract
 

@@ -282,9 +282,10 @@ mod tests {
     }
 
     #[test]
-    fn the_embedded_channel_is_a_zip_holding_a_manifest() {
+    fn the_embedded_channel_is_a_zip_holding_a_manifest_and_the_catalogs_it_reads() {
         assert_eq!(&CHANNEL_ZIP[..2], b"PK");
-        assert!(String::from_utf8_lossy(CHANNEL_ZIP).contains("manifest"));
+        let names = String::from_utf8_lossy(CHANNEL_ZIP);
+        assert!(names.contains("manifest") && names.contains("locales/fr.json"));
     }
 
     #[test]

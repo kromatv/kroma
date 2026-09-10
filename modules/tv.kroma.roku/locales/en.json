@@ -29,5 +29,18 @@
   "roku.addressHint": "For a network where the scan hears nothing: the box shows its address under Settings, Network, About. It has to be an address on this network, not a name.",
   "roku.addressPlaceholder": "192.168.1.50",
   "roku.add": "Add this box",
-  "roku.addFailed": "No Roku on this network answered at that address."
+  "roku.addFailed": "No Roku on this network answered at that address.",
+  "roku.channel.continueWatching": "Continue watching",
+  "roku.channel.movies": "Movies",
+  "roku.channel.shows": "Shows",
+  "roku.channel.episodes_one": "{count} episode",
+  "roku.channel.episodes_other": "{count} episodes",
+  "roku.channel.pairTitle": "Pair this Roku",
+  "roku.channel.pairHint": "Open KROMA on your phone or in a browser, go to Quick Connect and enter this code.",
+  "roku.channel.pairServer": "Server",
+  "roku.channel.pairUnreachable": "Cannot reach the server at",
+  "roku.channel.loading": "Loading",
+  "roku.channel.loadFailed": "Could not load the library.",
+  "roku.channel.play": "Play",
+  "roku.channel.resumeAt": "Resume at"
 }

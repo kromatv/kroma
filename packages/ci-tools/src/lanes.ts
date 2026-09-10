@@ -55,7 +55,7 @@ export const LANES = {
   sdk: {
     paths: [
       'packages/{cli,client,core,i18n,module-sdk,registry,spatial-nav,ui}/**',
-      'server/crates/{kroma-module-*,kroma-domain,kroma-http,kroma-db,kroma-primitives,kroma-testing}/**',
+      'server/crates/{kroma-module-*,kroma-domain,kroma-http,kroma-i18n,kroma-db,kroma-primitives,kroma-testing}/**',
       'server/Cargo.toml',
       ...INSTALL,
     ],

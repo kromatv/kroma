@@ -3,6 +3,8 @@
 
 use serde_json::Value;
 
+use kroma_module_sdk::i18n::Translator;
+
 use crate::channel::{
     backdrop, episode_code, item_tile, join, overview, show_tile, str, stream_format, Detail, Play,
 };
@@ -34,9 +36,14 @@ pub fn item_detail(item: &Value, resume_ms: i64) -> Detail {
     }
 }
 
-pub fn show_detail(show_detail: &Value, up_next: &Value, resume_ms: i64) -> Detail {
+pub fn show_detail(
+    strings: Translator<'_>,
+    show_detail: &Value,
+    up_next: &Value,
+    resume_ms: i64,
+) -> Detail {
     let show = show_detail.get("show").cloned().unwrap_or(Value::Null);
-    let tile = show_tile(&show);
+    let tile = show_tile(strings, &show);
     let episodes = show_detail
         .get("seasons")
         .and_then(Value::as_array)
@@ -75,23 +82,10 @@ pub fn show_detail(show_detail: &Value, up_next: &Value, resume_ms: i64) -> Deta
 mod tests {
     use serde_json::json;
 
+    use crate::strings;
+    use crate::test_support::{episode, movie};
+
     use super::*;
-
-    fn movie() -> Value {
-        json!({
-            "id": "m1", "kind": "movie", "title": "Dune", "year": 2021,
-            "container": "mov,mp4,m4a,3gp,3g2,mj2",
-            "metadata": { "overview": "Spice.", "backdropUrl": "https://img/dune.jpg" }
-        })
-    }
-
-    fn episode() -> Value {
-        json!({
-            "id": "e3", "kind": "episode", "title": "Chapter 3", "showId": "s1",
-            "showTitle": "Andor", "season": 1, "episode": 3, "episodeTitle": "Reckoning",
-            "container": "matroska,webm"
-        })
-    }
 
     #[test]
     fn a_movie_detail_plays_itself_from_where_it_was_left() {
@@ -115,9 +109,10 @@ mod tests {
         });
         let up_next = json!({ "item": episode(), "resume": true });
 
-        let detail = show_detail(&show, &up_next, 1000);
+        let detail = show_detail(strings::for_locale("fr"), &show, &up_next, 1000);
 
         assert_eq!(detail.kind, "show");
+        assert_eq!(detail.subtitle, "2022 · 1 épisode");
         assert_eq!(detail.episodes[0].title, "S1 E3 · Reckoning");
         assert_eq!(detail.episodes[0].id, "e3");
         let play = detail.play.unwrap();
@@ -130,7 +125,9 @@ mod tests {
     fn a_show_nothing_was_watched_from_has_no_play_action_yet() {
         let show = json!({ "show": { "id": "s1", "title": "Andor" }, "seasons": [] });
 
-        assert_eq!(show_detail(&show, &Value::Null, 0).play, None);
+        let detail = show_detail(strings::for_locale("en"), &show, &Value::Null, 0);
+
+        assert_eq!(detail.play, None);
     }
 
     #[test]
