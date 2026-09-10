@@ -1,4 +1,4 @@
-use kroma_http::Fetch;
+use kroma_http::{Fetch, FormPart};
 
 fn read_request(stream: &mut std::net::TcpStream) -> Vec<u8> {
     use std::io::Read;
@@ -42,6 +42,33 @@ fn one_shot_server(status_line: &str, body: &str) -> (String, std::thread::JoinH
         let (mut stream, _) = listener.accept().unwrap();
         let request = read_request(&mut stream);
         stream.write_all(response.as_bytes()).unwrap();
+        request
+    });
+    (url, handle)
+}
+
+// The 401 closes its connection so curl's retry arrives on a second accept
+// rather than on the same keep-alive socket, which nothing would be there to read.
+fn digest_challenge_server() -> (String, std::thread::JoinHandle<Vec<u8>>) {
+    use std::io::Write;
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}/plugin_install", listener.local_addr().unwrap());
+    let handle = std::thread::spawn(move || {
+        let (mut unauthed, _) = listener.accept().unwrap();
+        read_request(&mut unauthed);
+        unauthed
+            .write_all(
+                b"HTTP/1.1 401 Unauthorized\r\n\
+                  WWW-Authenticate: Digest realm=\"rokudev\", qop=\"auth\", nonce=\"nOnCe\"\r\n\
+                  connection: close\r\ncontent-length: 0\r\n\r\n",
+            )
+            .unwrap();
+        drop(unauthed);
+        let (mut authed, _) = listener.accept().unwrap();
+        let request = read_request(&mut authed);
+        authed
+            .write_all(b"HTTP/1.1 200 OK\r\ncontent-length: 15\r\n\r\nInstall Success")
+            .unwrap();
         request
     });
     (url, handle)
@@ -137,6 +164,74 @@ fn a_form_post_url_encodes_every_field() {
         "{request}"
     );
     assert_eq!(resp.text(), "Ok.");
+}
+
+#[test]
+fn a_form_post_with_no_fields_sends_a_post_with_an_empty_body() {
+    let (url, server) = one_shot_server("HTTP/1.1 200 OK", "");
+
+    let resp = Fetch::new().post_form(&url, &[]).unwrap();
+
+    let request = text(&server.join().unwrap());
+    assert!(request.starts_with("POST / HTTP/"), "{request}");
+    assert!(
+        request.to_lowercase().contains("content-length: 0"),
+        "{request}"
+    );
+    assert_eq!(resp.status, 200);
+}
+
+#[test]
+fn a_multipart_post_sends_a_literal_part_and_the_file_it_is_given() {
+    let dir = kroma_testing::temp_dir("http-multipart");
+    let zip = dir.path().join("channel.zip");
+    std::fs::write(&zip, b"PK\x03\x04channel").unwrap();
+    let (url, server) = one_shot_server("HTTP/1.1 200 OK", "Install Success");
+
+    let resp = Fetch::new()
+        .post_multipart(
+            &url,
+            &[
+                ("mysubmit", FormPart::Text("Replace")),
+                ("archive", FormPart::File(&zip)),
+            ],
+        )
+        .unwrap();
+
+    let request = text(&server.join().unwrap());
+    assert!(request.starts_with("POST / HTTP/"), "{request}");
+    assert!(
+        request
+            .to_lowercase()
+            .contains("content-type: multipart/form-data"),
+        "{request}"
+    );
+    assert!(request.contains(r#"name="mysubmit""#), "{request}");
+    assert!(request.contains("Replace"), "{request}");
+    assert!(
+        request.contains(r#"name="archive"; filename="channel.zip""#),
+        "{request}"
+    );
+    assert!(request.contains("PK\x03\x04channel"), "{request}");
+    assert_eq!(resp.text(), "Install Success");
+}
+
+#[test]
+fn a_digest_challenge_is_answered_with_the_user_and_never_the_password() {
+    let (url, server) = digest_challenge_server();
+
+    let resp = Fetch::new()
+        .max_time(5)
+        .digest("rokudev", "hunter2")
+        .post_form(&url, &[])
+        .unwrap();
+
+    let authed = text(&server.join().unwrap());
+    assert!(authed.contains("Authorization: Digest "), "{authed}");
+    assert!(authed.contains(r#"username="rokudev""#), "{authed}");
+    assert!(!authed.contains("hunter2"), "{authed}");
+    assert_eq!(resp.status, 200);
+    assert_eq!(resp.text(), "Install Success");
 }
 
 #[test]
