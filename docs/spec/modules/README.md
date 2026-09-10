@@ -189,6 +189,10 @@ Four actions, and what each does to the module's data:
   as such.
 - **MOD-33** (SHIPPED) - The server refuses to uninstall a module another enabled module still
   depends on, and names the dependant.
+- **MOD-52** (SHIPPED) - The server refuses to **update** a module past the range an enabled
+  dependant declares, and names the dependant. A dependency's range is enforced in both
+  directions or in neither: enforcing it only when the dependant installs lets a peer walk away
+  from it, and the dependant is then the one that cannot update.
 
 **MOD-34** (SHIPPED) - Uninstalling a module never touches media on disk. A downloads module
 leaves the files it fetched exactly where they are, and the library keeps observing them

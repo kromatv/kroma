@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { MODULE_SCHEMA_VERSION } from '@kromatv/registry';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { checkCommand, importProblems, specifierOf } from './check';
+import { checkCommand, importProblems, specifierOf, unsatisfiableRanges } from './check';
 
 const PROJECT = '/modules/tv.acme.notes';
 const FILE = join(PROJECT, 'ui/src/page.tsx');
@@ -122,5 +122,36 @@ describe('checkCommand', () => {
     expect(code).toBe(1);
     expect(said()).toContain('no tsconfig.json beside the frontend');
     expect(said()).toContain("is the kit's private alias");
+  });
+});
+
+describe('unsatisfiableRanges', () => {
+  const project = (id: string, version: string, dependencies?: Record<string, string>) =>
+    ({ dir: id, manifest: { id, version, dependencies }, server: null, ui: null }) as never;
+
+  it('names a peer that has moved past a declared range', () => {
+    const tree = [
+      project('tv.kroma.torrents', '0.6.6'),
+      project('tv.kroma.acquisition', '0.3.9', { 'tv.kroma.torrents': '^0.3.0' }),
+    ];
+
+    expect(unsatisfiableRanges(tree)).toEqual([
+      'tv.kroma.acquisition: needs tv.kroma.torrents@^0.3.0 but this tree has 0.6.6',
+    ]);
+  });
+
+  it('accepts a floor the peer clears', () => {
+    const tree = [
+      project('tv.kroma.torrents', '0.6.6'),
+      project('tv.kroma.acquisition', '0.3.9', { 'tv.kroma.torrents': '>=0.3.0' }),
+    ];
+
+    expect(unsatisfiableRanges(tree)).toEqual([]);
+  });
+
+  it('says nothing about a dependency that lives outside this tree', () => {
+    const tree = [project('tv.kroma.acquisition', '0.3.9', { 'com.someone.else': '^1.0.0' })];
+
+    expect(unsatisfiableRanges(tree)).toEqual([]);
   });
 });

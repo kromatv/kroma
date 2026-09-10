@@ -3,7 +3,7 @@
 
 # Requirement index
 
-410 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+411 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -330,6 +330,7 @@
 - **MOD-49** (AGREED) - Installing from a registry the operator added is gated once, per
 - **MOD-50** (AGREED) - A module that has disappeared from every configured registry is flagged
 - **MOD-51** (SHIPPED) - It may not read or write the server's own credentials. The settings
+- **MOD-52** (SHIPPED) - The server refuses to **update** a module past the range an enabled
 
 ## PLAY - [playback](playback/)
 
