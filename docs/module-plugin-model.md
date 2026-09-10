@@ -243,14 +243,24 @@ the core database, event publish, notifications, session lookup and permission
 checks, i18n with the module's own catalogue first, admin routes reverse-proxied
 under `/api/module/<id>/*`, a frontend remote.
 
-**The settings callback is not a way into the operator's credentials.** The keys
-only the core consumes (mail, LLM, the push private material) and the registry
-list the Store installs from are withheld on both directions of
-`/_host/setting{,s}`: a read answers the caller's own default, a patch naming one
-is refused. The core decides which keys those are, beside the defaults that
-declare them; the supervisor only asks, so it still knows nothing about what any
-module is for. A credential whose consumer IS a sidecar stays readable, because
-the callback is how it reaches the process that uses it.
+**The settings callback is not a way into the operator's credentials.** A key is
+reachable on `/_host/setting{,s}` only when the core declared that a module may
+reach it, beside the key's default. Anything else is withheld on both directions:
+a read answers the caller's own default, a patch naming one is refused. So the
+keys only the core consumes (mail, LLM, the push private material, the ticket
+signing key) and the registry list the Store installs from are withheld because
+they say so, and an identity the server mints for itself is withheld because
+nothing hands it out. The core owns that decision; the supervisor only asks, so
+it still knows nothing about what any module is for. A credential whose consumer
+IS a sidecar stays readable, because the callback is how it reaches the process
+that uses it.
+
+Withholding by default is what makes this survive the next key. The guard used to
+be a deny-list plus a test that swept key NAMES for `password`, `token`, `secret`
+and `credential`, and `mediaTicketKey` carries none of those words: it shipped
+readable until review caught it. The name sweep is still there, now checking that
+a credential-shaped name is never declared reachable, but it is the second net
+rather than the only one.
 
 Four gaps stand between that and "a module can do whatever we want":
 

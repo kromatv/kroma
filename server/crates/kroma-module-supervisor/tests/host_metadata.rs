@@ -2,11 +2,11 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use kroma_domain::metadata::{EpisodeInfo, MatchCandidate};
 use kroma_module_host::testing::StubHost;
-use kroma_module_supervisor::CoreOnlySettings;
+use kroma_module_supervisor::WithheldSettings;
 use tower::ServiceExt;
 
 const TOKEN: &str = "host-token";
-const NOTHING_WITHHELD: CoreOnlySettings = CoreOnlySettings(|_| false);
+const NOTHING_WITHHELD: WithheldSettings = WithheldSettings(|_| false);
 
 fn dune() -> MatchCandidate {
     MatchCandidate {

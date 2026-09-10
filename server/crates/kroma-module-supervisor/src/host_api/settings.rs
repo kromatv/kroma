@@ -7,11 +7,11 @@ use axum::{Extension, Json};
 use kroma_module_host::HostCtx;
 use serde_json::{json, Value};
 
-/// Asks the core whether a settings key is its own. `true` withholds that key, so
+/// Asks the core whether a settings key is withheld from a module. `true` means
 /// no sidecar reads or writes it through the callback: the supervisor carries the
 /// question, the core owns the answer.
 #[derive(Clone, Copy)]
-pub struct CoreOnlySettings(pub fn(&str) -> bool);
+pub struct WithheldSettings(pub fn(&str) -> bool);
 
 #[derive(serde::Deserialize)]
 pub(super) struct SettingQuery {
@@ -35,10 +35,10 @@ fn asked_with(q: &SettingQuery) -> Value {
 
 pub(super) async fn get_setting<S: HostCtx>(
     State(host): State<S>,
-    Extension(CoreOnlySettings(core_only)): Extension<CoreOnlySettings>,
+    Extension(WithheldSettings(withheld)): Extension<WithheldSettings>,
     Query(q): Query<SettingQuery>,
 ) -> Json<Value> {
-    if core_only(&q.key) {
+    if withheld(&q.key) {
         tracing::warn!(key = %q.key, "a module asked for a setting the core keeps to itself");
         return Json(json!({ "value": asked_with(&q) }));
     }
@@ -52,10 +52,10 @@ pub(super) async fn get_setting<S: HostCtx>(
 
 pub(super) async fn set_settings<S: HostCtx>(
     State(host): State<S>,
-    Extension(CoreOnlySettings(core_only)): Extension<CoreOnlySettings>,
+    Extension(WithheldSettings(withheld)): Extension<WithheldSettings>,
     Json(body): Json<SettingsPatch>,
 ) -> StatusCode {
-    if let Some(key) = body.patch.keys().find(|key| core_only(key)) {
+    if let Some(key) = body.patch.keys().find(|key| withheld(key)) {
         tracing::warn!(key = %key, "refusing a module's write to a setting the core keeps to itself");
         return StatusCode::FORBIDDEN;
     }

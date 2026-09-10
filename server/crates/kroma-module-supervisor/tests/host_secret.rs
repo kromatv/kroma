@@ -10,11 +10,11 @@
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use kroma_module_host::testing::StubHost;
-use kroma_module_supervisor::CoreOnlySettings;
+use kroma_module_supervisor::WithheldSettings;
 use tower::ServiceExt;
 
 const TOKEN: &str = "host-token";
-const NOTHING_WITHHELD: CoreOnlySettings = CoreOnlySettings(|_| false);
+const NOTHING_WITHHELD: WithheldSettings = WithheldSettings(|_| false);
 
 async fn get(host: StubHost, uri: &str, token: Option<&str>) -> (StatusCode, String) {
     let mut req = Request::builder().method("GET").uri(uri);

@@ -176,3 +176,55 @@ async fn a_sidecar_still_saves_the_settings_it_owns() {
     assert_eq!(t.state.settings.get("acqEnabled"), json!(true));
     assert_eq!(t.state.settings.get("vpnWgConfig"), json!("[Interface]"));
 }
+
+#[tokio::test]
+async fn an_identity_the_server_minted_for_itself_never_reaches_a_sidecar() {
+    let t = test_app();
+    let instance = crate::services::settings::ensure_instance_id(&t.state.settings, &t.state.db);
+    let stats = crate::services::settings::stats::ensure_identity(&t.state.settings, &t.state.db);
+
+    let mut answers = Vec::new();
+    for key in ["instanceId", crate::services::stats::ID_KEY] {
+        let uri = format!("/api/_host/setting?key={key}&kind=str&default=");
+        answers.push(get(&t.app, &uri, Some(HOST_TOKEN)).await);
+    }
+
+    assert!(!instance.is_empty() && !stats.is_empty(), "both are minted");
+    for (status, body) in &answers {
+        assert_eq!(*status, StatusCode::OK);
+        assert_eq!(*body, json!({ "value": "" }));
+        assert!(!body.to_string().contains(&instance));
+        assert!(!body.to_string().contains(&stats));
+    }
+}
+
+#[tokio::test]
+async fn a_key_no_declaration_names_is_withheld_in_both_directions() {
+    let t = test_app();
+    t.state
+        .settings
+        .set_internal(&t.state.db, "undeclaredSecret", json!("minted-by-nobody"));
+
+    let (read_status, read) = get(
+        &t.app,
+        "/api/_host/setting?key=undeclaredSecret&kind=str&default=",
+        Some(HOST_TOKEN),
+    )
+    .await;
+    let (write_status, _) = send(
+        &t.app,
+        "POST",
+        "/api/_host/settings",
+        Some(HOST_TOKEN),
+        Some(json!({ "patch": { "undeclaredSecret": "mine now" } })),
+    )
+    .await;
+
+    assert_eq!(read_status, StatusCode::OK);
+    assert_eq!(read, json!({ "value": "" }));
+    assert_eq!(write_status, StatusCode::FORBIDDEN);
+    assert_eq!(
+        t.state.settings.get_str("undeclaredSecret", ""),
+        "minted-by-nobody"
+    );
+}
