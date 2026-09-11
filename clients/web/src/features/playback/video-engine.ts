@@ -12,7 +12,7 @@ import {
   type EngineDecision,
   hlsBufferConfig,
   itemBufferPlan,
-  shakaStreamingConfig,
+  shakaConfig,
   type WaitReason,
 } from '@kromatv/core';
 import type { WebEnginePref } from '#web/features/playback/engine-pref';
@@ -114,6 +114,8 @@ export interface AttachSourceOptions {
   onRefused: (status: number) => void;
 }
 
+const MEDIA_ERR_ABORTED = 1;
+
 function seekToAnchor(v: HTMLVideoElement, startSec: number): void {
   if (startSec <= 0.5) return;
   const apply = () => {
@@ -176,6 +178,9 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
   // Checked before `useNativeHls`: an explicit Shaka override wins, so the choice
   // is honoured even on Safari, where native HLS would otherwise take it.
   if (useShaka) {
+    const onMediaError = () => {
+      if (!destroyed && v.error?.code !== MEDIA_ERR_ABORTED) onGiveUp();
+    };
     // Shaka reports the same relative clock as hls.js, so `baseSec` applies here too.
     void import('shaka-player/dist/shaka-player.compiled.js').then((mod) => {
       if (destroyed) return;
@@ -187,10 +192,11 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
       }
       const player = new shaka.Player();
       shakaRef.current = player;
-      player.configure({ streaming: shakaStreamingConfig(plan) });
+      player.configure(shakaConfig(plan));
+      v.addEventListener('error', onMediaError);
       player
         .attach(v)
-        .then(() => player.load(url))
+        .then(() => player.load(url, 0))
         .catch((e: unknown) => {
           const status = shakaHttpStatus(e);
           if (!destroyed && status !== null) onRefused(status);
@@ -198,6 +204,7 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
     });
     return () => {
       destroyed = true;
+      v.removeEventListener('error', onMediaError);
       void shakaRef.current?.destroy();
       shakaRef.current = null;
       v.removeAttribute('src');

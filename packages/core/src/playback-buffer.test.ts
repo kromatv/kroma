@@ -6,7 +6,7 @@ import {
   isPlayableAt,
   itemBufferPlan,
   reachableBufferEnd,
-  shakaStreamingConfig,
+  shakaConfig,
 } from './playback-buffer';
 
 const FIRST_FILE = MediaFileId.parse('f1');
@@ -185,7 +185,7 @@ describe('engine config', () => {
   it('hands Shaka the plan and a stall detector that gives up waiting sooner', () => {
     const plan = bufferPlan(4_000_000);
 
-    const cfg = shakaStreamingConfig(plan);
+    const cfg = shakaConfig(plan).streaming;
 
     expect(cfg.bufferingGoal).toBe(plan.forwardSec);
     expect(cfg.bufferBehind).toBe(plan.backSec);
@@ -193,8 +193,14 @@ describe('engine config', () => {
     expect(cfg.stallSkip).toBeGreaterThan(0.1);
   });
 
+  it('has Shaka place a segment by its own timestamps rather than the playlist sum', () => {
+    const cfg = shakaConfig(bufferPlan(4_000_000));
+
+    expect(cfg.manifest.hls.ignoreManifestTimestampsInSegmentsMode).toBe(true);
+  });
+
   it('agrees with the readout on what counts as a skippable hole', () => {
-    const hole = shakaStreamingConfig(bufferPlan(4_000_000)).gapDetectionThreshold;
+    const hole = shakaConfig(bufferPlan(4_000_000)).streaming.gapDetectionThreshold;
 
     expect(hlsBufferConfig(bufferPlan(4_000_000)).maxBufferHole).toBe(hole);
     expect(reachableBufferEnd(ranges([[hole, 90]]), 0)).toBe(90);
