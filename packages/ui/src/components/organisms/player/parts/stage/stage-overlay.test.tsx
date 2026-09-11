@@ -37,22 +37,28 @@ describe('the stage while it waits', () => {
     expect(screen.getByRole('progressbar')).toBeTruthy();
   });
 
-  it('names what it waits on once the wait has lasted', () => {
+  it('never writes the wait across the picture, however long it lasts', () => {
     overlay({ waiting: true, reason: 'buffering' });
-    pass(250);
+
+    pass(10_000);
+
     expect(screen.queryByText('Buffering…')).toBeNull();
-
-    pass(2500);
-
-    expect(screen.getByText('Buffering…')).toBeTruthy();
   });
 
-  it('says plain loading where the engine cannot tell why', () => {
+  it('names the wait to assistive tech', () => {
+    overlay({ waiting: true, reason: 'buffering' });
+
+    pass(250);
+
+    expect(screen.getByLabelText('Buffering…')).toBeTruthy();
+  });
+
+  it('calls it plain loading where the engine cannot tell why', () => {
     overlay({ waiting: true });
 
-    pass(3000);
+    pass(250);
 
-    expect(screen.getByText('Loading…')).toBeTruthy();
+    expect(screen.getByLabelText('Loading…')).toBeTruthy();
   });
 
   it('puts the failure up instead of a spinner', () => {
