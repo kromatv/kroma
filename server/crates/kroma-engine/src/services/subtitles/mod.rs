@@ -151,7 +151,7 @@ pub fn generate(
 
     let provider = spec.mode.provider();
     let id = stable_id(item_id, provider, &spec.target_lang);
-    let dir = data_dir.join("subs").join("downloaded");
+    let dir = downloaded_dir(data_dir);
     std::fs::create_dir_all(&dir)
         .map_err(|e| format!("could not create the subtitle cache dir: {e}"))?;
     let path = dir.join(format!("{id}.vtt"));
@@ -171,6 +171,11 @@ pub fn generate(
     db::insert_downloaded_sub(pool, &sub)
         .map_err(|e| format!("could not record the subtitle in the database: {e}"))?;
     Ok(sub)
+}
+
+/// Where the WebVTT of a generated or downloaded subtitle is kept.
+pub fn downloaded_dir(data_dir: &Path) -> std::path::PathBuf {
+    data_dir.join("subs").join("downloaded")
 }
 
 // Deterministic, so re-generating the same language replaces rather than duplicates.
