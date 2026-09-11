@@ -234,7 +234,7 @@ describe('attachMediaSource HLS master via Shaka', () => {
     expect(H.shakaInstances).toHaveLength(1);
     const inst = H.shakaInstances[0];
     expect(inst?.attach).toHaveBeenCalledWith(fv.el);
-    expect(inst?.load).toHaveBeenCalledWith('hls:w1:true:600:2');
+    expect(inst?.load).toHaveBeenCalledWith('hls:w1:true:600:2', 0);
     // Shaka's default bufferingGoal is only 10s.
     const cfg = inst?.configure.mock.calls[0]?.[0] as {
       streaming?: { bufferingGoal?: number };
@@ -277,5 +277,42 @@ describe('attachMediaSource HLS master via Shaka', () => {
     await tick();
     await tick();
     expect(H.shakaInstances[0]?.load).toHaveBeenCalled();
+  });
+
+  it('gives up on a picture the decoder refused, which Shaka recovers silently into nothing', async () => {
+    const fv = fakeVideo();
+    const opts = shakaOpts({ v: fv.el });
+    attachMediaSource(opts);
+    await tick();
+
+    fv.set('error', { code: 3 });
+    fv.fire('error');
+
+    expect(opts.onGiveUp).toHaveBeenCalledTimes(1);
+  });
+
+  it('takes an aborted fetch for what it is, not a failure', async () => {
+    const fv = fakeVideo();
+    const opts = shakaOpts({ v: fv.el });
+    attachMediaSource(opts);
+    await tick();
+
+    fv.set('error', { code: 1 });
+    fv.fire('error');
+
+    expect(opts.onGiveUp).not.toHaveBeenCalled();
+  });
+
+  it('stops listening for errors once the source is detached', async () => {
+    const fv = fakeVideo();
+    const opts = shakaOpts({ v: fv.el });
+    const cleanup = attachMediaSource(opts);
+    await tick();
+
+    cleanup();
+    fv.set('error', { code: 3 });
+    fv.fire('error');
+
+    expect(opts.onGiveUp).not.toHaveBeenCalled();
   });
 });

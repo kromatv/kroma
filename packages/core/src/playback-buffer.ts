@@ -133,18 +133,29 @@ export function hlsBufferConfig(plan: BufferPlan) {
 }
 
 /**
- * The `streaming` half of a Shaka config for `plan`. Shaka bounds its buffer in
- * seconds only, so `forwardSec` is the whole of what keeps it inside the byte
- * budget; its stall detector otherwise sits on a hole for a full second before
- * stepping over it.
+ * The Shaka config for a remux of `plan`. Shaka bounds its buffer in seconds
+ * only, so `forwardSec` is the whole of what keeps it inside the byte budget;
+ * its stall detector otherwise sits on a hole for a full second before stepping
+ * over it.
+ *
+ * Segments land at their own timestamps, not at the playlist's `EXTINF` sum.
+ * ffmpeg rounds `EXTINF` to the millisecond, and writes a copied video's a few
+ * frames off its fragments, so Shaka's default opens a hole or an overlap at
+ * every cut: Chrome discards the frames an overlap replaces along with every
+ * frame decoded from them, and an open-GOP source cannot decode across a hole.
+ * This relies on the remux's fragments counting from zero, as ffmpeg's fMP4
+ * output does under `-copyts`.
  */
-export function shakaStreamingConfig(plan: BufferPlan) {
+export function shakaConfig(plan: BufferPlan) {
   return {
-    bufferingGoal: plan.forwardSec,
-    bufferBehind: plan.backSec,
-    rebufferingGoal: 4,
-    gapDetectionThreshold: SKIPPABLE_GAP_SEC,
-    stallThreshold: 0.3,
-    stallSkip: 0.2,
+    streaming: {
+      bufferingGoal: plan.forwardSec,
+      bufferBehind: plan.backSec,
+      rebufferingGoal: 4,
+      gapDetectionThreshold: SKIPPABLE_GAP_SEC,
+      stallThreshold: 0.3,
+      stallSkip: 0.2,
+    },
+    manifest: { hls: { ignoreManifestTimestampsInSegmentsMode: true } },
   };
 }

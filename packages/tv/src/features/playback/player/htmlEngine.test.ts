@@ -256,7 +256,7 @@ describe('HtmlEngine Shaka master', () => {
     expect(shakaMock.installAll).toHaveBeenCalled();
     expect(shakaMock.attach).toHaveBeenCalledWith(fv.el);
     await tick();
-    expect(shakaMock.load).toHaveBeenCalledWith('master:vid1:false:0:2');
+    expect(shakaMock.load).toHaveBeenCalledWith('master:vid1:false:0:2', 0);
     expect(fv.get('src')).toBe('');
   });
 
