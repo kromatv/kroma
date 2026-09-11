@@ -17,7 +17,7 @@ import {
   reachableBufferEnd,
   recoverMse,
   STALL_NUDGE_SEC,
-  shakaStreamingConfig,
+  shakaConfig,
 } from '@kromatv/core';
 import {
   type EngineListeners,
@@ -212,12 +212,12 @@ export class HtmlEngine implements TvEngine {
       }
       const player = new shaka.Player();
       this.shaka = player;
-      player.configure({ streaming: shakaStreamingConfig(this.plan) });
+      player.configure(shakaConfig(this.plan));
       // Shaka reports the same relative clock as hls.js, so `baseSec` applies
       // unchanged.
       player
         .attach(this.v)
-        .then(() => player.load(url))
+        .then(() => player.load(url, 0))
         .catch(() => undefined);
     });
   }
