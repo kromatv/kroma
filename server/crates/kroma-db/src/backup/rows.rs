@@ -22,6 +22,14 @@ pub(super) fn dump_query(conn: &Connection, sql: &str) -> Result<Vec<Map<String,
     Ok(out)
 }
 
+fn columns(conn: &Connection, table: &str) -> Result<std::collections::HashSet<String>> {
+    let names = conn
+        .prepare("SELECT name FROM pragma_table_info(?1)")?
+        .query_map([table], |r| r.get::<_, String>(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    Ok(names)
+}
+
 // `INSERT OR REPLACE` each row into `table` (replace-by-primary-key). Column
 // names are validated as plain identifiers before interpolation.
 pub(super) fn restore_rows(
@@ -29,9 +37,13 @@ pub(super) fn restore_rows(
     table: &str,
     rows: &[Map<String, Value>],
 ) -> Result<usize> {
+    let known = columns(conn, table)?;
     let mut written = 0;
     for row in rows {
-        let cols: Vec<&String> = row.keys().filter(|c| is_ident(c)).collect();
+        let cols: Vec<&String> = row
+            .keys()
+            .filter(|c| is_ident(c) && known.contains(c.as_str()))
+            .collect();
         if cols.is_empty() {
             continue;
         }
@@ -93,8 +105,48 @@ pub(super) fn is_ident(s: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::backup::import_portable;
     use crate::backup::test_support::*;
+    use crate::backup::{export_portable, import_portable, TABLES};
+
+    #[test]
+    fn a_column_the_target_does_not_have_is_dropped_rather_than_failing_the_restore() {
+        let dst = fresh_pool("unknown-column");
+        let mut doc = empty_doc();
+        doc.tables.insert(
+            "users".into(),
+            vec![Map::from_iter([
+                ("id".to_string(), Value::from("u1")),
+                ("email".to_string(), Value::from("a@b.c")),
+                ("username".to_string(), Value::from("Al")),
+                ("password_hash".to_string(), Value::from("ph")),
+                ("created_at".to_string(), Value::from("t")),
+                ("added_by_a_newer_server".to_string(), Value::from(1)),
+            ])],
+        );
+
+        let summary = import_portable(&dst, &data_dir(&dst), &doc, false).unwrap();
+
+        assert_eq!(summary, vec![("users".to_string(), 1)]);
+    }
+
+    #[test]
+    fn every_table_a_backup_carries_comes_back_through_a_restore() {
+        let src = fresh_pool("every-src");
+        for table in TABLES {
+            seed_a_row_in(&src, table);
+        }
+        let doc = export_portable(&src, &data_dir(&src)).unwrap();
+        let dst = fresh_pool("every-dst");
+
+        import_portable(&dst, &data_dir(&dst), &doc, false).unwrap();
+
+        let empty: Vec<&str> = TABLES
+            .iter()
+            .copied()
+            .filter(|t| count(&dst, t) == 0)
+            .collect();
+        assert_eq!(empty, Vec::<&str>::new());
+    }
 
     #[test]
     fn a_row_whose_columns_are_all_unsafe_identifiers_is_skipped() {

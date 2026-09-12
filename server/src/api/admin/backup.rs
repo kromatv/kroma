@@ -146,6 +146,7 @@ pub async fn import_backup(
     // the rescan shares the single-flight guard with /api/scan and watch-triggered
     // runs, instead of racing a second walk + sync on the same DB.
     state.settings.reload(&state.db);
+    state.jobs.reload_schedules(&state.db);
     state.events.publish(ServerEvent::SettingsUpdated);
     let rescan_started = !matches!(
         state.jobs.trigger(

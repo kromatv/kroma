@@ -89,6 +89,30 @@ impl JobManager {
         }
     }
 
+    /// Re-read every override from the database. A job whose row is gone goes
+    /// back on its default schedule.
+    pub fn reload_schedules(&self, pool: &db::Pool) {
+        let remote: std::collections::HashMap<&str, Option<String>> = self
+            .remote
+            .read()
+            .unwrap()
+            .iter()
+            .map(|(key, job)| (*key, job.schedule.clone()))
+            .collect();
+        for (job, st) in self.schedules.write().unwrap().iter_mut() {
+            let schedule = match self.jobs.get(job) {
+                Some(b) => b.schedule.map(str::to_string),
+                None => remote.get(job.as_str()).cloned().flatten(),
+            };
+            *st = ScheduleState {
+                schedule,
+                enabled: true,
+                customized: false,
+            };
+        }
+        self.load_schedules(pool);
+    }
+
     /// Persists the override. `schedule = Some(None)` clears it (manual-only).
     pub fn update_schedule(
         &self,
@@ -136,6 +160,58 @@ mod tests {
     use super::*;
     use crate::services::jobs::test_support::{test_pool, TEST_BUILTIN};
     use crate::services::jobs::{JobContext, RemoteRun};
+
+    #[test]
+    fn reloading_puts_a_job_whose_override_is_gone_back_on_its_default() {
+        let pool = test_pool();
+        let mut m = JobManager::new();
+        m.register(&TEST_BUILTIN);
+        m.update_schedule(&pool, JobKey("test.job"), None, Some(false))
+            .unwrap();
+        pool.get()
+            .unwrap()
+            .execute("DELETE FROM job_schedules", [])
+            .unwrap();
+
+        m.reload_schedules(&pool);
+
+        assert_eq!(
+            m.jobs_for_trigger(Trigger::LibraryChange),
+            vec![JobKey("test.job")]
+        );
+    }
+
+    #[test]
+    fn reloading_puts_a_module_job_back_on_the_schedule_it_registered_with() {
+        let pool = test_pool();
+        let m = JobManager::new();
+        let run: RemoteRun = Arc::new(|_ctx: &JobContext| Ok(()));
+        m.register_remote(
+            "mod.job",
+            Category::Maintenance,
+            Some("0 4 * * *".into()),
+            run,
+        );
+        m.update_schedule(
+            &pool,
+            JobKey("mod.job"),
+            Some(Some("0 5 * * *".into())),
+            None,
+        )
+        .unwrap();
+        pool.get()
+            .unwrap()
+            .execute("DELETE FROM job_schedules", [])
+            .unwrap();
+
+        m.reload_schedules(&pool);
+
+        let schedules = m.schedules.read().unwrap();
+        assert_eq!(
+            schedules[&JobKey("mod.job")].schedule.as_deref(),
+            Some("0 4 * * *")
+        );
+    }
 
     #[test]
     fn register_remote_is_resolvable() {
