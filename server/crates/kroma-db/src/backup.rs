@@ -27,6 +27,8 @@ mod module_stores;
 mod rows;
 
 #[cfg(test)]
+mod left_out;
+#[cfg(test)]
 mod test_support;
 
 use module_stores::{dump_store, module_stores, restore_modules};
@@ -35,19 +37,6 @@ use rows::{dump_query, restore_rows};
 // On-disk shape version; bump on an incompatible change.
 const VERSION: u32 = 1;
 
-// Tables carried by a portable backup. Everything else (catalogue, embeddings,
-// AI sections, sessions, job run history, and the machine-specific `downloads`
-// torrent state) is regenerated and left out. `settings` carries the VPN /
-// naming / acquisition preferences; `requests` + `wanted` carry the users' media
-// wishlist and its episode ledger. `progress`/`watched`/`my_list` are item-keyed
-// user state that re-links by `item_id` once a re-scan recreates the catalogue
-// with matching ids.
-//
-// A module's own tables are NOT named here any more -- they are not in this
-// database. Each installed module's private store is walked whole (see
-// [`module_stores`]), which is both how the admin's indexer keys and download
-// client passwords still travel and how this list stopped needing to know which
-// modules exist.
 const TABLES: &[&str] = &[
     "users",
     "settings",
@@ -59,6 +48,12 @@ const TABLES: &[&str] = &[
     "progress",
     "watched",
     "my_list",
+    "passkeys",
+    "notification_prefs",
+    "reports",
+    "tmdb_pin",
+    "acq_file_tmdb",
+    "downloaded_subtitles",
 ];
 
 // Settings that name this machine at the statistics collector rather than

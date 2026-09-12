@@ -63,6 +63,8 @@ mod it_auth;
 #[cfg(test)]
 mod it_auth_faults;
 #[cfg(test)]
+mod it_backup;
+#[cfg(test)]
 mod it_cast;
 #[cfg(test)]
 mod it_content;
