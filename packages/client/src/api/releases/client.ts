@@ -5,7 +5,7 @@ import { ReleasesView } from './schemas';
 export default function releasesApi(ctx: RequestContext) {
   return {
     list: () => ctx.get('/releases', ReleasesView),
-    /** Records that the reader was shown `version`, so it stops opening on its own. */
+    /** Records that the reader was shown `version`, so `unseen` stops naming it. */
     markSeen: (version: string) => ctx.post('/releases/seen', { body: { version } }),
   };
 }

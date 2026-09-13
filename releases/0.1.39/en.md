@@ -1,8 +1,3 @@
-## Action required
-
-- Before updating, export a backup in **Admin > Backup**. This version changes the database in a way no older version can undo. On Docker, the image is now `ghcr.io/kromatv/kroma`.
-- Then update your modules in **Admin > Modules > Updates**, or they will not start. On iPhone, iPad and Apple TV, install KROMA TV from https://testflight.apple.com/join/ZjgQdunW
-
 ## New
 
 ### A suggestion when a film ends

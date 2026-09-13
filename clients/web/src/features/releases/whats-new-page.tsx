@@ -3,6 +3,7 @@ import { Box, EmptyState, PageHeader, Row, StatusDot, Text, useBreakpoint } from
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ReleaseArticle } from '#web/features/releases/release-article';
+import { useMarkReleaseSeen } from '#web/features/releases/use-mark-release-seen';
 import { VersionList } from '#web/features/releases/version-list';
 import { userQueries } from '#web/shared/lib/queries';
 import { PageFrame } from '#web/shared/ui';
@@ -12,6 +13,7 @@ export function WhatsNewPage() {
   const step = useBreakpoint();
   const wide = step === 'lg' || step === 'tv';
   const { data, isPending } = useQuery(userQueries.releases());
+  useMarkReleaseSeen(data?.unseen ?? null);
   const [picked, setPicked] = useState<string | null>(null);
   const releases = data?.releases ?? [];
   const shown = releases.find(({ version }) => version === picked) ?? releases[0];
