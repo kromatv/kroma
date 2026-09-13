@@ -88,4 +88,13 @@ describe('useWhatsNewOnLaunch', () => {
 
     expect(app.go).not.toHaveBeenCalled();
   });
+
+  it('leaves the reader home when the list cannot be fetched', async () => {
+    app.list.mockRejectedValue(new Error('offline'));
+
+    renderHook(() => useWhatsNewOnLaunch());
+    await settle();
+
+    expect(app.go).not.toHaveBeenCalled();
+  });
 });

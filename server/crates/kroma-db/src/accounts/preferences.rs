@@ -117,4 +117,28 @@ mod tests {
         set_user_language(&p, &u.id, None).unwrap();
         assert!(user_by_id(&p, &u.id).unwrap().unwrap().language.is_none());
     }
+
+    #[test]
+    fn the_last_release_seen_starts_empty_and_reads_back_what_was_set() {
+        let p = pool();
+        let u = mk_user(&p, "a@b.c", "alice");
+        let before = whats_new_seen(&p, &u.id).unwrap();
+
+        set_whats_new_seen(&p, &u.id, "0.1.39").unwrap();
+
+        assert_eq!(before, None);
+        assert_eq!(
+            whats_new_seen(&p, &u.id).unwrap().as_deref(),
+            Some("0.1.39")
+        );
+    }
+
+    #[test]
+    fn reading_the_last_release_seen_of_an_unknown_account_is_an_error() {
+        let p = pool();
+
+        let seen = whats_new_seen(&p, "nobody");
+
+        assert!(seen.is_err());
+    }
 }

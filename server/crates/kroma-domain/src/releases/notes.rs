@@ -315,4 +315,60 @@ mod tests {
             serde_json::json!({ "title": "A title", "body": "A paragraph." })
         );
     }
+
+    #[test]
+    fn joins_two_paragraphs_under_one_highlight_into_one_body() {
+        let markdown = "
+            ## New
+
+            ### A title
+            The first paragraph.
+
+            The second paragraph.
+        ";
+
+        let notes = ReleaseNotes::parse(markdown);
+
+        assert_eq!(
+            notes.highlights[0].body,
+            "The first paragraph. The second paragraph."
+        );
+    }
+
+    #[test]
+    fn drops_a_paragraph_that_comes_before_any_highlight_title() {
+        let markdown = "
+            ## New
+
+            A stray line with no title above it.
+
+            ### A title
+            Its paragraph.
+        ";
+
+        let notes = ReleaseNotes::parse(markdown);
+
+        assert_eq!(notes.highlights.len(), 1);
+        assert_eq!(notes.highlights[0].body, "Its paragraph.");
+    }
+
+    #[test]
+    fn keeps_a_bracket_that_opens_no_link_as_plain_text() {
+        let markdown = "
+            ## Fixed
+
+            - Season [2 no longer repeats.
+            - A title [with](a half link stays.
+        ";
+
+        let notes = ReleaseNotes::parse(markdown);
+
+        assert_eq!(
+            notes.fixed,
+            vec![
+                "Season [2 no longer repeats.",
+                "A title [with](a half link stays.",
+            ]
+        );
+    }
 }

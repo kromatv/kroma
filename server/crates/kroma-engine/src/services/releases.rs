@@ -219,4 +219,26 @@ mod tests {
         assert_eq!(version_key("0.1"), None);
         assert_eq!(version_key("0.1.2.3"), None);
     }
+
+    #[test]
+    fn shows_nothing_when_the_running_version_is_not_a_release_version() {
+        let releases = catalog();
+
+        let shown = view(&releases, "dev", "en", true);
+
+        assert!(shown.is_empty());
+    }
+
+    #[test]
+    fn never_opens_a_release_whose_version_it_cannot_order() {
+        let shown = vec![ReleaseView {
+            version: "next".into(),
+            date: None,
+            notes: ReleaseNotes::parse("## New\n\n### A title\nA paragraph."),
+        }];
+
+        let opened = unseen(&shown, None);
+
+        assert_eq!(opened, None);
+    }
 }
