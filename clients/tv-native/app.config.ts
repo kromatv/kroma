@@ -9,16 +9,16 @@
 // TV app is the same client compiled differently, so it must not disagree with
 // its own siblings about what version it is.
 //
-// WHY app.json's iOS BUNDLE ID SAYS `.mobile` ON A TELEVISION APP. Because it is
-// not this app's identifier, it is the PRODUCT's: App Store Connect record
-// 6793457018 carries both the iOS/iPadOS app and this one as two platforms of a
-// single listing (Apple calls it a universal purchase), and Apple requires every
-// platform in one record to share that record's bundle ID - which was minted for
-// the phone app first. So `clients/mobile` and `clients/tv-native` both build
-// `tv.kroma.mobile`, differing only in the SDK they are built against, and one
-// device only ever sees one of them. Android is unaffected and stays
-// `tv.kroma.tv`, because Play has no such notion and the two APKs are two apps.
-// Splitting them again means two separate App Store listings, not a rename.
+// WHY app.json's iOS BUNDLE ID IS THE PHONE APP'S TOO. Because it is not this
+// app's identifier, it is the PRODUCT's: one App Store Connect record carries
+// both the iOS/iPadOS app and this one as two platforms of a single listing
+// (Apple calls it a universal purchase), and Apple requires every platform in one
+// record to share that record's bundle ID. So `clients/mobile` and
+// `clients/tv-native` both build `tv.kroma.app`, differing only in the SDK they
+// are built against, and one device only ever sees one of them. Android is
+// unaffected and stays `tv.kroma.tv`, because Play has no such notion and the
+// two APKs are two apps. Splitting them again means two separate App Store
+// listings, not a rename.
 
 import path from 'node:path';
 import type { ConfigContext, ExpoConfig } from 'expo/config';

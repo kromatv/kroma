@@ -20,7 +20,7 @@
   "vars": {
     // The published app's bundle id, sent as `apns-topic`. Mirrors
     // `bundleIdentifier` in clients/mobile/app.json.
-    "APNS_TOPIC": "tv.kroma.mobile"
+    "APNS_TOPIC": "tv.kroma.app"
   },
   // Two different questions, so two different limiters.
   "ratelimits": [

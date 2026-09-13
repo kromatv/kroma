@@ -7,7 +7,7 @@ notify a phone.
 
 A KROMA server is self-hosted by anybody. The KROMA app is published by one team.
 Apple and Google only accept credentials THEY issued to the account that owns
-the app, so an operator's own Apple key can never push to `tv.kroma.mobile`, no
+the app, so an operator's own Apple key can never push to `tv.kroma.app`, no
 matter what they paste into an admin form. That is why the admin console asks for
 nothing: the question was unanswerable, not merely tedious.
 
@@ -66,7 +66,7 @@ exist in exactly one place.
 | `FCM_SERVICE_ACCOUNT` | The whole Firebase service-account JSON |
 
 `APNS_TOPIC` is a plain var in `wrangler.jsonc`, not a secret: it is the app's
-bundle id, `tv.kroma.mobile`. It must change in lockstep with the bundle id.
+bundle id, `tv.kroma.app`. It must change in lockstep with the bundle id.
 
 ### Cloudflare is not a backup
 
@@ -107,7 +107,7 @@ misconfiguration rather than the wrong file. Always probe before uploading.
    | Field | Choose | Why |
    |---|---|---|
    | Environment | Sandbox & Production | The relay serves every server at once, so it sees TestFlight and Xcode tokens in the same second. It tries production and falls back to sandbox per token (`worker/apns.ts`). Apple suggests separate per-environment keys; that advice assumes one key per workflow and does not fit a shared relay. |
-   | Key Restriction | Team Scoped (All Topics) | Survives a bundle-id rename. A topic-scoped key dies permanently if `tv.kroma.mobile` is ever renamed, and cannot be edited. |
+   | Key Restriction | Team Scoped (All Topics) | Survives a bundle-id rename. A topic-scoped key dies permanently if `tv.kroma.app` is ever renamed, and cannot be edited. |
 
    **Both settings are irreversible once saved.** Apple says so on the page.
 4. **Continue** → **Register** → **Download**.
@@ -119,7 +119,7 @@ misconfiguration rather than the wrong file. Always probe before uploading.
 
 ```sh
 bun packages/push-relay/scripts/probe-apns.ts \
-  ~/Downloads/AuthKey_XXXXXXXXXX.p8 XXXXXXXXXX 29729UWWP2 tv.kroma.mobile
+  ~/Downloads/AuthKey_XXXXXXXXXX.p8 XXXXXXXXXX 29729UWWP2 tv.kroma.app
 ```
 
 It pushes to a deliberately bogus device token (64 zeros), so nothing reaches a
@@ -162,13 +162,13 @@ The app must be registered in a Firebase project under the exact package name in
 1. <https://console.firebase.google.com> → the project (KROMA is `kroma-media`)
    → **Project settings** → **General**
 2. Under **Your apps**, select the Android app whose package is
-   `tv.kroma.mobile`, or **Add app** if it is not there
+   `tv.kroma.app`, or **Add app** if it is not there
 3. Download `google-services.json` to `clients/mobile/`
 4. Point the app at it in `clients/mobile/app.json`:
 
 ```jsonc
 "android": {
-  "package": "tv.kroma.mobile",
+  "package": "tv.kroma.app",
   "googleServicesFile": "./google-services.json"
 }
 ```
@@ -177,7 +177,7 @@ This is a native change: `expo prebuild` + `expo run:android`, not a JS
 reload. A build made before this lands cannot register for push no matter what
 the relay holds.
 
-One file can serve several packages: KROMA's carries both `tv.kroma.mobile` and
+One file can serve several packages: KROMA's carries both `tv.kroma.app` and
 `tv.kroma.androidtv`. It is safe to commit: the Android API key inside it is
 public by design (it ships inside the APK) and is scoped by package name. FCM
 does NOT need a SHA-1 fingerprint registered; other Firebase products do.

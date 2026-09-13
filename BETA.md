@@ -24,7 +24,7 @@ testing someone else's server, ask them for its address (something like
 
 1. Install **TestFlight** from the App Store (Apple's free app).
 2. Open this link on your iPhone or iPad:
-   **https://testflight.apple.com/join/RvvRxgvV**
+   **https://testflight.apple.com/join/ZjgQdunW**
 3. Tap **Accept**, then **Install**.
 
 KROMA appears on your home screen like any other app, and TestFlight tells you

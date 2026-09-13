@@ -12,7 +12,7 @@ export const docs = {
  * link, so a tester joins on a phone and the television offers the same app.
  */
 export const join = {
-  testflight: 'https://testflight.apple.com/join/RvvRxgvV',
+  testflight: 'https://testflight.apple.com/join/ZjgQdunW',
   firebase: 'https://appdistribution.firebase.dev/i/3aa500cefb6aeb83',
 } as const;
 

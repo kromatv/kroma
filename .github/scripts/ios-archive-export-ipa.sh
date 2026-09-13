@@ -4,7 +4,7 @@
 # (ASC_KEY_ID / ASC_ISSUER_ID / ASC_PRIVATE_KEY), and optionally SDK (`iphoneos`
 # or `appletvos`) + ARTIFACT.
 #
-# Both apps sign as tv.kroma.mobile: App Store Connect record 6793457018 carries
+# Both apps sign as tv.kroma.app: App Store Connect record 6811609753 carries
 # iOS and tvOS as two platforms of one listing, and Apple requires them to share a
 # bundle id. They differ only by the SDK, so one script covers both; the App Store
 # profile is per platform, and the caller imports its own before this runs.

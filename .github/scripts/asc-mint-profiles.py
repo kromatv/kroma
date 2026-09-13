@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mint fresh App Store provisioning profiles for tv.kroma.mobile, base64-encoded
+"""Mint fresh App Store provisioning profiles for tv.kroma.app, base64-encoded
 for `gh secret set`. A profile goes state=INVALID the moment the App ID's
 capabilities change and Apple does not re-issue it.
 
@@ -19,7 +19,7 @@ import sys
 
 import asc_api as asc
 
-BUNDLE = "tv.kroma.mobile"
+BUNDLE = "tv.kroma.app"
 # (bundle id, profileType, output basename). Both platforms of one App Store
 # record share the bundle id, so the app's two profiles differ only by platform.
 # The Top Shelf extension is a SEPARATE App ID: without its own profile the tvOS
@@ -85,7 +85,7 @@ def main() -> int:
     jwt = asc.token()
 
     # `filter[identifier]` is a PREFIX match, not an exact one: asking for
-    # tv.kroma.mobile also returns tv.kroma.mobile.TopShelf. One query covers
+    # tv.kroma.app also returns tv.kroma.app.TopShelf. One query covers
     # both; each identifier is matched exactly below.
     found = {
         b["attributes"]["identifier"]: b["id"]

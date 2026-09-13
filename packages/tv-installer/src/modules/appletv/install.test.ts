@@ -10,7 +10,7 @@ vi.mock('./devicectl', async (original) => ({
 }));
 
 const plist = JSON.stringify({
-  CFBundleIdentifier: 'tv.kroma.mobile',
+  CFBundleIdentifier: 'tv.kroma.app',
   DTPlatformName: 'appletvos',
 });
 
@@ -69,7 +69,7 @@ describe('installAppleTv', () => {
       '--device',
       '00008110-000A1B2C3D4E5F6G',
       '--terminate-existing',
-      'tv.kroma.mobile',
+      'tv.kroma.app',
     ]);
   });
 
@@ -81,7 +81,7 @@ describe('installAppleTv', () => {
 
   it('refuses an app that was built for the simulator', async () => {
     vi.mocked(runOk).mockResolvedValue(
-      JSON.stringify({ CFBundleIdentifier: 'tv.kroma.mobile', DTPlatformName: 'appletvsimulator' }),
+      JSON.stringify({ CFBundleIdentifier: 'tv.kroma.app', DTPlatformName: 'appletvsimulator' }),
     );
 
     await expect(installAppleTv(salon)).rejects.toThrow(
@@ -90,7 +90,7 @@ describe('installAppleTv', () => {
   });
 
   it('refuses an app whose plist names no SDK at all', async () => {
-    vi.mocked(runOk).mockResolvedValue(JSON.stringify({ CFBundleIdentifier: 'tv.kroma.mobile' }));
+    vi.mocked(runOk).mockResolvedValue(JSON.stringify({ CFBundleIdentifier: 'tv.kroma.app' }));
 
     await expect(installAppleTv(salon)).rejects.toThrow('built for an unnamed SDK');
   });
