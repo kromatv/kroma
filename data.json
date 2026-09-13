@@ -21,6 +21,11 @@
       "clients": 0,
       "day": "2026-09-12",
       "instances": 0
+    },
+    {
+      "clients": 0,
+      "day": "2026-09-13",
+      "instances": 0
     }
   ],
   "installs": [],
@@ -32,6 +37,6 @@
     "statistics": 0,
     "usage": 0
   },
-  "updatedAt": 1789202862,
+  "updatedAt": 1789292506,
   "versions": []
 }
