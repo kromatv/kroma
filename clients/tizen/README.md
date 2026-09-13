@@ -41,6 +41,7 @@ version is known, so the release job also packages each tier on its own
 | file | runs on | floor in its `config.xml` |
 |---|---|---|
 | `KROMA-tizen-<v>.wgt` | every model, the gate chooses | 3.0 |
+| `KROMA-tizen-store-<v>.wgt` | every model, the gate chooses, no Smart Hub preview | 3.0 |
 | `KROMA-tizen8-<v>.wgt` | Tizen 8.0 and newer (2024+) | 8.0 |
 | `KROMA-tizen4to7-<v>.wgt` | Tizen 4.0 to 7.0 (2018 to 2023) | 4.0 |
 | `KROMA-tizen3-<v>.wgt` | Tizen 3.0 (2017) | 3.0 |
@@ -48,6 +49,10 @@ version is known, so the release job also packages each tier on its own
 The floor is what makes the wrong download fail at install rather than show a
 black screen. `scripts/tiers.ts` is the table; `scripts/slice.ts` cuts one tier
 out of `dist/` and stamps the floor.
+
+The Store takes `KROMA-tizen-store-<v>.wgt`: Samsung reserves the preview's
+background service for Partner sellers, so `scripts/store.ts` cuts it out and
+fails the build if it survives. See [STORE.md §7](./STORE.md#7-privileges-and-partner-only-features).
 
 ## Develop (in a desktop browser)
 
