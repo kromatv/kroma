@@ -20,13 +20,25 @@ function tizenApplication(): TizenApplication | undefined {
   return (globalThis as { tizen?: { application?: TizenApplication } }).tizen?.application;
 }
 
-/** Samsung's key policy: Back on the first screen leaves the app, and Tizen is
- * the one shell that hands the app an exit of its own. */
-export function canExitOnBack(): boolean {
-  return tizenApplication() != null;
+interface PalmSystem {
+  platformBack?(): void;
 }
 
-/** Leave the app from its first screen through Tizen's application exit. */
+function palmSystem(): PalmSystem | undefined {
+  return (globalThis as { PalmSystem?: PalmSystem }).PalmSystem;
+}
+
+/** Back on the first screen leaves the app wherever the shell hands the app a
+ * way out: Tizen's application exit (Samsung's key policy), or webOS's platform
+ * Back, which the app owes the TV because `disableBackHistoryAPI` routes Back to it. */
+export function canExitOnBack(): boolean {
+  return tizenApplication() != null || palmSystem()?.platformBack != null;
+}
+
+/** Leave the app from its first screen: Tizen closes the application, webOS asks
+ * whether to exit (webOS 6 and later) or returns to the Home launcher. */
 export function exitOnBack(): void {
-  tizenApplication()?.getCurrentApplication().exit();
+  const tizen = tizenApplication();
+  if (tizen) tizen.getCurrentApplication().exit();
+  else palmSystem()?.platformBack?.();
 }
