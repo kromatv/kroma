@@ -1,9 +1,10 @@
 // Every installable package of one build, signed and named, into `out/`:
 //
-//   KROMA-tizen-<version>.wgt       every tier, the gate chooses (the Store package)
-//   KROMA-tizen8-<version>.wgt      Tizen 8.0 and newer (2024+)
-//   KROMA-tizen4to7-<version>.wgt   Tizen 4.0 to 7.0 (2018 to 2023)
-//   KROMA-tizen3-<version>.wgt      Tizen 3.0 (2017)
+//   KROMA-tizen-<version>.wgt        every tier, the gate chooses
+//   KROMA-tizen-store-<version>.wgt  the same without the Partner-only preview service (the Store package)
+//   KROMA-tizen8-<version>.wgt       Tizen 8.0 and newer (2024+)
+//   KROMA-tizen4to7-<version>.wgt    Tizen 4.0 to 7.0 (2018 to 2023)
+//   KROMA-tizen3-<version>.wgt       Tizen 3.0 (2017)
 //
 //   TIZEN_PROFILE=kroma-ci bun scripts/package-all.ts
 //
@@ -37,12 +38,15 @@ if (!version) {
 const profile = process.env.TIZEN_PROFILE;
 const signing = profile ? ['-s', profile] : [];
 
+const wgtsIn = (dir: string) => readdirSync(dir).filter((f) => f.endsWith('.wgt'));
+
 function pack(dir: string, name: string): void {
+  for (const stale of wgtsIn(dir)) rmSync(join(dir, stale));
   execFileSync('tizen', ['package', '-t', 'wgt', ...signing, '--', dir], {
     cwd: SHELL,
     stdio: 'inherit',
   });
-  const wgt = readdirSync(dir).find((f) => f.endsWith('.wgt'));
+  const [wgt] = wgtsIn(dir);
   if (!wgt) throw new Error(`tizen package left no .wgt in ${dir}`);
   renameSync(join(dir, wgt), join(OUT, name));
   console.log(`[package] ${name}`);
@@ -52,6 +56,8 @@ rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 
 pack(DIST, `KROMA-tizen-${version}.wgt`);
+execFileSync('bun', ['scripts/store.ts'], { cwd: SHELL, stdio: 'inherit' });
+pack(join(SHELL, 'dist-store'), `KROMA-tizen-store-${version}.wgt`);
 for (const tier of TIER_NAMES) {
   execFileSync('bun', ['scripts/slice.ts', tier], { cwd: SHELL, stdio: 'inherit' });
   pack(join(SHELL, `dist-${tier}`), `KROMA-${TIERS[tier].name}-${version}.wgt`);

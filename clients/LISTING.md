@@ -62,7 +62,7 @@ Send a title from the KROMA mobile app to this television and drive playback fro
 WHAT KROMA IS NOT
 It is not a streaming service. There is no catalogue to subscribe to, nothing to buy, and no account to create with us. The app shows only what your own server serves. It collects nothing about you: no analytics, no tracking, no advertising.
 
-Requires a KROMA server, which is free and open source (MIT). See kroma.tv.
+Requires a KROMA server, which is free and open source. See kroma.tv.
 ```
 
 ## Long description (French, second service language)
@@ -90,7 +90,7 @@ Envoyez un titre depuis l'application mobile KROMA vers ce téléviseur et pilot
 CE QUE KROMA N'EST PAS
 Ce n'est pas un service de streaming. Aucun catalogue auquel s'abonner, rien à acheter, aucun compte à créer chez nous : l'application n'affiche que ce que votre propre serveur lui sert. Elle ne collecte rien : aucune analyse d'usage, aucun traçage, aucune publicité.
 
-Nécessite un serveur KROMA, libre et open source (MIT). Voir kroma.tv.
+Nécessite un serveur KROMA, libre et open source. Voir kroma.tv.
 ```
 
 ## Keywords
@@ -98,13 +98,21 @@ Nécessite un serveur KROMA, libre et open source (MIT). Voir kroma.tv.
 Neither store wants a title or a studio name here: those are the words that
 attract a content-test question, and they describe someone else's product anyway.
 
-Samsung takes at least 3 **comma-separated** tags per language:
+Samsung takes at least 3 tags per language, and its form accepts **letters,
+digits and commas only**: no spaces, no hyphens, and 50 bytes for the whole
+field. Accented letters pass. So each tag is one word:
 
 ```
-media server, self-hosted, home media, personal library, video player, direct play, HEVC, HDR, subtitles, home network
+media,server,player,video,library,HEVC,HDR
 ```
 
-LG separates them with **spaces**, so the same list becomes:
+French:
+
+```
+multimédia,serveur,lecteur,vidéo,HEVC,HDR
+```
+
+LG separates keywords with **spaces** and takes the longer list:
 
 ```
 media server self-hosted home media personal library video player direct play HEVC HDR subtitles home network
@@ -130,7 +138,7 @@ First release.
 | Website | https://kroma.tv |
 | Support / contact | support@kroma.tv |
 | Privacy policy | Samsung takes the URL `https://kroma.tv/privacy`, so it must be PUBLISHED there before that submission. **LG takes the TEXT, not a link** ("The privacy policy will be provided as text only, not as a link"), so paste [PRIVACY.md](../PRIVACY.md)'s body into Service Country Info. instead |
-| Licence | MIT (the client is open source) |
+| Licence | GPL-2.0-or-later (client and server are open source) |
 
 > **Two mailboxes have to exist before submitting**: the support address and
 > `privacy@kroma.tv` named in the policy. A reviewer bouncing an e-mail is a
