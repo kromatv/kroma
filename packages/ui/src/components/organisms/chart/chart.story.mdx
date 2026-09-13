@@ -112,7 +112,7 @@ A plot of one or more series over one shared scale. The Root owns the box, the s
 </Scene>
 
 <Scene name="Stacked bars">
-  A bar sits on the ones declared before it when it says `stack`, so a band is read as its total. The radius belongs to the COLUMN and not to the segment: only the outermost corners are rounded and every join is square, or the two curves pinch and the column reads as two bars that happen to touch. W11 has nothing in the second series, so there the segment below it takes the top corners. Bars own a slice of the width rather than a position on it, which is also what the cursor lands on.
+  A bar sits on the ones declared before it when it says `stack`, so a band is read as its total. The radius belongs to the COLUMN and not to the segment: only the outermost corners are rounded and every join is square, or the two curves pinch and the column reads as two bars that happen to touch. W11 has nothing in the second series, so there the segment below it takes the top corners. W13 has a sliver thinner than the radius: it draws the top of the curve and the segment under it draws the rest. Bars own a slice of the width rather than a position on it, which is also what the cursor lands on.
 
   {story.take(({ height }) => (
     <Chart.Root

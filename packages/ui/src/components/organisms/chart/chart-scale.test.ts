@@ -151,27 +151,41 @@ describe('stackBase', () => {
 
 describe('barPath', () => {
   const BAR = { x: 0, width: 20, y: 0, height: 40 };
-  const curves = (d: string) => (d.match(/Q/g) ?? []).length;
+  const curves = (d: string) => (d.match(/A/g) ?? []).length;
 
   it('rounds all four corners of a column that is one segment', () => {
-    expect(curves(barPath(BAR, { top: 4, bottom: 4 }))).toBe(4);
+    expect(curves(barPath(BAR, BAR, 4))).toBe(4);
   });
 
-  it('leaves the join between two segments square', () => {
-    expect(curves(barPath(BAR, { top: 4, bottom: 0 }))).toBe(2);
-    expect(curves(barPath(BAR, { top: 0, bottom: 4 }))).toBe(2);
-    expect(curves(barPath(BAR, { top: 0, bottom: 0 }))).toBe(0);
+  it('rounds only the ends of the column a segment reaches, and leaves the join square', () => {
+    expect(curves(barPath(BAR, { y: 0, height: 20 }, 4))).toBe(2);
+    expect(curves(barPath(BAR, { y: 20, height: 20 }, 4))).toBe(2);
+    expect(curves(barPath(BAR, { y: 10, height: 20 }, 4))).toBe(0);
   });
 
-  it('closes the box whichever corners it rounds', () => {
-    expect(barPath(BAR, { top: 0, bottom: 0 })).toBe('M0 0L20 0L20 40L0 40Z');
+  it('closes a box it does not round', () => {
+    expect(barPath(BAR, BAR, 0)).toBe('M0 0L20 0L20 40L0 40L0 0Z');
   });
 
-  it('clamps a radius the segment is too short to draw', () => {
+  it('clamps a radius the column is too short to draw', () => {
     const squat = { x: 0, width: 20, y: 0, height: 6 };
-    expect(barPath(squat, { top: 40, bottom: 40 })).toBe(
-      'M0 3Q0 0,3 0L17 0Q20 0,20 3L20 3Q20 6,17 6L3 6Q0 6,0 3Z',
+    expect(barPath(squat, squat, 40)).toBe(
+      'M3 0L17 0A3 3 0 0 1 20 3L20 3A3 3 0 0 1 17 6L3 6A3 3 0 0 1 0 3L0 3A3 3 0 0 1 3 0Z',
     );
+  });
+
+  it('hands the rest of the corner to the segment under a sliver', () => {
+    const sliver = barPath(BAR, { y: 0, height: 1 }, 4);
+    const under = barPath(BAR, { y: 1, height: 39 }, 4);
+
+    expect(sliver).toBe('M4 0L16 0A4 4 0 0 1 18.6 1L1.4 1A4 4 0 0 1 4 0Z');
+    expect(under).toBe(
+      'M1.4 1L18.6 1A4 4 0 0 1 20 4L20 36A4 4 0 0 1 16 40L4 40A4 4 0 0 1 0 36L0 4A4 4 0 0 1 1.4 1Z',
+    );
+  });
+
+  it('draws nothing for a segment outside the column', () => {
+    expect(barPath(BAR, { y: 50, height: 10 }, 4)).toBe('');
   });
 });
 
