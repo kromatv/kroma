@@ -62,6 +62,7 @@ export interface TvNav {
   route: TvRoute;
   depth: number;
   canGoBack: boolean;
+  canExit: boolean;
   go: <K extends RouteName>(...args: GoArgs<K>) => void;
   back: () => void;
   reset: <K extends RouteName>(...args: GoArgs<K>) => void;
@@ -135,8 +136,14 @@ function make<K extends RouteName>(name: K, params?: TvRoutes[K]): TvRoute {
 export function TvNavProvider({
   screens,
   chrome,
+  onExit,
   children,
-}: Readonly<{ screens: TvScreens; chrome?: readonly TvChrome[]; children: ReactNode }>) {
+}: Readonly<{
+  screens: TvScreens;
+  chrome?: readonly TvChrome[];
+  onExit?: () => void;
+  children: ReactNode;
+}>) {
   const [stack, setStack] = useState<TvRoute[]>(() => loadDevStack(screens) ?? [PROFILES]);
 
   useEffect(() => {
@@ -152,9 +159,13 @@ export function TvNavProvider({
   const go = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
     setStack((s) => [...s, make(name, params)]);
   }, []);
-  // A no-op at depth 1 is the invariant, not an oversight: the bottom of the stack
-  // is always a root (home / profiles), so there is nowhere to go back to.
-  const back = useCallback(() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)), []);
+  // The bottom of the stack is always a root (home / profiles), so there is
+  // nowhere to go back to: Back there leaves the app where the shell can.
+  const root = stack.length <= 1;
+  const back = useCallback(() => {
+    if (root) onExit?.();
+    else setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
+  }, [root, onExit]);
   const reset = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
     setStack(name === 'home' ? [HOME] : [HOME, make(name, params)]);
   }, []);
@@ -171,6 +182,7 @@ export function TvNavProvider({
       route: stack.at(-1) ?? HOME,
       depth: stack.length,
       canGoBack: stack.length > 1,
+      canExit: onExit != null,
       go,
       back,
       reset,
@@ -178,7 +190,7 @@ export function TvNavProvider({
       swap,
       home,
     }),
-    [stack, go, back, reset, replace, swap, home],
+    [stack, onExit, go, back, reset, replace, swap, home],
   );
   return (
     <NavCtx.Provider value={value}>

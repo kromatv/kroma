@@ -55,7 +55,7 @@ export function TvHome() {
   const { sections, featured } = useRecommend();
   const { has: isWatched, refresh: refreshWatched } = useWatched();
   const { refresh: refreshMyList } = useMyList();
-  const { go } = useNav();
+  const { go, back, canExit } = useNav();
   const client = useClient();
   const t = useT();
   useEffect(() => refreshContinue(), [refreshContinue]);
@@ -63,7 +63,7 @@ export function TvHome() {
   // (auto-marked) or added on another device shows up the moment we land on Home.
   useEffect(() => refreshWatched(), [refreshWatched]);
   useEffect(() => refreshMyList(), [refreshMyList]);
-  useFocusNav({});
+  useFocusNav({ onBack: canExit ? back : undefined });
 
   const onSelectMovie = useCallback((m: MediaItem) => go('movie', { item: m }), [go]);
   const onSelectShow = useCallback((s: Show) => go('show', { show: s }), [go]);

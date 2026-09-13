@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { canQuitApp, quitApp } from './appQuit';
+import { canExitOnBack, canQuitApp, exitOnBack, quitApp } from './appQuit';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -24,5 +24,30 @@ describe('quitApp', () => {
 
   it('does nothing where there is no shell to ask', () => {
     expect(() => quitApp()).not.toThrow();
+  });
+});
+
+describe('canExitOnBack', () => {
+  it('is offered only where Tizen can close the application', () => {
+    expect(canExitOnBack()).toBe(false);
+
+    vi.stubGlobal('tizen', { application: { getCurrentApplication: () => ({ exit: () => {} }) } });
+
+    expect(canExitOnBack()).toBe(true);
+  });
+});
+
+describe('exitOnBack', () => {
+  it('closes the current Tizen application', () => {
+    const exit = vi.fn();
+    vi.stubGlobal('tizen', { application: { getCurrentApplication: () => ({ exit }) } });
+
+    exitOnBack();
+
+    expect(exit).toHaveBeenCalledOnce();
+  });
+
+  it('does nothing off Tizen', () => {
+    expect(() => exitOnBack()).not.toThrow();
   });
 });
