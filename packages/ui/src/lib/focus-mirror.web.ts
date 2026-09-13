@@ -43,10 +43,12 @@ function focusInPlace(element: HTMLElement): void {
   if (view && (view.scrollX !== x || view.scrollY !== y)) view.scrollTo(x, y);
 }
 
+const isFocused = (element: HTMLElement) => element.ownerDocument.activeElement === element;
+
 function letGo(): void {
   const held = mirrored;
   mirrored = null;
-  if (held && held.ownerDocument.activeElement === held) held.blur();
+  if (held && isFocused(held)) held.blur();
 }
 
 /**
