@@ -11,3 +11,22 @@ export function canQuitApp(): boolean {
 export function quitApp(): void {
   void getTauri()?.core.invoke('app_quit');
 }
+
+interface TizenApplication {
+  getCurrentApplication(): { exit(): void };
+}
+
+function tizenApplication(): TizenApplication | undefined {
+  return (globalThis as { tizen?: { application?: TizenApplication } }).tizen?.application;
+}
+
+/** Samsung's key policy: Back on the first screen leaves the app, and Tizen is
+ * the one shell that hands the app an exit of its own. */
+export function canExitOnBack(): boolean {
+  return tizenApplication() != null;
+}
+
+/** Leave the app from its first screen through Tizen's application exit. */
+export function exitOnBack(): void {
+  tizenApplication()?.getCurrentApplication().exit();
+}

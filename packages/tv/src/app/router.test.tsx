@@ -3,7 +3,7 @@ import type { MediaItem } from '@kromatv/client/media';
 import { focusSettled, markFocusSettled } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { useEffect, useRef } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   type TvChrome,
   type TvNav,
@@ -71,10 +71,10 @@ function Capture() {
   return null;
 }
 
-function mount(screens = stubScreens()) {
+function mount(screens = stubScreens(), onExit?: () => void) {
   MOUNTS.bar = 0;
   return render(
-    <TvNavProvider screens={screens} chrome={[CHROME]}>
+    <TvNavProvider screens={screens} chrome={[CHROME]} onExit={onExit}>
       <Capture />
       <TvOutlet />
     </TvNavProvider>,
@@ -111,6 +111,38 @@ describe('browse chrome', () => {
     // `entryKey`; otherwise the new screen's `autoFocus` is ignored.
     act(() => nav.reset('grid', { kind: 'films' }));
     expect(focusSettled()).toBe(false);
+  });
+});
+
+describe('Back on the root screen', () => {
+  it('leaves the app where the shell can exit', () => {
+    const onExit = vi.fn();
+    mount(stubScreens(), onExit);
+
+    act(() => nav.back());
+
+    expect(onExit).toHaveBeenCalledOnce();
+    expect(screen.getByText('screen:profiles')).toBeTruthy();
+  });
+
+  it('goes back a screen before it ever leaves', () => {
+    const onExit = vi.fn();
+    mount(stubScreens(), onExit);
+
+    act(() => nav.go('about'));
+    act(() => nav.back());
+
+    expect(onExit).not.toHaveBeenCalled();
+    expect(screen.getByText('screen:profiles')).toBeTruthy();
+  });
+
+  it('stays put where the shell cannot exit', () => {
+    mount();
+
+    act(() => nav.back());
+
+    expect(nav.canExit).toBe(false);
+    expect(screen.getByText('screen:profiles')).toBeTruthy();
   });
 });
 

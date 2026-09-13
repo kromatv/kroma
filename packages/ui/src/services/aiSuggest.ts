@@ -19,7 +19,8 @@ export interface UseAiSuggestOptions {
 export interface UseAiSuggestResult {
   /** The generated section once it arrives (items may be empty), else `null`. */
   section: Section | null;
-  /** True while generating / waiting to start; false once terminal. */
+  /** True once the server has answered that it is generating, until the section
+   * lands or polling gives up; false before its first answer. */
   pending: boolean;
   /** Elapsed-time progress estimate (0..1) for a spinner while `pending`. */
   progress: number;
@@ -51,7 +52,7 @@ export function useAiSuggest(
   { active = true }: UseAiSuggestOptions = {},
 ): UseAiSuggestResult {
   const [section, setSection] = useState<Section | null>(null);
-  const [pending, setPending] = useState(true);
+  const [pending, setPending] = useState(false);
   const progress = useEstimatedProgress(pending && active);
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export function useAiSuggest(
     let tries = 0;
     let timer: ReturnType<typeof setTimeout>;
     setSection(null);
-    setPending(true);
+    setPending(false);
     const poll = () => {
       client.media
         .aiSuggest(id)
@@ -72,6 +73,7 @@ export function useAiSuggest(
             setPending(false);
           } else if (tries < MAX_POLLS) {
             tries += 1;
+            setPending(true);
             timer = setTimeout(poll, POLL_MS); // still generating
           } else {
             setPending(false); // gave up waiting

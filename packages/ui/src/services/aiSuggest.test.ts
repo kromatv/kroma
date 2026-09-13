@@ -55,6 +55,30 @@ describe('useAiSuggest', () => {
     expect(result.current.pending).toBe(false);
   });
 
+  it('never reports pending when the first answer is already terminal', async () => {
+    const { client } = clientServing(section([]));
+    const seen: boolean[] = [];
+
+    renderHook(() => {
+      const state = useAiSuggest(client, ITEM);
+      seen.push(state.pending);
+      return state;
+    });
+    await settle();
+
+    expect(seen).not.toContain(true);
+  });
+
+  it('reports pending only once the server says it is generating', async () => {
+    const { client } = clientServing(null);
+
+    const { result } = renderHook(() => useAiSuggest(client, ITEM));
+    expect(result.current.pending).toBe(false);
+    await settle();
+
+    expect(result.current.pending).toBe(true);
+  });
+
   it('keeps polling while the server answers null', async () => {
     const { client, aiSuggest } = clientServing(null, null, section());
     const { result } = renderHook(() => useAiSuggest(client, ITEM));
