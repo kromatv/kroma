@@ -21,6 +21,7 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { UserChip, VersionInfo } from '#web/features/catalog/sidebar-account';
+import { WhatsNewLink } from '#web/features/catalog/whats-new-link';
 import { useModuleNav } from '#web/modules/ModuleHostProvider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
 import { useAuth } from '#web/shared/lib/auth';
@@ -126,6 +127,7 @@ function SidebarNav() {
           <SideNav.Label>{t('nav.connectDevice')}</SideNav.Label>
         </SideNav.Item>
         <AdminLink />
+        <WhatsNewLink />
         <UserChip />
         <Box gap={8} px={8} pt={4}>
           <Box row wrap align="center" between gapX={8} gapY={6}>

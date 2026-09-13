@@ -44,6 +44,8 @@ export interface TvRoutes {
     title: string;
     episodes?: ReportEpisode[];
   };
+  whatsNew: undefined;
+  releases: undefined;
 }
 
 export interface ReportEpisode {

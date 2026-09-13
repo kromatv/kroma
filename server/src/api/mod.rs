@@ -27,6 +27,7 @@ pub mod media_ticket;
 mod metadata;
 mod modules;
 mod notifications;
+mod releases;
 pub mod online_subs;
 mod origin;
 mod passkeys;
@@ -90,6 +91,8 @@ mod it_media_ticket;
 mod it_notification_images;
 #[cfg(test)]
 mod it_notifications;
+#[cfg(test)]
+mod it_releases;
 #[cfg(test)]
 mod it_pin;
 #[cfg(test)]
@@ -221,6 +224,7 @@ pub fn router(
         .merge(requests::routes())
         .merge(reports::routes())
         .merge(notifications::routes())
+        .merge(releases::routes())
         .merge(modules::routes())
         .route_layer(from_fn_with_state(state.clone(), require_session));
 

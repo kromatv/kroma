@@ -254,3 +254,7 @@ export function useAuth(): Auth {
   if (!ctx) throw new Error('useAuth() must be used inside <AuthProvider>');
   return ctx;
 }
+
+export function useAuthMaybe(): Auth | null {
+  return useContext(AuthCtx);
+}

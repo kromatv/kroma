@@ -86,7 +86,11 @@ pub async fn register(
         let hash = auth::hash_password(&body.password);
         let (owner_email, owner_username) = (email.clone(), username.clone());
         match query(&state.db, move |pool| {
-            db::create_owner_if_first(&pool, &owner_email, &owner_username, &hash)
+            let owner = db::create_owner_if_first(&pool, &owner_email, &owner_username, &hash)?;
+            if let Some(owner) = &owner {
+                db::set_whats_new_seen(&pool, &owner.id, env!("CARGO_PKG_VERSION"))?;
+            }
+            Ok(owner)
         })
         .await
         {
@@ -111,7 +115,9 @@ pub async fn register(
 
     let hash = auth::hash_password(&body.password);
     let user = match query(&state.db, move |pool| {
-        db::create_user(&pool, &email, &username, &hash, &permissions)
+        let user = db::create_user(&pool, &email, &username, &hash, &permissions)?;
+        db::set_whats_new_seen(&pool, &user.id, env!("CARGO_PKG_VERSION"))?;
+        Ok(user)
     })
     .await
     {

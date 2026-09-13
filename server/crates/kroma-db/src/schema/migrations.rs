@@ -282,4 +282,7 @@ pub(crate) const MIGRATIONS: &[&str] = &[
         user_id      TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,\
         fails        INTEGER NOT NULL DEFAULT 0,\
         locked_until INTEGER NOT NULL DEFAULT 0)",
+    // The newest release whose notes the account has been shown. NULL on every
+    // account that predates the notes, so its first update after them opens them.
+    "ALTER TABLE users ADD COLUMN whats_new_seen TEXT",
 ];

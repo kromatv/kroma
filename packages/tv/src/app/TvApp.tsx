@@ -43,6 +43,9 @@ import { TvShowDetail } from '#tv/features/catalog/TvShowDetail';
 // Loading the player is a platform decision: the browser targets code-split it,
 // the native ones cannot.
 import { TvPlayer } from '#tv/features/playback/playerChunk';
+import { TvReleases } from '#tv/features/releases/TvReleases';
+import { TvWhatsNew } from '#tv/features/releases/TvWhatsNew';
+import { useWhatsNewOnLaunch } from '#tv/features/releases/useWhatsNewOnLaunch';
 import { TvReport } from '#tv/features/reports/TvReport';
 import { AUTH_BACKDROP } from '#tv/shared/ui';
 
@@ -171,12 +174,15 @@ const SCREENS: TvScreens = {
   show: TvShowDetail,
   player: TvPlayer,
   report: TvReport,
+  whatsNew: TvWhatsNew,
+  releases: TvReleases,
 };
 
 function TvRouterGuard() {
   const nav = useNav();
   const { deepLink, movies, shows, clearDeepLink } = useConnection();
   const { user, ready } = useAuth();
+  useWhatsNewOnLaunch();
 
   useEffect(() => {
     // Routing on a session that has not been resumed yet would send the TV home

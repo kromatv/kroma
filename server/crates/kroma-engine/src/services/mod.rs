@@ -19,6 +19,7 @@ pub mod notify;
 pub mod pairing;
 pub mod pipeline;
 pub mod playback;
+pub mod releases;
 pub mod rematch;
 pub mod request_ledger;
 pub mod requests;

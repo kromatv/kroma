@@ -55,6 +55,26 @@ pub fn set_user_subtitle_language(
     Ok(())
 }
 
+/// The newest release whose notes this account has been shown, if any.
+pub fn whats_new_seen(pool: &Pool, user_id: &str) -> Result<Option<String>> {
+    let conn = pool.get()?;
+    let seen = conn.query_row(
+        "SELECT whats_new_seen FROM users WHERE id = ?1",
+        params![user_id],
+        |r| r.get::<_, Option<String>>(0),
+    )?;
+    Ok(seen)
+}
+
+pub fn set_whats_new_seen(pool: &Pool, user_id: &str, version: &str) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "UPDATE users SET whats_new_seen = ?2 WHERE id = ?1",
+        params![user_id, version],
+    )?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
