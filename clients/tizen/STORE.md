@@ -31,11 +31,14 @@ and a registration number.
 ## 2. Build the package
 
 ```bash
-bun run build:tizen                       # → clients/tizen/dist
+bun run build:tizen                                  # → clients/tizen/dist
 cd clients/tizen
-tizen build-web
-tizen package -t wgt -s <cert-profile> -- dist
+TIZEN_PROFILE=<cert-profile> bun run package:all     # → out/ (needs `tizen` on the PATH)
 ```
+
+Upload **`out/KROMA-tizen-store-<v>.wgt`**. It is `dist/` with every tier and
+the runtime gate, minus the one element a Public seller may not ship (§7). The
+other files in `out/` are for sideloading (see the [README](./README.md)).
 
 The `.wgt` needs `config.xml`, `author-signature.xml` and `signature1.xml`.
 
@@ -49,22 +52,26 @@ The package version is **stamped at build time** from the product version
 [`clients/tv-build/stamp-version.ts`](../tv-build/stamp-version.ts). Never
 hand-edit it in `config.xml`.
 
-`required_version="6.0"` floors the app at Tizen 6.0 (2021 models). Model groups
-are chosen at distribution time and all Tizen versions inside a group are
-included automatically; `jellyfin-tizen` was approved for only *some* models on
-its first pass, so choose deliberately and expect to widen later.
+`config.xml` ships `required_version="3.0"`, so the package is offered to every
+Tizen set from 2017, and the gate in `dist/index.html` hands each one the bundle
+its engine runs: modern on Tizen 8.0 and newer, legacy on 4.0 to 7.0, deep on
+3.0. Model groups are chosen at distribution time and all Tizen versions inside a
+group are included automatically; `jellyfin-tizen` was approved for only *some*
+models on its first pass, so choose deliberately and expect to widen later.
 
-That floor is only honest because the build ships a **legacy tier** (see the
-[README](./README.md)). Chromium is frozen per Tizen major (6.0 = 76, 6.5 = 85,
-7.0 = 94, 8.0 = 108) and the modern bundle needs 99, so a modern-only build
-offered to 2021+ hands 2021 something its engine cannot parse and 2022–2023 an
-app with every `@layer` block dropped. If the legacy tier is ever removed,
-`required_version` has to go to **8.0** in the same commit.
+That floor is only honest because the build ships the **legacy** and **deep**
+tiers (see the [README](./README.md)). Chromium is frozen per Tizen major
+(3.0 = 47, 4.0 = 56, 6.0 = 76, 7.0 = 94, 8.0 = 108) and the modern bundle needs
+99, so a modern-only package offered below 2024 hands older sets something their
+engine cannot parse, or an app with every `@layer` block dropped. If a tier is
+ever removed, `required_version` rises to the next tier's floor in the same
+commit.
 
-The QA consequence: Samsung tests the model groups you select, so selecting a
-2021–2023 group means the verification test runs against the legacy bundle. It
-is checked statically on every build (`check:legacy`), but nobody has yet watched
-it paint on a real 2021 set. Do that before submitting those groups.
+The QA consequence: Samsung tests the model groups you select, so a 2017 to 2023
+group means the verification test runs against the legacy or deep bundle. Both
+are checked statically on every build (`check:legacy`), but nobody has yet
+watched either paint on a real pre-2024 set. Do that before submitting those
+groups.
 
 ## 3. Assets
 
@@ -182,22 +189,31 @@ The tool is verified driving the app's signed-out screens; the screens worth
 showing a buyer need a catalogue, so tune its key sequence against the demo
 server. Convert to JPG ≤500 kB before upload.
 
-## 7. Privileges
+## 7. Privileges and Partner-only features
 
 `config.xml` declares `internet`, `systeminfo`, `filesystem.read/write`,
-`application.launch` and `http://developer.samsung.com/privilege/productinfo`.
+`application.launch`, `http://developer.samsung.com/privilege/productinfo` and
+`http://developer.samsung.com/privilege/network.public`.
 
-**Undeclared or unauthorised privileges fail the automated pre-test**, which runs
-the moment the `.wgt` is uploaded. Samsung splits privileges into public, partner
-and platform levels, and partner-level APIs require membership of a Seller Office
-partner group. The in-repo comment marks these as public-level, which is true for
-a *developer certificate*, which is a different question from store publication.
-**Verify `productinfo` at pre-test before building the listing around the Smart
-Hub preview feature**, which depends on it.
+The automated pre-test runs the moment a `.wgt` is uploaded. On a Public seller
+account (September 2026) it said:
 
-The preview carousel itself is declared through metadata
-(`use.preview = bg_service`), not a privilege, and Samsung's Preview API
-reference lists no privilege requirement.
+- **Every declared privilege passed**, `productinfo` and `network.public`
+  included.
+- **`<tizen:service>` failed as Critical**: "Element of "service" is available
+  only to Partner user." That element is the Smart Hub preview's background
+  service, so the Store package cannot carry the preview carousel until the
+  account is a Partner.
+
+`scripts/store.ts` therefore cuts `dist-store/` out of `dist/` without
+`service/`, the `<tizen:service>` element or the `use.preview` metadata, and
+exits non-zero if either survives. `package:all` signs it as
+`KROMA-tizen-store-<v>.wgt`, and that package passes the pre-test. The app
+already tolerates the missing service: every call that nudges it is guarded and
+fails quietly. Sideloaded packages keep the preview.
+
+Once the account is a Partner, upload `KROMA-tizen-<v>.wgt` instead and the
+carousel comes back.
 
 ## 8. Publication flow
 
