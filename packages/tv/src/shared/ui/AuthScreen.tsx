@@ -24,7 +24,9 @@ import { type TvChrome, useNav } from '#tv/app/router';
 // rendition the server makes. The kit's own home backdrop asks for the same.
 const SPLASH_W = 960;
 
-const BACKDROP = gradient(`radial-gradient(120% 90% at 50% 0%, #15131C, ${colors.bg} 68%)`);
+export const RADIAL_GROUND = gradient(
+  `radial-gradient(120% 90% at 50% 0%, #15131C, ${colors.bg} 68%)`,
+);
 
 /** The public `/api/splash` sample mapped for the kit's universal splash
  * backdrop, so the TV gate dresses like the web and phone ones. Empty until
@@ -89,7 +91,7 @@ function useSplashCovers(): SplashCover[] {
 const GateBackdrop = memo(function GateBackdrop() {
   const covers = useSplashCovers();
   return (
-    <Box fill style={BACKDROP}>
+    <Box fill style={RADIAL_GROUND}>
       <SplashBackdrop covers={covers} />
     </Box>
   );

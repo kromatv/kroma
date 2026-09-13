@@ -28,6 +28,7 @@ const domains = {
   requests: { list: endpoint(), calendar: endpoint(), missing: endpoint() },
   accounts: { sessions: endpoint(), passkeys: { list: endpoint() } },
   notifications: { list: endpoint(), prefs: endpoint(), push: { key: endpoint() } },
+  releases: { list: endpoint() },
 };
 
 type Endpoint = (...args: unknown[]) => unknown;

@@ -25,6 +25,7 @@ import { Route as AppMissingRouteImport } from './routes/_app.missing';
 import { Route as AppMyListRouteImport } from './routes/_app.my-list';
 import { Route as AppRequestsRouteImport } from './routes/_app.requests';
 import { Route as AppSearchRouteImport } from './routes/_app.search';
+import { Route as AppWhatsNewRouteImport } from './routes/_app.whats-new';
 import { Route as AdminIndexRouteImport } from './routes/admin.index';
 import { Route as AdminSplatRouteImport } from './routes/admin.$';
 import { Route as AdminAiRouteImport } from './routes/admin.ai';
@@ -134,6 +135,11 @@ const AppRequestsRoute = AppRequestsRouteImport.update({
 const AppSearchRoute = AppSearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => AppRoute,
+} as any);
+const AppWhatsNewRoute = AppWhatsNewRouteImport.update({
+  id: '/whats-new',
+  path: '/whats-new',
   getParentRoute: () => AppRoute,
 } as any);
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -308,6 +314,7 @@ export interface FileRoutesByFullPath {
   '/my-list': typeof AppMyListRoute;
   '/requests': typeof AppRequestsRoute;
   '/search': typeof AppSearchRoute;
+  '/whats-new': typeof AppWhatsNewRoute;
   '/admin/$': typeof AdminSplatRoute;
   '/admin/ai': typeof AdminAiRoute;
   '/admin/backup': typeof AdminBackupRoute;
@@ -354,6 +361,7 @@ export interface FileRoutesByTo {
   '/my-list': typeof AppMyListRoute;
   '/requests': typeof AppRequestsRoute;
   '/search': typeof AppSearchRoute;
+  '/whats-new': typeof AppWhatsNewRoute;
   '/admin/$': typeof AdminSplatRoute;
   '/admin/ai': typeof AdminAiRoute;
   '/admin/backup': typeof AdminBackupRoute;
@@ -404,6 +412,7 @@ export interface FileRoutesById {
   '/_app/my-list': typeof AppMyListRoute;
   '/_app/requests': typeof AppRequestsRoute;
   '/_app/search': typeof AppSearchRoute;
+  '/_app/whats-new': typeof AppWhatsNewRoute;
   '/admin/$': typeof AdminSplatRoute;
   '/admin/ai': typeof AdminAiRoute;
   '/admin/backup': typeof AdminBackupRoute;
@@ -455,6 +464,7 @@ export interface FileRouteTypes {
     | '/my-list'
     | '/requests'
     | '/search'
+    | '/whats-new'
     | '/admin/$'
     | '/admin/ai'
     | '/admin/backup'
@@ -501,6 +511,7 @@ export interface FileRouteTypes {
     | '/my-list'
     | '/requests'
     | '/search'
+    | '/whats-new'
     | '/admin/$'
     | '/admin/ai'
     | '/admin/backup'
@@ -550,6 +561,7 @@ export interface FileRouteTypes {
     | '/_app/my-list'
     | '/_app/requests'
     | '/_app/search'
+    | '/_app/whats-new'
     | '/admin/$'
     | '/admin/ai'
     | '/admin/backup'
@@ -705,6 +717,13 @@ declare module '@tanstack/react-router' {
       path: '/search';
       fullPath: '/search';
       preLoaderRoute: typeof AppSearchRouteImport;
+      parentRoute: typeof AppRoute;
+    };
+    '/_app/whats-new': {
+      id: '/_app/whats-new';
+      path: '/whats-new';
+      fullPath: '/whats-new';
+      preLoaderRoute: typeof AppWhatsNewRouteImport;
       parentRoute: typeof AppRoute;
     };
     '/admin/': {
@@ -937,6 +956,7 @@ interface AppRouteChildren {
   AppMyListRoute: typeof AppMyListRoute;
   AppRequestsRoute: typeof AppRequestsRoute;
   AppSearchRoute: typeof AppSearchRoute;
+  AppWhatsNewRoute: typeof AppWhatsNewRoute;
   AppIndexRoute: typeof AppIndexRoute;
   AppGenresIdRoute: typeof AppGenresIdRoute;
   AppMoviesIdRoute: typeof AppMoviesIdRoute;
@@ -960,6 +980,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMyListRoute: AppMyListRoute,
   AppRequestsRoute: AppRequestsRoute,
   AppSearchRoute: AppSearchRoute,
+  AppWhatsNewRoute: AppWhatsNewRoute,
   AppIndexRoute: AppIndexRoute,
   AppGenresIdRoute: AppGenresIdRoute,
   AppMoviesIdRoute: AppMoviesIdRoute,

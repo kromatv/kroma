@@ -19,6 +19,7 @@ For this repository that means [`CLAUDE.md`](../../CLAUDE.md),
 | `unslop` | Cuts AI tells from prose before it ships: puffery, "not just X but Y", em dashes, rule of three, chatbot filler. For docs, commit messages, PR descriptions and copy. |
 | `spec-writing` | Writing a product spec: what belongs there rather than in architecture, the status vocabulary, requirement IDs and keeping them stable, sizing one so it becomes one story. |
 | `ticket-writing` | Issues and PR descriptions: the epic and sub-issue structure, linking a requirement instead of copying spec text, reading the project's labels and templates rather than guessing them. |
+| `release-notes` | A short release note: the few changes a user notices, named by what they can now do, inside a length budget, every language written from the intent, every line traced to a PR. |
 
 ## Code
 
@@ -56,9 +57,10 @@ Copy the directory. `.claude/skills` in another repository, or `~/.claude/skills
 to load them in every project on this machine. Nothing here reads a path, a script
 name or a threshold that only exists in this repo.
 
-Two of them assume a tool rather than a repo, and that is the honest limit of the
-genericness: `sonar-loop` wants SonarCloud and the `gh` CLI, and `ticket-writing`
-wants GitHub issues. `spec-reviewer` is the one agent that stays specific, because
+Three of them assume a tool rather than a repo, and that is the honest limit of the
+genericness: `sonar-loop` wants SonarCloud and the `gh` CLI, `ticket-writing`
+wants GitHub issues, and `release-notes` wants release tags and `gh` to read the
+pull requests. `spec-reviewer` is the one agent that stays specific, because
 it reviews this repo's `docs/spec` layout.
 
 Where a project states a threshold of its own, the project wins. A skill that

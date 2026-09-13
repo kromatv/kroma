@@ -8,8 +8,15 @@ import { EnvProvider } from '#tv/app/providers/env';
 import { TvNavProvider } from '#tv/app/router';
 import { TvAbout } from '#tv/features/accounts/TvAbout';
 
+const auth = vi.hoisted(() => {
+  const session: { current: { user: { id: string } | null } | null } = { current: null };
+  return session;
+});
+vi.mock('#tv/app/providers/auth', () => ({ useAuthMaybe: () => auth.current }));
+
 afterEach(() => {
   cleanup();
+  auth.current = null;
   vi.unstubAllGlobals();
   setHardwareSource(null);
   sessionStorage.clear();
@@ -126,5 +133,24 @@ describe('TvAbout hardware rows', () => {
     expect(screen.queryByText('Memory')).toBeNull();
     // The platform row never depends on a Web API, so it still stands.
     expect(screen.getByText('Platform')).toBeTruthy();
+  });
+});
+
+describe('TvAbout release notes', () => {
+  it('keeps the release notes from a reader who is not signed in', () => {
+    withNavigator({});
+
+    mount();
+
+    expect(screen.queryByText("What's new")).toBeNull();
+  });
+
+  it('offers the release notes to a signed-in reader', () => {
+    withNavigator({});
+    auth.current = { user: { id: 'u1' } };
+
+    mount();
+
+    expect(screen.getByText("What's new")).toBeTruthy();
   });
 });

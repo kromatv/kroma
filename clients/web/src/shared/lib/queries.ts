@@ -176,6 +176,8 @@ export const userQueries = {
 
   /** The server's VAPID key + whether this account has a push endpoint. */
   pushKey: () => kromaClient().query.notifications.push.key(),
+
+  releases: () => kromaClient().query.releases.list(),
 } as const;
 
 export const serverQueries = {

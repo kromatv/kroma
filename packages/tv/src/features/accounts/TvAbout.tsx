@@ -5,6 +5,7 @@ import { Box, Hint, ListRow, styles, Text, useFocusNav } from '@kromatv/ui/kit';
 import { Platform } from 'react-native';
 import { buildInfo } from '#tv/app/clientBuild';
 import { type ClientHardware, clientHardware } from '#tv/app/clientHardware';
+import { useAuthMaybe } from '#tv/app/providers/auth';
 import { useEnv } from '#tv/app/providers/env';
 import { useNav } from '#tv/app/router';
 import { AuthScreen, GATE_MARK, KromaMark } from '#tv/shared/ui';
@@ -13,9 +14,7 @@ import { weight } from '#tv/shared/ui/weight';
 /**
  * About (route `about`): which build of the client is running.
  *
- * The fact rows are disabled, taking them out of the focus graph: a remote
- * that walks through five dead rows to reach the only live one is worse than
- * one that lands on it directly. Back stays the sole focus target.
+ * The fact rows are disabled, taking them out of the focus graph.
  */
 export function TvAbout() {
   const nav = useNav();
@@ -24,6 +23,7 @@ export function TvAbout() {
   const build = buildInfo();
   const env = useEnv();
   const hardware = clientHardware();
+  const signedIn = Boolean(useAuthMaybe()?.user);
   useFocusNav({ onBack: nav.back });
 
   return (
@@ -62,6 +62,11 @@ export function TvAbout() {
             {t('about.privacyUrl')}
           </Text>
         </Box>
+        {signedIn ? (
+          <ListRow.Root icon="sparkles" onPress={() => nav.go('releases')}>
+            <ListRow.Label>{t('releases.title')}</ListRow.Label>
+          </ListRow.Root>
+        ) : null}
         <ListRow.Root icon="arrow-left" autoFocus onPress={nav.back}>
           <ListRow.Label>{t('common.back')}</ListRow.Label>
         </ListRow.Root>
