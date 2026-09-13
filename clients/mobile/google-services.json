@@ -26,9 +26,9 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:469078770795:android:d76612f9c2eebd005b9d2e",
+        "mobilesdk_app_id": "1:469078770795:android:b3cb6a97becf1cac5b9d2e",
         "android_client_info": {
-          "package_name": "tv.kroma.mobile"
+          "package_name": "tv.kroma.app"
         }
       },
       "oauth_client": [],

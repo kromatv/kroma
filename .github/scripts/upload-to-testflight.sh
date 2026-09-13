@@ -3,7 +3,7 @@
 #
 # Inputs (step env):
 #   IPA            path to the .ipa
-#   PLATFORM       ios | tvos  - NOT cosmetic. App Store Connect record 6793457018
+#   PLATFORM       ios | tvos  - NOT cosmetic. App Store Connect record 6811609753
 #                  carries iOS and tvOS as two platforms of one listing, and the
 #                  flag is what tells it which half a build belongs to; a tvOS
 #                  .ipa sent as `-t ios` is rejected outright.

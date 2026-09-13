@@ -1,6 +1,6 @@
 // KROMA push relay: a Cloudflare Worker at push.kroma.tv. Apple and Google only accept
 // credentials they issued to the account that owns the KROMA app, so an operator's self-hosted
-// server can never push under `tv.kroma.mobile` itself - only this relay, which holds those
+// server can never push under `tv.kroma.app` itself - only this relay, which holds those
 // credentials, can. Since the server's source is public, there is no shared secret to
 // authenticate it with. Instead the relay issues per-device capabilities (see `grant.ts`): the
 // app trades its own push token for a sealed grant, hands it to whichever server the reader

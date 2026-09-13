@@ -66,7 +66,7 @@ export const TARGETS: readonly Target[] = [
     kind: 'apple',
     routing: 'keys',
     device: 'Apple TV 4K (3rd generation) (at 1080p)',
-    appId: 'tv.kroma.mobile',
+    appId: 'tv.kroma.app',
   },
   {
     id: 'androidtv',
@@ -74,7 +74,7 @@ export const TARGETS: readonly Target[] = [
     kind: 'android',
     routing: 'keys',
     avd: 'Television_4K',
-    appId: 'tv.kroma.mobile',
+    appId: 'tv.kroma.tv',
   },
 ];
 

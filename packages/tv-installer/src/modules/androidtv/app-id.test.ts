@@ -26,7 +26,7 @@ describe('androidAppId', () => {
   });
 
   it('falls back to the published package when the config names none', () => {
-    appJson.json = JSON.stringify({ expo: { ios: { bundleIdentifier: 'tv.kroma.mobile' } } });
+    appJson.json = JSON.stringify({ expo: { ios: { bundleIdentifier: 'tv.kroma.app' } } });
 
     expect(androidAppId()).toBe('tv.kroma.tv');
   });

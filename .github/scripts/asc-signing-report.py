@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """Report what App Store Connect holds for signing: certificates and the
-provisioning profiles for tv.kroma.mobile. Read-only - it creates nothing.
+provisioning profiles for tv.kroma.app. Read-only - it creates nothing.
 
 The question it exists to answer is narrow, and the stored secrets cannot answer
 it: a profile keeps decoding perfectly - right type, right app id, expiry years
 away - after Apple has marked it state=INVALID. Only the account knows. That is
 the state that makes `xcodebuild -allowProvisioningUpdates` mint a DEVELOPMENT
 identity instead, so the archive succeeds and `exportArchive` fails with
-"No profiles for 'tv.kroma.mobile' were found".
+"No profiles for 'tv.kroma.app' were found".
 
 Prints names, types, states and dates; never a credential.
 """
 
 import asc_api as asc
 
-BUNDLE = "tv.kroma.mobile"
+BUNDLE = "tv.kroma.app"
 
 
 def main() -> None:

@@ -226,7 +226,7 @@ jobs:
           fi
 
       # An App Store build needs a real Apple Distribution identity and an
-      # App Store provisioning profile for tv.kroma.mobile. Without them there
+      # App Store provisioning profile for tv.kroma.app. Without them there
       # is nothing uploadable, so the whole job no-ops rather than failing the
       # release (the desktop job takes the same stance on its signing cert).
       - name: Check signing secrets

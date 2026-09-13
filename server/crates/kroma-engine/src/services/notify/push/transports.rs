@@ -363,7 +363,7 @@ mod tests {
             &crate::test_support::test_apns_key_p8(),
             "ABC1234567",
             "TEAM123456",
-            "tv.kroma.mobile",
+            "tv.kroma.app",
             kroma_push::apns::Environment::Production,
         )
         .expect("the test key parses");

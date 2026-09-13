@@ -32,7 +32,7 @@ pub const APNS_TEAM_ID: &str = "notifications.apns.teamId";
 pub const FCM_SERVICE_ACCOUNT: &str = "notifications.fcm.serviceAccount";
 
 // Sent as `apns-topic`; mirrors `bundleIdentifier` in `clients/mobile/app.json`.
-const APNS_TOPIC: &str = "tv.kroma.mobile";
+const APNS_TOPIC: &str = "tv.kroma.app";
 
 const DEFAULT_SUBJECT: &str = "mailto:admin@kroma.invalid";
 
