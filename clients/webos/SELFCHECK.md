@@ -32,7 +32,7 @@ v5.0](https://seller.lgappstv.com/seller/support/RetrieveSelfCheckSample.lge),
 | 8 | Flickering | 📺 | |
 | 9 | Video full size | 📺 | The player video is full-bleed with no chrome margins. |
 | 10 | UI buttons | 📺 | |
-| 11 | BACK UI button | 📺 | On-screen back affordance plus remote Back at every depth; the router pops to the root and no further. |
+| 11 | BACK UI button | 📺 | On-screen back affordance plus remote Back at every depth; the router pops to the root, and Back on Home hands webOS its platform Back (`app/appQuit.ts`). |
 | 12 | EXIT UI button | **N/A** | The app deliberately offers no EXIT control on a TV: `canQuitApp()` is false off the desktop shell, because webOS terminates the app through its own system UI (`app/appQuit.ts`). |
 | 13 | Lock-up / latch-up | 📺 | |
 | 14 | Abnormal termination | 📺 | |
@@ -58,7 +58,7 @@ v5.0](https://seller.lgappstv.com/seller/support/RetrieveSelfCheckSample.lge),
 | 34 | MMRC-only: basic keys | **N/A** | Condition is "Magic remote control only". KROMA fully supports the general remote, so the rule does not apply. |
 | 35 | MMRC-only: non-basic keys | **N/A** | Same as TC 34. |
 | 36 | HOME key | 📺 | Platform-handled. |
-| 37 | BACK key | Pass | `disableBackHistoryAPI: true` routes Back to the app, where keyCode 461 maps to Back (`packages/core/src/remote.ts`). Confirm at every depth on a set. |
+| 37 | BACK key | Pass | `disableBackHistoryAPI: true` routes Back to the app, where keyCode 461 maps to Back (`packages/core/src/remote.ts`). On Home it calls `PalmSystem.platformBack()`: the exit prompt on webOS 6 and later, the Home launcher before. Confirm at every depth on a set. |
 | 38 | EXIT key | 📺 | Platform-handled; confirm the app terminates to Live TV. |
 | 39 | LIVE key | **N/A** | Condition is NetCast 4.5 / webOS 1.0 remotes. The supported floor is webOS 4.0. |
 | 40 | Other / number keys | Pass | Unmapped keys are ignored rather than mishandled. |
