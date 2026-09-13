@@ -11,6 +11,7 @@ import {
   tabDirection,
 } from '#ui/components/organisms/player/lib/player-keys';
 import type { PlayerController, PlayerFlags } from '#ui/components/organisms/player/types';
+import { redeliverKey } from '#ui/lib/focus-mirror';
 import { resolveRemoteKey } from '#ui/lib/remote-keys';
 import type { PlayerNav } from './use-player-nav';
 
@@ -141,8 +142,12 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   });
 
   useEffect(() => {
+    window.addEventListener('keydown', redeliverKey, true);
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', redeliverKey, true);
+      window.removeEventListener('keydown', onKeyDown);
+    };
   }, []);
 }
 

@@ -26,3 +26,12 @@ export function webWindow(): Window | null {
   const w = window as Partial<Window>;
   return typeof w.addEventListener === 'function' ? (window as Window) : null;
 }
+
+/** Whether `element` is a form field or an editable region: where the keys
+ *  belong to a caret, so nothing may take the focus from it. */
+export function holdsCaret(element: Element | null): boolean {
+  if (!element) return false;
+  const tag = element.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  return 'isContentEditable' in element && element.isContentEditable === true;
+}

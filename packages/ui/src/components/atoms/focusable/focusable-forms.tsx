@@ -8,6 +8,7 @@ import { Animated, type StyleProp, StyleSheet, View, type ViewStyle } from 'reac
 import type { AnySv } from '#ui/core';
 import type { RingToken } from '#ui/core/theme';
 import type { splitBoxLayers } from '#ui/lib/box-layers';
+import { useControlledMirror } from '#ui/lib/controlled-focus-mirror';
 import { GROUNDED, LIFTED } from '#ui/lib/focus-lift';
 import { WEB } from '#ui/lib/platform';
 import { linkProps, platformRole } from './focusable-a11y';
@@ -21,6 +22,7 @@ import type {
   WebKeys,
 } from './focusable-types';
 import { Painted, TouchPressable } from './touch-pressable';
+import { useMirroredFocus } from './use-mirrored-focus';
 
 // The navigator's `style` type follows whichever react-native copy the consuming
 // app resolves (the tvos fork on a TV, mainline on the phone), and those two are
@@ -84,6 +86,7 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   // control in a pointer-driven shell with no focus state at all, and the page
   // sheet's `:focus-visible` rule drawing a square outline in its place.
   const lit = at.focusVisible;
+  const box = useControlledMirror(at.controlled && at.focused, at.setBox);
   // Hover goes UNDER the focus coats: a control the cursor is over and the
   // remote is on is a focused control, not a doubly-lit one.
   const hover = at.hovered ? at.hoveredStyle : null;
@@ -97,7 +100,7 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   ];
   return (
     <TouchPressable
-      boxRef={at.setBox}
+      boxRef={box}
       webKeys={at.webKeys}
       href={at.href}
       label={at.label}
@@ -191,12 +194,13 @@ function NavigatorForm({
     ringToken: at.ringToken,
     animated: at.animated,
   });
+  const mirror = useMirroredFocus(at.setBox, at.handleFocus);
 
   return (
     <NavigatorItem
       ref={entry}
       onSelect={at.press}
-      onFocus={at.handleFocus}
+      onFocus={mirror.focus}
       onBlur={at.handleBlur}
       // On the browser targets the control is ONE element: a second view per
       // control is a cost Tizen pays on every focus move. The native builds keep
@@ -210,7 +214,7 @@ function NavigatorForm({
           ...(at.webKeys ?? null),
           accessibilityLabel: at.label,
           onLayout: at.onLayout,
-          ref: at.setBox,
+          ref: mirror.ref,
           // Browser targets only: this view is a plain <View>, so there is no
           // hover callback to lean on and react-native-web forwards these two
           // straight to the element.

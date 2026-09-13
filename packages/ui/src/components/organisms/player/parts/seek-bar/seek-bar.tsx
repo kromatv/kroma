@@ -14,6 +14,7 @@ import { a11yValue } from '#ui/lib/a11y';
 import { gradient } from '#ui/lib/css';
 import { suppressSelection } from '#ui/lib/drag-select';
 import { formatTimecode } from '#ui/lib/intl';
+import { useFocusMirror } from '#ui/lib/use-focus-mirror';
 import { useT } from '#ui/services/i18n';
 import type { StoryboardTile } from '#ui/services/storyboard';
 
@@ -62,6 +63,7 @@ export function SeekBar({
   onScrubCommit,
 }: Readonly<SeekBarProps>) {
   const t = useT();
+  const mirror = useFocusMirror(focused);
   const px = scaler(scale);
   // Built per scale, not per tick: this bar re-renders ~4 Hz and is not memoized,
   // so a fresh array would miss the style cache four times a second.
@@ -182,6 +184,7 @@ export function SeekBar({
         h={px(18)}
         px={px(2)}
         radius="pill"
+        ref={mirror}
         accessibilityRole="adjustable"
         accessibilityLabel={t('player.seekBar')}
         {...a11yValue({ min: 0, max: Math.round(dur), now: Math.round(shown), text: elapsed })}

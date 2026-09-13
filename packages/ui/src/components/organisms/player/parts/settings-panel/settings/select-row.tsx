@@ -6,6 +6,7 @@ import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus
 import { IconOk } from '#ui/components/organisms/player/parts/icons';
 import { style } from '#ui/core';
 import { a11yState } from '#ui/lib/a11y';
+import { useFocusMirror } from '#ui/lib/use-focus-mirror';
 import { panel, rowStyle } from './panel-style';
 
 const MIN_W = style({ minWidth: 0 });
@@ -45,9 +46,11 @@ export function SelectRow({
   leading?: ReactNode;
   trailing?: ReactNode;
 }>) {
+  const mirror = useFocusMirror(focused);
   return (
     <Pressable
       {...VIRTUAL_FOCUS}
+      ref={mirror}
       onPress={() => onActivate(index)}
       onPointerEnter={() => onFocus(index)}
       accessibilityRole="button"

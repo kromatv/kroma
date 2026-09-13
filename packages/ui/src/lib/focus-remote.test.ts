@@ -25,6 +25,7 @@ vi.mock('@kromatv/spatial-nav/react', () => ({
 const tab = vi.hoisted(() => ({ walk: vi.fn() }));
 vi.mock('./focus-tab', () => ({ walkTab: tab.walk }));
 
+import { mirrorFocus } from './focus-mirror';
 import { configureRemote } from './focus-remote';
 
 /** Wires the remote up and hands back what the navigator would hold. */
@@ -181,6 +182,20 @@ describe('the stray focus a click leaves behind', () => {
     const { blur } = focus('div', true);
     const { stop } = mount();
     press('ArrowDown');
+    expect(blur).not.toHaveBeenCalled();
+    stop();
+  });
+
+  it('leaves the control the navigator handed the focus to', () => {
+    const el = document.createElement('div');
+    el.tabIndex = -1;
+    document.body.append(el);
+    mirrorFocus(el);
+    const blur = vi.spyOn(el, 'blur');
+    const { stop } = mount();
+
+    press('ArrowDown');
+
     expect(blur).not.toHaveBeenCalled();
     stop();
   });

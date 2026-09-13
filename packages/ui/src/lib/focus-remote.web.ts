@@ -3,8 +3,9 @@
 
 import { type Direction, Directions } from '@kromatv/spatial-nav';
 import { configureRemote as configureNavigatorRemote } from '@kromatv/spatial-nav/react';
-import { webDocument } from './dom';
+import { holdsCaret, webDocument } from './dom';
 import { focusBox, focusSeq } from './focus-here';
+import { isMirrored } from './focus-mirror';
 import { walkTab } from './focus-tab';
 import { markPress } from './perf';
 
@@ -53,12 +54,11 @@ const TAB_CODE = 9;
 // rules then draw a ring there while the navigator's ring is somewhere else -
 // two rings, one of which nothing on a remote can move. The moment a key
 // arrives, the navigator takes the focus back. A field is left alone: a caret
-// belongs where the typing goes.
+// belongs where the typing goes. So is the control the navigator itself handed
+// the focus to (see `focus-mirror`), which is not stray at all.
 function dropStrayFocus(document: Document): void {
   const held = document.activeElement as (HTMLElement & { blur?: () => void }) | null;
-  if (!held || held === document.body) return;
-  const tag = held.tagName;
-  if (held.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  if (!held || held === document.body || holdsCaret(held) || isMirrored(held)) return;
   held.blur?.();
 }
 

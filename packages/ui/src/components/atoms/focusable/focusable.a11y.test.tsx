@@ -7,13 +7,31 @@
 // but a DOM assertion catches that - the props all look right in the tree.
 
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { act } from 'react';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Checkbox } from '#ui/components/atoms/checkbox';
 import { Radio } from '#ui/components/atoms/radio';
 import { Switch } from '#ui/components/atoms/switch';
+import { ControlledFocusMirror } from '#ui/lib/controlled-focus-mirror';
+import { configureRemote } from '#ui/lib/focus-remote';
+import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
+import { clearPressGuard } from '#ui/lib/press-guard';
 import { Focusable } from './focusable';
 
-afterEach(cleanup);
+beforeAll(() => configureRemote());
+
+afterEach(() => {
+  cleanup();
+  clearPressGuard();
+});
+
+function press(key: string) {
+  act(() => {
+    (document.activeElement ?? document).dispatchEvent(
+      new KeyboardEvent('keydown', { key, bubbles: true }),
+    );
+  });
+}
 
 describe('accessibility state reaches the DOM', () => {
   it('gives a switch its role and its checked state', () => {
@@ -82,5 +100,71 @@ describe('accessibility state reaches the DOM', () => {
     expect(el.getAttribute('role')).toBe('slider');
     expect(el.getAttribute('aria-valuenow')).toBe('40');
     expect(el.getAttribute('aria-valuemax')).toBe('100');
+  });
+});
+
+describe('the document focus follows the ring', () => {
+  it('hands the document focus to the control a screen opens on', () => {
+    render(
+      <FocusScope>
+        <Focusable label="Entree" autoFocus />
+      </FocusScope>,
+    );
+
+    expect(document.activeElement).toBe(screen.getByLabelText('Entree'));
+  });
+
+  it('moves the document focus with the ring', () => {
+    render(
+      <FocusScope>
+        <FocusRegion>
+          <Focusable label="Un" autoFocus />
+          <Focusable label="Deux" />
+        </FocusRegion>
+      </FocusScope>,
+    );
+
+    press('ArrowRight');
+
+    expect(document.activeElement).toBe(screen.getByLabelText('Deux'));
+  });
+
+  it('presses once when OK reaches the focused control before the navigator', () => {
+    const onPress = vi.fn();
+    render(
+      <FocusScope>
+        <Focusable label="OK" autoFocus onPress={onPress} />
+      </FocusScope>,
+    );
+
+    press('Enter');
+
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('hands it to a controlled control inside a ControlledFocusMirror', () => {
+    render(
+      <ControlledFocusMirror>
+        <Focusable label="Lecture" focused />
+      </ControlledFocusMirror>,
+    );
+
+    expect(document.activeElement).toBe(screen.getByLabelText('Lecture'));
+  });
+
+  it('leaves it alone for a controlled control anywhere else', () => {
+    render(<Focusable label="Lecture" focused />);
+
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('focuses a control whose role the browser would not focus by itself', () => {
+    render(
+      <FocusScope>
+        <Focusable label="Option" role="option" autoFocus />
+      </FocusScope>,
+    );
+
+    expect(document.activeElement).toBe(screen.getByLabelText('Option'));
   });
 });
