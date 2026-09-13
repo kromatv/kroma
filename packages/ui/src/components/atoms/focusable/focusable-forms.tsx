@@ -8,6 +8,7 @@ import { Animated, type StyleProp, StyleSheet, View, type ViewStyle } from 'reac
 import type { AnySv } from '#ui/core';
 import type { RingToken } from '#ui/core/theme';
 import type { splitBoxLayers } from '#ui/lib/box-layers';
+import { useControlledMirror } from '#ui/lib/controlled-focus-mirror';
 import { GROUNDED, LIFTED } from '#ui/lib/focus-lift';
 import { WEB } from '#ui/lib/platform';
 import { linkProps, platformRole } from './focusable-a11y';
@@ -85,6 +86,7 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   // control in a pointer-driven shell with no focus state at all, and the page
   // sheet's `:focus-visible` rule drawing a square outline in its place.
   const lit = at.focusVisible;
+  const box = useControlledMirror(at.controlled && at.focused, at.setBox);
   // Hover goes UNDER the focus coats: a control the cursor is over and the
   // remote is on is a focused control, not a doubly-lit one.
   const hover = at.hovered ? at.hoveredStyle : null;
@@ -98,7 +100,7 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   ];
   return (
     <TouchPressable
-      boxRef={at.setBox}
+      boxRef={box}
       webKeys={at.webKeys}
       href={at.href}
       label={at.label}

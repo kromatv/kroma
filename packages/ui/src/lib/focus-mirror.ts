@@ -12,3 +12,9 @@ export function mirrorFocus(_view: unknown): void {
 export function isMirrored(_element: unknown): boolean {
   return false;
 }
+
+/** Delivers a key pressed on the control the document's focus was handed to from
+ *  the page instead. Native has no document to deliver it from. */
+export function redeliverKey(_event: unknown): void {
+  // Intentionally empty.
+}

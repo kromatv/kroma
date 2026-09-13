@@ -32,7 +32,7 @@ import {
   Credits as CreditsSlot,
   Media,
   Panel,
-  PlayerSlotContext,
+  PlayerScope,
   PostPlay as PostPlaySlot,
   Report,
   SkipIntro as SkipIntroSlot,
@@ -219,7 +219,7 @@ function Root({
   const playUpNextItem = useCallback((item: UpNextItem) => onPlayItem?.(item), [onPlayItem]);
 
   return (
-    <PlayerSlotContext.Provider value={true}>
+    <PlayerScope>
       <Box
         ref={ref}
         nativeID={PLAYER_ROOT_ID}
@@ -355,7 +355,7 @@ function Root({
           {slots.rest}
         </Ground>
       </Box>
-    </PlayerSlotContext.Provider>
+    </PlayerScope>
   );
 }
 

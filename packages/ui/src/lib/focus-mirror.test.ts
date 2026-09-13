@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const scrollY = Object.getOwnPropertyDescriptor(window, 'scrollY');
+const undo: (() => void)[] = [];
 
 async function load() {
   vi.resetModules();
@@ -16,7 +17,32 @@ function control(parent: HTMLElement = document.body): HTMLElement {
   return el;
 }
 
+function redelivering(redeliverKey: (event: KeyboardEvent) => void): void {
+  window.addEventListener('keydown', redeliverKey, true);
+  undo.push(() => window.removeEventListener('keydown', redeliverKey, true));
+}
+
+function heard(target: EventTarget, answer?: (event: KeyboardEvent) => void): KeyboardEvent[] {
+  const events: KeyboardEvent[] = [];
+  const listener = (event: Event) => {
+    events.push(event as KeyboardEvent);
+    answer?.(event as KeyboardEvent);
+  };
+  target.addEventListener('keydown', listener);
+  undo.push(() => target.removeEventListener('keydown', listener));
+  return events;
+}
+
+function keydown(key: string, keyCode?: number): KeyboardEvent {
+  const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+  if (keyCode !== undefined) Object.defineProperty(event, 'keyCode', { value: keyCode });
+  return event;
+}
+
+const codeOf = (event: KeyboardEvent) => (event as { keyCode: number }).keyCode;
+
 afterEach(() => {
+  for (const step of undo.splice(0)) step();
   vi.restoreAllMocks();
   if (scrollY) Object.defineProperty(window, 'scrollY', scrollY);
   document.body.innerHTML = '';
@@ -146,5 +172,58 @@ describe('mirrorFocus', () => {
     mirrorFocus(el);
 
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+});
+
+describe('redeliverKey', () => {
+  it('hands a key on the mirrored control to the page instead', async () => {
+    const { mirrorFocus, redeliverKey } = await load();
+    const el = control();
+    mirrorFocus(el);
+    redelivering(redeliverKey);
+    const onControl = heard(el);
+    const onPage = heard(document);
+
+    el.dispatchEvent(keydown('Enter'));
+
+    expect(onControl).toHaveLength(0);
+    expect(onPage.map((event) => [event.target, event.key])).toEqual([[document.body, 'Enter']]);
+  });
+
+  it('keeps a key the page refused refused', async () => {
+    const { mirrorFocus, redeliverKey } = await load();
+    const el = control();
+    mirrorFocus(el);
+    redelivering(redeliverKey);
+    heard(document, (event) => event.preventDefault());
+    const key = keydown('ArrowDown');
+
+    el.dispatchEvent(key);
+
+    expect(key.defaultPrevented).toBe(true);
+  });
+
+  it('carries the code a remote with no key name sends', async () => {
+    const { mirrorFocus, redeliverKey } = await load();
+    const el = control();
+    mirrorFocus(el);
+    redelivering(redeliverKey);
+    const onPage = heard(document);
+
+    el.dispatchEvent(keydown('', 13));
+
+    expect(onPage.map(codeOf)).toEqual([13]);
+  });
+
+  it('leaves a key on any other element where it landed', async () => {
+    const { mirrorFocus, redeliverKey } = await load();
+    mirrorFocus(control());
+    const other = control();
+    redelivering(redeliverKey);
+    const onOther = heard(other);
+
+    other.dispatchEvent(keydown('Enter'));
+
+    expect(onOther).toHaveLength(1);
   });
 });

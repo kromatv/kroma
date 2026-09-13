@@ -12,6 +12,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Checkbox } from '#ui/components/atoms/checkbox';
 import { Radio } from '#ui/components/atoms/radio';
 import { Switch } from '#ui/components/atoms/switch';
+import { ControlledFocusMirror } from '#ui/lib/controlled-focus-mirror';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
 import { clearPressGuard } from '#ui/lib/press-guard';
@@ -139,6 +140,22 @@ describe('the document focus follows the ring', () => {
     press('Enter');
 
     expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('hands it to a controlled control inside a ControlledFocusMirror', () => {
+    render(
+      <ControlledFocusMirror>
+        <Focusable label="Lecture" focused />
+      </ControlledFocusMirror>,
+    );
+
+    expect(document.activeElement).toBe(screen.getByLabelText('Lecture'));
+  });
+
+  it('leaves it alone for a controlled control anywhere else', () => {
+    render(<Focusable label="Lecture" focused />);
+
+    expect(document.activeElement).toBe(document.body);
   });
 
   it('focuses a control whose role the browser would not focus by itself', () => {

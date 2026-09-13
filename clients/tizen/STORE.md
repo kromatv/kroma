@@ -153,10 +153,16 @@ country a Public Seller can ship to, so this is not optional for a first release
     Chromium: `document.activeElement` carries the ring's role and `aria-label`
     on every move, with no native outline and no scroller moved.
 
-  Two things stand between this and ticking TTS in a submission. Nobody has
-  listened to Voice Guide on a real set yet. And the player's controls run
-  their own virtual focus (`usePlayerNav`) rather than the navigator, so the
-  platform focus does not follow them once a video is playing.
+  The player's chrome runs a focus of its own (`usePlayerNav` and the panels'
+  list focus) rather than the navigator, and it mirrors the same way: the
+  transport controls, the seek bar, the back button and every row of the
+  subtitle, audio and settings menus take the DOM focus as they light, and a
+  key pressed on one is delivered from the page, where the player's router has
+  always read it. Checked the same way against a private server, walking a
+  demo title's controls and menus while it played.
+
+  One thing stands between this and ticking TTS in a submission: nobody has
+  listened to Voice Guide on a real set yet.
 
 Also declare **Player Specification** (video codec, audio codec, container,
 streaming engine, subtitle) and name the principal content. QA runs a playback

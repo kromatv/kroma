@@ -73,3 +73,33 @@ export function mirrorFocus(view: unknown): void {
 export function isMirrored(element: unknown): boolean {
   return element != null && element === mirrored;
 }
+
+type LegacyKeys = { keyCode: number; which: number };
+
+/**
+ * Delivers `event`, a key pressed on the control the document's focus was handed
+ * to, from the page instead, where it arrived before the focus moved. For a
+ * surface that routes every key itself: the control's own key handling never
+ * runs, and the routing stays the one it was.
+ */
+export function redeliverKey(event: KeyboardEvent): void {
+  const target = event.target;
+  if (!isElement(target) || target !== mirrored) return;
+  event.stopImmediatePropagation();
+  const copy = new KeyboardEvent(event.type, {
+    key: event.key,
+    code: event.code,
+    location: event.location,
+    repeat: event.repeat,
+    ctrlKey: event.ctrlKey,
+    shiftKey: event.shiftKey,
+    altKey: event.altKey,
+    metaKey: event.metaKey,
+    bubbles: true,
+    cancelable: true,
+  });
+  const legacy = event as LegacyKeys;
+  Object.defineProperty(copy, 'keyCode', { value: legacy.keyCode });
+  Object.defineProperty(copy, 'which', { value: legacy.which });
+  if (!target.ownerDocument.body.dispatchEvent(copy)) event.preventDefault();
+}
