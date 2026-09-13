@@ -28,10 +28,19 @@ describe('quitApp', () => {
 });
 
 describe('canExitOnBack', () => {
-  it('is offered only where Tizen can close the application', () => {
+  it('is offered where Tizen can close the application', () => {
     expect(canExitOnBack()).toBe(false);
 
     vi.stubGlobal('tizen', { application: { getCurrentApplication: () => ({ exit: () => {} }) } });
+
+    expect(canExitOnBack()).toBe(true);
+  });
+
+  it("is offered where webOS's platform Back can leave the app", () => {
+    vi.stubGlobal('PalmSystem', {});
+    expect(canExitOnBack()).toBe(false);
+
+    vi.stubGlobal('PalmSystem', { platformBack: () => {} });
 
     expect(canExitOnBack()).toBe(true);
   });
@@ -47,7 +56,16 @@ describe('exitOnBack', () => {
     expect(exit).toHaveBeenCalledOnce();
   });
 
-  it('does nothing off Tizen', () => {
+  it('hands webOS its platform Back', () => {
+    const platformBack = vi.fn();
+    vi.stubGlobal('PalmSystem', { platformBack });
+
+    exitOnBack();
+
+    expect(platformBack).toHaveBeenCalledOnce();
+  });
+
+  it('does nothing where no shell offers an exit', () => {
     expect(() => exitOnBack()).not.toThrow();
   });
 });
