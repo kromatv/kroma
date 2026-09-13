@@ -8,14 +8,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resolveRedirect } from '#tv/app/guard';
 import { GUARD } from '#tv/app/navPolicy';
 import { EnvProvider } from '#tv/app/providers/env';
-import {
-  TvClientProvider,
-  type TvNav,
-  TvNavProvider,
-  TvOutlet,
-  type TvScreens,
-  useNav,
-} from '#tv/app/router';
+import { TvClientProvider, type TvNav, TvNavProvider, TvOutlet, useNav } from '#tv/app/router';
+import { stubScreens } from '#tv/app/router.fixtures';
 import { TvReport } from '#tv/features/reports/TvReport';
 
 afterEach(() => {
@@ -25,33 +19,6 @@ afterEach(() => {
   // runner is; without this each mount resumes the previous test's stack.
   sessionStorage.clear();
 });
-
-// Every screen we do not exercise renders its own name, so a stray redirect
-// shows up as the wrong name on screen rather than as an empty tree.
-function stubScreens(): TvScreens {
-  const stub = (name: string) => () => <div>{`screen:${name}`}</div>;
-  return {
-    connect: stub('connect'),
-    profiles: stub('profiles'),
-    addProfile: stub('addProfile'),
-    quick: stub('quick'),
-    deviceSettings: stub('deviceSettings'),
-    about: stub('about'),
-    pin: stub('pin'),
-    profileMenu: stub('profileMenu'),
-    settingsGroup: stub('settingsGroup'),
-    home: stub('home'),
-    grid: stub('grid'),
-    genres: stub('genres'),
-    genre: stub('genre'),
-    search: stub('search'),
-    person: stub('person'),
-    movie: stub('movie'),
-    show: stub('show'),
-    player: stub('player'),
-    report: TvReport,
-  };
-}
 
 // TvApp's guard, verbatim in shape: the redirect is applied from an effect
 // after the screen has mounted, which is what made a missing allow-list
@@ -78,7 +45,7 @@ function mountApp(createReport = vi.fn().mockResolvedValue({})) {
     <EnvProvider platform="TV">
       <I18nProvider locale="en">
         <TvClientProvider client={fake}>
-          <TvNavProvider screens={stubScreens()}>
+          <TvNavProvider screens={stubScreens({ report: TvReport })}>
             <NavHandle
               onReady={(n) => {
                 nav = n;

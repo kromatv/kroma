@@ -55,6 +55,26 @@ pub fn set_user_subtitle_language(
     Ok(())
 }
 
+/// The newest release whose notes this account has been shown, if any.
+pub fn whats_new_seen(pool: &Pool, user_id: &str) -> Result<Option<String>> {
+    let conn = pool.get()?;
+    let seen = conn.query_row(
+        "SELECT whats_new_seen FROM users WHERE id = ?1",
+        params![user_id],
+        |r| r.get::<_, Option<String>>(0),
+    )?;
+    Ok(seen)
+}
+
+pub fn set_whats_new_seen(pool: &Pool, user_id: &str, version: &str) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "UPDATE users SET whats_new_seen = ?2 WHERE id = ?1",
+        params![user_id, version],
+    )?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -96,5 +116,29 @@ mod tests {
         assert_eq!(got.subtitle_language.as_deref(), Some("off"));
         set_user_language(&p, &u.id, None).unwrap();
         assert!(user_by_id(&p, &u.id).unwrap().unwrap().language.is_none());
+    }
+
+    #[test]
+    fn the_last_release_seen_starts_empty_and_reads_back_what_was_set() {
+        let p = pool();
+        let u = mk_user(&p, "a@b.c", "alice");
+        let before = whats_new_seen(&p, &u.id).unwrap();
+
+        set_whats_new_seen(&p, &u.id, "0.1.39").unwrap();
+
+        assert_eq!(before, None);
+        assert_eq!(
+            whats_new_seen(&p, &u.id).unwrap().as_deref(),
+            Some("0.1.39")
+        );
+    }
+
+    #[test]
+    fn reading_the_last_release_seen_of_an_unknown_account_is_an_error() {
+        let p = pool();
+
+        let seen = whats_new_seen(&p, "nobody");
+
+        assert!(seen.is_err());
     }
 }

@@ -4,14 +4,8 @@ import { focusSettled, markFocusSettled } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { useEffect, useRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  type TvChrome,
-  type TvNav,
-  TvNavProvider,
-  TvOutlet,
-  type TvScreens,
-  useNav,
-} from '#tv/app/router';
+import { type TvChrome, type TvNav, TvNavProvider, TvOutlet, useNav } from '#tv/app/router';
+import { stubScreens } from '#tv/app/router.fixtures';
 
 afterEach(() => {
   cleanup();
@@ -39,31 +33,6 @@ const film = (id: string) => ({ id, title: id }) as unknown as MediaItem;
 const MOUNTS = { bar: 0, movie: 0 };
 
 const CHROME: TvChrome = { routes: ['home', 'grid'], render: Bar };
-
-function stubScreens(): TvScreens {
-  const stub = (name: string) => () => <div>{`screen:${name}`}</div>;
-  return {
-    connect: stub('connect'),
-    profiles: stub('profiles'),
-    addProfile: stub('addProfile'),
-    quick: stub('quick'),
-    deviceSettings: stub('deviceSettings'),
-    about: stub('about'),
-    pin: stub('pin'),
-    profileMenu: stub('profileMenu'),
-    settingsGroup: stub('settingsGroup'),
-    home: stub('home'),
-    grid: stub('grid'),
-    genres: stub('genres'),
-    genre: stub('genre'),
-    search: stub('search'),
-    person: stub('person'),
-    movie: stub('movie'),
-    show: stub('show'),
-    player: stub('player'),
-    report: stub('report'),
-  };
-}
 
 let nav: TvNav;
 function Capture() {

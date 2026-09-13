@@ -123,6 +123,7 @@ describe('the plain reads', () => {
     ['user.notifications', () => userQueries.notifications(), c.notifications.list],
     ['user.notificationPrefs', () => userQueries.notificationPrefs(), c.notifications.prefs],
     ['user.pushKey', () => userQueries.pushKey(), c.notifications.push.key],
+    ['user.releases', () => userQueries.releases(), c.releases.list],
     ['server.health', () => serverQueries.health(), c.media.health],
     ['server.splash', () => serverQueries.splash(), c.media.splash],
     ['discover.detail', () => discoverQueries.detail('movie', 603), c.discovery.detail],
