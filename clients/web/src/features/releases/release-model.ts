@@ -1,4 +1,4 @@
-import type { Highlight, Release, ReleasesView } from '@kromatv/client/releases';
+import type { Highlight, Release } from '@kromatv/client/releases';
 
 const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -7,11 +7,6 @@ type CountKey = 'releases.highlightCount' | 'releases.fixCount';
 interface ReleaseCount {
   key: CountKey;
   count: number;
-}
-
-export interface WhatsNew {
-  release: Release;
-  steps: [Highlight, ...Highlight[]];
 }
 
 /** A release's `YYYY-MM-DD` as the reader's locale writes it, or null when it
@@ -34,15 +29,6 @@ export function releaseCounts(release: Release): ReleaseCount[] {
     { key: 'releases.fixCount', count: release.fixed.length },
   ];
   return counts.filter(({ count }) => count > 0);
-}
-
-/** The unseen release and its highlights. Null once it was seen,
- *  and for a release without a highlight. */
-export function whatsNewSteps(view: ReleasesView): WhatsNew | null {
-  const release = view.releases.find(({ version }) => version === view.unseen);
-  const [first, ...rest] = release?.highlights ?? [];
-  if (!release || !first) return null;
-  return { release, steps: [first, ...rest] };
 }
 
 /** The first highlight spans the column when it has a picture; the rest fill

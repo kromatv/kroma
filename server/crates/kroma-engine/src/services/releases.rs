@@ -83,8 +83,9 @@ pub fn view(releases: &[Release], current: &str, locale: &str, owner: bool) -> V
     shown.into_iter().map(|(_, view)| view).collect()
 }
 
-/// The release a client opens on its own: the newest one with highlights that
-/// is past `seen`. A reader who has never been shown one gets the newest.
+/// The newest release with highlights past `seen`, the one the reader has not
+/// been shown yet. A reader who has never been shown one gets the newest.
+/// The web marks it with a badge until the history is visited.
 pub fn unseen(shown: &[ReleaseView], seen: Option<&str>) -> Option<String> {
     let seen = seen.and_then(version_key);
     shown
@@ -193,7 +194,7 @@ mod tests {
     }
 
     #[test]
-    fn opens_the_newest_release_past_the_one_the_reader_last_saw() {
+    fn flags_the_newest_release_past_the_one_the_reader_last_saw() {
         let shown = view(&catalog(), "0.1.10", "en", true);
 
         assert_eq!(unseen(&shown, Some("0.1.9")).as_deref(), Some("0.1.10"));
@@ -202,13 +203,13 @@ mod tests {
     }
 
     #[test]
-    fn opens_nothing_for_a_release_without_highlights() {
+    fn flags_nothing_for_a_release_without_highlights() {
         let releases = assemble(&[("0.1.10", "en.md", "## Fixed\n\n- A fix.")]);
         let shown = view(&releases, "0.1.10", "en", true);
 
-        let opened = unseen(&shown, Some("0.1.9"));
+        let flagged = unseen(&shown, Some("0.1.9"));
 
-        assert_eq!(opened, None);
+        assert_eq!(flagged, None);
     }
 
     #[test]
@@ -230,15 +231,15 @@ mod tests {
     }
 
     #[test]
-    fn never_opens_a_release_whose_version_it_cannot_order() {
+    fn never_flags_a_release_whose_version_it_cannot_order() {
         let shown = vec![ReleaseView {
             version: "next".into(),
             date: None,
             notes: ReleaseNotes::parse("## New\n\n### A title\nA paragraph."),
         }];
 
-        let opened = unseen(&shown, None);
+        let flagged = unseen(&shown, None);
 
-        assert_eq!(opened, None);
+        assert_eq!(flagged, None);
     }
 }

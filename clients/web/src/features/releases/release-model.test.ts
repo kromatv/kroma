@@ -1,6 +1,6 @@
-import type { Highlight, Release, ReleasesView } from '@kromatv/client/releases';
+import type { Highlight, Release } from '@kromatv/client/releases';
 import { describe, expect, it } from 'vitest';
-import { formatReleaseDate, highlightLayout, releaseCounts, whatsNewSteps } from './release-model';
+import { formatReleaseDate, highlightLayout, releaseCounts } from './release-model';
 
 function highlight(title: string): Highlight {
   return { title, body: `${title}, in one paragraph.` };
@@ -12,10 +12,6 @@ function pictured(title: string): Highlight {
 
 function release(over: Partial<Release> = {}): Release {
   return { version: '0.1.39', action: [], highlights: [], fixed: [], owner: [], ...over };
-}
-
-function view(over: Partial<ReleasesView> = {}): ReleasesView {
-  return { current: '0.1.39', unseen: null, releases: [], ...over };
 }
 
 describe('formatReleaseDate', () => {
@@ -54,35 +50,6 @@ describe('releaseCounts', () => {
     expect(releaseCounts(release({ fixed: ['x', 'y'] }))).toEqual([
       { key: 'releases.fixCount', count: 2 },
     ]);
-  });
-});
-
-describe('whatsNewSteps', () => {
-  it('steps through the highlights of the unseen release', () => {
-    const unseen = release({ highlights: [highlight('a'), pictured('b')] });
-    const older = release({ version: '0.1.38', highlights: [highlight('c')] });
-
-    const steps = whatsNewSteps(view({ unseen: '0.1.39', releases: [unseen, older] }));
-
-    expect(steps).toEqual({ release: unseen, steps: [highlight('a'), pictured('b')] });
-  });
-
-  it('opens nothing once the release was seen', () => {
-    const notes = release({ highlights: [highlight('a')] });
-
-    expect(whatsNewSteps(view({ unseen: null, releases: [notes] }))).toBeNull();
-  });
-
-  it('opens nothing for a release of fixes alone', () => {
-    const notes = release({ fixed: ['x'] });
-
-    expect(whatsNewSteps(view({ unseen: '0.1.39', releases: [notes] }))).toBeNull();
-  });
-
-  it('opens nothing when the unseen version has no notes', () => {
-    const notes = release({ highlights: [highlight('a')] });
-
-    expect(whatsNewSteps(view({ unseen: '0.1.40', releases: [notes] }))).toBeNull();
   });
 });
 

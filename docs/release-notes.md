@@ -25,8 +25,9 @@ starts at the last `v[0-9]*` tag. Module and vendor tags are not server releases
 The server embeds every folder when it is built and serves the notes at
 `GET /api/releases`, in the reader's language, falling back to English. A release
 shows only once the running server has reached its version, so the next
-release's notes can land before the bump. The web app and the television open the
-newest unseen release on their own, once per account.
+release's notes can land before the bump. Nothing opens on its own: the web app
+badges the sidebar link until the reader visits the history, and the television
+lists every release under About.
 
 `release.json` carries the date, written when the release is cut:
 

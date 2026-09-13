@@ -6,7 +6,6 @@ import { CatalogModalHosts } from '#web/features/catalog/modal-hosts';
 import { MobileTopbar, Sidebar } from '#web/features/catalog/sidebar';
 import { useNotificationStream } from '#web/features/notifications/use-notifications';
 import { CastBar } from '#web/features/playback/cast/cast-bar';
-import { WhatsNewPrompt } from '#web/features/releases/whats-new-prompt';
 import { ensureSession, isAuthed, kromaClient } from '#web/shared/lib/api';
 import { deviceInfo } from '#web/shared/lib/device';
 import { useRequireAuth } from '#web/shared/lib/require-auth';
@@ -53,7 +52,6 @@ function AppLayout() {
           <Outlet />
         </Box>
         <CatalogModalHosts />
-        <WhatsNewPrompt />
         <CastBar />
       </Box>
       <Box z={CAST_PICKER_Z}>
