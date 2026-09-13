@@ -51,7 +51,8 @@ fn reserve(in_flight: &mut HashSet<String>, id: &str) -> bool {
 }
 
 /// `null` means it is still generating and the client should keep polling; a
-/// `Section`, even with empty `items`, is terminal.
+/// `Section`, even with empty `items`, is terminal. Without a configured LLM
+/// nothing can generate, so a miss is terminal and empty.
 pub async fn ai_suggest(
     State(state): State<SharedState>,
     AuthUser(_user): AuthUser,
@@ -78,6 +79,9 @@ pub async fn ai_suggest(
     match result {
         Ok(Cached::Ready(row, items)) => section(locale, pick_lang(&row.reasons, locale), items),
         Ok(Cached::UnknownSeed) => section(locale, None, Vec::new()),
+        Ok(Cached::Pending) if !crate::infra::llm::from_settings(&state.settings).available() => {
+            section(locale, None, Vec::new())
+        }
         Ok(Cached::Pending) => {
             spawn_generation(state.clone(), id);
             Json::<Option<Section>>(None).into_response()
@@ -175,6 +179,7 @@ mod tests {
     use super::*;
     use crate::api::test_support::{demo_item_id, get, test_app};
     use axum::http::StatusCode;
+    use serde_json::json;
 
     fn reasons(pairs: &[(&str, &str)]) -> HashMap<String, String> {
         pairs
@@ -238,6 +243,19 @@ mod tests {
     #[tokio::test]
     async fn a_seed_with_nothing_cached_yet_answers_null_so_the_client_keeps_polling() {
         let t = test_app();
+        t.state.settings.set_patch(
+            &t.state.db,
+            [
+                ("llmEnabled", json!(true)),
+                ("llmProvider", json!("openai")),
+                ("llmBaseUrl", json!("http://127.0.0.1:9")),
+                ("llmModel", json!("test-model")),
+                ("llmApiKey", json!("test-key")),
+            ]
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v))
+            .collect(),
+        );
         let id = demo_item_id("The Matrix");
 
         let (status, body) = get(
@@ -249,5 +267,23 @@ mod tests {
 
         assert_eq!(status, StatusCode::OK);
         assert!(body.is_null(), "{body}");
+    }
+
+    #[tokio::test]
+    async fn a_server_without_an_llm_answers_an_empty_section_instead_of_pending() {
+        let t = test_app();
+        let id = demo_item_id("The Matrix");
+
+        let (status, body) = get(
+            &t.app,
+            &format!("/api/items/{id}/ai-suggest"),
+            Some(&t.token),
+        )
+        .await;
+
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(body["id"], "ai:suggest");
+        assert_eq!(body["items"].as_array().map(Vec::len), Some(0));
+        assert!(db::get_suggestion(&t.state.db, &id).unwrap().is_none());
     }
 }

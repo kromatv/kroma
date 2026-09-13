@@ -1,6 +1,7 @@
 import type { LanDiscoveryBridge } from '@kromatv/core';
 import { configureKit, configureRemote, OverlayHost, Toaster } from '@kromatv/ui/kit';
 import { useEffect } from 'react';
+import { canExitOnBack, exitOnBack } from '#tv/app/appQuit';
 import { BrandIntro } from '#tv/app/BrandIntro';
 import { CompatBanner } from '#tv/app/CompatBanner';
 import { CrashBoundary } from '#tv/app/CrashBoundary';
@@ -98,7 +99,11 @@ export function TvApp({
 
   return (
     <EnvProvider platform={platform} overrides={capabilities}>
-      <TvNavProvider screens={SCREENS} chrome={LAYERS}>
+      <TvNavProvider
+        screens={SCREENS}
+        chrome={LAYERS}
+        onExit={canExitOnBack() ? exitOnBack : undefined}
+      >
         <ConnectionProvider value={connection}>
           <TvClientProvider client={client}>
             <AuthProvider
