@@ -27,7 +27,8 @@ export const Release = z.object({
 export type Release = z.infer<typeof Release>;
 
 /** `GET /api/releases`: every release the server has reached, newest first.
- * `unseen` names the one a client opens on its own, null once it was shown. */
+ * `unseen` names the newest release with highlights the reader has not been
+ * shown yet. The web marks it with a badge until the history is visited. */
 export const ReleasesView = z.object({
   current: z.string(),
   unseen: z.string().nullable(),

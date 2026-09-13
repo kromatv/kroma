@@ -1,5 +1,4 @@
-import { useT } from '@kromatv/ui';
-import { Box, Hint, styles, Text } from '@kromatv/ui/kit';
+import { Box, Hint, styles } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 
 const OVERSCAN_BOTTOM = 54;
@@ -9,7 +8,6 @@ type RemoteKeys = '{left}{right}' | '{up}{down}' | '{back}';
 
 const s = styles({
   hint: { fontSize: HINT_SIZE, fontWeight: '600' },
-  key: { fontSize: HINT_SIZE, fontWeight: '700' },
 });
 
 export function HintStrip({ children }: Readonly<{ children: ReactNode }>) {
@@ -31,17 +29,5 @@ export function HintStrip({ children }: Readonly<{ children: ReactNode }>) {
 export function KeyHint({ keys, label }: Readonly<{ keys: RemoteKeys; label: string }>) {
   return (
     <Hint text={`${keys}${label}`} size={HINT_SIZE} gap={3} color="textDim" textStyle={s.hint} />
-  );
-}
-
-export function OkHint({ label }: Readonly<{ label: string }>) {
-  const t = useT();
-  return (
-    <Text style={s.hint} color="textDim">
-      <Text style={s.key} color="accentText">
-        {t('content.hintOk')}
-      </Text>
-      {` ${label}`}
-    </Text>
   );
 }

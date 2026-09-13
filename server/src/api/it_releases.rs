@@ -56,7 +56,7 @@ async fn an_account_that_never_saw_a_release_is_offered_the_newest_one_with_high
 }
 
 #[tokio::test]
-async fn marking_the_running_release_seen_leaves_nothing_to_open() {
+async fn marking_the_running_release_seen_leaves_nothing_unseen() {
     let t = test_app();
     let ana = member(&t);
 

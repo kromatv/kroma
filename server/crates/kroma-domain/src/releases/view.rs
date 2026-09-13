@@ -14,8 +14,8 @@ pub struct ReleaseView {
 }
 
 /// `GET /api/releases`: every release this server has reached, newest first.
-/// `unseen` names the one a client opens on its own, and is absent once the
-/// reader has been shown it.
+/// `unseen` names the newest release with highlights the reader has not been
+/// shown yet. The web marks it with a badge until the history is visited.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ReleasesView {
