@@ -7,6 +7,7 @@ import { Text } from '#ui/components/atoms/text';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { style, styles } from '#ui/core';
 import { a11yState } from '#ui/lib/a11y';
+import { useFocusMirror } from '#ui/lib/use-focus-mirror';
 import { panel, rowStyle } from './panel-style';
 
 /**
@@ -45,9 +46,11 @@ export function MenuRow({
   onActivate: () => void;
   onFocus: () => void;
 }>) {
+  const mirror = useFocusMirror(focused);
   return (
     <Pressable
       {...VIRTUAL_FOCUS}
+      ref={mirror}
       onPress={onActivate}
       onPointerEnter={onFocus}
       accessibilityRole={toggle ? 'switch' : 'button'}

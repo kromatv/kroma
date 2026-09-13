@@ -5,6 +5,7 @@ import { Text } from '#ui/components/atoms/text';
 
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { styles } from '#ui/core';
+import { useFocusMirror } from '#ui/lib/use-focus-mirror';
 import { useT } from '#ui/services/i18n';
 
 /**
@@ -32,8 +33,15 @@ export function CycleField({
   onInc: () => void;
 }>) {
   const t = useT();
+  const mirror = useFocusMirror(focused);
   return (
-    <Box onPointerEnter={onFocus} style={[s.cycleRow, focused ? s.cycleOn : s.cycleOff]}>
+    <Box
+      ref={mirror}
+      role="group"
+      accessibilityLabel={`${label}: ${value}`}
+      onPointerEnter={onFocus}
+      style={[s.cycleRow, focused ? s.cycleOn : s.cycleOff]}
+    >
       <Text style={s.fieldLabel}>{label}</Text>
       <Box row align="center" gap={16}>
         <CycleArrow

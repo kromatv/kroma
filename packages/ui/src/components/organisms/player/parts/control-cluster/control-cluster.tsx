@@ -38,7 +38,9 @@ import {
 import { sharedStyle, styles, sv } from '#ui/core';
 import { a11yValue } from '#ui/lib/a11y';
 import { suppressSelection } from '#ui/lib/drag-select';
+import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { useFocusVisible } from '#ui/lib/focus-visible';
+import { useFocusMirror } from '#ui/lib/use-focus-mirror';
 import { useT } from '#ui/services/i18n';
 
 const circleFill = sv({ base: { _focus: { bg: 'tint/22' } } });
@@ -302,6 +304,7 @@ function VolumeControl({
   muteLabel: string;
 }>) {
   const lit = useFocusVisible(focused);
+  const mirror = useFocusMirror(focused);
   // Measured on the RAIL, not the row that holds it: the row has 20px of right
   // padding, so dividing a pointer offset by the row's width would put the level
   // a fifth past the cursor. The two share a left edge, so this still works.
@@ -374,10 +377,11 @@ function VolumeControl({
       </IconButton>
       <View
         {...pan.panHandlers}
+        ref={mirror}
         accessibilityRole="adjustable"
         accessibilityLabel={label}
         {...a11yValue({ min: 0, max: 100, now: percent, text: `${percent}%` })}
-        style={railOf(size, px(VOLUME_RAIL), px(20))}
+        style={[railOf(size, px(VOLUME_RAIL), px(20)), NO_OUTLINE]}
       >
         <Box
           ref={trackRef}

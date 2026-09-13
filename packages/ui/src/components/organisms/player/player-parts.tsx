@@ -9,6 +9,7 @@
 // would break D-pad traversal (DESIGN.md §3, T5).
 
 import { Children, createContext, isValidElement, type ReactNode, useContext } from 'react';
+import { ControlledFocusMirror } from '#ui/lib/controlled-focus-mirror';
 import type { StoryboardTile } from '#ui/services/storyboard';
 import type { SubtitleAppearance } from './lib/subtitle-appearance';
 import type { PlayerMarker, PlayerReportCategory } from './media-types';
@@ -19,6 +20,16 @@ import type { UpNextData, UpNextItem } from './parts/up-next-sheet';
 import type { Chapter } from './types';
 
 const PlayerSlotContext = createContext(false);
+
+/** What the Root renders around its parts: the context each part checks it sits
+ *  in, and the focus mirror the chrome's own focus needs. */
+function PlayerScope({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <PlayerSlotContext.Provider value={true}>
+      <ControlledFocusMirror>{children}</ControlledFocusMirror>
+    </PlayerSlotContext.Provider>
+  );
+}
 
 function useSlot(part: string): void {
   const inRoot = useContext(PlayerSlotContext);
@@ -274,6 +285,7 @@ export {
   Credits,
   Media,
   Panel,
+  PlayerScope,
   PlayerSlotContext,
   PostPlay,
   Report,

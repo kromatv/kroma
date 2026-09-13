@@ -138,8 +138,8 @@ country a Public Seller can ship to, so this is not optional for a first release
   You must also supply a video title and a playback URL whose content actually
   has captions. Samsung's checklist posts a defect for **fewer than three**
   captioned test contents, so line up three.
-- **TTS: half there, and the missing half is one specific thing.** Measured on
-  the built app rather than assumed:
+- **TTS: the platform focus follows the ring now, and Voice Guide still has to
+  be heard on a set.** Measured on the built app rather than assumed:
   - *Accessible names: present.* Every focusable control renders
     `role="button"` + `aria-label` (`Focusable` sets `accessibilityRole` /
     `accessibilityLabel`, which react-native-web maps to both). The audit found
@@ -147,19 +147,29 @@ country a Public Seller can ship to, so this is not optional for a first release
   - *`<html lang>`: fixed.* It was hardcoded `fr` in every shell's index.html,
     so an English interface was announced with French phonetics. The locale
     provider now mirrors the UI language onto it.
-  - *Platform focus: never moves.* This is the gap. Spatial navigation is
-    virtual (the navigator tracks the focused node in JS and draws the ring
-    itself), so `document.activeElement` stays on `<body>` for the whole
-    session. A screen reader announces the element that holds PLATFORM focus,
-    so Voice Guide has nothing to follow as the D-pad moves.
+  - *Platform focus: follows the D-pad.* Spatial navigation is virtual, so
+    `document.activeElement` used to sit on `<body>` for the whole session and
+    Voice Guide had nothing to follow. On the browser shells every navigator
+    control now takes the DOM focus as the ring lands on it (`lib/focus-mirror`):
+    `focus({ preventScroll: true })` where the engine honours it, and below
+    Chromium 64 (Tizen 3.0 and 4.0) a plain `focus()` with every scroller put
+    back where it was. A control the browser would not focus gets
+    `tabindex="-1"`, a field holding the caret keeps it, a move the pointer
+    drives hands the focus back to the page, and OK still reaches the control
+    once, through the navigator. Checked with Playwright on the Tizen shell in
+    Chromium: `document.activeElement` carries the ring's role and `aria-label`
+    on every move, with no native outline and no scroller moved.
 
-  Closing it means mirroring the virtual focus onto the DOM (`el.focus({
-  preventScroll: true })` when a `Focusable` becomes focused). That is a small
-  change in one component and a real risk to the navigator's behaviour, so it
-  needs verifying with Voice Guide on an actual set before it is claimed in a
-  submission. Until then the options are unchanged: implement it, or restrict
-  the launch to model groups outside FCC scope, which, on a Public Seller
-  account limited to the US, means not launching on Samsung at all.
+  The player's chrome runs a focus of its own (`usePlayerNav` and the panels'
+  list focus) rather than the navigator, and it mirrors the same way: the
+  transport controls, the seek bar, the back button and every row of the
+  subtitle, audio and settings menus take the DOM focus as they light, and a
+  key pressed on one is delivered from the page, where the player's router has
+  always read it. Checked the same way against a private server, walking a
+  demo title's controls and menus while it played.
+
+  One thing stands between this and ticking TTS in a submission: nobody has
+  listened to Voice Guide on a real set yet.
 
 Also declare **Player Specification** (video codec, audio codec, container,
 streaming engine, subtitle) and name the principal content. QA runs a playback

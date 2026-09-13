@@ -1,6 +1,10 @@
 import { type RefObject, useMemo } from 'react';
+import { webDocument } from '#ui/lib/dom';
+import { isMirrored } from '#ui/lib/focus-mirror';
 import { WEB } from '#ui/lib/platform';
 import type { FocusRole, WebKeys } from './focusable-types';
+
+const navigatorHolds = () => isMirrored(webDocument()?.activeElement ?? null);
 
 function useWebKeys(
   active: boolean,
@@ -19,7 +23,7 @@ function useWebKeys(
     });
     return {
       pressable: answering((key) => key === ' ' && role !== 'button'),
-      view: answering((key) => key === 'Enter' || key === ' '),
+      view: answering((key) => (key === 'Enter' || key === ' ') && !navigatorHolds()),
     };
   }, [active, role, press]);
 }
