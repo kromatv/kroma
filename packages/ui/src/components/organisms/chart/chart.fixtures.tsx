@@ -30,7 +30,7 @@ export const patchy = traffic.map((point, at) =>
 export const weeks = ['W09', 'W10', 'W11', 'W12', 'W13', 'W14'].map((at, index) => ({
   at,
   films: [6.2, 4.1, 8.8, 3.4, 7.1, 5.5][index] as number,
-  shows: [2.1, 5.6, 0, 6.8, 4.4, 9.2][index] as number,
+  shows: [2.1, 5.6, 0, 6.8, 0.2, 9.2][index] as number,
 }));
 
 export const mbps = (value: number) => `${value.toFixed(1)} Mb/s`;

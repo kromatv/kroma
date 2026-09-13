@@ -15,6 +15,17 @@ const SAMPLES = [
 
 const paths = (container: HTMLElement) => [...container.querySelectorAll('path')];
 
+function cornersPerBar(data: Record<string, number>): number[] {
+  cleanup();
+  const { container } = render(
+    <Chart.Root data={[data]} width={200} height={100}>
+      <Chart.Bar series="films" />
+      <Chart.Bar series="tv" stack />
+    </Chart.Root>,
+  );
+  return paths(container).map((path) => (path.getAttribute('d')?.match(/A/g) ?? []).length);
+}
+
 describe('<Chart>', () => {
   it('draws one trace per line', () => {
     const { container } = render(
@@ -175,24 +186,19 @@ describe('<Chart>', () => {
       </Chart.Root>,
     );
     const [films, tv] = paths(container).map((path) => path.getAttribute('d') ?? '');
-    expect(films).toBe('M38 50L162 50L162 96Q162 100,158 100L42 100Q38 100,38 96Z');
-    expect(tv).toBe('M38 4Q38 0,42 0L158 0Q162 0,162 4L162 50L38 50Z');
+    expect(films).toBe('M38 50L162 50L162 96A4 4 0 0 1 158 100L42 100A4 4 0 0 1 38 96L38 50Z');
+    expect(tv).toBe('M42 0L158 0A4 4 0 0 1 162 4L162 50L38 50L38 4A4 4 0 0 1 42 0Z');
   });
 
   it('rounds the ends of a stacked column and leaves the join square', () => {
-    const corners = (data: Record<string, number>) => {
-      cleanup();
-      const { container } = render(
-        <Chart.Root data={[data]} width={200} height={100}>
-          <Chart.Bar series="films" />
-          <Chart.Bar series="tv" stack />
-        </Chart.Root>,
-      );
-      return paths(container).map((path) => (path.getAttribute('d')?.match(/Q/g) ?? []).length);
-    };
-    expect(corners({ films: 2, tv: 2 })).toEqual([2, 2]);
-    expect(corners({ films: 2, tv: 0 })).toEqual([4]);
-    expect(corners({ films: 0, tv: 2 })).toEqual([4]);
+    expect(cornersPerBar({ films: 2, tv: 2 })).toEqual([2, 2]);
+    expect(cornersPerBar({ films: 2, tv: 0 })).toEqual([4]);
+    expect(cornersPerBar({ films: 0, tv: 2 })).toEqual([4]);
+  });
+
+  it('keeps the column round when the segment on its end is a sliver', () => {
+    expect(cornersPerBar({ films: 2, tv: 0.01 })).toEqual([4, 2]);
+    expect(cornersPerBar({ films: 2, tv: 0.0001 })).toEqual([4]);
   });
 
   it('refuses a part written outside a Root', () => {

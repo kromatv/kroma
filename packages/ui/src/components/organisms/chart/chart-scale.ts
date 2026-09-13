@@ -157,38 +157,55 @@ export interface BarBox {
   height: number;
 }
 
-/** The corners a bar rounds, in px. */
-export interface BarCorners {
-  top: number;
-  bottom: number;
+/** The part of a bar one segment covers: its top edge and its height, in px. */
+export interface BarSpan {
+  y: number;
+  height: number;
 }
 
 /**
- * One bar as a path, rounding only the corners it is given.
+ * One segment of a bar as a path: the slice `span` cuts out of `stack`, the
+ * box the whole stack fills, with the stack's four corners rounded by `radius`.
  *
  * The radius belongs to the STACK and not to the segment: a join between two
  * segments that both rounded would pinch, showing the ground through the notch
- * and reading as two bars that happen to touch. A radius larger than the box
- * can hold is clamped rather than allowed to deform it.
+ * and reading as two bars that happen to touch. A segment thinner than the
+ * radius draws only the part of the curve it covers and the one beside it draws
+ * the rest, so a sliver on the end of a stack never squares it off. A radius
+ * larger than the stack can hold is clamped rather than allowed to deform it.
  */
-export function barPath(box: Readonly<BarBox>, corners: Readonly<BarCorners>): string {
-  const limit = Math.max(0, Math.min(box.width / 2, box.height / 2));
-  const top = Math.max(0, Math.min(corners.top, limit));
-  const bottom = Math.max(0, Math.min(corners.bottom, limit));
-  const right = box.x + box.width;
-  const foot = box.y + box.height;
-  const arc = (cx: number, cy: number, x: number, y: number) =>
-    `Q${px(cx)} ${px(cy)},${px(x)} ${px(y)}`;
+export function barPath(stack: Readonly<BarBox>, span: Readonly<BarSpan>, radius: number): string {
+  const r = Math.max(0, Math.min(radius, stack.width / 2, stack.height / 2));
+  const head = stack.y + r;
+  const neck = stack.y + stack.height - r;
+  const from = Math.max(span.y, stack.y);
+  const to = Math.min(span.y + span.height, stack.y + stack.height);
+  if (to <= from) return '';
 
-  let d = `M${px(box.x)} ${px(box.y + top)}`;
-  if (top > 0) d += arc(box.x, box.y, box.x + top, box.y);
-  d += `L${px(right - top)} ${px(box.y)}`;
-  if (top > 0) d += arc(right, box.y, right, box.y + top);
-  d += `L${px(right)} ${px(foot - bottom)}`;
-  if (bottom > 0) d += arc(right, foot, right - bottom, foot);
-  d += `L${px(box.x + bottom)} ${px(foot)}`;
-  if (bottom > 0) d += arc(box.x, foot, box.x, foot - bottom);
-  return `${d}Z`;
+  const inset = (y: number) => {
+    const depth = Math.max(head - y, y - neck, 0);
+    return r - Math.sqrt(Math.max(0, r * r - depth * depth));
+  };
+  const left = (y: number) => stack.x + inset(y);
+  const right = (y: number) => stack.x + stack.width - inset(y);
+  const point = (edge: (y: number) => number, y: number) => `${px(edge(y))} ${px(y)}`;
+  const arc = `A${px(r)} ${px(r)} 0 0 1 `;
+  const side = (edge: (y: number) => number, start: number, stops: readonly number[]) => {
+    let d = '';
+    let last = start;
+    for (const y of stops) {
+      const middle = (last + y) / 2;
+      d += (middle < head || middle > neck ? arc : 'L') + point(edge, y);
+      last = y;
+    }
+    return d;
+  };
+  const bends = [head, neck].filter((y) => y > from && y < to);
+
+  return (
+    `M${point(left, from)}L${point(right, from)}${side(right, from, [...bends, to])}` +
+    `L${point(left, to)}${side(left, to, [from, ...bends].reverse())}Z`
+  );
 }
 
 /**

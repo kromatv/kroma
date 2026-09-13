@@ -6,7 +6,7 @@ import { type ColorValue, color } from '#ui/core';
 import { Path } from '#ui/lib/svg';
 import { type ChartSeries, type ChartState, useChart } from './chart-context';
 import { areaPath, type ChartCurve, linePath } from './chart-path';
-import { bandAt, barPath, px, yAt } from './chart-scale';
+import { type BarSpan, bandAt, barPath, px, yAt } from './chart-scale';
 
 const TRACE = 2.4;
 const WASH = 0.16;
@@ -84,23 +84,25 @@ function Area({ series, curve = 'monotone', thickness = TRACE }: Readonly<ChartT
   );
 }
 
-const filled = (value: number | null | undefined) =>
-  value !== null && value !== undefined && value !== 0;
+function spanOf(entry: ChartSeries, at: number, state: ChartState): BarSpan | null {
+  const value = entry.column[at];
+  if (value === null || value === undefined) return null;
+  const foot = entry.base?.[at] ?? 0;
+  const y = px(yAt(foot + value, state.domain, state.plot));
+  const height = px(yAt(foot, state.domain, state.plot)) - y;
+  return height > 0 ? { y, height } : null;
+}
 
-// Which ends of a column this segment owns at one sample: the outermost drawn
-// segments carry the whole stack's radius, and every join between two is
-// square. Read per sample, because the topmost segment changes as a series
-// drops to zero.
-function cornersOf(
-  stack: readonly ChartSeries[],
-  found: ChartSeries,
-  at: number,
-): { top: number; bottom: number } {
-  const drawn = stack.filter((entry) => filled(entry.column[at]));
-  return {
-    top: drawn.at(-1) === found ? BAR_CORNER : 0,
-    bottom: drawn[0] === found ? BAR_CORNER : 0,
-  };
+function extentOf(stack: readonly ChartSeries[], at: number, state: ChartState): BarSpan {
+  let top = Number.POSITIVE_INFINITY;
+  let foot = Number.NEGATIVE_INFINITY;
+  for (const entry of stack) {
+    const span = spanOf(entry, at, state);
+    if (!span) continue;
+    top = Math.min(top, span.y);
+    foot = Math.max(foot, span.y + span.height);
+  }
+  return { y: top, height: foot - top };
 }
 
 /** One series as a bar per sample. */
@@ -114,20 +116,18 @@ function Bar({ series }: Readonly<ChartBarProps>) {
   const paint = color(found.color);
   return (
     <>
-      {found.column.map((value, at) => {
-        if (!filled(value)) return null;
-        const foot = found.base?.[at] ?? 0;
+      {found.column.map((_, at) => {
+        const span = spanOf(found, at, state);
+        if (!span) return null;
         const band = bandAt(at, state.count, state.plot.width);
-        const y = px(yAt(foot + (value as number), state.domain, state.plot));
-        const height = px(yAt(foot, state.domain, state.plot)) - y;
-        if (height <= 0) return null;
+        const whole = { x: band.x, width: band.width, ...extentOf(stack, at, state) };
         return (
           <Path
             // The slot IS the identity: bar 3 is always bar 3, holding whatever
             // sample is current.
             // biome-ignore lint/suspicious/noArrayIndexKey: the position is the identity here
             key={at}
-            d={barPath({ x: band.x, width: band.width, y, height }, cornersOf(stack, found, at))}
+            d={barPath(whole, span, BAR_CORNER)}
             fill={paint}
           />
         );
