@@ -21,6 +21,7 @@ import type {
   WebKeys,
 } from './focusable-types';
 import { Painted, TouchPressable } from './touch-pressable';
+import { useMirroredFocus } from './use-mirrored-focus';
 
 // The navigator's `style` type follows whichever react-native copy the consuming
 // app resolves (the tvos fork on a TV, mainline on the phone), and those two are
@@ -191,12 +192,13 @@ function NavigatorForm({
     ringToken: at.ringToken,
     animated: at.animated,
   });
+  const mirror = useMirroredFocus(at.setBox, at.handleFocus);
 
   return (
     <NavigatorItem
       ref={entry}
       onSelect={at.press}
-      onFocus={at.handleFocus}
+      onFocus={mirror.focus}
       onBlur={at.handleBlur}
       // On the browser targets the control is ONE element: a second view per
       // control is a cost Tizen pays on every focus move. The native builds keep
@@ -210,7 +212,7 @@ function NavigatorForm({
           ...(at.webKeys ?? null),
           accessibilityLabel: at.label,
           onLayout: at.onLayout,
-          ref: at.setBox,
+          ref: mirror.ref,
           // Browser targets only: this view is a plain <View>, so there is no
           // hover callback to lean on and react-native-web forwards these two
           // straight to the element.
