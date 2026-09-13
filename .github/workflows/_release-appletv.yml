@@ -14,9 +14,9 @@ name: Release Apple TV beta channel
 # absent from the publish job's `needs`, next to the phone app rather than next
 # to the televisions.
 #
-# It ships the SAME app record as the phone: App Store Connect 6793457018 carries
+# It ships the SAME app record as the phone: App Store Connect 6811609753 carries
 # iOS and tvOS as two platforms of one listing (a universal purchase), which is
-# why both sign as `tv.kroma.mobile` - see clients/tv-native/app.config.ts.
+# why both sign as `tv.kroma.app` - see clients/tv-native/app.config.ts.
 #
 # Stable tags or an explicit manual run, never an untagged build: a TestFlight
 # number is spent for good, and a build that burned one would also mail every
@@ -103,12 +103,12 @@ jobs:
       #
       # Since the Top Shelf extension (tv-native's with-top-shelf plugin), the
       # imported profile alone no longer covers the whole archive: the app
-      # embeds KromaTopShelf, which signs as tv.kroma.mobile.TopShelf with its
+      # embeds KromaTopShelf, which signs as tv.kroma.app.TopShelf with its
       # own App Store profile that only the ASC-key-authenticated automatic
       # signing can resolve (it registers the App ID, the App Group, and mints
       # both profiles on first archive). The profile secret stays required as
       # this gate, but the ASC key trio is what actually signs - and the App
-      # Group's first appearance invalidates previously minted tv.kroma.mobile
+      # Group's first appearance invalidates previously minted tv.kroma.app
       # profiles, which automatic signing re-mints and a stored one cannot.
       - name: Check signing secrets
         id: signing
@@ -230,7 +230,7 @@ jobs:
           IOS_PROFILE: ${{ secrets.TVOS_PROVISIONING_PROFILE }}
           # The Top Shelf extension is a separate bundle id and so a separate
           # profile; without it that target goes unsigned and the export fails
-          # with "No profiles for 'tv.kroma.mobile.TopShelf' were found".
+          # with "No profiles for 'tv.kroma.app.TopShelf' were found".
           IOS_PROFILE_EXTRA_FILE: ${{ steps.profiles.outputs.minted == 'true' && format('{0}/profiles/tvos-topshelf.b64', runner.temp) || '' }}
           IOS_PROFILE_EXTRA: ${{ secrets.TVOS_TOPSHELF_PROVISIONING_PROFILE }}
         run: .github/scripts/ios-import-signing-assets.sh

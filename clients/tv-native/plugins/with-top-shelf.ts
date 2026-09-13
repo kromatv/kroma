@@ -20,7 +20,7 @@
 // CI's automatic signing (`-allowProvisioningUpdates` + the ASC API key)
 // registers that App ID and mints its profile on first archive; the one
 // portal-side effect to know about is that adding the App Group capability
-// invalidates previously minted profiles for tv.kroma.mobile - harmless while
+// invalidates previously minted profiles for tv.kroma.app - harmless while
 // both release lanes re-mint automatically, but a manually imported profile
 // would go stale.
 //
@@ -76,7 +76,7 @@ const infoPlist = (version: string, build: string) => `${plistHeader}
   <!-- Required, and required SEPARATELY from the app's own copy: an extension is
        its own bundle and App Store validation checks each one. Without it the
        .ipa builds, signs, and exports perfectly, and is then rejected at UPLOAD:
-       "Invalid Bundle. Your binary, 'tv.kroma.mobile.TopShelf', has a 64-bit
+       "Invalid Bundle. Your binary, 'tv.kroma.app.TopShelf', has a 64-bit
        architecture slice, so you must include the arm64 value for the
        UIRequiredDeviceCapabilities key" (90502). Every Apple TV is arm64, so
        this is a declaration rather than a constraint. -->

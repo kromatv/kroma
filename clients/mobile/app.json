@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#0A0A0C",
     "ios": {
-      "bundleIdentifier": "tv.kroma.mobile",
+      "bundleIdentifier": "tv.kroma.app",
       "supportsTablet": true,
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -28,7 +28,7 @@
       }
     },
     "android": {
-      "package": "tv.kroma.mobile",
+      "package": "tv.kroma.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0A0A0C",

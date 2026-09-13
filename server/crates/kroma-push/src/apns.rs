@@ -244,7 +244,7 @@ mod tests {
             &pem,
             "ABC1234567",
             "TEAM123456",
-            "tv.kroma.mobile",
+            "tv.kroma.app",
             environment,
         )
         .unwrap()
@@ -309,7 +309,7 @@ mod tests {
                 .map(|(_, v)| v.clone())
                 .unwrap()
         };
-        assert_eq!(h("apns-topic"), "tv.kroma.mobile");
+        assert_eq!(h("apns-topic"), "tv.kroma.app");
         assert_eq!(h("apns-push-type"), "alert");
         assert!(h("authorization").starts_with("bearer "));
 
@@ -517,7 +517,7 @@ mod tests {
         let rendered = format!("{:?}", test_key(Environment::Sandbox));
         assert!(rendered.contains("ABC1234567"), "{rendered}");
         assert!(rendered.contains("TEAM123456"), "{rendered}");
-        assert!(rendered.contains("tv.kroma.mobile"), "{rendered}");
+        assert!(rendered.contains("tv.kroma.app"), "{rendered}");
         assert!(rendered.contains("Sandbox"), "{rendered}");
         assert!(!rendered.contains("secret"), "{rendered}");
         assert!(!rendered.contains("PRIVATE KEY"), "{rendered}");

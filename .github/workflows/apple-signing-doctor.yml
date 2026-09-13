@@ -4,7 +4,7 @@ name: Apple signing doctor
 # printing any of them.
 #
 # Written because an .ipa failed at exportArchive with "No profiles for
-# 'tv.kroma.mobile' were found" while the ARCHIVE had succeeded - and the reason
+# 'tv.kroma.app' were found" while the ARCHIVE had succeeded - and the reason
 # was three lines earlier in a 10,000-line log: the archive had signed with
 # "Apple Development: Created via API" and an "iOS Team Provisioning Profile".
 # A development identity. Xcode mints one through the API when the keychain

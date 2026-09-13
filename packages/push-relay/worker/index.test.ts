@@ -31,7 +31,7 @@ beforeEach(async () => {
     APNS_KEY_P8: await testP8(),
     APNS_KEY_ID: 'ABC1234567',
     APNS_TEAM_ID: 'TEAM123456',
-    APNS_TOPIC: 'tv.kroma.mobile',
+    APNS_TOPIC: 'tv.kroma.app',
     MINT_LIMIT: allow(),
     PUSH_LIMIT: allow(),
   };
@@ -111,7 +111,7 @@ describe('spending a grant', () => {
     // has no field with which to name someone else's phone.
     expect(calls[0]?.url).toBe('https://api.push.apple.com/3/device/DEVICE-A');
     const headers = calls[0]?.init.headers as Record<string, string>;
-    expect(headers['apns-topic']).toBe('tv.kroma.mobile');
+    expect(headers['apns-topic']).toBe('tv.kroma.app');
     expect(headers.authorization).toMatch(/^bearer eyJ/);
   });
 
