@@ -61,11 +61,13 @@ COPY server/crates ./server/crates
 COPY modules ./modules
 # kroma-engine (a workspace member, so it's compiled by the warm-up build below)
 # include_str!s the shared locale catalogs at compile time
-# (crates/kroma-engine/src/i18n.rs -> ../../../packages/core/src/locales/*.json),
-# so they must exist before this build. Copy just the catalogs here they change
-# rarely, so the expensive dependency cache stays warm; the rest of packages/
-# lands with the real sources below.
+# (crates/kroma-engine/src/i18n.rs -> ../../../packages/core/src/locales/*.json)
+# and embeds the email templates and logo (src/services/email.rs ->
+# ../../../packages/core/assets/email/), so they must exist before this build.
+# Copy just those here: they change rarely, so the expensive dependency cache
+# stays warm; the rest of packages/ lands with the real sources below.
 COPY packages/core/src/locales ./packages/core/src/locales
+COPY packages/core/assets/email ./packages/core/assets/email
 WORKDIR /src/server
 RUN mkdir -p src && echo 'fn main() {}' > src/main.rs \
     && cargo build --locked --release \
