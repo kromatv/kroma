@@ -46,22 +46,68 @@ const t = ((k: string) => k) as unknown as Parameters<typeof useWebSubtitles>[1]
 installHarness();
 
 describe('useWebSubtitles track merge', () => {
-  it('merges embedded + downloaded tracks and flags selectability', async () => {
+  it('merges embedded + downloaded tracks and leaves picture subs out', async () => {
     H.downloadedSubtitles.mockResolvedValue([
       { id: 'd1', language: 'fr', label: 'IA FR', url: '/dl.vtt', provider: 'whisper' },
     ]);
     const item = movie([
       { index: 0, language: 'eng', codec: 'subrip', url: '/0.vtt' },
-      { index: 1, language: 'fra', codec: 'PGS', url: null }, // image sub → not selectable
+      { index: 1, language: 'fra', codec: 'PGS', url: null },
     ]);
+
     const { result } = renderHook(() => useWebSubtitles(item, t));
     await settle();
 
     const subs = result.current.subtitles;
-    expect(subs).toHaveLength(3);
+    expect(subs.map((s) => s.index)).toEqual([0, 1000]);
     expect(subs[0]).toMatchObject({ index: 0, selectable: true, ai: false });
-    expect(subs[1]).toMatchObject({ index: 1, selectable: false });
-    expect(subs[2]).toMatchObject({ index: 1000, ai: true, selectable: true, subId: 'd1' });
+    expect(subs[1]).toMatchObject({ index: 1000, ai: true, selectable: true, subId: 'd1' });
+  });
+});
+
+describe('useWebSubtitles failed tracks', () => {
+  const item = movie([
+    { index: 0, language: 'eng', codec: 'subrip', url: '/0.vtt' },
+    { index: 1, language: 'fra', codec: 'subrip', url: '/1.vtt' },
+  ]);
+
+  it('drops a track that failed to load and turns subtitles off without saving off', async () => {
+    const { result } = renderHook(() => useWebSubtitles(item, t));
+    await settle();
+    act(() => result.current.setActive(1));
+    H.updateUser.mockClear();
+
+    act(() => result.current.markFailed(1));
+
+    expect(result.current.activeIndex).toBeNull();
+    expect(result.current.subtitles.map((s) => s.index)).toEqual([0]);
+    expect(H.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('keeps the selection when a track other than the active one fails', async () => {
+    const { result } = renderHook(() => useWebSubtitles(item, t));
+    await settle();
+    act(() => result.current.setActive(0));
+
+    act(() => result.current.markFailed(1));
+
+    expect(result.current.activeIndex).toBe(0);
+    expect(result.current.subtitles.map((s) => s.index)).toEqual([0]);
+  });
+});
+
+describe('useWebSubtitles preferred track', () => {
+  it('turns on the full track rather than the forced one in the preferred language', async () => {
+    H.user = { subtitleLanguage: 'fr' };
+    const item = movie([
+      { index: 0, language: 'fra', codec: 'subrip', url: '/0.vtt', forced: true },
+      { index: 1, language: 'fra', codec: 'subrip', url: '/1.vtt' },
+    ]);
+
+    const { result } = renderHook(() => useWebSubtitles(item, t));
+    await settle();
+
+    expect(result.current.activeIndex).toBe(1);
   });
 });
 

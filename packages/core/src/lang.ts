@@ -127,6 +127,8 @@ export interface SubtitleCandidate {
   language?: string | null;
   url?: string | null;
   generated?: boolean;
+  title?: string | null;
+  forced?: boolean;
 }
 
 /** Index of the audio track matching `pref`, or null (the caller then keeps the
@@ -151,12 +153,30 @@ export function preferredAudioIndex(
 }
 
 /** Index of the subtitle track to auto-enable for `pref`, or null. Only
- * renderable, non-generated tracks are ever auto-enabled. */
+ * renderable, non-generated tracks are ever auto-enabled, and a full track wins
+ * over a forced one, which carries only the lines spoken in another language. */
 export function preferredSubIndex(
   subs: readonly SubtitleCandidate[],
   pref?: string | null,
 ): number | null {
   if (!pref || pref === LANG_OFF || pref === LANG_NO_PREF) return null;
-  const hit = subs.find((s) => Boolean(s.url) && !s.generated && matchesLang(pref, s.language));
+  const matches = subs.filter(
+    (s) => Boolean(s.url) && !s.generated && matchesLang(pref, s.language),
+  );
+  const hit = matches.find((s) => !isForced(s)) ?? matches[0];
   return hit ? hit.index : null;
+}
+
+const FORCED_WORDS: ReadonlySet<string> = new Set([
+  'forced',
+  'forcé',
+  'forcés',
+  'forcée',
+  'forcées',
+]);
+
+function isForced(sub: SubtitleCandidate): boolean {
+  if (sub.forced) return true;
+  const words = (sub.title ?? '').toLowerCase().split(/[^a-zÀ-ɏ]+/);
+  return words.some((w) => FORCED_WORDS.has(w));
 }

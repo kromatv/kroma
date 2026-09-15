@@ -71,6 +71,7 @@ pub(super) struct FfTags {
 #[derive(Debug, Deserialize)]
 pub(super) struct FfDisposition {
     pub(super) default: Option<u8>,
+    pub(super) forced: Option<u8>,
 }
 
 impl FfStream {

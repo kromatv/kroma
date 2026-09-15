@@ -1,20 +1,21 @@
 // @vitest-environment jsdom
 
-import { render } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { Animated } from 'react-native';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
 import { DEFAULT_SUB_APPEARANCE } from '../../lib/subtitle-appearance';
 import { fakeController } from '../../player.fixture';
+import type { PlayerController } from '../../types';
 import { Stage } from './stage';
 
-function stage(settingsShrink: boolean) {
+function stage(settingsShrink: boolean, controller: PlayerController = fakeController()) {
   const timing = vi.spyOn(Animated, 'timing');
   timing.mockClear();
   const { container } = render(
     <I18nProvider locale="en">
       <Stage
-        controller={fakeController()}
+        controller={controller}
         stageSize={{ width: 1920, height: 1080 }}
         settingsShrink={settingsShrink}
         appearance={DEFAULT_SUB_APPEARANCE}
@@ -44,5 +45,28 @@ describe('the settings card on the web', () => {
 
   it('sits at full size until the panel takes the stage', () => {
     expect(stage(false).node.style.transform).toBe('scale(1)');
+  });
+});
+
+describe('a subtitle track that fails to load', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('is reported to the controller, so the host can drop it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: false, status: 404 })),
+    );
+    const markSubtitleFailed = vi.fn();
+    const controller = fakeController({
+      subtitles: [{ index: 3, language: 'fra', codec: 'subrip', url: '/3.vtt', selectable: true }],
+      subtitleIndex: 3,
+      markSubtitleFailed,
+    });
+
+    stage(false, controller);
+
+    await waitFor(() => expect(markSubtitleFailed).toHaveBeenCalledWith(3));
   });
 });

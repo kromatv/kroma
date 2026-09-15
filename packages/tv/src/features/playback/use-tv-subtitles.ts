@@ -21,6 +21,7 @@ export interface TvSubtitles {
   subtitles: PlayerSub[];
   activeIndex: number | null;
   setActive: (index: number | null) => void;
+  markFailed: (index: number) => void;
   subtitleGen: SubtitleGenBundle;
 }
 
@@ -140,5 +141,5 @@ export function useTvSubtitles(
     onStart,
   };
 
-  return { subtitles, activeIndex: sel.active, setActive, subtitleGen };
+  return { subtitles, activeIndex: sel.active, setActive, markFailed: sel.drop, subtitleGen };
 }
