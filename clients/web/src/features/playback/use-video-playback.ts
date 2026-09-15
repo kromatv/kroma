@@ -2,6 +2,7 @@ import type { PlaybackMode } from '@kromatv/client/playback';
 import { audioTracksOf, type EngineDecision, preferredAudioIndex } from '@kromatv/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { setWebEnginePref, type WebEnginePref } from '#web/features/playback/engine-pref';
+import { useFullscreenFrame } from '#web/features/playback/fullscreen-frame';
 import { bindMediaEvents } from '#web/features/playback/media-events';
 import { useEngineDecision } from '#web/features/playback/use-engine-decision';
 import { useResumeAnchor } from '#web/features/playback/use-resume-anchor';
@@ -27,7 +28,7 @@ function modeOf(decision: EngineDecision): PlaybackMode {
  * is anchor-relative; positions reported by the hook are always absolute. */
 export function useVideoPlayback(item: MovieView): VideoPlayback {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const frame = useFullscreenFrame();
   const barRef = useRef<HTMLDivElement>(null);
 
   const [playing, setPlaying] = useState(true);
@@ -38,7 +39,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const [rate, setRate] = useState(1);
-  const [fs, setFs] = useState(false);
+  const [fs, setFs] = useState(() => Boolean(document.fullscreenElement));
   const [useHls, setUseHls] = useState(false);
   const [audioIndex, setAudioIndex] = useState(() => {
     const tracks = audioTracksOf(item);
@@ -200,7 +201,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
 
   const transport = useVideoTransport({
     videoRef,
-    containerRef,
+    frame,
     barRef,
     decisionKind: decision.kind,
     baseSec,
@@ -233,7 +234,6 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   const healthy = failure === null;
   return {
     videoRef,
-    containerRef,
     barRef,
     enginePref,
     setEnginePref,

@@ -37,7 +37,6 @@ function failureCopy(t: Translate, failure: StreamFailure): { error: string; hin
 export interface WebController {
   controller: PlayerController;
   videoRef: RefObject<HTMLVideoElement | null>;
-  containerRef: RefObject<HTMLDivElement | null>;
   pb: ReturnType<typeof useVideoPlayback>;
   subtitleGen: SubtitleGenBundle;
   subtitleLabel: string;
@@ -265,7 +264,6 @@ export function useWebController(item: MovieView): WebController {
   return {
     controller,
     videoRef: pb.videoRef,
-    containerRef: pb.containerRef,
     pb,
     subtitleGen: subs.subtitleGen,
     subtitleLabel: subs.label,

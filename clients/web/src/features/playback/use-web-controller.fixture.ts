@@ -28,7 +28,6 @@ function fakeVideo() {
 export function makePb(over: Record<string, unknown> = {}) {
   return {
     videoRef: { current: fakeVideo() },
-    containerRef: { current: null },
     anchor: 0,
     audioIndex: 0,
     baseSec: 0,

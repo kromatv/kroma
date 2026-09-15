@@ -51,7 +51,6 @@ interface ShakaStatic {
 
 export interface VideoPlayback {
   videoRef: React.RefObject<HTMLVideoElement | null>;
-  containerRef: React.RefObject<HTMLDivElement | null>;
   barRef: React.RefObject<HTMLDivElement | null>;
   playing: boolean;
   waiting: boolean;
