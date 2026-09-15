@@ -15,6 +15,7 @@ export const H = {
   refreshSession: vi.fn(async (): Promise<string | undefined> => 'fresh'),
   mseCaps: { caps: 'mse' },
   safariCaps: { caps: 'safari' },
+  frame: { current: null as HTMLDivElement | null },
   // A STABLE client reference: the resume effect keys on client identity, so a
   // fresh object each render would loop and clobber `anchor`.
   client: { playback: { itemProgress } },
@@ -90,6 +91,7 @@ export function installHarness(): void {
       { index: 1, language: 'fra' },
     ];
     H.user = null;
+    H.frame.current = null;
     H.itemProgress.mockResolvedValue(null);
     H.masterNeedsAac.mockReturnValue(false);
     H.refreshSession.mockClear();

@@ -4,7 +4,7 @@ import type { VideoPlayback } from '#web/features/playback/video-engine';
 
 export interface VideoTransportOptions {
   videoRef: React.RefObject<HTMLVideoElement | null>;
-  containerRef: React.RefObject<HTMLDivElement | null>;
+  frame: React.RefObject<HTMLDivElement | null> | null;
   barRef: React.RefObject<HTMLDivElement | null>;
   decisionKind: EngineDecision['kind'];
   baseSec: number;
@@ -38,8 +38,7 @@ export type VideoTransport = Pick<
  * state that only those actions read. Positions crossing this boundary are
  * absolute; the anchored HLS clock is converted against `baseSec`. */
 export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
-  const { videoRef, containerRef, barRef, decisionKind, baseSec, knownDurationMs, dur, setAnchor } =
-    opts;
+  const { videoRef, frame, barRef, decisionKind, baseSec, knownDurationMs, dur, setAnchor } = opts;
 
   const [hover, setHover] = useState<{ x: number; t: number; w: number } | null>(null);
   const [scrubbing, setScrubbing] = useState(false);
@@ -166,7 +165,7 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
   );
 
   const toggleFullscreen = useCallback(() => {
-    const el = containerRef.current;
+    const el = frame?.current;
     if (!el) return;
     if (document.fullscreenElement) {
       void document.exitFullscreen();
@@ -181,7 +180,7 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
       | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
       | null;
     if (typeof v?.webkitEnterFullscreen === 'function') v.webkitEnterFullscreen();
-  }, [videoRef, containerRef]);
+  }, [videoRef, frame]);
 
   return {
     hover,

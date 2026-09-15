@@ -25,6 +25,7 @@ import { Route as AppMissingRouteImport } from './routes/_app.missing';
 import { Route as AppMyListRouteImport } from './routes/_app.my-list';
 import { Route as AppRequestsRouteImport } from './routes/_app.requests';
 import { Route as AppSearchRouteImport } from './routes/_app.search';
+import { Route as AppWatchRouteImport } from './routes/_app.watch';
 import { Route as AppWhatsNewRouteImport } from './routes/_app.whats-new';
 import { Route as AdminIndexRouteImport } from './routes/admin.index';
 import { Route as AdminSplatRouteImport } from './routes/admin.$';
@@ -135,6 +136,11 @@ const AppRequestsRoute = AppRequestsRouteImport.update({
 const AppSearchRoute = AppSearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => AppRoute,
+} as any);
+const AppWatchRoute = AppWatchRouteImport.update({
+  id: '/watch',
+  path: '/watch',
   getParentRoute: () => AppRoute,
 } as any);
 const AppWhatsNewRoute = AppWhatsNewRouteImport.update({
@@ -268,9 +274,9 @@ const AppTrendingTypeRoute = AppTrendingTypeRouteImport.update({
   getParentRoute: () => AppRoute,
 } as any);
 const AppWatchIdRoute = AppWatchIdRouteImport.update({
-  id: '/watch/$id',
-  path: '/watch/$id',
-  getParentRoute: () => AppRoute,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppWatchRoute,
 } as any);
 const AdminModulesIndexRoute = AdminModulesIndexRouteImport.update({
   id: '/modules/',
@@ -314,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/my-list': typeof AppMyListRoute;
   '/requests': typeof AppRequestsRoute;
   '/search': typeof AppSearchRoute;
+  '/watch': typeof AppWatchRouteWithChildren;
   '/whats-new': typeof AppWhatsNewRoute;
   '/admin/$': typeof AdminSplatRoute;
   '/admin/ai': typeof AdminAiRoute;
@@ -361,6 +368,7 @@ export interface FileRoutesByTo {
   '/my-list': typeof AppMyListRoute;
   '/requests': typeof AppRequestsRoute;
   '/search': typeof AppSearchRoute;
+  '/watch': typeof AppWatchRouteWithChildren;
   '/whats-new': typeof AppWhatsNewRoute;
   '/admin/$': typeof AdminSplatRoute;
   '/admin/ai': typeof AdminAiRoute;
@@ -412,6 +420,7 @@ export interface FileRoutesById {
   '/_app/my-list': typeof AppMyListRoute;
   '/_app/requests': typeof AppRequestsRoute;
   '/_app/search': typeof AppSearchRoute;
+  '/_app/watch': typeof AppWatchRouteWithChildren;
   '/_app/whats-new': typeof AppWhatsNewRoute;
   '/admin/$': typeof AdminSplatRoute;
   '/admin/ai': typeof AdminAiRoute;
@@ -464,6 +473,7 @@ export interface FileRouteTypes {
     | '/my-list'
     | '/requests'
     | '/search'
+    | '/watch'
     | '/whats-new'
     | '/admin/$'
     | '/admin/ai'
@@ -511,6 +521,7 @@ export interface FileRouteTypes {
     | '/my-list'
     | '/requests'
     | '/search'
+    | '/watch'
     | '/whats-new'
     | '/admin/$'
     | '/admin/ai'
@@ -561,6 +572,7 @@ export interface FileRouteTypes {
     | '/_app/my-list'
     | '/_app/requests'
     | '/_app/search'
+    | '/_app/watch'
     | '/_app/whats-new'
     | '/admin/$'
     | '/admin/ai'
@@ -717,6 +729,13 @@ declare module '@tanstack/react-router' {
       path: '/search';
       fullPath: '/search';
       preLoaderRoute: typeof AppSearchRouteImport;
+      parentRoute: typeof AppRoute;
+    };
+    '/_app/watch': {
+      id: '/_app/watch';
+      path: '/watch';
+      fullPath: '/watch';
+      preLoaderRoute: typeof AppWatchRouteImport;
       parentRoute: typeof AppRoute;
     };
     '/_app/whats-new': {
@@ -903,10 +922,10 @@ declare module '@tanstack/react-router' {
     };
     '/_app/watch/$id': {
       id: '/_app/watch/$id';
-      path: '/watch/$id';
+      path: '/$id';
       fullPath: '/watch/$id';
       preLoaderRoute: typeof AppWatchIdRouteImport;
-      parentRoute: typeof AppRoute;
+      parentRoute: typeof AppWatchRoute;
     };
     '/admin/modules/': {
       id: '/admin/modules/';
@@ -946,6 +965,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppWatchRouteChildren {
+  AppWatchIdRoute: typeof AppWatchIdRoute;
+}
+
+const AppWatchRouteChildren: AppWatchRouteChildren = {
+  AppWatchIdRoute: AppWatchIdRoute,
+};
+
+const AppWatchRouteWithChildren = AppWatchRoute._addFileChildren(
+  AppWatchRouteChildren,
+);
+
 interface AppRouteChildren {
   AppSplatRoute: typeof AppSplatRoute;
   AppAccountRoute: typeof AppAccountRoute;
@@ -956,6 +987,7 @@ interface AppRouteChildren {
   AppMyListRoute: typeof AppMyListRoute;
   AppRequestsRoute: typeof AppRequestsRoute;
   AppSearchRoute: typeof AppSearchRoute;
+  AppWatchRoute: typeof AppWatchRouteWithChildren;
   AppWhatsNewRoute: typeof AppWhatsNewRoute;
   AppIndexRoute: typeof AppIndexRoute;
   AppGenresIdRoute: typeof AppGenresIdRoute;
@@ -963,7 +995,6 @@ interface AppRouteChildren {
   AppPeoplePersonRoute: typeof AppPeoplePersonRoute;
   AppShowsIdRoute: typeof AppShowsIdRoute;
   AppTrendingTypeRoute: typeof AppTrendingTypeRoute;
-  AppWatchIdRoute: typeof AppWatchIdRoute;
   AppGenresIndexRoute: typeof AppGenresIndexRoute;
   AppMoviesIndexRoute: typeof AppMoviesIndexRoute;
   AppShowsIndexRoute: typeof AppShowsIndexRoute;
@@ -980,6 +1011,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMyListRoute: AppMyListRoute,
   AppRequestsRoute: AppRequestsRoute,
   AppSearchRoute: AppSearchRoute,
+  AppWatchRoute: AppWatchRouteWithChildren,
   AppWhatsNewRoute: AppWhatsNewRoute,
   AppIndexRoute: AppIndexRoute,
   AppGenresIdRoute: AppGenresIdRoute,
@@ -987,7 +1019,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppPeoplePersonRoute: AppPeoplePersonRoute,
   AppShowsIdRoute: AppShowsIdRoute,
   AppTrendingTypeRoute: AppTrendingTypeRoute,
-  AppWatchIdRoute: AppWatchIdRoute,
   AppGenresIndexRoute: AppGenresIndexRoute,
   AppMoviesIndexRoute: AppMoviesIndexRoute,
   AppShowsIndexRoute: AppShowsIndexRoute,
