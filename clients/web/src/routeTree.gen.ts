@@ -17,6 +17,7 @@ import { Route as ResetRouteImport } from './routes/reset';
 import { Route as VerifyEmailRouteImport } from './routes/verify-email';
 import { Route as AppIndexRouteImport } from './routes/_app.index';
 import { Route as AppSplatRouteImport } from './routes/_app.$';
+import { Route as AppPlayerRouteImport } from './routes/_app._player';
 import { Route as AppAccountRouteImport } from './routes/_app.account';
 import { Route as AppComingSoonRouteImport } from './routes/_app.coming-soon';
 import { Route as AppConnectRouteImport } from './routes/_app.connect';
@@ -51,11 +52,11 @@ import { Route as AppPeoplePersonRouteImport } from './routes/_app.people.$perso
 import { Route as AppShowsIndexRouteImport } from './routes/_app.shows.index';
 import { Route as AppShowsIdRouteImport } from './routes/_app.shows.$id';
 import { Route as AppTrendingTypeRouteImport } from './routes/_app.trending.$type';
-import { Route as AppWatchIdRouteImport } from './routes/_app.watch.$id';
 import { Route as AdminModulesIndexRouteImport } from './routes/admin.modules.index';
 import { Route as AdminModulesIdRouteImport } from './routes/admin.modules.$id';
 import { Route as AdminRequestsIndexRouteImport } from './routes/admin.requests.index';
 import { Route as AdminRequestsIdRouteImport } from './routes/admin.requests.$id';
+import { Route as AppPlayerWatchIdRouteImport } from './routes/_app._player.watch.$id';
 import { Route as AppDiscoverTypeTmdbIdRouteImport } from './routes/_app.discover.$type.$tmdbId';
 
 const AppRoute = AppRouteImport.update({
@@ -95,6 +96,10 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppSplatRoute = AppSplatRouteImport.update({
   id: '/$',
   path: '/$',
+  getParentRoute: () => AppRoute,
+} as any);
+const AppPlayerRoute = AppPlayerRouteImport.update({
+  id: '/_player',
   getParentRoute: () => AppRoute,
 } as any);
 const AppAccountRoute = AppAccountRouteImport.update({
@@ -267,11 +272,6 @@ const AppTrendingTypeRoute = AppTrendingTypeRouteImport.update({
   path: '/trending/$type',
   getParentRoute: () => AppRoute,
 } as any);
-const AppWatchIdRoute = AppWatchIdRouteImport.update({
-  id: '/watch/$id',
-  path: '/watch/$id',
-  getParentRoute: () => AppRoute,
-} as any);
 const AdminModulesIndexRoute = AdminModulesIndexRouteImport.update({
   id: '/modules/',
   path: '/modules/',
@@ -291,6 +291,11 @@ const AdminRequestsIdRoute = AdminRequestsIdRouteImport.update({
   id: '/requests/$id',
   path: '/requests/$id',
   getParentRoute: () => AdminRoute,
+} as any);
+const AppPlayerWatchIdRoute = AppPlayerWatchIdRouteImport.update({
+  id: '/watch/$id',
+  path: '/watch/$id',
+  getParentRoute: () => AppPlayerRoute,
 } as any);
 const AppDiscoverTypeTmdbIdRoute = AppDiscoverTypeTmdbIdRouteImport.update({
   id: '/discover/$type/$tmdbId',
@@ -337,7 +342,6 @@ export interface FileRoutesByFullPath {
   '/people/$person': typeof AppPeoplePersonRoute;
   '/shows/$id': typeof AppShowsIdRoute;
   '/trending/$type': typeof AppTrendingTypeRoute;
-  '/watch/$id': typeof AppWatchIdRoute;
   '/admin/modules/$id': typeof AdminModulesIdRoute;
   '/admin/requests/$id': typeof AdminRequestsIdRoute;
   '/genres/': typeof AppGenresIndexRoute;
@@ -345,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/shows/': typeof AppShowsIndexRoute;
   '/admin/modules/': typeof AdminModulesIndexRoute;
   '/admin/requests/': typeof AdminRequestsIndexRoute;
+  '/watch/$id': typeof AppPlayerWatchIdRoute;
   '/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute;
 }
 export interface FileRoutesByTo {
@@ -353,6 +358,7 @@ export interface FileRoutesByTo {
   '/reset': typeof ResetRoute;
   '/verify-email': typeof VerifyEmailRoute;
   '/$': typeof AppSplatRoute;
+  '/': typeof AppIndexRoute;
   '/account': typeof AppAccountRoute;
   '/coming-soon': typeof AppComingSoonRoute;
   '/connect': typeof AppConnectRoute;
@@ -378,14 +384,12 @@ export interface FileRoutesByTo {
   '/admin/store': typeof AdminStoreRoute;
   '/admin/transcoder': typeof AdminTranscoderRoute;
   '/admin/users': typeof AdminUsersRoute;
-  '/': typeof AppIndexRoute;
   '/admin': typeof AdminIndexRoute;
   '/genres/$id': typeof AppGenresIdRoute;
   '/movies/$id': typeof AppMoviesIdRoute;
   '/people/$person': typeof AppPeoplePersonRoute;
   '/shows/$id': typeof AppShowsIdRoute;
   '/trending/$type': typeof AppTrendingTypeRoute;
-  '/watch/$id': typeof AppWatchIdRoute;
   '/admin/modules/$id': typeof AdminModulesIdRoute;
   '/admin/requests/$id': typeof AdminRequestsIdRoute;
   '/genres': typeof AppGenresIndexRoute;
@@ -393,6 +397,7 @@ export interface FileRoutesByTo {
   '/shows': typeof AppShowsIndexRoute;
   '/admin/modules': typeof AdminModulesIndexRoute;
   '/admin/requests': typeof AdminRequestsIndexRoute;
+  '/watch/$id': typeof AppPlayerWatchIdRoute;
   '/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute;
 }
 export interface FileRoutesById {
@@ -404,6 +409,7 @@ export interface FileRoutesById {
   '/reset': typeof ResetRoute;
   '/verify-email': typeof VerifyEmailRoute;
   '/_app/$': typeof AppSplatRoute;
+  '/_app/_player': typeof AppPlayerRouteWithChildren;
   '/_app/account': typeof AppAccountRoute;
   '/_app/coming-soon': typeof AppComingSoonRoute;
   '/_app/connect': typeof AppConnectRoute;
@@ -436,7 +442,6 @@ export interface FileRoutesById {
   '/_app/people/$person': typeof AppPeoplePersonRoute;
   '/_app/shows/$id': typeof AppShowsIdRoute;
   '/_app/trending/$type': typeof AppTrendingTypeRoute;
-  '/_app/watch/$id': typeof AppWatchIdRoute;
   '/admin/modules/$id': typeof AdminModulesIdRoute;
   '/admin/requests/$id': typeof AdminRequestsIdRoute;
   '/_app/genres/': typeof AppGenresIndexRoute;
@@ -444,6 +449,7 @@ export interface FileRoutesById {
   '/_app/shows/': typeof AppShowsIndexRoute;
   '/admin/modules/': typeof AdminModulesIndexRoute;
   '/admin/requests/': typeof AdminRequestsIndexRoute;
+  '/_app/_player/watch/$id': typeof AppPlayerWatchIdRoute;
   '/_app/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute;
 }
 export interface FileRouteTypes {
@@ -487,7 +493,6 @@ export interface FileRouteTypes {
     | '/people/$person'
     | '/shows/$id'
     | '/trending/$type'
-    | '/watch/$id'
     | '/admin/modules/$id'
     | '/admin/requests/$id'
     | '/genres/'
@@ -495,6 +500,7 @@ export interface FileRouteTypes {
     | '/shows/'
     | '/admin/modules/'
     | '/admin/requests/'
+    | '/watch/$id'
     | '/discover/$type/$tmdbId';
   fileRoutesByTo: FileRoutesByTo;
   to:
@@ -503,6 +509,7 @@ export interface FileRouteTypes {
     | '/reset'
     | '/verify-email'
     | '/$'
+    | '/'
     | '/account'
     | '/coming-soon'
     | '/connect'
@@ -528,14 +535,12 @@ export interface FileRouteTypes {
     | '/admin/store'
     | '/admin/transcoder'
     | '/admin/users'
-    | '/'
     | '/admin'
     | '/genres/$id'
     | '/movies/$id'
     | '/people/$person'
     | '/shows/$id'
     | '/trending/$type'
-    | '/watch/$id'
     | '/admin/modules/$id'
     | '/admin/requests/$id'
     | '/genres'
@@ -543,6 +548,7 @@ export interface FileRouteTypes {
     | '/shows'
     | '/admin/modules'
     | '/admin/requests'
+    | '/watch/$id'
     | '/discover/$type/$tmdbId';
   id:
     | '__root__'
@@ -553,6 +559,7 @@ export interface FileRouteTypes {
     | '/reset'
     | '/verify-email'
     | '/_app/$'
+    | '/_app/_player'
     | '/_app/account'
     | '/_app/coming-soon'
     | '/_app/connect'
@@ -585,7 +592,6 @@ export interface FileRouteTypes {
     | '/_app/people/$person'
     | '/_app/shows/$id'
     | '/_app/trending/$type'
-    | '/_app/watch/$id'
     | '/admin/modules/$id'
     | '/admin/requests/$id'
     | '/_app/genres/'
@@ -593,6 +599,7 @@ export interface FileRouteTypes {
     | '/_app/shows/'
     | '/admin/modules/'
     | '/admin/requests/'
+    | '/_app/_player/watch/$id'
     | '/_app/discover/$type/$tmdbId';
   fileRoutesById: FileRoutesById;
 }
@@ -661,6 +668,13 @@ declare module '@tanstack/react-router' {
       path: '/$';
       fullPath: '/$';
       preLoaderRoute: typeof AppSplatRouteImport;
+      parentRoute: typeof AppRoute;
+    };
+    '/_app/_player': {
+      id: '/_app/_player';
+      path: '';
+      fullPath: '/';
+      preLoaderRoute: typeof AppPlayerRouteImport;
       parentRoute: typeof AppRoute;
     };
     '/_app/account': {
@@ -901,13 +915,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTrendingTypeRouteImport;
       parentRoute: typeof AppRoute;
     };
-    '/_app/watch/$id': {
-      id: '/_app/watch/$id';
-      path: '/watch/$id';
-      fullPath: '/watch/$id';
-      preLoaderRoute: typeof AppWatchIdRouteImport;
-      parentRoute: typeof AppRoute;
-    };
     '/admin/modules/': {
       id: '/admin/modules/';
       path: '/modules';
@@ -936,6 +943,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRequestsIdRouteImport;
       parentRoute: typeof AdminRoute;
     };
+    '/_app/_player/watch/$id': {
+      id: '/_app/_player/watch/$id';
+      path: '/watch/$id';
+      fullPath: '/watch/$id';
+      preLoaderRoute: typeof AppPlayerWatchIdRouteImport;
+      parentRoute: typeof AppPlayerRoute;
+    };
     '/_app/discover/$type/$tmdbId': {
       id: '/_app/discover/$type/$tmdbId';
       path: '/discover/$type/$tmdbId';
@@ -946,8 +960,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppPlayerRouteChildren {
+  AppPlayerWatchIdRoute: typeof AppPlayerWatchIdRoute;
+}
+
+const AppPlayerRouteChildren: AppPlayerRouteChildren = {
+  AppPlayerWatchIdRoute: AppPlayerWatchIdRoute,
+};
+
+const AppPlayerRouteWithChildren = AppPlayerRoute._addFileChildren(
+  AppPlayerRouteChildren,
+);
+
 interface AppRouteChildren {
   AppSplatRoute: typeof AppSplatRoute;
+  AppPlayerRoute: typeof AppPlayerRouteWithChildren;
   AppAccountRoute: typeof AppAccountRoute;
   AppComingSoonRoute: typeof AppComingSoonRoute;
   AppConnectRoute: typeof AppConnectRoute;
@@ -963,7 +990,6 @@ interface AppRouteChildren {
   AppPeoplePersonRoute: typeof AppPeoplePersonRoute;
   AppShowsIdRoute: typeof AppShowsIdRoute;
   AppTrendingTypeRoute: typeof AppTrendingTypeRoute;
-  AppWatchIdRoute: typeof AppWatchIdRoute;
   AppGenresIndexRoute: typeof AppGenresIndexRoute;
   AppMoviesIndexRoute: typeof AppMoviesIndexRoute;
   AppShowsIndexRoute: typeof AppShowsIndexRoute;
@@ -972,6 +998,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppSplatRoute: AppSplatRoute,
+  AppPlayerRoute: AppPlayerRouteWithChildren,
   AppAccountRoute: AppAccountRoute,
   AppComingSoonRoute: AppComingSoonRoute,
   AppConnectRoute: AppConnectRoute,
@@ -987,7 +1014,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppPeoplePersonRoute: AppPeoplePersonRoute,
   AppShowsIdRoute: AppShowsIdRoute,
   AppTrendingTypeRoute: AppTrendingTypeRoute,
-  AppWatchIdRoute: AppWatchIdRoute,
   AppGenresIndexRoute: AppGenresIndexRoute,
   AppMoviesIndexRoute: AppMoviesIndexRoute,
   AppShowsIndexRoute: AppShowsIndexRoute,

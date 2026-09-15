@@ -7,7 +7,7 @@ import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
 
 const s = styles({ black: { position: 'fixed', inset: 0, bg: 'black' } });
-export const Route = createFileRoute('/_app/watch/$id')({
+export const Route = createFileRoute('/_app/_player/watch/$id')({
   loader: async ({ params, context: { queryClient } }) => {
     if (!isAuthed()) throw redirect({ to: '/' });
     // The next episode (for the Netflix-style "up next" autoplay) is sequence-based

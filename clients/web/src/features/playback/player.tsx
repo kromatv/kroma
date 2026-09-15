@@ -9,9 +9,7 @@ import {
 } from '@kromatv/ui';
 import { formatTimecode as fmtTime } from '@kromatv/ui/intl';
 import { Box, Button, backdropBlur, classes, Icon, styles, Text } from '@kromatv/ui/kit';
-import type { Ref } from 'react';
 import { useCallback, useMemo, useState } from 'react';
-import type { View } from 'react-native';
 import { Toast } from '#web/features/playback/player-toast';
 import { usePlaybackSession } from '#web/features/playback/use-playback-session';
 import { useResumeProgress } from '#web/features/playback/use-resume-progress';
@@ -47,7 +45,7 @@ export function Player({
   const t = useT();
   const cast = useCast();
   const wc = useWebController(item);
-  const { controller, videoRef, containerRef, pb, subtitleGen } = wc;
+  const { controller, videoRef, pb, subtitleGen } = wc;
   const [appearance, setAppearance] = useSubtitleAppearance();
   const storyboard = useStoryboard(item.id);
   const tileAt = useCallback((sec: number) => storyboard.tile(sec, PREVIEW_W), [storyboard]);
@@ -130,9 +128,6 @@ export function Player({
         const ok = await cast.playOn(picked, item.id, Math.round(pb.getPosition() * 1000));
         if (ok) onClose();
       }}
-      // The shared chrome is typed against React Native, but under
-      // react-native-web this ref receives the DOM node (requestFullscreen).
-      ref={containerRef as unknown as Ref<View>}
       onClose={onClose}
     >
       <UnifiedPlayer.Title>{item.title}</UnifiedPlayer.Title>

@@ -23,6 +23,10 @@ vi.mock('@kromatv/core', async (importOriginal) => ({
   selectEngine: () => H.decision,
 }));
 
+vi.mock('#web/features/playback/fullscreen-frame', () => ({
+  useFullscreenFrame: () => H.frame,
+}));
+
 vi.mock('#web/features/playback/media-events', () => ({
   bindMediaEvents: vi.fn(() => () => {}),
 }));
@@ -143,12 +147,20 @@ describe('useVideoPlayback fullscreen', () => {
     expect(result.current.fs).toBe(true);
   });
 
-  it('requests element fullscreen, and exits when already in it', () => {
+  it('starts in fullscreen when the item before it left the page there', () => {
+    setDoc('fullscreenElement', {});
+
+    const { result } = render();
+
+    expect(result.current.fs).toBe(true);
+  });
+
+  it('requests fullscreen of the frame, and exits when already in it', () => {
     const { result } = render();
     act(() => result.current.toggleFullscreen());
 
     const requestFullscreen = vi.fn();
-    result.current.containerRef.current = { requestFullscreen } as unknown as HTMLDivElement;
+    H.frame.current = { requestFullscreen } as unknown as HTMLDivElement;
     setDoc('fullscreenEnabled', true);
     act(() => result.current.toggleFullscreen());
     expect(requestFullscreen).toHaveBeenCalledTimes(1);
@@ -163,7 +175,7 @@ describe('useVideoPlayback fullscreen', () => {
 
   it('falls back to the video element API where there is no element fullscreen', () => {
     const { result } = render();
-    result.current.containerRef.current = {} as unknown as HTMLDivElement;
+    H.frame.current = {} as unknown as HTMLDivElement;
     const webkitEnterFullscreen = vi.fn();
     result.current.videoRef.current = fakeVideo({
       webkitEnterFullscreen,
@@ -180,7 +192,7 @@ describe('useVideoPlayback fullscreen', () => {
 
   it('does nothing when neither API is available', () => {
     const { result } = render();
-    result.current.containerRef.current = {} as unknown as HTMLDivElement;
+    H.frame.current = {} as unknown as HTMLDivElement;
     expect(() => act(() => result.current.toggleFullscreen())).not.toThrow();
   });
 });
