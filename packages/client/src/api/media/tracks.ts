@@ -58,6 +58,8 @@ export type AudioAnalysis = z.infer<typeof AudioAnalysis>;
 export const SubtitleTrack = z.object({
   language: z.string().nullable(),
   codec: z.string(),
+  title: z.string().nullish(),
+  forced: z.boolean().optional(),
 });
 export type SubtitleTrack = z.infer<typeof SubtitleTrack>;
 

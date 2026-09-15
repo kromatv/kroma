@@ -2,7 +2,7 @@
 
 import type { MediaItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useSubtitleSelection } from './useSubtitleSelection';
 
@@ -49,5 +49,46 @@ describe('useSubtitleSelection preferred language', () => {
     expect(active(undefined)).toBeNull();
     expect(active('off')).toBeNull();
     expect(active('de')).toBeNull();
+  });
+
+  it('auto-enables the full track rather than the forced one', () => {
+    const forcedFirst = {
+      id: 'ep3',
+      subtitles: [
+        { language: 'fre', codec: 'subrip', forced: true },
+        { language: 'fre', codec: 'subrip', title: 'Complets' },
+      ],
+    } as unknown as MediaItem;
+
+    const { result, unmount } = renderHook(() => useSubtitleSelection(client, forcedFirst, 'fr'));
+
+    expect(result.current.active).toBe(1);
+    unmount();
+  });
+});
+
+describe('useSubtitleSelection failed tracks', () => {
+  it('drops a failed track from the list and turns subtitles off when it was active', () => {
+    const { result, unmount } = renderHook(() => useSubtitleSelection(client, item, 'fr'));
+
+    act(() => result.current.drop(2));
+
+    expect(result.current.active).toBeNull();
+    expect(result.current.rendered.map((s) => s.index)).toEqual([0]);
+    unmount();
+  });
+
+  it('forgets the failures once another item plays in place', () => {
+    const next = { ...item, id: 'ep2' } as MediaItem;
+    const { result, rerender, unmount } = renderHook(
+      ({ current }) => useSubtitleSelection(client, current, null),
+      { initialProps: { current: item } },
+    );
+
+    act(() => result.current.drop(0));
+    rerender({ current: next });
+
+    expect(result.current.rendered.map((s) => s.index)).toEqual([0, 2]);
+    unmount();
   });
 });

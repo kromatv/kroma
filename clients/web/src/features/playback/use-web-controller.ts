@@ -237,6 +237,7 @@ export function useWebController(item: MovieView): WebController {
     subtitles: subs.subtitles,
     subtitleIndex: subs.activeIndex,
     setSubtitle: subs.setActive,
+    markSubtitleFailed: subs.markFailed,
     qualities,
     qualityId: 'auto',
     setQuality: () => undefined,

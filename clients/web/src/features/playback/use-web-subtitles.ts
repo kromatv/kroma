@@ -22,21 +22,24 @@ export interface WebSubtitles {
   subtitles: PlayerSub[];
   activeIndex: number | null;
   setActive: (index: number | null) => void;
+  markFailed: (index: number) => void;
   subtitleGen: SubtitleGenBundle;
   label: string;
 }
 
 /**
- * Web subtitle state: the embedded tracks merged with online/AI-generated ones,
- * the active selection (with the account's preferred language auto-applied once),
- * plus the prop-driven generation bundle the shared Settings panel consumes. AI
- * tracks get indices 1000+ so they never collide with embedded ones.
+ * Web subtitle state: the embedded text tracks merged with online/AI-generated
+ * ones, minus any that failed to load, the active selection (with the account's
+ * preferred language auto-applied once), plus the prop-driven generation bundle
+ * the shared Settings panel consumes. AI tracks get indices 1000+ so they never
+ * collide with embedded ones.
  */
 export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
   const { user } = useAuth();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [downloaded, setDownloaded] = useState<DownloadedSub[]>([]);
   const [caps, setCaps] = useState<SubCapabilities | null>(null);
+  const [failed, setFailed] = useState<ReadonlySet<number>>(() => new Set());
 
   // Auto-enable the account's preferred subtitle language once, when hydrated.
   const prefApplied = useRef(false);
@@ -99,17 +102,19 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
 
   const subtitles = useMemo<PlayerSub[]>(
     () =>
-      allSubs.map((s) => ({
-        index: s.index,
-        language: s.language,
-        label: s.label,
-        codec: s.codec,
-        url: s.url,
-        ai: Boolean(s.downloaded),
-        selectable: Boolean(s.url),
-        subId: s.subId,
-      })),
-    [allSubs],
+      allSubs
+        .filter((s) => s.url && !failed.has(s.index))
+        .map((s) => ({
+          index: s.index,
+          language: s.language,
+          label: s.label,
+          codec: s.codec,
+          url: s.url,
+          ai: Boolean(s.downloaded),
+          selectable: true,
+          subId: s.subId,
+        })),
+    [allSubs, failed],
   );
 
   const onDelete = useCallback(
@@ -193,11 +198,16 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
     [setSubtitle, allSubs],
   );
 
+  const markFailed = useCallback((index: number) => {
+    setFailed((prev) => (prev.has(index) ? prev : new Set(prev).add(index)));
+    setActiveIndex((cur) => (cur === index ? null : cur));
+  }, []);
+
   const active = activeIndex == null ? null : allSubs.find((s) => s.index === activeIndex);
   const label =
     activeIndex == null
       ? t('player.subtitlesOff')
       : active?.label || langName(t, active?.language) || t('player.langUnknown');
 
-  return { subtitles, activeIndex, setActive, subtitleGen, label };
+  return { subtitles, activeIndex, setActive, markFailed, subtitleGen, label };
 }

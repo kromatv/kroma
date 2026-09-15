@@ -100,6 +100,10 @@ pub struct AudioStream {
 pub struct SubtitleTrack {
     pub language: Option<String>,
     pub codec: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub forced: bool,
 }
 
 /// Outcome of the EBU R128 loudness analysis of an audio track.
@@ -164,5 +168,15 @@ mod tests {
 
         assert!(said_nothing.is_empty());
         assert!(!said_something.is_empty());
+    }
+
+    #[test]
+    fn a_subtitle_track_stored_before_title_and_forced_still_reads() {
+        let track: SubtitleTrack =
+            serde_json::from_str(r#"{"language":"fre","codec":"subrip"}"#).unwrap();
+
+        assert!(track.title.is_none());
+        assert!(!track.forced);
+        assert!(!serde_json::to_string(&track).unwrap().contains("title"));
     }
 }
