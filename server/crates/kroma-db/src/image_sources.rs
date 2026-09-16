@@ -2,7 +2,10 @@
 //! image directory a cache: a file the operator cleared is fetched again from
 //! the URL that produced it, under the same content-addressed name.
 
-use super::*;
+use anyhow::Result;
+use rusqlite::{params, OptionalExtension};
+
+use crate::Pool;
 
 /// Remember that `name` under the image dir was derived from `url`. Idempotent.
 pub fn record(pool: &Pool, name: &str, url: &str) -> Result<()> {
@@ -16,7 +19,6 @@ pub fn record(pool: &Pool, name: &str, url: &str) -> Result<()> {
 
 /// The URL `name` was derived from, when one was recorded.
 pub fn source(pool: &Pool, name: &str) -> Result<Option<String>> {
-    use rusqlite::OptionalExtension;
     let conn = pool.get()?;
     Ok(conn
         .query_row(
