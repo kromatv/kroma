@@ -10,7 +10,7 @@ import { usePlayerKeys } from './hooks/use-player-keys';
 import { usePlayerNav } from './hooks/use-player-nav';
 import { useSeekNudge } from './hooks/use-seek-nudge';
 import { useVolumeFlash } from './hooks/use-volume-flash';
-import { clamp01, sliderToVolume, volumeToSlider } from './lib/fmt';
+import { volumeStep } from './lib/fmt';
 import { chromeMetrics, panelGeometry, scaler, TRANSPORT_HEIGHT } from './lib/metrics';
 import { type ControlId, controlOrder, type PanelHandle } from './lib/nav';
 import { usePanelSlide } from './lib/panel-slide';
@@ -159,11 +159,7 @@ function Root({
       seekNudge: seek.nudge,
       onNext: () => onPlayNext?.(),
       hasNext: Boolean(onPlayNext),
-      // Step in perceptual slider space so a nudge feels even across the range.
-      volumeNudge: (d) =>
-        setVolume(
-          sliderToVolume(clamp01(volumeToSlider(c.volume, volumeMax) + d * 0.05), volumeMax),
-        ),
+      volumeNudge: (d) => setVolume(volumeStep(c.volume, d, volumeMax)),
       toggleMute: c.toggleMute,
       togglePip: c.togglePip,
       toggleFullscreen: c.toggleFullscreen,
@@ -259,7 +255,7 @@ function Root({
             {slots.media}
           </Stage>
 
-          <StageFlashView flash={flash} scale={metrics.scale} />
+          <StageFlashView flash={flash} scale={metrics.scale} lift={introLift} />
 
           {/* skip intro (§13) */}
           {intro ? (

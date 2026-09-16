@@ -4,12 +4,7 @@ import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { useDragTrack } from '#ui/components/organisms/player/hooks/use-drag-track';
-import {
-  clamp01,
-  sliderToVolume,
-  UNITY_POS,
-  volumeToSlider,
-} from '#ui/components/organisms/player/lib/fmt';
+import { clamp01, sliderToVolume, volumeToSlider } from '#ui/components/organisms/player/lib/fmt';
 import {
   type ChromeMetrics,
   CLUSTER_GAP,
@@ -327,7 +322,8 @@ function VolumeControl({
   // Fill and thumb track the perceptual slider position, not raw amplitude, so
   // the handle sits under the pointer while the audio follows the loudness curve.
   const sliderPos = muted ? 0 : volumeToSlider(volume, max);
-  const boosted = max > 1 && sliderPos > UNITY_POS;
+  const unity = 1 / max;
+  const boosted = max > 1 && sliderPos > unity;
   const volIcon = volumeGlyph(level, px(24));
 
   const setAt = useEffectEvent((x: number) => {
@@ -424,18 +420,21 @@ function VolumeControl({
               bottom={0}
               radius="pill"
               bg="accentBright"
-              style={{ left: `${UNITY_POS * 100}%`, width: `${(sliderPos - UNITY_POS) * 100}%` }}
+              style={{ left: `${unity * 100}%`, width: `${(sliderPos - unity) * 100}%` }}
             />
           ) : null}
           {max > 1 ? (
             <Box
               absolute
-              top={-px(3)}
-              bottom={-px(3)}
-              w={px(2)}
-              radius="pill"
-              bg="white/70"
-              style={[s.notch, { left: `${UNITY_POS * 100}%` }]}
+              top="50%"
+              w={px(6)}
+              h={px(6)}
+              radius="circle"
+              bg={boosted ? '#FFFFFF' : 'white/60'}
+              style={{
+                left: `${unity * 100}%`,
+                transform: [{ translateX: -px(3) }, { translateY: -px(3) }],
+              }}
             />
           ) : null}
           <Box
@@ -462,7 +461,6 @@ function VolumeControl({
 
 const s = styles({
   inert: { pointerEvents: 'none' },
-  notch: { transform: [{ translateX: -1 }] },
 });
 
 const NOOP = () => {};

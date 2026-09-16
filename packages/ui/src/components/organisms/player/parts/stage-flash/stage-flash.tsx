@@ -28,6 +28,10 @@ export interface StageFlashProps {
   flash: StageFlash | null;
   /** The chrome's scale (see ../lib/metrics). 1 on a television stage. */
   scale?: number;
+  /** How high the pill sits above the bottom edge, in real pixels (already
+   *  scaled): clear of the transport while the chrome is up, close to the edge
+   *  once it has gone. The same number the skip-intro pill takes. */
+  lift: number;
 }
 
 const FLASH_FADE_MS = 180;
@@ -48,7 +52,7 @@ function useLinger<T>(value: T | null): T | null {
 function webFade(shown: boolean): ViewStyle {
   return {
     opacity: shown ? 1 : 0,
-    transform: [{ scale: shown ? 1 : 0.9 }],
+    transform: [{ translateY: shown ? 0 : 8 }],
     transitionProperty: 'opacity, transform',
     transitionDuration: `${FLASH_FADE_MS}ms`,
     transitionTimingFunction: ease.out.css,
@@ -70,7 +74,7 @@ function useNativeFade(shown: boolean) {
   }, [shown, run]);
   return {
     opacity: run,
-    transform: [{ scale: run.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }],
+    transform: [{ translateY: run.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }],
   };
 }
 
@@ -100,36 +104,37 @@ const padOf = (x: number, y: number) =>
 const sizeOf = (fontSize: number) => sharedStyle(`flash:size:${fontSize}`, { fontSize });
 
 /**
- * A transient pill over the middle of the picture (YouTube's arrow feedback): the
- * seek so far with its direction, or the volume a key just set. It draws the
- * last flash while fading out, so a run of taps reads as one label counting up.
+ * A transient pill low on the picture, just above the seek bar it describes:
+ * the seek so far with its direction, or the volume a key just set. It keeps
+ * out of the frame's middle, and draws the last flash while fading out so a
+ * run of taps reads as one label counting up.
  */
-export function StageFlashView({ flash, scale = 1 }: Readonly<StageFlashProps>) {
+export function StageFlashView({ flash, scale = 1, lift }: Readonly<StageFlashProps>) {
   const t = useT();
   const held = useLinger(flash);
   const fade = useFade(flash != null);
   const px = scaler(scale);
   if (!held) return null;
 
-  const glyph = held.kind === 'seek' ? seekGlyph(held, px(44)) : volumeGlyph(held.level, px(38));
+  const glyph = held.kind === 'seek' ? seekGlyph(held, px(30)) : volumeGlyph(held.level, px(26));
   const label =
     held.kind === 'seek'
       ? seekLabel(held.deltaSec, t)
       : t('player.volumeLevel', { percent: Math.round(held.level * 100) });
 
   return (
-    <Box fill z={12} center style={s.inert}>
+    <Box absolute left={0} right={0} bottom={lift} z={12} align="center" style={s.inert}>
       <Animated.View style={fade}>
         <Box
           row
           align="center"
-          gap={px(14)}
+          gap={px(10)}
           radius="pill"
           bg="black/55"
-          style={[s.frost, padOf(px(28), px(14))]}
+          style={[s.frost, padOf(px(20), px(10))]}
         >
           {glyph}
-          <Text variant="title" color="#FFFFFF" style={sizeOf(px(34))}>
+          <Text variant="title" color="#FFFFFF" style={sizeOf(px(24))}>
             {label}
           </Text>
         </Box>
