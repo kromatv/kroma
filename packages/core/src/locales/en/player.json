@@ -143,7 +143,6 @@
   "player.volumeBoost": "Volume boost",
   "player.volumeBoostHint": "Boosts the sound on this device (all playback modes) while taming loud peaks. Handy when dialogue is too quiet.",
   "player.volumeBoostOff": "Off",
-  "player.volumeLevel": "{percent}%",
   "player.vp9Unsupported": "This device can't play VP9",
   "player.zoomFill": "Fill screen",
   "player.zoomFit": "Fit to screen"

@@ -9,7 +9,6 @@ import { usePlayerEnding } from './hooks/use-player-ending';
 import { usePlayerKeys } from './hooks/use-player-keys';
 import { usePlayerNav } from './hooks/use-player-nav';
 import { useSeekNudge } from './hooks/use-seek-nudge';
-import { useVolumeFlash } from './hooks/use-volume-flash';
 import { volumeStep } from './lib/fmt';
 import { chromeMetrics, panelGeometry, scaler, TRANSPORT_HEIGHT } from './lib/metrics';
 import { type ControlId, controlOrder, type PanelHandle } from './lib/nav';
@@ -22,7 +21,7 @@ import { SettingsPanel } from './parts/settings-panel';
 import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
 import { SkipIntroButton } from './parts/skip-intro-button';
 import { Stage } from './parts/stage';
-import { type StageFlash, StageFlashView } from './parts/stage-flash';
+import { StageFlashView } from './parts/stage-flash';
 import { StatsPanel } from './parts/stats-panel';
 import { TopBar } from './parts/top-bar';
 import { Transport } from './parts/transport';
@@ -145,13 +144,7 @@ function Root({
   const px = scaler(metrics.scale);
 
   const seek = useSeekNudge(c);
-  const volumeFlash = useVolumeFlash();
   const volumeMax = c.volumeMax ?? 1;
-  const setVolume = (level: number) => {
-    c.setVolume(level);
-    volumeFlash.show(level);
-  };
-  const flash: StageFlash | null = seek.burst ? { kind: 'seek', ...seek.burst } : volumeFlash.flash;
   const nav = usePlayerNav(
     c.playing,
     {
@@ -159,7 +152,7 @@ function Root({
       seekNudge: seek.nudge,
       onNext: () => onPlayNext?.(),
       hasNext: Boolean(onPlayNext),
-      volumeNudge: (d) => setVolume(volumeStep(c.volume, d, volumeMax)),
+      volumeNudge: (d) => c.setVolume(volumeStep(c.volume, d, volumeMax)),
       toggleMute: c.toggleMute,
       togglePip: c.togglePip,
       toggleFullscreen: c.toggleFullscreen,
@@ -190,7 +183,6 @@ function Root({
     panelRef,
     locked,
     seekNudge: seek.nudge,
-    setVolume,
     intro,
     credits: { active: credits.show, onKey: ending.onCreditsKey },
     postPlay: { active: ending.over, onKey: ending.onPostPlayKey },
@@ -255,7 +247,7 @@ function Root({
             {slots.media}
           </Stage>
 
-          <StageFlashView flash={flash} scale={metrics.scale} lift={introLift} />
+          <StageFlashView flash={seek.burst} scale={metrics.scale} lift={introLift} />
 
           {/* skip intro (§13) */}
           {intro ? (

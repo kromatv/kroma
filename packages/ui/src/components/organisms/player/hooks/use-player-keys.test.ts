@@ -75,7 +75,6 @@ interface Params {
   panelRef: { current: PanelHandle | null };
   locked: boolean;
   seekNudge: Mock<(dir: -1 | 1) => void>;
-  setVolume: Mock<(level: number) => void>;
   intro?: { active: boolean; onSkip: () => void };
   credits?: { active: boolean; onKey: (key: string) => boolean };
 }
@@ -90,7 +89,6 @@ function setup(over: Partial<Params> = {}) {
     panelRef: { current: null },
     locked: false,
     seekNudge: vi.fn<(dir: -1 | 1) => void>(),
-    setVolume: vi.fn<(level: number) => void>(),
     ...over,
   };
   const view = renderHook(() => usePlayerKeys(params));
@@ -269,19 +267,18 @@ describe('usePlayerKeys arrow seek', () => {
 });
 
 describe('usePlayerKeys arrow volume', () => {
-  it('ArrowUp/Down step the level by 5% through the root, up to the controller ceiling', () => {
+  it('ArrowUp/Down step the level by 5%, up to the controller ceiling', () => {
     const controller = makeController();
     controller.volume = 0.5;
     const { params, press } = setup({ controller });
     press({ key: 'ArrowUp' });
-    expect(params.setVolume).toHaveBeenCalledWith(0.55);
-    expect(params.controller.setVolume).not.toHaveBeenCalled();
+    expect(params.controller.setVolume).toHaveBeenCalledWith(0.55);
     controller.volume = 1;
     press({ key: 'ArrowUp' });
-    expect(params.setVolume).toHaveBeenLastCalledWith(1);
+    expect(params.controller.setVolume).toHaveBeenLastCalledWith(1);
     controller.volumeMax = 2;
     press({ key: 'ArrowUp' });
-    expect(params.setVolume).toHaveBeenLastCalledWith(1.05);
+    expect(params.controller.setVolume).toHaveBeenLastCalledWith(1.05);
   });
 
   it('keeps the chrome dark in immersive mode (rearmHide, not poke)', () => {
@@ -292,7 +289,7 @@ describe('usePlayerKeys arrow volume', () => {
     controller.volume = 0.5;
     const { params, press } = setup({ nav, controller });
     press({ key: 'ArrowUp' });
-    expect(params.setVolume).toHaveBeenCalled();
+    expect(params.controller.setVolume).toHaveBeenCalled();
     expect(nav.rearmHide).toHaveBeenCalled();
     expect(nav.poke).not.toHaveBeenCalled();
     expect(params.seekNudge).not.toHaveBeenCalled();

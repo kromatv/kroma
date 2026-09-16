@@ -143,7 +143,6 @@
   "player.volumeBoost": "Amplification du volume",
   "player.volumeBoostHint": "Renforce le son côté appareil (tous les modes de lecture) en écrasant les pointes sonores. Pratique quand les dialogues sont trop faibles.",
   "player.volumeBoostOff": "Désactivée",
-  "player.volumeLevel": "{percent} %",
   "player.vp9Unsupported": "Cet appareil ne lit pas le VP9",
   "player.zoomFill": "Remplir l'écran",
   "player.zoomFit": "Adapter à l'écran"

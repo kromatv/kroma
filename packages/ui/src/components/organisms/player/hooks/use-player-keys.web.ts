@@ -64,7 +64,7 @@ function arrowVolumeShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): b
   e.preventDefault();
   keepChrome(nav, controller, flags);
   const dir = e.key === 'ArrowUp' ? 1 : -1;
-  p.setVolume(volumeStep(controller.volume, dir, controller.volumeMax ?? 1));
+  controller.setVolume(volumeStep(controller.volume, dir, controller.volumeMax ?? 1));
   return true;
 }
 

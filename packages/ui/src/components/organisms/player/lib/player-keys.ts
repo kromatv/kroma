@@ -17,9 +17,6 @@ export interface PlayerKeysParams {
   /** The keyboard's seek: arrows and j / l go through the nudge machine, so a
    *  held key ramps, a run of taps adds up and the stage can echo them. */
   seekNudge(dir: -1 | 1): void;
-  /** The keyboard's volume: ArrowUp / Down land here so the stage can echo the
-   *  level, rather than on the controller directly. */
-  setVolume(level: number): void;
   intro?: { active: boolean; onSkip: () => void };
   credits?: { active: boolean; onKey: (key: RemoteKey) => boolean };
   /** The end-of-film screen. While it is up there is no film left to drive, so
