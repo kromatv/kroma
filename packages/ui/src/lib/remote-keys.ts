@@ -39,6 +39,8 @@ const KEY_CODES: Record<number, RemoteKey> = {
   413: 'Stop',
   412: 'Rewind',
   417: 'FastForward',
+  10232: 'Prev',
+  10233: 'Next',
   // Colour buttons
   403: 'ColorRed',
   404: 'ColorGreen',
@@ -117,6 +119,8 @@ const TIZEN_KEYS = [
   'MediaStop',
   'MediaRewind',
   'MediaFastForward',
+  'MediaTrackPrevious',
+  'MediaTrackNext',
   'ColorF0Red',
   'ColorF1Green',
   'ColorF2Yellow',
