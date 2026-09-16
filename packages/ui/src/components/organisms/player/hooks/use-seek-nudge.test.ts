@@ -51,7 +51,7 @@ describe('useSeekNudge taps', () => {
     const c = makeController();
     const { result } = renderHook(() => useSeekNudge(c));
 
-    act(() => result.current(1));
+    act(() => result.current.nudge(1));
     expect(lastTarget(c)).toBe(110);
     expect(c.scrubCommit).not.toHaveBeenCalled();
 
@@ -63,11 +63,11 @@ describe('useSeekNudge taps', () => {
     const c = makeController();
     const { result } = renderHook(() => useSeekNudge(c));
 
-    act(() => result.current(1));
+    act(() => result.current.nudge(1));
     advance(400); // slower than an auto-repeat, faster than the commit window
-    act(() => result.current(1));
+    act(() => result.current.nudge(1));
     advance(400);
-    act(() => result.current(1));
+    act(() => result.current.nudge(1));
 
     // 130, not 110: the taps continue from each other, not from the playhead.
     expect(lastTarget(c)).toBe(130);
@@ -82,12 +82,12 @@ describe('useSeekNudge hold', () => {
     const c = makeController();
     const { result } = renderHook(() => useSeekNudge(c));
 
-    act(() => result.current(1));
+    act(() => result.current.nudge(1));
     const steps: number[] = [];
     let prev = lastTarget(c);
     for (let i = 0; i < 8; i++) {
       advance(80); // an auto-repeating remote
-      act(() => result.current(1));
+      act(() => result.current.nudge(1));
       const next = lastTarget(c);
       steps.push(next - prev);
       prev = next;
@@ -102,10 +102,10 @@ describe('useSeekNudge hold', () => {
   it('about a second of holding crosses minutes, not seconds', () => {
     const held = makeController();
     const hook = renderHook(() => useSeekNudge(held));
-    act(() => hook.result.current(1));
+    act(() => hook.result.current.nudge(1));
     for (let i = 0; i < 12; i++) {
       advance(80);
-      act(() => hook.result.current(1));
+      act(() => hook.result.current.nudge(1));
     }
     const heldDistance = lastTarget(held) - 100;
 
@@ -117,15 +117,15 @@ describe('useSeekNudge hold', () => {
     const c = makeController();
     const { result } = renderHook(() => useSeekNudge(c));
 
-    act(() => result.current(1));
+    act(() => result.current.nudge(1));
     for (let i = 0; i < 10; i++) {
       advance(80);
-      act(() => result.current(1));
+      act(() => result.current.nudge(1));
     }
     const fast = lastTarget(c);
 
     advance(80);
-    act(() => result.current(-1));
+    act(() => result.current.nudge(-1));
     expect(lastTarget(c)).toBe(fast - 10);
   });
 });
@@ -134,19 +134,19 @@ describe('useSeekNudge bounds', () => {
   it('never runs past the end or before the start', () => {
     const c = makeController({ cur: 7195, dur: 7200 } as Partial<PlayerController>);
     const { result } = renderHook(() => useSeekNudge(c));
-    act(() => result.current(1));
+    act(() => result.current.nudge(1));
     expect(lastTarget(c)).toBe(7199);
 
     const start = makeController({ cur: 3 } as Partial<PlayerController>);
     const back = renderHook(() => useSeekNudge(start));
-    act(() => back.result.current(-1));
+    act(() => back.result.current.nudge(-1));
     expect(lastTarget(start)).toBe(0);
   });
 
   it('an unknown duration still seeks forward', () => {
     const c = makeController({ cur: 10, dur: 0 } as Partial<PlayerController>);
     const { result } = renderHook(() => useSeekNudge(c));
-    act(() => result.current(1));
+    act(() => result.current.nudge(1));
     expect(lastTarget(c)).toBe(20);
   });
 });

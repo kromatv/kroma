@@ -63,6 +63,8 @@ interface Graph {
   source: MediaElementAudioSourceNode;
   comp: DynamicsCompressorNode;
   gain: GainNode;
+  boost: GainNode;
+  limiter: DynamicsCompressorNode;
 }
 
 interface FilterDebugHandle {
@@ -116,31 +118,49 @@ function configure(g: Graph, mode: Exclude<AudioFilterMode, 'off'>): void {
   }
 }
 
+// biome-ignore lint/style/noRestrictedGlobals: a TYPE reference, erased at build; no value is read.
+function build(ctx: AudioContext, el: HTMLMediaElement): Graph {
+  const source = ctx.createMediaElementSource(el);
+  const comp = ctx.createDynamicsCompressor();
+  const gain = ctx.createGain();
+  const boost = ctx.createGain();
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = -3;
+  limiter.knee.value = 0;
+  limiter.ratio.value = 20;
+  limiter.attack.value = 0.001;
+  limiter.release.value = 0.08;
+  comp.connect(gain);
+  gain.connect(boost);
+  limiter.connect(ctx.destination);
+  return { source, comp, gain, boost, limiter };
+}
+
 // Once a graph exists the element's audio always flows through it, so "off"
-// becomes a straight source → destination wire rather than a teardown.
-function wire(el: HTMLMediaElement, mode: AudioFilterMode): void {
-  if (mode === 'off' && !graphs.has(el)) return;
+// becomes a straight source → boost wire rather than a teardown. The boost is
+// the volume past the element's own ceiling; the limiter only sits in the path
+// while it is above unity, so a plain 100% is never coloured by it.
+function wire(el: HTMLMediaElement, mode: AudioFilterMode, boost: number): void {
+  if (mode === 'off' && boost <= 1 && !graphs.has(el)) return;
   const ctx = audioCtx();
   if (!ctx) return;
 
   let g = graphs.get(el);
   if (!g) {
-    const source = ctx.createMediaElementSource(el);
-    const comp = ctx.createDynamicsCompressor();
-    const gain = ctx.createGain();
-    comp.connect(gain);
-    gain.connect(ctx.destination);
-    g = { source, comp, gain };
+    g = build(ctx, el);
     graphs.set(el, g);
   }
 
   g.source.disconnect();
   if (mode === 'off') {
-    g.source.connect(ctx.destination);
+    g.source.connect(g.boost);
   } else {
     configure(g, mode);
     g.source.connect(g.comp);
   }
+  g.boost.gain.value = Math.max(1, boost);
+  g.boost.disconnect();
+  g.boost.connect(boost > 1 ? g.limiter : ctx.destination);
   publishDebugHandle({ ctx, graph: g, mode });
 }
 
@@ -153,10 +173,12 @@ function persistAudioFilter(m: AudioFilterMode): void {
 }
 
 /** `remountKey` must change whenever the parent remounts the <video>, so the
- * graph re-attaches to the fresh element. */
+ * graph re-attaches to the fresh element. `boost` is the gain past the
+ * element's own ceiling (1 = none), the web's volume above 100%. */
 export function useAudioFilter(
   videoRef: RefObject<HTMLVideoElement | null>,
   remountKey: string,
+  boost = 1,
 ): { mode: AudioFilterMode; setMode: (m: AudioFilterMode) => void; supported: boolean } {
   const [modeState, setModeState] = useState<AudioFilterMode>('off');
   const [supported, setSupported] = useState(false);
@@ -170,8 +192,8 @@ export function useAudioFilter(
   // biome-ignore lint/correctness/useExhaustiveDependencies: remountKey tracks the element identity.
   useEffect(() => {
     const v = videoRef.current;
-    if (v) wire(v, modeState);
-  }, [modeState, remountKey, videoRef]);
+    if (v) wire(v, modeState, boost);
+  }, [modeState, boost, remountKey, videoRef]);
 
   const setMode = useCallback((m: AudioFilterMode) => {
     setModeState(m);

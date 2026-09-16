@@ -4,7 +4,9 @@
 // `indeterminate` spins a fixed arc instead and ignores `value`.
 
 import { Animated, View } from 'react-native';
+import { clamp01 } from '#ui/components/atoms/progress';
 import { style } from '#ui/core';
+import { a11yState, a11yValue } from '#ui/lib/a11y';
 import { useLoop } from '#ui/lib/loop';
 import { ProgressArc } from '#ui/lib/progress-motion';
 import {
@@ -18,6 +20,9 @@ import { Circle, Svg } from '#ui/lib/svg';
 
 interface ProgressRingProps extends RingProps {
   indeterminate?: boolean;
+  /** Names the ring to assistive tech. Leave it out inside a control that
+   *  already carries the name. */
+  label?: string;
 }
 
 // SVG draws an arc from 3 o'clock; rotating the container starts it at 12. The
@@ -25,12 +30,20 @@ interface ProgressRingProps extends RingProps {
 // React Native's transform vocabulary, on both platforms.
 const startAtTwelve = style({ transform: [{ rotate: RING_ROTATION }] });
 
-function ProgressRing({ indeterminate = false, ...props }: Readonly<ProgressRingProps>) {
+function ProgressRing({ indeterminate = false, label, ...props }: Readonly<ProgressRingProps>) {
   const g = ringGeometry(indeterminate ? { ...props, value: RING_BUSY_ARC } : props);
   const spin = useLoop('spin', RING_SPIN_MS, indeterminate);
+  const a11y = indeterminate
+    ? a11yState({ busy: true })
+    : a11yValue({ min: 0, max: 100, now: Math.round(clamp01(props.value ?? 0) * 100) });
 
   const ring = (
-    <View style={startAtTwelve}>
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel={label}
+      {...a11y}
+      style={startAtTwelve}
+    >
       <Svg width={g.size} height={g.size} viewBox={`0 0 ${g.size} ${g.size}`}>
         <Circle
           cx={g.centre}

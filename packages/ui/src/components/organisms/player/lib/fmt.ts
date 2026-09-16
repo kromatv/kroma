@@ -29,15 +29,32 @@ export function pct(value: number, total: number): number {
 // instead. Gamma 3 is the default: the midpoint sits at ~0.125 amplitude.
 export const VOLUME_GAMMA = 3;
 
-/** The loudest a track can play: audio volume is a [0,1] amplitude. */
-export const VOLUME_MAX = 1;
+/** Where full volume sits on a rail that reaches past it: the last quarter is
+ *  the boost, linear from 100% to `max`. A rail whose max is 1 ends there. */
+export const UNITY_POS = 0.75;
 
-/** Slider position [0,1] → audio volume [0,1] (perceptual). */
-export function sliderToVolume(position: number): number {
-  return clamp01(position) ** VOLUME_GAMMA;
+function unityPos(max: number): number {
+  return max > 1 ? UNITY_POS : 1;
 }
 
-/** Audio volume [0,1] → slider position [0,1] (inverse of {@link sliderToVolume}). */
-export function volumeToSlider(volume: number): number {
-  return clamp01(volume) ** (1 / VOLUME_GAMMA);
+/** Slider position [0,1] → audio volume [0,max]: perceptual up to 1, then a
+ *  linear boost. `max` is the controller's `volumeMax`, 1 without a boost. */
+export function sliderToVolume(position: number, max = 1): number {
+  const p = clamp01(position);
+  const unity = unityPos(max);
+  if (p <= unity) return (p / unity) ** VOLUME_GAMMA;
+  return 1 + ((p - unity) / (1 - unity)) * (max - 1);
+}
+
+/** Audio volume [0,max] → slider position [0,1] (inverse of {@link sliderToVolume}). */
+export function volumeToSlider(volume: number, max = 1): number {
+  const unity = unityPos(max);
+  const v = Math.max(0, Math.min(max, volume));
+  if (v <= 1) return clamp01(v) ** (1 / VOLUME_GAMMA) * unity;
+  return unity + ((v - 1) / (max - 1)) * (1 - unity);
+}
+
+/** One 5% step of real volume, clamped to [0,max]. */
+export function volumeStep(volume: number, dir: -1 | 1, max = 1): number {
+  return Math.max(0, Math.min(max, Math.round((volume + dir * 0.05) * 100) / 100));
 }

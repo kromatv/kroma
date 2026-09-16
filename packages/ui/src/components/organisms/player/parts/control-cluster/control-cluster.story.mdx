@@ -15,10 +15,15 @@ export const story = defineStory({
     playing: true,
     muted: false,
     volume: 0.7,
+    volumeMax: 2,
     pipActive: false,
     fullscreen: false,
   },
-  controls: { focused: ALL, volume: { min: 0, max: 1, step: 0.05 } },
+  controls: {
+    focused: ALL,
+    volume: { min: 0, max: 2, step: 0.05 },
+    volumeMax: [1, 2],
+  },
 });
 
 The transport row. Which controls exist is decided by the player (no `next` without a next episode, no `pip` where the platform has none) and handed in through `metrics`, so this draws whatever it is given rather than knowing about episodes or platforms. One `onActivate` serves a mouse click and a D-pad OK alike, and hover moves focus so a pointer and a remote agree on where they are.
@@ -41,6 +46,10 @@ It is drawn for the 1920 stage but not fixed to it: `metrics` (from `chromeMetri
 ```
 
 <Scene name="Paused, muted" args={{ playing: false, muted: true, volume: 0, focused: 'volume' }} />
+
+<Scene name="Boosted" args={{ volume: 1.6, focused: 'volume' }}>
+  Past the notch at 100%, into the last quarter of the rail the platform can boost.
+</Scene>
 
 <Scene name="On the settings gear" args={{ focused: 'settings' }} />
 

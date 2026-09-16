@@ -90,6 +90,7 @@ function Transport({
           playing={c.playing}
           muted={c.muted}
           volume={c.volume}
+          volumeMax={c.volumeMax}
           pipActive={c.pipActive}
           fullscreen={c.fullscreen}
           metrics={metrics}
