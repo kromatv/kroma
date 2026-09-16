@@ -248,6 +248,12 @@ pub fn cache_remote(data_dir: &Path, remote_url: &str) -> Option<String> {
     cache(data_dir, remote_url)
 }
 
+/// Whether `url` names a cached image whose file is no longer on disk.
+pub fn local_art_missing(data_dir: &Path, url: &str) -> bool {
+    url.strip_prefix(PUBLIC_PREFIX)
+        .is_some_and(|name| !images_dir(data_dir).join(name).exists())
+}
+
 fn cache(data_dir: &Path, remote_url: &str) -> Option<String> {
     // Already a local path (idempotent if called twice).
     if !remote_url.starts_with("http") {
@@ -437,4 +443,20 @@ pub(crate) fn encode_webp_quality(src: &Path, out: &Path, quality: &str) -> bool
         .arg(out)
         .status();
     matches!(ffmpeg, Ok(s) if s.success())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_cached_url_whose_file_is_gone_is_missing_and_a_remote_one_never_is() {
+        let dir = kroma_testing::temp_dir("image-missing");
+        std::fs::create_dir_all(images_dir(dir.path())).unwrap();
+        std::fs::write(images_dir(dir.path()).join("here.webp"), b"x").unwrap();
+
+        assert!(!local_art_missing(dir.path(), "/api/images/here.webp"));
+        assert!(local_art_missing(dir.path(), "/api/images/gone.webp"));
+        assert!(!local_art_missing(dir.path(), "https://img.example/p.jpg"));
+    }
 }

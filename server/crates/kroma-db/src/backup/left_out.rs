@@ -8,6 +8,7 @@ const REBUILT_BY_A_SCAN: &[&str] = &["files", "items", "libraries", "shows"];
 const REBUILT_FROM_THE_MEDIA_AND_ITS_PROVIDERS: &[&str] = &[
     "audio_analysis",
     "curated_sections",
+    "episode_guide",
     "file_segments",
     "item_suggestions",
     "item_vectors",

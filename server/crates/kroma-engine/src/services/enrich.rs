@@ -16,7 +16,7 @@ use crate::infra::events::{Bus, ServerEvent};
 use crate::infra::image;
 use crate::infra::metadata::{self, Cache, Target};
 use crate::infra::theme;
-use crate::model::{Kind, MediaItem, Metadata, Show};
+use crate::model::{Kind, ListedEpisode, MediaItem, Metadata, Show};
 use crate::point::Point;
 use crate::services::activity::{self, Shared as Activity};
 use crate::services::search::SearchEngine;
@@ -36,6 +36,11 @@ struct Job {
     // Set means "fetch THIS id" (operator correction or acquisition import);
     // checked before `resolved_tmdb` and always performs the detail fetch.
     pin: Option<u64>,
+    // Set means "fetch the id on file again": its cached art was cleared from
+    // disk, and the same URLs hash to the same names, so a fresh fetch brings
+    // every stored reference back. Unlike a pin it is not a correction, so it
+    // never renames the row.
+    refetch: Option<u64>,
 }
 
 #[derive(Clone)]
@@ -77,7 +82,7 @@ pub struct EnrichSummary {
     pub cancelled: bool,
 }
 
-fn build_jobs(items: &[MediaItem], shows: &[Show], pins: &Pins) -> Vec<Job> {
+fn build_jobs(items: &[MediaItem], shows: &[Show], pins: &Pins, data_dir: &Path) -> Vec<Job> {
     let mut jobs: Vec<Job> = Vec::new();
     for i in items {
         if !matches!(i.kind, Kind::Movie | Kind::Video) {
@@ -88,6 +93,7 @@ fn build_jobs(items: &[MediaItem], shows: &[Show], pins: &Pins) -> Vec<Job> {
         // A pin that disagrees with the id on file is a correction that has not
         // landed yet, so it re-matches even though the movie looks done.
         let settled = on_file.is_some() && (pin.is_none() || pin == on_file);
+        let intact = art_intact(data_dir, i.metadata.as_ref());
         jobs.push(Job {
             id: i.id.clone(),
             target: Target::Movie,
@@ -98,8 +104,9 @@ fn build_jobs(items: &[MediaItem], shows: &[Show], pins: &Pins) -> Vec<Job> {
             // id it resolved to means no search and no chance of landing on a
             // different film, and it is the only way a language added since is
             // ever noticed outside the nightly stage.
-            resolved_tmdb: settled.then(|| on_file).flatten(),
+            resolved_tmdb: on_file.filter(|_| settled && intact),
             pin,
+            refetch: on_file.filter(|_| settled && !intact),
         });
     }
     for s in shows {
@@ -107,17 +114,27 @@ fn build_jobs(items: &[MediaItem], shows: &[Show], pins: &Pins) -> Vec<Job> {
         // and `enrich_episodes` fills only the new stills/cast.
         let on_file = s.metadata.as_ref().map(|m| m.tmdb_id).filter(|&id| id != 0);
         let pin = pins.shows.get(&s.id).copied();
+        let settled = pin.is_none() || pin == on_file;
+        let intact = art_intact(data_dir, s.metadata.as_ref());
         jobs.push(Job {
             id: s.id.clone(),
             target: Target::Tv,
             title: s.title.clone(),
             year: s.year,
             is_show: true,
-            resolved_tmdb: on_file.filter(|_| pin.is_none() || pin == on_file),
+            resolved_tmdb: on_file.filter(|_| settled && intact),
             pin: pin.filter(|&p| Some(p) != on_file),
+            refetch: on_file.filter(|_| settled && !intact),
         });
     }
     jobs
+}
+
+fn art_intact(data_dir: &Path, meta: Option<&Metadata>) -> bool {
+    meta.is_none_or(|m| {
+        let urls = [&m.poster_url, &m.backdrop_url, &m.logo_url];
+        !art_gone(data_dir, urls.into_iter().map(Option::as_deref))
+    })
 }
 
 #[derive(Default)]
@@ -168,7 +185,12 @@ pub fn maybe_spawn(state: &SharedState, items: &[MediaItem], shows: &[Show]) {
     if !state.config.tmdb_enrich {
         return;
     }
-    let jobs = build_jobs(items, shows, &load_pins(&state.db));
+    let jobs = build_jobs(
+        items,
+        shows,
+        &load_pins(&state.db),
+        &state.config.data_dir,
+    );
     if jobs.is_empty() {
         return;
     }
@@ -234,19 +256,22 @@ fn enrich_episodes(
     let Ok(Some(detail)) = db::get_show(pool, show_id) else {
         return;
     };
-    let have_cast = db::seasons_with_cast(pool, show_id).unwrap_or_default();
+    let casts = db::season_casts(pool, show_id).unwrap_or_default();
+    let gaps = db::season_gaps(pool, show_id).unwrap_or_default();
     for season in &detail.seasons {
         let missing: Vec<&MediaItem> = season
             .episodes
             .iter()
-            .filter(|e| {
-                e.metadata
-                    .as_ref()
-                    .and_then(|m| m.backdrop_url.as_ref())
-                    .is_none()
-            })
+            .filter(|e| still_gone(data_dir, e))
             .collect();
-        let needs_cast = !have_cast.contains(&season.number);
+        let needs_cast = match casts.get(&season.number) {
+            None => true,
+            Some(cast) => art_gone(data_dir, cast.iter().map(|m| m.profile_url.as_deref())),
+        };
+        let needs_guide = db::episode_guide_stale(pool, show_id, season.number).unwrap_or(true)
+            || gaps.get(&season.number).is_some_and(|listed| {
+                art_gone(data_dir, listed.iter().map(|e| e.still_url.as_deref()))
+            });
         // Stills and a cast list say nothing about languages, so on their own
         // they let a language added since, or a payload that grew a field, pass
         // straight over every episode in a season that already has its artwork.
@@ -257,7 +282,7 @@ fn enrich_episodes(
         let stale_cast = !db::translations::stale_langs(pool, "season_cast", &cast_id, langs)
             .unwrap_or_default()
             .is_empty();
-        if missing.is_empty() && !needs_cast && !stale_text && !stale_cast {
+        if missing.is_empty() && !needs_cast && !needs_guide && !stale_text && !stale_cast {
             continue;
         }
         let per_lang = metadata::season_episodes_multi(api_key, langs, tv_id, season.number);
@@ -269,6 +294,7 @@ fn enrich_episodes(
 
         store_episode_stills(pool, data_dir, bus, &missing, data);
         store_episode_translations(pool, &per_lang, &season.episodes);
+        store_episode_guide(pool, data_dir, show_id, season.number, &per_lang, data);
         store_season_cast(
             pool,
             data_dir,
@@ -278,6 +304,64 @@ fn enrich_episodes(
             &per_lang,
             data,
         );
+    }
+}
+
+fn art_gone<'a>(data_dir: &Path, urls: impl Iterator<Item = Option<&'a str>>) -> bool {
+    urls.flatten()
+        .any(|url| image::local_art_missing(data_dir, url))
+}
+
+fn still_gone(data_dir: &Path, ep: &MediaItem) -> bool {
+    match ep.metadata.as_ref().and_then(|m| m.backdrop_url.as_deref()) {
+        None => true,
+        Some(url) => image::local_art_missing(data_dir, url),
+    }
+}
+
+// The whole roster is stored; what is on disk is filtered out when read, so a
+// file that arrives later needs no second fetch to stop being a gap.
+fn store_episode_guide(
+    pool: &Pool,
+    data_dir: &Path,
+    show_id: &str,
+    season: u32,
+    per_lang: &std::collections::HashMap<String, metadata::SeasonData>,
+    data: &metadata::SeasonData,
+) {
+    use db::translations::{self, TransData};
+    let listed: Vec<ListedEpisode> = data
+        .episodes
+        .iter()
+        .map(|a| ListedEpisode {
+            episode: a.episode,
+            title: a.name.clone(),
+            overview: a.overview.clone(),
+            air_date: a.air_date.clone(),
+            still_url: a
+                .still_url
+                .as_deref()
+                .and_then(|url| image::cache_remote(data_dir, url)),
+        })
+        .collect();
+    if let Err(e) = db::replace_episode_guide(pool, show_id, season, &listed) {
+        warn!(show = %show_id, season, error = %e, "failed to store the episode guide");
+        return;
+    }
+    for (lang, sdata) in per_lang {
+        for a in &sdata.episodes {
+            let td = TransData {
+                title: a.name.clone(),
+                overview: a.overview.clone(),
+                rev: translations::REV,
+                ..Default::default()
+            };
+            if td.is_empty() {
+                continue;
+            }
+            let id = format!("{show_id}:{season}:{}", a.episode);
+            let _ = translations::put(pool, "episode_guide", &id, lang, translations::TMDB, &td);
+        }
     }
 }
 
@@ -478,7 +562,7 @@ fn process_job(
         bump(eng, counters, total, activity);
         return;
     }
-    let resolved = match job.pin {
+    let resolved = match job.pin.or(job.refetch) {
         Some(tmdb_id) => {
             metadata::lookup_all_by_id(&eng.cache, &eng.api_key, &langs, job.target, tmdb_id)
         }
@@ -682,14 +766,16 @@ pub fn enrich_one(state: &SharedState, id: &str, is_show: bool) -> anyhow::Resul
             .map(|m| m.tmdb_id)
             .filter(|&i| i != 0);
         let pin = pin_for(state, db::metadata_core::SHOW, id).filter(|&p| Some(p) != on_file);
+        let intact = art_intact(&state.config.data_dir, show.metadata.as_ref());
         Job {
             id: show.id.clone(),
             target: Target::Tv,
             title: show.title.clone(),
             year: show.year,
             is_show: true,
-            resolved_tmdb: on_file.filter(|_| pin.is_none()),
+            resolved_tmdb: on_file.filter(|_| pin.is_none() && intact),
             pin,
+            refetch: on_file.filter(|_| pin.is_none() && !intact),
         }
     } else {
         let Some(item) = db::get_item(&state.db, id)? else {
@@ -701,14 +787,16 @@ pub fn enrich_one(state: &SharedState, id: &str, is_show: bool) -> anyhow::Resul
             .map(|m| m.tmdb_id)
             .filter(|&i| i != 0);
         let pin = pin_for(state, db::metadata_core::ITEM, id).filter(|&p| Some(p) != on_file);
+        let intact = art_intact(&state.config.data_dir, item.metadata.as_ref());
         Job {
             id: item.id.clone(),
             target: Target::Movie,
             title: item.title.clone(),
             year: item.year,
             is_show: false,
-            resolved_tmdb: on_file.filter(|_| pin.is_none()),
+            resolved_tmdb: on_file.filter(|_| pin.is_none() && intact),
             pin,
+            refetch: on_file.filter(|_| pin.is_none() && !intact),
         }
     };
     let eng = engine_for(state, api_key);
@@ -750,7 +838,12 @@ pub fn run_tracked(
     progress: impl Fn(usize, usize),
     cancelled: impl Fn() -> bool,
 ) -> EnrichSummary {
-    let jobs = build_jobs(items, shows, &load_pins(&state.db));
+    let jobs = build_jobs(
+        items,
+        shows,
+        &load_pins(&state.db),
+        &state.config.data_dir,
+    );
     let total = jobs.len();
     let Some(api_key) = state.config.tmdb_api_key.clone() else {
         return EnrichSummary {
@@ -862,17 +955,26 @@ mod tests {
         }
     }
 
+    fn data_dir() -> kroma_testing::TempDir {
+        kroma_testing::temp_dir("enrich-jobs")
+    }
+
     #[test]
     fn a_movie_already_matched_still_enters_the_queue_carrying_its_id() {
-        let jobs = build_jobs(&[movie_with("m1", 603)], &[], &Pins::default());
+        let dir = data_dir();
+
+        let jobs = build_jobs(&[movie_with("m1", 603)], &[], &Pins::default(), dir.path());
 
         let job = jobs.iter().find(|j| j.id == "m1").expect("the movie");
         assert_eq!(job.resolved_tmdb, Some(603));
+        assert_eq!(job.refetch, None);
     }
 
     #[test]
     fn a_movie_that_never_matched_is_queued_to_be_matched() {
-        let jobs = build_jobs(&[movie_with("m1", 0)], &[], &Pins::default());
+        let dir = data_dir();
+
+        let jobs = build_jobs(&[movie_with("m1", 0)], &[], &Pins::default(), dir.path());
 
         let job = jobs.iter().find(|j| j.id == "m1").expect("the movie");
         assert_eq!(job.resolved_tmdb, None);
@@ -880,13 +982,44 @@ mod tests {
 
     #[test]
     fn a_pin_that_disagrees_with_the_id_on_file_re_matches() {
+        let dir = data_dir();
         let mut pins = Pins::default();
         pins.items.insert("m1".into(), 999);
 
-        let jobs = build_jobs(&[movie_with("m1", 603)], &[], &pins);
+        let jobs = build_jobs(&[movie_with("m1", 603)], &[], &pins, dir.path());
 
         let job = jobs.iter().find(|j| j.id == "m1").expect("the movie");
         assert_eq!(job.resolved_tmdb, None);
         assert_eq!(job.pin, Some(999));
+    }
+
+    #[test]
+    fn a_movie_whose_cached_art_was_cleared_is_fetched_again_by_id() {
+        let dir = data_dir();
+        let mut movie = movie_with("m1", 603);
+        movie.metadata.as_mut().unwrap().poster_url = Some("/api/images/gone.webp".into());
+
+        let jobs = build_jobs(&[movie], &[], &Pins::default(), dir.path());
+
+        let job = jobs.iter().find(|j| j.id == "m1").expect("the movie");
+        assert_eq!(job.resolved_tmdb, None);
+        assert_eq!(job.pin, None);
+        assert_eq!(job.refetch, Some(603));
+    }
+
+    #[test]
+    fn a_movie_whose_cached_art_is_on_disk_stays_settled() {
+        let dir = data_dir();
+        let images = image::images_dir(dir.path());
+        std::fs::create_dir_all(&images).unwrap();
+        std::fs::write(images.join("here.webp"), b"x").unwrap();
+        let mut movie = movie_with("m1", 603);
+        movie.metadata.as_mut().unwrap().poster_url = Some("/api/images/here.webp".into());
+
+        let jobs = build_jobs(&[movie], &[], &Pins::default(), dir.path());
+
+        let job = jobs.iter().find(|j| j.id == "m1").expect("the movie");
+        assert_eq!(job.resolved_tmdb, Some(603));
+        assert_eq!(job.refetch, None);
     }
 }
