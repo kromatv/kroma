@@ -9,6 +9,7 @@ use rusqlite::OptionalExtension;
 use super::*;
 use kroma_domain::{Season, Show, ShowDetail, SplashEntry};
 
+mod art_owner;
 mod person;
 mod show_detail;
 mod shows;
@@ -17,6 +18,7 @@ mod splash;
 #[cfg(test)]
 mod test_support;
 
+pub use art_owner::*;
 pub use person::*;
 pub use show_detail::*;
 pub use shows::*;
