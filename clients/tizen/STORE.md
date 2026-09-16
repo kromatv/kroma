@@ -234,6 +234,17 @@ defects → launch.
 Updates support phased rollout: 3% of TVs, 10% after two weeks, 100% a week
 later.
 
+### The Return key, and what the verification test fails a build for
+
+Samsung's [key policy](https://developer.samsung.com/smarttv/develop/guides/fundamentals/terminating-applications.html)
+is checked by hand, and 0.1.39 was rejected on it. Return goes back one screen at
+every depth; on the **first** screen it raises an exit confirmation the app draws
+itself, and only the confirming button closes the app
+([`useRootBack.ts`](../../packages/tv/src/app/useRootBack.ts)). A silent
+`exit()` fails the same test, and so would a `window.confirm`: the popup has to
+be the app's own element. Long-pressing Return force-quits and is the platform's
+to handle, so nothing binds it.
+
 ### Beta test: the one real TestFlight on television
 
 Samsung is the only TV platform with a proper closed-beta channel, and unlike
