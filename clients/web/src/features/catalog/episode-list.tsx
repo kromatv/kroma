@@ -232,6 +232,7 @@ function SeasonEpisodes({
               key={`m-${n}`}
               season={current.number}
               episode={n}
+              listed={current.missing.find((m) => m.episode === n) ?? null}
               pending={current.requested || pendingEpisodes.has(epKey(current.number, n))}
               selected={selected.has(epKey(current.number, n))}
               onToggle={() => onToggleEpisode(current.number, n)}

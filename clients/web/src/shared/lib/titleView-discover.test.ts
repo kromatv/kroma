@@ -73,6 +73,7 @@ describe('buildTitleView: discover source (not owned)', () => {
         requested: false,
         airDate: '2019-05-01',
         episodes: [],
+        missing: [],
         cast: [],
       },
     ]);

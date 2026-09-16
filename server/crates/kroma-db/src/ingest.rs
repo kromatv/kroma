@@ -5,6 +5,7 @@
 //! what ffprobe found, and [`sync`] with [`scanned_files`] diff-sync what a
 //! library scan saw against what the database already holds.
 
+mod episode_guide;
 mod metadata;
 mod probe;
 mod probe_result;
@@ -14,6 +15,7 @@ mod sync;
 #[cfg(test)]
 mod test_support;
 
+pub use episode_guide::*;
 pub use metadata::*;
 pub use probe::*;
 pub use probe_result::*;

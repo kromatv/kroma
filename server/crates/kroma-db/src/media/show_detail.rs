@@ -7,7 +7,9 @@ use kroma_domain::MediaItem;
 
 use super::shows::{representative_video, row_to_show_bare};
 use super::{Metadata, OptionalExtension, Season, ShowDetail};
-use crate::{attach_files_batch, parse_metadata, row_to_item, season_casts, Pool, ITEM_COLS};
+use crate::{
+    attach_files_batch, parse_metadata, row_to_item, season_casts, season_gaps, Pool, ITEM_COLS,
+};
 
 pub fn show_title(pool: &Pool, id: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
@@ -68,15 +70,20 @@ pub fn get_show(pool: &Pool, id: &str) -> Result<Option<ShowDetail>> {
                 number: n,
                 episodes: vec![ep],
                 cast: Vec::new(),
+                missing: Vec::new(),
             }),
         }
     }
     seasons.sort_by_key(|s| s.number);
 
     let mut casts = season_casts(pool, id)?;
+    let mut gaps = season_gaps(pool, id)?;
     for s in &mut seasons {
         if let Some(cast) = casts.remove(&s.number) {
             s.cast = cast;
+        }
+        if let Some(missing) = gaps.remove(&s.number) {
+            s.missing = missing;
         }
     }
 

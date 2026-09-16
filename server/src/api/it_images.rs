@@ -1,6 +1,7 @@
 //! Integration tests for the artwork endpoints (`images.rs`): the poster
-//! redirect and the composited preview card's art selection. No network,
-//! ffmpeg, or disk assets are reached — the card 404s before compositing.
+//! redirect, the composited preview card's art selection and the cache miss.
+//! No network, ffmpeg, or disk assets are reached — the card 404s before
+//! compositing, and a miss has no provider to refill from.
 
 use axum::http::StatusCode;
 use serde_json::json;
@@ -70,4 +71,26 @@ async fn a_movie_card_ignores_show_art_and_needs_its_own() {
     let (status, body) = get(&t.app, &format!("/api/items/{movie}/card"), Some(&t.token)).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["error"], json!("artwork unavailable"));
+}
+
+#[tokio::test]
+async fn a_cleared_image_nothing_names_stays_missing() {
+    let t = test_app();
+
+    let (status, body) = get(&t.app, "/api/images/feedfeedfeedfeed.webp", None).await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["error"], json!("image not found"));
+}
+
+#[tokio::test]
+async fn a_cleared_image_a_show_names_is_asked_of_its_enrichment() {
+    let t = test_app();
+    let show_id = demo_episode().show_id.expect("episode show id");
+    crate::db::set_show_metadata(&t.state.db, &show_id, &art_metadata()).expect("set show metadata");
+
+    let (status, body) = get(&t.app, "/api/images/feedfeedfeedfeed.webp", None).await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND, "no provider key, so nothing to refill from");
+    assert_eq!(body["error"], json!("image not found"));
 }

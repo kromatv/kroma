@@ -33,6 +33,8 @@ describe('buildTitleView: show source', () => {
     seasons: [{ number: 1, episodes: [ep(1, 1)], cast: [{ name: 'S1Actor' }] }],
   };
 
+  const listed = { episode: 2, title: 'Two', airDate: '2030-01-01' };
+
   it('uses the first episode as the play target when there is no up-next', () => {
     const v = build({
       source: 'show',
@@ -60,6 +62,7 @@ describe('buildTitleView: show source', () => {
         requested: false,
         airDate: null,
         episodes: [ep(1, 1)],
+        missing: [],
         cast: [{ name: 'S1Actor' }],
       },
     ]);
@@ -158,6 +161,29 @@ describe('buildTitleView: show source', () => {
       episodes: [],
       cast: [],
     });
+  });
+
+  it('carries the listed gaps of an owned season, and none for a TMDB-only one', () => {
+    const withGaps = {
+      show: showObj,
+      seasons: [{ number: 1, episodes: [ep(1, 1)], missing: [listed] }],
+    };
+    const discover = {
+      seasons: [
+        { season: 1, episodeCount: 2, episodesAvailable: 1, available: false, requested: false },
+        { season: 2, episodeCount: 8, episodesAvailable: 0, available: false, requested: false },
+      ],
+      similar: [],
+    };
+    const v = build({
+      source: 'show',
+      detail: withGaps as never,
+      similarShows: [],
+      upNext: null,
+      discover: discover as never,
+    });
+    expect(v.seasons[0]?.missing).toEqual([listed]);
+    expect(v.seasons[1]?.missing).toEqual([]);
   });
 
   it('coalesces a show with no metadata and nothing to play', () => {

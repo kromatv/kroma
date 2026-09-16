@@ -2,9 +2,15 @@
 // request. The whole row is the control, so the trailing report / watched
 // buttons are actions inside it rather than a second stop beside it.
 
-import type { MediaItem } from '@kromatv/client/media';
-import { formatRuntime, posterColors } from '@kromatv/core';
-import { useT } from '@kromatv/ui';
+import type { ListedEpisode, MediaItem } from '@kromatv/client/media';
+import {
+  datedDayLabel,
+  formatRuntime,
+  posterColors,
+  relativeAirDate,
+  sentenceCase,
+} from '@kromatv/core';
+import { useLocale, useT } from '@kromatv/ui';
 import {
   Box,
   backdropBlur,
@@ -168,30 +174,32 @@ const missingRow = sv({
 
 /** A gap in the season the viewer can ask for. The whole row is the toggle, so
  * picking three episodes is three presses and one request from the bar below;
- * a row already asked for shows its status instead. */
+ * a row already asked for shows its status instead. What the provider lists
+ * for the episode (title, still, air date, synopsis) rides along once
+ * enrichment has fetched the season. */
 export function MissingEpisodeRow({
   episode,
+  listed,
   pending,
   selected,
   onToggle,
 }: Readonly<{
   season: number;
   episode: number;
+  listed: ListedEpisode | null;
   pending: boolean;
   selected: boolean;
   onToggle: () => void;
 }>) {
   const t = useT();
-  const label = t('content.episodeN', { n: episode });
+  const label = listed?.title
+    ? `${episode}. ${listed.title}`
+    : t('content.episodeN', { n: episode });
   if (pending) {
     return (
       <Box row align="center" gap={ROW_GAP} radius="xl" p={14} bg="white/1.5" border="white/5">
-        <MissingStill episode={episode} />
-        <Box minW={0} flex>
-          <Text variant="label" lines={1} color="white/70" style={s.bold}>
-            {label}
-          </Text>
-        </Box>
+        <MissingStill episode={episode} still={listed?.stillUrl ?? null} />
+        <MissingText label={label} listed={listed} color="white/70" />
         <RequestStatusChip status="pending" size="card" />
       </Box>
     );
@@ -205,23 +213,63 @@ export function MissingEpisodeRow({
       label={label}
       onPress={onToggle}
     >
-      <MissingStill episode={episode} />
-      <Box minW={0} flex>
-        <Text variant="label" lines={1} color={selected ? 'text' : 'white/70'} style={s.bold}>
-          {label}
-        </Text>
-      </Box>
+      <MissingStill episode={episode} still={listed?.stillUrl ?? null} />
+      <MissingText label={label} listed={listed} color={selected ? 'text' : 'white/70'} />
       <CheckboxFace checked={selected} />
     </Focusable>
   );
 }
 
-function MissingStill({ episode }: Readonly<{ episode: number }>) {
+function MissingText({
+  label,
+  listed,
+  color,
+}: Readonly<{ label: string; listed: ListedEpisode | null; color: 'text' | 'white/70' }>) {
+  const t = useT();
+  const locale = useLocale();
+  const airDate = listed?.airDate ?? null;
+  let when: string | null = null;
+  if (airDate) {
+    const relative = sentenceCase(relativeAirDate(airDate, locale), locale);
+    when = `${relative} · ${datedDayLabel(airDate, locale)}`;
+  } else if (listed) {
+    when = t('requests.noDate');
+  }
   return (
-    <Box w={STILL_W} aspect={16 / 9} shrink={0} center radius="md" bg="white/4">
-      <Text variant="label" color="white/35" style={s.bold}>
-        {String(episode)}
-      </Text>
+    <Box minW={0} flex>
+      <Box row align="center" gap={10} mb={6}>
+        <Text variant="label" lines={1} color={color} style={s.bold}>
+          {label}
+        </Text>
+        {when ? (
+          <Text variant="meta" color="white/45" shrink={0}>
+            {when}
+          </Text>
+        ) : null}
+      </Box>
+      {listed?.overview ? (
+        <Text variant="meta" color="white/60" lines={2}>
+          {listed.overview}
+        </Text>
+      ) : null}
+    </Box>
+  );
+}
+
+function MissingStill({ episode, still }: Readonly<{ episode: number; still: string | null }>) {
+  const src = kromaClient().media.artwork.resolve(still);
+  return (
+    <Box w={STILL_W} aspect={16 / 9} shrink={0} center overflow="hidden" radius="md" bg="white/4">
+      {src ? (
+        <>
+          <Image src={src} fit="cover" fill style={s.dimmed} />
+          <Box fill style={s.scrim} />
+        </>
+      ) : (
+        <Text variant="label" color="white/35" style={s.bold}>
+          {String(episode)}
+        </Text>
+      )}
     </Box>
   );
 }

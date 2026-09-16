@@ -7,6 +7,7 @@ import type { DiscoverDetail, DiscoverEntry } from '@kromatv/client/discovery';
 import type {
   CastMember,
   CrewMember,
+  ListedEpisode,
   MediaItem,
   Season,
   Show,
@@ -30,6 +31,7 @@ export interface TitleSeason {
   requested: boolean;
   airDate: string | null;
   episodes: MediaItem[];
+  missing: ListedEpisode[];
   cast: CastMember[];
 }
 
@@ -211,6 +213,7 @@ export function buildTitleView(
       requested: s.requested,
       airDate: s.airDate,
       episodes: [],
+      missing: [],
       cast: [],
     })),
     requestStatus: d.requestStatus,
@@ -240,6 +243,7 @@ function mergeSeasons(owned: Season[], discover: DiscoverDetail | null): TitleSe
       requested: false,
       airDate: null,
       episodes: s.episodes,
+      missing: s.missing ?? [],
       cast: s.cast ?? [],
     }));
   }
@@ -258,6 +262,7 @@ function mergeSeasons(owned: Season[], discover: DiscoverDetail | null): TitleSe
         requested: ds?.requested ?? false,
         airDate: ds?.airDate ?? null,
         episodes: own?.episodes ?? [],
+        missing: own?.missing ?? [],
         cast: own?.cast ?? [],
       };
     });

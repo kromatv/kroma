@@ -171,6 +171,21 @@ pub struct Show {
     pub progress: Option<u8>,
 }
 
+/// An episode as the provider lists it, for the ones the library does not
+/// hold: enough to show a gap with a title, a still and the day it airs.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ListedEpisode {
+    pub episode: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub overview: Option<String>,
+    #[serde(rename = "airDate", default, skip_serializing_if = "Option::is_none")]
+    pub air_date: Option<String>,
+    #[serde(rename = "stillUrl", default, skip_serializing_if = "Option::is_none")]
+    pub still_url: Option<String>,
+}
+
 /// Sorted by episode number.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Season {
@@ -179,6 +194,9 @@ pub struct Season {
     // Empty until enriched, or when the provider returned none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub cast: Vec<CastMember>,
+    // The listed episodes not on disk, in episode order. Empty until enriched.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub missing: Vec<ListedEpisode>,
 }
 
 /// `GET /api/shows/:id` payload: a show plus its seasons.

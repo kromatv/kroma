@@ -129,6 +129,7 @@ mod tests {
             number: 1,
             episodes,
             cast: Vec::new(),
+            missing: Vec::new(),
         }
     }
 

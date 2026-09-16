@@ -4,7 +4,7 @@ use super::{apply, apply_show, overlay_season_cast};
 use crate::{metadata_core, translations, Pool};
 use anyhow::Result;
 
-use kroma_domain::{Show, ShowDetail};
+use kroma_domain::{Season, Show, ShowDetail};
 
 /// Overlay `locale` onto a batch of shows (their top-level metadata only).
 pub fn overlay_shows(pool: &Pool, shows: &mut [Show], locale: &str) -> Result<()> {
@@ -55,6 +55,38 @@ pub fn overlay_show_detail(pool: &Pool, detail: &mut ShowDetail, locale: &str) -
             }
         }
         overlay_season_cast(&conn, &detail.show.id, season, locale)?;
+        overlay_listed(&conn, &detail.show.id, season, locale)?;
+    }
+    Ok(())
+}
+
+// A listed episode is keyed `"{show_id}:{season}:{episode}"`: it has no row of
+// its own to hang a translation on.
+fn overlay_listed(
+    conn: &rusqlite::Connection,
+    show_id: &str,
+    season: &mut Season,
+    locale: &str,
+) -> Result<()> {
+    if season.missing.is_empty() {
+        return Ok(());
+    }
+    let ids: Vec<String> = season
+        .missing
+        .iter()
+        .map(|e| format!("{show_id}:{}:{}", season.number, e.episode))
+        .collect();
+    let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+    let tr = translations::resolve_many(conn, "episode_guide", &refs, locale)?;
+    for (ep, id) in season.missing.iter_mut().zip(&ids) {
+        if let Some(t) = tr.get(id) {
+            if t.title.is_some() {
+                ep.title = t.title.clone();
+            }
+            if t.overview.is_some() {
+                ep.overview = t.overview.clone();
+            }
+        }
     }
     Ok(())
 }
@@ -66,7 +98,7 @@ mod tests {
     use crate::localize::test_support::*;
     use crate::translations::TransData;
 
-    use kroma_domain::{CastMember, Kind, Season, SectionItem};
+    use kroma_domain::{CastMember, Kind, ListedEpisode, Season, SectionItem};
 
     #[test]
     fn overlay_shows_and_section_items() {
@@ -136,6 +168,15 @@ mod tests {
         .unwrap();
         translations::put(
             &p,
+            "episode_guide",
+            "s1:1:2",
+            "fr",
+            translations::TMDB,
+            &td("Listé FR", vec![]),
+        )
+        .unwrap();
+        translations::put(
+            &p,
             "episode",
             "e1",
             "fr",
@@ -167,6 +208,13 @@ mod tests {
                     character: Some("orig".into()),
                     profile_url: None,
                 }],
+                missing: vec![ListedEpisode {
+                    episode: 2,
+                    title: Some("Listed".into()),
+                    overview: Some("Original".into()),
+                    air_date: None,
+                    still_url: None,
+                }],
             }],
         };
         overlay_show_detail(&p, &mut detail, "fr").unwrap();
@@ -187,6 +235,11 @@ mod tests {
         assert_eq!(
             detail.seasons[0].cast[0].character.as_deref(),
             Some("Perso Saison")
+        );
+        assert_eq!(detail.seasons[0].missing[0].title.as_deref(), Some("Listé FR"));
+        assert_eq!(
+            detail.seasons[0].missing[0].overview.as_deref(),
+            Some("Original")
         );
     }
 }

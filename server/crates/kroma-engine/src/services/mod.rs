@@ -2,6 +2,7 @@
 //! adapters and the database.
 
 pub mod activity;
+pub mod art_refill;
 pub mod auth;
 pub mod backup;
 pub mod cast;

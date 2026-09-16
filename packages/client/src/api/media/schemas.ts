@@ -69,11 +69,24 @@ export const MediaItem = CatalogEntry.extend(Tracks.shape).extend({
 });
 export type MediaItem = z.infer<typeof MediaItem>;
 
-/** Episodes are sorted by episode number. */
+/** An episode the provider lists that the library does not hold: enough to show
+ * the gap with a title, a still and the day it airs. */
+export const ListedEpisode = z.object({
+  episode: z.number(),
+  title: z.string().nullish(),
+  overview: z.string().nullish(),
+  airDate: z.string().nullish(),
+  stillUrl: z.string().nullish(),
+});
+export type ListedEpisode = z.infer<typeof ListedEpisode>;
+
+/** Episodes are sorted by episode number; `missing` holds the listed episodes
+ * not on disk, in the same order. */
 export const Season = z.object({
   number: z.number(),
   episodes: z.array(MediaItem),
   cast: z.array(CastMember).nullish(),
+  missing: z.array(ListedEpisode).nullish(),
 });
 export type Season = z.infer<typeof Season>;
 
