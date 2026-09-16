@@ -1,0 +1,16 @@
+{
+  "consent.subject": "{name} souhaite vous écrire",
+  "consent.preheader": "Confirmez cette adresse pour recevoir les courriels de votre compte sur {name}.",
+  "consent.heading": "Un serveur KROMA souhaite vous écrire",
+  "consent.intro": "Le propriétaire de {name} ({host}) a enregistré cette adresse pour votre compte et souhaite pouvoir vous envoyer les courriels liés à ce compte, par exemple une réinitialisation de mot de passe.",
+  "consent.button": "Autoriser et confirmer mon adresse",
+  "consent.footer": "Rien n'est envoyé tant que vous n'avez pas confirmé. Si {name} ne vous dit rien, ignorez ce message : rien ne change. Cette demande expire dans 7 jours.",
+  "consent.text": "Le propriétaire de {name} ({host}) a enregistré cette adresse pour votre compte et souhaite pouvoir vous envoyer les courriels liés à ce compte, par exemple une réinitialisation de mot de passe.\n\nPour l'autoriser et confirmer votre adresse, ouvrez ce lien :\n{url}\n\nRien n'est envoyé tant que vous n'avez pas confirmé. Si {name} ne vous dit rien, ignorez ce message : rien ne change. Cette demande expire dans 7 jours.",
+  "page.title": "Autoriser {name} à vous écrire ?",
+  "page.intro": "{name}, le serveur KROMA à l'adresse {host}, souhaite envoyer les courriels de votre compte à {address}. Seul ce serveur pourra s'en servir, et seulement pour cette adresse.",
+  "page.allow": "Autoriser et confirmer mon adresse",
+  "page.deny": "Si ce serveur ne vous dit rien, fermez cette page. Rien ne sera envoyé.",
+  "page.invalidTitle": "Ce lien n'est plus valable",
+  "page.invalidDesc": "Il a expiré ou a déjà servi. Demandez au propriétaire du serveur d'en envoyer un nouveau.",
+  "relay.name": "relais courriel kroma.tv"
+}

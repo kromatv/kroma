@@ -325,6 +325,13 @@ const ACTIONS: Record<string, ActionSpec> = {
     run: (client) => client.admin.testSmtp(),
     ok: (t, r) => t('admin.smtpTestOk', { email: r.sentTo }),
   },
+  relayTest: {
+    label: 'admin.relayTestRun',
+    running: 'admin.relayTestSending',
+    failed: 'admin.relayTestFailed',
+    run: (client) => client.admin.testRelay(),
+    ok: (t, r) => t('admin.relayTestOk', { email: r.sentTo }),
+  },
 };
 
 function ActionControl({ actionKey }: Readonly<{ actionKey: string }>) {

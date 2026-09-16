@@ -1,6 +1,8 @@
 //! The two links an owner mints for a member: a credential reset and an address
-//! verification. Both are single-use and both try the operator's SMTP server
-//! before falling back to the owner copying the link by hand.
+//! verification. Both are single-use and both try the configured delivery
+//! before falling back to the owner copying the link by hand. On the kroma.tv
+//! relay, a verification for a mailbox that has not yet consented is the
+//! relay's own consent request, and a reset waits until it has.
 
 use axum::extract::{Path as AxPath, State};
 use axum::response::{IntoResponse, Response};
@@ -11,7 +13,8 @@ use crate::api::util::query;
 use crate::db;
 use crate::model::{Permission, User};
 use crate::services::auth;
-use crate::services::email::{self, EmailKind, OutboundEmail};
+use crate::services::email::{self, Delivery, EmailKind, Enrolment, OutboundEmail, SendError};
+use crate::services::settings::{email_delivery, EmailDelivery};
 use crate::state::SharedState;
 
 const RESET_TTL: i64 = 48 * 3600;
@@ -23,7 +26,7 @@ fn now_unix() -> i64 {
 
 /// The base reset/verify links are built against: the configured web URL, else
 /// the Remote Access public URL (the same fallback quick-connect links use).
-/// Still `None` when neither is set — the client then composes from its own
+/// Still `None` when neither is set: the client then composes from its own
 /// origin, which is right for an owner browsing the very server they admin.
 fn web_base(state: &SharedState) -> Option<String> {
     state.config.web_url.clone().or_else(|| {
@@ -32,12 +35,28 @@ fn web_base(state: &SharedState) -> Option<String> {
     })
 }
 
-/// How the link reached the member: `smtp` once the operator's server took it,
-/// `manual` when the owner has to carry it. A send failure never fails the
-/// mint, because copying by hand is the default delivery anyway.
-async fn deliver(state: &SharedState, to: &User, kind: EmailKind, url: Option<&str>) -> String {
+fn relay_url(state: &SharedState) -> &str {
+    state
+        .config
+        .mail_relay_url
+        .as_deref()
+        .unwrap_or(email::RELAY_URL)
+}
+
+async fn stored_grant(state: &SharedState, user_id: &str) -> Option<String> {
+    let uid = user_id.to_string();
+    query(&state.db, move |pool| db::mail_grant(&pool, &uid))
+        .await
+        .ok()
+        .flatten()
+        .map(|g| g.grant)
+}
+
+/// How the link reached the member. A send failure never fails the mint,
+/// because copying by hand is the default delivery anyway.
+async fn deliver(state: &SharedState, to: &User, kind: EmailKind, url: Option<&str>) -> Delivery {
     let Some(url) = url else {
-        return "manual".to_string();
+        return Delivery::Manual;
     };
     let outbound = OutboundEmail {
         to: to.email.clone(),
@@ -46,10 +65,46 @@ async fn deliver(state: &SharedState, to: &User, kind: EmailKind, url: Option<&s
         server_name: state.settings.get_str("serverName", "KROMA"),
         kind,
     };
-    email::send(&state.settings, &outbound)
-        .await
-        .unwrap_or("manual")
-        .to_string()
+    let grant = stored_grant(state, &to.id).await;
+    let uid = to.id.clone();
+    match email::send(&state.settings, relay_url(state), &outbound, grant.as_deref()).await {
+        Ok(sent) => {
+            if let Some(renewed) = sent.renewed_grant {
+                let _ = query(&state.db, move |pool| {
+                    db::renew_mail_grant(&pool, &uid, &renewed)
+                })
+                .await;
+            }
+            sent.delivery
+        }
+        Err(SendError::GrantGone) => {
+            let _ = query(&state.db, move |pool| db::clear_mail_grant(&pool, &uid)).await;
+            Delivery::Unconfirmed
+        }
+        Err(SendError::Failed(why)) => {
+            tracing::warn!(user = %to.id, "account email not sent: {why}");
+            Delivery::Manual
+        }
+    }
+}
+
+/// On the relay, a mailbox that has not consented cannot be written to: the
+/// relay asks it, carrying this token so the click comes back as a verification.
+async fn ask_consent(state: &SharedState, to: &User, origin: &str, token: &str) -> Delivery {
+    let enrolment = Enrolment {
+        address: &to.email,
+        origin,
+        server_name: &state.settings.get_str("serverName", "KROMA"),
+        locale: super::super::user_locale(to),
+        token,
+    };
+    match email::enrol(relay_url(state), &enrolment).await {
+        Ok(()) => Delivery::Relay,
+        Err(why) => {
+            tracing::warn!(user = %to.id, "relay consent not requested: {why}");
+            Delivery::Manual
+        }
+    }
 }
 
 /// `POST /api/admin/users/:id/reset` → mint a credential reset. The link alone
@@ -84,7 +139,7 @@ pub async fn reset_user(
         code,
         url,
         expires_at,
-        delivered,
+        delivered: delivered.as_str().to_string(),
     })
     .into_response())
 }
@@ -114,13 +169,19 @@ pub async fn send_email_verification(
         )
     })
     .await?;
-    let url = web_base(&state).map(|w| format!("{w}/verify-email?token={token}"));
-    let delivered = deliver(&state, &target, EmailKind::Verify, url.as_deref()).await;
+    let base = web_base(&state);
+    let url = base.as_ref().map(|w| format!("{w}/verify-email?token={token}"));
+    let delivered = match (email_delivery(&state.settings), &base) {
+        (EmailDelivery::Relay, Some(origin)) if stored_grant(&state, &target.id).await.is_none() => {
+            ask_consent(&state, &target, origin, &token).await
+        }
+        _ => deliver(&state, &target, EmailKind::Verify, url.as_deref()).await,
+    };
     Ok(Json(crate::api::dto::VerificationCreated {
         token,
         url,
         expires_at,
-        delivered,
+        delivered: delivered.as_str().to_string(),
     })
     .into_response())
 }

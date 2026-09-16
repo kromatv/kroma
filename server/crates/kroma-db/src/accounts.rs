@@ -15,6 +15,7 @@ use kroma_domain::PublicUser;
 mod access_tokens;
 mod credentials;
 mod invites;
+mod mail_grants;
 mod pin_attempts;
 mod preferences;
 mod resets;
@@ -27,6 +28,7 @@ mod test_support;
 pub use access_tokens::*;
 pub use credentials::*;
 pub use invites::*;
+pub use mail_grants::*;
 pub use pin_attempts::*;
 pub use preferences::*;
 pub use resets::*;
@@ -204,12 +206,17 @@ pub fn username_taken(pool: &Pool, username: &str, exclude_id: Option<&str>) -> 
 /// The caller must pre-check for a duplicate to surface a clean 409; the
 /// `UNIQUE COLLATE NOCASE` constraint is the atomic backstop, so a `rusqlite`
 /// error here is that collision. Changing the address clears its verified
-/// state: the proof belongs to the mailbox, not the account (ADMIN-87).
+/// state and the relay grant with it: the proof belongs to the mailbox, not
+/// the account (ADMIN-87).
 pub fn set_user_email(pool: &Pool, user_id: &str, email: &str) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
         "UPDATE users SET email = ?2, email_verified_at = NULL WHERE id = ?1",
         params![user_id, email],
+    )?;
+    conn.execute(
+        "DELETE FROM mail_grants WHERE user_id = ?1",
+        params![user_id],
     )?;
     Ok(())
 }

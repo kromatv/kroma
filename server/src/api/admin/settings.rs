@@ -4,24 +4,30 @@
 use std::collections::BTreeMap;
 
 use axum::extract::{Query, State};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
+use crate::api::error::{json_error, lerr};
 use crate::api::extract::AuthUser;
+use crate::api::util::query;
+use crate::db;
 use crate::infra::events::ServerEvent;
 use crate::model::Permission;
-use crate::services::settings;
+use crate::services::email::{self, RelayError};
+use crate::services::settings::{self, EmailDelivery};
 use crate::state::SharedState;
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 
 /// Admin settings. Paths are relative to the `/api/admin` nest.
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/settings", get(get_settings).put(put_settings))
-        .route("/settings/smtp-test", axum::routing::post(smtp_test))
+        .route("/settings/smtp-test", post(smtp_test))
+        .route("/settings/relay-test", post(relay_test))
 }
 
 #[derive(Debug, Deserialize)]
@@ -90,19 +96,51 @@ pub async fn smtp_test(
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
     let loc = super::user_locale(&user);
-    if !state.settings.get_bool("smtpEnabled", false) {
-        return Err(crate::api::error::lerr(
-            loc,
-            axum::http::StatusCode::BAD_REQUEST,
-            "admin.smtpTestDisabled",
-        ));
+    if settings::email_delivery(&state.settings) != EmailDelivery::Smtp {
+        return Err(lerr(loc, StatusCode::BAD_REQUEST, "admin.smtpTestDisabled"));
     }
-    if let Err(e) = crate::services::email::send_test(&state.settings, &user.email, loc).await {
+    if let Err(e) = email::send_test(&state.settings, &user.email, loc).await {
         let prefix = crate::i18n::t(loc, "admin.smtpTestFailed", &[]);
-        return Err(crate::api::error::json_error(
-            axum::http::StatusCode::BAD_GATEWAY,
-            &format!("{prefix}: {e}"),
-        ));
+        return Err(json_error(StatusCode::BAD_GATEWAY, &format!("{prefix}: {e}")));
     }
     Ok(Json(json!({ "sentTo": user.email })).into_response())
+}
+
+/// `POST /api/admin/settings/relay-test` → send a short probe to the caller's
+/// own address through the kroma.tv relay, spending the caller's own grant. No
+/// grant means the owner's mailbox has not consented yet: a verification from
+/// the member editor is what asks it.
+pub async fn relay_test(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    super::require(&user, Permission::SettingsManage)?;
+    let loc = super::user_locale(&user);
+    if settings::email_delivery(&state.settings) != EmailDelivery::Relay {
+        return Err(lerr(loc, StatusCode::BAD_REQUEST, "admin.relayTestDisabled"));
+    }
+    let uid = user.id.clone();
+    let Some(grant) = query(&state.db, move |pool| db::mail_grant(&pool, &uid)).await? else {
+        return Err(lerr(loc, StatusCode::BAD_REQUEST, "admin.relayTestUnconfirmed"));
+    };
+    let relay_url = state
+        .config
+        .mail_relay_url
+        .as_deref()
+        .unwrap_or(email::RELAY_URL);
+    let uid = user.id.clone();
+    match email::relay_test(relay_url, &grant.grant, loc).await {
+        Ok(renewed) => {
+            query(&state.db, move |pool| db::renew_mail_grant(&pool, &uid, &renewed)).await?;
+            Ok(Json(json!({ "sentTo": user.email })).into_response())
+        }
+        Err(RelayError::Gone) => {
+            query(&state.db, move |pool| db::clear_mail_grant(&pool, &uid)).await?;
+            Err(lerr(loc, StatusCode::BAD_REQUEST, "admin.relayTestUnconfirmed"))
+        }
+        Err(e) => {
+            let prefix = crate::i18n::t(loc, "admin.relayTestFailed", &[]);
+            Err(json_error(StatusCode::BAD_GATEWAY, &format!("{prefix}: {e}")))
+        }
+    }
 }

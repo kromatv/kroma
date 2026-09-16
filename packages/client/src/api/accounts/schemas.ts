@@ -106,7 +106,10 @@ export const PairingStatus = z.discriminatedUnion('status', [
 ]);
 export type PairingStatus = z.infer<typeof PairingStatus>;
 
-const Delivery = z.enum(['manual', 'smtp']).catch('manual');
+/** How a minted link left the server. `unconfirmed`: the kroma.tv relay is
+ * chosen but this mailbox has not allowed the server yet, so nothing went out. */
+const Delivery = z.enum(['manual', 'smtp', 'relay', 'unconfirmed']).catch('manual');
+export type Delivery = z.infer<typeof Delivery>;
 
 /** `POST /api/admin/users/:id/reset` the link plus the one-time code the owner
  * reads to the user. */

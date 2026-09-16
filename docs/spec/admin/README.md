@@ -134,7 +134,23 @@ and deliverability before a user's reset depends on them.
 
 **ADMIN-83** (AGREED) - The kroma.tv relay sees the destination address and the link, never
 the code, never the password, and cannot reset anything. It holds the published app's mail
-credential so a self-hosted server does not have to, and it keeps no record of what it sent.
+credential so a self-hosted server does not have to. It keeps no address and no mail, only
+short-lived counters of how often a mailbox was written to, under a key that cannot be
+turned back into the address.
+
+**ADMIN-89** (AGREED) - The relay writes to a mailbox only after that mailbox allowed this
+server to. The one message it sends unasked is a consent request, in a fixed template where
+the server chose nothing but its name, and a mailbox receives at most a few of them a day.
+The click that allows the server is also the address verification (ADMIN-85): reaching the
+mailbox was the proof. A reset for an address that has not consented is carried by hand, and
+the member editor says so.
+
+**ADMIN-90** (AGREED) - What a mailbox grants is bound to this server: every link in a
+message the relay carries leads back to the server the mailbox said yes to, and nothing in
+the message may run, submit or embed. The permission is opaque to the server, cannot be
+forged, and dies with the address it was minted for, with the server's public address, or
+when the mailbox itself bounces. A permission the relay retires is dropped by the server, and
+the mailbox is asked again through a new verification.
 
 **ADMIN-88** (AGREED) - A user who cannot sign in can ask for a reset from the sign-in
 screen, naming their account by email or username. The answer is uniform whether or not the
@@ -164,8 +180,9 @@ out-of-band code: reaching the mailbox is itself the proof, so the link alone su
 
 **ADMIN-86** (AGREED) - The owner sends a verification from the member editor, with the
 same delivery choices as a credential reset: copy the link by hand, the operator's own
-mail server, or the kroma.tv relay. The verified state is shown next to the address, and
-the email is written in the recipient's language.
+mail server, or the kroma.tv relay. On the relay, a verification for a mailbox that has not
+yet allowed this server is the relay's own consent request (ADMIN-89). The verified state is
+shown next to the address, and the email is written in the recipient's language.
 
 **ADMIN-87** (AGREED) - Changing the address clears the verified state: the proof belongs
 to the mailbox, not the account. A verification link names the address it was minted for

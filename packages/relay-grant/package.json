@@ -1,0 +1,24 @@
+{
+  "name": "@kromatv/relay-grant",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "KROMA relay grants: the AES-256-GCM sealed capability both kroma.tv relays (push, mail) mint for a self-hosted server, and the rate-limit key that follows the subject rather than the grant.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kromatv/kroma.git",
+    "directory": "packages/relay-grant"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

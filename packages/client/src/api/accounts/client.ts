@@ -135,9 +135,11 @@ export default function accountsApi(ctx: RequestContext) {
       ctx.get('/auth/verify-email/:token', ResetCheck, { params: { token } }),
 
     /** Confirm an email verification. Throws `KromaApiError` 400 when unknown,
-     * expired, used, or the address changed since minting. */
-    confirmEmailVerification: (token: string) =>
-      ctx.post('/auth/verify-email', { body: { token } }),
+     * expired, used, or the address changed since minting. `grant` is what the
+     * kroma.tv relay's consent page handed the browser: the server keeps it for
+     * this address so later email can go through the relay. */
+    confirmEmailVerification: (token: string, grant?: string) =>
+      ctx.post('/auth/verify-email', { body: grant ? { token, grant } : { token } }),
 
     /** Pending invites (requires `users.manage`). */
     invites: () => ctx.get('/invites', Invite.array()),

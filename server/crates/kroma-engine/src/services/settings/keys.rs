@@ -220,6 +220,9 @@ fn declared() -> Declared {
     // first boot, and the core's alone: a sidecar holding it forges a ticket for
     // any device and reads any library.
     m.core_only("mediaTicketKey", json!(""));
+    // How account email leaves: `manual` | `smtp` | `relay`. Empty defers to the
+    // older `smtpEnabled` toggle (see `email_delivery`).
+    m.public("emailDelivery", json!(""));
     // Operator SMTP for credential-reset email.
     m.public("smtpEnabled", json!(false));
     m.public("smtpHost", json!(""));

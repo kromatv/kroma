@@ -1,0 +1,16 @@
+{
+  "consent.subject": "{name} would like to send you email",
+  "consent.preheader": "Confirm this address to receive account email from {name}.",
+  "consent.heading": "A KROMA server would like to email you",
+  "consent.intro": "The owner of {name} ({host}) registered this address for your account and would like to send you account email, such as a password reset.",
+  "consent.button": "Allow and confirm my address",
+  "consent.footer": "Nothing is sent until you confirm. If you do not know {name}, ignore this email: nothing changes. This request expires in 7 days.",
+  "consent.text": "The owner of {name} ({host}) registered this address for your account and would like to send you account email, such as a password reset.\n\nTo allow it and confirm your address, open this link:\n{url}\n\nNothing is sent until you confirm. If you do not know {name}, ignore this email: nothing changes. This request expires in 7 days.",
+  "page.title": "Allow {name} to email you?",
+  "page.intro": "{name}, the KROMA server at {host}, would like to send account email to {address}. Only that server can use this permission, and only for this address.",
+  "page.allow": "Allow and confirm my address",
+  "page.deny": "If you do not know this server, close this page. Nothing will be sent.",
+  "page.invalidTitle": "This link is no longer valid",
+  "page.invalidDesc": "It expired or was already used. Ask the server's owner to send a new one.",
+  "relay.name": "kroma.tv mail relay"
+}

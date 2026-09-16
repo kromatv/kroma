@@ -321,12 +321,12 @@ pub fn groups(
                 Some("admin.emailDesc"),
                 vec![
                     row(
-                        "smtpEnabled",
-                        t("admin.smtpEnabled"),
-                        Some(t("admin.smtpEnabledHint")),
-                        "toggle",
-                        &[],
-                        g("smtpEnabled"),
+                        "emailDelivery",
+                        t("admin.emailDelivery"),
+                        Some(t("admin.emailDeliveryHint")),
+                        "select",
+                        &super::EmailDelivery::OPTIONS,
+                        json!(super::email_delivery(settings).as_str()),
                         true,
                     ),
                     row(
@@ -375,6 +375,11 @@ pub fn groups(
                         "smtpTest",
                         t("admin.smtpTest"),
                         Some(t("admin.smtpTestHint")),
+                    ),
+                    action_row(
+                        "relayTest",
+                        t("admin.relayTest"),
+                        Some(t("admin.relayTestHint")),
                     ),
                 ],
             ),

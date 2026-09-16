@@ -148,6 +148,13 @@ describe('the accounts endpoints', () => {
       path: '/auth/verify-email',
       body: { token: 'tok' },
     },
+    {
+      name: 'confirmEmailVerification with a relay grant',
+      call: (c) => c.accounts.confirmEmailVerification('tok', 'v1.sealed'),
+      method: 'POST',
+      path: '/auth/verify-email',
+      body: { token: 'tok', grant: 'v1.sealed' },
+    },
     { name: 'invites', call: (c) => c.accounts.invites(), method: 'GET', path: '/invites' },
     {
       name: 'createInvite',
