@@ -10,7 +10,7 @@ pub enum EmailDelivery {
 }
 
 impl EmailDelivery {
-    pub const OPTIONS: [&'static str; 3] = ["manual", "smtp", "relay"];
+    pub const OPTIONS: [&str; 3] = ["manual", "smtp", "relay"];
 
     pub fn as_str(self) -> &'static str {
         match self {

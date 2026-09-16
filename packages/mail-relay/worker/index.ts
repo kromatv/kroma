@@ -141,7 +141,6 @@ app.get('/confirm/:blob', async (c) => {
       name: pending.n,
       host: new URL(pending.o).host,
       address: pending.a,
-      action: c.req.path,
     }),
   );
 });

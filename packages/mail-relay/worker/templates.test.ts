@@ -41,12 +41,12 @@ describe('the confirm page', () => {
       name: 'Home',
       host: 'kroma.example',
       address: 'reader@example.test',
-      action: '/confirm/v1.abc',
     });
 
     expect(page).toContain('Autoriser');
     expect(page).toContain('reader@example.test');
-    expect(page).toContain('<form method="post" action="/confirm/v1.abc"');
+    expect(page).toContain('<form method="post"');
+    expect(page).not.toContain('action=');
     expect(page).not.toContain('<a ');
   });
 

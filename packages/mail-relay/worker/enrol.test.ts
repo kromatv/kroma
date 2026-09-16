@@ -128,7 +128,8 @@ describe('the consent page', () => {
     const html = await page.text();
     expect(html).toContain('Home &lt;b&gt;');
     expect(html).toContain('kroma.example');
-    expect(html).toContain(`action="${path}"`);
+    expect(html).toContain('<form method="post"');
+    expect(html).not.toContain(path);
     expect(env.sent).toHaveLength(0);
   });
 

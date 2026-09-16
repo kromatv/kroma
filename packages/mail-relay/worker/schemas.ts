@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const Locale = z.enum(['en', 'fr']);
 export type Locale = z.infer<typeof Locale>;
 
-const ADDRESS = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ADDRESS = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
 /** A mailbox, lowercased so two spellings of one inbox share one budget. */
 export const Address = z
@@ -14,8 +14,23 @@ export const Address = z
   .max(254)
   .regex(ADDRESS, 'not an address');
 
-const PRIVATE_HOST =
-  /^(localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|\[::1\]|\[f[cd][0-9a-f]{2}:[^\]]*\]|.+\.(local|lan|home\.arpa))$/i;
+const PRIVATE_SUFFIXES = ['.local', '.lan', '.home.arpa'];
+
+function privateIpv4(host: string): boolean {
+  const parts = host.split('.');
+  if (parts.length !== 4 || !parts.every((p) => /^\d{1,3}$/.test(p))) return false;
+  const a = Number(parts[0]);
+  const b = Number(parts[1]);
+  return a === 10 || a === 127 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31);
+}
+
+function privateHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  if (host === 'localhost' || host === '[::1]') return true;
+  if (host.startsWith('[fc') || host.startsWith('[fd')) return true;
+  if (privateIpv4(host)) return true;
+  return PRIVATE_SUFFIXES.some((suffix) => host.endsWith(suffix));
+}
 
 /**
  * Whether `s` is exactly an origin (scheme, host, port; no path, query or
@@ -31,7 +46,13 @@ export function isOrigin(s: string): boolean {
   }
   if (url.origin !== s) return false;
   if (url.protocol === 'https:') return true;
-  return url.protocol === 'http:' && PRIVATE_HOST.test(url.hostname);
+  return url.protocol === 'http:' && privateHost(url.hostname);
+}
+
+function withoutTrailingSlashes(s: string): string {
+  let end = s.length;
+  while (end > 0 && s[end - 1] === '/') end--;
+  return s.slice(0, end);
 }
 
 /** The server a grant is bound to. A trailing slash is forgiven, nothing else. */
@@ -39,7 +60,7 @@ export const Origin = z
   .string()
   .trim()
   .max(256)
-  .transform((s) => s.replace(/\/+$/, ''))
+  .transform(withoutTrailingSlashes)
   .refine(isOrigin, 'not an origin');
 
 const printable = (s: string) =>
@@ -51,12 +72,17 @@ const printable = (s: string) =>
 /** The one thing a server gets to say in a consent email, flattened to one printable line. */
 export const ServerName = z.string().max(256).transform(printable).pipe(z.string().min(1).max(64));
 
+/** A locale the relay speaks; anything else, or nothing, reads as English. */
+const LocaleOrEnglish = z
+  .unknown()
+  .transform((value): Locale => Locale.safeParse(value).data ?? 'en');
+
 /** `POST /v1/enrol`: a server asks the relay to ask a mailbox for consent. */
 export const EnrolRequest = z.object({
   address: Address,
   origin: Origin,
   serverName: ServerName,
-  locale: Locale.catch('en'),
+  locale: LocaleOrEnglish,
   token: z.string().trim().min(8).max(256),
 });
 export type EnrolRequest = z.infer<typeof EnrolRequest>;

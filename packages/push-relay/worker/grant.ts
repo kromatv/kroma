@@ -5,7 +5,7 @@
 // yields no readable device tokens either. The sealing itself is `@kromatv/relay-grant`, shared
 // with the mail relay; the salt below is what keeps the two relays' grants apart.
 
-import { open as openSealed, seal as sealPayload, subjectKey } from '@kromatv/relay-grant';
+import { open as openSealed, seal as sealPayload } from '@kromatv/relay-grant';
 import { z } from 'zod';
 import { Transport } from './schemas';
 
@@ -52,4 +52,4 @@ export function open(secret: string, grant: string, nowSecs: number): Promise<Gr
  * buy a fresh budget: a device that asks for a new grant every second is still
  * the same device, and still capped.
  */
-export const deviceKey = subjectKey;
+export { subjectKey as deviceKey } from '@kromatv/relay-grant';

@@ -93,16 +93,17 @@ export function consentEmail(
   };
 }
 
-/** The page behind a consent link. Consent is the POST the button makes, never the GET. */
+/** The page behind a consent link. Consent is the POST the button makes, never
+ * the GET; the form names no action, so it posts back to the page's own URL. */
 export function confirmPage(
   locale: Locale,
-  vars: { name: string; host: string; address: string; action: string },
+  vars: { name: string; host: string; address: string },
 ): string {
   const body = [
     heading(t(locale, 'page.title', vars)),
     paragraph(t(locale, 'page.intro', vars)),
     button(
-      `<form method="post" action="${escapeHtml(vars.action)}" style="margin:0;"><button type="submit" style="${BUTTON_STYLE}">${escapeHtml(t(locale, 'page.allow'))}</button></form>`,
+      `<form method="post" style="margin:0;"><button type="submit" style="${BUTTON_STYLE}">${escapeHtml(t(locale, 'page.allow'))}</button></form>`,
     ),
     paragraph(t(locale, 'page.deny'), DIM),
   ].join('\n');
