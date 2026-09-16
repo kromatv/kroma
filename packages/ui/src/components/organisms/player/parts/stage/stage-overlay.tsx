@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Spinner } from '#ui/components/atoms/spinner';
+import { ProgressRing } from '#ui/components/atoms/progress-ring';
 import { EmptyState } from '#ui/components/molecules/empty-state';
 import { styles } from '#ui/core';
 import { backdropBlur } from '#ui/lib/css';
@@ -50,9 +50,12 @@ function StageOverlay({ error, hint, waiting = false, reason }: Readonly<StageOv
   return (
     <Box fill z={4} center>
       <Box w={DISC} h={DISC} radius="circle" bg="black/50" center style={s.frost}>
-        <Spinner
+        <ProgressRing
+          indeterminate
           size={48}
           thickness={4}
+          track="rgba(255, 255, 255, 0.14)"
+          fill="#F4B642"
           label={t(reason === 'buffering' ? 'player.buffering' : 'player.loading')}
         />
       </Box>

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { clamp01, endsAtClock, pct, sliderToVolume, volumeToSlider } from './fmt';
+import { clamp01, endsAtClock, pct, sliderToVolume, volumeStep, volumeToSlider } from './fmt';
 
 afterEach(() => vi.useRealTimers());
 
@@ -64,25 +64,36 @@ describe('pct', () => {
   });
 });
 
-describe('perceptual volume curve', () => {
-  it('pins the endpoints and tapers the middle below linear', () => {
+describe('the volume rail', () => {
+  it('is linear in the level the viewer reads', () => {
     expect(sliderToVolume(0)).toBe(0);
+    expect(sliderToVolume(0.5)).toBe(0.5);
     expect(sliderToVolume(1)).toBe(1);
-    // A centred slider yields a much quieter amplitude than a linear 0.5.
-    expect(sliderToVolume(0.5)).toBeCloseTo(0.125, 5);
+    expect(volumeToSlider(0.25)).toBe(0.25);
   });
 
-  it('round-trips through the inverse', () => {
-    for (const v of [0, 0.125, 0.4, 0.8, 1]) {
-      expect(volumeToSlider(sliderToVolume(v))).toBeCloseTo(v, 5);
-    }
-    expect(volumeToSlider(0.125)).toBeCloseTo(0.5, 5);
+  it('puts 100% halfway along a rail that reaches 200%', () => {
+    expect(sliderToVolume(0.5, 2)).toBe(1);
+    expect(sliderToVolume(1, 2)).toBe(2);
+    expect(volumeToSlider(1, 2)).toBe(0.5);
+    expect(volumeToSlider(1.5, 2)).toBe(0.75);
   });
 
   it('clamps out-of-range inputs', () => {
     expect(sliderToVolume(-1)).toBe(0);
     expect(sliderToVolume(2)).toBe(1);
     expect(volumeToSlider(-1)).toBe(0);
-    expect(volumeToSlider(2)).toBe(1);
+    expect(volumeToSlider(3, 2)).toBe(1);
+  });
+});
+
+describe('volumeStep', () => {
+  it('moves by 5% of real volume and clamps to the ceiling and to silence', () => {
+    expect(volumeStep(0.5, 1)).toBe(0.55);
+    expect(volumeStep(0.5, -1)).toBe(0.45);
+    expect(volumeStep(0.98, 1)).toBe(1);
+    expect(volumeStep(0.98, 1, 2)).toBe(1.03);
+    expect(volumeStep(1.98, 1, 2)).toBe(2);
+    expect(volumeStep(0.02, -1)).toBe(0);
   });
 });

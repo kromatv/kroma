@@ -19,6 +19,7 @@ import { isWebEnginePref } from '#web/features/playback/engine-pref';
 import { makeFpsSampler, readEngineStats } from '#web/features/playback/engine-stats';
 import type { StreamFailure } from '#web/features/playback/stream-failure';
 import { useVideoPlayback } from '#web/features/playback/use-video-playback';
+import { useVolumeBoost, VOLUME_BOOST_MAX } from '#web/features/playback/use-volume-boost';
 import { useWebSubtitles } from '#web/features/playback/use-web-subtitles';
 import { buildWebStats } from '#web/features/playback/web-stats';
 import { kromaClient, type MovieView } from '#web/shared/lib/api';
@@ -55,7 +56,8 @@ export function useWebController(item: MovieView): WebController {
   const locale = useLocale();
   const pb = useVideoPlayback(item);
   const subs = useWebSubtitles(item, t);
-  const filter = useAudioFilter(pb.videoRef, `${pb.anchor}:${pb.audioIndex}`);
+  const loud = useVolumeBoost(pb);
+  const filter = useAudioFilter(pb.videoRef, `${pb.anchor}:${pb.audioIndex}`, loud.boost);
 
   // Switching audio track also stores the language as the preference, refined
   // by the dub variant its title betrays ('fre' + "VFF …" → 'fr-FR'). A track
@@ -225,9 +227,10 @@ export function useWebController(item: MovieView): WebController {
     skip: pb.skip,
     scrubPreview,
     scrubCommit,
-    volume: pb.volume,
+    volume: loud.volume,
+    volumeMax: filter.supported ? VOLUME_BOOST_MAX : 1,
     muted: pb.muted,
-    setVolume: pb.setVol,
+    setVolume: loud.setVolume,
     toggleMute: pb.toggleMute,
     rate: pb.rate,
     setRate: pb.applyRate,

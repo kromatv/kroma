@@ -59,6 +59,9 @@ export interface ControlClusterProps {
   playing: boolean;
   muted: boolean;
   volume: number;
+  /** The loudest the rail reaches. Above 1 the last quarter is a boost zone
+   *  past a notch at 100%. Defaults to 1. */
+  volumeMax?: number;
   pipActive: boolean;
   fullscreen: boolean;
   /** How the row fits the stage it is drawn on (see ../lib/metrics): WHICH
@@ -172,6 +175,7 @@ export const ControlCluster = memo(function ControlCluster({
   playing,
   muted,
   volume,
+  volumeMax = 1,
   pipActive,
   fullscreen,
   metrics,
@@ -238,6 +242,7 @@ export const ControlCluster = memo(function ControlCluster({
           focused={on}
           muted={muted}
           volume={volume}
+          max={volumeMax}
           px={px}
           onFocus={() => onFocus(id)}
           onToggle={() => onActivate(id)}
@@ -286,6 +291,7 @@ function VolumeControl({
   focused,
   muted,
   volume,
+  max,
   px,
   onFocus,
   onToggle,
@@ -296,6 +302,7 @@ function VolumeControl({
   focused: boolean;
   muted: boolean;
   volume: number;
+  max: number;
   px: Px;
   onFocus: () => void;
   onToggle: () => void;
@@ -314,13 +321,15 @@ function VolumeControl({
   const percent = Math.round(level * 100);
   // Fill and thumb track the perceptual slider position, not raw amplitude, so
   // the handle sits under the pointer while the audio follows the loudness curve.
-  const sliderPos = muted ? 0 : volumeToSlider(volume);
+  const sliderPos = muted ? 0 : volumeToSlider(volume, max);
+  const unity = 1 / max;
+  const boosted = max > 1 && sliderPos > unity;
   const volIcon = volumeGlyph(level, px(24));
 
   const setAt = useEffectEvent((x: number) => {
     const offset = track.offsetOf(x);
     if (offset == null || track.width <= 0) return;
-    onVolume(sliderToVolume(clamp01(offset / track.width)));
+    onVolume(sliderToVolume(clamp01(offset / track.width), max));
   });
 
   const endSelectionBlock = useRef(NOOP);
@@ -380,7 +389,7 @@ function VolumeControl({
         ref={mirror}
         accessibilityRole="adjustable"
         accessibilityLabel={label}
-        {...a11yValue({ min: 0, max: 100, now: percent, text: `${percent}%` })}
+        {...a11yValue({ min: 0, max: Math.round(max * 100), now: percent, text: `${percent}%` })}
         style={[railOf(size, px(VOLUME_RAIL), px(20)), NO_OUTLINE]}
       >
         <Box
@@ -404,6 +413,30 @@ function VolumeControl({
             bg="accent"
             style={{ width: `${sliderPos * 100}%` }}
           />
+          {boosted ? (
+            <Box
+              absolute
+              top={0}
+              bottom={0}
+              radius="pill"
+              bg="accentBright"
+              style={{ left: `${unity * 100}%`, width: `${(sliderPos - unity) * 100}%` }}
+            />
+          ) : null}
+          {max > 1 ? (
+            <Box
+              absolute
+              top="50%"
+              w={px(6)}
+              h={px(6)}
+              radius="circle"
+              bg={boosted ? '#FFFFFF' : 'white/60'}
+              style={{
+                left: `${unity * 100}%`,
+                transform: [{ translateX: -px(3) }, { translateY: -px(3) }],
+              }}
+            />
+          ) : null}
           <Box
             absolute
             top="50%"

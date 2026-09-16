@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, type Mock, vi } from 'vitest';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import type { PlayerController } from '#ui/components/organisms/player/types';
 import { WEB_FLAGS } from '#ui/components/organisms/player/types';
@@ -74,9 +74,13 @@ interface Params {
   flags: typeof WEB_FLAGS;
   panelRef: { current: PanelHandle | null };
   locked: boolean;
+  seekNudge: Mock<(dir: -1 | 1) => void>;
+  setVolume: Mock<(level: number) => void>;
   intro?: { active: boolean; onSkip: () => void };
   credits?: { active: boolean; onKey: (key: string) => boolean };
 }
+
+const TV_BROWSER_FLAGS = { ...WEB_FLAGS, pointer: false };
 
 function setup(over: Partial<Params> = {}) {
   const params: Params = {
@@ -85,6 +89,8 @@ function setup(over: Partial<Params> = {}) {
     flags: WEB_FLAGS,
     panelRef: { current: null },
     locked: false,
+    seekNudge: vi.fn<(dir: -1 | 1) => void>(),
+    setVolume: vi.fn<(level: number) => void>(),
     ...over,
   };
   const view = renderHook(() => usePlayerKeys(params));
@@ -123,31 +129,34 @@ describe('usePlayerKeys letter/space transport shortcuts', () => {
     expect(off.params.controller.toggleFullscreen).not.toHaveBeenCalled();
   });
 
-  it('"m" mutes (volume flag), "j"/"l" seek ∓10s', () => {
+  it('"m" mutes (volume flag), "j"/"l" nudge the seek back and forward', () => {
     const { params, press } = setup();
     press({ key: 'm' });
     expect(params.controller.toggleMute).toHaveBeenCalledTimes(1);
     press({ key: 'j' });
-    expect(params.controller.skip).toHaveBeenCalledWith(-10);
+    expect(params.seekNudge).toHaveBeenCalledWith(-1);
     press({ key: 'l' });
-    expect(params.controller.skip).toHaveBeenCalledWith(10);
+    expect(params.seekNudge).toHaveBeenCalledWith(1);
+    expect(params.controller.skip).not.toHaveBeenCalled();
   });
 });
 
-describe('usePlayerKeys D-pad routing', () => {
+describe('usePlayerKeys D-pad routing (a browser TV shell, no pointer)', () => {
   it('routes an arrow key to nav.handleKey when revealed with no panel', () => {
-    const { params, press } = setup();
+    const { params, press } = setup({ flags: TV_BROWSER_FLAGS });
     press({ key: 'ArrowRight' });
     expect(params.nav.handleKey).toHaveBeenCalledWith('Right');
+    expect(params.seekNudge).not.toHaveBeenCalled();
   });
 
   it('while hidden the first arrow only pokes (does not route)', () => {
     const nav = makeNav();
     nav.revealed = false;
-    const { press } = setup({ nav });
+    const { press, params } = setup({ nav, flags: TV_BROWSER_FLAGS });
     press({ key: 'ArrowRight' });
     expect(nav.poke).toHaveBeenCalledTimes(1);
     expect(nav.handleKey).not.toHaveBeenCalled();
+    expect(params.seekNudge).not.toHaveBeenCalled();
   });
 
   it('an open panel gets first refusal; a consumed key stops before nav', () => {
@@ -202,47 +211,80 @@ describe('usePlayerKeys locked / intro / credits gates', () => {
   });
 });
 
-describe('usePlayerKeys immersive seek (fullscreen + chrome hidden)', () => {
-  it('ArrowLeft/Right seek ±10s when fullscreen and chrome is hidden', () => {
+describe('usePlayerKeys arrow seek', () => {
+  it('ArrowLeft/Right nudge the seek where a pointer drives the chrome, and keep it revealed', () => {
+    const { params, press } = setup();
+    const prevented = press({ key: 'ArrowLeft' });
+    expect(params.seekNudge).toHaveBeenCalledWith(-1);
+    expect(params.nav.poke).toHaveBeenCalled();
+    expect(params.nav.handleKey).not.toHaveBeenCalled();
+    expect(prevented).toBe(false);
+    press({ key: 'ArrowRight' });
+    expect(params.seekNudge).toHaveBeenCalledWith(1);
+  });
+
+  it('a hidden chrome out of fullscreen comes back with the seek', () => {
+    const nav = makeNav();
+    nav.revealed = false;
+    const { params, press } = setup({ nav });
+    press({ key: 'ArrowRight' });
+    expect(params.seekNudge).toHaveBeenCalledWith(1);
+    expect(nav.poke).toHaveBeenCalled();
+    expect(nav.rearmHide).not.toHaveBeenCalled();
+  });
+
+  it('in immersive mode (fullscreen + hidden) the chrome stays dark', () => {
     const nav = makeNav();
     nav.revealed = false;
     const controller = makeController();
     controller.fullscreen = true;
     const { params, press } = setup({ nav, controller });
     press({ key: 'ArrowLeft' });
-    expect(params.controller.skip).toHaveBeenCalledWith(-10);
-    expect(params.nav.rearmHide).toHaveBeenCalled();
-    expect(params.nav.poke).not.toHaveBeenCalled();
-    expect(params.nav.handleKey).not.toHaveBeenCalled();
-    press({ key: 'ArrowRight' });
-    expect(params.controller.skip).toHaveBeenCalledWith(10);
+    expect(params.seekNudge).toHaveBeenCalledWith(-1);
+    expect(nav.rearmHide).toHaveBeenCalled();
+    expect(nav.poke).not.toHaveBeenCalled();
+    expect(nav.handleKey).not.toHaveBeenCalled();
   });
 
-  it('ArrowLeft/Right navigate (not seek) when the chrome is visible in fullscreen', () => {
-    const nav = makeNav();
-    nav.revealed = true;
-    const controller = makeController();
-    controller.fullscreen = true;
-    const { params, press } = setup({ nav, controller });
-    press({ key: 'ArrowRight' });
-    expect(params.controller.skip).not.toHaveBeenCalled();
-    expect(params.nav.handleKey).toHaveBeenCalledWith('Right');
-  });
-
-  it('ArrowLeft/Right navigate when not fullscreen even if chrome is hidden', () => {
+  it('a browser TV shell only gets the seek in immersive mode', () => {
     const nav = makeNav();
     nav.revealed = false;
     const controller = makeController();
-    controller.fullscreen = false;
-    const { params, press } = setup({ nav, controller });
+    controller.fullscreen = true;
+    const { params, press } = setup({ nav, controller, flags: TV_BROWSER_FLAGS });
     press({ key: 'ArrowRight' });
-    expect(params.controller.skip).not.toHaveBeenCalled();
-    // Chrome is hidden → first key only pokes (existing behavior).
-    expect(params.nav.poke).toHaveBeenCalled();
-    expect(params.nav.handleKey).not.toHaveBeenCalled();
+    expect(params.seekNudge).toHaveBeenCalledWith(1);
+    expect(nav.rearmHide).toHaveBeenCalled();
   });
 
-  it('ArrowUp/Down still adjust volume in immersive mode (rearmHide, not poke)', () => {
+  it('an open panel keeps the arrows for itself', () => {
+    const nav = makeNav();
+    nav.overlay = 'settings';
+    const onKey = vi.fn(() => true);
+    const { params, press } = setup({ nav, panelRef: { current: { onKey } } });
+    press({ key: 'ArrowRight' });
+    expect(params.seekNudge).not.toHaveBeenCalled();
+    expect(onKey).toHaveBeenCalledWith('Right');
+  });
+});
+
+describe('usePlayerKeys arrow volume', () => {
+  it('ArrowUp/Down step the level by 5% through the root, up to the controller ceiling', () => {
+    const controller = makeController();
+    controller.volume = 0.5;
+    const { params, press } = setup({ controller });
+    press({ key: 'ArrowUp' });
+    expect(params.setVolume).toHaveBeenCalledWith(0.55);
+    expect(params.controller.setVolume).not.toHaveBeenCalled();
+    controller.volume = 1;
+    press({ key: 'ArrowUp' });
+    expect(params.setVolume).toHaveBeenLastCalledWith(1);
+    controller.volumeMax = 2;
+    press({ key: 'ArrowUp' });
+    expect(params.setVolume).toHaveBeenLastCalledWith(1.05);
+  });
+
+  it('keeps the chrome dark in immersive mode (rearmHide, not poke)', () => {
     const nav = makeNav();
     nav.revealed = false;
     const controller = makeController();
@@ -250,10 +292,10 @@ describe('usePlayerKeys immersive seek (fullscreen + chrome hidden)', () => {
     controller.volume = 0.5;
     const { params, press } = setup({ nav, controller });
     press({ key: 'ArrowUp' });
-    expect(params.controller.setVolume).toHaveBeenCalled();
-    expect(params.nav.rearmHide).toHaveBeenCalled();
-    expect(params.nav.poke).not.toHaveBeenCalled();
-    expect(params.controller.skip).not.toHaveBeenCalled();
+    expect(params.setVolume).toHaveBeenCalled();
+    expect(nav.rearmHide).toHaveBeenCalled();
+    expect(nav.poke).not.toHaveBeenCalled();
+    expect(params.seekNudge).not.toHaveBeenCalled();
   });
 });
 

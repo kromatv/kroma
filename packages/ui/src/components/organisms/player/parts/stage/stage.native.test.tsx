@@ -8,6 +8,8 @@ import { DEFAULT_SUB_APPEARANCE } from '../../lib/subtitle-appearance';
 import { fakeController } from '../../player.fixture';
 import { Stage } from './stage';
 
+vi.mock('#ui/lib/svg', () => ({ Svg: () => null, Circle: () => null }));
+
 function stage(settingsShrink: boolean) {
   const timing = vi.spyOn(Animated, 'timing');
   timing.mockClear();

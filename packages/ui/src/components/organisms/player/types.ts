@@ -216,7 +216,12 @@ export interface PlayerController {
   scrubPreview(abs: number | null): void;
   scrubCommit(): void;
 
+  /** [0, volumeMax]. Above 1 the platform boosts the track past the element's
+   *  own ceiling (web: a Web Audio gain behind the <video>). */
   volume: number;
+  /** The loudest `setVolume` accepts. 1 without a boost path; the web reports
+   *  2 once Web Audio is available. The slider draws its 100% notch from it. */
+  volumeMax?: number;
   muted: boolean;
   setVolume(v: number): void;
   toggleMute(): void;
