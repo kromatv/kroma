@@ -28,6 +28,9 @@ describe('resolveRemoteKey', () => {
     expect(resolveRemoteKey(ev({ key: '', keyCode: 10009 }))).toBe('Back'); // Tizen back
     expect(resolveRemoteKey(ev({ key: '', keyCode: 461 }))).toBe('Back'); // webOS back
     expect(resolveRemoteKey(ev({ key: '', keyCode: 415 }))).toBe('Play');
+    expect(resolveRemoteKey(ev({ key: '', keyCode: 10252 }))).toBe('PlayPause');
+    expect(resolveRemoteKey(ev({ key: '', keyCode: 10232 }))).toBe('Prev');
+    expect(resolveRemoteKey(ev({ key: '', keyCode: 10233 }))).toBe('Next');
     expect(resolveRemoteKey(ev({ key: '', keyCode: 403 }))).toBe('ColorRed');
   });
 
@@ -100,8 +103,10 @@ describe('registerTvMediaKeys', () => {
     (globalThis as { tizen?: unknown }).tizen = { tvinputdevice: { registerKey } };
     registerTvMediaKeys();
     expect(registerKey).toHaveBeenCalledWith('MediaPlay');
+    expect(registerKey).toHaveBeenCalledWith('MediaPlayPause');
+    expect(registerKey).toHaveBeenCalledWith('MediaTrackNext');
     expect(registerKey).toHaveBeenCalledWith('ColorF0Red');
-    expect(registerKey).toHaveBeenCalledTimes(10);
+    expect(registerKey).toHaveBeenCalledTimes(12);
   });
 
   it('swallows a per-key registration error', () => {
@@ -110,6 +115,6 @@ describe('registerTvMediaKeys', () => {
     });
     (globalThis as { tizen?: unknown }).tizen = { tvinputdevice: { registerKey } };
     expect(() => registerTvMediaKeys()).not.toThrow();
-    expect(registerKey).toHaveBeenCalledTimes(10);
+    expect(registerKey).toHaveBeenCalledTimes(12);
   });
 });

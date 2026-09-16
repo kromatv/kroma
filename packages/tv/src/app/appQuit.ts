@@ -35,6 +35,13 @@ export function canExitOnBack(): boolean {
   return tizenApplication() != null || palmSystem()?.platformBack != null;
 }
 
+/** Whether the app owes the viewer a question before it closes. Samsung's key
+ * policy puts that prompt on the application; webOS's platform Back raises LG's
+ * own, so asking there would ask twice. */
+export function exitNeedsConfirm(): boolean {
+  return tizenApplication() != null;
+}
+
 /** Leave the app from its first screen: Tizen closes the application, webOS asks
  * whether to exit (webOS 6 and later) or returns to the Home launcher. */
 export function exitOnBack(): void {

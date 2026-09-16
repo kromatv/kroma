@@ -22,6 +22,11 @@
        call is refused and the set falls back to announcing its MODEL. Public
        level, so a dev certificate carries it. -->
   <tizen:privilege name="http://developer.samsung.com/privilege/network.public"/>
+  <!-- `tizen.tvinputdevice.registerKey()`: without it every registration throws,
+       the platform keeps the media and colour keys for itself, and a press of
+       Play/Pause draws the TV's own remote guide instead of reaching the app.
+       Public level, so a dev certificate carries it. -->
+  <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
   <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" install-location="auto"/>
   <tizen:metadata key="http://samsung.com/tv/metadata/use.tv.profile" value="true"/>
   <!-- Smart Hub preview: a background service supplies the home-screen carousel

@@ -2,7 +2,7 @@ import type { KromaClient } from '@kromatv/client';
 import type { StoredSession } from '@kromatv/client/accounts';
 import type { MediaItem, Show } from '@kromatv/client/media';
 import type { ReportSubjectKind } from '@kromatv/client/reports';
-import { Box, FocusScope, PageMain, PerfHud } from '@kromatv/ui/kit';
+import { Box, ConfirmHost, FocusScope, PageMain, PerfHud } from '@kromatv/ui/kit';
 import {
   type ComponentType,
   createContext,
@@ -272,6 +272,10 @@ export function TvOutlet() {
             <layer.render key={layer.routes[0]} />
           ))}
           <Screen key={key} />
+          {/* Inside the scope, because that is what a dialog needs to take the
+              remote: outside one, `useLockFocusBehind` is a documented no-op and
+              the panel's own buttons never register with a navigator. */}
+          <ConfirmHost />
         </FocusScope>
       </Suspense>
       {/* Outside the scope on purpose: the remote must not be able to land on it. */}

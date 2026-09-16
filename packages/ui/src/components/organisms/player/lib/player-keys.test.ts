@@ -8,6 +8,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav';
+import type { RemoteKey } from '#ui/lib/remote-keys';
 import { type PlayerKeysParams, routeRemoteKey, tabDirection } from './player-keys';
 
 const nav = (over: Partial<PlayerNav>): PlayerNav => over as PlayerNav;
@@ -94,5 +95,42 @@ describe('routeRemoteKey once the film is over', () => {
     routeRemoteKey(params, 'Enter');
     expect(params.credits?.onKey).not.toHaveBeenCalled();
     expect(onKey).toHaveBeenCalledWith('Enter');
+  });
+});
+
+describe('routeRemoteKey while the chrome is hidden', () => {
+  function hidden() {
+    const handleKey = vi.fn();
+    const poke = vi.fn();
+    const params = {
+      nav: nav({ handleKey, poke, revealed: false, overlay: null }),
+      panelRef: { current: null },
+      locked: false,
+    } as unknown as PlayerKeysParams;
+    return { params, handleKey, poke };
+  }
+
+  it.each<[string, RemoteKey]>([
+    ['play/pause', 'PlayPause'],
+    ['play', 'Play'],
+    ['pause', 'Pause'],
+    ['rewind', 'Rewind'],
+    ['fast forward', 'FastForward'],
+    ['stop', 'Stop'],
+  ])('drives the film on %s, with no press spent waking the chrome', (_label, key) => {
+    const { params, handleKey } = hidden();
+
+    routeRemoteKey(params, key);
+
+    expect(handleKey).toHaveBeenCalledWith(key);
+  });
+
+  it('spends a d-pad press on revealing the chrome instead', () => {
+    const { params, handleKey, poke } = hidden();
+
+    routeRemoteKey(params, 'Right');
+
+    expect(handleKey).not.toHaveBeenCalled();
+    expect(poke).toHaveBeenCalledOnce();
   });
 });

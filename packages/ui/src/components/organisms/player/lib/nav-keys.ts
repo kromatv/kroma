@@ -16,6 +16,19 @@ interface DpadContext {
   activate: (id: ControlId) => void;
 }
 
+/** The keys {@link handleMediaKey} answers: a transport press drives the film
+ *  itself, so it acts wherever the player is rather than waiting for the chrome. */
+const TRANSPORT_KEYS: ReadonlySet<RemoteKey> = new Set([
+  'Play',
+  'Pause',
+  'PlayPause',
+  'Next',
+  'Prev',
+  'Rewind',
+  'FastForward',
+  'Stop',
+]);
+
 function handleMediaKey(key: RemoteKey, a: PlayerNavActions): boolean {
   switch (key) {
     case 'Play':
@@ -95,4 +108,4 @@ function handleDpadKey(key: RemoteKey, ctx: DpadContext): void {
   }
 }
 
-export { handleDpadKey, handleMediaKey };
+export { handleDpadKey, handleMediaKey, TRANSPORT_KEYS };

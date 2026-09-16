@@ -18,6 +18,7 @@ import { useMemo } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
+import { useRootBack } from '#tv/app/useRootBack';
 import { useServersHealth } from '#tv/app/useServersHealth';
 import { AuthScreen, artUrl, GATE_MARK, hostOf, KromaMark } from '#tv/shared/ui';
 
@@ -60,7 +61,8 @@ export function TvProfiles() {
   );
   const health = useServersHealth(serverUrls);
 
-  useFocusNav({ onBack: nav.back, resetKey: tiles.length });
+  const onBack = useRootBack();
+  useFocusNav({ onBack, resetKey: tiles.length });
 
   const onSelect = (a: StoredSession, offline: boolean) => {
     // Signing in would only fail against a server that isn't answering.

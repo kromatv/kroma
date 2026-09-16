@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { canExitOnBack, canQuitApp, exitOnBack, quitApp } from './appQuit';
+import { canExitOnBack, canQuitApp, exitNeedsConfirm, exitOnBack, quitApp } from './appQuit';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -43,6 +43,22 @@ describe('canExitOnBack', () => {
     vi.stubGlobal('PalmSystem', { platformBack: () => {} });
 
     expect(canExitOnBack()).toBe(true);
+  });
+});
+
+describe('exitNeedsConfirm', () => {
+  it('asks on Tizen, where Samsung puts the prompt on the application', () => {
+    expect(exitNeedsConfirm()).toBe(false);
+
+    vi.stubGlobal('tizen', { application: { getCurrentApplication: () => ({ exit: () => {} }) } });
+
+    expect(exitNeedsConfirm()).toBe(true);
+  });
+
+  it('stays quiet on webOS, which raises a prompt of its own', () => {
+    vi.stubGlobal('PalmSystem', { platformBack: () => {} });
+
+    expect(exitNeedsConfirm()).toBe(false);
   });
 });
 

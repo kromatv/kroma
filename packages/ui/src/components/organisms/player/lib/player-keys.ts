@@ -6,6 +6,7 @@ import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player
 import type { PlayerController, PlayerFlags } from '#ui/components/organisms/player/types';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import type { PanelHandle } from './nav';
+import { TRANSPORT_KEYS } from './nav-keys';
 
 export interface PlayerKeysParams {
   nav: PlayerNav;
@@ -38,9 +39,9 @@ export function tabDirection(nav: PlayerNav, backwards: boolean): RemoteKey {
 /**
  * Route one logical remote key (§3, §15). While locked only Back / OK get
  * through, and both mean "dismiss". The end-of-film screen takes everything.
- * Otherwise the chrome reveals first and swallows the key (§16), then the
- * panel, skip-intro and credits card each get first refusal before the nav
- * machine sees it.
+ * Otherwise a hidden chrome reveals first and swallows the key (§16) unless the
+ * key drives the film itself, then the panel, skip-intro and credits card each
+ * get first refusal before the nav machine sees it.
  */
 export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): void {
   const { nav } = p;
@@ -53,7 +54,7 @@ export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): v
     return;
   }
 
-  if (!nav.revealed) {
+  if (!nav.revealed && !TRANSPORT_KEYS.has(key)) {
     nav.poke();
     return;
   }
