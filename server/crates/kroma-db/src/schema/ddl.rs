@@ -217,6 +217,25 @@ pub(crate) const SCHEMA: &str = "
         detected_at INTEGER NOT NULL,
         PRIMARY KEY (show_id, season, episode)
     );
+    -- What the provider lists for a season the library holds part of, so a gap
+    -- has a title, a still and an air date. The whole roster is stored and the
+    -- episodes on disk are filtered out at read time.
+    CREATE TABLE IF NOT EXISTS episode_guide (
+        show_id   TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
+        season    INTEGER NOT NULL,
+        episode   INTEGER NOT NULL,
+        title     TEXT,
+        overview  TEXT,
+        air_date  TEXT,
+        still_url TEXT,
+        PRIMARY KEY (show_id, season, episode)
+    );
+    -- The URL each cached image under <data>/images was derived from, so a
+    -- cleared cache can be refilled on demand under the same names.
+    CREATE TABLE IF NOT EXISTS image_sources (
+        name TEXT PRIMARY KEY,
+        url  TEXT NOT NULL
+    );
     -- Ma liste: user-bookmarked titles (movie item ids OR show ids; same
     -- no-items-FK rationale as `watched`). Synced across web + TV.
     CREATE TABLE IF NOT EXISTS my_list (
@@ -568,7 +587,7 @@ pub(crate) const SCHEMA: &str = "
     -- carries only a revision: that is a marker saying the language was asked
     -- for and had nothing, not something to serve.
     CREATE TABLE IF NOT EXISTS translations (
-        subject_kind TEXT NOT NULL,   -- 'item'|'show'|'episode'|'season_cast'|'curated'|'suggestion'
+        subject_kind TEXT NOT NULL,   -- 'item'|'show'|'episode'|'episode_guide'|'season_cast'|'curated'|'suggestion'
         subject_id   TEXT NOT NULL,
         lang         TEXT NOT NULL,   -- a code from i18n::SUPPORTED_LOCALES
         source       TEXT NOT NULL,   -- 'tmdb' | 'llm' | 'manual'

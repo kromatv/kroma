@@ -95,6 +95,7 @@ pub async fn details(
     let (name, tmdb_id) = credited_person(&state, lookup).await?;
     let language = settings::metadata_language_for(&state.settings, &state.config, reader);
     let data_dir = state.config.data_dir.clone();
+    let pool = state.db.clone();
     let lookup = name.clone();
     let (person, credits) = blocking(move || {
         let person =
@@ -102,7 +103,7 @@ pub async fn details(
                 if let Some(local) = p
                     .profile_url
                     .as_deref()
-                    .and_then(|u| image::cache_remote(&data_dir, u))
+                    .and_then(|u| image::cache_remote(&pool, &data_dir, u))
                 {
                     p.profile_url = Some(local);
                 }

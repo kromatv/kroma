@@ -1,5 +1,5 @@
 //! One table for every localized string, keyed `(subject_kind, subject_id, lang)`
-//! with `subject_kind` in `'item'|'show'|'episode'|'season_cast'|'curated'|'suggestion'`.
+//! with `subject_kind` in `'item'|'show'|'episode'|'episode_guide'|'season_cast'|'curated'|'suggestion'`.
 //! Reads fall back requested lang -> `en`, and read only those two, so a
 //! catalog page costs the same whether the server stores two languages or ten.
 #![allow(dead_code)]

@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use crate::db::{self, Pool};
 use crate::model::Metadata;
 use kroma_primitives::short_hash;
 
@@ -24,26 +25,26 @@ pub fn images_dir(data_dir: &Path) -> PathBuf {
 
 /// Rewrites a [`Metadata`]'s poster/backdrop URLs to locally-cached WebP.
 /// Leaves any image unchanged that can't be cached.
-pub fn localize(data_dir: &Path, mut meta: Metadata) -> Metadata {
+pub fn localize(pool: &Pool, data_dir: &Path, mut meta: Metadata) -> Metadata {
     if let Some(url) = meta.poster_url.as_deref() {
-        if let Some(local) = cache(data_dir, url) {
+        if let Some(local) = cache(pool, data_dir, url) {
             meta.poster_url = Some(local);
         }
     }
     if let Some(url) = meta.backdrop_url.as_deref() {
-        if let Some(local) = cache(data_dir, url) {
+        if let Some(local) = cache(pool, data_dir, url) {
             meta.backdrop_url = Some(local);
         }
     }
     // Logo kept as PNG, not transcoded: transparency must survive.
     if let Some(url) = meta.logo_url.as_deref() {
-        if let Some(local) = cache_verbatim(data_dir, url, "png") {
+        if let Some(local) = cache_verbatim(pool, data_dir, url, "png") {
             meta.logo_url = Some(local);
         }
     }
     for member in &mut meta.cast {
         if let Some(url) = member.profile_url.as_deref() {
-            if let Some(local) = cache(data_dir, url) {
+            if let Some(local) = cache(pool, data_dir, url) {
                 member.profile_url = Some(local);
             }
         }
@@ -53,7 +54,7 @@ pub fn localize(data_dir: &Path, mut meta: Metadata) -> Metadata {
 
 /// Caches only the artwork that carries the title as printed art for one
 /// language: the poster and the logo.
-pub fn localize_title_art(data_dir: &Path, mut meta: Metadata) -> Metadata {
+pub fn localize_title_art(pool: &Pool, data_dir: &Path, mut meta: Metadata) -> Metadata {
     // A download that failed leaves the remote URL in hand. Kept, it is stored
     // as this language's art and served to every viewer straight from TMDB,
     // bypassing the cache and announcing them to it. Dropped, the language
@@ -61,16 +62,16 @@ pub fn localize_title_art(data_dir: &Path, mut meta: Metadata) -> Metadata {
     meta.poster_url = meta
         .poster_url
         .as_deref()
-        .and_then(|url| cache(data_dir, url));
+        .and_then(|url| cache(pool, data_dir, url));
     // Logo kept as PNG, not transcoded: transparency must survive.
     meta.logo_url = meta
         .logo_url
         .as_deref()
-        .and_then(|url| cache_verbatim(data_dir, url, "png"));
+        .and_then(|url| cache_verbatim(pool, data_dir, url, "png"));
     meta
 }
 
-fn cache_verbatim(data_dir: &Path, remote_url: &str, ext: &str) -> Option<String> {
+fn cache_verbatim(pool: &Pool, data_dir: &Path, remote_url: &str, ext: &str) -> Option<String> {
     if !remote_url.starts_with("http") {
         return Some(remote_url.to_string());
     }
@@ -92,6 +93,7 @@ fn cache_verbatim(data_dir: &Path, remote_url: &str, ext: &str) -> Option<String
         }
         finalize(&tmp, &out)?;
     }
+    let _ = db::image_sources::record(pool, &name, remote_url);
     Some(format!("{PUBLIC_PREFIX}{name}"))
 }
 
@@ -244,11 +246,31 @@ fn finalize(tmp: &Path, out: &Path) -> Option<PathBuf> {
 /// Ensures a remote image is cached as WebP and returns its public path, or
 /// `None` on failure (the caller keeps the provider URL). The entry point for
 /// art that arrives outside title enrichment, e.g. a person's portrait.
-pub fn cache_remote(data_dir: &Path, remote_url: &str) -> Option<String> {
-    cache(data_dir, remote_url)
+pub fn cache_remote(pool: &Pool, data_dir: &Path, remote_url: &str) -> Option<String> {
+    cache(pool, data_dir, remote_url)
 }
 
-fn cache(data_dir: &Path, remote_url: &str) -> Option<String> {
+/// Fetches a cached image whose file is gone again, from the URL it was derived
+/// from. False when nothing recorded where `name` came from or the fetch failed.
+pub fn restore(pool: &Pool, data_dir: &Path, name: &str) -> bool {
+    let Ok(Some(url)) = db::image_sources::source(pool, name) else {
+        return false;
+    };
+    let restored = if name.ends_with(".png") {
+        cache_verbatim(pool, data_dir, &url, "png")
+    } else {
+        cache(pool, data_dir, &url)
+    };
+    restored.is_some_and(|public| public == format!("{PUBLIC_PREFIX}{name}"))
+}
+
+/// Whether `url` names a cached image whose file is no longer on disk.
+pub fn local_art_missing(data_dir: &Path, url: &str) -> bool {
+    url.strip_prefix(PUBLIC_PREFIX)
+        .is_some_and(|name| !images_dir(data_dir).join(name).exists())
+}
+
+fn cache(pool: &Pool, data_dir: &Path, remote_url: &str) -> Option<String> {
     // Already a local path (idempotent if called twice).
     if !remote_url.starts_with("http") {
         return Some(remote_url.to_string());
@@ -261,6 +283,7 @@ fn cache(data_dir: &Path, remote_url: &str) -> Option<String> {
     if !out.exists() && !transcode(remote_url, &out) {
         return None;
     }
+    let _ = db::image_sources::record(pool, &name, remote_url);
     Some(format!("{PUBLIC_PREFIX}{name}"))
 }
 
@@ -437,4 +460,39 @@ pub(crate) fn encode_webp_quality(src: &Path, out: &Path, quality: &str) -> bool
         .arg(out)
         .status();
     matches!(ffmpeg, Ok(s) if s.success())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_cached_url_whose_file_is_gone_is_missing_and_a_remote_one_never_is() {
+        let dir = kroma_testing::temp_dir("image-missing");
+        std::fs::create_dir_all(images_dir(dir.path())).unwrap();
+        std::fs::write(images_dir(dir.path()).join("here.webp"), b"x").unwrap();
+
+        assert!(!local_art_missing(dir.path(), "/api/images/here.webp"));
+        assert!(local_art_missing(dir.path(), "/api/images/gone.webp"));
+        assert!(!local_art_missing(dir.path(), "https://img.example/p.jpg"));
+    }
+
+    #[test]
+    fn restoring_a_name_nobody_recorded_does_nothing() {
+        let dir = kroma_testing::temp_dir("image-restore");
+        let pool = kroma_db::testing::temp_pool("image-restore");
+
+        assert!(!restore(&pool, dir.path(), "gone.webp"));
+        assert!(!images_dir(dir.path()).join("gone.webp").exists());
+    }
+
+    #[test]
+    fn a_source_that_cannot_be_fetched_leaves_no_file_behind() {
+        let dir = kroma_testing::temp_dir("image-restore-fail");
+        let pool = kroma_db::testing::temp_pool("image-restore-fail");
+        kroma_db::image_sources::record(&pool, "gone.webp", "http://127.0.0.1:1/p.jpg").unwrap();
+
+        assert!(!restore(&pool, dir.path(), "gone.webp"));
+        assert!(!images_dir(dir.path()).join("gone.webp").exists());
+    }
 }
