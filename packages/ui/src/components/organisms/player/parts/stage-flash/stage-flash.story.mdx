@@ -1,0 +1,51 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
+import { StageFlashView } from './stage-flash';
+
+export const story = defineStory({
+  group: 'Player',
+  viewport: 'tv',
+  args: { kind: 'seek', deltaSec: 10, level: 1.5, scale: 1, lift: 120 },
+  controls: {
+    kind: ['seek', 'volume'],
+    deltaSec: { min: -600, max: 600, step: 10 },
+    level: { min: 0, max: 2, step: 0.05 },
+    scale: { min: 0.5, max: 1, step: 0.05 },
+    lift: { min: 24, max: 400, step: 4 },
+  },
+  render: ({ kind, deltaSec, level, scale, lift }) => (
+    <Ground tone="dark">
+      <Box aspect={16 / 9} minH={280} bg="surface2" radius="lg" overflow="hidden">
+        <StageFlashView
+          scale={scale}
+          lift={lift}
+          flash={
+            kind === 'seek'
+              ? { kind: 'seek', dir: deltaSec < 0 ? -1 : 1, deltaSec }
+              : { kind: 'volume', level }
+          }
+        />
+      </Box>
+    </Ground>
+  ),
+});
+
+The echo of a shortcut, low on the picture and just above the seek bar it describes, so the frame's middle stays the film's. A seek burst shows the distance covered so far, counting up as the taps land and turning into a timecode past a minute; a volume key shows the level it set, past 100% once the platform can boost. It fades out on its own once the flash it was given goes null, holding the last label through the fade.
+
+<Scene name="Seek back" args={{ kind: 'seek', deltaSec: -30 }}>
+  Three taps back.
+</Scene>
+
+<Scene name="Volume boosted" args={{ kind: 'volume', level: 1.6 }}>
+  A level past the element's own ceiling.
+</Scene>
+
+<Do>
+- Give it the lift the skip-intro pill takes, so it clears the transport while the chrome is up and drops to the edge once it has gone.
+- Feed it the live burst from `useSeekNudge` and the level a volume key set, and nothing the pointer did: a dragged slider is its own feedback.
+</Do>
+
+<Dont>
+- Keep a flash alive with a timer of your own. Hand it null and let the pill fade.
+</Dont>

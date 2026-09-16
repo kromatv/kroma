@@ -9,7 +9,8 @@ import { usePlayerEnding } from './hooks/use-player-ending';
 import { usePlayerKeys } from './hooks/use-player-keys';
 import { usePlayerNav } from './hooks/use-player-nav';
 import { useSeekNudge } from './hooks/use-seek-nudge';
-import { clamp01, sliderToVolume, volumeToSlider } from './lib/fmt';
+import { useVolumeFlash } from './hooks/use-volume-flash';
+import { volumeStep } from './lib/fmt';
 import { chromeMetrics, panelGeometry, scaler, TRANSPORT_HEIGHT } from './lib/metrics';
 import { type ControlId, controlOrder, type PanelHandle } from './lib/nav';
 import { usePanelSlide } from './lib/panel-slide';
@@ -21,6 +22,7 @@ import { SettingsPanel } from './parts/settings-panel';
 import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
 import { SkipIntroButton } from './parts/skip-intro-button';
 import { Stage } from './parts/stage';
+import { type StageFlash, StageFlashView } from './parts/stage-flash';
 import { StatsPanel } from './parts/stats-panel';
 import { TopBar } from './parts/top-bar';
 import { Transport } from './parts/transport';
@@ -142,16 +144,22 @@ function Root({
   const metrics = useMemo(() => chromeMetrics(row, stageSize.width), [row, stageSize.width]);
   const px = scaler(metrics.scale);
 
-  const seekNudge = useSeekNudge(c);
+  const seek = useSeekNudge(c);
+  const volumeFlash = useVolumeFlash();
+  const volumeMax = c.volumeMax ?? 1;
+  const setVolume = (level: number) => {
+    c.setVolume(level);
+    volumeFlash.show(level);
+  };
+  const flash: StageFlash | null = seek.burst ? { kind: 'seek', ...seek.burst } : volumeFlash.flash;
   const nav = usePlayerNav(
     c.playing,
     {
       togglePlay: c.togglePlay,
-      seekNudge,
+      seekNudge: seek.nudge,
       onNext: () => onPlayNext?.(),
       hasNext: Boolean(onPlayNext),
-      // Step in perceptual slider space so a nudge feels even across the range.
-      volumeNudge: (d) => c.setVolume(sliderToVolume(clamp01(volumeToSlider(c.volume) + d * 0.05))),
+      volumeNudge: (d) => setVolume(volumeStep(c.volume, d, volumeMax)),
       toggleMute: c.toggleMute,
       togglePip: c.togglePip,
       toggleFullscreen: c.toggleFullscreen,
@@ -181,6 +189,8 @@ function Root({
     flags,
     panelRef,
     locked,
+    seekNudge: seek.nudge,
+    setVolume,
     intro,
     credits: { active: credits.show, onKey: ending.onCreditsKey },
     postPlay: { active: ending.over, onKey: ending.onPostPlayKey },
@@ -244,6 +254,8 @@ function Root({
           >
             {slots.media}
           </Stage>
+
+          <StageFlashView flash={flash} scale={metrics.scale} lift={introLift} />
 
           {/* skip intro (§13) */}
           {intro ? (

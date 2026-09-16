@@ -42,7 +42,7 @@ function press(key: string) {
 const labelOf = () => document.activeElement?.getAttribute('aria-label') ?? '';
 
 function walkTo(name: RegExp) {
-  for (let step = 0; step < 12 && !name.test(labelOf()); step++) press('ArrowRight');
+  for (let step = 0; step < 12 && !name.test(labelOf()); step++) press('Tab');
 }
 
 describe('the player chrome and the document focus', () => {
@@ -53,11 +53,16 @@ describe('the player chrome and the document focus', () => {
     expect(labelOf()).not.toBe('');
   });
 
-  it('moves the document focus along the controls with the arrows', () => {
-    mount();
+  it('moves the document focus along the controls with Tab, the arrows being a seek', () => {
+    const scrubPreview = vi.fn();
+    mount(fakeController({ scrubPreview }));
     const start = document.activeElement;
 
     press('ArrowRight');
+    expect(document.activeElement).toBe(start);
+    expect(scrubPreview).toHaveBeenCalledWith(174);
+
+    press('Tab');
 
     expect(document.activeElement).not.toBe(start);
     expect(labelOf()).not.toBe('');

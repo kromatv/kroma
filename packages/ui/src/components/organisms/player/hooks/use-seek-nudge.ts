@@ -2,7 +2,7 @@
 // press ramps into a continuous scrub, and only one real seek fires once presses
 // stop: each seek re-anchors the HLS master, so coalescing them matters.
 
-import { useEffect, useEffectEvent, useRef } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { PlayerController } from '#ui/components/organisms/player/types';
 
 const TAP_STEP = 10;
@@ -21,21 +21,36 @@ const COMMIT_MS = 500;
 const MAX_TICK_S = 0.25;
 
 interface Burst {
+  origin: number;
   target: number;
   startedAt: number;
   lastAt: number;
   dir: -1 | 1;
 }
 
+/** The seek in progress, for the stage to show: how far the presses so far
+ *  have moved the cursor from where the film was, and which way. */
+export interface SeekBurst {
+  dir: -1 | 1;
+  deltaSec: number;
+}
+
+export interface SeekNudge {
+  /** The `seekNudge(dir)` the nav machine calls for ◀ / ▶ on the progress bar,
+   *  the rewind / forward transport buttons and the keyboard's arrows. */
+  nudge(dir: -1 | 1): void;
+  /** Live from the first press until the coalesced seek fires, null after. */
+  burst: SeekBurst | null;
+}
+
 /**
- * A directional seek that ramps while the button is held.
- *
- * Returns the `seekNudge(dir)` the nav machine calls for ◀ / ▶ on the progress
- * bar and for the rewind / forward transport buttons.
+ * A directional seek that ramps while the button is held: a tap moves exactly
+ * 10 s, a run of taps adds up, and one real seek fires once the presses stop.
  */
-export function useSeekNudge(controller: PlayerController): (dir: -1 | 1) => void {
+export function useSeekNudge(controller: PlayerController): SeekNudge {
   const burst = useRef<Burst | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [shown, setShown] = useState<SeekBurst | null>(null);
 
   // A burst interrupted by unmount must not leave a timer holding the player.
   useEffect(
@@ -51,10 +66,11 @@ export function useSeekNudge(controller: PlayerController): (dir: -1 | 1) => voi
   const commit = useEffectEvent(() => {
     timer.current = null;
     burst.current = null;
+    setShown(null);
     controller.scrubCommit();
   });
 
-  return useEffectEvent((dir: -1 | 1) => {
+  const nudge = useEffectEvent((dir: -1 | 1) => {
     const c = controller;
     const now = Date.now();
     const prev = burst.current;
@@ -75,15 +91,20 @@ export function useSeekNudge(controller: PlayerController): (dir: -1 | 1) => voi
 
     const ceiling = c.dur > 0 ? c.dur - 1 : Number.POSITIVE_INFINITY;
     target = Math.max(0, Math.min(ceiling, target));
+    const origin = prev?.origin ?? c.cur;
     burst.current = {
+      origin,
       target,
       startedAt: holding ? prev.startedAt : now,
       lastAt: now,
       dir,
     };
     c.scrubPreview(target);
+    setShown({ dir, deltaSec: Math.abs(target - origin) });
 
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(commit, COMMIT_MS);
   });
+
+  return { nudge, burst: shown };
 }

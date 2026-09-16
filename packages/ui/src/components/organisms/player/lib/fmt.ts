@@ -24,20 +24,20 @@ export function pct(value: number, total: number): number {
   return total > 0 ? clamp01(value / total) * 100 : 0;
 }
 
-// Human loudness is roughly logarithmic, so a linear fader barely resolves the
-// quiet end; slider position maps to volume through a power curve (gamma)
-// instead. Gamma 3 is the default: the midpoint sits at ~0.125 amplitude.
-export const VOLUME_GAMMA = 3;
-
-/** The loudest a track can play: audio volume is a [0,1] amplitude. */
-export const VOLUME_MAX = 1;
-
-/** Slider position [0,1] → audio volume [0,1] (perceptual). */
-export function sliderToVolume(position: number): number {
-  return clamp01(position) ** VOLUME_GAMMA;
+/** Slider position [0,1] → level [0,max]. The rail is linear in the level a
+ *  viewer reads (50% sits halfway to 100%); the platform applies the loudness
+ *  curve when it drives the audio (see the web's useVolumeBoost). `max` is the
+ *  controller's `volumeMax`, 1 without a boost. */
+export function sliderToVolume(position: number, max = 1): number {
+  return clamp01(position) * max;
 }
 
-/** Audio volume [0,1] → slider position [0,1] (inverse of {@link sliderToVolume}). */
-export function volumeToSlider(volume: number): number {
-  return clamp01(volume) ** (1 / VOLUME_GAMMA);
+/** Level [0,max] → slider position [0,1] (inverse of {@link sliderToVolume}). */
+export function volumeToSlider(volume: number, max = 1): number {
+  return clamp01(volume / max);
+}
+
+/** One 5% step of level, clamped to [0,max]. */
+export function volumeStep(volume: number, dir: -1 | 1, max = 1): number {
+  return Math.max(0, Math.min(max, Math.round((volume + dir * 0.05) * 100) / 100));
 }

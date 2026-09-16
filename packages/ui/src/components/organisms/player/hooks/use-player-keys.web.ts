@@ -4,7 +4,7 @@
 // `usePlayerKeys.ts`; Vite resolves `.web` first, Metro takes the plain file.
 
 import { useEffect, useEffectEvent } from 'react';
-import { VOLUME_MAX } from '#ui/components/organisms/player/lib/fmt';
+import { volumeStep } from '#ui/components/organisms/player/lib/fmt';
 import {
   type PlayerKeysParams,
   routeRemoteKey,
@@ -15,12 +15,8 @@ import { redeliverKey } from '#ui/lib/focus-mirror';
 import { resolveRemoteKey } from '#ui/lib/remote-keys';
 import type { PlayerNav } from './use-player-nav';
 
-function letterShortcut(
-  e: KeyboardEvent,
-  nav: PlayerNav,
-  controller: PlayerController,
-  flags: PlayerFlags,
-): boolean {
+function letterShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolean {
+  const { nav, controller, flags } = p;
   const letter = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (e.code === 'Space' || letter === 'k') {
     e.preventDefault();
@@ -39,57 +35,53 @@ function letterShortcut(
     return true;
   }
   if (letter === 'j') {
-    nav.poke();
-    controller.skip(-10);
+    keepChrome(nav, controller, flags);
+    p.seekNudge(-1);
     return true;
   }
   if (letter === 'l') {
-    nav.poke();
-    controller.skip(10);
+    keepChrome(nav, controller, flags);
+    p.seekNudge(1);
     return true;
   }
   return false;
 }
 
-// On the web (flags.volume = true), ArrowUp/Down adjust volume globally — no
+// In immersive mode (fullscreen + chrome hidden) a media shortcut keeps the UI
+// dark, the stage echoing what happened instead; elsewhere it reveals the chrome.
+function keepChrome(nav: PlayerNav, controller: PlayerController, flags: PlayerFlags): void {
+  if (!nav.revealed && flags.fullscreen && controller.fullscreen) nav.rearmHide();
+  else nav.poke();
+}
+
+// On the web (flags.volume = true), ArrowUp/Down adjust volume globally: no
 // need to focus the volume control first. Skipped when a panel is open so
-// D-pad navigation inside the panel still works. In immersive mode (fullscreen
-// + chrome hidden), rearmHide keeps the UI dark instead of flashing it.
-function arrowVolumeShortcut(
-  e: KeyboardEvent,
-  nav: PlayerNav,
-  controller: PlayerController,
-  flags: PlayerFlags,
-): boolean {
+// D-pad navigation inside the panel still works.
+function arrowVolumeShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolean {
+  const { nav, controller, flags } = p;
   if (!flags.volume || nav.overlay) return false;
   if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return false;
   e.preventDefault();
-  if (flags.fullscreen && controller.fullscreen && !nav.revealed) nav.rearmHide();
-  else nav.poke();
+  keepChrome(nav, controller, flags);
   const dir = e.key === 'ArrowUp' ? 1 : -1;
-  // Step 5% in real volume (not slider space), clamped to 0–VOLUME_MAX.
-  const next = Math.max(0, Math.min(VOLUME_MAX, controller.volume + dir * 0.05));
-  controller.setVolume(next);
+  p.setVolume(volumeStep(controller.volume, dir, controller.volumeMax ?? 1));
   return true;
 }
 
-// Immersive mode: fullscreen + chrome hidden → ArrowLeft/Right seek ±10s, just
-// like the j/l letter shortcuts. The chrome stays hidden (rearmHide re-arms the
-// auto-hide timer without revealing). When the chrome is visible, arrows fall
-// through to the nav machine for D-pad navigation instead.
-const SEEK_STEP = 10;
-function arrowSeekShortcut(
-  e: KeyboardEvent,
-  nav: PlayerNav,
-  controller: PlayerController,
-  flags: PlayerFlags,
-): boolean {
-  if (!flags.fullscreen || !controller.fullscreen) return false;
-  if (nav.revealed || nav.overlay) return false;
+// ArrowLeft/Right seek like YouTube's: a tap is 10 s, taps add up, a held key
+// ramps (see useSeekNudge). Where a fine pointer drives the chrome, the arrows
+// are always a seek: hovering moves the focus and Tab walks the row, so the
+// D-pad never needs them. A browser TV shell keeps them for the D-pad, and only
+// gets the seek in immersive mode (fullscreen + chrome hidden).
+function arrowSeekShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolean {
+  const { nav, controller, flags } = p;
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return false;
+  if (nav.overlay || p.credits?.active) return false;
+  const immersive = flags.fullscreen && controller.fullscreen && !nav.revealed;
+  if (!flags.pointer && !immersive) return false;
   e.preventDefault();
-  nav.rearmHide();
-  controller.skip(e.key === 'ArrowLeft' ? -SEEK_STEP : SEEK_STEP);
+  keepChrome(nav, controller, flags);
+  p.seekNudge(e.key === 'ArrowLeft' ? -1 : 1);
   return true;
 }
 
@@ -97,7 +89,7 @@ function arrowSeekShortcut(
  * render, so re-renders never re-subscribe. */
 export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
-    const { nav, controller, flags, locked } = params;
+    const { nav, locked } = params;
     if (locked) {
       const key = resolveRemoteKey(e);
       if (key === 'Back' || key === 'Enter') {
@@ -128,12 +120,9 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
       return;
     }
 
-    if (letterShortcut(e, nav, controller, flags)) return;
-
-    // Immersive mode first: fullscreen + chrome hidden → arrows are media
-    // shortcuts (seek/volume), not D-pad navigation.
-    if (arrowSeekShortcut(e, nav, controller, flags)) return;
-    if (arrowVolumeShortcut(e, nav, controller, flags)) return;
+    if (letterShortcut(e, params)) return;
+    if (arrowSeekShortcut(e, params)) return;
+    if (arrowVolumeShortcut(e, params)) return;
 
     const remote = resolveRemoteKey(e);
     if (!remote) return;

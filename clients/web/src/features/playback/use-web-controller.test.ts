@@ -53,6 +53,14 @@ describe('useWebController controller mapping', () => {
     expect(c.audioFilterSupported).toBe(true);
   });
 
+  it('offers the boost only where Web Audio can carry it', () => {
+    expect(render().result.current.controller.volumeMax).toBe(2);
+
+    H.filter = { mode: 'off', setMode: vi.fn(), supported: false };
+
+    expect(render().result.current.controller.volumeMax).toBe(1);
+  });
+
   it('passes the subtitle bundle through and derives the audio label', () => {
     const { result } = render();
     const c = result.current.controller;

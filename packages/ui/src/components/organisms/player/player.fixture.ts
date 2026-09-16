@@ -170,6 +170,7 @@ function fakeController(over: Partial<PlayerController> = {}): PlayerController 
     scrubCommit: noop,
 
     volume: 0.7,
+    volumeMax: 2,
     muted: false,
     setVolume: noop,
     toggleMute: noop,

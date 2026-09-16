@@ -26,15 +26,28 @@ const comp = {
   release: param(),
   connect: vi.fn(),
 };
-const gain = { gain: param(), connect: vi.fn() };
+const limiter = {
+  threshold: param(),
+  knee: param(),
+  ratio: param(),
+  attack: param(),
+  release: param(),
+  connect: vi.fn(),
+};
+const gain = { gain: param(), connect: vi.fn(), disconnect: vi.fn() };
+const boost = { gain: param(), connect: vi.fn(), disconnect: vi.fn() };
 const source = { connect: vi.fn(), disconnect: vi.fn() };
+// A graph asks for its filter pair first and its boost pair second, so the
+// stubs are handed out in that order and each test builds one graph.
+let comps = 0;
+let gains = 0;
 const ctx = {
   state: 'running',
   destination: {},
   resume: vi.fn(),
   createMediaElementSource: vi.fn(() => source),
-  createDynamicsCompressor: vi.fn(() => comp),
-  createGain: vi.fn(() => gain),
+  createDynamicsCompressor: vi.fn(() => (comps++ % 2 === 0 ? comp : limiter)),
+  createGain: vi.fn(() => (gains++ % 2 === 0 ? gain : boost)),
 };
 
 // A plain function, not arrow or class: the module calls `new AudioContext()`,
@@ -43,7 +56,7 @@ function stubAudio() {
   vi.stubGlobal('AudioContext', function AudioContextStub() {
     return ctx;
   });
-  return { ctx, comp, gain, source };
+  return { ctx, comp, gain, boost, limiter, source };
 }
 
 function memoryStorage() {
@@ -60,6 +73,8 @@ const videoRef = () => ({ current: document.createElement('video') });
 
 beforeEach(() => {
   memoryStorage();
+  comps = 0;
+  gains = 0;
   for (const fn of [
     ctx.createMediaElementSource,
     ctx.createDynamicsCompressor,
@@ -68,6 +83,8 @@ beforeEach(() => {
     source.disconnect,
     comp.connect,
     gain.connect,
+    boost.connect,
+    boost.disconnect,
   ]) {
     fn.mockClear();
   }
@@ -198,13 +215,47 @@ describe('useAudioFilter', () => {
     expect(ctx.createMediaElementSource).toHaveBeenCalledTimes(1);
   });
 
-  it('routes straight to the output when switched back off', () => {
-    const { ctx, source } = stubAudio();
+  it('routes past the compressor when switched back off', () => {
+    const { ctx, source, boost } = stubAudio();
     const ref = videoRef();
     const { result } = renderHook(() => useAudioFilter(ref, 'k1'));
     act(() => result.current.setMode('standard'));
     act(() => result.current.setMode('off'));
-    expect(source.connect).toHaveBeenLastCalledWith(ctx.destination);
+    expect(source.connect).toHaveBeenLastCalledWith(boost);
+    expect(boost.connect).toHaveBeenLastCalledWith(ctx.destination);
+  });
+
+  describe('boost', () => {
+    it('builds the graph for a level past 100% with the mode off, and limits it', () => {
+      const { ctx, source, boost, limiter } = stubAudio();
+      const ref = videoRef();
+      renderHook(() => useAudioFilter(ref, 'k1', 1.5));
+      expect(ctx.createMediaElementSource).toHaveBeenCalledTimes(1);
+      expect(source.connect).toHaveBeenLastCalledWith(boost);
+      expect(boost.gain.value).toBe(1.5);
+      expect(boost.connect).toHaveBeenLastCalledWith(limiter);
+      expect(limiter.ratio.value).toBeGreaterThan(10);
+    });
+
+    it('drops the limiter and sits at unity once the level is back under 100%', () => {
+      const { ctx, boost } = stubAudio();
+      const ref = videoRef();
+      const { rerender } = renderHook(({ level }) => useAudioFilter(ref, 'k1', level), {
+        initialProps: { level: 2 },
+      });
+      rerender({ level: 1 });
+      expect(boost.gain.value).toBe(1);
+      expect(boost.connect).toHaveBeenLastCalledWith(ctx.destination);
+    });
+
+    it('leaves the make-up gain of the mode alone', () => {
+      const { gain, boost } = stubAudio();
+      const ref = videoRef();
+      const { result } = renderHook(() => useAudioFilter(ref, 'k1', 1.5));
+      act(() => result.current.setMode('standard'));
+      expect(gain.gain.value).toBe(1.4);
+      expect(boost.gain.value).toBe(1.5);
+    });
   });
 
   describe('tuning', () => {
