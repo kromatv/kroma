@@ -126,17 +126,6 @@ pub async fn image(
         return json_error(StatusCode::BAD_REQUEST, "invalid image name");
     }
 
-    // A cleared cache is refilled on demand: every rendition is derived from
-    // the master, so it is the master that is fetched again.
-    let master = master_name(&name).to_string();
-    if !crate::infra::image::images_dir(&state.config.data_dir)
-        .join(&master)
-        .exists()
-    {
-        let (pool, data_dir) = (state.db.clone(), state.config.data_dir.clone());
-        let _ = blocking(move || Ok(crate::infra::image::restore(&pool, &data_dir, &master))).await;
-    }
-
     // Sized rendition: produced once (cwebp/ffmpeg, on the blocking pool), then
     // served from disk forever. Falls through to the original on any failure.
     if let Some(resp) = sized_rendition_response(&state, &name, &q).await {
@@ -154,12 +143,6 @@ pub async fn image(
         Ok(bytes) => image_response(bytes, content_type_for(&name)),
         Err(_) => json_error(StatusCode::NOT_FOUND, "image not found"),
     }
-}
-
-fn master_name(name: &str) -> &str {
-    name.strip_suffix(".jpg")
-        .filter(|s| s.ends_with(".webp"))
-        .unwrap_or(name)
 }
 
 async fn sized_rendition_response(
@@ -330,15 +313,7 @@ fn cache_name(url: &str) -> Option<&str> {
 
 #[cfg(test)]
 mod tests {
-    use super::{bucket_for, master_name, IMAGE_WIDTHS};
-
-    #[test]
-    fn a_samsung_tile_is_named_after_the_webp_it_is_cut_from() {
-        assert_eq!(master_name("abcd.webp.jpg"), "abcd.webp");
-        assert_eq!(master_name("abcd.webp"), "abcd.webp");
-        assert_eq!(master_name("logo.png"), "logo.png");
-        assert_eq!(master_name("photo.jpg"), "photo.jpg");
-    }
+    use super::{bucket_for, IMAGE_WIDTHS};
 
     #[test]
     fn a_width_snaps_up_to_the_next_bucket() {

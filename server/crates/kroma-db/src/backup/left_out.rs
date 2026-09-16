@@ -10,7 +10,6 @@ const REBUILT_FROM_THE_MEDIA_AND_ITS_PROVIDERS: &[&str] = &[
     "curated_sections",
     "episode_guide",
     "file_segments",
-    "image_sources",
     "item_suggestions",
     "item_vectors",
     "library_gaps",

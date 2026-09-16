@@ -230,12 +230,6 @@ pub(crate) const SCHEMA: &str = "
         still_url TEXT,
         PRIMARY KEY (show_id, season, episode)
     );
-    -- The URL each cached image under <data>/images was derived from, so a
-    -- cleared cache can be refilled on demand under the same names.
-    CREATE TABLE IF NOT EXISTS image_sources (
-        name TEXT PRIMARY KEY,
-        url  TEXT NOT NULL
-    );
     -- Ma liste: user-bookmarked titles (movie item ids OR show ids; same
     -- no-items-FK rationale as `watched`). Synced across web + TV.
     CREATE TABLE IF NOT EXISTS my_list (

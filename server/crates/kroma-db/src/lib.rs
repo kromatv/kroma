@@ -52,7 +52,6 @@ mod backup;
 mod core_tables;
 mod grant;
 mod home;
-pub mod image_sources;
 pub mod localize;
 pub mod metadata_core;
 mod schema;

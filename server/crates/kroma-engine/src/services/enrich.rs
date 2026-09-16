@@ -132,10 +132,8 @@ fn build_jobs(items: &[MediaItem], shows: &[Show], pins: &Pins, data_dir: &Path)
 
 fn art_intact(data_dir: &Path, meta: Option<&Metadata>) -> bool {
     meta.is_none_or(|m| {
-        [&m.poster_url, &m.backdrop_url, &m.logo_url]
-            .into_iter()
-            .flatten()
-            .all(|url| !image::local_art_missing(data_dir, url))
+        let urls = [&m.poster_url, &m.backdrop_url, &m.logo_url];
+        !art_gone(data_dir, urls.into_iter().map(Option::as_deref))
     })
 }
 
@@ -258,15 +256,22 @@ fn enrich_episodes(
     let Ok(Some(detail)) = db::get_show(pool, show_id) else {
         return;
     };
-    let have_cast = db::seasons_with_cast(pool, show_id).unwrap_or_default();
+    let casts = db::season_casts(pool, show_id).unwrap_or_default();
+    let gaps = db::season_gaps(pool, show_id).unwrap_or_default();
     for season in &detail.seasons {
         let missing: Vec<&MediaItem> = season
             .episodes
             .iter()
             .filter(|e| still_gone(data_dir, e))
             .collect();
-        let needs_cast = !have_cast.contains(&season.number);
-        let needs_guide = db::episode_guide_stale(pool, show_id, season.number).unwrap_or(true);
+        let needs_cast = match casts.get(&season.number) {
+            None => true,
+            Some(cast) => art_gone(data_dir, cast.iter().map(|m| m.profile_url.as_deref())),
+        };
+        let needs_guide = db::episode_guide_stale(pool, show_id, season.number).unwrap_or(true)
+            || gaps.get(&season.number).is_some_and(|listed| {
+                art_gone(data_dir, listed.iter().map(|e| e.still_url.as_deref()))
+            });
         // Stills and a cast list say nothing about languages, so on their own
         // they let a language added since, or a payload that grew a field, pass
         // straight over every episode in a season that already has its artwork.
@@ -302,6 +307,11 @@ fn enrich_episodes(
     }
 }
 
+fn art_gone<'a>(data_dir: &Path, urls: impl Iterator<Item = Option<&'a str>>) -> bool {
+    urls.flatten()
+        .any(|url| image::local_art_missing(data_dir, url))
+}
+
 fn still_gone(data_dir: &Path, ep: &MediaItem) -> bool {
     match ep.metadata.as_ref().and_then(|m| m.backdrop_url.as_deref()) {
         None => true,
@@ -331,7 +341,7 @@ fn store_episode_guide(
             still_url: a
                 .still_url
                 .as_deref()
-                .and_then(|url| image::cache_remote(pool, data_dir, url)),
+                .and_then(|url| image::cache_remote(data_dir, url)),
         })
         .collect();
     if let Err(e) = db::replace_episode_guide(pool, show_id, season, &listed) {
@@ -375,7 +385,7 @@ fn store_episode_stills(
         if art.still_url.is_none() && art.overview.is_none() {
             continue;
         }
-        let meta = image::localize(pool, data_dir, episode_metadata(art));
+        let meta = image::localize(data_dir, episode_metadata(art));
         match db::set_item_metadata(pool, &ep.id, &meta) {
             Ok(()) => bus.publish(ServerEvent::ItemUpdated { id: ep.id.clone() }),
             Err(e) => warn!(id = %ep.id, error = %e, "failed to store episode metadata"),
@@ -428,7 +438,6 @@ fn store_season_cast(
     }
     if needs_cast {
         let carrier = image::localize(
-            pool,
             data_dir,
             Metadata {
                 cast: data.cast.clone(),
@@ -498,7 +507,7 @@ fn fill_langs(eng: &Engine, job: &Job, tmdb_id: u64, missing: &[String]) {
     let by_lang: std::collections::HashMap<String, Metadata> = resolved
         .by_lang
         .into_iter()
-        .map(|(lang, m)| (lang, image::localize_title_art(&eng.pool, &eng.data_dir, m)))
+        .map(|(lang, m)| (lang, image::localize_title_art(&eng.data_dir, m)))
         .collect();
     // Only the languages TMDB actually answered for. One whose request failed
     // says nothing about the title, and recording "there is nothing here" for it
@@ -578,7 +587,7 @@ fn process_job(
         bump(eng, counters, total, activity);
         return;
     };
-    let meta = image::localize(&eng.pool, &eng.data_dir, meta);
+    let meta = image::localize(&eng.data_dir, meta);
     let by_lang: std::collections::HashMap<String, Metadata> = resolved
         .by_lang
         .into_iter()
@@ -586,7 +595,7 @@ fn process_job(
             let m = if lang == primary_key {
                 meta.clone()
             } else {
-                image::localize_title_art(&eng.pool, &eng.data_dir, m)
+                image::localize_title_art(&eng.data_dir, m)
             };
             (lang, m)
         })

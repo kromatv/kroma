@@ -1,7 +1,6 @@
 //! Integration tests for the artwork endpoints (`images.rs`): the poster
-//! redirect, the composited preview card's art selection and the cache miss.
-//! No network, ffmpeg, or disk assets are reached — the card 404s before
-//! compositing and the miss has no source to fetch from.
+//! redirect and the composited preview card's art selection. No network,
+//! ffmpeg, or disk assets are reached — the card 404s before compositing.
 
 use axum::http::StatusCode;
 use serde_json::json;
@@ -71,34 +70,4 @@ async fn a_movie_card_ignores_show_art_and_needs_its_own() {
     let (status, body) = get(&t.app, &format!("/api/items/{movie}/card"), Some(&t.token)).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["error"], json!("artwork unavailable"));
-}
-
-#[tokio::test]
-async fn a_cleared_image_is_served_again_once_its_file_is_back() {
-    let t = test_app();
-    let dir = crate::infra::image::images_dir(&t.state.config.data_dir);
-    std::fs::create_dir_all(&dir).expect("images dir");
-
-    let (status, body) = get(&t.app, "/api/images/feedfeedfeedfeed.webp", None).await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
-    assert_eq!(body["error"], json!("image not found"));
-
-    std::fs::write(dir.join("feedfeedfeedfeed.webp"), b"RIFF").expect("seed image");
-    let (status, _) = get(&t.app, "/api/images/feedfeedfeedfeed.webp", None).await;
-    assert_eq!(status, StatusCode::OK);
-}
-
-#[tokio::test]
-async fn an_image_whose_source_cannot_be_reached_stays_missing() {
-    let t = test_app();
-    crate::db::image_sources::record(
-        &t.state.db,
-        "feedfeedfeedfeed.webp",
-        "http://127.0.0.1:1/still.jpg",
-    )
-    .expect("record source");
-
-    let (status, body) = get(&t.app, "/api/images/feedfeedfeedfeed.webp", None).await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
-    assert_eq!(body["error"], json!("image not found"));
 }
