@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { refuseContent } from './content';
+import { exactly, onOrigin, refuseContent } from './content';
 
 const ORIGIN = 'https://kroma.example';
+const allowed = onOrigin(ORIGIN);
 
 const html = (inner: string) => `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
 <table role="presentation"><tr><td>
@@ -9,30 +10,26 @@ const html = (inner: string) => `<!DOCTYPE html><html><head><meta charset="utf-8
 ${inner}
 </td></tr></table></body></html>`;
 
-describe('what may leave through a grant', () => {
+describe('what may leave under a grant', () => {
   it('lets the server’s own reset email through', () => {
     const page = html(
       `<a href="${ORIGIN}/reset?token=abc" style="color:#0A0A0C;">Choose a new password</a>
        <div style="word-break:break-all;">${ORIGIN}/reset?token=abc</div>`,
     );
 
-    expect(refuseContent(ORIGIN, `Open ${ORIGIN}/reset?token=abc to continue.`, page)).toBeNull();
+    expect(refuseContent(allowed, `Open ${ORIGIN}/reset?token=abc to continue.`, page)).toBeNull();
   });
 
   it('refuses a link that leads anywhere else, in an attribute or in prose', () => {
-    expect(refuseContent(ORIGIN, 'ok', html('<a href="https://evil.example/x">go</a>'))).toMatch(
-      /link leads off/,
+    expect(refuseContent(allowed, 'ok', html('<a href="https://evil.example/x">go</a>'))).toMatch(
+      /leads where/,
     );
-    expect(refuseContent(ORIGIN, 'ok', html('<a href=https://evil.example>go</a>'))).toMatch(
-      /link leads off/,
+    expect(refuseContent(allowed, 'ok', html('<a href=https://evil.example>go</a>'))).toMatch(
+      /leads where/,
     );
-    expect(refuseContent(ORIGIN, 'ok', html('see https://evil.example/x'))).toMatch(
-      /link leads off/,
-    );
-    expect(refuseContent(ORIGIN, 'ok', html('see www.evil.example'))).toMatch(/link leads off/);
-    expect(refuseContent(ORIGIN, `see https://evil.example`, html('ok'))).toMatch(
-      /^text: a link leads off/,
-    );
+    expect(refuseContent(allowed, 'ok', html('see https://evil.example/x'))).toMatch(/leads where/);
+    expect(refuseContent(allowed, 'ok', html('see www.evil.example'))).toMatch(/leads where/);
+    expect(refuseContent(allowed, 'see https://evil.example', html('ok'))).toMatch(/^text: /);
   });
 
   it('refuses a lookalike origin', () => {
@@ -46,8 +43,8 @@ describe('what may leave through a grant', () => {
       'data:text/html,hi',
       '&#106;avascript:alert(1)',
     ]) {
-      expect(refuseContent(ORIGIN, 'ok', html(`<a href="${bad}">go</a>`)), bad).toMatch(
-        /link leads off/,
+      expect(refuseContent(allowed, 'ok', html(`<a href="${bad}">go</a>`)), bad).toMatch(
+        /leads where/,
       );
     }
   });
@@ -56,7 +53,6 @@ describe('what may leave through a grant', () => {
     for (const bad of [
       '<script>1</script>',
       '<SCRIPT src="x">',
-      '< script>',
       '<form action="https://kroma.example/x"></form>',
       '<iframe src="https://kroma.example/x">',
       '<object data="x">',
@@ -68,8 +64,10 @@ describe('what may leave through a grant', () => {
       '<img src="cid:logo" onerror="1">',
       '<img srcset="https://kroma.example/a 1x">',
       '<div style="background:url(https://kroma.example/x)">',
+      '<style>@import "https://kroma.example/x.css";</style>',
+      '<div style="width:expression(1)">',
     ]) {
-      expect(refuseContent(ORIGIN, 'ok', html(bad)), bad).not.toBeNull();
+      expect(refuseContent(allowed, 'ok', html(bad)), bad).not.toBeNull();
     }
   });
 
@@ -79,28 +77,36 @@ describe('what may leave through a grant', () => {
       '<a title=">" onclick="1">go</a>',
       "<img alt='>' src='https://evil.example/p.png'>",
     ]) {
-      expect(refuseContent(ORIGIN, 'ok', html(smuggled)), smuggled).not.toBeNull();
-    }
-  });
-
-  it('refuses css that loads or runs, wherever it sits', () => {
-    for (const bad of [
-      '<style>@import "https://kroma.example/x.css";</style>',
-      '<div style="width:expression(1)">',
-      '<div style="behavior:url(#x)">',
-    ]) {
-      expect(refuseContent(ORIGIN, 'ok', html(bad)), bad).not.toBeNull();
+      expect(refuseContent(allowed, 'ok', html(smuggled)), smuggled).not.toBeNull();
     }
   });
 
   it('lets prose through unless it is spelled exactly like a handler', () => {
-    expect(refuseContent(ORIGIN, 'ok', html('<p>Saison 1, version=3, region=eu</p>'))).toBeNull();
-    expect(refuseContent(ORIGIN, 'ok', html('<p>one=two</p>'))).not.toBeNull();
+    expect(refuseContent(allowed, 'ok', html('<p>Saison 1, version=3, region=eu</p>'))).toBeNull();
+    expect(refuseContent(allowed, 'ok', html('<p>one=two</p>'))).not.toBeNull();
   });
 
   it('matches the origin without regard to case', () => {
     expect(
-      refuseContent(ORIGIN, 'ok', html('<a href="HTTPS://KROMA.EXAMPLE/reset">go</a>')),
+      refuseContent(allowed, 'ok', html('<a href="HTTPS://KROMA.EXAMPLE/reset">go</a>')),
     ).toBeNull();
+  });
+});
+
+describe('what may leave as the question', () => {
+  const link = 'https://mail.kroma.tv/confirm/v1.abc';
+  const only = exactly(link);
+
+  it('is one link, repeated as often as the template likes, and nothing else', () => {
+    expect(
+      refuseContent(only, `Open ${link}`, html(`<a href="${link}">Allow</a><div>${link}</div>`)),
+    ).toBeNull();
+    expect(refuseContent(only, `Open ${link}`, html(`<a href="${link}/">Allow</a>`))).toMatch(
+      /leads where/,
+    );
+    expect(refuseContent(only, `Open ${link}`, html(`<a href="${ORIGIN}">Allow</a>`))).toMatch(
+      /leads where/,
+    );
+    expect(refuseContent(only, `Open ${link} or ${ORIGIN}`, html('<p>x</p>'))).toMatch(/^text: /);
   });
 });

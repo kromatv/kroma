@@ -43,7 +43,6 @@ const TABLES: &[&str] = &[
     "requests",
     "wanted",
     "invites",
-    "mail_grants",
     "play_history",
     "job_schedules",
     "progress",

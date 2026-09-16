@@ -132,25 +132,28 @@ their own channel is the trusted one. The operator's mail server settings can be
 in place: a test sends a short probe to the owner's own address, proving host, credentials
 and deliverability before a user's reset depends on them.
 
-**ADMIN-83** (AGREED) - The kroma.tv relay sees the destination address and the link, never
-the code, never the password, and cannot reset anything. It holds the published app's mail
-credential so a self-hosted server does not have to. It keeps no address and no mail, only
-short-lived counters of how often a mailbox was written to, under a key that cannot be
-turned back into the address.
+**ADMIN-83** (AGREED) - The kroma.tv relay carries what the server wrote; it writes nothing
+of its own. It sees the destination address and the message, never the code, never the
+password, and cannot reset anything. It holds the published app's mail credential so a
+self-hosted server does not have to. It keeps no address and no mail: only counters of how
+often a mailbox was asked or written to, and which mailboxes said yes to which servers, all
+under keys that cannot be turned back into an address.
 
-**ADMIN-89** (AGREED) - The relay writes to a mailbox only after that mailbox allowed this
-server to. The one message it sends unasked is a consent request, in a fixed template where
-the server chose nothing but its name, and a mailbox receives at most a few of them a day.
-The click that allows the server is also the address verification (ADMIN-85): reaching the
-mailbox was the proof. A reset for an address that has not consented is carried by hand, and
-the member editor says so.
+**ADMIN-89** (AGREED) - A server speaks to the relay under an identity of its own: a key it
+mints once and registers with its public address. A public address must answer the relay's
+challenge with that key before the relay carries anything for it; a private address needs no
+proof, since nobody can be lured to it. Every request is signed, the server's address comes
+from its registration and never from the request, and the relay can shut one server out.
 
-**ADMIN-90** (AGREED) - What a mailbox grants is bound to this server: every link in a
-message the relay carries leads back to the server the mailbox said yes to, and nothing in
-the message may run, submit or embed. The permission is opaque to the server, cannot be
-forged, and dies with the address it was minted for, with the server's public address, or
-when the mailbox itself bounces. A permission the relay retires is dropped by the server, and
-the mailbox is asked again through a new verification.
+**ADMIN-90** (AGREED) - The relay writes to a mailbox only after that mailbox allowed this
+server. Until then the only message it carries is the question, written by the server, whose
+only link is the relay's own consent link, and a mailbox receives at most a few questions a
+day. The click that allows the server is also the address verification (ADMIN-85): reaching
+the mailbox was the proof. A reset for an address that has not said yes is carried by hand,
+and the member editor says so. Every link in a message to a mailbox that said yes leads back
+to the server it said yes to, nothing in the message may run, submit or embed, and the
+sender's display name carries the server's real host. The yes dies when the mailbox bounces,
+or when the server's public address changes.
 
 **ADMIN-88** (AGREED) - A user who cannot sign in can ask for a reset from the sign-in
 screen, naming their account by email or username. The answer is uniform whether or not the
@@ -180,8 +183,8 @@ out-of-band code: reaching the mailbox is itself the proof, so the link alone su
 
 **ADMIN-86** (AGREED) - The owner sends a verification from the member editor, with the
 same delivery choices as a credential reset: copy the link by hand, the operator's own
-mail server, or the kroma.tv relay. On the relay, a verification for a mailbox that has not
-yet allowed this server is the relay's own consent request (ADMIN-89). The verified state is
+mail server, or the kroma.tv relay. On the relay, a verification is the question asking the
+mailbox to allow this server (ADMIN-90). The verified state is
 shown next to the address, and the email is written in the recipient's language.
 
 **ADMIN-87** (AGREED) - Changing the address clears the verified state: the proof belongs

@@ -12,8 +12,6 @@ use serde_json::{json, Value};
 
 use crate::api::error::{json_error, lerr};
 use crate::api::extract::AuthUser;
-use crate::api::util::query;
-use crate::db;
 use crate::infra::events::ServerEvent;
 use crate::model::Permission;
 use crate::services::email::{self, RelayError};
@@ -107,9 +105,9 @@ pub async fn smtp_test(
 }
 
 /// `POST /api/admin/settings/relay-test` → send a short probe to the caller's
-/// own address through the kroma.tv relay, spending the caller's own grant. No
-/// grant means the owner's mailbox has not consented yet: a verification from
-/// the member editor is what asks it.
+/// own address through the kroma.tv relay. It registers this server with the
+/// relay if it has not yet; a mailbox that has not allowed the server is told
+/// so, and a verification from the member editor is what asks it.
 pub async fn relay_test(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -119,25 +117,20 @@ pub async fn relay_test(
     if settings::email_delivery(&state.settings) != EmailDelivery::Relay {
         return Err(lerr(loc, StatusCode::BAD_REQUEST, "admin.relayTestDisabled"));
     }
-    let uid = user.id.clone();
-    let Some(grant) = query(&state.db, move |pool| db::mail_grant(&pool, &uid)).await? else {
-        return Err(lerr(loc, StatusCode::BAD_REQUEST, "admin.relayTestUnconfirmed"));
+    let Some(origin) = super::web_base(&state) else {
+        return Err(lerr(loc, StatusCode::BAD_REQUEST, "admin.relayTestNoAddress"));
     };
-    let relay_url = state
-        .config
-        .mail_relay_url
-        .as_deref()
-        .unwrap_or(email::RELAY_URL);
-    let uid = user.id.clone();
-    match email::relay_test(relay_url, &grant.grant, loc).await {
-        Ok(renewed) => {
-            query(&state.db, move |pool| db::renew_mail_grant(&pool, &uid, &renewed)).await?;
-            Ok(Json(json!({ "sentTo": user.email })).into_response())
-        }
-        Err(RelayError::Gone) => {
-            query(&state.db, move |pool| db::clear_mail_grant(&pool, &uid)).await?;
-            Err(lerr(loc, StatusCode::BAD_REQUEST, "admin.relayTestUnconfirmed"))
-        }
+    let target = email::RelayTarget {
+        url: super::relay_url(&state),
+        origin: &origin,
+    };
+    match email::relay_test(&state.settings, &state.db, &target, &user.email, loc).await {
+        Ok(()) => Ok(Json(json!({ "sentTo": user.email })).into_response()),
+        Err(RelayError::ConsentRequired | RelayError::Gone) => Err(lerr(
+            loc,
+            StatusCode::BAD_REQUEST,
+            "admin.relayTestUnconfirmed",
+        )),
         Err(e) => {
             let prefix = crate::i18n::t(loc, "admin.relayTestFailed", &[]);
             Err(json_error(StatusCode::BAD_GATEWAY, &format!("{prefix}: {e}")))

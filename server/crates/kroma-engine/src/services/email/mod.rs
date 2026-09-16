@@ -1,28 +1,35 @@
 //! Sending the account emails (credential reset, address verification). Three
 //! ways out, the owner's choice per server: `manual`, where the owner copies
 //! the link by hand; the operator's own SMTP server; or the kroma.tv mail relay,
-//! which only writes to a mailbox that told it this server may. For a reset the
-//! link alone is not enough: the user must also enter the short code the owner
-//! read to them, so intercepting the email gives nothing. A send failure never
-//! fails the mint.
+//! which carries what this server wrote to a mailbox that allowed this server,
+//! or the question asking it to. Every word of every message is rendered here.
+//! For a reset the link alone is not enough: the user must also enter the
+//! short code the owner read to them, so intercepting the email gives nothing.
+//! A send failure never fails the mint.
 
+mod identity;
 mod relay;
 mod render;
 mod smtp;
 
-pub use relay::{Enrolment, RelayError, RELAY_URL};
+pub use identity::{ensure_identity, RelayIdentity, INSTANCE, INSTANCE_ORIGIN, IDENTITY_KEY};
+pub use relay::{RelayError, RELAY_URL};
 pub use render::{render_html, render_strings, ResetStrings};
 pub use smtp::send_test;
 
+use serde_json::json;
+
+use crate::db::Pool;
 use crate::services::settings::{email_delivery, EmailDelivery, Settings};
 
-/// Which email the skeleton carries. Both share the layout; a verification has
-/// no out-of-band code (reading the mailbox is itself the proof), so its
-/// code-note block is dropped.
+/// Which email the skeleton carries. All share the layout; only a reset has
+/// an out-of-band code, so the others drop the code-note block.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum EmailKind {
     Reset,
     Verify,
+    /// The relay's question, in this server's words: may this server write to you?
+    Consent,
 }
 
 pub struct OutboundEmail {
@@ -73,96 +80,183 @@ impl Delivery {
     }
 }
 
-#[derive(Debug)]
-pub struct Sent {
-    pub delivery: Delivery,
-    /// The fresher grant the relay handed back, for the caller to store.
-    pub renewed_grant: Option<String>,
+/// The relay this server speaks to, and the origin it speaks for: the public
+/// address its links are built on, which the relay binds the identity to.
+pub struct RelayTarget<'a> {
+    pub url: &'a str,
+    pub origin: &'a str,
 }
 
-#[derive(Debug)]
-pub enum SendError {
-    /// The relay retired the grant: drop it, and let the mailbox re-consent.
-    GrantGone,
-    Failed(String),
+/// This server's standing with the relay, registering when it has none yet or
+/// its public address moved since.
+async fn session(
+    settings: &Settings,
+    pool: &Pool,
+    target: &RelayTarget<'_>,
+) -> Result<relay::Session, RelayError> {
+    let identity = ensure_identity(settings, pool).map_err(|e| RelayError::Transient(e.to_string()))?;
+    let stored = settings.get_str(INSTANCE, "");
+    if !stored.is_empty() && settings.get_str(INSTANCE_ORIGIN, "") == target.origin {
+        return Ok(relay::Session {
+            instance: stored,
+            identity,
+        });
+    }
+    register(settings, pool, target, identity).await
 }
 
-impl std::fmt::Display for SendError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::GrantGone => f.write_str("the relay retired this grant"),
-            Self::Failed(why) => f.write_str(why),
-        }
+async fn register(
+    settings: &Settings,
+    pool: &Pool,
+    target: &RelayTarget<'_>,
+    identity: RelayIdentity,
+) -> Result<relay::Session, RelayError> {
+    let instance = relay::register(target.url, target.origin, &identity).await?;
+    settings.set_internal(pool, INSTANCE, json!(instance));
+    settings.set_internal(pool, INSTANCE_ORIGIN, json!(target.origin));
+    tracing::info!(origin = target.origin, "registered with the mail relay");
+    Ok(relay::Session { instance, identity })
+}
+
+/// One call the relay answers under a session.
+enum Call<'a> {
+    Send { to: &'a str, rendered: &'a Rendered },
+    Consent { to: &'a str, token: &'a str },
+}
+
+enum Answer {
+    Sent,
+    Link(String),
+}
+
+async fn perform(base: &str, session: &relay::Session, call: &Call<'_>) -> Result<Answer, RelayError> {
+    match call {
+        Call::Send { to, rendered } => relay::send(base, session, to, rendered)
+            .await
+            .map(|()| Answer::Sent),
+        Call::Consent { to, token } => relay::consent(base, session, to, token)
+            .await
+            .map(Answer::Link),
     }
 }
 
-/// Deliver by the configured mode. `grant` is the recipient's stored relay
-/// grant, consulted only in relay mode. `manual` never fails.
+/// Run one relay call, registering afresh and retrying once when the relay
+/// has forgotten this server.
+async fn with_session(
+    settings: &Settings,
+    pool: &Pool,
+    target: &RelayTarget<'_>,
+    call: Call<'_>,
+) -> Result<Answer, RelayError> {
+    let session = session(settings, pool, target).await?;
+    match perform(target.url, &session, &call).await {
+        Err(RelayError::Unregistered) => {
+            let session = register(settings, pool, target, session.identity).await?;
+            perform(target.url, &session, &call).await
+        }
+        other => other,
+    }
+}
+
+/// Deliver by the configured mode. `target` is needed only on the relay, and
+/// only exists once the server has a public address. `manual` never fails.
 pub async fn send(
     settings: &Settings,
-    relay_url: &str,
+    pool: &Pool,
+    target: Option<&RelayTarget<'_>>,
     email: &OutboundEmail,
-    grant: Option<&str>,
-) -> Result<Sent, SendError> {
+) -> Result<Delivery, String> {
     match email_delivery(settings) {
-        EmailDelivery::Manual => Ok(Sent {
-            delivery: Delivery::Manual,
-            renewed_grant: None,
-        }),
-        EmailDelivery::Smtp => {
-            smtp::send_smtp(settings, &email.to, &render(email))
-                .await
-                .map_err(SendError::Failed)?;
-            Ok(Sent {
-                delivery: Delivery::Smtp,
-                renewed_grant: None,
-            })
-        }
+        EmailDelivery::Manual => Ok(Delivery::Manual),
+        EmailDelivery::Smtp => smtp::send_smtp(settings, &email.to, &render(email))
+            .await
+            .map(|_| Delivery::Smtp),
         EmailDelivery::Relay => {
-            let Some(grant) = grant else {
-                return Ok(Sent {
-                    delivery: Delivery::Unconfirmed,
-                    renewed_grant: None,
-                });
+            let Some(target) = target else {
+                return Ok(Delivery::Manual);
             };
-            match relay::send(relay_url, grant, &render(email)).await {
-                Ok(renewed) => Ok(Sent {
-                    delivery: Delivery::Relay,
-                    renewed_grant: Some(renewed),
-                }),
-                Err(RelayError::Gone) => Err(SendError::GrantGone),
-                Err(e) => Err(SendError::Failed(e.to_string())),
+            let rendered = render(email);
+            let call = Call::Send {
+                to: &email.to,
+                rendered: &rendered,
+            };
+            match with_session(settings, pool, target, call).await {
+                Ok(_) => Ok(Delivery::Relay),
+                Err(RelayError::ConsentRequired | RelayError::Gone) => Ok(Delivery::Unconfirmed),
+                Err(e) => Err(e.to_string()),
             }
         }
     }
 }
 
-/// Ask the relay to ask a mailbox for consent, on this server's behalf.
-pub async fn enrol(relay_url: &str, enrolment: &Enrolment<'_>) -> Result<(), RelayError> {
-    relay::enrol(relay_url, enrolment).await
+/// Ask a mailbox, through the relay, whether this server may write to it: the
+/// relay mints the link, this server writes the message around it. The click
+/// verifies the address too, so `token` is the verification being minted.
+pub async fn ask_consent(
+    settings: &Settings,
+    pool: &Pool,
+    target: &RelayTarget<'_>,
+    email: &OutboundEmail,
+    token: &str,
+) -> Result<Delivery, String> {
+    let call = Call::Consent {
+        to: &email.to,
+        token,
+    };
+    let url = match with_session(settings, pool, target, call).await {
+        Ok(Answer::Link(url)) => url,
+        Ok(Answer::Sent) => return Err("the relay answered a question with a delivery".into()),
+        Err(e) => return Err(e.to_string()),
+    };
+    let question = OutboundEmail {
+        to: email.to.clone(),
+        locale: email.locale,
+        url,
+        server_name: email.server_name.clone(),
+        kind: EmailKind::Consent,
+    };
+    let rendered = render(&question);
+    let call = Call::Send {
+        to: &email.to,
+        rendered: &rendered,
+    };
+    with_session(settings, pool, target, call)
+        .await
+        .map(|_| Delivery::Relay)
+        .map_err(|e| e.to_string())
 }
 
-/// A short probe through the owner's own grant: proves the relay, the grant and
-/// deliverability in one shot. Returns the renewed grant.
-pub async fn relay_test(relay_url: &str, grant: &str, locale: &str) -> Result<String, RelayError> {
+/// A short probe to the owner's own address through the relay: proves the
+/// registration, the relay and deliverability in one shot.
+pub async fn relay_test(
+    settings: &Settings,
+    pool: &Pool,
+    target: &RelayTarget<'_>,
+    to: &str,
+    locale: &str,
+) -> Result<(), RelayError> {
     let text = crate::i18n::t(locale, "email.test.text", &[]);
     let rendered = Rendered {
         subject: crate::i18n::t(locale, "email.test.subject", &[]),
         html: format!("<p>{text}</p>"),
         text,
     };
-    relay::send(relay_url, grant, &rendered).await
+    with_session(settings, pool, target, Call::Send { to, rendered: &rendered })
+        .await
+        .map(|_| ())
 }
 
 #[cfg(test)]
 mod tests {
     use kroma_db::testing::TempPool;
-    use kroma_db::Pool;
-    use serde_json::{json, Value};
+    use serde_json::Value;
 
     use super::*;
 
-    const NOWHERE: &str = "http://127.0.0.1:1";
+    const NOWHERE: RelayTarget<'static> = RelayTarget {
+        url: "http://127.0.0.1:1",
+        origin: "https://kroma.test",
+    };
 
     fn settings() -> (TempPool, Settings) {
         let pool = crate::db::testing::temp_pool("email");
@@ -190,24 +284,16 @@ mod tests {
         }
     }
 
-    fn failure(result: Result<Sent, SendError>) -> String {
-        match result {
-            Err(SendError::Failed(why)) => why,
-            Err(SendError::GrantGone) => panic!("the grant was retired"),
-            Ok(sent) => panic!("delivered as {:?}", sent.delivery),
-        }
-    }
-
     #[tokio::test]
     async fn an_unconfigured_server_reports_manual_rather_than_failing() {
-        let (_pool, settings) = settings();
+        let (pool, settings) = settings();
 
-        let sent = send(&settings, NOWHERE, &outbound(), None)
+        let delivery = send(&settings, &pool, Some(&NOWHERE), &outbound())
             .await
             .expect("a delivery");
 
-        assert_eq!(sent.delivery, Delivery::Manual);
-        assert_eq!(sent.delivery.as_str(), "manual");
+        assert_eq!(delivery, Delivery::Manual);
+        assert_eq!(delivery.as_str(), "manual");
     }
 
     #[tokio::test]
@@ -222,7 +308,9 @@ mod tests {
             ],
         );
 
-        let err = failure(send(&settings, NOWHERE, &outbound(), None).await);
+        let err = send(&settings, &pool, None, &outbound())
+            .await
+            .expect_err("a refusal");
 
         assert!(err.contains("smtpFrom"), "{err}");
     }
@@ -239,7 +327,9 @@ mod tests {
             ],
         );
 
-        let err = failure(send(&settings, NOWHERE, &outbound(), None).await);
+        let err = send(&settings, &pool, None, &outbound())
+            .await
+            .expect_err("a refusal");
 
         assert!(err.contains("smtpHost"), "{err}");
     }
@@ -259,34 +349,51 @@ mod tests {
         let mut email = outbound();
         email.to = "not an address".to_string();
 
-        let err = failure(send(&settings, NOWHERE, &email, None).await);
+        let err = send(&settings, &pool, None, &email)
+            .await
+            .expect_err("a refusal");
 
         assert!(err.starts_with("to:"), "{err}");
     }
 
     #[tokio::test]
-    async fn on_the_relay_a_mailbox_that_never_consented_is_unconfirmed() {
+    async fn on_the_relay_a_server_with_no_public_address_falls_back_to_hand_delivery() {
         let (pool, settings) = settings();
         configure(&pool, &settings, &[("emailDelivery", json!("relay"))]);
 
-        let sent = send(&settings, NOWHERE, &outbound(), None)
+        let delivery = send(&settings, &pool, None, &outbound())
             .await
             .expect("a delivery");
 
-        assert_eq!(sent.delivery, Delivery::Unconfirmed);
-        assert!(sent.renewed_grant.is_none());
+        assert_eq!(delivery, Delivery::Manual);
     }
 
     #[tokio::test]
-    async fn an_unreachable_relay_fails_the_send_and_keeps_the_grant() {
+    async fn an_unreachable_relay_fails_the_send_and_mints_the_identity_anyway() {
         let (pool, settings) = settings();
         configure(&pool, &settings, &[("emailDelivery", json!("relay"))]);
 
-        let err = send(&settings, NOWHERE, &outbound(), Some("v1.SEALED"))
+        let err = send(&settings, &pool, Some(&NOWHERE), &outbound())
             .await
             .expect_err("a failure");
 
-        assert!(matches!(err, SendError::Failed(_)), "{err}");
+        assert!(err.contains("unreachable"), "{err}");
+        assert!(!settings.get_str(IDENTITY_KEY, "").is_empty());
+        assert!(settings.get_str(INSTANCE, "").is_empty());
+    }
+
+    #[tokio::test]
+    async fn a_stored_instance_for_another_origin_is_not_reused() {
+        let (pool, settings) = settings();
+        configure(&pool, &settings, &[("emailDelivery", json!("relay"))]);
+        settings.set_internal(&pool, INSTANCE, json!("v1.OLD"));
+        settings.set_internal(&pool, INSTANCE_ORIGIN, json!("https://elsewhere.test"));
+
+        let err = send(&settings, &pool, Some(&NOWHERE), &outbound())
+            .await
+            .expect_err("a registration attempt that fails");
+
+        assert!(err.contains("unreachable"), "{err}");
     }
 
     #[tokio::test]

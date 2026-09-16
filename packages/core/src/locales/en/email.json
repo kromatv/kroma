@@ -1,4 +1,11 @@
 {
+  "email.consent.button": "Allow and confirm my address",
+  "email.consent.footer": "Nothing is sent until you confirm. If you do not know {name}, ignore this email: nothing changes. This request expires in 7 days.",
+  "email.consent.heading": "May this server email you?",
+  "email.consent.intro": "The owner of {name} registered this address for your account and would like to send you account email, such as a password reset.",
+  "email.consent.preheader": "Confirm this address to receive account email from {name}.",
+  "email.consent.subject": "{name} would like to send you email",
+  "email.consent.text": "The owner of {name} registered this address for your account and would like to send you account email, such as a password reset.\n\nTo allow it and confirm your address, open this link:\n{url}\n\nNothing is sent until you confirm. If you do not know {name}, ignore this email: nothing changes. This request expires in 7 days.",
   "email.reset.button": "Choose a new password",
   "email.reset.codeLabel": "8-character code",
   "email.reset.codeNote": "The link alone is not enough: you will need the {code} your server owner gave you. Without it, nobody can use this link — not even us.",

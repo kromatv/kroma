@@ -1,8 +1,5 @@
 import { z } from 'zod';
 
-export const Locale = z.enum(['en', 'fr']);
-export type Locale = z.infer<typeof Locale>;
-
 const ADDRESS = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
 /** A mailbox, lowercased so two spellings of one inbox share one budget. */
@@ -24,7 +21,10 @@ function privateIpv4(host: string): boolean {
   return a === 10 || a === 127 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31);
 }
 
-function privateHost(hostname: string): boolean {
+/** A host nobody on the public internet can be sent to: no proof of control
+ * is asked of it, and no consent link pointing at it is worth anything to a
+ * stranger. */
+export function isPrivateHost(hostname: string): boolean {
   const host = hostname.toLowerCase();
   if (host === 'localhost' || host === '[::1]') return true;
   if (host.startsWith('[fc') || host.startsWith('[fd')) return true;
@@ -46,7 +46,7 @@ export function isOrigin(s: string): boolean {
   }
   if (url.origin !== s) return false;
   if (url.protocol === 'https:') return true;
-  return url.protocol === 'http:' && privateHost(url.hostname);
+  return url.protocol === 'http:' && isPrivateHost(url.hostname);
 }
 
 function withoutTrailingSlashes(s: string): string {
@@ -55,7 +55,7 @@ function withoutTrailingSlashes(s: string): string {
   return s.slice(0, end);
 }
 
-/** The server a grant is bound to. A trailing slash is forgiven, nothing else. */
+/** The server an instance is bound to. A trailing slash is forgiven, nothing else. */
 export const Origin = z
   .string()
   .trim()
@@ -69,27 +69,68 @@ const printable = (s: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-/** The one thing a server gets to say in a consent email, flattened to one printable line. */
-export const ServerName = z.string().max(256).transform(printable).pipe(z.string().min(1).max(64));
+const B64URL = /^[A-Za-z0-9_-]+$/;
 
-/** A locale the relay speaks; anything else, or nothing, reads as English. */
-const LocaleOrEnglish = z
-  .unknown()
-  .transform((value): Locale => Locale.safeParse(value).data ?? 'en');
+/** An uncompressed P-256 public point, base64url: 65 bytes, 87 characters. */
+export const PublicKey = z.string().regex(B64URL).length(87);
 
-/** `POST /v1/enrol`: a server asks the relay to ask a mailbox for consent. */
-export const EnrolRequest = z.object({
-  address: Address,
+/** A raw `r || s` P-256 signature, base64url: 64 bytes, 86 characters. */
+export const Signature = z.string().regex(B64URL).length(86);
+
+/** `POST /v1/register`: a server presents its origin and its key. */
+export const RegisterRequest = z.object({
   origin: Origin,
-  serverName: ServerName,
-  locale: LocaleOrEnglish,
+  publicKey: PublicKey,
+});
+export type RegisterRequest = z.infer<typeof RegisterRequest>;
+
+/** What a registered server answers at `/api/mail/relay-challenge`. */
+export const ChallengeAnswer = z.object({
+  nonce: z.string().min(1).max(128),
+  signature: Signature,
+});
+
+/**
+ * The envelope every authenticated call arrives in. `payload` is the exact
+ * text the instance signed; it is only parsed once the signature holds.
+ */
+export const SignedRequest = z.object({
+  instance: z.string().min(1).max(4096),
+  payload: z
+    .string()
+    .min(2)
+    .max(256 * 1024),
+  signature: Signature,
+});
+export type SignedRequest = z.infer<typeof SignedRequest>;
+
+/** How long a signed payload is accepted around its own timestamp. */
+export const PAYLOAD_WINDOW_SECS = 5 * 60;
+
+const Stamped = z.object({ ts: z.number().int() });
+
+/** `POST /v1/consent`: an instance asks for the link one mailbox may click. */
+export const ConsentPayload = Stamped.extend({
+  to: Address,
   token: z.string().trim().min(8).max(256),
 });
-export type EnrolRequest = z.infer<typeof EnrolRequest>;
+export type ConsentPayload = z.infer<typeof ConsentPayload>;
 
-/** `POST /v1/send`: a server spends a grant on one rendered message. */
-export const SendRequest = z.object({
-  grant: z.string().min(1).max(4096),
+/** One inline image the message references as `cid:<contentId>`. */
+export const Attachment = z.object({
+  filename: z.string().regex(/^[a-z0-9._-]{1,64}$/i),
+  type: z.enum(['image/png', 'image/jpeg']),
+  contentId: z.string().regex(/^[a-z0-9-]{1,32}$/),
+  content: z
+    .string()
+    .regex(B64URL)
+    .max(128 * 1024),
+});
+export type Attachment = z.infer<typeof Attachment>;
+
+/** `POST /v1/send`: one rendered message to one mailbox, as SMTP would take it. */
+export const SendPayload = Stamped.extend({
+  to: Address,
   subject: z.string().max(512).transform(printable).pipe(z.string().min(1).max(256)),
   text: z
     .string()
@@ -99,8 +140,9 @@ export const SendRequest = z.object({
     .string()
     .min(1)
     .max(64 * 1024),
+  attachments: z.array(Attachment).max(1).default([]),
 });
-export type SendRequest = z.infer<typeof SendRequest>;
+export type SendPayload = z.infer<typeof SendPayload>;
 
 /** The first problem zod found, naming the field and never echoing the value. */
 export function firstIssue(error: { issues: readonly z.core.$ZodIssue[] }): string {

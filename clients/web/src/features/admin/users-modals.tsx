@@ -62,7 +62,7 @@ const LINK_KIND = {
       manual: 'admin.verificationManual',
       smtp: 'admin.verificationSent',
       relay: 'admin.verificationRelay',
-      unconfirmed: 'admin.verificationUnconfirmed',
+      unconfirmed: 'admin.verificationManual',
     },
   },
 } as const satisfies Record<string, { path: string; outcome: Record<Delivery, string> }>;

@@ -5,10 +5,21 @@ const URL_ATTR = /\b(href|src|action|background|poster)\s*=\s*/gi;
 const URL_LIKE = /(?:https?:\/\/|www\.)[^\s"'<>()]+/gi;
 const CSS_ESCAPE = /url\s*\(|@import\b|expression\s*\(|-moz-binding|behavior\s*:/i;
 
-function onOrigin(origin: string, url: string): boolean {
+/** Where a message's links may lead. */
+export type Allowed = (url: string) => boolean;
+
+/** Any link on `origin`: what a grant permits. */
+export function onOrigin(origin: string): Allowed {
   const o = origin.toLowerCase();
-  const u = url.trim().toLowerCase();
-  return u === o || u.startsWith(`${o}/`) || u.startsWith(`${o}?`) || u.startsWith(`${o}#`);
+  return (url) => {
+    const u = url.trim().toLowerCase();
+    return u === o || u.startsWith(`${o}/`) || u.startsWith(`${o}?`) || u.startsWith(`${o}#`);
+  };
+}
+
+/** One link and no other: what a consent link permits. */
+export function exactly(link: string): Allowed {
+  return (url) => url.trim() === link;
 }
 
 // The attribute value that starts at `from`: a quoted run, else up to
@@ -27,8 +38,8 @@ function attributeValue(html: string, from: number): string {
 
 /**
  * Why a message may not leave, or `null` when it may. Every link, in the html
- * and in the text, must lead back to `origin`, the one server the recipient
- * consented to; nothing in the html may run, submit, embed or redirect.
+ * and in the text, must be one `allowed` says; nothing in the html may run,
+ * submit, embed or redirect.
  *
  * Attributes are matched over the whole document rather than tag by tag: a
  * `>` smuggled into one attribute value would otherwise end the "tag" early
@@ -36,7 +47,7 @@ function attributeValue(html: string, from: number): string {
  * them fine. The price is that prose spelled like an attribute (`one=two`)
  * is refused too, and the server falls back to hand delivery.
  */
-export function refuseContent(origin: string, text: string, html: string): string | null {
+export function refuseContent(allowed: Allowed, text: string, html: string): string | null {
   const tag = FORBIDDEN_TAG.exec(html);
   if (tag) return `html: <${(tag[1] ?? '').toLowerCase()}> is not allowed`;
   if (CSS_ESCAPE.test(html)) return 'html: css that loads or runs is not allowed';
@@ -45,13 +56,13 @@ export function refuseContent(origin: string, text: string, html: string): strin
   for (const m of html.matchAll(URL_ATTR)) {
     const url = attributeValue(html, m.index + m[0].length).trim();
     if (url.toLowerCase().startsWith('cid:')) continue;
-    if (!onOrigin(origin, url)) return `html: a link leads off ${origin}`;
+    if (!allowed(url)) return 'html: a link leads where this message may not';
   }
   for (const [url] of html.matchAll(URL_LIKE)) {
-    if (!onOrigin(origin, url)) return `html: a link leads off ${origin}`;
+    if (!allowed(url)) return 'html: a link leads where this message may not';
   }
   for (const [url] of text.matchAll(URL_LIKE)) {
-    if (!onOrigin(origin, url)) return `text: a link leads off ${origin}`;
+    if (!allowed(url)) return 'text: a link leads where this message may not';
   }
   return null;
 }

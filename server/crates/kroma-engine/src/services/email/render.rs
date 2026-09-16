@@ -51,11 +51,12 @@ pub fn render_strings(
     let prefix = match kind {
         EmailKind::Reset => "email.reset",
         EmailKind::Verify => "email.verify",
+        EmailKind::Consent => "email.consent",
     };
     let t = |key: &str| i18n::t(locale, &format!("{prefix}.{key}"), &[]);
     let (code_note, code_label) = match kind {
         EmailKind::Reset => (t("codeNote"), t("codeLabel")),
-        EmailKind::Verify => (String::new(), String::new()),
+        EmailKind::Verify | EmailKind::Consent => (String::new(), String::new()),
     };
     ResetStrings {
         subject: i18n::t(locale, &format!("{prefix}.subject"), &[("name", server_name)]),
@@ -158,6 +159,20 @@ mod tests {
         assert!(!html.contains("{{"));
         assert!(!html.contains("#1C1C22"));
         assert!(html.contains("cid:logo"));
+    }
+
+    #[test]
+    fn the_consent_email_links_only_to_the_relay_and_names_the_server() {
+        let url = "https://mail.kroma.tv/confirm/v1.abc";
+        let s = render_strings(EmailKind::Consent, "fr", "Home", url);
+        let html = render_html("fr", &s, "Home", url);
+
+        assert!(s.code_note.is_empty());
+        assert!(s.text.contains(url));
+        assert!(s.text.contains("Home"));
+        assert!(html.contains(url));
+        assert!(!html.contains("{{"));
+        assert_eq!(html.matches("https://").count(), 2);
     }
 
     #[test]

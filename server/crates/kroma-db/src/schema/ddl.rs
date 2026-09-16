@@ -184,16 +184,6 @@ pub(crate) const SCHEMA: &str = "
         expires_at  INTEGER NOT NULL,
         used_at     TEXT
     );
-    -- The mail relay's sealed permission to write to this account's address.
-    -- Opaque to the server, minted by the mailbox itself, and dropped with the
-    -- address it was minted for.
-    CREATE TABLE IF NOT EXISTS mail_grants (
-        user_id    TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-        email      TEXT NOT NULL,
-        grant      TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        last_ok_at TEXT
-    );
     CREATE TABLE IF NOT EXISTS reset_requests (
         user_id     TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
         created_at  TEXT NOT NULL

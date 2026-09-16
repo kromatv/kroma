@@ -1,8 +1,7 @@
 //! Email verification: the public check and confirm handlers. No code here:
 //! reaching the mailbox is itself the proof, so the link alone suffices. The
 //! link verifies nothing once the account's address no longer matches the one
-//! it was minted for (ADMIN-87). When the mailbox consented at the kroma.tv
-//! relay, its grant rides in with the click and is kept for that address.
+//! it was minted for (ADMIN-87).
 
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -15,8 +14,6 @@ use crate::api::util::query;
 use crate::db;
 use crate::i18n::ReqLocale;
 use crate::state::SharedState;
-
-const MAX_GRANT_LEN: usize = 4096;
 
 /// A token is usable only while unused, unexpired, and still naming the
 /// account's current address.
@@ -63,28 +60,17 @@ pub async fn check_verification(
 #[derive(Debug, Deserialize)]
 pub struct VerifyEmailBody {
     pub token: String,
-    #[serde(default)]
-    pub grant: Option<String>,
 }
 
-/// `POST /api/auth/verify-email` `{ token, grant? }` → 204. A bare GET never
-/// consumes: mail scanners prefetch links, and a prefetch must not verify
-/// anything. The grant is opaque here; a forged one simply fails at the relay.
+/// `POST /api/auth/verify-email` `{ token }` → 204. A bare GET never consumes:
+/// mail scanners prefetch links, and a prefetch must not verify anything.
 pub async fn confirm_verification(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
     Json(body): Json<VerifyEmailBody>,
 ) -> Response {
     let token = body.token.trim().to_string();
-    let grant = body
-        .grant
-        .map(|g| g.trim().to_string())
-        .filter(|g| !g.is_empty() && g.len() <= MAX_GRANT_LEN);
-    match query(&state.db, move |pool| {
-        db::confirm_verification(&pool, &token, grant.as_deref())
-    })
-    .await
-    {
+    match query(&state.db, move |pool| db::confirm_verification(&pool, &token)).await {
         Ok(Some(_)) => StatusCode::NO_CONTENT.into_response(),
         Ok(None) => lerr(loc, StatusCode::BAD_REQUEST, "auth.verificationInvalid"),
         Err(resp) => resp,

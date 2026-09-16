@@ -1,71 +1,94 @@
-//! The kroma.tv mail relay: how a self-hosted server writes to a mailbox that
-//! let it. The server holds no credential the relay would trust; it holds a
-//! GRANT the mailbox minted by clicking the relay's consent link, opaque to the
-//! server and good for that one address from this one origin. See
-//! `packages/mail-relay/README.md`.
+//! The kroma.tv mail relay, from the server's side: register once, then send
+//! like SMTP, one mailbox at a time. The relay writes nothing; it carries what
+//! this server rendered, checks it, and only to a mailbox that said yes to
+//! this origin, or to ask it. See `packages/mail-relay/README.md`.
 
 use serde_json::{json, Value};
 
+use super::identity::{b64url, RelayIdentity};
+use super::render::LOGO_PNG;
 use super::Rendered;
 
-/// Where every KROMA server enrols and sends unless `KROMA_MAIL_RELAY_URL` names
-/// an operator's own copy of the Worker.
+/// Where every KROMA server registers and sends unless `KROMA_MAIL_RELAY_URL`
+/// names an operator's own copy of the Worker.
 pub const RELAY_URL: &str = "https://mail.kroma.tv";
 
 const MAX_TIME_SECS: u32 = 15;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum RelayError {
-    /// The grant will never work again: expired, sealed under a key the relay
-    /// no longer holds, or the mailbox bounced. Drop it; the mailbox re-consents.
+    /// The relay no longer knows this instance: register again.
+    Unregistered,
+    /// This mailbox has not allowed this origin. Ask it, or carry the link by hand.
+    ConsentRequired,
+    /// The mailbox is gone for good: it bounced, or reported the sender.
     Gone,
     /// The relay would not carry this request as written. Retrying changes nothing.
     Refused(String),
-    /// The relay, or the way to it, was not there. The grant stays.
+    /// The relay, or the way to it, was not there.
     Transient(String),
 }
 
 impl std::fmt::Display for RelayError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Gone => f.write_str("the relay retired this grant"),
+            Self::Unregistered => f.write_str("the relay does not know this server"),
+            Self::ConsentRequired => f.write_str("the mailbox has not allowed this server"),
+            Self::Gone => f.write_str("the relay retired this mailbox"),
             Self::Refused(why) => write!(f, "the relay refused: {why}"),
             Self::Transient(why) => write!(f, "the relay was unreachable: {why}"),
         }
     }
 }
 
-pub struct Enrolment<'a> {
-    pub address: &'a str,
-    pub origin: &'a str,
-    pub server_name: &'a str,
-    pub locale: &'a str,
-    pub token: &'a str,
+/// What signs a call: the instance the relay sealed for this origin, and the key it named.
+pub struct Session {
+    pub instance: String,
+    pub identity: RelayIdentity,
 }
 
-pub fn enrol_body(e: &Enrolment<'_>) -> Value {
+fn signed(session: &Session, payload: Value) -> Value {
+    let text = payload.to_string();
     json!({
-        "address": e.address,
-        "origin": e.origin,
-        "serverName": e.server_name,
-        "locale": e.locale,
-        "token": e.token,
+        "instance": session.instance,
+        "payload": text,
+        "signature": session.identity.sign(&text),
     })
 }
 
-pub fn send_body(grant: &str, rendered: &Rendered) -> Value {
-    json!({
-        "grant": grant,
-        "subject": rendered.subject,
-        "text": rendered.text,
-        "html": rendered.html,
-    })
+fn now() -> i64 {
+    time::OffsetDateTime::now_utc().unix_timestamp()
 }
 
-/// What the relay's answer means. A 2xx carries the renewed grant when one was
-/// spent; 401 and 410 retire the grant; a 4xx names what was wrong with the
-/// request; anything else is the network or the relay having a moment.
-pub fn outcome(status: u16, body: &str) -> Result<Option<String>, RelayError> {
+pub fn register_body(origin: &str, identity: &RelayIdentity) -> Value {
+    json!({ "origin": origin, "publicKey": identity.public_base64url() })
+}
+
+pub fn consent_body(session: &Session, to: &str, token: &str) -> Value {
+    signed(session, json!({ "to": to, "token": token, "ts": now() }))
+}
+
+pub fn send_body(session: &Session, to: &str, rendered: &Rendered) -> Value {
+    signed(
+        session,
+        json!({
+            "to": to,
+            "subject": rendered.subject,
+            "text": rendered.text,
+            "html": rendered.html,
+            "attachments": [{
+                "filename": "logo.png",
+                "type": "image/png",
+                "contentId": "logo",
+                "content": b64url(LOGO_PNG),
+            }],
+            "ts": now(),
+        }),
+    )
+}
+
+/// What the relay's answer means.
+pub fn outcome(status: u16, body: &str) -> Result<Value, RelayError> {
     let parsed: Value = serde_json::from_str(body).unwrap_or(Value::Null);
     let error = || {
         parsed["error"]
@@ -74,14 +97,16 @@ pub fn outcome(status: u16, body: &str) -> Result<Option<String>, RelayError> {
             .unwrap_or_else(|| format!("HTTP {status}"))
     };
     match status {
-        200..=299 => Ok(parsed["grant"].as_str().map(str::to_string)),
-        401 | 410 => Err(RelayError::Gone),
-        400 | 413 | 422 => Err(RelayError::Refused(error())),
+        200..=299 => Ok(parsed),
+        401 => Err(RelayError::Unregistered),
+        403 if parsed["error"] == "consent required" => Err(RelayError::ConsentRequired),
+        410 => Err(RelayError::Gone),
+        400 | 403 | 413 | 422 => Err(RelayError::Refused(error())),
         _ => Err(RelayError::Transient(error())),
     }
 }
 
-async fn post(url: String, body: Value) -> Result<Option<String>, RelayError> {
+async fn post(url: String, body: Value) -> Result<Value, RelayError> {
     let response = tokio::task::spawn_blocking(move || {
         kroma_http::Fetch::new()
             .max_time(MAX_TIME_SECS)
@@ -93,23 +118,44 @@ async fn post(url: String, body: Value) -> Result<Option<String>, RelayError> {
     outcome(response.status, &response.text())
 }
 
-/// Ask the relay to ask `address` for consent. Nothing comes back but the
-/// verdict: the grant reaches this server later, in the recipient's browser.
-pub async fn enrol(base: &str, enrolment: &Enrolment<'_>) -> Result<(), RelayError> {
-    post(format!("{base}/v1/enrol"), enrol_body(enrolment))
-        .await
-        .map(|_| ())
+/// Register this origin under `identity`. The relay will call the origin's
+/// challenge route before answering, so the server must be reachable at it.
+/// Returns the sealed instance to keep.
+pub async fn register(base: &str, origin: &str, identity: &RelayIdentity) -> Result<String, RelayError> {
+    let answer = post(format!("{base}/v1/register"), register_body(origin, identity)).await?;
+    answer["instance"]
+        .as_str()
+        .map(str::to_string)
+        .ok_or_else(|| RelayError::Refused("no instance in the answer".into()))
 }
 
-/// Spend `grant` on one rendered message. Returns the renewed grant to store.
-pub async fn send(base: &str, grant: &str, rendered: &Rendered) -> Result<String, RelayError> {
-    let renewed = post(format!("{base}/v1/send"), send_body(grant, rendered)).await?;
-    Ok(renewed.unwrap_or_else(|| grant.to_string()))
+/// The link one mailbox may click to allow this origin, for the server to
+/// write its own message around.
+pub async fn consent(base: &str, session: &Session, to: &str, token: &str) -> Result<String, RelayError> {
+    let answer = post(format!("{base}/v1/consent"), consent_body(session, to, token)).await?;
+    answer["url"]
+        .as_str()
+        .map(str::to_string)
+        .ok_or_else(|| RelayError::Refused("no link in the answer".into()))
+}
+
+/// Send one rendered message to `to`, as SMTP would.
+pub async fn send(base: &str, session: &Session, to: &str, rendered: &Rendered) -> Result<(), RelayError> {
+    post(format!("{base}/v1/send"), send_body(session, to, rendered))
+        .await
+        .map(|_| ())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn session() -> Session {
+        Session {
+            instance: "v1.INSTANCE".into(),
+            identity: RelayIdentity::generate(),
+        }
+    }
 
     fn rendered() -> Rendered {
         Rendered {
@@ -120,68 +166,54 @@ mod tests {
     }
 
     #[test]
-    fn a_send_carries_the_grant_and_the_message_and_never_an_address() {
-        let body = send_body("v1.SEALED", &rendered());
+    fn a_send_is_signed_and_names_the_mailbox_the_message_and_the_logo() {
+        let s = session();
+        let body = send_body(&s, "u@b.co", &rendered());
 
-        assert_eq!(body["grant"], "v1.SEALED");
-        assert_eq!(body["subject"], "Reset");
-        assert!(body.get("to").is_none());
-        assert!(body.get("from").is_none());
+        assert_eq!(body["instance"], "v1.INSTANCE");
+        let payload: Value = serde_json::from_str(body["payload"].as_str().unwrap()).unwrap();
+        assert_eq!(payload["to"], "u@b.co");
+        assert_eq!(payload["subject"], "Reset");
+        assert_eq!(payload["attachments"][0]["contentId"], "logo");
+        assert!(payload["ts"].as_i64().unwrap() > 1_700_000_000);
+        assert_eq!(body["signature"].as_str().unwrap().len(), 86);
     }
 
     #[test]
-    fn an_enrolment_names_the_mailbox_the_server_and_the_token() {
-        let body = enrol_body(&Enrolment {
-            address: "u@b.c",
-            origin: "https://kroma.example",
-            server_name: "Home",
-            locale: "fr",
-            token: "tok",
-        });
+    fn a_registration_carries_the_origin_and_the_public_point_only() {
+        let identity = RelayIdentity::generate();
+        let body = register_body("https://kroma.example", &identity);
 
-        assert_eq!(body["address"], "u@b.c");
         assert_eq!(body["origin"], "https://kroma.example");
-        assert_eq!(body["locale"], "fr");
-        assert_eq!(body["token"], "tok");
+        assert_eq!(body["publicKey"], identity.public_base64url());
+        assert!(body.get("privateKey").is_none());
     }
 
     #[test]
-    fn a_delivery_hands_back_the_renewed_grant() {
+    fn every_status_the_relay_speaks_has_one_meaning() {
+        assert_eq!(outcome(200, r#"{"url":"x"}"#).unwrap()["url"], "x");
+        assert_eq!(outcome(401, "").unwrap_err(), RelayError::Unregistered);
         assert_eq!(
-            outcome(200, r#"{"delivered":true,"grant":"v1.NEW"}"#).unwrap(),
-            Some("v1.NEW".to_string())
+            outcome(403, r#"{"error":"consent required"}"#).unwrap_err(),
+            RelayError::ConsentRequired
         );
-        assert_eq!(outcome(204, "").unwrap(), None);
-    }
-
-    #[test]
-    fn only_the_permanent_statuses_retire_a_grant() {
-        assert_eq!(outcome(401, r#"{"error":"invalid grant"}"#), Err(RelayError::Gone));
+        assert_eq!(
+            outcome(403, r#"{"error":"this origin is shut out"}"#).unwrap_err(),
+            RelayError::Refused("this origin is shut out".into())
+        );
         assert_eq!(outcome(410, "").unwrap_err(), RelayError::Gone);
+        assert_eq!(
+            outcome(422, r#"{"error":"html: a link leads where this message may not"}"#).unwrap_err(),
+            RelayError::Refused("html: a link leads where this message may not".into())
+        );
         for transient in [429, 500, 502, 503, 504] {
-            assert!(
-                matches!(outcome(transient, "").unwrap_err(), RelayError::Transient(_)),
-                "{transient} must not retire the grant"
-            );
+            assert!(matches!(outcome(transient, "").unwrap_err(), RelayError::Transient(_)));
         }
     }
 
-    #[test]
-    fn a_refusal_carries_the_relays_own_words() {
-        let err = outcome(422, r#"{"error":"html: a link leads off https://kroma.example"}"#);
-
-        assert_eq!(
-            err,
-            Err(RelayError::Refused(
-                "html: a link leads off https://kroma.example".into()
-            ))
-        );
-        assert_eq!(outcome(400, "not json"), Err(RelayError::Refused("HTTP 400".into())));
-    }
-
     #[tokio::test]
-    async fn a_relay_that_is_not_there_is_transient_and_keeps_the_grant() {
-        let err = send("http://127.0.0.1:1", "v1.SEALED", &rendered())
+    async fn a_relay_that_is_not_there_is_transient() {
+        let err = register("http://127.0.0.1:1", "https://kroma.example", &RelayIdentity::generate())
             .await
             .unwrap_err();
 

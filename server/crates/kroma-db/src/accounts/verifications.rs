@@ -69,45 +69,28 @@ pub fn get_verification(pool: &Pool, token: &str) -> Result<Option<EmailVerifica
 
 /// Confirm a verification: mark the address verified and the token used, only
 /// while the token is unused, unexpired and the account's address is still the
-/// one the link was minted for. A relay `grant` that rode in with the click is
-/// kept for that address, and only when the link held. Returns the verified
-/// user id, or `None`.
-pub fn confirm_verification(
-    pool: &Pool,
-    token: &str,
-    grant: Option<&str>,
-) -> Result<Option<String>> {
+/// one the link was minted for. Returns the verified user id, or `None`.
+pub fn confirm_verification(pool: &Pool, token: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
-    let confirmed: Option<(String, String)> = conn
+    let user_id: Option<String> = conn
         .query_row(
             "UPDATE users SET email_verified_at = ?2 \
              WHERE id = (SELECT user_id FROM email_verifications \
                          WHERE token = ?1 AND used_at IS NULL AND expires_at > ?2) \
                AND email = (SELECT email FROM email_verifications WHERE token = ?1) \
-             RETURNING id, email",
+             RETURNING id",
             params![token, now],
-            |r| Ok((r.get(0)?, r.get(1)?)),
+            |r| r.get(0),
         )
         .optional()?;
-    let Some((user_id, email)) = confirmed else {
-        return Ok(None);
-    };
-    conn.execute(
-        "UPDATE email_verifications SET used_at = ?2 WHERE token = ?1",
-        params![token, now_or_blank()],
-    )?;
-    if let Some(grant) = grant {
+    if user_id.is_some() {
         conn.execute(
-            "INSERT INTO mail_grants (user_id,email,grant,created_at,last_ok_at) \
-             VALUES (?1,?2,?3,?4,NULL) \
-             ON CONFLICT(user_id) DO UPDATE SET \
-               email = excluded.email, grant = excluded.grant, \
-               created_at = excluded.created_at, last_ok_at = NULL",
-            params![user_id, email, grant, now_or_blank()],
+            "UPDATE email_verifications SET used_at = ?2 WHERE token = ?1",
+            params![token, now_or_blank()],
         )?;
     }
-    Ok(Some(user_id))
+    Ok(user_id)
 }
 
 /// Set or clear the address's proof of ownership directly.
@@ -138,10 +121,10 @@ mod tests {
         assert_eq!(got.email, "u@b.c");
         assert!(got.used_at.is_none());
 
-        let uid = confirm_verification(&p, "tok1", None).unwrap().unwrap();
+        let uid = confirm_verification(&p, "tok1").unwrap().unwrap();
         assert_eq!(uid, user.id);
         assert!(get_verification(&p, "tok1").unwrap().unwrap().used_at.is_some());
-        assert!(confirm_verification(&p, "tok1", None).unwrap().is_none());
+        assert!(confirm_verification(&p, "tok1").unwrap().is_none());
     }
 
     #[test]
@@ -163,7 +146,7 @@ mod tests {
         let user = mk_user(&p, "u@b.c", "user");
         create_verification(&p, "old", &user.id, "u@b.c", &owner.id, 1).unwrap();
 
-        assert!(confirm_verification(&p, "old", None).unwrap().is_none());
+        assert!(confirm_verification(&p, "old").unwrap().is_none());
     }
 
     #[test]
@@ -174,33 +157,8 @@ mod tests {
         create_verification(&p, "tok", &user.id, "u@b.c", &owner.id, FUTURE).unwrap();
         crate::accounts::set_user_email(&p, &user.id, "new@b.c").unwrap();
 
-        assert!(confirm_verification(&p, "tok", None).unwrap().is_none());
+        assert!(confirm_verification(&p, "tok").unwrap().is_none());
         assert!(get_verification(&p, "tok").unwrap().unwrap().used_at.is_none());
-    }
-
-    #[test]
-    fn a_grant_that_rides_in_with_the_click_is_kept_for_that_address() {
-        let p = pool();
-        let owner = mk_user(&p, "o@b.c", "owner");
-        let user = mk_user(&p, "u@b.c", "user");
-        create_verification(&p, "tok", &user.id, "u@b.c", &owner.id, FUTURE).unwrap();
-
-        confirm_verification(&p, "tok", Some("v1.sealed")).unwrap().unwrap();
-
-        let grant = crate::accounts::mail_grant(&p, &user.id).unwrap().unwrap();
-        assert_eq!(grant.email, "u@b.c");
-        assert_eq!(grant.grant, "v1.sealed");
-    }
-
-    #[test]
-    fn a_grant_offered_on_a_link_that_does_not_hold_is_dropped() {
-        let p = pool();
-        let owner = mk_user(&p, "o@b.c", "owner");
-        let user = mk_user(&p, "u@b.c", "user");
-        create_verification(&p, "old", &user.id, "u@b.c", &owner.id, 1).unwrap();
-
-        assert!(confirm_verification(&p, "old", Some("v1.sealed")).unwrap().is_none());
-        assert!(crate::accounts::mail_grant(&p, &user.id).unwrap().is_none());
     }
 
     #[test]

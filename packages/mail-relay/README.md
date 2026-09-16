@@ -1,70 +1,89 @@
 # KROMA mail relay
 
-The Cloudflare Worker at mail.kroma.tv that emails a self-hosted KROMA server's
-users on its behalf: credential resets, address verifications.
+The Cloudflare Worker at mail.kroma.tv that carries a self-hosted KROMA
+server's account email (credential resets, address verifications) to its
+users. It is a carrier, not a mailer: it writes nothing, and it sends only
+where a mailbox has said yes.
 
 ## Why this exists
 
 A KROMA server is self-hosted by anybody, and most of them have no mail server.
-The alternative today is the owner copying a reset link by hand. The relay lets
-a server send from `no-reply@kroma.tv` without holding any credential at all.
+The alternative is the owner copying a reset link by hand. The relay lets a
+server send from `no-reply@kroma.tv` without holding any credential at all,
+and every word of every message stays the server's: templates, catalogs and
+logo live in the server repo, rendered at runtime by the server.
 
 ## Why it is not an open mailer
 
 The server's source is public, so there is no shared secret to authenticate it
-with, and an open mailer under kroma.tv would be everyone's spam cannon. So the
-**mailbox** authorises, not the server:
+with, and an open mailer under kroma.tv would be everyone's spam cannon. Two
+things stand in for the secret:
 
-1. The server asks the relay to ask a mailbox (`POST /v1/enrol`). The relay
-   sends one fixed consent email. The server chose only its name; the only link
-   in it is the relay's own.
-2. The recipient opens the link and clicks **Allow**. The relay mints a grant,
-   an AES-256-GCM sealed blob naming exactly that address and that server's
-   origin, and sends the browser back to the server with it. The click is also
-   the address verification: reaching the mailbox was the proof.
-3. The server spends the grant (`POST /v1/send`) for every later message. The
-   relay opens it, checks that every link in the message leads back to the
-   consented origin, and sends. Each delivery hands back a renewed grant.
+1. **An identity per server.** The server mints a P-256 key once and registers
+   it with its origin (`POST /v1/register`). A public origin must prove it holds
+   the key: the relay fetches `https://<origin>/api/mail/relay-challenge?nonce=…`
+   and expects the nonce back, signed. A private origin (a LAN address,
+   `.local`, `localhost`) is taken at its word, because nobody can be lured to
+   it. The answer is a sealed **instance** naming the origin and the key; every
+   later call is that instance plus a signature over its payload. The origin is
+   read from the instance, never from the request.
+2. **A yes per mailbox.** A message goes to a mailbox only if that mailbox has
+   allowed that origin. The mark is kept by the relay under an HMAC of
+   (origin, mailbox), so a server needs nothing but the address to send, like
+   SMTP. Until the mark exists, the only message that may go is the question:
+   the server asks for a consent link (`POST /v1/consent`), writes its own
+   message around it, and the relay sends it only if every link in it is that
+   one link. The recipient clicks, sees the question on the **server's** page,
+   and the yes is recorded when that page posts back to the relay.
 
-A grant can do one thing: write to its mailbox on behalf of its server. It
-cannot be forged without `GRANT_SECRET`, it cannot be read, and a message spent
-with it cannot link anywhere but the server the recipient said yes to. A
-compromised server can be noisy to its own consenting users, briefly, and to
-nobody else.
-
-What bounds the one unsolicited email:
+What one server can then do: write to the mailboxes that allowed it, with
+links that lead back to its own origin only; nothing in a message may run,
+submit, embed or redirect. What a stranger can do: register an origin they
+control and ask a mailbox, three times a day at most, with a message whose only
+link is the relay's, sent under `"<their host> via KROMA"`. Every message
+carries the real host of the origin as the sender's display name.
 
 | Limit | Value | Where |
 |---|---|---|
-| Consent requests per mailbox | 3 a day | KV counter |
-| Consent requests per caller | 5 a minute | `ENROL_IP` |
+| Consent links per mailbox | 3 a day | KV counter |
+| Consent links per origin | 50 a day | KV counter |
+| Registrations and consent requests per caller | 5 a minute | `ENROL_IP` |
 | Sends per mailbox | 10 a minute, 50 a day | `SEND_ADDR`, KV counter |
 | Sends per caller | 60 a minute | `SEND_IP` |
 | Sends, all callers | 2000 a day | KV counter |
-| Bodies | 8 KB enrol, 96 KB send | refused off the declared length; a body with no declared length is refused outright |
+| Signed payloads | within 5 minutes of their timestamp | |
+| Bodies | 8 KB register and consent, 256 KB send | refused off the declared length; a body with no declared length is refused outright |
 
-Counters are keyed on an HMAC of the address under `LIMIT_SECRET`, so the relay
-keeps no address and no mail, only how many times a mailbox was written to
-today. See `worker/content.ts` for what a message may contain, `worker/consent.ts`
-for the blobs, `@kromatv/relay-grant` for the sealing both relays share.
+Counters and marks are keyed on HMACs under `LIMIT_SECRET`, so the relay keeps
+no address and no mail, only how often a mailbox was asked or written to, and
+which (origin, mailbox) pairs said yes. An origin can be shut out with
+`wrangler kv key put --binding COUNTERS ban:<key> 1`, where `<key>` is the
+HMAC of the origin (`budgetKey` in `worker/limits.ts`).
+
+See `worker/content.ts` for what a message may contain, `worker/identity.ts`
+and `worker/challenge.ts` for who may call, `worker/consent.ts` for the yes,
+`@kromatv/relay-grant` for the sealing both relays share.
 
 ## Routes
 
 | Route | Body | Answers |
 |---|---|---|
-| `POST /v1/enrol` | `{address, origin, serverName, locale, token}` | `204` · `429` |
-| `GET /confirm/:blob` | | the consent page |
-| `POST /confirm/:blob` | | `303` to `<origin>/verify-email?token=…&grant=…` |
-| `POST /v1/send` | `{grant, subject, text, html}` | `{delivered, grant}` · `401` bad grant · `410` mailbox gone · `422` content refused · `429` |
+| `POST /v1/register` | `{origin, publicKey}` | `{instance, expiresAt}` · `403` the origin did not answer for the key |
+| `POST /v1/consent` | signed `{to, token, ts}` | `{url, expiresAt}` · `429` |
+| `POST /v1/send` | signed `{to, subject, text, html, attachments, ts}` | `{delivered}` · `403 consent required` · `410` mailbox gone · `422` content refused · `429` |
+| `GET /confirm/:blob` | | `303` to `<origin>/verify-email?token=…&consent=…` |
+| `POST /confirm/:blob` | | records the yes, `303` to `<origin>/verify-email?token=…` |
 | `GET /health` | | `{ok, email}` |
 
-`401` and `410` are the statuses a server acts on: it drops the grant, and the
-mailbox re-consents through a new verification. Everything else is transient.
+A signed body is `{instance, payload, signature}`: `payload` is the JSON text
+the server signed (ECDSA P-256, SHA-256, raw `r || s`, base64url), parsed only
+once the signature holds. `401` means the instance is unknown: register again.
+`403 consent required` means the mailbox has not said yes: ask it, or carry
+the link by hand. `410` means the mailbox bounced and its yes was withdrawn.
 
 `origin` is https anywhere, or http on a host that is not on the public
-internet (a LAN address, `.local`, `localhost`). Grants are bound to it: an
-operator who moves their server to a new domain asks their users to consent
-again.
+internet. An operator who moves their server to a new domain registers again
+on first use, and their users say yes again.
 
 ## Deploy
 
@@ -84,43 +103,31 @@ Then, and every time after:
 bunx wrangler deploy
 ```
 
-`GRANT_SECRET` is **not** the push relay's. Rotating it retires every grant in
-the field: every mailbox has to consent again. Keep a copy in your password
-manager; Worker secrets are write-only.
+`GRANT_SECRET` is **not** the push relay's. Rotating it retires every instance
+and consent link in the field: every server registers again on its next send.
+Rotating `LIMIT_SECRET` forgets every yes: every mailbox is asked again. Keep
+copies in your password manager; Worker secrets are write-only.
 
 ## Verifying the whole chain
 
-```sh
-curl -s https://mail.kroma.tv/health
-# {"ok":true,"email":true}
-
-curl -s -w '\n[%{http_code}]\n' -X POST https://mail.kroma.tv/v1/enrol \
-  -H 'content-type: application/json' \
-  -d '{"address":"you@example.com","origin":"https://kroma.example","serverName":"Home","locale":"en","token":"tok-1234567890"}'
-# [204], and a consent email in your inbox
-```
-
-Click through: the page shows "Home" and `kroma.example`, the button sends the
-browser to `https://kroma.example/verify-email?token=tok-1234567890&grant=v1.…`.
-Take the grant off that URL and spend it:
-
-```sh
-curl -s -w '\n[%{http_code}]\n' -X POST https://mail.kroma.tv/v1/send \
-  -H 'content-type: application/json' \
-  -d '{"grant":"v1.…","subject":"Hello","text":"Open https://kroma.example/x","html":"<a href=\"https://kroma.example/x\">x</a>"}'
-# {"delivered":true,"grant":"v1.…"}  [200]
-```
-
-The same body with `https://evil.example` in it answers `422`; a grant sealed
-under another secret answers `401`.
+Run the relay locally (`bunx wrangler dev`, the mail binding writes each
+message under `.wrangler/tmp/email/`) and a server with
+`KROMA_MAIL_RELAY_URL=http://127.0.0.1:8787` and a public address. In
+Admin → Settings → Email choose `relay`, then from the member editor send
+yourself a verification: the relay log shows the consent message, its only link
+the relay's. Open the link (rewrite the host to the local relay), click Allow on
+the server's page, and the address turns verified. Mint a reset: the message
+goes out under the grant of that yes, every link on your origin, the code note
+present and the code absent.
 
 ## On the server
 
 Admin → Settings → Email → Delivery: `relay`. A server reaches the relay at
 `https://mail.kroma.tv` unless `KROMA_MAIL_RELAY_URL` names an operator's own
-copy of this Worker. The rest is the member editor: **Send verification** asks
-the mailbox, and once it said yes, **Reset access** emails the reset link (the
-code still travels by voice).
+copy of this Worker. It needs a public address (`KROMA_WEB_URL` or Remote
+access) to register under. The rest is the member editor: **Send
+verification** asks the mailbox, and once it said yes, **Reset access** emails
+the reset link (the code still travels by voice).
 
 ## Tests
 
@@ -128,5 +135,6 @@ code still travels by voice).
 bunx vitest run packages/mail-relay/ packages/relay-grant/
 ```
 
-`content.test.ts` is the phishing boundary, `consent.test.ts` and
-`@kromatv/relay-grant`'s `seal.test.ts` the forgery one.
+`content.test.ts` is the phishing boundary, `identity.test.ts`,
+`challenge.test.ts` and `register.test.ts` the impersonation one,
+`send.test.ts` the consent one.

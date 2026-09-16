@@ -6,7 +6,6 @@ use axum::http::StatusCode;
 use serde_json::json;
 
 use crate::api::test_support::{get, seed_library, seed_session, send, test_app};
-use crate::db;
 use crate::model::Permission;
 
 #[tokio::test]
@@ -335,7 +334,7 @@ async fn the_smtp_probe_refuses_once_the_owner_chose_another_delivery() {
 }
 
 #[tokio::test]
-async fn the_relay_probe_needs_the_relay_chosen_and_the_owners_own_consent() {
+async fn the_relay_probe_needs_the_relay_chosen_and_a_public_address() {
     let t = test_app();
 
     let (status, body) = send(
@@ -367,33 +366,6 @@ async fn the_relay_probe_needs_the_relay_chosen_and_the_owners_own_consent() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
     let reason = body["error"].as_str().unwrap_or_default();
     assert!(!reason.is_empty() && !reason.starts_with("admin."), "{reason}");
-}
-
-#[tokio::test]
-async fn the_relay_probe_reports_an_unreachable_relay_and_keeps_the_grant() {
-    let t = test_app();
-    t.state.settings.set_patch(
-        &t.state.db,
-        [("emailDelivery".to_string(), json!("relay"))]
-            .into_iter()
-            .collect(),
-    );
-    db::set_mail_grant(&t.state.db, &t.user_id, "owner@test.dev", "v1.sealed")
-        .expect("store a grant");
-
-    let (status, body) = send(
-        &t.app,
-        "POST",
-        "/api/admin/settings/relay-test",
-        Some(&t.token),
-        None,
-    )
-    .await;
-    assert_eq!(status, StatusCode::BAD_GATEWAY);
-    assert!(!body["error"].as_str().unwrap_or_default().is_empty());
-    assert!(db::mail_grant(&t.state.db, &t.user_id)
-        .expect("read the grant")
-        .is_some());
 }
 
 #[tokio::test]

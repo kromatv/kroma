@@ -12,7 +12,6 @@
   "compatibility_date": "2026-07-28",
   "observability": { "enabled": true },
   "workers_dev": true,
-  "rules": [{ "type": "Data", "globs": ["**/*.png"] }],
   "vars": {
     "FROM_ADDRESS": "no-reply@kroma.tv",
     "FROM_NAME": "KROMA",

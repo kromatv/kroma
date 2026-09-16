@@ -1,43 +1,66 @@
 import { describe, expect, it } from 'vitest';
-import { openGrant, openPending, sealGrant, sealPending } from './consent';
-import { ADDRESS, ORIGIN, SECRET } from './test-support';
+import { Consents, consentBlob, consentUrl, openPending, sealPending } from './consent';
+import { ADDRESS, LIMIT_SECRET, memoryCounters, ORIGIN, PUBLIC_URL, SECRET } from './test-support';
 
 const NOW = 1_800_000_000;
 
-describe('consent blobs', () => {
-  it('a pending request round-trips, and opens as nothing else', async () => {
+describe('consent links', () => {
+  it('round-trip the mailbox, the server and its token', async () => {
     const blob = await sealPending(SECRET, {
       a: ADDRESS,
       o: ORIGIN,
-      n: 'Home',
-      l: 'fr',
       t: 'tok-1234567890',
       e: NOW + 60,
     });
 
-    expect(await openPending(SECRET, blob, NOW)).toMatchObject({ a: ADDRESS, o: ORIGIN, l: 'fr' });
-    expect(await openGrant(SECRET, blob, NOW)).toBeNull();
+    expect(await openPending(SECRET, blob, NOW)).toEqual({
+      a: ADDRESS,
+      o: ORIGIN,
+      t: 'tok-1234567890',
+      e: NOW + 60,
+    });
+    expect(blob).not.toContain('reader');
   });
 
-  it('a grant round-trips, and can never stand in for a pending request', async () => {
-    const grant = await sealGrant(SECRET, { a: ADDRESS, o: ORIGIN, e: NOW + 60 });
+  it('are the relay’s own URL and nothing else', async () => {
+    const blob = await sealPending(SECRET, { a: ADDRESS, o: ORIGIN, t: 'tok', e: NOW + 60 });
+    const url = consentUrl(PUBLIC_URL, blob);
 
-    expect(await openGrant(SECRET, grant, NOW)).toEqual({ a: ADDRESS, o: ORIGIN, e: NOW + 60 });
-    expect(await openPending(SECRET, grant, NOW)).toBeNull();
+    expect(url).toBe(`${PUBLIC_URL}/confirm/${blob}`);
+    expect(consentBlob(PUBLIC_URL, url)).toBe(blob);
+    expect(consentBlob(PUBLIC_URL, `https://evil.example/confirm/${blob}`)).toBeNull();
+    expect(consentBlob(PUBLIC_URL, `${PUBLIC_URL}/confirm/${blob}?x=1`)).toBeNull();
+    expect(consentBlob(PUBLIC_URL, `${PUBLIC_URL}/other/${blob}`)).toBeNull();
   });
 
-  it('neither reveals the address it carries', async () => {
-    const grant = await sealGrant(SECRET, { a: ADDRESS, o: ORIGIN, e: NOW + 60 });
+  it('expire with the server’s verification link', async () => {
+    const blob = await sealPending(SECRET, { a: ADDRESS, o: ORIGIN, t: 'tok', e: NOW - 1 });
 
-    expect(grant).not.toContain('reader');
-    expect(grant).not.toContain('example');
+    expect(await openPending(SECRET, blob, NOW)).toBeNull();
+  });
+});
+
+describe('a mailbox’s yes', () => {
+  it('is kept per origin and per mailbox, under a key that names neither', async () => {
+    const kv = memoryCounters();
+    const marks = new Consents(kv, LIMIT_SECRET);
+
+    expect(await marks.has(ORIGIN, ADDRESS)).toBe(false);
+    await marks.give(ORIGIN, ADDRESS);
+    expect(await marks.has(ORIGIN, ADDRESS)).toBe(true);
+    expect(await marks.has(ORIGIN, 'other@example.test')).toBe(false);
+    expect(await marks.has('https://other.example', ADDRESS)).toBe(false);
+    for (const key of kv.store.keys()) {
+      expect(key).not.toMatch(/reader|example/);
+    }
   });
 
-  it('a grant from another secret, or past its time, is no grant', async () => {
-    const foreign = await sealGrant('another-secret', { a: ADDRESS, o: ORIGIN, e: NOW + 60 });
-    const stale = await sealGrant(SECRET, { a: ADDRESS, o: ORIGIN, e: NOW - 1 });
+  it('reads the same for any spelling of the address, and can be withdrawn', async () => {
+    const marks = new Consents(memoryCounters(), LIMIT_SECRET);
+    await marks.give(ORIGIN, ADDRESS);
 
-    expect(await openGrant(SECRET, foreign, NOW)).toBeNull();
-    expect(await openGrant(SECRET, stale, NOW)).toBeNull();
+    expect(await marks.has(ORIGIN, ADDRESS.toUpperCase())).toBe(true);
+    await marks.withdraw(ORIGIN, ADDRESS);
+    expect(await marks.has(ORIGIN, ADDRESS)).toBe(false);
   });
 });

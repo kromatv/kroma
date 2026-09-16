@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addressKey, takeDaily } from './limits';
+import { budgetKey, takeDaily } from './limits';
 import { memoryCounters } from './test-support';
 
 const DAY = 24 * 60 * 60;
@@ -26,11 +26,11 @@ describe('daily budgets', () => {
 
 describe('the address key', () => {
   it('is stable, case-blind and reveals nothing', async () => {
-    const a = await addressKey('s', 'Reader@Example.test');
+    const a = await budgetKey('s', 'Reader@Example.test');
 
-    expect(await addressKey('s', 'reader@example.test ')).toBe(a);
-    expect(await addressKey('s', 'other@example.test')).not.toBe(a);
-    expect(await addressKey('another', 'reader@example.test')).not.toBe(a);
+    expect(await budgetKey('s', 'reader@example.test ')).toBe(a);
+    expect(await budgetKey('s', 'other@example.test')).not.toBe(a);
+    expect(await budgetKey('another', 'reader@example.test')).not.toBe(a);
     expect(a).not.toMatch(/reader|example/i);
   });
 });

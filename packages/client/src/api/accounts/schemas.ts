@@ -49,6 +49,10 @@ export type PublicUser = z.infer<typeof PublicUser>;
 export const AuthConfig = z.object({
   publicUserList: z.boolean(),
   hasAccounts: z.boolean(),
+  serverName: z.string().optional(),
+  /** Where the consent page posts a mailbox's yes: present only while
+   * account email goes through the kroma.tv relay. */
+  mailRelayUrl: z.string().optional(),
 });
 export type AuthConfig = z.infer<typeof AuthConfig>;
 

@@ -4,6 +4,7 @@ import { b64url } from '@kromatv/relay-grant';
 export interface Counters {
   get(key: string): Promise<string | null>;
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+  delete(key: string): Promise<void>;
 }
 
 const DAY_SECS = 24 * 60 * 60;
@@ -29,10 +30,10 @@ export async function takeDaily(
 }
 
 /**
- * A counter key for a mailbox that cannot be turned back into it: an HMAC
- * under a secret only the relay holds, so a dump of the counters names nobody.
+ * A key for a mailbox or an origin that cannot be turned back into it: an
+ * HMAC under a secret only the relay holds, so a dump of the store names nobody.
  */
-export async function addressKey(secret: string, address: string): Promise<string> {
+export async function budgetKey(secret: string, subject: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     'raw',
     utf8.encode(secret),
@@ -40,6 +41,11 @@ export async function addressKey(secret: string, address: string): Promise<strin
     false,
     ['sign'],
   );
-  const mac = await crypto.subtle.sign('HMAC', key, utf8.encode(address.trim().toLowerCase()));
+  const mac = await crypto.subtle.sign('HMAC', key, utf8.encode(subject.trim().toLowerCase()));
   return b64url(mac).slice(0, 22);
+}
+
+/** Whether the operator shut this origin out: `wrangler kv key put ban:<key> 1`. */
+export async function banned(kv: Counters, originKey: string): Promise<boolean> {
+  return (await kv.get(`ban:${originKey}`)) !== null;
 }

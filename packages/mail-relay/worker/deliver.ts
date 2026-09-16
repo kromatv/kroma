@@ -1,4 +1,5 @@
-import { LOGO_PNG } from './logo';
+import { fromB64url } from '@kromatv/relay-grant';
+import type { Attachment } from './schemas';
 
 /** The `send_email` binding, declared locally like the rate limiter's. */
 export interface EmailSender {
@@ -25,26 +26,31 @@ const REASON_MAX = 200;
 export const printable = (reason: string): string =>
   reason.replace(/[^ -~]/g, '').slice(0, REASON_MAX);
 
-/** One send, with the relay's own logo riding inline as `cid:logo`. */
+/**
+ * One send. The sender is the relay's address with the real host of the
+ * server that wrote the message as its display name, so every mail client
+ * shows who is behind it before a word of the body is read.
+ */
 export async function deliver(
   email: EmailSender,
   env: { FROM_ADDRESS: string; FROM_NAME: string },
   to: string,
-  message: { subject: string; text: string; html: string },
+  origin: string,
+  message: { subject: string; text: string; html: string; attachments: Attachment[] },
 ): Promise<void> {
   await email.send({
     to,
-    from: { email: env.FROM_ADDRESS, name: env.FROM_NAME },
-    ...message,
-    attachments: [
-      {
-        content: LOGO_PNG,
-        filename: 'logo.png',
-        type: 'image/png',
-        disposition: 'inline',
-        contentId: 'logo',
-      },
-    ],
+    from: { email: env.FROM_ADDRESS, name: `${new URL(origin).host} via ${env.FROM_NAME}` },
+    subject: message.subject,
+    text: message.text,
+    html: message.html,
+    attachments: message.attachments.map((a) => ({
+      content: fromB64url(a.content).buffer,
+      filename: a.filename,
+      type: a.type,
+      disposition: 'inline',
+      contentId: a.contentId,
+    })),
   });
 }
 
