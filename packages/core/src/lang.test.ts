@@ -206,6 +206,30 @@ describe('preferredSubIndex', () => {
   });
 });
 
+describe('preferredSubIndex with forced tracks', () => {
+  it('prefers the full track over a forced one in the same language', () => {
+    expect(preferredSubIndex([sub(0, 'fra', { forced: true }), sub(1, 'fra')], 'fr')).toBe(1);
+  });
+
+  it('reads a forced track off its title when the container left the flag unset', () => {
+    const french = [sub(0, 'fre', { title: 'Forcés' }), sub(1, 'fre', { title: 'Complets' })];
+    const english = [sub(0, 'eng', { title: 'English (Forced)' }), sub(1, 'eng')];
+
+    expect(preferredSubIndex(french, 'fr')).toBe(1);
+    expect(preferredSubIndex(english, 'en')).toBe(1);
+  });
+
+  it('falls back to the forced track when it is the only one in that language', () => {
+    expect(preferredSubIndex([sub(0, 'eng'), sub(1, 'fra', { forced: true })], 'fr')).toBe(1);
+  });
+
+  it('does not read a title that merely mentions a force as forced', () => {
+    const subs = [sub(0, 'eng', { title: 'Air Force One commentary' }), sub(1, 'eng')];
+
+    expect(preferredSubIndex(subs, 'en')).toBe(0);
+  });
+});
+
 describe('titleLangVariant', () => {
   it('reads the French dub variant out of the wild track titles', () => {
     expect(titleLangVariant('VFF AC3 5.1 @448kbps')).toBe('fr-FR');

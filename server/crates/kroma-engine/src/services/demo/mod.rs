@@ -401,6 +401,8 @@ fn sub(language: Option<&str>, codec: &str) -> SubtitleTrack {
     SubtitleTrack {
         language: language.map(Into::into),
         codec: codec.into(),
+        title: None,
+        forced: false,
     }
 }
 

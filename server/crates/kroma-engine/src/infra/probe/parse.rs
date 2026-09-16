@@ -40,6 +40,8 @@ pub(super) fn build_result(raw: FfprobeOutput) -> ProbeResult {
             .map(|s| SubtitleTrack {
                 language: s.language(),
                 codec: normalize_codec(s.codec_name.as_deref()),
+                title: s.title(),
+                forced: s.disposition.as_ref().is_some_and(|d| d.forced == Some(1)),
             })
             .collect(),
         chapters: raw.chapters.iter().filter_map(build_chapter).collect(),
@@ -246,5 +248,23 @@ mod tests {
 
         assert!(video.color.is_none());
         assert!(video.hdr_format.is_none());
+    }
+
+    #[test]
+    fn a_subtitle_track_keeps_its_title_and_forced_flag() {
+        let raw: FfprobeOutput = serde_json::from_str(
+            r#"{"streams":[
+                {"codec_type":"subtitle","codec_name":"subrip",
+                 "tags":{"language":"fre","title":"Forcés"},"disposition":{"default":0,"forced":1}},
+                {"codec_type":"subtitle","codec_name":"subrip","tags":{"language":"fre"}}]}"#,
+        )
+        .unwrap();
+
+        let subs = build_result(raw).subtitles;
+
+        assert_eq!(subs[0].title.as_deref(), Some("Forcés"));
+        assert!(subs[0].forced);
+        assert!(subs[1].title.is_none());
+        assert!(!subs[1].forced);
     }
 }

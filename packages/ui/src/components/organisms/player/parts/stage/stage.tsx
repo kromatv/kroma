@@ -287,6 +287,7 @@ function Stage({
             activeIndex={c.subtitleIndex}
             appearance={appearance}
             raised={raised}
+            onTrackFailed={c.markSubtitleFailed}
           />
           {locked ? null : (
             <StageOverlay

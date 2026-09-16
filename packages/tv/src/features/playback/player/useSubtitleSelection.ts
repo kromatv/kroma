@@ -9,6 +9,8 @@ export interface SubView {
   language: string | null;
   url: string | null;
   label?: string;
+  title?: string | null;
+  forced?: boolean;
   subId?: SubtitleId;
   ai?: boolean;
 }
@@ -18,6 +20,7 @@ export interface SubtitleSelection {
   options: (number | null)[];
   active: number | null;
   pick: (index: number | null) => void;
+  drop: (index: number) => void;
   reload: () => void;
 }
 
@@ -33,6 +36,9 @@ export function useSubtitleSelection(
 ): SubtitleSelection {
   const [active, setActive] = useState<number | null>(null);
   const [downloaded, setDownloaded] = useState<DownloadedSub[]>([]);
+  const [failed, setFailed] = useState<{ itemId: string; indices: ReadonlySet<number> } | null>(
+    null,
+  );
   const [nonce, setNonce] = useState(0);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `nonce` is the reload trigger (bumped by reload()) that forces a re-fetch after a generation completes; it is intentionally a dependency though the body does not read it.
@@ -56,6 +62,8 @@ export function useSubtitleSelection(
         .map((s, index) => ({
           index,
           language: s.language,
+          title: s.title,
+          forced: s.forced,
           url: isTextSubtitle(s.codec) ? client.media.subtitleUrl(item.id, index) : null,
         }))
         .filter((s) => s.url),
@@ -72,6 +80,7 @@ export function useSubtitleSelection(
     setActive(preferredSubIndex(embedded, subtitleLanguage));
   }, [item.id, embedded, subtitleLanguage]);
 
+  const failedHere = failed?.itemId === item.id ? failed.indices : null;
   const rendered = useMemo<SubView[]>(() => {
     // Generated tracks get high indices (1000+) so they never collide with embedded.
     const gen: SubView[] = downloaded.map((d, i) => ({
@@ -82,14 +91,24 @@ export function useSubtitleSelection(
       subId: d.id,
       ai: true,
     }));
-    return [...embedded, ...gen];
-  }, [client, embedded, downloaded]);
+    return [...embedded, ...gen].filter((s) => !failedHere?.has(s.index));
+  }, [client, embedded, downloaded, failedHere]);
 
   const options = useMemo<(number | null)[]>(
     () => [null, ...rendered.map((s) => s.index)],
     [rendered],
   );
   const pick = useCallback((index: number | null) => setActive(index), []);
+  const drop = useCallback(
+    (index: number) => {
+      setFailed((prev) => ({
+        itemId: item.id,
+        indices: new Set(prev?.itemId === item.id ? prev.indices : []).add(index),
+      }));
+      setActive((cur) => (cur === index ? null : cur));
+    },
+    [item.id],
+  );
 
-  return { rendered, options, active, pick, reload };
+  return { rendered, options, active, pick, drop, reload };
 }

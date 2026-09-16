@@ -231,6 +231,7 @@ export interface PlayerController {
   subtitles: PlayerSub[];
   subtitleIndex: number | null;
   setSubtitle(index: number | null): void;
+  markSubtitleFailed?(index: number): void;
 
   qualities: PlayerQuality[];
   qualityId: string;

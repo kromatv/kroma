@@ -103,6 +103,8 @@ export interface SubtitleView {
   language: string | null;
   codec: string;
   url: string | null;
+  title?: string | null;
+  forced?: boolean;
   downloaded?: boolean;
   label?: string;
   subId?: SubtitleId;
@@ -128,6 +130,8 @@ export function toMovieView(c: KromaClient, item: MediaItem): MovieView {
     index,
     language: s.language,
     codec: s.codec,
+    title: s.title,
+    forced: s.forced,
     url: isTextSubtitle(s.codec) ? c.media.subtitleUrl(item.id, index) : null,
   }));
   return {
