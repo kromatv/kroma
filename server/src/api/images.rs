@@ -85,10 +85,10 @@ fn redirect_to_art(url: &str) -> Response {
 }
 
 // A fixed bucket set keeps the on-disk cache bounded and lets clients asking
-// for similar widths share a rendition. 960 is the top rung because a backdrop
-// master is a TMDB w1280 (see `infra::metadata::client`): a wider bucket would
-// re-encode the master at its own size rather than downscale it.
-const IMAGE_WIDTHS: [u32; 6] = [160, 240, 320, 480, 780, 960];
+// for similar widths share a rendition. 1280 is the top rung because a backdrop
+// master is a TMDB w1280 (see `infra::metadata::client`): that ask is the
+// master itself, served as stored, since a rendition is only cut when it shrinks.
+const IMAGE_WIDTHS: [u32; 7] = [160, 240, 320, 480, 780, 960, 1280];
 
 const WIDEST_IMAGE: u32 = IMAGE_WIDTHS[IMAGE_WIDTHS.len() - 1];
 
@@ -350,12 +350,14 @@ mod tests {
         assert_eq!(bucket_for(720), 780);
         assert_eq!(bucket_for(781), 960);
         assert_eq!(bucket_for(960), 960);
+        assert_eq!(bucket_for(961), 1280);
+        assert_eq!(bucket_for(1280), 1280);
     }
 
     #[test]
     fn an_ask_past_the_widest_bucket_is_capped_rather_than_served_the_master() {
-        assert_eq!(bucket_for(1280), 960);
-        assert_eq!(bucket_for(2560), 960);
-        assert_eq!(bucket_for(u32::MAX), 960);
+        assert_eq!(bucket_for(1281), 1280);
+        assert_eq!(bucket_for(2560), 1280);
+        assert_eq!(bucket_for(u32::MAX), 1280);
     }
 }
