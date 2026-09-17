@@ -203,6 +203,27 @@ async function consentLinkFor(
   return exactly(link);
 }
 
+// What stops one more message to `to`, or `null`: the mailbox's minute and
+// day, then the relay's day, on the budget this kind of message draws on.
+async function overBudget(
+  env: Env,
+  to: string,
+  consented: boolean,
+  now: number,
+): Promise<string | null> {
+  const mailbox = await budgetKey(env.LIMIT_SECRET, to);
+  const minute = await env.SEND_ADDR.limit({ key: mailbox });
+  if (!minute.success) return 'too many messages for this address';
+  if (!(await takeDaily(env.COUNTERS, `send:${mailbox}`, SEND_PER_ADDRESS_DAY, now))) {
+    return 'too many messages for this address today';
+  }
+  const [budget, cap] = consented ? ['send', SEND_PER_DAY] : ['ask', ASK_PER_DAY];
+  if (!(await takeDaily(env.COUNTERS, budget, cap, now))) {
+    return 'the relay is over its daily budget';
+  }
+  return null;
+}
+
 // `POST /v1/send` - an instance sends one message it wrote, to one mailbox.
 // The mailbox must have said yes to this origin, in which case links may lead
 // back to the origin; otherwise the message must be the question, and its
@@ -230,16 +251,8 @@ app.post('/v1/send', validate(SignedRequest), async (c) => {
     : await consentLinkFor(c.env, origin, message.to, message.text, message.html, now);
   if (!allowed) return c.json({ error: 'consent required' }, 403);
 
-  const mailbox = await budgetKey(c.env.LIMIT_SECRET, message.to);
-  const minute = await c.env.SEND_ADDR.limit({ key: mailbox });
-  if (!minute.success) return c.json({ error: 'too many messages for this address' }, 429);
-  if (!(await takeDaily(c.env.COUNTERS, `send:${mailbox}`, SEND_PER_ADDRESS_DAY, now))) {
-    return c.json({ error: 'too many messages for this address today' }, 429);
-  }
-  const [budget, cap] = consented ? ['send', SEND_PER_DAY] : ['ask', ASK_PER_DAY];
-  if (!(await takeDaily(c.env.COUNTERS, budget, cap, now))) {
-    return c.json({ error: 'the relay is over its daily budget' }, 429);
-  }
+  const spent = await overBudget(c.env, message.to, consented, now);
+  if (spent) return c.json({ error: spent }, 429);
 
   const refusal = refuseContent(allowed, message.text, message.html);
   if (refusal) return c.json({ error: refusal }, 422);
