@@ -2,7 +2,7 @@
 //! library-grant edits and account removal (the "Membres & partage" table). The
 //! reset and verification links the owner mints live in `users/links.rs`.
 
-mod links;
+pub(super) mod links;
 
 use std::collections::BTreeSet;
 

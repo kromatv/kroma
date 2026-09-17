@@ -15,7 +15,9 @@ const Sessions = z.object({ sessions: z.array(PlaybackSession) });
 const Freed = z.object({ freedBytes: z.number() });
 const MetadataReset = z.object({ items: z.number(), shows: z.number() });
 const SettingsWritten = z.object({ updated: z.array(z.string()) });
-const SmtpProbe = z.object({ sentTo: z.string() });
+/** `asked` is the relay's first answer for an address that has not allowed
+ * this server yet: what went out was the relay's question, not the probe. */
+const SmtpProbe = z.object({ sentTo: z.string(), asked: z.boolean().optional() });
 const Viewers = z.object({ users: z.array(TopUser) });
 
 interface HistoryWindow {

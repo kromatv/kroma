@@ -314,8 +314,8 @@ interface ActionSpec {
   label: MessageKey;
   running: MessageKey;
   failed: MessageKey;
-  run: (client: KromaClient) => Promise<{ sentTo: string }>;
-  ok: (t: T, r: { sentTo: string }) => string;
+  run: (client: KromaClient) => Promise<{ sentTo: string; asked?: boolean }>;
+  ok: (t: T, r: { sentTo: string; asked?: boolean }) => string;
 }
 const ACTIONS: Record<string, ActionSpec> = {
   smtpTest: {
@@ -330,7 +330,10 @@ const ACTIONS: Record<string, ActionSpec> = {
     running: 'admin.relayTestSending',
     failed: 'admin.relayTestFailed',
     run: (client) => client.admin.testRelay(),
-    ok: (t, r) => t('admin.relayTestOk', { email: r.sentTo }),
+    ok: (t, r) =>
+      r.asked
+        ? t('admin.relayTestAsked', { email: r.sentTo })
+        : t('admin.relayTestOk', { email: r.sentTo }),
   },
 };
 

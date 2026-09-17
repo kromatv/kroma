@@ -18,7 +18,7 @@ use crate::services::settings::{email_delivery, EmailDelivery};
 use crate::state::SharedState;
 
 const RESET_TTL: i64 = 48 * 3600;
-const VERIFY_TTL: i64 = 7 * 24 * 3600;
+pub(in crate::api::admin) const VERIFY_TTL: i64 = 7 * 24 * 3600;
 
 fn now_unix() -> i64 {
     time::OffsetDateTime::now_utc().unix_timestamp()

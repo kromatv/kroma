@@ -85,6 +85,8 @@ mod it_invites;
 #[cfg(test)]
 mod it_library_visibility;
 #[cfg(test)]
+mod it_mail_relay;
+#[cfg(test)]
 mod it_media;
 #[cfg(test)]
 mod it_media_ticket;
