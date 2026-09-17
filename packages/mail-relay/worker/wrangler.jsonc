@@ -22,7 +22,7 @@
   // Daily counters, keyed on an HMAC of the address: the relay keeps no
   // address and no mail, only how many times a mailbox was written to today.
   "kv_namespaces": [
-    { "binding": "COUNTERS", "id": "REPLACE_WITH_THE_ID_wrangler_kv_namespace_create_PRINTS" }
+    { "binding": "COUNTERS", "id": "f60d96c32df84c5c915d7ad13b6dfdd2" }
   ],
   "ratelimits": [
     {
