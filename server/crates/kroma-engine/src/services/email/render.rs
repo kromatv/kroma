@@ -54,6 +54,7 @@ pub fn render_strings(
         EmailKind::Consent => "email.consent",
     };
     let t = |key: &str| i18n::t(locale, &format!("{prefix}.{key}"), &[]);
+    let named = |key: &str| i18n::t(locale, &format!("{prefix}.{key}"), &[("name", server_name)]);
     let (code_note, code_label) = match kind {
         EmailKind::Reset => (t("codeNote"), t("codeLabel")),
         EmailKind::Verify | EmailKind::Consent => (String::new(), String::new()),
@@ -65,13 +66,13 @@ pub fn render_strings(
             &format!("{prefix}.text"),
             &[("name", server_name), ("url", url)],
         ),
-        preheader: t("preheader"),
+        preheader: named("preheader"),
         heading: t("heading"),
         intro: t("intro"),
         button_label: t("button"),
         code_note,
         code_label,
-        footer: t("footer"),
+        footer: named("footer"),
     }
 }
 
@@ -170,6 +171,8 @@ mod tests {
         assert!(s.code_note.is_empty());
         assert!(s.text.contains(url));
         assert!(s.text.contains("Home"));
+        assert!(s.preheader.contains("Home") && !s.preheader.contains("{name}"));
+        assert!(s.footer.contains("Home") && !s.footer.contains("{name}"));
         assert!(html.contains(url));
         assert!(!html.contains("{{"));
         assert_eq!(html.matches("https://").count(), 2);
