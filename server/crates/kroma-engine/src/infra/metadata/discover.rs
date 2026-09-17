@@ -515,7 +515,7 @@ mod tests {
         assert_eq!(cast[0].character.as_deref(), Some("A"));
         assert_eq!(
             cast[0].profile_url.as_deref(),
-            Some("https://image.tmdb.org/t/p/w185/a.jpg")
+            Some("https://image.tmdb.org/t/p/w342/a.jpg")
         );
         assert_eq!(cast[2].character, None);
 

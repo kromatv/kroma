@@ -10,7 +10,7 @@ function artworkRatio(): number {
 // key: a fluid grid whose cell is 203px on one window and 219px on the next
 // would otherwise mint two keys - and two decodes - for the one rendition the
 // server hands back for both.
-const ARTWORK_WIDTHS = [160, 240, 320, 480, 780, 960];
+const ARTWORK_WIDTHS = [160, 240, 320, 480, 780, 960, 1280];
 const WIDEST_ARTWORK = Math.max(...ARTWORK_WIDTHS);
 
 let artworkScale = 1;

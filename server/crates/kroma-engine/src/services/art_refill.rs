@@ -16,7 +16,10 @@ pub struct Inflight(Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>);
 
 impl Inflight {
     fn lock_for(&self, key: &str) -> Arc<tokio::sync::Mutex<()>> {
-        let mut map = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let mut map = self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         map.entry(key.to_string()).or_default().clone()
     }
 }

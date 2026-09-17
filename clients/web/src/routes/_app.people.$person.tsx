@@ -1,5 +1,5 @@
 import type { TmdbCredit } from '@kromatv/client/media';
-import { personInvolvement, posterColors, roleLabels } from '@kromatv/core';
+import { personInvolvement, posterColors, roleLabels, sizedImageUrl } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import {
   Box,
@@ -23,6 +23,8 @@ import { wash } from '#web/shared/lib/art-styles';
 import { catalogQueries } from '#web/shared/lib/queries';
 import { Image, PageFrame, PageSkeleton } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
+
+const PORTRAIT_W = 104;
 
 export const Route = createFileRoute('/_app/people/$person')({
   loader: async ({ params, context: { queryClient } }) => {
@@ -55,7 +57,7 @@ function PersonPage() {
   const credited = /^\d+$/.test(creditedName) ? null : creditedName;
   const name = detail?.name ?? credited ?? t('person.unnamed');
   const involvement = personInvolvement(metas, creditedName);
-  const photo = imageUrl(detail?.profileUrl ?? involvement.profileUrl);
+  const photo = sizedImageUrl(imageUrl(detail?.profileUrl ?? involvement.profileUrl), PORTRAIT_W);
   const [g1, g2] = posterColors(name);
   const roles = roleLabels(t, involvement);
 
@@ -66,8 +68,8 @@ function PersonPage() {
       <header>
         <Row gap={22} mb={36}>
           <Box
-            w={{ base: 80, md: 104 }}
-            h={{ base: 80, md: 104 }}
+            w={{ base: 80, md: PORTRAIT_W }}
+            h={{ base: 80, md: PORTRAIT_W }}
             radius="circle"
             overflow="hidden"
           >

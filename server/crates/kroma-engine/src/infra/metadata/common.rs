@@ -56,7 +56,7 @@ pub(super) struct RawCreatedBy {
 }
 
 /// Top-billed cast (TMDB orders by `order` ascending; sort defensively), capped at
-/// `max_cast`; empty characters dropped and photos absolutized to `w185`. With
+/// `max_cast`; empty characters dropped and photos absolutized to `w342`. With
 /// `drop_unnamed` set, rows with an empty name are filtered first (the discover
 /// path does this; enrichment keeps TMDB's list as-is).
 pub(super) fn build_cast(
@@ -72,7 +72,7 @@ pub(super) fn build_cast(
             name: m.name,
             tmdb_id: m.id,
             character: m.character.filter(|s| !s.is_empty()),
-            profile_url: m.profile_path.map(|p| format!("{IMG}/w185{p}")),
+            profile_url: m.profile_path.map(|p| format!("{IMG}/w342{p}")),
         })
         .collect()
 }

@@ -1,7 +1,7 @@
 // The two horizontal rails under a detail hero: the cast, and similar titles.
 
 import type { CastMember } from '@kromatv/client/media';
-import { personSegment, posterColors } from '@kromatv/core';
+import { personSegment, posterColors, sizedImageUrl } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import {
   Box,
@@ -50,7 +50,9 @@ const s = styles({
   },
 });
 
-const castTile = sv({ base: { shrink: 0, align: 'center', w: { base: 96, md: 112 } } });
+const CAST_TILE_W = 112;
+
+const castTile = sv({ base: { shrink: 0, align: 'center', w: { base: 96, md: CAST_TILE_W } } });
 
 /** First + last initials, e.g. "George MacKay" → "GM". */
 export function initials(name: string): string {
@@ -86,7 +88,7 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
 function CastTile({ person }: Readonly<{ person: CastMember }>) {
   const t = useT();
   const [g1, g2] = posterColors(person.name);
-  const photo = imageUrl(person.profileUrl);
+  const photo = sizedImageUrl(imageUrl(person.profileUrl), CAST_TILE_W);
   const face = <CastInitials name={person.name} g1={g1} g2={g2} />;
   return (
     <Focusable
