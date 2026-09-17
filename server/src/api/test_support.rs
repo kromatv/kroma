@@ -73,23 +73,29 @@ fn test_supervisor(data_dir: &Path) -> Arc<kroma_module_supervisor::Supervisor> 
 }
 
 pub fn test_app() -> TestApp {
-    build_app(None, &[])
+    build_app(None, &[], None)
+}
+
+/// Like [`test_app`] but speaking to a mail relay at `relay_url`, a stub a
+/// test runs on a local port, rather than the closed port the default aims at.
+pub fn test_app_with_mail_relay(relay_url: &str) -> TestApp {
+    build_app(None, &[], Some(relay_url))
 }
 
 /// Like [`test_app`] but with a fake TMDB key, so handlers clear their
 /// `require_tmdb_key` gate. Only request *unknown* ids: no network fetch happens.
 pub fn test_app_with_tmdb() -> TestApp {
-    build_app(Some("test-tmdb-key"), &[])
+    build_app(Some("test-tmdb-key"), &[], None)
 }
 
 /// Like [`test_app`] but with a built web SPA on the same origin, as the
 /// single-binary deploy has. `files` are written verbatim under the served
 /// directory; `_shell.html` is the client-side-routing fallback.
 pub fn test_app_with_web(files: &[(&str, &str)]) -> TestApp {
-    build_app(None, files)
+    build_app(None, files, None)
 }
 
-fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)]) -> TestApp {
+fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)], relay_url: Option<&str>) -> TestApp {
     let tmp = unique_data_dir();
     let data_dir = tmp.path().to_path_buf();
     let db = db::init(&data_dir.join("kroma.db")).expect("init db");
@@ -105,6 +111,9 @@ fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)]) -> TestApp {
 
     let mut config = test_config(data_dir.clone());
     config.tmdb_api_key = tmdb_api_key.map(str::to_string);
+    if let Some(url) = relay_url {
+        config.mail_relay_url = Some(url.to_string());
+    }
     if !web.is_empty() {
         let web_dir = data_dir.join("web");
         for (name, contents) in web {

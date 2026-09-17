@@ -101,7 +101,10 @@ pub async fn smtp_test(
     }
     if let Err(e) = email::send_test(&state.settings, &user.email, loc).await {
         let prefix = crate::i18n::t(loc, "admin.smtpTestFailed", &[]);
-        return Err(json_error(StatusCode::BAD_GATEWAY, &format!("{prefix}: {e}")));
+        return Err(json_error(
+            StatusCode::BAD_GATEWAY,
+            &format!("{prefix}: {e}"),
+        ));
     }
     Ok(Json(json!({ "sentTo": user.email })).into_response())
 }
@@ -118,10 +121,18 @@ pub async fn relay_test(
     super::require(&user, Permission::SettingsManage)?;
     let loc = super::user_locale(&user);
     if settings::email_delivery(&state.settings) != EmailDelivery::Relay {
-        return Err(lerr(loc, StatusCode::BAD_REQUEST, "admin.relayTestDisabled"));
+        return Err(lerr(
+            loc,
+            StatusCode::BAD_REQUEST,
+            "admin.relayTestDisabled",
+        ));
     }
     let Some(origin) = super::web_base(&state) else {
-        return Err(lerr(loc, StatusCode::BAD_REQUEST, "admin.relayTestNoAddress"));
+        return Err(lerr(
+            loc,
+            StatusCode::BAD_REQUEST,
+            "admin.relayTestNoAddress",
+        ));
     };
     let target = email::RelayTarget {
         url: super::relay_url(&state),
