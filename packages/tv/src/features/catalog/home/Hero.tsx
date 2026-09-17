@@ -32,9 +32,9 @@ const HERO_VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 1%, transparent 4
 const HERO_HEIGHT = 691;
 const HERO_EMPTY_HEIGHT = 432;
 
-// The hero fills the 1920 stage, but a backdrop master is a TMDB w1280 and the
-// server's widest bucket is 960, so there is nothing sharper to ask for.
-const HERO_W = 960;
+// The hero fills the 1920 stage, but a backdrop master is a TMDB w1280, so
+// there is nothing sharper to ask for.
+const HERO_W = 1280;
 
 const s = styles({
   titleGap: { mt: 16, mb: 14 },

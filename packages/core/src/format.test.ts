@@ -125,9 +125,9 @@ describe('sizedImageUrl', () => {
   });
 
   it('caps a full-screen ask at the widest rendition the server keeps', () => {
-    expect(sizedImageUrl('/api/images/abc.webp', 1280)).toBe('/api/images/abc.webp?w=960');
+    expect(sizedImageUrl('/api/images/abc.webp', 1920)).toBe('/api/images/abc.webp?w=1280');
     vi.stubGlobal('devicePixelRatio', 2);
-    expect(sizedImageUrl('/api/images/abc.webp', 960)).toBe('/api/images/abc.webp?w=960');
+    expect(sizedImageUrl('/api/images/abc.webp', 960)).toBe('/api/images/abc.webp?w=1280');
   });
 
   it('honours the artwork-quality setting, like the client art helpers', () => {

@@ -68,7 +68,7 @@ export const perfHudPrefStore = reactivePref('kroma:perf-hud', ['off', 'on'] as 
  * can keep up; the lower steps trade sharpness for decode time and texture
  * memory, which is what a set with a weak SoC runs out of first while scrolling
  * a grid. Each step lands on its own rendition bucket at a rail tile (320 →
- * 320/240/160) and at the hero (960 → 960/780/480).
+ * 320/240/160) and at the hero (1280 → 1280/960/780).
  *
  * The default is `full`, and `high` on a set reporting no more RAM than
  * `LOW_MEMORY_GB` - the one capability read that tells a 2 GB Android TV box

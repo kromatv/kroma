@@ -92,13 +92,13 @@ describe('artworkWidth', () => {
   });
 
   it('caps at the widest rendition, so two viewports share one cache key', () => {
-    expect(artworkWidth(4000)).toBe(960);
-    expect(artworkWidth(8000)).toBe(960);
+    expect(artworkWidth(4000)).toBe(1280);
+    expect(artworkWidth(8000)).toBe(1280);
   });
 
   it('caps before scaling, so a lower step always asks for less', () => {
     setArtworkScale(0.5);
-    expect(artworkWidth(4000)).toBe(480);
+    expect(artworkWidth(4000)).toBe(780);
   });
 
   it('never asks below the smallest rendition the server keeps', () => {
