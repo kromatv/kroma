@@ -191,9 +191,10 @@ async function consentLinkFor(
   html: string,
   now: number,
 ): Promise<Allowed | null> {
-  const link = `${text}\n${html}`.match(/https?:\/\/[^\s"'<>()]+/)?.[0] ?? '';
+  const link = /https?:\/\/[^\s"'<>()]+/.exec(`${text}\n${html}`)?.[0] ?? '';
   const blob = consentBlob(env.PUBLIC_URL, link);
-  const pending = blob && (await openPending(env.GRANT_SECRET, blob, now));
+  if (!blob) return null;
+  const pending = await openPending(env.GRANT_SECRET, blob, now);
   if (!pending || pending.o !== origin || pending.a !== to) return null;
   return exactly(link);
 }
