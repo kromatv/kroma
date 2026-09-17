@@ -12,6 +12,8 @@ use serde_json::{json, Value};
 
 use crate::api::error::{json_error, lerr};
 use crate::api::extract::AuthUser;
+use crate::api::util::query;
+use crate::db;
 use crate::infra::events::ServerEvent;
 use crate::model::Permission;
 use crate::services::email::{self, RelayError};
@@ -104,10 +106,11 @@ pub async fn smtp_test(
     Ok(Json(json!({ "sentTo": user.email })).into_response())
 }
 
-/// `POST /api/admin/settings/relay-test` → send a short probe to the caller's
-/// own address through the kroma.tv relay. It registers this server with the
-/// relay if it has not yet; a mailbox that has not allowed the server is told
-/// so, and a verification from the member editor is what asks it.
+/// `POST /api/admin/settings/relay-test` → prove the relay from this server:
+/// register with it if not yet, then send a short probe to the caller's own
+/// address. The first time, that address has not allowed this server, so what
+/// goes out is the relay's question instead (which verifies the address too);
+/// the answer says so with `asked: true`, and the next test is a delivery.
 pub async fn relay_test(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -124,16 +127,33 @@ pub async fn relay_test(
         url: super::relay_url(&state),
         origin: &origin,
     };
+    let failed = |e: String| {
+        let prefix = crate::i18n::t(loc, "admin.relayTestFailed", &[]);
+        json_error(StatusCode::BAD_GATEWAY, &format!("{prefix}: {e}"))
+    };
     match email::relay_test(&state.settings, &state.db, &target, &user.email, loc).await {
         Ok(()) => Ok(Json(json!({ "sentTo": user.email })).into_response()),
-        Err(RelayError::ConsentRequired | RelayError::Gone) => Err(lerr(
-            loc,
-            StatusCode::BAD_REQUEST,
-            "admin.relayTestUnconfirmed",
-        )),
-        Err(e) => {
-            let prefix = crate::i18n::t(loc, "admin.relayTestFailed", &[]);
-            Err(json_error(StatusCode::BAD_GATEWAY, &format!("{prefix}: {e}")))
+        Err(RelayError::ConsentRequired | RelayError::Gone) => {
+            let token = crate::services::auth::random_token();
+            let expires_at =
+                time::OffsetDateTime::now_utc().unix_timestamp() + super::users::links::VERIFY_TTL;
+            let (row_token, uid, address) = (token.clone(), user.id.clone(), user.email.clone());
+            query(&state.db, move |pool| {
+                db::create_verification(&pool, &row_token, &uid, &address, &uid, expires_at)
+            })
+            .await?;
+            let question = email::OutboundEmail {
+                to: user.email.clone(),
+                locale: loc,
+                url: String::new(),
+                server_name: state.settings.get_str("serverName", "KROMA"),
+                kind: email::EmailKind::Consent,
+            };
+            email::ask_consent(&state.settings, &state.db, &target, &question, &token)
+                .await
+                .map_err(failed)?;
+            Ok(Json(json!({ "sentTo": user.email, "asked": true })).into_response())
         }
+        Err(e) => Err(failed(e.to_string())),
     }
 }
