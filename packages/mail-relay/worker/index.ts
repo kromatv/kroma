@@ -195,7 +195,7 @@ async function consentLinkFor(
   const blob = consentBlob(env.PUBLIC_URL, link);
   if (!blob) return null;
   const pending = await openPending(env.GRANT_SECRET, blob, now);
-  if (!pending || pending.o !== origin || pending.a !== to) return null;
+  if (pending?.o !== origin || pending.a !== to) return null;
   return exactly(link);
 }
 
