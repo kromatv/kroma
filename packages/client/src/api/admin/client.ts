@@ -92,6 +92,10 @@ export default function adminApi(ctx: RequestContext) {
      * settings; resolves with the address it went to. */
     testSmtp: () => ctx.post('/admin/settings/smtp-test', SmtpProbe),
 
+    /** Send a probe to the caller's own address through the kroma.tv relay,
+     * spending the caller's own grant. 400 until their mailbox consented. */
+    testRelay: () => ctx.post('/admin/settings/relay-test', SmtpProbe),
+
     overview: () => ctx.get('/admin/stats/overview', AdminOverview),
 
     topUsers: (days = 7) => ctx.get('/admin/stats/top-users', Viewers, { query: { days } }),

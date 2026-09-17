@@ -122,9 +122,19 @@ pub async fn auth_config(State(state): State<SharedState>) -> Response {
         // Fail closed: assume the server is set up, so registration stays hidden.
         Err(_) => true,
     };
+    let relay = crate::services::settings::email_delivery(&state.settings)
+        == crate::services::settings::EmailDelivery::Relay;
     Json(crate::api::dto::AuthConfig {
         public_user_list: state.settings.get_bool("publicUserList", false),
         has_accounts,
+        server_name: crate::services::settings::server_name(&state.settings),
+        mail_relay_url: relay.then(|| {
+            state
+                .config
+                .mail_relay_url
+                .clone()
+                .unwrap_or_else(|| crate::services::email::RELAY_URL.to_string())
+        }),
     })
     .into_response()
 }

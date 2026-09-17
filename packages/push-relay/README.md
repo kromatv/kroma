@@ -33,7 +33,10 @@ who already trusted it and whom it could already reach.
 Rate limits key on a hash of the device token, so re-minting a grant buys no
 fresh budget.
 
-See `worker/grant.ts` for the seal, `worker/index.ts` for the routes.
+The sealing itself is `@kromatv/relay-grant`, shared with the mail relay at
+mail.kroma.tv (`packages/mail-relay`); each relay salts it with its own name, so
+a grant minted by one never opens on the other. See `worker/grant.ts` for this
+relay's payload, `worker/index.ts` for the routes.
 
 ## Routes
 

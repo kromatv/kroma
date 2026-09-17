@@ -694,6 +694,20 @@
         "expo": "^57.0.13",
       },
     },
+    "packages/mail-relay": {
+      "name": "@kromatv/mail-relay",
+      "version": "0.0.0",
+      "dependencies": {
+        "@hono/zod-validator": "^0.9.0",
+        "@kromatv/relay-grant": "workspace:*",
+        "hono": "^4.13.2",
+        "zod": "^4.5.4",
+      },
+      "devDependencies": {
+        "typescript": "^7.0.2",
+        "wrangler": "^4.123.0",
+      },
+    },
     "packages/mdns-beacon": {
       "name": "@kromatv/mdns-beacon",
       "version": "0.0.0",
@@ -739,6 +753,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@hono/zod-validator": "^0.9.0",
+        "@kromatv/relay-grant": "workspace:*",
         "hono": "^4.13.2",
         "zod": "^4.5.4",
       },
@@ -773,6 +788,13 @@
       "dependencies": {
         "zod": "^4.5.4",
       },
+      "devDependencies": {
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/relay-grant": {
+      "name": "@kromatv/relay-grant",
+      "version": "0.0.0",
       "devDependencies": {
         "typescript": "^7.0.2",
       },
@@ -1562,6 +1584,8 @@
 
     "@kromatv/lan-beacon": ["@kromatv/lan-beacon@workspace:packages/lan-beacon"],
 
+    "@kromatv/mail-relay": ["@kromatv/mail-relay@workspace:packages/mail-relay"],
+
     "@kromatv/mdns-beacon": ["@kromatv/mdns-beacon@workspace:packages/mdns-beacon"],
 
     "@kromatv/media3-ffmpeg": ["@kromatv/media3-ffmpeg@workspace:packages/media3-ffmpeg"],
@@ -1591,6 +1615,8 @@
     "@kromatv/react-audit": ["@kromatv/react-audit@workspace:packages/react-audit"],
 
     "@kromatv/registry": ["@kromatv/registry@workspace:packages/registry"],
+
+    "@kromatv/relay-grant": ["@kromatv/relay-grant@workspace:packages/relay-grant"],
 
     "@kromatv/shots": ["@kromatv/shots@workspace:packages/shots"],
 

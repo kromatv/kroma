@@ -1,0 +1,28 @@
+{
+  "name": "@kromatv/mail-relay",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "KROMA mail relay: the Cloudflare Worker at mail.kroma.tv that emails a self-hosted server's users on its behalf, and only the ones who told the relay that server may write to them.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kromatv/kroma.git",
+    "directory": "packages/mail-relay"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.9.0",
+    "@kromatv/relay-grant": "workspace:*",
+    "hono": "^4.13.2",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "wrangler": "^4.123.0"
+  }
+}

@@ -1,4 +1,5 @@
 import type {
+  Delivery,
   Invite,
   Permission,
   ResetCreated,
@@ -48,23 +49,31 @@ async function copyText(url: string): Promise<boolean> {
 const LINK_KIND = {
   reset: {
     path: '/reset',
-    manualKey: 'admin.resetManual',
-    sentKey: 'admin.resetSent',
+    outcome: {
+      manual: 'admin.resetManual',
+      smtp: 'admin.resetSent',
+      relay: 'admin.resetSent',
+      unconfirmed: 'admin.resetUnconfirmed',
+    },
   },
   verify: {
     path: '/verify-email',
-    manualKey: 'admin.verificationManual',
-    sentKey: 'admin.verificationSent',
+    outcome: {
+      manual: 'admin.verificationManual',
+      smtp: 'admin.verificationSent',
+      relay: 'admin.verificationRelay',
+      unconfirmed: 'admin.verificationManual',
+    },
   },
-} as const;
+} as const satisfies Record<string, { path: string; outcome: Record<Delivery, string> }>;
 
 /** A minted link (reset or verification) with its copy button and the delivery
- * outcome: sent by email, or manual when no delivery is configured. A reset's
- * HAND-COPY link embeds the code (the owner holds both halves anyway, and their
- * channel is the trusted one) so the user only picks a new password; the emailed
- * link never carries it. When the server knows no public URL at all, the link
- * is composed from the browser's own origin — right for an owner browsing the
- * very server they admin. */
+ * outcome: sent by email, asked of the mailbox by the relay, or left to the
+ * owner. A reset's HAND-CARRIED link embeds the code (the owner holds both
+ * halves anyway, and their channel is the trusted one) so the user only picks
+ * a new password; an emailed link never carries it. When the server knows no
+ * public URL at all, the link is composed from the browser's own origin, which
+ * is right for an owner browsing the very server they admin. */
 function LinkResult({
   kind,
   label,
@@ -77,17 +86,17 @@ function LinkResult({
   label: string;
   url: string | null;
   token: string;
-  delivered: string;
+  delivered: Delivery;
   code?: string;
 }>) {
   const t = useT();
   const [copied, setCopied] = useState(false);
-  const { path, manualKey, sentKey } = LINK_KIND[kind];
+  const { path, outcome } = LINK_KIND[kind];
   const base =
     url ??
     (typeof window !== 'undefined' ? `${window.location.origin}${path}?token=${token}` : null);
-  const shown =
-    kind === 'reset' && delivered === 'manual' && base && code ? `${base}&code=${code}` : base;
+  const byHand = delivered === 'manual' || delivered === 'unconfirmed';
+  const shown = kind === 'reset' && byHand && base && code ? `${base}&code=${code}` : base;
   return (
     <Box gap={8}>
       {shown ? (
@@ -109,7 +118,7 @@ function LinkResult({
         </InputGroup.Root>
       ) : null}
       <Text variant="meta" color="textMuted">
-        {delivered === 'manual' ? t(manualKey) : t(sentKey)}
+        {t(outcome[delivered])}
       </Text>
     </Box>
   );

@@ -1,5 +1,6 @@
+import { b64url, fromB64url } from '@kromatv/relay-grant';
 import { describe, expect, it } from 'vitest';
-import { b64url, fromB64url, importEs256, importRs256, sign } from './jwt';
+import { importEs256, importRs256, sign } from './jwt';
 
 const utf8 = new TextEncoder();
 

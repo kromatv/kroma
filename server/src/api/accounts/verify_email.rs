@@ -1,4 +1,4 @@
-//! Email verification: the public check and confirm handlers. No code here —
+//! Email verification: the public check and confirm handlers. No code here:
 //! reaching the mailbox is itself the proof, so the link alone suffices. The
 //! link verifies nothing once the account's address no longer matches the one
 //! it was minted for (ADMIN-87).
