@@ -232,3 +232,31 @@ async fn a_members_verification_is_the_question_and_their_reset_waits_for_the_an
         .unwrap()
         .contains("https://kroma.test/reset?token="));
 }
+
+#[tokio::test]
+async fn the_relay_probe_reports_a_relay_that_is_not_there_in_the_owners_words() {
+    let t = test_app_with_mail_relay("http://127.0.0.1:1");
+    t.state.settings.set_patch(
+        &t.state.db,
+        [
+            ("emailDelivery".to_string(), json!("relay")),
+            ("remoteUrl".to_string(), json!("https://kroma.test")),
+        ]
+        .into_iter()
+        .collect(),
+    );
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/settings/relay-test",
+        Some(&t.token),
+        None,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::BAD_GATEWAY);
+    let reason = body["error"].as_str().unwrap_or_default();
+    assert!(reason.contains("unreachable"), "{reason}");
+    assert!(!reason.starts_with("admin."), "{reason}");
+}
