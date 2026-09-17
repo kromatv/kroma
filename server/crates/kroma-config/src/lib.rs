@@ -26,6 +26,10 @@ pub struct Config {
     /// demo as rows with no bytes behind them.
     pub demo_media: bool,
     pub web_url: Option<String>,
+    /// The mail relay this server enrols mailboxes with and spends their grants
+    /// at. `None` is kroma.tv's; an operator running their own copy of the
+    /// Worker names it here.
+    pub mail_relay_url: Option<String>,
     pub web_dir: Option<PathBuf>,
     // Every `*_override` is `None` = defer to the stored admin setting, `Some` =
     // env pins it and wins over the toggle.
@@ -147,6 +151,11 @@ impl Config {
             .map(|s| s.trim().trim_end_matches('/').to_string())
             .filter(|s| !s.is_empty());
 
+        let mail_relay_url = env::var("KROMA_MAIL_RELAY_URL")
+            .ok()
+            .map(|s| s.trim().trim_end_matches('/').to_string())
+            .filter(|s| !s.is_empty());
+
         let web_dir = env::var("KROMA_WEB_DIR")
             .ok()
             .map(|s| PathBuf::from(s.trim()))
@@ -201,6 +210,7 @@ impl Config {
             tmdb_enrich,
             demo_media,
             web_url,
+            mail_relay_url,
             web_dir,
             https_override,
             https_port_override,
@@ -348,6 +358,7 @@ mod tests {
         "KROMA_TMDB_ENRICH",
         "KROMA_DEMO_MEDIA",
         "KROMA_WEB_URL",
+        "KROMA_MAIL_RELAY_URL",
         "KROMA_WEB_DIR",
         "KROMA_TRUSTED_PROXIES",
         "KROMA_ALLOWED_ORIGINS",
@@ -482,6 +493,7 @@ mod tests {
         env::set_var("KROMA_TMDB_LANGUAGE", "fr-FR");
         env::set_var("KROMA_TMDB_ENRICH", "0");
         env::set_var("KROMA_WEB_URL", "https://kroma.example/");
+        env::set_var("KROMA_MAIL_RELAY_URL", "http://127.0.0.1:9/");
         env::set_var("KROMA_WEB_DIR", web.path().to_str().unwrap());
 
         let c = Config::from_env();
@@ -498,6 +510,7 @@ mod tests {
         assert_eq!(c.tmdb_language, "fr-FR");
         assert!(!c.tmdb_enrich);
         assert_eq!(c.web_url.as_deref(), Some("https://kroma.example"));
+        assert_eq!(c.mail_relay_url.as_deref(), Some("http://127.0.0.1:9"));
         assert_eq!(c.web_dir.as_deref(), Some(web.path()));
 
         clear_env();
@@ -533,6 +546,7 @@ mod tests {
         }
         env::set_var("KROMA_WEB_URL", "");
         assert!(Config::from_env().web_url.is_none());
+        assert!(Config::from_env().mail_relay_url.is_none());
 
         clear_env();
     }

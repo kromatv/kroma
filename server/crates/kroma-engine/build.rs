@@ -32,8 +32,17 @@ fn write_catalog_parts(manifest: &Path, out_dir: &Path) {
         let code = file_name(&locale).to_owned();
         for file in sorted_children(&locale, |p| p.extension().is_some_and(|e| e == "json")) {
             rerun_if_changed(&file);
-            let path = file.display().to_string();
-            parts.push(format!("    ({code:?}, include_str!({path:?})),"));
+            let name = file
+                .file_name()
+                .and_then(OsStr::to_str)
+                .expect("a catalog file has a name");
+            // Relative to the crate being compiled rather than canonical, so a
+            // target dir shared between checkouts never embeds another checkout's
+            // catalogs, and rustc tracks this checkout's files for rebuilds.
+            let rel = format!("{LOCALES}/{code}/{name}");
+            parts.push(format!(
+                "    ({code:?}, include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{rel}\"))),"
+            ));
         }
         codes.push(format!("{code:?}"));
     }

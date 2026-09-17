@@ -1822,6 +1822,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "base64 0.22.1",
  "chacha20poly1305",
  "hex",
  "jwalk",
@@ -1837,6 +1838,8 @@ dependencies = [
  "kroma-testing",
  "lettre",
  "notify",
+ "p256",
+ "rand_core 0.6.4",
  "rusty-chromaprint",
  "serde",
  "serde_json",

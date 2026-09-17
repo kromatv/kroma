@@ -22,12 +22,14 @@
 pub const TMDB_LANGUAGE_AUTO: &str = "Auto";
 
 mod accessors;
+mod email_delivery;
 mod keys;
 mod llm;
 mod schema;
 mod store;
 
 pub use accessors::*;
+pub use email_delivery::*;
 pub use keys::reach_of_setting;
 pub use llm::*;
 pub use schema::*;

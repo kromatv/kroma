@@ -118,6 +118,26 @@ fn user_locale(user: &User) -> &'static str {
     i18n::user_locale(user)
 }
 
+/// The base the reset and verification links are built on, and the origin the
+/// mail relay binds this server to: the configured web URL, else the Remote
+/// Access public URL (the same fallback quick-connect links use). `None` when
+/// neither is set; the client then composes links from its own origin, which
+/// is right for an owner browsing the very server they admin.
+fn web_base(state: &SharedState) -> Option<String> {
+    state.config.web_url.clone().or_else(|| {
+        let url = crate::services::settings::public_url(&state.settings);
+        (!url.is_empty()).then_some(url)
+    })
+}
+
+fn relay_url(state: &SharedState) -> &str {
+    state
+        .config
+        .mail_relay_url
+        .as_deref()
+        .unwrap_or(crate::services::email::RELAY_URL)
+}
+
 fn require(user: &User, perm: Permission) -> Result<(), Response> {
     if user.can(perm) {
         Ok(())

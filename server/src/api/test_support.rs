@@ -54,6 +54,7 @@ fn test_config(data_dir: PathBuf) -> Config {
         port: 0,
         data_dir,
         tmdb_language: "en-US".into(),
+        mail_relay_url: Some("http://127.0.0.1:1".into()),
         ..Default::default()
     }
 }

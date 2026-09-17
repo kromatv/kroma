@@ -114,6 +114,7 @@ Environment variables carry all configuration:
 | `KROMA_TRUSTED_PROXIES`| *(empty)* | Proxies whose forwarding headers may be believed. See [Behind a reverse proxy](#behind-a-reverse-proxy). |
 | `KROMA_ALLOWED_ORIGINS`| *(empty)* | Extra browser origins allowed to read the API. See [Which browsers are answered](#which-browsers-are-answered). |
 | `KROMA_WEB_URL`    | *(`:<port>`)* | Public address written into invite and account links.                |
+| `KROMA_MAIL_RELAY_URL` | `https://mail.kroma.tv` | The mail relay account email goes through when Admin → Email chooses `relay`. Only for an operator running their own copy of `packages/mail-relay`. |
 | `KROMA_WEB_DIR`    | *(empty)*   | Built SPA served as the fallback route. Ignored unless it holds `_shell.html`, which is why dev leaves it unset. |
 | `KROMA_INSTALL`    | `unknown`   | How this server was installed: `docker`, `synology` or `binary`. The Docker images and the Synology package set their own; `binary` is for an operator running the built server directly, and an unset value reports `unknown` rather than guessing. Reported only with the anonymous statistics. See [`docs/anonymous-stats.md`](../docs/anonymous-stats.md). |
 | `RUST_LOG`         | `info`      | Standard `tracing` filter, e.g. `kroma_server=debug`. Inherited by the module sidecars. |

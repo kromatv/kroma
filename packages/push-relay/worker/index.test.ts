@@ -42,12 +42,17 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const post = (path: string, body: unknown) =>
-  new Request(`https://push.kroma.tv${path}`, {
+const post = (path: string, body: unknown) => {
+  const json = JSON.stringify(body);
+  return new Request(`https://push.kroma.tv${path}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: {
+      'content-type': 'application/json',
+      'content-length': String(new TextEncoder().encode(json).byteLength),
+    },
+    body: json,
   });
+};
 
 const NOTIFICATION = { id: 'n1', title: 'Ready to watch', body: 'Dune is in your library.' };
 
@@ -379,6 +384,18 @@ describe('the request surface', () => {
       env,
     );
     expect(res.status).toBe(413);
+  });
+
+  it('refuses a body whose length it was not told', async () => {
+    const res = await worker.fetch(
+      new Request('https://push.kroma.tv/v1/grant', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ transport: 'apns', token: 'DEVICE-A' }),
+      }),
+      env,
+    );
+    expect(res.status).toBe(411);
   });
 
   it('answers an unexpected failure as JSON, saying nothing about it', async () => {

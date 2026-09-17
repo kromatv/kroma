@@ -62,8 +62,23 @@ app.notFound((c) => c.json({ error: 'not found' }, 404));
 // an unbounded body to discover it was junk is exactly the work an attacker
 // would like the relay to do. Runs before `zValidator`.
 app.use('/v1/*', async (c, next) => {
-  const declared = Number(c.req.header('content-length') ?? '0');
-  if (declared > MAX_REQUEST_BYTES) return c.json({ error: 'body too large' }, 413);
+  if (c.req.method === 'GET' || c.req.method === 'HEAD') return next();
+  const declared = c.req.header('content-length');
+  // A body with no declared length would have to be buffered to be measured,
+  // which is the work a flood wants done: not accepted at all.
+  const length = Number(declared);
+  let refused: Response | null = null;
+  if (declared === undefined) {
+    refused = c.json({ error: 'content-length required' }, 411);
+  } else if (!Number.isInteger(length) || length < 0 || length > MAX_REQUEST_BYTES) {
+    refused = c.json({ error: 'body too large' }, 413);
+  }
+  if (refused) {
+    // The body is never read, so tell the runtime to drop it rather than
+    // leave it to drain once the client gives up.
+    await c.req.raw.body?.cancel().catch(() => undefined);
+    return refused;
+  }
   await next();
 });
 

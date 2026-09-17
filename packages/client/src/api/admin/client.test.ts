@@ -107,6 +107,12 @@ describe('the admin console endpoints', () => {
       path: '/admin/settings/smtp-test',
     },
     {
+      name: 'testRelay',
+      call: (c) => c.admin.testRelay(),
+      method: 'POST',
+      path: '/admin/settings/relay-test',
+    },
+    {
       name: 'overview',
       call: (c) => c.admin.overview(),
       method: 'GET',

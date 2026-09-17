@@ -22,6 +22,7 @@ pub mod host_events;
 mod host_jobs;
 mod images;
 mod invites;
+mod mail;
 mod media;
 pub mod media_ticket;
 mod metadata;
@@ -192,6 +193,7 @@ pub fn router(
         .merge(pin::routes())
         .merge(handoff::public_routes(state.clone()))
         .merge(invites::routes())
+        .merge(mail::routes())
         .merge(images::routes())
         .merge(media::public_routes())
         .merge(stream::routes())

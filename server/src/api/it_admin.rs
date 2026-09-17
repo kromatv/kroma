@@ -310,6 +310,65 @@ async fn the_smtp_probe_reports_the_transport_s_own_words_when_the_dial_fails() 
 }
 
 #[tokio::test]
+async fn the_smtp_probe_refuses_once_the_owner_chose_another_delivery() {
+    let t = test_app();
+    t.state.settings.set_patch(
+        &t.state.db,
+        [
+            ("smtpEnabled".to_string(), json!(true)),
+            ("emailDelivery".to_string(), json!("manual")),
+        ]
+        .into_iter()
+        .collect(),
+    );
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/settings/smtp-test",
+        Some(&t.token),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn the_relay_probe_needs_the_relay_chosen_and_a_public_address() {
+    let t = test_app();
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/settings/relay-test",
+        Some(&t.token),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let reason = body["error"].as_str().unwrap_or_default();
+    assert!(!reason.is_empty() && !reason.starts_with("admin."), "{reason}");
+
+    t.state.settings.set_patch(
+        &t.state.db,
+        [("emailDelivery".to_string(), json!("relay"))]
+            .into_iter()
+            .collect(),
+    );
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/settings/relay-test",
+        Some(&t.token),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let reason = body["error"].as_str().unwrap_or_default();
+    assert!(!reason.is_empty() && !reason.starts_with("admin."), "{reason}");
+}
+
+#[tokio::test]
 async fn the_smtp_probe_is_closed_to_a_member_who_cannot_manage_settings() {
     let t = test_app();
     let (_, viewer) = seed_session(&t.state, "ray@test.dev", "ray", &[Permission::Playback]);

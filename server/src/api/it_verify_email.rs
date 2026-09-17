@@ -95,6 +95,85 @@ async fn confirming_marks_the_address_verified_once_and_only_once() {
     assert_eq!(confirm(&t, "never-minted").await, StatusCode::BAD_REQUEST);
 }
 
+fn choose_relay(t: &TestApp) {
+    t.state.settings.set_patch(
+        &t.state.db,
+        [
+            ("emailDelivery".to_string(), json!("relay")),
+            ("remoteUrl".to_string(), json!("https://kroma.test")),
+        ]
+        .into_iter()
+        .collect(),
+    );
+}
+
+#[tokio::test]
+async fn on_the_relay_an_unreachable_relay_leaves_the_owner_the_reset_link() {
+    let t = test_app();
+    choose_relay(&t);
+    let (uid, _) = seed_session(&t.state, "max@test.dev", "max", &[Permission::Playback]);
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        &format!("/api/admin/users/{uid}/reset"),
+        Some(&t.token),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["delivered"], json!("manual"));
+    assert!(body["url"]
+        .as_str()
+        .expect("a link")
+        .starts_with("https://kroma.test/reset?token="));
+}
+
+#[tokio::test]
+async fn on_the_relay_a_verification_asks_the_mailbox_and_an_unreachable_relay_leaves_the_link() {
+    let t = test_app();
+    choose_relay(&t);
+    let (uid, _) = seed_session(&t.state, "nia@test.dev", "nia", &[Permission::Playback]);
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        &format!("/api/admin/users/{uid}/email-verification"),
+        Some(&t.token),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["delivered"], json!("manual"));
+    let token = body["token"].as_str().expect("a token");
+    let (_, check) = get(&t.app, &format!("/api/auth/verify-email/{token}"), None).await;
+    assert_eq!(check["valid"], json!(true));
+}
+
+#[tokio::test]
+async fn the_relay_challenge_is_answered_with_a_signature_under_this_servers_key() {
+    let t = test_app();
+
+    let (status, body) = get(&t.app, "/api/auth/config", None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.get("mailRelayUrl").is_none());
+    assert!(body["serverName"].is_string());
+
+    let (status, body) = get(&t.app, "/api/mail/relay-challenge?nonce=abc-DEF_123", None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["nonce"], json!("abc-DEF_123"));
+    assert_eq!(body["signature"].as_str().expect("a signature").len(), 86);
+
+    let (status, _) = get(&t.app, "/api/mail/relay-challenge?nonce=", None).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _) = get(&t.app, "/api/mail/relay-challenge?nonce=a%20b", None).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    choose_relay(&t);
+    let (_, body) = get(&t.app, "/api/auth/config", None).await;
+    assert_eq!(body["mailRelayUrl"], json!("http://127.0.0.1:1"));
+}
+
 #[tokio::test]
 async fn a_bare_get_never_consumes_the_link() {
     let t = test_app();

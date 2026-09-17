@@ -86,6 +86,11 @@ pub struct AuthConfig {
     // Off by default: hiding it means knowing the URL no longer lists accounts.
     pub public_user_list: bool,
     pub has_accounts: bool,
+    pub server_name: String,
+    /// Where the consent page posts a mailbox's yes: set only while account
+    /// email goes through the relay.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mail_relay_url: Option<String>,
 }
 
 /// `POST /api/invites` result the invite plus a ready-to-share join URL.

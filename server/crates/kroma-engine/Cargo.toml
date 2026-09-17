@@ -29,6 +29,10 @@ tokio = { workspace = true }
 tokio-util = { workspace = true }
 # Account email (credential reset, address verification) via the operator's SMTP.
 lettre = { workspace = true }
+# The server's identity at the mail relay: a P-256 key that signs every call.
+p256 = { version = "0.13", features = ["ecdsa"] }
+rand_core = { version = "0.6", features = ["getrandom"] }
+base64 = { workspace = true }
 # The storyboard hwaccel probe writes a throwaway frame; a guard removes it even
 # when the decode fails and the probe returns early.
 tempfile = { workspace = true }
