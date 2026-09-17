@@ -42,7 +42,10 @@ export function outbox(): {
   return { sent, send };
 }
 
-export function testEnv(): Env & { sent: OutboundMessage[] } {
+export function testEnv(): Env & {
+  sent: OutboundMessage[];
+  COUNTERS: ReturnType<typeof memoryCounters>;
+} {
   const { sent, send } = outbox();
   return {
     GRANT_SECRET: SECRET,

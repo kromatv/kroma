@@ -53,7 +53,11 @@ const MAX_SEND_BYTES = 256 * 1024;
 const CONSENT_PER_ADDRESS_DAY = 3;
 const CONSENT_PER_ORIGIN_DAY = 50;
 const SEND_PER_ADDRESS_DAY = 50;
+// Two budgets, because the two kinds of message cost differently to fake: a
+// question can be sent by anyone who registered an origin, a delivery only to
+// a mailbox that really said yes. Questions must never starve deliveries.
 const SEND_PER_DAY = 2000;
+const ASK_PER_DAY = 500;
 
 const nowSecs = () => Math.floor(Date.now() / 1000);
 
@@ -232,7 +236,8 @@ app.post('/v1/send', validate(SignedRequest), async (c) => {
   if (!(await takeDaily(c.env.COUNTERS, `send:${mailbox}`, SEND_PER_ADDRESS_DAY, now))) {
     return c.json({ error: 'too many messages for this address today' }, 429);
   }
-  if (!(await takeDaily(c.env.COUNTERS, 'send', SEND_PER_DAY, now))) {
+  const [budget, cap] = consented ? ['send', SEND_PER_DAY] : ['ask', ASK_PER_DAY];
+  if (!(await takeDaily(c.env.COUNTERS, budget, cap, now))) {
     return c.json({ error: 'the relay is over its daily budget' }, 429);
   }
 

@@ -129,6 +129,17 @@ describe('sending to a mailbox that has not said yes', () => {
     expect(await new Consents(env.COUNTERS, env.LIMIT_SECRET).has(ORIGIN, ADDRESS)).toBe(false);
   });
 
+  it('draws questions on a budget of their own, so they can never starve deliveries', async () => {
+    const day = Math.floor(Date.now() / 1000 / 86400);
+    env.COUNTERS.store.set(`ask:${day}`, '500');
+    const link = consentUrl(PUBLIC_URL, await pendingFor());
+    const question = { to: ADDRESS, subject: 'x', text: `Open ${link}`, html: '<p>x</p>' };
+
+    expect((await send(question)).status).toBe(429);
+    await consented(env);
+    expect((await send(MESSAGE)).status).toBe(200);
+  });
+
   it('refuses the question when it carries any other link, or a link for another mailbox or origin', async () => {
     const link = consentUrl(PUBLIC_URL, await pendingFor());
     const withOrigin = {

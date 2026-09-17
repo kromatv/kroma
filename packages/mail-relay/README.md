@@ -50,7 +50,8 @@ carries the real host of the origin as the sender's display name.
 | Registrations and consent requests per caller | 5 a minute | `ENROL_IP` |
 | Sends per mailbox | 10 a minute, 50 a day | `SEND_ADDR`, KV counter |
 | Sends per caller | 60 a minute | `SEND_IP` |
-| Sends, all callers | 2000 a day | KV counter |
+| Sends to mailboxes that said yes, all callers | 2000 a day | KV counter |
+| Questions, all callers | 500 a day, a budget of their own so questions can never starve deliveries | KV counter |
 | Signed payloads | within 5 minutes of their timestamp | |
 | Bodies | 8 KB register and consent, 256 KB send | refused off the declared length; a body with no declared length is refused outright |
 
