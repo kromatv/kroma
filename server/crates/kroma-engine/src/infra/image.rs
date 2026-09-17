@@ -333,24 +333,8 @@ fn encode_webp_capped(src: &Path, out: &Path, max_width: u32) -> bool {
     }
     let _ = std::fs::remove_file(out);
 
-    let scaled = Command::new("ffmpeg")
-        .args(["-y", "-loglevel", "error", "-threads", "1", "-i"])
-        .arg(src)
-        .args([
-            "-vf",
-            &format!("scale='min(iw,{max_width})':-2:flags=lanczos"),
-            "-frames:v",
-            "1",
-            "-c:v",
-            "libwebp",
-            "-quality",
-            WEBP_QUALITY,
-            "-compression_level",
-            WEBP_EFFORT,
-        ])
-        .arg(out)
-        .status();
-    if matches!(scaled, Ok(s) if s.success()) && out.exists() {
+    let shrink = format!("scale='min(iw,{max_width})':-2:flags=lanczos");
+    if ffmpeg_webp(src, out, WEBP_QUALITY, Some(&shrink)) {
         return true;
     }
     let _ = std::fs::remove_file(out);
@@ -427,22 +411,23 @@ pub(crate) fn encode_webp_quality(src: &Path, out: &Path, quality: &str) -> bool
         return true;
     }
 
-    let ffmpeg = Command::new("ffmpeg")
+    ffmpeg_webp(src, out, quality, None)
+}
+
+fn ffmpeg_webp(src: &Path, out: &Path, quality: &str, vf: Option<&str>) -> bool {
+    let mut ffmpeg = Command::new("ffmpeg");
+    ffmpeg
         .args(["-y", "-loglevel", "error", "-threads", "1", "-i"])
-        .arg(src)
-        .args([
-            "-frames:v",
-            "1",
-            "-c:v",
-            "libwebp",
-            "-quality",
-            quality,
-            "-compression_level",
-            WEBP_EFFORT,
-        ])
+        .arg(src);
+    if let Some(vf) = vf {
+        ffmpeg.args(["-vf", vf]);
+    }
+    let status = ffmpeg
+        .args(["-frames:v", "1", "-c:v", "libwebp", "-q:v", quality])
+        .args(["-compression_level", WEBP_EFFORT])
         .arg(out)
         .status();
-    matches!(ffmpeg, Ok(s) if s.success())
+    matches!(status, Ok(s) if s.success()) && out.exists()
 }
 
 #[cfg(test)]
@@ -458,5 +443,26 @@ mod tests {
         assert!(!local_art_missing(dir.path(), "/api/images/here.webp"));
         assert!(local_art_missing(dir.path(), "/api/images/gone.webp"));
         assert!(!local_art_missing(dir.path(), "https://img.example/p.jpg"));
+    }
+
+    #[test]
+    fn ffmpeg_encodes_at_the_quality_it_is_asked_for() {
+        let dir = kroma_testing::temp_dir("image-quality");
+        let src = dir.path().join("src.png");
+        let low = dir.path().join("low.webp");
+        let high = dir.path().join("high.webp");
+        let drawn = Command::new("ffmpeg")
+            .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i"])
+            .args(["testsrc2=size=320x180:rate=1", "-frames:v", "1"])
+            .arg(&src)
+            .status();
+        if !matches!(drawn, Ok(s) if s.success()) || !ffmpeg_webp(&src, &low, "20", None) {
+            return;
+        }
+
+        assert!(ffmpeg_webp(&src, &high, "90", None));
+
+        let size = |p: &Path| std::fs::metadata(p).unwrap().len();
+        assert!(size(&high) > size(&low));
     }
 }
