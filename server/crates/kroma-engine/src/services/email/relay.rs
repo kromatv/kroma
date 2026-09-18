@@ -1,7 +1,7 @@
-//! The kroma.tv mail relay, from the server's side: register once, then send
-//! like SMTP, one mailbox at a time. The relay writes nothing; it carries what
-//! this server rendered, checks it, and only to a mailbox that said yes to
-//! this origin, or to ask it. See `packages/mail-relay/README.md`.
+//! The kroma.tv mail relay, from the server's side: register once, get the
+//! owner to activate this server once, then send like SMTP, one mailbox at a
+//! time. The relay writes nothing; it carries what this server rendered,
+//! checks it, and refuses a mailbox that opted out. See `packages/mail-relay/README.md`.
 
 use serde_json::{json, Value};
 
@@ -19,9 +19,9 @@ const MAX_TIME_SECS: u32 = 15;
 pub enum RelayError {
     /// The relay no longer knows this instance: register again.
     Unregistered,
-    /// This mailbox has not allowed this origin. Ask it, or carry the link by hand.
-    ConsentRequired,
-    /// The mailbox is gone for good: it bounced, or reported the sender.
+    /// Nobody has activated this server on the relay yet. Ask the owner.
+    Inactive,
+    /// The mailbox is closed to this server: it opted out, bounced, or reported it.
     Gone,
     /// The relay would not carry this request as written. Retrying changes nothing.
     Refused(String),
@@ -33,8 +33,8 @@ impl std::fmt::Display for RelayError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Unregistered => f.write_str("the relay does not know this server"),
-            Self::ConsentRequired => f.write_str("the mailbox has not allowed this server"),
-            Self::Gone => f.write_str("the relay retired this mailbox"),
+            Self::Inactive => f.write_str("the relay has not been activated for this server"),
+            Self::Gone => f.write_str("the mailbox is closed to this server"),
             Self::Refused(why) => write!(f, "the relay refused: {why}"),
             Self::Transient(why) => write!(f, "the relay was unreachable: {why}"),
         }
@@ -64,7 +64,7 @@ pub fn register_body(origin: &str, identity: &RelayIdentity) -> Value {
     json!({ "origin": origin, "publicKey": identity.public_base64url() })
 }
 
-pub fn consent_body(session: &Session, to: &str, token: &str) -> Value {
+pub fn activate_body(session: &Session, to: &str, token: &str) -> Value {
     signed(session, json!({ "to": to, "token": token, "ts": now() }))
 }
 
@@ -99,7 +99,7 @@ pub fn outcome(status: u16, body: &str) -> Result<Value, RelayError> {
     match status {
         200..=299 => Ok(parsed),
         401 => Err(RelayError::Unregistered),
-        403 if parsed["error"] == "consent required" => Err(RelayError::ConsentRequired),
+        403 if parsed["error"] == "activation required" => Err(RelayError::Inactive),
         410 => Err(RelayError::Gone),
         400 | 403 | 413 | 422 => Err(RelayError::Refused(error())),
         _ => Err(RelayError::Transient(error())),
@@ -129,10 +129,10 @@ pub async fn register(base: &str, origin: &str, identity: &RelayIdentity) -> Res
         .ok_or_else(|| RelayError::Refused("no instance in the answer".into()))
 }
 
-/// The link one mailbox may click to allow this origin, for the server to
-/// write its own message around.
-pub async fn consent(base: &str, session: &Session, to: &str, token: &str) -> Result<String, RelayError> {
-    let answer = post(format!("{base}/v1/consent"), consent_body(session, to, token)).await?;
+/// The link the owner's mailbox may click to activate this origin, for the
+/// server to write its own message around.
+pub async fn activate(base: &str, session: &Session, to: &str, token: &str) -> Result<String, RelayError> {
+    let answer = post(format!("{base}/v1/activate"), activate_body(session, to, token)).await?;
     answer["url"]
         .as_str()
         .map(str::to_string)
@@ -194,8 +194,8 @@ mod tests {
         assert_eq!(outcome(200, r#"{"url":"x"}"#).unwrap()["url"], "x");
         assert_eq!(outcome(401, "").unwrap_err(), RelayError::Unregistered);
         assert_eq!(
-            outcome(403, r#"{"error":"consent required"}"#).unwrap_err(),
-            RelayError::ConsentRequired
+            outcome(403, r#"{"error":"activation required"}"#).unwrap_err(),
+            RelayError::Inactive
         );
         assert_eq!(
             outcome(403, r#"{"error":"this origin is shut out"}"#).unwrap_err(),

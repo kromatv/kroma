@@ -210,9 +210,11 @@ function Control({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: un
   }
   // value (read-only)
   return (
-    <Text variant="meta" color="text/60">
-      {asText(row.value)}
-    </Text>
+    <Box maxW={380}>
+      <Text variant="meta" color="text/60" textAlign="right">
+        {asText(row.value)}
+      </Text>
+    </Box>
   );
 }
 
@@ -345,7 +347,7 @@ function ActionControl({ actionKey }: Readonly<{ actionKey: string }>) {
   const action = ACTIONS[actionKey];
   if (!action) return null;
   return (
-    <Box align="flex-end" gap={6}>
+    <Box align="flex-end" gap={6} maxW={380}>
       <Button
         variant="glass"
         size="sm"
@@ -365,7 +367,7 @@ function ActionControl({ actionKey }: Readonly<{ actionKey: string }>) {
         }}
       />
       {result ? (
-        <Text variant="overline" color={result.ok ? 'success' : 'danger'}>
+        <Text variant="overline" color={result.ok ? 'success' : 'danger'} textAlign="right">
           {result.text}
         </Text>
       ) : null}

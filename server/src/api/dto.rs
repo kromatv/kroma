@@ -87,8 +87,8 @@ pub struct AuthConfig {
     pub public_user_list: bool,
     pub has_accounts: bool,
     pub server_name: String,
-    /// Where the consent page posts a mailbox's yes: set only while account
-    /// email goes through the relay.
+    /// Where the activation page posts the owner's yes: set only while
+    /// account email goes through the relay.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mail_relay_url: Option<String>,
 }

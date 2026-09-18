@@ -1,6 +1,6 @@
 import { b64url } from '@kromatv/relay-grant';
 import { vi } from 'vitest';
-import { Consents, sealPending } from './consent';
+import { Marks, sealPending } from './activation';
 import type { OutboundMessage } from './deliver';
 import { INSTANCE_TTL_SECS, sealInstance } from './identity';
 import type { Env, RateLimit } from './index';
@@ -62,9 +62,14 @@ export function testEnv(): Env & {
   };
 }
 
-/** Mark `address` as having said yes to `origin`, as a click would. */
-export function consented(env: Env, address = ADDRESS, origin = ORIGIN): Promise<void> {
-  return new Consents(env.COUNTERS, env.LIMIT_SECRET).give(origin, address);
+export const OWNER = 'owner@example.test';
+export const SERVER_IP = '203.0.113.7';
+
+export const marks = (env: Env) => new Marks(env.COUNTERS, env.LIMIT_SECRET);
+
+/** Mark `origin` as activated by `by`, as the owner's click would. */
+export function activated(env: Env, origin = ORIGIN, by = OWNER): Promise<void> {
+  return marks(env).activate(origin, by);
 }
 
 /** A server's identity as the relay sees it: its P-256 key, and its instance blob. */
@@ -116,8 +121,8 @@ export async function signed(server: Server, payload: Record<string, unknown>) {
   };
 }
 
-export async function pendingFor(address = ADDRESS, origin = ORIGIN, token = 'tok-1234567890') {
-  return sealPending(SECRET, { a: address, o: origin, t: token, e: FAR });
+export async function pendingFor(address = OWNER, origin = ORIGIN, token = 'tok-1234567890') {
+  return sealPending(SECRET, { a: address, o: origin, t: token, i: SERVER_IP, e: FAR });
 }
 
 export const post = (path: string, body: unknown, headers: Record<string, string> = {}) => {

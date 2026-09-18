@@ -1175,7 +1175,7 @@
     "space": "admin",
     "number": 83,
     "status": "AGREED",
-    "text": "The kroma.tv relay sees the destination address and the link, never",
+    "text": "The kroma.tv relay carries what the server wrote; it writes nothing",
     "file": "docs/spec/admin/README.md",
     "line": 135
   },
@@ -1187,7 +1187,7 @@
     "status": "AGREED",
     "text": "The owner can clear a user's profile PIN. Clearing is the only PIN",
     "file": "docs/spec/admin/README.md",
-    "line": 150
+    "line": 174
   },
   {
     "id": "ADMIN-85",
@@ -1197,7 +1197,7 @@
     "status": "AGREED",
     "text": "An address on an account is unverified until the mailbox proves",
     "file": "docs/spec/admin/README.md",
-    "line": 160
+    "line": 184
   },
   {
     "id": "ADMIN-86",
@@ -1207,7 +1207,7 @@
     "status": "AGREED",
     "text": "The owner sends a verification from the member editor, with the",
     "file": "docs/spec/admin/README.md",
-    "line": 165
+    "line": 189
   },
   {
     "id": "ADMIN-87",
@@ -1217,7 +1217,7 @@
     "status": "AGREED",
     "text": "Changing the address clears the verified state: the proof belongs",
     "file": "docs/spec/admin/README.md",
-    "line": 170
+    "line": 195
   },
   {
     "id": "ADMIN-88",
@@ -1227,7 +1227,7 @@
     "status": "AGREED",
     "text": "A user who cannot sign in can ask for a reset from the sign-in",
     "file": "docs/spec/admin/README.md",
-    "line": 139
+    "line": 163
   },
   {
     "id": "ADMIN-89",
@@ -1237,7 +1237,7 @@
     "status": "AGREED",
     "text": "A server learns it is out of date by checking for a newer release and",
     "file": "docs/spec/admin/README.md",
-    "line": 273
+    "line": 298
   },
   {
     "id": "ADMIN-90",
@@ -1247,7 +1247,7 @@
     "status": "AGREED",
     "text": "A server update migrates the persistent store forward",
     "file": "docs/spec/admin/README.md",
-    "line": 279
+    "line": 304
   },
   {
     "id": "ADMIN-91",
@@ -1257,7 +1257,7 @@
     "status": "AGREED",
     "text": "Module updates are independent of the server and carry their own",
     "file": "docs/spec/admin/README.md",
-    "line": 283
+    "line": 308
   },
   {
     "id": "ADMIN-92",
@@ -1267,7 +1267,7 @@
     "status": "AGREED",
     "text": "Active playback neither blocks an update nor is stopped by one",
     "file": "docs/spec/admin/README.md",
-    "line": 286
+    "line": 311
   },
   {
     "id": "ADMIN-93",
@@ -1277,7 +1277,27 @@
     "status": "AGREED",
     "text": "The rule above is identical on every host. Only the delivery vehicle",
     "file": "docs/spec/admin/README.md",
-    "line": 291
+    "line": 316
+  },
+  {
+    "id": "ADMIN-94",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 94,
+    "status": "AGREED",
+    "text": "A server speaks to the relay under an identity of its own: a key it",
+    "file": "docs/spec/admin/README.md",
+    "line": 142
+  },
+  {
+    "id": "ADMIN-95",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 95,
+    "status": "AGREED",
+    "text": "The relay carries a server's mail only after a person allowed that",
+    "file": "docs/spec/admin/README.md",
+    "line": 148
   },
   {
     "id": "DISC-1",

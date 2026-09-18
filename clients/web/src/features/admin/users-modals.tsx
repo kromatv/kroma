@@ -53,7 +53,8 @@ const LINK_KIND = {
       manual: 'admin.resetManual',
       smtp: 'admin.resetSent',
       relay: 'admin.resetSent',
-      unconfirmed: 'admin.resetUnconfirmed',
+      inactive: 'admin.resetInactive',
+      refused: 'admin.resetRefused',
     },
   },
   verify: {
@@ -61,15 +62,15 @@ const LINK_KIND = {
     outcome: {
       manual: 'admin.verificationManual',
       smtp: 'admin.verificationSent',
-      relay: 'admin.verificationRelay',
-      unconfirmed: 'admin.verificationManual',
+      relay: 'admin.verificationSent',
+      inactive: 'admin.verificationInactive',
+      refused: 'admin.verificationRefused',
     },
   },
 } as const satisfies Record<string, { path: string; outcome: Record<Delivery, string> }>;
 
 /** A minted link (reset or verification) with its copy button and the delivery
- * outcome: sent by email, asked of the mailbox by the relay, or left to the
- * owner. A reset's HAND-CARRIED link embeds the code (the owner holds both
+ * outcome: sent by email, or left to the owner. A reset's HAND-CARRIED link embeds the code (the owner holds both
  * halves anyway, and their channel is the trusted one) so the user only picks
  * a new password; an emailed link never carries it. When the server knows no
  * public URL at all, the link is composed from the browser's own origin, which
@@ -95,7 +96,7 @@ function LinkResult({
   const base =
     url ??
     (typeof window !== 'undefined' ? `${window.location.origin}${path}?token=${token}` : null);
-  const byHand = delivered === 'manual' || delivered === 'unconfirmed';
+  const byHand = delivered !== 'smtp' && delivered !== 'relay';
   const shown = kind === 'reset' && byHand && base && code ? `${base}&code=${code}` : base;
   return (
     <Box gap={8}>

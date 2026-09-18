@@ -12,6 +12,7 @@ export interface OutboundMessage {
   subject: string;
   text: string;
   html: string;
+  headers?: Record<string, string>;
   attachments: {
     content: ArrayBuffer;
     filename: string;
@@ -29,7 +30,9 @@ export const printable = (reason: string): string =>
 /**
  * One send. The sender is the relay's address with the real host of the
  * server that wrote the message as its display name, so every mail client
- * shows who is behind it before a word of the body is read.
+ * shows who is behind it before a word of the body is read. `optOut` is the
+ * relay's own link for this mailbox to stop mail from this server; carried
+ * as the list headers mail clients turn into an unsubscribe button.
  */
 export async function deliver(
   email: EmailSender,
@@ -37,6 +40,7 @@ export async function deliver(
   to: string,
   origin: string,
   message: { subject: string; text: string; html: string; attachments: Attachment[] },
+  optOut?: string,
 ): Promise<void> {
   await email.send({
     to,
@@ -44,6 +48,14 @@ export async function deliver(
     subject: message.subject,
     text: message.text,
     html: message.html,
+    ...(optOut
+      ? {
+          headers: {
+            'List-Unsubscribe': `<${optOut}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+        }
+      : {}),
     attachments: message.attachments.map((a) => ({
       content: fromB64url(a.content).buffer,
       filename: a.filename,
@@ -59,8 +71,8 @@ export type FailureStatus = 410 | 429 | 502;
 /**
  * What a send failure means to the server. Cloudflare's binding throws with a
  * code; a suppressed address (it bounced, or reported spam) is the one failure
- * about the mailbox rather than the moment, so it is 410 and the server drops
- * the grant. Everything else is transient.
+ * about the mailbox rather than the moment, so it is 410 and the relay stops
+ * carrying mail to it. Everything else is transient.
  */
 export function failure(e: unknown): { status: FailureStatus; error: string } {
   const code = typeof e === 'object' && e && 'code' in e ? String(e.code) : '';

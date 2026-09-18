@@ -1,6 +1,7 @@
 //! Integration tests for what the server says to the mail relay, against a
-//! stub relay on a local port: registration, the relay's refusal for a mailbox
-//! that has not said yes, and the question the server then writes and sends.
+//! stub relay on a local port: registration, the relay's refusal while nobody
+//! has activated this server, and the question the server then writes to its
+//! owner; then, once active, the members' mail going straight through.
 
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -14,30 +15,26 @@ use crate::api::test_support::{seed_session, send, test_app_with_mail_relay, Tes
 use crate::model::Permission;
 
 /// A relay that speaks just enough HTTP for curl: it registers anything, mints
-/// one consent link, refuses a send to a mailbox that has not said yes unless
-/// the message is the question, and records every path it was asked.
+/// one activation link, refuses a send until the server is active unless the
+/// message is the question, and records every path it was asked.
 struct StubRelay {
     base: String,
     calls: Arc<Mutex<Vec<(String, Value)>>>,
-    consented: Arc<AtomicBool>,
+    active: Arc<AtomicBool>,
 }
 
 fn stub_relay() -> StubRelay {
     let listener = TcpListener::bind("127.0.0.1:0").expect("bind the stub relay");
     let base = format!("http://{}", listener.local_addr().expect("stub address"));
     let calls = Arc::new(Mutex::new(Vec::new()));
-    let consented = Arc::new(AtomicBool::new(false));
-    let (log, yes, at) = (calls.clone(), consented.clone(), base.clone());
+    let active = Arc::new(AtomicBool::new(false));
+    let (log, yes, at) = (calls.clone(), active.clone(), base.clone());
     std::thread::spawn(move || {
         for stream in listener.incoming().flatten() {
             answer(stream, &at, &log, &yes);
         }
     });
-    StubRelay {
-        base,
-        calls,
-        consented,
-    }
+    StubRelay { base, calls, active }
 }
 
 fn answer(stream: TcpStream, base: &str, log: &Mutex<Vec<(String, Value)>>, yes: &AtomicBool) {
@@ -75,7 +72,7 @@ fn answer(stream: TcpStream, base: &str, log: &Mutex<Vec<(String, Value)>>, yes:
     log.lock().unwrap().push((path.clone(), payload.clone()));
     let (status, reply) = match path.as_str() {
         "/v1/register" => (200, json!({ "instance": "v1.stub", "expiresAt": 0 })),
-        "/v1/consent" => (200, json!({ "url": format!("{base}/confirm/v1.question") })),
+        "/v1/activate" => (200, json!({ "url": format!("{base}/confirm/v1.question") })),
         "/v1/send" => {
             let question = payload["text"]
                 .as_str()
@@ -83,7 +80,7 @@ fn answer(stream: TcpStream, base: &str, log: &Mutex<Vec<(String, Value)>>, yes:
             if yes.load(Ordering::SeqCst) || question {
                 (200, json!({ "delivered": true }))
             } else {
-                (403, json!({ "error": "consent required" }))
+                (403, json!({ "error": "activation required" }))
             }
         }
         _ => (404, json!({ "error": "not found" })),
@@ -121,7 +118,7 @@ fn paths(stub: &StubRelay) -> Vec<String> {
 }
 
 #[tokio::test]
-async fn the_relay_probe_registers_then_asks_the_owners_mailbox_when_it_has_not_said_yes() {
+async fn the_relay_probe_registers_then_asks_the_owner_to_activate_the_server() {
     let stub = stub_relay();
     let t = relay_app(&stub);
 
@@ -139,7 +136,7 @@ async fn the_relay_probe_registers_then_asks_the_owners_mailbox_when_it_has_not_
     assert_eq!(body["asked"], json!(true));
     assert_eq!(
         paths(&stub),
-        ["/v1/register", "/v1/send", "/v1/consent", "/v1/send"]
+        ["/v1/register", "/v1/send", "/v1/activate", "/v1/send"]
     );
     let calls = stub.calls.lock().unwrap();
     let question = &calls[3].1;
@@ -162,9 +159,9 @@ async fn the_relay_probe_registers_then_asks_the_owners_mailbox_when_it_has_not_
 }
 
 #[tokio::test]
-async fn the_relay_probe_delivers_once_the_mailbox_said_yes() {
+async fn the_relay_probe_delivers_once_the_server_is_active() {
     let stub = stub_relay();
-    stub.consented.store(true, Ordering::SeqCst);
+    stub.active.store(true, Ordering::SeqCst);
     let t = relay_app(&stub);
 
     let (status, body) = send(
@@ -182,7 +179,7 @@ async fn the_relay_probe_delivers_once_the_mailbox_said_yes() {
 }
 
 #[tokio::test]
-async fn a_members_verification_is_the_question_and_their_reset_waits_for_the_answer() {
+async fn a_members_mail_waits_for_the_owner_to_activate_the_server_and_then_goes_straight_through() {
     let stub = stub_relay();
     let t = relay_app(&stub);
     let (uid, _) = seed_session(&t.state, "pat@test.dev", "pat", &[Permission::Playback]);
@@ -195,8 +192,30 @@ async fn a_members_verification_is_the_question_and_their_reset_waits_for_the_an
         None,
     )
     .await;
-    assert_eq!(reset["delivered"], json!("unconfirmed"));
+    assert_eq!(reset["delivered"], json!("inactive"));
+    assert!(reset["url"].as_str().unwrap().contains("/reset?token="));
 
+    let (_, verification) = send(
+        &t.app,
+        "POST",
+        &format!("/api/admin/users/{uid}/email-verification"),
+        Some(&t.token),
+        None,
+    )
+    .await;
+    assert_eq!(verification["delivered"], json!("inactive"));
+    assert_eq!(paths(&stub), ["/v1/register", "/v1/send", "/v1/send"]);
+
+    stub.active.store(true, Ordering::SeqCst);
+    let (_, reset) = send(
+        &t.app,
+        "POST",
+        &format!("/api/admin/users/{uid}/reset"),
+        Some(&t.token),
+        None,
+    )
+    .await;
+    assert_eq!(reset["delivered"], json!("relay"));
     let (_, verification) = send(
         &t.app,
         "POST",
@@ -207,30 +226,18 @@ async fn a_members_verification_is_the_question_and_their_reset_waits_for_the_an
     .await;
     assert_eq!(verification["delivered"], json!("relay"));
     let calls = stub.calls.lock().unwrap();
-    let question = &calls.last().unwrap().1;
-    assert_eq!(question["to"], json!("pat@test.dev"));
-    assert!(question["html"]
-        .as_str()
-        .unwrap()
-        .contains("/confirm/v1.question"));
-
-    drop(calls);
-    stub.consented.store(true, Ordering::SeqCst);
-    let (_, reset) = send(
-        &t.app,
-        "POST",
-        &format!("/api/admin/users/{uid}/reset"),
-        Some(&t.token),
-        None,
-    )
-    .await;
-    assert_eq!(reset["delivered"], json!("relay"));
-    let calls = stub.calls.lock().unwrap();
-    let message = &calls.last().unwrap().1;
+    let message = &calls[calls.len() - 2].1;
+    assert_eq!(message["to"], json!("pat@test.dev"));
     assert!(message["html"]
         .as_str()
         .unwrap()
         .contains("https://kroma.test/reset?token="));
+    let message = &calls.last().unwrap().1;
+    assert!(message["html"]
+        .as_str()
+        .unwrap()
+        .contains("https://kroma.test/verify-email?token="));
+    assert!(!message["html"].as_str().unwrap().contains("/confirm/"));
 }
 
 #[tokio::test]

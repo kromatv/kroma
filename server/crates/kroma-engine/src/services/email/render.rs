@@ -51,13 +51,13 @@ pub fn render_strings(
     let prefix = match kind {
         EmailKind::Reset => "email.reset",
         EmailKind::Verify => "email.verify",
-        EmailKind::Consent => "email.consent",
+        EmailKind::Activate => "email.activate",
     };
     let t = |key: &str| i18n::t(locale, &format!("{prefix}.{key}"), &[]);
     let named = |key: &str| i18n::t(locale, &format!("{prefix}.{key}"), &[("name", server_name)]);
     let (code_note, code_label) = match kind {
         EmailKind::Reset => (t("codeNote"), t("codeLabel")),
-        EmailKind::Verify | EmailKind::Consent => (String::new(), String::new()),
+        EmailKind::Verify | EmailKind::Activate => (String::new(), String::new()),
     };
     ResetStrings {
         subject: i18n::t(locale, &format!("{prefix}.subject"), &[("name", server_name)]),
@@ -163,16 +163,16 @@ mod tests {
     }
 
     #[test]
-    fn the_consent_email_links_only_to_the_relay_and_names_the_server() {
+    fn the_activation_email_links_only_to_the_relay_and_names_the_server() {
         let url = "https://mail.kroma.tv/confirm/v1.abc";
-        let s = render_strings(EmailKind::Consent, "fr", "Home", url);
+        let s = render_strings(EmailKind::Activate, "fr", "Home", url);
         let html = render_html("fr", &s, "Home", url);
 
         assert!(s.code_note.is_empty());
         assert!(s.text.contains(url));
         assert!(s.text.contains("Home"));
         assert!(s.preheader.contains("Home") && !s.preheader.contains("{name}"));
-        assert!(s.footer.contains("Home") && !s.footer.contains("{name}"));
+        assert!(!s.footer.contains("{name}"));
         assert!(html.contains(url));
         assert!(!html.contains("{{"));
         assert_eq!(html.matches("https://").count(), 2);

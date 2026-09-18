@@ -50,7 +50,7 @@ export const AuthConfig = z.object({
   publicUserList: z.boolean(),
   hasAccounts: z.boolean(),
   serverName: z.string().optional(),
-  /** Where the consent page posts a mailbox's yes: present only while
+  /** Where the activation page posts the owner's yes: present only while
    * account email goes through the kroma.tv relay. */
   mailRelayUrl: z.string().optional(),
 });
@@ -110,9 +110,10 @@ export const PairingStatus = z.discriminatedUnion('status', [
 ]);
 export type PairingStatus = z.infer<typeof PairingStatus>;
 
-/** How a minted link left the server. `unconfirmed`: the kroma.tv relay is
- * chosen but this mailbox has not allowed the server yet, so nothing went out. */
-const Delivery = z.enum(['manual', 'smtp', 'relay', 'unconfirmed']).catch('manual');
+/** How a minted link left the server. `inactive`: the kroma.tv relay is
+ * chosen but nobody has allowed this server there yet, so nothing went out.
+ * `refused`: the mailbox is closed to this server on the relay. */
+const Delivery = z.enum(['manual', 'smtp', 'relay', 'inactive', 'refused']).catch('manual');
 export type Delivery = z.infer<typeof Delivery>;
 
 /** `POST /api/admin/users/:id/reset` the link plus the one-time code the owner

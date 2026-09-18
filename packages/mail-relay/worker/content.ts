@@ -17,7 +17,7 @@ export function onOrigin(origin: string): Allowed {
   };
 }
 
-/** One link and no other: what a consent link permits. */
+/** One link and no other: what an activation link permits. */
 export function exactly(link: string): Allowed {
   return (url) => url.trim() === link;
 }

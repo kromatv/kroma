@@ -22,7 +22,7 @@ function privateIpv4(host: string): boolean {
 }
 
 /** A host nobody on the public internet can be sent to: no proof of control
- * is asked of it, and no consent link pointing at it is worth anything to a
+ * is asked of it, and no activation link pointing at it is worth anything to a
  * stranger. */
 export function isPrivateHost(hostname: string): boolean {
   const host = hostname.toLowerCase();
@@ -109,12 +109,12 @@ export const PAYLOAD_WINDOW_SECS = 5 * 60;
 
 const Stamped = z.object({ ts: z.number().int() });
 
-/** `POST /v1/consent`: an instance asks for the link one mailbox may click. */
-export const ConsentPayload = Stamped.extend({
+/** `POST /v1/activate`: an instance asks for the link its owner's mailbox may click. */
+export const ActivatePayload = Stamped.extend({
   to: Address,
   token: z.string().trim().min(8).max(256),
 });
-export type ConsentPayload = z.infer<typeof ConsentPayload>;
+export type ActivatePayload = z.infer<typeof ActivatePayload>;
 
 /** One inline image the message references as `cid:<contentId>`. */
 export const Attachment = z.object({
