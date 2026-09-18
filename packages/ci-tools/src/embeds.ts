@@ -31,24 +31,25 @@ function crateDir(file: string): string {
  * literals. `sources` maps repo-relative `.rs` paths to their text.
  */
 export function embeds(sources: Record<string, string>): Embed[] {
-  const found: Embed[] = [];
-  for (const [file, text] of Object.entries(sources)) {
-    const body = shipped(text).replace(/\s+/g, ' ');
-    const base = file.endsWith('build.rs') ? dirname(file) : crateDir(file);
-    for (const m of body.matchAll(INCLUDE)) {
-      const raw = m[1] ?? '';
-      const relativeTo = raw.startsWith('/') ? base : dirname(file);
-      const resolved = normalize(posix.join(relativeTo, raw));
-      if (resolved.startsWith('packages/')) found.push({ from: file, path: resolved });
-    }
-    if (file.endsWith('build.rs')) {
-      for (const m of body.matchAll(BUILD_SCRIPT_PATH)) {
-        const resolved = normalize(posix.join(base, m[1] ?? ''));
-        if (resolved.startsWith('packages/')) found.push({ from: file, path: resolved });
-      }
-    }
-  }
-  return found;
+  return Object.entries(sources).flatMap(([file, text]) =>
+    embedsOf(file, shipped(text).replace(/\s+/g, ' '))
+      .filter((path) => path.startsWith('packages/'))
+      .map((path) => ({ from: file, path })),
+  );
+}
+
+function embedsOf(file: string, body: string): string[] {
+  const isBuildScript = file.endsWith('build.rs');
+  const base = isBuildScript ? dirname(file) : crateDir(file);
+  const included = [...body.matchAll(INCLUDE)].map((m) => {
+    const raw = m[1] ?? '';
+    return normalize(posix.join(raw.startsWith('/') ? base : dirname(file), raw));
+  });
+  if (!isBuildScript) return included;
+  const literals = [...body.matchAll(BUILD_SCRIPT_PATH)].map((m) =>
+    normalize(posix.join(base, m[1] ?? '')),
+  );
+  return [...included, ...literals];
 }
 
 /**
@@ -64,10 +65,16 @@ export function warmUpCopies(dockerfile: string): string[] {
     if (/^FROM\s.*\sAS\s+builder\b/i.test(line)) inBuilder = true;
     if (!inBuilder) continue;
     if (/^RUN .*fn main\(\)/.test(line)) break;
-    const m = /^COPY\s+(\S+)\s+\S+/.exec(line);
-    if (m?.[1]) copies.push(m[1].replace(/\/+$/, ''));
+    const [word, source] = line.split(/\s+/);
+    if (word === 'COPY' && source) copies.push(withoutTrailingSlash(source));
   }
   return copies;
+}
+
+function withoutTrailingSlash(path: string): string {
+  let end = path.length;
+  while (end > 0 && path[end - 1] === '/') end -= 1;
+  return path.slice(0, end);
 }
 
 /** The embeds no warm-up `COPY` puts in place. */
