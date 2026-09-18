@@ -13,13 +13,19 @@ describe('an instance', () => {
     expect(blob).not.toContain('kroma.example');
   });
 
-  it('is not a consent link, and a consent link is not an instance', async () => {
+  it('is not an activation link, and an activation link is not an instance', async () => {
     const { publicKey } = await keypair();
     const blob = await sealInstance(SECRET, { o: ORIGIN, k: publicKey, e: NOW + 60 });
-    const { openPending, sealPending } = await import('./consent');
+    const { openPending, sealPending } = await import('./activation');
 
     expect(await openPending(SECRET, blob, NOW)).toBeNull();
-    const pending = await sealPending(SECRET, { a: 'a@b.co', o: ORIGIN, t: 'tok', e: NOW + 60 });
+    const pending = await sealPending(SECRET, {
+      a: 'a@b.co',
+      o: ORIGIN,
+      t: 'tok',
+      i: '',
+      e: NOW + 60,
+    });
     expect(await openInstance(SECRET, pending, NOW)).toBeNull();
   });
 });

@@ -1,16 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Consents, consentUrl } from './consent';
+import { activationUrl, openBlock } from './activation';
 import worker from './index';
 import {
   ADDRESS,
-  consented,
+  activated,
   deny,
   get,
+  marks,
   ORIGIN,
+  OWNER,
   PUBLIC_URL,
   pendingFor,
   post,
   registered,
+  SECRET,
   type Server,
   signed,
   testEnv,
@@ -41,10 +44,10 @@ const MESSAGE = {
 const send = async (payload: Record<string, unknown>, by = server) =>
   worker.fetch(post('/v1/send', await signed(by, payload)), env);
 
-describe('sending to a mailbox that said yes', () => {
-  beforeEach(() => consented(env));
+describe('sending from an activated server', () => {
+  beforeEach(() => activated(env));
 
-  it('delivers the server’s message, from the relay, under the server’s real host', async () => {
+  it('delivers the server’s message to any mailbox, from the relay, under the server’s real host', async () => {
     const res = await send(MESSAGE);
 
     expect(res.status).toBe(200);
@@ -59,6 +62,40 @@ describe('sending to a mailbox that said yes', () => {
       type: 'image/png',
     });
     expect(sent?.attachments[0]?.content.byteLength).toBe(8);
+    expect((await send({ ...MESSAGE, to: 'someone-else@example.test' })).status).toBe(200);
+  });
+
+  it('carries the relay’s own opt-out link for that mailbox and that server', async () => {
+    await send(MESSAGE);
+
+    const headers = env.sent[0]?.headers ?? {};
+    expect(headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
+    const link = /^<(.+)>$/.exec(headers['List-Unsubscribe'] ?? '')?.[1] ?? '';
+    expect(link.startsWith(`${PUBLIC_URL}/block/`)).toBe(true);
+    const blob = link.slice(`${PUBLIC_URL}/block/`.length);
+    expect(await openBlock(SECRET, blob, Math.floor(Date.now() / 1000))).toMatchObject({
+      a: ADDRESS,
+      o: ORIGIN,
+    });
+  });
+
+  it('leaves the activation with the owner: a member’s opt-out closes their mailbox, not the server', async () => {
+    await send(MESSAGE);
+    await marks(env).block(ORIGIN, ADDRESS);
+    await marks(env).deactivateBy(ORIGIN, ADDRESS);
+
+    expect(await marks(env).active(ORIGIN)).toBe(true);
+    expect((await send(MESSAGE)).status).toBe(410);
+    expect((await send({ ...MESSAGE, to: OWNER })).status).toBe(200);
+  });
+
+  it('carries nothing to a mailbox that opted out of this server', async () => {
+    await marks(env).block(ORIGIN, ADDRESS);
+
+    const res = await send(MESSAGE);
+    expect(res.status).toBe(410);
+    expect(await res.json()).toEqual({ error: 'address opted out' });
+    expect((await send({ ...MESSAGE, to: 'someone-else@example.test' })).status).toBe(200);
   });
 
   it('refuses a message whose links lead away from the origin', async () => {
@@ -71,13 +108,13 @@ describe('sending to a mailbox that said yes', () => {
     expect(env.sent).toHaveLength(0);
   });
 
-  it('is a yes for this origin only', async () => {
+  it('is an activation for this origin only', async () => {
     const other = await registered('https://other.example');
 
     expect((await send(MESSAGE, other)).status).toBe(403);
   });
 
-  it('withdraws the yes when the mailbox bounces, and reports a wobble as transient', async () => {
+  it('blocks a mailbox that bounces, and reports a wobble as transient', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const failing = (code: string) => ({
       send: vi.fn().mockRejectedValue(Object.assign(new Error(code), { code })),
@@ -85,10 +122,10 @@ describe('sending to a mailbox that said yes', () => {
 
     env.EMAIL = failing('E_DELIVERY_FAILED');
     expect((await send(MESSAGE)).status).toBe(502);
-    expect(await new Consents(env.COUNTERS, env.LIMIT_SECRET).has(ORIGIN, ADDRESS)).toBe(true);
+    expect(await marks(env).blocked(ORIGIN, ADDRESS)).toBe(false);
     env.EMAIL = failing('E_RECIPIENT_SUPPRESSED');
     expect((await send(MESSAGE)).status).toBe(410);
-    expect(await new Consents(env.COUNTERS, env.LIMIT_SECRET).has(ORIGIN, ADDRESS)).toBe(false);
+    expect(await marks(env).blocked(ORIGIN, ADDRESS)).toBe(true);
   });
 
   it('rate-limits by mailbox and by caller, and keeps a daily budget per mailbox', async () => {
@@ -103,61 +140,79 @@ describe('sending to a mailbox that said yes', () => {
     expect((await send(MESSAGE)).status).toBe(429);
     expect(env.sent).toHaveLength(50);
   });
+
+  it('keeps a daily budget per origin, so one server cannot spend the relay’s day', async () => {
+    for (let i = 0; i < 200; i++) {
+      expect((await send({ ...MESSAGE, to: `r${i % 40}@example.test` })).status).toBe(200);
+    }
+
+    expect((await send({ ...MESSAGE, to: 'r41@example.test' })).status).toBe(429);
+    const other = await registered('https://other.example');
+    await activated(env, 'https://other.example');
+    const theirs = {
+      to: 'r41@example.test',
+      subject: 'x',
+      text: 'https://other.example/x',
+      html: '<p>x</p>',
+    };
+    expect((await send(theirs, other)).status).toBe(200);
+  });
 });
 
-describe('sending to a mailbox that has not said yes', () => {
+describe('sending from a server nobody activated', () => {
   it('is refused, however harmless the message', async () => {
     const res = await send(MESSAGE);
 
     expect(res.status).toBe(403);
-    expect(await res.json()).toEqual({ error: 'consent required' });
+    expect(await res.json()).toEqual({ error: 'activation required' });
     expect(env.sent).toHaveLength(0);
   });
 
-  it('is allowed for the question itself: a message whose only link is that mailbox’s consent link', async () => {
-    const link = consentUrl(PUBLIC_URL, await pendingFor());
+  it('is allowed for the question itself: to the owner, with that owner’s activation link as its only link', async () => {
+    const link = activationUrl(PUBLIC_URL, await pendingFor());
     const question = {
-      to: ADDRESS,
-      subject: 'Home would like to send you email',
+      to: OWNER,
+      subject: 'Allow Home to send email through KROMA?',
       text: `Open ${link} to allow it.`,
       html: `<a href="${link}">Allow</a><div>${link}</div>`,
     };
 
     const res = await send(question);
     expect(res.status).toBe(200);
-    expect(env.sent[0]?.to).toBe(ADDRESS);
-    expect(await new Consents(env.COUNTERS, env.LIMIT_SECRET).has(ORIGIN, ADDRESS)).toBe(false);
+    expect(env.sent[0]?.to).toBe(OWNER);
+    expect(env.sent[0]?.headers).toBeUndefined();
+    expect(await marks(env).active(ORIGIN)).toBe(false);
   });
 
   it('draws questions on a budget of their own, so they can never starve deliveries', async () => {
     const day = Math.floor(Date.now() / 1000 / 86400);
     env.COUNTERS.store.set(`ask:${day}`, '500');
-    const link = consentUrl(PUBLIC_URL, await pendingFor());
-    const question = { to: ADDRESS, subject: 'x', text: `Open ${link}`, html: '<p>x</p>' };
+    const link = activationUrl(PUBLIC_URL, await pendingFor());
+    const question = { to: OWNER, subject: 'x', text: `Open ${link}`, html: '<p>x</p>' };
 
     expect((await send(question)).status).toBe(429);
-    await consented(env);
+    await activated(env);
     expect((await send(MESSAGE)).status).toBe(200);
   });
 
   it('refuses the question when it carries any other link, or a link for another mailbox or origin', async () => {
-    const link = consentUrl(PUBLIC_URL, await pendingFor());
+    const link = activationUrl(PUBLIC_URL, await pendingFor());
     const withOrigin = {
-      to: ADDRESS,
+      to: OWNER,
       subject: 'x',
       text: `${link} and ${ORIGIN}/x`,
       html: '<p>x</p>',
     };
     expect((await send(withOrigin)).status).toBe(422);
 
-    const someoneElse = consentUrl(PUBLIC_URL, await pendingFor('other@example.test'));
+    const someoneElse = activationUrl(PUBLIC_URL, await pendingFor('other@example.test'));
     expect(
-      (await send({ to: ADDRESS, subject: 'x', text: someoneElse, html: '<p>x</p>' })).status,
+      (await send({ to: OWNER, subject: 'x', text: someoneElse, html: '<p>x</p>' })).status,
     ).toBe(403);
 
-    const otherOrigin = consentUrl(PUBLIC_URL, await pendingFor(ADDRESS, 'https://other.example'));
+    const otherOrigin = activationUrl(PUBLIC_URL, await pendingFor(OWNER, 'https://other.example'));
     expect(
-      (await send({ to: ADDRESS, subject: 'x', text: otherOrigin, html: '<p>x</p>' })).status,
+      (await send({ to: OWNER, subject: 'x', text: otherOrigin, html: '<p>x</p>' })).status,
     ).toBe(403);
     expect(env.sent).toHaveLength(0);
   });
@@ -179,7 +234,7 @@ describe('the request surface', () => {
   });
 
   it('validates the message rather than forwarding whatever it is given', async () => {
-    await consented(env);
+    await activated(env);
     for (const body of [
       { to: ADDRESS },
       { to: 'nobody', subject: 'x', text: 'y', html: 'z' },

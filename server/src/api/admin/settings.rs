@@ -109,11 +109,11 @@ pub async fn smtp_test(
     Ok(Json(json!({ "sentTo": user.email })).into_response())
 }
 
-/// `POST /api/admin/settings/relay-test` → prove the relay from this server:
-/// register with it if not yet, then send a short probe to the caller's own
-/// address. The first time, that address has not allowed this server, so what
-/// goes out is the relay's question instead (which verifies the address too);
-/// the answer says so with `asked: true`, and the next test is a delivery.
+/// `POST /api/admin/settings/relay-test` → register with the relay if need be
+/// and send a short probe to the owner's own address. Until the owner has
+/// activated this server on the relay, what goes out is the relay's question
+/// instead (which verifies the owner's address too); the answer says so with
+/// `asked: true`, and the next test is a delivery.
 pub async fn relay_test(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -144,7 +144,7 @@ pub async fn relay_test(
     };
     match email::relay_test(&state.settings, &state.db, &target, &user.email, loc).await {
         Ok(()) => Ok(Json(json!({ "sentTo": user.email })).into_response()),
-        Err(RelayError::ConsentRequired | RelayError::Gone) => {
+        Err(RelayError::Inactive) => {
             let token = crate::services::auth::random_token();
             let expires_at =
                 time::OffsetDateTime::now_utc().unix_timestamp() + super::users::links::VERIFY_TTL;
@@ -158,9 +158,9 @@ pub async fn relay_test(
                 locale: loc,
                 url: String::new(),
                 server_name: state.settings.get_str("serverName", "KROMA"),
-                kind: email::EmailKind::Consent,
+                kind: email::EmailKind::Activate,
             };
-            email::ask_consent(&state.settings, &state.db, &target, &question, &token)
+            email::ask_activation(&state.settings, &state.db, &target, &question, &token)
                 .await
                 .map_err(failed)?;
             Ok(Json(json!({ "sentTo": user.email, "asked": true })).into_response())
