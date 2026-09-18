@@ -10,6 +10,7 @@ const COMMANDS = {
   tools: async (args: string[]) => (await import('./tools')).main(args),
   sonar: async (args: string[]) => (await import('./sonar')).main(args),
   sdk: async (args: string[]) => (await import('./sdk-command')).main(args),
+  embeds: async () => (await import('./embeds-command')).main(),
 };
 
 type Command = keyof typeof COMMANDS;

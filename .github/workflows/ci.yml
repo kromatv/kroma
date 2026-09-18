@@ -93,6 +93,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run check
+      - run: bun run ci embeds
 
   test:
     name: Unit tests ${{ matrix.shard }}/4
