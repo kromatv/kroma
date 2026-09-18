@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Address, ConsentPayload, isOrigin, Origin, PublicKey, SendPayload } from './schemas';
+import { ActivatePayload, Address, isOrigin, Origin, PublicKey, SendPayload } from './schemas';
 
 describe('an origin', () => {
   it('is https anywhere, exactly the origin and nothing more', () => {
@@ -61,9 +61,9 @@ describe('a key', () => {
   });
 });
 
-describe('a consent request', () => {
+describe('an activation request', () => {
   it('names a mailbox, a token and a time', () => {
-    const parsed = ConsentPayload.parse({
+    const parsed = ActivatePayload.parse({
       to: 'Reader@Example.test',
       token: 'tok-1234567890',
       ts: 1,
@@ -71,10 +71,10 @@ describe('a consent request', () => {
 
     expect(parsed.to).toBe('reader@example.test');
     expect(
-      ConsentPayload.safeParse({ to: 'reader@example.test', token: 'short', ts: 1 }).success,
+      ActivatePayload.safeParse({ to: 'reader@example.test', token: 'short', ts: 1 }).success,
     ).toBe(false);
     expect(
-      ConsentPayload.safeParse({ to: 'reader@example.test', token: 'tok-1234567890' }).success,
+      ActivatePayload.safeParse({ to: 'reader@example.test', token: 'tok-1234567890' }).success,
     ).toBe(false);
   });
 });

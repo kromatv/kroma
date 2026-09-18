@@ -136,23 +136,28 @@ and deliverability before a user's reset depends on them.
 of its own. It sees the destination address and the message, never the code, never the
 password, and cannot reset anything. It holds the published app's mail credential so a
 self-hosted server does not have to. It keeps no address and no mail: only counters of how
-often a mailbox was asked or written to, and which mailboxes said yes to which servers, all
-under keys that cannot be turned back into an address.
+often a mailbox or a server was written to, which servers were allowed and which mailboxes
+opted out of which servers, all under keys that cannot be turned back into an address.
 
-**ADMIN-89** (AGREED) - A server speaks to the relay under an identity of its own: a key it
+**ADMIN-94** (AGREED) - A server speaks to the relay under an identity of its own: a key it
 mints once and registers with its public address. A public address must answer the relay's
 challenge with that key before the relay carries anything for it; a private address needs no
 proof, since nobody can be lured to it. Every request is signed, the server's address comes
 from its registration and never from the request, and the relay can shut one server out.
 
-**ADMIN-90** (AGREED) - The relay writes to a mailbox only after that mailbox allowed this
-server. Until then the only message it carries is the question, written by the server, whose
-only link is the relay's own consent link, and a mailbox receives at most a few questions a
-day. The click that allows the server is also the address verification (ADMIN-85): reaching
-the mailbox was the proof. A reset for an address that has not said yes is carried by hand,
-and the member editor says so. Every link in a message to a mailbox that said yes leads back
-to the server it said yes to, nothing in the message may run, submit or embed, and the
-sender's display name carries the server's real host. The yes dies when the mailbox bounces,
+**ADMIN-95** (AGREED) - The relay carries a server's mail only after a person allowed that
+server, from a mailbox, having seen the server's host and the public address it called from.
+Until then the only message it carries is that question, written by the server to the
+owner's own address, whose only link is the relay's own; a mailbox receives at most a few
+questions a day and a server may ask only a few times. The click that allows the server is
+also the verification of the owner's address (ADMIN-85). Once allowed, the server writes to
+any of its members through the relay, as it would over its own mail server, within a daily
+budget per server and per mailbox. A reset or verification minted while the server is not
+yet allowed is carried by hand, and the member editor says so and where to allow it. Every
+link in a carried message leads back to the server, nothing in it may run, submit or embed,
+the sender's display name carries the server's real host, and every message carries the
+relay's own opt-out link, which closes that mailbox to that server for good; a mailbox that
+bounces is closed the same way. The permission dies when the mailbox that gave it opts out,
 or when the server's public address changes.
 
 **ADMIN-88** (AGREED) - A user who cannot sign in can ask for a reset from the sign-in
@@ -183,9 +188,9 @@ out-of-band code: reaching the mailbox is itself the proof, so the link alone su
 
 **ADMIN-86** (AGREED) - The owner sends a verification from the member editor, with the
 same delivery choices as a credential reset: copy the link by hand, the operator's own
-mail server, or the kroma.tv relay. On the relay, a verification is the question asking the
-mailbox to allow this server (ADMIN-90). The verified state is
-shown next to the address, and the email is written in the recipient's language.
+mail server, or the kroma.tv relay, which carries it once the owner has allowed this server
+there (ADMIN-95) and leaves it to the owner's hands before. The verified state is shown next
+to the address, and the email is written in the recipient's language.
 
 **ADMIN-87** (AGREED) - Changing the address clears the verified state: the proof belongs
 to the mailbox, not the account. A verification link names the address it was minted for

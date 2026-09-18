@@ -3,7 +3,7 @@
 
 # Requirement index
 
-412 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+414 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -127,7 +127,7 @@
 - **ADMIN-80** (AGREED) - The code is eight characters from a thirty-two-symbol alphabet with <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-81** (AGREED) - A new reset invalidates any unused previous one for the same account. <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-82** (AGREED) - Delivery is the owner's choice, per server: copy the link and code <sub>[README.md](admin/README.md)</sub>
-- **ADMIN-83** (AGREED) - The kroma.tv relay sees the destination address and the link, never <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-83** (AGREED) - The kroma.tv relay carries what the server wrote; it writes nothing <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-84** (AGREED) - The owner can clear a user's profile PIN. Clearing is the only PIN <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-85** (AGREED) - An address on an account is unverified until the mailbox proves <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-86** (AGREED) - The owner sends a verification from the member editor, with the <sub>[README.md](admin/README.md)</sub>
@@ -138,6 +138,8 @@
 - **ADMIN-91** (AGREED) - Module updates are independent of the server and carry their own <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-92** (AGREED) - Active playback neither blocks an update nor is stopped by one <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-93** (AGREED) - The rule above is identical on every host. Only the delivery vehicle <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-94** (AGREED) - A server speaks to the relay under an identity of its own: a key it <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-95** (AGREED) - The relay carries a server's mail only after a person allowed that <sub>[README.md](admin/README.md)</sub>
 
 ## DISC - [discovery](discovery/)
 

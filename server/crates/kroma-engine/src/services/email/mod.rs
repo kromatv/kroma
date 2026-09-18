@@ -1,8 +1,9 @@
 //! Sending the account emails (credential reset, address verification). Three
 //! ways out, the owner's choice per server: `manual`, where the owner copies
 //! the link by hand; the operator's own SMTP server; or the kroma.tv mail relay,
-//! which carries what this server wrote to a mailbox that allowed this server,
-//! or the question asking it to. Every word of every message is rendered here.
+//! which carries what this server wrote once the owner has activated this
+//! server there, and before that only the question asking them to. Every word
+//! of every message is rendered here.
 //! For a reset the link alone is not enough: the user must also enter the
 //! short code the owner read to them, so intercepting the email gives nothing.
 //! A send failure never fails the mint.
@@ -28,8 +29,9 @@ use crate::services::settings::{email_delivery, EmailDelivery, Settings};
 pub enum EmailKind {
     Reset,
     Verify,
-    /// The relay's question, in this server's words: may this server write to you?
-    Consent,
+    /// The relay's question to the owner, in this server's words: may this
+    /// server send email through the relay?
+    Activate,
 }
 
 pub struct OutboundEmail {
@@ -58,15 +60,17 @@ pub fn render(email: &OutboundEmail) -> Rendered {
     }
 }
 
-/// How the message left, as the wire spells it. `Unconfirmed` is the relay's
-/// answer for a mailbox that has not yet allowed this server: the owner carries
-/// the link by hand, and a verification is what asks the mailbox.
+/// How the message left, as the wire spells it. `Inactive` is the relay's
+/// answer while nobody has activated this server there: the owner carries the
+/// link by hand, and the relay test is what asks them. `Refused` is a mailbox
+/// closed to this server: it opted out, bounced, or reported it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Delivery {
     Manual,
     Smtp,
     Relay,
-    Unconfirmed,
+    Inactive,
+    Refused,
 }
 
 impl Delivery {
@@ -75,7 +79,8 @@ impl Delivery {
             Self::Manual => "manual",
             Self::Smtp => "smtp",
             Self::Relay => "relay",
-            Self::Unconfirmed => "unconfirmed",
+            Self::Inactive => "inactive",
+            Self::Refused => "refused",
         }
     }
 }
@@ -121,7 +126,7 @@ async fn register(
 /// One call the relay answers under a session.
 enum Call<'a> {
     Send { to: &'a str, rendered: &'a Rendered },
-    Consent { to: &'a str, token: &'a str },
+    Activate { to: &'a str, token: &'a str },
 }
 
 enum Answer {
@@ -134,7 +139,7 @@ async fn perform(base: &str, session: &relay::Session, call: &Call<'_>) -> Resul
         Call::Send { to, rendered } => relay::send(base, session, to, rendered)
             .await
             .map(|()| Answer::Sent),
-        Call::Consent { to, token } => relay::consent(base, session, to, token)
+        Call::Activate { to, token } => relay::activate(base, session, to, token)
             .await
             .map(Answer::Link),
     }
@@ -182,24 +187,25 @@ pub async fn send(
             };
             match with_session(settings, pool, target, call).await {
                 Ok(_) => Ok(Delivery::Relay),
-                Err(RelayError::ConsentRequired | RelayError::Gone) => Ok(Delivery::Unconfirmed),
+                Err(RelayError::Inactive) => Ok(Delivery::Inactive),
+                Err(RelayError::Gone) => Ok(Delivery::Refused),
                 Err(e) => Err(e.to_string()),
             }
         }
     }
 }
 
-/// Ask a mailbox, through the relay, whether this server may write to it: the
-/// relay mints the link, this server writes the message around it. The click
-/// verifies the address too, so `token` is the verification being minted.
-pub async fn ask_consent(
+/// Ask the owner, through the relay, to activate this server there: the relay
+/// mints the link, this server writes the message around it. The click
+/// verifies the owner's address too, so `token` is the verification being minted.
+pub async fn ask_activation(
     settings: &Settings,
     pool: &Pool,
     target: &RelayTarget<'_>,
     email: &OutboundEmail,
     token: &str,
 ) -> Result<Delivery, String> {
-    let call = Call::Consent {
+    let call = Call::Activate {
         to: &email.to,
         token,
     };
@@ -213,7 +219,7 @@ pub async fn ask_consent(
         locale: email.locale,
         url,
         server_name: email.server_name.clone(),
-        kind: EmailKind::Consent,
+        kind: EmailKind::Activate,
     };
     let rendered = render(&question);
     let call = Call::Send {
