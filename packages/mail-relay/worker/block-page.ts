@@ -1,4 +1,4 @@
-const escaped = (s: string) => s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+const escaped = (s: string) => s.replace(/[&<>"']/g, (ch) => `&#${ch.codePointAt(0)};`);
 
 const STYLE =
   'body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;' +

@@ -23,7 +23,7 @@ import {
 import { optOutPage } from './block-page';
 import { provesOrigin } from './challenge';
 import { type Allowed, exactly, onOrigin, refuseContent } from './content';
-import { deliver, type EmailSender, failure, printable } from './deliver';
+import { deliver, type EmailSender, type FailureStatus, failure, printable } from './deliver';
 import { INSTANCE_TTL_SECS, importPublicKey, openSigned, sealInstance } from './identity';
 import { banned, budgetKey, type Counters, takeDaily } from './limits';
 import {
@@ -274,16 +274,31 @@ app.post('/v1/send', validate(SignedRequest), async (c) => {
   const optOut = active
     ? blockUrl(c.env.PUBLIC_URL, await sealBlock(c.env.GRANT_SECRET, message.to, origin, now))
     : undefined;
-  try {
-    await deliver(c.env.EMAIL, c.env, message.to, origin, message, optOut);
-  } catch (e) {
-    const { status, error } = failure(e);
-    if (status === 410) await marks.block(origin, message.to);
-    return c.json({ error }, status);
-  }
+  const outcome = await carry(c.env.EMAIL, c.env, marks, origin, message, optOut);
+  if (outcome) return c.json({ error: outcome.error }, outcome.status);
   if (active) await marks.refresh(origin);
   return c.json({ delivered: true });
 });
+
+// One delivery, and what it means when it fails: a mailbox the mail service
+// gave up on is closed to this origin from here on.
+async function carry(
+  email: EmailSender,
+  env: Env,
+  marks: Marks,
+  origin: string,
+  message: SendPayload,
+  optOut: string | undefined,
+): Promise<{ status: FailureStatus; error: string } | null> {
+  try {
+    await deliver(email, env, message.to, origin, message, optOut);
+    return null;
+  } catch (e) {
+    const outcome = failure(e);
+    if (outcome.status === 410) await marks.block(origin, message.to);
+    return outcome;
+  }
+}
 
 // The link in an activation message. The question itself is asked on the
 // server's own page, so the relay only sends the browser there with what it
