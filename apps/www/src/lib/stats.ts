@@ -9,13 +9,18 @@ export const Stats = z.object({
   instances: z.number(),
   // Optional, because the collector is deployed by hand and the site by CI: a
   // page that hard-required this would go blank for the window between them.
-  reports: z.object({ usage: z.number(), statistics: z.number() }).optional(),
+  reports: z
+    .object({ usage: z.number(), statistics: z.number(), sizes: z.number().optional() })
+    .optional(),
   clients: z.object({
     tv: z.number(),
     mobile: z.number(),
     desktop: z.number(),
     total: z.number(),
   }),
+  // Null from the collector until two servers report a size.
+  sizes: z.object({ users: z.number(), titles: z.number() }).nullable().optional(),
+  located: z.object({ servers: z.number(), countries: z.number() }).optional(),
   versions: Counted,
   platforms: Counted,
   installs: Counted,

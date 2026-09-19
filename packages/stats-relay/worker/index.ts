@@ -15,6 +15,7 @@
 // is dropped with the request.
 
 import { Hono } from 'hono';
+import { z } from 'zod';
 import { configFrom, verify } from './access';
 import { aggregate, settling } from './aggregate';
 import { burstIds, dayOf } from './integrity';
@@ -111,9 +112,19 @@ async function within(request: Request): Promise<string | null> {
   }
 }
 
-function country(header: string | undefined): string | null {
-  const code = header?.trim().toUpperCase() ?? '';
-  return /^[A-Z]{2}$/.test(code) ? code : null;
+// Cloudflare spells "could not tell" as XX and a Tor exit as T1. Neither is a place.
+const NOT_A_PLACE = new Set(['XX', 'T1']);
+
+// The edge's own view of the request. `cf.country` is on every request a
+// Worker receives; the `cf-ipcountry` header is only added once the zone's IP
+// Geolocation setting is on, which is easy to leave off and invisible when it is.
+const EdgeFacts = z.object({ cf: z.object({ country: z.string() }).partial() }).partial();
+
+function country(request: Request): string | null {
+  const facts = EdgeFacts.safeParse(request);
+  const seen = facts.success ? facts.data.cf?.country : undefined;
+  const code = (seen ?? request.headers.get('cf-ipcountry') ?? '').trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(code) && !NOT_A_PLACE.has(code) ? code : null;
 }
 
 /**
@@ -189,7 +200,7 @@ export function createApp(storeFor: (env: Env) => Store) {
       if (!fresh.success) return c.json({ error: 'too many new installs from here' }, 429);
     }
 
-    await store.upsert(ping, country(c.req.header('cf-ipcountry')), c.get('now'));
+    await store.upsert(ping, country(c.req.raw), c.get('now'));
     return c.json({ ok: true });
   });
 
@@ -208,7 +219,7 @@ export function createApp(storeFor: (env: Env) => Store) {
   });
 
   // Everything an administrator may see beyond the public page: the same
-  // aggregate with no floor applied, plus what the nightly sweep set aside.
+  // aggregate, plus what the nightly sweep set aside.
   // Deliberately still not rows. Per-install data is read from D1 against the
   // Cloudflare account, which is a different door with a different key.
   app.get('/v1/admin/stats', async (c) => {
@@ -231,7 +242,7 @@ export function createApp(storeFor: (env: Env) => Store) {
     const [rows, history] = await Promise.all([store.all(), store.daily()]);
     return c.json(
       {
-        ...aggregate(rows, history, now, 0),
+        ...aggregate(rows, history, now),
         stored: rows.length,
         flagged: rows.filter((row) => row.flagged).length,
         settling: rows.filter((row) => settling(row, now)).length,

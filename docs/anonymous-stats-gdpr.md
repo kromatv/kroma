@@ -80,8 +80,8 @@ a single request that needs nobody's permission.
 
 **Safeguards**, each of which exists because of this balance: a device ceiling, a
 set of language tags rather than per-device values, only official module ids, no
-address stored, no size published against any single install, a floor of five
-before any breakdown is published, and deletion ninety days after a server goes
+address stored, no size published against any single install (a total appears
+once two servers report one), and deletion ninety days after a server goes
 quiet.
 
 ### Transparency
@@ -162,10 +162,9 @@ so it cannot be used to test whether an identifier exists.
   configured, so an operator cannot be pointed at somebody else's collector.
 - No credential exists to steal. A payload carries nothing worth taking and there
   is nobody to authenticate.
-- No route returns a row. Reads answer aggregates, and any breakdown fewer than
-  five servers share is suppressed before it is published.
-- The one route that answers unsuppressed aggregates, `/v1/admin/stats`, is
-  behind Cloudflare Access: a short-lived assertion signed by a key only
+- No route returns a row. Reads answer aggregates: counts over installs, never
+  an install.
+- The administrator's route, `/v1/admin/stats`, is behind Cloudflare Access: a short-lived assertion signed by a key only
   Cloudflare holds, checked by the Worker itself rather than assumed from the
   edge, and refused outright when no administrator is configured. It still
   returns no rows. Access to individual rows is through the database, against the
@@ -173,9 +172,8 @@ so it cannot be used to test whether an identifier exists.
 - Data minimisation is the main control here: the strongest protection for a
   field is that it was never collected.
 - The published aggregate is the whole of what is disclosed, at
-  `https://stats.kroma.tv/v1/stats`, snapshotted daily into the repository's
-  `stats-data` branch. Anyone can check the page against it, and nothing in
-  either carries an identifier.
+  `https://stats.kroma.tv/v1/stats`. Anyone can check the page against it, and
+  neither carries an identifier.
 
 ## Swiss law
 
