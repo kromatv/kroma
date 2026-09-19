@@ -1,0 +1,151 @@
+{
+  "clients": {
+    "desktop": 20,
+    "mobile": 9,
+    "total": 33,
+    "tv": 4
+  },
+  "countries": [
+    {
+      "key": "DE",
+      "n": 2
+    },
+    {
+      "key": "GB",
+      "n": 2
+    },
+    {
+      "key": "US",
+      "n": 2
+    },
+    {
+      "key": "CA",
+      "n": 1
+    },
+    {
+      "key": "CH",
+      "n": 1
+    },
+    {
+      "key": "CZ",
+      "n": 1
+    },
+    {
+      "key": "SG",
+      "n": 1
+    },
+    {
+      "key": "UA",
+      "n": 1
+    }
+  ],
+  "floors": {
+    "breakdowns": 5,
+    "countries": 1
+  },
+  "history": [
+    {
+      "clients": 0,
+      "day": "2026-09-10",
+      "instances": 0
+    },
+    {
+      "clients": 0,
+      "day": "2026-09-11",
+      "instances": 0
+    },
+    {
+      "clients": 0,
+      "day": "2026-09-12",
+      "instances": 0
+    },
+    {
+      "clients": 0,
+      "day": "2026-09-13",
+      "instances": 0
+    },
+    {
+      "clients": 0,
+      "day": "2026-09-14",
+      "instances": 0
+    },
+    {
+      "clients": 0,
+      "day": "2026-09-15",
+      "instances": 0
+    },
+    {
+      "clients": 0,
+      "day": "2026-09-16",
+      "instances": 0
+    },
+    {
+      "clients": 23,
+      "day": "2026-09-17",
+      "instances": 5
+    },
+    {
+      "clients": 33,
+      "day": "2026-09-18",
+      "instances": 9
+    },
+    {
+      "clients": 34,
+      "day": "2026-09-19",
+      "instances": 11
+    }
+  ],
+  "installs": [
+    {
+      "key": "docker",
+      "n": 10
+    }
+  ],
+  "instances": 11,
+  "locales": [
+    {
+      "key": "en",
+      "n": 7
+    }
+  ],
+  "located": {
+    "countries": 8,
+    "servers": 11
+  },
+  "modules": [
+    {
+      "key": "tv.kroma.indexer",
+      "n": 5
+    },
+    {
+      "key": "tv.kroma.torrents",
+      "n": 5
+    },
+    {
+      "key": "tv.kroma.vpn",
+      "n": 5
+    }
+  ],
+  "platforms": [
+    {
+      "key": "unknown-linux-musl",
+      "n": 11
+    }
+  ],
+  "reports": {
+    "sizes": 6,
+    "statistics": 11,
+    "usage": 11
+  },
+  "sizes": {
+    "titles": 4794,
+    "users": 17
+  },
+  "updatedAt": 1789808248,
+  "versions": [
+    {
+      "key": "0.1.39",
+      "n": 11
+    }
+  ]
+}
