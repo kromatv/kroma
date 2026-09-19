@@ -14,8 +14,8 @@
   "observability": { "enabled": true },
   // Cloudflare Access guards `/v1/admin/*`. The three settings live in
   // `wrangler secret`, not here: an allow-list committed to a public repository
-  // publishes which identity has to be phished to reach the unfloored
-  // breakdowns, and a value in `vars` is reset on every deploy, which would
+  // publishes which identity has to be phished to reach the administrator's
+  // view, and a value in `vars` is reset on every deploy, which would
   // silently shut the route after somebody set it in the dashboard.
   //   bunx wrangler secret put ACCESS_TEAM_DOMAIN   # <team>.cloudflareaccess.com
   //   bunx wrangler secret put ACCESS_AUD           # the application's AUD tag

@@ -3,6 +3,7 @@ import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { kroma } from '@kromatv/bundler';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
+import { landPlugin } from './vite/land.ts';
 import { mdxPlugin } from './vite/mdx.ts';
 import { modulesPlugin } from './vite/modules.ts';
 import { ogPlugin } from './vite/og.tsx';
@@ -53,6 +54,7 @@ export default defineConfig({
     }),
     tailwindcss(),
     mdxPlugin(),
+    landPlugin(),
     modulesPlugin(),
     releasesPlugin(),
     ogPlugin(),

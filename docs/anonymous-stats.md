@@ -130,13 +130,19 @@ of the rights, is [`anonymous-stats-gdpr.md`](anonymous-stats-gdpr.md).
 - A server counts once it has been reporting for **7 days**, so a fleet of fake
   ids has to be maintained for a week before it moves anything.
 - It stops counting **30 days** after its last report.
-- A breakdown (a version, a country, a language, a module) is published only
-  where at least **5** servers share it, so a lone install is never singled out.
+- Every breakdown (a version, a platform, a country, a language, a module) is
+  published from the first server that has it. A breakdown names software and
+  places, never a person, and a country is the coarsest thing the collector
+  knows about an install.
 - Newcomers that arrive in the same minute wearing an identical payload are
   flagged and left out.
 - A breakdown that only some servers report is published beside the number that
   reported it, because a chart over half the fleet and a chart over all of it
   are not the same chart.
+- Accounts and titles are published as one sum over the servers that report a
+  size, and only once **2** of them do, so the sum is never one library.
+- How many servers could be placed in a country at all, and how many countries
+  that is, are published as counts beside the list.
 
 None of that is proof. KROMA is free software anyone can read and change, so no
 server can prove it is real, and no scheme in a public binary can make it. The
@@ -148,9 +154,7 @@ published number as a floor, not a census.
 `GET https://stats.kroma.tv/v1/stats` is the published aggregate, CORS-open and
 cached an hour. It is the same document [kroma.tv/stats](https://kroma.tv/stats)
 renders, so any chart on that page can be checked against it or replaced with
-your own. A nightly job commits a copy to the `stats-data` branch of the
-repository, which is both the history of how the numbers moved and a copy of
-them that does not live at Cloudflare.
+your own.
 
 ## The collector
 
