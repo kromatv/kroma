@@ -30,7 +30,7 @@ export function LangSwitcher({ className }: Readonly<{ className?: string }>) {
             hrefLang={l}
             aria-current={isActive ? 'true' : undefined}
             className={[
-              'rounded-md px-2 py-1 transition-colors',
+              'flex h-7 items-center rounded-md px-2 transition-colors',
               isActive
                 ? 'bg-accent text-accent-ink'
                 : 'text-muted hover:text-text focus-visible:text-text',

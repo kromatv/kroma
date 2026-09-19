@@ -12,6 +12,14 @@ export function formatDay(day: string, lang: Lang): string {
   );
 }
 
+/** `2026-08-14` as the reader's own short date, `14 Aug`, pinned to UTC like
+ * `formatDay`. For an axis, where the long form would not fit. */
+export function formatDayShort(day: string, lang: Lang): string {
+  return new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(
+    new Date(day),
+  );
+}
+
 /**
  * `2026-08-21T03:58:35Z` as the reader's own date and clock time, or null when
  * it is not an instant.

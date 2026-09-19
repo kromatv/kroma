@@ -1,8 +1,7 @@
 // What the public page is allowed to see, and the rules that decide it.
 //
 // Nothing here reads a row out to a caller: every number below is a count over
-// many installs, and a breakdown too small to be a crowd is dropped rather than
-// published.
+// installs, never an install.
 
 import type { DailyRow, InstanceRow } from './store';
 
@@ -18,8 +17,11 @@ export const ACTIVE_DAYS = 30;
  */
 export const SETTLE_DAYS = 7;
 
-/** No breakdown is published for fewer instances than this. */
-export const FLOOR = 5;
+/**
+ * A total of accounts and titles is published once this many installs report a
+ * size, so the sum is never one install's own library.
+ */
+export const SIZE_REPORTERS = 2;
 
 /** One bar: what it names, and how many installs have it. */
 export interface Counted {
@@ -30,17 +32,36 @@ export interface Counted {
 /**
  * How many of the counted installs supplied each optional block. A breakdown is
  * over the servers that reported it, not over every server, and publishing the
- * denominator is what keeps that readable rather than misleading.
+ * denominator is what keeps that readable rather than misleading. `sizes` is
+ * narrower than `statistics`: a server still on the banded shape reports its
+ * devices and has no size.
  */
 export interface Reports {
   usage: number;
   statistics: number;
+  sizes: number;
+}
+
+/** Accounts and titles summed over the installs that report a size, or null
+ * until `SIZE_REPORTERS` of them do. */
+export interface Sizes {
+  users: number;
+  titles: number;
+}
+
+/** How many counted installs the edge could place in a country, and how many
+ * countries that is. */
+export interface Located {
+  servers: number;
+  countries: number;
 }
 
 interface Aggregate {
   instances: number;
   reports: Reports;
   clients: { tv: number; mobile: number; desktop: number; total: number };
+  sizes: Sizes | null;
+  located: Located;
   versions: Counted[];
   platforms: Counted[];
   installs: Counted[];
@@ -89,39 +110,47 @@ function tally(values: Iterable<string>): Map<string, number> {
 }
 
 /**
- * Drop every entry that fewer than `floor` instances share, heaviest first. A
- * floor of 0 keeps everything, which only the Access-gated view asks for.
- *
- * An array of pairs rather than an object, because an object reorders keys that
- * look like array indices: a fork reporting `version: "2"` would jump to the
- * head of the chart whatever its count.
+ * Every entry, heaviest first, then by name. An array of pairs rather than an
+ * object, because an object reorders keys that look like array indices: a fork
+ * reporting `version: "2"` would jump to the head of the chart whatever its
+ * count.
  */
-export function floored(counts: Map<string, number>, floor: number = FLOOR): Counted[] {
+export function ranked(counts: Map<string, number>): Counted[] {
   return [...counts]
-    .filter(([, n]) => n >= floor)
     .sort(([a, na], [b, nb]) => nb - na || a.localeCompare(b))
     .map(([key, n]) => ({ key, n }));
 }
 
-// `aarch64-apple-darwin` -> `apple-darwin`: the OS is the interesting half, and
-// the full triple narrows an install further than an aggregate needs to.
+// `x86_64-unknown-linux-musl` -> `linux-musl`, `aarch64-apple-darwin` ->
+// `darwin`: the architecture narrows an install further than an aggregate needs
+// to, and the vendor word of a Rust triple says nothing at all.
+const VENDORS = new Set(['unknown', 'pc', 'apple', 'none']);
+
 function platform(target: string): string {
-  const parts = target.split('-');
-  return parts.length > 1 ? parts.slice(1).join('-') : target;
+  const [, second, ...rest] = target.split('-');
+  if (second === undefined) return target;
+  const os = VENDORS.has(second) ? rest : [second, ...rest];
+  return os.join('-') || target;
 }
 
-export function aggregate(
-  rows: InstanceRow[],
-  history: DailyRow[],
-  now: number,
-  floor: number = FLOOR,
-): Aggregate {
+function sum(rows: InstanceRow[], of: (row: InstanceRow) => number | undefined): number {
+  return rows.reduce((total, row) => total + (of(row) ?? 0), 0);
+}
+
+function sizes(rows: InstanceRow[]): Sizes | null {
+  const sized = rows.filter((row) => row.users !== undefined && row.titles !== undefined);
+  if (sized.length < SIZE_REPORTERS) return null;
+  return { users: sum(sized, (row) => row.users), titles: sum(sized, (row) => row.titles) };
+}
+
+export function aggregate(rows: InstanceRow[], history: DailyRow[], now: number): Aggregate {
   const live = counted(rows, now);
+  const placed = live.flatMap((row) => (row.country ? [row.country] : []));
   const clients = live.reduce(
-    (sum, row) => ({
-      tv: sum.tv + (row.clients?.tv ?? 0),
-      mobile: sum.mobile + (row.clients?.mobile ?? 0),
-      desktop: sum.desktop + (row.clients?.desktop ?? 0),
+    (total, row) => ({
+      tv: total.tv + (row.clients?.tv ?? 0),
+      mobile: total.mobile + (row.clients?.mobile ?? 0),
+      desktop: total.desktop + (row.clients?.desktop ?? 0),
     }),
     { tv: 0, mobile: 0, desktop: 0 },
   );
@@ -130,14 +159,17 @@ export function aggregate(
     reports: {
       usage: live.filter((row) => row.modules !== undefined || row.locales !== undefined).length,
       statistics: live.filter((row) => row.clients !== undefined).length,
+      sizes: live.filter((row) => row.users !== undefined && row.titles !== undefined).length,
     },
     clients: { ...clients, total: clients.tv + clients.mobile + clients.desktop },
-    versions: floored(tally(live.map((row) => row.version)), floor),
-    platforms: floored(tally(live.map((row) => platform(row.target))), floor),
-    installs: floored(tally(live.map((row) => row.install)), floor),
-    countries: floored(tally(live.flatMap((row) => (row.country ? [row.country] : []))), floor),
-    locales: floored(tally(live.flatMap((row) => unique(row.locales ?? []))), floor),
-    modules: floored(tally(live.flatMap((row) => unique(row.modules ?? []))), floor),
+    sizes: sizes(live),
+    located: { servers: placed.length, countries: new Set(placed).size },
+    versions: ranked(tally(live.map((row) => row.version))),
+    platforms: ranked(tally(live.map((row) => platform(row.target)))),
+    installs: ranked(tally(live.map((row) => row.install))),
+    countries: ranked(tally(placed)),
+    locales: ranked(tally(live.flatMap((row) => unique(row.locales ?? [])))),
+    modules: ranked(tally(live.flatMap((row) => unique(row.modules ?? [])))),
     history,
     updatedAt: now,
   };

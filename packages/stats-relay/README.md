@@ -14,8 +14,8 @@ That document is the contract; this one is how to run the thing.
 |---|---|
 | `POST /v1/ping` | One install's daily payload. Unauthenticated on purpose. |
 | `POST /v1/forget` | Deletes the row an identifier names. The identifier is the authorisation. |
-| `GET /v1/stats` | The published aggregate, CORS-open and cached an hour. This is the public data file: `kroma.tv/stats` renders it and nothing else, and a nightly job commits a copy to the `stats-data` branch. |
-| `GET /v1/admin/stats` | The same aggregate with no floor, plus the sweep's counts. Behind Cloudflare Access. |
+| `GET /v1/stats` | The published aggregate, CORS-open and cached an hour. This is the public data file: `kroma.tv/stats` renders it and nothing else. |
+| `GET /v1/admin/stats` | The same aggregate, plus the sweep's counts. Behind Cloudflare Access. |
 | `GET /health` | Whether the database is reachable. |
 
 A nightly cron flags fleets, records the day's numbers so they survive pruning,
@@ -87,8 +87,7 @@ collector that is not this one.
 
 ## The administrator's view
 
-`GET /v1/admin/stats` answers the same aggregate with **no floor applied**, so a
-version or a country a single install has is visible, plus how many rows are
+`GET /v1/admin/stats` answers the same aggregate, plus how many rows are
 stored, how many the nightly sweep flagged, and how many are still settling. It
 deliberately does not return rows: per-install data is read from D1, which is a
 different door with a different key.
@@ -133,7 +132,7 @@ Rows are read straight from D1, authenticated by the Cloudflare account rather
 than by anything shipped here.
 
 ```bash
-# The unfloored picture, which the public endpoint will not give you.
+# The picture by version, straight from the rows.
 bunx wrangler d1 execute kroma-stats --remote --command \
   "SELECT version, COUNT(*) n FROM instances WHERE flagged = 0 GROUP BY version ORDER BY n DESC"
 

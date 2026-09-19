@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { FLOOR } from './aggregate';
 import { createApp, type Env, sweep } from './index';
 import { BURST_LIMIT } from './integrity';
 import type { Store } from './store';
@@ -8,6 +7,7 @@ import { allow, deny, memoryStore, ping, row } from './test-support';
 const DAY = 86_400;
 const NOW = 1_800_000_000;
 const OTHER_ID = 'b'.repeat(64);
+const SOME = 5;
 
 function env(overrides: Partial<Env> = {}): Env {
   return {
@@ -160,6 +160,25 @@ describe('POST /v1/ping', () => {
     expect([...store.rows.values()][0]?.country).toBeNull();
   });
 
+  it('reads the country off the request itself when the zone adds no header', async () => {
+    const store = memoryStore();
+    const request = Object.assign(post(ping()), { cf: { country: 'fr' } });
+
+    await send(store, request);
+
+    expect([...store.rows.values()][0]?.country).toBe('FR');
+  });
+
+  it('stores no country for the codes the edge uses when it cannot tell', async () => {
+    for (const code of ['XX', 'T1']) {
+      const store = memoryStore();
+
+      await send(store, post(ping(), { 'cf-ipcountry': code }));
+
+      expect([...store.rows.values()][0]?.country).toBeNull();
+    }
+  });
+
   it('keeps the day an install first appeared when it pings again', async () => {
     const store = memoryStore();
 
@@ -228,7 +247,7 @@ describe('GET /v1/stats', () => {
     // The route reads the wall clock, so the fixtures hang off it too.
     const now = Math.floor(Date.now() / 1000);
     const store = memoryStore(
-      Array.from({ length: FLOOR }, (_, i) =>
+      Array.from({ length: SOME }, (_, i) =>
         row({ id: `id-${i}`, firstSeen: now - 30 * DAY, lastSeen: now - DAY }),
       ),
     );
@@ -239,7 +258,7 @@ describe('GET /v1/stats', () => {
     expect(res.headers.get('access-control-allow-origin')).toBe('*');
     expect(res.headers.get('cache-control')).toContain('max-age=3600');
     const body = (await res.json()) as { instances: number };
-    expect(body.instances).toBe(FLOOR);
+    expect(body.instances).toBe(SOME);
   });
 
   it('is read from the edge cache when one is there, rather than from the store', async () => {
@@ -276,13 +295,15 @@ describe('GET /v1/stats', () => {
     const now = Math.floor(Date.now() / 1000);
     const settled = { firstSeen: now - 30 * DAY, lastSeen: now - DAY };
     const store = memoryStore([
-      ...Array.from({ length: FLOOR }, (_, i) => row({ id: `full-${i}`, ...settled })),
+      ...Array.from({ length: SOME }, (_, i) => row({ id: `full-${i}`, ...settled })),
       row({
         id: 'base-only',
         ...settled,
         locales: undefined,
         modules: undefined,
         clients: undefined,
+        users: undefined,
+        titles: undefined,
       }),
     ]);
 
@@ -293,9 +314,9 @@ describe('GET /v1/stats', () => {
       reports: { usage: number; statistics: number };
       clients: { total: number };
     };
-    expect(body.instances).toBe(FLOOR + 1);
-    expect(body.reports).toEqual({ usage: FLOOR, statistics: FLOOR });
-    expect(body.clients.total).toBe(FLOOR * 3);
+    expect(body.instances).toBe(SOME + 1);
+    expect(body.reports).toEqual({ usage: SOME, statistics: SOME, sizes: SOME });
+    expect(body.clients.total).toBe(SOME * 3);
   });
 
   it('never returns a row, only counts', async () => {

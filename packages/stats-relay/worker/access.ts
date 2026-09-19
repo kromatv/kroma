@@ -1,4 +1,4 @@
-// Who is allowed to see the unfloored numbers.
+// Who is allowed to see the administrator's numbers.
 //
 // Cloudflare Access, rather than a bearer token this Worker would have to hold.
 // Access signs a short-lived RS256 assertion with a key only Cloudflare has, so

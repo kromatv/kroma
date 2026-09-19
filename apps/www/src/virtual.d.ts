@@ -18,3 +18,9 @@ declare module 'virtual:kroma-releases' {
   /** Every build CI published that no release carries, newest first. */
   export const canary: ChannelBuild[];
 }
+
+declare module 'virtual:kroma-land' {
+  /** Where land is, as `[lat, lng]` pairs in tenths of a degree, computed at
+   * build time by `vite/land.ts`. `decodeLand` in `#site/lib/geo` reads it. */
+  export const points: readonly number[];
+}

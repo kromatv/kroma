@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { formatDay, formatMoment, formatMonth, groupByMonth, monthKey } from './day.ts';
+import {
+  formatDay,
+  formatDayShort,
+  formatMoment,
+  formatMonth,
+  groupByMonth,
+  monthKey,
+} from './day.ts';
 
 describe('formatDay', () => {
   it('reads a release day in the language of the page', () => {
@@ -88,5 +95,12 @@ describe('groupByMonth', () => {
     ];
 
     expect(groupByMonth(items, at).map((g) => g.key)).toEqual(['2026-08', '2026-07', '2026-08']);
+  });
+});
+
+describe('formatDayShort', () => {
+  it('fits an axis and stays on the day it was given', () => {
+    expect(formatDayShort('2026-08-14', 'en')).toBe('Aug 14');
+    expect(formatDayShort('2026-08-14', 'fr')).toBe('14 août');
   });
 });
