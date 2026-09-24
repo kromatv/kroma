@@ -1,0 +1,52 @@
+# PROPOSED workflow for RFC 107 — NOT active yet.
+#
+# This file is staged here (outside .github/workflows/) on purpose: the
+# automation account pushes with `repo` scope only and GitHub refuses to create
+# or update a file under .github/workflows/ without `workflow` scope. To activate:
+#
+#     git mv docs/rfcs/assets/release-please.proposed-workflow.yml \
+#            .github/workflows/release-please.yml
+#     git commit && push        # by a human/token that HAS `workflow` scope
+#
+# What it does: on every push to main, release-please keeps a standing "Release
+# PR" that computes the next version from Conventional Commits since the last
+# release, bumps server/Cargo.toml (via .release-please-manifest.json), and
+# regenerates CHANGELOG.md. Merging that PR is the deliberate "open the version"
+# act — today's hand-edited `chore(release): X` commit, now generated.
+#
+# OPEN INTEGRATION POINT (decide in the RFC before activating):
+# release-please, on merge, also creates tag `v<version>` + a GitHub Release.
+# The existing deploy.yml ALSO creates `v<version>` when it promotes a candidate
+# behind the production approval. Two things must not both own the tag. The
+# intended resolution: release-please owns the version bump + changelog + tag;
+# deploy.yml is adapted to ATTACH the promoted fleet artifacts onto the release
+# release-please already created (upload, not create). Until that deploy.yml
+# change lands, do not activate this file, or a release will be published
+# without the approval gate.
+
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Maintain the Release PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # skip-github-release / skip-github-pull-request are NOT set: we want
+          # the PR. Whether release-please also cuts the GitHub Release, or
+          # defers that to deploy.yml, is the open point documented above.

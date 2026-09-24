@@ -1,0 +1,9 @@
+{
+  "server": "0.1.38",
+  "clients/web": "0.1.38",
+  "clients/tizen": "0.1.38",
+  "clients/webos": "0.1.38",
+  "clients/tv-native": "0.1.38",
+  "clients/desktop": "0.1.38",
+  "clients/mobile": "0.1.38"
+}
