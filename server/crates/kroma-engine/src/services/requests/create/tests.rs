@@ -1,4 +1,6 @@
 use serde_json::json;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 use super::*;
 use crate::model::Audience;
@@ -169,6 +171,46 @@ fn a_requester_who_may_self_approve_skips_the_queue() {
             .all(|(a, _)| a != &Audience::permission(Permission::RequestsManage)),
         "a self-approved request should not page the moderators"
     );
+}
+
+#[test]
+fn a_failed_auto_approval_stays_pending_and_the_next_ask_retries_it() {
+    let host = test_host();
+    let calls = Arc::new(AtomicUsize::new(0));
+    let seen = calls.clone();
+    let _tmdb = FakeTmdb::start(move |_| {
+        if seen.fetch_add(1, Ordering::SeqCst) == 1 {
+            (503, json!({ "status_message": "Temporary outage" }))
+        } else {
+            (200, movie_detail("The Matrix", "1999-03-31"))
+        }
+    });
+    seed_user(&host, "owner");
+    let owner = user(
+        "owner",
+        vec![Permission::Playback, Permission::RequestsAuto],
+    );
+
+    let err = create_request(&host, &owner, &body("owner"))
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("TMDB lookup failed"), "{err}");
+    let conn = host.db().get().unwrap();
+    let pending = db::list_requests(&conn, None)
+        .unwrap()
+        .pop()
+        .expect("pending request");
+    assert_eq!(pending.status, RequestStatus::Pending);
+    assert!(db::wanted_for_request(&conn, &pending.id)
+        .unwrap()
+        .is_empty());
+    drop(conn);
+
+    let retried = create_request(&host, &owner, &body("owner")).unwrap();
+    assert_eq!(retried.id, pending.id);
+    assert_eq!(retried.status, RequestStatus::Approved);
+    let conn = host.db().get().unwrap();
+    assert_eq!(db::wanted_for_request(&conn, &retried.id).unwrap().len(), 1);
 }
 
 #[test]
