@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
+import type { LayoutChangeEvent, StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
@@ -14,10 +14,23 @@ interface SortCellProps {
   sort: TableSort;
   box: StyleProp<ViewStyle>;
   pad: StyleProp<ViewStyle>;
+  bleed: StyleProp<ViewStyle>;
+  seam: ReactNode;
+  onLayout: ((event: LayoutChangeEvent) => void) | undefined;
   children?: ReactNode;
 }
 
-function SortCell({ column, align, sort, box, pad, children }: Readonly<SortCellProps>) {
+function SortCell({
+  column,
+  align,
+  sort,
+  box,
+  pad,
+  bleed,
+  seam,
+  onLayout,
+  children,
+}: Readonly<SortCellProps>) {
   const place = sortPlace(sort.columns, column);
   const state = place?.direction ?? 'none';
   const press = sort.press;
@@ -37,9 +50,9 @@ function SortCell({ column, align, sort, box, pad, children }: Readonly<SortCell
       ) : null}
     </>
   );
-  const inside = [s.head, pad, align === 'end' ? s.end : null];
+  const inside = [bleed, pad, s.head, align === 'end' ? s.end : null];
   return (
-    <Box role="columnheader" style={box} {...sortClaim(state)}>
+    <Box role="columnheader" style={[box, pad]} onLayout={onLayout} {...sortClaim(state)}>
       {press ? (
         <Focusable
           ring="focusEdge"
@@ -52,6 +65,7 @@ function SortCell({ column, align, sort, box, pad, children }: Readonly<SortCell
       ) : (
         <Box style={inside}>{face}</Box>
       )}
+      {seam}
     </Box>
   );
 }
@@ -59,7 +73,7 @@ function SortCell({ column, align, sort, box, pad, children }: Readonly<SortCell
 const HEAD_STATES = { hover: { bg: 'tint/10' }, press: { bg: 'tint/18' } } as const;
 
 const s = styles({
-  head: { flex: true, row: true, align: 'center', gap: 6, minW: 0 },
+  head: { flex: true, row: true, align: 'center', justify: 'flex-start', gap: 6, minW: 0 },
   end: { justify: 'flex-end' },
 });
 

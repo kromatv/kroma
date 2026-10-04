@@ -10,6 +10,7 @@ interface Place {
   head: boolean;
   ruled: boolean;
   at: number;
+  of: number;
 }
 
 interface TableSectionProps {

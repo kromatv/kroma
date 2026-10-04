@@ -32,6 +32,7 @@ interface SpatialNodeProps {
   onFocus?: () => void;
   onBlur?: () => void;
   onSelect?: () => void;
+  onLongSelect?: () => void;
   onActive?: () => void;
   onInactive?: () => void;
   ref?: Ref<NodeHandle>;
@@ -46,6 +47,7 @@ function SpatialNode({
   onFocus,
   onBlur,
   onSelect,
+  onLongSelect,
   onActive,
   onInactive,
   ref,
@@ -58,11 +60,20 @@ function SpatialNode({
 
   // A registration is immutable, so what it hands the navigator reads the
   // latest props rather than the ones this node mounted with.
-  const latest = useRef({ onFocus, onBlur, onSelect, onActive, onInactive, watched: false });
+  const latest = useRef({
+    onFocus,
+    onBlur,
+    onSelect,
+    onLongSelect,
+    onActive,
+    onInactive,
+    watched: false,
+  });
   latest.current = {
     onFocus,
     onBlur,
     onSelect,
+    onLongSelect,
     onActive,
     onInactive,
     watched: typeof children === 'function',
@@ -87,6 +98,8 @@ function SpatialNode({
         if (latest.current.watched) setFocused(false);
       },
       onSelect: () => latest.current.onSelect?.(),
+      holds: () => latest.current.onLongSelect !== undefined,
+      onLongSelect: () => latest.current.onLongSelect?.(),
       onActive: () => {
         latest.current.onActive?.();
         if (latest.current.watched) setActive(true);

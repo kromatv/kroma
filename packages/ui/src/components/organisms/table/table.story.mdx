@@ -4,7 +4,14 @@ import { Box } from '#ui/components/atoms/box';
 import { Chip } from '#ui/components/atoms/chip';
 import { Text } from '#ui/components/atoms/text';
 import { Table } from './table';
-import { Columned, MODULES, ServerSorted, SortedByOne, SortedByTwo } from './table.fixtures';
+import {
+  Columned,
+  MODULES,
+  Resizing,
+  ServerSorted,
+  SortedByOne,
+  SortedByTwo,
+} from './table.fixtures';
 
 export const story = defineStory({
   group: 'Layout',
@@ -139,6 +146,14 @@ The whole heading is the control, so it is one D-pad stop with a hit area the si
   {story.take(({ variant }) => <ServerSorted variant={variant} />)}
 </Scene>
 
+<Scene name="Columns the reader resizes">
+  `resizable` puts a seam at the trailing edge of every heading but the last, the same seam `<Resizable>` draws between panels. Drag it and the boundary follows the pointer: the column before it grows, the one after it gives the width up, and the columns beyond move only once that one reaches its floor. The table still never scrolls sideways, because a seam only ever shares out the width the table already has.
+
+  The seam is a D-pad stop too. Press it to take the arrow keys, move it, press it again to give them back. Press it twice, or hold it, and every column goes back to the width it was declared with. A column stops at its `min`, or at 56 points where it states none. A cell never paints past its column: text truncates, and anything that cannot, a chip or a badge, is clipped. So give a column that holds one a `min` as wide as what it holds, as the State column here does. Pass `autoSaveId` and the widths come back on the next visit, one layout for each set of columns the window draws.
+
+  {story.take(({ variant }) => <Resizing variant={variant} />)}
+</Scene>
+
 <Scene name="Composed cells">
   A cell holds whatever it is about. Only a plain string is set in the table's own type; anything else is drawn as it was written, which is how a badge or a chip lands in a column.
 
@@ -158,7 +173,9 @@ The whole heading is the control, so it is one D-pad stop with a hit area the si
             <Badge tone="HDR">HDR</Badge>
           </Table.Cell>
           <Table.Cell>
-            <Chip label="Yes" size="sm" dot="success" />
+            <Box row>
+              <Chip label="Yes" size="sm" dot="success" />
+            </Box>
           </Table.Cell>
         </Table.Row>
         <Table.Row>
@@ -167,7 +184,9 @@ The whole heading is the control, so it is one D-pad stop with a hit area the si
             <Badge tone="4K">4K</Badge>
           </Table.Cell>
           <Table.Cell>
-            <Chip label="Remux" size="sm" dot="accent" />
+            <Box row>
+              <Chip label="Remux" size="sm" dot="accent" />
+            </Box>
           </Table.Cell>
         </Table.Row>
       </Table.Body>
@@ -234,6 +253,8 @@ The whole heading is the control, so it is one D-pad stop with a hit area the si
 - Declare `columns` wherever a column has to hold its width: without one, a cell is as wide as its share of the row and nothing else.
 - Name a `column` only where sorting by it means something: one without a name is not a control and takes no stop.
 - Give a `flex` column a `min`, so a long title stops shrinking rather than squeezing to nothing.
+- Pass `autoSaveId` with `resizable` wherever a reader comes back to the same table: widths they set once should still be there.
+- Give a resizable column that holds a chip, a badge or a number a `min` as wide as its widest value, so a drag stops before it cuts one in half.
 </Do>
 
 <Dont>

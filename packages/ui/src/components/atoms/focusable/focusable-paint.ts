@@ -66,7 +66,6 @@ interface PaintInput {
   inert: boolean;
   canPress: boolean;
   actionable: boolean;
-  showRing: boolean;
 }
 
 /** Resolves the recipe and the one-off state coats into the styles a form
@@ -82,7 +81,6 @@ function useFocusablePaint({
   inert,
   canPress,
   actionable,
-  showRing,
 }: PaintInput) {
   const coats = useMemo(
     () => ({ focus: coat(states?.focus), hover: coat(states?.hover), press: coat(states?.press) }),
@@ -119,11 +117,10 @@ function useFocusablePaint({
   // Under `painted`, never over it: a control that states its own cursor - a
   // resize seam asking for `col-resize` - has to keep it.
   const cursor = pointerCursor(disabled, actionable);
-  const ringOff = WEB && !showRing ? NO_OUTLINE : null;
   // Under `painted` as well: a control that states its own transition keeps it.
   const dressed = useMemo(
-    () => (WEB ? [COLOUR_MOTION, cursor, ringOff, painted] : painted),
-    [cursor, ringOff, painted],
+    () => (WEB ? [COLOUR_MOTION, cursor, NO_OUTLINE, painted] : painted),
+    [cursor, painted],
   );
 
   return { dressed, focusedStyle, hoveredStyle, layers, paintedPressed, resolve, rest };

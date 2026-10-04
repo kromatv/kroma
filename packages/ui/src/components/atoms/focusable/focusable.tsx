@@ -165,6 +165,10 @@ function Focusable<R extends AnySv = AnySv>({
   useLayoutEffect(() => {
     pressRef.current = press;
   });
+  const longPress = useCallback(() => {
+    if (disabled || inputHeld() || pressGuardActive()) return;
+    onLongPress?.();
+  }, [disabled, onLongPress]);
 
   const { entry, isEntry, pointerPress } = useEntryFocus(autoFocus, press);
 
@@ -184,7 +188,6 @@ function Focusable<R extends AnySv = AnySv>({
       inert,
       canPress,
       actionable: Boolean(onPress) || asChild,
-      showRing,
     });
 
   // A disabled control is not a node at all, so the remote walks straight past
@@ -284,6 +287,7 @@ function Focusable<R extends AnySv = AnySv>({
         onPointerDown: pointerDown,
         onPointerUp: pointerUp,
         onLongPress,
+        onLongSelect: onLongPress ? longPress : undefined,
         hitSlop,
         resolve,
         children: content,

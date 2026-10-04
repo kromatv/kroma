@@ -29,6 +29,8 @@ interface PosterCardProps {
    *  from the item size it was given), so there the tile states its own. */
   width?: number;
   onPress?: () => void;
+  /** OK held on a remote, or a finger held on the tile. */
+  onLongPress?: () => void;
   onFocus?: () => void;
   autoFocus?: boolean;
 }
@@ -44,6 +46,7 @@ function PosterCard({
   watched = false,
   width,
   onPress,
+  onLongPress,
   onFocus,
   autoFocus,
 }: Readonly<PosterCardProps>) {
@@ -51,6 +54,7 @@ function PosterCard({
   return (
     <Focusable
       onPress={onPress}
+      onLongPress={onLongPress}
       onFocus={onFocus}
       autoFocus={autoFocus}
       label={title}

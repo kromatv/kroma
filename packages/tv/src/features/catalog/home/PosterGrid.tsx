@@ -15,6 +15,7 @@ export interface GridCard {
   watched?: boolean;
   progress?: number | null;
   onClick: () => void;
+  onLongPress?: () => void;
   onFocus?: () => void;
 }
 
@@ -54,6 +55,7 @@ function PosterGridImpl({ cards }: Readonly<{ cards: GridCard[] }>) {
           // figure); <PosterCard> takes a 0..1 ratio.
           progress={c.progress == null ? null : c.progress / 100}
           onPress={c.onClick}
+          onLongPress={c.onLongPress}
           onFocus={c.onFocus}
         />
       )}

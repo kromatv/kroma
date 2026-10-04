@@ -3,7 +3,7 @@
 // tree long enough for the exit to play.
 
 import { type ReactNode, useEffect, useState } from 'react';
-import { Animated, type ViewStyle } from 'react-native';
+import { Animated, type StyleProp, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { sharedStyle, styles } from '#ui/core';
 import { motion } from '#ui/core/tokens';
@@ -47,19 +47,22 @@ function useSlide(open: boolean): { mounted: boolean; shown: boolean } {
   return { mounted, shown };
 }
 
-function SlidePanel({
-  shown,
-  side,
-  width,
-  children,
-}: Readonly<{ shown: boolean; side: DrawerSide; width: number; children: ReactNode }>) {
-  const holder = side === 'right' ? s.holderRight : s.holderLeft;
+interface SlidePanelProps {
+  shown: boolean;
+  side: DrawerSide;
+  width: number;
+  inset: number;
+  children: ReactNode;
+}
+
+function SlidePanel({ shown, side, width, inset, children }: Readonly<SlidePanelProps>) {
+  const holder = [side === 'right' ? s.holderRight : s.holderLeft, inset ? frame(inset) : null];
   if (WEB) {
     const away = side === 'right' ? SLIDE_OUT : SLIDE_OUT_LEFT;
     return <Box style={[holder, move.slide, slideTo(shown ? 0 : away)]}>{children}</Box>;
   }
   return (
-    <SlidePanelNative shown={shown} side={side} width={width} holder={holder}>
+    <SlidePanelNative shown={shown} side={side} width={width + 2 * inset} holder={holder}>
       {children}
     </SlidePanelNative>
   );
@@ -75,7 +78,7 @@ function SlidePanelNative({
   shown: boolean;
   side: DrawerSide;
   width: number;
-  holder: ViewStyle;
+  holder: StyleProp<ViewStyle>;
   children: ReactNode;
 }>) {
   // Initial value matches the initial state so a drawer restored open does not
@@ -116,6 +119,9 @@ const move = styles({
 const FADE = move.fade;
 
 const slideTo = (x: number) => sharedStyle(`drawer:slide:${x}`, { transform: [{ translateX: x }] });
+
+const frame = (inset: number) =>
+  sharedStyle(`drawer:frame:${inset}`, { padding: inset, pointerEvents: 'box-none' });
 
 const s = styles({
   holderRight: { absolute: true, top: 0, bottom: 0, right: 0, maxW: '100%' },

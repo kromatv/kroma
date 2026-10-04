@@ -32,7 +32,7 @@ import {
   type ResizableLayoutDetails,
   SeamIndexContext,
 } from './resizable-context';
-import { HANDLE_THICKNESS, Handle } from './resizable-handle';
+import { Handle } from './resizable-handle';
 import {
   adjust,
   defaultLayout,
@@ -45,6 +45,7 @@ import {
   solve,
 } from './resizable-layout';
 import { Panel } from './resizable-panel';
+import { HANDLE_THICKNESS } from './resizable-seam';
 import { browserStorage, type ResizableStorage, readLayout, writeLayout } from './resizable-store';
 
 interface ResizableRootProps {

@@ -152,6 +152,8 @@ export function HistoryTable({
       required
       sort={sort}
       onSortChange={onSortChange}
+      resizable
+      autoSaveId={`kroma:admin-history:${columns.map((column) => column.column).join(',')}`}
     >
       <Table.Header>
         <Table.Row>

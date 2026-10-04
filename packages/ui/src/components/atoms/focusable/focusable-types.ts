@@ -62,6 +62,7 @@ interface FocusableProps<R extends AnySv = AnySv> {
   /** The variant picks to resolve `sv` with, typed to the recipe's own groups. */
   vars?: Parameters<R>[0];
   onPress?: () => void;
+  /** A finger or OK held down; given, OK acts on its release, not its press. */
   onLongPress?: () => void;
   onFocus?: () => void;
   onBlur?: () => void;

@@ -37,7 +37,7 @@ function Row({ asChild = false, children }: Readonly<TableRowProps>) {
   const host = asChild ? hostOf(children) : null;
   const cells = useMemo(() => parts(host ? host.props.children : children), [host, children]);
   const places = useMemo(
-    () => cells.map((_, at) => ({ variant, head, ruled, at })),
+    () => cells.map((_, at) => ({ variant, head, ruled, at, of: cells.length })),
     [variant, head, ruled, cells],
   );
   const placed = <Placed places={places} items={cells} />;

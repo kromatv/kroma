@@ -144,6 +144,7 @@ function DialogRow({ row, label, icon, disabled, danger, composed, delegate }: R
       role="menuitem"
       label={label || undefined}
       disabled={disabled}
+      autoFocus={row.entry}
       onPress={row.fire}
       sv={menuItemVariants}
       vars={{ danger }}

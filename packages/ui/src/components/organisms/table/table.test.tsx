@@ -219,13 +219,22 @@ describe('a heading that sorts', () => {
     expect(within(module).getByRole('button').querySelector('svg')).toBeTruthy();
   });
 
-  it('presses over the whole cell, whose padding it takes', () => {
+  it('pads like a body cell, so a column shares out the width the same in every row', () => {
     render(<Sortable />);
 
     const module = heading(0);
+    const cell = screen.getAllByRole('cell')[0] as HTMLElement;
 
-    expect(getComputedStyle(module).paddingLeft).toBe('0px');
-    expect(getComputedStyle(within(module).getByRole('button')).paddingLeft).toBe('12px');
+    expect(getComputedStyle(module).paddingLeft).toBe(getComputedStyle(cell).paddingLeft);
+  });
+
+  it('presses over the whole cell, bleeding back over the padding it shares', () => {
+    render(<Sortable />);
+
+    const button = within(heading(0)).getByRole('button');
+
+    expect(getComputedStyle(button).marginLeft).toBe('-12px');
+    expect(getComputedStyle(button).paddingLeft).toBe('12px');
   });
 
   it('leaves a heading whose column names no key out of the sort and out of the tab order', () => {

@@ -14,6 +14,8 @@ export interface NodeConfig {
   onActive?: () => void;
   onInactive?: () => void;
   onSelect?: () => void;
+  holds?: () => boolean;
+  onLongSelect?: () => void;
 }
 
 export interface TreeNode {
