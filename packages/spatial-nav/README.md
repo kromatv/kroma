@@ -58,7 +58,7 @@ React and no React Native. `./react` is the only half that renders anything.
 | `SpatialNavigationRoot isActive onDirectionHandledWithoutMovement` | `<NavigatorRoot active onEdge>` |
 | `SpatialNavigationNode orientation alignInGrid onActive onInactive` | `<NavigatorNode orientation alignInGrid index onActive onInactive>` |
 | `SpatialNavigationView direction alignInGrid style` | `<NavigatorView direction alignInGrid style>` |
-| `SpatialNavigationFocusableView onSelect onFocus onBlur style viewProps` | `<NavigatorItem onSelect onFocus onBlur index style viewProps>` |
+| `SpatialNavigationFocusableView onSelect onFocus onBlur style viewProps` | `<NavigatorItem onSelect onLongSelect onFocus onBlur index style viewProps>` |
 | `SpatialNavigationNodeRef` | `NodeHandle` |
 | `DefaultFocus enable` | `<DefaultFocus enable>` |
 | `useLockSpatialNavigation()` | `useLockNavigator()` |
@@ -113,6 +113,15 @@ Imperative `focus()` is unaffected: a lock stops the remote, not the app.
 Unlocking a navigator that is not locked clamps at zero rather than going
 negative.
 
+**OK can be held.** A node that `holds` turns a press into two halves: `enter`
+starts it and `release` selects, unless OK stayed down for half a second, in
+which case `onLongSelect` runs and the release is swallowed. A platform that
+times the hold itself (tvOS's `longSelect`) posts `hold` instead. A node without
+a hold selects on `enter`, as it always did, so only a control that has
+something to do on a hold pays for one. On the browser targets a pointer held
+on a `<NavigatorItem>` for the same half second long-selects it too, moves the
+ring onto it, and swallows the click its release makes.
+
 **`Directions` is a const object, not a TS enum.** `Directions.LEFT` still reads
 the same, and the type is `Direction`.
 
@@ -147,6 +156,7 @@ adds goes with it.
 | `navigator.focus.test.ts` | one owner, blur before focus, select, the active path |
 | `navigator.lifecycle.test.ts` | where the focus goes when its node is unregistered |
 | `navigator.lock.test.ts` | the counted lock |
+| `navigator.hold.test.ts` | OK held: a select on release, a long select after half a second or on `hold` |
 | `react.test.tsx` | the binding: tree order, one lit tile, a growing row, the lock hook |
 
 Count, not identity, is the assertion that matters in the focus tests. The bug

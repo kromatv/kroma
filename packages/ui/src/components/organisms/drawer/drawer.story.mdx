@@ -62,6 +62,10 @@ false.
 never a number; `fullBelow` is the viewport width under which the sheet takes
 the screen instead.
 
+`floating` holds the sheet off the screen's edges, by the same gutter a
+**Dialog** keeps, and rounds every corner: a card that slides in rather than a
+panel flush to its side. A television's long press on a title opens one.
+
 ## Naming it, then arranging it
 
 `title` names the sheet to assistive tech, and draws the ordinary header, close
@@ -154,6 +158,32 @@ component of your own is wrapped at the call site
           <Drawer.Footer>
             <Button block label="Request" />
           </Drawer.Footer>
+        </>
+      )}
+    />
+  ))}
+</Scene>
+
+<Scene name="Floating">
+  A card held off every edge, the shape a television's long press opens: the title's artwork and facts pinned at the top, its actions scrolling under them.
+
+  {story.take((props) => (
+    <Demo
+      {...props}
+      floating
+      body={(close) => (
+        <>
+          <Drawer.Header>
+            <Text variant="h2">Planet Earth II</Text>
+            <Text color="textMuted">1 season · Documentary</Text>
+          </Drawer.Header>
+          <Drawer.Panel>
+            <Box gap={8}>
+              <Button block variant="glass" label="Add to my list" onPress={close} />
+              <Button block variant="glass" label="Mark as watched" onPress={close} />
+              <Button block variant="glass" label="Report a problem" onPress={close} />
+            </Box>
+          </Drawer.Panel>
         </>
       )}
     />

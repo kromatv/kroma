@@ -1,7 +1,15 @@
 import type { ReactNode, Ref } from 'react';
-import { Platform, type StyleProp, View, type ViewProps, type ViewStyle } from 'react-native';
+import {
+  Platform,
+  type PointerEvent,
+  type StyleProp,
+  View,
+  type ViewProps,
+  type ViewStyle,
+} from 'react-native';
 import { useNodeHost } from './navigator-context';
 import { usePointerDevice } from './pointer-device';
+import { usePointerHold } from './pointer-hold';
 import { type ItemState, type NodeHandle, SpatialNode } from './spatial-node';
 
 const WEB = Platform.OS === 'web';
@@ -12,6 +20,10 @@ const UNSELECTED = { selected: false };
 interface PointerProps {
   onMouseEnter?: () => void;
   onClick?: () => void;
+  onPointerDown?: (event: PointerEvent) => void;
+  onPointerUp?: (event: PointerEvent) => void;
+  onPointerCancel?: (event: PointerEvent) => void;
+  onPointerLeave?: (event: PointerEvent) => void;
 }
 
 interface NavigatorItemProps {
@@ -19,6 +31,7 @@ interface NavigatorItemProps {
   /** This item's slot among its siblings, the same as a node's. */
   index?: number;
   onSelect?: () => void;
+  onLongSelect?: () => void;
   onFocus?: () => void;
   onBlur?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -37,6 +50,7 @@ function NavigatorItem({
   children,
   index,
   onSelect,
+  onLongSelect,
   onFocus,
   onBlur,
   style,
@@ -48,12 +62,19 @@ function NavigatorItem({
       focusable
       index={index}
       onSelect={onSelect}
+      onLongSelect={onLongSelect}
       onFocus={onFocus}
       onBlur={onBlur}
       ref={ref}
     >
       {(state) => (
-        <ItemView state={state} style={style} viewProps={viewProps} onSelect={onSelect}>
+        <ItemView
+          state={state}
+          style={style}
+          viewProps={viewProps}
+          onSelect={onSelect}
+          onLongSelect={onLongSelect}
+        >
           {children}
         </ItemView>
       )}
@@ -67,11 +88,27 @@ interface ItemViewProps {
   style: StyleProp<ViewStyle>;
   viewProps: NavigatorItemProps['viewProps'];
   onSelect: (() => void) | undefined;
+  onLongSelect: (() => void) | undefined;
 }
 
-function ItemView({ children, state, style, viewProps, onSelect }: Readonly<ItemViewProps>) {
+function ItemView({
+  children,
+  state,
+  style,
+  viewProps,
+  onSelect,
+  onLongSelect,
+}: Readonly<ItemViewProps>) {
   const { host, parentId: id } = useNodeHost();
   const device = usePointerDevice();
+  const hold = usePointerHold(
+    onLongSelect
+      ? () => {
+          host.requestFocus(id);
+          onLongSelect();
+        }
+      : undefined,
+  );
 
   // The navigator's focus is not the platform's, so a screen reader activating
   // an item the ring is not on has to move the ring before it acts.
@@ -86,7 +123,10 @@ function ItemView({ children, state, style, viewProps, onSelect }: Readonly<Item
           viewProps?.onMouseEnter?.();
           if (device.current === 'pointer') host.requestFocus(id);
         },
-        onClick: () => onSelect?.(),
+        onClick: () => {
+          if (!hold.tookClick()) onSelect?.();
+        },
+        ...(onLongSelect ? holdHandlers(hold, viewProps) : null),
       }
     : null;
 
@@ -104,6 +144,27 @@ function ItemView({ children, state, style, viewProps, onSelect }: Readonly<Item
       {typeof children === 'function' ? children(state) : children}
     </View>
   );
+}
+
+function holdHandlers(
+  hold: ReturnType<typeof usePointerHold>,
+  viewProps: NavigatorItemProps['viewProps'],
+): PointerProps {
+  const ended =
+    (own: ((event: PointerEvent) => void) | undefined) =>
+    (event: PointerEvent): void => {
+      own?.(event);
+      hold.end();
+    };
+  return {
+    onPointerDown: (event) => {
+      viewProps?.onPointerDown?.(event);
+      hold.down(event);
+    },
+    onPointerUp: ended(viewProps?.onPointerUp),
+    onPointerCancel: ended(viewProps?.onPointerCancel),
+    onPointerLeave: ended(viewProps?.onPointerLeave),
+  };
 }
 
 export type { NavigatorItemProps };

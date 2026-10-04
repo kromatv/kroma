@@ -11,6 +11,7 @@ export interface SearchResult {
   poster: string;
   colors: [string, string];
   onOpen: () => void;
+  onLongPress?: () => void;
 }
 
 interface TvSearchResultsProps {
@@ -54,6 +55,7 @@ export function TvSearchResults({ hits, query, width, header }: Readonly<TvSearc
               art={h.poster}
               tint={h.colors}
               onPress={h.onOpen}
+              onLongPress={h.onLongPress}
             />
           ))}
         </Grid>
