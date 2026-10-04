@@ -1,6 +1,7 @@
 import { type ReactNode, useMemo } from 'react';
 import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import type { ResizableStorage } from '#ui/components/organisms/resizable';
 import { useBreakpointStep } from '#ui/core';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { Cell } from './table-cell';
@@ -13,6 +14,7 @@ import {
 } from './table-columns';
 import { type TableSectionProps, type TableVariant, useTable } from './table-context';
 import { Frame } from './table-frame';
+import { ResizeContext, useColumnLayout } from './table-layout';
 import { Placed, parts } from './table-place';
 import { Row } from './table-row';
 import { nextSort, type SortColumn, SortContext, type TableSort } from './table-sort';
@@ -36,6 +38,17 @@ interface TableRootProps {
   /** The sort can never be handed back empty: a press on the last column
    *  sorting turns it around rather than dropping it. */
   required?: boolean;
+  /** Every heading but the last carries a seam at its trailing edge that the
+   *  reader drags, or takes with the remote, to share the width out again.
+   *  Needs `columns`. Pressing a seam twice, or holding it, gives every
+   *  column back the width it was declared with. */
+  resizable?: boolean;
+  /** Keeps the dragged widths between visits under this key, one layout per
+   *  set of columns the window draws. */
+  autoSaveId?: string;
+  /** Where `autoSaveId` writes. Defaults to `localStorage`, which is null off
+   *  the web. */
+  storage?: ResizableStorage | null;
   /** A DIRECT <Table.Header>, <Table.Body> or <Table.Row> child. */
   children?: ReactNode;
 }
@@ -48,11 +61,21 @@ function Root({
   onSortChange,
   multiple = false,
   required = false,
+  resizable = false,
+  autoSaveId,
+  storage,
   children,
 }: Readonly<TableRootProps>) {
   const sections = useMemo(() => parts(children), [children]);
   const places = useMemo(
-    () => sections.map((_, at) => ({ variant, head: false, ruled: at !== 0, at })),
+    () =>
+      sections.map((_, at) => ({
+        variant,
+        head: false,
+        ruled: at !== 0,
+        at,
+        of: sections.length,
+      })),
     [variant, sections],
   );
   const declared = useMemo(() => {
@@ -68,7 +91,14 @@ function Root({
   }, [sort, onSortChange, press]);
   return (
     <SortContext.Provider value={sorting}>
-      <GridScope columns={declared.list} boxes={declared.boxes} breakpoints={declared.breakpoints}>
+      <GridScope
+        columns={declared.list}
+        boxes={declared.boxes}
+        breakpoints={declared.breakpoints}
+        resizable={resizable}
+        autoSaveId={autoSaveId}
+        storage={storage}
+      >
         <Frame variant={variant} label={label}>
           <Placed places={places} items={sections} />
         </Frame>
@@ -81,16 +111,28 @@ function GridScope({
   columns,
   boxes,
   breakpoints,
+  resizable,
+  autoSaveId,
+  storage,
   children,
 }: Readonly<{
   columns: readonly TableColumn[];
   boxes: readonly ViewStyle[];
   breakpoints: number;
+  resizable: boolean;
+  autoSaveId: string | undefined;
+  storage: ResizableStorage | null | undefined;
   children: ReactNode;
 }>) {
   const step = useBreakpointStep(breakpoints);
-  const value = useMemo(() => ({ columns, boxes, step }), [columns, boxes, step]);
-  return <GridContext.Provider value={value}>{children}</GridContext.Provider>;
+  const layout = useColumnLayout({ columns, step, resizable, autoSaveId, storage });
+  const dragged = layout.boxes ?? boxes;
+  const value = useMemo(() => ({ columns, boxes: dragged, step }), [columns, dragged, step]);
+  return (
+    <ResizeContext.Provider value={layout.resize}>
+      <GridContext.Provider value={value}>{children}</GridContext.Provider>
+    </ResizeContext.Provider>
+  );
 }
 
 const NO_SORT: readonly SortColumn[] = [];
@@ -99,7 +141,7 @@ function Section({ head, children }: Readonly<{ head: boolean } & TableSectionPr
   const { variant, ruled } = useTable(head ? 'Header' : 'Body');
   const rows = useMemo(() => parts(children), [children]);
   const places = useMemo(
-    () => rows.map((_, at) => ({ variant, head, ruled: ruled || at !== 0, at })),
+    () => rows.map((_, at) => ({ variant, head, ruled: ruled || at !== 0, at, of: rows.length })),
     [variant, head, ruled, rows],
   );
   return (

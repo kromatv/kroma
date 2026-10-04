@@ -59,9 +59,9 @@ export function query(sort: readonly SortColumn[]): string {
 
 export const COLUMNS: readonly TableColumn[] = [
   { column: 'name', flex: 2, min: 160 },
-  { column: 'state', width: 172 },
-  { column: 'added', width: 128, from: 'md' },
-  { column: 'bytes', width: 92, align: 'end' },
+  { column: 'state', width: 172, min: 148 },
+  { column: 'added', width: 128, min: 112, from: 'md' },
+  { column: 'bytes', width: 92, min: 92, align: 'end' },
 ];
 
 function Head() {
@@ -84,7 +84,9 @@ function Rows({ rows }: Readonly<{ rows: readonly Download[] }>) {
         <Table.Row key={row.name}>
           <Table.Cell>{row.name}</Table.Cell>
           <Table.Cell>
-            <Chip label={row.state} size="sm" dot={DOT[row.state]} />
+            <Box row>
+              <Chip label={row.state} size="sm" dot={DOT[row.state]} />
+            </Box>
           </Table.Cell>
           <Table.Cell>{row.added}</Table.Cell>
           <Table.Cell>{`${(row.bytes / 1e9).toFixed(1)} GB`}</Table.Cell>
@@ -102,6 +104,24 @@ export function Columned({ variant, width }: Readonly<Take & { width: number }>)
         <Rows rows={DOWNLOADS.slice(0, 3)} />
       </Table.Root>
     </Box>
+  );
+}
+
+export function Resizing({ variant }: Readonly<Take>) {
+  const [sort, setSort] = useState<readonly SortColumn[]>([{ column: 'added', direction: 'desc' }]);
+  const rows = useMemo(() => ordered(DOWNLOADS, sort), [sort]);
+  return (
+    <Table.Root
+      variant={variant}
+      label="Downloads"
+      columns={COLUMNS}
+      sort={sort}
+      onSortChange={setSort}
+      resizable
+    >
+      <Head />
+      <Rows rows={rows} />
+    </Table.Root>
   );
 }
 
