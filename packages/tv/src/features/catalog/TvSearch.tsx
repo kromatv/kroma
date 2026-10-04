@@ -99,7 +99,8 @@ export function TvSearch() {
           remember();
           nav.go('movie', { item: m });
         },
-        onLongPress: m.kind === 'movie' ? () => hold({ kind: 'movie', item: m }) : undefined,
+        onLongPress: () =>
+          hold(m.kind === 'episode' ? { kind: 'episode', item: m } : { kind: 'movie', item: m }),
       };
     },
     [client, nav, hold],

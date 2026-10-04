@@ -30,18 +30,24 @@ vi.mock('#tv/app/providers/continue', () => ({
   useContinue: () => ({ refresh: state.refresh }),
 }));
 
+vi.mock('#tv/app/providers/connection', () => ({
+  useConnection: () => ({ shows: [SILO] }),
+}));
+
 const DUNE = {
   id: 'm1',
   title: 'Dune',
   kind: 'movie',
+  showId: null,
   season: null,
   episode: null,
 } as unknown as MediaItem;
-const SILO = { id: 's1', title: 'Silo' } as unknown as Show;
+const SILO = vi.hoisted(() => ({ id: 's1', title: 'Silo' })) as unknown as Show;
 const EPISODE = {
   id: 'e1',
   title: 'Le Pacte',
   kind: 'episode',
+  showId: 's1',
   season: null,
   episode: null,
 } as unknown as MediaItem;
@@ -176,13 +182,53 @@ describe('the title menu', () => {
     const { hold, forget } = mount({ kind: 'resume', item: EPISODE, progress: 0.4 });
     hold();
 
-    expect(rows('Le Pacte')).toEqual(['Resume', 'Remove from Continue watching']);
+    expect(rows('Le Pacte')).toEqual([
+      'Resume',
+      'Go to series',
+      'Remove from Continue watching',
+      'Report a problem',
+    ]);
     await act(async () => {
       fireEvent.click(screen.getByText('Remove from Continue watching'));
     });
 
     expect(forget).toHaveBeenCalledWith('e1');
     expect(state.refresh).toHaveBeenCalled();
+  });
+
+  it('offers a Continue watching film more info, and a report like every title', () => {
+    const { hold } = mount({ kind: 'resume', item: DUNE, progress: 0.3 });
+
+    hold();
+
+    expect(rows('Dune')).toEqual([
+      'Resume',
+      'More info',
+      'Remove from Continue watching',
+      'Report a problem',
+    ]);
+  });
+
+  it('offers an episode its play, its series, watched and report rows', () => {
+    const { hold } = mount({ kind: 'episode', item: EPISODE });
+
+    hold();
+
+    expect(rows('Le Pacte')).toEqual([
+      'Play',
+      'Go to series',
+      'Mark as watched',
+      'Report a problem',
+    ]);
+  });
+
+  it('opens the series an episode belongs to', () => {
+    const { hold } = mount({ kind: 'episode', item: EPISODE });
+    hold();
+
+    fireEvent.click(screen.getByText('Go to series'));
+
+    expect(screen.getByText('screen:show')).toBeTruthy();
   });
 
   it('lets Back through to the menu while it is up, and to the screen once it is not', () => {

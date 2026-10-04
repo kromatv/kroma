@@ -10,6 +10,7 @@ import { useTitleActions } from '#tv/features/catalog/useTitleActions';
 export type HeldTitle =
   | { kind: 'movie'; item: MediaItem }
   | { kind: 'show'; item: Show }
+  | { kind: 'episode'; item: MediaItem }
   | { kind: 'resume'; item: MediaItem; progress: number };
 
 interface TitleMenuProps {
