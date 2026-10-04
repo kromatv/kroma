@@ -188,7 +188,6 @@ function Focusable<R extends AnySv = AnySv>({
       inert,
       canPress,
       actionable: Boolean(onPress) || asChild,
-      showRing,
     });
 
   // A disabled control is not a node at all, so the remote walks straight past
