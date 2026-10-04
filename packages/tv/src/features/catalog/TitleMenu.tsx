@@ -1,19 +1,8 @@
 import type { MediaItem, Show } from '@kromatv/client/media';
-import { useT } from '@kromatv/ui';
-import {
-  Drawer,
-  FocusColumn,
-  type FocusNavHandlers,
-  type IconName,
-  ListRow,
-  styles,
-} from '@kromatv/ui/kit';
+import { Drawer, FocusColumn, type FocusNavHandlers, ListRow, styles } from '@kromatv/ui/kit';
 import { type ReactNode, useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { useContinue } from '#tv/app/providers/continue';
-import { useMyList } from '#tv/app/providers/mylist';
-import { useWatched } from '#tv/app/providers/watched';
-import { useClient, useNav } from '#tv/app/router';
 import { TitleMenuHeader } from '#tv/features/catalog/TitleMenuHeader';
+import { useTitleActions } from '#tv/features/catalog/useTitleActions';
 
 /** The title a held OK opened the menu on. `resume` is a Continue watching
  * tile: a film or an episode the viewer is part way through, `progress` of
@@ -23,77 +12,14 @@ export type HeldTitle =
   | { kind: 'show'; item: Show }
   | { kind: 'resume'; item: MediaItem; progress: number };
 
-interface TitleAction {
-  icon: IconName;
-  label: string;
-  run: () => void;
-}
-
 interface TitleMenuProps {
   title: HeldTitle;
   open: boolean;
   onClose: () => void;
 }
 
-function useActions(title: HeldTitle): TitleAction[] {
-  const t = useT();
-  const nav = useNav();
-  const client = useClient();
-  const myList = useMyList();
-  const watched = useWatched();
-  const { refresh } = useContinue();
-  const subject = title.item;
-
-  if (title.kind === 'resume') {
-    const forget: TitleAction = {
-      icon: 'x',
-      label: t('content.removeFromContinue'),
-      run: () => {
-        client.playback
-          .forget(title.item.id)
-          .then(refresh)
-          .catch(() => undefined);
-      },
-    };
-    if (title.item.kind !== 'movie') return [forget];
-    const info: TitleAction = {
-      icon: 'info-circle',
-      label: t('content.moreInfo'),
-      run: () => nav.go('movie', { item: title.item }),
-    };
-    return [info, forget];
-  }
-
-  const listed = myList.has(subject.id);
-  const seen = watched.has(subject.id);
-  const rest: TitleAction[] = [
-    {
-      icon: listed ? 'bookmark-off' : 'bookmark',
-      label: t(listed ? 'content.removeFromList' : 'content.addToList'),
-      run: () => myList.toggle(subject.id),
-    },
-    {
-      icon: seen ? 'eye-off' : 'check',
-      label: t(seen ? 'content.markUnwatched' : 'content.markWatched'),
-      run: () => watched.toggle(subject.id),
-    },
-    {
-      icon: 'flag',
-      label: t('report.action'),
-      run: () => nav.go('report', { kind: title.kind, id: subject.id, title: subject.title }),
-    },
-  ];
-  if (title.kind === 'show') return rest;
-  const play: TitleAction = {
-    icon: 'player-play-filled',
-    label: t('player.play'),
-    run: () => nav.go('player', { item: title.item }),
-  };
-  return [play, ...rest];
-}
-
 function TitleMenu({ title, open, onClose }: Readonly<TitleMenuProps>) {
-  const actions = useActions(title);
+  const actions = useTitleActions(title);
   return (
     <Drawer.Root open={open} onClose={onClose} title={title.item.title} width="md" floating>
       <Drawer.Header>
@@ -103,7 +29,7 @@ function TitleMenu({ title, open, onClose }: Readonly<TitleMenuProps>) {
         <FocusColumn style={s.actions}>
           {actions.map((action, at) => (
             <ListRow.Root
-              key={action.label}
+              key={action.id}
               icon={action.icon}
               size="tv"
               ground="surface"
