@@ -144,7 +144,7 @@ describe('a Focusable that delegates its host to a router link', () => {
     );
 
     fireEvent.blur(host('Genres'));
-    expect(declared(host('Genres'), 'outline-width')).toBeNull();
+    expect(declared(host('Genres'), 'outline-width')).toBe('0px');
   });
 
   it('gives the delegated element the hand a pressable control gets', () => {

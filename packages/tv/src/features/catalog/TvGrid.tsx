@@ -16,6 +16,7 @@ import {
 import { HintBar } from '#tv/features/catalog/home/HintBar';
 import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid';
 import { EMPTY } from '#tv/features/catalog/screenStyle';
+import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
 import { BrowseFilters, BrowseHeader } from '#tv/features/catalog/TvBrowseHeader';
 
 const LABEL_KEY: Record<'films' | 'series' | 'mylist', MessageKey> = {
@@ -46,7 +47,8 @@ export function TvGrid() {
   const watched = useWatched();
   const isFilms = kind === 'films';
   const isSeries = kind === 'series';
-  useFocusNav({ onBack: nav.back, resetKey: kind });
+  const titleMenu = useTitleMenu(nav.back);
+  useFocusNav({ onBack: titleMenu.onBack, resetKey: kind });
 
   const [sort, setSort] = useState<SortMode>('added');
   const [genre, setGenre] = useState<string | undefined>(undefined);
@@ -91,9 +93,10 @@ export function TvGrid() {
         progress: e.kind === 'show' ? (e.item.progress ?? null) : null,
         onClick: () =>
           e.kind === 'movie' ? nav.go('movie', { item: e.item }) : nav.go('show', { show: e.item }),
+        onLongPress: () => titleMenu.open(e),
         onFocus: () => setFocusId(e.item.id),
       })),
-    [entries, client, nav, watched, t],
+    [entries, client, nav, watched, titleMenu.open, t],
   );
 
   const focused = useMemo<Entry | null>(
@@ -138,6 +141,7 @@ export function TvGrid() {
       )}
 
       <HintBar browseKey="content.hintBrowseAll" strength={0.85} />
+      {titleMenu.menu}
     </Box>
   );
 }

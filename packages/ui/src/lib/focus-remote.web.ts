@@ -92,6 +92,10 @@ export function configureRemote(): void {
         // steer the navigator instead of being ignored.
         const direction = event.key ? KEYS[event.key] : CODES[legacyCode(event)];
         if (!direction) return;
+        if (direction === Directions.ENTER && event.repeat) {
+          event.preventDefault();
+          return;
+        }
         // No text-entry guard, deliberately: react-native-web's TextInput calls
         // stopPropagation() on every keydown (its issue #612), so a key pressed
         // while a field holds the caret never reaches this listener.
@@ -102,10 +106,16 @@ export function configureRemote(): void {
         markPress();
         handle(direction);
       };
+      const onKeyUp = (event: KeyboardEvent) => {
+        const direction = event.key ? KEYS[event.key] : CODES[legacyCode(event)];
+        if (direction === Directions.ENTER) handle(Directions.RELEASE);
+      };
       document.addEventListener('keydown', onKey);
+      document.addEventListener('keyup', onKeyUp);
       return () => {
         handlers.delete(handle);
         document.removeEventListener('keydown', onKey);
+        document.removeEventListener('keyup', onKeyUp);
       };
     },
   });

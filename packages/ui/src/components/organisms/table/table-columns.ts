@@ -11,7 +11,8 @@ interface TableColumn {
   width?: number;
   /** Share of the width the fixed columns leave, defaulting to 1. */
   flex?: number;
-  /** The px a `flex` column stops shrinking at. */
+  /** The px a `flex` column stops shrinking at, and the floor a resize stops
+   *  any column at. */
   min?: number;
   /** Drawn from this breakpoint up, and absent below it: not narrowed, not
    *  clipped, and not read out. */
@@ -68,5 +69,12 @@ function drawn(column: TableColumn | undefined, step: number): boolean {
   return !column?.from || step >= stepOf(column.from);
 }
 
+function lastDrawn(columns: readonly TableColumn[], count: number, step: number): number {
+  for (let at = count - 1; at >= 0; at -= 1) {
+    if (drawn(columns[at], step)) return at;
+  }
+  return -1;
+}
+
 export type { TableColumn, TableGrid };
-export { breakpointMask, columnBox, drawn, FILL, GridContext, NO_COLUMNS, useTableGrid };
+export { breakpointMask, columnBox, drawn, FILL, GridContext, lastDrawn, NO_COLUMNS, useTableGrid };

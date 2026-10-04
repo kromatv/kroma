@@ -27,4 +27,11 @@ export const SURFACE_WIDTH: Record<SurfaceWidth, number> = {
 /** The gutter a `<Dialog>`'s three bands share, and what its `pad` defaults to. */
 export const DIALOG_PAD = 40;
 
+/** The frame a floating surface keeps from the screen's edges. 64 frames a
+ *  television; on a phone it would cost a third of the width the panel has to
+ *  say anything in, so a narrow window keeps 16. */
+export function surfaceGutter(windowWidth: number): number {
+  return windowWidth < 600 ? 16 : 64;
+}
+
 export type { SurfaceWidth };

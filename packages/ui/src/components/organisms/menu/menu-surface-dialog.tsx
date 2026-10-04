@@ -41,19 +41,21 @@ function dismissReason(): MenuDismissReason {
 interface DialogEntryProps {
   entry: ReactElement;
   spec: MenuRowSpec | undefined;
+  first: boolean;
   onFire: (spec: MenuRowSpec) => void;
 }
 
-function DialogEntry({ entry, spec, onFire }: Readonly<DialogEntryProps>) {
+function DialogEntry({ entry, spec, first, onFire }: Readonly<DialogEntryProps>) {
   const row = useMemo<MenuRowState>(
     () => ({
       presentation: 'dialog',
       active: false,
+      entry: first,
       fire: () => {
         if (spec) onFire(spec);
       },
     }),
-    [spec, onFire],
+    [spec, first, onFire],
   );
   return <MenuRowContext.Provider value={row}>{entry}</MenuRowContext.Provider>;
 }
@@ -73,6 +75,7 @@ export function MenuSurfaceDialog({
     },
     [onDismiss],
   );
+  const opening = rows.find((row) => !row.disabled)?.at;
   return (
     <Dialog.Root open={open} onClose={() => onDismiss(dismissReason())} title={label} width="sm">
       <FocusColumn>
@@ -81,6 +84,7 @@ export function MenuSurfaceDialog({
             key={entry.key}
             entry={entry}
             spec={rows.find((row) => row.at === at)}
+            first={at === opening}
             onFire={fire}
           />
         ))}

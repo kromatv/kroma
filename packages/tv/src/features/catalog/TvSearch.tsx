@@ -28,6 +28,7 @@ import { onSearchRequest, takePendingSearch } from '#tv/app/searchRequest';
 import { searchShell } from '#tv/app/searchShell';
 import { voiceSearchBackend } from '#tv/app/voiceSearch';
 import { addRecentSearch, getRecentSearches } from '#tv/features/catalog/searchHistory';
+import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
 import type { SearchResult } from '#tv/features/catalog/TvSearchResults';
 import { TvSearchResults } from '#tv/features/catalog/TvSearchResults';
 import { TvVoiceSearch } from '#tv/features/catalog/TvVoiceSearch';
@@ -52,7 +53,9 @@ export function TvSearch() {
   const [hits, setHits] = useState<SearchResult[]>([]);
   const [recent, setRecent] = useState<string[]>(getRecentSearches);
   const { physicalKeyboard } = useEnv();
-  useFocusNav({ onBack: nav.back });
+  const titleMenu = useTitleMenu(nav.back);
+  useFocusNav({ onBack: titleMenu.onBack });
+  const hold = titleMenu.open;
   // Null on every shell that cannot hear (the browser TVs today, an Android TV
   // whose recogniser is missing): then no mic is shown at all.
   const voice = voiceSearchBackend();
@@ -82,6 +85,7 @@ export function TvSearch() {
             remember();
             nav.go('show', { show });
           },
+          onLongPress: () => hold({ kind: 'show', item: show }),
         };
       }
       const m = hit.item; // movie | episode both navigate to the item detail
@@ -95,9 +99,11 @@ export function TvSearch() {
           remember();
           nav.go('movie', { item: m });
         },
+        onLongPress: () =>
+          hold(m.kind === 'episode' ? { kind: 'episode', item: m } : { kind: 'movie', item: m }),
       };
     },
-    [client, nav],
+    [client, nav, hold],
   );
 
   // Offline fallback: filter the already-loaded catalogue by title / genre.
@@ -167,16 +173,19 @@ export function TvSearch() {
   if (shell) {
     const { Shell } = shell;
     return (
-      <Shell value={query} onChange={setQuery} placeholder={t('nav.search')}>
-        {({ width }) => (
-          <TvSearchResults
-            hits={hits}
-            query={query}
-            width={width - RESULTS_PADDING}
-            header={recentPills}
-          />
-        )}
-      </Shell>
+      <>
+        <Shell value={query} onChange={setQuery} placeholder={t('nav.search')}>
+          {({ width }) => (
+            <TvSearchResults
+              hits={hits}
+              query={query}
+              width={width - RESULTS_PADDING}
+              header={recentPills}
+            />
+          )}
+        </Shell>
+        {titleMenu.menu}
+      </>
     );
   }
 
@@ -239,6 +248,7 @@ export function TvSearch() {
       {speaking && voice ? (
         <TvVoiceSearch backend={voice} onText={setQuery} onDone={stopSpeaking} />
       ) : null}
+      {titleMenu.menu}
     </Box>
   );
 }

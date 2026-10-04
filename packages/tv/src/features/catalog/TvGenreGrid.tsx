@@ -11,6 +11,7 @@ import {
 } from '#tv/features/catalog/home/AmbientBackdrop';
 import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid';
 import { EMPTY, TITLE } from '#tv/features/catalog/screenStyle';
+import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
 
 // Best-known titles first (rating, then year) the same ranking as the person grid.
 const SORT: SortMode = 'rating';
@@ -24,7 +25,8 @@ export function TvGenreGrid() {
   const client = useClient();
   const t = useT();
   const nav = useNav();
-  useFocusNav({ onBack: nav.back, resetKey: slug });
+  const titleMenu = useTitleMenu(nav.back);
+  useFocusNav({ onBack: titleMenu.onBack, resetKey: slug });
 
   const [focusId, setFocusId] = useState<string | null>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: slug is an intentional re-run key (a genre switch clears the focus echo), not read inside the effect
@@ -49,9 +51,10 @@ export function TvGenreGrid() {
         progress: e.kind === 'show' ? (e.item.progress ?? null) : null,
         onClick: () =>
           e.kind === 'movie' ? nav.go('movie', { item: e.item }) : nav.go('show', { show: e.item }),
+        onLongPress: () => titleMenu.open(e),
         onFocus: () => setFocusId(e.item.id),
       })),
-    [entries, client, nav],
+    [entries, client, nav, titleMenu.open],
   );
 
   const focused = useMemo<Entry | null>(
@@ -83,6 +86,7 @@ export function TvGenreGrid() {
           </Text>
         </Box>
       )}
+      {titleMenu.menu}
     </Box>
   );
 }

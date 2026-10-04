@@ -18,7 +18,7 @@ import { useModalPortalRepair } from '#ui/lib/modal-portal';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { surfaceBands } from '#ui/lib/surface-bands';
-import { SURFACE_WIDTH, type SurfaceWidth } from '#ui/lib/surface-shell';
+import { SURFACE_WIDTH, type SurfaceWidth, surfaceGutter } from '#ui/lib/surface-shell';
 import { Close, Footer, Header, PAD, Panel, type Shell, ShellContext } from './drawer-parts';
 import { type DrawerSide, FADE, SlidePanel, useSlide, WEB } from './drawer-slide';
 
@@ -35,6 +35,8 @@ interface DrawerRootProps {
   /** Viewport width under which the panel takes the whole screen (the phone
    *  nav sheet). 0 keeps the fixed width everywhere. */
   fullBelow?: number;
+  /** Held off the screen's edges with every corner rounded; ignored under `fullBelow`. */
+  floating?: boolean;
   /** Surface overrides (a nav sheet's darker fill), merged over the panel. */
   panelStyle?: ViewStyle;
   /** Horizontal padding shared by the three bands. 0 hands the surface to
@@ -52,6 +54,7 @@ function Root({
   side = 'right',
   width = 'md',
   fullBelow = 0,
+  floating = false,
   panelStyle,
   pad = PAD,
   children,
@@ -71,6 +74,7 @@ function Root({
       side={side}
       width={width}
       fullBelow={fullBelow}
+      floating={floating}
       panelStyle={panelStyle}
       pad={pad}
       shown={shown}
@@ -97,6 +101,7 @@ function DrawerSurface({
   side,
   width,
   fullBelow,
+  floating,
   panelStyle,
   pad,
   shown,
@@ -108,6 +113,7 @@ function DrawerSurface({
     side: DrawerSide;
     width: SurfaceWidth;
     fullBelow: number;
+    floating: boolean;
     pad: number;
     shown: boolean;
     trapped: boolean;
@@ -117,6 +123,7 @@ function DrawerSurface({
   useFocusNav({ onBack: onClose });
   const window = useWindowDimensions();
   const full = fullBelow > 0 && window.width < fullBelow;
+  const inset = floating && !full ? surfaceGutter(window.width) : 0;
   const panelWidth = full ? window.width : SURFACE_WIDTH[width];
   const shell = useMemo<Shell>(() => ({ pad, onClose }), [pad, onClose]);
 
@@ -140,13 +147,13 @@ function DrawerSurface({
       >
         <DismissBackdrop onPress={onClose} />
       </Box>
-      <SlidePanel shown={shown} side={side} width={panelWidth}>
+      <SlidePanel shown={shown} side={side} width={panelWidth} inset={inset}>
         <Box
           flex
           w={panelWidth}
           maxW="100%"
-          bg="surface1"
-          style={[side === 'right' ? s.panelRight : s.panelLeft, panelStyle]}
+          bg={inset ? 'surface2' : 'surface1'}
+          style={[edgeOf(side, inset), panelStyle]}
           role="dialog"
           aria-modal
           accessibilityLabel={title}
@@ -168,6 +175,11 @@ function DrawerSurface({
   ) : (
     panel
   );
+}
+
+function edgeOf(side: DrawerSide, inset: number): ViewStyle {
+  if (inset) return s.card;
+  return side === 'right' ? s.panelRight : s.panelLeft;
 }
 
 function defaultHeader(title: string): ReactNode {
@@ -192,6 +204,7 @@ const s = styles({
   scrimInert: { pointerEvents: 'none' },
   panelRight: { borderLeftWidth: 1, borderColor: 'borderStrong', h: '100%' },
   panelLeft: { borderRightWidth: 1, borderColor: 'borderStrong', h: '100%' },
+  card: { border: 'borderStrong', radius: 'xl', overflow: 'hidden', h: '100%' },
 });
 
 /**

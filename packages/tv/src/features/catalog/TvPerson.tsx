@@ -9,6 +9,7 @@ import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid'
 import { PersonHeader } from '#tv/features/catalog/person/PersonHeader';
 import { usePersonDetail } from '#tv/features/catalog/person/usePersonDetail';
 import { EMPTY } from '#tv/features/catalog/screenStyle';
+import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
 
 /** Everything one cast/crew person is credited in. The filmography is filtered
  * out of the already-loaded catalogue (no request); the biography comes from the
@@ -19,7 +20,9 @@ export function TvPerson() {
   const client = useClient();
   const t = useT();
   const nav = useNav();
-  useFocusNav({ onBack: nav.back, resetKey: name });
+  const titleMenu = useTitleMenu(nav.back);
+  useFocusNav({ onBack: titleMenu.onBack, resetKey: name });
+  const hold = titleMenu.open;
 
   const { cards, involvement } = useMemo(() => {
     const mine = (meta?: Metadata | null) => creditsPerson(meta, name);
@@ -37,6 +40,7 @@ export function TvPerson() {
         poster: (width: number) => client.media.artwork.posterFor(m, width),
         colors: posterColors(m.id),
         onClick: () => nav.go('movie', { item: m }),
+        onLongPress: () => hold({ kind: 'movie', item: m }),
       } satisfies GridCard,
     }));
     const showCards = matchedShows.map((s) => ({
@@ -47,6 +51,7 @@ export function TvPerson() {
         poster: (width: number) => client.media.artwork.showPosterFor(s, width),
         colors: posterColors(s.id),
         onClick: () => nav.go('show', { show: s }),
+        onLongPress: () => hold({ kind: 'show', item: s }),
       } satisfies GridCard,
     }));
 
@@ -55,7 +60,7 @@ export function TvPerson() {
       .map((c) => c.card);
     const metas = [...matchedMovies, ...matchedShows].map((it) => it.metadata);
     return { cards, involvement: personInvolvement(metas, name) };
-  }, [movies, shows, name, client, nav]);
+  }, [movies, shows, name, client, nav, hold]);
 
   const detail = usePersonDetail(name);
   // The provider's portrait is the better one; the credit's photo is the instant
@@ -85,6 +90,7 @@ export function TvPerson() {
           </Text>
         </Box>
       )}
+      {titleMenu.menu}
     </Box>
   );
 }

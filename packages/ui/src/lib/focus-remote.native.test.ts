@@ -127,19 +127,37 @@ describe('the TV remote', () => {
     expect(nav1.moves).toEqual(['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right']);
   });
 
-  it('turns Select into the navigator’s enter', async () => {
+  it('turns a tvOS Select into a whole press, since it arrives once OK is back up', async () => {
     const { remote } = await load();
     const nav1 = navigator();
     renderHook(() => remote.useRemoteBridge());
-    press('select');
-    expect(nav1.moves).toEqual(['enter']);
+    press('select', 1);
+    expect(nav1.moves).toEqual(['enter', 'release']);
+  });
+
+  it('turns the two halves of an Android Select into a press and a release', async () => {
+    const { remote } = await load('android');
+    const nav1 = navigator();
+    renderHook(() => remote.useRemoteBridge());
+    press('select', 0);
+    press('select', 1);
+    expect(nav1.moves).toEqual(['enter', 'release']);
+  });
+
+  it('turns a held Select into a hold, and its end into a release', async () => {
+    const { remote } = await load();
+    const nav1 = navigator();
+    renderHook(() => remote.useRemoteBridge());
+    press('longSelect', 0);
+    press('longSelect', 1);
+    expect(nav1.moves).toEqual(['hold', 'release']);
   });
 
   it('ignores a button the navigator has no direction for', async () => {
     const { remote } = await load();
     const nav1 = navigator();
     renderHook(() => remote.useRemoteBridge());
-    for (const event of ['menu', 'playPause', 'longSelect']) press(event);
+    for (const event of ['menu', 'playPause', 'longPlayPause']) press(event);
     expect(nav1.moves).toEqual([]);
   });
 
@@ -197,6 +215,32 @@ describe('the Android key host', () => {
       keyDown(result.current, { code });
     }
     expect(nav1.moves).toEqual(['up', 'down', 'left', 'right', 'enter']);
+  });
+
+  it('releases the press when OK comes back up', async () => {
+    const { remote } = await load('android');
+    const nav1 = navigator();
+    const { result } = renderHook(() => remote.useRemoteHostProps());
+
+    keyDown(result.current, { code: 'Enter' });
+    act(() => {
+      result.current.onKeyUp?.({
+        nativeEvent: { code: 'Enter', key: 'Enter' },
+      } as NativeSyntheticEvent<TVKeyEvent>);
+    });
+
+    expect(nav1.moves).toEqual(['enter', 'release']);
+  });
+
+  it('swallows the auto-repeat of a held OK, so a hold cannot fire what it opens', async () => {
+    const { remote } = await load('android');
+    const nav1 = navigator();
+    const { result } = renderHook(() => remote.useRemoteHostProps());
+
+    keyDown(result.current, { code: 'Enter' });
+    keyDown(result.current, { code: 'Enter', repeat: true });
+
+    expect(nav1.moves).toEqual(['enter']);
   });
 
   it('passes auto-repeat straight through, which is how a long rail scrolls', async () => {

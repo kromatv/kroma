@@ -11,6 +11,8 @@ export const RESET: readonly SheetEntry[] = [
   rule('a', { color: 'inherit', textDecoration: 'none' }),
   rule(FLOW, { margin: 0 }),
   rule(['ul', 'ol'], { padding: 0, listStyle: 'none' }),
+  // At zero specificity, so a ring any control declares for itself still wins.
+  rule(':where(:focus)', { outline: 'none' }),
   rule(HEADINGS, { fontSize: 'inherit', fontWeight: 'inherit' }),
   rule(FIELDS, {
     margin: 0,

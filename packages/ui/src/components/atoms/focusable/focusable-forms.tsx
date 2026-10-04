@@ -176,6 +176,7 @@ function NavigatorForm({
     onPointerDown: () => void;
     onPointerUp: () => void;
     onLongPress: FocusableProps['onLongPress'];
+    onLongSelect: (() => void) | undefined;
     hitSlop: FocusableProps['hitSlop'];
     resolve: Resolve;
     children: FocusableProps['children'];
@@ -200,6 +201,7 @@ function NavigatorForm({
     <NavigatorItem
       ref={entry}
       onSelect={at.press}
+      onLongSelect={at.onLongSelect}
       onFocus={mirror.focus}
       onBlur={at.handleBlur}
       // On the browser targets the control is ONE element: a second view per

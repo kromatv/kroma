@@ -31,10 +31,10 @@ describe('the ring a control draws', () => {
     expect(declared(painted('Ronde'), 'outlineWidth')).toBe('0px');
   });
 
-  it('composes no outline at all on a control that asked for nothing', () => {
+  it("suppresses the browser's own outline on a control whose ring is not showing", () => {
     render(<Focusable label="Nue" onPress={() => {}} />);
 
-    expect(declared(painted('Nue'), 'outlineStyle')).toBeNull();
+    expect(declared(painted('Nue'), 'outlineStyle')).toBe('none');
   });
 
   it('keeps the ring a control paints itself after opting out of the kit ring', () => {

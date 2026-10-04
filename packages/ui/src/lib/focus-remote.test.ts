@@ -139,6 +139,36 @@ describe('arrow keys', () => {
 
   // Without this a television's browser scrolls the page and the focused
   // control walks out of the viewport.
+  it('releases the press when Enter comes back up', () => {
+    const { handle, stop } = mount();
+
+    press('Enter');
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter' }));
+
+    expect(handle.mock.calls).toEqual([['enter'], ['release']]);
+    stop();
+  });
+
+  it('swallows the auto-repeat of a held OK, so a hold cannot fire what it opens', () => {
+    const { handle, stop } = mount();
+
+    press('Enter');
+    const repeat = press('Enter', { repeat: true });
+
+    expect(handle.mock.calls).toEqual([['enter']]);
+    expect(repeat.defaultPrevented).toBe(true);
+    stop();
+  });
+
+  it('releases nothing when another key comes back up', () => {
+    const { handle, stop } = mount();
+
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown' }));
+
+    expect(handle).not.toHaveBeenCalled();
+    stop();
+  });
+
   it('takes the key from the browser', () => {
     const { stop } = mount();
     expect(press('ArrowDown').defaultPrevented).toBe(true);

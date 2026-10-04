@@ -33,12 +33,19 @@ export function HintBar({
     >
       <Hint text={t(browseKey)} size={13} gap={3} color="textDim" textStyle={s.hint} />
       <Hint text={t('content.hintRows')} size={13} gap={3} color="textDim" textStyle={s.hint} />
-      <Text style={s.hint} color="textDim">
-        <Text style={s.hintKey} color="accentText">
-          {t('content.hintOk')}
-        </Text>
-        {` ${t('content.hintOpen')}`}
-      </Text>
+      <KeyHint button={t('content.hintOk')} action={t('content.hintOpen')} />
+      <KeyHint button={t('content.hintHold')} action={t('content.moreActions')} />
     </Box>
+  );
+}
+
+function KeyHint({ button, action }: Readonly<{ button: string; action: string }>) {
+  return (
+    <Text style={s.hint} color="textDim">
+      <Text style={s.hintKey} color="accentText">
+        {button}
+      </Text>
+      {` ${action}`}
+    </Text>
   );
 }

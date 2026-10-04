@@ -156,3 +156,35 @@ describe('the exit', () => {
     }
   });
 });
+
+describe('a floating sheet', () => {
+  it('rounds every corner and stands off the edges of the screen', () => {
+    render(
+      <Drawer.Root open floating onClose={() => {}} title="Planet Earth II">
+        <Text>Ajouter à ma liste</Text>
+      </Drawer.Root>,
+    );
+    const sheet = getComputedStyle(screen.getByLabelText('Planet Earth II'));
+    const frame = getComputedStyle(
+      screen.getByLabelText('Planet Earth II').parentElement as Element,
+    );
+
+    expect([sheet.borderTopLeftRadius, sheet.borderBottomRightRadius]).not.toContain('0px');
+    expect(frame.paddingRight).not.toBe('0px');
+    expect([frame.paddingTop, frame.paddingBottom]).toEqual([
+      frame.paddingRight,
+      frame.paddingRight,
+    ]);
+  });
+
+  it('stays flush to its side when it is not asked to float', () => {
+    render(
+      <Drawer.Root open onClose={() => {}} title="Notifications">
+        <Text>Rien</Text>
+      </Drawer.Root>,
+    );
+    const frame = getComputedStyle(screen.getByLabelText('Notifications').parentElement as Element);
+
+    expect(frame.paddingRight).toBe('0px');
+  });
+});

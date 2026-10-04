@@ -31,8 +31,13 @@ const REMOTE: Record<string, Direction> = {
   swipeDown: Directions.DOWN,
   swipeLeft: Directions.LEFT,
   swipeRight: Directions.RIGHT,
-  select: Directions.ENTER,
 };
+
+const RELEASE = Directions.RELEASE;
+const HOLD = Directions.HOLD;
+const TAP: readonly Direction[] = [Directions.ENTER, RELEASE];
+const NONE: readonly Direction[] = [];
+const IS_ANDROID = Platform.OS === 'android';
 
 // A SET, not a single slot: screens stack, so two navigators can be subscribed
 // for a moment, and React tears the old subscription down AFTER the new one is
@@ -96,13 +101,20 @@ const useRemoteEvents: (handler: (event: HWEvent) => void) => void = HAS_TV_EVEN
 export function useRemoteBridge(on = true): void {
   useRemoteEvents((event: HWEvent) => {
     if (!on) return;
-    if (isRemoteKeyUp(event)) return;
     // A full-screen overlay (the brand intro) owns the remote while it's up.
     if (inputHeld()) return;
-    const direction = REMOTE[event.eventType];
-    if (!direction) return;
-    stepRing(direction, 'events');
+    for (const direction of directionsOf(event)) stepRing(direction, 'events');
   });
+}
+
+function directionsOf(event: HWEvent): readonly Direction[] {
+  if (event.eventType === 'longSelect') return [event.eventKeyAction === 1 ? RELEASE : HOLD];
+  if (event.eventType === 'select') {
+    if (!IS_ANDROID) return TAP;
+    return [isRemoteKeyUp(event) ? RELEASE : Directions.ENTER];
+  }
+  const direction = isRemoteKeyUp(event) ? undefined : REMOTE[event.eventType];
+  return direction ? [direction] : NONE;
 }
 
 // Android TV: the new architecture (ReactSurfaceView) routes keys to per-view
@@ -134,6 +146,7 @@ const REMOTE_KEY: Record<string, RemoteKey> = {
 /** Empty off Android, where `useTVEventHandler` above is the whole story. */
 export interface RemoteHostProps {
   onKeyDown?: (event: NativeSyntheticEvent<TVKeyEvent>) => void;
+  onKeyUp?: (event: NativeSyntheticEvent<TVKeyEvent>) => void;
 }
 
 // Same Set-not-slot reasoning as `handlers` above.
@@ -145,20 +158,18 @@ const typists = new Set<(key: string) => void>();
 const remoteKeys = new Set<(key: RemoteKey) => void>();
 
 const NO_HOST_PROPS: RemoteHostProps = {};
-const IS_ANDROID = Platform.OS === 'android';
 
 /** Spread by <FocusRoot>. `on` takes <FocusScope>'s `bridge`: the key events
  * BUBBLE, so a scope nested inside another must not carry a second host or one
  * press walks the ring twice. */
 export function useRemoteHostProps(on = true): RemoteHostProps {
   const onKeyDown = useCallback((event: NativeSyntheticEvent<TVKeyEvent>) => {
-    // This is the DOWN event; `onKeyUp` is a separate prop nothing subscribes to.
     if (inputHeld()) return;
     const { code, key, altKey, ctrlKey, metaKey } = event.nativeEvent;
     // Auto-repeat from a held direction is how a TV scrolls a long rail.
     const direction = KEY_CODES[code];
     if (direction) {
-      stepRing(direction, 'host');
+      if (direction !== Directions.ENTER || !event.nativeEvent.repeat) stepRing(direction, 'host');
       // Fanned to the player chrome as well, the same way `useTVEventHandler`
       // feeds both the navigator bridge and the player on tvOS. Sent whatever
       // `stepRing` decided: the chrome keeps its own virtual focus and counts
@@ -173,7 +184,10 @@ export function useRemoteHostProps(on = true): RemoteHostProps {
     if (key !== 'Backspace' && key.length !== 1) return;
     for (const handle of typists) handle(key);
   }, []);
-  return IS_ANDROID && on ? { onKeyDown } : NO_HOST_PROPS;
+  const onKeyUp = useCallback((event: NativeSyntheticEvent<TVKeyEvent>) => {
+    if (KEY_CODES[event.nativeEvent.code] === Directions.ENTER) stepRing(RELEASE, 'host');
+  }, []);
+  return IS_ANDROID && on ? { onKeyDown, onKeyUp } : NO_HOST_PROPS;
 }
 
 /**

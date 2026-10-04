@@ -16,7 +16,7 @@ import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
 import { WEB } from '#ui/lib/platform';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { surfaceBands } from '#ui/lib/surface-bands';
-import { DIALOG_PAD, SURFACE_WIDTH, type SurfaceWidth } from '#ui/lib/surface-shell';
+import { DIALOG_PAD, SURFACE_WIDTH, type SurfaceWidth, surfaceGutter } from '#ui/lib/surface-shell';
 import { Actions } from './dialog-actions';
 import { Footer, Header, Panel, type Shell, ShellContext } from './dialog-parts';
 
@@ -108,9 +108,7 @@ function DialogSurface({
   }
 >) {
   useFocusNav({ onBack: onClose });
-  // A 64pt gutter is a frame on a television and a squeeze on a phone, where it
-  // costs a third of the width the panel has to say anything in.
-  const gutter = useWindowDimensions().width < 600 ? 16 : 64;
+  const gutter = surfaceGutter(useWindowDimensions().width);
   const titleId = useId();
   const descriptionId = useId();
   const showsTitle = Boolean(title) && !titleHidden;

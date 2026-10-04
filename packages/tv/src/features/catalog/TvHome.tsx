@@ -23,6 +23,7 @@ import { useRootBack } from '#tv/app/useRootBack';
 import { computeHero, Hero } from '#tv/features/catalog/home/Hero';
 import { HintBar } from '#tv/features/catalog/home/HintBar';
 import { entryId } from '#tv/features/catalog/home/sectionEntry';
+import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
 
 const RAIL_LIMIT = 20;
 
@@ -64,8 +65,9 @@ export function TvHome() {
   // (auto-marked) or added on another device shows up the moment we land on Home.
   useEffect(() => refreshWatched(), [refreshWatched]);
   useEffect(() => refreshMyList(), [refreshMyList]);
-  const onBack = useRootBack();
-  useFocusNav({ onBack });
+  const titleMenu = useTitleMenu(useRootBack());
+  useFocusNav({ onBack: titleMenu.onBack });
+  const hold = titleMenu.open;
 
   const onSelectMovie = useCallback((m: MediaItem) => go('movie', { item: m }), [go]);
   const onSelectShow = useCallback((s: Show) => go('show', { show: s }), [go]);
@@ -94,6 +96,7 @@ export function TvHome() {
             watched={isWatched(show.id)}
             progress={show.progress == null ? null : show.progress / 100}
             onPress={() => onSelectShow(show)}
+            onLongPress={() => hold({ kind: 'show', item: show })}
           />
         );
       }
@@ -109,10 +112,11 @@ export function TvHome() {
           tint={posterColors(m.id)}
           watched={isWatched(m.id)}
           onPress={() => onSelectMovie(m)}
+          onLongPress={() => hold({ kind: 'movie', item: m })}
         />
       );
     },
-    [client, onSelectMovie, onSelectShow, isWatched, t],
+    [client, onSelectMovie, onSelectShow, isWatched, hold, t],
   );
 
   // One 16:9 rail per server section: empty list in → null out, so the home drops
@@ -153,6 +157,7 @@ export function TvHome() {
                 tint={posterColors(item.id)}
                 progress={pct / 100}
                 onPress={() => onPlay(item)}
+                onLongPress={() => hold({ kind: 'resume', item, progress: pct / 100 })}
               />
             );
           }),
@@ -190,6 +195,7 @@ export function TvHome() {
                 watched={isWatched(show.id)}
                 progress={show.progress == null ? null : show.progress / 100}
                 onPress={() => onSelectShow(show)}
+                onLongPress={() => hold({ kind: 'show', item: show })}
               />
             )),
         }
@@ -205,6 +211,7 @@ export function TvHome() {
     onPlay,
     onSelectShow,
     isWatched,
+    hold,
     t,
   ]);
 
@@ -248,6 +255,7 @@ export function TvHome() {
       </FocusScroll>
 
       <HintBar browseKey="content.hintBrowse" />
+      {titleMenu.menu}
     </Box>
   );
 }

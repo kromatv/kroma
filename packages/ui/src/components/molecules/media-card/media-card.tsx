@@ -35,6 +35,8 @@ interface MediaCardProps {
    *  number only OUTSIDE a rail. */
   width?: number | '100%';
   onPress?: () => void;
+  /** OK held on a remote, or a finger held on the tile. */
+  onLongPress?: () => void;
   onFocus?: () => void;
   autoFocus?: boolean;
 }
@@ -48,6 +50,7 @@ function MediaCard({
   watched = false,
   width = '100%',
   onPress,
+  onLongPress,
   onFocus,
   autoFocus,
 }: Readonly<MediaCardProps>) {
@@ -55,6 +58,7 @@ function MediaCard({
   return (
     <Focusable
       onPress={onPress}
+      onLongPress={onLongPress}
       onFocus={onFocus}
       autoFocus={autoFocus}
       label={title}
