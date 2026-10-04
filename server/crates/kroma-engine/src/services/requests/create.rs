@@ -50,6 +50,9 @@ pub fn create_request<S: HostStorage>(
         if body.kind == RequestKind::Show {
             merge_show_request(state, &existing, asked_seasons, asked_episodes)?;
         }
+        if existing.status == RequestStatus::Pending && user.can(Permission::RequestsAuto) {
+            approve_request(state, &existing.id, Some(&user.id))?;
+        }
         let conn = state.db().get()?;
         return db::get_request(&conn, &existing.id)?
             .ok_or_else(|| anyhow!("request vanished during merge"));
