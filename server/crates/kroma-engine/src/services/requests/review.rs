@@ -24,6 +24,7 @@ pub fn approve_request<S: HostStorage>(
     if matches!(req.status, RequestStatus::Denied) {
         bail!("request was denied; delete it and ask again");
     }
+    materialize_wanted(state, id)?;
     db::set_request_status(
         state.db(),
         id,
@@ -32,7 +33,6 @@ pub fn approve_request<S: HostStorage>(
         None,
         now_ms(),
     )?;
-    materialize_wanted(state, id)?;
     let status = match_one(state, id)?.unwrap_or(RequestStatus::Approved);
     publish(state, id, status);
     notify_transition(state, id, status);
