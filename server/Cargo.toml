@@ -120,6 +120,7 @@ jobserver = "0.1"
 # WebAuthn / passkeys relying-party. Requires uuid >= 1.19 (see the pin above)
 # and rust >= 1.88. Pulls openssl transitively (see the binary dep + Dockerfile).
 webauthn-rs = "0.5.5"
+webauthn-rs-proto = "0.5.5"
 # musl allocator (Linux only; see the binary's #[global_allocator]).
 mimalloc = { version = "0.1", default-features = false }
 # In-workspace crates, referenced by path so a member bumping its own version
@@ -257,6 +258,7 @@ jobserver = { workspace = true }
 # WebAuthn / passkeys relying-party (api/passkeys). `conditional-ui` unlocks the
 # discoverable (usernameless) authentication API.
 webauthn-rs = { workspace = true, features = ["conditional-ui"] }
+webauthn-rs-proto = { workspace = true }
 # webauthn-rs pulls openssl. Force the `vendored` feature so openssl-sys compiles
 # it from source and links it statically instead of hunting for a system libssl.
 # This is what makes the x86_64-musl Synology build (no musl libssl) link, and it
