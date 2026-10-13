@@ -13,9 +13,11 @@ use axum::{Json, Router};
 use serde::Deserialize;
 use serde_json::json;
 use webauthn_rs::prelude::{
-    CredentialID, DiscoverableAuthentication, DiscoverableKey, Passkey, PasskeyRegistration,
-    PublicKeyCredential, RegisterPublicKeyCredential, Url, Uuid, Webauthn, WebauthnBuilder,
+    CreationChallengeResponse, CredentialID, DiscoverableAuthentication, DiscoverableKey, Passkey,
+    PasskeyRegistration, PublicKeyCredential, RegisterPublicKeyCredential, Url, Uuid, Webauthn,
+    WebauthnBuilder,
 };
+use webauthn_rs_proto::ResidentKeyRequirement;
 
 use crate::api::accounts::{device_hints, issue_tokens};
 use crate::api::error::lerr;
@@ -111,6 +113,13 @@ fn relying_party(headers: &HeaderMap, loc: &str) -> Result<Webauthn, Response> {
         .map_err(|_| lerr(loc, StatusCode::BAD_REQUEST, "passkey.originInvalid"))
 }
 
+fn require_discoverable(ccr: &mut CreationChallengeResponse) {
+    if let Some(selection) = ccr.public_key.authenticator_selection.as_mut() {
+        selection.resident_key = Some(ResidentKeyRequirement::Required);
+        selection.require_resident_key = true;
+    }
+}
+
 fn parse_passkeys(blobs: &[String]) -> Vec<(String, Passkey)> {
     blobs
         .iter()
@@ -150,7 +159,8 @@ pub async fn register_start(
         &user.username,
         exclude,
     ) {
-        Ok((ccr, reg)) => {
+        Ok((mut ccr, reg)) => {
+            require_discoverable(&mut ccr);
             let ceremony_id = stash(Ceremony::Register {
                 user_id: user.id,
                 reg,
