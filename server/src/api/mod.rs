@@ -99,6 +99,8 @@ mod it_notification_images;
 #[cfg(test)]
 mod it_notifications;
 #[cfg(test)]
+mod it_passkeys;
+#[cfg(test)]
 mod it_pin;
 #[cfg(test)]
 mod it_pin_lockout;
