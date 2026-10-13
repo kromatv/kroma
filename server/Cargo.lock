@@ -2080,6 +2080,7 @@ dependencies = [
  "uuid",
  "walkdir",
  "webauthn-rs",
+ "webauthn-rs-proto",
  "zip",
 ]
 

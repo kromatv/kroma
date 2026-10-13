@@ -97,6 +97,8 @@ mod it_notifications;
 #[cfg(test)]
 mod it_releases;
 #[cfg(test)]
+mod it_passkeys;
+#[cfg(test)]
 mod it_pin;
 #[cfg(test)]
 mod it_pin_lockout;
