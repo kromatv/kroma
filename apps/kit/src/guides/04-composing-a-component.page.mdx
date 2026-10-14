@@ -169,19 +169,39 @@ The rule is about faces. It does not strip the kit of props.
 3. An exported context hook. No prop merging at all, and unlike a cloned child it
    survives arbitrary wrapper depth.
 
-### Do not add asChild
+### `asChild` is a slot with a written-down merge
 
-`asChild` solves a DOM-only problem. Semantics live on the element tag, so a
-trigger sometimes has to be an anchor and sometimes a button. Here semantics are
-props, so that decision does not exist. What would remain is only the prop merge,
-and the merge is worse here than on the web: `style` is a positional array whose
-precedence is order, press is a family with focus and hover on top for TV, and a
-host ref is a component instance with `measure`, not a node. An implicit merge over
-all of that is guesswork.
+The ladder is about a part's inside. `asChild` is about where a component's
+element goes, and the kit has it, as Radix spells it: `asChild` on a component
+means exactly `<Slot {...itsProps}>` around the one element its children resolve
+to. It exists to delete elements. `<Box asChild>` is the workhorse, and a control
+takes it too, so a card that navigates is a real `<a href>` the browser can
+middle-click, copy and hover, rather than a press handler calling the router:
 
-This is why rung 2 is the function form only. The element form's entire value is
-the automatic merge, which is exactly the part that does not survive. Making the
-caller spread explicitly is the feature.
+```tsx
+<Button label="More info" asChild>
+  <RouteLink to="/movies/$id" params={{ id }} />
+</Button>
+```
+
+Radix leans on an implicit merge. This kit cannot, because `style` is a
+positional array whose precedence is order, press is a family with focus and hover
+on top for TV, and a host ref is a component instance with `measure`, not a node.
+So the merge is written down, in `lib/slot.tsx`, and it is deliberately small:
+
+- the child's own props win, prop by prop;
+- `style` composes as `[slot, child]`, the child's declarations last;
+- two handlers for the same event both run, the child's first;
+- two refs both attach.
+
+Anything subtler stays on the component that owns it. A state-dependent coat, an
+`sv` slot or a focus scale is not a merge: the control resolves it and hands the
+finished value over. That is also why rung 2 of the ladder is the function form:
+a `render` that has to see state returns an element the caller spreads
+explicitly, and where that content has to go somewhere, the function returns the
+link and `asChild` still applies. The full rule, the delegated-control cost
+numbers and the one case where a coat does compose (`<Frost>`) are in
+`packages/ui/src/components/DESIGN.md`.
 
 ## Controlled and uncontrolled
 
