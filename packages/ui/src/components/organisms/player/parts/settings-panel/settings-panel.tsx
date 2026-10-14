@@ -31,8 +31,9 @@ import { playerStyle } from '#ui/components/organisms/player/lib/style';
 import type { SubtitleAppearance } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import type { PlayerController } from '#ui/components/organisms/player/types';
-import { sharedStyle, styles } from '#ui/core';
+import { sharedStyle, style, styles } from '#ui/core';
 import { ease } from '#ui/lib/ease';
+import { FocusScroll } from '#ui/lib/focus-scroll';
 import { WEB } from '#ui/lib/platform';
 import { useT } from '#ui/services/i18n';
 import type { PlayerReportCategory } from '../../media-types';
@@ -86,6 +87,8 @@ const veil = styles({
   live: { pointerEvents: 'auto' },
   inert: { pointerEvents: 'none' },
 });
+
+const SCROLL = style({ flex: true });
 
 const veilTo = (right: number | string) => sharedStyle(`settings:veil:${right}`, { right });
 
@@ -207,42 +210,45 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
         onPress={onClose}
         style={[veil.box, veilTo(width ?? '44%'), shown ? veil.live : veil.inert]}
       />
-      <Animated.ScrollView
-        style={[playerStyle.panel, panelWidth(width ?? '44%'), travel]}
-        contentContainerStyle={panelPad(px(58), px(56))}
-        showsVerticalScrollIndicator={false}
-      >
-        <TitleBar
-          title={panelTitle(view, entries, t)}
-          back={view === 'menu' ? undefined : backToMenu}
-          backFocused={backFocused}
-          onClose={covers ? onClose : undefined}
-          px={px}
-        />
-
-        {view === 'menu' ? (
-          <MenuList
-            entries={entries}
-            moved={moved.length}
-            focused={menuFocus.index}
-            onFocus={menuFocus.hover}
+      <Animated.View style={[playerStyle.panel, panelWidth(width ?? '44%'), travel]}>
+        <FocusScroll
+          style={SCROLL}
+          contentStyle={panelPad(px(58), px(56))}
+          reveal="nearest"
+          offsetFromStart={px(12)}
+        >
+          <TitleBar
+            title={panelTitle(view, entries, t)}
+            back={view === 'menu' ? undefined : backToMenu}
+            backFocused={backFocused}
+            onClose={covers ? onClose : undefined}
             px={px}
           />
-        ) : (
-          <PanelHeaderProvider value={header}>
-            <SubView
-              ref={subRef}
-              view={view}
-              controller={controller}
-              appearance={appearance}
-              onAppearanceChange={onAppearanceChange}
-              subtitleGen={subtitleGen}
-              onReport={onReport}
-              onBack={backToMenu}
+
+          {view === 'menu' ? (
+            <MenuList
+              entries={entries}
+              moved={moved.length}
+              focused={menuFocus.index}
+              onFocus={menuFocus.hover}
+              px={px}
             />
-          </PanelHeaderProvider>
-        )}
-      </Animated.ScrollView>
+          ) : (
+            <PanelHeaderProvider value={header}>
+              <SubView
+                ref={subRef}
+                view={view}
+                controller={controller}
+                appearance={appearance}
+                onAppearanceChange={onAppearanceChange}
+                subtitleGen={subtitleGen}
+                onReport={onReport}
+                onBack={backToMenu}
+              />
+            </PanelHeaderProvider>
+          )}
+        </FocusScroll>
+      </Animated.View>
     </>
   );
 });

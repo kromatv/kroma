@@ -7,7 +7,7 @@ import { SUB_COLORS } from '#ui/components/organisms/player/lib/subtitle-appeara
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { sharedStyle, styles, useTheme } from '#ui/core';
 import { a11yState } from '#ui/lib/a11y';
-import { useFocusMirror } from '#ui/lib/use-focus-mirror';
+import { useFocusedRow } from '#ui/lib/use-focused-row';
 import { useT } from '#ui/services/i18n';
 import { panel, rowStyle } from './panel-style';
 
@@ -37,10 +37,10 @@ export function AppearanceRow({
   children: ReactNode;
 }>) {
   const t = useT();
-  const mirror = useFocusMirror(focused);
+  const anchor = useFocusedRow(focused);
   return (
     <Box
-      ref={mirror}
+      ref={anchor}
       role="group"
       accessibilityLabel={label}
       onPointerEnter={() => onFocus(index)}

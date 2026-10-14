@@ -10,6 +10,7 @@ import { IconButton } from '#ui/components/atoms/icon-button';
 import { Text } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
 import { sharedStyle, styles } from '#ui/core';
+import { useRevealWhenFocused } from '#ui/lib/focus-scroll';
 import { useT } from '#ui/services/i18n';
 
 const titleOf = (fontSize: number) =>
@@ -30,8 +31,9 @@ export function TitleBar({
   px: (n: number) => number;
 }>) {
   const t = useT();
+  const anchor = useRevealWhenFocused(backFocused);
   return (
-    <Box row align="center" gap={px(18)} mb={px(30)}>
+    <Box ref={anchor} row align="center" gap={px(18)} mb={px(30)}>
       {back ? (
         <BackButton
           variant="glass"
