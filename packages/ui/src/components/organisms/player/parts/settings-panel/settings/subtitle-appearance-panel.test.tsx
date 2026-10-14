@@ -6,8 +6,10 @@
 // are about REACHABILITY - every edge treatment, every font style, and a colour
 // row for each of the three layers.
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
+import { createRef, type RefObject, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import {
   DEFAULT_SUB_APPEARANCE,
   SUB_COLORS,
@@ -30,6 +32,31 @@ function panel(over: Partial<SubtitleAppearance> = {}) {
     </I18nProvider>,
   );
   return { onAppearanceChange };
+}
+
+function Live({ handle }: Readonly<{ handle: RefObject<PanelHandle | null> }>) {
+  const [appearance, setAppearance] = useState(DEFAULT_SUB_APPEARANCE);
+  return (
+    <I18nProvider locale="en">
+      <SubtitleAppearancePanel
+        ref={handle}
+        appearance={appearance}
+        onAppearanceChange={(patch) => setAppearance((prev) => ({ ...prev, ...patch }))}
+        onBack={vi.fn()}
+      />
+    </I18nProvider>
+  );
+}
+
+function press(
+  handle: RefObject<PanelHandle | null>,
+  ...keys: ('Up' | 'Down' | 'Left' | 'Right')[]
+) {
+  for (const key of keys) {
+    act(() => {
+      handle.current?.onKey(key);
+    });
+  }
 }
 
 describe('SubtitleAppearancePanel', () => {
@@ -114,5 +141,24 @@ describe('SubtitleAppearancePanel', () => {
     panel();
     expect(screen.getByLabelText('Increase Opacity')).toBeTruthy();
     expect(screen.getByLabelText('Decrease Size')).toBeTruthy();
+  });
+
+  it('steps a value from where it stands, not from where it stood at mount', () => {
+    const handle = createRef<PanelHandle>();
+    render(<Live handle={handle} />);
+
+    press(handle, 'Down', 'Down', 'Down', 'Down', 'Down', 'Right', 'Right');
+
+    expect(screen.getByText('10%')).toBeTruthy();
+  });
+
+  it('steps the row the focus is on once a row has appeared above it', () => {
+    const handle = createRef<PanelHandle>();
+    render(<Live handle={handle} />);
+
+    press(handle, 'Down', 'Down', 'Down', 'Down', 'Down', 'Right', 'Down', 'Down', 'Right');
+
+    expect(screen.getByText('Background color')).toBeTruthy();
+    expect(screen.getByText('Window color')).toBeTruthy();
   });
 });

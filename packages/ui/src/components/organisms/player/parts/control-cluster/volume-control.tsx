@@ -2,7 +2,7 @@
 // collapses to the bare key when there is no width for the rail.
 
 import type { ReactNode } from 'react';
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
@@ -16,6 +16,7 @@ import { a11yValue } from '#ui/lib/a11y';
 import { suppressSelection } from '#ui/lib/drag-select';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { useFocusVisible } from '#ui/lib/focus-visible';
+import { useStableCallback } from '#ui/lib/stable-callback';
 import { useFocusMirror } from '#ui/lib/use-focus-mirror';
 
 // The volume pill's wrapper isn't a kit atom (it holds a button AND a slider),
@@ -85,7 +86,7 @@ export function VolumeControl({
   const boosted = max > 1 && sliderPos > unity;
   const volIcon = volumeGlyph(level, px(24));
 
-  const setAt = useEffectEvent((x: number) => {
+  const setAt = useStableCallback((x: number) => {
     const offset = track.offsetOf(x);
     if (offset == null || track.width <= 0) return;
     onVolume(sliderToVolume(clamp01(offset / track.width), max));
@@ -96,17 +97,17 @@ export function VolumeControl({
   // otherwise leave the document unselectable for the rest of the session.
   useEffect(() => () => endSelectionBlock.current(), []);
 
-  const grabRail = useEffectEvent((x: number) => {
+  const grabRail = useStableCallback((x: number) => {
     endSelectionBlock.current = suppressSelection();
     track.measure();
     setAt(x);
   });
-  const releaseRail = useEffectEvent(() => {
+  const releaseRail = useStableCallback(() => {
     endSelectionBlock.current();
     endSelectionBlock.current = NOOP;
   });
 
-  // Built once: the handlers are effect events, so the one responder always
+  // Built once: the handlers keep one identity, so the one responder always
   // sees the current rail geometry without ever being recreated.
   const [pan] = useState(() =>
     PanResponder.create({

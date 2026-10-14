@@ -1,5 +1,5 @@
 import { subtitleEtaTime, subtitleStageKey } from '@kromatv/core';
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { type Ref, useImperativeHandle, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Progress } from '#ui/components/atoms/progress';
@@ -24,6 +24,7 @@ interface SubtitlesPanelProps {
   onSelect: (index: number | null) => void;
   gen: SubtitleGenBundle;
   onBack: () => void;
+  ref?: Ref<PanelHandle>;
 }
 
 /**
@@ -32,10 +33,14 @@ interface SubtitlesPanelProps {
  * "create missing" row (leading sparkle) that opens the {@link GenerateWizard}
  * inline. Selecting a track returns to the menu; the wizard captures the D-pad.
  */
-export const SubtitlesPanel = forwardRef<PanelHandle, SubtitlesPanelProps>(function SubtitlesPanel(
-  { subs, current, onSelect, gen, onBack },
+export function SubtitlesPanel({
+  subs,
+  current,
+  onSelect,
+  gen,
+  onBack,
   ref,
-) {
+}: Readonly<SubtitlesPanelProps>) {
   const t = useT();
   const [wizardOpen, setWizardOpen] = useState(false);
   const wizardRef = useRef<PanelHandle>(null);
@@ -148,7 +153,7 @@ export const SubtitlesPanel = forwardRef<PanelHandle, SubtitlesPanelProps>(funct
       ) : null}
     </Box>
   );
-});
+}
 
 const MIN_W = style({ minWidth: 0 });
 function AiBadge() {

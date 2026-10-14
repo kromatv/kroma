@@ -1,5 +1,5 @@
 import type { Translate } from '@kromatv/i18n';
-import { forwardRef, memo, type ReactNode, useMemo, useState } from 'react';
+import { memo, type ReactNode, type Ref, useMemo, useState } from 'react';
 import { Animated, Pressable, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -39,6 +39,7 @@ export interface UpNextSheetProps {
   onOpen: () => void;
   onClose: () => void;
   onPlay: (item: UpNextItem) => void;
+  ref?: Ref<PanelHandle>;
 }
 
 // The player's bottom chrome has to clear exactly this much (see Player.tsx).
@@ -103,10 +104,15 @@ function peekSections(sections: Section[]): Section[] {
 
 /** One sliding sheet with two positions: parked as a non-focusable peek, or
  * risen over a scrim into a scrollable grid the D-pad walks as one flat list. */
-const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNextSheet(
-  { data, open, revealed, onOpen, onClose, onPlay },
+function UpNextSheetBase({
+  data,
+  open,
+  revealed,
+  onOpen,
+  onClose,
+  onPlay,
   ref,
-) {
+}: Readonly<UpNextSheetProps>) {
   const t = useT();
   const items = useMemo(() => [...data.nextEpisodes, ...data.recommendations], [data]);
   const sections = useMemo(() => buildSections(data, t), [data, t]);
@@ -214,7 +220,7 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
       </Animated.View>
     </>
   );
-});
+}
 
 // Memoized so the parked sheet skips the chrome's ~4 Hz playback re-renders.
 export const UpNextSheet = memo(UpNextSheetBase);

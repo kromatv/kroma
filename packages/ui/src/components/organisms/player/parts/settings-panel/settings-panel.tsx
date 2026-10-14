@@ -13,7 +13,7 @@
 // the Back button at the same time.
 
 import {
-  forwardRef,
+  type Ref,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -74,6 +74,7 @@ interface SettingsPanelProps {
    *  picture expands from under it rather than from under nothing. */
   shown?: boolean;
   onClose: () => void;
+  ref?: Ref<PanelHandle>;
 }
 
 // Starts off its own edge whatever `shown` says, so a panel mounted open still
@@ -132,26 +133,24 @@ function usePanelTravel(shown: boolean, width: number) {
   return WEB ? webPanelTravel(shown, width) : native;
 }
 
-export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(function SettingsPanel(
-  {
-    controller,
-    appearance,
-    onAppearanceChange,
-    statsOn,
-    onToggleStats,
-    subtitleGen,
-    onReport,
-    overflow,
-    onControl,
-    width,
-    covers,
-    scale = 1,
-    initialView,
-    shown = true,
-    onClose,
-  },
+export function SettingsPanel({
+  controller,
+  appearance,
+  onAppearanceChange,
+  statsOn,
+  onToggleStats,
+  subtitleGen,
+  onReport,
+  overflow,
+  onControl,
+  width,
+  covers,
+  scale = 1,
+  initialView,
+  shown = true,
+  onClose,
   ref,
-) {
+}: Readonly<SettingsPanelProps>) {
   const t = useT();
   const px = scaler(scale);
   const travel = usePanelTravel(shown, width ?? PANEL_MAX);
@@ -251,4 +250,4 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
       </Animated.View>
     </>
   );
-});
+}

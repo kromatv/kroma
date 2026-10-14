@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from 'react';
+import { type Ref, useImperativeHandle } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
@@ -12,6 +12,7 @@ interface QualityPanelProps {
   onSelect: (id: string) => void;
   /** Return to the settings menu (Back, or after a pick). */
   onBack: () => void;
+  ref?: Ref<PanelHandle>;
 }
 
 /**
@@ -19,10 +20,13 @@ interface QualityPanelProps {
  * source ("Auto · <source>") rather than a fake ladder. Picking a quality selects
  * it and returns to the menu.
  */
-export const QualityPanel = forwardRef<PanelHandle, QualityPanelProps>(function QualityPanel(
-  { qualities, current, onSelect, onBack },
+export function QualityPanel({
+  qualities,
+  current,
+  onSelect,
+  onBack,
   ref,
-) {
+}: Readonly<QualityPanelProps>) {
   const pick = (i: number) => {
     const q = qualities[i];
     if (q) onSelect(q.id);
@@ -47,4 +51,4 @@ export const QualityPanel = forwardRef<PanelHandle, QualityPanelProps>(function 
       ))}
     </Box>
   );
-});
+}

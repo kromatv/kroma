@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from 'react';
+import { type Ref, useImperativeHandle } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
@@ -13,41 +13,45 @@ interface AudioFilterPanelProps {
   value: AudioFilterMode;
   onSelect: (mode: AudioFilterMode) => void;
   onBack: () => void;
+  ref?: Ref<PanelHandle>;
 }
 
 const MODES: AudioFilterMode[] = ['off', 'standard', 'night', 'boost'];
 
 /** Volume-normalizer picker (§7): Off / Standard / Night, with a hint. Only
  * mounted when the controller reports `audioFilterSupported`. */
-export const AudioFilterPanel = forwardRef<PanelHandle, AudioFilterPanelProps>(
-  function AudioFilterPanel({ value, onSelect, onBack }, ref) {
-    const t = useT();
-    const labels = audioFilterLabels(t);
-    const pick = (i: number) => {
-      const m = MODES[i];
-      if (m) onSelect(m);
-      onBack();
-    };
-    const focus = useListFocus({ count: MODES.length, onActivate: pick, onBack });
-    useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
+export function AudioFilterPanel({
+  value,
+  onSelect,
+  onBack,
+  ref,
+}: Readonly<AudioFilterPanelProps>) {
+  const t = useT();
+  const labels = audioFilterLabels(t);
+  const pick = (i: number) => {
+    const m = MODES[i];
+    if (m) onSelect(m);
+    onBack();
+  };
+  const focus = useListFocus({ count: MODES.length, onActivate: pick, onBack });
+  useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
-    return (
-      <Box>
-        <Box style={panel.panelList}>
-          {MODES.map((m, i) => (
-            <SelectRow
-              key={m}
-              index={i}
-              label={labels[m]}
-              selected={m === value}
-              focused={focus.index === i}
-              onActivate={pick}
-              onFocus={focus.setIndex}
-            />
-          ))}
-        </Box>
-        <Text style={panel.panelHint}>{t('player.audioFilterHint')}</Text>
+  return (
+    <Box>
+      <Box style={panel.panelList}>
+        {MODES.map((m, i) => (
+          <SelectRow
+            key={m}
+            index={i}
+            label={labels[m]}
+            selected={m === value}
+            focused={focus.index === i}
+            onActivate={pick}
+            onFocus={focus.setIndex}
+          />
+        ))}
       </Box>
-    );
-  },
-);
+      <Text style={panel.panelHint}>{t('player.audioFilterHint')}</Text>
+    </Box>
+  );
+}

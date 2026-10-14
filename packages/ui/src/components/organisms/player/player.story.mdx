@@ -4,10 +4,9 @@ import { IconButton } from '#ui/components/atoms/icon-button';
 import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
 import { stillArt } from '#ui/lib/sample-art';
-import { DEFAULT_SUB_APPEARANCE } from './lib/subtitle-appearance';
 import { Player } from './player';
 import { CHAPTERS, fakeController } from './player.fixture';
-import { WEB, TV, NO_GEN, UP_NEXT, ASPECTS, Surface } from './player.fixtures';
+import { WEB, TV, NO_GEN, UP_NEXT, ASPECTS, LiveAppearance, Surface } from './player.fixtures';
 
 export const story = defineStory({
   group: 'Player',
@@ -26,52 +25,56 @@ export const story = defineStory({
   },
   controls: { format: Object.keys(ASPECTS) },
   render: ({ playing, format, warn, tv, intro, actions, stopped }) => (
-    <Box flex bg="#000000" overflow="hidden">
-      <Player.Root
-        controller={fakeController({ playing, aspect: ASPECTS[String(format)] })}
-        flags={tv ? TV : WEB}
-        title="Blade Runner 2049"
-        onClose={() => {}}
-      >
-        <Player.Title>Blade Runner 2049</Player.Title>
-        <Player.Subtitle>2017 · 2 h 44</Player.Subtitle>
-        {warn ? <Player.Warning>{String(warn)}</Player.Warning> : null}
-        <Player.Transport chapters={CHAPTERS} tileAt={() => null} />
-        <Player.Subtitles
-          appearance={DEFAULT_SUB_APPEARANCE}
-          onAppearanceChange={() => {}}
-          gen={NO_GEN}
-        />
-        <Player.UpNext data={UP_NEXT} />
-        {intro ? <Player.SkipIntro active={intro} onSkip={() => {}} /> : null}
-        <Player.Media>
-          <Surface />
-        </Player.Media>
-        {actions ? (
-          <Player.Actions>
-            <IconButton icon="device-tv" label="Play on TV" variant="ghost" diameter={42} />
-          </Player.Actions>
-        ) : null}
-        {stopped ? (
-          <Player.Panel>
-            <Box fill z={80} center gap={16} px={64} bg="black/92">
-              <Text variant="headingTv" textAlign="center" color="white">
-                Playback stopped
-              </Text>
-              <Text variant="bodyTv" textAlign="center" maxW={672} color="text/72">
-                An administrator ended this session.
-              </Text>
-            </Box>
-          </Player.Panel>
-        ) : null}
-      </Player.Root>
-      <Box absolute bottom={8} left={12}>
-        <Text variant="meta" color="textDim">
-          Nothing is playing: the controller is a fixture, so the transport shows state without a
-          film behind it.
-        </Text>
-      </Box>
-    </Box>
+    <LiveAppearance>
+      {(appearance, onAppearanceChange) => (
+        <Box flex bg="#000000" overflow="hidden">
+          <Player.Root
+            controller={fakeController({ playing, aspect: ASPECTS[String(format)] })}
+            flags={tv ? TV : WEB}
+            title="Blade Runner 2049"
+            onClose={() => {}}
+          >
+            <Player.Title>Blade Runner 2049</Player.Title>
+            <Player.Subtitle>2017 · 2 h 44</Player.Subtitle>
+            {warn ? <Player.Warning>{String(warn)}</Player.Warning> : null}
+            <Player.Transport chapters={CHAPTERS} tileAt={() => null} />
+            <Player.Subtitles
+              appearance={appearance}
+              onAppearanceChange={onAppearanceChange}
+              gen={NO_GEN}
+            />
+            <Player.UpNext data={UP_NEXT} />
+            {intro ? <Player.SkipIntro active={intro} onSkip={() => {}} /> : null}
+            <Player.Media>
+              <Surface />
+            </Player.Media>
+            {actions ? (
+              <Player.Actions>
+                <IconButton icon="device-tv" label="Play on TV" variant="ghost" diameter={42} />
+              </Player.Actions>
+            ) : null}
+            {stopped ? (
+              <Player.Panel>
+                <Box fill z={80} center gap={16} px={64} bg="black/92">
+                  <Text variant="headingTv" textAlign="center" color="white">
+                    Playback stopped
+                  </Text>
+                  <Text variant="bodyTv" textAlign="center" maxW={672} color="text/72">
+                    An administrator ended this session.
+                  </Text>
+                </Box>
+              </Player.Panel>
+            ) : null}
+          </Player.Root>
+          <Box absolute bottom={8} left={12}>
+            <Text variant="meta" color="textDim">
+              Nothing is playing: the controller is a fixture, so the transport shows state without a
+              film behind it.
+            </Text>
+          </Box>
+        </Box>
+      )}
+    </LiveAppearance>
   ),
 });
 

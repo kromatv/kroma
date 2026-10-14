@@ -1,4 +1,4 @@
-import { memo, useEffect, useEffectEvent, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
@@ -11,6 +11,7 @@ import type {
   PlayerStats,
 } from '#ui/components/organisms/player/types';
 import { styles } from '#ui/core';
+import { useStableCallback } from '#ui/lib/stable-callback';
 import { useT } from '#ui/services/i18n';
 import { StatsChart } from './stats-chart';
 
@@ -42,9 +43,9 @@ export function StatsPanel({
   const [s, setS] = useState<PlayerStats>(() => controller.getStats());
   const [history] = useState(() => new Map<string, number[]>());
   // The controller is rebuilt on every parent render (~4x/s while playing, via
-  // timeupdate), so the timer calls an effect event: depending on `controller`
-  // identity would recreate the 500ms timer faster than it ever fires.
-  const tick = useEffectEvent(() => {
+  // timeupdate), so the timer calls one stable callback: depending on
+  // `controller` identity would recreate the 500ms timer faster than it ever fires.
+  const tick = useStableCallback(() => {
     const snap = controller.getStats();
     record(history, snap);
     setS(snap);
@@ -54,7 +55,7 @@ export function StatsPanel({
     tick();
     const id = setInterval(tick, 500);
     return () => clearInterval(id);
-  }, []);
+  }, [tick]);
 
   const charts = chartGroups(s.meters ?? []);
   const stackCharts = width < 560;
