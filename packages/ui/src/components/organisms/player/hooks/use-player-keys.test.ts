@@ -108,7 +108,29 @@ function setup(over: Partial<Params> = {}) {
   return { ...view, params, press };
 }
 
-afterEach(() => vi.restoreAllMocks());
+const undo: (() => void)[] = [];
+
+function pressOn(target: EventTarget, init: KeyboardEventInit): void {
+  act(() => {
+    target.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }),
+    );
+  });
+}
+
+function heard(target: EventTarget): KeyboardEvent[] {
+  const events: KeyboardEvent[] = [];
+  const listener = (event: Event) => events.push(event as KeyboardEvent);
+  target.addEventListener('keydown', listener);
+  undo.push(() => target.removeEventListener('keydown', listener));
+  return events;
+}
+
+afterEach(() => {
+  for (const step of undo.splice(0)) step();
+  document.body.replaceChildren();
+  vi.restoreAllMocks();
+});
 
 describe('usePlayerKeys letter/space transport shortcuts', () => {
   it('Space and "k" toggle play (and preventDefault the event)', () => {
@@ -179,6 +201,40 @@ describe('usePlayerKeys D-pad routing (a browser TV shell, no pointer)', () => {
     press({ key: 'Escape' });
     expect(onKey).toHaveBeenCalledWith('Back');
     expect(nav.handleKey).toHaveBeenCalledWith('Back');
+  });
+});
+
+describe('usePlayerKeys owns the keys it takes', () => {
+  it('stops a routed key before a listener behind the player sees it', () => {
+    const { params } = setup({ flags: TV_BROWSER_FLAGS });
+    const behind = heard(document);
+
+    pressOn(document.body, { key: 'ArrowRight' });
+
+    expect(params.nav.handleKey).toHaveBeenCalledWith('Right');
+    expect(behind).toEqual([]);
+  });
+
+  it('leaves the keys typed in a field to the field', () => {
+    const { params } = setup();
+    const field = document.body.appendChild(document.createElement('input'));
+
+    pressOn(field, { key: ' ', code: 'Space' });
+    pressOn(field, { key: 'ArrowRight' });
+
+    expect(params.controller.togglePlay).not.toHaveBeenCalled();
+    expect(params.seekNudge).not.toHaveBeenCalled();
+  });
+
+  it('leaves a chord with a modifier to the browser', () => {
+    const { params, press } = setup();
+
+    const notPrevented = press({ key: ' ', code: 'Space', ctrlKey: true });
+    press({ key: 'ArrowRight', altKey: true });
+
+    expect(notPrevented).toBe(true);
+    expect(params.controller.togglePlay).not.toHaveBeenCalled();
+    expect(params.seekNudge).not.toHaveBeenCalled();
   });
 });
 

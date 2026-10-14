@@ -12,9 +12,15 @@ import {
   routeTab,
 } from '#ui/components/organisms/player/lib/player-keys';
 import type { PlayerController, PlayerFlags } from '#ui/components/organisms/player/types';
+import { holdsCaret } from '#ui/lib/dom';
 import { redeliverKey } from '#ui/lib/focus-mirror';
 import { resolveRemoteKey } from '#ui/lib/remote-keys';
 import type { PlayerNav } from './use-player-nav';
+
+function takeKey(e: KeyboardEvent): void {
+  e.preventDefault();
+  e.stopPropagation();
+}
 
 function letterShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolean {
   const { nav, controller, flags } = p;
@@ -66,7 +72,7 @@ function arrowVolumeShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): b
   const { nav, controller, flags } = p;
   if (!flags.volume || nav.overlay) return false;
   if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return false;
-  e.preventDefault();
+  takeKey(e);
   keepChrome(nav, controller, flags);
   const dir = e.key === 'ArrowUp' ? 1 : -1;
   p.setVolume(volumeStep(controller.volume, dir, controller.volumeMax ?? 1));
@@ -84,21 +90,26 @@ function arrowSeekShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boo
   if (nav.overlay || p.credits?.active) return false;
   const immersive = flags.fullscreen && controller.fullscreen && !nav.revealed;
   if (!flags.pointer && !immersive) return false;
-  e.preventDefault();
+  takeKey(e);
   keepChrome(nav, controller, flags);
   p.seekNudge(e.key === 'ArrowLeft' ? -1 : 1, pressOf(e));
   return true;
 }
 
 /** The single window keydown router. One stable listener always sees the latest
- * render, so re-renders never re-subscribe. */
+ * render, so re-renders never re-subscribe. It listens in the capture phase and
+ * stops every press it routes, so the spatial navigator and the screen behind
+ * the player never act on the same press. A field holding the caret keeps its
+ * keys, and a chord with Meta, Control or Alt stays the browser's. */
 export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target instanceof Element && holdsCaret(e.target)) return;
     const { locked } = params;
     if (locked) {
       const key = resolveRemoteKey(e);
       if (key === 'Back' || key === 'Enter') {
-        e.preventDefault();
+        takeKey(e);
         routeRemoteKey(params, key);
       }
       return;
@@ -111,7 +122,7 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
       const tab = e.shiftKey ? 'Left' : 'Right';
       const key = e.key === 'Tab' ? tab : resolveRemoteKey(e);
       if (!key) return;
-      e.preventDefault();
+      takeKey(e);
       routeRemoteKey(params, key);
       return;
     }
@@ -120,7 +131,7 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
     // is the only focus this screen has, so a second one behind it would take
     // the keyboard somewhere the eye is not.
     if (e.key === 'Tab') {
-      e.preventDefault();
+      takeKey(e);
       routeTab(params, e.shiftKey);
       return;
     }
@@ -131,16 +142,16 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
 
     const remote = resolveRemoteKey(e);
     if (!remote) return;
-    e.preventDefault();
+    takeKey(e);
     routeRemoteKey(params, remote);
   });
 
   useEffect(() => {
     window.addEventListener('keydown', redeliverKey, true);
-    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keydown', onKeyDown, true);
     return () => {
       window.removeEventListener('keydown', redeliverKey, true);
-      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keydown', onKeyDown, true);
     };
   }, []);
 }
