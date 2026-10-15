@@ -34,10 +34,23 @@ describe('usePlayerNav global + overlay behaviour', () => {
     expect(actions.seekNudge).toHaveBeenCalledWith(-1, 'hold');
   });
 
-  it('Back at the top level exits', () => {
-    const { key, actions } = nav();
+  it('Back puts the chrome away rather than leaving the film', () => {
+    const { result, key, actions } = nav();
+
     key('Back');
-    expect(actions.onExit).toHaveBeenCalledTimes(1);
+
+    expect(result.current.revealed).toBe(false);
+    expect(actions.onExit).not.toHaveBeenCalled();
+  });
+
+  it('Back with the chrome already away leaves the player', () => {
+    const { result, key, actions } = nav();
+    key('Back');
+
+    key('Back');
+
+    expect(result.current.revealed).toBe(false);
+    expect(actions.onExit).toHaveBeenCalledWith('back');
   });
 
   it('with a panel open only Back closes it (other keys are swallowed)', () => {
