@@ -190,8 +190,7 @@ export function usePlayerNav(
   const handleKey = useEffectEvent((key: RemoteKey) => {
     if (handleMediaKey(key, actions)) return;
 
-    // While hidden, the first key just brings the chrome back (§3, §16). Back
-    // is the exception: with nothing on screen left to put away, it leaves.
+    // While hidden, the first key just brings the chrome back (§3, §16), except Back.
     if (!revealed) {
       if (key === 'Back') actions.onExit('back');
       else poke();

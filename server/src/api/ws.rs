@@ -131,10 +131,7 @@ async fn pump(mut socket: WebSocket, state: SharedState, who: Viewer) {
     }
 
     // Periodic ping so a half-open socket (client vanished without a Close
-    // frame) is detected as a failed send rather than lingering forever. Tizen
-    // freezes a suspended app with its socket open, where the send keeps
-    // succeeding, so the Pong is the only thing telling that apart from a
-    // paused film.
+    // frame) is detected as a failed send rather than lingering forever.
     let mut keepalive = tokio::time::interval(std::time::Duration::from_secs(30));
     keepalive.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     keepalive.reset(); // skip the immediate first tick
