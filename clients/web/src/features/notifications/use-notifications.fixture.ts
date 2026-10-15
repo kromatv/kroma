@@ -56,8 +56,9 @@ export async function expectBadge(read: () => number, n: number) {
 // The write has to happen INSIDE the `act`: react-query batches its observer
 // notifications, so an `act` that returns first leaves the badge unmoved.
 export async function push(e: { type: string; unread: number }) {
-  await act(async () => {
+  await act(() => {
     stream().emit(e);
+    return Promise.resolve();
   });
 }
 
