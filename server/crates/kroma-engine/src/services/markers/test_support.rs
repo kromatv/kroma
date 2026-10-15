@@ -3,12 +3,14 @@ use std::process::Command;
 
 use crate::services::markers::video::{HEIGHT, WIDTH};
 
+const EVERY_FRAME_A_KEYFRAME: [&str; 2] = ["-g", "1"];
+
 fn render(at: &Path, source: &str) -> PathBuf {
     let status = Command::new("ffmpeg")
         .args(["-v", "error", "-nostdin", "-y"])
         .args(["-f", "lavfi", "-i", source])
-        // One keyframe a second, because the scan decodes keyframes only.
-        .args(["-c:v", "libx264", "-g", "1", "-pix_fmt", "yuv420p"])
+        .args(["-c:v", "libx264", "-pix_fmt", "yuv420p"])
+        .args(EVERY_FRAME_A_KEYFRAME)
         .arg(at)
         .status()
         .expect("run ffmpeg");
