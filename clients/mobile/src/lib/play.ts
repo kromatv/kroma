@@ -15,8 +15,8 @@ export function usePlay() {
     async (itemId: string, positionMs = 0) => {
       if (active) {
         // The TV resumes from the account's own position when none is given.
-        const ok = await playOn(active.id, itemId as ItemId, positionMs);
-        if (ok) {
+        const failure = await playOn(active.id, itemId as ItemId, positionMs);
+        if (!failure) {
           router.push('/cast' as never);
           return;
         }

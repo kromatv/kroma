@@ -7,7 +7,7 @@ import {
   useT,
   WEB_FLAGS,
 } from '@kromatv/ui';
-import { Box, Button, backdropBlur, classes, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, backdropBlur, classes, Icon, styles, Text, toast } from '@kromatv/ui/kit';
 import { useCallback, useMemo, useState } from 'react';
 import { usePlaybackSession } from '#web/features/playback/use-playback-session';
 import { useResumeProgress } from '#web/features/playback/use-resume-progress';
@@ -118,8 +118,9 @@ export function Player({
       onCast={async () => {
         const picked = await castPicker();
         if (!picked) return;
-        const ok = await cast.playOn(picked, item.id, Math.round(pb.getPosition() * 1000));
-        if (ok) onClose();
+        const failure = await cast.playOn(picked, item.id, Math.round(pb.getPosition() * 1000));
+        if (failure) toast({ message: t(failure) });
+        else onClose();
       }}
       onClose={onClose}
     >

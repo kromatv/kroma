@@ -4,6 +4,10 @@ import type { ItemId } from '@kromatv/client/media';
 import type { DiscoveredTv } from '@kromatv/core';
 import { createContext, useContext } from 'react';
 
+/** Why an order did not reach a television, as a message key. `cast.titleGone`
+ * is the title's failure rather than the set's, so the sender keeps driving it. */
+export type CastFailure = 'cast.gone' | 'cast.titleGone' | 'cast.failed';
+
 /** What a sender can do with the TV it is driving. */
 export interface Cast {
   /** Live receivers on this server, the caller's own devices first. */
@@ -21,12 +25,16 @@ export interface Cast {
   /** Start driving a receiver (or `null` to go back to local playback). */
   select: (receiverId: DeviceId | null) => void;
   /** Start a title on `receiverId`, and drive that TV from now on. */
-  playOn: (receiverId: DeviceId, itemId: ItemId, positionMs?: number) => Promise<boolean>;
-  /** Send an order to the active receiver. False when it failed / went away. */
-  send: (command: CastCommand) => Promise<boolean>;
-  /** The last failure, as a message key, or null. Cleared on the next success.
-   * `cast.kicked` is not a failure exactly - the TV chose to let this remote go. */
-  error: 'cast.gone' | 'cast.failed' | 'cast.kicked' | null;
+  playOn: (
+    receiverId: DeviceId,
+    itemId: ItemId,
+    positionMs?: number,
+  ) => Promise<CastFailure | null>;
+  /** Send an order to the active receiver. */
+  send: (command: CastCommand) => Promise<CastFailure | null>;
+  /** The last failure, or `cast.kicked` where the television let this remote go,
+   * which is not a failure exactly. Cleared on the next success. */
+  error: CastFailure | 'cast.kicked' | null;
 }
 
 const CastCtx = createContext<Cast | null>(null);
@@ -44,8 +52,8 @@ const IDLE: Cast = {
   available: false,
   positionMs: 0,
   select: () => undefined,
-  playOn: () => Promise.resolve(false),
-  send: () => Promise.resolve(false),
+  playOn: () => Promise.resolve<CastFailure>('cast.failed'),
+  send: () => Promise.resolve<CastFailure>('cast.failed'),
   error: null,
 };
 

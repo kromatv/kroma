@@ -193,10 +193,10 @@ export function PlayerBody({
         onPick={async (id) => {
           setCastOpen(false);
           if (!id) return;
-          const ok = await cast.playOn(id, item.id, Math.round(engine.cur * 1000));
+          const failure = await cast.playOn(id, item.id, Math.round(engine.cur * 1000));
           // Stop local playback once the TV picks up the same title, to avoid
           // two screens playing it at once.
-          if (ok) {
+          if (!failure) {
             engine.shutdown();
             goBack(router);
           }

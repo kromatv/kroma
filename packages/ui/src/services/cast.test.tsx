@@ -15,7 +15,7 @@ import { fakeClient } from '@kromatv/client/test';
 import { act, render, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CastProvider, useCast } from './cast';
+import { type CastFailure, CastProvider, useCast } from './cast';
 
 const events = vi.hoisted(() => ({
   connect: vi.fn(),
@@ -177,13 +177,32 @@ describe('sending', () => {
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
     act(() => result.current.select(SALON_ID));
 
-    let ok: boolean | undefined;
+    let failure: CastFailure | null | undefined;
     await act(async () => {
-      ok = await result.current.send({ type: 'pause' });
+      failure = await result.current.send({ type: 'pause' });
     });
-    expect(ok).toBe(false);
+    expect(failure).toBe('cast.gone');
     expect(result.current.error).toBe('cast.gone');
     expect(result.current.active).toBeNull();
+  });
+
+  it('keeps driving the TV when the title is the thing that went missing', async () => {
+    const client = castClient({
+      command: vi.fn(async () => {
+        throw new KromaApiError(404, 'no such item', { code: 'error.itemNotFound' });
+      }),
+    });
+    const { result } = mount(client);
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+    act(() => result.current.select(SALON_ID));
+
+    let failure: CastFailure | null | undefined;
+    await act(async () => {
+      failure = await result.current.playOn(SALON_ID, ItemId.parse('gone'));
+    });
+
+    expect(failure).toBe('cast.titleGone');
+    expect(result.current.active?.id).toBe(SALON_ID);
   });
 
   it('distinguishes a failed send from a missing TV', async () => {
@@ -206,11 +225,11 @@ describe('sending', () => {
   it('sends nothing when no TV is selected', async () => {
     const client = castClient();
     const { result } = mount(client);
-    let ok: boolean | undefined;
+    let failure: CastFailure | null | undefined;
     await act(async () => {
-      ok = await result.current.send({ type: 'pause' });
+      failure = await result.current.send({ type: 'pause' });
     });
-    expect(ok).toBe(false);
+    expect(failure).toBe('cast.failed');
     expect(client.cast.command).not.toHaveBeenCalled();
   });
 });
