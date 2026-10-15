@@ -44,8 +44,8 @@ const IDLE: Cast = {
   available: false,
   positionMs: 0,
   select: () => undefined,
-  playOn: async () => false,
-  send: async () => false,
+  playOn: () => Promise.resolve(false),
+  send: () => Promise.resolve(false),
   error: null,
 };
 

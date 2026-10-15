@@ -27,24 +27,25 @@ export function stubClient(overrides: Partial<KromaClient['handoff']> = {}) {
   const left: string[] = [];
   let minted = 0;
   const handoff = {
-    announce: vi.fn(async (body: HandoffAnnounce) => {
+    announce: vi.fn((body: HandoffAnnounce) => {
       calls.push('announce');
       announces.push(body);
       minted += 1;
-      return {
+      return Promise.resolve({
         ...BEACON,
         secret: `s${minted}`,
         handle: HandoffHandle.parse(`h${minted}`),
         proof: `p${minted}`,
-      };
+      });
     }),
-    poll: vi.fn(async (): Promise<PairingStatus> => {
+    poll: vi.fn((): Promise<PairingStatus> => {
       calls.push('poll');
-      return { status: 'pending' };
+      return Promise.resolve({ status: 'pending' });
     }),
-    leave: vi.fn(async (secret: string) => {
+    leave: vi.fn((secret: string) => {
       calls.push('leave');
       left.push(secret);
+      return Promise.resolve();
     }),
     ...overrides,
   };
@@ -73,7 +74,5 @@ export async function tick(ms = 0) {
 }
 
 export function refusing(status: number, route = '/handoff/announce') {
-  return vi.fn(async () => {
-    throw new KromaApiError(status, `POST ${route} failed (${status})`);
-  });
+  return vi.fn(() => Promise.reject(new KromaApiError(status, `POST ${route} failed (${status})`)));
 }
