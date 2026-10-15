@@ -67,6 +67,7 @@ function makeNav(): PlayerNav {
     activate: vi.fn(),
     focusControl: vi.fn(),
     focusProgress: vi.fn(),
+    exit: vi.fn(),
   };
 }
 
@@ -239,13 +240,13 @@ describe('usePlayerKeys owns the keys it takes', () => {
 });
 
 describe('usePlayerKeys locked / intro / credits gates', () => {
-  it('when locked only Back/OK dismiss (routed as Back); arrows are ignored', () => {
+  it('when locked only Back/OK leave the player; arrows are ignored', () => {
     const nav = makeNav();
     const { press } = setup({ nav, locked: true });
     press({ key: 'ArrowRight' });
-    expect(nav.handleKey).not.toHaveBeenCalled();
+    expect(nav.exit).not.toHaveBeenCalled();
     press({ key: 'Enter' });
-    expect(nav.handleKey).toHaveBeenCalledWith('Back');
+    expect(nav.exit).toHaveBeenCalledWith('back');
   });
 
   it('the skip-intro affordance consumes OK', () => {

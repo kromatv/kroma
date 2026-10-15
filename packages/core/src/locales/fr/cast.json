@@ -11,6 +11,7 @@
   "cast.moveToTv": "Envoyer sur le téléviseur",
   "cast.noDevices": "Aucun téléviseur disponible",
   "cast.noDevicesHint": "Ouvrez KROMA sur votre téléviseur : il apparaîtra ici.",
+  "cast.openHint": "KROMA doit être ouvert sur le téléviseur : s'il passe sur une autre source, il quitte la liste.",
   "cast.playHere": "Lire ici",
   "cast.playOn": "Lire sur {device}",
   "cast.playingOn": "Lecture sur {device}",
@@ -26,5 +27,6 @@
   "cast.takeOver": "{device} lit déjà {title}.",
   "cast.takeOverConfirm": "Lire quand même",
   "cast.thisDevice": "Cet appareil",
-  "cast.title": "Lire sur le téléviseur"
+  "cast.title": "Lire sur le téléviseur",
+  "cast.titleGone": "Ce titre n'est plus dans la bibliothèque"
 }

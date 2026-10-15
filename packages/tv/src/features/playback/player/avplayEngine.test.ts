@@ -330,18 +330,44 @@ describe('AvplayEngine prepared (resume + audio mapping)', () => {
     expect(listeners.onReady).toHaveBeenCalledTimes(1);
   });
 
-  it('asks again for the wanted soundtrack once playing, which Tizen refuses at READY', () => {
+  it('keeps asking for the wanted soundtrack until one call is accepted', () => {
     const { e, a, names, lastArgs } = make({ direct: true, initialRendition: 1 }, [
       'setSelectTrack:ready',
     ]);
     a.setTracks([track(0, 'VIDEO'), track(1, 'AUDIO'), track(2, 'AUDIO')]);
 
     a.prepareOk();
-    e.play();
     a.listener().oncurrentplaytime?.(500);
+    e.play();
     a.listener().oncurrentplaytime?.(1000);
+    a.listener().oncurrentplaytime?.(1500);
 
-    expect(names().filter((n) => n === 'setSelectTrack')).toHaveLength(2);
+    expect(names().filter((n) => n === 'setSelectTrack')).toHaveLength(3);
+    expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 2]);
+  });
+
+  it('gives up on the wanted soundtrack after a few refusals instead of asking forever', () => {
+    const { e, a, names } = make({ direct: true, initialRendition: 1 }, ['setSelectTrack']);
+    a.setTracks([track(0, 'VIDEO'), track(1, 'AUDIO'), track(2, 'AUDIO')]);
+
+    a.prepareOk();
+    e.play();
+    for (const ms of [500, 1000, 1500, 2000, 2500]) a.listener().oncurrentplaytime?.(ms);
+
+    expect(names().filter((n) => n === 'setSelectTrack')).toHaveLength(4);
+  });
+
+  it('leaves a manual pick alone rather than restoring the soundtrack it opened with', () => {
+    const { e, a, lastArgs } = make({ direct: true, initialRendition: 0 }, [
+      'setSelectTrack:ready',
+    ]);
+    a.setTracks([track(0, 'VIDEO'), track(1, 'AUDIO'), track(2, 'AUDIO')]);
+    a.prepareOk();
+    e.play();
+
+    e.setAudioRendition(1);
+    a.listener().oncurrentplaytime?.(500);
+
     expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 2]);
   });
 
@@ -502,6 +528,35 @@ describe('AvplayEngine audio switching', () => {
     await tick();
     expect(lastArgs('open')).toEqual(['master:sm1:false:25:1']);
   });
+
+  it('re-asserts the soundtrack already shown when the viewer picks it again', () => {
+    const { e, a, names, lastArgs } = make({ direct: true, initialRendition: 1 });
+    a.setTracks([track(1, 'AUDIO'), track(4, 'AUDIO')]);
+    const before = names().filter((n) => n === 'setSelectTrack').length;
+
+    e.setAudioRendition(1);
+
+    expect(names().filter((n) => n === 'setSelectTrack')).toHaveLength(before + 1);
+    expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 4]);
+  });
+
+  it('re-picking the running rendition on a master touches nothing', () => {
+    const { e, names } = make({ direct: false, startSec: 0, initialRendition: 1 });
+    const before = names().length;
+
+    e.setAudioRendition(1);
+
+    expect(names()).toHaveLength(before);
+  });
+
+  it('a re-pick the set refuses leaves the stream where it is', async () => {
+    const { e, names } = make({ direct: true, initialRendition: 1 });
+
+    e.setAudioRendition(1);
+    await tick();
+
+    expect(names()).not.toContain('stop');
+  });
 });
 
 describe('AvplayEngine visibility + destroy', () => {
@@ -616,10 +671,9 @@ describe('AvplayEngine when the firmware refuses', () => {
 });
 
 describe('AvplayEngine no-ops', () => {
-  it('re-selecting the running rendition or filter touches nothing', () => {
+  it('re-selecting the running filter touches nothing', () => {
     const { e, names } = make({ direct: true, initialRendition: 1, audioFilter: 'off' });
     const before = names().length;
-    e.setAudioRendition(1);
     e.setAudioFilter('off');
     expect(names()).toHaveLength(before);
   });

@@ -131,10 +131,14 @@ async fn pump(mut socket: WebSocket, state: SharedState, who: Viewer) {
     }
 
     // Periodic ping so a half-open socket (client vanished without a Close
-    // frame) is detected as a failed send rather than lingering forever.
+    // frame) is detected as a failed send rather than lingering forever. Tizen
+    // freezes a suspended app with its socket open, where the send keeps
+    // succeeding, so the Pong is the only thing telling that apart from a
+    // paused film.
     let mut keepalive = tokio::time::interval(std::time::Duration::from_secs(30));
     keepalive.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     keepalive.reset(); // skip the immediate first tick
+    let mut answered = true;
 
     // Set once this socket attaches a TV; the roster entry lives as long as this
     // does.
@@ -178,14 +182,19 @@ async fn pump(mut socket: WebSocket, state: SharedState, who: Viewer) {
                         .await;
                     }
                 }
+                Some(Ok(Message::Pong(_))) => answered = true,
                 _ => {}
             },
             _ = keepalive.tick() => {
+                if !answered {
+                    break;
+                }
                 // Doubles as the receiver's liveness: a paused film sends nothing
                 // for minutes and must not age out of the roster.
                 if let Some(id) = receiver.as_deref() {
                     state.cast.touch(id);
                 }
+                answered = false;
                 if socket.send(Message::Ping(Default::default())).await.is_err() {
                     break;
                 }

@@ -11,11 +11,12 @@ export {
   registerTvMediaKeys,
   resolveRemoteKey,
 } from './lib/remote-keys';
+export { useForeground } from './lib/use-foreground';
 export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/aiSuggest';
 export { useAiSuggest } from './services/aiSuggest';
 export type { ActivateResult, AuthSession } from './services/auth';
 export { useAuthSession } from './services/auth';
-export type { Cast, CastProviderProps } from './services/cast';
+export type { Cast, CastFailure, CastProviderProps } from './services/cast';
 export { CastProvider, useCast } from './services/cast';
 export { type Format, useFormat } from './services/format';
 export type { I18nProviderProps } from './services/i18n';

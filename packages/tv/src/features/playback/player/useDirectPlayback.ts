@@ -74,7 +74,7 @@ export function useDirectPlayback(
     deviceLabel,
     durationSec,
     audioIndex,
-    setAudioIndex,
+    pickAudio,
     setCur,
     playing,
     waiting,
@@ -175,11 +175,6 @@ export function useDirectPlayback(
     commit: seekScrubCommit,
   } = useSeekGesture({ duration: runtime, seekTo });
 
-  const setAudio = useCallback(
-    (index: number) => setAudioIndex((c) => (c === index ? c : index)),
-    [setAudioIndex],
-  );
-
   return {
     videoRef,
     objectRef,
@@ -203,7 +198,7 @@ export function useDirectPlayback(
     aspect: engine.decodedAspect ?? declaredAspect(item),
     audioTracks,
     audioIndex,
-    setAudio,
+    setAudio: pickAudio,
     togglePlay,
     seek,
     seekTo,

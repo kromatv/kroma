@@ -11,7 +11,7 @@ vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
 
 const cast = vi.hoisted(() => ({
   active: null as { id: string; name: string } | null,
-  playOn: vi.fn(async () => true),
+  playOn: vi.fn(async (): Promise<string | null> => null),
 }));
 vi.mock('@kromatv/ui', () => ({ useCast: () => cast }));
 
@@ -19,7 +19,7 @@ const { usePlay } = await import('./play');
 
 beforeEach(() => {
   push.mockClear();
-  cast.playOn.mockClear().mockResolvedValue(true);
+  cast.playOn.mockClear().mockResolvedValue(null);
   cast.active = null;
 });
 
@@ -61,7 +61,7 @@ describe('while driving a TV', () => {
 
   it('plays here when the set refuses, rather than doing nothing at all', async () => {
     // Switched off since the roster was drawn, or it let this remote go.
-    cast.playOn.mockResolvedValue(false);
+    cast.playOn.mockResolvedValue('cast.gone');
     const { result } = renderHook(() => usePlay());
 
     await result.current.play('item-1');

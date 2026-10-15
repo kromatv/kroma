@@ -12,7 +12,7 @@
 // position is interpolated locally, so a remote's progress bar runs smoothly
 // instead of stepping every ten seconds.
 
-import { type DeviceId, KromaApiError, type KromaClient } from '@kromatv/client';
+import { apiErrorBody, type DeviceId, KromaApiError, type KromaClient } from '@kromatv/client';
 import type { CastCommand, CastReceiver } from '@kromatv/client/cast';
 import { KromaEvents } from '@kromatv/client/events';
 import type { ItemId } from '@kromatv/client/media';
@@ -28,11 +28,16 @@ import {
   useState,
 } from 'react';
 import { useLanCast } from '#ui/services/cast-lan';
-import { type Cast, CastCtx } from './cast-context';
+import { type Cast, CastCtx, type CastFailure } from './cast-context';
 import { applyCastEvent } from './cast-events';
 import { livePosition, type PositionBase } from './cast-position';
 
 const TICK_MS = 500;
+
+function failureOf(e: unknown): CastFailure {
+  if (!(e instanceof KromaApiError) || e.status !== 404) return 'cast.failed';
+  return apiErrorBody(e).code === 'error.itemNotFound' ? 'cast.titleGone' : 'cast.gone';
+}
 
 export interface CastProviderProps {
   /** Null while a shell is still resolving its session; treated as "not yet". */
@@ -165,21 +170,20 @@ export function CastProvider({
   const positionMs = livePosition(active, base, playing);
 
   const sendTo = useCallback(
-    async (receiverId: DeviceId, command: CastCommand): Promise<boolean> => {
-      if (!client) return false;
+    async (receiverId: DeviceId, command: CastCommand): Promise<CastFailure | null> => {
+      if (!client) return 'cast.failed';
       try {
         await client.cast.command(receiverId, command);
         setError(null);
-        return true;
+        return null;
       } catch (e) {
-        // 404 = that TV went away between listing it and pressing the button.
-        const gone = e instanceof KromaApiError && e.status === 404;
-        setError(gone ? 'cast.gone' : 'cast.failed');
-        if (gone) {
+        const failure = failureOf(e);
+        setError(failure);
+        if (failure === 'cast.gone') {
           setActiveId((id) => (id === receiverId ? null : id));
           refresh();
         }
-        return false;
+        return failure;
       }
     },
     [client, refresh],
@@ -187,21 +191,22 @@ export function CastProvider({
 
   const playOn = useCallback(
     async (receiverId: DeviceId, itemId: ItemId, positionMs = 0) => {
-      const ok = await sendTo(receiverId, { type: 'play', itemId, positionMs });
-      if (ok) {
+      const failure = await sendTo(receiverId, { type: 'play', itemId, positionMs });
+      if (!failure) {
         setActiveId(receiverId);
         socket.current?.send({ type: 'cast.control', receiverId, name: name.current });
         // Optimistic: the TV's own heartbeat corrects this within a beat, but the
         // remote should not sit at 0:00 while it starts.
         setBase({ id: receiverId, positionMs, playing: true, at: Date.now() });
       }
-      return ok;
+      return failure;
     },
     [sendTo],
   );
 
   const send = useCallback(
-    (command: CastCommand) => (activeId ? sendTo(activeId, command) : Promise.resolve(false)),
+    (command: CastCommand) =>
+      activeId ? sendTo(activeId, command) : Promise.resolve<CastFailure>('cast.failed'),
     [activeId, sendTo],
   );
 
@@ -248,5 +253,5 @@ export function CastProvider({
   return <CastCtx.Provider value={value}>{children}</CastCtx.Provider>;
 }
 
-export type { Cast } from './cast-context';
+export type { Cast, CastFailure } from './cast-context';
 export { useCast } from './cast-context';

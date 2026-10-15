@@ -35,11 +35,12 @@ function summarize(issues: readonly z.core.$ZodIssue[]): string {
 
 /** The server's error payload. Every field is optional: which ones come back is
  * decided by the endpoint that failed, and one field arriving malformed must not
- * cost the caller the others. `retryAfter` is a whole number of seconds;
- * `tokenInvalid` marks an access token no PIN can rescue; `pinRequired` marks a
- * profile locked behind a PIN. */
+ * cost the caller the others. `code` is the catalog key behind `error`;
+ * `retryAfter` is a whole number of seconds; `tokenInvalid` marks an access
+ * token no PIN can rescue; `pinRequired` marks a profile locked behind a PIN. */
 export const ApiErrorBody = z.object({
   error: z.string().optional().catch(undefined),
+  code: z.string().optional().catch(undefined),
   retryAfter: z.number().int().positive().optional().catch(undefined),
   tokenInvalid: z.boolean().optional().catch(undefined),
   pinRequired: z.boolean().optional().catch(undefined),

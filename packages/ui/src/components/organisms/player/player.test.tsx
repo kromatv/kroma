@@ -233,10 +233,22 @@ describe('<Player.Root> says why it was closed', () => {
     expect(onClose).toHaveBeenCalledWith({ reason: 'close' });
   });
 
-  it('reports the remote`s Back button, which a browser shell sends as Escape, as `back`', () => {
+  it('puts the chrome away on the first Back, which a browser shell sends as Escape', () => {
+    const onClose = vi.fn();
+    render(player(media, { onClose }));
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('reports the Back that finds no chrome left to put away as `back`', () => {
     const onClose = vi.fn();
     render(player(media, { onClose }));
     fireEvent.keyDown(window, { key: 'Escape' });
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
     expect(onClose).toHaveBeenCalledWith({ reason: 'back' });
   });
 });

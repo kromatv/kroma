@@ -35,32 +35,31 @@ export interface PlayerKeysParams {
 /**
  * Route one logical remote key (§3, §15). While locked only Back / OK get
  * through, and both mean "dismiss". The end-of-film screen takes everything.
- * Otherwise a hidden chrome reveals first and swallows the key (§16) unless the
- * key drives the film itself, then the panel, the resume prompt, skip-intro and
- * credits card each get first refusal before the nav machine sees it.
+ * Then the open panel, then the three things drawn over the film: the resume
+ * prompt, the skip pill and the credits card. Only after those does a hidden
+ * chrome reveal and swallow the key (§16), unless the key drives the film
+ * itself, or is the Back that leaves.
  */
 export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): void {
   const { nav } = p;
   if (p.locked) {
-    if (key === 'Back' || key === 'Enter') nav.handleKey('Back');
+    if (key === 'Back' || key === 'Enter') nav.exit('back');
     return;
   }
   if (p.postPlay?.active) {
     p.postPlay.onKey(key);
     return;
   }
-
-  if (!nav.revealed && !TRANSPORT_KEYS.has(key)) {
-    nav.poke();
-    return;
-  }
-  nav.poke();
-
   if (nav.overlay) {
+    nav.poke();
     if (p.panelRef.current?.onKey(key)) return;
     nav.handleKey(key); // an unhandled Back closes the panel
     return;
   }
+
+  // Asked before the chrome because they outlive it: a press belongs to what
+  // the viewer can see, and spending the first one on the reveal instead
+  // leaves a lit pill doing nothing.
   if (p.resume?.active && key === 'Back') {
     p.resume.onDismiss();
     return;
@@ -70,6 +69,18 @@ export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): v
     return;
   }
   if (p.credits?.active && p.credits.onKey(key)) return;
+
+  // Never spent on the reveal: with the chrome already away there is nothing
+  // left for Back to put away, so it leaves the player (see usePlayerNav).
+  if (key === 'Back' && !nav.revealed) {
+    nav.handleKey(key);
+    return;
+  }
+  if (!nav.revealed && !TRANSPORT_KEYS.has(key)) {
+    nav.poke();
+    return;
+  }
+  nav.poke();
   nav.handleKey(key);
 }
 

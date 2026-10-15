@@ -274,12 +274,14 @@ export class AvplayEngine extends BaseTvEngine {
   }
 
   setAudioRendition(rendition: number): void {
-    if (rendition === this.rendition) return;
+    const changed = rendition !== this.rendition;
     this.rendition = rendition;
-    // Direct: in-place native track switch. Master: the stream carries only
-    // one audio track, so a language switch reopens it at the current position.
-    if (this.mode === 'direct' && this.direct.selectAudio(rendition)) return;
-    this.reanchor(this.position());
+    // A direct source is asked even when nothing changed: that is how a viewer
+    // overrides a set which took the first ask and played the container default
+    // anyway. A master carries one audio track, so only a real change is worth
+    // anything there, and it reopens the stream at the current position.
+    const landed = this.mode === 'direct' && this.direct.picksAudio(rendition);
+    if (changed && !landed) this.reanchor(this.position());
   }
 
   destroy(): void {
