@@ -17,7 +17,7 @@ mod tests {
 
     #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
     struct Row {
-        #[serde(with = "super")]
+        #[serde(default, with = "super")]
         tmdb_id: Option<u64>,
     }
 
@@ -44,6 +44,15 @@ mod tests {
     #[test]
     fn a_peer_that_sends_null_reads_as_nothing() {
         let json = serde_json::json!({ "tmdb_id": null });
+
+        let row: Row = serde_json::from_value(json).unwrap();
+
+        assert_eq!(row.tmdb_id, None);
+    }
+
+    #[test]
+    fn a_peer_that_omits_the_field_reads_as_nothing() {
+        let json = serde_json::json!({});
 
         let row: Row = serde_json::from_value(json).unwrap();
 
