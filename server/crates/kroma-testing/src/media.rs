@@ -1,13 +1,10 @@
-//! A real media file for the tests that read one. ffmpeg is what every pass in
-//! this crate shells out to, so a path it cannot open proves nothing about the
-//! code around it.
-
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// Five seconds of colour bars and a tone at `<dir>/clip.mp4`, keyframed every
-/// second so a seek has somewhere to land.
-pub(crate) fn clip(dir: &Path) -> PathBuf {
+/// second so a seek has somewhere to land. Needs `ffmpeg` on PATH, which every
+/// job that runs these tests installs.
+pub fn clip(dir: &Path) -> PathBuf {
     let at = dir.join("clip.mp4");
     let status = Command::new("ffmpeg")
         .args(["-v", "error", "-nostdin", "-y"])

@@ -50,7 +50,7 @@ fn a_cell_is_named_by_its_position_so_the_montage_reads_them_in_order() {
 #[test]
 fn every_tile_asked_for_lands_and_is_reported_in_order() {
     let scratch = kroma_testing::temp_dir("tile-grab");
-    let input = crate::test_support::clip(scratch.path());
+    let input = kroma_testing::clip(scratch.path());
     let plan = Plan::for_duration(5.0);
 
     let landed = grab_tiles(
@@ -69,7 +69,7 @@ fn every_tile_asked_for_lands_and_is_reported_in_order() {
 #[test]
 fn a_pass_cancelled_before_it_starts_grabs_nothing_and_says_so() {
     let scratch = kroma_testing::temp_dir("tile-cancel");
-    let input = crate::test_support::clip(scratch.path());
+    let input = kroma_testing::clip(scratch.path());
     let plan = Plan::for_duration(5.0);
 
     let refused = grab_tiles(
@@ -126,7 +126,7 @@ fn the_worker_count_stays_inside_the_band_whatever_the_box_reports() {
 #[test]
 fn the_decode_path_is_measured_once_and_the_answer_is_kept() {
     let scratch = kroma_testing::temp_dir("tile-probe");
-    let input = crate::test_support::clip(scratch.path());
+    let input = kroma_testing::clip(scratch.path());
     let path = input.to_str().unwrap();
 
     let first = probe(path, 5.0);

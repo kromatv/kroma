@@ -274,8 +274,6 @@ mod tests {
         assert!(found.is_empty());
     }
 
-    // No indexer module installed: every target fails for the same reason, which
-    // is the indexer's report to carry rather than the sweep's to fail on.
     #[test]
     fn an_indexer_nothing_answers_for_reports_its_error_and_no_rows() {
         let host = StubHost::new();

@@ -1,9 +1,3 @@
-//! Integration tests for the HLS routes: the mode the master settles on before
-//! any ffmpeg is spawned, the guards in front of a session, and the child files
-//! served out of one. The redirect is the whole decision surface, so the cases
-//! that test it return before the engine is reached; the two that drive a real
-//! remux say so by seeding a file ffmpeg can read.
-
 use axum::http::StatusCode;
 
 use crate::api::test_support::{demo_item_id, raw, seed_playable_item, test_app, TestApp};
@@ -101,22 +95,9 @@ async fn an_item_that_does_not_exist_is_not_found() {
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
-// A real five-second file, so the master reaches ffmpeg rather than one of the
-// guards in front of it.
 fn clip_bytes() -> Vec<u8> {
     let dir = kroma_testing::temp_dir("it-hls-clip");
-    let at = dir.path().join("clip.mp4");
-    let status = std::process::Command::new("ffmpeg")
-        .args(["-v", "error", "-nostdin", "-y"])
-        .args(["-f", "lavfi", "-i", "testsrc=size=320x180:rate=15:duration=5"])
-        .args(["-f", "lavfi", "-i", "sine=frequency=440:duration=5"])
-        .args(["-c:v", "libx264", "-g", "15", "-pix_fmt", "yuv420p"])
-        .args(["-c:a", "aac", "-shortest"])
-        .arg(&at)
-        .status()
-        .expect("run ffmpeg");
-    assert!(status.success(), "ffmpeg could not write the fixture clip");
-    std::fs::read(&at).expect("read the fixture clip")
+    std::fs::read(kroma_testing::clip(dir.path())).expect("read the fixture clip")
 }
 
 fn child(id: &str, mode: &str, name: &str) -> String {

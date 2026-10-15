@@ -6,7 +6,6 @@ use kroma_module_wire::{AudioStream, VideoStream};
 use super::*;
 use crate::hls::{AudioMode, Rung, VideoMode};
 use crate::meter::Unmetered;
-use crate::test_support::clip;
 
 const COPY: StreamMode = StreamMode::new(VideoMode::Copy, AudioMode::Copy);
 
@@ -128,7 +127,7 @@ fn a_program_with_no_probed_picture_has_no_frame_to_fit() {
 #[tokio::test]
 async fn a_program_answers_its_playlist_with_the_start_and_the_true_length() {
     let dir = kroma_testing::temp_dir("program-master");
-    let input = clip(dir.path());
+    let input = kroma_testing::clip(dir.path());
     let engine = engine(dir.path());
     let tracks = [audio(0, "aac")];
     let session = Session {
@@ -163,7 +162,7 @@ async fn a_program_answers_its_playlist_with_the_start_and_the_true_length() {
 #[tokio::test]
 async fn an_unprobed_program_takes_its_length_off_the_file_itself() {
     let dir = kroma_testing::temp_dir("program-probed");
-    let input = clip(dir.path());
+    let input = kroma_testing::clip(dir.path());
     let engine = engine(dir.path());
     let tracks = [audio(0, "aac")];
     let mut unprobed = program(None, &tracks);
@@ -215,7 +214,7 @@ async fn a_segment_no_session_is_producing_is_a_miss_nothing_may_cache() {
 #[tokio::test]
 async fn a_segment_url_is_good_forever_and_a_playlist_never_is() {
     let dir = kroma_testing::temp_dir("program-file");
-    let input = clip(dir.path());
+    let input = kroma_testing::clip(dir.path());
     let engine = engine(dir.path());
     let tracks = [audio(0, "aac")];
     let session = Session {

@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use super::*;
-use crate::test_support::clip;
 
 const COPY: StreamMode = StreamMode::new(VideoMode::Copy, AudioMode::Copy);
 
@@ -17,8 +16,6 @@ async fn remux(engine: &HlsEngine, input: &Path) -> String {
         .0
 }
 
-// The remux writes the whole five seconds and exits; the playlist only becomes
-// seekable VOD once it has.
 async fn finished_playlist(engine: &HlsEngine) -> String {
     for _ in 0..200 {
         let Some((bytes, _)) = engine.file("it1", COPY, 0, 0, "index.m3u8").await else {
@@ -36,7 +33,7 @@ async fn finished_playlist(engine: &HlsEngine) -> String {
 #[tokio::test]
 async fn the_length_a_file_carries_is_read_once_and_kept() {
     let dir = kroma_testing::temp_dir("hls-duration");
-    let input = clip(dir.path());
+    let input = kroma_testing::clip(dir.path());
     let engine = engine(dir.path());
     let path = input.to_str().unwrap();
 
@@ -65,7 +62,7 @@ async fn a_file_nothing_can_open_has_no_length_and_is_not_probed_twice() {
 #[tokio::test]
 async fn what_a_session_wrote_is_what_the_cache_weighs() {
     let dir = kroma_testing::temp_dir("hls-bytes");
-    let input = clip(dir.path());
+    let input = kroma_testing::clip(dir.path());
     let engine = engine(dir.path());
 
     remux(&engine, &input).await;
@@ -87,7 +84,7 @@ async fn the_disk_budget_is_retuned_without_restarting_the_engine() {
 #[tokio::test]
 async fn a_running_remux_says_what_it_is_producing_and_on_what_silicon() {
     let dir = kroma_testing::temp_dir("hls-live");
-    let input = clip(dir.path());
+    let input = kroma_testing::clip(dir.path());
     let engine = engine(dir.path());
 
     remux(&engine, &input).await;
@@ -112,7 +109,7 @@ fn the_pipeline_this_host_settled_on_comes_with_the_reason_for_it() {
 #[tokio::test]
 async fn a_child_name_reaching_out_of_the_session_is_refused_outright() {
     let dir = kroma_testing::temp_dir("hls-escape");
-    let input = clip(dir.path());
+    let input = kroma_testing::clip(dir.path());
     let engine = engine(dir.path());
     remux(&engine, &input).await;
 
@@ -124,7 +121,7 @@ async fn a_child_name_reaching_out_of_the_session_is_refused_outright() {
 #[tokio::test]
 async fn a_finished_remux_is_seekable_vod_rather_than_a_live_edge() {
     let dir = kroma_testing::temp_dir("hls-endlist");
-    let input = clip(dir.path());
+    let input = kroma_testing::clip(dir.path());
     let engine = engine(dir.path());
     remux(&engine, &input).await;
 
@@ -137,7 +134,7 @@ async fn a_finished_remux_is_seekable_vod_rather_than_a_live_edge() {
 #[tokio::test]
 async fn a_segment_served_out_of_a_session_knows_what_it_is() {
     let dir = kroma_testing::temp_dir("hls-segment");
-    let input = clip(dir.path());
+    let input = kroma_testing::clip(dir.path());
     let engine = engine(dir.path());
     remux(&engine, &input).await;
     finished_playlist(&engine).await;
@@ -158,7 +155,7 @@ fn session_dirs(root: &Path) -> usize {
 #[tokio::test]
 async fn a_re_anchor_into_a_session_already_running_is_answered_out_of_it() {
     let dir = kroma_testing::temp_dir("hls-reanchor");
-    let input = clip(dir.path());
+    let input = kroma_testing::clip(dir.path());
     let engine = engine(dir.path());
     remux(&engine, &input).await;
     finished_playlist(&engine).await;

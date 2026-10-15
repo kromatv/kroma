@@ -1,7 +1,3 @@
-//! Films the credits scan can actually read. The pass under test is ffmpeg
-//! decoding a picture, so a path that does not open says nothing about the
-//! scoring around it.
-
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
