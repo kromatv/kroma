@@ -199,6 +199,8 @@ export function PlayerChrome({
   }, [screenWidth]);
 
   const { intro, inCredits } = markersAt(item, engine.cur);
+  const lift = (visible ? 110 : 40) + insets.bottom;
+  const statsTop = (visible ? 64 : 12) + insets.top;
 
   return (
     <Box fill>
@@ -208,7 +210,7 @@ export function PlayerChrome({
         <Box fill />
       </GestureDetector>
       <Box style={StyleSheet.absoluteFill} pointerEvents="box-none">
-        <CueLine cue={cue} bottom={(visible ? 110 : 40) + insets.bottom} appearance={appearance} />
+        <CueLine cue={cue} bottom={lift} appearance={appearance} />
 
         {(zoomNote ?? notice) ? (
           <Box style={[s.zoomNote, { top: insets.top + 18 }]} pointerEvents="none">
@@ -220,12 +222,10 @@ export function PlayerChrome({
           <StatsPanel
             controller={{ getStats: stats }}
             onClose={onToggleStats}
-            top={(visible ? 64 : 12) + insets.top}
+            top={statsTop}
             left={insets.left + 16}
             width={Math.min(460, screenWidth - insets.left - insets.right - 32)}
-            maxHeight={
-              screenHeight - ((visible ? 64 : 12) + insets.top) - Math.max(insets.bottom, 12)
-            }
+            maxHeight={screenHeight - statsTop - Math.max(insets.bottom, 12)}
           />
         ) : null}
 
@@ -244,7 +244,7 @@ export function PlayerChrome({
             shown={resume.shown}
             secondsLeft={resume.secondsLeft}
             total={resume.total}
-            lift={(visible ? 110 : 40) + insets.bottom}
+            lift={lift}
             onStartOver={() => {
               resume.dismiss();
               engine.seekTo(0);
