@@ -32,7 +32,7 @@ export function JobsPage() {
         if (e.type === 'job.progress') {
           setLive((s) => ({ ...s, [e.key]: { done: e.done, total: e.total } }));
         } else if (e.type === 'job.started' || e.type === 'job.finished') {
-          reload();
+          void reload();
         }
       },
     });

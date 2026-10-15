@@ -103,7 +103,7 @@ export function ReportsQueuePage() {
     fn()
       .then(() => {
         flash(label);
-        reload();
+        void reload();
       })
       .catch((e) => {
         flash(t('reports.actionFailed'));

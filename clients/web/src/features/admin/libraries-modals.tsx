@@ -61,7 +61,7 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
 
   const create = () => {
     if (!name.trim()) return;
-    run(async () => {
+    void run(async () => {
       await client.library.create({
         name: name.trim(),
         kind,
@@ -132,7 +132,7 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
         destructive: true,
       });
       if (!ok) return;
-      run(async () => {
+      await run(async () => {
         await client.library.delete(lib.id);
         call.end(true);
       });
@@ -167,9 +167,7 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
           <Dialog.Actions
             onCancel={() => call.end(false)}
             cancelLabel={t('common.cancel')}
-            onConfirm={() => {
-              save();
-            }}
+            onConfirm={() => void save()}
             confirmLabel={busy ? t('common.saving') : t('common.save')}
             busy={busy}
             disabled={!name.trim()}

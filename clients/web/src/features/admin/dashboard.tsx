@@ -35,7 +35,7 @@ export function DashboardScreen() {
 
   const sessions = sessionsData?.sessions ?? [];
   const askStop = async (session: PlaybackSession) => {
-    if (await StopStreamModal.call({ session })) reloadSessions();
+    if (await StopStreamModal.call({ session })) await reloadSessions();
   };
   const avatarByUser = useMemo(() => {
     const known = new Map<string, string | null>();

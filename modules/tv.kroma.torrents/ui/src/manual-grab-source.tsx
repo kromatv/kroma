@@ -69,7 +69,7 @@ export function SourceStep({ search, onPicked }: Readonly<SourceStepProps>) {
   const takeFile = (file: File | undefined) => {
     if (!file) return;
     setRefused(null);
-    run(
+    void run(
       async () => {
         const inspected = await torrents.inspectTorrent(file);
         onPicked({

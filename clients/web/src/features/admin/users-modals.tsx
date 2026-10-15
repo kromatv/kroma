@@ -258,7 +258,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
       destructive: true,
     });
     if (!ok) return;
-    run(
+    await run(
       async () => {
         await client.admin.deleteUser(user.id);
         call.end(true);
@@ -275,7 +275,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
       cancelLabel: t('common.cancel'),
     });
     if (!ok) return;
-    run(
+    await run(
       async () => setReset(await client.admin.resetUser(user.id)),
       () => t('admin.resetAccessFailed'),
     );
@@ -296,7 +296,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
       destructive: true,
     });
     if (!ok) return;
-    run(
+    await run(
       async () => {
         await client.admin.clearUserPin(user.id);
         setPinCleared(true);
@@ -423,9 +423,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
         <Dialog.Actions
           onCancel={() => call.end(false)}
           cancelLabel={t('common.cancel')}
-          onConfirm={() => {
-            save();
-          }}
+          onConfirm={() => void save()}
           confirmLabel={busy ? t('common.saving') : t('common.save')}
           busy={busy}
         >
@@ -504,9 +502,7 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
           <Dialog.Actions
             onCancel={close}
             cancelLabel={t('common.cancel')}
-            onConfirm={() => {
-              create();
-            }}
+            onConfirm={() => void create()}
             confirmLabel={busy ? t('common.creating') : t('admin.createLink')}
             busy={busy}
             disabled={perms.size === 0}

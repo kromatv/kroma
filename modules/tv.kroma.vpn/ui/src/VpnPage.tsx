@@ -133,7 +133,7 @@ export function VpnCard() {
           configured={configured}
           onClose={() => setModal(false)}
           onSaved={() => {
-            reload();
+            void reload();
             setTest({});
           }}
         />
