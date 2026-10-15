@@ -52,7 +52,9 @@ export class Namespaces {
     }
     if (landed) this.sink.changed();
     entry.needed ||= needed;
-    if (entry.needed) for (const locale of this.warmed) this.ensure(namespace, locale);
+    if (entry.needed) {
+      for (const locale of this.warmed) this.ensure(namespace, locale)?.catch(() => undefined);
+    }
   }
 
   /** From now on, fetch every needed namespace's catalog for `locale`. */
@@ -60,7 +62,7 @@ export class Namespaces {
     if (this.warmed.has(locale)) return;
     this.warmed.add(locale);
     for (const [namespace, entry] of this.entries) {
-      if (entry.needed) this.ensure(namespace, locale);
+      if (entry.needed) this.ensure(namespace, locale)?.catch(() => undefined);
     }
   }
 

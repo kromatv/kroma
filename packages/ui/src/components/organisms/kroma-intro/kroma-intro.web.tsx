@@ -163,15 +163,15 @@ function VideoIntro({
 
     // Sound-first autoplay; muted fallback when the browser blocks it. A
     // muted-too rejection means playback is genuinely broken: use the CSS scene.
+    const beginMuted = () => {
+      v.muted = true;
+      const muted = v.play();
+      if (typeof muted?.then === 'function') muted.catch(fail);
+    };
+
     const begin = () => {
       const p = v.play();
-      if (typeof p?.then === 'function') {
-        p.catch(() => {
-          v.muted = true;
-          const p2 = v.play();
-          if (typeof p2?.then === 'function') p2.catch(fail);
-        });
-      }
+      if (typeof p?.then === 'function') p.catch(beginMuted);
       rearmSafety();
     };
 

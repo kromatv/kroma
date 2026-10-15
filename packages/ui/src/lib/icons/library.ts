@@ -56,7 +56,7 @@ function useIconLibrary(): boolean {
   const [ready, setReady] = useState(iconLibraryReady);
   useEffect(() => {
     let live = true;
-    loadIconLibrary().then(() => {
+    void loadIconLibrary().then(() => {
       if (live) setReady(true);
     });
     return () => {
