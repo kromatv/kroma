@@ -1,4 +1,4 @@
-import { ItemId, type SubjectId } from '@kromatv/client/media';
+import type { ItemId, SubjectId } from '@kromatv/client/media';
 import { formatRuntime } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Button, type HostElement } from '@kromatv/ui/kit';
@@ -82,7 +82,7 @@ export function TitleHero({
       playLabel={view.playLabel ?? undefined}
       themeUrl={view.themeUrl}
       watched={listState.watched}
-      castItemId={owned && localId ? ItemId.parse(localId) : undefined}
+      castItemId={playable?.id}
       onToggleWatched={listState.onToggleWatched}
       inList={listState.inList}
       onToggleList={listState.onToggleList}

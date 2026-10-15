@@ -2,9 +2,12 @@ import { AT_FILM_START_SEC } from '@kromatv/core';
 import { bestEffort } from '#tv/features/playback/player/avplayCalls';
 import type { AvplayApi } from '#tv/features/playback/player/engine';
 
+const AUDIO_RETRY_REPORTS = 3;
+
 export class AvplayDirectSource {
   private pendingSeek: number | null = null;
   private pendingAudio: number | null = null;
+  private audioRetriesLeft = 0;
 
   constructor(private readonly api: AvplayApi) {}
 
@@ -36,18 +39,32 @@ export class AvplayDirectSource {
     return seconds;
   }
 
-  /** Select the rendition's soundtrack, holding a refusal: the container default
-   * may not be the wanted language, and Tizen refuses a track change at READY
-   * (`InvalidStateError`), where the same call lands once PLAYING. */
+  /** Hold the rendition's soundtrack and ask for it. The hold stands until a
+   * call is seen to land: Tizen refuses a track change at READY
+   * (`InvalidStateError`) where the same call takes once PLAYING, and a firmware
+   * that accepts it there can still play the container default. */
   wantsAudio(rendition: number): void {
-    if (!this.selectAudio(rendition)) this.pendingAudio = rendition;
+    this.pendingAudio = rendition;
+    this.audioRetriesLeft = AUDIO_RETRY_REPORTS;
+    this.selectAudio(rendition);
   }
 
+  /** Ask again for the held soundtrack, once per time report, until one call
+   * lands or the budget runs out. */
   applyPendingAudio(): void {
     const rendition = this.pendingAudio;
     if (rendition === null) return;
-    this.pendingAudio = null;
-    this.selectAudio(rendition);
+    this.audioRetriesLeft -= 1;
+    if (this.selectAudio(rendition) || this.audioRetriesLeft <= 0) this.pendingAudio = null;
+  }
+
+  /** The viewer's own pick, which replaces whatever was held. Answers whether
+   * the call landed. */
+  picksAudio(rendition: number): boolean {
+    const landed = this.selectAudio(rendition);
+    this.pendingAudio = landed ? null : rendition;
+    this.audioRetriesLeft = AUDIO_RETRY_REPORTS;
+    return landed;
   }
 
   /** Map an audio-relative index onto AVPlay's internal track index and select it;

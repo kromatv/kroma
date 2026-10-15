@@ -6,7 +6,7 @@
 
 import type { ItemId } from '@kromatv/client/media';
 import { useCast, useT } from '@kromatv/ui';
-import { Button } from '@kromatv/ui/kit';
+import { Button, toast } from '@kromatv/ui/kit';
 import { castPicker } from '#web/shared/ui/cast-picker';
 
 export function CastButton({ itemId }: Readonly<{ itemId: ItemId }>) {
@@ -20,9 +20,11 @@ export function CastButton({ itemId }: Readonly<{ itemId: ItemId }>) {
       label={t('cast.title')}
       onPress={async () => {
         const picked = await castPicker();
+        if (!picked) return;
         // The position is the account's own resume point, which the receiver
         // already knows - nothing to hand over from a page that isn't playing.
-        if (picked) await playOn(picked, itemId);
+        const failure = await playOn(picked, itemId);
+        if (failure) toast({ message: t(failure) });
       }}
     />
   );

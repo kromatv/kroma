@@ -88,6 +88,22 @@ describe('useEngineLifecycle stall guard', () => {
   });
 });
 
+describe('useEngineLifecycle soundtrack', () => {
+  beforeEach(() => {
+    H.listeners = null;
+  });
+
+  it('asks the engine again when the track already playing is picked again', () => {
+    const { result } = open();
+
+    H.engine.setAudioRendition.mockClear();
+
+    act(() => result.current.pickAudio(result.current.audioIndex));
+
+    expect(H.engine.setAudioRendition).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('useEngineLifecycle decoder ceiling', () => {
   const UHD = {
     id: 'uhd1',

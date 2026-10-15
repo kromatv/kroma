@@ -14,7 +14,7 @@
 import type { DiscoveredTv, LanBeacons, LanDiscoveryBridge } from '@kromatv/core';
 import { watchLanBeacons } from '@kromatv/core';
 import { useEffect, useEffectEvent, useState } from 'react';
-import { AppState } from 'react-native';
+import { useForeground } from '#ui/lib/use-foreground';
 
 export interface LanCastOptions {
   /** This device's DNS-SD stack, when it has one. Absent everywhere else, and
@@ -84,18 +84,4 @@ function sameTvs(held: readonly DiscoveredTv[], found: readonly DiscoveredTv[]):
       );
     })
   );
-}
-
-// `inactive` is the app switcher and the pull-down shade on iOS, a second of
-// nothing rather than a departure: tearing the browse down for it would restart
-// it as fast as it stopped.
-function useForeground(): boolean {
-  const [inFront, setInFront] = useState(() => AppState.currentState !== 'background');
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (state) => {
-      setInFront(state !== 'background');
-    });
-    return () => sub?.remove();
-  }, []);
-  return inFront;
 }

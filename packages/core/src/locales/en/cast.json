@@ -11,6 +11,7 @@
   "cast.moveToTv": "Move to TV",
   "cast.noDevices": "No TV available",
   "cast.noDevicesHint": "Open KROMA on your TV and it shows up here.",
+  "cast.openHint": "KROMA has to be open on the television: a set that moves to another source leaves the list.",
   "cast.playHere": "Play here",
   "cast.playOn": "Play on {device}",
   "cast.playingOn": "Playing on {device}",
@@ -26,5 +27,6 @@
   "cast.takeOver": "{device} is playing {title}.",
   "cast.takeOverConfirm": "Play anyway",
   "cast.thisDevice": "This device",
-  "cast.title": "Play on TV"
+  "cast.title": "Play on TV",
+  "cast.titleGone": "That title is no longer in the library"
 }
