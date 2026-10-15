@@ -51,7 +51,7 @@ describe('useSeekNudge taps', () => {
     const c = makeController();
     const { result } = renderHook(() => useSeekNudge(c));
 
-    act(() => result.current.nudge(1));
+    act(() => result.current.nudge(1, 'hold'));
     expect(lastTarget(c)).toBe(110);
     expect(c.scrubCommit).not.toHaveBeenCalled();
 
@@ -63,11 +63,11 @@ describe('useSeekNudge taps', () => {
     const c = makeController();
     const { result } = renderHook(() => useSeekNudge(c));
 
-    act(() => result.current.nudge(1));
+    act(() => result.current.nudge(1, 'hold'));
     advance(400); // slower than an auto-repeat, faster than the commit window
-    act(() => result.current.nudge(1));
+    act(() => result.current.nudge(1, 'hold'));
     advance(400);
-    act(() => result.current.nudge(1));
+    act(() => result.current.nudge(1, 'hold'));
 
     // 130, not 110: the taps continue from each other, not from the playhead.
     expect(lastTarget(c)).toBe(130);
@@ -77,17 +77,76 @@ describe('useSeekNudge taps', () => {
   });
 });
 
+describe('useSeekNudge clicks', () => {
+  it('moves one exact step per click however fast the clicks come', () => {
+    const c = makeController();
+    const { result } = renderHook(() => useSeekNudge(c));
+
+    act(() => result.current.nudge(1, 'tap'));
+    advance(80);
+    act(() => result.current.nudge(1, 'tap'));
+    advance(80);
+    act(() => result.current.nudge(1, 'tap'));
+
+    expect(lastTarget(c)).toBe(130);
+  });
+
+  it('shows the viewer the round number the clicks add up to', () => {
+    const c = makeController();
+    const { result } = renderHook(() => useSeekNudge(c));
+
+    act(() => result.current.nudge(1, 'tap'));
+    advance(80);
+    act(() => result.current.nudge(1, 'tap'));
+    advance(80);
+    act(() => result.current.nudge(1, 'tap'));
+
+    expect(result.current.burst).toEqual({ dir: 1, deltaSec: 3 * TAP_STEP });
+  });
+
+  it('still issues ONE seek for a run of clicks', () => {
+    const c = makeController();
+    const { result } = renderHook(() => useSeekNudge(c));
+
+    act(() => result.current.nudge(1, 'tap'));
+    advance(80);
+    act(() => result.current.nudge(1, 'tap'));
+
+    expect(c.scrubCommit).not.toHaveBeenCalled();
+    advance(600);
+    expect(c.scrubCommit).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the held key its ramp, so a click never slows the remote down', () => {
+    const c = makeController();
+    const { result } = renderHook(() => useSeekNudge(c));
+
+    act(() => result.current.nudge(1, 'tap'));
+    let prev = lastTarget(c);
+    const steps: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      advance(80);
+      act(() => result.current.nudge(1, 'hold'));
+      const next = lastTarget(c);
+      steps.push(next - prev);
+      prev = next;
+    }
+
+    expect(steps[steps.length - 1]).toBeGreaterThan(TAP_STEP);
+  });
+});
+
 describe('useSeekNudge hold', () => {
   it('accelerates: each repeat travels further than the one before', () => {
     const c = makeController();
     const { result } = renderHook(() => useSeekNudge(c));
 
-    act(() => result.current.nudge(1));
+    act(() => result.current.nudge(1, 'hold'));
     const steps: number[] = [];
     let prev = lastTarget(c);
     for (let i = 0; i < 8; i++) {
       advance(80); // an auto-repeating remote
-      act(() => result.current.nudge(1));
+      act(() => result.current.nudge(1, 'hold'));
       const next = lastTarget(c);
       steps.push(next - prev);
       prev = next;
@@ -102,10 +161,10 @@ describe('useSeekNudge hold', () => {
   it('about a second of holding crosses minutes, not seconds', () => {
     const held = makeController();
     const hook = renderHook(() => useSeekNudge(held));
-    act(() => hook.result.current.nudge(1));
+    act(() => hook.result.current.nudge(1, 'hold'));
     for (let i = 0; i < 12; i++) {
       advance(80);
-      act(() => hook.result.current.nudge(1));
+      act(() => hook.result.current.nudge(1, 'hold'));
     }
     const heldDistance = lastTarget(held) - 100;
 
@@ -117,15 +176,15 @@ describe('useSeekNudge hold', () => {
     const c = makeController();
     const { result } = renderHook(() => useSeekNudge(c));
 
-    act(() => result.current.nudge(1));
+    act(() => result.current.nudge(1, 'hold'));
     for (let i = 0; i < 10; i++) {
       advance(80);
-      act(() => result.current.nudge(1));
+      act(() => result.current.nudge(1, 'hold'));
     }
     const fast = lastTarget(c);
 
     advance(80);
-    act(() => result.current.nudge(-1));
+    act(() => result.current.nudge(-1, 'hold'));
     expect(lastTarget(c)).toBe(fast - 10);
   });
 });
@@ -134,19 +193,52 @@ describe('useSeekNudge bounds', () => {
   it('never runs past the end or before the start', () => {
     const c = makeController({ cur: 7195, dur: 7200 } as Partial<PlayerController>);
     const { result } = renderHook(() => useSeekNudge(c));
-    act(() => result.current.nudge(1));
+    act(() => result.current.nudge(1, 'hold'));
     expect(lastTarget(c)).toBe(7199);
 
     const start = makeController({ cur: 3 } as Partial<PlayerController>);
     const back = renderHook(() => useSeekNudge(start));
-    act(() => back.result.current.nudge(-1));
+    act(() => back.result.current.nudge(-1, 'hold'));
     expect(lastTarget(start)).toBe(0);
   });
 
   it('an unknown duration still seeks forward', () => {
     const c = makeController({ cur: 10, dur: 0 } as Partial<PlayerController>);
     const { result } = renderHook(() => useSeekNudge(c));
-    act(() => result.current.nudge(1));
+    act(() => result.current.nudge(1, 'hold'));
     expect(lastTarget(c)).toBe(20);
+  });
+});
+
+describe('what the stage flash is told', () => {
+  it('reports a backward seek as a negative distance, which is what picks the glyph', () => {
+    const c = makeController();
+    const { result } = renderHook(() => useSeekNudge(c));
+
+    act(() => result.current.nudge(-1, 'hold'));
+
+    expect(result.current.burst).toEqual({ dir: -1, deltaSec: -TAP_STEP });
+  });
+
+  it('reports a forward seek as a positive one', () => {
+    const c = makeController();
+    const { result } = renderHook(() => useSeekNudge(c));
+
+    act(() => result.current.nudge(1, 'hold'));
+
+    expect(result.current.burst).toEqual({ dir: 1, deltaSec: TAP_STEP });
+  });
+
+  it('stays positive when a run that went forward turns back one press', () => {
+    const c = makeController();
+    const { result } = renderHook(() => useSeekNudge(c));
+
+    act(() => result.current.nudge(1, 'hold'));
+    advance(400);
+    act(() => result.current.nudge(1, 'hold'));
+    advance(400);
+    act(() => result.current.nudge(-1, 'hold'));
+
+    expect(result.current.burst).toEqual({ dir: -1, deltaSec: TAP_STEP });
   });
 });

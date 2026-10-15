@@ -1,7 +1,5 @@
-//! Asking every enabled indexer at once. A sweep used to walk the list one
-//! tracker at a time, so a single slow or unreachable one set the wall clock for
-//! all of them; now the wall clock is the slowest indexer rather than their sum,
-//! and each one answers for itself in the report.
+//! Asking every enabled indexer at once, each one answering for itself in the
+//! report.
 
 use std::time::Instant;
 
@@ -9,8 +7,6 @@ use crate::peers::indexers::IndexerRef;
 
 use crate::dtos::IndexerReport;
 
-// One thread per indexer, capped: a sweep is network-bound, but a list of fifty
-// trackers should not become fifty threads and fifty simultaneous connections.
 const MAX_PARALLEL: usize = 8;
 
 /// Run `ask` against every indexer concurrently, in indexer order, and report

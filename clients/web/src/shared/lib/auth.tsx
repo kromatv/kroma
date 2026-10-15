@@ -1,38 +1,19 @@
 // Client-side authentication context: one authed KromaClient plus the
 // web-specific login, passkey and registration flows over `useAuthSession`.
 
-import type { InviteToken, StoredSession, User, UserId } from '@kromatv/client/accounts';
-import { createQueryClient, type QueryClient } from '@kromatv/client/query';
+import type { InviteToken, StoredSession } from '@kromatv/client/accounts';
+import { createQueryClient } from '@kromatv/client/query';
 import { activeLocale } from '@kromatv/core';
 import { type ActivateResult, useAuthSession } from '@kromatv/ui';
 import { useRouter } from '@tanstack/react-router';
-import { createContext, type ReactNode, useCallback, useContext, useMemo } from 'react';
+import { type ReactNode, useCallback, useMemo } from 'react';
 import { apiBase } from '#web/shared/lib/api';
+import { AuthContext, type AuthValue } from '#web/shared/lib/auth-context';
 import { queryClient } from '#web/shared/lib/query';
 import { getPasskey } from '#web/shared/lib/webauthn';
 
-interface AuthValue {
-  user: User | null;
-  ready: boolean;
-  client: QueryClient;
-  accounts: StoredSession[];
-  login: (email: string, password: string) => Promise<void>;
-  loginPasskey: () => Promise<void>;
-  register: (
-    email: string,
-    username: string,
-    password: string,
-    avatar?: File | null,
-    inviteToken?: InviteToken,
-  ) => Promise<void>;
-  activate: (s: StoredSession, pin?: string) => Promise<ActivateResult>;
-  switchProfile: () => void;
-  forget: (userId: UserId) => void;
-  logout: () => Promise<void>;
-  updateUser: (patch: Partial<User>) => void;
-}
-
-const AuthContext = createContext<AuthValue | null>(null);
+export type { AuthValue } from '#web/shared/lib/auth-context';
+export { useAuth } from '#web/shared/lib/auth-context';
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const client = useMemo(
@@ -125,11 +106,4 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-/** Access the auth context. Throws if used outside `<AuthProvider>`. */
-export function useAuth(): AuthValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within <AuthProvider>');
-  return ctx;
 }

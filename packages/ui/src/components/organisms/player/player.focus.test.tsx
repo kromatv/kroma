@@ -3,6 +3,7 @@
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
+import { wearsRing } from '#ui/testing';
 import { DEFAULT_SUB_APPEARANCE } from './lib/subtitle-appearance';
 import { Player } from './player';
 import { fakeController } from './player.fixture';
@@ -41,6 +42,8 @@ function press(key: string) {
 
 const labelOf = () => document.activeElement?.getAttribute('aria-label') ?? '';
 
+const pillAroundFocus = () => document.activeElement?.parentElement;
+
 function walkTo(name: RegExp) {
   for (let step = 0; step < 12 && !name.test(labelOf()); step++) press('Tab');
 }
@@ -66,6 +69,16 @@ describe('the player chrome and the document focus', () => {
 
     expect(document.activeElement).not.toBe(start);
     expect(labelOf()).not.toBe('');
+  });
+
+  it("stops on the volume, where the ring is the pill's and not the rail's", () => {
+    mount();
+
+    walkTo(/^volume$/i);
+
+    expect(labelOf()).toBe('Volume');
+    expect(wearsRing(document.activeElement)).toBe(false);
+    expect(wearsRing(pillAroundFocus())).toBe(true);
   });
 
   it('presses the focused control once when OK lands on it', () => {

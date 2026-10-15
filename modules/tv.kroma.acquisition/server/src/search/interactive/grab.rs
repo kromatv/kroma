@@ -43,8 +43,6 @@ pub fn grab_cached<S: HostStorage>(
     let wanted = db::wanted_for_request(&conn, request_id)?;
     drop(conn);
     let wanted_ids = crate::search::wanted_ids_for(&wanted, &cached.view);
-    // Everything this grab covers is already on disk: it can only be an upgrade,
-    // and the import replaces the file it improves instead of sitting beside it.
     let upgrade = is_upgrade(&wanted, &wanted_ids);
     let spec = crate::search::grab_spec_from_release(
         &cached.view,
@@ -59,8 +57,6 @@ pub fn grab_cached<S: HostStorage>(
     crate::peers::downloads::grab(state, &spec)
 }
 
-// A built-in indexer may need a details-page fetch to turn a search row into a
-// magnet / .torrent link.
 fn resolve_grab_target<S: HostStorage>(state: &S, cached: &CachedRelease) -> Result<String> {
     let indexer = crate::peers::indexers::get(state, &cached.view.indexer_id)?;
     match indexer {

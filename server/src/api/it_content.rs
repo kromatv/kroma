@@ -1,6 +1,3 @@
-//! Integration tests for the read-only content endpoints: browse, search,
-//! people, home, recommendations, per-user playback, metadata and discover.
-
 use axum::http::StatusCode;
 use serde_json::json;
 

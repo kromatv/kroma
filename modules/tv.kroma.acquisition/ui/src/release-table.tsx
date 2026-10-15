@@ -7,7 +7,7 @@ import type { IndexerReport, ScoredReleaseView } from '@kromatv/client/requests'
 import { TABULAR, Table, type TableColumn, useT } from '@kromatv/module-sdk';
 import { Box, Chip, Divider, EmptyState, Icon, Row, SegmentGroup, Text } from '@kromatv/ui/kit';
 import { useMemo, useState } from 'react';
-import { IndexerReportStrip } from './indexer-report';
+import { IndexerReportStrip, nothingAnswered } from './indexer-report';
 import { ReleaseFacts } from './release-cells';
 import {
   filterReleases,
@@ -55,6 +55,7 @@ export function ReleaseTable({
 
   const acceptedCount = releases.filter((r) => r.score != null).length;
   const rejectedCount = releases.length - acceptedCount;
+  const unsearched = releases.length === 0 && nothingAnswered(indexers);
   const rows = useMemo(
     () => sortReleases(filterReleases(releases, filter), sort),
     [releases, filter, sort],
@@ -98,8 +99,10 @@ export function ReleaseTable({
 
       {rows.length === 0 ? (
         <Box py={20}>
-          <EmptyState.Root icon="search">
-            <EmptyState.Title>{t('requests.noReleases')}</EmptyState.Title>
+          <EmptyState.Root icon={unsearched ? 'alert-triangle' : 'search'}>
+            <EmptyState.Title>
+              {t(unsearched ? 'requests.indexersAllFailed' : 'requests.noReleases')}
+            </EmptyState.Title>
           </EmptyState.Root>
         </Box>
       ) : (

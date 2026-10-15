@@ -111,6 +111,10 @@ function ErrorScreen({
   );
 }
 
+// A line height is px here as it is in React Native, so a bare ratio would
+// collapse the glyph box to a 1px band and clip the gradient to nothing.
+const NUMERAL = 104;
+
 const s = styles({
   screen: {
     display: 'flex',
@@ -122,9 +126,9 @@ const s = styles({
   },
   numeral: {
     fontFamily: 'var(--font-display)',
-    fontSize: 104,
+    fontSize: NUMERAL,
     fontWeight: '800',
-    lineHeight: 1,
+    lineHeight: NUMERAL,
     letterSpacing: '-0.04em',
     color: 'transparent',
     backgroundImage: `linear-gradient(180deg, ${color('text')} 0%, ${color('text/28')} 100%)`,

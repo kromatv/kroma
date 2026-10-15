@@ -6,8 +6,10 @@ import {
   useRef,
   useState,
 } from 'react';
+import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-nudge';
 import type { ControlId, Overlay, Zone } from '#ui/components/organisms/player/lib/nav';
 import { handleDpadKey, handleMediaKey } from '#ui/components/organisms/player/lib/nav-keys';
+import { nextTabStop } from '#ui/components/organisms/player/lib/tab-walk';
 import type { PlayerCloseReason } from '#ui/components/organisms/player/types';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 
@@ -16,11 +18,12 @@ const HIDE_MS = 3500;
 /** Actions the top-level machine invokes; the shell wires them to the controller. */
 export interface PlayerNavActions {
   togglePlay(): void;
-  /** Discrete seek, -1 = back / +1 = forward (±10 s), from the progress zone or
-   *  the rewind/forward transport buttons. */
-  seekNudge(dir: -1 | 1): void;
+  /** Directional seek, -1 = back / +1 = forward, from the progress zone or the
+   *  rewind/forward transport buttons. */
+  seekNudge(dir: -1 | 1, press: SeekPress): void;
   onNext(): void;
   hasNext: boolean;
+  sheetHasItems: boolean;
   /** Volume ±5 % (§4b) when the volume control is focused. */
   volumeNudge(dir: -1 | 1): void;
   toggleMute(): void;
@@ -29,6 +32,9 @@ export interface PlayerNavActions {
   /** Hand this film to a TV. Only reachable when `flags.cast` is on, which the
    *  host sets while a receiver is live. */
   onCast?(): void;
+  /** The resumed-at prompt while it is up. Absent once it has gone, which is
+   *  also what takes its stop out of the chain. */
+  resume?: { onStartOver(): void; onFocus(): void };
   /** Leave the player, told why: OK on the back button, Back at the top level,
    *  or the Stop media key. */
   onExit(reason: PlayerCloseReason): void;
@@ -44,6 +50,7 @@ export interface PlayerNav {
   /** Route a logical key. The shell calls this after giving any open panel first
    *  refusal. */
   handleKey(key: RemoteKey): void;
+  walkChrome(backwards: boolean): void;
   /** Reveal the chrome + (re)arm the auto-hide timer (pointer move / any key). */
   poke(): void;
   /** Re-arm the auto-hide timer WITHOUT revealing the chrome. Used by immersive
@@ -128,6 +135,11 @@ export function usePlayerNav(
     return clearHide;
   }, [playing, overlay, poke, clearHide]);
 
+  const resumeShown = actions.resume != null;
+  useEffect(() => {
+    if (!resumeShown) setZone((z) => (z === 'resume' ? 'controls' : z));
+  }, [resumeShown]);
+
   const openOverlay = useCallback((o: Exclude<Overlay, null>) => {
     setOverlay(o);
     setRevealed(true);
@@ -148,11 +160,11 @@ export function usePlayerNav(
     const a = actions;
     switch (id) {
       case 'rewind':
-        return a.seekNudge(-1);
+        return a.seekNudge(-1, 'tap');
       case 'play':
         return a.togglePlay();
       case 'forward':
-        return a.seekNudge(1);
+        return a.seekNudge(1, 'tap');
       case 'next':
         return a.onNext();
       case 'volume':
@@ -202,6 +214,27 @@ export function usePlayerNav(
     });
   });
 
+  const walkChrome = useEffectEvent((backwards: boolean) => {
+    const stop = nextTabStop(
+      {
+        zone,
+        control: controls[controlIndex] ?? null,
+        drawnControls: controls,
+        sheetHasItems: actions.sheetHasItems,
+        resumeShown: actions.resume != null,
+      },
+      backwards,
+    );
+    if (!stop) return;
+    if (stop.zone === 'sheet') {
+      openOverlay('sheet');
+      return;
+    }
+    setZone(stop.zone);
+    if (stop.zone === 'controls') setFocusedId(stop.control);
+    if (stop.zone === 'resume') actions.resume?.onFocus();
+  });
+
   const focusedControl =
     !overlay && revealed && zone === 'controls' ? (controls[controlIndex] ?? null) : null;
 
@@ -212,6 +245,7 @@ export function usePlayerNav(
     controls,
     focusedControl,
     handleKey,
+    walkChrome,
     poke,
     rearmHide,
     openOverlay,

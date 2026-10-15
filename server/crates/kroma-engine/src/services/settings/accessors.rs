@@ -26,11 +26,7 @@ pub fn local_networks(settings: &Settings) -> Vec<String> {
 }
 
 /// A stable opaque identity for THIS install, minted on first boot and persisted
-/// with the settings. Clients reach one server through several origins (its mDNS
-/// name, its LAN IP, a tunnel hostname) and need to collapse those into one
-/// entry; matching on name/version/library counts collides between two fresh
-/// installs (both "KROMA", same version, 0 libraries), so discovery matches on
-/// this instead. Opaque and non-guessable: it is served on the public health
+/// with the settings. Opaque and non-guessable: it is served on the public health
 /// endpoint, so it must carry no information about the box.
 pub fn ensure_instance_id(settings: &Settings, pool: &Pool) -> String {
     let existing = settings.get_str("instanceId", "");
@@ -38,7 +34,9 @@ pub fn ensure_instance_id(settings: &Settings, pool: &Pool) -> String {
         return existing;
     }
     let id = crate::services::auth::random_token();
-    settings.set_internal(pool, "instanceId", json!(id.clone()));
+    if let Err(error) = settings.set_internal(pool, "instanceId", json!(id.clone())) {
+        tracing::warn!(%error, "could not store this install's id; the next start mints another");
+    }
     id
 }
 
@@ -52,31 +50,24 @@ pub fn server_name(settings: &Settings) -> String {
     }
 }
 
-/// Max concurrent HLS sessions (functional cap), 1..=32. Most are stream-copies
-/// and cost almost nothing, so the bound is generous; the ones that re-encode a
-/// picture hold the box down themselves (see [`crate::infra::ffmpeg_gate`]). It
-/// seeds the semaphore in [`crate::infra::hls::HlsEngine`].
+/// Max concurrent HLS sessions (functional cap), 1..=32. Seeds the semaphore in
+/// [`kroma_media::hls::HlsEngine`].
 pub fn max_transcodes(settings: &Settings) -> usize {
     settings.get_i64("maxConcurrent", 8).clamp(1, 32) as usize
 }
 
 /// How many CPU-heavy media passes (storyboard tiles/montage, subtitle extraction,
-/// marker fingerprinting) may run at once, 1..=32. `0`/unset = auto (`cores - 1`,
-/// floored at 1) so a small NAS keeps a core for playback out of the box. Seeds +
-/// live-updates the process-wide [`crate::infra::ffmpeg_gate`]. Unlike
-/// `maxConcurrent` (cheap stream-copy segments), these passes actually decode, so
-/// this is the knob that keeps the box usable during background processing.
+/// marker fingerprinting) may run at once, per
+/// [`kroma_media::ffmpeg_gate::capacity_from`]. Seeds + live-updates the
+/// process-wide gate.
 pub fn media_workers(settings: &Settings) -> usize {
-    match settings.get_i64("mediaConcurrency", 0) {
-        n if n > 0 => (n as usize).clamp(1, 32),
-        _ => crate::infra::ffmpeg_gate::auto_capacity(),
-    }
+    kroma_media::ffmpeg_gate::capacity_from(settings.get_i64("mediaConcurrency", 0))
 }
 
 /// Byte budget for the on-disk transcode (HLS segment) cache, from the
 /// `transcodeCacheLimit` setting. `0` = unlimited (any non-numeric label, e.g.
 /// "Illimité"). Labels use decimal "Go" (1 Go = 1e9 bytes), matching the image
-/// `cacheLimit`. Seeds the budget in [`crate::infra::hls::HlsEngine`].
+/// `cacheLimit`. Seeds the budget in [`kroma_media::hls::HlsEngine`].
 pub fn transcode_cache_limit_bytes(settings: &Settings) -> u64 {
     let label = settings.get_str("transcodeCacheLimit", "20 Go");
     // Take the leading numeric run INCLUDING a decimal point (e.g. "1.5 Go" -> 1.5,
@@ -143,8 +134,7 @@ pub fn metadata_language_for(
 ) -> String {
     let configured = metadata_language(settings, config);
     // Nothing was asked for: a request with no Accept-Language is a script or
-    // an older client, and the operator's setting is the answer. Treating the
-    // fallback locale as a preference let any such call quietly override it.
+    // an older client, and the operator's setting is the answer.
     let Some(reader) = reader else {
         return configured;
     };
@@ -187,9 +177,8 @@ pub fn remote_access_token(settings: &Settings) -> String {
 }
 
 /// Persist the remote-access config. `token` is `Some` only when the admin
-/// provided a new value a blank field keeps the stored secret rather than wiping
-/// it (mirrors the LLM API-key handling). The `cloudflared` binary is provided by
-/// the server, so there is no configurable path.
+/// provided a new value: a blank field keeps the stored secret rather than wiping
+/// it.
 pub fn set_remote_config(
     settings: &Settings,
     pool: &Pool,
@@ -213,7 +202,6 @@ pub fn set_remote_config(
 pub struct LibraryDef {
     pub id: String,
     pub name: String,
-    // `movies` | `shows` | `mixed` | "" (auto-detect from contents).
     #[serde(default)]
     pub kind: String,
     pub folders: Vec<String>,
@@ -232,9 +220,7 @@ fn default_true() -> bool {
 /// backward compatibility.
 ///
 /// With nothing configured at all, the demo library under `<data>/demo-media` is
-/// the seed, so a server that has written it treats those files exactly as it
-/// would a real library — one scan path, one set of jobs, no special case
-/// downstream.
+/// the seed.
 pub fn library_defs(settings: &Settings, config: &crate::config::Config) -> Vec<LibraryDef> {
     if let Value::Array(_) = settings.get("libraries") {
         if let Ok(defs) = serde_json::from_value::<Vec<LibraryDef>>(settings.get("libraries")) {
@@ -289,13 +275,9 @@ pub fn library_defs(settings: &Settings, config: &crate::config::Config) -> Vec<
     defs
 }
 
-// The two libraries the written demo library is read as. Named so an admin can
-// see what they are looking at, and pointed at the folders `demo::media` writes.
-//
 // Only the ones that EXIST. A definition for a folder nobody wrote would scan as
 // zero items with folders configured, which is how an unmounted share looks: the
-// scan would keep the stored index and the row-only demo seed would never run. So
-// a server with no ffmpeg behaves exactly as it did before this existed.
+// scan would keep the stored index and the row-only demo seed would never run.
 fn demo_defs(config: &crate::config::Config) -> Vec<LibraryDef> {
     let (movies, shows) = crate::services::demo::media::roots(&config.data_dir);
     let mut defs = Vec::new();
@@ -320,14 +302,12 @@ fn demo_defs(config: &crate::config::Config) -> Vec<LibraryDef> {
     defs
 }
 
-/// Persist the full set of library definitions.
 pub fn set_library_defs(settings: &Settings, pool: &Pool, defs: &[LibraryDef]) {
     let mut patch = BTreeMap::new();
     patch.insert("libraries".to_string(), json!(defs));
     settings.set_patch(pool, patch);
 }
 
-/// All scan folders across every effective library (for a flat walk if needed).
 pub fn all_folders(settings: &Settings, config: &crate::config::Config) -> Vec<PathBuf> {
     library_defs(settings, config)
         .into_iter()
@@ -385,7 +365,6 @@ mod tests {
         let c = test_config();
 
         assert_eq!(metadata_language_for(&s, &c, Some("en")), "en-US");
-        // Regioned, not bare: TMDB picks release dates and artwork by region.
         assert_eq!(metadata_language_for(&s, &c, Some("fr")), "fr-FR");
         assert_eq!(metadata_language_for(&s, &c, Some("de")), "de-DE");
 
@@ -407,9 +386,6 @@ mod tests {
             BTreeMap::from([("tmdbLanguage".to_string(), json!("fr-FR"))]),
         );
 
-        // A curl, a module or an older client sends no Accept-Language. Reading
-        // the fallback locale as a preference let any of them quietly override
-        // a server configured for something else.
         assert_eq!(metadata_language_for(&s, &c, None), "fr-FR");
     }
 
@@ -417,11 +393,9 @@ mod tests {
     fn local_networks_splits_default_and_custom() {
         let pool = test_pool();
         let s = settings(&pool);
-        // default
         let nets = local_networks(&s);
         assert!(nets.contains(&"192.168.0.0/16".to_string()));
         assert_eq!(nets.len(), 3);
-        // custom: comma AND space separated, empties dropped
         s.set_patch(
             &pool,
             BTreeMap::from([(
@@ -479,7 +453,6 @@ mod tests {
     fn media_workers_explicit_and_auto() {
         let pool = test_pool();
         let s = settings(&pool);
-        // default 0 -> auto capacity (cores-1, floored at 1)
         assert!(media_workers(&s) >= 1);
         s.set_patch(
             &pool,
@@ -559,7 +532,6 @@ mod tests {
         assert!(remote_access_enabled(&s));
         assert_eq!(public_url(&s), "https://a.b");
         assert_eq!(remote_access_token(&s), "tok1");
-        // None keeps the stored token.
         set_remote_config(&s, &pool, false, "https://a.b", None);
         assert!(!remote_access_enabled(&s));
         assert_eq!(remote_access_token(&s), "tok1");
@@ -579,7 +551,6 @@ mod tests {
         assert_eq!(defs[0].kind, "movies");
         assert_eq!(defs[1].name, "Séries");
         assert_eq!(defs[1].kind, "shows");
-        // untyped media dir seeds a library named after the folder, empty kind
         assert_eq!(defs[2].name, "Misc");
         assert!(defs[2].kind.is_empty());
     }
@@ -648,9 +619,6 @@ mod tests {
 
     #[test]
     fn nothing_configured_and_nothing_written_seeds_no_library_at_all() {
-        // The row-only demo depends on this: a definition for a folder that does
-        // not exist scans as zero items WITH folders configured, which is how an
-        // unmounted share looks, and the seed would never run.
         let pool = test_pool();
         let s = settings(&pool);
         let mut cfg = test_config();
@@ -677,7 +645,6 @@ mod tests {
         assert_eq!(defs[0].folders, vec![movies.to_string_lossy().to_string()]);
         assert_eq!(defs[1].kind, "shows");
         assert_eq!(defs[1].folders, vec![shows.to_string_lossy().to_string()]);
-        // Two ids, stable across runs, and not the ones a configured library gets.
         assert_ne!(defs[0].id, defs[1].id);
         assert_ne!(defs[0].id, crate::services::scan::short_hash("lib|movies"));
     }
@@ -735,14 +702,12 @@ mod tests {
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].name, "Cinema");
         assert!(!got[0].auto_scan);
-        // all_folders flattens
         let folders = all_folders(&s, &cfg);
         assert_eq!(folders, vec![PathBuf::from("/a"), PathBuf::from("/b")]);
     }
 
     #[test]
     fn library_def_auto_scan_defaults_true_on_deserialize() {
-        // A def JSON without autoScan defaults to true.
         let d: LibraryDef =
             serde_json::from_value(json!({"id":"x","name":"N","folders":["/f"]})).unwrap();
         assert!(d.auto_scan);

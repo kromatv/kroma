@@ -2,20 +2,7 @@
 //!
 //! A module must not depend on `kroma-engine`, `kroma-db`, `kroma-domain`,
 //! `kroma-sqlite`, `kroma-module-wire`, `kroma-http` or `kroma-i18n` directly.
-//! This facade re-exports the manifest layer at the crate root
-//! (`EmbeddedModule`, `ModuleManifest`, `Registry`, ...) and mirrors the host /
-//! engine / domain / http / i18n / db / primitives surface under submodules, so
-//! a module writes `kroma_module_sdk::engine::state::SharedState` instead of
-//! reaching into the core crate.
-//!
-//! What is NOT here is any description of what a module is for. A module reaches
-//! a peer by asking [`host::HostCtx::contributions`] for a point NAME and calling
-//! it with JSON both sides declare themselves; there is no trait here for
-//! torznab, or downloads, or anything else, because the core cannot enumerate the
-//! things modules will do. See docs/module-plugin-model.md.
 
-// Manifest layer (below engine): EmbeddedModule / Module / ModuleManifest /
-// Registry / capability + config types. Re-exported at the crate root.
 pub use kroma_module_manifest::*;
 
 /// `embedded_module!()` builds a module's `MODULE` const by discovering its
@@ -35,8 +22,7 @@ pub mod host {
 }
 
 /// The application surface: `state::SharedState`, `services::*`, `model::*`.
-/// Behind the `engine` feature: this is the whole core, and only the two modules
-/// that orchestrate it (acquisition, torrents) have any use for it.
+/// Behind the `engine` feature: this is the whole core.
 #[cfg(feature = "engine")]
 pub mod engine {
     pub use kroma_engine::*;
@@ -49,7 +35,18 @@ pub mod engine {
 pub mod domain {
     #[cfg(feature = "domain")]
     pub use kroma_domain::*;
+    // Only where `kroma-domain` is absent: it re-exports the wire types itself, and
+    // a second glob over the same names resolves through neither.
+    #[cfg(not(feature = "domain"))]
     pub use kroma_module_wire::*;
+}
+
+/// Reading and re-encoding one media input. Behind the `transcode` feature,
+/// which brings no database and no catalog with it: an input is a path or a URL,
+/// and a module tells the engine which directory it may write its sessions in.
+#[cfg(feature = "transcode")]
+pub mod media {
+    pub use kroma_media::*;
 }
 
 /// The outbound HTTP client (`Fetch`, `Response`).
@@ -63,8 +60,6 @@ pub mod http {
 pub mod i18n {
     pub use kroma_i18n::*;
 
-    /// The locale a key falls back to: a module's `en.json` is the
-    /// authoritative catalog, the one every other is a translation of.
     pub const FALLBACK_LOCALE: &str = "en";
 
     /// An engine over the catalogs [`crate::embedded_locales!`] found. A module

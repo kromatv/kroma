@@ -11,10 +11,6 @@ pub type Version = String;
 /// A point this module DEFINES: somewhere other modules can plug in. `name` is
 /// local, and the point's full name is `<this module's id>/<name>`, so ownership
 /// is legible from the name alone and two authors cannot collide.
-///
-/// Any module may define one. That is the whole trick: the core resolves a point
-/// by matching a string against the installed manifests, so a module defining a
-/// point is not a special case of the core defining one.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PointDef {
@@ -25,8 +21,7 @@ pub struct PointDef {
     #[serde(default = "one")]
     pub version: u32,
     /// The methods a contributor is expected to answer, as
-    /// `/_port/<point>/<method>`. Introspection today; what lets the Store warn
-    /// about a consumer wanting a method the installed provider lacks.
+    /// `/_port/<point>/<method>`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub methods: Vec<String>,
 }
@@ -48,12 +43,6 @@ impl PointDef {
 /// One thing a module contributes: it answers `point` (a full
 /// `<definer>/<name>`), under `id` when several contributions to that point can
 /// be live at once.
-///
-/// This is one declaration where there used to be three. `provides` described a
-/// user-configurable capability for the admin picker, `ports` described the RPC
-/// name resolution matched on, and they were the same fact written twice — an
-/// engine advertised `download-client` under both. The UI metadata rides along
-/// because the admin's add-form is data-driven off it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Contribution {
@@ -232,7 +221,6 @@ mod dep_map {
                 Ok(Vec::new())
             }
 
-            // Package.json-style map: each key is a module id, each value a range.
             fn visit_map<M: MapAccess<'de>>(self, mut access: M) -> Result<Self::Value, M::Error> {
                 let mut out = Vec::new();
                 while let Some((id, range)) = access.next_entry::<String, String>()? {
@@ -251,10 +239,6 @@ mod dep_map {
 
 /// A point this module CALLS, rather than a dependency on a specific module:
 /// satisfied by whichever module contributes `point` (under `id`, when given).
-///
-/// This is what makes a module's needs legible without naming a peer. A module id
-/// in `dependencies` says "install that one"; this says "something has to answer
-/// this", which is what a marketplace can resolve.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PointReq {
@@ -284,11 +268,6 @@ pub const MODULE_SCHEMA_VERSION: u32 = 2;
 /// `storage` object gets no database at all, and the sidecar built for it does
 /// not link SQLite.
 ///
-/// Additive, so it cost no [`MODULE_SCHEMA_VERSION`] bump: a reader that
-/// predates the field sees a module with no database, which is what such a
-/// module had. What a module needs from its HOST is `engines`, and that is where
-/// the floor for this one is declared.
-///
 /// Presence alone grants the module its own file
 /// (`<data>/modules/<id>/module.sqlite`), which it owns outright. Reaching the
 /// SHARED core database is separate and narrower: only what [`core`](Self::core)
@@ -307,7 +286,7 @@ pub struct Storage {
 }
 
 /// The slice of the CORE database a module may reach, as `"table"` (the whole
-/// table) or `"table.column"` entries. Empty -- the default -- means none of it.
+/// table) or `"table.column"` entries. Empty, the default, means none of it.
 ///
 /// Two rules are not visible from the list itself, because they come from
 /// SQLite rather than from us: a column named in a `WHERE` is reached as much as
@@ -334,10 +313,10 @@ impl CoreScope {
 /// reaches a module that named it here and no other, which is the difference
 /// between a credential reaching the tunnel and reaching everything installed.
 ///
-/// Additive, so it cost no [`MODULE_SCHEMA_VERSION`] bump, and absent is not the
-/// same as empty: a manifest with no `settings` object predates the field, so it
-/// keeps every ordinary preference and reaches none of the keys that want a
-/// declaration. One that declares reaches exactly what it lists.
+/// Absent is not the same as empty: a manifest with no `settings` object
+/// predates the field, so it keeps every ordinary preference and reaches none of
+/// the keys that want a declaration. One that declares reaches exactly what it
+/// lists.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SettingsScope {
@@ -378,21 +357,17 @@ pub struct ModuleManifest {
     #[serde(default)]
     pub description: String,
     /// What this module needs from its host, by engine name (`server`) and
-    /// semver range. Named like npm's `engines` because it is that, and an
-    /// object because a floor on one thing was never going to be all of it.
+    /// semver range.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub engines: BTreeMap<String, String>,
     #[serde(default, with = "dep_map", skip_serializing_if = "Vec::is_empty")]
     pub dependencies: Vec<Dependency>,
     #[serde(default, with = "dep_map", skip_serializing_if = "Vec::is_empty")]
     pub optional_dependencies: Vec<Dependency>,
-    /// Points this module invents, for other modules to plug into.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub defines_points: Vec<PointDef>,
-    /// Points this module answers, its own included.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub contributes: Vec<Contribution>,
-    /// Points this module calls.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub consumes: Vec<PointReq>,
     #[serde(default)]

@@ -9,8 +9,8 @@ import {
   masterNeedsAac,
   resolveAudioRelativeIndex,
 } from './audio-support';
-import { MSE_CAPS, NATIVE_TV_CAPS, SAFARI_CAPS } from './directplay';
 import { EN_51, FR_51, FR_COMMENTARY, makeItem, track, UNPROBED } from './directplay.fixture';
+import { MSE_CAPS, NATIVE_TV_CAPS, SAFARI_CAPS } from './runtime-caps';
 
 describe('audioSupport', () => {
   it('says nothing about an item whose audio was never probed', () => {

@@ -1,13 +1,7 @@
 //! A point the core calls: a NAME, and JSON in both directions.
 //!
-//! The engine holds no type describing what a point is for. There is no trait a
-//! module implements and nothing here that could only be answered by one
-//! implementation: a module answers `POST /_port/<point>/<method>` with the
-//! fields it chooses, and this reads the ones the caller asked for. That is why
-//! a feature nobody here has thought of needs no edit in this crate.
-//!
 //! Nothing answering is not an error. `call` returns `None`, and the core's own
-//! features degrade — no recommendations rather than a failed request.
+//! features degrade: no recommendations rather than a failed request.
 
 use std::sync::Arc;
 
@@ -23,17 +17,12 @@ pub struct Point {
     answer: Answer,
 }
 
-/// A test's answer to any method, as `(method, body) -> answer`.
 type StubFn = Arc<dyn Fn(&str, &Value) -> Option<Value> + Send + Sync>;
 
 #[derive(Clone)]
 enum Answer {
-    /// The live server: whoever contributes the point right now.
     Live(Contributions),
-    /// Answered in this process, for a test with no sidecar to serve. Generic on
-    /// purpose, so a test fakes any point without a type here naming what it does.
     Stub(StubFn),
-    /// Nothing answers, which is the state of every point on a fresh install.
     Absent,
 }
 
@@ -45,8 +34,7 @@ impl Point {
         }
     }
 
-    /// A point answered by `f` in this process. For a test that needs the core's
-    /// side of a feature without standing a sidecar up.
+    /// A point answered by `f` in this process.
     pub fn stub(
         name: &'static str,
         f: impl Fn(&str, &Value) -> Option<Value> + Send + Sync + 'static,
@@ -57,7 +45,6 @@ impl Point {
         }
     }
 
-    /// A point nothing answers.
     pub fn absent(name: &'static str) -> Self {
         Self {
             name,
@@ -65,7 +52,6 @@ impl Point {
         }
     }
 
-    /// Whether anything answers it right now.
     pub fn live(&self) -> bool {
         match &self.answer {
             Answer::Live(resolve) => !resolve(self.name).is_empty(),
@@ -86,11 +72,12 @@ impl Point {
         match &self.answer {
             Answer::Live(resolve) => {
                 let found = resolve(self.name).into_iter().next()?;
-                let endpoint = (found.base_url, found.token);
-                let resolver: kroma_module_host::Resolver =
-                    Arc::new(move || Some(endpoint.clone()));
-                kroma_module_host::call_raw(&resolver, &format!("{}/{method}", self.name), body)
-                    .ok()
+                kroma_module_host::call_raw(
+                    &found.resolver(),
+                    &format!("{}/{method}", self.name),
+                    body,
+                )
+                .ok()
             }
             Answer::Stub(f) => {
                 let sent = serde_json::to_value(body).ok()?;
@@ -163,8 +150,6 @@ mod tests {
 
     #[test]
     fn an_answer_of_another_shape_reads_as_no_answer() {
-        // The two ends ship on separate releases; a payload this build cannot
-        // read is the same thing to the feature as nothing answering.
         let p = Point::stub("embedder", |_, _| Some(json!({ "unexpected": true })));
 
         assert_eq!(p.call::<_, Vec<f32>>("embed", &json!({})), None);

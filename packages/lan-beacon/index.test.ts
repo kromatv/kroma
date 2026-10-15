@@ -20,6 +20,7 @@ const env = vi.hoisted(() => ({
   permission: 'granted' as string,
   permissionThrows: false,
   hasNative: true,
+  nativeThrows: false,
 }));
 
 const native = vi.hoisted(() => ({
@@ -35,12 +36,17 @@ vi.mock('expo', () => ({
   requireOptionalNativeModule: () =>
     env.hasNative
       ? {
-          publish: (name: string, txt: Record<string, string>) =>
-            native.published.push({ name, txt }),
+          publish: (name: string, txt: Record<string, string>) => {
+            if (env.nativeThrows) throw new Error('no link');
+            native.published.push({ name, txt });
+          },
           unpublish: () => {
             native.unpublished += 1;
           },
-          startBrowse: (epoch: number) => native.started.push(epoch),
+          startBrowse: (epoch: number) => {
+            if (env.nativeThrows) throw new Error('no link');
+            native.started.push(epoch);
+          },
           stopBrowse: () => {
             native.stopped += 1;
           },
@@ -93,6 +99,7 @@ beforeEach(() => {
   env.permission = 'granted';
   env.permissionThrows = false;
   env.hasNative = true;
+  env.nativeThrows = false;
   native.published = [];
   native.unpublished = 0;
   native.started = [];
@@ -267,5 +274,22 @@ describe('Android 13, where discovery moved behind a runtime permission', () => 
     lan?.browse?.(() => undefined);
     await settled();
     expect(native.started).toHaveLength(1);
+  });
+});
+
+describe('a native half that throws', () => {
+  it('leaves the link unheard instead of an unhandled rejection', async () => {
+    env.nativeThrows = true;
+    const rejections: unknown[] = [];
+    const note = (reason: unknown) => rejections.push(reason);
+    process.on('unhandledRejection', note);
+    const lan = await load();
+    lan?.browse?.(() => undefined);
+    lan?.publish?.(SERVICE);
+    await settled();
+    process.off('unhandledRejection', note);
+    expect(rejections).toEqual([]);
+    expect(native.started).toEqual([]);
+    expect(native.published).toEqual([]);
   });
 });

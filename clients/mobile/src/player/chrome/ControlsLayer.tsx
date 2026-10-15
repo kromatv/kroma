@@ -1,6 +1,6 @@
 // The controls themselves: scrims, title bar, transport row and the scrub bar
 // with its actions. Mounted only while controls are up; every press pokes the
-// auto-hide timer.
+// auto-hide timer, and a finger on the controls or a scrub in flight holds it off.
 //
 // The design mirrors the TV player's (@kromatv/ui player parts) at phone scale;
 // the UX stays the phone's own, which is why this file mirrors those parts
@@ -8,6 +8,7 @@
 
 import type { MediaItem } from '@kromatv/client/media';
 import { audioTracksOf, episodeTag } from '@kromatv/core';
+import { BACK_10_ICON, FWD_10_ICON } from '@kromatv/ui';
 import { formatTimecode } from '@kromatv/ui/intl';
 import {
   BackButton,
@@ -23,10 +24,11 @@ import {
   Text,
 } from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
 import { colors, spacing } from '#mobile/lib/theme';
+import { useControlsHold } from '#mobile/player/chrome/useControlsHold';
 import type { Engine } from '#mobile/player/engine';
 import { ScrubBar } from '#mobile/player/ScrubBar';
 import type { SheetView } from '#mobile/player/TrackSheet';
@@ -37,6 +39,7 @@ export function ControlsLayer({
   item,
   insets,
   poke,
+  hold,
   onBack,
   onOpenSheet,
   tileFor,
@@ -49,6 +52,7 @@ export function ControlsLayer({
   item: MediaItem;
   insets: EdgeInsets;
   poke(): void;
+  hold?(): () => void;
   onBack(): void;
   onOpenSheet(view?: SheetView): void;
   tileFor?: (abs: number) => StoryboardTile | null;
@@ -72,9 +76,18 @@ export function ControlsLayer({
   };
   // The audio shortcut earns its spot only when there is a choice to make.
   const audioCount = engine.offline ? engine.localAudio.length : audioTracksOf(item).length;
+  const touch = useControlsHold(hold);
 
   return (
-    <Box style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <View
+      style={StyleSheet.absoluteFill}
+      pointerEvents="box-none"
+      onTouchStart={touch.take}
+      onTouchEnd={(e) => {
+        if (e.nativeEvent.touches.length === 0) touch.give();
+      }}
+      onTouchCancel={touch.give}
+    >
       <Box style={s.scrim} pointerEvents="none" />
       <LinearGradient
         colors={['rgba(0,0,0,0.65)', 'rgba(0,0,0,0)']}
@@ -115,7 +128,7 @@ export function ControlsLayer({
       <Box style={s.centerRow} pointerEvents="box-none">
         <IconButton
           diameter={56}
-          icon="rewind-backward-10"
+          icon={BACK_10_ICON}
           glyph={28}
           onPress={() => {
             engine.skip(-10);
@@ -143,7 +156,7 @@ export function ControlsLayer({
         </IconButton>
         <IconButton
           diameter={56}
-          icon="rewind-forward-10"
+          icon={FWD_10_ICON}
           glyph={28}
           onPress={() => {
             engine.skip(10);
@@ -163,7 +176,7 @@ export function ControlsLayer({
           },
         ]}
       >
-        <ScrubRow engine={engine} onInteract={poke} tileFor={tileFor} item={item} />
+        <ScrubRow engine={engine} onInteract={poke} hold={hold} tileFor={tileFor} item={item} />
         {/* Icon-only: labels ride on accessibility, not the row itself. */}
         <Box style={s.actionsRow}>
           <Box style={s.actionsGroup}>
@@ -213,7 +226,7 @@ export function ControlsLayer({
           </Box>
         </Box>
       </Box>
-    </Box>
+    </View>
   );
 }
 
@@ -228,15 +241,18 @@ function RowShortcut({
 function ScrubRow({
   engine,
   onInteract,
+  hold,
   tileFor,
   item,
 }: Readonly<{
   engine: Engine;
   onInteract(): void;
+  hold?: () => () => void;
   tileFor?: (abs: number) => StoryboardTile | null;
   item: MediaItem;
 }>) {
   const markers = (item.markers ?? []).map((m) => m.startMs / 1000);
+  const scrub = useControlsHold(hold);
   return (
     <Box>
       <ScrubBar
@@ -245,6 +261,8 @@ function ScrubRow({
         buffered={engine.buffered}
         tileFor={tileFor}
         markers={markers}
+        onScrubStart={scrub.take}
+        onScrubEnd={scrub.give}
         onSeek={(abs) => {
           engine.seekTo(abs);
           onInteract();

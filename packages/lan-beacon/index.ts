@@ -87,10 +87,12 @@ function bridge(module: LanBeaconNativeModule): LanDiscoveryBridge {
     publish(service) {
       const owner = Symbol('lan-beacon record');
       published = owner;
-      void allowedNearby().then((allowed) => {
-        // Still ours by the time the answer came back?
-        if (allowed && published === owner) module.publish(service.name, service.txt);
-      });
+      void allowedNearby()
+        .then((allowed) => {
+          // Still ours by the time the answer came back?
+          if (allowed && published === owner) module.publish(service.name, service.txt);
+        })
+        .catch(() => undefined);
       return () => {
         // Someone else's record is up now; theirs is not ours to take down.
         if (published !== owner) return;
@@ -107,11 +109,13 @@ function bridge(module: LanBeaconNativeModule): LanDiscoveryBridge {
           latest = event.services;
           for (const listener of listeners) listener(latest);
         });
-        void allowedNearby().then((allowed) => {
-          if (!allowed || listeners.size === 0) return;
-          epoch += 1;
-          module.startBrowse(epoch);
-        });
+        void allowedNearby()
+          .then((allowed) => {
+            if (!allowed || listeners.size === 0) return;
+            epoch += 1;
+            module.startBrowse(epoch);
+          })
+          .catch(() => undefined);
       } else {
         onFound(latest);
       }

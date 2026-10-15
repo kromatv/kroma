@@ -13,7 +13,6 @@ use crate::db::{self, DownloadRow};
 use crate::downloads::LiveStat;
 use crate::DownloadView;
 
-/// The per-page lookups every row on it shares.
 pub struct RowContext<'a> {
     pub indexers: &'a HashMap<String, String>,
     pub clients: &'a HashMap<String, String>,

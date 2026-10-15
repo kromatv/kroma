@@ -42,11 +42,9 @@ impl ByteSink {
     }
 }
 
-#[cfg(test)]
-impl ByteSink {
-    pub(crate) fn counting() -> (Self, Arc<AtomicU64>) {
-        let counter = Arc::new(AtomicU64::new(0));
-        (ByteSink(Some(counter.clone())), counter)
+impl kroma_media::ByteMeter for ByteSink {
+    fn add(&self, bytes: u64) {
+        ByteSink::add(self, bytes);
     }
 }
 

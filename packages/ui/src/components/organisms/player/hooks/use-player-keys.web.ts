@@ -4,11 +4,12 @@
 // `usePlayerKeys.ts`; Vite resolves `.web` first, Metro takes the plain file.
 
 import { useEffect, useEffectEvent } from 'react';
+import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-nudge';
 import { volumeStep } from '#ui/components/organisms/player/lib/fmt';
 import {
   type PlayerKeysParams,
   routeRemoteKey,
-  tabDirection,
+  routeTab,
 } from '#ui/components/organisms/player/lib/player-keys';
 import type { PlayerController, PlayerFlags } from '#ui/components/organisms/player/types';
 import { redeliverKey } from '#ui/lib/focus-mirror';
@@ -36,15 +37,19 @@ function letterShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolea
   }
   if (letter === 'j') {
     keepChrome(nav, controller, flags);
-    p.seekNudge(-1);
+    p.seekNudge(-1, pressOf(e));
     return true;
   }
   if (letter === 'l') {
     keepChrome(nav, controller, flags);
-    p.seekNudge(1);
+    p.seekNudge(1, pressOf(e));
     return true;
   }
   return false;
+}
+
+function pressOf(e: KeyboardEvent): SeekPress {
+  return e.repeat ? 'hold' : 'tap';
 }
 
 // In immersive mode (fullscreen + chrome hidden) a media shortcut keeps the UI
@@ -81,7 +86,7 @@ function arrowSeekShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boo
   if (!flags.pointer && !immersive) return false;
   e.preventDefault();
   keepChrome(nav, controller, flags);
-  p.seekNudge(e.key === 'ArrowLeft' ? -1 : 1);
+  p.seekNudge(e.key === 'ArrowLeft' ? -1 : 1, pressOf(e));
   return true;
 }
 
@@ -89,7 +94,7 @@ function arrowSeekShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boo
  * render, so re-renders never re-subscribe. */
 export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
-    const { nav, locked } = params;
+    const { locked } = params;
     if (locked) {
       const key = resolveRemoteKey(e);
       if (key === 'Back' || key === 'Enter') {
@@ -116,7 +121,7 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
     // the keyboard somewhere the eye is not.
     if (e.key === 'Tab') {
       e.preventDefault();
-      routeRemoteKey(params, tabDirection(nav, e.shiftKey));
+      routeTab(params, e.shiftKey);
       return;
     }
 

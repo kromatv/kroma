@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import type { DiscoverEntry, DiscoverResponse } from '@kromatv/client/discovery';
 import type { MediaItem, SearchResponse, Show } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { clearPressGuard } from '@kromatv/ui/kit';
@@ -29,6 +30,28 @@ const series = (id: string, title: string, genre = 'drama'): Show =>
 
 const found = (...results: SearchResponse['results']): SearchResponse => ({ query: '', results });
 
+const tmdb = (tmdbId: number, title: string, inLibrary = false): DiscoverEntry => ({
+  kind: 'movie',
+  tmdbId,
+  title,
+  year: null,
+  posterUrl: null,
+  backdropUrl: null,
+  overview: null,
+  rating: null,
+  inLibrary,
+  localId: inLibrary ? 'local-1' : null,
+  requestId: null,
+  requestStatus: null,
+  requestProgress: null,
+});
+
+const known = (...results: DiscoverEntry[]): DiscoverResponse => ({
+  results,
+  page: 1,
+  totalPages: 1,
+});
+
 function NavHandle({ onReady }: Readonly<{ onReady: (nav: TvNav) => void }>) {
   const nav = useNav();
   onReady(nav);
@@ -37,10 +60,12 @@ function NavHandle({ onReady }: Readonly<{ onReady: (nav: TvNav) => void }>) {
 
 function mount({
   search = vi.fn(async () => found()),
+  discover = vi.fn(async () => known()),
   movies = [] as MediaItem[],
   shows = [] as Show[],
 }: {
   search?: () => Promise<SearchResponse>;
+  discover?: () => Promise<DiscoverResponse>;
   movies?: MediaItem[];
   shows?: Show[];
 } = {}) {
@@ -50,8 +75,10 @@ function mount({
       artwork: {
         posterFor: (m) => `art:${m.id}`,
         showPosterFor: (s) => `art:${s.id}`,
+        resolve: (url) => url ?? null,
       },
     },
+    discovery: { search: discover },
   });
   let nav!: TvNav;
   render(
@@ -75,7 +102,7 @@ function mount({
   // The screen arms the press guard as it mounts, and would otherwise swallow
   // the test's first press.
   clearPressGuard();
-  return { nav: () => nav, search };
+  return { nav: () => nav, search, discover };
 }
 
 // The on-screen keyboard is the only way to type on a remote-driven shell.
@@ -204,6 +231,26 @@ describe('TvSearch', () => {
     expect(screen.getByText('shell:Search')).toBeTruthy();
     // Ours is gone with it: the platform draws its own field and keys.
     expect(screen.queryByLabelText('A')).toBeNull();
+  });
+
+  it('offers a title TMDB knows and this server has not got', async () => {
+    const { nav } = mount({ discover: vi.fn(async () => known(tmdb(45_745, 'Sintel'))) });
+    type('S');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sintel' }));
+    expect(nav().route.name).toBe('discover');
+    expect(screen.getByText('Discover')).toBeTruthy();
+  });
+
+  it('leaves a title the library already holds out of the half that is not in it', async () => {
+    mount({
+      search: vi.fn(async () => found({ type: 'movie', item: movie('m1', 'Sintel') })),
+      discover: vi.fn(async () => known(tmdb(45_745, 'Sintel', true))),
+    });
+    type('S');
+
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Sintel' })).toHaveLength(1));
+    expect(screen.queryByText('Discover')).toBeNull();
   });
 
   it('opens on a query asked for from outside the app, and re-targets a second one', async () => {

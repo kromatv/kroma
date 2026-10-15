@@ -7,12 +7,14 @@
 import type { CastMember, ItemId, MediaItem, SubjectId } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
 import { Box, Chip, classes, ringRoomBlock, styles, Text } from '@kromatv/ui/kit';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { CastRail } from '#web/features/catalog/detail';
 import { EpisodeRow, MissingEpisodeRow } from '#web/features/catalog/episode-row';
 import { epKey } from '#web/features/catalog/episode-selection';
-import { RequestBar } from '#web/features/catalog/request-bar';
+import { RequestBar, SeasonAsk } from '#web/features/catalog/request-bar';
 import { SeasonRequestCard } from '#web/features/catalog/season-card';
+import { discoverQueries } from '#web/shared/lib/queries';
 import type { TitleSeason } from '#web/shared/lib/titleView';
 
 // The page gutter is a fluid CSS custom property and `overflow-x` names one
@@ -57,6 +59,7 @@ function SeasonSwitcher({
 }
 export function SeasonSection({
   seasons,
+  discoverTmdbId,
   fallbackCast,
   isWatched,
   toggleWatched,
@@ -73,6 +76,7 @@ export function SeasonSection({
   requestBusy,
 }: Readonly<{
   seasons: TitleSeason[];
+  discoverTmdbId: number | null;
   fallbackCast: CastMember[];
   isWatched: (id: SubjectId) => boolean;
   toggleWatched: (id: SubjectId) => void;
@@ -90,7 +94,12 @@ export function SeasonSection({
 }>) {
   const t = useT();
   const [season, setSeason] = useState(seasons[0]?.number ?? 1);
-  const current = seasons.find((s) => s.number === season) ?? seasons[0];
+  const { data: listing } = useQuery({
+    ...discoverQueries.season(discoverTmdbId ?? 0, season),
+    enabled: discoverTmdbId != null,
+  });
+  const picked = seasons.find((s) => s.number === season) ?? seasons[0];
+  const current = picked && listing ? { ...picked, missing: listing.episodes } : picked;
   // The ticks leave the screen with their season, and the request bar counts
   // the whole set: carrying them over would submit episodes nothing on screen
   // shows, and nothing offers a way to see or clear.
@@ -112,6 +121,16 @@ export function SeasonSection({
           <h2>
             <Text variant="h2">{t('content.episodes')}</Text>
           </h2>
+          {canRequest ? (
+            <SeasonAsk
+              season={current.number}
+              seasonPickable={seasonPickable}
+              allPickable={hasOpen}
+              busy={requestBusy}
+              onRequestSeason={() => onRequestSeason(current.number)}
+              onRequestAll={onRequestAll}
+            />
+          ) : null}
         </Box>
       </div>
 
@@ -158,13 +177,8 @@ export function SeasonSection({
       {canRequest ? (
         <RequestBar
           count={selected.size}
-          season={current.number}
-          seasonPickable={seasonPickable}
-          allPickable={hasOpen}
           busy={requestBusy}
           onRequestSelected={onRequestSelected}
-          onRequestSeason={() => onRequestSeason(current.number)}
-          onRequestAll={onRequestAll}
           onClear={onClearSelection}
         />
       ) : null}

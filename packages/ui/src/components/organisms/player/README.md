@@ -14,7 +14,7 @@ where something is in a folder you have never opened:
 player/
   index.ts              the public door: what the rest of the app may import
   player.tsx            Player.Root: assembles the parts, owns nothing else
-  player-parts.tsx      the slots a host fills: Media, Actions, Panel
+  player-parts.tsx      the slots a host fills: Media, Actions, Panel, Resume, …
   types.ts              the contract shared across the folder (PlayerController)
   player.fixture.ts     a standing-still controller, so the parts have stories
   parts/                sub-components ONLY this component renders
@@ -42,8 +42,8 @@ does not reach for `parts/top-bar`.
 
 ## The two meanings of "part"
 
-`player-parts.tsx` holds the compound's public parts, the three slots a host fills,
-in `DESIGN.md`'s vocabulary. `parts/` holds the private sub-components the chrome
+`player-parts.tsx` holds the compound's public parts, the slots a host fills, in
+`DESIGN.md`'s vocabulary. `parts/` holds the private sub-components the chrome
 draws for itself. Only the first ever appears in a call site:
 
 ```tsx
@@ -56,9 +56,9 @@ draws for itself. Only the first ever appears in a call site:
 Each slot renders its children and NOTHING else. `Media` in particular must add no
 element: the injected stylesheet sizes a browser surface through
 `#kroma-player-stage > video`, a direct-child rule a wrapper would break. Only a
-DIRECT child takes its slot; any other child is drawn over the chrome as it stands,
-which is what the web's resume toast does. A `<Player.Panel>` also LOCKS the
-chrome: the picture stops taking presses and only Back / OK get through.
+DIRECT child takes its slot; any other child is drawn over the chrome as it stands.
+A `<Player.Panel>` also LOCKS the chrome: the picture stops taking presses and only
+Back / OK get through.
 
 Everything else the chrome needs is data rather than children: one
 `PlayerController`, the platform `flags`, and the collections that come off the

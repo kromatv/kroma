@@ -1,31 +1,9 @@
-import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { $ } from 'bun';
 import { summary } from './actions';
 import { root } from './root';
-
-interface Workspace {
-  id: string;
-  dir: string;
-  targetDir: string | undefined;
-}
-
-const KMOD_TARGET_DIR = join(root, 'target/kmod');
-
-const SERVER: Workspace = { id: 'server', dir: join(root, 'server'), targetDir: undefined };
-
-function workspaces(): Workspace[] {
-  const modules = join(root, 'modules');
-  const out = [SERVER];
-  for (const entry of readdirSync(modules, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const dir = entry.name === 'lib' ? join(modules, 'lib') : join(modules, entry.name, 'server');
-    if (existsSync(join(dir, 'Cargo.toml'))) {
-      out.push({ id: entry.name, dir, targetDir: KMOD_TARGET_DIR });
-    }
-  }
-  return out;
-}
+import { featured, on, SERVER, type Workspace, workspaces } from './rust-workspaces';
 
 const env = (ws: Workspace) => ({
   ...process.env,
@@ -50,26 +28,41 @@ async function each(
 
 const scope = (ws: Workspace) => (ws === SERVER ? ['--workspace'] : []);
 
-const clippy = () => each('clippy', (ws) => ['clippy', ...scope(ws), '--all-targets']);
+async function clippy(): Promise<void> {
+  await each('clippy', (ws) => ['clippy', ...scope(ws), '--all-targets']);
+  await each(
+    'clippy with features',
+    (ws) => ['clippy', ...scope(ws), '--all-targets', ...on(ws)],
+    featured(),
+  );
+}
 
 async function test(): Promise<void> {
   const report = join(root, 'server/lcov.info');
   rmSync(report, { force: true });
   const list = workspaces();
   const partial = (ws: Workspace) => join(ws.dir, 'lcov.part.info');
+  const featuredPartial = (ws: Workspace) => join(ws.dir, 'lcov.features.info');
   await each(
     'test',
     (ws) => ['llvm-cov', ...scope(ws), '--lcov', '--output-path', partial(ws)],
     list,
   );
-  const parts = list.filter((ws) => existsSync(partial(ws)));
-  writeFileSync(report, parts.map((ws) => readFileSync(partial(ws), 'utf8')).join('\n'));
-  for (const ws of parts) rmSync(partial(ws));
+  await each(
+    'test with features',
+    (ws) => ['llvm-cov', ...scope(ws), ...on(ws), '--lcov', '--output-path', featuredPartial(ws)],
+    featured(),
+  );
+  const measured = [...list.map(partial), ...featured().map(featuredPartial)].filter((at) =>
+    existsSync(at),
+  );
+  writeFileSync(report, measured.map((at) => readFileSync(at, 'utf8')).join('\n'));
+  for (const at of measured) rmSync(at);
 
   const records = readFileSync(report, 'utf8')
     .split('\n')
     .filter((l) => l.startsWith('SF:'));
-  summary(`### Rust tests\n\n${parts.length} workspace(s) measured, lcov: ${records.length} files`);
+  summary(`### Rust tests\n\n${measured.length} run(s) measured, lcov: ${records.length} files`);
 }
 
 export async function main(argv: string[]): Promise<void> {

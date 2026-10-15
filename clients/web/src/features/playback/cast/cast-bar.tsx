@@ -4,7 +4,7 @@
 
 import type { CastNowPlaying } from '@kromatv/client/cast';
 import type { MediaItem } from '@kromatv/client/media';
-import { type Cast, useCast, useT } from '@kromatv/ui';
+import { BACK_10_ICON, type Cast, FWD_10_ICON, useCast, useT } from '@kromatv/ui';
 import { formatTimecode } from '@kromatv/ui/intl';
 import {
   Box,
@@ -121,7 +121,7 @@ function TransportKeys({
   return (
     <Row gap={4}>
       <Transport
-        icon="rewind-backward-10"
+        icon={BACK_10_ICON}
         label={t('player.back10')}
         onPress={() => void send({ type: 'skip', deltaMs: -SKIP_MS })}
       />
@@ -132,7 +132,7 @@ function TransportKeys({
         primary
       />
       <Transport
-        icon="rewind-forward-10"
+        icon={FWD_10_ICON}
         label={t('player.fwd10')}
         onPress={() => void send({ type: 'skip', deltaMs: SKIP_MS })}
       />

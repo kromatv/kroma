@@ -7,7 +7,7 @@ use rusqlite::OptionalExtension;
 
 use super::*;
 
-use kroma_domain::LibraryScope;
+use kroma_domain::{LibraryScope, RequestKind};
 
 /// Replace an account's library grant. [`LibraryScope::All`] clears the column,
 /// which is also how every account reads before an admin has ever set one.
@@ -68,6 +68,44 @@ pub fn item_libraries(pool: &Pool, item_ids: &[String]) -> Result<HashMap<String
     Ok(out)
 }
 
+/// Every catalogue row matched to `tmdb_id`, as `(id, library)`: movie and video
+/// items for [`RequestKind::Movie`], shows for [`RequestKind::Show`].
+///
+/// `video` items count as movies: enrichment resolves both against TMDB's movie
+/// namespace. Joined back to `items` / `shows` so a stale core row for a deleted
+/// title never matches.
+pub fn titles_by_tmdb(
+    conn: &Connection,
+    kind: RequestKind,
+    tmdb_id: u64,
+) -> rusqlite::Result<Vec<(String, String)>> {
+    let sql = match kind {
+        RequestKind::Movie => {
+            "SELECT i.id, i.library FROM metadata_core c JOIN items i ON i.id = c.subject_id \
+             WHERE c.subject_kind = 'item' AND c.tmdb_id = ?1 AND i.kind IN ('movie', 'video')"
+        }
+        RequestKind::Show => {
+            "SELECT s.id, s.library FROM metadata_core c JOIN shows s ON s.id = c.subject_id \
+             WHERE c.subject_kind = 'show' AND c.tmdb_id = ?1"
+        }
+    };
+    let mut stmt = conn.prepare(sql)?;
+    let rows = stmt.query_map(params![tmdb_id as i64], |r| Ok((r.get(0)?, r.get(1)?)))?;
+    rows.collect()
+}
+
+/// The first catalogue row matched to `tmdb_id`, whichever library it is in.
+pub fn title_by_tmdb(
+    conn: &Connection,
+    kind: RequestKind,
+    tmdb_id: u64,
+) -> rusqlite::Result<Option<String>> {
+    Ok(titles_by_tmdb(conn, kind, tmdb_id)?
+        .into_iter()
+        .next()
+        .map(|(id, _)| id))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -115,6 +153,30 @@ mod tests {
         assert_eq!(found.get("m1").map(String::as_str), Some("films"));
         assert_eq!(found.get("e1").map(String::as_str), Some("series"));
         assert!(item_libraries(&pool, &[]).unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_title_matched_in_two_libraries_answers_from_both() {
+        let pool = seeded();
+        let conn = pool.get().unwrap();
+        conn.execute_batch(
+            "INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('m2','movie','A','mkv','series','t');\
+             INSERT INTO metadata_core (subject_kind,subject_id,tmdb_id,updated_at) VALUES ('item','m1',603,0),('item','m2',603,0),('item','e1',603,0),('show','s1',603,0);",
+        )
+        .unwrap();
+
+        let mut movies = titles_by_tmdb(&conn, RequestKind::Movie, 603).unwrap();
+        let shows = titles_by_tmdb(&conn, RequestKind::Show, 603).unwrap();
+
+        movies.sort();
+        assert_eq!(
+            movies,
+            [
+                ("m1".into(), "films".into()),
+                ("m2".into(), "series".into())
+            ]
+        );
+        assert_eq!(shows, [("s1".to_string(), "series".to_string())]);
     }
 
     #[test]

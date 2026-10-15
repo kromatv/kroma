@@ -1,9 +1,7 @@
 //! The automatic wanted-list search: what makes an approved request download
-//! itself. Runs as the `acquisition.search` job (cron + on-approve trigger):
-//! due wanted rows -> per-request targets (season packs first) -> indexer
-//! sweep -> best accepted release above zero -> grab. Every due row is stamped
-//! and pushed out by its own backoff, so a freshly-aired episode comes back
-//! within minutes while an ancient gap steps aside.
+//! itself. Runs as the `acquisition.search` job (cron + on-approve trigger).
+//! Every due row is stamped and pushed out by its own backoff, so a freshly-aired
+//! episode comes back within minutes while an ancient gap steps aside.
 
 use std::collections::{HashMap, HashSet};
 
@@ -17,8 +15,6 @@ use crate::search::backoff::base_delay_ms;
 use crate::search::{score_release, targets_for_wanted, wanted_ids_by};
 
 const BATCH: usize = 60;
-// Indexer round trips one pass may spend. Ordering, not a request cap, is what
-// keeps a fresh episode ahead of an old one, so the budget only bounds cost.
 const MAX_TARGETS: usize = 40;
 
 #[derive(Debug, Default)]
@@ -126,18 +122,16 @@ fn schedule_retries<S: kroma_module_sdk::host::HostStorage>(
 }
 
 fn wanted_row_ids(wanted: &[db::WantedRow], st: &crate::search::SearchTarget) -> Vec<String> {
-    // Reuse the coverage rule the grab path uses, driven by the target shape.
     wanted_ids_by(wanted, st.kind, st.season, st.episodes.as_deref())
         .into_iter()
         .filter(|id| wanted.iter().any(|w| &w.id == id && w.status == "wanted"))
         .collect()
 }
 
-// A target earns one of the pass's indexer slots when it still has an open row
-// nothing grabbed this pass, AND at least one of its rows is in the due batch.
-// The request's whole open list becomes targets, so without the second rule an
-// old unfindable season spends every slot ahead of the episode that just aired,
-// is charged no backoff for it (only due rows are), and does it again forever.
+// The request's whole open list becomes targets, so without the due-batch rule
+// an old unfindable season spends every slot ahead of the episode that just
+// aired, is charged no backoff for it (only due rows are), and does it again
+// forever.
 fn worth_a_slot(
     target_rows: &[String],
     covered: &HashSet<String>,
@@ -188,7 +182,6 @@ fn search_request<S: kroma_module_sdk::host::HostStorage>(
 
     summary.requests += 1;
     let targets = targets_for_wanted(req.kind, &wanted, &today_ymd());
-    // Rows a pack grab already covered this pass (skip episode targets).
     let mut covered: HashSet<String> = HashSet::new();
     for st in &targets {
         if cancelled() || summary.targets >= MAX_TARGETS {
@@ -210,8 +203,6 @@ fn search_request<S: kroma_module_sdk::host::HostStorage>(
             &mut summary.errors,
         );
         let Some((candidate, score)) = outcome.best else {
-            // A silent empty pass reads the same as a broken indexer; say which
-            // it was, since this is the only trace the admin ever gets.
             log(format!(
                 "no release for \"{}\" {} ({} seen{})",
                 req.title,
@@ -242,7 +233,6 @@ fn search_request<S: kroma_module_sdk::host::HostStorage>(
         );
         match crate::peers::downloads::grab(state, &spec) {
             Ok(row) => {
-                // Background job: fine to add synchronously here.
                 crate::peers::downloads::activate(state, &row.id);
                 summary.grabbed += 1;
                 covered.extend(target_rows);

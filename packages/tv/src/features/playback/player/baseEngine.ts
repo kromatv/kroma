@@ -5,7 +5,12 @@
 
 import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
-import { decodableAudioCodecs, decoderMaxFrame, STALL_NUDGE_SEC } from '@kromatv/core';
+import {
+  decodableAudioCodecs,
+  decodableVideoCodecs,
+  decoderMaxFrame,
+  STALL_NUDGE_SEC,
+} from '@kromatv/core';
 import type { AudioFilterMode } from '@kromatv/ui';
 import type { EngineListeners, TvEngine } from '#tv/features/playback/player/engine';
 
@@ -69,16 +74,22 @@ export abstract class BaseTvEngine implements TvEngine {
   protected sourceUrl(): string {
     return this.mode === 'direct'
       ? this.client.media.streamUrl(this.item.id)
-      : this.client.media.hlsMasterUrl(
-          this.item.id,
-          this.forceAac,
-          this.baseSec,
-          this.rendition,
+      : this.client.media.hlsMasterUrl(this.item.id, this.forceAac, this.baseSec, this.rendition, {
           // Declared on every master, not just the fallback one: the server copies
           // audio unless it is told what this device decodes, so a master that says
           // nothing is served a codec it may only be able to play as silence.
-          { copyCodecs: decodableAudioCodecs(), maxFrame: decoderMaxFrame(this.item) },
-        );
+          copyCodecs: this.declaredAudioCodecs(),
+          videoCodecs: this.declaredVideoCodecs(),
+          maxFrame: decoderMaxFrame(this.item),
+        });
+  }
+
+  protected declaredVideoCodecs(): string[] {
+    return decodableVideoCodecs();
+  }
+
+  protected declaredAudioCodecs(): string[] {
+    return decodableAudioCodecs();
   }
 
   // `audioUnsupported`: the device can't decode the source audio track, so

@@ -4,6 +4,8 @@
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 use std::process::Command;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 use super::DefinitionStore;
 
@@ -71,11 +73,18 @@ pub(super) fn tarball(layout: &[(&str, &str)]) -> Vec<u8> {
 }
 
 pub(super) fn serve(status: u16, body: Vec<u8>) -> String {
+    counted(status, body).0
+}
+
+pub(super) fn counted(status: u16, body: Vec<u8>) -> (String, Arc<AtomicUsize>) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
+    let served = Arc::new(AtomicUsize::new(0));
+    let counting = Arc::clone(&served);
     std::thread::spawn(move || {
         for stream in listener.incoming() {
             let Ok(mut stream) = stream else { break };
+            counting.fetch_add(1, Ordering::SeqCst);
             let mut reader = BufReader::new(stream.try_clone().unwrap());
             loop {
                 let mut line = String::new();
@@ -92,7 +101,7 @@ pub(super) fn serve(status: u16, body: Vec<u8>) -> String {
             let _ = stream.flush();
         }
     });
-    format!("http://127.0.0.1:{port}/master.tar.gz")
+    (format!("http://127.0.0.1:{port}/master.tar.gz"), served)
 }
 
 pub(super) struct TempStore {

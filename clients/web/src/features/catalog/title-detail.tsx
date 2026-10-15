@@ -1,5 +1,6 @@
 // The single detail page for a title, owned or not. Fed a normalized `TitleView`
 
+import { tmdbKindOf } from '@kromatv/client/discovery';
 import { ItemId, type SubjectId } from '@kromatv/client/media';
 import { useCast, useT } from '@kromatv/ui';
 import { classes, type HostElement, styles, Text } from '@kromatv/ui/kit';
@@ -58,7 +59,7 @@ function similarLink(target: SimilarTarget): HostElement | undefined {
   return (
     <RouteLink
       to="/discover/$type/$tmdbId"
-      params={{ type: target.kind === 'show' ? 'tv' : 'movie', tmdbId: String(target.tmdbId) }}
+      params={{ type: tmdbKindOf(target.kind), tmdbId: String(target.tmdbId) }}
     />
   );
 }
@@ -124,6 +125,7 @@ function TitleBody({
       ) : (
         <SeasonSection
           seasons={view.seasons}
+          discoverTmdbId={owned ? null : view.tmdbId}
           fallbackCast={view.cast}
           isWatched={isWatched}
           toggleWatched={toggleWatched}

@@ -8,24 +8,18 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 ///
 /// The bare `warn` matters more than any entry after it. An `EnvFilter` built
 /// only from `target=level` directives drops every target that matches none of
-/// them, so anything not named here was silent in production, at every level:
-/// a NAS ran for six weeks without one line explaining which encoder it had
-/// settled on or why a remux refused to start, because `kroma_engine` was not
-/// on the list. A floor of `warn` means a problem is never silent again, and
-/// the entries above it are the subsystems whose ordinary progress an operator
+/// them, so anything not named here is silent in production, at every level.
+/// The entries above it are the subsystems whose ordinary progress an operator
 /// reads rather than debugs.
-///
-/// Every developer runs with `RUST_LOG` set, which replaces this wholesale.
-/// That is why nobody saw it.
 const DEFAULT_FILTER: &str = "warn,\
     kroma_server=info,\
     kroma_engine=info,\
+    kroma_media=info,\
     kroma_module_supervisor=info,\
     tower_http=info,axum=info,librqbit=info";
 
 /// Days of rolling log kept on disk. `tracing_appender` deletes nothing on its
-/// own, so before this was set a NAS accumulated one file per day forever. Long
-/// enough to still hold the week a viewer eventually gets round to reporting.
+/// own.
 const KEEP_DAYS: usize = 30;
 
 pub fn init_tracing(
@@ -134,9 +128,6 @@ mod tests {
         tracing::subscriber::with_default(subscriber, emit);
     }
 
-    // The bug this pins: the default filter named only two of our crates, so a
-    // production server dropped every line the engine emitted, warnings and
-    // errors included, and a NAS ran for six weeks with nothing to read.
     #[test]
     fn the_engine_narrates_itself_in_production() {
         under_default_filter(|| {

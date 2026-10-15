@@ -18,9 +18,6 @@ use crate::state::SharedState;
 
 use super::{require, service};
 
-// The search + grab routes are core, but the work behind them happens in
-// whichever module answers this point. The core holds the name and forwards
-// opaque JSON: the scored-releases view is the client's business, not the core's.
 const ACQUISITION: &str = "acquisition";
 
 // Resolving IS the gate: with no module installed, enabled and answering the
@@ -76,11 +73,9 @@ pub async fn search_all_missing(
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     require(&user, Permission::RequestsManage)?;
-    // The job only exists while a module has registered it, so resolving it is
-    // the gate: no acquisition module, no pass to trigger.
     let job = state.jobs.resolve("acquisition.search").ok_or_else(|| {
         lerr(
-            super::locale(&user),
+            crate::i18n::user_locale(&user),
             StatusCode::NOT_FOUND,
             "error.moduleDisabled",
         )
@@ -92,7 +87,7 @@ pub async fn search_all_missing(
             "a search pass is already running",
         )),
         Err(TriggerError::Unknown) => Err(lerr(
-            super::locale(&user),
+            crate::i18n::user_locale(&user),
             StatusCode::NOT_FOUND,
             "error.moduleDisabled",
         )),
@@ -165,8 +160,6 @@ pub struct ScopeParams {
     episode: Option<u32>,
 }
 
-// Mirrors the acquisition module's own scope type; the core only forwards it, so
-// it travels as JSON rather than as a shared type across the sidecar boundary.
 fn scope_value(params: &ScopeParams) -> Result<serde_json::Value, Response> {
     let bad = |what: &str| json_error(StatusCode::BAD_REQUEST, what);
     match params.scope.as_deref().unwrap_or("all") {
@@ -254,9 +247,6 @@ mod tests {
 
     #[test]
     fn an_absent_scope_is_the_whole_request() {
-        // Every caller that does not narrow (the auto-search button, an older
-        // client) must keep sweeping everything rather than silently searching
-        // nothing.
         assert_eq!(ok(None, None, None), json!({ "kind": "all" }));
         assert_eq!(ok(Some("all"), None, None), json!({ "kind": "all" }));
     }

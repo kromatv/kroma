@@ -1,17 +1,20 @@
 //! The media catalog's entities: kinds, files, items, shows and seasons.
-//! A track's own description is in [`streams`], the edition level in [`edition`],
-//! and which of a title's files is preferred in [`preference`].
+//! A track's own description is [`kroma_module_wire`]'s, because a module
+//! answers with one too; the edition level is in [`edition`], the loudness
+//! measurement in [`loudness`], and which of a title's files is preferred in
+//! [`preference`].
 //!
 //! The JSON shape here is a public contract web/TV clients depend on it, so
 //! field names and casing must not drift.
 
 mod edition;
+mod loudness;
 mod preference;
-mod streams;
 
 pub use edition::*;
+pub use kroma_module_wire::{AudioStream, ColorInfo, HdrFormat, SubtitleTrack, VideoStream};
+pub use loudness::*;
 pub use preference::*;
-pub use streams::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -210,7 +213,6 @@ pub struct ShowDetail {
 /// paint a backdrop and caption it, and deliberately nothing more.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SplashEntry {
-    /// `movie` or `show`.
     pub kind: String,
     pub title: String,
     pub year: Option<u32>,

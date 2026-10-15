@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
 
-import { render } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
+import { createRef } from 'react';
 import { Animated } from 'react-native';
-import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
-import { onScreen } from '#ui/testing';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
+import { configureRemote } from '#ui/lib/focus-remote';
+import { declared, onScreen, wearsRing } from '#ui/testing';
 import { UpNextSheet } from './up-next-sheet';
 import { DATA } from './up-next-sheet.fixtures';
 
@@ -15,6 +18,8 @@ import { DATA } from './up-next-sheet.fixtures';
 vi.hoisted(() => {
   vi.stubEnv('NODE_ENV', 'development');
 });
+
+beforeAll(() => configureRemote());
 
 afterAll(() => {
   vi.unstubAllEnvs();
@@ -37,6 +42,16 @@ function sheet(open: boolean) {
       />,
     ),
   );
+}
+
+const control = (name: string) => screen.getByRole('button', { name });
+
+function press(key: string) {
+  act(() => {
+    (document.activeElement ?? document.body).dispatchEvent(
+      new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+    );
+  });
 }
 
 describe('the sheet rising and parking', () => {
@@ -69,5 +84,57 @@ describe('the sheet rising and parking', () => {
 
     expect(timing).not.toHaveBeenCalled();
     expect(container.querySelector('[style*="transition-property: transform"]')).toBeTruthy();
+  });
+});
+
+describe('the ring an open sheet wears', () => {
+  it('rings the card the sheet opens on', () => {
+    sheet(true);
+
+    expect(wearsRing(control('The Kingsroad'))).toBe(true);
+  });
+
+  it('leaves no browser outline on a card the focus has not reached', () => {
+    sheet(true);
+
+    expect(declared(control('Lord Snow'), 'outlineStyle')).toBe('none');
+  });
+
+  it('leaves no browser outline on the header the focus has not reached', () => {
+    sheet(true);
+
+    expect(declared(control('Up next'), 'outlineStyle')).toBe('none');
+  });
+
+  it('rings the header the remote climbs to', () => {
+    sheet(true);
+
+    press('ArrowUp');
+
+    expect(wearsRing(control('Up next'))).toBe(true);
+  });
+});
+
+describe('the sheet where a remote already feeds the navigator', () => {
+  it('lets the press through once, not twice', () => {
+    const panel = createRef<PanelHandle>();
+    render(
+      onScreen(
+        <UpNextSheet
+          ref={panel}
+          data={DATA}
+          open
+          revealed
+          onOpen={() => {}}
+          onClose={() => {}}
+          onPlay={() => {}}
+        />,
+      ),
+    );
+
+    press('ArrowRight');
+    act(() => void panel.current?.onKey('Right'));
+
+    expect(wearsRing(control('Lord Snow'))).toBe(true);
   });
 });

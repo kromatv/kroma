@@ -6,11 +6,13 @@ import {
   getTauri,
   mpvAvailable,
   renditionFor,
-  resolveMasterStart,
   shellOwnsPlaneGeometry,
 } from './engine';
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe('getAvplay / avplayAvailable', () => {
   it('is null / false in a plain browser (no webapis)', () => {
@@ -97,50 +99,6 @@ describe('shellOwnsPlaneGeometry', () => {
   it('is never a browser, whatever the user agent says', () => {
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' });
     expect(shellOwnsPlaneGeometry()).toBe(false);
-  });
-});
-
-describe('resolveMasterStart', () => {
-  it('short-circuits to 0 for a start at/near zero (no fetch)', async () => {
-    const fetchSpy = vi.fn();
-    vi.stubGlobal('fetch', fetchSpy);
-    expect(await resolveMasterStart('http://x/master.m3u8', 0)).toBe(0);
-    expect(await resolveMasterStart('http://x/master.m3u8', 0.4)).toBe(0);
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  it('returns the server-reported keyframe start from the X-Hls-Start header', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() =>
-        Promise.resolve({ headers: { get: (k: string) => (k === 'X-Hls-Start' ? '12.5' : null) } }),
-      ),
-    );
-    expect(await resolveMasterStart('http://x/master.m3u8', 30)).toBe(12.5);
-  });
-
-  it('keeps the requested start when the header is present but non-numeric', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.resolve({ headers: { get: () => 'not-a-number' } })),
-    );
-    expect(await resolveMasterStart('http://x/master.m3u8', 30)).toBe(30);
-  });
-
-  it('reports 0 when the header is absent (Number(null) is a finite 0)', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.resolve({ headers: { get: () => null } })),
-    );
-    expect(await resolveMasterStart('http://x/master.m3u8', 30)).toBe(0);
-  });
-
-  it('falls back to the requested start when the fetch rejects', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.reject(new Error('offline'))),
-    );
-    expect(await resolveMasterStart('http://x/master.m3u8', 42)).toBe(42);
   });
 });
 

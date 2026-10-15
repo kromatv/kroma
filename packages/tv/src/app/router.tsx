@@ -1,5 +1,6 @@
 import type { KromaClient } from '@kromatv/client';
 import type { StoredSession } from '@kromatv/client/accounts';
+import type { DiscoverEntry } from '@kromatv/client/discovery';
 import type { MediaItem, Show } from '@kromatv/client/media';
 import type { ReportSubjectKind } from '@kromatv/client/reports';
 import { Box, ConfirmHost, FocusScope, PageMain, PerfHud } from '@kromatv/ui/kit';
@@ -37,6 +38,7 @@ export interface TvRoutes {
   person: { name: string };
   movie: { item: MediaItem };
   show: { show: Show };
+  discover: { entry: DiscoverEntry };
   player: { item: MediaItem };
   report: {
     kind: ReportSubjectKind;
@@ -242,6 +244,7 @@ function subjectKey(route: TvRoute): string {
   if (route.name === 'player' || route.name === 'movie') {
     return `${route.name}:${route.params.item.id}`;
   }
+  if (route.name === 'discover') return `discover:${route.params.entry.tmdbId}`;
   return route.name;
 }
 

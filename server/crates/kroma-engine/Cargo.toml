@@ -19,6 +19,8 @@ kroma-module-manifest = { workspace = true }
 kroma-module-host = { workspace = true, features = ["storage"] }
 kroma-http = { workspace = true }
 kroma-push = { workspace = true }
+# ffprobe, the ffmpeg budget and the HLS engine, re-exported under `infra::`.
+kroma-media = { workspace = true }
 # The heavy/optional adapters (embeddings, whisper transcription, mDNS) are no
 # longer named here: the engine consumes them through the port traits in
 # `crate::ports`, and the binary (composition root) wraps the concrete module
@@ -33,9 +35,6 @@ lettre = { workspace = true }
 p256 = { version = "0.13", features = ["ecdsa"] }
 rand_core = { version = "0.6", features = ["getrandom"] }
 base64 = { workspace = true }
-# The storyboard hwaccel probe writes a throwaway frame; a guard removes it even
-# when the decode fails and the probe returns early.
-tempfile = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }

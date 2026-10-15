@@ -62,7 +62,20 @@ function dropStrayFocus(document: Document): void {
   held.blur?.();
 }
 
+let configured = false;
+
+/**
+ * False in the web client, which has no remote and never calls
+ * {@link configureRemote}: a chrome driving its own focus (the player) must then
+ * post the presses itself, and posting them where a transport IS named would walk
+ * the ring twice.
+ */
+export function remoteConfigured(): boolean {
+  return configured;
+}
+
 export function configureRemote(): void {
+  configured = true;
   configureNavigatorRemote({
     subscribe: (handle) => {
       handlers.add(handle);

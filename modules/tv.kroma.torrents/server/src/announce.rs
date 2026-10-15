@@ -5,12 +5,9 @@
 //! announce yields nothing - fatal for a private, IPv6-only swarm (no DHT
 //! fallback). We announce ourselves over the bridge with `curl`
 //! (`--socks5-hostname`, which DOES traverse it), parse BOTH `peers` and
-//! `peers6`, and hand librqbit the result as `initial_peers` - which it can then
-//! connect to (over IPv6 too). Used both as the one-shot seed at add time and by
-//! the periodic re-seed of stalled torrents (see `DownloadManager::reseed_stalled`).
-//!
-//! Best-effort throughout: any parse/network failure yields an empty list and
-//! the engine falls back to its own discovery.
+//! `peers6`, and hand librqbit the result as `initial_peers`. Any parse or
+//! network failure yields an empty list and the engine falls back to its own
+//! discovery.
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
@@ -37,9 +34,7 @@ pub fn tracker_peers(torrent_bytes: &[u8], socks: Option<&str>) -> Vec<SocketAdd
     out
 }
 
-// One HTTP announce; returns the peers it reported (both families).
 fn announce_once(base: &str, info_hash: &[u8; 20], socks: Option<&str>) -> Vec<SocketAddr> {
-    // A fixed-but-torrent-specific peer id (`-LM0001-` + hash nibbles).
     let mut peer_id = *b"-LM0001-000000000000";
     for (i, b) in info_hash.iter().take(6).enumerate() {
         let hex = b"0123456789abcdef";
@@ -64,7 +59,6 @@ fn announce_once(base: &str, info_hash: &[u8; 20], socks: Option<&str>) -> Vec<S
     }
 }
 
-// Percent-encode arbitrary bytes (BitTorrent info_hash / peer_id style).
 fn urlencode(bytes: &[u8]) -> String {
     let mut s = String::with_capacity(bytes.len() * 3);
     for &b in bytes {
@@ -78,21 +72,19 @@ fn urlencode(bytes: &[u8]) -> String {
     s
 }
 
-// Extracts `peers` (6-byte v4) + `peers6` (18-byte v6) from a compact tracker
-// response (a flat bencoded dict).
 fn parse_peers(body: &[u8]) -> Vec<SocketAddr> {
     let mut out = Vec::new();
     for (key, val) in top_dict_strings(body) {
         match key {
             b"peers" => {
-                for c in val.chunks_exact(6) {
+                for c in val.as_chunks::<6>().0 {
                     let ip = Ipv4Addr::new(c[0], c[1], c[2], c[3]);
                     let port = u16::from_be_bytes([c[4], c[5]]);
                     out.push(SocketAddr::V4(SocketAddrV4::new(ip, port)));
                 }
             }
             b"peers6" => {
-                for c in val.chunks_exact(18) {
+                for c in val.as_chunks::<18>().0 {
                     let mut ip = [0u8; 16];
                     ip.copy_from_slice(&c[..16]);
                     let port = u16::from_be_bytes([c[16], c[17]]);
@@ -110,7 +102,6 @@ fn parse_peers(body: &[u8]) -> Vec<SocketAddr> {
     out
 }
 
-// End index (exclusive) of the bencode value starting at `i`.
 fn bskip(b: &[u8], i: usize) -> Option<usize> {
     match b.get(i)? {
         b'i' => b[i..].iter().position(|&c| c == b'e').map(|p| i + p + 1),
@@ -138,7 +129,6 @@ fn bskip(b: &[u8], i: usize) -> Option<usize> {
     }
 }
 
-// Reads a bencode byte string at `i`, returning `(bytes, next_index)`.
 fn read_bstr(b: &[u8], i: usize) -> Option<(&[u8], usize)> {
     let colon = i + b.get(i..)?.iter().position(|&c| c == b':')?;
     let len: usize = std::str::from_utf8(b.get(i..colon)?).ok()?.parse().ok()?;
@@ -146,7 +136,6 @@ fn read_bstr(b: &[u8], i: usize) -> Option<(&[u8], usize)> {
     Some((b.get(start..start + len)?, start + len))
 }
 
-// SHA-1 of the `.torrent`'s `info` dict = the info hash.
 fn info_hash(b: &[u8]) -> Option<[u8; 20]> {
     let (start, end) = dict_value_bounds(b, b"info")?;
     let mut h = Sha1::new();
@@ -154,7 +143,6 @@ fn info_hash(b: &[u8]) -> Option<[u8; 20]> {
     Some(h.finalize().into())
 }
 
-// The `announce` string + every `announce-list` entry.
 fn announce_urls(b: &[u8]) -> Vec<String> {
     let mut urls = Vec::new();
     if let Some((s, e)) = dict_value_bounds(b, b"announce") {
@@ -171,8 +159,6 @@ fn announce_urls(b: &[u8]) -> Vec<String> {
     urls
 }
 
-// Parses a bencoded `announce-list` (a list of lists of tracker URLs) starting
-// at the outer list at index `s`, appending each URL to `urls`.
 fn parse_announce_list(b: &[u8], s: usize, e: usize, urls: &mut Vec<String>) {
     let mut i = s + 1; // into the outer list
     while i < e && b.get(i) == Some(&b'l') {
@@ -188,7 +174,6 @@ fn parse_announce_list(b: &[u8], s: usize, e: usize, urls: &mut Vec<String>) {
     }
 }
 
-// Byte-range of the value for `key` in the TOP-LEVEL dict.
 fn dict_value_bounds(b: &[u8], key: &[u8]) -> Option<(usize, usize)> {
     if b.first()? != &b'd' {
         return None;
@@ -205,7 +190,6 @@ fn dict_value_bounds(b: &[u8], key: &[u8]) -> Option<(usize, usize)> {
     None
 }
 
-// Top-level dict keys whose values are byte strings, as `(key, value)`.
 fn top_dict_strings(b: &[u8]) -> Vec<(&[u8], &[u8])> {
     let mut out = Vec::new();
     if b.first() != Some(&b'd') {
@@ -236,7 +220,6 @@ fn top_dict_strings(b: &[u8]) -> Vec<(&[u8], &[u8])> {
 mod tests {
     use super::*;
 
-    // A tiny synthetic tracker response with one v4 + one v6 peer.
     #[test]
     fn parses_v4_and_v6_peers() {
         let mut v = Vec::new();

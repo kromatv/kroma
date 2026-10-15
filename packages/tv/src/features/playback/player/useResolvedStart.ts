@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 export interface ResolvedStart {
   startSec: number | null;
+  resumedAt: number | null;
   setStartSec: (sec: number) => void;
 }
 
@@ -11,9 +12,11 @@ export function useResolvedStart(client: KromaClient, item: MediaItem): Resolved
   // Resolved BEFORE the engine is built so it opens there; loading at 0 and re-seeking
   // reloads the whole stream. Keyed by id: an item swap leaves this stale for a render.
   const [resolved, setResolved] = useState<{ id: string; sec: number } | null>(null);
+  const [resumed, setResumed] = useState<{ id: string; sec: number } | null>(null);
   useEffect(() => {
     if (!client.hasAuth) {
       setResolved({ id: item.id, sec: 0 });
+      setResumed({ id: item.id, sec: 0 });
       return;
     }
     let done = false;
@@ -21,6 +24,7 @@ export function useResolvedStart(client: KromaClient, item: MediaItem): Resolved
       if (done) return;
       done = true;
       setResolved({ id: item.id, sec });
+      setResumed({ id: item.id, sec });
     };
     // Never let a stalled progress fetch block playback forever.
     const timer = setTimeout(() => settle(0), 4000);
@@ -41,5 +45,9 @@ export function useResolvedStart(client: KromaClient, item: MediaItem): Resolved
 
   const setStartSec = useCallback((sec: number) => setResolved({ id: item.id, sec }), [item.id]);
 
-  return { startSec: resolved?.id === item.id ? resolved.sec : null, setStartSec };
+  return {
+    startSec: resolved?.id === item.id ? resolved.sec : null,
+    resumedAt: resumed?.id === item.id && resumed.sec > 0 ? resumed.sec : null,
+    setStartSec,
+  };
 }

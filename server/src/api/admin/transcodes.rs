@@ -1,10 +1,4 @@
 //! What the box is re-encoding right now.
-//!
-//! A remux is a child ffmpeg, so from the dashboard it used to be invisible: the
-//! server's CPU line stayed flat, no page named the title responsible, and
-//! nothing said whether the encoder was keeping ahead of the player. This is the
-//! one place that answers all three, plus the sentence explaining which silicon
-//! the host settled on and why.
 
 use axum::extract::State;
 use axum::response::{IntoResponse, Response};
@@ -15,8 +9,8 @@ use serde::Serialize;
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
-use crate::infra::hls::{HlsEngine, Transcode};
 use crate::state::SharedState;
+use kroma_media::hls::{HlsEngine, Transcode};
 
 /// Paths are relative to the `/api/admin` nest.
 pub fn routes() -> Router<SharedState> {
@@ -27,11 +21,8 @@ pub fn routes() -> Router<SharedState> {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Hardware {
-    /// `videotoolbox` | `qsv` | `vaapi` | `nvenc` | `software`.
     pub accel: String,
-    /// Why that one: which device answered, or why every candidate was refused.
     pub reason: String,
-    /// False means every frame is rebuilt by the CPU.
     pub accelerated: bool,
 }
 
@@ -45,8 +36,6 @@ pub struct LiveTranscode {
     pub show_title: Option<String>,
     pub season: Option<u32>,
     pub episode: Option<u32>,
-    /// Percent of the whole box this one ffmpeg is spending, where the sampler
-    /// has seen its pid.
     pub cpu: Option<f32>,
 }
 
@@ -57,7 +46,6 @@ pub struct LiveTranscode {
 pub struct Transcodes {
     pub hardware: Hardware,
     pub sessions: Vec<LiveTranscode>,
-    /// How many of them are rebuilding the picture, which is the expensive axis.
     pub encoding: usize,
     pub cache_bytes: u64,
 }

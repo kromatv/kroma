@@ -30,19 +30,12 @@ pub fn routes() -> Router<SharedState> {
         .route("/reports/mine", get(list_mine))
 }
 
-fn locale(user: &User) -> &'static str {
-    user.language
-        .as_deref()
-        .and_then(i18n::normalize)
-        .unwrap_or(i18n::DEFAULT_LOCALE)
-}
-
 fn require(user: &User, perm: Permission) -> Result<(), Response> {
     if user.can(perm) {
         Ok(())
     } else {
         Err(lerr(
-            locale(user),
+            i18n::user_locale(user),
             StatusCode::FORBIDDEN,
             "error.permissionDenied",
         ))
@@ -68,7 +61,7 @@ pub async fn create(
     Json(body): Json<CreateReportBody>,
 ) -> Result<Response, Response> {
     require(&user, Permission::Playback)?;
-    let loc = locale(&user);
+    let loc = i18n::user_locale(&user);
     let kind = body.subject_kind;
     let subject_id = body.subject_id.clone();
     let category = body.category;

@@ -1,4 +1,4 @@
-import type { DiscoverEntry } from '@kromatv/client/discovery';
+import { type DiscoverEntry, tmdbKindOf } from '@kromatv/client/discovery';
 import type { SubjectId } from '@kromatv/client/media';
 import type { RequestStatus } from '@kromatv/client/requests';
 import { posterColors, sizedImageUrl } from '@kromatv/core';
@@ -28,7 +28,7 @@ function detailLink(entry: DiscoverEntry, owned: boolean): ReactNode {
   return (
     <RouteLink
       to="/discover/$type/$tmdbId"
-      params={{ type: entry.kind === 'show' ? 'tv' : 'movie', tmdbId: String(entry.tmdbId) }}
+      params={{ type: tmdbKindOf(entry.kind), tmdbId: String(entry.tmdbId) }}
     />
   );
 }

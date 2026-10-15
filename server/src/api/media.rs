@@ -180,7 +180,8 @@ pub async fn get_show(
     Ok(Json(detail).into_response())
 }
 
-/// `GET /api/items/:id` → `MediaItem`
+/// `GET /api/items/:id` → `MediaItem`, whose subtitle list is the tracks inside
+/// its file followed by the text subtitle files sitting beside it on disk.
 pub async fn get_item(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -188,11 +189,13 @@ pub async fn get_item(
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
     visibility::gate_item(&state, &user, &id).await?;
+    let beside = state.external_subtitles.clone();
     let item = query(&state.db, move |pool| {
         let Some(mut item) = db::get_item(&pool, &id)? else {
             return Ok(None);
         };
         db::localize::overlay_items(&pool, std::slice::from_mut(&mut item), locale)?;
+        beside.attach(&mut item);
         Ok(Some(item))
     })
     .await?

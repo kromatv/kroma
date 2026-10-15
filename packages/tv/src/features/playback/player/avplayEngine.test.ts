@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { MediaItem } from '@kromatv/client/media';
+import type { HlsMasterDeclaration, MediaItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AvplayEngine } from './avplayEngine';
@@ -18,6 +18,8 @@ interface FakeAvplay {
   prepareErr(): void;
   setTracks(t: AvplayTrack[]): void;
   setDuration(ms: number): void;
+  setTime(ms: number): void;
+  seekLanded(): void;
 }
 
 function fakeAvplay(refuses: string[] = []): FakeAvplay {
@@ -27,26 +29,39 @@ function fakeAvplay(refuses: string[] = []): FakeAvplay {
   let err: () => void = () => {};
   let tracks: AvplayTrack[] = [];
   let duration = 0;
+  let time = 0;
+  let answer: (() => void) | null = null;
+  let playing = false;
+  // `<call>:ready` is refused only until playback starts, which is how Tizen
+  // answers a track change made in the READY state.
   const rec =
     (m: string) =>
     (...args: unknown[]) => {
       calls.push({ m, args });
-      if (refuses.includes(m)) throw new Error(m);
+      if (refuses.includes(m) || (!playing && refuses.includes(`${m}:ready`))) throw new Error(m);
     };
   const api = {
     open: rec('open'),
     close: rec('close'),
     stop: rec('stop'),
-    play: rec('play'),
+    play: (...args: unknown[]) => {
+      playing = true;
+      rec('play')(...args);
+    },
     pause: rec('pause'),
-    seekTo: rec('seekTo'),
+    seekTo: (ms: number, onOk?: () => void) => {
+      calls.push({ m: 'seekTo', args: [ms] });
+      if (refuses.includes('seekTo')) throw new Error('seekTo');
+      time = ms;
+      answer = onOk ?? null;
+    },
     setDisplayRect: rec('setDisplayRect'),
     setStreamingProperty: rec('setStreamingProperty'),
     setSilentSubtitle: rec('setSilentSubtitle'),
     setSelectTrack: rec('setSelectTrack'),
     suspend: rec('suspend'),
     restore: rec('restore'),
-    getCurrentTime: () => 0,
+    getCurrentTime: () => time,
     getState: () => 'PLAYING',
     getDuration: () => duration,
     getTotalTrackInfo: () => {
@@ -75,6 +90,14 @@ function fakeAvplay(refuses: string[] = []): FakeAvplay {
     setDuration: (ms) => {
       duration = ms;
     },
+    setTime: (ms) => {
+      time = ms;
+    },
+    seekLanded: () => {
+      const done = answer;
+      answer = null;
+      done?.();
+    },
   };
 }
 
@@ -93,6 +116,7 @@ function mkListeners(): EngineListeners {
   };
 }
 
+const declared: HlsMasterDeclaration[] = [];
 const client = fakeClient({
   media: {
     streamUrl: (id: string) => `stream:${id}`,
@@ -101,12 +125,27 @@ const client = fakeClient({
       aac = false,
       startSec = 0,
       audio = 0,
-      decl: { filter?: string } = {},
-    ) => `master:${id}:${aac}:${startSec}:${audio}${decl.filter ? `:${decl.filter}` : ''}`,
+      decl: HlsMasterDeclaration = {},
+    ) => {
+      declared.push(decl);
+      return `master:${id}:${aac}:${startSec}:${audio}${decl.filter ? `:${decl.filter}` : ''}`;
+    },
   },
 });
 const item = { id: 'sm1' } as unknown as MediaItem;
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+
+function masterArrivedTo(arrivedSec: number) {
+  return vi.fn((url: string) => {
+    const anchor = Number(String(url).split(':')[3]);
+    if (anchor > arrivedSec) return Promise.resolve({ status: 503, headers: { get: () => null } });
+    return Promise.resolve({
+      status: 200,
+      headers: { get: (k: string) => (k === 'X-Hls-Start' ? String(anchor - 2) : null) },
+    });
+  });
+}
+
 const track = (index: number, type: string): AvplayTrack => ({ index, type }) as AvplayTrack;
 
 function opts(over: Partial<EngineOptions> = {}): EngineOptions {
@@ -133,6 +172,7 @@ function make(over: Partial<EngineOptions> = {}, refuses: string[] = []) {
 }
 
 beforeEach(() => {
+  declared.length = 0;
   vi.stubGlobal(
     'fetch',
     vi.fn(() =>
@@ -140,7 +180,10 @@ beforeEach(() => {
     ),
   );
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe('AvplayEngine construction', () => {
   it('throws when AVPlay is unavailable', () => {
@@ -175,6 +218,105 @@ describe('AvplayEngine construction', () => {
   });
 });
 
+describe('AvplayEngine audio declaration', () => {
+  it('asks the server to copy only the audio its HLS path plays', () => {
+    make({ direct: false, startSec: 0 });
+
+    expect(declared.at(-1)?.copyCodecs).toEqual(['aac', 'ac3', 'eac3', 'mp3']);
+  });
+
+  it('declares the picture the same silicon draws from a file', () => {
+    make({ direct: false, startSec: 0 });
+
+    expect(declared.at(-1)?.videoCodecs).toEqual(['hevc', 'h264', 'vp9']);
+  });
+});
+
+describe('AvplayEngine joining a master that is still being written', () => {
+  it('starts at the top when AVPlay opened the playlist at its live edge', () => {
+    const { e, a, lastArgs } = make({ direct: false, startSec: 0 });
+
+    a.prepareOk();
+    a.listener().oncurrentplaytime?.(122774);
+
+    expect(lastArgs('seekTo')).toEqual([0]);
+    expect(e.position()).toBe(0);
+  });
+
+  it('waits for the first time report, because Tizen refuses a seek at READY', () => {
+    const { a, names } = make({ direct: false, startSec: 0 });
+    a.setTime(122774);
+
+    a.prepareOk();
+
+    expect(names()).not.toContain('seekTo');
+  });
+
+  it('keeps the clock on the anchor plus AVPlay time once it has landed', async () => {
+    const { e, a, listeners } = make({ direct: false, startSec: 30 });
+    await tick();
+
+    a.prepareOk();
+    a.listener().oncurrentplaytime?.(122774);
+    a.seekLanded();
+    a.listener().oncurrentplaytime?.(4000);
+
+    expect(e.position()).toBe(12);
+    expect(listeners.onTime).toHaveBeenLastCalledWith(12);
+  });
+
+  it('leaves a playlist that opened at its own start alone', () => {
+    const { a, names } = make({ direct: false, startSec: 0 });
+
+    a.prepareOk();
+    a.listener().oncurrentplaytime?.(400);
+    a.listener().oncurrentplaytime?.(122774);
+
+    expect(names()).not.toContain('seekTo');
+  });
+
+  it('gives up after three tries on a firmware that will not go back', () => {
+    const { a, names } = make({ direct: false, startSec: 0 }, ['seekTo']);
+
+    a.prepareOk();
+    for (const ms of [91000, 92000, 93000, 94000]) a.listener().oncurrentplaytime?.(ms);
+
+    expect(names().filter((n) => n === 'seekTo')).toHaveLength(3);
+  });
+
+  it('keeps one seek in flight while the reports repeat the stale position', () => {
+    const { a, names } = make({ direct: false, startSec: 0 });
+
+    a.prepareOk();
+    for (const ms of [156015, 156015, 156015]) a.listener().oncurrentplaytime?.(ms);
+
+    expect(names().filter((n) => n === 'seekTo')).toHaveLength(1);
+  });
+
+  it('lands at the top of the new anchor after an audio switch', async () => {
+    const { e, a, lastArgs } = make({ direct: false, startSec: 0 });
+    a.listener().oncurrentplaytime?.(25000);
+
+    e.setAudioRendition(1);
+    await tick();
+    a.prepareOk();
+    a.listener().oncurrentplaytime?.(60000);
+
+    expect(lastArgs('seekTo')).toEqual([0]);
+    expect(e.position()).toBe(8);
+  });
+
+  it('never drags a direct file back to its start', () => {
+    const { a, names } = make({ direct: true, startSec: 0 });
+    a.setTime(122774);
+
+    a.prepareOk();
+    a.listener().oncurrentplaytime?.(122774);
+
+    expect(names()).not.toContain('seekTo');
+  });
+});
+
 describe('AvplayEngine prepared (resume + audio mapping)', () => {
   it('applies the resume seek and maps the rendition to the AVPlay track index', () => {
     const { a, lastArgs, listeners } = make({ direct: true, startSec: 30, initialRendition: 1 });
@@ -188,12 +330,37 @@ describe('AvplayEngine prepared (resume + audio mapping)', () => {
     expect(listeners.onReady).toHaveBeenCalledTimes(1);
   });
 
+  it('asks again for the wanted soundtrack once playing, which Tizen refuses at READY', () => {
+    const { e, a, names, lastArgs } = make({ direct: true, initialRendition: 1 }, [
+      'setSelectTrack:ready',
+    ]);
+    a.setTracks([track(0, 'VIDEO'), track(1, 'AUDIO'), track(2, 'AUDIO')]);
+
+    a.prepareOk();
+    e.play();
+    a.listener().oncurrentplaytime?.(500);
+    a.listener().oncurrentplaytime?.(1000);
+
+    expect(names().filter((n) => n === 'setSelectTrack')).toHaveLength(2);
+    expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 2]);
+  });
+
   it('master prepared just announces duration + ready (no seek/track)', () => {
     const { a, names, listeners } = make({ direct: false, startSec: 0 });
     a.prepareOk();
     expect(names()).not.toContain('seekTo');
     expect(names()).not.toContain('setSelectTrack');
     expect(listeners.onReady).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the runtime it was given rather than the seconds the remux has written', () => {
+    const { e, a, listeners } = make({ direct: false, startSec: 0, durationSec: 888 });
+    a.setDuration(2000);
+
+    a.prepareOk();
+
+    expect(e.duration()).toBe(888);
+    expect(listeners.onDuration).toHaveBeenCalledWith(888);
   });
 });
 
@@ -258,6 +425,55 @@ describe('AvplayEngine transport', () => {
     expect(names()).toContain('stop');
     expect(names()).toContain('close');
     expect(lastArgs('open')).toEqual(['master:sm1:false:600:0']);
+  });
+});
+
+describe('AvplayEngine seeking past the film that has arrived', () => {
+  it('holds the target second while the master it asked for is not written yet', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', masterArrivedTo(1200));
+    const { e, a } = make({ direct: false, startSec: 0 });
+    a.prepareOk();
+
+    e.seekTo(2400);
+    await vi.runAllTimersAsync();
+    a.prepareErr();
+
+    expect(e.position()).toBe(2400);
+  });
+
+  it('plays from the target second once the film has arrived under it', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', masterArrivedTo(1200));
+    const { e, a, lastArgs } = make({ direct: false, startSec: 0 });
+    a.prepareOk();
+    e.seekTo(2400);
+    await vi.runAllTimersAsync();
+    a.prepareErr();
+
+    vi.stubGlobal('fetch', masterArrivedTo(5400));
+
+    e.restart(2400);
+    await vi.runAllTimersAsync();
+    a.prepareOk();
+
+    expect(lastArgs('open')).toEqual(['master:sm1:false:2400:0']);
+    expect(e.position()).toBe(2398);
+  });
+
+  it('holds the target second when the master names no start of its own', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ status: 200, headers: { get: () => null } })),
+    );
+    const { e, a } = make({ direct: false, startSec: 0 });
+
+    e.seekTo(2400);
+    await vi.runAllTimersAsync();
+    a.prepareOk();
+
+    expect(e.position()).toBe(2400);
   });
 });
 

@@ -24,7 +24,11 @@ import { type HlsAudioFilter, StoryboardManifest } from './tracks';
  * request, `videoCodecs` for every mode. `maxFrame` is the largest picture this
  * decoder accepts: a bigger source is fitted inside the nearest rung under it.
  * Both axes, because a scope frame breaks the width limit while clearing the
- * height one. */
+ * height one.
+ *
+ * `videoCodecs` carries ffprobe's codec names plus `h26410bit`, which is not a
+ * codec: it says the decoder takes H.264 above 8 bits, since `h264` on its own
+ * is read as the 8-bit 4:2:0 profile. */
 export interface HlsMasterDeclaration {
   filter?: HlsAudioFilter;
   copyCodecs?: string[];

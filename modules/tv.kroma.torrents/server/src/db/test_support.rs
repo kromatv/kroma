@@ -15,7 +15,7 @@ pub(crate) fn test_db() -> TempPool {
     pool
 }
 
-pub(super) fn client(id: &str, priority: i32, enabled: bool, created_at: i64) -> DownloadClientRow {
+pub(crate) fn client(id: &str, priority: i32, enabled: bool, created_at: i64) -> DownloadClientRow {
     DownloadClientRow {
         id: id.into(),
         kind: "rqbit".into(),
@@ -29,7 +29,7 @@ pub(super) fn client(id: &str, priority: i32, enabled: bool, created_at: i64) ->
     }
 }
 
-pub(super) fn download(id: &str, status: &str, grabbed_at: i64) -> DownloadRow {
+pub(crate) fn download(id: &str, status: &str, grabbed_at: i64) -> DownloadRow {
     DownloadRow {
         id: id.into(),
         client_id: "embedded".into(),

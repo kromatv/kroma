@@ -336,7 +336,7 @@ pub(crate) const SCHEMA: &str = "
         updated_at INTEGER NOT NULL
     );
 
-    -- Keyframe-derived HLS segment table per physical file (see infra::hls),
+    -- Keyframe-derived HLS segment table per physical file (see kroma_media::hls),
     -- computed lazily and revalidated by mtime/size/version.
     CREATE TABLE IF NOT EXISTS file_segments (
         file_id     TEXT PRIMARY KEY REFERENCES files(id) ON DELETE CASCADE,

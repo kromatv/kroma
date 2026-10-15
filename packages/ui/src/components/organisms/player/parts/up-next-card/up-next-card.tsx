@@ -8,6 +8,7 @@ import { Text } from '#ui/components/atoms/text';
 import { FOCUS_SCALE } from '#ui/components/organisms/player/lib/style';
 import { style, styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
+import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { FocusLiftHost, LIFTED } from '#ui/lib/focus-lift';
 import { useFocusScale } from '#ui/lib/focus-transition';
 
@@ -125,7 +126,7 @@ export function UpNextCard({
               onPress={() => onActivate(item)}
               autoFocus={autoFocus}
               focusScale={1}
-              style={s.hit}
+              style={[s.hit, NO_OUTLINE]}
             >
               <Box fill />
             </Focusable>

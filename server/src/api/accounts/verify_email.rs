@@ -70,7 +70,11 @@ pub async fn confirm_verification(
     Json(body): Json<VerifyEmailBody>,
 ) -> Response {
     let token = body.token.trim().to_string();
-    match query(&state.db, move |pool| db::confirm_verification(&pool, &token)).await {
+    match query(&state.db, move |pool| {
+        db::confirm_verification(&pool, &token)
+    })
+    .await
+    {
         Ok(Some(_)) => StatusCode::NO_CONTENT.into_response(),
         Ok(None) => lerr(loc, StatusCode::BAD_REQUEST, "auth.verificationInvalid"),
         Err(resp) => resp,

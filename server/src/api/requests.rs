@@ -1,7 +1,6 @@
 //! `/api/requests` the media request queue. Users with `requests.create`
 //! submit and track their own; `requests.manage` holders see everyone's and
-//! approve / deny. Interactive search + manual grab join with the indexer
-//! milestone.
+//! approve / deny.
 
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
@@ -45,19 +44,12 @@ pub fn routes() -> Router<SharedState> {
         .route("/requests/{id}/grab", post(grab))
 }
 
-fn locale(user: &User) -> &'static str {
-    user.language
-        .as_deref()
-        .and_then(i18n::normalize)
-        .unwrap_or(i18n::DEFAULT_LOCALE)
-}
-
 fn require(user: &User, perm: Permission) -> Result<(), Response> {
     if user.can(perm) {
         Ok(())
     } else {
         Err(lerr(
-            locale(user),
+            i18n::user_locale(user),
             StatusCode::FORBIDDEN,
             "error.permissionDenied",
         ))
@@ -221,7 +213,7 @@ pub async fn remove(
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
     require(&user, Permission::RequestsCreate)?;
-    let loc = locale(&user);
+    let loc = i18n::user_locale(&user);
     let manager = user.can(Permission::RequestsManage);
     let uid = user.id.clone();
     let id_for_event = id.clone();

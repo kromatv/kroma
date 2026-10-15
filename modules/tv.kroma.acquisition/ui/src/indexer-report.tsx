@@ -17,6 +17,10 @@ export interface IndexerAnswer {
   elapsedMs: number;
 }
 
+export function nothingAnswered(indexers: readonly IndexerAnswer[]): boolean {
+  return indexers.length > 0 && indexers.every((i) => Boolean(i.error));
+}
+
 export function IndexerReportStrip({ indexers = [] }: Readonly<{ indexers?: IndexerAnswer[] }>) {
   const t = useT();
   if (indexers.length === 0) return null;

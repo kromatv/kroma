@@ -67,7 +67,9 @@ pub fn ensure_identity(settings: &Settings, pool: &Pool) -> Result<RelayIdentity
         return RelayIdentity::from_base64url(&stored);
     }
     let identity = RelayIdentity::generate();
-    settings.set_internal(pool, IDENTITY_KEY, json!(identity.private_base64url()));
+    settings
+        .set_internal(pool, IDENTITY_KEY, json!(identity.private_base64url()))
+        .context("storing the mail relay identity")?;
     tracing::info!("minted an identity for the mail relay");
     Ok(identity)
 }
@@ -116,5 +118,14 @@ mod tests {
 
         assert_eq!(first.public_base64url(), second.public_base64url());
         assert!(!settings.get_str(IDENTITY_KEY, "").is_empty());
+    }
+
+    #[test]
+    fn an_identity_that_could_not_be_stored_is_an_error_rather_than_a_key_the_relay_outlives() {
+        let pool = crate::db::testing::temp_pool("relay-identity-unwritable");
+        let settings = Settings::load(&pool);
+        pool.get().unwrap().execute_batch("DROP TABLE settings").unwrap();
+
+        assert!(ensure_identity(&settings, &pool).is_err());
     }
 }

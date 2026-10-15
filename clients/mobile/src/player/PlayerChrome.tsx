@@ -6,8 +6,10 @@ import {
   audioFilterLabels,
   buildLeanStats,
   type PlayerStats,
+  ResumePrompt,
   StatsPanel,
   type SubtitleAppearance,
+  useResumeNotice,
 } from '@kromatv/ui';
 import { Box, styles, Text } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
@@ -16,13 +18,12 @@ import { StyleSheet, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
+import { useChromeReveal } from '#mobile/player/useChromeReveal';
 import { ControlsLayer } from './chrome/ControlsLayer';
 import { BufferingSpinner, CueLine, SkipIntroButton, UpNextCard } from './chrome/overlays';
 import type { Engine } from './engine';
 import type { SheetView } from './TrackSheet';
 import type { StoryboardTile } from './useStoryboard';
-
-const HIDE_AFTER_MS = 4000;
 
 function usePhoneStats(engine: Engine, item: MediaItem): () => PlayerStats {
   const t = useT();
@@ -107,6 +108,7 @@ export function PlayerChrome({
   fill,
   onZoom,
   notice,
+  resumedAt,
   onBack,
   onOpenSheet,
   tileFor,
@@ -124,6 +126,7 @@ export function PlayerChrome({
   fill: boolean;
   onZoom(fill: boolean): void;
   notice?: string | null;
+  resumedAt?: number;
   onBack(): void;
   onOpenSheet(view?: SheetView): void;
   tileFor?: (abs: number) => StoryboardTile | null;
@@ -134,24 +137,15 @@ export function PlayerChrome({
 }>) {
   const t = useT();
   const insets = useSafeAreaInsets();
-  const [visible, setVisible] = useState(true);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { shown: visible, poke, toggle, hold } = useChromeReveal();
 
   const stats = usePhoneStats(engine, item);
-
-  const poke = () => {
-    setVisible(true);
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setVisible(false), HIDE_AFTER_MS);
-  };
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: arm the auto-hide once on mount
-  useEffect(() => {
-    poke();
-    return () => {
-      if (hideTimer.current) clearTimeout(hideTimer.current);
-    };
-  }, []);
+  const resume = useResumeNotice({
+    at: resumedAt || undefined,
+    cur: engine.cur,
+    playing: engine.playing,
+    waiting: engine.waiting,
+  });
 
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [zoomNote, setZoomNote] = useState<string | null>(null);
@@ -163,15 +157,12 @@ export function PlayerChrome({
 
   // The gesture tree is memoized so GestureDetector does not re-diff the native
   // handler config on every engine tick; churning values reach it via this ref.
-  const live = useRef({ visible, fill, engine, onZoom, t, poke });
-  live.current = { visible, fill, engine, onZoom, t, poke };
+  const live = useRef({ fill, engine, onZoom, t, poke, toggle });
+  live.current = { fill, engine, onZoom, t, poke, toggle };
   const gestures = useMemo(() => {
     const tap = Gesture.Tap()
       .runOnJS(true)
-      .onEnd(() => {
-        if (live.current.visible) setVisible(false);
-        else live.current.poke();
-      });
+      .onEnd(() => live.current.toggle());
     const doubleTap = Gesture.Tap()
       .runOnJS(true)
       .numberOfTaps(2)
@@ -236,10 +227,24 @@ export function PlayerChrome({
 
         {engine.waiting && !engine.failed && !visible ? <BufferingSpinner /> : null}
 
-        {intro && !visible ? (
+        {intro && !visible && !resume.shown ? (
           <SkipIntroButton
             onPress={() => engine.seekTo(intro.endMs / 1000)}
             bottom={40 + insets.bottom}
+          />
+        ) : null}
+
+        {resumedAt ? (
+          <ResumePrompt
+            at={resumedAt}
+            shown={resume.shown}
+            secondsLeft={resume.secondsLeft}
+            total={resume.total}
+            lift={(visible ? 110 : 40) + insets.bottom}
+            onStartOver={() => {
+              resume.dismiss();
+              engine.seekTo(0);
+            }}
           />
         ) : null}
 
@@ -253,6 +258,7 @@ export function PlayerChrome({
             item={item}
             insets={insets}
             poke={poke}
+            hold={hold}
             onBack={onBack}
             onOpenSheet={onOpenSheet}
             tileFor={tileFor}

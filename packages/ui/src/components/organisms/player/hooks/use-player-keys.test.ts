@@ -6,6 +6,7 @@ import type { PlayerController } from '#ui/components/organisms/player/types';
 import { WEB_FLAGS } from '#ui/components/organisms/player/types';
 import { usePlayerKeys } from './use-player-keys';
 import type { PlayerNav } from './use-player-nav';
+import type { SeekPress } from './use-seek-nudge';
 
 function makeController(): PlayerController {
   return {
@@ -58,6 +59,7 @@ function makeNav(): PlayerNav {
     controls: [],
     focusedControl: null,
     handleKey: vi.fn(),
+    walkChrome: vi.fn(),
     poke: vi.fn(),
     rearmHide: vi.fn(),
     openOverlay: vi.fn(),
@@ -74,7 +76,7 @@ interface Params {
   flags: typeof WEB_FLAGS;
   panelRef: { current: PanelHandle | null };
   locked: boolean;
-  seekNudge: Mock<(dir: -1 | 1) => void>;
+  seekNudge: Mock<(dir: -1 | 1, press: SeekPress) => void>;
   setVolume: Mock<(level: number) => void>;
   intro?: { active: boolean; onSkip: () => void };
   credits?: { active: boolean; onKey: (key: string) => boolean };
@@ -89,7 +91,7 @@ function setup(over: Partial<Params> = {}) {
     flags: WEB_FLAGS,
     panelRef: { current: null },
     locked: false,
-    seekNudge: vi.fn<(dir: -1 | 1) => void>(),
+    seekNudge: vi.fn<(dir: -1 | 1, press: SeekPress) => void>(),
     setVolume: vi.fn<(level: number) => void>(),
     ...over,
   };
@@ -134,9 +136,9 @@ describe('usePlayerKeys letter/space transport shortcuts', () => {
     press({ key: 'm' });
     expect(params.controller.toggleMute).toHaveBeenCalledTimes(1);
     press({ key: 'j' });
-    expect(params.seekNudge).toHaveBeenCalledWith(-1);
+    expect(params.seekNudge).toHaveBeenCalledWith(-1, 'tap');
     press({ key: 'l' });
-    expect(params.seekNudge).toHaveBeenCalledWith(1);
+    expect(params.seekNudge).toHaveBeenCalledWith(1, 'tap');
     expect(params.controller.skip).not.toHaveBeenCalled();
   });
 });
@@ -215,12 +217,12 @@ describe('usePlayerKeys arrow seek', () => {
   it('ArrowLeft/Right nudge the seek where a pointer drives the chrome, and keep it revealed', () => {
     const { params, press } = setup();
     const prevented = press({ key: 'ArrowLeft' });
-    expect(params.seekNudge).toHaveBeenCalledWith(-1);
+    expect(params.seekNudge).toHaveBeenCalledWith(-1, 'tap');
     expect(params.nav.poke).toHaveBeenCalled();
     expect(params.nav.handleKey).not.toHaveBeenCalled();
     expect(prevented).toBe(false);
     press({ key: 'ArrowRight' });
-    expect(params.seekNudge).toHaveBeenCalledWith(1);
+    expect(params.seekNudge).toHaveBeenCalledWith(1, 'tap');
   });
 
   it('a hidden chrome out of fullscreen comes back with the seek', () => {
@@ -228,7 +230,7 @@ describe('usePlayerKeys arrow seek', () => {
     nav.revealed = false;
     const { params, press } = setup({ nav });
     press({ key: 'ArrowRight' });
-    expect(params.seekNudge).toHaveBeenCalledWith(1);
+    expect(params.seekNudge).toHaveBeenCalledWith(1, 'tap');
     expect(nav.poke).toHaveBeenCalled();
     expect(nav.rearmHide).not.toHaveBeenCalled();
   });
@@ -240,7 +242,7 @@ describe('usePlayerKeys arrow seek', () => {
     controller.fullscreen = true;
     const { params, press } = setup({ nav, controller });
     press({ key: 'ArrowLeft' });
-    expect(params.seekNudge).toHaveBeenCalledWith(-1);
+    expect(params.seekNudge).toHaveBeenCalledWith(-1, 'tap');
     expect(nav.rearmHide).toHaveBeenCalled();
     expect(nav.poke).not.toHaveBeenCalled();
     expect(nav.handleKey).not.toHaveBeenCalled();
@@ -253,8 +255,20 @@ describe('usePlayerKeys arrow seek', () => {
     controller.fullscreen = true;
     const { params, press } = setup({ nav, controller, flags: TV_BROWSER_FLAGS });
     press({ key: 'ArrowRight' });
-    expect(params.seekNudge).toHaveBeenCalledWith(1);
+    expect(params.seekNudge).toHaveBeenCalledWith(1, 'tap');
     expect(nav.rearmHide).toHaveBeenCalled();
+  });
+
+  it('marks auto-repeat as a hold, so only a held key ramps into a scrub', () => {
+    const { params, press } = setup();
+
+    press({ key: 'ArrowRight', repeat: true });
+    press({ key: 'l', repeat: true });
+
+    expect(params.seekNudge.mock.calls).toEqual([
+      [1, 'hold'],
+      [1, 'hold'],
+    ]);
   });
 
   it('an open panel keeps the arrows for itself', () => {
@@ -309,12 +323,12 @@ describe('usePlayerKeys listener lifecycle', () => {
 });
 
 describe('usePlayerKeys Tab', () => {
-  it('walks the transport row sideways, and backwards with Shift', () => {
+  it('walks the chrome in reading order, and backwards with Shift', () => {
     const { params, press } = setup();
     expect(press({ key: 'Tab' })).toBe(false);
-    expect(params.nav.handleKey).toHaveBeenCalledWith('Right');
+    expect(params.nav.walkChrome).toHaveBeenCalledWith(false);
     press({ key: 'Tab', shiftKey: true });
-    expect(params.nav.handleKey).toHaveBeenCalledWith('Left');
+    expect(params.nav.walkChrome).toHaveBeenCalledWith(true);
   });
 
   it('walks a settings list downwards, since a list is a column', () => {
@@ -332,6 +346,7 @@ describe('usePlayerKeys Tab', () => {
     const nav = makeNav();
     const { press } = setup({ nav, locked: true });
     press({ key: 'Tab' });
+    expect(nav.walkChrome).not.toHaveBeenCalled();
     expect(nav.handleKey).not.toHaveBeenCalled();
   });
 });

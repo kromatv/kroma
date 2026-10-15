@@ -3,28 +3,21 @@ import type { MovieView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { useWatched } from '#web/shared/lib/watched';
 
-export interface ResumeProgress {
-  resumeAt: number | null;
-  showResume: boolean;
-  setShowResume: (v: boolean) => void;
-}
-
 /**
- * Per-user resume + progress persistence for the player. Fetches the saved
- * position, seeks to it once the media is ready (flashing a toast), and writes
- * progress every 10 s / on pause / on close clearing it once ~finished.
+ * Per-user resume + progress persistence for the player. Answers the second the
+ * film opened on, and writes progress every 10 s / on pause / on close, clearing
+ * it once ~finished.
  */
 export function useResumeProgress(
   videoRef: React.RefObject<HTMLVideoElement | null>,
   item: MovieView,
   // Offset-aware position from useVideoPlayback; falls back to the raw <video>
   // timeline when omitted (single-stream direct-play).
-  position?: { seekTo: (absSec: number) => void; getPosition: () => number },
-): ResumeProgress {
+  position?: { getPosition: () => number },
+): number | null {
   const { client, user } = useAuth();
   const { setWatched } = useWatched();
   const [resumeAt, setResumeAt] = useState<number | null>(null);
-  const [showResume, setShowResume] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -42,16 +35,6 @@ export function useResumeProgress(
       cancelled = true;
     };
   }, [client, user, item.id, item.durationMs]);
-
-  // Flash the "resumed at …" toast. The actual resume is NOT a seek here: the
-  // player attaches the source already anchored at the saved position (a fresh
-  // attach), so there is no re-anchor that could leave the clock at 0:00.
-  useEffect(() => {
-    if (resumeAt == null) return;
-    setShowResume(true);
-    const hide = setTimeout(() => setShowResume(false), 6000);
-    return () => clearTimeout(hide);
-  }, [resumeAt]);
 
   const saveProgress = useCallback(() => {
     const v = videoRef.current;
@@ -88,5 +71,5 @@ export function useResumeProgress(
     };
   }, [videoRef, user, saveProgress, setWatched, item.id]);
 
-  return { resumeAt, showResume, setShowResume };
+  return resumeAt;
 }

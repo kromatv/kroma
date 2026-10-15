@@ -24,10 +24,8 @@ import { pointerDriving } from '#ui/lib/input-source';
 export function useFocusVisible(focus: unknown): boolean {
   const held = focus !== false && focus != null;
   const [seen, setSeen] = useState(() => ({ focus, visible: !pointerDriving() }));
-  let { visible } = seen;
-  if (seen.focus !== focus) {
-    if (held) visible = !pointerDriving();
-    setSeen({ focus, visible });
-  }
+  const moved = seen.focus !== focus;
+  const visible = moved && held ? !pointerDriving() : seen.visible;
+  if (moved) setSeen({ focus, visible });
   return held && visible;
 }

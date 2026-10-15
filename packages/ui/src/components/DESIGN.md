@@ -76,6 +76,7 @@ input device, never a boolean spelled as a string.
 | `Addon` | A member of a group that nothing can press, shaped like the controls beside it: a protocol, a unit, a suffix. | Named for the role, not the content. `InputGroup.Addon` and `ButtonGroup.Addon` are the same thing. |
 | `Previous` / `Next` | A step backwards or forwards through a sequence. | Named for the direction, never for the glyph that draws it. |
 | `Pages` / `Ellipsis` / `Status` | The run of page entries; the gap standing for the pages it skips; the "12 of 40" readout. | Pagination's own three. `Status` reports, it does not control. |
+| `Resume` | The prompt saying a film opened where it was left, and offering the beginning. | The player's. It states what happened, so its words are a fact and never an offer, and it must not answer OK: a film that resumed would restart on a press of play. |
 | `Line` / `Area` / `Bar` | One series of a plot, drawn as the mark that names it. | Named for the MARK, never for what the data means. A series' paint and its scale are the Root's; a mark only says which field it draws. |
 | `Grid` | The ruled ground a plot is read against. | Furniture: it draws no value, and it is never a data mark. |
 | `Axis` | One edge's scale: its levels and their labels. | `edge` says which one. Not `XAxis`/`YAxis`: a name denotes a role, and there is one axis part. |

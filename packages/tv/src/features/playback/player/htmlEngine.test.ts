@@ -2,7 +2,7 @@
 
 import type { MediaItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
-import { decodableAudioCodecs } from '@kromatv/core';
+import { decodableAudioCodecs, decodableVideoCodecs } from '@kromatv/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineListeners } from './engine';
 import { HtmlEngine } from './htmlEngine';
@@ -10,6 +10,7 @@ import { HtmlEngine } from './htmlEngine';
 // Every master carries what this device decodes, so the server knows which audio
 // it may stream-copy; jsdom probes nothing, so here that is the empty set.
 const DECODABLE = decodableAudioCodecs();
+const DECLARED = decodableVideoCodecs();
 
 // Driven against a hand-rolled fake media element. The master path is forced onto
 // the native-HLS branch so no hls.js dynamic import is needed.
@@ -221,7 +222,10 @@ describe('HtmlEngine master construction', () => {
   it('points the element at the anchored master with the chosen audio rendition', async () => {
     const fv = fakeVideo();
     const { hlsMasterUrl } = makeEngine({ fv, direct: false, rendition: 2, masterAac: true });
-    expect(hlsMasterUrl).toHaveBeenCalledWith('vid1', true, 0, 2, { copyCodecs: DECODABLE });
+    expect(hlsMasterUrl).toHaveBeenCalledWith('vid1', true, 0, 2, {
+      copyCodecs: DECODABLE,
+      videoCodecs: DECLARED,
+    });
     await tick();
     expect(fv.get('src')).toBe('master:vid1:true:0:2');
     expect(fv.get('preload')).toBe('auto');
@@ -233,6 +237,84 @@ describe('HtmlEngine master construction', () => {
     await tick();
     fv.set('currentTime', 0);
     expect(engine.position()).toBe(7.5);
+  });
+});
+
+describe('HtmlEngine joining a master the remux ran ahead of', () => {
+  it('starts a stream the element opened near its live edge at its top', async () => {
+    const fv = fakeVideo();
+    makeEngine({ fv, direct: false });
+    await tick();
+
+    fv.set('currentTime', 25);
+    fv.fire('loadedmetadata');
+
+    expect(fv.get('currentTime')).toBe(0);
+  });
+
+  it('leaves a stream that opened at its own start where it is', async () => {
+    const fv = fakeVideo();
+    makeEngine({ fv, direct: false });
+    await tick();
+
+    fv.set('currentTime', 0.4);
+    fv.fire('loadedmetadata');
+
+    expect(fv.get('currentTime')).toBe(0.4);
+  });
+
+  it('lets the stream play on once it has landed', async () => {
+    const fv = fakeVideo();
+    makeEngine({ fv, direct: false });
+    await tick();
+    fv.fire('loadedmetadata');
+
+    fv.set('currentTime', 12);
+    fv.fire('timeupdate');
+
+    expect(fv.get('currentTime')).toBe(12);
+  });
+
+  it('gives up after three tries on an engine that will not land', async () => {
+    const fv = fakeVideo();
+    makeEngine({ fv, direct: false });
+    await tick();
+
+    const seen: unknown[] = [];
+    for (let round = 0; round < 5; round += 1) {
+      fv.set('currentTime', 25);
+      fv.fire('timeupdate');
+      seen.push(fv.get('currentTime'));
+    }
+
+    expect(seen).toEqual([0, 0, 0, 25, 25]);
+  });
+
+  it('keeps a seek inside the buffer where the viewer put it', async () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false });
+    await tick();
+    fv.setBuffered([[0, 100]]);
+
+    engine.seekTo(45);
+    fv.fire('timeupdate');
+
+    expect(fv.get('currentTime')).toBe(45);
+  });
+
+  it('starts at the top again after an audio switch', async () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false });
+    await tick();
+    fv.fire('loadedmetadata');
+
+    engine.setAudioRendition(1);
+    await tick();
+    fv.set('currentTime', 30);
+    fv.fire('loadedmetadata');
+
+    expect(fv.get('src')).toBe('master:vid1:false:0:1');
+    expect(fv.get('currentTime')).toBe(0);
   });
 });
 
@@ -476,7 +558,10 @@ describe('HtmlEngine seek (master)', () => {
     fv.setBuffered([[0, 10]]);
     engine.seekTo(600);
     expect(hlsMasterUrl).toHaveBeenCalledTimes(1);
-    expect(hlsMasterUrl).toHaveBeenLastCalledWith('vid1', false, 600, 0, { copyCodecs: DECODABLE });
+    expect(hlsMasterUrl).toHaveBeenLastCalledWith('vid1', false, 600, 0, {
+      copyCodecs: DECODABLE,
+      videoCodecs: DECLARED,
+    });
   });
 
   it('resumes playback once the re-anchored master can play', async () => {
@@ -539,7 +624,10 @@ describe('HtmlEngine seek (master)', () => {
     hlsMasterUrl.mockClear();
     engine.seekTo(5);
     expect(hlsMasterUrl).toHaveBeenCalledTimes(1);
-    expect(hlsMasterUrl).toHaveBeenLastCalledWith('vid1', false, 5, 0, { copyCodecs: DECODABLE });
+    expect(hlsMasterUrl).toHaveBeenLastCalledWith('vid1', false, 5, 0, {
+      copyCodecs: DECODABLE,
+      videoCodecs: DECLARED,
+    });
   });
 });
 
@@ -552,7 +640,10 @@ describe('HtmlEngine audio rendition (master)', () => {
     hlsMasterUrl.mockClear();
     engine.setAudioRendition(1);
     expect(hlsMasterUrl).toHaveBeenCalledTimes(1);
-    expect(hlsMasterUrl).toHaveBeenLastCalledWith('vid1', false, 42, 1, { copyCodecs: DECODABLE });
+    expect(hlsMasterUrl).toHaveBeenLastCalledWith('vid1', false, 42, 1, {
+      copyCodecs: DECODABLE,
+      videoCodecs: DECLARED,
+    });
   });
 
   it('ignores selecting the already-active rendition', async () => {
@@ -716,7 +807,10 @@ describe('HtmlEngine stall recovery', () => {
     await tick();
     await tick();
 
-    expect(hlsMasterUrl).toHaveBeenCalledWith('vid1', false, 1800, 0, { copyCodecs: DECODABLE });
+    expect(hlsMasterUrl).toHaveBeenCalledWith('vid1', false, 1800, 0, {
+      copyCodecs: DECODABLE,
+      videoCodecs: DECLARED,
+    });
     expect(engine.position()).toBe(7.5);
   });
 
@@ -733,6 +827,9 @@ describe('HtmlEngine stall recovery', () => {
     await tick();
 
     expect(hlsMock.recoverMediaError).toHaveBeenCalledTimes(2);
-    expect(hlsMasterUrl).toHaveBeenCalledWith('vid1', false, 42, 0, { copyCodecs: DECODABLE });
+    expect(hlsMasterUrl).toHaveBeenCalledWith('vid1', false, 42, 0, {
+      copyCodecs: DECODABLE,
+      videoCodecs: DECLARED,
+    });
   });
 });

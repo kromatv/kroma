@@ -60,9 +60,6 @@ fn version_label() -> String {
 // reported has nothing minted and nothing to erase. Seeing it is what lets an
 // operator have that row deleted.
 fn privacy_rows(settings: &Settings, t: &impl Fn(&str) -> String) -> Vec<SettingRow> {
-    // The base switch first, then what it carries. The two detail switches send
-    // nothing while the base one is off, which is why they read as its parts
-    // rather than as three independent settings.
     let toggles = [
         ("anonStats", "admin.anonStats", "admin.anonStatsHint"),
         (
@@ -111,8 +108,6 @@ pub struct SettingRow {
     pub label: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub desc: Option<String>,
-    // `toggle` | `select` | `text` | `value` | `secret` (multi-line write-only)
-    // | `password` (single-line write-only) | `action` (a button, no value).
     pub kind: &'static str,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub options: Vec<String>,
@@ -142,7 +137,7 @@ pub fn groups(
 ) -> Vec<SettingGroup> {
     let g = |key: &str| settings.get(key);
     // Select `options` are persisted *values*, so they are deliberately not
-    // translated — only labels, hints, group titles and descriptions are.
+    // translated: only labels, hints, group titles and descriptions are.
     let t = |key: &str| i18n::t(locale, key, &[]);
     let group = |title: &str, desc: Option<&str>, rows: Vec<SettingRow>| SettingGroup {
         title: t(title),
@@ -822,7 +817,7 @@ mod tests {
         let s = Settings::load(&pool);
         assert!(find_row(&groups("general", &s, &test_config(), "en"), "statsId").is_none());
 
-        s.set_internal(&pool, "statsId", json!("a-minted-id"));
+        s.set_internal(&pool, "statsId", json!("a-minted-id")).unwrap();
 
         let after = groups("general", &s, &test_config(), "en");
         let shown = find_row(&after, "statsId")

@@ -1,7 +1,3 @@
-//! The `/api/_host/*` settings callbacks against the real wiring: which keys a
-//! sidecar reads and writes, by what the core declared about the key and what the
-//! calling module declared about itself.
-
 use std::collections::BTreeMap;
 
 use axum::http::StatusCode;
@@ -278,7 +274,8 @@ async fn a_key_no_declaration_names_is_withheld_in_both_directions() {
     let t = test_app();
     t.state
         .settings
-        .set_internal(&t.state.db, "undeclaredSecret", json!("minted-by-nobody"));
+        .set_internal(&t.state.db, "undeclaredSecret", json!("minted-by-nobody"))
+        .unwrap();
 
     let (read_status, read) = get(
         &t.app,

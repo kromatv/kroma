@@ -11,6 +11,7 @@ export const CLOSURE = [
   'kroma-module-manifest',
   'kroma-module-macros',
   'kroma-module-wire',
+  'kroma-media',
   'kroma-sqlite',
   'kroma-http',
   'kroma-i18n',

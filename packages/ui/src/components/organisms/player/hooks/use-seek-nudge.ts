@@ -28,24 +28,30 @@ interface Burst {
   dir: -1 | 1;
 }
 
-/** The seek in progress, for the stage to show: how far the presses so far
- *  have moved the cursor from where the film was, and which way. */
+/** The seek in progress, for the stage to show: how far the presses so far have
+ *  moved the cursor from where the film was, signed against it. */
 export interface SeekBurst {
   dir: -1 | 1;
   deltaSec: number;
 }
 
+/**
+ * `tap` is exactly one step whatever came before it. `hold` is a press from
+ * something that auto-repeats, so a run of them close together becomes a scrub.
+ */
+export type SeekPress = 'tap' | 'hold';
+
 export interface SeekNudge {
-  /** The `seekNudge(dir)` the nav machine calls for ◀ / ▶ on the progress bar,
-   *  the rewind / forward transport buttons and the keyboard's arrows. */
-  nudge(dir: -1 | 1): void;
+  /** The `seekNudge(dir, press)` the nav machine calls for ◀ / ▶ on the progress
+   *  bar, the rewind / forward transport buttons and the keyboard's arrows. */
+  nudge(dir: -1 | 1, press: SeekPress): void;
   /** Live from the first press until the coalesced seek fires, null after. */
   burst: SeekBurst | null;
 }
 
 /**
- * A directional seek that ramps while the button is held: a tap moves exactly
- * 10 s, a run of taps adds up, and one real seek fires once the presses stop.
+ * A directional seek that ramps while a key is held: a tap moves exactly 10 s,
+ * a run of taps adds up, and one real seek fires once the presses stop.
  */
 export function useSeekNudge(controller: PlayerController): SeekNudge {
   const burst = useRef<Burst | null>(null);
@@ -70,13 +76,13 @@ export function useSeekNudge(controller: PlayerController): SeekNudge {
     controller.scrubCommit();
   });
 
-  const nudge = useEffectEvent((dir: -1 | 1) => {
+  const nudge = useEffectEvent((dir: -1 | 1, press: SeekPress) => {
     const c = controller;
     const now = Date.now();
     const prev = burst.current;
     // A gap, or a change of direction, is a new gesture: the ramp restarts so
     // reversing out of a fast scrub is immediately precise again.
-    const holding = prev?.dir === dir && now - prev.lastAt <= REPEAT_MS;
+    const holding = press === 'hold' && prev?.dir === dir && now - prev.lastAt <= REPEAT_MS;
 
     let target: number;
     if (holding) {
@@ -100,7 +106,7 @@ export function useSeekNudge(controller: PlayerController): SeekNudge {
       dir,
     };
     c.scrubPreview(target);
-    setShown({ dir, deltaSec: Math.abs(target - origin) });
+    setShown({ dir, deltaSec: target - origin });
 
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(commit, COMMIT_MS);

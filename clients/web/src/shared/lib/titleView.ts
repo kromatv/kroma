@@ -3,7 +3,7 @@
 
 import type { KromaClient } from '@kromatv/client';
 import { hasPermission, type User } from '@kromatv/client/accounts';
-import type { DiscoverDetail, DiscoverEntry } from '@kromatv/client/discovery';
+import type { DiscoverDetail, DiscoverEntry, DiscoverEpisode } from '@kromatv/client/discovery';
 import type {
   CastMember,
   CrewMember,
@@ -20,6 +20,8 @@ import { directorsOf, formatRuntime, genreLabels } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { imageUrl } from '#web/shared/lib/api';
 
+export type SeasonGap = ListedEpisode | DiscoverEpisode;
+
 /** A season in the unified model: owned playable episodes merged with TMDB
  * availability. */
 export interface TitleSeason {
@@ -31,7 +33,7 @@ export interface TitleSeason {
   requested: boolean;
   airDate: string | null;
   episodes: MediaItem[];
-  missing: ListedEpisode[];
+  missing: SeasonGap[];
   cast: CastMember[];
 }
 

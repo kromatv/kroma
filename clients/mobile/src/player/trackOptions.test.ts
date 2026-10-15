@@ -3,7 +3,13 @@ import type { AudioTrack as LocalAudioTrack } from 'expo-video';
 import { describe, expect, it } from 'vitest';
 import type { useT } from '#mobile/lib/i18n';
 import type { Engine } from './engine';
-import { audioOptions, qualityBadge, subNote, subtitleLabel } from './trackOptions';
+import {
+  audioOptions,
+  qualityBadge,
+  subNote,
+  subtitleLabel,
+  subtitleRowLabel,
+} from './trackOptions';
 import type { Subtitles } from './useSubtitles';
 
 const NAMES: Record<string, string> = {
@@ -124,6 +130,22 @@ describe('the subtitle button', () => {
 
   it('numbers a picked track the list no longer holds', () => {
     expect(subtitleLabel(subs({ active: 4, tracks: [] }), t)).toBe('#5');
+  });
+});
+
+describe('a subtitle row', () => {
+  it('tells two tracks of one language apart by the title the file gave them', () => {
+    const plain = { index: 0, language: 'eng', url: '' };
+    const forTheDeaf = { index: 1, language: 'eng', url: '', title: 'SDH' };
+
+    expect(subtitleRowLabel(t, plain)).toBe('Anglais');
+    expect(subtitleRowLabel(t, forTheDeaf)).toBe('Anglais · SDH');
+  });
+
+  it('says a generated track was generated', () => {
+    const made = { index: 1000, language: 'fra', url: '', ai: true };
+
+    expect(subtitleRowLabel(t, made)).toBe('Français · IA');
   });
 });
 

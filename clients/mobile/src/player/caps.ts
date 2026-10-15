@@ -11,6 +11,7 @@ import {
   audioTracksOf,
   canDecodeAudioCodec,
   canDirectPlay,
+  decodableVideoCodecs,
   FMP4_COPY_CODECS,
   masterNeedsAac,
   type PlaybackCapabilities,
@@ -19,10 +20,13 @@ import { Platform } from 'react-native';
 
 // AVPlayer: HEVC/H264 hardware decode, Dolby (AC3/EAC3) native, no VP9/AV1
 // (AV1 is A17+ only; report false rather than fail opaquely), no DTS/TrueHD.
+// VideoToolbox's H.264 block is 8-bit 4:2:0 only, whatever its HEVC block does
+// with Main10, and a 10-bit stream handed to it plays black.
 export const IOS_CAPS: PlaybackCapabilities = {
   hevc: true,
   hevc10bit: true,
   h264: true,
+  h26410bit: false,
   av1: false,
   vp9: false,
   hdr: { hdr10: true, hdr10Plus: false, dolbyVision: true, hlg: true },
@@ -49,6 +53,7 @@ export const ANDROID_CAPS: PlaybackCapabilities = {
   hevc: true,
   hevc10bit: true,
   h264: true,
+  h26410bit: false,
   av1: false,
   vp9: true,
   hdr: { hdr10: true, hdr10Plus: true, dolbyVision: true, hlg: true },
@@ -95,13 +100,14 @@ export function downloadCopyCodecs(): string[] {
   return [...FMP4_COPY_CODECS].filter((codec) => decodable.has(codec));
 }
 
-/** The `?video=` set for `/download`: video codecs this runtime decodes in
- * hardware. A source outside the set is transcoded to H.264 by the server -
- * offline has no master fallback, so an undecodable video track downloads as
- * audio under a black frame (AV1 on a pre-A17 iPhone did exactly that). */
-export function downloadVideoCodecs(): string[] {
-  const caps = mobileCaps();
-  return (['hevc', 'h264', 'av1', 'vp9'] as const).filter((codec) => caps[codec] === true);
+/** The `?video=` set this runtime declares, on a master and on `/download`
+ * alike: what it draws, which for H.264 stops at 8 bits. A source outside the
+ * set is re-encoded to H.264 server-side rather than copied into a black
+ * picture, and offline that is the only chance to get it right: a download has
+ * no master to fall back to (AV1 on a pre-A17 iPhone played as audio under a
+ * black frame). */
+export function mobileVideoCodecs(): string[] {
+  return decodableVideoCodecs(mobileCaps());
 }
 
 /** Whether the ORIGINAL file can be downloaded raw (byte-identical, zero

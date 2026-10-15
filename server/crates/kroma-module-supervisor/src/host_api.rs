@@ -43,7 +43,7 @@ where
         // never learns which vendors exist.
         .route("/_host/secret", get(secret::<S>))
         // Authentication, so a sidecar resolves the caller of one of its routes
-        // without reading the `sessions` table -- the last thing that made a
+        // without reading the `sessions` table, the last thing that made a
         // module with no storage of its own open a database.
         .route("/_host/session", post(session_user::<S>))
         // How a module reaches a peer: it asks for a CONTRACT and the core

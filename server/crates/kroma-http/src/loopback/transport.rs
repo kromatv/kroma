@@ -24,7 +24,6 @@ pub struct Request<'a> {
     pub method: Method,
     pub url: &'a str,
     pub headers: &'a [(String, String)],
-    /// `(content-type, bytes)`, absent on a GET.
     pub body: Option<(&'a str, &'a [u8])>,
     pub timeout: Duration,
 }
