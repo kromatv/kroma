@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { canDirectPlay, MSE_CAPS, SAFARI_CAPS } from './directplay';
+import { canDirectPlay } from './directplay';
 import { makeItem, track, UNPROBED } from './directplay.fixture';
 import { avplayDirectPlayable, nativeDirectPlayable, type PlayEnv, selectEngine } from './engine';
+import { MSE_CAPS, SAFARI_CAPS } from './runtime-caps';
 
 describe('nativeDirectPlayable', () => {
   it('opens the QuickTime family on both, but Matroska only on Media3', () => {

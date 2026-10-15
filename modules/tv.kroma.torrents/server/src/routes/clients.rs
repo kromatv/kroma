@@ -171,7 +171,7 @@ pub async fn update<S: HostStorage + Clone + Send + Sync + 'static>(
     if let Some(enabled) = body.enabled {
         if id == EMBEDDED_CLIENT_ID {
             if enabled {
-                dm(&state).start_rqbit(&state).await;
+                dm(&state).ensure_rqbit(&state).await;
                 let downloads = dm(&state);
                 blocking(move || {
                     downloads.resume_after_enable();

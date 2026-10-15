@@ -6,7 +6,7 @@
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { CastTrack } from '@kromatv/client/cast';
 import { Icon, styles, Text } from '@kromatv/ui/kit';
-import { forwardRef } from 'react';
+import type { Ref } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import { SheetBody, SheetTitle, sheetChrome } from '#mobile/components/ui';
 import { radius, spacing, type } from '#mobile/lib/theme';
@@ -17,35 +17,41 @@ interface TrackPickerSheetProps {
   activeIndex: number | null;
   offLabel?: string;
   onPick: (index: number | null) => void;
+  ref?: Ref<BottomSheetModal>;
 }
 
-export const TrackPickerSheet = forwardRef<BottomSheetModal, TrackPickerSheetProps>(
-  function TrackPickerSheet({ title, tracks, activeIndex, offLabel, onPick }, ref) {
-    return (
-      <BottomSheetModal ref={ref} {...sheetChrome()}>
-        <SheetBody>
-          <SheetTitle>{title}</SheetTitle>
-          {/* Bounded: a long-dubbed film can carry a dozen tracks, so the sheet
+export function TrackPickerSheet({
+  title,
+  tracks,
+  activeIndex,
+  offLabel,
+  onPick,
+  ref,
+}: Readonly<TrackPickerSheetProps>) {
+  return (
+    <BottomSheetModal ref={ref} {...sheetChrome()}>
+      <SheetBody>
+        <SheetTitle>{title}</SheetTitle>
+        {/* Bounded: a long-dubbed film can carry a dozen tracks, so the sheet
               stops short of the full screen; <SheetBody>'s drawer floor covers
               the other end. */}
-          <ScrollView style={s.list} bounces={false}>
-            {offLabel ? (
-              <Row label={offLabel} selected={activeIndex == null} onPress={() => onPick(null)} />
-            ) : null}
-            {tracks.map((track) => (
-              <Row
-                key={track.index}
-                label={track.label}
-                selected={track.index === activeIndex}
-                onPress={() => onPick(track.index)}
-              />
-            ))}
-          </ScrollView>
-        </SheetBody>
-      </BottomSheetModal>
-    );
-  },
-);
+        <ScrollView style={s.list} bounces={false}>
+          {offLabel ? (
+            <Row label={offLabel} selected={activeIndex == null} onPress={() => onPick(null)} />
+          ) : null}
+          {tracks.map((track) => (
+            <Row
+              key={track.index}
+              label={track.label}
+              selected={track.index === activeIndex}
+              onPress={() => onPick(track.index)}
+            />
+          ))}
+        </ScrollView>
+      </SheetBody>
+    </BottomSheetModal>
+  );
+}
 
 function Row({
   label,

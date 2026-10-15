@@ -1,4 +1,4 @@
-import type { MediaItem } from '@kromatv/client/media';
+import type { HlsMasterDeclaration, MediaItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineOptions } from './baseEngine';
@@ -68,11 +68,20 @@ function mkListeners(): EngineListeners {
   };
 }
 
+const declared: HlsMasterDeclaration[] = [];
 const client = fakeClient({
   media: {
     streamUrl: (id: string) => `stream:${id}`,
-    hlsMasterUrl: (id: string, aac = false, startSec = 0, audio = 0) =>
-      `master:${id}:${aac}:${startSec}:${audio}`,
+    hlsMasterUrl: (
+      id: string,
+      aac = false,
+      startSec = 0,
+      audio = 0,
+      decl: HlsMasterDeclaration = {},
+    ) => {
+      declared.push(decl);
+      return `master:${id}:${aac}:${startSec}:${audio}`;
+    },
   },
 });
 const item = { id: 'v9' } as unknown as MediaItem;
@@ -101,6 +110,7 @@ function opts(over: Partial<EngineOptions> = {}): EngineOptions {
 }
 
 beforeEach(() => {
+  declared.length = 0;
   vi.stubGlobal(
     'fetch',
     vi.fn(() =>
@@ -169,6 +179,27 @@ describe('MpvEngine construction / open', () => {
     engine.start();
     await vi.waitFor(() => expect(probed).toBe(true));
     expect(listeners.onError).not.toHaveBeenCalled();
+  });
+});
+
+describe('MpvEngine audio declaration', () => {
+  it('asks the server to copy the soundtracks its own decoders play', () => {
+    const t = fakeTauri();
+    vi.stubGlobal('__TAURI__', t.bridge);
+
+    new MpvEngine(opts({ direct: false, startSec: 0 })).start();
+
+    expect(declared.at(-1)?.copyCodecs).toEqual([
+      'aac',
+      'ac3',
+      'eac3',
+      'dts',
+      'truehd',
+      'flac',
+      'opus',
+      'mp3',
+      'vorbis',
+    ]);
   });
 });
 

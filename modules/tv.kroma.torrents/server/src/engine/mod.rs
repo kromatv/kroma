@@ -1,23 +1,11 @@
 //! What this module needs of a torrent engine, and how it reaches one.
-//!
-//! [`DownloadClient`] is this module's own trait, not a shared contract: the
-//! embedded librqbit engine implements it in-process, and [`remote`] implements it
-//! by calling whichever module contributes the `download-client` point under the
-//! client's `kind`. An engine module therefore links nothing of this crate. It
-//! serves the methods below over HTTP and declares its kind in its manifest, so a
-//! download client nobody here has written can be installed at runtime.
 
 pub mod remote;
 
-/// The embedded engine's client `kind`. This module answers the
-/// [`download-client`](remote::DOWNLOAD_CLIENT) point for it in its own process,
-/// because librqbit's session is a live handle and not something a wire carries.
 pub const EMBEDDED_KIND: &str = "rqbit";
 
 use serde::{Deserialize, Serialize};
 
-/// A torrent to hand to an engine. Borrowed, because the call is in-process:
-/// [`remote`] sends the subset an external engine reads.
 #[derive(Debug, Clone)]
 pub struct AddTorrentReq<'a> {
     pub magnet_or_url: &'a str,
@@ -38,7 +26,6 @@ pub enum TorrentState {
     Error,
 }
 
-/// A point-in-time view of one torrent inside an engine.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TorrentStatus {
     pub client_ref: String,
@@ -49,8 +36,6 @@ pub struct TorrentStatus {
     pub down_bps: u64,
     pub up_bps: u64,
     pub peers: u32,
-    // Seen from tracker/DHT, connected or not. While downloading, 0 means a dead
-    // torrent or a blocked announce; >0 with `peers` at 0 means firewall/proxy.
     pub peers_seen: u32,
     pub size_bytes: u64,
     pub save_path: Option<String>,
@@ -64,7 +49,6 @@ pub struct TorrentStatus {
     pub lifetime_uploaded_bytes: u64,
 }
 
-/// One file inside a torrent, from a metadata-only listing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TorrentFileEntry {
     pub index: usize,
@@ -72,19 +56,16 @@ pub struct TorrentFileEntry {
     pub size_bytes: u64,
 }
 
-/// One torrent engine.
 pub trait DownloadClient: Send + Sync {
     fn kind(&self) -> &'static str;
     // Reachability probe; returns a human-readable version string.
     fn test(&self) -> anyhow::Result<String>;
     // Returns the engine's identifier for the new torrent (`client_ref`).
     fn add(&self, req: &AddTorrentReq) -> anyhow::Result<String>;
-    // Fetch the torrent's file list WITHOUT downloading (metadata-only), so
-    // the caller can analyze/select before committing. `torrent_bytes` are the
-    // pre-fetched `.torrent` file (fetched outside the VPN); when `None` the
-    // engine resolves `magnet_or_url` itself. Not every engine can do this
-    // (external clients don't expose a list-only add) - the default reports it
-    // as unsupported.
+    // Metadata-only, no download. `torrent_bytes` are the pre-fetched
+    // `.torrent` file; when `None` the engine resolves `magnet_or_url` itself.
+    // Not every engine can do this (external clients don't expose a list-only
+    // add) - the default reports it as unsupported.
     fn list_files(
         &self,
         _magnet_or_url: &str,
@@ -96,17 +77,14 @@ pub trait DownloadClient: Send + Sync {
     fn status(&self, client_ref: &str) -> anyhow::Result<Option<TorrentStatus>>;
     fn pause(&self, client_ref: &str) -> anyhow::Result<()>;
     fn resume(&self, client_ref: &str) -> anyhow::Result<()>;
-    // Force a tracker / DHT re-announce now ("ask more peers"). Best-effort;
-    // the default is a no-op, overridden by every real engine (the embedded
-    // one cycles the torrent's live task, external clients call their API).
+    // Force a tracker / DHT re-announce now. Best-effort; the default is a
+    // no-op.
     fn reannounce(&self, _client_ref: &str) -> anyhow::Result<()> {
         Ok(())
     }
     fn remove(&self, client_ref: &str, delete_data: bool) -> anyhow::Result<()>;
 }
 
-/// A configured engine, as this module holds it: one row of its own
-/// `download_clients` table, and what [`remote`] sends an engine per call.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ClientDef {
@@ -167,7 +145,6 @@ mod tests {
 
     #[test]
     fn magnet_info_hash_is_case_insensitive() {
-        // The scheme + hash are upper-cased; the result is normalized to lowercase.
         let uri = "MAGNET:?XT=URN:BTIH:0123456789ABCDEF0123456789ABCDEF01234567";
         assert_eq!(
             magnet_info_hash(uri).as_deref(),
@@ -186,12 +163,9 @@ mod tests {
 
     #[test]
     fn magnet_info_hash_rejects_bad_input() {
-        // No xt parameter.
         assert_eq!(magnet_info_hash("magnet:?dn=nothing"), None);
         assert_eq!(magnet_info_hash(""), None);
-        // Wrong length (neither 40 nor 32).
         assert_eq!(magnet_info_hash("magnet:?xt=urn:btih:deadbeef"), None);
-        // Stops at the first non-alphanumeric, leaving an invalid length.
         assert_eq!(magnet_info_hash("magnet:?xt=urn:btih:-&dn=x"), None);
     }
 

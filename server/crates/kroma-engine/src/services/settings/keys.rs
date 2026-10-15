@@ -13,9 +13,7 @@ mod tests;
 ///
 /// Withheld unless a declaration in this module hands the key out, so a key that
 /// reaches the store with no declared reach is [`SettingReach::Unknown`] rather
-/// than served. An identity the server mints for itself is declared
-/// [`SettingReach::CoreOnly`], and the next key someone adds without thinking
-/// about who reads it is withheld either way.
+/// than served.
 pub fn reach_of_setting(key: &str) -> SettingReach {
     static REACH: OnceLock<BTreeMap<&'static str, SettingReach>> = OnceLock::new();
     *REACH
@@ -68,8 +66,6 @@ fn declared() -> Declared {
     m.public("serverName", json!("KROMA"));
     m.minted("instanceId");
     // One key for the whole blob: `{ "<id>": { "enabled": bool, "config": {..} } }`.
-    // A module reads its own config out of the point call that carries it, never
-    // out of here, so the blob holding every other module's stays the core's.
     m.core_only("moduleStates", json!({}));
     // Empty = the built-in catalog (modules.json on this repo's GitHub Releases).
     // This is the OFFICIAL slot: it stays pinned first and wins on an id clash.
@@ -106,6 +102,10 @@ fn declared() -> Declared {
     m.public("themeSongs", json!(false));
     // off | chapters (free, from embedded chapters) | fingerprint (heavy audio job).
     m.public("introDetection", json!("chapters"));
+    m.public(
+        "playedThreshold",
+        json!(kroma_domain::DEFAULT_PLAYED_PERCENT.to_string()),
+    );
     m.public("theme", json!("Sombre (Kroma)"));
     m.public("dateFormat", json!("JJ/MM/AAAA"));
     m.public("moduleAutoUpdate", json!(true));
@@ -142,7 +142,6 @@ fn declared() -> Declared {
     m.public("transcodeCacheLimit", json!("20 Go"));
     // Scheduler timezone offset in minutes from UTC (60 = UTC+1, -300 = UTC-5).
     m.public("jobsUtcOffset", json!(0));
-    // Keyword lists are comma-separated, matched as whole tokens against release names.
     m.public("acqIndexersUseVpn", json!(false));
     m.public("acqFlaresolverrUrl", json!(""));
     m.public("acqEnabled", json!(false));
@@ -184,8 +183,6 @@ fn declared() -> Declared {
         "namingEpisodeFile",
         json!("{Title} - S{season:00}E{episode:00} - {Episode Title} {Quality Full}"),
     );
-    // MUST stay registered: `set_patch` silently drops unknown keys, so without
-    // this line `save_naming` answers `{"ok": true}` and throws the value away.
     m.public("namingCase", json!("default"));
     // openai = any OpenAI-compatible server (Ollama, llama.cpp, LM Studio, …);
     // anthropic = Claude.
@@ -229,7 +226,6 @@ fn declared() -> Declared {
     m.core_only("mailRelay.identityKey", json!(""));
     m.core_only("mailRelay.instance", json!(""));
     m.core_only("mailRelay.instanceOrigin", json!(""));
-    // Operator SMTP for credential-reset email.
     m.public("smtpEnabled", json!(false));
     m.public("smtpHost", json!(""));
     m.public("smtpPort", json!(587));

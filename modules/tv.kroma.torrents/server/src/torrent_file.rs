@@ -4,16 +4,12 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 
-/// What one uploaded `.torrent` says about itself.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParsedTorrentFile {
-    /// Lowercase hex of the v1 info hash.
     pub info_hash: String,
-    /// The torrent's own name, which for a scene release is the release name.
     pub name: String,
     pub size_bytes: u64,
     pub trackers: Vec<String>,
-    /// The magnet that stands for this file for engines that take no bytes.
     pub magnet: String,
 }
 
@@ -41,8 +37,8 @@ fn magnet_for(info_hash: &str, name: &str, trackers: &[String]) -> String {
     magnet
 }
 
-/// Bencode-decode an uploaded `.torrent`. Errors on anything that is not one,
-/// which is the whole point: the bytes reached us over HTTP.
+/// Bencode-decode an uploaded `.torrent`. Errors on anything that is not one:
+/// the bytes reached us over HTTP.
 pub fn parse(bytes: &[u8]) -> Result<ParsedTorrentFile> {
     if bytes.is_empty() {
         bail!("the uploaded file is empty");

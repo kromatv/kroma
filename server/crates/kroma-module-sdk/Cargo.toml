@@ -19,6 +19,8 @@ kroma-module-host = { workspace = true }
 kroma-engine = { workspace = true, optional = true }
 kroma-domain = { workspace = true, optional = true }
 kroma-db = { workspace = true, optional = true }
+# Reading and re-encoding one input, behind `transcode`.
+kroma-media = { workspace = true, optional = true }
 # What a sidecar links: the wire types, the HTTP client, the i18n engine its
 # own catalogs resolve against, the SQLite pool.
 kroma-module-wire = { workspace = true }
@@ -46,6 +48,11 @@ testing = ["kroma-module-host/testing", "storage", "kroma-sqlite/testing", "krom
 # enables it when its `module.json` declares `storage`, and only then does its
 # binary link SQLite -- which is 1.5 MB of the 3.3 MB a sidecar used to be.
 storage = ["dep:kroma-sqlite", "kroma-module-host/storage"]
+# The `transcode` capability: `media::{hls, probe, program, stream}`, for a module
+# that holds a media file and has to describe or re-encode it. Never `core`,
+# `domain` or `engine`: a module transcodes without a catalog, and a crate with no
+# database is what lets it.
+transcode = ["dep:kroma-media"]
 # The core database's own schema, so `db::testing::temp_pool` stamps it: what a
 # grant test needs to run against the real tables. In-repo only, like `domain`
 # and `engine` below -- none of the three is part of the published SDK.

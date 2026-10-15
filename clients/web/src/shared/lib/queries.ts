@@ -194,6 +194,8 @@ export const discoverQueries = {
   detail: (kind: 'movie' | 'tv', tmdbId: number) =>
     kromaClient().query.discovery.detail(kind, tmdbId),
 
+  season: (tmdbId: number, season: number) => kromaClient().query.discovery.season(tmdbId, season),
+
   trending: (type: DiscoverType, page: number) =>
     kromaClient().query.discovery.trending({ type, page }),
 } as const;

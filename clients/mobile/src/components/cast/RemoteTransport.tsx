@@ -1,3 +1,4 @@
+import { BACK_10_ICON, FWD_10_ICON } from '@kromatv/ui';
 import { Box, Icon, type IconName, styles } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
@@ -19,18 +20,14 @@ export function RemoteTransport({
   const t = useT();
   return (
     <Box style={s.transport}>
-      <Round
-        icon="rewind-backward-10"
-        label={t('player.back10')}
-        onPress={() => onSkip(-SKIP_MS)}
-      />
+      <Round icon={BACK_10_ICON} label={t('player.back10')} onPress={() => onSkip(-SKIP_MS)} />
       <Round
         big
         icon={isPlaying || buffering ? 'player-pause-filled' : 'player-play-filled'}
         label={t(isPlaying ? 'player.pause' : 'player.play')}
         onPress={onTogglePlay}
       />
-      <Round icon="rewind-forward-10" label={t('player.fwd10')} onPress={() => onSkip(SKIP_MS)} />
+      <Round icon={FWD_10_ICON} label={t('player.fwd10')} onPress={() => onSkip(SKIP_MS)} />
     </Box>
   );
 }

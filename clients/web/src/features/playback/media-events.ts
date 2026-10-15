@@ -77,6 +77,9 @@ export function bindMediaEvents(
     setPlaying(true);
   };
 
+  // `timeupdate` fires about four times a second, so waiting for one would
+  // report the clock against the anchor the PREVIOUS binding had.
+  onTime();
   v.addEventListener('timeupdate', onTime);
   v.addEventListener('durationchange', onDur);
   v.addEventListener('progress', onProg);

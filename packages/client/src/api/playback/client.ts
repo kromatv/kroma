@@ -10,7 +10,7 @@ import {
   UpNext,
 } from '../media';
 import type { PlaybackSessionId } from './ids';
-import type { PlaybackPing } from './schemas';
+import { type PlaybackPing, ProgressReceipt } from './schemas';
 
 const TitleIds = z.array(z.union([ItemId, ShowId]));
 
@@ -24,9 +24,11 @@ export default function playbackApi(ctx: RequestContext) {
     itemProgress: (itemId: ItemId) =>
       ctx.get('/progress/:itemId', ProgressEntry.nullable(), { params: { itemId } }),
 
-    /** Save (upsert) the playback position for an item. */
+    /** Save (upsert) the playback position for an item. The server applies the
+     * watched rule to it and answers whether the title now counts as watched;
+     * the position is kept either way. */
     save: (itemId: ItemId, positionMs: number, durationMs?: number | null) =>
-      ctx.put('/progress/:itemId', {
+      ctx.put('/progress/:itemId', ProgressReceipt, {
         params: { itemId },
         body: { positionMs: Math.round(positionMs), durationMs: durationMs ?? null },
       }),
@@ -61,7 +63,7 @@ export default function playbackApi(ctx: RequestContext) {
      * this into a set once and badge cards from it. */
     watched: () => ctx.get('/watched', ItemId.array()),
 
-    /** Mark an item as watched (also clears its resume position). */
+    /** Mark an item as watched by hand (also clears its resume position). */
     markWatched: (itemId: ItemId) => ctx.put('/watched/:itemId', { params: { itemId } }),
 
     /** Clear an item's watched flag. */

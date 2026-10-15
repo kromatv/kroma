@@ -1,3 +1,4 @@
+import type { DiscoverEntry } from '@kromatv/client/discovery';
 import type { SearchHit } from '@kromatv/client/media';
 import {
   genreLabels,
@@ -20,7 +21,7 @@ import {
   Text,
   useFocusNav,
 } from '@kromatv/ui/kit';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav } from '#tv/app/router';
@@ -29,19 +30,18 @@ import { searchShell } from '#tv/app/searchShell';
 import { voiceSearchBackend } from '#tv/app/voiceSearch';
 import { addRecentSearch, getRecentSearches } from '#tv/features/catalog/searchHistory';
 import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
-import type { SearchResult } from '#tv/features/catalog/TvSearchResults';
+import type { SearchResult, SearchSection } from '#tv/features/catalog/TvSearchResults';
 import { TvSearchResults } from '#tv/features/catalog/TvSearchResults';
 import { TvVoiceSearch } from '#tv/features/catalog/TvVoiceSearch';
+import { useSearchAnswers } from '#tv/features/catalog/useSearchAnswers';
 import { SCREEN_PAD, STAGE_W } from '#tv/shared/stage';
 import { KromaMark, SearchKeyboard } from '#tv/shared/ui';
-
-const DEBOUNCE_MS = 250;
 
 /** Search with a live results grid, typed either on our D-pad on-screen
  * keyboard or on the platform's own where that is the better one (Apple TV,
  * whose keyboard is also the only thing that can hear dictation; see
- * `app/searchShell`). Falls back to the in-memory catalogue when the
- * server's `/api/search` request fails. */
+ * `app/searchShell`). Falls back to the in-memory catalogue when the server's
+ * `/api/search` request fails. */
 export function TvSearch() {
   const { movies, shows } = useConnection();
   const client = useClient();
@@ -50,7 +50,6 @@ export function TvSearch() {
   // A query spoken to Siri (or handed over by any other shell) is waiting here
   // when the screen was opened BY that request; typing starts empty as usual.
   const [query, setQuery] = useState(() => takePendingSearch() ?? '');
-  const [hits, setHits] = useState<SearchResult[]>([]);
   const [recent, setRecent] = useState<string[]>(getRecentSearches);
   const { physicalKeyboard } = useEnv();
   const titleMenu = useTitleMenu(nav.back);
@@ -106,45 +105,57 @@ export function TvSearch() {
     [client, nav, hold],
   );
 
+  const toEntry = useCallback(
+    (entry: DiscoverEntry, found: string): SearchResult => ({
+      id: `tmdb:${entry.tmdbId}`,
+      title: entry.title,
+      badge: null,
+      poster: client.media.artwork.resolve(entry.posterUrl, RESULT_W),
+      colors: posterColors(String(entry.tmdbId)),
+      onOpen: () => {
+        setRecent(addRecentSearch(found));
+        nav.go('discover', { entry });
+      },
+    }),
+    [client, nav],
+  );
+
   // Offline fallback: filter the already-loaded catalogue by title / genre.
   const localHits = useCallback(
-    (q: string): SearchResult[] => {
+    (q: string): SearchHit[] => {
       const needle = q.toLowerCase();
       const match = (title: string, meta?: TitleGenres | null) =>
         title.toLowerCase().includes(needle) ||
         genreLabels(t, meta).some((g) => g.toLowerCase().includes(needle));
-      const mv = movies
-        .filter((m) => match(m.title, m.metadata))
-        .map((m) => toHit({ type: 'movie', item: m }, q));
-      const sh = shows
-        .filter((show) => match(show.title, show.metadata))
-        .map((show) => toHit({ type: 'show', show }, q));
-      return [...mv, ...sh];
+      return [
+        ...movies
+          .filter((m) => match(m.title, m.metadata))
+          .map((item): SearchHit => ({ type: 'movie', item })),
+        ...shows
+          .filter((show) => match(show.title, show.metadata))
+          .map((show): SearchHit => ({ type: 'show', show })),
+      ];
     },
-    [movies, shows, t, toHit],
+    [movies, shows, t],
   );
 
-  // Debounced server search; the latest query wins (stale responses are dropped).
-  const seq = useRef(0);
-  useEffect(() => {
-    const q = query.trim();
-    if (!q) {
-      setHits([]);
-      return;
-    }
-    const mine = ++seq.current;
-    const timer = setTimeout(() => {
-      client.media
-        .search(q)
-        .then((res) => {
-          if (mine === seq.current) setHits(res.results.map((hit) => toHit(hit, q)));
-        })
-        .catch(() => {
-          if (mine === seq.current) setHits(localHits(q)); // offline / server down
-        });
-    }, DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [query, client, toHit, localHits]);
+  const answers = useSearchAnswers(query, localHits);
+
+  const sections = useMemo<SearchSection[]>(() => {
+    const { query: found, library, discover } = answers;
+    return [
+      {
+        key: 'library',
+        title: t('discover.sectionLibrary'),
+        hits: library.map((hit) => toHit(hit, found)),
+      },
+      {
+        key: 'discover',
+        title: t('discover.sectionDiscover'),
+        hits: discover.filter((entry) => !entry.inLibrary).map((entry) => toEntry(entry, found)),
+      },
+    ];
+  }, [answers, toEntry, toHit, t]);
 
   const recentPills = recent.length ? (
     <Box mt={28} gap={12} minH={0}>
@@ -177,7 +188,7 @@ export function TvSearch() {
         <Shell value={query} onChange={setQuery} placeholder={t('nav.search')}>
           {({ width }) => (
             <TvSearchResults
-              hits={hits}
+              sections={sections}
               query={query}
               width={width - RESULTS_PADDING}
               header={recentPills}
@@ -240,7 +251,7 @@ export function TvSearch() {
           {recentPills}
         </FocusColumn>
 
-        <TvSearchResults hits={hits} query={query} width={RESULTS_WIDTH} />
+        <TvSearchResults sections={sections} query={query} width={RESULTS_WIDTH} />
       </FocusRegion>
 
       {/* Spoken words land in the same `query` typing feeds, so the grid behind

@@ -1,3 +1,4 @@
+import { tmdbKindOf } from '@kromatv/client/discovery';
 import { KromaEvents, type ServerEvent } from '@kromatv/client/events';
 import type { DownloadProgressEvent, MediaRequest } from '@kromatv/client/requests';
 import { useLocale, useT } from '@kromatv/ui';
@@ -107,7 +108,7 @@ function RequestLink({
   return (
     <RouteLink
       to="/discover/$type/$tmdbId"
-      params={{ type: req.kind === 'show' ? 'tv' : 'movie', tmdbId: String(req.tmdbId) }}
+      params={{ type: tmdbKindOf(req.kind), tmdbId: String(req.tmdbId) }}
       {...link}
     >
       {children}

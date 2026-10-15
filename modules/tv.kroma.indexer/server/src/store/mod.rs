@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::definition::{self, Definition};
 
+mod heal;
 mod sync;
 #[cfg(test)]
 mod test_support;
@@ -99,10 +100,17 @@ impl DefinitionStore {
     /// Load and fully parse one definition by id. The id reaches this from an
     /// admin request body, so it is checked against the cache-file vocabulary
     /// before it is joined onto a path.
+    ///
+    /// A definition the cache has lost is fetched by one sync of the whole set,
+    /// which every caller racing on it shares and which no id retries more than
+    /// once every 15 minutes. Blocking, and for that sync's duration.
     pub fn load(&self, id: &str) -> Result<Definition> {
         let path = self.path_for(id)?;
-        let bytes = std::fs::read(&path)
-            .with_context(|| format!("definition '{id}' not found (run a definitions sync?)"))?;
+        let bytes = match std::fs::read(&path) {
+            Ok(bytes) => bytes,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => self.heal(id, &path)?,
+            Err(e) => return Err(e).with_context(|| format!("read definition '{id}'")),
+        };
         definition::parse(&bytes).with_context(|| format!("parse definition '{id}'"))
     }
 
@@ -149,8 +157,6 @@ mod tests {
             .list()
             .expect("listing a store that never synced")
             .is_empty());
-        // Asking for one by name is still an error: nothing is there to load.
-        assert!(store.load("thepiratebay").is_err());
     }
 
     #[test]
@@ -236,18 +242,6 @@ links:
         // The id comes from the file body, not the file name.
         assert_eq!(def.id, "t");
         assert_eq!(def.name, "My Tracker");
-    }
-
-    #[test]
-    fn load_missing_definition_errors_with_a_hint() {
-        let data = tmpdir("load-miss");
-        let store = DefinitionStore::new(data.path());
-        std::fs::create_dir_all(store.dir()).unwrap();
-        let err = store.load("ghost").unwrap_err();
-        assert!(
-            format!("{err:#}").contains("not found"),
-            "unexpected error: {err:#}"
-        );
     }
 
     #[test]

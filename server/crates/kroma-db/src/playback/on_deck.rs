@@ -6,8 +6,8 @@ use rusqlite::{params, Connection};
 // The episode after the last watched one, for every show the user has watched and
 // left with no episode in progress, newest show first: `(item_id, watched_at)`.
 // A show that is caught up yields no row (the JOIN finds nothing to play).
-fn sql() -> String {
-    let resumable = crate::playback::resumable_sql();
+fn sql(played_percent: i64) -> String {
+    let resumable = crate::playback::resumable_sql(played_percent);
     format!(
         "\
 WITH busy AS ( \
@@ -42,8 +42,9 @@ pub(super) fn on_deck(
     conn: &Connection,
     user_id: &str,
     limit: usize,
+    played_percent: i64,
 ) -> Result<Vec<(String, String)>> {
-    let mut stmt = conn.prepare(&sql())?;
+    let mut stmt = conn.prepare(&sql(played_percent))?;
     let rows = stmt
         .query_map(params![user_id, limit as i64], |r| {
             Ok((r.get(0)?, r.get(1)?))

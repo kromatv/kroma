@@ -81,6 +81,7 @@ const caps = (audio: Partial<AudioCapabilities>): PlaybackCapabilities => ({
   hevc: false,
   hevc10bit: false,
   h264: false,
+  h26410bit: false,
   av1: false,
   vp9: false,
   hdr: NO_HDR,
@@ -126,6 +127,7 @@ describe('detectCapabilities (TV platforms)', () => {
       hevc: true,
       hevc10bit: true,
       h264: true,
+      h26410bit: false,
       av1: false,
       vp9: true,
       hdr: { hdr10: true, hdr10Plus: true, dolbyVision: true, hlg: true },
@@ -239,23 +241,40 @@ describe('decodableVideoCodecs', () => {
     }
   });
 
-  it('never names the flags that are not codecs', () => {
+  it('names the H.264 depth, which is a declaration, and no other flag', () => {
     const all = videoCaps({
       hevc: true,
       hevc10bit: true,
       h264: true,
+      h26410bit: true,
       av1: true,
       vp9: true,
       hdr: { hdr10: true, hdr10Plus: true, dolbyVision: true, hlg: true },
     });
+    expect(decodableVideoCodecs(all)).toEqual(['hevc', 'h264', 'h26410bit', 'av1', 'vp9']);
     expect(decodableVideoCodecs(all)).not.toContain('hevc10bit');
     expect(decodableVideoCodecs(all)).not.toContain('hdr');
   });
 
-  it('still names hevc when only the 10-bit profile is out of reach', () => {
-    expect(decodableVideoCodecs(videoCaps({ hevc: true, hevc10bit: false }))).toEqual(['hevc']);
-    const forTenBit = videoCaps({ hevc: true, hevc10bit: false, h264: true });
-    expect(decodableVideoCodecs({ ...forTenBit, hevc: false })).toEqual(['h264']);
+  it('withholds hevc entirely where its 10-bit profile is out of reach', () => {
+    expect(decodableVideoCodecs(videoCaps({ hevc: true, hevc10bit: false }))).toEqual([]);
+    expect(decodableVideoCodecs(videoCaps({ hevc: true, hevc10bit: false, h264: true }))).toEqual([
+      'h264',
+    ]);
+  });
+
+  it('withholds the H.264 depth from a runtime that draws only one of its profiles', () => {
+    g.MediaSource = { isTypeSupported: (t: string) => t.includes('avc1.6E') };
+
+    expect(detectCapabilities().h26410bit).toBe(false);
+  });
+
+  it('names the H.264 depth for a runtime that draws both of its profiles', () => {
+    g.MediaSource = {
+      isTypeSupported: (t: string) => t.includes('avc1.6E') || t.includes('avc1.F4'),
+    };
+
+    expect(decodableVideoCodecs(detectCapabilities())).toContain('h26410bit');
   });
 
   it('falls back to the cached capabilities of this runtime', () => {

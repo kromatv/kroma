@@ -1,4 +1,5 @@
 import type { AudioTrack } from '@kromatv/client/media';
+import { pictureFormat } from '@kromatv/core';
 import type { Locale, Translate } from '@kromatv/i18n';
 import type { PlayerMeter, PlayerStats } from '@kromatv/ui';
 import { formatTimecode as clock, decimal, formatBytes } from '@kromatv/ui/intl';
@@ -85,10 +86,7 @@ function computeMetrics(s: WebStatsInput): StatsMetrics {
 }
 
 function videoCodecLabel(item: MovieView): string {
-  const vcodec = item.video?.codec?.toUpperCase() ?? '-';
-  const depth = item.video?.bitDepth ? ` ${item.video.bitDepth}-bit` : '';
-  const hdr = item.video?.hdr ? ' HDR' : '';
-  return `${vcodec}${depth}${hdr}`;
+  return item.video ? pictureFormat(item.video) : '-';
 }
 
 function audioFormatLabel(selAudio: AudioTrack | undefined, item: MovieView): string {

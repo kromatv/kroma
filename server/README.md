@@ -15,9 +15,9 @@ It does four things:
    [`modules/README.md`](../modules/README.md).
 
 `server/` is a cargo workspace, and the layers are its crates: `kroma-domain`
-holds the entities below, `kroma-db` all the SQL, `kroma-engine` the business
-logic, and `src/api/` only translates HTTP. [`ARCHITECTURE.md`](../ARCHITECTURE.md)
-draws the whole shape.
+holds the entities below, `kroma-db` all the SQL, `kroma-media` reading and
+re-encoding one input, `kroma-engine` the business logic, and `src/api/` only
+translates HTTP. [`ARCHITECTURE.md`](../ARCHITECTURE.md) draws the whole shape.
 
 **Direct play is the default**: the client (web / TV) decodes HEVC/H.265, AV1,
 H.264, etc. itself and the server ships the original bytes. What a client cannot
@@ -25,7 +25,9 @@ decode goes through an on-demand HLS session instead (MKV→fMP4 repackaging,
 AC3/EAC3/DTS→AAC, HEVC→H.264, language switching), the only path that re-encodes.
 See [Hardware transcoding](#hardware-transcoding). `ffprobe` reads metadata and
 nothing else, and without it the server still runs and infers the codec from the
-file extension.
+file extension. None of that machinery is the core's alone: it is `kroma-media`,
+which links no database, so a module holding a media file describes and
+re-encodes it with the same engine (`kroma-module-sdk/transcode`).
 
 SQLite holds the library (`<data>/kroma.db`, WAL mode). A scan computes the full
 set of libraries/shows/items and swaps it in atomically, and reads run on a small

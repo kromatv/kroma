@@ -48,12 +48,22 @@ pub struct DiscoverSeason {
     pub name: Option<String>,
     pub episode_count: u32,
     pub air_date: Option<String>,
-    // Every episode of this season is already in the library.
     pub available: bool,
-    // How many of the season's episodes are on disk (for "4/6" partial state).
     pub episodes_available: u32,
-    // Covered by an open request.
     pub requested: bool,
+}
+
+/// One episode of `GET /api/discover/tv/:tmdbId/season/:season`. `name` and
+/// `overview` are null when TMDB has none in the asked language.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiscoverEpisode {
+    pub episode: u32,
+    pub name: Option<String>,
+    pub overview: Option<String>,
+    pub still_url: Option<String>,
+    pub air_date: Option<String>,
+    pub runtime_min: Option<u32>,
 }
 
 /// `GET /api/discover/{movie,tv}/:tmdbId`: the request-flow detail page.

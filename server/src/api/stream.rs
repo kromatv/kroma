@@ -13,7 +13,6 @@ use crate::api::error::json_error;
 use crate::api::media_ticket::MediaViewer;
 use crate::api::util::client_ip;
 use crate::api::visibility;
-use crate::infra::stream::stream_or_demo_error;
 use crate::infra::subtitles;
 use crate::model::{MediaItem, User};
 use crate::services::playback;
@@ -21,12 +20,15 @@ use crate::services::settings;
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
+use kroma_media::stream::stream_file;
 
 mod download;
+mod external_subtitles;
 mod hls;
-mod hls_playlist;
+mod hls_query;
 
 use download::download_item;
+use external_subtitles::nth_beside;
 use hls::{hls_file, hls_master};
 
 fn byte_sink(
@@ -84,9 +86,11 @@ pub async fn stream_item(
     let item = load_item(&state, &viewer, id)
         .await
         .ok_or_else(visibility::out_of_scope)?;
-    let abs_path = pick_file_path(&item, q.file.as_deref());
     let sink = byte_sink(&state, &headers, &addr);
-    Ok(stream_or_demo_error(abs_path.as_deref(), &headers, sink).await)
+    Ok(match pick_file_path(&item, q.file.as_deref()) {
+        Some(path) => stream_file(std::path::Path::new(&path), &headers, sink).await,
+        None => json_error(StatusCode::NOT_FOUND, "demo item has no media"),
+    })
 }
 
 fn pick_file_path(item: &MediaItem, file_id: Option<&str>) -> Option<String> {
@@ -151,9 +155,10 @@ fn json_no_store(status: StatusCode, body: Vec<u8>) -> Response {
         .unwrap()
 }
 
-/// `GET /api/items/:id/subtitles/:track` → an embedded text subtitle stream as
-/// WebVTT. `track` is the 0-based subtitle index (a trailing `.vtt` is allowed);
-/// image subtitles (PGS/VobSub) can't convert and return 404.
+/// `GET /api/items/:id/subtitles/:track` → one text subtitle track as WebVTT.
+/// `track` is the 0-based subtitle index (a trailing `.vtt` is allowed): the
+/// file's own tracks first, then the subtitle files beside it. Image subtitles
+/// (PGS/VobSub) can't convert and return 404.
 pub async fn subtitles(
     State(state): State<SharedState>,
     MediaViewer(viewer): MediaViewer,
@@ -170,6 +175,12 @@ pub async fn subtitles(
     let Some(abs) = item.abs_path.clone() else {
         return json_error(StatusCode::NOT_FOUND, "no media file for item");
     };
+
+    if let Some(nth) = index.checked_sub(item.subtitles.len()) {
+        if let Some(bytes) = nth_beside(&state, &abs, nth).await {
+            return vtt_response(bytes);
+        }
+    }
 
     // Extracting a text subtitle reads the whole file (cues are interleaved), so
     // cache per (file, mtime, track). Computing the key stats the file, which on a
@@ -237,7 +248,8 @@ pub(crate) async fn extract_webvtt(path: &str, index: usize) -> Option<Vec<u8>> 
         .ok()?;
 
     // On timeout the future is dropped, which via kill_on_drop kills ffmpeg.
-    let out = tokio::time::timeout(subtitles::timeout_for(path), child.wait_with_output())
+    let budget = kroma_media::subtitles::timeout_for(path);
+    let out = tokio::time::timeout(budget, child.wait_with_output())
         .await
         .ok()?
         .ok()?;

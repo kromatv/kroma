@@ -108,6 +108,7 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
           index: s.index,
           language: s.language,
           label: s.label,
+          title: s.title,
           codec: s.codec,
           url: s.url,
           ai: Boolean(s.downloaded),

@@ -22,6 +22,7 @@ use crate::model::Section;
 use crate::state::SharedState;
 
 use crate::services::embeddings;
+use crate::services::settings;
 use context::Context;
 
 const SECTION_CAP: usize = 20;
@@ -39,7 +40,7 @@ const NO_FLOOR: f32 = f32::NEG_INFINITY;
 /// fails (or comes up thin) simply contributes no section.
 pub fn build_home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Vec<Section> {
     let _ = state.vectors.refresh_if_stale(pool);
-    let ctx = Context::build(pool, user_id);
+    let ctx = Context::build(pool, user_id, settings::played_percent(&state.settings));
     // Themed rows must clear this cosine floor or they're noise (the lexical
     // backend's "christmas" → random-classics row is what this kills).
     let floor = embeddings::relevance_floor(&state.embedder);
@@ -531,7 +532,7 @@ mod tests {
             crate::db::set_item_vector(&state.db, id, &vector).unwrap();
         }
         let _ = state.vectors.refresh_if_stale(&state.db);
-        let ctx = Context::build(&state.db, "u1");
+        let ctx = Context::build(&state.db, "u1", 90);
         let mut out = Builder {
             pool: &state.db,
             sections: Vec::new(),

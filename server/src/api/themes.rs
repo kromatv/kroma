@@ -7,11 +7,11 @@ use axum::response::Response;
 
 use crate::api::error::json_error;
 use crate::infra::metrics::ByteSink;
-use crate::infra::stream::stream_file;
 use crate::infra::theme::themes_dir;
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
+use kroma_media::stream::stream_file;
 
 pub fn routes() -> Router<SharedState> {
     Router::new().route("/themes/{name}", get(theme))

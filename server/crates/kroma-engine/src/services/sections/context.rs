@@ -25,7 +25,7 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn build(pool: &Pool, user_id: &str) -> Self {
+    pub fn build(pool: &Pool, user_id: &str, played_percent: i64) -> Self {
         let now = OffsetDateTime::now_utc();
         let part_of_day = match now.hour() {
             5..=11 => PartOfDay::Morning,
@@ -37,9 +37,12 @@ impl Context {
             month: u8::from(now.month()),
             weekday: now.weekday(),
             part_of_day,
-            last_finished: db::last_finished(pool, user_id).ok().flatten(),
+            last_finished: db::last_finished(pool, user_id, played_percent)
+                .ok()
+                .flatten(),
             watched: db::recent_watched_ids(pool, user_id).unwrap_or_default(),
-            in_progress: db::continue_watching_ids(pool, user_id).unwrap_or_default(),
+            in_progress: db::continue_watching_ids(pool, user_id, played_percent)
+                .unwrap_or_default(),
         }
     }
 

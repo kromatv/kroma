@@ -64,6 +64,7 @@
   "pipeline.subject.item": "items",
   "pipeline.subject.season": "seasons",
   "pipeline.subject.show": "shows",
+  "pipeline.t.credits": "Credits",
   "pipeline.t.embed": "Embedding",
   "pipeline.t.markers": "Markers",
   "pipeline.t.metadata": "TMDB",

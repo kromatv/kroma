@@ -1,6 +1,3 @@
-//! Integration tests for the read-only content endpoints: browse, search,
-//! people, home, recommendations, per-user playback, metadata and discover.
-
 use axum::http::StatusCode;
 use serde_json::json;
 
@@ -198,7 +195,7 @@ async fn progress_round_trips_per_user() {
         Some(json!({ "positionMs": 60_000, "durationMs": 9_960_000 })),
     )
     .await;
-    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(status, StatusCode::OK);
 
     let (status, entry) = get(&t.app, &format!("/api/progress/{id}"), Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);

@@ -1,0 +1,77 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
+import { ResumePrompt } from './resume-prompt';
+
+export const story = defineStory({
+  group: 'Player',
+  width: { min: 480, max: 1000 },
+  viewport: 'tv',
+  args: { at: 280, shown: true, secondsLeft: 6, total: 6, focused: false, scale: 1, lift: 214 },
+  controls: {
+    at: { min: 0, max: 7200, step: 10 },
+    secondsLeft: { min: 0, max: 6, step: 1 },
+    scale: { min: 0.5, max: 1, step: 0.05 },
+    lift: { min: 40, max: 400, step: 2 },
+  },
+  render: ({ at, shown, secondsLeft, total, focused, scale, lift }) => (
+    // It positions itself absolutely against the player surface, so the story
+    // provides a 16:9 one to sit in; `lift` is measured from the bottom of it.
+    <Ground tone="dark">
+      <Box aspect={16 / 9} minH={280} bg="surface2" radius="lg" overflow="hidden">
+        <ResumePrompt
+          at={at}
+          shown={shown}
+          secondsLeft={secondsLeft}
+          total={total}
+          focused={focused}
+          scale={scale}
+          lift={lift}
+          onStartOver={() => {}}
+        />
+      </Box>
+    </Ground>
+  ),
+});
+
+What a film says when it opens where it was left. It states the time as a fact, because by the time anyone reads it the picture has already resumed, and it offers the one thing that fact makes anyone want: the beginning. The rule along its foot drains while the window runs, so the prompt going away is never a surprise.
+
+It shares the skip pill's corner and takes the same `lift`, and the player draws only one of the two at a time. `focused` comes from the nav machine rather than from the DOM, so on a television the remote reaches it without the picture ever losing the real focus.
+
+```tsx
+<ResumePrompt
+  at={resumedAt}
+  shown={notice.shown}
+  secondsLeft={notice.secondsLeft}
+  lift={transportHeight + gap}
+  onStartOver={() => controller.seekTo(0)}
+/>
+```
+
+Inside `<Player.Root>` none of that is a caller's business: write `<Player.Resume at={resumedAt} />` and the chrome owns the clock, the corner and the D-pad stop.
+
+<Scene name="Focused" args={{ focused: true }}>
+  What the remote resting on it looks like.
+</Scene>
+
+<Scene name="Last second" args={{ secondsLeft: 1 }}>
+  The window nearly spent.
+</Scene>
+
+<Scene name="Held" args={{ secondsLeft: null }}>
+  Aimed at, so it stopped counting and the rule is gone with the countdown.
+</Scene>
+
+<Scene name="Gone" args={{ shown: false }}>
+  Not styled away: after the fade it renders nothing.
+</Scene>
+
+<Do>
+- Pass the second the stream opened on, and only where it really resumed.
+- Give it the lift the skip-intro pill takes, so it clears the transport while the chrome is up.
+</Do>
+
+<Dont>
+- Let it answer OK. A film that opened where it was left must not restart because someone pressed play.
+- Word it as an offer. "Resume at 4:40" reads as a question about something that already happened.
+</Dont>

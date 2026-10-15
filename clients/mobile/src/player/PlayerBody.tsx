@@ -1,5 +1,6 @@
 import type { MediaItem } from '@kromatv/client/media';
 import { audioTracksOf, langCode, preferredAudioIndex } from '@kromatv/core';
+import { useHeldSeek } from '@kromatv/core/react';
 import { useCast } from '@kromatv/ui';
 import { Box, styles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
@@ -42,7 +43,7 @@ export function PlayerBody({
   // it (same as TV). Offline keeps the file's default: local ordinals are the
   // native player's business.
   const startAudio = localUri ? 0 : (preferredAudioIndex(audioTracksOf(item), prefs.audio) ?? 0);
-  const engine = useKromaEngine(client, item, startSec, localUri, startAudio);
+  const engine = useHeldSeek(useKromaEngine(client, item, startSec, localUri, startAudio));
   const navigation = useNavigation();
   const subs = useSubtitles(client, item, offline, prefs.subtitle);
   const tileFor = useStoryboard(client, item, !localUri, offline);
@@ -170,6 +171,7 @@ export function PlayerBody({
         fill={fill}
         onZoom={setFill}
         notice={subNotice}
+        resumedAt={startSec}
         onBack={() => {
           engine.shutdown();
           goBack(router);

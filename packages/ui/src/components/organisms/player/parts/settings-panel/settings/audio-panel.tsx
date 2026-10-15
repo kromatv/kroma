@@ -1,5 +1,5 @@
 import { channelLabel, langName } from '@kromatv/core';
-import { forwardRef, useImperativeHandle } from 'react';
+import { type Ref, useImperativeHandle } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
@@ -14,13 +14,11 @@ interface AudioPanelProps {
   current: number;
   onSelect: (index: number) => void;
   onBack: () => void;
+  ref?: Ref<PanelHandle>;
 }
 
 /** Audio-track picker (§5). */
-export const AudioPanel = forwardRef<PanelHandle, AudioPanelProps>(function AudioPanel(
-  { tracks, current, onSelect, onBack },
-  ref,
-) {
+export function AudioPanel({ tracks, current, onSelect, onBack, ref }: Readonly<AudioPanelProps>) {
   const t = useT();
   const pick = (i: number) => {
     const track = tracks[i];
@@ -56,4 +54,4 @@ export const AudioPanel = forwardRef<PanelHandle, AudioPanelProps>(function Audi
       })}
     </Box>
   );
-});
+}

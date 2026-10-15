@@ -123,7 +123,7 @@ export function NowPlayingCard({
               </Row>
             </Row>
             <Text variant="meta" color="textDim" mt={4}>
-              {[sub, s.videoLabel].filter(Boolean).join(' · ')}
+              {[sub, s.videoLabel].filter((part) => part && part !== '-').join(' · ')}
             </Text>
           </Box>
           <Row shrink={0} gap={11}>
@@ -188,7 +188,7 @@ export function NowPlayingCard({
           <DataField.Root size="sm">
             <DataField.Label>{t('admin.statBitrate')}</DataField.Label>
             <Text variant="meta" color="textMuted" style={TABULAR}>
-              {fmt.mbps(s.bitrate)} Mb/s
+              {s.bitrate > 0 ? `${fmt.mbps(s.bitrate)} Mb/s` : '-'}
             </Text>
           </DataField.Root>
           <DataField.Root size="sm">

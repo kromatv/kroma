@@ -83,6 +83,7 @@ describe('<Player> as a compound', () => {
       'Panel',
       'PostPlay',
       'Report',
+      'Resume',
       'Root',
       'SkipIntro',
       'Subtitle',

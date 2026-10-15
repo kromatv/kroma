@@ -27,7 +27,7 @@ the in-app Downloads screen is already the parity story there.
 Mobile downloads are progressive files: the raw original when the device
 direct-plays it, else the server's `/download` endpoint remuxing to one fMP4
 over a chunked response. The server's HLS infra
-(`server/crates/kroma-engine/src/infra/hls/`) is the opposite of downloadable:
+(`server/crates/kroma-media/src/hls/`) is the opposite of downloadable:
 per-(item, mode, anchor) **live transcode sessions**, LRU-reaped, whose
 playlists grow as ffmpeg produces segments. `AVAssetDownloadTask` needs a
 stable, finite, complete **VOD playlist** whose every URL stays valid for the

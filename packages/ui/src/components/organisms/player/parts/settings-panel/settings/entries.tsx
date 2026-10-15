@@ -12,6 +12,7 @@ import type { MessageKey } from '@kromatv/i18n';
 import type { ReactNode } from 'react';
 import { audioFilterLabels } from '#ui/components/organisms/player/lib/audio-filter';
 import type { ControlId } from '#ui/components/organisms/player/lib/nav';
+import { subtitleName } from '#ui/components/organisms/player/lib/subtitle-name';
 import {
   IconAppearance,
   IconAudioFilter,
@@ -29,7 +30,7 @@ import {
   IconStats,
   IconSubtitles,
 } from '#ui/components/organisms/player/parts/icons';
-import type { PlayerController, PlayerSub } from '#ui/components/organisms/player/types';
+import type { PlayerController } from '#ui/components/organisms/player/types';
 import type { useT } from '#ui/services/i18n';
 
 type T = ReturnType<typeof useT>;
@@ -96,12 +97,6 @@ export function movedEntries(
   });
 }
 
-function subtitleLabel(t: T, sub: PlayerSub | null | undefined): string {
-  if (!sub) return t('player.subtitlesOff');
-  if (sub.ai && sub.label) return sub.label;
-  return langName(t, sub.language) || t('player.langUnknown');
-}
-
 /** Every setting the panel offers, in the order it is read. */
 export function menuEntries(
   t: T,
@@ -150,7 +145,7 @@ export function menuEntries(
       id: 'subtitles',
       icon: <IconSubtitles />,
       label: t('player.subtitles'),
-      value: subtitleLabel(t, sub),
+      value: subtitleName(t, sub),
       activate: () => at.go('subtitles'),
     },
     {

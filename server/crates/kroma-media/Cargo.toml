@@ -1,0 +1,31 @@
+[package]
+name = "kroma-media"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Reading and re-encoding media: the ffprobe reader, the ffmpeg budget, the HLS engine and the per-request program over it. No database, no catalog."
+license.workspace = true
+
+[dependencies]
+# The track descriptions ffprobe fills in, which a module answers with too.
+kroma-module-wire = { workspace = true }
+# `short_hash` names a session's directory, `random_token` the doomed one a
+# reclaim sweep renames before deleting.
+kroma-primitives = { workspace = true }
+
+axum = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+# The scratch dir the one-time hardware-decode head-to-head writes its frame in.
+tempfile = { workspace = true }
+# The unix second a live session started, which the admin screen sorts on.
+time = { workspace = true }
+# Walking a session directory to weigh it against the cache budget.
+walkdir = { workspace = true }
+
+[dev-dependencies]
+# The self-deleting scratch dir the session and probe tests write in.
+kroma-testing = { workspace = true }

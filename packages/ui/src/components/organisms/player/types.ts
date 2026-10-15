@@ -60,6 +60,9 @@ export interface PlayerSub {
   language: string | null;
   /** Human label (AI tracks carry their own; else derived from the language). */
   label?: string | null;
+  /** The track's own name as the file spells it (`SDH`, `Forced`, `Commentary`),
+   *  drawn after the language so two tracks of one language are told apart. */
+  title?: string | null;
   codec: string;
   /** Resolved WebVTT url the renderer fetches (absent for picture subs). */
   url?: string | null;
@@ -186,6 +189,8 @@ export interface PlayerController {
   bufEnd: number | null;
   /** Pending scrub target while dragging / D-pad seeking; null when settled. */
   seekPreview: number | null;
+  /** Any value that CHANGES when a re-anchored stream opens. */
+  anchor?: unknown;
 
   playing: boolean;
   waiting: boolean;

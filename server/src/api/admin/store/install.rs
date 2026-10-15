@@ -43,9 +43,6 @@ pub async fn install_with_deps(
     }
 }
 
-/// Download + verify + install every planned module in dependency order,
-/// streaming progress on `op`. Blocking work (unpack + spawn) runs off the
-/// async runtime.
 async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Result<Vec<Value>> {
     let mut installed = Vec::new();
     for p in plan {
@@ -163,7 +160,6 @@ pub async fn reinstall(state: &SharedState, sup: &Arc<Supervisor>, id: &str) -> 
     Ok(installed_row(&manifest))
 }
 
-/// What the Store shows for a module that just landed.
 pub(super) fn installed_row(m: &kroma_module_manifest::ModuleManifest) -> Value {
     json!({ "id": m.id, "name": m.name, "version": m.version })
 }
@@ -181,7 +177,7 @@ pub struct FailedUpdate {
     pub error: String,
 }
 
-/// `POST /store/update`'s wire shape, straight off the type.
+/// `POST /store/update`'s wire shape.
 #[derive(Serialize)]
 pub struct UpdateOutcome {
     pub updated: Vec<UpdatedModule>,
@@ -190,11 +186,6 @@ pub struct UpdateOutcome {
 
 /// The enabled modules a candidate version would strand: they hard-depend on
 /// `id` and declare a range the candidate does not satisfy.
-///
-/// Installing a dependent enforces its range against the registry, and
-/// uninstalling a dependency asks who needs it, but updating a dependency
-/// checked neither, so a peer could move out from under its dependents and
-/// leave them unable to update in turn.
 fn stranded_dependents(
     installed: &[kroma_module_manifest::ModuleManifest],
     enabled: &dyn Fn(&str) -> bool,
@@ -207,9 +198,9 @@ fn stranded_dependents(
         .filter(|m| {
             m.dependencies.iter().any(|d| {
                 d.id == id
-                    && d.version
-                        .as_deref()
-                        .is_some_and(|range| !kroma_module_manifest::range_matches(range, candidate))
+                    && d.version.as_deref().is_some_and(|range| {
+                        !kroma_module_manifest::range_matches(range, candidate)
+                    })
             })
         })
         .map(|m| m.id.clone())

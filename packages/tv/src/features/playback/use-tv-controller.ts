@@ -1,6 +1,6 @@
 import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
-import { qualityBadgeForVideo, refineTrackLang } from '@kromatv/core';
+import { pictureBadge, refineTrackLang } from '@kromatv/core';
 import { buildLeanStats, type PlayerController, useAudioFilter, useT } from '@kromatv/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -56,7 +56,7 @@ export function useTvController(client: KromaClient, item: MediaItem): TvControl
   );
 
   const qualities = useMemo(() => {
-    const badge = qualityBadgeForVideo(item.video);
+    const badge = pictureBadge(item.video);
     const badgeSuffix = badge ? ` · ${badge}` : '';
     return [{ id: 'auto', label: `${t('player.qualityAuto')}${badgeSuffix}` }];
   }, [item.video, t]);

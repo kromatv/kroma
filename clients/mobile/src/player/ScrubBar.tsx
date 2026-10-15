@@ -22,6 +22,8 @@ export function ScrubBar({
   dur,
   buffered,
   onSeek,
+  onScrubStart,
+  onScrubEnd,
   tileFor,
   markers,
 }: Readonly<{
@@ -29,6 +31,8 @@ export function ScrubBar({
   dur: number;
   buffered: number;
   onSeek(abs: number): void;
+  onScrubStart?(): void;
+  onScrubEnd?(): void;
   tileFor?: (abs: number) => StoryboardTile | null;
   markers?: number[];
 }>) {
@@ -44,13 +48,19 @@ export function ScrubBar({
   const pan = Gesture.Pan()
     .runOnJS(true)
     .activeOffsetX([-5, 5])
-    .onBegin((e) => setPreview(toTime(e.x)))
+    .onBegin((e) => {
+      onScrubStart?.();
+      setPreview(toTime(e.x));
+    })
     .onUpdate((e) => setPreview(toTime(e.x)))
     .onEnd((e) => {
       onSeek(toTime(e.x));
       setPreview(null);
     })
-    .onFinalize(() => setPreview(null));
+    .onFinalize(() => {
+      setPreview(null);
+      onScrubEnd?.();
+    });
   const tap = Gesture.Tap()
     .runOnJS(true)
     .onEnd((e, ok) => {

@@ -33,7 +33,7 @@ pub(crate) const MIGRATIONS: &[&str] = &[
     // keyword that breaks unquoted SELECT/INSERT. Rename to `casts`. Errors
     // ("no such column") once renamed / on fresh DBs, which we ignore.
     "ALTER TABLE season_meta RENAME COLUMN \"cast\" TO casts",
-    // Keyframe-derived HLS segment tables (infra::hls). `CREATE TABLE IF NOT
+    // Keyframe-derived HLS segment tables (kroma_media::hls). `CREATE TABLE IF NOT
     // EXISTS` is idempotent for DBs created before the table existed.
     "CREATE TABLE IF NOT EXISTS file_segments (\
         file_id TEXT PRIMARY KEY REFERENCES files(id) ON DELETE CASCADE,\

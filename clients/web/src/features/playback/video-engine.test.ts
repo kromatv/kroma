@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { EngineDecision } from '@kromatv/core';
+import { decodableVideoCodecs, type EngineDecision } from '@kromatv/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeVideo } from '#web/features/playback/fake-video.fixture';
 import type { MovieView } from '#web/shared/lib/api';
@@ -158,7 +158,9 @@ describe('attachMediaSource HLS master', () => {
     const opts = hlsOpts({ v: fv.el, useNativeHls: true });
     attachMediaSource(opts);
     expect(opts.setUseHls).toHaveBeenCalledWith(true);
-    expect(H.hlsMasterUrl).toHaveBeenCalledWith('w1', true, 600, 2);
+    expect(H.hlsMasterUrl).toHaveBeenCalledWith('w1', true, 600, 2, {
+      videoCodecs: decodableVideoCodecs(),
+    });
     expect(fv.get('src')).toBe('hls:w1:true:600:2');
   });
 

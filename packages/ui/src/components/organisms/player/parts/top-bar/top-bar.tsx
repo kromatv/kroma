@@ -5,6 +5,7 @@ import { BackButton } from '#ui/components/molecules/back-button';
 import { GUTTER, scaler } from '#ui/components/organisms/player/lib/metrics';
 import { sharedStyle, styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
+import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { useT } from '#ui/services/i18n';
 
 const sizeOf = (fontSize: number) => sharedStyle(`top-bar:size:${fontSize}`, { fontSize });
@@ -64,6 +65,7 @@ export const TopBar = memo(function TopBar({
       <BackButton
         variant="glass"
         diameter={px(42)}
+        style={NO_OUTLINE}
         focused={backFocused ?? false}
         onPress={onBack}
         label={t('player.back')}

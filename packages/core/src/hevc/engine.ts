@@ -1,7 +1,8 @@
 import type { MediaItem } from '@kromatv/client/media';
 import { audioTracksOf, canDecodeAudioCodec, masterNeedsAac } from './audio-support';
 import type { PlaybackCapabilities } from './capabilities';
-import { canDirectPlay, MSE_CAPS, NATIVE_TV_CAPS, SAFARI_CAPS } from './directplay';
+import { canDirectPlay } from './directplay';
+import { MSE_CAPS, NATIVE_TV_CAPS, SAFARI_CAPS } from './runtime-caps';
 
 export type PlayerEngineKind = 'direct' | 'web-mse' | 'tizen-avplay' | 'webos' | 'desktop-mpv';
 

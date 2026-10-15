@@ -2,7 +2,7 @@ import type { MediaItem } from '@kromatv/client/media';
 import { audioTrackLabel, audioTracksOf, langName, refineTrackLang } from '@kromatv/core';
 import type { useT } from '#mobile/lib/i18n';
 import type { Engine } from './engine';
-import type { Subtitles } from './useSubtitles';
+import type { Subtitles, SubView } from './useSubtitles';
 
 export interface AudioOption {
   index: number;
@@ -36,10 +36,15 @@ export function audioOptions(
   }));
 }
 
+export function subtitleRowLabel(t: ReturnType<typeof useT>, track: SubView): string {
+  const name = track.label?.trim() || langName(t, track.language) || `#${track.index + 1}`;
+  return [name, track.title?.trim(), track.ai ? 'IA' : undefined].filter(Boolean).join(' · ');
+}
+
 export function subtitleLabel(subs: Subtitles, t: ReturnType<typeof useT>): string {
   if (subs.active === null) return t('player.subtitlesOff');
   const track = subs.tracks.find((s) => s.index === subs.active);
-  return track?.label?.trim() ?? langName(t, track?.language) ?? `#${(subs.active ?? 0) + 1}`;
+  return track ? subtitleRowLabel(t, track) : `#${(subs.active ?? 0) + 1}`;
 }
 
 export function subNote(

@@ -1,5 +1,5 @@
 import { GEN_LANGS, GEN_QUALITIES, type GenQuality } from '@kromatv/client/subtitles';
-import { forwardRef, useImperativeHandle, useState } from 'react';
+import { type Ref, useImperativeHandle, useState } from 'react';
 import { Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
@@ -25,6 +25,7 @@ interface GenerateWizardProps {
   sources: PlayerSub[];
   onStart: (req: SubtitleGenRequest) => void;
   onClose: () => void;
+  ref?: Ref<PanelHandle>;
 }
 
 /** One focusable wizard field, in display order for the current mode. */
@@ -42,10 +43,13 @@ const mod = (n: number, m: number) => ((n % m) + m) % m;
  * between cycle fields, ◀▶ change the focused field, OK on the last row emits a
  * {@link SubtitleGenRequest} and closes. Modes are gated by `caps`.
  */
-export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(function GenerateWizard(
-  { caps, sources, onStart, onClose },
+export function GenerateWizard({
+  caps,
+  sources,
+  onStart,
+  onClose,
   ref,
-) {
+}: Readonly<GenerateWizardProps>) {
   const t = useT();
   const [mode, setMode] = useState<Mode>(caps?.transcribe ? 'transcribe' : 'translate');
   const [langIndex, setLangIndex] = useState(0);
@@ -219,7 +223,7 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
       />
     </Box>
   );
-});
+}
 
 const s = styles({
   startButton: { mt: 4 },

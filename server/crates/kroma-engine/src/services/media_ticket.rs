@@ -33,7 +33,12 @@ pub fn signing_key(settings: &Settings, pool: &Pool) -> String {
         return existing;
     }
     let key = super::auth::random_token();
-    settings.set_internal(pool, SIGNING_KEY_SETTING, json!(key.clone()));
+    if let Err(error) = settings.set_internal(pool, SIGNING_KEY_SETTING, json!(key.clone())) {
+        tracing::warn!(
+            %error,
+            "could not store the media-ticket key; the tickets minted now stop validating at the next start"
+        );
+    }
     key
 }
 

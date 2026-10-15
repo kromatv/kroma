@@ -13,7 +13,6 @@ fn reject(rule: &str, note: impl Into<String>) -> Reject {
     }
 }
 
-// Case-insensitive token match of `needle` against the release title.
 fn has_token(title: &str, needle: &str) -> bool {
     let needle = needle.trim().to_ascii_lowercase();
     !needle.is_empty()
@@ -47,7 +46,6 @@ pub fn score(
         return Err(reject("resolution", "no recognizable resolution"));
     };
 
-    // Target shape checks + the size budget for this kind of grab.
     let max_size = target_budget(parsed, target, profile)?;
     if max_size > 0 {
         if let Some(size) = candidate.size_bytes {
@@ -248,7 +246,6 @@ fn resolution_delta(got: Res, want: Res) -> i32 {
         (Res::R2160, Res::R1080) => 100,
         (Res::R1080, Res::R2160) | (Res::R720, Res::R1080) => 400,
         (Res::R720, Res::R2160) => 50,
-        // Above-preference beyond the handled pairs (1080 over 720 pref...).
         _ => 100,
     }
 }

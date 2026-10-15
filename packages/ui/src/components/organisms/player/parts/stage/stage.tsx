@@ -3,6 +3,7 @@ import { Animated, Platform, Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { sharedStyle, style, styles } from '#ui/core';
 import { ease } from '#ui/lib/ease';
+import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { WEB } from '#ui/lib/platform';
 import { useT } from '#ui/services/i18n';
 import { CARD_MS } from '../../lib/panel-slide';
@@ -259,6 +260,7 @@ function Stage({
         nativeID={STAGE_ID}
         style={[
           s.stage,
+          NO_OUTLINE,
           shrink === 'transform' ? zoomStyle(zoom, card, stageWidth, settingsShrink) : null,
         ]}
       >

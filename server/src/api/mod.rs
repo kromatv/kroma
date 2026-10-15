@@ -28,7 +28,6 @@ pub mod media_ticket;
 mod metadata;
 mod modules;
 mod notifications;
-mod releases;
 pub mod online_subs;
 mod origin;
 mod passkeys;
@@ -37,6 +36,7 @@ mod pin;
 mod plugin;
 mod point;
 mod recommend;
+mod releases;
 mod rematch;
 mod reports;
 mod requests;
@@ -47,9 +47,6 @@ mod themes;
 mod util;
 mod visibility;
 
-// Integration-test harness + suites for the HTTP handler layer. `test_support`
-// builds a fully wired router over a temp DB (see its docs); the `it_*` modules
-// drive real endpoints through it. All `#[cfg(test)]`, so nothing ships.
 #[cfg(test)]
 mod it_accounts;
 #[cfg(test)]
@@ -73,6 +70,8 @@ mod it_content;
 #[cfg(test)]
 mod it_diagnostics;
 #[cfg(test)]
+mod it_external_subtitles;
+#[cfg(test)]
 mod it_first_run;
 #[cfg(test)]
 mod it_handoff;
@@ -89,13 +88,13 @@ mod it_mail_relay;
 #[cfg(test)]
 mod it_media;
 #[cfg(test)]
+mod it_media_bearer;
+#[cfg(test)]
 mod it_media_ticket;
 #[cfg(test)]
 mod it_notification_images;
 #[cfg(test)]
 mod it_notifications;
-#[cfg(test)]
-mod it_releases;
 #[cfg(test)]
 mod it_pin;
 #[cfg(test)]
@@ -104,6 +103,8 @@ mod it_pin_lockout;
 mod it_playback;
 #[cfg(test)]
 mod it_playback_faults;
+#[cfg(test)]
+mod it_releases;
 #[cfg(test)]
 mod it_rematch;
 #[cfg(test)]
@@ -232,23 +233,15 @@ pub fn router(
         .merge(modules::routes())
         .route_layer(from_fn_with_state(state.clone(), require_session));
 
-    // Each feature module owns its routes via a `routes()` function. The admin
-    // subtree gets its own `/admin` prefix and self-gates per-handler (permission
-    // checks), so it lives outside the blanket content layer.
-    // Out-of-process (.kmod) modules: the /api/_host/* callback API they call back
-    // into (token-authed, resolved against the core's HostCtx), and a reverse
-    // proxy `/api/module/<id>/*` forwarding to the installed module's process.
+    // The admin subtree self-gates per-handler (permission checks), so it lives
+    // outside the blanket content layer.
     let api = public
         .merge(content)
         .merge(kroma_module_supervisor::host_router::<SharedState>(
             supervisor.clone(),
             kroma_module_host::SettingReachOf(crate::services::settings::reach_of_setting),
         ))
-        // A sidecar registers its scheduled jobs with the core JobManager here, so
-        // they appear in admin Tâches like in-core jobs (same host-token guard).
         .merge(host_jobs::routes(supervisor.host_token().to_string()))
-        // And the topics it wants delivered, so it can react to what other
-        // modules and the core publish rather than only being called.
         .merge(host_events::routes(
             supervisor.host_token().to_string(),
             subscriptions.clone(),

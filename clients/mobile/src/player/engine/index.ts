@@ -10,17 +10,12 @@
 
 import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
+import { resolveMasterStart } from '@kromatv/core';
 import { type AudioTrack, useVideoPlayer, type VideoPlayer } from 'expo-video';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { decideSource } from '#mobile/player/caps';
+import { decideSource, mobileVideoCodecs } from '#mobile/player/caps';
 import { useEngineControls } from './controls';
-import {
-  type AudioFilterMode,
-  type Engine,
-  type EngineCore,
-  nativeTrackKey,
-  resolveMasterStart,
-} from './types';
+import { type AudioFilterMode, type Engine, type EngineCore, nativeTrackKey } from './types';
 
 export type { AudioFilterMode, Engine, EngineState } from './types';
 
@@ -83,6 +78,7 @@ export function useKromaEngine(
     const f = core.filter === 'off' ? undefined : core.filter;
     return client.media.hlsMasterUrl(item.id, core.forceAac, core.baseSec, core.audioIndex, {
       filter: f,
+      videoCodecs: mobileVideoCodecs(),
     });
   }, [client, item.id, core, localUri]);
 

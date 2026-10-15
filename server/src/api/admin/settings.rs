@@ -72,7 +72,7 @@ pub async fn put_settings(
     // The ffmpeg concurrency gate caches its budget; refresh it so a new
     // `mediaConcurrency` throttles (or opens up) background media work live.
     if written.iter().any(|k| k == "mediaConcurrency") {
-        crate::infra::ffmpeg_gate::set_capacity(settings::media_workers(&state.settings));
+        kroma_media::ffmpeg_gate::set_capacity(settings::media_workers(&state.settings));
     }
     // A server that booted with the switch off has no identifier, and the moment
     // it is switched on the settings page has to name one: it is what an operator
@@ -80,9 +80,6 @@ pub async fn put_settings(
     if written.iter().any(|k| k == settings::stats::ENABLED_KEY) {
         settings::stats::ensure_identity(&state.settings, &state.db);
     }
-    // The embedded torrent engine's listen port / rate limits (rqbit*) are owned
-    // by the Downloads sidecar now; it applies them on its next engine (re)start.
-    // The SettingsUpdated event below is the signal a live-reconfig would key on.
     state.events.publish(ServerEvent::SettingsUpdated);
     Ok(Json(json!({ "updated": written })).into_response())
 }

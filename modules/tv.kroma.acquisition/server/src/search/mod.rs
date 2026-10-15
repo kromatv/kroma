@@ -3,14 +3,16 @@
 //! scoring -> ordered candidate views.
 
 pub mod backoff;
+pub mod hits;
 pub mod interactive;
 pub mod manual;
 pub mod sweep;
 pub mod targets;
+#[cfg(test)]
+pub(crate) mod test_support;
 
-pub use interactive::{
-    cached_release, grab_cached, interactive_search, score_release, CachedRelease,
-};
+pub use hits::{score_release, CachedRelease};
+pub use interactive::{cached_release, grab_cached, interactive_search};
 pub use manual::manual_search;
 pub use targets::{
     targets_for_scope, targets_for_wanted, wanted_ids_by, SearchScope, SearchTarget,

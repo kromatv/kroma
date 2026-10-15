@@ -28,6 +28,7 @@ export interface PlayerVideoTrack {
   height: number | null;
   hdr: boolean;
   bitDepth: number | null;
+  hdrFormat?: 'hdr10' | 'hdr10Plus' | 'dolbyVision' | 'hlg' | null;
 }
 
 /** What a viewer can report about the thing they are watching. */

@@ -1,5 +1,5 @@
 import type { Translate } from '@kromatv/i18n';
-import { forwardRef, memo, type ReactNode, useImperativeHandle, useMemo, useState } from 'react';
+import { memo, type ReactNode, type Ref, useMemo, useState } from 'react';
 import { Animated, Pressable, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -17,11 +17,12 @@ import {
 } from '#ui/components/organisms/player/parts/up-next-card';
 import { RING_ROOM, styles } from '#ui/core';
 import { gradient, maskImage } from '#ui/lib/css';
+import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { FocusColumn, FocusRegion, FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { FocusScroll } from '#ui/lib/focus-scroll';
 import { pointerDriving } from '#ui/lib/input-source';
-import type { RemoteKey } from '#ui/lib/remote-keys';
 import { useT } from '#ui/services/i18n';
+import { SheetKeys } from './sheet-keys';
 import { useSheetSlide } from './slide';
 
 export type { UpNextItem };
@@ -38,6 +39,7 @@ export interface UpNextSheetProps {
   onOpen: () => void;
   onClose: () => void;
   onPlay: (item: UpNextItem) => void;
+  ref?: Ref<PanelHandle>;
 }
 
 // The player's bottom chrome has to clear exactly this much (see Player.tsx).
@@ -102,29 +104,18 @@ function peekSections(sections: Section[]): Section[] {
 
 /** One sliding sheet with two positions: parked as a non-focusable peek, or
  * risen over a scrim into a scrollable grid the D-pad walks as one flat list. */
-const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNextSheet(
-  { data, open, revealed, onOpen, onClose, onPlay },
+function UpNextSheetBase({
+  data,
+  open,
+  revealed,
+  onOpen,
+  onClose,
+  onPlay,
   ref,
-) {
+}: Readonly<UpNextSheetProps>) {
   const t = useT();
   const items = useMemo(() => [...data.nextEpisodes, ...data.recommendations], [data]);
   const sections = useMemo(() => buildSections(data, t), [data, t]);
-
-  // The open sheet is the navigator's: its cards are <Focusable>s in a focus
-  // grid, so ◀▶▲▼ and OK have already been answered by the time this runs. Back
-  // is the one key the navigator does not own; ▲ off the top row reaches the
-  // header, and reaching the header IS leaving (see <SheetHeader>).
-  useImperativeHandle(
-    ref,
-    () => ({
-      onKey: (key: RemoteKey) => {
-        if (!open) return false;
-        if (key === 'Back') onClose();
-        return true;
-      },
-    }),
-    [open, onClose],
-  );
 
   // Seeded from the stage so the first frame is already parked: a height that
   // starts at 0 and corrects on layout flashes full-screen over the film.
@@ -163,7 +154,7 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
         onPress={onClose}
         accessibilityRole="button"
         accessibilityLabel={t('player.back')}
-        style={[s.scrimBox, fills.scrim, open ? fills.scrimOn : fills.scrimOff]}
+        style={[s.scrimBox, NO_OUTLINE, fills.scrim, open ? fills.scrimOn : fills.scrimOff]}
       />
       <Animated.View
         onLayout={(e) => {
@@ -176,6 +167,7 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
             leaving the sheet. `bridge={false}`: the screen's remote bridge is
             already listening, and a second would fire every press twice. */}
         <SheetScope open={open}>
+          <SheetKeys handle={ref} open={open} onClose={onClose} />
           <SheetHeader
             open={open}
             title={t('player.upNextTitle')}
@@ -228,7 +220,7 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
       </Animated.View>
     </>
   );
-});
+}
 
 // Memoized so the parked sheet skips the chrome's ~4 Hz playback re-renders.
 export const UpNextSheet = memo(UpNextSheetBase);
@@ -317,7 +309,7 @@ function SheetHeader({
         // a ring on a parked sheet marks a focus the remote is not on.
         ring={open}
         focusScale={1}
-        style={s.headerBox}
+        style={[s.headerBox, NO_OUTLINE]}
       >
         {inside}
       </Focusable>

@@ -11,6 +11,8 @@ export type DiscoverType = z.infer<typeof DiscoverType>;
 export const TmdbKind = DiscoverType.exclude(['all']);
 export type TmdbKind = z.infer<typeof TmdbKind>;
 
+export const tmdbKindOf = (kind: RequestKind): TmdbKind => (kind === 'show' ? 'tv' : 'movie');
+
 /** One TMDB title as the request flow sees it: what the provider knows plus
  * what this library and this account's requests already cover. */
 export const DiscoverEntry = z.object({
@@ -55,6 +57,26 @@ export const DiscoverDetail = DiscoverEntry.extend({
   nextAirDate: z.string().nullable(),
 });
 export type DiscoverDetail = z.infer<typeof DiscoverDetail>;
+
+export const DiscoverEpisode = z
+  .object({
+    episode: z.number().int().nonnegative(),
+    name: z.string().nullish(),
+    overview: z.string().nullish(),
+    stillUrl: z.string().nullable(),
+    airDate: z.string().nullable(),
+    runtimeMin: z.number().nullish(),
+  })
+  .transform(({ name, overview, ...episode }) => ({
+    ...episode,
+    title: name || null,
+    overview: overview || null,
+  }));
+export type DiscoverEpisode = z.infer<typeof DiscoverEpisode>;
+
+/** `GET /api/discover/tv/:tmdbId/season/:season`. */
+export const DiscoverSeasonEpisodes = z.object({ episodes: z.array(DiscoverEpisode) });
+export type DiscoverSeasonEpisodes = z.infer<typeof DiscoverSeasonEpisodes>;
 
 /** `GET /api/discover/search` / `GET /api/discover/trending`. */
 export const DiscoverResponse = z.object({

@@ -3,7 +3,7 @@ import type { MediaItem, Show } from '@kromatv/client/media';
 import { collectGenres, type GenreCount, genreLabel } from '@kromatv/core';
 import { Box, genreIcon, Icon, styles, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { forwardRef, useMemo, useState } from 'react';
+import { type Ref, useMemo, useState } from 'react';
 import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Loading, SheetTitle, sheetChrome } from '#mobile/components/ui';
@@ -14,10 +14,10 @@ import { radius, spacing, type } from '#mobile/lib/theme';
 const SNAP_POINTS = ['70%'];
 const COLUMNS = 2;
 
-export const GenrePickerSheet = forwardRef<
-  BottomSheetModal,
-  Readonly<{ onPick: (slug: string) => void }>
->(function GenrePickerSheet({ onPick }, ref) {
+export function GenrePickerSheet({
+  onPick,
+  ref,
+}: Readonly<{ onPick: (slug: string) => void; ref?: Ref<BottomSheetModal> }>) {
   const t = useT();
   const client = useClient();
   const insets = useSafeAreaInsets();
@@ -82,7 +82,7 @@ export const GenrePickerSheet = forwardRef<
       )}
     </BottomSheetModal>
   );
-});
+}
 
 const s = styles({
   header: { px: spacing.md, pt: spacing.sm },

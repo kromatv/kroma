@@ -1,3 +1,4 @@
+import { activeCueText, type Cue, parseVtt } from '@kromatv/core';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
@@ -9,76 +10,9 @@ import {
 import type { PlayerSub } from '#ui/components/organisms/player/types';
 import { style } from '#ui/core';
 
-/** A parsed WebVTT cue at absolute playback seconds. */
-interface Cue {
-  startSec: number;
-  endSec: number;
-  text: string;
-}
-
-const TAG = /<[^<>]*>/g;
-
 const MAX_VTT_BYTES = 8 * 1024 * 1024;
 
 const NO_POINTER = style({ pointerEvents: 'none' });
-
-/** Strip VTT inline markup UNTIL STABLE, not in one pass: removing the inner tag
- * of `<<i>>` leaves `<>` behind, so a single sweep can put the very markup this
- * removes back on screen. Each pass strictly shortens the string. */
-function stripTags(text: string): string {
-  let out = text;
-  let previous: string;
-  do {
-    previous = out;
-    out = out.replace(TAG, '');
-  } while (out !== previous);
-  return out;
-}
-
-/** Parse an `HH:MM:SS.mmm` or `MM:SS.mmm` timestamp into seconds. */
-function toSeconds(v: string): number {
-  let sec = 0;
-  for (const part of v.trim().split(':'))
-    sec = sec * 60 + Number.parseFloat(part.replace(',', '.'));
-  return sec;
-}
-
-function parseVtt(raw: string): Cue[] {
-  const cues: Cue[] = [];
-  for (const block of raw.replace(/\r\n?/g, '\n').split('\n\n')) {
-    const lines = block.split('\n').filter((l) => l.trim() !== '');
-    const arrow = lines.findIndex((l) => l.includes('-->'));
-    const arrowLine = arrow === -1 ? undefined : lines[arrow];
-    if (!arrowLine) continue;
-    const [a, rest] = arrowLine.split('-->');
-    if (!a || !rest) continue;
-    const startSec = toSeconds(a);
-    // Drop any cue settings (e.g. `line:90%`) that follow the end timestamp.
-    const endTok = rest.trim().split(/\s+/)[0];
-    if (!endTok) continue;
-    const endSec = toSeconds(endTok);
-    if (!Number.isFinite(startSec) || !Number.isFinite(endSec)) continue;
-    const text = stripTags(lines.slice(arrow + 1).join('\n')).trim();
-    if (text) cues.push({ startSec, endSec, text });
-  }
-  return cues;
-}
-
-/** Active-cue lookup with a forward-moving hint (cues are monotonic), falling
- * back to a scan from 0 after a backward jump. */
-function cueAt(cues: Cue[], t: number, from: number): { text: string; next: number } {
-  let i = Math.max(0, Math.min(from, cues.length - 1));
-  const start = cues[i];
-  if (start && start.startSec > t) i = 0;
-  while (i < cues.length) {
-    const ci = cues[i];
-    if (!ci || ci.endSec > t) break;
-    i += 1;
-  }
-  const c = cues[i];
-  if (c && c.startSec <= t && t < c.endSec) return { text: c.text, next: i };
-  return { text: '', next: i };
-}
 
 const now = (): number => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
@@ -192,8 +126,8 @@ export function SubtitleRenderer({
     const tick = () => {
       const c = clock.current;
       const est = playing ? c.pos + (now() - c.at) / 1000 : c.pos;
-      const { text: cur, next } = cueAt(cues, est, pointer.current);
-      pointer.current = next;
+      const { text: cur, index } = activeCueText(cues, est, pointer.current);
+      pointer.current = index;
       if (cur !== last) {
         last = cur;
         setText(cur);

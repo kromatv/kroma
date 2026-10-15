@@ -1,5 +1,5 @@
 import type { ItemId } from '@kromatv/client/media';
-import { type EngineDecision, streamRefusal } from '@kromatv/core';
+import { decodableVideoCodecs, type EngineDecision, streamRefusal } from '@kromatv/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { StreamFailure } from '#web/features/playback/stream-failure';
 import { kromaClient } from '#web/shared/lib/api';
@@ -84,7 +84,9 @@ export function useStreamProbe({
       return;
     }
     let cancelled = false;
-    const url = kromaClient().media.hlsMasterUrl(itemId, decision.aacMaster, anchor, audioIndex);
+    const url = kromaClient().media.hlsMasterUrl(itemId, decision.aacMaster, anchor, audioIndex, {
+      videoCodecs: decodableVideoCodecs(),
+    });
     fetch(url)
       .then((r) => {
         if (cancelled) return;

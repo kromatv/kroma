@@ -1,9 +1,5 @@
 //! The `download-vpn` point this module answers, and the `vpn-proxy` point it
 //! calls.
-//!
-//! The VPN module's admin page reads the kill-switch state off whichever download
-//! engine is running, and this engine routes its peers through whichever module
-//! runs a bridge. Neither names the other.
 
 use std::sync::Arc;
 
@@ -18,12 +14,8 @@ use crate::bandwidth::{BandwidthView, Range};
 use crate::dtos::VpnStatusView;
 use crate::DownloadManager;
 
-/// The point this module answers: the tunnel's state, a seal check, and a
-/// restart, for whatever draws the VPN admin page.
 pub const DOWNLOAD_VPN: &str = "tv.kroma.torrents/vpn";
 
-/// The bridge this module's peers are routed through, answered by whichever
-/// module runs one.
 pub const VPN_PROXY: &str = "tv.kroma.vpn/proxy";
 
 /// The local SOCKS5 bridge to route peers through (librqbit only proxies via
@@ -35,7 +27,6 @@ pub fn proxy_url(host: &dyn HostCtx) -> Option<String> {
         .flatten()
 }
 
-/// The routes this module mounts for [`DOWNLOAD_VPN`].
 pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
         .route("/_port/tv.kroma.torrents/vpn/status", post(status::<S>))
@@ -44,11 +35,12 @@ pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
             post(seal_check::<S>),
         )
         .route("/_port/tv.kroma.torrents/vpn/restart", post(restart::<S>))
-        .route("/_port/tv.kroma.torrents/vpn/bandwidth", post(bandwidth::<S>))
+        .route(
+            "/_port/tv.kroma.torrents/vpn/bandwidth",
+            post(bandwidth::<S>),
+        )
 }
 
-// Every method answers `Option<_>`: this process may be up while the manager it
-// answers out of is not yet registered, and the caller draws a card either way.
 fn manager<S: HostCtx>(host: &S) -> Option<Arc<DownloadManager>> {
     service::<DownloadManager>(host)
 }
@@ -113,7 +105,7 @@ async fn restart<S: HostCtx + Clone + Send + Sync + 'static>(
     let Some(manager) = manager(&host) else {
         return Json(None);
     };
-    manager.start_rqbit(&host).await;
+    manager.restart_rqbit(&host).await;
     Json(Some(true))
 }
 
@@ -143,9 +135,6 @@ mod tests {
         )
     }
 
-    // With no manager registered — this process between spawn and wiring — every
-    // method answers rather than failing, because the VPN admin card renders
-    // either way and a 500 would blank it.
     #[tokio::test]
     async fn every_method_answers_with_no_manager_running() {
         for path in [
@@ -168,8 +157,6 @@ mod tests {
         assert_eq!(proxy_url(&host), None);
     }
 
-    // The consumer reads camelCase off this, and it is a separately released
-    // module, so the key spelling is the contract.
     #[test]
     fn a_status_serializes_under_the_keys_the_consumer_reads() {
         let json = serde_json::to_value(VpnStatusView {

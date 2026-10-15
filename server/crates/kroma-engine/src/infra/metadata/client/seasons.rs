@@ -1,11 +1,11 @@
 use serde::Deserialize;
 
 use crate::domain::metadata::CastMember;
+use crate::domain::DiscoverEpisode;
 
 use super::super::common::{build_cast, RawCredits};
 use super::{api, curl_json, IMG, MAX_CAST};
 
-/// Per-episode artwork + text resolved from a TMDB season fetch.
 #[derive(Debug, Clone)]
 pub struct EpisodeArt {
     pub episode: u32,
@@ -14,6 +14,20 @@ pub struct EpisodeArt {
     pub overview: Option<String>,
     pub air_date: Option<String>,
     pub rating: Option<f32>,
+    pub runtime_min: Option<u32>,
+}
+
+impl From<EpisodeArt> for DiscoverEpisode {
+    fn from(e: EpisodeArt) -> Self {
+        Self {
+            episode: e.episode,
+            name: e.name,
+            overview: e.overview,
+            still_url: e.still_url,
+            air_date: e.air_date,
+            runtime_min: e.runtime_min,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -48,6 +62,7 @@ pub fn season_episodes(api_key: &str, language: &str, tv_id: u64, season: u32) -
             overview: e.overview.filter(|s| !s.is_empty()),
             air_date: e.air_date.filter(|s| !s.is_empty()),
             rating: e.vote_average.filter(|v| *v > 0.0),
+            runtime_min: e.runtime.filter(|m| *m > 0),
         })
         .collect();
     let cast = build_cast(
@@ -97,11 +112,43 @@ struct RawEpisode {
     air_date: Option<String>,
     #[serde(default)]
     vote_average: Option<f32>,
+    #[serde(default)]
+    runtime: Option<u32>,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use serde_json::json;
+
+    use crate::test_support::FakeTmdb;
+
+    #[test]
+    fn a_season_crosses_to_discover_under_the_keys_a_client_reads() {
+        let tmdb = FakeTmdb::start(|_| {
+            let pilot = json!({ "episode_number": 1, "name": "Pilot", "overview": "It begins.",
+                "still_path": "/s1.jpg", "air_date": "2025-10-01", "runtime": 52 });
+            let untitled = json!({ "episode_number": 2, "name": "", "runtime": 0 });
+            (200, json!({ "episodes": [pilot, untitled] }))
+        });
+
+        let season = season_episodes("key", "fr-FR", 1399, 1);
+
+        let episodes: Vec<DiscoverEpisode> = season.episodes.into_iter().map(Into::into).collect();
+        assert_eq!(
+            serde_json::to_value(episodes).unwrap(),
+            json!([
+                { "episode": 1, "name": "Pilot", "overview": "It begins.",
+                  "stillUrl": "https://image.tmdb.org/t/p/w300/s1.jpg", "airDate": "2025-10-01",
+                  "runtimeMin": 52 },
+                { "episode": 2, "name": null, "overview": null, "stillUrl": null, "airDate": null,
+                  "runtimeMin": null },
+            ])
+        );
+        assert!(tmdb.requests()[0].starts_with("/tv/1399/season/1?"));
+        assert!(tmdb.requests()[0].contains("language=fr-FR"));
+    }
 
     #[test]
     fn parses_season_episode_stills() {

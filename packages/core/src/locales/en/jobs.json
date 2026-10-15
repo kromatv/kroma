@@ -32,6 +32,8 @@
   "jobs.noRuns": "No runs yet.",
   "jobs.notifications.digest.desc": "Tells accounts which films and episodes arrived since the last digest. Notifies nobody on its first run: the library as it stands becomes the baseline.",
   "jobs.notifications.digest.name": "New arrivals digest",
+  "jobs.pipeline.credits.desc": "Finds where each film's credits start, from its chapter cut and, in fingerprint mode, a scan of the picture in its last minutes (dark frames carrying dense text). Reaching the credits then counts as watched. Incremental: skips films whose file is unchanged.",
+  "jobs.pipeline.credits.name": "Film credits detection",
   "jobs.pipeline.embed.desc": "Computes the content embedding behind 'For You' and similar rows from each title's metadata. Re-embeds when the model changes.",
   "jobs.pipeline.embed.name": "Content embeddings",
   "jobs.pipeline.loudness.desc": "Measures the EBU R128 loudness of each file's default audio track (and the dialogue channel on 5.1) to flag problematic mixes: quiet dialogue, excessive dynamics. Incremental, one file at a time, paused during playback.",

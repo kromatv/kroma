@@ -7,6 +7,10 @@ function initialSettingsView(overlay: string | null): 'audio' | 'subtitles' | 'm
   return 'menu';
 }
 
+function hasUpNext(data: UpNextData): boolean {
+  return data.nextEpisodes.length + data.recommendations.length > 0;
+}
+
 function deriveChrome(
   nav: ReturnType<typeof usePlayerNav>,
   upNext: UpNextData,
@@ -19,10 +23,9 @@ function deriveChrome(
   // Whether the picture is on the card, not HOW it got there: which hold the
   // card takes is the surface's business (see lib/surface-shrink).
   const settingsShrink = settingsOpen && !panelCovers;
-  const hasUpNext = upNext.nextEpisodes.length + upNext.recommendations.length > 0;
-  const peekVisible = !over && nav.revealed && hasUpNext && !settingsShrink && !nav.overlay;
+  const peekVisible = !over && nav.revealed && hasUpNext(upNext) && !settingsShrink && !nav.overlay;
   const chromeShown = !over && nav.revealed && !nav.overlay;
   return { settingsOpen, sheetOpen, settingsShrink, peekVisible, chromeShown };
 }
 
-export { deriveChrome, initialSettingsView };
+export { deriveChrome, hasUpNext, initialSettingsView };

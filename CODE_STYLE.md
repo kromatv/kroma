@@ -174,6 +174,11 @@ The same instinct applies to the code:
   done. The refactor is part of the change, not a follow-up.
 - **Types over checks.** See [`CONVENTIONS.md`](CONVENTIONS.md) for validating
   untrusted input with zod rather than by hand.
+- **`ref` is a prop, never `forwardRef`, and `useEffectEvent` lives in a plain
+  function component.** react-dom commits an effect event's new body for
+  function-component fibers only: inside `forwardRef` or `memo` it keeps the
+  closure it had at mount. A memoised component that needs one stable, fresh
+  callback uses `useStableCallback` (`#ui/lib/stable-callback`).
 - **No dead code, no unused exports.** `bun run deadcode` catches them.
 - Follow `biome.json` for formatting and lint. Run `bun run check` before a PR.
 - For Rust, rustfmt is canonical: run `cargo fmt` before a PR. The root

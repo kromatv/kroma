@@ -41,10 +41,10 @@ function handleMediaKey(key: RemoteKey, a: PlayerNavActions): boolean {
       return true;
     case 'Prev':
     case 'Rewind':
-      a.seekNudge(-1);
+      a.seekNudge(-1, 'hold');
       return true;
     case 'FastForward':
-      a.seekNudge(1);
+      a.seekNudge(1, 'hold');
       return true;
     case 'Stop':
       a.onExit('stop');
@@ -52,6 +52,11 @@ function handleMediaKey(key: RemoteKey, a: PlayerNavActions): boolean {
     default:
       return false;
   }
+}
+
+function enterResume(ctx: DpadContext): void {
+  ctx.setZone('resume');
+  ctx.a.resume?.onFocus();
 }
 
 function dpadUp(ctx: DpadContext): void {
@@ -63,6 +68,9 @@ function dpadUp(ctx: DpadContext): void {
     }
     ctx.setZone('progress');
   } else if (zone === 'progress') {
+    if (a.resume) enterResume(ctx);
+    else ctx.setZone('back');
+  } else if (zone === 'resume') {
     ctx.setZone('back');
   } else {
     // Above the Back button there is nothing left to focus, so ▲ dismisses the
@@ -74,7 +82,10 @@ function dpadUp(ctx: DpadContext): void {
 
 function dpadDown(ctx: DpadContext): void {
   const { a, zone, focused } = ctx;
-  if (zone === 'back') ctx.setZone('progress');
+  if (zone === 'back') {
+    if (a.resume) enterResume(ctx);
+    else ctx.setZone('progress');
+  } else if (zone === 'resume') ctx.setZone('progress');
   else if (zone === 'progress') ctx.setZone('controls');
   else if (focused === 'volume') a.volumeNudge(-1);
   else ctx.openOverlay('sheet');
@@ -90,15 +101,17 @@ function handleDpadKey(key: RemoteKey, ctx: DpadContext): void {
       dpadDown(ctx);
       return;
     case 'Left':
-      if (zone === 'progress') a.seekNudge(-1);
-      else ctx.setControlIndex((i) => Math.max(0, i - 1));
+      if (zone === 'progress') a.seekNudge(-1, 'hold');
+      else if (zone === 'controls') ctx.setControlIndex((i) => Math.max(0, i - 1));
       return;
     case 'Right':
-      if (zone === 'progress') a.seekNudge(1);
-      else ctx.setControlIndex((i) => Math.min(ctx.controlsLen - 1, i + 1));
+      if (zone === 'progress') a.seekNudge(1, 'hold');
+      else if (zone === 'controls')
+        ctx.setControlIndex((i) => Math.min(ctx.controlsLen - 1, i + 1));
       return;
     case 'Enter':
       if (zone === 'back') a.onExit('close');
+      else if (zone === 'resume') a.resume?.onStartOver();
       else if (zone === 'progress') a.togglePlay();
       else if (focused) ctx.activate(focused);
       return;

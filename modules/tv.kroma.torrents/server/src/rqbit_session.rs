@@ -3,22 +3,16 @@
 //! librqbit restores every torrent it persisted before its session is usable,
 //! and it awaits all of them: `Session::new_with_opts` does not return until the
 //! last one is added. A persisted entry whose `.torrent` is missing or empty has
-//! no metadata to restore FROM, so librqbit goes looking for it — and for a
+//! no metadata to restore FROM, so librqbit goes looking for it, and for a
 //! private tracker, which means no DHT and no peer exchange, that search never
 //! finishes. One such entry holds the whole engine, and with it every route this
 //! module serves, for as long as the process runs.
-//!
-//! So they are dropped before the session opens. Nothing is lost: this module's
-//! own ledger is the record of what is being downloaded, and it re-adds a row
-//! that the engine does not know about. That add is per-torrent and detached, so
-//! the same dead magnet then blocks only itself.
 
 use std::path::Path;
 
 const STORE: &str = "session.json";
 
 /// Drop the persisted torrents that cannot be restored without the network.
-/// Returns how many were dropped, for the log.
 pub fn prune_unrestorable(session_dir: &Path) -> usize {
     let store = session_dir.join(STORE);
     let Ok(raw) = std::fs::read_to_string(&store) else {

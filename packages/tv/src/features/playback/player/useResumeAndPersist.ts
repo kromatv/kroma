@@ -10,8 +10,10 @@ export interface PersistPort {
   endedNonce: number;
 }
 
-/** Persists progress every 10 s, on pause, near the end, and on exit. The resume
- * position is applied by `useDirectPlayback` as `startSec`, not re-seeked here. */
+/** Persists progress every 10 s, on pause, and on exit; the server turns a
+ * position past the credits or the played threshold into a watched flag. The
+ * resume position is applied by `useDirectPlayback` as `startSec`, not
+ * re-seeked here. */
 export function useResumeAndPersist(client: KromaClient, item: MediaItem, port: PersistPort): void {
   const portRef = useRef(port);
   portRef.current = port;
@@ -22,9 +24,7 @@ export function useResumeAndPersist(client: KromaClient, item: MediaItem, port: 
     const d = p.getDuration();
     const pos = p.getPosition();
     if (!Number.isFinite(d) || d <= 0 || pos < 5) return;
-    // Marking watched also clears the resume position server-side.
-    if (pos > d * 0.97) void client.playback.markWatched(item.id);
-    else void client.playback.save(item.id, pos * 1000, d * 1000);
+    void client.playback.save(item.id, pos * 1000, d * 1000).catch(() => undefined);
   }, [client, item]);
 
   useEffect(() => {

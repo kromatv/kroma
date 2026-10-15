@@ -1,9 +1,6 @@
 //! Sending the account emails (credential reset, address verification). Three
 //! ways out, the owner's choice per server: `manual`, where the owner copies
-//! the link by hand; the operator's own SMTP server; or the kroma.tv mail relay,
-//! which carries what this server wrote once the owner has activated this
-//! server there, and before that only the question asking them to. Every word
-//! of every message is rendered here.
+//! the link by hand; the operator's own SMTP server; or the kroma.tv mail relay.
 //! For a reset the link alone is not enough: the user must also enter the
 //! short code the owner read to them, so intercepting the email gives nothing.
 //! A send failure never fails the mint.
@@ -13,7 +10,7 @@ mod relay;
 mod render;
 mod smtp;
 
-pub use identity::{ensure_identity, RelayIdentity, INSTANCE, INSTANCE_ORIGIN, IDENTITY_KEY};
+pub use identity::{ensure_identity, RelayIdentity, IDENTITY_KEY, INSTANCE, INSTANCE_ORIGIN};
 pub use relay::{RelayError, RELAY_URL};
 pub use render::{render_html, render_strings, ResetStrings};
 pub use smtp::send_test;
@@ -29,21 +26,17 @@ use crate::services::settings::{email_delivery, EmailDelivery, Settings};
 pub enum EmailKind {
     Reset,
     Verify,
-    /// The relay's question to the owner, in this server's words: may this
-    /// server send email through the relay?
     Activate,
 }
 
 pub struct OutboundEmail {
     pub to: String,
-    /// Resolved with [`crate::i18n::user_locale`] by the caller.
     pub locale: &'static str,
     pub url: String,
     pub server_name: String,
     pub kind: EmailKind,
 }
 
-/// One message, fully rendered: what SMTP sends and what the relay carries.
 pub struct Rendered {
     pub subject: String,
     pub text: String,
@@ -92,8 +85,6 @@ pub struct RelayTarget<'a> {
     pub origin: &'a str,
 }
 
-/// This server's standing with the relay, registering when it has none yet or
-/// its public address moved since.
 async fn session(
     settings: &Settings,
     pool: &Pool,
@@ -117,13 +108,18 @@ async fn register(
     identity: RelayIdentity,
 ) -> Result<relay::Session, RelayError> {
     let instance = relay::register(target.url, target.origin, &identity).await?;
-    settings.set_internal(pool, INSTANCE, json!(instance));
-    settings.set_internal(pool, INSTANCE_ORIGIN, json!(target.origin));
+    let named = settings.set_internal(pool, INSTANCE, json!(instance));
+    let origin = settings.set_internal(pool, INSTANCE_ORIGIN, json!(target.origin));
+    if let Err(error) = named.and(origin) {
+        tracing::warn!(
+            %error,
+            "registered with the mail relay but could not store the session; the next send registers again"
+        );
+    }
     tracing::info!(origin = target.origin, "registered with the mail relay");
     Ok(relay::Session { instance, identity })
 }
 
-/// One call the relay answers under a session.
 enum Call<'a> {
     Send { to: &'a str, rendered: &'a Rendered },
     Activate { to: &'a str, token: &'a str },
@@ -145,8 +141,6 @@ async fn perform(base: &str, session: &relay::Session, call: &Call<'_>) -> Resul
     }
 }
 
-/// Run one relay call, registering afresh and retrying once when the relay
-/// has forgotten this server.
 async fn with_session(
     settings: &Settings,
     pool: &Pool,
@@ -392,8 +386,12 @@ mod tests {
     async fn a_stored_instance_for_another_origin_is_not_reused() {
         let (pool, settings) = settings();
         configure(&pool, &settings, &[("emailDelivery", json!("relay"))]);
-        settings.set_internal(&pool, INSTANCE, json!("v1.OLD"));
-        settings.set_internal(&pool, INSTANCE_ORIGIN, json!("https://elsewhere.test"));
+        settings
+            .set_internal(&pool, INSTANCE, json!("v1.OLD"))
+            .unwrap();
+        settings
+            .set_internal(&pool, INSTANCE_ORIGIN, json!("https://elsewhere.test"))
+            .unwrap();
 
         let err = send(&settings, &pool, Some(&NOWHERE), &outbound())
             .await

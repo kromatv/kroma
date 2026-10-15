@@ -4,6 +4,7 @@
 
 import { Table, type TableColumn, useT } from '@kromatv/module-sdk';
 import { Box, EmptyState, Row, Text } from '@kromatv/ui/kit';
+import { type IndexerAnswer, nothingAnswered } from './indexer-report';
 import { ReleaseFacts } from './release-cells';
 import type { ManualReleaseView } from './schemas';
 
@@ -17,11 +18,13 @@ const COLUMNS: TableColumn[] = [
 
 export function ManualReleaseTable({
   releases,
+  indexers = [],
   canGrab,
   grabbing,
   onGrab,
 }: Readonly<{
   releases: ManualReleaseView[];
+  indexers?: IndexerAnswer[];
   canGrab: boolean;
   /** The guid of the row being grabbed, so only that row is busy. */
   grabbing: string | null;
@@ -29,10 +32,13 @@ export function ManualReleaseTable({
 }>) {
   const t = useT();
   if (releases.length === 0) {
+    const unsearched = nothingAnswered(indexers);
     return (
       <Box py={20}>
-        <EmptyState.Root icon="search">
-          <EmptyState.Title>{t('requests.noReleases')}</EmptyState.Title>
+        <EmptyState.Root icon={unsearched ? 'alert-triangle' : 'search'}>
+          <EmptyState.Title>
+            {t(unsearched ? 'requests.indexersAllFailed' : 'requests.noReleases')}
+          </EmptyState.Title>
         </EmptyState.Root>
       </Box>
     );

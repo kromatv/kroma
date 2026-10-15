@@ -19,9 +19,9 @@ import {
   canRawDownload,
   decideSource,
   downloadCopyCodecs,
-  downloadVideoCodecs,
   IOS_CAPS,
   mobileCaps,
+  mobileVideoCodecs,
 } from './caps';
 
 type Track = { codec: string; default?: boolean };
@@ -95,9 +95,16 @@ describe('the download codec sets', () => {
 
   it('asks only for video this runtime decodes in hardware', () => {
     rn.os = 'ios';
-    expect(downloadVideoCodecs()).toEqual(['hevc', 'h264']);
+    expect(mobileVideoCodecs()).toEqual(['hevc', 'h264']);
     rn.os = 'android';
-    expect(downloadVideoCodecs()).toEqual(['hevc', 'h264', 'vp9']);
+    expect(mobileVideoCodecs()).toEqual(['hevc', 'h264', 'vp9']);
+  });
+
+  it('never claims the 10-bit H.264 neither phone decoder implements', () => {
+    for (const os of ['ios', 'android'] as const) {
+      rn.os = os;
+      expect(mobileVideoCodecs()).not.toContain('h26410bit');
+    }
   });
 
   it('never asks for a codec ffmpeg cannot stream-copy into fMP4', () => {

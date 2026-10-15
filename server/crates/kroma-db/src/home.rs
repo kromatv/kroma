@@ -58,21 +58,20 @@ pub fn recently_added_ids(pool: &Pool, n: usize) -> Result<Vec<String>> {
 /// The user's most recently **finished** title id (for "Because you watched …").
 ///
 /// Finished means what it means in "Continue watching": marked watched, or left
-/// past 95% of the runtime. Merely opening a title is not a taste signal. An
-/// episode answers as its parent show, the only seed of the two that carries an
-/// embedding to rank from.
-pub fn last_finished(pool: &Pool, user_id: &str) -> Result<Option<String>> {
-    let percent = crate::playback::FINISHED_PERCENT;
+/// past the credits or `played_percent` of the runtime. Merely opening a title
+/// is not a taste signal. An episode answers as its parent show, the only seed
+/// of the two that carries an embedding to rank from.
+pub fn last_finished(pool: &Pool, user_id: &str, played_percent: i64) -> Result<Option<String>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(&format!(
         "SELECT COALESCE(i.show_id, f.item_id) FROM ( \
              SELECT item_id, watched_at AS at FROM watched WHERE user_id = ?1 \
              UNION ALL \
-             SELECT item_id, updated_at FROM progress \
-              WHERE user_id = ?1 AND duration_ms IS NOT NULL \
-                AND position_ms >= duration_ms * {percent} / 100 \
+             SELECT p.item_id, p.updated_at FROM progress p \
+              WHERE p.user_id = ?1 AND {} \
          ) f LEFT JOIN items i ON i.id = f.item_id \
-         ORDER BY f.at DESC LIMIT 1"
+         ORDER BY f.at DESC LIMIT 1",
+        crate::playback::finished_sql(played_percent)
     ))?;
     let mut rows = stmt.query_map(params![user_id], |r| r.get::<_, String>(0))?;
     Ok(rows.next().transpose()?)
@@ -126,8 +125,8 @@ mod tests {
         .unwrap();
         drop(conn);
 
-        assert!(last_finished(&p, &user).unwrap().is_none());
-        assert!(last_finished(&p, "nobody").unwrap().is_none());
+        assert!(last_finished(&p, &user, 90).unwrap().is_none());
+        assert!(last_finished(&p, "nobody", 90).unwrap().is_none());
     }
 
     #[test]
@@ -143,7 +142,7 @@ mod tests {
         .unwrap();
         drop(conn);
 
-        assert_eq!(last_finished(&p, &user).unwrap().as_deref(), Some("c1"));
+        assert_eq!(last_finished(&p, &user, 90).unwrap().as_deref(), Some("c1"));
 
         p.get()
             .unwrap()
@@ -154,7 +153,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(last_finished(&p, &user).unwrap().as_deref(), Some("c2"));
+        assert_eq!(last_finished(&p, &user, 90).unwrap().as_deref(), Some("c2"));
     }
 
     #[test]
@@ -170,7 +169,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(last_finished(&p, &user).unwrap().as_deref(), Some("sh1"));
+        assert_eq!(last_finished(&p, &user, 90).unwrap().as_deref(), Some("sh1"));
     }
 
     #[test]

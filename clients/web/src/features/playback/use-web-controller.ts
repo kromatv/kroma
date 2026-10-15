@@ -1,7 +1,7 @@
 import {
   audioTrackLabel,
   declaredAspect,
-  qualityBadgeForVideo,
+  pictureBadge,
   refineTrackLang,
   streamNotice,
 } from '@kromatv/core';
@@ -184,7 +184,7 @@ export function useWebController(item: MovieView): WebController {
   const getStats = useCallback(() => statsRef.current(), []);
 
   const qualities = useMemo(() => {
-    const badge = qualityBadgeForVideo(item.video);
+    const badge = pictureBadge(item.video);
     const badgeSuffix = badge ? ` · ${badge}` : '';
     const notice = streamNotice(item, pb.mode);
     return [
@@ -213,6 +213,7 @@ export function useWebController(item: MovieView): WebController {
     dur: pb.dur,
     bufEnd: pb.bufEnd,
     seekPreview: scrubSec,
+    anchor: pb.baseSec,
     playing: pb.playing,
     waiting: pb.waiting,
     waitReason: pb.waitReason ?? undefined,

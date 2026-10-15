@@ -6,6 +6,10 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
+// How far under a download folder a release may bury its files before the
+// import stops looking.
+const DEEPEST_RELEASE: usize = 6;
+
 pub(super) fn ext_of(path: &Path) -> &str {
     path.extension()
         .and_then(std::ffi::OsStr::to_str)
@@ -13,7 +17,7 @@ pub(super) fn ext_of(path: &Path) -> &str {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(super) enum Placement {
+pub(crate) enum Placement {
     Skip,
     Replace,
     Beside,
@@ -23,7 +27,7 @@ pub(super) enum Placement {
 // replaces (a PROPER of the same quality). With replacement on it writes beside
 // the destination and renames over it; with replacement off both files are
 // kept; a plain import still leaves an existing file alone.
-pub(super) fn place(src: &Path, dest: &Path, mode: Placement) -> Result<PathBuf> {
+pub(crate) fn place(src: &Path, dest: &Path, mode: Placement) -> Result<PathBuf> {
     if dest.exists() {
         match mode {
             Placement::Skip => return Ok(dest.to_path_buf()),
@@ -94,35 +98,31 @@ fn try_reflink(src: &Path, dest: &Path) -> std::io::Result<()> {
     }
 }
 
-pub(super) fn video_files(root: &Path) -> Result<Vec<PathBuf>> {
-    let mut out = Vec::new();
-    for entry in walkdir::WalkDir::new(root)
-        .max_depth(6)
+pub(super) fn files_under(root: &Path) -> Vec<PathBuf> {
+    walkdir::WalkDir::new(root)
+        .max_depth(DEEPEST_RELEASE)
         .into_iter()
         .flatten()
-    {
-        if !entry.file_type().is_file() {
-            continue;
-        }
-        let path = entry.into_path();
-        let ext_ok = path
-            .extension()
-            .and_then(std::ffi::OsStr::to_str)
-            .map(|e| {
-                kroma_module_sdk::engine::services::scan::walk::VIDEO_EXTENSIONS
-                    .contains(&e.to_ascii_lowercase().as_str())
-            })
-            .unwrap_or(false);
-        let name = path
-            .file_name()
-            .and_then(std::ffi::OsStr::to_str)
-            .unwrap_or_default()
-            .to_ascii_lowercase();
-        if ext_ok && !name.contains("sample") {
-            out.push(path);
-        }
-    }
-    Ok(out)
+        .filter(|entry| entry.file_type().is_file())
+        .map(walkdir::DirEntry::into_path)
+        .collect()
+}
+
+pub(super) fn video_files(root: &Path) -> Result<Vec<PathBuf>> {
+    Ok(files_under(root)
+        .into_iter()
+        .filter(|path| {
+            kroma_module_sdk::media::video::has_video_extension(path) && !is_a_sample(path)
+        })
+        .collect())
+}
+
+fn is_a_sample(path: &Path) -> bool {
+    path.file_name()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or_default()
+        .to_ascii_lowercase()
+        .contains("sample")
 }
 
 pub(super) fn largest(files: &[PathBuf]) -> Option<&Path> {

@@ -78,7 +78,13 @@ export { ARROW, HAND } from './lib/cursor';
 export { webDocument, webWindow } from './lib/dom';
 export { armEscapeGuard } from './lib/escape-guard';
 export type { ControlMetrics, ControlSize } from './lib/field-shell';
-export { CONTROL, controlMetrics, entryDefaultSize, setEntryDefaults } from './lib/field-shell';
+export {
+  CONTROL,
+  controlMetrics,
+  entryDefaultSize,
+  NO_OUTLINE,
+  setEntryDefaults,
+} from './lib/field-shell';
 export { useFocusNav } from './lib/focus-nav';
 export type { FocusDirection, FocusOwner } from './lib/focus-platform';
 export { usePlatformFocus } from './lib/focus-platform';

@@ -1,34 +1,53 @@
 // Native Samsung AVPlay backend, in one of two source modes: `direct` opens
-// the original file URL and lets the TV demux/decode it natively (seeks and
-// audio-track switches are native, in place); `master` is the server's HLS
-// remux for files AVPlay can't demux, anchored at `baseSec` so a resume/far
-// seek over a network mount starts fast (absolute position is
-// `baseSec + avplay time`; a far seek or language switch re-anchors).
+// the original file URL and lets the TV demux/decode it natively; `master` is
+// the server's HLS remux for files AVPlay can't demux, anchored at `baseSec` so
+// a resume/far seek over a network mount starts fast.
 //
 // AVPlay renders to a video plane behind the page: the player shows a
 // transparent `<object type="application/avplayer">` with the HTML chrome
 // and subtitle overlay on top.
 
-import { decodableAudioCodecs } from '@kromatv/core';
+import {
+  AT_FILM_START_SEC,
+  AVPLAY_HLS_CAPS,
+  decodableAudioCodecs,
+  decodableVideoCodecs,
+  resolveMasterStart,
+} from '@kromatv/core';
 import type { AudioFilterMode, PlaneRect } from '@kromatv/ui';
+import {
+  bestEffort,
+  currentSec,
+  releasePlayer,
+  silenceSubtitles,
+} from '#tv/features/playback/player/avplayCalls';
+import { AvplayDirectSource } from '#tv/features/playback/player/avplayDirect';
+import { AvplayLanding } from '#tv/features/playback/player/avplayLanding';
+import {
+  AvplayOpens,
+  insideRunningMaster,
+  seekToAnchor,
+} from '#tv/features/playback/player/avplayMaster';
+import {
+  FULL_PLANE,
+  type PlaneBox,
+  planeBox,
+  samePlaneBox,
+} from '#tv/features/playback/player/avplayPlane';
 import {
   BaseTvEngine,
   type EngineOptions,
-  NATIVE_SEEK_AHEAD,
   serverAudioFilter,
 } from '#tv/features/playback/player/baseEngine';
-import { type AvplayApi, getAvplay, resolveMasterStart } from '#tv/features/playback/player/engine';
-
-// AVPlay's display coordinate space is the app's fixed 1920x1080 canvas.
-const AVPLAY_W = 1920;
-const AVPLAY_H = 1080;
+import { type AvplayApi, getAvplay } from '#tv/features/playback/player/engine';
 
 export class AvplayEngine extends BaseTvEngine {
   readonly kind = 'avplay';
   private readonly api: AvplayApi;
-  private pendingSeek: number | null = null;
-  private displayRect = { x: 0, y: 0, w: AVPLAY_W, h: AVPLAY_H };
-  private openGen = 0;
+  private displayRect: PlaneBox = FULL_PLANE;
+  private readonly direct: AvplayDirectSource;
+  private readonly landing = new AvplayLanding();
+  private readonly opens = new AvplayOpens();
   private readonly onVisibility: () => void;
 
   constructor(opts: EngineOptions) {
@@ -36,6 +55,7 @@ export class AvplayEngine extends BaseTvEngine {
     const api = getAvplay();
     if (!api) throw new Error('AVPlay unavailable');
     this.api = api;
+    this.direct = new AvplayDirectSource(api);
     if (this.filter !== 'off' && this.mode === 'direct') {
       // The filter runs server-side, so a filtered start opens the remux (at the
       // same position) instead of the original file.
@@ -44,9 +64,7 @@ export class AvplayEngine extends BaseTvEngine {
       this.baseSec = this.elSec;
       this.elSec = 0;
     }
-    if (this.mode === 'direct') {
-      this.pendingSeek = opts.startSec > 0.5 ? opts.startSec : null;
-    }
+    if (this.mode === 'direct') this.direct.wantsStart(opts.startSec);
     this.onVisibility = () => this.handleVisibility();
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', this.onVisibility);
@@ -60,10 +78,19 @@ export class AvplayEngine extends BaseTvEngine {
     if (this.mode === 'master' && this.filter !== 'off') {
       return this.client.media.hlsMasterUrl(this.item.id, false, this.baseSec, this.rendition, {
         filter: serverAudioFilter(this.filter),
-        copyCodecs: decodableAudioCodecs(),
+        copyCodecs: this.declaredAudioCodecs(),
+        videoCodecs: this.declaredVideoCodecs(),
       });
     }
     return super.sourceUrl();
+  }
+
+  protected override declaredAudioCodecs(): string[] {
+    return decodableAudioCodecs(AVPLAY_HLS_CAPS);
+  }
+
+  protected override declaredVideoCodecs(): string[] {
+    return decodableVideoCodecs(AVPLAY_HLS_CAPS);
   }
 
   /** Reloads the source at the current position with the new filter mode; a
@@ -85,14 +112,11 @@ export class AvplayEngine extends BaseTvEngine {
   // An anchored master first resolves its real start (the keyframe the server
   // actually seeked to) so `baseSec` stays honest; direct sources open at once.
   private open(): void {
-    // A filter toggle or seek can arrive while this round-trip is pending, so
-    // stamp a generation and drop a stale resolution rather than overwrite
-    // `baseSec` with an abandoned source's answer.
-    const gen = ++this.openGen;
+    const stamp = this.opens.begin();
     const url = this.sourceUrl();
-    if (this.mode === 'master' && this.baseSec > 0.5) {
+    if (this.mode === 'master' && this.baseSec > AT_FILM_START_SEC) {
       void resolveMasterStart(url, this.baseSec).then((real) => {
-        if (this.destroyed || gen !== this.openGen) return;
+        if (this.destroyed || this.opens.abandoned(stamp)) return;
         this.baseSec = real;
         this.openNow(url);
       });
@@ -106,11 +130,9 @@ export class AvplayEngine extends BaseTvEngine {
       this.api.open(url);
       const r = this.displayRect;
       this.api.setDisplayRect(r.x, r.y, r.w, r.h);
-      try {
-        this.api.setStreamingProperty('ADAPTIVE_INFO', 'STARTBITRATE=HIGHEST|SKIPBITRATE=LOWEST');
-      } catch {
-        /* not all firmwares accept this */
-      }
+      bestEffort(() =>
+        this.api.setStreamingProperty('ADAPTIVE_INFO', 'STARTBITRATE=HIGHEST|SKIPBITRATE=LOWEST'),
+      );
       // NB: silencing subtitles here (IDLE state) is ignored by Tizen; it's
       // (re)applied in onPrepared (READY) and play (PLAYING) instead.
       this.api.setListener({
@@ -118,6 +140,8 @@ export class AvplayEngine extends BaseTvEngine {
         onbufferingcomplete: () => this.listeners.onPlaying(),
         oncurrentplaytime: (ms: number) => {
           this.elSec = ms / 1000;
+          if (this.landing.reported(ms)) this.seekToTop();
+          this.direct.applyPendingAudio();
           this.listeners.onTime(this.baseSec + this.elSec);
         },
         onstreamcompleted: () => this.listeners.onEnded(),
@@ -132,41 +156,21 @@ export class AvplayEngine extends BaseTvEngine {
     }
   }
 
-  // Suppresses AVPlay's own subtitle rendering (we draw our own). Firmware
-  // honors it inconsistently by state, so it's re-asserted at READY and PLAYING.
-  private silenceSubtitles(): void {
-    try {
-      this.api.setSilentSubtitle(true);
-    } catch {
-      /* not all firmwares expose it */
-    }
-  }
-
   private onPrepared(): void {
     if (this.destroyed) return;
-    this.silenceSubtitles();
-    try {
-      const d = this.api.getDuration();
-      if (d > 0) this.durSec = d / 1000;
-    } catch {
-      /* keep the catalogue runtime */
-    }
+    silenceSubtitles(this.api);
     if (this.mode === 'direct') {
+      // A master's duration is the remux's, which on a playlist still being
+      // written is the seconds produced so far, not the runtime.
+      const runtime = this.direct.runtime();
+      if (runtime > 0) this.durSec = runtime;
       // Resume / fallback hand-off: land on the target before frames roll.
-      const target = this.pendingSeek;
-      this.pendingSeek = null;
-      if (target != null) {
-        this.elSec = target;
-        try {
-          this.api.seekTo(Math.max(0, Math.round(target * 1000)));
-        } catch {
-          /* keep from 0 */
-        }
-      }
-      // The container default may not be the wanted language; select explicitly.
-      this.selectNativeAudio(this.rendition);
+      const target = this.direct.land();
+      if (target !== null) this.elSec = target;
+      this.direct.wantsAudio(this.rendition);
     } else {
-      this.elSec = 0;
+      this.elSec = currentSec(this.api);
+      this.landing.attached();
     }
     this.listeners.onDuration(this.durSec);
     this.listeners.onReady(); // the hook drives the FIRST playback start
@@ -176,25 +180,27 @@ export class AvplayEngine extends BaseTvEngine {
     }
   }
 
+  private seekToTop(): void {
+    this.elSec = 0;
+    seekToAnchor(this.api, this.landing);
+  }
+
   private handleVisibility(): void {
     if (this.destroyed) return;
-    try {
-      if (document.visibilityState === 'hidden') this.api.suspend();
-      else {
-        // Direct sources restore at the ABSOLUTE position; anchored masters at
-        // the relative one (their clock restarts at the anchor).
-        const ms = Math.round((this.mode === 'direct' ? this.position() : this.elSec) * 1000);
-        this.api.restore(this.sourceUrl(), ms, this.paused ? 'PAUSED' : 'PLAYING');
-      }
-    } catch {
-      /* best effort */
+    if (document.visibilityState === 'hidden') {
+      bestEffort(() => this.api.suspend());
+      return;
     }
+    // Direct sources restore at the ABSOLUTE position; anchored masters at the
+    // relative one (their clock restarts at the anchor).
+    const ms = Math.round((this.mode === 'direct' ? this.position() : this.elSec) * 1000);
+    bestEffort(() => this.api.restore(this.sourceUrl(), ms, this.paused ? 'PAUSED' : 'PLAYING'));
   }
 
   play(): void {
     try {
       this.api.play();
-      this.silenceSubtitles(); // some firmwares only honor it once PLAYING
+      silenceSubtitles(this.api); // some firmwares only honor it once PLAYING
       this.paused = false;
       this.listeners.onPlay();
     } catch {
@@ -226,18 +232,11 @@ export class AvplayEngine extends BaseTvEngine {
 
   seekTo(absSec: number): void {
     if (this.mode === 'direct') {
-      // The original file is one fully-seekable VOD: every seek is native.
       this.elSec = Math.max(0, absSec);
-      try {
-        this.api.seekTo(Math.max(0, Math.round(absSec * 1000)));
-      } catch {
-        /* transient (e.g. mid-prepare); the position state stays consistent */
-      }
+      this.direct.seekTo(absSec);
       return;
     }
-    const here = this.position();
-    // Native within the current remux + its buffer; otherwise re-anchor.
-    if (absSec >= this.baseSec && absSec <= here + NATIVE_SEEK_AHEAD) {
+    if (insideRunningMaster(absSec, this.baseSec, this.position())) {
       this.elSec = absSec - this.baseSec;
       try {
         this.api.seekTo(Math.max(0, Math.round((absSec - this.baseSec) * 1000)));
@@ -256,58 +255,22 @@ export class AvplayEngine extends BaseTvEngine {
     if (this.mode === 'direct') {
       this.baseSec = 0;
       this.elSec = absSec;
-      this.pendingSeek = absSec > 0.5 ? absSec : null;
+      this.direct.wantsStart(absSec);
     } else {
       this.baseSec = absSec;
       this.elSec = 0;
     }
-    try {
-      this.api.stop();
-    } catch {
-      /* ignore */
-    }
-    try {
-      this.api.close();
-    } catch {
-      /* ignore */
-    }
+    releasePlayer(this.api);
     this.open();
     // onPrepared fires onReady; the hook restarts playback there.
   }
 
-  // Maps an audio-relative index to AVPlay's internal track index.
-  private selectNativeAudio(rendition: number): boolean {
-    try {
-      const audios = this.api.getTotalTrackInfo().filter((t) => t.type === 'AUDIO');
-      const track = audios[rendition];
-      if (!track) return false;
-      this.api.setSelectTrack('AUDIO', track.index);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
   /** Shrink/restore the hardware video plane (fraction-rect → 1920x1080 px). */
   setRect(rect: PlaneRect | null): void {
-    const next = rect
-      ? {
-          x: Math.round(rect.x * AVPLAY_W),
-          y: Math.round(rect.y * AVPLAY_H),
-          w: Math.round(rect.w * AVPLAY_W),
-          h: Math.round(rect.h * AVPLAY_H),
-        }
-      : { x: 0, y: 0, w: AVPLAY_W, h: AVPLAY_H };
-    const p = this.displayRect;
-    // Skip a no-op resize (e.g. the restore-to-fullscreen on unmount when already
-    // fullscreen) - each setDisplayRect hits the hardware compositor.
-    if (next.x === p.x && next.y === p.y && next.w === p.w && next.h === p.h) return;
+    const next = planeBox(rect);
+    if (samePlaneBox(next, this.displayRect)) return;
     this.displayRect = next;
-    try {
-      this.api.setDisplayRect(next.x, next.y, next.w, next.h);
-    } catch {
-      /* transient (mid-prepare); re-applied on the next open() */
-    }
+    bestEffort(() => this.api.setDisplayRect(next.x, next.y, next.w, next.h));
   }
 
   setAudioRendition(rendition: number): void {
@@ -315,7 +278,7 @@ export class AvplayEngine extends BaseTvEngine {
     this.rendition = rendition;
     // Direct: in-place native track switch. Master: the stream carries only
     // one audio track, so a language switch reopens it at the current position.
-    if (this.mode === 'direct' && this.selectNativeAudio(rendition)) return;
+    if (this.mode === 'direct' && this.direct.selectAudio(rendition)) return;
     this.reanchor(this.position());
   }
 
@@ -324,16 +287,6 @@ export class AvplayEngine extends BaseTvEngine {
     if (typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', this.onVisibility);
     }
-    // Singleton hardware resource: stop THEN close, or the next open() fails.
-    try {
-      this.api.stop();
-    } catch {
-      /* ignore */
-    }
-    try {
-      this.api.close();
-    } catch {
-      /* ignore */
-    }
+    releasePlayer(this.api);
   }
 }

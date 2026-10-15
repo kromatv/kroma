@@ -1,8 +1,4 @@
-//! The Downloads module's admin API (served under its `/api/admin/m/<id>` mount): torrent engines
-//! ([`clients`]), the download queue ([`queue`]) and what drives it ([`actions`],
-//! [`limits`], [`add`], [`link`]), the file-organize tool ([`organize`]). Every
-//! handler is generic over the host state `S: HostStorage`, so the module runs
-//! both in-process and out-of-process in its `.kmod` form.
+//! The Downloads module's admin API, served under its `/api/admin/m/<id>` mount.
 
 mod actions;
 mod add;
@@ -43,8 +39,6 @@ pub(super) fn dm<S: HostStorage>(state: &S) -> Arc<DownloadManager> {
     service::<DownloadManager>(state).expect("download manager registered")
 }
 
-// The queue is readable and drivable by either the moderator who grabbed
-// (`requests.manage`) or the operator who owns the engines.
 pub(super) fn require_downloads<S: HostStorage>(state: &S, user: &User) -> Result<(), Response> {
     if user.can(Permission::RequestsManage) || user.can(Permission::SettingsManage) {
         Ok(())

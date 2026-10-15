@@ -23,7 +23,7 @@ path = "src/bin/module.rs"
 # resolved at runtime through the host registry, so it names no sibling crate.
 # `storage` + `engine`: this module orchestrates the core's request /
 # wanted ledger, so it reaches both, within the grant module.json declares.
-kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["storage", "engine"] }
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["storage", "engine", "transcode"] }
 # The two shared libraries, linked rather than reached over a point: naming
 # renders one path per imported file and the release parser scores every release
 # of every search, so a localhost round trip per call would be slower than the

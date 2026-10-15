@@ -205,19 +205,3 @@ export function mpvAvailable(): boolean {
   // macOS: the in-process libmpv engine flags itself in Rust `setup` once it's up.
   return '__KROMA_MPV__' in globalThis;
 }
-
-/** The real start of an anchored master: the server seeks to the keyframe
- * at-or-before the requested anchor (`-noaccurate_seek`) and reports it via
- * the `X-Hls-Start` header. Using the requested anchor as `baseSec` would
- * drift the absolute clock by up to one GOP, desyncing the progress bar and
- * every subtitle cue after a resume/seek/audio switch. */
-export async function resolveMasterStart(url: string, requested: number): Promise<number> {
-  if (requested <= 0.5) return 0;
-  try {
-    const r = await fetch(url);
-    const real = Number(r.headers.get('X-Hls-Start'));
-    return Number.isFinite(real) ? real : requested;
-  } catch {
-    return requested;
-  }
-}

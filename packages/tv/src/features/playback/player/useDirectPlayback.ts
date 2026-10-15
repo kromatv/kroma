@@ -35,6 +35,7 @@ export interface Playback {
   cur: number;
   dur: number;
   bufEnd: number | null;
+  resumedAt: number | null;
   /** The picture's display ratio, from the decoder where a backend can read it
    *  and from the catalog otherwise; undefined when neither knows. */
   aspect: number | undefined;
@@ -198,6 +199,7 @@ export function useDirectPlayback(
     cur: engine.cur,
     dur: engine.dur,
     bufEnd: engine.bufEnd,
+    resumedAt: engine.resumedAt,
     aspect: engine.decodedAspect ?? declaredAspect(item),
     audioTracks,
     audioIndex,

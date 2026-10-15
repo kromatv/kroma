@@ -20,6 +20,9 @@ interface WatchedValue {
   isWatched: (id: SubjectId) => boolean;
   setWatched: (id: SubjectId, watched: boolean) => void;
   toggleWatched: (id: SubjectId) => void;
+  /** Adopt a watched flag the server already set (a progress save that crossed
+   * the line), so the set agrees without a round trip. */
+  noteWatched: (id: SubjectId) => void;
 }
 
 const WatchedContext = createContext<WatchedValue | null>(null);
@@ -80,6 +83,14 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
     [client, user, apply],
   );
 
+  const noteWatched = useCallback(
+    (id: SubjectId) => {
+      if (idsRef.current.has(id)) return;
+      apply(new Set(idsRef.current).add(id));
+    },
+    [apply],
+  );
+
   const value = useMemo<WatchedValue>(
     () => ({
       ready,
@@ -87,8 +98,9 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
       isWatched: (id) => ids.has(id),
       setWatched,
       toggleWatched: (id) => setWatched(id, !ids.has(id)),
+      noteWatched,
     }),
-    [ids, ready, setWatched],
+    [ids, ready, setWatched, noteWatched],
   );
 
   return <WatchedContext.Provider value={value}>{children}</WatchedContext.Provider>;

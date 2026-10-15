@@ -2,8 +2,7 @@
 //! pass: decode + analyze, never transcodes). One pass over the file measures
 //! the full mix; for 5.1+ tracks the same decode also measures the centre
 //! channel alone (where dialogue lives) through an `asplit` fork, so the file
-//! is read once. The measured values feed both the stored verdict and any
-//! future playback-side `loudnorm` two-pass remediation.
+//! is read once.
 
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -62,7 +61,7 @@ pub fn measure(path: &Path, audio_rel: u32, channels: Option<u32>) -> Result<Lou
     cmd.stdout(Stdio::null()).stderr(Stdio::piped());
 
     let out = {
-        let _permit = crate::infra::ffmpeg_gate::acquire();
+        let _permit = kroma_media::ffmpeg_gate::acquire();
         cmd.output()
             .context("spawn ffmpeg for loudness measurement")?
     };
@@ -137,7 +136,6 @@ fn parse_loudnorm_blocks(stderr: &str) -> Vec<(u32, LoudnessStats)> {
     out
 }
 
-/// Derive the stored analysis (verdict included) from a measurement.
 pub fn to_analysis(res: &LoudnessResult) -> AudioAnalysis {
     let dialog_lufs = res.dialog.map(|d| d.input_i);
     AudioAnalysis {
@@ -215,13 +213,9 @@ size=N/A time=00:00:04.50 bitrate=N/A speed=8.91x
 
     #[test]
     fn verdict_policy() {
-        // Comfortable mix.
         assert_eq!(verdict(-23.0, 9.0, Some(-25.0)), AudioVerdict::Ok);
-        // Wide dynamics, dialogue fine.
         assert_eq!(verdict(-23.0, 18.5, None), AudioVerdict::HighDynamics);
-        // Buried dialogue wins over the LRA flag.
         assert_eq!(verdict(-9.0, 18.5, Some(-31.6)), AudioVerdict::QuietDialog);
-        // Silent centre channel is not "quiet dialogue".
         assert_eq!(verdict(-23.0, 9.0, Some(-70.0)), AudioVerdict::Ok);
     }
 }

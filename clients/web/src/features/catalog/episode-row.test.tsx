@@ -54,6 +54,19 @@ describe('MissingEpisodeRow', () => {
     expect(screen.queryByText('9')).toBeNull();
   });
 
+  it('shows the runtime the provider lists next to the day it airs', () => {
+    row({
+      episode: 9,
+      title: 'The Wedding',
+      overview: null,
+      airDate: '2031-03-14',
+      stillUrl: null,
+      runtimeMin: 48,
+    });
+
+    expect(screen.getByText(/Mar 14, 2031 · 48min/)).toBeTruthy();
+  });
+
   it('says the date is unknown when the listing has none', () => {
     row({ episode: 9, title: 'Untitled', airDate: null });
 

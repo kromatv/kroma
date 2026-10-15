@@ -2,17 +2,7 @@
 //! DISPATCH (interactive via [`search`]; the automatic wanted-list pass in
 //! [`auto`]), plus grab + import. Its own module so disabling it gates the whole
 //! search / grab / auto feature.
-//!
-//! SDK-only: acquisition names no sibling crate. It reaches the Downloads module
-//! (grab / ledger) through the `download-grab` and `download-db` points, and the
-//! Indexers module through `indexer-search` and `indexer-db` (see [`peers`]),
-//! all resolved at
-//! runtime through the host port registry. The coupling stays one-way (those
-//! modules never call acquisition), so there is no cycle.
 
-// The axum `Response` is intentionally the Err type of request guards so handlers
-// short-circuit with `?`; boxing every guard for `result_large_err` would churn
-// dozens of signatures for no real gain on these error paths.
 #![allow(clippy::result_large_err)]
 
 pub mod auto;
@@ -43,7 +33,6 @@ pub const MODULE_ID: &str = "tv.kroma.acquisition";
 use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 
-/// Build the decision engine's profile from the admin settings.
 pub fn profile_from_settings<S: HostStorage>(state: &S) -> Profile {
     let resolution = match state.setting_str("acqResolution", "1080p").as_str() {
         "720p" => Res::R720,
@@ -71,9 +60,7 @@ pub fn profile_from_settings<S: HostStorage>(state: &S) -> Profile {
 }
 
 /// Run one query against one indexer, whatever its kind, returning normalized
-/// releases. This is the single dispatch point the search pipelines call; the
-/// native-vs-Torznab dispatch lives behind the `indexer-search` point, so this
-/// module names neither engine.
+/// releases.
 pub fn search_indexer<S: HostStorage>(
     state: &S,
     indexer: &IndexerRef,
@@ -94,8 +81,6 @@ pub fn search_indexer<S: HostStorage>(
         },
         now_ms(),
     );
-    // Surface an all-error, no-result sweep as an error (so it reads as a broken
-    // indexer, not "nothing found").
     if outcome.releases.is_empty() && !outcome.errors.is_empty() {
         anyhow::bail!("{}", outcome.errors.join("; "));
     }
@@ -135,8 +120,6 @@ impl<S: HostStorage + Clone + Send + Sync + 'static> kroma_module_sdk::host::Ser
         Some(routes::routes::<S>())
     }
 
-    // Jobs contributed to the core JobManager, which owns cron cadence, run-now
-    // and history and drives each via `/_job/run/{key}`.
     fn jobs(&self) -> Vec<kroma_module_sdk::host::ModuleJob<S>> {
         use kroma_module_sdk::host::ModuleJob;
         vec![
@@ -148,9 +131,6 @@ impl<S: HostStorage + Clone + Send + Sync + 'static> kroma_module_sdk::host::Ser
                 schedule: Some("*/5 * * * *"),
                 run: run_import::<S>,
             },
-            // Every 15 min: with the ledger ordered freshest-air-date-first and
-            // each row on its own backoff, a tighter tick costs little and is
-            // what puts a weekly episode in the library the day it airs.
             ModuleJob {
                 key: "acquisition.search",
                 category: "acquisition",
@@ -163,10 +143,6 @@ impl<S: HostStorage + Clone + Send + Sync + 'static> kroma_module_sdk::host::Ser
                 schedule: Some("30 5 * * *"),
                 run: run_match::<S>,
             },
-            // Every 6h: re-fetch TMDB for open requests so an ongoing show's
-            // newly-aired episodes join the wanted ledger (and unreleased movies
-            // gain an availability date). Additive + throttled, so it never wipes
-            // grabbed rows nor hammers TMDB.
             ModuleJob {
                 key: "acquisition.refresh",
                 category: "acquisition",
@@ -177,12 +153,7 @@ impl<S: HostStorage + Clone + Send + Sync + 'static> kroma_module_sdk::host::Ser
     }
 }
 
-// No enabled-guard needed here: the supervisor stops this sidecar process when
-// the module is disabled.
-
 fn run_search<S: HostStorage>(host: &S) -> anyhow::Result<()> {
-    // No JobContext-driven cancellation across the process boundary (MVP): the
-    // pass runs to completion once the core fires it.
     auto::auto_search_pass(
         host,
         &|l| tracing::info!(target: "acquisition", "{l}"),
@@ -206,9 +177,7 @@ fn run_refresh<S: HostStorage>(host: &S) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// This module's backend behavior, for the host's generic module roster. Generic
-/// over the host state so both the in-core roster (`S = SharedState`) and the
-/// `.kmod` binary (`S = RemoteHost`) construct it.
+/// This module's backend behavior, for the host's generic module roster.
 pub fn server_module<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Box<dyn kroma_module_sdk::host::ServerModule<S>> {
     Box::new(AcquisitionModule)

@@ -147,6 +147,9 @@ kroma-module-wire = { path = "crates/kroma-module-wire" }
 # The SQLite pool and the storage grant, the one piece of kroma-db a module links.
 kroma-sqlite = { path = "crates/kroma-sqlite" }
 kroma-i18n = { path = "crates/kroma-i18n" }
+# Reading and re-encoding one media input, below the engine. No database, so a
+# module links it without the core's forty tables.
+kroma-media = { path = "crates/kroma-media" }
 kroma-db = { path = "crates/kroma-db" }
 kroma-http = { path = "crates/kroma-http" }
 kroma-module-host = { path = "crates/kroma-module-host" }
@@ -190,6 +193,9 @@ kroma-module-host = { workspace = true }
 # `crate::model` wire types come through `kroma-engine`.
 kroma-config = { workspace = true }
 kroma-db = { workspace = true }
+# The byte routes are a thin shell over this: the HLS engine, the per-request
+# program over it, and the range streamer.
+kroma-media = { workspace = true }
 
 axum = { workspace = true }
 tokio = { workspace = true }

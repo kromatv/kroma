@@ -3,12 +3,20 @@ use std::process::Command;
 
 use anyhow::{bail, Context as _, Result};
 
+use super::heal::gate;
 use super::{is_yml, DefinitionStore, SyncReport};
 
 impl DefinitionStore {
     /// Downloads and extracts the current definition set, replacing the cache
-    /// (extract to a temp dir, then swap the yml files in).
+    /// (extract to a temp dir, then swap the yml files in). Waits for any sync
+    /// of the same cache already running, rather than extracting over it.
     pub fn sync(&self) -> Result<SyncReport> {
+        let gate = gate(&self.dir);
+        let _running = gate.lock().unwrap();
+        self.sync_now()
+    }
+
+    pub(super) fn sync_now(&self) -> Result<SyncReport> {
         std::fs::create_dir_all(&self.dir).context("create defs dir")?;
         let tmp = self.dir.join(".sync-tmp");
         let _ = std::fs::remove_dir_all(&tmp);

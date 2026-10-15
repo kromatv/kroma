@@ -1,7 +1,9 @@
+import { type ReactNode, useState } from 'react';
 import { Img } from '#ui/components/atoms/img';
 
 import { stillArt } from '#ui/lib/sample-art';
 
+import { DEFAULT_SUB_APPEARANCE, type SubtitleAppearance } from './lib/subtitle-appearance';
 import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
 
 import type { PlayerFlags } from './types';
@@ -46,4 +48,19 @@ export const ASPECTS: Record<string, number> = {
 
 export function Surface() {
   return <Img src={stillArt(1)} fill fit="cover" />;
+}
+
+/** Subtitle appearance that remembers what the panel sets, so a story's ◀▶ and
+ *  swatches take effect. A story's `render` is called as a plain function, so
+ *  the state has to live in a component of its own. */
+export function LiveAppearance({
+  children,
+}: Readonly<{
+  children: (
+    appearance: SubtitleAppearance,
+    onAppearanceChange: (patch: Partial<SubtitleAppearance>) => void,
+  ) => ReactNode;
+}>) {
+  const [appearance, setAppearance] = useState(DEFAULT_SUB_APPEARANCE);
+  return children(appearance, (patch) => setAppearance((prev) => ({ ...prev, ...patch })));
 }

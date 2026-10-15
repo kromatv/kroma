@@ -12,7 +12,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { wearsRing } from '#ui/testing';
 import { configureRemote } from './focus-remote';
 import { FocusRegion, FocusScope } from './focus-scope';
-import { FocusSlot, pageOffset } from './focus-scroll';
+import { FocusSlot, nearestOffset, pageOffset } from './focus-scroll';
 
 const page = { viewport: 1080, content: 6480 };
 
@@ -31,6 +31,27 @@ describe('pageOffset', () => {
 
   it('does not scroll a page that fits', () => {
     expect(pageOffset({ top: 700, offsetFromStart: 120, viewport: 1080, content: 900 })).toBe(0);
+  });
+});
+
+describe('nearestOffset', () => {
+  const list = { margin: 20, viewport: 1080, content: 1400 };
+
+  it('leaves a row that is already whole where it is', () => {
+    expect(nearestOffset({ top: 500, size: 100, current: 200, ...list })).toBe(200);
+  });
+
+  it('brings a row below the fold up by just enough', () => {
+    expect(nearestOffset({ top: 1200, size: 100, current: 0, ...list })).toBe(240);
+  });
+
+  it('brings a row above the fold down by just enough', () => {
+    expect(nearestOffset({ top: 100, size: 100, current: 300, ...list })).toBe(80);
+  });
+
+  it('never scrolls past either end', () => {
+    expect(nearestOffset({ top: 1300, size: 100, current: 0, ...list })).toBe(320);
+    expect(nearestOffset({ top: 0, size: 100, current: 300, ...list })).toBe(0);
   });
 });
 

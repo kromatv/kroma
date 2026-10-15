@@ -9,7 +9,7 @@ of what a module written elsewhere depends on, and the only thing published.
 | `types/<pkg>/` declarations | `packages/{module-sdk,ui,core,client,registry,i18n,spatial-nav}` |
 | `types/react-native/` | the declaration files of the React Native fork the kit is typed against, so a module installs no React Native (it and its toolchain are most of a 250 MB `node_modules`; the runtime is the host's) |
 | `tsconfig.module.json` | `packages/cli/tsconfig.module.json` plus `paths` mapping every `@kromatv/*` specifier and `react-native` onto `types/` |
-| `rust/` | the ten crates a sidecar links, out of `server/crates` (400 KB: the SDK's own, not the server's) |
+| `rust/` | the eleven crates a sidecar links, out of `server/crates` (400 KB: the SDK's own, not the server's) |
 | `templates/` | what `kroma create` renders |
 
 Every workspace package stays `private: true`; `bun run ci sdk stage` assembles
@@ -47,7 +47,8 @@ delivers both halves at one version.
 
 The closure is `kroma-module-sdk`, `kroma-module-runtime`, `kroma-module-host`,
 `kroma-module-manifest`, `kroma-module-macros`, `kroma-module-wire`,
-`kroma-sqlite`, `kroma-http`, `kroma-primitives`, `kroma-testing`.
+`kroma-media`, `kroma-sqlite`, `kroma-http`, `kroma-primitives`,
+`kroma-testing`.
 
 None of it is server code, and that is the rule the split enforces. A sidecar
 used to link `kroma-domain` for seven wire types and `kroma-db` for a pool and
@@ -62,6 +63,15 @@ the dependency and the comment that introduced it: `core` (the core schema, so
 a first-party grant test prepares against the real tables), `domain` (all of
 `kroma-domain`) and `engine` (the whole core, for the two modules that
 orchestrate it).
+
+`transcode` is not one of them. `kroma-media` is reading and re-encoding one
+input and nothing else, so it ships: a module that holds a media file gets
+ffprobe, the HLS engine and the per-request program over it without the database
+those used to arrive with. It is in the closure for the same reason
+`kroma-module-wire` is, and the crate's own dependency list is what proves it:
+`kroma-module-wire`, `kroma-module-host`, `kroma-primitives`, axum, tokio,
+serde, tracing, time and walkdir. No `rusqlite`, so `cargo tree` on the SDK with
+`transcode` alone finds no SQLite at all.
 
 ## The lane
 

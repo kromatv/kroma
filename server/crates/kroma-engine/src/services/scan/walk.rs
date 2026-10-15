@@ -15,9 +15,7 @@ use crate::model::{Kind, MediaFile, MediaItem, Show};
 use super::ids::{detect_edition, episode_logical_id, movie_logical_id, short_hash, show_key};
 use super::now_iso8601;
 
-/// Extensions we treat as playable video. Public so the relocated acquisition
-/// importer (tv.kroma.torrents) can share the exact same set.
-pub const VIDEO_EXTENSIONS: &[&str] = &["mkv", "mp4", "m4v", "mov", "webm", "avi", "ts"];
+pub use kroma_media::video::{has_video_extension, VIDEO_EXTENSIONS};
 
 /// Scan one folder belonging to `lib_id`, accumulating items (by logical id) and
 /// shows into the shared maps. Flags/ids track what this library contributed so
@@ -351,13 +349,6 @@ fn file_meta(path: &Path) -> FileMeta {
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0);
     Some((md.len(), mtime))
-}
-
-fn has_video_extension(path: &Path) -> bool {
-    path.extension()
-        .and_then(std::ffi::OsStr::to_str)
-        .map(|e| VIDEO_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
-        .unwrap_or(false)
 }
 
 #[cfg(test)]

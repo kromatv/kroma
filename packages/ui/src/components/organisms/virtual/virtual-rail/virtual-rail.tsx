@@ -1,5 +1,3 @@
-// <VirtualRail>: the horizontally scrolling row of the browse screens.
-//
 // Under a pointer or a finger the row is a REAL horizontal scroller and the
 // platform owns every gesture: a vertical wheel chains to the page with its
 // momentum intact, a sideways swipe or shift+wheel pans the row. Only under a
@@ -63,12 +61,7 @@ function VirtualRail<T>({
   edgeMargin = 1,
   arrows = true,
 }: Readonly<VirtualRailProps<T>>) {
-  // Without a <FocusScope> above there is no navigator. Unscoped, the row keeps
-  // everything except the D-pad.
   const scoped = useInsideFocusScope();
-  // Translated only where the D-pad drives the row; everywhere else the row is
-  // a real scroller.
-  const translated = scoped;
   const scroller = useRef<ScrollView | null>(null);
   const [offset, setOffset] = useState(0);
   const [reach, setReach] = useState(OVERSCAN);
@@ -89,10 +82,9 @@ function VirtualRail<T>({
   const pitch = width > 0 ? fitPitch(itemWidth, width) : itemWidth;
   const edge = edgeWidth(width);
 
-  const grow = useCallback(
-    (index: number) => setReach((prev) => (index > prev ? Math.min(count - 1, index) : prev)),
-    [count],
-  );
+  // Bounded by the data at render rather than here, because the data can arrive
+  // after the row has already reached past it.
+  const grow = useCallback((index: number) => setReach((prev) => Math.max(prev, index)), []);
 
   // Stable, so the tiles never rebuild when the row grows: one function,
   // always seeing the current pitch and count. Not `useEffectEvent`, whose new
@@ -102,7 +94,7 @@ function VirtualRail<T>({
     if (index >= count - 1 - OVERSCAN) onEndReached?.();
     // A real scroller owns its position: the browser reveals a tab-focused
     // tile itself, and a tap must not yank the row out from under the finger.
-    if (!translated) return;
+    if (!scoped) return;
     // Only a PRESS moves the row: the navigator focuses whatever the cursor
     // enters, so scrolling on every focus change made the row creep sideways
     // under a wandering pointer.
@@ -138,14 +130,14 @@ function VirtualRail<T>({
       const target = Math.round(Math.min(furthest, Math.max(0, at.current + by)));
       // Mounted before the move, or the scroll runs into an unrendered gap.
       grow(Math.ceil((target + measured.current) / pitch) + OVERSCAN);
-      if (translated) {
+      if (scoped) {
         at.current = target;
         setOffset(target);
         return;
       }
       scroller.current?.scrollTo({ x: target, animated: true });
     },
-    [count, grow, pitch, translated],
+    [count, grow, pitch, scoped],
   );
 
   const onLayout = useCallback(
@@ -187,8 +179,6 @@ function VirtualRail<T>({
     const item = data[index];
     if (item === undefined) continue;
     tiles.push(
-      // <FocusReporter> rather than a node per tile: the tile's own focusable
-      // is already the node, and the row only needs to know which one took it.
       <FocusLiftView key={index} style={cell}>
         <FocusReporter onFocus={select} index={index}>
           {renderItem(item, index)}
@@ -199,8 +189,6 @@ function VirtualRail<T>({
 
   const furthest = maxOffset(count, pitch, width);
   const arrowsOn = WEB && arrows;
-  // The fade means "there is more": always on a D-pad row, with the buttons under
-  // a pointer, never on touch.
   const buttonsUp = arrowsOn && hovered;
   const fadeOn = scoped || buttonsUp;
   const fadeStart = fadeOn && offset > 1;
@@ -219,7 +207,7 @@ function VirtualRail<T>({
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
-      {translated ? (
+      {scoped ? (
         <View style={clipStyles.clip}>
           <MovingStrip axis="x" offset={offset} style={contentStyle}>
             {row}

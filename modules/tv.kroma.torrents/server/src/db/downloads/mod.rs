@@ -14,7 +14,6 @@ pub use rollup::*;
 pub use sort::*;
 pub use write::*;
 
-/// A stored download row.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DownloadRow {
     pub id: String,
@@ -38,7 +37,6 @@ pub struct DownloadRow {
     pub status: String,
     pub progress: f64,
     pub save_path: Option<String>,
-    // Persisted for the record / a future "reveal in library"; not read yet.
     #[allow(dead_code)]
     pub imported_paths: Option<Vec<String>>,
     pub error: Option<String>,
@@ -47,7 +45,6 @@ pub struct DownloadRow {
     pub imported_at: Option<i64>,
     pub details_url: Option<String>,
     pub only_files: Option<Vec<usize>>,
-    /// Replaces media already on disk (see [`GrabSpec::upgrade`]).
     #[serde(default)]
     pub upgrade: bool,
     #[serde(default)]

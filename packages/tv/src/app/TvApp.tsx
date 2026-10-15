@@ -31,6 +31,7 @@ import { TvProfiles } from '#tv/features/accounts/TvProfiles';
 import { TvQuickConnect } from '#tv/features/accounts/TvQuickConnect';
 import { TvSettingsGroup } from '#tv/features/accounts/TvSettingsGroup';
 import { CastReceiverProvider } from '#tv/features/cast/CastReceiverProvider';
+import { TvDiscoverDetail } from '#tv/features/catalog/discover/TvDiscoverDetail';
 import { BROWSE_CHROME } from '#tv/features/catalog/home/chrome';
 import { TvGenreGrid } from '#tv/features/catalog/TvGenreGrid';
 import { TvGenres } from '#tv/features/catalog/TvGenres';
@@ -170,6 +171,7 @@ const SCREENS: TvScreens = {
   person: TvPerson,
   movie: TvMovieDetail,
   show: TvShowDetail,
+  discover: TvDiscoverDetail,
   player: TvPlayer,
   report: TvReport,
   releases: TvReleases,

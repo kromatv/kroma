@@ -1,9 +1,10 @@
 // For surfaces whose player exposes no decode counters; the web builds its own
 // richer snapshot instead.
 
+import { pictureFormat } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import type { PlayerStats } from '#ui/components/organisms/player/types';
-import type { PlayerAudioTrack, PlayerStatsItem, PlayerVideoTrack } from '../media-types';
+import type { PlayerAudioTrack, PlayerStatsItem } from '../media-types';
 
 /** Typed structurally so React Native surfaces can satisfy it with no DOM lib. */
 export interface LeanStatsVideoHandle {
@@ -32,13 +33,6 @@ export interface LeanStatsInput {
   meters?: NonNullable<PlayerStats['meters']>;
 }
 
-function videoCodecLabel(video: PlayerVideoTrack | null): string | undefined {
-  if (!video) return undefined;
-  const depth = video.bitDepth ? ` ${video.bitDepth}-bit` : '';
-  const hdr = video.hdr ? ' HDR' : '';
-  return `${video.codec.toUpperCase()}${depth}${hdr}`;
-}
-
 function audioFormatLabel(track: PlayerAudioTrack | undefined): string | undefined {
   if (!track) return undefined;
   const channels = track.channels ? ` ${track.channels}.0` : '';
@@ -62,7 +56,7 @@ export function buildLeanStats(s: LeanStatsInput): PlayerStats {
   return {
     mode,
     resolution: vw && vh ? `${vw}×${vh}` : undefined,
-    videoCodec: videoCodecLabel(item.video),
+    videoCodec: item.video ? pictureFormat(item.video) : undefined,
     audioFormat: audioFormatLabel(selAudio),
     buffer:
       bufferAhead == null ? undefined : t('stats.bufferAhead', { seconds: bufferAhead.toFixed(1) }),

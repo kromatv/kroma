@@ -4,6 +4,7 @@
 // Releases landing within the week get the accent date treatment so the
 // imminent stuff pops out of the list.
 
+import { tmdbKindOf } from '@kromatv/client/discovery';
 import type { CalendarEntry } from '@kromatv/client/requests';
 import {
   daysFromToday,
@@ -134,7 +135,7 @@ function CalendarRow({ entry, locale }: Readonly<{ entry: CalendarEntry; locale:
       link={
         <RouteLink
           to="/discover/$type/$tmdbId"
-          params={{ type: entry.kind === 'show' ? 'tv' : 'movie', tmdbId: String(entry.tmdbId) }}
+          params={{ type: tmdbKindOf(entry.kind), tmdbId: String(entry.tmdbId) }}
         />
       }
     />
