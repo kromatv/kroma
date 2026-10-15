@@ -89,7 +89,7 @@ pub(in crate::hls) async fn registry_with_budget(
     let mut map = s.inner.lock().await;
     for (key, age) in sessions {
         let dir = s.root.join(session_dir(key));
-        std::fs::create_dir_all(&dir).expect("session dir");
+        tokio::fs::create_dir_all(&dir).await.expect("session dir");
         map.insert((*key).to_string(), fake_session(dir, *age));
     }
     drop(map);

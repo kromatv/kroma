@@ -59,7 +59,9 @@ pub async fn download(data_dir: &Path) -> Result<PathBuf, String> {
         )
     })?;
     let bindir = data_dir.join("bin");
-    std::fs::create_dir_all(&bindir).map_err(|e| format!("create bin dir: {e}"))?;
+    tokio::fs::create_dir_all(&bindir)
+        .await
+        .map_err(|e| format!("create bin dir: {e}"))?;
     let dest = bindir.join(bin_name());
     let tmp = bindir.join(format!("cloudflared.download.{}", std::process::id()));
     let url = format!("{RELEASE}/{asset}");
@@ -73,7 +75,7 @@ pub async fn download(data_dir: &Path) -> Result<PathBuf, String> {
         .map(|s| s.success())
         .unwrap_or(false);
     if !ok {
-        let _ = std::fs::remove_file(&tmp);
+        let _ = tokio::fs::remove_file(&tmp).await;
         return Err(format!("download failed: {url}"));
     }
 
@@ -90,18 +92,20 @@ pub async fn download(data_dir: &Path) -> Result<PathBuf, String> {
             .await
             .map(|s| s.success())
             .unwrap_or(false);
-        let _ = std::fs::remove_file(&tmp);
+        let _ = tokio::fs::remove_file(&tmp).await;
         if !extracted {
             return Err("failed to extract cloudflared archive".to_string());
         }
     } else {
-        std::fs::rename(&tmp, &dest).map_err(|e| format!("install cloudflared: {e}"))?;
+        tokio::fs::rename(&tmp, &dest)
+            .await
+            .map_err(|e| format!("install cloudflared: {e}"))?;
     }
 
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let _ = std::fs::set_permissions(&dest, std::fs::Permissions::from_mode(0o700));
+        let _ = tokio::fs::set_permissions(&dest, std::fs::Permissions::from_mode(0o700)).await;
     }
 
     // Validate: it must actually run, else discard the (partial/corrupt) file.
@@ -112,7 +116,7 @@ pub async fn download(data_dir: &Path) -> Result<PathBuf, String> {
         .map(|o| o.status.success())
         .unwrap_or(false);
     if !runs {
-        let _ = std::fs::remove_file(&dest);
+        let _ = tokio::fs::remove_file(&dest).await;
         return Err("downloaded cloudflared is not runnable".to_string());
     }
     Ok(dest)
