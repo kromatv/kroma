@@ -137,3 +137,6 @@ impl HlsEngine {
         self.sessions.file(&key, name).await
     }
 }
+
+#[cfg(test)]
+mod tests;

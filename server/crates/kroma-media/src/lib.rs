@@ -21,6 +21,8 @@ pub mod video;
 mod credential;
 mod json_error;
 mod meter;
+#[cfg(test)]
+mod test_support;
 
 pub use credential::Credential;
 pub use meter::{ByteMeter, Unmetered};
