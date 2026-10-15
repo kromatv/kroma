@@ -100,8 +100,10 @@ export function ogPlugin(): Plugin {
     // would write a second, unreachable copy.
     async generateBundle() {
       if (this.environment?.name !== 'client') return;
-      for (const card of Object.values(OG_CARDS)) {
-        const png = await cardFor(card.file);
+      const rendered = await Promise.all(
+        Object.values(OG_CARDS).map(async (card) => ({ card, png: await cardFor(card.file) })),
+      );
+      for (const { card, png } of rendered) {
         if (!png) continue;
         this.emitFile({ type: 'asset', fileName: card.file, source: png });
       }
