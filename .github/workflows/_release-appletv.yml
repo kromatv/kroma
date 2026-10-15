@@ -178,6 +178,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ inputs.triplet }}" "$plist"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ inputs.build }}" "$plist"
           echo "re-stamped $plist"
+          echo "export NODE_BINARY=$(command -v node)" > clients/tv-native/ios/.xcode.env.local
 
       - name: Prebuild the tvOS project
         if: steps.signing.outputs.ready == 'true' && steps.ios-cache.outputs.cache-hit != 'true'
