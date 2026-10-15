@@ -10,7 +10,7 @@
 
 use std::collections::HashMap;
 
-use super::*;
+use super::{params, Connection, Pool, Result, Row};
 
 use kroma_domain::{CastMember, CrewMember};
 

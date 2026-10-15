@@ -26,7 +26,7 @@ const records = (file: string) =>
     .split('\n')
     .filter((l) => l.startsWith('SF:')).length;
 
-async function prepare(): Promise<void> {
+function prepare(): void {
   let removed = 0;
   for (const name of WORKSPACE_ROOTS) {
     const dir = join(root, name);
@@ -44,7 +44,7 @@ async function prepare(): Promise<void> {
   else notice('no Rust coverage this run (no Rust changed); the scan carries JS/TS coverage only');
 }
 
-export async function main(argv: string[]): Promise<void> {
-  if (argv[0] === 'prepare') return prepare();
-  throw new Error('usage: bun run ci sonar prepare');
+export function main(argv: string[]): void {
+  if (argv[0] !== 'prepare') throw new Error('usage: bun run ci sonar prepare');
+  prepare();
 }

@@ -1,5 +1,3 @@
-export type Platform = string;
-
 export type DeveloperMode = 'on' | 'off' | 'unknown';
 
 export type Learned = 'reported' | 'derived';
@@ -14,7 +12,7 @@ export interface Runtime {
 
 export interface Television {
   host: string;
-  platform: Platform;
+  platform: string;
   vendor: string;
   name: string;
   model: string;

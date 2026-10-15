@@ -1,6 +1,6 @@
 //! Library reads: the scanned library roots and their item counts.
 
-use super::*;
+use super::{Pool, Result};
 
 use kroma_domain::{Library, LibraryKind};
 
@@ -32,6 +32,8 @@ fn parse_library_kind(s: &str) -> LibraryKind {
 
 #[cfg(test)]
 mod tests {
+    use rusqlite::params;
+
     use super::*;
     use crate::testing::TempPool;
 

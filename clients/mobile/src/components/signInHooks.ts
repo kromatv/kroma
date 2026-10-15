@@ -30,21 +30,22 @@ export function useDiscoveryLoop(active: boolean): DiscoveredServer[] {
   useEffect(() => {
     if (!active) return;
     let alive = true;
-    void (async () => {
-      while (alive) {
-        try {
-          const localIp = await getDeviceLocalIp();
-          const hits = await discoverServers({ localIp: localIp ?? undefined });
-          if (!alive) return;
-          setFound(hits);
-        } catch {
-          // Transient network error; the next sweep retries.
-        }
-        await new Promise((resolve) => setTimeout(resolve, 4000));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const sweep = async () => {
+      try {
+        const localIp = await getDeviceLocalIp();
+        const hits = await discoverServers({ localIp: localIp ?? undefined });
+        if (!alive) return;
+        setFound(hits);
+      } catch {
+        // Transient network error; the next sweep retries.
       }
-    })();
+      if (alive) timer = setTimeout(() => void sweep(), 4000);
+    };
+    void sweep();
     return () => {
       alive = false;
+      clearTimeout(timer);
     };
   }, [active]);
   return found;

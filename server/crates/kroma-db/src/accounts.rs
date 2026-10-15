@@ -1,6 +1,6 @@
 //! The user row: creating an account, finding one, and naming it.
 
-use super::*;
+use super::{now_or_blank, params, row_to_user, Permission, Pool, Result, User};
 
 use rusqlite::OptionalExtension;
 

@@ -215,7 +215,7 @@ impl Sessions {
         self.make_room(&mut map).await;
         let dir = self.root.join(session_dir(key));
         super::reclaim::discard_dir(&dir);
-        std::fs::create_dir_all(&dir)?;
+        tokio::fs::create_dir_all(&dir).await?;
         let child = spawn_stream(input, &dir, audio, mode, start_secs, self.burst, pipeline)?;
         info!(session = %key, audio, mode = ?mode, anchor = start_secs, start, accel = pipeline.accel.label(), effort = pipeline.effort.label(), "started HLS remux");
         let session = Arc::new(Session {

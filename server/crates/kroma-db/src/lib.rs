@@ -17,7 +17,7 @@
 use anyhow::Result;
 use rusqlite::{params, Connection, Row};
 
-use kroma_domain::{MediaItem, Metadata, Permission, User};
+use kroma_domain::{MediaItem, Permission, User};
 
 mod accounts;
 mod admin;

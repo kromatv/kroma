@@ -82,14 +82,14 @@ export default function IndexersPage() {
   };
 
   const openEdit = async (ix: IndexerView) => {
-    if (await IndexerModal.call({ indexer: ix })) reload();
+    if (await IndexerModal.call({ indexer: ix })) await reload();
   };
 
   // Built-in flow: browse/pick a Cardigann definition, then fill its settings.
   const openPicker = async () => {
     const definitionId = await DefinitionPickerModal.call();
     if (!definitionId) return;
-    if (await BuiltinIndexerModal.call({ definitionId, indexer: null })) reload();
+    if (await BuiltinIndexerModal.call({ definitionId, indexer: null })) await reload();
   };
 
   // Generic engine (e.g. Torznab): the shared field form over the engine's schema.
@@ -111,7 +111,7 @@ export default function IndexersPage() {
           })
           .then(() => {}),
     });
-    if (changed) reload();
+    if (changed) await reload();
   };
 
   // One add-flow per enabled engine: the native Cardigann engine opens its

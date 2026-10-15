@@ -5,7 +5,7 @@
 use std::collections::{HashMap, HashSet};
 
 use super::translations::{self, TransData};
-use super::*;
+use super::{params, Pool, Result};
 
 /// One curated collection. `item_ids` are resolved member ids (movies or shows);
 /// `source` is `"director"` (deterministic) or `"llm"` (editorial). The localized

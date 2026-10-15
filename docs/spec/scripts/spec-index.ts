@@ -44,19 +44,19 @@ function spaceOf(relPath: string): string {
 // Recursively list every .md chapter under docs/spec/, skipping the two root
 // artefacts and the scripts/ folder. Paths returned are relative to SPEC_DIR.
 async function chapters(dir: string): Promise<string[]> {
-  const out: string[] = [];
+  const here: string[] = [];
+  const below: Array<Promise<string[]>> = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === 'scripts') continue;
-      out.push(...(await chapters(full)));
+      if (entry.name !== 'scripts') below.push(chapters(full));
     } else if (entry.name.endsWith('.md')) {
       const rel = relative(SPEC_DIR, full);
-      if (rel.split(sep).length === 1 && ROOT_SKIP.has(entry.name)) continue;
-      out.push(rel);
+      if (rel.split(sep).length > 1 || !ROOT_SKIP.has(entry.name)) here.push(rel);
     }
   }
-  return out.sort((a, b) => a.localeCompare(b));
+  const nested = await Promise.all(below);
+  return [...here, ...nested.flat()].sort((a, b) => a.localeCompare(b));
 }
 
 const STATUSES = ['SHIPPED', 'AGREED', 'DRAFT', 'DESIGN, NOT IMPLEMENTED'] as const;
@@ -87,9 +87,15 @@ async function collect(): Promise<{ reqs: Requirement[]; errors: string[] }> {
   const prefixOwner = new Map<string, string>(); // prefix -> the space that owns it
   const spacePrefix = new Map<string, string>(); // space -> the one prefix it uses
 
-  for (const rel of await chapters(SPEC_DIR)) {
+  const opened = await Promise.all(
+    (await chapters(SPEC_DIR)).map(async (rel) => ({
+      rel,
+      lines: (await readFile(join(SPEC_DIR, rel), 'utf8')).split('\n'),
+    })),
+  );
+
+  for (const { rel, lines } of opened) {
     const space = spaceOf(rel);
-    const lines = (await readFile(join(SPEC_DIR, rel), 'utf8')).split('\n');
     let inFence = false;
     lines.forEach((raw, i) => {
       // Never parse inside a fenced code block - spec files show example
@@ -222,14 +228,14 @@ const jsonPath = join(SPEC_DIR, 'requirements.json');
 const indexPath = join(SPEC_DIR, 'INDEX.md');
 
 if (check) {
-  const stale: string[] = [];
-  for (const [path, want] of [
+  const wanted = [
     [jsonPath, json],
     [indexPath, index],
-  ] as const) {
-    const have = await readFile(path, 'utf8').catch(() => null);
-    if (have !== want) stale.push(path);
-  }
+  ] as const;
+  const onDisk = await Promise.all(
+    wanted.map(([path]) => readFile(path, 'utf8').catch(() => null)),
+  );
+  const stale = wanted.filter(([, want], at) => onDisk[at] !== want).map(([path]) => path);
   if (stale.length) {
     const listed = stale.map((p) => `  ✗ ${p}`).join('\n');
     console.error(

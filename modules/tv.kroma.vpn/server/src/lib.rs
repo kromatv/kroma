@@ -112,7 +112,9 @@ impl Vpn {
     ) -> Result<(), String> {
         let bin = provision::ensure(&self.data_dir).await?;
         let dir = self.dir();
-        std::fs::create_dir_all(&dir).map_err(|e| format!("create vpn dir: {e}"))?;
+        tokio::fs::create_dir_all(&dir)
+            .await
+            .map_err(|e| format!("create vpn dir: {e}"))?;
         let wg_path = dir.join("wg.conf");
         // Force the tunnel IPv4-only. wireproxy carries IPv4 BitTorrent peer
         // connections fine but STALLS IPv6 ones mid-handshake (Proton's IPv6
@@ -120,21 +122,24 @@ impl Vpn {
         // trackers over IPv6, so the tracker returns IPv6 peers (which then
         // can't be reached) instead of the IPv4 peers wireproxy can use. See
         // `ipv4_only_wg`.
-        std::fs::write(&wg_path, ipv4_only_wg(wg_config.trim()) + "\n")
+        tokio::fs::write(&wg_path, ipv4_only_wg(wg_config.trim()) + "\n")
+            .await
             .map_err(|e| format!("write wg.conf: {e}"))?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let _ = std::fs::set_permissions(&wg_path, std::fs::Permissions::from_mode(0o600));
+            let _ =
+                tokio::fs::set_permissions(&wg_path, std::fs::Permissions::from_mode(0o600)).await;
         }
         let conf_path = dir.join("wireproxy.conf");
-        std::fs::write(
+        tokio::fs::write(
             &conf_path,
             format!(
                 "WGConfig = {}\n\n[Socks5]\nBindAddress = 127.0.0.1:{port}\n",
                 wg_path.display()
             ),
         )
+        .await
         .map_err(|e| format!("write wireproxy.conf: {e}"))?;
 
         let child = spawn_child(&bin, &conf_path)?;

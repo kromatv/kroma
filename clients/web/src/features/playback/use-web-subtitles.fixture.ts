@@ -16,7 +16,7 @@ export const H = {
   refresh: vi.fn(),
   lastGenOpts: null as { onComplete: (subId: string) => void } | null,
   updateUser: vi.fn(),
-  updateAccount: vi.fn(async () => ({})),
+  updateAccount: vi.fn(() => Promise.resolve({})),
 };
 
 export function kromaClientStub() {

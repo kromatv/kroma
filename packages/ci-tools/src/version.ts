@@ -65,7 +65,7 @@ function manifestVersion(): string {
   return version;
 }
 
-export async function main(argv: string[]): Promise<void> {
+export function main(argv: string[]): void {
   const { values } = parseArgs({
     args: argv,
     options: { input: { type: 'string', default: process.env.VERSION_INPUT ?? '' } },

@@ -43,8 +43,8 @@ def pin(src: str, bundle: str, profile: str) -> tuple[str, int]:
         chunk = chunk.replace(
             marker,
             marker
-            + f'\n\t\t\t\tCODE_SIGN_STYLE = Manual;'
-            + f'\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";'
+            + '\n\t\t\t\tCODE_SIGN_STYLE = Manual;'
+            + '\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";'
             + f'\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{profile}";',
             1,
         )

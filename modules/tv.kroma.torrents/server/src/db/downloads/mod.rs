@@ -21,7 +21,7 @@ pub struct DownloadRow {
     pub client_ref: String,
     pub request_id: Option<String>,
     pub kind: String,
-    #[serde(with = "crate::zero_as_none")]
+    #[serde(default, with = "crate::zero_as_none")]
     pub tmdb_id: Option<u64>,
     pub title: Option<String>,
     pub year: Option<u32>,

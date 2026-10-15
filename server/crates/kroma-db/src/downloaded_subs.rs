@@ -4,7 +4,7 @@
 
 use rusqlite::OptionalExtension;
 
-use super::*;
+use super::{params, Connection, Pool, Result, Row};
 
 /// A cached generated subtitle; `path` is an absolute WebVTT file under the data dir.
 #[derive(Debug, Clone)]

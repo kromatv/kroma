@@ -10,7 +10,7 @@
 
 use std::collections::HashMap;
 
-use super::*;
+use super::{params, Connection, Pool, Result};
 
 /// Pin `tmdb_id` to one catalog subject (`kind` is `metadata_core::ITEM` or
 /// `SHOW`). Upsert: re-pinning replaces the previous choice.

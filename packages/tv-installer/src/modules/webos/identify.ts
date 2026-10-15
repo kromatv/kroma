@@ -13,19 +13,19 @@ export const WEBOS_PORTS = {
 // A webOS set answers its own SSDP target with its own name even when DIAL is asleep.
 export const WEBOS_SEARCH_TARGET = 'urn:lge-com:service:webos-second-screen:1';
 
-export async function identifyWebos(
+export function identifyWebos(
   host: string,
   openPorts: ReadonlySet<number>,
   upnp?: UpnpDevice,
 ): Promise<Television | null> {
   const devMode = openPorts.has(DEV_PORT);
-  if (!looksWebos(devMode, upnp)) return null;
+  if (!looksWebos(devMode, upnp)) return Promise.resolve(null);
 
   const runtime = webosRuntime([upnp?.modelName, upnp?.modelNumber, upnp?.friendlyName]);
   const seen = devMode
     ? 'Dev Mode running, key server on 9922'
     : 'Dev Mode app not running: install it from the LG Content Store, log in, Dev Mode ON and Key Server ON';
-  return {
+  return Promise.resolve({
     host,
     platform: 'webos',
     vendor: 'LG',
@@ -35,7 +35,7 @@ export async function identifyWebos(
     sideloadable: true,
     note: seen,
     runtime,
-  };
+  });
 }
 
 function looksWebos(devMode: boolean, upnp?: UpnpDevice): boolean {

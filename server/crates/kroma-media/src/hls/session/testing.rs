@@ -1,14 +1,21 @@
 //! Fixtures shared by the serving and reclamation test modules: a session
 //! with a stand-in child process, and a registry pre-populated with them.
 
+use std::path::PathBuf;
 use std::process::Stdio;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use tokio::process::Command;
+use tokio::sync::Mutex;
 
 use super::super::hwaccel::{HwAccel, Pipeline};
+use super::super::live::Plan;
+use super::super::naming::session_dir;
 use super::super::software::Effort;
-use super::super::{AudioMode, VideoMode};
-use super::*;
+use super::super::window::Window;
+use super::super::{AudioMode, StreamMode, VideoMode};
+use super::{Session, Sessions};
 
 pub(in crate::hls) const LIVE: Duration = Duration::from_secs(1);
 
@@ -82,7 +89,7 @@ pub(in crate::hls) async fn registry_with_budget(
     let mut map = s.inner.lock().await;
     for (key, age) in sessions {
         let dir = s.root.join(session_dir(key));
-        std::fs::create_dir_all(&dir).expect("session dir");
+        tokio::fs::create_dir_all(&dir).await.expect("session dir");
         map.insert((*key).to_string(), fake_session(dir, *age));
     }
     drop(map);

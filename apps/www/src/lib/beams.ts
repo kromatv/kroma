@@ -205,7 +205,7 @@ export function mountBeams(canvas: HTMLCanvasElement, opts: BeamOptions = {}): (
   document.addEventListener('visibilitychange', wake);
   // Re-measure once fonts land, since a reflow can move the anchor. Guarded:
   // this can resolve after a fast route change, against an already-detached canvas.
-  document.fonts?.ready.then(() => {
+  void document.fonts?.ready.then(() => {
     if (!dead) measure();
   });
   const onLost = (e: Event) => {

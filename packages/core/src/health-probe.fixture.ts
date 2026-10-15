@@ -15,18 +15,20 @@ export type Health = {
   url?: string;
 };
 export function fakeFetch(map: Record<string, Health>): typeof globalThis.fetch {
-  return vi.fn(async (input: RequestInfo | URL) => {
+  return vi.fn((input: RequestInfo | URL) => {
     const url = urlOf(input);
     const h = map[url];
-    if (!h) return { ok: false, url, json: async () => ({}) } as Response;
-    return {
+    if (!h) {
+      return Promise.resolve({ ok: false, url, json: () => Promise.resolve({}) } as Response);
+    }
+    return Promise.resolve({
       ok: h.ok ?? true,
       url: h.url ?? url,
-      json: async () => {
-        if (h.throws) throw new Error('bad json');
-        return { status: h.status ?? 'ok', ...h.body };
-      },
-    } as Response;
+      json: () =>
+        h.throws
+          ? Promise.reject(new Error('bad json'))
+          : Promise.resolve({ status: h.status ?? 'ok', ...h.body }),
+    } as Response);
   }) as unknown as typeof globalThis.fetch;
 }
 

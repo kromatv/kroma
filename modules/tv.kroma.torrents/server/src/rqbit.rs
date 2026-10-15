@@ -48,8 +48,8 @@ impl RqbitEngine {
     /// Start (or restore, via fastresume) the embedded session. Must be called
     /// from within a tokio runtime.
     pub async fn start(cfg: &RqbitConfig) -> Result<Arc<RqbitEngine>> {
-        std::fs::create_dir_all(&cfg.download_dir).ok();
-        std::fs::create_dir_all(&cfg.session_dir).ok();
+        tokio::fs::create_dir_all(&cfg.download_dir).await.ok();
+        tokio::fs::create_dir_all(&cfg.session_dir).await.ok();
         // Before the session opens, because opening it is what waits on these.
         let dropped = crate::rqbit_session::prune_unrestorable(&cfg.session_dir);
         if dropped > 0 {

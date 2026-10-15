@@ -294,33 +294,47 @@ pub async fn item_card(
         .and_then(cache_name)
         .map(str::to_string);
 
-    let label = q.label.unwrap_or_default();
-    let progress = q.progress;
-    let scale: u32 = if q.w.unwrap_or(640) > 640 { 2 } else { 1 };
+    let art = CardArt {
+        webp,
+        logo,
+        label: q.label.unwrap_or_default(),
+        progress: q.progress,
+        scale: if q.w.unwrap_or(640) > 640 { 2 } else { 1 },
+    };
     let data_dir = state.config.data_dir.clone();
 
-    let rendered = blocking(move || {
-        let Some(base_path) = crate::infra::image::card_base_png(&data_dir, &webp, scale) else {
-            return Ok(None);
-        };
-        let base = std::fs::read(&base_path)?;
-        let logo_bytes = logo
-            .and_then(|name| crate::infra::image::card_logo_png(&data_dir, &name, scale))
-            .and_then(|path| std::fs::read(&path).ok());
-        Ok(crate::api::card::render(&crate::api::card::Card {
-            base_png: &base,
-            label: &label,
-            logo_png: logo_bytes.as_deref(),
-            progress,
-        }))
-    })
-    .await?;
+    let rendered = blocking(move || composite_card(&data_dir, art)).await?;
 
     let resp = match rendered {
         Some(jpg) => image_response(jpg, "image/jpeg"),
         None => json_error(StatusCode::NOT_FOUND, "artwork unavailable"),
     };
     Ok(resp)
+}
+
+struct CardArt {
+    webp: String,
+    logo: Option<String>,
+    label: String,
+    progress: Option<f32>,
+    scale: u32,
+}
+
+fn composite_card(data_dir: &std::path::Path, art: CardArt) -> anyhow::Result<Option<Vec<u8>>> {
+    let Some(base_path) = crate::infra::image::card_base_png(data_dir, &art.webp, art.scale) else {
+        return Ok(None);
+    };
+    let base = std::fs::read(&base_path)?;
+    let logo_bytes = art
+        .logo
+        .and_then(|name| crate::infra::image::card_logo_png(data_dir, &name, art.scale))
+        .and_then(|path| std::fs::read(&path).ok());
+    Ok(crate::api::card::render(&crate::api::card::Card {
+        base_png: &base,
+        label: &art.label,
+        logo_png: logo_bytes.as_deref(),
+        progress: art.progress,
+    }))
 }
 
 fn cache_name(url: &str) -> Option<&str> {

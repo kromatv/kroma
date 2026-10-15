@@ -31,7 +31,7 @@ async function focusedTab(page: Page): Promise<string | null> {
   return ringedTab(await read(page));
 }
 
-async function tabLabels(page: Page): Promise<string[]> {
+function tabLabels(page: Page): Promise<string[]> {
   return page.evaluate(() =>
     [...document.querySelectorAll('[role="tab"]')].map((el) => el.getAttribute('aria-label') ?? ''),
   );

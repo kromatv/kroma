@@ -31,8 +31,8 @@ async fn main() -> anyhow::Result<()> {
 
     let session_dir = work_dir.join("session");
     let download_dir = work_dir.join("downloads");
-    std::fs::create_dir_all(&session_dir)?;
-    std::fs::create_dir_all(&download_dir)?;
+    tokio::fs::create_dir_all(&session_dir).await?;
+    tokio::fs::create_dir_all(&download_dir).await?;
 
     let opts = SessionOptions {
         persistence: Some(SessionPersistenceConfig::Json {
@@ -63,7 +63,7 @@ async fn main() -> anyhow::Result<()> {
     println!("starting session (socks={socks:?})");
     let session = Session::new_with_opts(download_dir, opts).await?;
 
-    let bytes = std::fs::read(&torrent)?;
+    let bytes = tokio::fs::read(&torrent).await?;
     // Mirror the real engine's add-time seed: announce over the bridge (curl)
     // and hand librqbit the peers as initial_peers.
     let seed = socks

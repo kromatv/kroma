@@ -1,11 +1,6 @@
-//! Integration tests for the HLS master handler: the mode it settles on before
-//! any ffmpeg is spawned, and the guards in front of the session. The redirect
-//! is the whole decision surface, so every case here returns before the engine
-//! is reached and none of them touch ffmpeg or the disk.
-
 use axum::http::StatusCode;
 
-use crate::api::test_support::{demo_item_id, raw, test_app, TestApp};
+use crate::api::test_support::{demo_item_id, raw, seed_playable_item, test_app, TestApp};
 
 // A decoder that stops at 1920 on both axes, which is how a Chromecast HD
 // declares itself: one number for both, not a 16:9 shape.
@@ -96,6 +91,76 @@ async fn an_item_that_does_not_exist_is_not_found() {
     let t = test_app();
 
     let (status, _) = location(&t, &master("deadbeef", "copy", "")).await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+fn clip_bytes() -> Vec<u8> {
+    let dir = kroma_testing::temp_dir("it-hls-clip");
+    std::fs::read(kroma_testing::clip(dir.path())).expect("read the fixture clip")
+}
+
+fn child(id: &str, mode: &str, name: &str) -> String {
+    format!("/api/items/{id}/hls/{mode}/0/0/{name}")
+}
+
+#[tokio::test]
+async fn a_file_ffmpeg_can_read_is_remuxed_into_a_playlist_the_player_opens() {
+    let t = test_app();
+    let id = seed_playable_item(&t.state, "Clip", &clip_bytes());
+
+    let (status, headers, _) = raw(&t.app, "GET", &master(&id, "copy", ""), Some(&t.token), None, &[]).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        headers.get("content-type").unwrap(),
+        "application/vnd.apple.mpegurl"
+    );
+    assert_eq!(headers.get("x-hls-start").unwrap(), "0.000");
+}
+
+#[tokio::test]
+async fn a_child_of_a_running_session_is_served_out_of_it() {
+    let t = test_app();
+    let id = seed_playable_item(&t.state, "Clip", &clip_bytes());
+    raw(&t.app, "GET", &master(&id, "copy", ""), Some(&t.token), None, &[]).await;
+
+    let (status, headers, _) =
+        raw(&t.app, "GET", &child(&id, "copy", "init.mp4"), Some(&t.token), None, &[]).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(headers.get("content-type").unwrap(), "video/mp4");
+}
+
+#[tokio::test]
+async fn a_child_of_a_session_nobody_started_is_not_found() {
+    let t = test_app();
+    let id = demo_item_id("The Matrix");
+
+    let (status, headers, _) =
+        raw(&t.app, "GET", &child(&id, "copy", "seg_00000.m4s"), Some(&t.token), None, &[]).await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(headers.get("cache-control").unwrap(), "no-store");
+}
+
+#[tokio::test]
+async fn a_child_asked_for_under_a_mode_nothing_parses_is_refused() {
+    let t = test_app();
+    let id = demo_item_id("The Matrix");
+
+    let (status, _, _) =
+        raw(&t.app, "GET", &child(&id, "h264-bogus", "init.mp4"), Some(&t.token), None, &[]).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn a_child_of_an_item_the_viewer_cannot_reach_is_never_served() {
+    let t = test_app();
+
+    let (status, _, _) =
+        raw(&t.app, "GET", &child("deadbeef", "copy", "init.mp4"), Some(&t.token), None, &[]).await;
 
     assert_eq!(status, StatusCode::NOT_FOUND);
 }

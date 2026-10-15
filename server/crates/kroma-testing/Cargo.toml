@@ -3,7 +3,7 @@ name = "kroma-testing"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
-description = "Self-deleting temp directories for the test harnesses"
+description = "Self-deleting temp directories and media fixtures for the test harnesses"
 license.workspace = true
 
 [dependencies]

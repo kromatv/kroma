@@ -164,9 +164,7 @@ export function ProviderCard({
           set={set}
           onProvider={setProvider}
           onLoadModels={loadModels}
-          onTest={() => {
-            test();
-          }}
+          onTest={() => void test()}
           onSetDefault={onSetDefault}
           onRemove={onRemove}
         />

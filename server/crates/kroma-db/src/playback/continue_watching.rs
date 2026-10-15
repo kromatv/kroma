@@ -5,8 +5,8 @@ use rusqlite::params;
 
 use super::on_deck::on_deck;
 use crate::hydrate::items_by_ids_ordered;
-use crate::Pool;
 use crate::rows::parse_metadata;
+use crate::{Pool, IN_CHUNK};
 use kroma_domain::{ContinueItem, Kind, MediaItem};
 
 const LIMIT: usize = 30;
@@ -64,7 +64,7 @@ pub fn continue_watching(
         .collect();
     let mut show_meta_by_id: std::collections::HashMap<String, Option<String>> =
         std::collections::HashMap::new();
-    for chunk in show_ids.chunks(super::IN_CHUNK) {
+    for chunk in show_ids.chunks(IN_CHUNK) {
         let ph = vec!["?"; chunk.len()].join(",");
         let mut stmt = conn.prepare(&format!(
             "SELECT id, metadata FROM shows WHERE id IN ({ph})"

@@ -1,7 +1,7 @@
 //! Storage for WebAuthn credentials. The ceremonies live in `api::passkeys`,
 //! which serializes the webauthn-rs `Passkey` into the `credential` column.
 
-use super::*;
+use super::{now_or_blank, params, Pool, Result};
 
 use rusqlite::OptionalExtension;
 

@@ -53,7 +53,7 @@ export type CoreScope = z.infer<typeof CoreScope>;
 
 // A core settings key: camelCase, or dotted for the namespaced ones
 // (`notifications.vapid.publicKey`). Matched exactly, so the spelling has to be.
-const SettingKey = z.string().regex(/^[A-Za-z][\w]*(?:\.[A-Za-z][\w]*)*$/);
+const SettingKey = z.string().regex(/^[A-Za-z]\w*(?:\.[A-Za-z]\w*)*$/);
 
 /** The CORE settings keys a module reads and writes. */
 export const SettingsScope = z.object({

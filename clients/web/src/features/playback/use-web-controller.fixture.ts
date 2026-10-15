@@ -93,7 +93,7 @@ export function installHarness(): void {
   beforeEach(() => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({ headers: { get: () => null } })),
+      vi.fn(() => Promise.resolve({ headers: { get: () => null } })),
     );
     H.endedHandler = null;
     H.handlers = {};

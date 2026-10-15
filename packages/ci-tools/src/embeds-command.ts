@@ -5,17 +5,22 @@ import { root } from './root';
 
 const CRATES = ['server/crates', 'modules'];
 
-async function rustSources(): Promise<Record<string, string>> {
+async function rustPaths(dir: string): Promise<string[]> {
   const glob = new Bun.Glob('**/*.rs');
-  const sources: Record<string, string> = {};
-  for (const dir of CRATES) {
-    for await (const file of glob.scan({ cwd: join(root, dir), onlyFiles: true })) {
-      if (file.includes('/target/') || file.includes('/ui/')) continue;
-      const path = `${dir}/${file}`;
-      sources[path] = await readFile(join(root, path), 'utf8');
-    }
+  const paths: string[] = [];
+  for await (const file of glob.scan({ cwd: join(root, dir), onlyFiles: true })) {
+    if (file.includes('/target/') || file.includes('/ui/')) continue;
+    paths.push(`${dir}/${file}`);
   }
-  return sources;
+  return paths;
+}
+
+async function rustSources(): Promise<Record<string, string>> {
+  const found = await Promise.all(CRATES.map(rustPaths));
+  const read = await Promise.all(
+    found.flat().map(async (path) => [path, await readFile(join(root, path), 'utf8')] as const),
+  );
+  return Object.fromEntries(read);
 }
 
 /**

@@ -33,19 +33,22 @@ export function load(clientList: Array<Record<string, unknown>> = []): Harness {
   const opened: string[] = [];
   const navigated: string[] = [];
   const state = { focused: 0 };
-  let fetchImpl: (url: string, init?: RequestInit) => Promise<unknown> = async () => ({ ok: true });
+  let fetchImpl: (url: string, init?: RequestInit) => Promise<unknown> = () =>
+    Promise.resolve({ ok: true });
 
   let pending: Promise<unknown> = Promise.resolve();
 
   const clients = clientList.map((c) => ({
     ...c,
-    focus: async () => {
+    focus: () => {
       state.focused += 1;
+      return Promise.resolve();
     },
     navigate:
       c.navigate ??
-      (async (url: string) => {
+      ((url: string) => {
         navigated.push(url);
+        return Promise.resolve();
       }),
   }));
 
@@ -54,15 +57,17 @@ export function load(clientList: Array<Record<string, unknown>> = []): Harness {
     skipWaiting: () => {},
     addEventListener: (type: string, fn: Listener) => listeners.set(type, fn),
     registration: {
-      showNotification: async (title: string, options: Record<string, unknown>) => {
+      showNotification: (title: string, options: Record<string, unknown>) => {
         shown.push({ title, options });
+        return Promise.resolve();
       },
     },
     clients: {
-      claim: async () => {},
-      matchAll: async () => clients,
-      openWindow: async (url: string) => {
+      claim: () => Promise.resolve(),
+      matchAll: () => Promise.resolve(clients),
+      openWindow: (url: string) => {
         opened.push(url);
+        return Promise.resolve();
       },
     },
   };

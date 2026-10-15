@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use super::translations::{self, TransData};
-use super::*;
+use super::{params, Pool, Result};
 
 use rusqlite::OptionalExtension;
 

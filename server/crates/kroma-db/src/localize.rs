@@ -12,7 +12,7 @@
 //! keeps its blob text, so this is always safe to call.
 
 use super::translations::{self, TransData};
-use super::*;
+use super::{metadata_core, Connection, Pool, Result};
 
 use kroma_domain::{CastMember, Metadata, Season, Show};
 
