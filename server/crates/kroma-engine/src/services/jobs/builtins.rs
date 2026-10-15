@@ -59,6 +59,7 @@ const JOBS: &[Builtin] = &[
     crate::services::pipeline::stages::storyboard::SPEC,
     crate::services::pipeline::stages::subtitles::SPEC,
     crate::services::pipeline::stages::markers::SPEC,
+    crate::services::pipeline::stages::credits::SPEC,
     crate::services::pipeline::stages::embed::SPEC,
 ];
 

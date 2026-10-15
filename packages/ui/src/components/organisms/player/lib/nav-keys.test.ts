@@ -30,6 +30,7 @@ function makeActions(): PlayerNavActions {
     seekNudge: vi.fn(),
     onNext: vi.fn(),
     hasNext: true,
+    sheetHasItems: true,
     volumeNudge: vi.fn(),
     toggleMute: vi.fn(),
     togglePip: vi.fn(),

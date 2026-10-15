@@ -1,14 +1,17 @@
 // @vitest-environment jsdom
 
-import type { MediaItem } from '@kromatv/client/media';
+import type { MediaItem, SubtitleTrack } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useSubtitleSelection } from './useSubtitleSelection';
 
 const client = fakeClient({
   subtitles: { downloaded: async () => [] },
-  media: { subtitleUrl: (id, index) => `/sub/${id}/${index}.vtt` },
+  media: {
+    subtitleUrl: (id, index) => `/sub/${id}/${index}.vtt`,
+    item: () => Promise.reject(new Error('unreachable')),
+  },
 });
 
 /** Index 1 is a PICTURE sub (PGS): French, but not renderable as text - the
@@ -29,6 +32,15 @@ const item = {
 // Unmounting cancels the work; the tick lets anything already queued run
 // while `window` still exists.
 afterEach(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+const serving = (tracks: SubtitleTrack[]) =>
+  fakeClient({
+    subtitles: { downloaded: async () => [] },
+    media: {
+      subtitleUrl: (id, index) => `/sub/${id}/${index}.vtt`,
+      item: async (id) => ({ id, subtitles: tracks }) as MediaItem,
+    },
+  });
 
 const active = (pref?: string | null) => {
   const { result, unmount } = renderHook(() => useSubtitleSelection(client, item, pref));
@@ -63,6 +75,37 @@ describe('useSubtitleSelection preferred language', () => {
     const { result, unmount } = renderHook(() => useSubtitleSelection(client, forcedFirst, 'fr'));
 
     expect(result.current.active).toBe(1);
+    unmount();
+  });
+});
+
+describe('useSubtitleSelection subtitle files beside the film', () => {
+  it('offers the files the list response it was handed left out', async () => {
+    const { result, unmount } = renderHook(() =>
+      useSubtitleSelection(
+        serving([...item.subtitles, { language: 'nld', codec: 'subrip' }]),
+        item,
+      ),
+    );
+
+    await waitFor(() => expect(result.current.rendered).toHaveLength(3));
+
+    expect(result.current.rendered.map((s) => s.index)).toEqual([0, 2, 3]);
+    unmount();
+  });
+
+  it('auto-enables a language only a file beside the film carries', async () => {
+    const dutch = { id: 'ep4', subtitles: [{ language: 'eng', codec: 'subrip' }] } as MediaItem;
+
+    const { result, unmount } = renderHook(() =>
+      useSubtitleSelection(
+        serving([...dutch.subtitles, { language: 'nld', codec: 'subrip' }]),
+        dutch,
+        'nl',
+      ),
+    );
+
+    await waitFor(() => expect(result.current.active).toBe(1));
     unmount();
   });
 });

@@ -1,35 +1,10 @@
 use anyhow::{anyhow, Result};
 
-use kroma_module_sdk::host::HostCtx;
-
 use crate::db::{self, DownloadClientRow, DownloadRow};
 
 use super::DownloadManager;
 
 impl DownloadManager {
-    /// Drops the engine torrent and its data but KEEPS the ledger row.
-    pub fn drop_data(&self, _host: &dyn HostCtx, row: &DownloadRow) {
-        if row.client_ref.is_empty() {
-            return;
-        }
-        let client = self
-            .store()
-            .get()
-            .ok()
-            .and_then(|c| db::get_download_client(&c, &row.client_id).ok().flatten());
-        if let Some(client) = client {
-            if let Ok(engine) = self.engine_for(&client) {
-                if let Err(e) = engine.remove(&row.client_ref, true) {
-                    tracing::warn!(id = %row.id, error = %format!("{e:#}"), "delete-after-import: engine remove failed");
-                    return;
-                }
-                // Blank the ref so nothing polls a torrent the engine dropped.
-                let _ = db::set_download_ref(self.core(), &row.id, "");
-                tracing::info!(release = %row.release_title, "deleted torrent + data after import");
-            }
-        }
-    }
-
     /// An empty `client_ref` means the row is still being added: the engine
     /// call is skipped and `activate()` honors the ledger when the add lands.
     pub fn pause(&self, id: &str) -> Result<()> {

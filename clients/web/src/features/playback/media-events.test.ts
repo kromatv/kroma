@@ -30,6 +30,16 @@ describe('bindMediaEvents', () => {
     expect(s.setCur).toHaveBeenCalledWith(112);
   });
 
+  it('reports the clock against the anchor it binds with, before any event', () => {
+    const fv = fakeVideo();
+    const s = mkSetters();
+
+    fv.set('currentTime', 3);
+    bindMediaEvents(fv.el, item, s, 520);
+
+    expect(s.setCur).toHaveBeenCalledWith(523);
+  });
+
   it('prefers the catalogue runtime for duration, else the element duration', () => {
     const fv = fakeVideo();
     const s = mkSetters();
@@ -203,9 +213,12 @@ describe('bindMediaEvents', () => {
     const fv = fakeVideo();
     const s = mkSetters();
     const off = bindMediaEvents(fv.el, item, s, 0);
+    vi.mocked(s.setCur).mockClear();
+
     off();
     fv.fire('timeupdate');
     fv.fire('pause');
+
     expect(s.setCur).not.toHaveBeenCalled();
     expect(s.setPlaying).not.toHaveBeenCalled();
   });

@@ -2,14 +2,6 @@
 //! evenly-spaced thumbnails) plus a tiny JSON manifest, generated once per file
 //! and cached on disk. The player shows the tile under the cursor via CSS
 //! `background-position` - no per-frame work, a single image fetch.
-//!
-//! Generation never reads the whole file: each tile is grabbed by a fast
-//! keyframe seek (`-ss <t>` before `-i`, so ffmpeg jumps straight to the GOP
-//! at that timestamp) across a small thread pool, then montaged into one
-//! sheet and encoded to WebP, falling back to JPEG. A linear
-//! `-skip_frame nokey` pass would instead demux the entire file to reach the
-//! last keyframe, costing minutes on a multi-GB film; seeking only reads the
-//! ~240 sampled GOPs.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -23,25 +15,12 @@ use tracing::warn;
 use crate::model::MediaItem;
 use kroma_primitives::short_hash;
 
-mod extract;
-mod proc;
 mod render;
 
-// True 16:9, both dimensions even so 4:2:0 chroma never coerces the crop to
-// an odd size, which would drift the client's `background-position`.
-const TILE_W: u32 = 160;
-const TILE_H: u32 = 90;
-// Hard cap on grid cells, bounding the sheet size + ffmpeg output (a 3 h film
-// still fits in a single sheet).
-const MAX_TILES: u32 = 240;
-// Never sample finer than this; short clips don't need hundreds of
-// near-identical tiles.
-const MIN_INTERVAL: u32 = 2;
 // Bump to invalidate every cached sheet when the generation parameters change.
 const VERSION: u32 = 3;
 // Max concurrent storyboard items, keeping generation off the HLS remux's
-// back when several items are opened at once. Each item also fans its tiles
-// out over its own worker pool (`tile_workers`).
+// back when several items are opened at once.
 const MAX_CONCURRENT: usize = 2;
 // After a failed generation, don't retry the same key for this long: the
 // player polls the manifest every few seconds, and without a cooldown a
@@ -53,8 +32,7 @@ const FAIL_COOLDOWN: Duration = Duration::from_secs(120);
 #[serde(rename_all = "camelCase")]
 pub struct Manifest {
     // The `v` query param busts the immutable cache when the source file (its
-    // mtime) changes. The on-disk format (WebP or JPEG) is internal; the
-    // route sets the content type.
+    // mtime) changes.
     pub url: String,
     pub interval: f64,
     pub tile_w: u32,
@@ -66,39 +44,12 @@ pub struct Manifest {
     pub duration: f64,
 }
 
-/// Result of asking for an item's storyboard.
 pub enum Status {
     Ready(Manifest),
     Pending,
     Unavailable,
 }
 
-/// The grid layout + sampling cadence derived from a runtime's duration.
-pub(super) struct Plan {
-    interval: u32,
-    cols: u32,
-    rows: u32,
-    count: u32,
-}
-
-impl Plan {
-    fn for_duration(dur_s: f64) -> Self {
-        let interval = ((dur_s / f64::from(MAX_TILES)).ceil() as u32).max(MIN_INTERVAL);
-        // `fps=1/interval` over the duration emits floor(dur/interval)+1 frames.
-        let count = ((dur_s as u32 / interval) + 1).clamp(1, MAX_TILES);
-        let cols = (f64::from(count).sqrt().ceil() as u32).max(1);
-        let rows = count.div_ceil(cols).max(1);
-        Self {
-            interval,
-            cols,
-            rows,
-            count,
-        }
-    }
-}
-
-/// Sprite-sheet engine: a cache dir + in-flight dedup + a concurrency gate +
-/// a recent-failure cooldown.
 pub struct Storyboard {
     dir: PathBuf,
     inflight: Arc<Mutex<HashSet<String>>>,
@@ -118,23 +69,24 @@ impl Storyboard {
 
     // Bumping the source remaps the key, so a replaced file regenerates
     // instead of serving a stale sheet.
-    fn key(abs: &str) -> String {
+    fn key(abs: &str, tiles: &str) -> String {
         let mtime = std::fs::metadata(abs)
             .ok()
             .and_then(|m| m.modified().ok())
             .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
             .map(|d| d.as_secs())
             .unwrap_or(0);
-        short_hash(&format!("{abs}:{mtime}:v{VERSION}"))
+        short_hash(&format!("{abs}:{mtime}:v{VERSION}{tiles}"))
     }
 
     /// Cached sheet bytes + content type for `item`, trying WebP then JPEG; `None`
     /// if it has not been generated yet.
     pub async fn sheet(&self, item: &MediaItem) -> Option<(Vec<u8>, &'static str)> {
         let abs = item.abs_path.clone()?;
+        let tiles = tile_path(item);
         // `key` derivation does a blocking `fs::metadata`; run it off the async
         // worker so a stalled mount can't wedge the runtime.
-        let key = tokio::task::spawn_blocking(move || Self::key(&abs))
+        let key = tokio::task::spawn_blocking(move || Self::key(&abs, tiles))
             .await
             .ok()?;
         for (ext, ct) in [("webp", "image/webp"), ("jpg", "image/jpeg")] {
@@ -152,19 +104,20 @@ impl Storyboard {
         let Some(abs) = item.abs_path.as_deref() else {
             return;
         };
-        let key = Self::key(abs);
+        let key = Self::key(abs, tile_path(item));
         for ext in ["webp", "jpg", "json"] {
             let _ = std::fs::remove_file(self.dir.join(format!("{key}.{ext}")));
         }
     }
 
-    /// Whether `item`'s storyboard is already on disk (cheap existence check, used
-    /// by the pre-generation job to skip done work).
+    /// Whether `item`'s storyboard is already on disk.
     pub fn is_cached(&self, item: &MediaItem) -> bool {
         let Some(abs) = item.abs_path.as_deref() else {
             return false;
         };
-        self.dir.join(format!("{}.json", Self::key(abs))).exists()
+        self.dir
+            .join(format!("{}.json", Self::key(abs, tile_path(item))))
+            .exists()
     }
 
     /// The manifest if cached; otherwise kick off generation (deduped +
@@ -178,8 +131,9 @@ impl Storyboard {
         // answers "does the source even exist" an offline mount must not spawn
         // a doomed ffmpeg (let alone one per poll).
         let abs_key = abs.clone();
+        let tiles = tile_path(item);
         let Ok((key, exists)) = tokio::task::spawn_blocking(move || {
-            (Self::key(&abs_key), Path::new(&abs_key).exists())
+            (Self::key(&abs_key, tiles), Path::new(&abs_key).exists())
         })
         .await
         else {
@@ -193,17 +147,14 @@ impl Storyboard {
         if !exists {
             return Status::Unavailable;
         }
-        // Recently failed (unreadable/corrupt file, dying mount): don't retry on
-        // every poll; the cooldown expiring or a source change (new key) retries.
         if let Some(at) = self.failed.lock().unwrap().get(&key) {
             if at.elapsed() < FAIL_COOLDOWN {
                 return Status::Unavailable;
             }
         }
 
-        // Not cached: claim the key (concurrent pollers then get Pending) + spawn.
         if !self.inflight.lock().unwrap().insert(key.clone()) {
-            return Status::Pending; // already generating
+            return Status::Pending;
         }
         let dir = self.dir.clone();
         let inflight = self.inflight.clone();
@@ -234,6 +185,17 @@ impl Storyboard {
     }
 }
 
+fn tile_path(item: &MediaItem) -> &'static str {
+    tiles_of(item.video.as_ref().and_then(|video| video.bit_depth))
+}
+
+fn tiles_of(bit_depth: Option<u32>) -> &'static str {
+    match bit_depth {
+        Some(depth) if depth > 8 => ":rgb24",
+        _ => "",
+    }
+}
+
 fn playable(item: &MediaItem) -> Option<(String, f64)> {
     let abs = item.abs_path.clone()?;
     let ms = item.duration_ms.filter(|&d| d > 0)?;
@@ -245,15 +207,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn plan_bounds_tiles_and_grid() {
-        let p = Plan::for_duration(7200.0);
-        assert!(p.interval >= MIN_INTERVAL);
-        assert!(p.count <= MAX_TILES);
-        assert!(p.cols * p.rows >= p.count);
+    fn a_ten_bit_source_keys_its_sheet_apart_from_the_black_one_it_had() {
+        let eight = Storyboard::key("/films/one.mkv", tiles_of(Some(8u32)));
 
-        let s = Plan::for_duration(60.0);
-        assert_eq!(s.interval, MIN_INTERVAL);
-        assert!(s.count < MAX_TILES);
-        assert!(s.cols * s.rows >= s.count);
+        let ten = Storyboard::key("/films/one.mkv", tiles_of(Some(10u32)));
+
+        assert_eq!(eight, Storyboard::key("/films/one.mkv", ""));
+        assert_ne!(ten, eight);
+    }
+
+    #[test]
+    fn a_source_whose_depth_nothing_measured_keeps_the_sheet_it_has() {
+        let kept = [None, Some(8u32)].map(tiles_of);
+
+        assert_eq!(kept, ["", ""]);
+        assert_eq!(tiles_of(Some(12u32)), ":rgb24");
     }
 }

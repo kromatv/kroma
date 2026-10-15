@@ -34,6 +34,7 @@ const ACCESS: Record<RouteName, Access> = {
   person: 'signedIn',
   movie: 'signedIn',
   show: 'signedIn',
+  discover: 'signedIn',
   player: 'signedIn',
   report: 'signedIn',
   releases: 'signedIn',

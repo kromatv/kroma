@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { type Ref, useImperativeHandle, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
@@ -14,12 +14,10 @@ import { SelectRow } from './select-row';
 interface ReportPanelProps {
   onReport: (category: PlayerReportCategory) => Promise<void>;
   onBack: () => void;
+  ref?: Ref<PanelHandle>;
 }
 
-export const ReportPanel = forwardRef<PanelHandle, ReportPanelProps>(function ReportPanel(
-  { onReport, onBack },
-  ref,
-) {
+export function ReportPanel({ onReport, onBack, ref }: Readonly<ReportPanelProps>) {
   const t = useT();
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'failed'>('idle');
 
@@ -73,4 +71,4 @@ export const ReportPanel = forwardRef<PanelHandle, ReportPanelProps>(function Re
       ) : null}
     </Box>
   );
-});
+}

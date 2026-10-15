@@ -3,8 +3,7 @@
 //! `ffmpeg` decodes a window of mono PCM, `rusty-chromaprint` turns it into a
 //! Chromaprint fingerprint, and the crate's `match_fingerprints` aligns two
 //! episodes to surface the run they share: the intro (near the start of the file)
-//! or the recurring credits theme (near the end). No external `fpcalc` binary: we
-//! already ship `ffmpeg` and fingerprint in-process.
+//! or the recurring credits theme (near the end).
 
 use std::ffi::OsString;
 use std::path::Path;
@@ -44,10 +43,10 @@ pub fn fingerprint_window(
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
 
-    // Share the process-wide ffmpeg budget (see `infra::ffmpeg_gate`); the permit
+    // Share the process-wide ffmpeg budget (see `kroma_media::ffmpeg_gate`); the permit
     // is held only for the decode and dropped as this block ends.
     let out = {
-        let _permit = crate::infra::ffmpeg_gate::acquire();
+        let _permit = kroma_media::ffmpeg_gate::acquire();
         cmd.output().context("spawn ffmpeg for fingerprint")?
     };
     if !out.status.success() {
@@ -135,7 +134,7 @@ pub fn matched_range(
 }
 
 /// Pure: from candidate `(start, end)` ranges, keep those starting in `region` and
-/// at least `min_len_s` long; return the longest. Separated out for testing.
+/// at least `min_len_s` long; return the longest.
 pub fn pick_range(ranges: &[(f32, f32)], region: (f32, f32), min_len_s: f32) -> Option<(f32, f32)> {
     ranges
         .iter()
@@ -161,7 +160,6 @@ pub fn consensus(mut ranges: Vec<(f32, f32)>, min_support: usize) -> Option<(f32
     (support >= min_support.max(1)).then_some((ms, me))
 }
 
-/// Convert an in-window `secs` offset to an absolute position in ms.
 pub fn abs_ms(window_start_s: f64, secs: f32) -> u64 {
     ((window_start_s + secs as f64) * 1000.0).max(0.0) as u64
 }
@@ -223,15 +221,12 @@ mod tests {
         let ar = at(&a, "-ar").unwrap();
         assert_eq!(a[ar + 1], "11025");
         assert_eq!(a[ar + 1], config().sample_rate().to_string());
-        // Raw little-endian s16 on stdout, which is what `samples_from_pcm` reads.
         assert_eq!(a[at(&a, "-f").unwrap() + 1], "s16le");
         assert_eq!(a.last().unwrap(), "-");
     }
 
     #[test]
     fn video_is_dropped_and_the_decoder_stays_on_one_thread() {
-        // The marker pass already runs several episodes at once; letting each
-        // decode fan out across every core is how it starves playback.
         let a = args(30, false);
         assert!(a.contains(&"-vn".to_string()), "{a:?}");
         assert_eq!(a[at(&a, "-threads").unwrap() + 1], "1");
@@ -309,8 +304,6 @@ mod tests {
 
     #[test]
     fn an_episode_shorter_than_the_window_still_anchors_at_zero() {
-        // A ten-second clip with a thirty-second credits window would otherwise
-        // anchor at -20s and put every marker before the start of the file.
         assert_eq!(window_start_s(30, true, 10.0), 0.0);
     }
 
@@ -325,9 +318,7 @@ mod tests {
             (400.0, 460.0), // outside region
         ];
         assert_eq!(pick_range(&ranges, (0.0, 60.0), 10.0), Some((2.5, 30.0)));
-        // Tighter min length drops everything.
         assert_eq!(pick_range(&ranges, (0.0, 60.0), 40.0), None);
-        // Region excludes the early starts.
         assert_eq!(
             pick_range(&ranges, (300.0, 500.0), 10.0),
             Some((400.0, 460.0))
@@ -338,9 +329,7 @@ mod tests {
     fn consensus_needs_support() {
         let agree = vec![(1.0, 90.0), (1.5, 91.0), (2.0, 89.0)];
         assert_eq!(consensus(agree, 2), Some((1.5, 91.0)));
-        // Scattered starts → no consensus.
         assert_eq!(consensus(vec![(1.0, 90.0), (40.0, 130.0)], 2), None);
-        // Too few candidates.
         assert_eq!(consensus(vec![(1.0, 90.0)], 2), None);
     }
 
@@ -350,10 +339,6 @@ mod tests {
         assert_eq!(abs_ms(1200.0, 15.0), 1_215_000); // end window offset added
     }
 
-    // A fingerprint is just a `Vec<u32>`; the matcher can be driven with
-    // synthetic data, without ffmpeg or a media file.
-
-    // Deterministic so the test cannot drift.
     fn synthetic_fp(len: usize, seed: u32) -> Vec<u32> {
         // A simple LCG: reproducible, and varied enough that two different seeds
         // do not accidentally align.
@@ -380,8 +365,6 @@ mod tests {
 
     #[test]
     fn a_fingerprint_matched_against_itself_covers_its_whole_length() {
-        // The degenerate case that proves the plumbing: identical audio aligns
-        // perfectly, so the match should span essentially the whole window.
         let fp = synthetic_fp(600, 1);
         let got = matched_range(&fp, &fp, (0.0, 600.0), 1.0).expect("identical input must match");
         assert!(
@@ -396,15 +379,12 @@ mod tests {
 
     #[test]
     fn a_match_outside_the_region_of_interest_is_not_returned() {
-        // The intro search only looks at the first minutes; a strong match later
-        // in the file is somebody else's marker.
         let fp = synthetic_fp(600, 1);
         assert_eq!(matched_range(&fp, &fp, (500.0, 600.0), 1.0), None);
     }
 
     #[test]
     fn a_match_shorter_than_the_floor_is_not_a_marker() {
-        // A two-second coincidence is not an intro.
         let fp = synthetic_fp(600, 1);
         assert_eq!(matched_range(&fp, &fp, (0.0, 600.0), 10_000.0), None);
     }
@@ -426,8 +406,6 @@ mod tests {
 
     #[test]
     fn two_unrelated_fingerprints_do_not_produce_a_marker() {
-        // The false-positive case that matters: two episodes with no shared
-        // intro must yield nothing, or every show grows a spurious skip button.
         let a = synthetic_fp(600, 1);
         let b = synthetic_fp(600, 999);
         assert_eq!(matched_range(&a, &b, (0.0, 600.0), 10.0), None);

@@ -9,6 +9,7 @@ import type { AudioTrack } from '@kromatv/client/media';
 import type { PlaybackMode } from '@kromatv/client/playback';
 import {
   attachHlsRecovery,
+  decodableVideoCodecs,
   type EngineDecision,
   hlsBufferConfig,
   itemBufferPlan,
@@ -171,7 +172,9 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
   const plan = itemBufferPlan(item);
   // Remuxed from `startSec`; hls.js plays it from relative 0 and the hook adds
   // the server's reported start back to report the absolute position.
-  const url = kromaClient().media.hlsMasterUrl(item.id, decision.aacMaster, startSec, audioRel);
+  const url = kromaClient().media.hlsMasterUrl(item.id, decision.aacMaster, startSec, audioRel, {
+    videoCodecs: decodableVideoCodecs(),
+  });
   let destroyed = false;
 
   // Checked before `useNativeHls`: an explicit Shaka override wins, so the choice

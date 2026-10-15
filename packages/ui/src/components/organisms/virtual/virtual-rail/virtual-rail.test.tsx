@@ -1,10 +1,6 @@
 // @vitest-environment jsdom
 
-// Unscoped (a pointer browser), the rail is a REAL horizontal scroller: the
-// browser routes the wheel, so no listener may consume it. The old translated
-// row intercepted the wheel and swallowed the page's vertical scroll with it.
-
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { VirtualRail } from './virtual-rail';
@@ -13,17 +9,35 @@ afterEach(cleanup);
 
 const DATA = Array.from({ length: 24 }, (_, i) => `Tile ${i}`);
 
+const rail = (data: readonly string[]) => (
+  <VirtualRail
+    data={data}
+    itemWidth={200}
+    style={{ height: 300 }}
+    renderItem={(label) => <Text>{label}</Text>}
+  />
+);
+
 function mount() {
-  const { container } = render(
-    <VirtualRail
-      data={DATA}
-      itemWidth={200}
-      style={{ height: 300 }}
-      renderItem={(label) => <Text>{label}</Text>}
-    />,
-  );
+  const { container } = render(rail(DATA));
   return container;
 }
+
+function flingTo(container: HTMLElement, scrollLeft: number): void {
+  const scroller = container.firstElementChild?.firstElementChild as HTMLElement;
+  fireEvent.scroll(scroller, { target: { scrollLeft } });
+}
+
+describe('a rail whose rows arrive after it does', () => {
+  it('mounts the tiles it is handed, however far it reached while empty', () => {
+    const { container, rerender } = render(rail([]));
+    flingTo(container, 2_000);
+
+    rerender(rail(DATA));
+
+    expect(container.textContent).toContain('Tile 0');
+  });
+});
 
 describe('an unscoped rail', () => {
   it('renders a real scroller, not a translated row', () => {

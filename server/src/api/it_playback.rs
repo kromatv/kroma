@@ -198,7 +198,7 @@ async fn progress_clamps_negative_positions_to_zero() {
         Some(json!({ "positionMs": -500, "durationMs": 888_000 })),
     )
     .await;
-    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(status, StatusCode::OK);
 
     let (status, entry) = get(&t.app, &format!("/api/progress/{item}"), Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
@@ -218,7 +218,95 @@ async fn progress_accepts_a_missing_duration() {
         Some(json!({ "positionMs": 3000 })),
     )
     .await;
-    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn progress_past_the_played_threshold_flags_the_title_watched_and_keeps_the_position() {
+    let t = test_app();
+    let item = demo_item_id("Sintel");
+
+    let (_, early) = send(
+        &t.app,
+        "PUT",
+        &format!("/api/progress/{item}"),
+        Some(&t.token),
+        Some(json!({ "positionMs": 700_000, "durationMs": 888_000 })),
+    )
+    .await;
+    let (_, late) = send(
+        &t.app,
+        "PUT",
+        &format!("/api/progress/{item}"),
+        Some(&t.token),
+        Some(json!({ "positionMs": 800_000, "durationMs": 888_000 })),
+    )
+    .await;
+
+    assert_eq!(early["watched"], json!(false));
+    assert_eq!(late["watched"], json!(true));
+    let (_, watched) = get(&t.app, "/api/watched", Some(&t.token)).await;
+    assert_eq!(watched, json!([item]));
+    let (_, entry) = get(&t.app, &format!("/api/progress/{item}"), Some(&t.token)).await;
+    assert_eq!(entry["positionMs"], json!(800_000));
+    let (_, rail) = get(&t.app, "/api/continue", Some(&t.token)).await;
+    assert_eq!(rail.as_array().map(Vec::len), Some(0));
+}
+
+#[tokio::test]
+async fn progress_into_the_credits_flags_the_title_watched_below_the_threshold() {
+    let t = test_app();
+    let item = demo_item_id("Sintel");
+    crate::db::set_marker(
+        &t.state.db,
+        &item,
+        crate::model::MarkerKind::Credits,
+        600_000,
+        888_000,
+        "video",
+    )
+    .unwrap();
+
+    let (_, before) = send(
+        &t.app,
+        "PUT",
+        &format!("/api/progress/{item}"),
+        Some(&t.token),
+        Some(json!({ "positionMs": 590_000, "durationMs": 888_000 })),
+    )
+    .await;
+    let (_, inside) = send(
+        &t.app,
+        "PUT",
+        &format!("/api/progress/{item}"),
+        Some(&t.token),
+        Some(json!({ "positionMs": 600_000, "durationMs": 888_000 })),
+    )
+    .await;
+
+    assert_eq!(before["watched"], json!(false));
+    assert_eq!(inside["watched"], json!(true));
+}
+
+#[tokio::test]
+async fn the_played_threshold_setting_moves_the_line() {
+    let t = test_app();
+    let item = demo_item_id("Sintel");
+    t.state.settings.set_patch(
+        &t.state.db,
+        [("playedThreshold".to_string(), json!("80"))].into(),
+    );
+
+    let (_, body) = send(
+        &t.app,
+        "PUT",
+        &format!("/api/progress/{item}"),
+        Some(&t.token),
+        Some(json!({ "positionMs": 720_000, "durationMs": 888_000 })),
+    )
+    .await;
+
+    assert_eq!(body["watched"], json!(true));
 }
 
 #[tokio::test]

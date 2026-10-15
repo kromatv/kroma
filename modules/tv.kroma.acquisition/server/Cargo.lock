@@ -1318,6 +1318,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "base64 0.22.1",
  "chacha20poly1305",
  "hex",
  "jwalk",
@@ -1326,19 +1327,21 @@ dependencies = [
  "kroma-domain",
  "kroma-http",
  "kroma-i18n",
+ "kroma-media",
  "kroma-module-host",
  "kroma-module-manifest",
  "kroma-primitives",
  "kroma-push",
  "lettre",
  "notify",
+ "p256",
+ "rand_core 0.6.4",
  "rusty-chromaprint",
  "serde",
  "serde_json",
  "sha2",
  "sysinfo",
  "tantivy",
- "tempfile",
  "time",
  "tokio",
  "tokio-util",
@@ -1368,6 +1371,23 @@ name = "kroma-i18n"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+]
+
+[[package]]
+name = "kroma-media"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "kroma-module-wire",
+ "kroma-primitives",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "time",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "walkdir",
 ]
 
 [[package]]
@@ -1429,6 +1449,7 @@ dependencies = [
  "kroma-engine",
  "kroma-http",
  "kroma-i18n",
+ "kroma-media",
  "kroma-module-host",
  "kroma-module-macros",
  "kroma-module-manifest",

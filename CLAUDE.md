@@ -117,6 +117,9 @@ server/
     kroma-sqlite      the WAL pool, the storage grant, a module's migrations
     kroma-db          all SQL on top of it, one shared Pool
     kroma-engine      infra + services + state + model, the business logic
+    kroma-media       ffprobe · the ffmpeg budget · the HLS engine and the
+                      per-request program over it. No db, no domain, so the
+                      published SDK carries it and a module transcodes too
     kroma-http kroma-i18n kroma-push
     kroma-module-*    the module host: kernel, manifest, macros, sdk, runtime,
                       host, supervisor, wire. It carries the

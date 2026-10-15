@@ -21,6 +21,15 @@ pub struct Contribution {
     pub token: String,
 }
 
+impl Contribution {
+    /// A [`Resolver`] pinned to this one answer, for a caller that has already
+    /// picked which of a point's contributions it means. It does not re-resolve.
+    pub fn resolver(&self) -> Resolver {
+        let endpoint = (self.base_url.clone(), self.token.clone());
+        Arc::new(move || Some(endpoint.clone()))
+    }
+}
+
 /// Resolves the module currently answering a point: its `(base_url, auth_token)`,
 /// or `None` when nothing installed and running answers it. Called on EVERY
 /// cross-module request, so a provider that restarted on a new port is picked
@@ -62,8 +71,7 @@ pub fn pinned_resolver(
             Some(id) => c.instance.as_deref() == Some(id),
             None => true,
         })?;
-    let endpoint = (found.base_url, found.token);
-    Some(Arc::new(move || Some(endpoint.clone())))
+    Some(found.resolver())
 }
 
 /// Serialize `body`, POST it to the provider's `/_port/<path>` with the bearer

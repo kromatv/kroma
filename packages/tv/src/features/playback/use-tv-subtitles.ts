@@ -61,6 +61,7 @@ export function useTvSubtitles(
         index: s.index,
         language: s.language,
         label: s.label,
+        title: s.title,
         codec: s.ai ? 'SRT' : (item.subtitles[s.index]?.codec ?? 'SUB'),
         url: s.url,
         ai: s.ai,

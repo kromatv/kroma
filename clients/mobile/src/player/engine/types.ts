@@ -70,17 +70,3 @@ export interface EngineCore {
 export function nativeTrackKey(t: AudioTrack): string {
   return t.id ?? `${t.language}|${t.label}`;
 }
-
-/** The master's clock starts at the real keyframe the remux began on, which can
- * sit before the requested anchor; the server reports it so the absolute clock
- * stays honest. */
-export async function resolveMasterStart(url: string, requested: number): Promise<number> {
-  if (requested <= 0.5) return 0;
-  try {
-    const r = await fetch(url);
-    const real = Number(r.headers.get('X-Hls-Start'));
-    return Number.isFinite(real) ? real : requested;
-  } catch {
-    return requested;
-  }
-}

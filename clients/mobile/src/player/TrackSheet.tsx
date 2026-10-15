@@ -3,7 +3,7 @@
 // touch-driven: a modal or bottom sheet, no focus engine.
 
 import type { MediaItem } from '@kromatv/client/media';
-import { LANG_OFF, langName } from '@kromatv/core';
+import { LANG_OFF } from '@kromatv/core';
 import type { SubtitleAppearance } from '@kromatv/ui';
 import { AUDIO_FILTER_KEY } from '@kromatv/ui';
 import { Box } from '@kromatv/ui/kit';
@@ -17,7 +17,13 @@ import type { Engine } from './engine';
 import { SheetMenu, type SheetView } from './SheetMenu';
 import { SubAppearanceView, sizeName } from './SubAppearanceView';
 import { Row, SubHeader } from './TrackSheetRows';
-import { audioOptions, qualityBadge, subNote, subtitleLabel } from './trackOptions';
+import {
+  audioOptions,
+  qualityBadge,
+  subNote,
+  subtitleLabel,
+  subtitleRowLabel,
+} from './trackOptions';
 import type { Subtitles } from './useSubtitles';
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
@@ -180,10 +186,7 @@ export function TrackSheet({
           {subs.tracks.map((track) => (
             <Row
               key={track.index}
-              label={
-                (track.label?.trim() || langName(t, track.language) || `#${track.index + 1}`) +
-                (track.ai ? ' · IA' : '')
-              }
+              label={subtitleRowLabel(t, track)}
               selected={subs.active === track.index}
               disabled={subs.failed.has(track.index)}
               // A first request can sit through a server-side extraction of the

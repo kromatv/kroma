@@ -2,63 +2,11 @@ use axum::http::header::{CONTENT_LENGTH, CONTENT_RANGE};
 use axum::http::StatusCode;
 
 use crate::api::test_support::{
-    demo_item_id, demo_library_ids, grant_libraries, media_ticket_for, raw, seed_playable_item,
-    seed_session, test_app, TestApp,
+    byte_routes, demo_item_id, demo_library_ids, device_of, grant_libraries,
+    household_where_the_viewer_only_sees_films, media_ticket_for, raw, seed_playable_item,
+    seed_session, test_app, ticketed, FILM,
 };
-use crate::model::Permission;
 use crate::services::media_ticket;
-
-const FILM: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
-
-struct Household {
-    app: TestApp,
-    viewer: String,
-    ticket: String,
-    episode: String,
-}
-
-fn household_where_the_viewer_only_sees_films() -> Household {
-    let app = test_app();
-    let (viewer_id, viewer) = seed_session(
-        &app.state,
-        "viewer@test.dev",
-        "viewer",
-        &[Permission::Playback],
-    );
-    let (movies_lib, _shows_lib) = demo_library_ids();
-    grant_libraries(&app.state, &viewer_id, &[movies_lib]);
-    let ticket = media_ticket_for(&app.state, &viewer);
-
-    Household {
-        app,
-        viewer,
-        ticket,
-        episode: demo_item_id("Islands"),
-    }
-}
-
-fn byte_routes(item: &str) -> Vec<String> {
-    vec![
-        format!("/api/items/{item}/stream"),
-        format!("/api/items/{item}/hls/copy/0/0/index.m3u8"),
-        format!("/api/items/{item}/hls/copy/0/0/init.mp4"),
-        format!("/api/items/{item}/storyboard"),
-        format!("/api/items/{item}/storyboard.img"),
-        format!("/api/items/{item}/subtitles/0"),
-        format!("/api/items/{item}/subtitles/dl/anything.vtt"),
-    ]
-}
-
-fn ticketed(uri: &str, ticket: &str) -> String {
-    let join = if uri.contains('?') { '&' } else { '?' };
-    format!("{uri}{join}t={ticket}")
-}
-
-fn device_of(h: &Household) -> String {
-    crate::db::session_device_id(&h.app.state.db, &h.viewer)
-        .expect("read the session's device")
-        .expect("a session minted from an access token")
-}
 
 #[tokio::test]
 async fn a_request_for_bytes_that_carries_no_credential_at_all_is_refused() {
@@ -88,6 +36,25 @@ async fn a_ticket_reaches_the_bytes_of_a_title_its_account_was_granted() {
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(headers[CONTENT_LENGTH], FILM.len().to_string());
+}
+
+#[tokio::test]
+async fn a_granted_title_the_demo_seed_wrote_no_file_for_says_so_by_name() {
+    let h = household_where_the_viewer_only_sees_films();
+    let uri = format!("/api/items/{}/stream", demo_item_id("Blade Runner 2049"));
+
+    let (status, _headers, body) = raw(
+        &h.app.app,
+        "GET",
+        &ticketed(&uri, &h.ticket),
+        None,
+        None,
+        &[],
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["error"], "demo item has no media");
 }
 
 #[tokio::test]
@@ -237,63 +204,4 @@ async fn a_range_request_partway_through_a_film_is_answered_for_the_same_ticket(
     assert_eq!(later, StatusCode::PARTIAL_CONTENT);
     assert_eq!(first_headers[CONTENT_RANGE], "bytes 0-7/36");
     assert_eq!(later_headers[CONTENT_RANGE], "bytes 20-27/36");
-}
-
-#[tokio::test]
-async fn a_session_bearer_still_answers_for_the_bytes_it_may_see() {
-    let h = household_where_the_viewer_only_sees_films();
-    let granted = seed_playable_item(&h.app.state, "Granted", FILM);
-
-    let (status, _headers, _) = raw(
-        &h.app.app,
-        "GET",
-        &format!("/api/items/{granted}/stream"),
-        Some(&h.viewer),
-        None,
-        &[],
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::OK);
-}
-
-#[tokio::test]
-async fn a_bearer_that_is_no_longer_a_session_is_refused_rather_than_read_as_anonymous() {
-    let h = household_where_the_viewer_only_sees_films();
-    let granted = seed_playable_item(&h.app.state, "Granted", FILM);
-
-    let (status, _headers, _) = raw(
-        &h.app.app,
-        "GET",
-        &ticketed(&format!("/api/items/{granted}/stream"), &h.ticket),
-        Some("not-a-session"),
-        None,
-        &[],
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::UNAUTHORIZED);
-}
-
-#[tokio::test]
-async fn every_signed_in_device_is_handed_a_ticket_with_its_session() {
-    let t = test_app();
-    let access = crate::api::test_support::seed_access_token(&t.state, &t.user_id, true);
-
-    let (status, body) = crate::api::test_support::send(
-        &t.app,
-        "POST",
-        "/api/auth/token",
-        None,
-        Some(serde_json::json!({ "accessToken": access })),
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::OK);
-    let ticket = body["mediaTicket"].as_str().expect("a media ticket");
-    let now = time::OffsetDateTime::now_utc().unix_timestamp();
-    assert_eq!(
-        media_ticket::device_of(&t.state.media_ticket_key, ticket, now),
-        Some(crate::services::scan::short_hash(&access))
-    );
 }

@@ -22,6 +22,7 @@ export interface SubView {
   language: string | null;
   url: string;
   label?: string;
+  title?: string | null;
   ai?: boolean;
 }
 
@@ -77,11 +78,12 @@ export function useSubtitles(
       }));
     }
     const embedded = item.subtitles
-      .map((s, index) => ({ index, language: s.language, codec: s.codec }))
+      .map((s, index) => ({ index, language: s.language, title: s.title, codec: s.codec }))
       .filter((s) => isTextSubtitle(s.codec))
       .map((s) => ({
         index: s.index,
         language: s.language,
+        title: s.title,
         url: client.media.subtitleUrl(item.id, s.index),
       }));
     const gen: SubView[] = downloaded.map((d, i) => ({

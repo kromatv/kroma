@@ -1,8 +1,5 @@
 //! Download wire types: the download queue + client config views, the naming /
-//! organize shapes, and the VPN kill-switch status. Pure data (serde); relocated
-//! here from the core `kroma-domain` crate so the module that owns them also owns
-//! their contract. The acquisition search / grab / analyze DTOs live in the
-//! `kroma-acquisition` crate now.
+//! organize shapes, and the VPN kill-switch status.
 
 use serde::{Deserialize, Serialize};
 
@@ -21,7 +18,6 @@ pub struct VpnStatusView {
 #[serde(rename_all = "camelCase")]
 pub struct DownloadClientView {
     pub id: String,
-    // `rqbit` | `transmission` | `qbittorrent`.
     pub kind: String,
     pub name: String,
     pub url: String,
@@ -35,19 +31,13 @@ pub struct DownloadClientView {
     pub starting_for_ms: Option<i64>,
 }
 
-/// What an engine is doing right now, as a state a panel can render rather than
-/// an error string it has to interpret.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum EngineState {
     Ready,
-    /// Warming up: the session is coming back and its torrents are being
-    /// restored. Not an error, and not something to retry.
     Starting,
     Stopped,
-    /// This build has no embedded engine.
     NotCompiled,
-    /// An external daemon, which only answers when asked.
     Unknown,
 }
 
@@ -90,7 +80,6 @@ pub struct DownloadClientsView {
     pub rqbit_compiled: bool,
 }
 
-/// Create/update body for a download client.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SaveDownloadClientBody {
@@ -128,10 +117,6 @@ pub struct DownloadView {
     pub episodes: Option<Vec<u32>>,
     pub status: String,
     pub progress: f64,
-    // Live engine stats for an active download (0 when not live/known). Polled
-    // into the DTO so the panel shows speed + peers even when the live event
-    // stream (WebSocket) can't reach the client - e.g. through a tunnel that
-    // doesn't upgrade WebSockets.
     pub down_bps: u64,
     pub up_bps: u64,
     pub peers: u32,
@@ -154,18 +139,15 @@ pub struct DownloadView {
     pub lifetime_uploaded_bytes: u64,
 }
 
-/// Where one page sits in the filtered ledger.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PageView {
     pub page: u32,
     pub per_page: u32,
-    /// Rows the CURRENT filter matches, which is what the page count divides.
     pub total: i64,
     pub page_count: u32,
 }
 
-/// One sample of the whole engine's throughput, oldest first.
 #[derive(Debug, Clone, Copy, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SpeedSample {
@@ -176,7 +158,6 @@ pub struct SpeedSample {
     pub peers: u32,
 }
 
-/// The queue's headline numbers: what is moving now, what has moved ever.
 #[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadStatsView {
@@ -184,12 +165,9 @@ pub struct DownloadStatsView {
     pub up_bps: u64,
     pub peers: u32,
     pub active: i64,
-    /// Every status in the ledger with its row count, so a filter chip can say
-    /// how many rows it would reveal without a query per chip.
     pub by_status: std::collections::BTreeMap<String, i64>,
     pub total_downloaded_bytes: u64,
     pub total_uploaded_bytes: u64,
-    /// Throughput over the recent past, oldest sample first.
     pub history: Vec<SpeedSample>,
 }
 
@@ -198,7 +176,6 @@ pub struct DownloadStatsView {
 #[serde(rename_all = "camelCase")]
 pub struct DownloadsView {
     pub downloads: Vec<DownloadView>,
-    // VPN seal status (`None` until a proxy is configured).
     pub vpn: Option<VpnStatusView>,
     pub page: PageView,
     pub stats: DownloadStatsView,
@@ -214,33 +191,26 @@ pub struct LimitsView {
     pub max_active: i64,
 }
 
-/// One TMDB title a download could be for, ranked best first.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MatchCandidateView {
     pub tmdb_id: u64,
-    /// `movie` | `show`.
     pub kind: String,
     pub title: String,
     pub year: Option<u32>,
     pub overview: Option<String>,
     pub poster_url: Option<String>,
-    /// 0..1, from the same ranking the automatic pass uses.
     pub score: f64,
 }
 
-/// `POST /downloads/torrent`: what an uploaded `.torrent` says about itself,
-/// in the shape the manual-add flow already speaks.
+/// `POST /downloads/torrent`: what an uploaded `.torrent` says about itself.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InspectedTorrent {
-    /// The magnet that stands for the file, for the engines that take no bytes.
     pub magnet: String,
     pub info_hash: String,
-    /// The torrent's own name, which for a scene release is the release name.
     pub release_title: String,
     pub size_bytes: u64,
-    /// What the release name reads as: `movie` | `season` | `episode`.
     pub kind: String,
     pub title: Option<String>,
     pub year: Option<u32>,
@@ -248,7 +218,6 @@ pub struct InspectedTorrent {
     pub episodes: Option<Vec<u32>>,
 }
 
-/// One file inside a torrent, with what the release parser read off its name.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TorrentFileView {
@@ -261,13 +230,9 @@ pub struct TorrentFileView {
 }
 
 /// `GET /downloads/{id}/contents`: what a torrent actually holds.
-///
-/// The same shape the acquisition module answers its own analysis with, so one
-/// component renders a torrent being added and a torrent already in the queue.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TorrentContentsView {
-    /// `movie` | `episode` | `season` | `series` | `unknown`.
     pub kind: String,
     pub seasons: Vec<u32>,
     pub files: Vec<TorrentFileView>,
@@ -277,7 +242,6 @@ pub struct TorrentContentsView {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LinkBody {
-    /// `movie` | `season` | `episode`.
     pub kind: String,
     pub tmdb_id: u64,
     pub title: Option<String>,
@@ -307,7 +271,6 @@ pub struct NamingView {
     pub sample: SampleNames,
 }
 
-/// Example rendered names for the live preview.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SampleNames {
@@ -315,10 +278,9 @@ pub struct SampleNames {
     pub episode: String,
 }
 
-/// `POST /organize/sample` body (render as the admin types).
+/// `POST /organize/sample` body.
 pub type SampleBody = NamingTemplatesView;
 
-/// One file the rename tool would move.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrganizeMove {

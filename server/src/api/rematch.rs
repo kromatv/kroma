@@ -24,19 +24,12 @@ pub fn routes() -> Router<SharedState> {
         .route("/rematch/{kind}/{id}", post(apply))
 }
 
-fn locale(user: &User) -> &'static str {
-    user.language
-        .as_deref()
-        .and_then(i18n::normalize)
-        .unwrap_or(i18n::DEFAULT_LOCALE)
-}
-
 fn require_manage(user: &User) -> Result<(), Response> {
     if user.can(Permission::LibraryManage) {
         Ok(())
     } else {
         Err(lerr(
-            locale(user),
+            i18n::user_locale(user),
             StatusCode::FORBIDDEN,
             "error.permissionDenied",
         ))
@@ -45,7 +38,7 @@ fn require_manage(user: &User) -> Result<(), Response> {
 
 fn subject_of(user: &User, kind: &str) -> Result<Subject, Response> {
     Subject::parse(kind)
-        .ok_or_else(|| lerr(locale(user), StatusCode::NOT_FOUND, "error.itemNotFound"))
+        .ok_or_else(|| lerr(i18n::user_locale(user), StatusCode::NOT_FOUND, "error.itemNotFound"))
 }
 
 #[derive(Debug, Deserialize)]

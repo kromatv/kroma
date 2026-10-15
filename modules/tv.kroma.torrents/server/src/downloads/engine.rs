@@ -21,9 +21,33 @@ pub struct LiveStat {
 }
 
 impl DownloadManager {
-    /// Errors are logged, not fatal. The new session starts before the old one
-    /// stops, so a failed restart leaves the previous engine running.
-    pub async fn start_rqbit(&self, host: &dyn HostCtx) {
+    /// Brings the engine up unless one already runs. Callers race at boot (the
+    /// enable hook and the monitor's first tick), so starts are single-flight.
+    pub async fn ensure_rqbit(&self, host: &dyn HostCtx) {
+        let _gate = self.engine_gate.lock().await;
+        if self.rqbit().is_some() {
+            return;
+        }
+        self.bring_up(host).await;
+    }
+
+    /// Replaces the running engine, e.g. after a VPN change. The old session is
+    /// stopped before the new one opens the same persistence directory, so a
+    /// failed start leaves no engine and the monitor retries. Errors are logged.
+    pub async fn restart_rqbit(&self, host: &dyn HostCtx) {
+        let _gate = self.engine_gate.lock().await;
+        let old = self.rqbit.write().unwrap().take();
+        if let Some(old) = old {
+            old.shutdown().await;
+        }
+        self.bring_up(host).await;
+    }
+
+    async fn bring_up(&self, host: &dyn HostCtx) {
+        let retiring = self.retiring.lock().unwrap().take();
+        if let Some(old) = retiring {
+            old.shutdown().await;
+        }
         // Never bring the engine up while the embedded client is disabled; a
         // missing row means first boot before seeding, treated as enabled.
         if let Ok(conn) = self.store().get() {
@@ -70,13 +94,10 @@ impl DownloadManager {
                     proxy = cfg.socks_proxy_url.is_some(),
                     "embedded torrent engine started"
                 );
-                let old = self.rqbit.write().unwrap().replace(engine);
-                if let Some(old) = old {
-                    old.stop();
-                }
+                *self.rqbit.write().unwrap() = Some(engine);
             }
             Err(e) => {
-                tracing::warn!(error = %format!("{e:#}"), "embedded torrent engine restart failed; keeping the previous session");
+                tracing::warn!(error = %format!("{e:#}"), "embedded torrent engine start failed");
             }
         }
     }
@@ -208,11 +229,12 @@ impl DownloadManager {
     pub fn stop_rqbit(&self) {
         if let Some(engine) = self.rqbit.write().unwrap().take() {
             engine.stop();
+            *self.retiring.lock().unwrap() = Some(engine);
             tracing::info!("embedded torrent engine stopped");
         }
     }
 
-    /// `start_rqbit` refuses to come back up until re-enabled, so this survives
+    /// `ensure_rqbit` refuses to come back up until re-enabled, so this survives
     /// restarts.
     pub fn disable_embedded(&self) {
         let mut held = Vec::new();

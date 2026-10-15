@@ -10,6 +10,11 @@ const PROBE = {
   hevcMainAlt: 'video/mp4; codecs="hev1.1.6.L93.B0"',
   hevcMain10: 'video/mp4; codecs="hvc1.2.4.L120.B0"',
   h264High: 'video/mp4; codecs="avc1.640028"',
+  // The two profiles a 10-bit H.264 encode lands in: High 10 (`6E`) for 4:2:0
+  // and High 4:4:4 Predictive (`F4`), which is what x264 writes at 4:4:4. Both
+  // are probed because a runtime that draws one still shows the other black.
+  h264High10: 'video/mp4; codecs="avc1.6E0028"',
+  h264High444: 'video/mp4; codecs="avc1.F40028"',
   av1Main: 'video/mp4; codecs="av01.0.05M.08"',
   vp9: 'video/webm; codecs="vp09.00.10.08"',
   // `dvh1` profile 5 level 6: the dual-layer-free Dolby Vision a browser either
@@ -65,6 +70,7 @@ export interface PlaybackCapabilities {
   hevc: boolean;
   hevc10bit: boolean;
   h264: boolean;
+  h26410bit: boolean;
   av1: boolean;
   vp9: boolean;
   hdr: HdrCapabilities;
@@ -156,6 +162,10 @@ export function detectCapabilities(): PlaybackCapabilities {
       hevc: true,
       hevc10bit: true,
       h264: true,
+      // No platform here reports its H.264 profiles, and unlike the HDR claim
+      // below a wrong yes draws nothing at all, so this claims only the 8-bit
+      // 4:2:0 every decoder implements.
+      h26410bit: false,
       av1: false,
       vp9: true,
       // No platform here reports its HDR systems, and a panel that cannot draw a
@@ -186,6 +196,7 @@ export function detectCapabilities(): PlaybackCapabilities {
     hevc,
     hevc10bit: supportsType(PROBE.hevcMain10),
     h264: supportsType(PROBE.h264High),
+    h26410bit: supportsType(PROBE.h264High10) && supportsType(PROBE.h264High444),
     av1: supportsType(PROBE.av1Main),
     vp9: supportsType(PROBE.vp9),
     hdr: detectHdrFormats(),
@@ -218,15 +229,18 @@ export function decodableAudioCodecs(caps: PlaybackCapabilities = capabilities()
 }
 
 /**
- * The video codecs this device can decode, named the way the server names them
- * (ffprobe's `codec_name`, which is what an item's video stream carries).
+ * What this device declares it can draw, named the way the server names it
+ * (ffprobe's `codec_name`, which is what an item's video stream carries) plus one
+ * name that is not a codec: `h26410bit`, for H.264 above 8 bits.
  *
  * This is what a player sends as `videoCodecs`: the server stream-copies video by
  * default and only re-encodes a source this list leaves out, so a device that
  * declares nothing is served a copy and shows a black picture for anything it
- * cannot decode. A codec name carries no bit depth, so a caller playing a 10-bit
- * source on a runtime whose `hevc10bit` is false declares `{ ...caps, hevc: false }`.
+ * cannot decode. A codec name carries no bit depth, which is why the deep
+ * H.264 case has a name of its own; HEVC has none, so `hevc` is declared only
+ * where 10-bit HEVC decodes too, one name covering both depths.
  */
 export function decodableVideoCodecs(caps: PlaybackCapabilities = capabilities()): string[] {
-  return (['hevc', 'h264', 'av1', 'vp9'] as const).filter((codec) => caps[codec]);
+  const declared: PlaybackCapabilities = { ...caps, hevc: caps.hevc && caps.hevc10bit };
+  return (['hevc', 'h264', 'h26410bit', 'av1', 'vp9'] as const).filter((codec) => declared[codec]);
 }

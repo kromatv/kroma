@@ -187,7 +187,7 @@ mod tests {
             .unwrap();
         }
 
-        let cw = continue_watching(&pool, &uid).unwrap();
+        let cw = continue_watching(&pool, &uid, 90).unwrap();
         let meta = cw[0]
             .item
             .metadata

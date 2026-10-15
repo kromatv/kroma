@@ -1,7 +1,6 @@
 //! Scene/P2P release-name parsing: tokenize on separators, then classify each
 //! token (resolution, codec, source, season/episode markers, flags); the title
-//! is everything before the first structural marker. No regex crate: the
-//! token vocabulary is small and hand-matching keeps the crate dependency-free.
+//! is everything before the first structural marker.
 
 use crate::{Codec, ParsedRelease, Res, Source};
 
@@ -18,7 +17,6 @@ pub fn parse_release_name(name: &str) -> ParsedRelease {
         group,
         ..ParsedRelease::default()
     };
-    // Index of the first structural token; the title stops there.
     let mut first_marker: Option<usize> = None;
 
     for i in 0..tokens.len() {
@@ -81,15 +79,12 @@ fn strip_trailing_noise(run: &[String]) -> &[String] {
     &run[..run.len() - noise]
 }
 
-// Remembers the earliest structural-marker index (the title ends before it).
 fn mark(slot: &mut Option<usize>, i: usize) {
     if slot.is_none() || i < slot.unwrap() {
         *slot = Some(i);
     }
 }
 
-// Classifies token `i`: folds any resolution/codec/source/episode marker into
-// `out`, else falls back to the word/flag/year table.
 fn classify_token(
     out: &mut ParsedRelease,
     first_marker: &mut Option<usize>,
@@ -130,7 +125,6 @@ fn classify_token(
     classify_word(out, first_marker, tokens, i, &t);
 }
 
-// The word/flag table for tokens that are not a resolution/codec/source/episode.
 fn classify_word(
     out: &mut ParsedRelease,
     first_marker: &mut Option<usize>,
@@ -152,7 +146,6 @@ fn classify_word(
     }
 }
 
-// A spelled-out `season <n>` marker.
 fn mark_season_word(
     out: &mut ParsedRelease,
     first_marker: &mut Option<usize>,
@@ -254,8 +247,6 @@ fn parse_source(t: &str, next: Option<&str>) -> Option<Source> {
     }
 }
 
-// Matches `s01e02`, `s01e01-e03` / `s01e01e02`, bare `s01`, `1x02` (guarded
-// against `1920x1080`). Returns `(season, episode, episode_end, full_season)`.
 fn parse_episode_marker(t: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
     if let Some(rest) = t.strip_prefix('s') {
         return parse_s_marker(rest);
@@ -267,8 +258,6 @@ fn parse_episode_marker(t: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)
     None
 }
 
-// Matches `sNN` / `sNNeMM` / `sNNeMM-eKK` / `sNNeMMeKK`, given the text after
-// the `s`.
 fn parse_s_marker(rest: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
     let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
     if digits.is_empty() || digits.len() > 2 {
@@ -297,7 +286,6 @@ fn parse_s_marker(rest: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
     Some((season, Some(first), last, false))
 }
 
-// `NxMM` episode marker (guarded so `1920x1080` stays a resolution).
 fn parse_x_marker(s: &str, e: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
     if !s.is_empty()
         && !e.is_empty()

@@ -120,6 +120,7 @@ pub fn list(state: &SharedState, f: &Filter) -> Result<PipelineElements> {
     let subs_l: Ledger = db::pipeline::stage_statuses(db, "subtitles")?;
     let embed_l: Ledger = db::pipeline::stage_statuses(db, "embed")?;
     let mark_l: Ledger = db::pipeline::stage_statuses(db, "markers")?;
+    let credits_l: Ledger = db::pipeline::stage_statuses(db, "credits")?;
 
     let ep_by_show = group_episodes_by_show(&items);
     let show_poster: HashMap<&str, Option<String>> = shows
@@ -136,6 +137,7 @@ pub fn list(state: &SharedState, f: &Filter) -> Result<PipelineElements> {
         subs_l: &subs_l,
         embed_l: &embed_l,
         mark_l: &mark_l,
+        credits_l: &credits_l,
         show_poster: &show_poster,
     };
 
@@ -240,6 +242,7 @@ struct Ledgers<'a, 'k> {
     subs_l: &'a Ledger,
     embed_l: &'a Ledger,
     mark_l: &'a Ledger,
+    credits_l: &'a Ledger,
     show_poster: &'a HashMap<&'k str, Option<String>>,
 }
 
@@ -291,6 +294,7 @@ fn item_treatments(
         let (m, me) = status_of(lg.meta_l.get(&it.id), it.has_meta, false);
         let (s, se) = status_of(lg.story_l.get(&it.id), false, true);
         let (st, ste) = status_of(lg.subs_l.get(&it.id), false, true);
+        let (c, ce) = status_of(lg.credits_l.get(&it.id), lg.markset.contains(&it.id), true);
         let (e, ee) = status_of(lg.embed_l.get(&it.id), lg.vecset.contains(&it.id), false);
         (
             vec![
@@ -298,6 +302,7 @@ fn item_treatments(
                 tr("metadata", m, me),
                 tr("storyboard", s, se),
                 tr("subtitles", st, ste),
+                tr("credits", c, ce),
                 tr("embed", e, ee),
             ],
             "film",
@@ -498,6 +503,7 @@ mod tests {
             subs_l: &empty,
             embed_l: &empty,
             mark_l: &empty,
+            credits_l: &empty,
             show_poster: &show_poster,
         };
 
@@ -510,7 +516,14 @@ mod tests {
         let keys: Vec<&str> = treatments.iter().map(|t| t.key.as_str()).collect();
         assert_eq!(
             keys,
-            vec!["probe", "metadata", "storyboard", "subtitles", "embed"]
+            vec![
+                "probe",
+                "metadata",
+                "storyboard",
+                "subtitles",
+                "credits",
+                "embed"
+            ]
         );
         let by = |k: &str| treatments.iter().find(|t| t.key == k).unwrap();
         assert_eq!(by("probe").status, "done");
@@ -537,6 +550,7 @@ mod tests {
             subs_l: &empty,
             embed_l: &empty,
             mark_l: &empty,
+            credits_l: &empty,
             show_poster: &show_poster,
         };
 
@@ -577,6 +591,7 @@ mod tests {
             subs_l: &empty,
             embed_l: &empty,
             mark_l: &empty,
+            credits_l: &empty,
             show_poster: &show_poster,
         };
 

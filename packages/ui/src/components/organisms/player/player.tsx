@@ -1,3 +1,4 @@
+import { useHeldSeek } from '@kromatv/core/react';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 import type { LayoutChangeEvent, View } from 'react-native';
 import { Dimensions } from 'react-native';
@@ -8,6 +9,7 @@ import { PLAYER_ROOT_ID, useIdleCursor } from './hooks/use-idle-cursor';
 import { usePlayerEnding } from './hooks/use-player-ending';
 import { usePlayerKeys } from './hooks/use-player-keys';
 import { usePlayerNav } from './hooks/use-player-nav';
+import { useResumeNotice } from './hooks/use-resume-notice';
 import { useSeekNudge } from './hooks/use-seek-nudge';
 import { useVolumeFlash } from './hooks/use-volume-flash';
 import { volumeStep } from './lib/fmt';
@@ -18,6 +20,7 @@ import { DEFAULT_SUB_APPEARANCE } from './lib/subtitle-appearance';
 import { surfaceShrink } from './lib/surface-shrink';
 import { CreditsCard } from './parts/credits-card';
 import { PostPlay } from './parts/post-play';
+import { ResumePrompt } from './parts/resume-prompt';
 import { SettingsPanel } from './parts/settings-panel';
 import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
 import { SkipIntroButton } from './parts/skip-intro-button';
@@ -27,7 +30,7 @@ import { StatsPanel } from './parts/stats-panel';
 import { TopBar } from './parts/top-bar';
 import { Transport } from './parts/transport';
 import { PEEK_HEIGHT, type UpNextData, type UpNextItem, UpNextSheet } from './parts/up-next-sheet';
-import { deriveChrome, initialSettingsView } from './player-chrome-state';
+import { deriveChrome, hasUpNext, initialSettingsView } from './player-chrome-state';
 import { playerInputHandlers } from './player-input';
 import {
   Actions,
@@ -37,6 +40,7 @@ import {
   PlayerScope,
   PostPlay as PostPlaySlot,
   Report,
+  Resume as ResumeSlot,
   SkipIntro as SkipIntroSlot,
   Subtitle,
   Subtitles,
@@ -59,9 +63,9 @@ export interface PlayerRootProps {
   ref?: React.Ref<View>;
   /** The parts. A `<Player.Media>`, then any of the faces (`Title`, `Subtitle`,
    *  `Warning`, `Actions`, `Panel`) and the settings (`Transport`, `UpNext`,
-   *  `Credits`, `PostPlay`, `SkipIntro`, `Subtitles`, `Report`). Only a DIRECT
-   *  child takes its slot; anything else is drawn over the chrome, in the order
-   *  it was written. */
+   *  `Credits`, `PostPlay`, `SkipIntro`, `Resume`, `Subtitles`, `Report`). Only
+   *  a DIRECT child takes its slot; anything else is drawn over the chrome, in
+   *  the order it was written. */
   children?: ReactNode;
 }
 
@@ -90,7 +94,7 @@ const SKIP_REST = 56;
 // props bag whole would make every `props.x` read a ref-aggregate access and
 // cost the whole chrome its compiler memoisation.
 function Root({
-  controller: c,
+  controller,
   flags,
   title,
   onCast,
@@ -98,6 +102,7 @@ function Root({
   ref,
   children,
 }: Readonly<PlayerRootProps>) {
+  const c = useHeldSeek(controller);
   const slots = useMemo(() => sortSlots(children), [children]);
   const upNext = slots.upNext?.data ?? NO_UP_NEXT;
   const onPlayItem = slots.upNext?.onPlay;
@@ -133,9 +138,24 @@ function Root({
   const locked = slots.panel != null;
   const close = useCallback((reason: PlayerCloseReason) => onClose({ reason }), [onClose]);
   const closeFromChrome = useCallback(() => close('close'), [close]);
+  const notice = useResumeNotice({
+    at: slots.resume?.at,
+    cur: c.cur,
+    playing: c.playing,
+    waiting: c.waiting,
+  });
+  const startOver = () => {
+    notice.dismiss();
+    c.seekTo(0);
+  };
+  // The skip pill waits: it is the same corner as the resume prompt, and OK
+  // belongs to whichever of the two is drawn.
   const intro = useMemo(
-    () => (onSkipIntro ? { active: introActive === true, onSkip: onSkipIntro } : undefined),
-    [introActive, onSkipIntro],
+    () =>
+      onSkipIntro
+        ? { active: introActive === true && !notice.shown, onSkip: onSkipIntro }
+        : undefined,
+    [introActive, onSkipIntro, notice.shown],
   );
 
   // Measured BEFORE the nav machine, which is then given the row that is drawn:
@@ -159,12 +179,14 @@ function Root({
       seekNudge: seek.nudge,
       onNext: () => onPlayNext?.(),
       hasNext: Boolean(onPlayNext),
+      sheetHasItems: hasUpNext(upNext),
       volumeNudge: (d) => setVolume(volumeStep(c.volume, d, volumeMax)),
       toggleMute: c.toggleMute,
       togglePip: c.togglePip,
       toggleFullscreen: c.toggleFullscreen,
       onCast,
       onExit: close,
+      resume: notice.shown ? { onStartOver: startOver, onFocus: notice.holdOpen } : undefined,
     },
     metrics.controls,
   );
@@ -192,6 +214,7 @@ function Root({
     seekNudge: seek.nudge,
     setVolume,
     intro,
+    resume: { active: notice.shown, onDismiss: notice.dismiss },
     credits: { active: credits.show, onKey: ending.onCreditsKey },
     postPlay: { active: ending.over, onKey: ending.onPostPlayKey },
   });
@@ -265,6 +288,19 @@ function Root({
               scale={metrics.scale}
               lift={introLift}
               onSkip={intro.onSkip}
+            />
+          ) : null}
+
+          {slots.resume ? (
+            <ResumePrompt
+              at={slots.resume.at}
+              shown={notice.shown}
+              secondsLeft={notice.secondsLeft}
+              total={notice.total}
+              focused={nav.zone === 'resume'}
+              scale={metrics.scale}
+              lift={introLift}
+              onStartOver={startOver}
             />
           ) : null}
 
@@ -389,6 +425,7 @@ const Player = {
   Credits: CreditsSlot,
   PostPlay: PostPlaySlot,
   SkipIntro: SkipIntroSlot,
+  Resume: ResumeSlot,
   Subtitles,
   Report,
 };

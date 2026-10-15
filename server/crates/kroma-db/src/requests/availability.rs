@@ -1,27 +1,14 @@
 //! What the library already holds for a requested title.
 
-use rusqlite::{params, Connection, OptionalExtension};
+use kroma_domain::RequestKind;
+use rusqlite::{params, Connection};
 
-/// `video` items count: enrichment resolves both against TMDB's movie namespace.
-/// Joined back to `items` so a stale core row for a deleted item never matches.
 pub fn movie_item_by_tmdb(conn: &Connection, tmdb_id: u64) -> rusqlite::Result<Option<String>> {
-    conn.query_row(
-        "SELECT c.subject_id FROM metadata_core c JOIN items i ON i.id = c.subject_id \
-         WHERE c.subject_kind = 'item' AND c.tmdb_id = ?1 AND i.kind IN ('movie', 'video') LIMIT 1",
-        params![tmdb_id as i64],
-        |r| r.get(0),
-    )
-    .optional()
+    crate::visibility::title_by_tmdb(conn, RequestKind::Movie, tmdb_id)
 }
 
 pub fn show_by_tmdb(conn: &Connection, tmdb_id: u64) -> rusqlite::Result<Option<String>> {
-    conn.query_row(
-        "SELECT c.subject_id FROM metadata_core c JOIN shows s ON s.id = c.subject_id \
-         WHERE c.subject_kind = 'show' AND c.tmdb_id = ?1 LIMIT 1",
-        params![tmdb_id as i64],
-        |r| r.get(0),
-    )
-    .optional()
+    crate::visibility::title_by_tmdb(conn, RequestKind::Show, tmdb_id)
 }
 
 /// One physical file backing a catalog item, with what an upgrade needs to

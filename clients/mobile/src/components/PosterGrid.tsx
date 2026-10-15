@@ -46,6 +46,7 @@ export interface PosterGridHandle {
 export function PosterGrid({
   cards,
   header,
+  footer,
   empty,
   refreshing,
   onRefresh,
@@ -55,6 +56,7 @@ export function PosterGrid({
 }: Readonly<{
   cards: CardModel[];
   header?: ReactElement;
+  footer?: ReactElement;
   empty?: ReactElement;
   refreshing?: boolean;
   onRefresh?: () => void;
@@ -142,6 +144,7 @@ export function PosterGrid({
           </Box>
         ) : undefined
       }
+      ListFooterComponent={footer ? <Box style={bleed}>{footer}</Box> : undefined}
       ListEmptyComponent={listW === null ? undefined : empty}
       refreshing={refreshing}
       onRefresh={onRefresh}

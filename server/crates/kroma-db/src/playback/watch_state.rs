@@ -22,6 +22,18 @@ pub fn mark_watched(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
     Ok(())
 }
 
+/// Flag an item watched because playback reached its end, keeping the resume
+/// position so a scene after the credits picks up where it was left.
+pub fn mark_finished(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "INSERT INTO watched (user_id,item_id,watched_at) VALUES (?1,?2,?3) \
+         ON CONFLICT(user_id,item_id) DO UPDATE SET watched_at=excluded.watched_at",
+        params![user_id, item_id, now_or_blank()],
+    )?;
+    Ok(())
+}
+
 /// Clear an item's watched flag for a user. Idempotent.
 pub fn unmark_watched(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
     let conn = pool.get()?;
@@ -106,6 +118,19 @@ mod tests {
             list_watched(&pool, &uid).unwrap(),
             vec!["show-7".to_string()]
         );
+    }
+
+    #[test]
+    fn finishing_keeps_the_resume_position() {
+        let (pool, uid) = pool_with_user();
+        upsert_progress(&pool, &uid, "m1", 110_000, Some(120_000)).unwrap();
+
+        mark_finished(&pool, &uid, "m1").unwrap();
+        mark_finished(&pool, &uid, "m1").unwrap();
+
+        assert_eq!(list_watched(&pool, &uid).unwrap(), vec!["m1".to_string()]);
+        let kept = get_progress(&pool, &uid, "m1").unwrap().unwrap();
+        assert_eq!(kept.position_ms, 110_000);
     }
 
     #[test]

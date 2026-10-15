@@ -58,6 +58,7 @@ vi.mock('expo-video', () => ({
 
 vi.mock('#mobile/player/caps', () => ({
   decideSource: () => ({ direct: true, aacMaster: false }),
+  mobileVideoCodecs: () => ['hevc', 'h264'],
 }));
 
 import { useKromaEngine } from './index';

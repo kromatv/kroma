@@ -46,6 +46,7 @@ export interface EngineLifecycle {
   setCur: React.Dispatch<React.SetStateAction<number>>;
   dur: number;
   bufEnd: number | null;
+  resumedAt: number | null;
   decodedAspect: number | undefined;
   audioIndex: number;
   setAudioIndex: React.Dispatch<React.SetStateAction<number>>;
@@ -137,7 +138,7 @@ export function useEngineLifecycle(
       ? playVerdict
       : { messageKey: 'player.cantPlay', hintKey: 'player.cantPlayHint' };
 
-  const { startSec, setStartSec } = useResolvedStart(client, item);
+  const { startSec, resumedAt, setStartSec } = useResolvedStart(client, item);
 
   // Audio switches do NOT re-create the engine; they call setAudioRendition in place.
   // biome-ignore lint/correctness/useExhaustiveDependencies: env.nativeHls is a session-constant capability; the dep list is intentionally curated to rebuild only on item/engine changes.
@@ -273,6 +274,7 @@ export function useEngineLifecycle(
     setCur,
     dur,
     bufEnd,
+    resumedAt,
     decodedAspect,
     audioIndex,
     setAudioIndex,

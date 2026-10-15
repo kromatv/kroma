@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::config::Config;
 use crate::db::Pool;
 use crate::infra::events::Bus;
-use crate::infra::hls;
+use crate::infra::external_subtitles::ExternalSubtitles;
 use crate::infra::metadata;
 use crate::infra::metrics::Metrics;
 use crate::infra::storyboard::Storyboard;
@@ -18,6 +18,7 @@ use crate::services::search::SearchEngine;
 use crate::services::sections::VectorCache;
 use crate::services::settings::Settings;
 use crate::services::subtitles::GenRegistry;
+use kroma_media::hls;
 
 /// Resolves a point name to every module currently contributing it. The core
 /// holds only this: it never learns which module answers, or what the point is
@@ -33,17 +34,12 @@ pub type OfficialModules = std::sync::Arc<dyn Fn() -> Vec<String> + Send + Sync>
 /// Everything the composition root (the binary) contributes from module crates,
 /// bundled so the core roster keeps naming no module type. See [`AppState::new`].
 pub struct ModuleWiring {
-    // Module services + peer ports, resolved by type through the `HostCtx` seam.
     pub services: std::collections::HashMap<
         std::any::TypeId,
         std::sync::Arc<dyn std::any::Any + Send + Sync>,
     >,
-    // Background jobs contributed by module crates, run alongside the built-ins.
     pub jobs: &'static [crate::services::jobs::Builtin],
-    // Resolves a port contract name to the running provider's `(base_url, token)`.
     pub contributions: Contributions,
-    // Names the installed modules that came from the official catalog, for the
-    // anonymous statistics. Anything installed from elsewhere is absent.
     pub official_modules: OfficialModules,
 }
 
@@ -58,13 +54,12 @@ pub struct AppState {
     pub activity: activity::Shared,
     pub hls: hls::HlsEngine,
     pub storyboard: Storyboard,
+    pub external_subtitles: ExternalSubtitles,
     pub quickconnect: QuickConnect,
     pub handoff: Handoff,
     pub playback: Registry,
     pub cast: crate::services::cast::Registry,
     pub metrics: Metrics,
-    // The `embedder` point: the core's search asks whichever module answers it
-    // for vectors, and finds nothing when none does.
     pub embedder: crate::point::Point,
     pub search: Arc<SearchEngine>,
     pub vectors: Arc<VectorCache>,
@@ -77,9 +72,6 @@ pub struct AppState {
     // rather than queueing, since a permit is held for the whole transfer.
     pub downloads: Arc<tokio::sync::Semaphore>,
     me: std::sync::Weak<AppState>,
-    // Set by the composition root from the module supervisor. A FUNCTION, not
-    // the supervisor itself: the engine must not name it, and this is the whole
-    // of what the core knows about reaching a module.
     pub(crate) contributions: Contributions,
     pub(crate) official_modules: OfficialModules,
     pub(crate) services: std::collections::HashMap<
@@ -109,12 +101,7 @@ impl AppState {
         ffprobe_available: bool,
         db: Pool,
         settings: Settings,
-        // The `embedder` point, built by the composition root from the same
-        // resolver it passes below. A test hands in a stub; a server with no
-        // module answering it finds nothing rather than failing.
         embedder: crate::point::Point,
-        // Module-contributed wiring (services, jobs, port contributions), built
-        // by the binary so the core roster names no module.
         wiring: ModuleWiring,
     ) -> SharedState {
         let ModuleWiring {
@@ -124,7 +111,7 @@ impl AppState {
             official_modules,
         } = wiring;
         let hls = hls::HlsEngine::new(
-            &config.data_dir,
+            config.data_dir.join("hls"),
             crate::services::settings::max_transcodes(&settings),
             crate::services::settings::transcode_cache_limit_bytes(&settings),
         );
@@ -139,45 +126,21 @@ impl AppState {
         if settings.get_bool(crate::services::stats::ENABLED_KEY, false) {
             crate::services::stats::ensure_identity(&settings, &db);
         }
-        // Offline downloads draw from the same operator-facing budget as the HLS
-        // remux sessions rather than inventing a second knob.
         let downloads = Arc::new(tokio::sync::Semaphore::new(
             crate::services::settings::max_transcodes(&settings),
         ));
-        // Every module service + peer port (the download manager, the VPN bridge,
-        // the Remote connector, the VpnProxy / TorrentFetch ports) is built by the
-        // binary (the composition root) and passed in via `module_services`, so the
-        // core never names those module types. Modules resolve their own engine by
-        // type through the `HostCtx` seam.
         let services = module_services;
-        // Seed the process-wide ffmpeg concurrency budget from the setting so the
-        // very first background pass already honors it (updated live on write).
-        crate::infra::ffmpeg_gate::set_capacity(crate::services::settings::media_workers(
-            &settings,
-        ));
-        // Build the job registry: register the built-ins, then overlay any
-        // persisted schedule overrides. The cron loop is spawned in `main`.
+        kroma_media::ffmpeg_gate::set_capacity(crate::services::settings::media_workers(&settings));
         let mut jobs = JobManager::new();
         crate::services::jobs::register_all(&mut jobs);
-        // Overlay the module-contributed jobs (e.g. acquisition) so the core
-        // roster stays module-free while their handlers still run.
         for b in module_jobs {
             jobs.register(b);
         }
         jobs.load_schedules(&db);
-        // Restore the persisted global pipeline-pause so a box rebooted while held
-        // stays held until an admin resumes (visible in the Pipeline console).
         jobs.set_pipeline_paused(settings.get_bool("pipelinePaused", false));
-        // Any run left `running` belongs to a previous process that died mid-job;
-        // mark it failed so it doesn't show as forever-running in the console.
         let _ = crate::db::reconcile_running_runs(&db);
-        // Likewise, reset any pipeline ledger task stranded `running` by that
-        // crash back to `pending` so its stage picks it up again.
         crate::services::pipeline::recover_on_boot(&db);
         let metrics = Metrics::new(db.clone());
-        // `new_cyclic` seeds the weak self-reference (`me`) during construction so
-        // `trigger_job` can re-share the full state; the closure is FnOnce, so the
-        // pre-built services above move straight in.
         Arc::new_cyclic(|weak| AppState {
             config,
             ffprobe_available,
@@ -189,6 +152,7 @@ impl AppState {
             activity: activity::new(),
             hls,
             storyboard,
+            external_subtitles: ExternalSubtitles::default(),
             quickconnect: quickconnect::new(),
             handoff: handoff::new(),
             playback: Registry::new(),

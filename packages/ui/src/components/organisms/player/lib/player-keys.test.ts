@@ -1,38 +1,103 @@
-// Which way Tab walks from where the player is.
-//
-// The chrome is NOT on the spatial navigator - it cannot be, since tvOS's own
-// focus engine would adopt it in parallel with this machine - so a keyboard's
-// Tab reaches it the same way a remote does: as a direction. What decides the
-// direction is the SHAPE of the thing being walked, and getting that wrong
-// gives a keyboard user a Tab key that walks across a column or down a row.
-
 import { describe, expect, it, vi } from 'vitest';
 import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav';
 import type { RemoteKey } from '#ui/lib/remote-keys';
-import { type PlayerKeysParams, routeRemoteKey, tabDirection } from './player-keys';
+import { type PlayerKeysParams, routeRemoteKey, routeTab } from './player-keys';
 
 const nav = (over: Partial<PlayerNav>): PlayerNav => over as PlayerNav;
 
-describe('tabDirection', () => {
-  // The transport controls are a row, and so is the up-next sheet's grid.
-  it.each([
-    ['the transport controls', { overlay: null, zone: 'controls' }],
-    ['the up-next sheet', { overlay: 'sheet', zone: 'controls' }],
-    ['the up-next sheet, whatever zone is under it', { overlay: 'sheet', zone: 'seek' }],
-  ])('walks along %s', (_label, over) => {
-    expect(tabDirection(nav(over as Partial<PlayerNav>), false)).toBe('Right');
-    expect(tabDirection(nav(over as Partial<PlayerNav>), true)).toBe('Left');
+describe('routeTab over the chrome', () => {
+  function chrome(over: Partial<PlayerNav> = {}) {
+    const walkChrome = vi.fn();
+    const handleKey = vi.fn();
+    const poke = vi.fn();
+    const params = {
+      nav: nav({ walkChrome, handleKey, poke, revealed: true, overlay: null, ...over }),
+      panelRef: { current: null },
+      locked: false,
+    } as unknown as PlayerKeysParams;
+    return { params, walkChrome, handleKey, poke };
+  }
+
+  it('walks the reading order rather than stepping a direction', () => {
+    const { params, walkChrome, handleKey } = chrome();
+
+    routeTab(params, false);
+    routeTab(params, true);
+
+    expect(walkChrome.mock.calls).toEqual([[false], [true]]);
+    expect(handleKey).not.toHaveBeenCalled();
   });
 
-  // Everything else is a column: the settings panel's rows, the seek bar's
-  // stack, and the chrome above them.
-  it.each([
-    ['the seek bar', { overlay: null, zone: 'seek' }],
-    ['the top chrome', { overlay: null, zone: 'top' }],
-    ['a panel over the player', { overlay: 'panel', zone: 'controls' }],
-  ])('walks down %s', (_label, over) => {
-    expect(tabDirection(nav(over as Partial<PlayerNav>), false)).toBe('Down');
-    expect(tabDirection(nav(over as Partial<PlayerNav>), true)).toBe('Up');
+  it('spends the first press waking a hidden chrome, as every other key does', () => {
+    const { params, walkChrome, poke } = chrome({ revealed: false });
+
+    routeTab(params, false);
+
+    expect(walkChrome).not.toHaveBeenCalled();
+    expect(poke).toHaveBeenCalledOnce();
+  });
+});
+
+describe('routeTab inside a surface that took the keyboard', () => {
+  function surface(over: Partial<PlayerKeysParams>, navOver: Partial<PlayerNav> = {}) {
+    const onKey = vi.fn(() => true);
+    const walkChrome = vi.fn();
+    const params = {
+      nav: nav({
+        walkChrome,
+        handleKey: vi.fn(),
+        poke: vi.fn(),
+        closeOverlay: vi.fn(),
+        revealed: true,
+        ...navOver,
+      }),
+      panelRef: { current: { onKey } },
+      locked: false,
+      ...over,
+    } as unknown as PlayerKeysParams;
+    return { params, onKey, walkChrome };
+  }
+
+  it('hands a grid the whole press, so a line can turn the corner', () => {
+    const onTab = vi.fn(() => true);
+    const closeOverlay = vi.fn();
+    const { params } = surface({}, { overlay: 'sheet', closeOverlay });
+    params.panelRef.current = { onKey: vi.fn(() => true), onTab };
+
+    routeTab(params, false);
+    routeTab(params, true);
+
+    expect(onTab.mock.calls).toEqual([[false], [true]]);
+    expect(closeOverlay).not.toHaveBeenCalled();
+  });
+
+  it('closes a grid that hands the press back, so the walk leaves it', () => {
+    const closeOverlay = vi.fn();
+    const { params } = surface({}, { overlay: 'sheet', closeOverlay });
+    params.panelRef.current = { onKey: vi.fn(() => true), onTab: () => false };
+
+    routeTab(params, true);
+
+    expect(closeOverlay).toHaveBeenCalledOnce();
+  });
+
+  it('walks down a settings list, which is a column', () => {
+    const { params, onKey } = surface({}, { overlay: 'settings' });
+
+    routeTab(params, false);
+    routeTab(params, true);
+
+    expect(onKey.mock.calls).toEqual([['Down'], ['Up']]);
+  });
+
+  it('walks along the credits card, whose two buttons sit side by side', () => {
+    const credits = { active: true, onKey: vi.fn(() => true) };
+    const { params, walkChrome } = surface({ credits }, { overlay: null });
+
+    routeTab(params, false);
+
+    expect(credits.onKey).toHaveBeenCalledWith('Right');
+    expect(walkChrome).not.toHaveBeenCalled();
   });
 });
 
@@ -95,6 +160,47 @@ describe('routeRemoteKey once the film is over', () => {
     routeRemoteKey(params, 'Enter');
     expect(params.credits?.onKey).not.toHaveBeenCalled();
     expect(onKey).toHaveBeenCalledWith('Enter');
+  });
+});
+
+describe('routeRemoteKey while the resume prompt is up', () => {
+  function prompted(active = true) {
+    const handleKey = vi.fn();
+    const onDismiss = vi.fn();
+    const params = {
+      nav: nav({ handleKey, poke: vi.fn(), revealed: true, overlay: null }),
+      panelRef: { current: null },
+      locked: false,
+      resume: { active, onDismiss },
+    } as unknown as PlayerKeysParams;
+    return { params, handleKey, onDismiss };
+  }
+
+  it('takes Back for itself rather than letting the player close', () => {
+    const { params, handleKey, onDismiss } = prompted();
+
+    routeRemoteKey(params, 'Back');
+
+    expect(onDismiss).toHaveBeenCalledOnce();
+    expect(handleKey).not.toHaveBeenCalled();
+  });
+
+  it('leaves OK alone, so a film that opened where it was left cannot restart', () => {
+    const { params, handleKey, onDismiss } = prompted();
+
+    routeRemoteKey(params, 'Enter');
+
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(handleKey).toHaveBeenCalledWith('Enter');
+  });
+
+  it('hands Back back to the player once it has gone', () => {
+    const { params, handleKey, onDismiss } = prompted(false);
+
+    routeRemoteKey(params, 'Back');
+
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(handleKey).toHaveBeenCalledWith('Back');
   });
 });
 

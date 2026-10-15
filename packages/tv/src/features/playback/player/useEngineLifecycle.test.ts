@@ -38,7 +38,7 @@ vi.mock('#tv/features/playback/player/backend', () => ({
 }));
 
 vi.mock('#tv/features/playback/player/useResolvedStart', () => ({
-  useResolvedStart: () => ({ startSec: 0, setStartSec: vi.fn() }),
+  useResolvedStart: () => ({ startSec: 0, resumedAt: null, setStartSec: vi.fn() }),
 }));
 
 vi.mock('#tv/features/playback/player/vlcPlane', () => ({ vlcAvailable: () => H.vlc }));

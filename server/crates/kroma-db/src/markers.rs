@@ -2,6 +2,7 @@
 
 use super::*;
 use kroma_domain::{Marker, MarkerKind};
+use rusqlite::OptionalExtension;
 
 fn kind_str(kind: MarkerKind) -> &'static str {
     match kind {
@@ -34,6 +35,16 @@ pub fn has_markers(pool: &Pool, item_id: &str) -> Result<bool> {
         |r| r.get(0),
     )?;
     Ok(n > 0)
+}
+
+/// Where the credits of `item_id` start, when a marker says so.
+pub fn credits_start_ms(conn: &Connection, item_id: &str) -> rusqlite::Result<Option<i64>> {
+    conn.query_row(
+        "SELECT start_ms FROM markers WHERE item_id = ?1 AND kind = 'credits'",
+        params![item_id],
+        |r| r.get::<_, i64>(0),
+    )
+    .optional()
 }
 
 /// Unknown kinds are skipped, so a future kind cannot break older clients.
@@ -97,7 +108,7 @@ pub(crate) fn markers_for_items(
 }
 
 /// Overwrites only when `source` ranks at least as high as the stored one
-/// (`manual` > `fingerprint` > `chapters`).
+/// (`manual` > `fingerprint` = `video` > `chapters`).
 pub fn set_marker(
     pool: &Pool,
     item_id: &str,
@@ -113,8 +124,8 @@ pub fn set_marker(
          ON CONFLICT(item_id, kind) DO UPDATE SET \
            start_ms = excluded.start_ms, end_ms = excluded.end_ms, \
            source = excluded.source, updated_at = excluded.updated_at \
-         WHERE (CASE excluded.source WHEN 'manual' THEN 3 WHEN 'fingerprint' THEN 2 WHEN 'chapters' THEN 1 ELSE 0 END) \
-            >= (CASE markers.source WHEN 'manual' THEN 3 WHEN 'fingerprint' THEN 2 WHEN 'chapters' THEN 1 ELSE 0 END)",
+         WHERE (CASE excluded.source WHEN 'manual' THEN 3 WHEN 'fingerprint' THEN 2 WHEN 'video' THEN 2 WHEN 'chapters' THEN 1 ELSE 0 END) \
+            >= (CASE markers.source WHEN 'manual' THEN 3 WHEN 'fingerprint' THEN 2 WHEN 'video' THEN 2 WHEN 'chapters' THEN 1 ELSE 0 END)",
         params![item_id, kind_str(kind), start_ms as i64, end_ms as i64, source],
     )?;
     Ok(())

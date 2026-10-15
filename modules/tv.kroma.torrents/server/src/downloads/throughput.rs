@@ -9,8 +9,6 @@ use crate::SpeedSample;
 
 use super::DownloadManager;
 
-/// Samples kept for the queue's throughput chart. At the monitor's 5 s active
-/// tick this is the last 15 minutes.
 pub const HISTORY_LEN: usize = 180;
 
 pub const DOWN_KBPS_KEY: &str = "rqbitDownKbps";

@@ -1,7 +1,6 @@
 import type { MediaItem } from '@kromatv/client/media';
 import type { ReportCategory } from '@kromatv/client/reports';
-import { audioSupport, playerSubtitle } from '@kromatv/core';
-import type { Translate } from '@kromatv/i18n';
+import { playerSubtitle } from '@kromatv/core';
 import {
   Player,
   TV_FLAGS,
@@ -17,7 +16,6 @@ import { useClient, useNav, useParams } from '#tv/app/router';
 import { useCastTarget } from '#tv/features/cast/castBridge';
 import { revealNativeSurface } from '#tv/features/playback/player/nativeSurface';
 import { PlayerSurface } from '#tv/features/playback/player/PlayerSurface';
-import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
 import { useNowPlaying } from '#tv/features/playback/player/useNowPlaying';
 import { useStoryboard } from '#tv/features/playback/player/useStoryboard';
 import { useTvController } from '#tv/features/playback/use-tv-controller';
@@ -25,20 +23,7 @@ import { useTvUpNext } from '#tv/features/playback/use-tv-upnext';
 
 const PREVIEW_W = 256;
 
-// Warnings only: a title that will not play at all is the controller's `error`,
-// which the stage prints across the picture instead of hinting at it in a corner.
-// Priority order: direct-play verdict (in-page surface only) -> audio support.
-// Null when nothing to warn about.
-
 const BACK = style({ radius: 999, mt: 8 });
-function playerWarn(pb: Playback, item: MediaItem, t: Translate): string | null {
-  if (pb.error) return null;
-  if (pb.surface === 'video' && pb.verdict && !pb.verdict.canDirectPlay)
-    return t(pb.verdict.messageKey, pb.verdict.messageVars);
-  const audio = audioSupport(item);
-  if (!audio.canPlay && audio.messageKey) return t(audio.messageKey, audio.messageVars);
-  return null;
-}
 
 /**
  * The TV player: a thin wrapper adapting the native-plane engine to the
@@ -119,8 +104,6 @@ export function TvPlayer() {
     return revealNativeSurface();
   }, [pb.surface, pb.ready]);
 
-  const warn = playerWarn(pb, item, t);
-
   const nextTitle = next
     ? {
         title: next.episodeTitle ?? next.title,
@@ -151,7 +134,6 @@ export function TvPlayer() {
     <Player.Root controller={controller} flags={playerFlags} title={item.title} onClose={nav.back}>
       <Player.Title>{item.title}</Player.Title>
       {subtitle ? <Player.Subtitle>{subtitle}</Player.Subtitle> : null}
-      {warn ? <Player.Warning>{warn}</Player.Warning> : null}
       <Player.Transport tileAt={tileAt} />
       <Player.Subtitles
         appearance={appearance}
@@ -169,6 +151,7 @@ export function TvPlayer() {
       {intro ? (
         <Player.SkipIntro active={introActive} onSkip={() => pb.seekTo(intro.endMs / 1000)} />
       ) : null}
+      {pb.resumedAt ? <Player.Resume at={pb.resumedAt} /> : null}
       <Player.Media>
         <PlayerSurface pb={pb} title={item.title} />
       </Player.Media>

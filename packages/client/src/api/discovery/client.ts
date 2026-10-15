@@ -1,5 +1,11 @@
 import type { Query, RequestContext } from '../../core/client';
-import { DiscoverDetail, DiscoverResponse, type DiscoverType, type TmdbKind } from './schemas';
+import {
+  DiscoverDetail,
+  DiscoverResponse,
+  DiscoverSeasonEpisodes,
+  type DiscoverType,
+  type TmdbKind,
+} from './schemas';
 
 /** What a discovery listing asks for. `all` is the absence of a type filter and
  * page one is the absence of a page, which is how the server reads them. */
@@ -39,6 +45,11 @@ export default function discoveryApi(ctx: RequestContext) {
      * (`movie` | `tv`); the response speaks the catalog's (`movie` | `show`). */
     detail: (kind: TmdbKind, tmdbId: number) =>
       ctx.get('/discover/:kind/:tmdbId', DiscoverDetail, { params: { kind, tmdbId } }),
+
+    season: (tmdbId: number, season: number) =>
+      ctx.get('/discover/tv/:tmdbId/season/:season', DiscoverSeasonEpisodes, {
+        params: { tmdbId, season },
+      }),
   };
 }
 

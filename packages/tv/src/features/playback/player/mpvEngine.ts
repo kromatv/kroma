@@ -11,6 +11,12 @@
 // behind the page" model AVPlay uses on Tizen, so this backend shows no in-page
 // media element (surface: 'mpv').
 
+import {
+  decodableAudioCodecs,
+  decodableVideoCodecs,
+  MPV_CAPS,
+  resolveMasterStart,
+} from '@kromatv/core';
 import type { AudioFilterMode, PlaneRect } from '@kromatv/ui';
 import {
   BaseTvEngine,
@@ -19,7 +25,6 @@ import {
 } from '#tv/features/playback/player/baseEngine';
 import {
   getTauri,
-  resolveMasterStart,
   shellOwnsPlaneGeometry,
   type TauriBridge,
 } from '#tv/features/playback/player/engine';
@@ -68,6 +73,14 @@ export class MpvEngine extends BaseTvEngine {
     if (this.mode === 'direct') {
       this.pendingSeek = opts.startSec > 0.5 ? opts.startSec : null;
     }
+  }
+
+  protected override declaredAudioCodecs(): string[] {
+    return decodableAudioCodecs(MPV_CAPS);
+  }
+
+  protected override declaredVideoCodecs(): string[] {
+    return decodableVideoCodecs(MPV_CAPS);
   }
 
   // Kept out of the constructor so it holds no async work; called once right after.

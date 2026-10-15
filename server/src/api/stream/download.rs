@@ -126,7 +126,7 @@ pub async fn download_item(
 
     // Wait for the first bytes before committing to a `200`: every structural
     // failure is decided in the muxer's init, and past the status line a
-    // truncated body would be stored as a finished download. One read only —
+    // truncated body would be stored as a finished download. One read only:
     // `ftyp` lands the moment init succeeds, the first fragment can be minutes away.
     let mut head = vec![0u8; 64 * 1024];
     let filled = stdout.read(&mut head).await.unwrap_or(0);
@@ -172,7 +172,7 @@ pub async fn download_item(
 
     let sink = byte_sink(&state, &headers, &addr);
     let body =
-        crate::infra::stream::CountingReader::new(std::io::Cursor::new(head).chain(stdout), sink);
+        kroma_media::stream::CountingReader::new(std::io::Cursor::new(head).chain(stdout), sink);
     Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "video/mp4")

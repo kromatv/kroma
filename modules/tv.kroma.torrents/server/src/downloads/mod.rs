@@ -18,12 +18,15 @@ use kroma_module_sdk::host::HostCtx;
 use kroma_module_sdk::primitives::now_ms;
 
 mod bandwidth;
+mod drops;
 mod engine;
 mod fetch;
 mod gate;
 mod grab;
-pub mod matching;
 mod ledger;
+pub mod matching;
+#[cfg(test)]
+pub(crate) mod test_support;
 mod throughput;
 
 pub use engine::LiveStat;
@@ -44,19 +47,12 @@ pub struct DownloadManager {
     speed_history: Mutex<Vec<crate::SpeedSample>>,
     bandwidth: Mutex<crate::bandwidth::meter::Meter>,
     starting_since: Mutex<Option<i64>>,
+    engine_gate: tokio::sync::Mutex<()>,
+    retiring: Mutex<Option<Arc<RqbitEngine>>>,
     state_dir: PathBuf,
     downloads_dir: PathBuf,
-    // Held rather than threaded through: `engine_for` is called from the monitor
-    // loop and from lifecycle methods with no host in scope, and every engine but
-    // the embedded one is another process this has to resolve.
     host: Arc<dyn HostCtx>,
     monitor_started: AtomicBool,
-    // The manager holds its own pools rather than taking them off a host,
-    // because the port contracts it implements name only `HostCtx`: a consumer
-    // must be able to compile against a contract without holding the provider's
-    // capabilities. `core` is the shared ledger (`downloads`, scoped by this
-    // module's grant); `store` is this module's own file, where the client
-    // configs and their passwords live.
     core: Pool,
     store: Pool,
 }
@@ -80,6 +76,8 @@ impl DownloadManager {
             speed_history: Mutex::new(Vec::new()),
             bandwidth: Mutex::new(crate::bandwidth::meter::Meter::default()),
             starting_since: Mutex::new(None),
+            engine_gate: tokio::sync::Mutex::new(()),
+            retiring: Mutex::new(None),
             downloads_dir: state_dir.join("downloads"),
             state_dir,
             host,
@@ -181,8 +179,6 @@ impl DownloadManager {
             password: row.password.clone(),
         };
         if def.kind == crate::engine::EMBEDDED_KIND {
-            // Both reasons are actionable, and they are different problems: one
-            // needs the engine started, the other a build that has it.
             let engine = self.rqbit().ok_or_else(|| {
                 if crate::RQBIT_COMPILED {
                     anyhow!("embedded engine not started")
@@ -198,8 +194,7 @@ impl DownloadManager {
     }
 }
 
-/// Everything needed to grab a torrent + import it. Built from a scored release
-/// (auto / interactive) or from admin-provided fields (manual add / magnet).
+/// Everything needed to grab a torrent + import it.
 /// `upgrade` means the grab replaces media already on disk, so the import takes
 /// the destination and clears what it superseded instead of landing beside it.
 ///
@@ -226,23 +221,18 @@ pub struct GrabSpec {
     pub wanted_ids: Vec<String>,
     pub only_files: Option<Vec<usize>>,
     pub details_url: Option<String>,
-    #[serde(default)]
     pub upgrade: bool,
 }
 
 /// The `download-db` provider: the ledger reads the import pass makes over the
-/// port bridge. Holds the pool for the same reason [`DownloadManager`] does -
-/// the contract names only `HostCtx`, so the database cannot arrive through it.
+/// port bridge.
 pub struct DownloadDb(Pool);
 
 impl DownloadDb {
     pub fn new(core: Pool) -> Self {
         Self(core)
     }
-}
 
-impl DownloadDb {
-    /// One row by id, or `None` when nothing has it.
     pub fn get(&self, id: &str) -> Result<Option<DownloadRow>> {
         let conn = self.0.get()?;
         Ok(db::get_download(&conn, id)?)
@@ -254,7 +244,6 @@ impl DownloadDb {
         Ok(db::completed_downloads(&conn)?)
     }
 
-    /// Record where an import landed a row's files.
     pub fn mark_imported(&self, id: &str, paths: &[String], now_ms: i64) -> Result<()> {
         db::mark_download_imported(&self.0, id, paths, now_ms)
     }

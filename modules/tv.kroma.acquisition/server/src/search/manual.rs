@@ -43,8 +43,7 @@ fn query_for(body: &ManualSearchBody, text: &str) -> Query {
 
 /// Free-text manual search across every enabled indexer: parse each result for
 /// quality/episode hints and sort best-first, with no accept/reject scoring
-/// since there's no specific target. The admin picks and grabs via the add
-/// endpoint.
+/// since there's no specific target.
 pub fn manual_search<S: HostStorage>(
     state: &S,
     body: &ManualSearchBody,
@@ -196,8 +195,6 @@ mod tests {
     fn a_release_with_neither_is_left_ungrabbable_rather_than_guessed_at() {
         let v = to_view(&release("Show.S01", None, None), "i", "T");
         assert!(v.download_url.is_none());
-        // The details page is still carried: a built-in indexer resolves the
-        // real target from it at grab time.
         assert_eq!(v.details_url.as_deref(), Some("https://t/1"));
     }
 
@@ -231,8 +228,6 @@ mod tests {
 
     #[test]
     fn an_episode_kind_without_a_number_sweeps_the_season() {
-        // What the form's own hint promises. Substituting episode 1 searched for
-        // one episode under a hint reading "S02".
         assert!(matches!(
             query_for(&body(Some("episode"), Some(2), None), "Breaking Bad"),
             Query::Season { season: 2, .. }

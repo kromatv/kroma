@@ -170,6 +170,7 @@ export function RequestFreeSearch({
           <IndexerReportStrip indexers={search.view.indexers} />
           <ManualReleaseTable
             releases={search.view.releases}
+            indexers={search.view.indexers}
             canGrab={canGrab}
             grabbing={search.grabbing}
             onGrab={grab}

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Animated, type ViewStyle } from 'react-native';
+import { Animated } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
+import { FADE_MS, useFadeRise } from '#ui/components/organisms/player/hooks/use-fade-rise';
 import { scaler } from '#ui/components/organisms/player/lib/metrics';
 import {
   IconBack10,
@@ -12,9 +13,7 @@ import {
 } from '#ui/components/organisms/player/parts/icons';
 import { sharedStyle, styles } from '#ui/core';
 import { backdropBlur } from '#ui/lib/css';
-import { ease } from '#ui/lib/ease';
 import { formatTimecode } from '#ui/lib/intl';
-import { WEB } from '#ui/lib/platform';
 import { useT } from '#ui/services/i18n';
 
 /** What a keyboard or remote shortcut just did to the film, for the stage to
@@ -34,8 +33,6 @@ export interface StageFlashProps {
   lift: number;
 }
 
-const FLASH_FADE_MS = 180;
-
 function useLinger<T>(value: T | null): T | null {
   const [held, setHeld] = useState(value);
   useEffect(() => {
@@ -43,44 +40,10 @@ function useLinger<T>(value: T | null): T | null {
       setHeld(value);
       return;
     }
-    const out = setTimeout(() => setHeld(null), FLASH_FADE_MS);
+    const out = setTimeout(() => setHeld(null), FADE_MS);
     return () => clearTimeout(out);
   }, [value]);
   return held;
-}
-
-function webFade(shown: boolean): ViewStyle {
-  return {
-    opacity: shown ? 1 : 0,
-    transform: [{ translateY: shown ? 0 : 8 }],
-    transitionProperty: 'opacity, transform',
-    transitionDuration: `${FLASH_FADE_MS}ms`,
-    transitionTimingFunction: ease.out.css,
-  } as ViewStyle;
-}
-
-function useNativeFade(shown: boolean) {
-  const [run] = useState(() => new Animated.Value(0));
-  useEffect(() => {
-    if (WEB) return;
-    const anim = Animated.timing(run, {
-      toValue: shown ? 1 : 0,
-      duration: FLASH_FADE_MS,
-      easing: ease.out.native,
-      useNativeDriver: true,
-    });
-    anim.start();
-    return () => anim.stop();
-  }, [shown, run]);
-  return {
-    opacity: run,
-    transform: [{ translateY: run.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }],
-  };
-}
-
-function useFade(shown: boolean) {
-  const native = useNativeFade(shown);
-  return WEB ? webFade(shown) : native;
 }
 
 function seekLabel(deltaSec: number, t: ReturnType<typeof useT>): string {
@@ -112,7 +75,7 @@ const sizeOf = (fontSize: number) => sharedStyle(`flash:size:${fontSize}`, { fon
 export function StageFlashView({ flash, scale = 1, lift }: Readonly<StageFlashProps>) {
   const t = useT();
   const held = useLinger(flash);
-  const fade = useFade(flash != null);
+  const fade = useFadeRise(flash != null);
   const px = scaler(scale);
   if (!held) return null;
 
@@ -124,7 +87,7 @@ export function StageFlashView({ flash, scale = 1, lift }: Readonly<StageFlashPr
 
   return (
     <Box absolute left={0} right={0} bottom={lift} z={12} align="center" style={s.inert}>
-      <Animated.View style={fade}>
+      <Animated.View style={fade.style}>
         <Box
           row
           align="center"

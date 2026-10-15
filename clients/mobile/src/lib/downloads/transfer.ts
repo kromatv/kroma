@@ -12,7 +12,7 @@ import type { KromaClient } from '@kromatv/client';
 import { MediaItem } from '@kromatv/client/media';
 import * as FileSystem from 'expo-file-system/legacy';
 import { z } from 'zod';
-import { canRawDownload, downloadCopyCodecs, downloadVideoCodecs } from '#mobile/player/caps';
+import { canRawDownload, downloadCopyCodecs, mobileVideoCodecs } from '#mobile/player/caps';
 import { fetchSidecars } from './sidecars';
 import { type DownloadEntry, ensureDir, mediaPath } from './store';
 
@@ -209,7 +209,7 @@ export async function runTransfer(
     await ensureDir();
     const url = meta.raw
       ? client.media.streamUrl(item.id)
-      : client.media.downloadUrl(item.id, downloadCopyCodecs(), downloadVideoCodecs());
+      : client.media.downloadUrl(item.id, downloadCopyCodecs(), mobileVideoCodecs());
     // `/download` is session-gated (it costs a server-side ffmpeg for the length
     // of a film), and this transfer is owned by the platform downloader, so the
     // bearer has to be attached by hand.

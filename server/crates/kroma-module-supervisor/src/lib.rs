@@ -28,9 +28,7 @@ use manifests::{check_manifest_schema, grant_json};
 use process::Proc;
 
 pub const MODULE_BIN: &str = "module";
-/// A module's own database, beside the files its `.kmod` unpacked into.
 pub const MODULE_STORE: &str = "module.sqlite";
-/// Names the directory an install unpacks into before it replaces the module's.
 const STAGING_PREFIX: &str = ".staging-";
 
 /// Where a module's own log lines go, as `(module_id, line)`. `None` leaves the
@@ -132,9 +130,7 @@ impl Supervisor {
     ///
     /// A manifest that declares the point but whose module is not running is
     /// passed over rather than answered with, so a second contributor still
-    /// answers. ONE declaration is read now, not two: a `contributes` entry
-    /// carries the instance name when the point takes several and `None` when it
-    /// takes one, so a module can no longer say the same thing twice.
+    /// answers.
     ///
     /// A contribution built against a different MAJOR than the definer serves is
     /// skipped, and said so on that module's own log, rather than resolved to and
@@ -224,7 +220,7 @@ impl Supervisor {
 }
 
 /// The major the module that DEFINES `point` serves, or `None` when no installed
-/// manifest defines it — in which case a contribution's version has nothing to be
+/// manifest defines it, in which case a contribution's version has nothing to be
 /// checked against and is taken as given. A bare name (no `/`) is one of the
 /// handful the CORE calls, which no manifest defines.
 fn point_major(installed: &[ModuleManifest], point: &str) -> Option<u32> {

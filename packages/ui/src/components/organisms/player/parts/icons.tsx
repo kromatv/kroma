@@ -14,9 +14,10 @@ function glyph(name: IconName, defaultSize: number, defaultThickness?: number) {
 
 export const IconPlay = glyph('player-play-filled', 30);
 export const IconPause = glyph('player-pause-filled', 28);
-// The design draws the +/-10s transport as double-chevrons, not a circular "10".
-export const IconBack10 = glyph('chevrons-left', 27, 1.8);
-export const IconFwd10 = glyph('chevrons-right', 27, 1.8);
+export const BACK_10_ICON: IconName = 'rewind-backward-10';
+export const FWD_10_ICON: IconName = 'rewind-forward-10';
+export const IconBack10 = glyph(BACK_10_ICON, 27, 1.8);
+export const IconFwd10 = glyph(FWD_10_ICON, 27, 1.8);
 export const IconNext = glyph('player-track-next-filled', 24);
 export const IconVolHigh = glyph('volume', 22, 1.8);
 export const IconVolLow = glyph('volume-2', 22, 1.8);

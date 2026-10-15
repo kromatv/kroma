@@ -1,20 +1,20 @@
-//! Storyboard render orchestration: sampling plan, tile extraction, montage,
+//! Turning one item into a published sheet: the sampling plan, the tile passes
 //! and the encoded sheet (WebP preferred, JPEG fallback) plus its manifest.
 
 use std::path::Path;
-use std::process::Command;
-use std::sync::atomic::Ordering;
-use std::time::Duration;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+use kroma_media::ffmpeg_run::Cancel;
+use kroma_media::storyboard::{self, Decode, Plan, TILE_H, TILE_W};
+use kroma_media::tmp_file::{finalize, unique_tmp};
 
 use crate::model::MediaItem;
 
-use super::extract::{extract_tiles, use_hwaccel};
-use super::proc::{finalize, run_capturing, unique_tmp, Cancel, TMP_SEQ};
-use super::{playable, Manifest, Plan, Storyboard, TILE_H, TILE_W};
+use super::{playable, Manifest, Storyboard};
 
-// Low on purpose: the tiles are tiny and only previewed on hover.
 const WEBP_QUALITY: &str = "58";
-const TIMEOUT: Duration = Duration::from_secs(600);
+
+static SCRATCH_SEQ: AtomicU64 = AtomicU64::new(0);
 
 /// Publishes the sheet before the manifest, so a reader that sees the manifest
 /// always finds the sheet.
@@ -29,7 +29,7 @@ pub(super) fn generate(
     std::fs::create_dir_all(dir)
         .map_err(|e| format!("could not create the cache dir {}: {e}", dir.display()))?;
     let plan = Plan::for_duration(dur_s);
-    render(abs, dir, key, &plan, use_hwaccel(abs, dur_s), cancel)?;
+    render(abs, dir, key, &plan, storyboard::probe(abs, dur_s), cancel)?;
     let manifest = Manifest {
         url: format!("/api/items/{item_id}/storyboard.img?v={key}"),
         interval: f64::from(plan.interval),
@@ -57,15 +57,15 @@ fn render(
     dir: &Path,
     key: &str,
     plan: &Plan,
-    hwaccel: bool,
+    decode: Decode,
     cancel: Cancel,
 ) -> std::result::Result<&'static str, String> {
     // Per-run scratch dir, so a crash mid-generation leaves no stray PNGs.
-    let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
+    let seq = SCRATCH_SEQ.fetch_add(1, Ordering::Relaxed);
     let scratch = dir.join(format!(".sb-{key}-{}-{seq}", std::process::id()));
     std::fs::create_dir_all(&scratch)
         .map_err(|e| format!("could not create the storyboard scratch dir: {e}"))?;
-    let res = render_into(abs, dir, key, plan, &scratch, hwaccel, cancel);
+    let res = render_into(abs, dir, key, plan, &scratch, decode, cancel);
     let _ = std::fs::remove_dir_all(&scratch);
     res
 }
@@ -76,16 +76,17 @@ fn render_into(
     key: &str,
     plan: &Plan,
     scratch: &Path,
-    hwaccel: bool,
+    decode: Decode,
     cancel: Cancel,
 ) -> std::result::Result<&'static str, String> {
-    extract_tiles(abs, scratch, plan, hwaccel, cancel)?;
+    storyboard::grab_tiles(abs, scratch, plan, &plan.every(), decode, cancel)?;
     // Bail before the montage so a half-sampled sheet is never published.
     if cancel() {
         return Err("cancelled".to_string());
     }
+    storyboard::fill_gaps(scratch, plan.count);
     let mosaic = scratch.join("mosaic.png");
-    montage(scratch, plan, &mosaic)?;
+    storyboard::montage(scratch, plan, &mosaic)?;
 
     let webp = unique_tmp(&dir.join(format!("{key}.webp")));
     if crate::infra::image::encode_webp_quality(&mosaic, &webp, WEBP_QUALITY) && webp.exists() {
@@ -97,52 +98,11 @@ fn render_into(
     }
     let _ = std::fs::remove_file(&webp);
     let jpg = unique_tmp(&dir.join(format!("{key}.jpg")));
-    match png_to_jpeg(&mosaic, &jpg) {
+    match storyboard::encode_jpeg(&mosaic, &jpg) {
         Err(e) => Err(format!("no WebP encoder and the JPEG fallback failed: {e}")),
         Ok(()) if finalize(&jpg, &dir.join(format!("{key}.jpg"))) => Ok("jpg"),
         Ok(()) => Err("could not publish the JPEG sheet (atomic rename failed)".to_string()),
     }
-}
-
-fn montage(scratch: &Path, plan: &Plan, out: &Path) -> std::result::Result<(), String> {
-    let mut cmd = Command::new("ffmpeg");
-    // `-threads 1`: one mosaic frame from local PNGs is cheap; bound each run's
-    // footprint rather than let the decoder pool grab every core.
-    cmd.args([
-        "-v",
-        "error",
-        "-nostdin",
-        "-threads",
-        "1",
-        "-y",
-        "-start_number",
-        "0",
-        "-i",
-    ])
-    .arg(scratch.join("px_%04d.png"))
-    .args([
-        "-frames:v",
-        "1",
-        "-vf",
-        &format!("tile={}x{}", plan.cols, plan.rows),
-    ])
-    .arg(out);
-    run_capturing(cmd, TIMEOUT).map_err(|e| format!("mosaic assembly failed: {e}"))?;
-    if out.exists() {
-        Ok(())
-    } else {
-        Err("mosaic assembly reported success but produced no sheet".to_string())
-    }
-}
-
-fn png_to_jpeg(png: &Path, out: &Path) -> std::result::Result<(), String> {
-    let mut cmd = Command::new("ffmpeg");
-    // `-threads 1`: a single-frame JPEG encode is trivial; keep it off every core.
-    cmd.args(["-y", "-v", "error", "-threads", "1", "-i"])
-        .arg(png)
-        .args(["-c:v", "mjpeg", "-q:v", "12", "-huffman", "optimal"])
-        .arg(out);
-    run_capturing(cmd, TIMEOUT)
 }
 
 impl Storyboard {
@@ -161,7 +121,7 @@ impl Storyboard {
         let Some((abs, dur_s)) = playable(item) else {
             return Err("no media file or unknown duration".to_string());
         };
-        let key = Self::key(&abs);
+        let key = Self::key(&abs, super::tile_path(item));
         generate(&abs, &self.dir, &key, &item.id, dur_s, cancel)
     }
 }
@@ -170,8 +130,8 @@ impl Storyboard {
 mod tests {
     use super::*;
 
-    // Needs ffmpeg + writes temp files; run with
-    // `cargo test --bin kroma-server -- --ignored storyboard_generates`.
+    use std::process::Command;
+
     #[test]
     #[ignore]
     fn storyboard_generates_a_consistent_sheet() {
@@ -199,7 +159,6 @@ mod tests {
         generate(clip.to_str().unwrap(), tmp, key, "x", 30.0, &|| false)
             .expect("generation failed");
 
-        // A sheet (WebP or JPEG) + a parseable manifest landed.
         let plan = Plan::for_duration(30.0);
         let sheet = ["webp", "jpg"]
             .iter()

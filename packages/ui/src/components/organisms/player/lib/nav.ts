@@ -17,7 +17,7 @@ export type { RemoteKey } from '#ui/lib/remote-keys';
  * control because this player drives its own D-pad chain instead of the
  * spatial navigator: anything not named here cannot be reached at all, which
  * is exactly how the Back button spent its life unreachable by ▲. */
-export type Zone = 'back' | 'progress' | 'controls';
+export type Zone = 'back' | 'resume' | 'progress' | 'controls';
 
 /** An open panel that captures navigation until dismissed. */
 export type Overlay = 'settings' | 'audio' | 'subtitles' | 'sheet' | null;
@@ -63,4 +63,7 @@ export function controlOrder(flags: PlayerFlags, hasNext: boolean): ControlId[] 
  */
 export interface PanelHandle {
   onKey(key: RemoteKey): boolean;
+  /** Tab's reading-order walk. Return false to hand the press back; omit it and
+   *  Tab arrives through `onKey` as a direction. */
+  onTab?(backwards: boolean): boolean;
 }

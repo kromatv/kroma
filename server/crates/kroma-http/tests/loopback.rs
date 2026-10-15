@@ -21,6 +21,41 @@ fn one_shot_server(status_line: &str, body: &str) -> (String, std::thread::JoinH
     (url, handle)
 }
 
+fn a_server_that_stalls_after_its_head() -> (String, std::thread::JoinHandle<()>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}/", listener.local_addr().unwrap());
+    let handle = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut buf = [0u8; 16384];
+        let _ = stream.read(&mut buf);
+        stream
+            .write_all(b"HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 4096\r\n\r\n")
+            .unwrap();
+        stream.flush().unwrap();
+        std::thread::sleep(std::time::Duration::from_secs(20));
+    });
+    (url, handle)
+}
+
+#[test]
+fn a_peer_that_answers_its_head_and_then_stalls_still_costs_only_the_budget() {
+    let (url, _server) = a_server_that_stalls_after_its_head();
+    let started = std::time::Instant::now();
+
+    let err = Loopback::new()
+        .max_time(1)
+        .get(&url)
+        .unwrap_err()
+        .to_string();
+
+    assert!(err.contains("did not answer in time"), "{err}");
+    assert!(
+        started.elapsed() < std::time::Duration::from_secs(10),
+        "{:?}",
+        started.elapsed()
+    );
+}
+
 #[test]
 fn a_post_round_trips_status_headers_and_body() {
     let (url, server) = one_shot_server("HTTP/1.1 200 OK", r#"{"ok":true}"#);

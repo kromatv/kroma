@@ -7,16 +7,10 @@ use crate::MatchSource;
 
 use super::DownloadManager;
 
-/// Below this the release name told us nothing useful and a wrong poster is
-/// worse than none. Deliberately above the catalog's own accept cutoff: a
-/// download can be corrected in one click, but only if it is obvious it is
-/// wrong.
 const MIN_CONFIDENCE: f32 = 0.55;
 
-/// What the release name says, in the shape the ledger stores.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReleaseShape {
-    /// `movie` | `season` | `episode`.
     pub kind: String,
     pub title: String,
     pub year: Option<u32>,
@@ -24,7 +18,6 @@ pub struct ReleaseShape {
     pub episodes: Option<Vec<u32>>,
 }
 
-/// Read a scene release name into the fields a download row carries.
 pub fn shape_of(release_title: &str) -> ReleaseShape {
     let parsed = kroma_scene::parse_release_name(release_title);
     let kind = match (parsed.season, parsed.episode) {

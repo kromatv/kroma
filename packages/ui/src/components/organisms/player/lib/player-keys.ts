@@ -3,6 +3,7 @@
 
 import type { RefObject } from 'react';
 import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav';
+import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-nudge';
 import type { PlayerController, PlayerFlags } from '#ui/components/organisms/player/types';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import type { PanelHandle } from './nav';
@@ -16,11 +17,15 @@ export interface PlayerKeysParams {
   locked: boolean;
   /** The keyboard's seek: arrows and j / l go through the nudge machine, so a
    *  held key ramps, a run of taps adds up and the stage can echo them. */
-  seekNudge(dir: -1 | 1): void;
+  seekNudge(dir: -1 | 1, press: SeekPress): void;
   /** The keyboard's volume: ArrowUp / Down land here so the stage can echo the
    *  level, rather than on the controller directly. */
   setVolume(level: number): void;
   intro?: { active: boolean; onSkip: () => void };
+  /** The resumed-at prompt while it is up. It takes Back (the keyboard's Escape)
+   *  and nothing else: unlike the skip pill it must not answer OK, or a film that
+   *  opened where it was left would restart on a press of play. */
+  resume?: { active: boolean; onDismiss: () => void };
   credits?: { active: boolean; onKey: (key: RemoteKey) => boolean };
   /** The end-of-film screen. While it is up there is no film left to drive, so
    *  it takes every key rather than getting first refusal on some. */
@@ -28,26 +33,11 @@ export interface PlayerKeysParams {
 }
 
 /**
- * Which way Tab walks from where the player currently is.
- *
- * The chrome is NOT on the spatial navigator - it cannot be, since tvOS's own
- * focus engine would adopt it in parallel with this machine (see
- * lib/virtual-focus) - so a keyboard's Tab reaches it the same way a remote
- * does: as a direction. Along the thing being walked, which is a row for the
- * transport controls and the up-next grid, and a column for everything else.
- */
-export function tabDirection(nav: PlayerNav, backwards: boolean): RemoteKey {
-  const row = nav.overlay === 'sheet' || (!nav.overlay && nav.zone === 'controls');
-  if (row) return backwards ? 'Left' : 'Right';
-  return backwards ? 'Up' : 'Down';
-}
-
-/**
  * Route one logical remote key (§3, §15). While locked only Back / OK get
  * through, and both mean "dismiss". The end-of-film screen takes everything.
  * Otherwise a hidden chrome reveals first and swallows the key (§16) unless the
- * key drives the film itself, then the panel, skip-intro and credits card each
- * get first refusal before the nav machine sees it.
+ * key drives the film itself, then the panel, the resume prompt, skip-intro and
+ * credits card each get first refusal before the nav machine sees it.
  */
 export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): void {
   const { nav } = p;
@@ -71,10 +61,46 @@ export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): v
     nav.handleKey(key); // an unhandled Back closes the panel
     return;
   }
+  if (p.resume?.active && key === 'Back') {
+    p.resume.onDismiss();
+    return;
+  }
   if (p.intro?.active && key === 'Enter') {
     p.intro.onSkip();
     return;
   }
   if (p.credits?.active && p.credits.onKey(key)) return;
   nav.handleKey(key);
+}
+
+/**
+ * Tab and Shift+Tab, which only a keyboard has.
+ *
+ * The chrome is NOT on the spatial navigator (it cannot be, since tvOS's own
+ * focus engine would adopt it in parallel with this machine, see
+ * lib/virtual-focus), and no single direction reaches the back button, the seek
+ * bar, every control and the sheet in turn.
+ */
+export function routeTab(p: Readonly<PlayerKeysParams>, backwards: boolean): void {
+  const { nav } = p;
+  if (nav.overlay) {
+    const panel = p.panelRef.current;
+    if (!panel?.onTab) {
+      routeRemoteKey(p, backwards ? 'Up' : 'Down');
+      return;
+    }
+    nav.poke();
+    if (!panel.onTab(backwards)) nav.closeOverlay();
+    return;
+  }
+  if (p.credits?.active) {
+    routeRemoteKey(p, backwards ? 'Left' : 'Right');
+    return;
+  }
+  if (!nav.revealed) {
+    nav.poke();
+    return;
+  }
+  nav.poke();
+  nav.walkChrome(backwards);
 }

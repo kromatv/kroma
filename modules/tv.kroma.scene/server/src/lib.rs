@@ -1,8 +1,7 @@
 //! Release-name intelligence for the acquisition stack: parse scene/P2P
 //! release titles ("Movie.2023.1080p.BluRay.x265-GROUP") into structured facts,
 //! and score candidate releases against a quality profile. Pure computation,
-//! zero I/O, fully self-contained (owns its own token vocabulary; the server's
-//! filename-oriented `domain/naming` is a separate concern and stays as is).
+//! zero I/O.
 
 use serde::{Deserialize, Serialize};
 
@@ -34,7 +33,6 @@ pub enum Source {
     Cam,
 }
 
-/// Structured facts extracted from one release title.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ParsedRelease {
     pub title: String,
@@ -62,8 +60,6 @@ pub enum Target {
     Season { season: u32, episodes: u32 },
 }
 
-/// The quality profile the decision engine scores against (from server
-/// settings; KROMA is HEVC-first so `prefer_hevc` defaults on there).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Profile {
     pub resolution: Res,
@@ -84,7 +80,6 @@ pub struct ScoreLine {
     pub note: String,
 }
 
-/// A release the engine accepted, with its total and explanation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Scored {
     pub parsed: ParsedRelease,
@@ -92,14 +87,12 @@ pub struct Scored {
     pub breakdown: Vec<ScoreLine>,
 }
 
-/// Why a release was rejected (shown in interactive search).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Reject {
     pub rule: String,
     pub note: String,
 }
 
-/// The facts about a candidate the scorer needs beyond its parsed name.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Candidate {
     pub size_bytes: Option<u64>,

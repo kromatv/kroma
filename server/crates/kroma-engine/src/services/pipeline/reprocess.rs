@@ -58,6 +58,7 @@ pub fn stage_for(state: &SharedState, kind: &str, id: &str, stage: &str) -> Resu
         "subtitles" => stage_subtitles(state, db, kind, id, now)?,
         "probe" => stage_probe(db, kind, id, now)?,
         "markers" => stage_markers(db, kind, id, now)?,
+        "credits" => stage_credits(db, kind, id, now)?,
         other => bail!("unknown stage {other:?}"),
     }
     if let Some(job) = state.jobs.resolve(&format!("pipeline.{stage}")) {
@@ -174,6 +175,17 @@ fn stage_markers(db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
     Ok(())
 }
 
+fn stage_credits(db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
+    if kind == "show" {
+        return Ok(());
+    }
+    let is_film = db::get_item(db, id)?.is_some_and(|it| it.kind == Kind::Movie);
+    if is_film {
+        db::pipeline::enqueue(db, "credits", "item", id, HIGH, now)?;
+    }
+    Ok(())
+}
+
 // Used to fan a show-level per-stage retry (storyboard/subtitles/probe) out to
 // the episodes/files that actually carry those artifacts (a show id has none).
 fn show_episodes(db: &db::Pool, id: &str) -> Result<Vec<crate::model::MediaItem>> {
@@ -214,11 +226,16 @@ fn reprocess_item(
         db::pipeline::enqueue(db, "metadata", "item", id, HIGH, now)?;
         db::pipeline::enqueue(db, "embed", "item", id, HIGH, now)?;
         *subjects += 2;
+        if item.kind == Kind::Movie {
+            db::pipeline::enqueue(db, "credits", "item", id, HIGH, now)?;
+            *subjects += 1;
+        }
         Ok(vec![
             "pipeline.probe",
             "pipeline.metadata",
             "pipeline.storyboard",
             "pipeline.subtitles",
+            "pipeline.credits",
             "pipeline.embed",
         ])
     } else {
@@ -473,13 +490,13 @@ mod tests {
     use crate::test_support;
 
     #[test]
-    fn reprocess_item_movie_queues_all_five_stages() {
+    fn reprocess_item_movie_queues_all_six_stages() {
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m1"); // one item + one file
         let mut subjects = 0usize;
         let stages = reprocess_item(&state, &state.db, "m1", now_ms(), &mut subjects).unwrap();
-        // 1 file (probe) + storyboard + subtitles + metadata + embed = 5 subjects.
-        assert_eq!(subjects, 5);
+        // 1 file (probe) + storyboard + subtitles + metadata + embed + credits = 6 subjects.
+        assert_eq!(subjects, 6);
         assert_eq!(
             stages,
             vec![
@@ -487,10 +504,18 @@ mod tests {
                 "pipeline.metadata",
                 "pipeline.storyboard",
                 "pipeline.subtitles",
+                "pipeline.credits",
                 "pipeline.embed",
             ]
         );
-        for stage in ["probe", "metadata", "storyboard", "subtitles", "embed"] {
+        for stage in [
+            "probe",
+            "metadata",
+            "storyboard",
+            "subtitles",
+            "credits",
+            "embed",
+        ] {
             assert_eq!(pending(&state.db, stage), 1, "{stage} queued one HIGH task");
         }
     }
@@ -618,7 +643,7 @@ mod tests {
 
         let outcome = reprocess(&state, "item", "m1").unwrap();
 
-        assert_eq!(outcome.subjects, 5);
+        assert_eq!(outcome.subjects, 6);
         assert!(!outcome.stages.is_empty());
         for key in &outcome.stages {
             assert!(
@@ -635,6 +660,19 @@ mod tests {
 
         stage_for(&state, "item", "m1", "markers").unwrap();
         assert_eq!(pending(&state.db, "markers"), 0);
+    }
+
+    #[test]
+    fn retrying_credits_queues_a_film_and_nothing_for_an_episode() {
+        let state = test_support::test_state();
+        test_support::seed_movie(&state, "m1");
+        test_support::seed_show_episode(&state, "sh1", "ep1");
+
+        stage_credits(&state.db, "item", "m1", now_ms()).unwrap();
+        stage_credits(&state.db, "item", "ep1", now_ms()).unwrap();
+        stage_credits(&state.db, "show", "sh1", now_ms()).unwrap();
+
+        assert_eq!(pending(&state.db, "credits"), 1);
     }
 
     #[test]

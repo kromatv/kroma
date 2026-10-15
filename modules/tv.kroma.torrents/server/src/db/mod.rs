@@ -1,32 +1,25 @@
 //! The Downloads module's persistence, split by who reads it.
 //!
-//! `download_clients` is this module's alone -- credentials included -- so it
-//! lives in this module's OWN database, which is what [`MIGRATIONS`] creates.
+//! `download_clients` is this module's alone, credentials included, so it lives
+//! in this module's OWN database, which is what [`MIGRATIONS`] creates.
 //! The `downloads` ledger is shared: the core reads it for the live progress
 //! overlay on request / discover lists, and `request_id` is a real foreign key
 //! into `requests`. It is therefore part of the CORE schema, and this module
 //! reaches it through the grant its `module.json` declares.
-//!
-//! This module doubles as a thin facade: it re-exports the core `kroma-db` surface
-//! (catalog, requests, settings, tmdb hints) and the `indexers` rows that moved to
-//! the Indexers module crate, so a single `crate::db::...` path resolves every
-//! query the module makes.
 
-// The core persistence surface (catalog, requests, settings, acq tmdb hints, ...)
-// stays in kroma-db; re-exported so `crate::db::get_request` etc. keep resolving.
 pub use kroma_module_sdk::db::*;
-// The indexers table is owned by the indexer module; the queue view + acquisition
-// reach it over the indexer module's own db point, not a re-export here.
 
 mod bandwidth;
 mod clients;
 mod downloads;
+mod drops;
 #[cfg(test)]
 pub(crate) mod test_support;
 
 pub use bandwidth::*;
 pub use clients::*;
 pub use downloads::*;
+pub use drops::*;
 
 // `IF NOT EXISTS` DDL only, so it runs harmlessly on every boot. Applied to this
 // module's OWN database (see `ServerModule::migrations`), which is why the
@@ -62,7 +55,8 @@ pub const MIGRATIONS: &str = "
         PRIMARY KEY (step_secs, at)
     );
     CREATE INDEX IF NOT EXISTS idx_vpn_bandwidth_at ON vpn_bandwidth(at);
+
+    CREATE TABLE IF NOT EXISTS deferred_drops (id TEXT PRIMARY KEY);
 ";
 
-// The seeded embedded-engine row id (created at boot when compiled in).
 pub const EMBEDDED_CLIENT_ID: &str = "embedded";

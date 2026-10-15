@@ -1,39 +1,23 @@
-//! The from-zero HLS remux: the media playlist for one (mode, anchor, audio)
-//! session and the child init/segment files ffmpeg writes for it.
+//! The catalogue's HLS routes: an item's media playlist for one (mode, anchor,
+//! audio) session and the child init/segment files ffmpeg writes for it.
 
 use std::net::SocketAddr;
 
-use axum::extract::{ConnectInfo, Path, Query, State};
-use axum::http::{header, HeaderMap, StatusCode};
+use axum::extract::{ConnectInfo, Path, State};
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
-use serde::Deserialize;
+
+use kroma_media::hls::StreamMode;
+use kroma_media::program::{self, Program, Session};
+use kroma_media::Credential;
 
 use crate::api::error::json_error;
-use crate::api::media_ticket::{self, MediaViewer, TicketQuery};
+use crate::api::media_ticket::MediaViewer;
 use crate::api::visibility;
-use crate::infra::hls::StreamMode;
-use crate::infra::metrics::ByteSink;
-use crate::infra::stream::metered_body;
 use crate::state::SharedState;
 
-use super::{byte_sink, hls_playlist, load_item};
-
-/// `?copy=` names the audio codecs the client can decode or pass through, so the
-/// server can refuse to stream-copy one the device would play silent; `?video=`
-/// does the same for the picture, which would otherwise play black. Absent means
-/// no declared capability (the requested mode is trusted); present but empty means
-/// the client decodes none, so any copied stream is transcoded.
-#[derive(Debug, Deserialize)]
-pub struct HlsQuery {
-    pub copy: Option<String>,
-    pub video: Option<String>,
-    /// The largest picture this client's decoder accepts, both axes. Absent means
-    /// it never probed one, and the source's own size stands.
-    pub maxw: Option<u32>,
-    pub maxh: Option<u32>,
-    #[serde(flatten)]
-    pub ticket: TicketQuery,
-}
+use super::hls_query::HlsQuery;
+use super::{byte_sink, load_item};
 
 /// `GET /api/items/:id/hls/:mode/:anchor/:audio/index.m3u8` (mode = an audio
 /// treatment `copy`|`aac`|`aac-standard`|`aac-night`, optionally prefixed `h264-`
@@ -45,7 +29,7 @@ pub async fn hls_master(
     State(state): State<SharedState>,
     MediaViewer(viewer): MediaViewer,
     Path((id, mode, anchor, audio)): Path<(String, String, u64, u32)>,
-    Query(q): Query<HlsQuery>,
+    q: HlsQuery,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
 ) -> Response {
@@ -55,29 +39,23 @@ pub async fn hls_master(
     let Some(item) = load_item(&state, &viewer, id).await else {
         return visibility::out_of_scope();
     };
+    let program = Program {
+        id: &item.id,
+        video: item.video.as_ref(),
+        audio_tracks: &item.audio_tracks,
+        duration_ms: item.duration_ms,
+    };
     // Redirected rather than served here: the effective mode owns the session and
-    // its segment URLs, so master and segments never disagree. Both axes are
-    // resolved before the comparison, so one redirect settles them together.
-    let selected_codec = item
-        .audio_tracks
-        .iter()
-        .find(|t| t.index == audio)
-        .map(|t| t.codec.as_str());
-    let source_frame = item.video.as_ref().and_then(|v| v.width.zip(v.height));
-    let effective = mode
-        .for_client_audio(selected_codec, q.copy.as_deref())
-        .for_client_video(
-            item.video.as_ref().map(|v| v.codec.as_str()),
-            q.video.as_deref(),
-        )
-        .for_client_frame(source_frame, q.maxw.zip(q.maxh));
+    // its segment URLs, so master and segments never disagree.
+    let credential = q.ticket.credential();
+    let effective = program.effective_mode(mode, audio, &q.decoders);
     if effective != mode {
         return Redirect::temporary(&hls_master_path(
             &item.id,
             effective,
             anchor,
             audio,
-            q.ticket.ticket(),
+            &credential,
         ))
         .into_response();
     }
@@ -96,36 +74,17 @@ pub async fn hls_master(
             "media file unavailable (mount offline?)",
         );
     }
-    match state
-        .hls
-        .master(&item.id, &abs, audio, mode, anchor, source_frame)
+    let session = Session {
+        mode,
+        anchor,
+        audio,
+    };
+    let sink = byte_sink(&state, &headers, &addr);
+    match program
+        .master(&state.hls, &abs, session, &credential, sink)
         .await
     {
-        // `X-Hls-Start` is the real start (the keyframe at-or-before the anchor, where
-        // `-noaccurate_seek` begins); the client needs it to align clock and subtitles.
-        Some((body, start)) => {
-            let body = match q.ticket.ticket() {
-                Some(ticket) => hls_playlist::ticketed(&body, ticket),
-                None => body,
-            };
-            let mut resp = playlist_response(body, byte_sink(&state, &headers, &addr));
-            if let Ok(v) = header::HeaderValue::from_str(&format!("{start:.3}")) {
-                resp.headers_mut().insert("X-Hls-Start", v);
-            }
-            // `X-Media-Duration` is the true total length in seconds: without it a
-            // client missing `durationMs` would size its slider to the growing EVENT
-            // playlist's live edge.
-            let dur_ms = match item.duration_ms {
-                Some(d) => Some(d),
-                None => state.hls.input_duration_ms(&abs).await,
-            };
-            if let Some(secs) = dur_ms.map(|ms| ms as f64 / 1000.0).filter(|s| *s > 0.0) {
-                if let Ok(v) = header::HeaderValue::from_str(&format!("{secs:.3}")) {
-                    resp.headers_mut().insert("X-Media-Duration", v);
-                }
-            }
-            resp
-        }
+        Some(resp) => resp,
         None => json_error(
             StatusCode::INTERNAL_SERVER_ERROR,
             "HLS remux unavailable (is ffmpeg installed?)",
@@ -149,40 +108,19 @@ pub async fn hls_file(
     if let Err(resp) = visibility::gate_item(&state, &viewer, &id).await {
         return resp;
     }
-    let immutable = !file.ends_with(".m3u8");
-    match state.hls.file(&id, mode, anchor, audio, &file).await {
-        Some((bytes, ct)) => {
-            let sink = byte_sink(&state, &headers, &addr);
-            Response::builder()
-                .header(header::CONTENT_TYPE, ct)
-                .header(header::CONTENT_LENGTH, bytes.len())
-                // Each anchor's URLs are unique, so segment bytes never change; event
-                // playlists grow.
-                .header(
-                    header::CACHE_CONTROL,
-                    if immutable {
-                        "public, max-age=31536000, immutable"
-                    } else {
-                        "no-store"
-                    },
-                )
-                .body(metered_body(std::io::Cursor::new(bytes), sink))
-                .unwrap()
-        }
-        // A segment that has not been produced yet 404s the same way one that was
-        // pruned does, so the miss must never be cached: the URL becomes valid.
-        None => {
-            let mut resp = json_error(
-                StatusCode::NOT_FOUND,
-                "segment not found (session expired?)",
-            );
-            resp.headers_mut().insert(
-                header::CACHE_CONTROL,
-                header::HeaderValue::from_static("no-store"),
-            );
-            resp
-        }
-    }
+    let session = Session {
+        mode,
+        anchor,
+        audio,
+    };
+    program::file(
+        &state.hls,
+        &id,
+        session,
+        &file,
+        byte_sink(&state, &headers, &addr),
+    )
+    .await
 }
 
 // Item ids are hex `short_hash`es (optionally joined by a colon), so they need no
@@ -193,25 +131,13 @@ fn hls_master_path(
     mode: StreamMode,
     anchor: u64,
     audio: u32,
-    ticket: Option<&str>,
+    credential: &Credential,
 ) -> String {
-    let credential = ticket
-        .map(|t| format!("?{}={t}", media_ticket::PARAM))
-        .unwrap_or_default();
     format!(
-        "/api/items/{id}/hls/{}/{anchor}/{audio}/index.m3u8{credential}",
-        mode.token()
+        "/api/items/{id}/hls/{}/{anchor}/{audio}/index.m3u8{}",
+        mode.token(),
+        credential.query()
     )
-}
-
-fn playlist_response(body: String, sink: ByteSink) -> Response {
-    let bytes = body.into_bytes();
-    Response::builder()
-        .header(header::CONTENT_TYPE, "application/vnd.apple.mpegurl")
-        .header(header::CONTENT_LENGTH, bytes.len())
-        .header(header::CACHE_CONTROL, "no-store")
-        .body(metered_body(std::io::Cursor::new(bytes), sink))
-        .unwrap()
 }
 
 #[cfg(test)]

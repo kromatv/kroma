@@ -31,7 +31,7 @@ fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
             if !i
                 .subtitles
                 .iter()
-                .any(|s| subtitles::is_text_codec(&s.codec))
+                .any(|s| kroma_media::subtitles::is_text_codec(&s.codec))
             {
                 return None;
             }

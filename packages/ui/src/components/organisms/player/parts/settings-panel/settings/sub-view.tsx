@@ -7,7 +7,7 @@
 // Every panel takes the same ref - the open one owns the keys (PanelHandle) -
 // and the same `onBack`, which returns to the menu.
 
-import { forwardRef } from 'react';
+import type { Ref } from 'react';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import type { SubtitleAppearance } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import type { PlayerController } from '#ui/components/organisms/player/types';
@@ -30,12 +30,19 @@ export interface SubViewProps {
   subtitleGen: SubtitleGenBundle;
   onReport?: (category: PlayerReportCategory) => Promise<void>;
   onBack: () => void;
+  ref?: Ref<PanelHandle>;
 }
 
-export const SubView = forwardRef<PanelHandle, SubViewProps>(function SubView(
-  { view, controller: c, appearance, onAppearanceChange, subtitleGen, onReport, onBack },
+export function SubView({
+  view,
+  controller: c,
+  appearance,
+  onAppearanceChange,
+  subtitleGen,
+  onReport,
+  onBack,
   ref,
-) {
+}: Readonly<SubViewProps>) {
   switch (view) {
     case 'quality':
       return (
@@ -104,4 +111,4 @@ export const SubView = forwardRef<PanelHandle, SubViewProps>(function SubView(
     default:
       return null;
   }
-});
+}

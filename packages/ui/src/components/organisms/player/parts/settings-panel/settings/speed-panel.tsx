@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from 'react';
+import { type Ref, useImperativeHandle } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
@@ -12,13 +12,11 @@ interface SpeedPanelProps {
   rate: number;
   onSelect: (rate: number) => void;
   onBack: () => void;
+  ref?: Ref<PanelHandle>;
 }
 
 /** Playback-speed picker (§5). `1` reads as "Normal"; others as "1.25×". */
-export const SpeedPanel = forwardRef<PanelHandle, SpeedPanelProps>(function SpeedPanel(
-  { rate, onSelect, onBack },
-  ref,
-) {
+export function SpeedPanel({ rate, onSelect, onBack, ref }: Readonly<SpeedPanelProps>) {
   const t = useT();
   const pick = (i: number) => {
     const r = RATES[i];
@@ -43,4 +41,4 @@ export const SpeedPanel = forwardRef<PanelHandle, SpeedPanelProps>(function Spee
       ))}
     </Box>
   );
-});
+}

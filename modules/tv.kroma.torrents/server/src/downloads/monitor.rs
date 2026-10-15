@@ -1,9 +1,6 @@
-//! The downloads monitor: a resident tokio task (the HLS-reaper pattern, NOT a
-//! cron job: the scheduler ticks at 30s, far too coarse for live progress).
-//! Fast ticks while anything is active, slow idle ticks otherwise. Each tick
-//! polls the engines on a blocking thread, mirrors progress into the ledger,
-//! publishes `download.progress` frames, and flips finished torrents to
-//! `completed` (chaining the import job). Over the HostCtx seam.
+//! The downloads monitor: a resident tokio task. Each tick polls the engines on
+//! a blocking thread, mirrors progress into the ledger, publishes
+//! `download.progress` frames, and flips finished torrents to `completed`.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -18,14 +15,9 @@ use super::DownloadManager;
 const ACTIVE_TICK: Duration = Duration::from_secs(5);
 const IDLE_TICK: Duration = Duration::from_secs(30);
 const VPN_CHECK_EVERY: Duration = Duration::from_secs(60);
-// How often to retry bringing the embedded engine up while it isn't running (a
-// boot deferral: the VPN sidecar wasn't answering yet). Short, so the engine
-// starts within seconds of the VPN resolving instead of a VPN-check away.
 const START_RETRY: Duration = Duration::from_secs(6);
-// How often to re-seed peer-starved embedded torrents from our own proxied
-// tracker announce (see `DownloadManager::reseed_stalled`). Slow: each pass
-// removes+re-adds the stalled torrents, so it must give injected peers time to
-// connect before trying again.
+// Slow: each reseed pass removes+re-adds the stalled torrents, so it must give
+// injected peers time to connect before trying again.
 const RESEED_EVERY: Duration = Duration::from_secs(120);
 
 fn human_bytes(n: u64) -> String {
@@ -39,37 +31,29 @@ fn human_bytes(n: u64) -> String {
 }
 
 impl DownloadManager {
-    /// Spawn the resident monitor. Call once from `main` next to the reapers.
+    /// Spawn the resident monitor. Call once.
     pub fn spawn_monitor(self: &Arc<Self>, host: Arc<dyn HostCtx>) {
         let manager = self.clone();
         tokio::spawn(async move { manager.monitor_loop(host).await });
     }
 
-    // Idle while disabled, self-heal a deferred engine start, then poll on a
-    // fast (active) / slow (idle) cadence.
     async fn monitor_loop(self: Arc<Self>, host: Arc<dyn HostCtx>) {
         let mut last_vpn_check = std::time::Instant::now() - VPN_CHECK_EVERY;
         // Start the reseed clock at "now" (not in the past): give the add-time
         // peer seed + librqbit a full interval before intervening.
         let mut last_reseed = std::time::Instant::now();
-        // Retry a deferred engine start immediately on the first iteration.
         let mut last_start_try = std::time::Instant::now() - START_RETRY;
         loop {
-            // When the Downloads module is disabled its engine is torn down; idle
-            // the monitor entirely (no polling, no VPN probe) until it is
-            // re-enabled, so a disabled system does no background work.
             if !host.module_enabled(crate::MODULE_ID) {
                 tokio::time::sleep(IDLE_TICK).await;
                 continue;
             }
-            // Self-heal a deferred engine start on a SHORT cadence (NOT the 60s VPN
-            // check): at boot the VPN sidecar may not answer yet, so start_rqbit
-            // defers to stay sealed. Retry every few seconds so the engine comes up
-            // right after the VPN resolves. start_rqbit re-checks every guard
-            // (disabled client, unresolved proxy) itself; no-op once up.
+            // At boot the VPN sidecar may not answer yet, so ensure_rqbit defers to
+            // stay sealed. Retry every few seconds so the engine comes up right
+            // after the VPN resolves.
             if self.awaiting_engine() && last_start_try.elapsed() >= START_RETRY {
                 last_start_try = std::time::Instant::now();
-                self.start_rqbit(&*host).await;
+                self.ensure_rqbit(&*host).await;
             }
             let vpn_due = last_vpn_check.elapsed() >= VPN_CHECK_EVERY;
             if vpn_due {
@@ -86,21 +70,17 @@ impl DownloadManager {
             })
             .await
             .unwrap_or(false);
-            // Tick fast while we still need to bring the engine up, so the
-            // boot-time start retry actually fires every START_RETRY.
             let fast = had_active || self.awaiting_engine();
             tokio::time::sleep(if fast { ACTIVE_TICK } else { IDLE_TICK }).await;
         }
     }
 
-    // True while the embedded engine is compiled in but not yet running (a boot
-    // deferral we keep retrying).
     fn awaiting_engine(&self) -> bool {
         crate::RQBIT_COMPILED && self.rqbit().is_none()
     }
 
-    // Optional VPN probe + reseed, then `tick`. Same thread as `tick`, so the
-    // remove/re-add window a reseed opens is never observed by a concurrent poll.
+    // Same thread as `tick`, so the remove/re-add window a reseed opens is never
+    // observed by a concurrent poll.
     fn poll_once(&self, host: &dyn HostCtx, vpn_due: bool, reseed_due: bool) -> bool {
         if vpn_due {
             let _ = self.vpn_check(host);
@@ -110,10 +90,10 @@ impl DownloadManager {
         }
         let had_active = self.tick(host);
         self.sample_bandwidth(host);
+        self.retry_deferred_drops();
         had_active
     }
 
-    // Returns whether anything is still active (drives the tick cadence).
     fn tick(&self, host: &dyn HostCtx) -> bool {
         let rows = match self
             .core()
@@ -144,15 +124,13 @@ impl DownloadManager {
         self.fill_free_slots(host);
 
         if completed_any {
-            // Import runs as a tracked job so its work shows in the console.
             host.trigger_job("acquisition.import", "download-complete");
         }
         true
     }
 
-    // Best-effort titles for rows nothing has resolved. One row per tick: a
-    // provider lookup is a network call, and a queue that arrived unlinked all
-    // at once must not become a burst of them.
+    // One row per tick: a provider lookup is a network call, and a queue that
+    // arrived unlinked all at once must not become a burst of them.
     fn link_unresolved(&self, host: &dyn HostCtx, rows: &[db::DownloadRow]) {
         let Some(row) = rows
             .iter()
@@ -192,11 +170,7 @@ impl DownloadManager {
         }
     }
 
-    // Returns whether the row just completed (so the caller chains the import
-    // job).
     fn process_row(&self, host: &dyn HostCtx, row: &db::DownloadRow) -> bool {
-        // Still being added in the background (grab enqueues, then activate()
-        // fills the ref). Nothing to poll yet.
         if row.client_ref.is_empty() {
             return false;
         }
@@ -219,8 +193,6 @@ impl DownloadManager {
         let engine = match self.engine_for(&client) {
             Ok(e) => e,
             Err(e) => {
-                // Engine offline (external daemon down, embedded not started):
-                // leave the row as-is and retry next tick.
                 tracing::debug!(id = %row.id, error = %format!("{e:#}"), "engine unavailable");
                 return false;
             }
@@ -228,8 +200,6 @@ impl DownloadManager {
         match engine.status(&row.client_ref) {
             Ok(Some(status)) => self.apply_status(host, row, &status),
             Ok(None) => {
-                // The torrent vanished from the engine (user removed it there, or a
-                // session reset): the grab failed.
                 let _ = db::set_download_status(
                     self.core(),
                     &row.id,
@@ -245,18 +215,12 @@ impl DownloadManager {
         }
     }
 
-    // Mirrors a fresh engine status into the ledger + publishes progress.
-    // Returns whether the row just completed.
     fn apply_status(
         &self,
         host: &dyn HostCtx,
         row: &db::DownloadRow,
         status: &crate::TorrentStatus,
     ) -> bool {
-        // Visibility for "stuck at 0%": show what the swarm looks like. peers=0 &
-        // seen=0 -> the tracker returned nothing (dead torrent / announce
-        // blocked). seen>0 & peers=0 -> discovered but can't connect (firewall /
-        // no port-forward).
         tracing::info!(
             release = %row.release_title,
             state = ?status.state,

@@ -1,10 +1,4 @@
 //! The user row: creating an account, finding one, and naming it.
-//!
-//! Re-exported flat here so the public `db::<item>` paths resolve unchanged:
-//! [`invites`] holds the token an account is created against, [`preferences`]
-//! what the user chose, [`credentials`] the password and PIN hashes,
-//! [`sessions`] a signed-in session, [`access_tokens`] the device credential
-//! behind it and [`pin_attempts`] the guesses the PIN gate counts.
 
 use super::*;
 
@@ -134,7 +128,7 @@ pub fn find_user_by_email(pool: &Pool, email: &str) -> Result<Option<(User, Stri
 }
 
 /// `identifier` is either an email (case-insensitive) or a username, so the
-/// profile picker — which only knows usernames — can log in. The second tuple
+/// profile picker, which only knows usernames, can log in. The second tuple
 /// field is the stored password hash.
 pub fn find_user_by_login(pool: &Pool, identifier: &str) -> Result<Option<(User, String)>> {
     let conn = pool.get()?;

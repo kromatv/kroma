@@ -1,5 +1,5 @@
 import { CastProvider } from '@kromatv/ui';
-import { Box, styles, useBreakpoint } from '@kromatv/ui/kit';
+import { Box, classes, styles, useBreakpoint } from '@kromatv/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { GateLoading } from '#web/features/accounts/auth-gate';
 import { CatalogModalHosts } from '#web/features/catalog/modal-hosts';
@@ -24,7 +24,13 @@ export const Route = createFileRoute('/_app')({
 const BROWSER_LABEL =
   typeof navigator === 'undefined' ? 'Web' : deviceInfo(navigator.userAgent, 'Web').label;
 
-const s = styles({ unpositioned: { position: 'static' } });
+// A plain element, not a `Box`: a `View` carries `position: relative` and
+// `z-index: 0`, and as a flex item that makes this column a stacking context,
+// so the player fixed inside it could never rise above the phone top bar, and
+// its root would size "fullscreen" to the content beside the rail.
+const s = styles({
+  column: { display: 'flex', flexDirection: 'column', flexGrow: 1, flexBasis: 0, minWidth: 0 },
+});
 
 const RAIL_WIDTH = 248;
 
@@ -44,13 +50,9 @@ function AppLayout() {
         ) : (
           <MobileTopbar />
         )}
-        {/* Unpositioned, as the frame's own element was: a `View` is
-            `position: relative` by default, and the player's root fills its
-            nearest positioned ancestor, so a positioned column here sizes
-            "fullscreen" to the content beside the rail. */}
-        <Box flex minW={0} style={s.unpositioned}>
+        <div className={classes(s.column)}>
           <Outlet />
-        </Box>
+        </div>
         <CatalogModalHosts />
         <CastBar />
       </Box>

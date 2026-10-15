@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MSE_CAPS } from './directplay';
 import { makeItem, track, UNPROBED } from './directplay.fixture';
+import { MSE_CAPS } from './runtime-caps';
 import { streamNotice } from './stream-notice';
 
 describe('streamNotice', () => {

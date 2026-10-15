@@ -17,25 +17,20 @@ use crate::api::util::{client_ip, query};
 use crate::db;
 use crate::i18n;
 use crate::infra::events::ServerEvent;
-use crate::model::{CastCommand, CastCommandEnvelope, CastPlayback, CastState, Permission, User};
+use crate::model::{CastCommandEnvelope, CastPlayback, CastState, Permission, User};
 use crate::services::cast::{valid_receiver_id, Announce, Announced};
 use crate::services::playback::classify_network;
 use crate::services::settings;
 use crate::state::SharedState;
+
+mod command;
 
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/cast/announce", post(announce))
         .route("/cast/receivers", get(list))
         .route("/cast/receivers/{id}", delete(unregister))
-        .route("/cast/receivers/{id}/command", post(command))
-}
-
-fn locale(user: &User) -> &'static str {
-    user.language
-        .as_deref()
-        .and_then(i18n::normalize)
-        .unwrap_or(i18n::DEFAULT_LOCALE)
+        .route("/cast/receivers/{id}/command", post(command::command))
 }
 
 fn require_playback(user: &User) -> Result<(), Response> {
@@ -43,7 +38,7 @@ fn require_playback(user: &User) -> Result<(), Response> {
         Ok(())
     } else {
         Err(lerr(
-            locale(user),
+            i18n::user_locale(user),
             StatusCode::FORBIDDEN,
             "error.permissionDenied",
         ))
@@ -52,7 +47,7 @@ fn require_playback(user: &User) -> Result<(), Response> {
 
 fn bad_id(user: &User) -> Response {
     lerr(
-        locale(user),
+        i18n::user_locale(user),
         StatusCode::BAD_REQUEST,
         "error.castBadReceiver",
     )
@@ -158,14 +153,14 @@ pub async fn announce(
         // impersonating another's TV to collect the commands meant for it.
         Announced::Taken => {
             return Err(lerr(
-                locale(&user),
+                i18n::user_locale(&user),
                 StatusCode::CONFLICT,
                 "error.castReceiverTaken",
             ))
         }
         Announced::Full => {
             return Err(lerr(
-                locale(&user),
+                i18n::user_locale(&user),
                 StatusCode::SERVICE_UNAVAILABLE,
                 "error.castRosterFull",
             ))
@@ -181,7 +176,7 @@ pub async fn announce(
 
 /// `GET /api/cast/receivers` (Bearer) → `CastReceiver[]`. Only the receivers
 /// signed into the caller's own account: casting is scoped to where you are
-/// connected, so nobody browses — let alone drives — another household's TVs.
+/// connected, so nobody browses, let alone drives, another household's TVs.
 pub async fn list(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -205,87 +200,4 @@ pub async fn unregister(
             .publish_to(&user.id, ServerEvent::CastReceiverGone { receiver_id: id });
     }
     Ok(StatusCode::NO_CONTENT.into_response())
-}
-
-#[derive(Debug, Deserialize)]
-pub struct CommandBody {
-    #[serde(flatten)]
-    pub command: CastCommand,
-}
-
-#[derive(Debug, Serialize)]
-pub struct CommandReply {
-    pub seq: u64,
-}
-
-/// `POST /api/cast/receivers/:id/command` (Bearer) `{ type, ... }` → `{ seq }`.
-/// Owner-scoped: only the account the receiver is signed into may drive it, and
-/// anybody else's receiver answers exactly like a missing one. A `play` is
-/// checked against the catalog first, so the TV is never handed an id the server
-/// did not recognize.
-pub async fn command(
-    State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-    Path(id): Path<String>,
-    Json(body): Json<CommandBody>,
-) -> Result<Response, Response> {
-    require_playback(&user)?;
-    if !valid_receiver_id(&id) {
-        return Err(bad_id(&user));
-    }
-    // `None` covers absent, dead and foreign alike; answering all three with the
-    // same 404 keeps the roster unprobable. Only a kick — which already implies
-    // the set is the caller's own — is a refusal.
-    match state.cast.may_command(&id, &user.id) {
-        Some(true) => {}
-        Some(false) => {
-            return Err(lerr(
-                locale(&user),
-                StatusCode::FORBIDDEN,
-                "error.forbidden",
-            ))
-        }
-        None => {
-            return Err(lerr(
-                locale(&user),
-                StatusCode::NOT_FOUND,
-                "error.castReceiverGone",
-            ))
-        }
-    }
-    if let CastCommand::Play { item_id, .. } = &body.command {
-        let wanted = item_id.clone();
-        let known = query(&state.db, move |pool| db::get_item(&pool, &wanted))
-            .await
-            .unwrap_or_default()
-            .filter(|item| user.sees_library(&item.library))
-            .is_some();
-        if !known {
-            return Err(lerr(
-                locale(&user),
-                StatusCode::NOT_FOUND,
-                "error.itemNotFound",
-            ));
-        }
-    }
-
-    let Some(envelope) = state.cast.enqueue(&id, &user.id, body.command) else {
-        return Err(lerr(
-            locale(&user),
-            StatusCode::NOT_FOUND,
-            "error.castReceiverGone",
-        ));
-    };
-
-    // Addressed to the caller's own account — the only one the receiver can
-    // belong to here — so no other household's clients ever see it.
-    state.events.publish_to(
-        &user.id,
-        ServerEvent::CastCommandIssued {
-            receiver_id: id,
-            seq: envelope.seq,
-            command: envelope.command,
-        },
-    );
-    Ok(Json(CommandReply { seq: envelope.seq }).into_response())
 }

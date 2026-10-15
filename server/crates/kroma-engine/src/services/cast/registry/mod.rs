@@ -74,7 +74,7 @@ struct Receiver {
     id: String,
     name: String,
     platform: String,
-    // Sticky for the receiver's lifetime; scopes everything — who sees this set,
+    // Sticky for the receiver's lifetime; scopes everything: who sees this set,
     // who may command it, who may re-announce or unregister it.
     user_id: String,
     username: String,
@@ -157,7 +157,7 @@ impl Registry {
         Self::default()
     }
 
-    /// The live receivers signed into `user_id`'s account — the only ones that
+    /// The live receivers signed into `user_id`'s account, the only ones that
     /// account may see or drive. Another household's TV never appears here.
     pub fn list(&self, user_id: &str) -> Vec<CastReceiver> {
         let mut v: Vec<CastReceiver> = self

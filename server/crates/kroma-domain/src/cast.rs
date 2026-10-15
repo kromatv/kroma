@@ -86,7 +86,7 @@ pub struct CastReceiver {
     pub platform: String,
     // Deliberately the only identity here: the roster is scoped to the account
     // the receiver is signed into, so a reader needs no account id or "mine"
-    // flag — everything it is shown is its own.
+    // flag: everything it is shown is its own.
     pub username: String,
     pub network: String,
     #[serde(rename = "nowPlaying", skip_serializing_if = "Option::is_none")]

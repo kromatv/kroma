@@ -1,9 +1,6 @@
-//! Built on hyper's own client rather than a batteries-included one: axum
-//! already puts hyper in every sidecar, and a peer at 127.0.0.1 needs none of
-//! the TLS, proxy or cookie machinery the size would buy. It also cannot follow
-//! a redirect, which is what this seam wants -- a sidecar answering 302 is
-//! trying to move the core somewhere, and the only correct destination is the
-//! one the supervisor named.
+//! Built on hyper's own client, which cannot follow a redirect: a sidecar
+//! answering 302 is trying to move the core somewhere, and the only correct
+//! destination is the one the supervisor named.
 
 use std::sync::OnceLock;
 
@@ -54,30 +51,37 @@ impl Transport for Tcp {
             .context("build the loopback request")?;
         let timeout = request.timeout;
         block_on(async move {
-            let response = tokio::time::timeout(timeout, client().request(prepared))
-                .await
-                .context("the loopback peer did not answer in time")?
-                .context("send the loopback request")?;
-            let status = response.status().as_u16();
-            let headers = response
-                .headers()
-                .iter()
-                .map(|(name, value)| {
-                    (
-                        name.as_str().to_string(),
-                        String::from_utf8_lossy(value.as_bytes()).into_owned(),
-                    )
+            // The budget covers the body too: a peer that answers its head and
+            // then stalls mid-body would otherwise hold this thread for as long
+            // as it likes.
+            tokio::time::timeout(timeout, async move {
+                let response = client()
+                    .request(prepared)
+                    .await
+                    .context("send the loopback request")?;
+                let status = response.status().as_u16();
+                let headers = response
+                    .headers()
+                    .iter()
+                    .map(|(name, value)| {
+                        (
+                            name.as_str().to_string(),
+                            String::from_utf8_lossy(value.as_bytes()).into_owned(),
+                        )
+                    })
+                    .collect();
+                let body = Limited::new(response.into_body(), MAX_BODY_BYTES)
+                    .collect()
+                    .await
+                    .map_err(|e| anyhow::anyhow!("read the loopback response body: {e}"))?;
+                Ok(Response {
+                    status,
+                    headers,
+                    body: body.to_bytes().to_vec(),
                 })
-                .collect();
-            let body = Limited::new(response.into_body(), MAX_BODY_BYTES)
-                .collect()
-                .await
-                .map_err(|e| anyhow::anyhow!("read the loopback response body: {e}"))?;
-            Ok(Response {
-                status,
-                headers,
-                body: body.to_bytes().to_vec(),
             })
+            .await
+            .context("the loopback peer did not answer in time")?
         })
     }
 }

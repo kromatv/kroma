@@ -12,20 +12,16 @@ use kroma_module_sdk::db;
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::host::{HostStorage, LibraryFolders};
-use kroma_naming as naming;
 
+mod naming;
 mod place;
 mod replace;
+mod subtitles;
 
-use place::{ext_of, largest, place, video_files, Placement};
+use naming::{episode_ctx, movie_ctx, resolve_meta, stem_of};
+use place::{ext_of, files_under, largest, video_files, Placement};
 use replace::drop_replaced;
-
-struct ImportMeta {
-    kind: RequestKind,
-    title: String,
-    year: Option<u32>,
-    tmdb_id: Option<u64>,
-}
+use subtitles::place_with_subtitles;
 
 #[derive(Debug, Default)]
 pub struct ImportSummary {
@@ -109,6 +105,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
         .save_path
         .as_deref()
         .ok_or_else(|| anyhow!("download folder unknown (external client did not report it)"))?;
+    let around = files_under(Path::new(save_path));
     let videos = video_files(Path::new(save_path))?;
     let Some(largest_video) = largest(&videos) else {
         bail!("no video file found under {save_path}");
@@ -120,7 +117,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
             .first()
             .ok_or_else(|| anyhow!("library {} has no folder", lib.name))?,
     );
-    let tpl = naming::NamingTemplates::read(|k, d| state.setting_str(k, d));
+    let tpl = kroma_naming::NamingTemplates::read(|k, d| state.setting_str(k, d));
     let replacing = row.upgrade && state.setting_bool("acqReplaceOnUpgrade", true);
     let mode = match (row.upgrade, replacing) {
         (true, true) => Placement::Replace,
@@ -134,7 +131,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
         "movie" => {
             let ctx = movie_ctx(&meta, largest_video);
             let dest = lib_root.join(tpl.movie_rel_path(&ctx, ext_of(largest_video)));
-            let at = place(largest_video, &dest, mode)?;
+            let at = place_with_subtitles(largest_video, &around, &dest, mode)?;
             placed.push((Replaced::Movie, at.to_string_lossy().into_owned()));
         }
         "episode" => {
@@ -148,7 +145,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
             let season = row.season.or(parsed.season).unwrap_or(1);
             let ctx = episode_ctx(&meta, season, episode, &parsed);
             let dest = lib_root.join(tpl.episode_rel_path(&ctx, ext_of(largest_video)));
-            let at = place(largest_video, &dest, mode)?;
+            let at = place_with_subtitles(largest_video, &around, &dest, mode)?;
             placed.push((
                 Replaced::Episode(season, episode),
                 at.to_string_lossy().into_owned(),
@@ -176,7 +173,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
                 }
                 let ctx = episode_ctx(&meta, season, episode, &parsed);
                 let dest = lib_root.join(tpl.episode_rel_path(&ctx, ext_of(src)));
-                let at = place(src, &dest, mode)?;
+                let at = place_with_subtitles(src, &around, &dest, mode)?;
                 placed.push((
                     Replaced::Episode(season, episode),
                     at.to_string_lossy().into_owned(),
@@ -201,93 +198,6 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
 enum Replaced {
     Movie,
     Episode(u32, u32),
-}
-
-fn movie_ctx(meta: &ImportMeta, src: &Path) -> naming::NameContext {
-    let parsed = kroma_scene::parse_release_name(stem_of(src));
-    let ctx = base_ctx(meta, &parsed);
-    naming::NameContext {
-        title: meta.title.clone(),
-        year: meta.year,
-        ..ctx
-    }
-}
-
-fn episode_ctx(
-    meta: &ImportMeta,
-    season: u32,
-    episode: u32,
-    parsed: &kroma_scene::ParsedRelease,
-) -> naming::NameContext {
-    let ctx = base_ctx(meta, parsed);
-    naming::NameContext {
-        title: meta.title.clone(),
-        year: meta.year,
-        season: Some(season),
-        episode: Some(episode),
-        ..ctx
-    }
-}
-
-fn base_ctx(meta: &ImportMeta, parsed: &kroma_scene::ParsedRelease) -> naming::NameContext {
-    let (resolution, codec, source) = naming::quality_from_parsed(parsed);
-    naming::NameContext {
-        resolution,
-        codec,
-        source,
-        proper: parsed.proper,
-        repack: parsed.repack,
-        release_group: parsed.group.clone(),
-        dynamic_range: naming::dynamic_range(parsed.hdr, parsed.dolby_vision),
-        tmdb_id: meta.tmdb_id,
-        ..Default::default()
-    }
-}
-
-fn resolve_meta<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<ImportMeta> {
-    let kind = if row.kind == "movie" {
-        RequestKind::Movie
-    } else {
-        RequestKind::Show
-    };
-    let tmdb_id = (row.tmdb_id != 0).then_some(row.tmdb_id);
-
-    if let Some(rid) = row.request_id.as_deref() {
-        let conn = state.db().get()?;
-        if let Some(req) = db::get_request(&conn, rid)? {
-            return Ok(ImportMeta {
-                kind: req.kind,
-                title: req.title,
-                year: req.year,
-                tmdb_id,
-            });
-        }
-    }
-    if let Some(title) = row.title.as_deref().filter(|t| !t.trim().is_empty()) {
-        return Ok(ImportMeta {
-            kind,
-            title: title.to_string(),
-            year: row.year,
-            tmdb_id,
-        });
-    }
-    // Last resort: derive from the release name (bare magnet with no metadata).
-    let parsed = kroma_scene::parse_release_name(&row.release_title);
-    if parsed.title.trim().is_empty() {
-        bail!("could not determine a title to import under (no request, no metadata, unparseable name)");
-    }
-    Ok(ImportMeta {
-        kind,
-        title: parsed.title,
-        year: parsed.year,
-        tmdb_id,
-    })
-}
-
-fn stem_of(path: &Path) -> &str {
-    path.file_stem()
-        .and_then(std::ffi::OsStr::to_str)
-        .unwrap_or_default()
 }
 
 fn target_library_def<S: HostStorage>(state: &S, kind: RequestKind) -> Result<LibraryFolders> {

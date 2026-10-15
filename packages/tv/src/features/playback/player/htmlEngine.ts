@@ -8,39 +8,25 @@ import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
 import {
   attachDirectPlay,
-  attachHlsRecovery,
   type BufferPlan,
   decodableAudioCodecs,
-  hlsBufferConfig,
+  decodableVideoCodecs,
   isPlayableAt,
   itemBufferPlan,
   reachableBufferEnd,
   recoverMse,
-  STALL_NUDGE_SEC,
-  shakaConfig,
-} from '@kromatv/core';
-import {
-  type EngineListeners,
   resolveMasterStart,
-  type TvEngine,
-} from '#tv/features/playback/player/engine';
+  STALL_NUDGE_SEC,
+} from '@kromatv/core';
+import type { EngineListeners, TvEngine } from '#tv/features/playback/player/engine';
+import {
+  bindMediaEvents,
+  seekOnceOnMetadata,
+  startStreamAt,
+} from '#tv/features/playback/player/htmlEvents';
+import { attachMseMaster, type ShakaPlayerLike } from '#tv/features/playback/player/htmlMse';
 
 type HlsInstance = import('hls.js').default;
-
-// The slice of the Shaka Player API this engine touches, typed structurally so
-// Shaka's generated namespace types stay out of the program (the web client's
-// video-engine does the same).
-interface ShakaPlayerLike {
-  attach(media: HTMLMediaElement): Promise<void>;
-  load(uri: string, startTime?: number | null): Promise<void>;
-  destroy(): Promise<void>;
-  configure(config: Record<string, unknown>): boolean;
-  retryStreaming(retryDelaySeconds?: number): boolean;
-}
-interface ShakaStatic {
-  Player: { new (): ShakaPlayerLike; isBrowserSupported(): boolean };
-  polyfill: { installAll(): void };
-}
 
 export interface HtmlOptions {
   video: HTMLVideoElement;
@@ -75,6 +61,7 @@ export class HtmlEngine implements TvEngine {
   private shaka: ShakaPlayerLike | null = null;
   private destroyed = false;
   private attachSeq = 0;
+  private landing: (() => void) | null = null;
   private resumeOnCanPlay: (() => void) | null = null;
   private readonly cleanupEvents: () => void;
 
@@ -88,69 +75,16 @@ export class HtmlEngine implements TvEngine {
     this.baseSec = opts.startSec;
     this.rendition = opts.initialRendition;
     const v = this.v;
-    const L = opts.listeners;
-    const total = opts.durationSec;
-
-    const onTime = () => L.onTime(this.baseSec + v.currentTime);
-    const onDur = () => {
-      if (total > 0) L.onDuration(total);
-      else if (Number.isFinite(v.duration)) L.onDuration(v.duration);
-    };
-    const onProg = () => {
-      const end = reachableBufferEnd(v.buffered, v.currentTime);
-      L.onBuffered(end > 0 ? this.baseSec + end : 0);
-    };
-    const onPlay = () => L.onPlay();
-    const onPause = () => L.onPause();
-    const onWaiting = () => L.onWaiting();
-    const onPlaying = () => L.onPlaying();
-    const onEnded = () => L.onEnded();
-    const onErr = () => L.onError();
-    const onReady = () => L.onReady();
-    // The DISPLAY size, so an anamorphic stream is already corrected. `resize`
-    // covers a variant switch mid-playback, not just the first metadata.
-    const onResize = () => {
-      if (v.videoHeight > 0) L.onAspect?.(v.videoWidth / v.videoHeight);
-    };
-
-    const evs: [string, EventListener][] = [
-      ['timeupdate', onTime],
-      ['durationchange', onDur],
-      ['progress', onProg],
-      // Also on `timeupdate`: the reachable end jumps when the playhead crosses a
-      // hole, and nothing is downloading at that moment for `progress` to fire.
-      ['timeupdate', onProg],
-      ['play', onPlay],
-      ['pause', onPause],
-      ['waiting', onWaiting],
-      ['playing', onPlaying],
-      ['ended', onEnded],
-      ['error', onErr],
-      ['loadedmetadata', onReady],
-      ['loadeddata', onReady],
-      ['canplay', onReady],
-      ['loadedmetadata', onResize],
-      ['resize', onResize],
-    ];
-    for (const [t, fn] of evs) v.addEventListener(t, fn);
-    this.cleanupEvents = () => {
-      for (const [t, fn] of evs) v.removeEventListener(t, fn);
-    };
+    this.cleanupEvents = bindMediaEvents(v, opts.listeners, opts.durationSec, () => this.baseSec);
 
     if (opts.direct) {
       attachDirectPlay(v, opts.client, opts.item, { autoplay: false });
       if (opts.startSec > 0.5) {
-        const seekOnce = () => {
-          v.currentTime = opts.startSec;
-          v.removeEventListener('loadedmetadata', seekOnce);
-        };
-        v.addEventListener('loadedmetadata', seekOnce);
-        // The <video> is reused across items: a leaked seekOnce would jump the
-        // NEXT item to this offset.
-        const base = this.cleanupEvents;
+        const events = this.cleanupEvents;
+        const stopSeek = seekOnceOnMetadata(v, opts.startSec);
         this.cleanupEvents = () => {
-          base();
-          v.removeEventListener('loadedmetadata', seekOnce);
+          events();
+          stopSeek();
         };
       }
       return;
@@ -158,8 +92,47 @@ export class HtmlEngine implements TvEngine {
     this.attachMaster();
   }
 
+  private playsHlsItself(): boolean {
+    return (
+      this.opts.forceNativeHls === true ||
+      this.v.canPlayType('application/vnd.apple.mpegurl') !== ''
+    );
+  }
+
+  private attachNative(url: string, fromSec: number): void {
+    // Safari / WKWebView: prefer native HLS, whose stack decodes Dolby
+    // (AC3 / E-AC3) in full surround where hls.js + MSE cannot.
+    this.dropLanding();
+    this.v.src = url;
+    this.v.preload = 'auto';
+    this.landing = startStreamAt(this.v, fromSec);
+  }
+
+  private attachPlaylist(url: string, fromSec: number): void {
+    const seq = ++this.attachSeq;
+    if (this.playsHlsItself()) {
+      this.attachNative(url, fromSec);
+      return;
+    }
+    attachMseMaster({
+      video: this.v,
+      url,
+      fromSec,
+      plan: this.plan,
+      shaka: this.opts.masterShaka,
+      stale: () => this.destroyed || seq !== this.attachSeq,
+      onShaka: (player) => {
+        this.shaka = player;
+      },
+      onHls: (hls) => {
+        this.hls = hls;
+      },
+      onGiveUp: () => this.reanchor(this.position()),
+      onNative: () => this.attachNative(url, fromSec),
+    });
+  }
+
   private attachMaster(): void {
-    const v = this.v;
     const seq = ++this.attachSeq;
     // The URL must carry both the anchor and the audio track: without the anchor
     // the server always starts at t=0 and the picture ignores every seek.
@@ -168,80 +141,20 @@ export class HtmlEngine implements TvEngine {
       this.opts.masterAac,
       this.baseSec,
       this.rendition,
-      { copyCodecs: decodableAudioCodecs() },
+      { copyCodecs: decodableAudioCodecs(), videoCodecs: decodableVideoCodecs() },
     );
-    // Safari / WKWebView: prefer native HLS, whose stack decodes Dolby
-    // (AC3 / E-AC3) in full surround where hls.js + MSE cannot.
-    const useNative =
-      this.opts.forceNativeHls === true || v.canPlayType('application/vnd.apple.mpegurl') !== '';
     // The stream really starts at the keyframe AT-OR-BEFORE the anchor; correct
     // `baseSec` from X-Hls-Start so the clock + subtitle cues don't drift a GOP.
     void resolveMasterStart(url, this.baseSec).then((realStart) => {
       if (this.destroyed || seq !== this.attachSeq) return;
       this.baseSec = realStart;
-      if (useNative) {
-        v.src = url;
-        v.preload = 'auto';
-        return;
-      }
-      if (this.opts.masterShaka) {
-        this.attachShaka(url, seq);
-        return;
-      }
-      this.attachHls(url, seq);
+      this.attachPlaylist(url, 0);
     });
   }
 
-  private attachShaka(url: string, seq: number): void {
-    // Spelled inline (not shakaAvailable()) so the legacy IIFE build, which
-    // defines the global and inlines dynamic imports, folds this to `if (true)`
-    // and drops the unreachable import below: Shaka never reaches a bundle
-    // whose engines cannot run it.
-    if ((globalThis as { __KROMA_LEGACY_TIER__?: boolean }).__KROMA_LEGACY_TIER__) {
-      this.attachHls(url, seq);
-      return;
-    }
-    void import('shaka-player/dist/shaka-player.compiled.js').then((mod) => {
-      if (this.destroyed || seq !== this.attachSeq) return;
-      const shaka = (mod as unknown as { default: ShakaStatic }).default;
-      shaka.polyfill.installAll();
-      // A TV Chromium Shaka rejects still plays the same master through hls.js.
-      if (!shaka.Player.isBrowserSupported()) {
-        this.attachHls(url, seq);
-        return;
-      }
-      const player = new shaka.Player();
-      this.shaka = player;
-      player.configure(shakaConfig(this.plan));
-      // Shaka reports the same relative clock as hls.js, so `baseSec` applies
-      // unchanged.
-      player
-        .attach(this.v)
-        .then(() => player.load(url, 0))
-        .catch(() => undefined);
-    });
-  }
-
-  private attachHls(url: string, seq: number): void {
-    const v = this.v;
-    void import('hls.js').then(({ default: Hls }) => {
-      if (this.destroyed || seq !== this.attachSeq) return;
-      if (!Hls.isSupported()) {
-        v.src = url;
-        v.preload = 'auto';
-        return;
-      }
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: false,
-        startPosition: 0,
-        ...hlsBufferConfig(this.plan),
-      });
-      this.hls = hls;
-      attachHlsRecovery(Hls, hls, () => this.reanchor(this.position()));
-      hls.loadSource(url);
-      hls.attachMedia(v);
-    });
+  private dropLanding(): void {
+    this.landing?.();
+    this.landing = null;
   }
 
   private dropResumeOnCanPlay(): void {
@@ -250,17 +163,17 @@ export class HtmlEngine implements TvEngine {
     this.resumeOnCanPlay = null;
   }
 
-  private reanchor(absSec: number): void {
-    const wasPlaying = !this.v.paused;
-    this.baseSec = absSec;
+  private release(): void {
     this.hls?.destroy();
     this.hls = null;
     void this.shaka?.destroy();
     this.shaka = null;
     this.v.removeAttribute('src');
+    this.dropLanding();
     this.dropResumeOnCanPlay();
-    this.attachMaster();
-    if (!wasPlaying) return;
+  }
+
+  private resumeWhenPlayable(): void {
     // The <video> outlives this engine, so a resume left armed would start the
     // NEXT item by itself.
     const resume = () => {
@@ -269,6 +182,14 @@ export class HtmlEngine implements TvEngine {
     };
     this.resumeOnCanPlay = resume;
     this.v.addEventListener('canplay', resume, { once: true });
+  }
+
+  private reanchor(absSec: number): void {
+    const wasPlaying = !this.v.paused;
+    this.baseSec = absSec;
+    this.release();
+    this.attachMaster();
+    if (wasPlaying) this.resumeWhenPlayable();
   }
 
   play(): void {
@@ -310,6 +231,7 @@ export class HtmlEngine implements TvEngine {
       this.v.currentTime = absSec; // direct-play timeline is absolute
       return;
     }
+    this.dropLanding();
     const rel = absSec - this.baseSec;
     if (rel >= 0 && isPlayableAt(this.v.buffered, rel)) {
       this.v.currentTime = rel;
@@ -328,13 +250,8 @@ export class HtmlEngine implements TvEngine {
 
   destroy(): void {
     this.destroyed = true;
-    this.dropResumeOnCanPlay();
     this.cleanupEvents();
-    this.hls?.destroy();
-    this.hls = null;
-    void this.shaka?.destroy();
-    this.shaka = null;
-    this.v.removeAttribute('src');
+    this.release();
     this.v.load();
   }
 }

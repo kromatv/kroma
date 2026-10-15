@@ -66,9 +66,21 @@ function stepRing(direction: Direction, from: Transport): void {
   for (const handle of handlers) handle(direction);
 }
 
+let configured = false;
+
+/**
+ * False on a phone, which has no remote and never calls {@link configureRemote}:
+ * a chrome driving its own focus (the player) must then post the presses itself,
+ * and posting them where a transport IS named would walk the ring twice.
+ */
+export function remoteConfigured(): boolean {
+  return configured;
+}
+
 /** Call once at startup, before the first screen renders; a navigator mounted
  * first never subscribes. Calling it twice is harmless. */
 export function configureRemote(): void {
+  configured = true;
   configureNavigatorRemote({
     subscribe: (handle) => {
       handlers.add(handle);

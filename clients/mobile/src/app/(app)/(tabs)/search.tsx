@@ -9,10 +9,11 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { type CardModel, movieCard, showCard } from '#mobile/components/cards';
+import { type CardModel, movieCard, PosterCard, showCard } from '#mobile/components/cards';
 import { FadeImage } from '#mobile/components/FadeImage';
 import { gridMetrics, PosterGrid } from '#mobile/components/PosterGrid';
-import { EmptyState, Loading } from '#mobile/components/ui';
+import { EmptyState, Loading, SectionTitle } from '#mobile/components/ui';
+import { discoverCard } from '#mobile/lib/discover';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
@@ -76,15 +77,47 @@ export default function Search() {
     enabled: q.length >= 2,
     placeholderData: (prev) => prev,
   });
+  const beyond = useQuery({
+    ...client.query.discovery.search(q),
+    enabled: q.length >= 2,
+    placeholderData: (prev) => prev,
+  });
   const suggested = useQuery({ ...client.query.playback.forYou(), staleTime: 10 * 60_000 });
 
   const cards: CardModel[] = (results.data?.results ?? []).map((hit) =>
     hit.type === 'show' ? showCard(hit.show, client, cardW) : movieCard(hit.item, client, cardW),
   );
+  const elsewhere: CardModel[] = (beyond.data?.results ?? [])
+    .filter((entry) => !entry.inLibrary)
+    .map((entry) => discoverCard(entry, client, cardW));
+
+  const beyondBlock =
+    elsewhere.length > 0 ? (
+      <Box>
+        <SectionTitle>{t('discover.sectionDiscover')}</SectionTitle>
+        <Box style={[s.beyondRow, gutters.style]}>
+          {elsewhere.map((card) => (
+            <PosterCard key={card.key} card={card} width={cardW} labelled />
+          ))}
+        </Box>
+      </Box>
+    ) : undefined;
 
   function searchBody(): React.ReactElement | null {
     if (q.length >= 2 && results.isPending) return <Loading label={t('common.loading')} />;
-    if (q.length >= 2 && cards.length > 0) return <PosterGrid cards={cards} gutters={gutters} />;
+    if (q.length >= 2 && (cards.length > 0 || beyondBlock))
+      return (
+        <PosterGrid
+          cards={cards}
+          gutters={gutters}
+          header={
+            cards.length > 0 ? (
+              <SectionTitle>{t('discover.sectionLibrary')}</SectionTitle>
+            ) : undefined
+          }
+          footer={beyondBlock}
+        />
+      );
     if (q.length >= 2 && results.isSuccess)
       return (
         <EmptyState
@@ -136,4 +169,5 @@ const s = styles({
   suggestTitle: { ...type.body, flex: true, fontWeight: '600' },
   suggestPlay: { center: true, w: 38, h: 38, radius: 19, border: 'textMuted', borderWidth: 1.5 },
   suggestPlayPressed: { border: 'text', bg: 'surface2' },
+  beyondRow: { row: true, wrap: true, gap: 12 },
 });

@@ -50,6 +50,18 @@ describe('useFocusVisible', () => {
     expect(seen.at(-1)).toBe(false);
   });
 
+  it('lights again when a key brings the focus back to an owner the pointer had taken', () => {
+    const { Probe, seen } = probe();
+    const view = render(<Probe focus="play" />);
+
+    fireEvent.mouseMove(window);
+    view.rerender(<Probe focus={null} />);
+    fireEvent.keyDown(window, { key: 'Tab' });
+    view.rerender(<Probe focus="play" />);
+
+    expect(seen.at(-1)).toBe(true);
+  });
+
   it('re-reads the modality when the focus moves to another owner', () => {
     const { Probe, seen } = probe();
     const view = render(<Probe focus={false} />);

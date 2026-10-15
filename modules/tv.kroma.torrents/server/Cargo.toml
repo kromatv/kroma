@@ -78,7 +78,7 @@ librqbit = { version = "=9.0.0-rc.0", optional = true, default-features = false,
 # The async admin routes + downloads monitor need spawn_blocking + timers
 # unconditionally (independent of the embedded engine); the `rqbit` feature layers
 # on the multi-thread runtime the librqbit session drives.
-tokio = { version = "1", features = ["rt", "time"] }
+tokio = { version = "1", features = ["rt", "time", "sync"] }
 
 [dev-dependencies]
 # The shared HostCtx double, the throwaway pool and the scratch dir, all through

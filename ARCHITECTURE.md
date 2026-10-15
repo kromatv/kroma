@@ -49,6 +49,8 @@ server/
   src/                 kroma-server BINARY: main.rs + api/ (router + handlers), 8k LOC
   crates/
     kroma-engine/       infra + services + state + i18n + model  (the business logic, 20k LOC)
+    kroma-media/        ffprobe, the ffmpeg budget, HLS and its per-request program
+                        (no db, no domain: the core and any module share it)
     kroma-db/           all SQL, one shared Pool                 (persistence, 7k LOC)
     kroma-sqlite/       the pool itself, the storage grant, a module's migrations
     kroma-domain/       entities + PURE rules (serde only, no I/O)

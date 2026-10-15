@@ -13,12 +13,10 @@ import {
   ceilingLabel,
   decoderMaxFrame,
   frameLabel,
-  MSE_CAPS,
-  NATIVE_TV_CAPS,
   overrunLabels,
-  SAFARI_CAPS,
 } from './directplay';
 import { makeItem, probedItem, track } from './directplay.fixture';
+import { MSE_CAPS, NATIVE_TV_CAPS, SAFARI_CAPS } from './runtime-caps';
 
 describe('canDirectPlay', () => {
   it('refuses 10-bit HEVC on an engine that only decodes 8-bit', () => {
@@ -29,6 +27,17 @@ describe('canDirectPlay', () => {
       hintKey: 'player.codecUnsupportedHint',
     });
     expect(canDirectPlay(item, MSE_CAPS).canDirectPlay).toBe(true);
+  });
+
+  it('refuses 10-bit H.264 on a decoder that only draws the 8-bit profile', () => {
+    const item = makeItem({ videoCodec: 'h264', bitDepth: 10, audio: [] });
+
+    expect(canDirectPlay(item, NATIVE_TV_CAPS)).toEqual({
+      canDirectPlay: false,
+      messageKey: 'player.h26410Unsupported',
+      hintKey: 'player.codecUnsupportedHint',
+    });
+    expect(canDirectPlay(item, { ...NATIVE_TV_CAPS, h26410bit: true }).canDirectPlay).toBe(true);
   });
 
   it('refuses a picture larger than the decoder that would draw it', () => {

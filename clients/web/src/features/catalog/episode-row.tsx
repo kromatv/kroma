@@ -2,7 +2,7 @@
 // request. The whole row is the control, so the trailing report / watched
 // buttons are actions inside it rather than a second stop beside it.
 
-import type { ListedEpisode, MediaItem } from '@kromatv/client/media';
+import type { MediaItem } from '@kromatv/client/media';
 import {
   datedDayLabel,
   formatRuntime,
@@ -27,6 +27,7 @@ import { IconPlayerPlayFilled } from '@tabler/icons-react';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
 import { kromaClient } from '#web/shared/lib/api';
 import { wash } from '#web/shared/lib/art-styles';
+import type { SeasonGap } from '#web/shared/lib/titleView';
 import { Image } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
@@ -175,7 +176,7 @@ const missingRow = sv({
 /** A gap in the season the viewer can ask for. The whole row is the toggle, so
  * picking three episodes is three presses and one request from the bar below;
  * a row already asked for shows its status instead. What the provider lists
- * for the episode (title, still, air date, synopsis) rides along once
+ * for the episode (title, still, air date, synopsis, runtime) rides along once
  * enrichment has fetched the season. */
 export function MissingEpisodeRow({
   episode,
@@ -186,7 +187,7 @@ export function MissingEpisodeRow({
 }: Readonly<{
   season: number;
   episode: number;
-  listed: ListedEpisode | null;
+  listed: SeasonGap | null;
   pending: boolean;
   selected: boolean;
   onToggle: () => void;
@@ -220,30 +221,39 @@ export function MissingEpisodeRow({
   );
 }
 
+function runtimeMinOf(listed: SeasonGap | null): number {
+  if (!listed || !('runtimeMin' in listed)) return 0;
+  return listed.runtimeMin ?? 0;
+}
+
 function MissingText({
   label,
   listed,
   color,
-}: Readonly<{ label: string; listed: ListedEpisode | null; color: 'text' | 'white/70' }>) {
+}: Readonly<{ label: string; listed: SeasonGap | null; color: 'text' | 'white/70' }>) {
   const t = useT();
   const locale = useLocale();
   const airDate = listed?.airDate ?? null;
-  let when: string | null = null;
+  const facts: string[] = [];
   if (airDate) {
-    const relative = sentenceCase(relativeAirDate(airDate, locale), locale);
-    when = `${relative} · ${datedDayLabel(airDate, locale)}`;
+    facts.push(
+      sentenceCase(relativeAirDate(airDate, locale), locale),
+      datedDayLabel(airDate, locale),
+    );
   } else if (listed) {
-    when = t('requests.noDate');
+    facts.push(t('requests.noDate'));
   }
+  const runtime = formatRuntime(runtimeMinOf(listed) * 60_000);
+  if (runtime) facts.push(runtime);
   return (
     <Box minW={0} flex>
       <Box row align="center" gap={10} mb={6}>
         <Text variant="label" lines={1} color={color} style={s.bold}>
           {label}
         </Text>
-        {when ? (
+        {facts.length > 0 ? (
           <Text variant="meta" color="white/45" shrink={0}>
-            {when}
+            {facts.join(' · ')}
           </Text>
         ) : null}
       </Box>

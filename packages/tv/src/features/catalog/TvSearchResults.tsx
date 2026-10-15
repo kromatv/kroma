@@ -3,34 +3,40 @@ import { Box, FocusScroll, Grid, Hint, PosterCard, styles, Text } from '@kromatv
 import type { ReactNode } from 'react';
 import { weight } from '#tv/shared/ui/weight';
 
-/** One result, already reduced to what a poster needs. */
 export interface SearchResult {
   id: string;
   title: string;
   badge: string | null;
-  poster: string;
+  poster: string | null;
   colors: [string, string];
   onOpen: () => void;
   onLongPress?: () => void;
 }
 
-interface TvSearchResultsProps {
+export interface SearchSection {
+  key: string;
+  title: string;
   hits: SearchResult[];
+}
+
+interface TvSearchResultsProps {
+  sections: readonly SearchSection[];
   query: string;
-  /** The pane's width, when the chrome around it already knows it (the
-   *  platform's own search shell). Omit and the grid measures its own box. */
   width?: number;
   header?: ReactNode;
 }
 
-/** The results half of the search screen, shared by both chromes (our on-screen
- * keyboard and the platform's own), so the two only ever differ in how the query
- * is typed. */
-export function TvSearchResults({ hits, query, width, header }: Readonly<TvSearchResultsProps>) {
+export function TvSearchResults({
+  sections,
+  query,
+  width,
+  header,
+}: Readonly<TvSearchResultsProps>) {
   const t = useT();
   // Read out here, not in the branch below: inside it `query` joins the grid's
   // own cache guard, and then every keystroke rebuilds every poster.
   const emptyMessage = query.trim() ? t('search.noResults') : t('search.empty');
+  const found = sections.filter((section) => section.hits.length > 0);
   return (
     <FocusScroll style={s.scroll} offsetFromStart={80}>
       {header}
@@ -46,32 +52,37 @@ export function TvSearchResults({ hits, query, width, header }: Readonly<TvSearc
           textStyle={weight.semibold}
         />
       </Box>
-      {hits.length ? (
-        <Grid width={width} min={POSTER} gap={GAP}>
-          {hits.map((h) => (
-            <PosterCard
-              key={h.id}
-              title={h.title}
-              art={h.poster}
-              tint={h.colors}
-              onPress={h.onOpen}
-              onLongPress={h.onLongPress}
-            />
-          ))}
-        </Grid>
-      ) : (
+      {found.length === 0 ? (
         <Text variant="leadTv" pt={20} color="text/40">
           {emptyMessage}
         </Text>
+      ) : (
+        found.map((section) => (
+          <Box key={section.key} gap={14} mb={34}>
+            <Text variant="overlineTv" color="textDim">
+              {section.title}
+            </Text>
+            <Grid width={width} min={MIN_POSTER_W} gap={GAP}>
+              {section.hits.map((h) => (
+                <PosterCard
+                  key={h.id}
+                  title={h.title}
+                  art={h.poster}
+                  tint={h.colors}
+                  onPress={h.onOpen}
+                  onLongPress={h.onLongPress}
+                />
+              ))}
+            </Grid>
+          </Box>
+        ))
       )}
     </FocusScroll>
   );
 }
 
 const GAP = 24;
-// The SMALLEST poster worth drawing, not the drawn width: the grid fits as many
-// of these as the pane holds and then shares the pane between them.
-const POSTER = 250;
+const MIN_POSTER_W = 250;
 
 const s = styles({
   scroll: { flex: true, minH: 0 },

@@ -7,10 +7,8 @@ import {
   useT,
   WEB_FLAGS,
 } from '@kromatv/ui';
-import { formatTimecode as fmtTime } from '@kromatv/ui/intl';
 import { Box, Button, backdropBlur, classes, Icon, styles, Text } from '@kromatv/ui/kit';
 import { useCallback, useMemo, useState } from 'react';
-import { Toast } from '#web/features/playback/player-toast';
 import { usePlaybackSession } from '#web/features/playback/use-playback-session';
 import { useResumeProgress } from '#web/features/playback/use-resume-progress';
 import { useWebController } from '#web/features/playback/use-web-controller';
@@ -24,7 +22,7 @@ const PREVIEW_W = 176;
 const s = styles({ frost: backdropBlur(4), inheritCorner: { borderRadius: 'inherit' } });
 
 /** Adapts the web engine to the shared unified `<Player>`; layers on web-only
- *  concerns (resume prompt, admin-stop overlay, session heartbeat). */
+ *  concerns (admin-stop overlay, session heartbeat). */
 export function Player({
   item,
   next,
@@ -52,13 +50,8 @@ export function Player({
   const upNext = useWebUpNext(t, item, following);
   const flags = useMemo(() => ({ ...WEB_FLAGS, cast: cast.available }), [cast.available]);
 
-  // The engine already anchors at the saved position; this only shows the toast
-  // and offers a restart.
-  const position = useMemo(
-    () => ({ seekTo: pb.seekTo, getPosition: pb.getPosition }),
-    [pb.seekTo, pb.getPosition],
-  );
-  const { resumeAt, showResume, setShowResume } = useResumeProgress(videoRef, item, position);
+  const position = useMemo(() => ({ getPosition: pb.getPosition }), [pb.getPosition]);
+  const resumeAt = useResumeProgress(videoRef, item, position);
   const [terminated, setTerminated] = useState<string | null>(null);
 
   usePlaybackSession({
@@ -152,6 +145,7 @@ export function Player({
           onSkip={() => pb.seekTo(intro.endMs / 1000)}
         />
       ) : null}
+      {resumeAt != null ? <UnifiedPlayer.Resume at={resumeAt} /> : null}
       <UnifiedPlayer.Media>{surface}</UnifiedPlayer.Media>
       {terminated ? (
         <UnifiedPlayer.Panel>
@@ -169,25 +163,6 @@ export function Player({
             />
           </Box>
         </UnifiedPlayer.Panel>
-      ) : null}
-      {showResume && resumeAt != null ? (
-        <Toast
-          variant="info"
-          onDismiss={() => setShowResume(false)}
-          action={
-            <Button
-              variant="glass"
-              size="sm"
-              label={t('player.restart')}
-              onPress={() => {
-                pb.seekTo(0);
-                setShowResume(false);
-              }}
-            />
-          }
-        >
-          ⏵ {t('player.resumeAt', { time: fmtTime(resumeAt) })}
-        </Toast>
       ) : null}
     </UnifiedPlayer.Root>
   );

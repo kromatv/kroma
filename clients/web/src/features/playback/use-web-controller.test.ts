@@ -24,7 +24,7 @@ vi.mock('@kromatv/ui', () => ({
 vi.mock('@kromatv/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@kromatv/core')>()),
   audioTrackLabel: () => 'English 5.1',
-  qualityBadgeForVideo: () => H.badge,
+  pictureBadge: () => H.badge,
 }));
 vi.mock('#web/shared/lib/lang-pref', () => ({
   useLangPrefs: () => ({ setAudio: H.rememberAudio }),

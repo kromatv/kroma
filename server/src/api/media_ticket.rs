@@ -6,6 +6,7 @@ use axum::extract::{FromRequestParts, Query};
 use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::Response;
+use kroma_media::Credential;
 use serde::Deserialize;
 
 use crate::api::error::json_error;
@@ -37,6 +38,10 @@ impl TicketQuery {
             .as_deref()
             .map(str::trim)
             .filter(|t| !t.is_empty() && t.len() <= MAX_TICKET_LEN)
+    }
+
+    pub fn credential(&self) -> Credential {
+        Credential::new(PARAM, self.ticket())
     }
 }
 
@@ -82,6 +87,15 @@ mod tests {
 
     fn presented(t: &str) -> TicketQuery {
         TicketQuery { t: Some(t.into()) }
+    }
+
+    #[test]
+    fn a_ticket_becomes_the_query_every_uri_of_a_program_carries() {
+        assert_eq!(
+            presented("dev.999.sig").credential().query(),
+            "?t=dev.999.sig"
+        );
+        assert_eq!(TicketQuery::default().credential().query(), "");
     }
 
     #[test]
