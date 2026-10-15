@@ -7,12 +7,11 @@ export const t = vi.fn((key: string, vars?: unknown) => `t:${key}:${JSON.stringi
 export const locale = { value: 'en' };
 export const navigate = vi.fn();
 export const registry = {
-  start: vi.fn(async (base: unknown, _skipSetup?: ReadonlySet<string>) => ({
-    ...(base as object),
-    getModuleApi: () => undefined,
-  })),
+  start: vi.fn((base: unknown, _skipSetup?: ReadonlySet<string>) =>
+    Promise.resolve({ ...(base as object), getModuleApi: () => undefined }),
+  ),
 };
-export const loadRuntimeRemotes = vi.fn(async () => undefined);
+export const loadRuntimeRemotes = vi.fn(() => Promise.resolve(undefined));
 export const auth = { user: null as { id: string } | null };
 
 export function base() {
@@ -30,7 +29,7 @@ export function base() {
 export const fetchMock = vi.fn();
 
 export const answers = (body: unknown, ok = true, status = 200) =>
-  fetchMock.mockResolvedValue({ ok, status, json: async () => body });
+  fetchMock.mockResolvedValue({ ok, status, json: () => Promise.resolve(body) });
 
 /** Registers the per-test reset every `useModuleHost` suite shares. */
 export function installHarness(): void {
@@ -40,10 +39,9 @@ export function installHarness(): void {
     locale.value = 'en';
     sessionToken.mockReturnValue('tok');
     hasPermission.mockReturnValue(true);
-    registry.start.mockImplementation(async (b: unknown) => ({
-      ...(b as object),
-      getModuleApi: () => undefined,
-    }));
+    registry.start.mockImplementation((b: unknown) =>
+      Promise.resolve({ ...(b as object), getModuleApi: () => undefined }),
+    );
     answers([]);
     vi.stubGlobal('fetch', fetchMock);
   });

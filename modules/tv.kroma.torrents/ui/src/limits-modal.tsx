@@ -41,7 +41,7 @@ export const LimitsModal = createCallable<void, boolean>(({ call }) => {
 
   const save = () => {
     if (!limits) return;
-    run(
+    void run(
       async () => {
         await torrents.saveLimits(limits);
         call.end(true);

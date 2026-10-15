@@ -19,9 +19,9 @@ export function installHarness(): void {
 export function stubFetch(res: Response) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string, init: RequestInit) => {
+    vi.fn((url: string, init: RequestInit) => {
       calls.push({ url, init });
-      return res;
+      return Promise.resolve(res);
     }),
   );
 }

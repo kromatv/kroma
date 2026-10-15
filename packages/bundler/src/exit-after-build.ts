@@ -15,8 +15,9 @@ export function exitAfterBuild(): Plugin {
     enforce: 'post',
     buildApp: {
       order: 'post',
-      async handler() {
+      handler() {
         setImmediate(() => process.exit(0));
+        return Promise.resolve();
       },
     },
   };

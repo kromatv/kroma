@@ -41,7 +41,7 @@ function StoragePage() {
     setClearing(true);
     try {
       await client.admin.clearCache();
-      reload();
+      void reload();
     } finally {
       setClearing(false);
     }
@@ -59,7 +59,7 @@ function StoragePage() {
     setResetting(true);
     try {
       await client.admin.resetMetadata();
-      reload();
+      void reload();
     } finally {
       setResetting(false);
     }

@@ -20,12 +20,14 @@ export function memoryCounters(): Counters & { store: Map<string, string> } {
   const store = new Map<string, string>();
   return {
     store,
-    get: async (key) => store.get(key) ?? null,
-    put: async (key, value) => {
+    get: (key) => Promise.resolve(store.get(key) ?? null),
+    put: (key, value) => {
       store.set(key, value);
+      return Promise.resolve();
     },
-    delete: async (key) => {
+    delete: (key) => {
       store.delete(key);
+      return Promise.resolve();
     },
   };
 }
@@ -35,9 +37,9 @@ export function outbox(): {
   send: (message: OutboundMessage) => Promise<unknown>;
 } {
   const sent: OutboundMessage[] = [];
-  const send = vi.fn(async (message: OutboundMessage) => {
+  const send = vi.fn((message: OutboundMessage) => {
     sent.push(message);
-    return { messageId: 'm1' };
+    return Promise.resolve({ messageId: 'm1' });
   });
   return { sent, send };
 }

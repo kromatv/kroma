@@ -35,7 +35,7 @@ export interface AuthSession {
    *  the next exchange re-prompts. */
   relockAccount(account: MobileAccount): Promise<void>;
   switchProfile(): void;
-  signOut(): Promise<void>;
+  signOut(): void;
   forgetAccount(account: MobileAccount): void;
   forgetServer(url: string): void;
   setUser(user: User): void;
@@ -184,7 +184,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
   );
 
   const switchProfile = useCallback(() => leave(false), [leave]);
-  const signOut = useCallback(async () => leave(true), [leave]);
+  const signOut = useCallback(() => leave(true), [leave]);
 
   const forgetAccount = useCallback(
     (account: MobileAccount) => {

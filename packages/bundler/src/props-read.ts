@@ -294,6 +294,6 @@ export async function readPropDocs(
     for (const [name, props] of found.flat()) out[name] = props;
     return out;
   } finally {
-    api.close();
+    await api.close();
   }
 }

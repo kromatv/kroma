@@ -94,12 +94,13 @@ export function usePushTaps(): void {
 
       // Banner only, no sound: the app is already in hand.
       push.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowBanner: true,
-          shouldShowList: true,
-          shouldPlaySound: false,
-          shouldSetBadge: true,
-        }),
+        handleNotification: () =>
+          Promise.resolve({
+            shouldShowBanner: true,
+            shouldShowList: true,
+            shouldPlaySound: false,
+            shouldSetBadge: true,
+          }),
       });
 
       const go = async (response: Notifications.NotificationResponse) => {

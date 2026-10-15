@@ -49,10 +49,10 @@ function LibrariesPageInner() {
   const { data, reload } = usePoll(['admin', 'libraries'], () => client.library.list(), 8000);
 
   const openAdd = async () => {
-    if (await AddLibraryModal.call()) reload();
+    if (await AddLibraryModal.call()) await reload();
   };
   const openManage = async (lib: AdminLibrary) => {
-    if (await ManageLibraryModal.call({ lib })) reload();
+    if (await ManageLibraryModal.call({ lib })) await reload();
   };
 
   const libraries = data?.libraries ?? [];

@@ -1,6 +1,6 @@
 //! Episode segment markers: one row per `(item_id, kind)`, bounds in ms.
 
-use super::*;
+use super::{params, Connection, Pool, Result};
 use kroma_domain::{Marker, MarkerKind};
 use rusqlite::OptionalExtension;
 

@@ -176,3 +176,6 @@ fn playlist_response<M: ByteMeter>(body: String, meter: M) -> Response {
         .body(metered_body(std::io::Cursor::new(bytes), meter))
         .unwrap()
 }
+
+#[cfg(test)]
+mod tests;

@@ -47,8 +47,8 @@ export function pushBlocker(): PushBlocker | null {
 }
 
 export const webPush: PushCapability = {
-  async blocker() {
-    return pushBlocker();
+  blocker() {
+    return Promise.resolve(pushBlocker());
   },
 
   async subscribe({ applicationServerKey }: PushSubscribeContext): Promise<SubscribeBody> {

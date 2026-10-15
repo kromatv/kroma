@@ -25,7 +25,7 @@ features = ["rqbit"]
 [features]
 # The embedded librqbit engine. Off = the "rqbit" client kind compiles as a
 # stub reporting "not compiled"; Transmission/qBittorrent (plain curl) remain.
-rqbit = ["dep:librqbit", "tokio/rt-multi-thread"]
+rqbit = ["dep:librqbit", "tokio/fs", "tokio/rt-multi-thread"]
 
 [dependencies]
 # `storage`: the downloads ledger is a core table this module holds a grant

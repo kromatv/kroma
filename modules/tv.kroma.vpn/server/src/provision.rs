@@ -36,7 +36,9 @@ fn asset() -> Option<&'static str> {
 /// from a different one.
 pub async fn ensure(data_dir: &Path) -> Result<PathBuf, String> {
     let dest = cached_path(data_dir);
-    let cached_version = std::fs::read_to_string(version_path(data_dir)).unwrap_or_default();
+    let cached_version = tokio::fs::read_to_string(version_path(data_dir))
+        .await
+        .unwrap_or_default();
     if dest.exists() && cached_version.trim() == VERSION {
         return Ok(dest);
     }
@@ -59,7 +61,9 @@ async fn download(data_dir: &Path) -> Result<PathBuf, String> {
         )
     })?;
     let bindir = data_dir.join("bin");
-    std::fs::create_dir_all(&bindir).map_err(|e| format!("create bin dir: {e}"))?;
+    tokio::fs::create_dir_all(&bindir)
+        .await
+        .map_err(|e| format!("create bin dir: {e}"))?;
     let dest = cached_path(data_dir);
     let tmp = bindir.join(format!("wireproxy.download.{}", std::process::id()));
     let url = format!("{RELEASE}/{VERSION}/{asset}");
@@ -73,7 +77,7 @@ async fn download(data_dir: &Path) -> Result<PathBuf, String> {
         .map(|s| s.success())
         .unwrap_or(false);
     if !ok {
-        let _ = std::fs::remove_file(&tmp);
+        let _ = tokio::fs::remove_file(&tmp).await;
         return Err(format!("download failed: {url}"));
     }
 
@@ -87,7 +91,7 @@ async fn download(data_dir: &Path) -> Result<PathBuf, String> {
         .await
         .map(|s| s.success())
         .unwrap_or(false);
-    let _ = std::fs::remove_file(&tmp);
+    let _ = tokio::fs::remove_file(&tmp).await;
     if !extracted {
         return Err("failed to extract wireproxy archive".to_string());
     }
@@ -95,7 +99,7 @@ async fn download(data_dir: &Path) -> Result<PathBuf, String> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let _ = std::fs::set_permissions(&dest, std::fs::Permissions::from_mode(0o700));
+        let _ = tokio::fs::set_permissions(&dest, std::fs::Permissions::from_mode(0o700)).await;
     }
 
     let runs = Command::new(&dest)
@@ -105,9 +109,9 @@ async fn download(data_dir: &Path) -> Result<PathBuf, String> {
         .map(|o| o.status.success())
         .unwrap_or(false);
     if !runs {
-        let _ = std::fs::remove_file(&dest);
+        let _ = tokio::fs::remove_file(&dest).await;
         return Err("downloaded wireproxy is not runnable".to_string());
     }
-    let _ = std::fs::write(version_path(data_dir), VERSION);
+    let _ = tokio::fs::write(version_path(data_dir), VERSION).await;
     Ok(dest)
 }

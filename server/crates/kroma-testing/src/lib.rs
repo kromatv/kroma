@@ -1,9 +1,12 @@
-//! Scratch directories for test harnesses, owned by a guard.
+//! Scratch directories and media fixtures for test harnesses.
 //!
 //! A hand-built `env::temp_dir().join(pid)` is a path, not a resource: nothing
 //! removes it when the test ends, panics, or is killed. A [`TempDir`] goes when
 //! its holder drops, unwinding included.
 
+mod media;
+
+pub use media::clip;
 pub use tempfile::TempDir;
 
 /// A fresh, empty directory under `$TMPDIR`, named `kroma-<tag>-<random>` so a

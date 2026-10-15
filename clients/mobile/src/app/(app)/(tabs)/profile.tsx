@@ -103,7 +103,7 @@ export default function Profile() {
       </Box>
 
       {/* The kit ghost inks text-colored; the danger reading comes via children. */}
-      <Button variant="ghost" style={s.signOut} onPress={() => void signOut()}>
+      <Button variant="ghost" style={s.signOut} onPress={() => signOut()}>
         <Icon name="logout" size={18} thickness={1.8} color="danger" />
         <Text color="danger" style={s.signOutText}>
           {t('auth.logout')}

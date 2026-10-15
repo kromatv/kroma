@@ -15,7 +15,7 @@ mod tests;
 /// reaches the store with no declared reach is [`SettingReach::Unknown`] rather
 /// than served.
 pub fn reach_of_setting(key: &str) -> SettingReach {
-    static REACH: OnceLock<BTreeMap<&'static str, SettingReach>> = OnceLock::new();
+    static REACH: OnceLock<BTreeMap<&str, SettingReach>> = OnceLock::new();
     *REACH
         .get_or_init(|| declared().reach)
         .get(key)

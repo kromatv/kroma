@@ -1,7 +1,7 @@
 //! Persistence for the background job system: schedule overrides, run records
 //! and per-run log lines. All timestamps are epoch milliseconds.
 
-use super::*;
+use super::{params, Pool, Result, Row};
 
 use kroma_domain::{JobLog, JobRun};
 

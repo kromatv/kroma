@@ -35,7 +35,7 @@ export function recordingClient(
   options?: { authToken?: string; locale?: string; userAgent?: string },
 ) {
   const calls: RecordedCall[] = [];
-  const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  const fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const url = requestUrl(input);
     calls.push({
       method: init?.method ?? 'GET',
@@ -46,14 +46,14 @@ export function recordingClient(
     });
     const r = reply?.(url, init) ?? {};
     const text = r.text ?? (r.json === undefined ? '' : JSON.stringify(r.json));
-    return {
+    return Promise.resolve({
       ok: r.ok ?? true,
       status: r.status ?? 200,
       body: null,
-      text: async () => text,
-      json: async () => (text ? JSON.parse(text) : undefined),
-      blob: async () => new Blob([text]),
-    } as unknown as Response;
+      text: () => Promise.resolve(text),
+      json: () => Promise.resolve(text ? JSON.parse(text) : undefined),
+      blob: () => Promise.resolve(new Blob([text])),
+    } as unknown as Response);
   }) as typeof globalThis.fetch;
 
   return { client: createKromaClient({ baseUrl: BASE, fetch, ...options }), calls, fetch };
@@ -109,7 +109,7 @@ export function fakeClient(parts: PartialClient = {}): KromaClient {
     baseUrl: BASE,
     setAuthToken: () => undefined,
     setRefreshHandler: () => undefined,
-    refreshSession: async () => undefined,
+    refreshSession: () => Promise.resolve(undefined),
     setLocale: () => undefined,
     hasAuth: false,
     sessionToken: undefined,

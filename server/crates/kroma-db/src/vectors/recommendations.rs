@@ -1,7 +1,7 @@
 //! Search results as render-ready items.
 
 use super::{for_you, similar, themed};
-use crate::{items_by_ids_ordered, Pool};
+use crate::{genre_guard, items_by_ids, items_by_ids_ordered, recently_added_ids, Pool};
 use anyhow::Result;
 
 use kroma_domain::MediaItem;
@@ -25,7 +25,7 @@ pub fn recommended_for(pool: &Pool, user_id: &str, n: usize) -> Result<Vec<Media
 /// weakly discriminative item↔item) + hydration.
 pub fn similar_items(pool: &Pool, id: &str, n: usize) -> Result<Vec<MediaItem>> {
     let raw = similar(pool, id, (n + 8).max(48))?;
-    let guarded = super::genre_guard(pool, id, raw.clone());
+    let guarded = genre_guard(pool, id, raw.clone());
     // The guard can prune below `n` (few neighbours share a genre); top up from
     // the unguarded neighbours so it still fills when candidates exist.
     let ranked = if guarded.len() >= n {
@@ -55,7 +55,7 @@ pub fn similar_items(pool: &Pool, id: &str, n: usize) -> Result<Vec<MediaItem>> 
         let mut have: std::collections::HashSet<String> =
             items.iter().map(|i| i.id.clone()).collect();
         have.insert(id.to_string());
-        let recent = super::recently_added_ids(pool, n * 3)?;
+        let recent = recently_added_ids(pool, n * 3)?;
         let mut extra_ids: Vec<&str> = recent
             .iter()
             .filter(|r| !have.contains(r.as_str()))
@@ -63,7 +63,7 @@ pub fn similar_items(pool: &Pool, id: &str, n: usize) -> Result<Vec<MediaItem>> 
             .collect();
         // Only hydrate what actually fills the rail (each item is a full MediaItem).
         extra_ids.truncate(n - items.len());
-        items.extend(super::items_by_ids(pool, &extra_ids)?);
+        items.extend(items_by_ids(pool, &extra_ids)?);
     }
     Ok(items)
 }

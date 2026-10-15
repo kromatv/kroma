@@ -7,3 +7,6 @@ pub mod credits;
 pub mod fingerprint;
 pub mod job;
 pub mod video;
+
+#[cfg(test)]
+mod test_support;

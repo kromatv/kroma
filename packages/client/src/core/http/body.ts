@@ -14,15 +14,20 @@ async function readBoundedText(res: Response, path: string): Promise<string> {
   const decoder = new TextDecoder();
   let text = '';
   let read = 0;
+  let over = false;
   for (;;) {
     const chunk = await reader.read();
     if (chunk.done) break;
     read += chunk.value.byteLength;
     if (read > MAX_JSON_BODY_BYTES) {
-      await reader.cancel();
-      throw bodyTooLarge(path, read);
+      over = true;
+      break;
     }
     text += decoder.decode(chunk.value, { stream: true });
+  }
+  if (over) {
+    await reader.cancel();
+    throw bodyTooLarge(path, read);
   }
   return text + decoder.decode();
 }

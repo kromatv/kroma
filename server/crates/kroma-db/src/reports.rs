@@ -1,6 +1,6 @@
 //! Problem-report persistence: insert, list, triage-status transitions, delete.
 
-use super::*;
+use super::{params, Connection, Pool, Result, Row};
 use kroma_domain::{Report, ReportCategory, ReportStatus, ReportSubjectKind};
 
 // Positional order must match [`row_to_report`].

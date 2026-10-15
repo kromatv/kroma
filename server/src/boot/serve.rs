@@ -29,7 +29,11 @@ pub async fn run(
     let https = build_https(&state).await;
     let mut cert_pem_shared: Option<std::sync::Arc<String>> = None;
     if let Some((cert_path, _, _)) = &https {
-        let cert_pem = std::sync::Arc::new(std::fs::read_to_string(cert_path).unwrap_or_default());
+        let cert_pem = std::sync::Arc::new(
+            tokio::fs::read_to_string(cert_path)
+                .await
+                .unwrap_or_default(),
+        );
         app = app.route("/api/tls/cert.pem", cert_download_route(cert_pem.clone()));
         cert_pem_shared = Some(cert_pem);
     }

@@ -75,7 +75,7 @@ export function RequestsQueuePage() {
     return fn()
       .then(() => {
         flash(label);
-        reload();
+        void reload();
       })
       .catch(() => flash(t('requests.actionFailed')));
   };
@@ -201,7 +201,7 @@ export function RequestsQueuePage() {
         onCreated={reload}
         onOpenRequest={(id) => {
           setAdding(false);
-          reload();
+          void reload();
           navigate({ to: '/admin/requests/$id', params: { id } });
         }}
       />

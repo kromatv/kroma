@@ -59,7 +59,7 @@ function titleOf(id: string): string {
   return slug.charAt(0).toUpperCase() + slug.slice(1).replaceAll('-', ' ');
 }
 
-async function answer<T>(value: T | symbol): Promise<T> {
+function answer<T>(value: T | symbol): T {
   if (p.isCancel(value)) throw new Error('cancelled');
   return value as T;
 }
@@ -82,7 +82,7 @@ async function ask(options: CreateOptions, cwd: string): Promise<Answers> {
   const id =
     given && !idIssue(given)
       ? given
-      : await answer(
+      : answer(
           await p.text({
             message: 'Module id',
             placeholder: 'tv.acme.notes',
@@ -91,24 +91,22 @@ async function ask(options: CreateOptions, cwd: string): Promise<Answers> {
           }),
         );
   const name =
-    options.name ??
-    (await answer(await p.text({ message: 'Display name', initialValue: titleOf(id) })));
+    options.name ?? answer(await p.text({ message: 'Display name', initialValue: titleOf(id) }));
   const description =
-    options.description ??
-    (await answer(await p.text({ message: 'One line about it', defaultValue: '' })));
+    options.description ?? answer(await p.text({ message: 'One line about it', defaultValue: '' }));
   const kind = isKind(options.kind)
     ? options.kind
-    : await answer(await p.select<Kind>({ message: 'What is it?', options: KINDS }));
+    : answer(await p.select<Kind>({ message: 'What is it?', options: KINDS }));
   const storage =
     kind === 'ui'
       ? false
       : (options.storage ??
-        (await answer(
+        answer(
           await p.confirm({
             message: 'Does the sidecar keep its own database?',
             initialValue: false,
           }),
-        )));
+        ));
   return { id, name, description, kind, storage, inRepo };
 }
 

@@ -38,8 +38,9 @@ function actEnvironment(): boolean {
 // outside it is what turns every assertion into a race.
 async function flush(work?: () => void): Promise<void> {
   if (actEnvironment()) {
-    await act(async () => {
+    await act(() => {
       work?.();
+      return Promise.resolve();
     });
     return;
   }

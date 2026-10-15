@@ -187,6 +187,7 @@ fn decode_args(path: &Path, window_start_s: f64) -> Vec<OsString> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::markers::test_support::{credits_clip, scene_clip};
 
     fn frame(fill: u8, text_rows: usize) -> Vec<u8> {
         let mut gray = vec![fill; FRAME_BYTES];
@@ -272,6 +273,43 @@ mod tests {
         assert_eq!(credits_start(&card), None);
         assert_eq!(credits_start(&dark), None);
         assert_eq!(credits_start(&[]), None);
+    }
+
+    #[test]
+    fn a_picture_of_nothing_but_credits_is_read_as_credits_from_its_first_frame() {
+        let dir = kroma_testing::temp_dir("credits-scan");
+        let clip = credits_clip(dir.path(), 70);
+
+        let start = credits_start_ms(&clip, 70_000).unwrap();
+
+        assert_eq!(start, Some(0));
+    }
+
+    #[test]
+    fn a_picture_that_is_a_picture_carries_no_credits_however_long_it_runs() {
+        let dir = kroma_testing::temp_dir("credits-scene");
+        let clip = scene_clip(dir.path(), 70);
+
+        let start = credits_start_ms(&clip, 70_000).unwrap();
+
+        assert_eq!(start, None);
+    }
+
+    #[test]
+    fn a_window_that_opens_past_the_end_of_the_file_decodes_nothing() {
+        let dir = kroma_testing::temp_dir("credits-window");
+        let clip = scene_clip(dir.path(), 5);
+
+        let refused = credits_start_ms(&clip, 3_600_000);
+
+        assert!(refused.is_err());
+    }
+
+    #[test]
+    fn a_film_nothing_can_open_fails_the_scan_rather_than_reporting_no_credits() {
+        let refused = credits_start_ms(Path::new("/nowhere/absent.mkv"), 70_000);
+
+        assert!(refused.is_err());
     }
 
     #[test]

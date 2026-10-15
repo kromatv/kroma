@@ -5,7 +5,7 @@
 //! watched / my-list flags, [`show_progress`] the percent through a show, and
 //! [`up_next`] which episode comes next.
 
-use super::*;
+use super::{now_or_blank, params, Pool, Result, Row};
 use kroma_domain::ProgressEntry;
 use rusqlite::OptionalExtension;
 

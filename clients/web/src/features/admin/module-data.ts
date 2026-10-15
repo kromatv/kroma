@@ -25,8 +25,7 @@ export function useModuleData() {
   // follow installs/toggles without a page reload.
   const refreshAll = async () => {
     await refreshModules();
-    reload();
-    reloadCatalog();
+    await Promise.all([reload(), reloadCatalog()]);
   };
   return { modules, catalog, reload, reloadCatalog, refreshAll };
 }

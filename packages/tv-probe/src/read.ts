@@ -14,13 +14,13 @@ const CONTROLS = '[role="button"],[role="tab"],[role="link"],[role="menuitem"],[
 
 const OBSERVER_DEADLINE_MS = 300;
 
-export async function read(page: Page): Promise<Reading> {
+export function read(page: Page): Promise<Reading> {
   return page.evaluate(readDocument, { controls: CONTROLS, wait: OBSERVER_DEADLINE_MS });
 }
 
 /** The app's own frame counter (`packages/ui/src/lib/perf.ts`), or null where
  * the global is missing, which means the run measured nothing. */
-export async function frames(page: Page): Promise<Frames | null> {
+export function frames(page: Page): Promise<Frames | null> {
   return page.evaluate(() => {
     const perf = (globalThis as { KROMA_PERF?: { report(): Frames } }).KROMA_PERF;
     if (!perf) return null;

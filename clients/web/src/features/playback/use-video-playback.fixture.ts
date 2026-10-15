@@ -12,7 +12,7 @@ export const H = {
   user: null as { audioLanguage?: string | null } | null,
   itemProgress,
   masterNeedsAac: vi.fn(),
-  refreshSession: vi.fn(async (): Promise<string | undefined> => 'fresh'),
+  refreshSession: vi.fn((): Promise<string | undefined> => Promise.resolve('fresh')),
   mseCaps: { caps: 'mse' },
   safariCaps: { caps: 'safari' },
   frame: { current: null as HTMLDivElement | null },
@@ -48,12 +48,14 @@ export function fakeVideo(over: Partial<Record<string, unknown>> = {}) {
 export const movie = (over: Partial<MovieView> = {}): MovieView =>
   ({ id: 'm1', durationMs: 100_000, subs: [], ...over }) as MovieView;
 
+const ticks = async (left: number): Promise<void> => {
+  if (left === 0) return;
+  await new Promise<void>((r) => setTimeout(r, 0));
+  return ticks(left - 1);
+};
+
 export async function settle() {
-  await act(async () => {
-    for (let tick = 0; tick < 8; tick += 1) {
-      await new Promise<void>((r) => setTimeout(r, 0));
-    }
-  });
+  await act(() => ticks(8));
 }
 
 // The engine override is persisted per device, so without a fresh store each
@@ -83,7 +85,7 @@ export function installHarness(): void {
     vi.stubGlobal('localStorage', memoryStorage());
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({ headers: { get: () => '0' } })),
+      vi.fn(() => Promise.resolve({ headers: { get: () => '0' } })),
     );
     H.decision = { kind: 'direct' };
     H.tracks = [

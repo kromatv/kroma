@@ -2,7 +2,7 @@
 //! -weighted play counts), recently-added, the user's last play, batch hydration
 //! by id, and the embedding-cache staleness stamp.
 
-use super::*;
+use super::{params, Pool, Result};
 
 mod genre_guard;
 mod hydration;

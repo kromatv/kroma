@@ -1,5 +1,4 @@
 import type { ArgsDef, SubCommandsDef } from 'citty';
-import type { Platform } from '../television';
 import { androidtv } from './androidtv/module';
 import { appletv } from './appletv/module';
 import type { ModuleOptions, TvModule } from './module';
@@ -12,11 +11,11 @@ export function modules(): readonly TvModule[] {
   return REGISTRY;
 }
 
-export function findModule(platform: Platform): TvModule | undefined {
+export function findModule(platform: string): TvModule | undefined {
   return REGISTRY.find((module) => module.id === platform);
 }
 
-export function moduleFor(platform: Platform): TvModule {
+export function moduleFor(platform: string): TvModule {
   const module = findModule(platform);
   if (!module) throw new Error(`no module answers for ${platform}`);
   return module;

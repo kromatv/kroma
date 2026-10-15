@@ -56,7 +56,7 @@ export type RoleStyle = Omit<
 > & {
   fontSize?: number | string;
   lineHeight?: number | string;
-  fontWeight?: TextStyle['fontWeight'] | string;
+  fontWeight?: string;
   letterSpacing?: number | string;
 };
 

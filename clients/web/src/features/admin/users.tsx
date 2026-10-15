@@ -46,10 +46,10 @@ function UsersPageInner() {
     15000,
   );
   const openInvite = async () => {
-    if (await InviteModal.call()) reloadInvites();
+    if (await InviteModal.call()) await reloadInvites();
   };
   const openEdit = async (user: AdminUser) => {
-    if (await EditUserModal.call({ user })) reload();
+    if (await EditUserModal.call({ user })) await reload();
   };
 
   const users = data?.users ?? [];

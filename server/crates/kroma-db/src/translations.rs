@@ -15,7 +15,7 @@ pub const REV: u32 = 2;
 
 use serde::{Deserialize, Serialize};
 
-use super::*;
+use super::{params, Connection, Pool, Result};
 
 /// Values for the `source` column.
 pub const TMDB: &str = "tmdb";

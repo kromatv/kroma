@@ -92,7 +92,7 @@ export default function DownloadsPage() {
     const now = Date.now();
     if (now - lastReloadRef.current < RELOAD_THROTTLE_MS) return;
     lastReloadRef.current = now;
-    reload();
+    void reload();
   }, [reload]);
 
   // `download.progress` frames feed the per-row overlay; terminal events
@@ -125,16 +125,16 @@ export default function DownloadsPage() {
       .catch(() => undefined)
       .finally(() => {
         setBusy(false);
-        reload();
+        void reload();
       });
   };
 
   const relink = async (dl: DownloadView) => {
-    if (await LinkModal.call({ dl })) reload();
+    if (await LinkModal.call({ dl })) await reload();
   };
 
   const editLimits = async () => {
-    if (await LimitsModal.call()) reload();
+    if (await LimitsModal.call()) await reload();
   };
 
   if (!canQueue) return <Denied />;

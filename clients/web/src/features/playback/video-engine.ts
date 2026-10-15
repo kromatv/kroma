@@ -184,7 +184,7 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
       if (!destroyed && v.error?.code !== MEDIA_ERR_ABORTED) onGiveUp();
     };
     // Shaka reports the same relative clock as hls.js, so `baseSec` applies here too.
-    void import('shaka-player/dist/shaka-player.compiled.js').then((mod) => {
+    void import('shaka-player/dist/shaka-player.compiled.js').then(async (mod) => {
       if (destroyed) return;
       const shaka = (mod as unknown as { default: ShakaStatic }).default;
       shaka.polyfill.installAll();
@@ -196,13 +196,13 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
       shakaRef.current = player;
       player.configure(shakaConfig(plan));
       v.addEventListener('error', onMediaError);
-      player
-        .attach(v)
-        .then(() => player.load(url, 0))
-        .catch((e: unknown) => {
-          const status = shakaHttpStatus(e);
-          if (!destroyed && status !== null) onRefused(status);
-        });
+      try {
+        await player.attach(v);
+        await player.load(url, 0);
+      } catch (e: unknown) {
+        const status = shakaHttpStatus(e);
+        if (!destroyed && status !== null) onRefused(status);
+      }
     });
     return () => {
       destroyed = true;

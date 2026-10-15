@@ -27,27 +27,22 @@ export function GateBody() {
 
   useEffect(() => {
     let cancelled = false;
-    client.accounts
-      .config()
-      .then((cfg) => {
-        if (cancelled) return;
-        setCanPick(cfg.publicUserList);
-        if (!cfg.hasAccounts) {
-          setMode({ kind: 'register' });
-          return;
-        }
-        if (!cfg.publicUserList) {
-          setMode(accounts.length > 0 ? { kind: 'pick' } : { kind: 'login', user: null });
-          return;
-        }
-        client.accounts
-          .users()
-          .then((u) => {
-            if (!cancelled) setProfiles(u);
-          })
-          .catch(() => undefined);
-      })
-      .catch(() => undefined);
+    const load = async () => {
+      const cfg = await client.accounts.config();
+      if (cancelled) return;
+      setCanPick(cfg.publicUserList);
+      if (!cfg.hasAccounts) {
+        setMode({ kind: 'register' });
+        return;
+      }
+      if (!cfg.publicUserList) {
+        setMode(accounts.length > 0 ? { kind: 'pick' } : { kind: 'login', user: null });
+        return;
+      }
+      const users = await client.accounts.users();
+      if (!cancelled) setProfiles(users);
+    };
+    load().catch(() => undefined);
     return () => {
       cancelled = true;
     };

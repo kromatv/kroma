@@ -23,7 +23,7 @@ interface CachedVirtualOptions {
 const cacheFile = (id: string, hash: string): string =>
   join(process.cwd(), 'node_modules', '.cache', 'kroma', `${id}-${hash}.json`);
 
-async function readCache(id: string, hash: string): Promise<string | null> {
+function readCache(id: string, hash: string): Promise<string | null> {
   return readFile(cacheFile(id, hash), 'utf8').catch(() => null);
 }
 

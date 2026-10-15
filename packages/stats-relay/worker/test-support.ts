@@ -46,7 +46,7 @@ export function memoryStore(seed: InstanceRow[] = []): Store & { rows: Map<strin
   const days = new Map<string, DailyRow>();
   return {
     rows,
-    async upsert(p, country, now) {
+    upsert(p, country, now) {
       const existing = rows.get(p.id);
       rows.set(p.id, {
         id: p.id,
@@ -62,38 +62,43 @@ export function memoryStore(seed: InstanceRow[] = []): Store & { rows: Map<strin
         ...size(p),
         flagged: existing?.flagged ?? false,
       });
+      return Promise.resolve();
     },
-    async has(id) {
-      return rows.has(id);
+    has(id) {
+      return Promise.resolve(rows.has(id));
     },
-    async all() {
-      return [...rows.values()];
+    all() {
+      return Promise.resolve([...rows.values()]);
     },
-    async daily() {
-      return [...days.values()].sort((a, b) => a.day.localeCompare(b.day));
+    daily() {
+      return Promise.resolve([...days.values()].sort((a, b) => a.day.localeCompare(b.day)));
     },
-    async flag(ids) {
+    flag(ids) {
       for (const id of ids) {
         const found = rows.get(id);
         if (found) rows.set(id, { ...found, flagged: true });
       }
+      return Promise.resolve();
     },
-    async record(day, instances, clients) {
+    record(day, instances, clients) {
       days.set(day, { day, instances, clients });
+      return Promise.resolve();
     },
-    async prune(before) {
+    prune(before) {
       for (const [id, r] of rows) if (r.lastSeen < before) rows.delete(id);
+      return Promise.resolve();
     },
-    async forget(id) {
+    forget(id) {
       rows.delete(id);
+      return Promise.resolve();
     },
   };
 }
 
 export function allow() {
-  return { limit: async () => ({ success: true }) };
+  return { limit: () => Promise.resolve({ success: true }) };
 }
 
 export function deny() {
-  return { limit: async () => ({ success: false }) };
+  return { limit: () => Promise.resolve({ success: false }) };
 }

@@ -92,7 +92,44 @@ fn fmt_ms(ms: u64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{seed_movie, test_state};
+    use crate::services::markers::test_support::{credits_clip, scene_clip};
+    use crate::state::SharedState;
+    use crate::test_support::{seed_library, seed_movie, test_state};
+
+    fn film(state: &SharedState, at: &std::path::Path, duration_ms: u64) -> MediaItem {
+        seed_library(state, "lib-movies", "movies");
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute(
+                &format!(
+                    "INSERT INTO items (id,kind,title,container,library,abs_path,duration_ms,added_at) \
+                     VALUES ('f1','movie','A Film','mp4','lib-movies','{}',{duration_ms},'t')",
+                    at.display()
+                ),
+                [],
+            )
+            .unwrap();
+        crate::db::get_item(&state.db, "f1").unwrap().unwrap()
+    }
+
+    fn detecting(mode: &str) -> JobContext {
+        let state = test_state();
+        state.settings.set_patch(
+            &state.db,
+            [("introDetection".to_string(), serde_json::json!(mode))].into(),
+        );
+        JobContext::for_test(state)
+    }
+
+    fn marker_of(ctx: &JobContext) -> Option<crate::model::Marker> {
+        let conn = ctx.state.db.get().unwrap();
+        crate::db::markers_for_item(&conn, "f1")
+            .unwrap()
+            .into_iter()
+            .find(|m| m.kind == MarkerKind::Credits)
+    }
 
     #[test]
     fn a_chapter_cut_near_the_picture_wins_as_the_authored_source() {
@@ -141,5 +178,50 @@ mod tests {
             [("introDetection".to_string(), serde_json::json!("chapters"))].into(),
         );
         assert!(!detect_movie(&ctx, &item).unwrap());
+    }
+
+    #[test]
+    fn the_picture_pass_writes_where_the_credits_it_found_begin() {
+        let dir = kroma_testing::temp_dir("credits-film");
+        let ctx = detecting("fingerprint");
+        let item = film(&ctx.state, &credits_clip(dir.path(), 70), 70_000);
+
+        assert!(detect_movie(&ctx, &item).unwrap());
+
+        let marker = marker_of(&ctx).expect("a credits marker");
+        assert_eq!(marker.start_ms, 0);
+        assert_eq!(marker.end_ms, 70_000);
+    }
+
+    #[test]
+    fn a_film_whose_picture_never_looks_like_credits_keeps_no_marker() {
+        let dir = kroma_testing::temp_dir("credits-none");
+        let ctx = detecting("fingerprint");
+        let item = film(&ctx.state, &scene_clip(dir.path(), 70), 70_000);
+
+        assert!(!detect_movie(&ctx, &item).unwrap());
+
+        assert!(marker_of(&ctx).is_none());
+    }
+
+    #[test]
+    fn a_picture_scan_that_fails_leaves_the_pass_standing() {
+        let ctx = detecting("fingerprint");
+        let item = film(&ctx.state, std::path::Path::new("/nowhere/absent.mkv"), 70_000);
+
+        assert!(!detect_movie(&ctx, &item).unwrap());
+
+        assert!(marker_of(&ctx).is_none());
+    }
+
+    #[test]
+    fn the_chapter_cut_alone_never_pays_for_the_picture_scan() {
+        let dir = kroma_testing::temp_dir("credits-chapters");
+        let ctx = detecting("chapters");
+        let item = film(&ctx.state, &credits_clip(dir.path(), 70), 70_000);
+
+        assert!(!detect_movie(&ctx, &item).unwrap());
+
+        assert!(marker_of(&ctx).is_none());
     }
 }

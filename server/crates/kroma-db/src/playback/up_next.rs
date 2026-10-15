@@ -3,7 +3,7 @@
 use anyhow::Result;
 use rusqlite::{params, OptionalExtension};
 
-use crate::hydrate::attach_files;
+use crate::hydrate::{attach_files, attach_files_batch};
 use crate::Pool;
 use crate::rows::row_to_item;
 use crate::schema::ITEM_COLS;
@@ -102,7 +102,7 @@ pub fn following_episodes(pool: &Pool, item_id: &str, n: usize) -> Result<Vec<Me
     drop(stmt);
     // Batch-hydrate (files + markers in one query each) instead of N queries per
     // episode - this rail can be up to UP_NEXT_EPISODES rows on every watch load.
-    super::attach_files_batch(&conn, &mut items)?;
+    attach_files_batch(&conn, &mut items)?;
     Ok(items)
 }
 

@@ -54,17 +54,19 @@ async function once(url: string, options: Options): Promise<string> {
  */
 export async function fetchBody(url: string, options: Options): Promise<string> {
   const backoff = options.backoffMs ?? BACKOFF_MS;
-  let last: unknown;
 
-  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
-    if (attempt > 1) await wait(backoff * (attempt - 1));
+  const attempt = async (n: number): Promise<string> => {
+    if (n > 1) await wait(backoff * (n - 1));
     try {
       return await once(url, options);
     } catch (err) {
       if (err instanceof Permanent) throw err;
-      last = err;
+      if (n === ATTEMPTS) {
+        throw new Error(`${url} could not be read after ${ATTEMPTS} attempts: ${chain(err)}`);
+      }
+      return attempt(n + 1);
     }
-  }
+  };
 
-  throw new Error(`${url} could not be read after ${ATTEMPTS} attempts: ${chain(last)}`);
+  return attempt(1);
 }

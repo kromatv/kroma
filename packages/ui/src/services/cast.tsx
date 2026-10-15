@@ -201,7 +201,7 @@ export function CastProvider({
   );
 
   const send = useCallback(
-    async (command: CastCommand) => (activeId ? sendTo(activeId, command) : false),
+    (command: CastCommand) => (activeId ? sendTo(activeId, command) : Promise.resolve(false)),
     [activeId, sendTo],
   );
 

@@ -55,10 +55,10 @@ export function DownloadClientsSection() {
         });
       },
     });
-    if (changed) reload();
+    if (changed) await reload();
   };
   const openEdit = async (c: DownloadClientView) => {
-    if (await DownloadClientModal.call({ client: c })) reload();
+    if (await DownloadClientModal.call({ client: c })) await reload();
   };
 
   const toggle = (c: DownloadClientView, enabled: boolean) => {
