@@ -160,6 +160,66 @@ export function canRenderHdr(
   return profile == null || !DV_WITHOUT_A_BASE_LAYER.has(profile);
 }
 
+// A codec whose 10-bit profile is a decoder of its own: a device that draws the
+// 8-bit one may still refuse the deeper stream.
+function byDepth(options: {
+  tenBit: boolean;
+  decodes: boolean;
+  decodes10: boolean;
+  unsupported: MessageKey;
+  unsupported10: MessageKey;
+  ok: MessageKey;
+}): DirectPlayVerdict {
+  if (!options.decodes) return undecodable(options.unsupported);
+  if (options.tenBit && !options.decodes10) return undecodable(options.unsupported10);
+  return { canDirectPlay: true, messageKey: options.ok };
+}
+
+function byCodec(options: {
+  codec: string;
+  tenBit: boolean;
+  undescribed: boolean;
+  caps: PlaybackCapabilities;
+}): DirectPlayVerdict {
+  const { caps, tenBit } = options;
+  switch (options.codec) {
+    case 'hevc':
+      return byDepth({
+        tenBit,
+        decodes: caps.hevc,
+        decodes10: caps.hevc10bit,
+        unsupported: 'player.hevcUnsupported',
+        unsupported10: 'player.hevc10Unsupported',
+        ok: 'player.directPlayHevc',
+      });
+    case H264:
+      return byDepth({
+        tenBit,
+        decodes: caps.h264,
+        decodes10: caps.h26410bit,
+        unsupported: 'player.h264Unsupported',
+        unsupported10: 'player.h26410Unsupported',
+        ok: 'player.directPlayH264',
+      });
+    case 'av1':
+      return caps.av1
+        ? { canDirectPlay: true, messageKey: 'player.directPlayAv1' }
+        : undecodable('player.av1Unsupported');
+    case 'vp9':
+      return caps.vp9
+        ? { canDirectPlay: true, messageKey: 'player.directPlayVp9' }
+        : undecodable('player.vp9Unsupported');
+    default:
+      return options.undescribed
+        ? {
+            canDirectPlay: false,
+            messageKey: 'player.streamUndescribed',
+            hintKey: 'player.streamUndescribedHint',
+          }
+        : { canDirectPlay: true, messageKey: 'player.directPlayUnknown' };
+  }
+}
+
 export function canDirectPlay(
   item: MediaItem,
   caps: PlaybackCapabilities = capabilities(),
@@ -173,9 +233,6 @@ export function canDirectPlay(
       hintKey: 'player.fileUnreadableHint',
     };
 
-  const codec = item.video?.codec ?? UNNAMED_CODEC;
-  const tenBit = (item.video?.bitDepth ?? 8) >= 10;
-
   const over = beyondDecoder(item, caps);
   if (over)
     return {
@@ -187,30 +244,10 @@ export function canDirectPlay(
 
   if (!canRenderHdr(item, caps)) return undecodable('player.dolbyVisionUnsupported');
 
-  switch (codec) {
-    case 'hevc':
-      if (!caps.hevc) return undecodable('player.hevcUnsupported');
-      if (tenBit && !caps.hevc10bit) return undecodable('player.hevc10Unsupported');
-      return { canDirectPlay: true, messageKey: 'player.directPlayHevc' };
-    case 'h264':
-      if (!caps.h264) return undecodable('player.h264Unsupported');
-      if (tenBit && !caps.h26410bit) return undecodable('player.h26410Unsupported');
-      return { canDirectPlay: true, messageKey: 'player.directPlayH264' };
-    case 'av1':
-      return caps.av1
-        ? { canDirectPlay: true, messageKey: 'player.directPlayAv1' }
-        : undecodable('player.av1Unsupported');
-    case 'vp9':
-      return caps.vp9
-        ? { canDirectPlay: true, messageKey: 'player.directPlayVp9' }
-        : undecodable('player.vp9Unsupported');
-    default:
-      return nameless(item, file)
-        ? {
-            canDirectPlay: false,
-            messageKey: 'player.streamUndescribed',
-            hintKey: 'player.streamUndescribedHint',
-          }
-        : { canDirectPlay: true, messageKey: 'player.directPlayUnknown' };
-  }
+  return byCodec({
+    codec: item.video?.codec ?? UNNAMED_CODEC,
+    tenBit: (item.video?.bitDepth ?? 8) >= 10,
+    undescribed: nameless(item, file),
+    caps,
+  });
 }

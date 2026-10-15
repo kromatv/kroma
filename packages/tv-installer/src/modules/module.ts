@@ -2,7 +2,7 @@ import type { ArgsDef, SubCommandsDef } from 'citty';
 import type { UpnpDevice } from '../discovery/upnp';
 import type { ArtifactRequest, Source } from '../install/artifact';
 import type { LogLine } from '../run';
-import type { Platform, Television } from '../television';
+import type { Television } from '../television';
 import type { Tool } from '../toolchain/detect';
 
 export type ModuleOptions = Readonly<Record<string, string | boolean | undefined>>;
@@ -21,7 +21,7 @@ export interface ModulePorts {
 }
 
 export interface TvModule {
-  id: Platform;
+  id: string;
   label: string;
   brands: string;
   package: string;
