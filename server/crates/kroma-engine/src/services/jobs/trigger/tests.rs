@@ -1,7 +1,9 @@
 use super::*;
 use crate::db;
 use crate::model::Category;
-use crate::services::jobs::test_support::{wait_idle, TEST_BUILTIN};
+use crate::services::jobs::test_support::{
+    blocked_on, until_cancelled, wait_idle, Gate, TEST_BUILTIN,
+};
 use crate::services::jobs::{JobContext, RemoteRun};
 use crate::test_support;
 
@@ -60,19 +62,13 @@ async fn trigger_records_a_failed_run_with_its_message() {
 #[tokio::test]
 async fn trigger_rejects_a_second_run_while_one_is_in_flight() {
     let state = test_support::test_state();
-    // Blocks until released, so the first run is provably still in flight when
-    // the second trigger is attempted.
-    let gate = Arc::new(std::sync::atomic::AtomicBool::new(false));
-    let g = gate.clone();
-    let run: RemoteRun = Arc::new(move |_ctx: &JobContext| {
-        while !g.load(std::sync::atomic::Ordering::Relaxed) {
-            std::thread::sleep(std::time::Duration::from_millis(5));
-        }
-        Ok(())
-    });
-    state
-        .jobs
-        .register_remote("test.remote.slow", Category::Maintenance, None, run);
+    let gate = Arc::new(Gate::default());
+    state.jobs.register_remote(
+        "test.remote.slow",
+        Category::Maintenance,
+        None,
+        blocked_on(&gate),
+    );
 
     state
         .jobs
@@ -82,17 +78,8 @@ async fn trigger_rejects_a_second_run_while_one_is_in_flight() {
         .jobs
         .trigger(state.clone(), JobKey("test.remote.slow"), "manual");
     assert_eq!(second, Err(TriggerError::AlreadyRunning));
-    gate.store(true, std::sync::atomic::Ordering::Relaxed);
+    gate.release();
     wait_idle(&state.jobs).await;
-}
-
-fn until_cancelled() -> RemoteRun {
-    Arc::new(|ctx: &JobContext| {
-        while !ctx.cancelled() {
-            std::thread::sleep(std::time::Duration::from_millis(5));
-        }
-        Ok(())
-    })
 }
 
 #[tokio::test]

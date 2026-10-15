@@ -237,19 +237,16 @@ mod tests {
     #[tokio::test]
     async fn a_running_job_reports_the_progress_it_last_published() {
         use crate::model::Category;
-        use crate::services::jobs::{JobKey, RemoteRun};
+        use crate::services::jobs::test_support::publishing_progress;
+        use crate::services::jobs::JobKey;
 
         let state = test_state();
-        let run: RemoteRun = std::sync::Arc::new(|ctx| {
-            ctx.progress(3, 10);
-            while !ctx.cancelled() {
-                std::thread::sleep(std::time::Duration::from_millis(5));
-            }
-            Ok(())
-        });
-        state
-            .jobs
-            .register_remote("mod.progressing", Category::Maintenance, None, run);
+        state.jobs.register_remote(
+            "mod.progressing",
+            Category::Maintenance,
+            None,
+            publishing_progress(3, 10),
+        );
         let run_id = state
             .jobs
             .trigger(state.clone(), JobKey("mod.progressing"), "manual")
