@@ -7,21 +7,7 @@
 
 import type { ReactNode } from 'react';
 import { Children, isValidElement } from 'react';
-import {
-  Actions,
-  Media,
-  Panel,
-  type PlayerActionsProps,
-  type PlayerMediaProps,
-  type PlayerPanelProps,
-  type PlayerSubtitleProps,
-  type PlayerTitleProps,
-  type PlayerWarningProps,
-  Subtitle,
-  Title,
-  Warning,
-} from './player-faces';
-import { PlayerScope } from './player-scope';
+import { Actions, Media, Panel, Subtitle, Title, Warning } from './player-faces';
 import {
   Credits,
   type PlayerCreditsProps,
@@ -111,26 +97,28 @@ function sortSlots(children: ReactNode): PlayerSlots {
 
 export type {
   PlayerActionsProps,
-  PlayerCreditsProps,
   PlayerMediaProps,
   PlayerPanelProps,
+  PlayerSubtitleProps,
+  PlayerTitleProps,
+  PlayerWarningProps,
+} from './player-faces';
+export { PlayerScope } from './player-scope';
+export type {
+  PlayerCreditsProps,
   PlayerPostPlayProps,
   PlayerReportProps,
   PlayerResumeProps,
   PlayerSkipIntroProps,
-  PlayerSubtitleProps,
   PlayerSubtitlesProps,
-  PlayerTitleProps,
   PlayerTransportProps,
   PlayerUpNextProps,
-  PlayerWarningProps,
 };
 export {
   Actions,
   Credits,
   Media,
   Panel,
-  PlayerScope,
   PostPlay,
   Report,
   Resume,

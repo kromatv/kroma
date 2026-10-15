@@ -100,14 +100,7 @@ function DiscoverScreen({ kind, tmdbId }: Readonly<{ kind: TmdbKind; tmdbId: num
         seed={String(detail.tmdbId)}
         title={detail.title}
         context={`${kindLabel} · ${t('discover.notInLibrary')}`}
-        meta={
-          <>
-            {detail.year ? <Text style={s.metaText}>{detail.year}</Text> : null}
-            {span ? <Text style={s.metaText}>{span}</Text> : null}
-            {detail.genres[0] ? <Text style={s.metaText}>{detail.genres[0]}</Text> : null}
-            {detail.rating ? <Text style={s.rating}>★ {detail.rating.toFixed(1)}</Text> : null}
-          </>
-        }
+        meta={<DiscoverMeta detail={detail} span={span} />}
       />
 
       <Box style={[s.body, gutters.style]}>
@@ -126,6 +119,17 @@ function DiscoverScreen({ kind, tmdbId }: Readonly<{ kind: TmdbKind; tmdbId: num
         </Box>
       ) : null}
     </Animated.ScrollView>
+  );
+}
+
+function DiscoverMeta({ detail, span }: Readonly<{ detail: DiscoverDetail; span: string }>) {
+  return (
+    <>
+      {detail.year ? <Text style={s.metaText}>{detail.year}</Text> : null}
+      {span ? <Text style={s.metaText}>{span}</Text> : null}
+      {detail.genres[0] ? <Text style={s.metaText}>{detail.genres[0]}</Text> : null}
+      {detail.rating ? <Text style={s.rating}>★ {detail.rating.toFixed(1)}</Text> : null}
+    </>
   );
 }
 

@@ -21,9 +21,11 @@ export function hdrLabel(video: HdrTraits | null | undefined): string | null {
 }
 
 export function pictureFormat(video: Pick<VideoTrack, 'codec' | 'bitDepth'> & HdrTraits): string {
-  const depth = video.bitDepth ? ` ${video.bitDepth}-bit` : '';
+  const parts = [video.codec.toUpperCase()];
+  if (video.bitDepth) parts.push(`${video.bitDepth}-bit`);
   const hdr = hdrLabel(video);
-  return `${video.codec.toUpperCase()}${depth}${hdr ? ` ${hdr}` : ''}`;
+  if (hdr) parts.push(hdr);
+  return parts.join(' ');
 }
 
 /** The player's quality badge: the HDR system, else what the catalogue's badge

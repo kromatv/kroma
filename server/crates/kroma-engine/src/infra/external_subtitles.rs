@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use kroma_media::external_subtitles::{self, ExternalSubtitle, SUBTITLE_FOLDERS};
@@ -67,7 +67,7 @@ impl ExternalSubtitles {
             return remembered;
         }
         let files: Arc<[PathBuf]> = listed(folder).into();
-        let mut held = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let mut held = self.0.lock().unwrap_or_else(PoisonError::into_inner);
         held.retain(|_, listing| listing.read_at.elapsed() < REMEMBERED_FOR);
         held.insert(
             folder.to_path_buf(),
@@ -80,7 +80,7 @@ impl ExternalSubtitles {
     }
 
     fn remembered(&self, folder: &Path) -> Option<Arc<[PathBuf]>> {
-        let held = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let held = self.0.lock().unwrap_or_else(PoisonError::into_inner);
         let listing = held.get(folder)?;
         (listing.read_at.elapsed() < REMEMBERED_FOR).then(|| Arc::clone(&listing.files))
     }

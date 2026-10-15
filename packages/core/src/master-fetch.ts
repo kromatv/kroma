@@ -17,15 +17,14 @@ const sleep = (ms: number) => new Promise((wake) => setTimeout(wake, ms));
  */
 export async function fetchMaster(url: string, signal?: AbortSignal): Promise<Response> {
   const init = signal ? { signal } : undefined;
-  let answer = await fetch(url, init);
-  let wait = FIRST_WAIT_MS;
-  for (let asked = 1; answer.status === PLAYLIST_NOT_WRITTEN_YET && asked < ATTEMPTS; asked += 1) {
+  const ask = async (asked: number, wait: number): Promise<Response> => {
+    const answer = await fetch(url, init);
+    if (answer.status !== PLAYLIST_NOT_WRITTEN_YET || asked >= ATTEMPTS) return answer;
     await sleep(wait);
-    if (signal?.aborted) break;
-    wait *= 2;
-    answer = await fetch(url, init);
-  }
-  return answer;
+    if (signal?.aborted) return answer;
+    return ask(asked + 1, wait * 2);
+  };
+  return ask(1, FIRST_WAIT_MS);
 }
 
 /** The real start of an anchored master: the server seeks to the keyframe

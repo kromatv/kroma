@@ -96,6 +96,29 @@ function arrowSeekShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boo
   return true;
 }
 
+function belongsElsewhere(e: KeyboardEvent): boolean {
+  if (e.metaKey || e.ctrlKey || e.altKey) return true;
+  return e.target instanceof Element && holdsCaret(e.target);
+}
+
+function lockedKey(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): void {
+  const key = resolveRemoteKey(e);
+  if (key !== 'Back' && key !== 'Enter') return;
+  takeKey(e);
+  routeRemoteKey(p, key);
+}
+
+function postPlayKey(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolean {
+  if (!p.postPlay?.active) return false;
+  const tab = e.shiftKey ? 'Left' : 'Right';
+  const key = e.key === 'Tab' ? tab : resolveRemoteKey(e);
+  if (key) {
+    takeKey(e);
+    routeRemoteKey(p, key);
+  }
+  return true;
+}
+
 /** The single window keydown router. One stable listener always sees the latest
  * render, so re-renders never re-subscribe. It listens in the capture phase and
  * stops every press it routes, so the spatial navigator and the screen behind
@@ -103,29 +126,16 @@ function arrowSeekShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boo
  * keys, and a chord with Meta, Control or Alt stays the browser's. */
 export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.target instanceof Element && holdsCaret(e.target)) return;
-    const { locked } = params;
-    if (locked) {
-      const key = resolveRemoteKey(e);
-      if (key === 'Back' || key === 'Enter') {
-        takeKey(e);
-        routeRemoteKey(params, key);
-      }
+    if (belongsElsewhere(e)) return;
+    if (params.locked) {
+      lockedKey(e, params);
       return;
     }
 
     // The end-of-film screen is a screen of its own: nothing is playing, so the
     // media shortcuts below have nothing to act on, and its two buttons are a
     // row Tab walks the way the remote does.
-    if (params.postPlay?.active) {
-      const tab = e.shiftKey ? 'Left' : 'Right';
-      const key = e.key === 'Tab' ? tab : resolveRemoteKey(e);
-      if (!key) return;
-      takeKey(e);
-      routeRemoteKey(params, key);
-      return;
-    }
+    if (postPlayKey(e, params)) return;
 
     // Tab walks the chrome, and never the browser's own tab order: the chrome
     // is the only focus this screen has, so a second one behind it would take

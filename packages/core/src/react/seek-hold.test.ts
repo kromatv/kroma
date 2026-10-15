@@ -97,30 +97,35 @@ describe('what the chrome draws after a seek is committed', () => {
     expect(result.current.cur).toBe(600);
   });
 
-  it('stops showing the wait once a re-anchored stream opens short of the target', () => {
-    const { result, rerender } = renderHook(
-      ({ cur, waiting }) => useHeldSeek(transport({ cur, waiting })),
-      { initialProps: { cur: 60, waiting: false } },
-    );
+  it.each([
+    {
+      when: 'stops showing the wait once a re-anchored stream opens short of the target',
+      tick: 477,
+      cur: 477,
+      waiting: false,
+    },
+    {
+      when: 'keeps the target while the old stream plays on under it',
+      tick: 60.25,
+      cur: 480,
+      waiting: true,
+    },
+    {
+      when: 'keeps the target while the element between two streams reads nothing',
+      tick: 0,
+      cur: 480,
+      waiting: true,
+    },
+  ])('$when', ({ tick, cur, waiting }) => {
+    const { result, rerender } = renderHook((props) => useHeldSeek(transport(props)), {
+      initialProps: { cur: 60, waiting: false },
+    });
     act(() => result.current.seekTo(480));
 
-    rerender({ cur: 477, waiting: false });
+    rerender({ cur: tick, waiting: false });
 
-    expect(result.current.cur).toBe(477);
-    expect(result.current.waiting).toBe(false);
-  });
-
-  it('keeps the target while the old stream plays on under it', () => {
-    const { result, rerender } = renderHook(
-      ({ cur, waiting }) => useHeldSeek(transport({ cur, waiting })),
-      { initialProps: { cur: 60, waiting: false } },
-    );
-    act(() => result.current.seekTo(480));
-
-    rerender({ cur: 60.25, waiting: false });
-
-    expect(result.current.cur).toBe(480);
-    expect(result.current.waiting).toBe(true);
+    expect(result.current.cur).toBe(cur);
+    expect(result.current.waiting).toBe(waiting);
   });
 
   it('lets go the moment a shell that names its streams opens a new one', () => {
@@ -146,18 +151,5 @@ describe('what the chrome draws after a seek is committed', () => {
     rerender({ cur: 470, anchor: 0 });
 
     expect(result.current.cur).toBe(480);
-  });
-
-  it('keeps the target while the element between two streams reads nothing', () => {
-    const { result, rerender } = renderHook(
-      ({ cur, waiting }) => useHeldSeek(transport({ cur, waiting })),
-      { initialProps: { cur: 60, waiting: false } },
-    );
-    act(() => result.current.seekTo(480));
-
-    rerender({ cur: 0, waiting: false });
-
-    expect(result.current.cur).toBe(480);
-    expect(result.current.waiting).toBe(true);
   });
 });

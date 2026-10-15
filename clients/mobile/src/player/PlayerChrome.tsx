@@ -98,6 +98,15 @@ function usePhoneStats(engine: Engine, item: MediaItem): () => PlayerStats {
   };
 }
 
+function markersAt(item: MediaItem, sec: number) {
+  const ms = sec * 1000;
+  const markers = item.markers ?? [];
+  return {
+    intro: markers.find((m) => m.kind === 'intro' && ms >= m.startMs && ms < m.endMs),
+    inCredits: markers.some((m) => m.kind === 'credits' && ms >= m.startMs),
+  };
+}
+
 export function PlayerChrome({
   engine,
   item,
@@ -189,12 +198,7 @@ export function PlayerChrome({
     return Gesture.Race(pinch, Gesture.Exclusive(doubleTap, tap));
   }, [screenWidth]);
 
-  const intro = (item.markers ?? []).find(
-    (m) => m.kind === 'intro' && engine.cur * 1000 >= m.startMs && engine.cur * 1000 < m.endMs,
-  );
-  const inCredits = (item.markers ?? []).some(
-    (m) => m.kind === 'credits' && engine.cur * 1000 >= m.startMs,
-  );
+  const { intro, inCredits } = markersAt(item, engine.cur);
 
   return (
     <Box fill>

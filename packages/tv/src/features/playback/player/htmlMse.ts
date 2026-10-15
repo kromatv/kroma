@@ -62,14 +62,18 @@ function attachShaka(opts: Readonly<MseMasterOptions>): void {
       attachHls(opts);
       return;
     }
-    const player = new shaka.Player();
-    opts.onShaka(player);
-    player.configure(shakaConfig(opts.plan));
-    player
-      .attach(opts.video)
-      .then(() => player.load(opts.url, opts.fromSec))
-      .catch(() => undefined);
+    startShaka(shaka, opts);
   });
+}
+
+function startShaka(shaka: ShakaStatic, opts: Readonly<MseMasterOptions>): void {
+  const player = new shaka.Player();
+  opts.onShaka(player);
+  player.configure(shakaConfig(opts.plan));
+  player
+    .attach(opts.video)
+    .then(() => player.load(opts.url, opts.fromSec))
+    .catch(() => undefined);
 }
 
 function attachHls(opts: Readonly<MseMasterOptions>): void {
