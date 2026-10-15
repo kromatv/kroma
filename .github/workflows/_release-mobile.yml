@@ -325,6 +325,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $ver" "$plist"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build" "$plist"
           echo "re-stamped $plist -> $ver ($build)"
+          echo "export NODE_BINARY=$(command -v node)" > ios/.xcode.env.local
 
       # Mint the profile HERE rather than read a stored one.
       #
