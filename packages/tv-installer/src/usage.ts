@@ -21,12 +21,14 @@ const END = '<!-- usage:end -->';
 /** The commands and options of a CLI, as the markdown table its README carries. */
 export async function renderUsage(root: UsageCommand, invocation: string): Promise<string> {
   const meta = await resolve(root.meta);
-  const rows = [row(invocation, meta?.description)];
-  for (const [name, sub] of Object.entries((await resolve(root.subCommands)) ?? {})) {
-    const command = await resolve(sub);
-    const subMeta = await resolve(command.meta);
-    rows.push(row(`${invocation} ${name}${await positionals(command)}`, subMeta?.description));
-  }
+  const subs = await Promise.all(
+    Object.entries((await resolve(root.subCommands)) ?? {}).map(async ([name, sub]) => {
+      const command = await resolve(sub);
+      const subMeta = await resolve(command.meta);
+      return row(`${invocation} ${name}${await positionals(command)}`, subMeta?.description);
+    }),
+  );
+  const rows = [row(invocation, meta?.description), ...subs];
 
   const options = optionRows((await resolve(root.args)) ?? {});
   return [
