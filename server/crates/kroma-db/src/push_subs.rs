@@ -10,7 +10,7 @@
 
 use rusqlite::OptionalExtension;
 
-use super::*;
+use super::{params, Connection, Pool, Result, Row};
 use kroma_domain::PushTransport;
 
 /// Consecutive failures after which an endpoint is dropped. Transient outages

@@ -1,7 +1,7 @@
 //! Persistence for per-user LLM taste: the evolving natural-language profile and
 //! the cached personalized home sections (see the `sections.personalize` job).
 
-use super::*;
+use super::{params, Pool, Result};
 
 /// `(profile, sections_json)`; `None` if never generated.
 pub fn get_user_taste(pool: &Pool, user_id: &str) -> Result<Option<(Option<String>, String)>> {

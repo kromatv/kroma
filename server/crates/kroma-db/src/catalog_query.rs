@@ -7,7 +7,7 @@
 //! shows** at once via a small `cat` CTE so a tool query spans the whole
 //! library without the caller stitching two tables together.
 
-use super::*;
+use super::{params, parse_metadata, Pool, Result};
 
 use rusqlite::OptionalExtension;
 

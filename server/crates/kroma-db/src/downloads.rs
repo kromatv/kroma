@@ -15,7 +15,7 @@
 
 use std::collections::HashMap;
 
-use super::*;
+use super::{params, Connection, Pool, Result};
 
 /// Pin a known TMDB id to the absolute path an import wrote a file to, so
 /// enrichment adopts it instead of guessing from the filename. `abs_path` must be

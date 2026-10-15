@@ -8,7 +8,7 @@
 
 use rusqlite::OptionalExtension;
 
-use super::*;
+use super::{params, Connection, Pool, Result, Row};
 use kroma_domain::{EpisodeRef, MediaRequest, RequestKind, RequestStatus};
 
 mod availability;

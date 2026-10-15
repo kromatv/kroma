@@ -3,7 +3,7 @@
 //! suggestion. One row per analyzed track; written by the `pipeline.loudness`
 //! stage. Raw measured values are kept so remediation can reuse them.
 
-use super::*;
+use super::{params, Connection, Pool, Result, Row};
 use kroma_domain::{AudioAnalysis, AudioVerdict};
 
 fn verdict_str(v: AudioVerdict) -> &'static str {

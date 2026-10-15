@@ -3,10 +3,10 @@
 use anyhow::Result;
 use rusqlite::params;
 
-use kroma_domain::MediaItem;
+use kroma_domain::{MediaItem, Metadata};
 
 use super::shows::{representative_video, row_to_show_bare};
-use super::{Metadata, OptionalExtension, Season, ShowDetail};
+use super::{OptionalExtension, Season, ShowDetail};
 use crate::{
     attach_files_batch, parse_metadata, row_to_item, season_casts, season_gaps, Pool, ITEM_COLS,
 };

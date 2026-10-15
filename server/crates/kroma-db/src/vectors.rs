@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 use rusqlite::OptionalExtension;
 
-use super::*;
+use super::{now_or_blank, params, Pool, Result};
 
 mod recommendations;
 mod search;
