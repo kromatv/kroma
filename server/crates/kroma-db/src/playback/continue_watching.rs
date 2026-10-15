@@ -11,10 +11,15 @@ use kroma_domain::{ContinueItem, Kind, MediaItem};
 
 const LIMIT: usize = 30;
 
-/// "Continue watching": resumable items (started, not yet ~finished), plus the
-/// episode a show is left on when none of it is mid-play (at position 0). Newest
-/// first, each carried as a full [`MediaItem`] so clients render normal cards.
-pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>> {
+/// "Continue watching": resumable items (started, not finished by the watched
+/// rule at `played_percent`), plus the episode a show is left on when none of it
+/// is mid-play (at position 0). Newest first, each carried as a full
+/// [`MediaItem`] so clients render normal cards.
+pub fn continue_watching(
+    pool: &Pool,
+    user_id: &str,
+    played_percent: i64,
+) -> Result<Vec<ContinueItem>> {
     let conn = pool.get()?;
     // The JOIN drops any orphan progress row whose item no longer exists.
     let mut stmt = conn.prepare(&format!(
@@ -22,7 +27,7 @@ pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>
          FROM progress p JOIN items i ON i.id = p.item_id \
          WHERE p.user_id = ?1 AND {} \
          ORDER BY p.updated_at DESC LIMIT ?2",
-        super::resumable_sql()
+        super::resumable_sql(played_percent)
     ))?;
     let mut rows: Vec<(String, i64, Option<i64>, String)> = stmt
         .query_map(params![user_id, LIMIT as i64], |r| {
@@ -35,7 +40,7 @@ pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>
     // off the list entirely: the episode it is left on joins at position 0, ordered
     // among the rest by when that show was last watched.
     rows.extend(
-        on_deck(&conn, user_id, LIMIT)?
+        on_deck(&conn, user_id, LIMIT, played_percent)?
             .into_iter()
             .map(|(id, at)| (id, 0, None, at)),
     );
@@ -103,20 +108,24 @@ pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>
 
 /// The ids "Continue watching" occupies, plus the parent show of any episode
 /// among them: what the home generator must not offer again in a row below it.
-pub fn continue_watching_ids(pool: &Pool, user_id: &str) -> Result<Vec<String>> {
+pub fn continue_watching_ids(
+    pool: &Pool,
+    user_id: &str,
+    played_percent: i64,
+) -> Result<Vec<String>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(&format!(
         "SELECT p.item_id FROM progress p JOIN items i ON i.id = p.item_id \
          WHERE p.user_id = ?1 AND {} \
          ORDER BY p.updated_at DESC LIMIT ?2",
-        super::resumable_sql()
+        super::resumable_sql(played_percent)
     ))?;
     let mut ids: Vec<String> = stmt
         .query_map(params![user_id, LIMIT as i64], |r| r.get::<_, String>(0))?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     drop(stmt);
     ids.extend(
-        on_deck(&conn, user_id, LIMIT)?
+        on_deck(&conn, user_id, LIMIT, played_percent)?
             .into_iter()
             .map(|(id, _)| id),
     );
@@ -130,6 +139,7 @@ pub fn continue_watching_ids(pool: &Pool, user_id: &str) -> Result<Vec<String>> 
 mod tests {
     use super::*;
     use crate::playback::test_support::*;
+    use kroma_domain::MarkerKind;
 
     #[test]
     fn continue_watching_filters_and_orders() {
@@ -147,8 +157,7 @@ mod tests {
                 ("m1", 20_000, Some(100_000), "2021-01-02T00:00:00Z"),
                 // Below the 15s floor -> excluded.
                 ("low", 5_000, Some(100_000), "2021-01-03T00:00:00Z"),
-                // Past 95% -> counts as finished -> excluded.
-                ("done", 96_000, Some(100_000), "2021-01-04T00:00:00Z"),
+                ("done", 91_000, Some(100_000), "2021-01-04T00:00:00Z"),
             ];
             for (id, pos, dur, at) in rows {
                 conn.execute(
@@ -160,7 +169,7 @@ mod tests {
             }
         }
 
-        let cw = continue_watching(&pool, &uid).unwrap();
+        let cw = continue_watching(&pool, &uid, 90).unwrap();
         let ids: Vec<&str> = cw.iter().map(|c| c.item.id.as_str()).collect();
         // Only the two resumable rows, newest-first (m1 then nodur).
         assert_eq!(ids, vec!["m1", "nodur"]);
@@ -190,10 +199,41 @@ mod tests {
             .unwrap();
         }
 
-        let mut ids = continue_watching_ids(&pool, &uid).unwrap();
+        let mut ids = continue_watching_ids(&pool, &uid, 90).unwrap();
         ids.sort();
 
         assert_eq!(ids, vec!["e1".to_string(), "s1".to_string()]);
+    }
+
+    #[test]
+    fn a_position_inside_the_credits_leaves_the_rail() {
+        let (pool, uid) = pool_with_user();
+        seed_movie(&pool, "marked");
+        crate::set_marker(
+            &pool,
+            "marked",
+            MarkerKind::Credits,
+            60_000,
+            100_000,
+            "video",
+        )
+        .unwrap();
+        {
+            let conn = pool.get().unwrap();
+            for (id, pos) in [("m1", 60_000), ("marked", 60_000)] {
+                conn.execute(
+                    "INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) \
+                     VALUES (?1,?2,?3,100000,'2021-01-01T00:00:00Z')",
+                    params![uid, id, pos],
+                )
+                .unwrap();
+            }
+        }
+
+        let cw = continue_watching(&pool, &uid, 90).unwrap();
+
+        let ids: Vec<&str> = cw.iter().map(|c| c.item.id.as_str()).collect();
+        assert_eq!(ids, vec!["m1"]);
     }
 
     #[test]
@@ -221,7 +261,7 @@ mod tests {
             .unwrap();
         }
 
-        let cw = continue_watching(&pool, &uid).unwrap();
+        let cw = continue_watching(&pool, &uid, 90).unwrap();
         assert_eq!(cw.len(), 1);
         let meta = cw[0]
             .item
@@ -248,7 +288,7 @@ mod tests {
             .unwrap();
         }
 
-        let cw = continue_watching(&pool, &uid).unwrap();
+        let cw = continue_watching(&pool, &uid, 90).unwrap();
 
         let ids: Vec<&str> = cw.iter().map(|c| c.item.id.as_str()).collect();
         assert_eq!(ids, vec!["e2"]);
@@ -280,7 +320,7 @@ mod tests {
             .unwrap();
         }
 
-        let cw = continue_watching(&pool, &uid).unwrap();
+        let cw = continue_watching(&pool, &uid, 90).unwrap();
 
         let ids: Vec<&str> = cw.iter().map(|c| c.item.id.as_str()).collect();
         assert_eq!(ids, vec!["b2"]);

@@ -224,17 +224,28 @@ async fn another_accounts_watch_state_does_not_leak_a_hidden_title() {
     let owner = Some(h.app.token.as_str());
     let viewer = Some(h.viewer.as_str());
 
-    for (method, uri, body) in [
+    for (method, uri, body, answer) in [
         (
             "PUT",
             format!("/api/progress/{}", h.episode),
             Some(json!({ "positionMs": 5000, "durationMs": 60000 })),
+            StatusCode::OK,
         ),
-        ("PUT", format!("/api/watched/{}", h.movie), None),
-        ("PUT", format!("/api/my-list/{}", h.episode), None),
+        (
+            "PUT",
+            format!("/api/watched/{}", h.movie),
+            None,
+            StatusCode::NO_CONTENT,
+        ),
+        (
+            "PUT",
+            format!("/api/my-list/{}", h.episode),
+            None,
+            StatusCode::NO_CONTENT,
+        ),
     ] {
         let (status, _) = send(&h.app.app, method, &uri, owner, body).await;
-        assert_eq!(status, StatusCode::NO_CONTENT, "{uri}");
+        assert_eq!(status, answer, "{uri}");
     }
 
     let (_status, owner_progress) = get(&h.app.app, "/api/progress", owner).await;

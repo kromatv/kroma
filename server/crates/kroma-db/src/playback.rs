@@ -7,6 +7,7 @@
 
 use super::*;
 use kroma_domain::ProgressEntry;
+use rusqlite::OptionalExtension;
 
 mod continue_watching;
 mod on_deck;
@@ -23,13 +24,54 @@ pub use up_next::*;
 pub use watch_state::*;
 
 pub(crate) const RESUME_FLOOR_MS: i64 = 15_000;
-pub(crate) const FINISHED_PERCENT: i64 = 95;
 
-pub(crate) fn resumable_sql() -> String {
+pub(crate) fn finished_sql(played_percent: i64) -> String {
     format!(
-        "p.position_ms > {RESUME_FLOOR_MS} \
-         AND (p.duration_ms IS NULL OR p.position_ms < p.duration_ms * {FINISHED_PERCENT} / 100)"
+        "((p.duration_ms IS NOT NULL AND p.position_ms * 100 >= p.duration_ms * {played_percent}) \
+          OR EXISTS (SELECT 1 FROM markers m WHERE m.item_id = p.item_id \
+                      AND m.kind = 'credits' AND p.position_ms >= m.start_ms))"
     )
+}
+
+pub(crate) fn resumable_sql(played_percent: i64) -> String {
+    format!(
+        "p.position_ms > {RESUME_FLOOR_MS} AND NOT {}",
+        finished_sql(played_percent)
+    )
+}
+
+/// Save a position and apply the watched rule to it: past the credits marker or
+/// `played_percent` of the runtime the item is flagged watched, position kept.
+/// The runtime is the one the player reports, else the catalogue's. Returns
+/// whether the item counts as watched now.
+pub fn save_progress(
+    pool: &Pool,
+    user_id: &str,
+    item_id: &str,
+    position_ms: i64,
+    duration_ms: Option<i64>,
+    played_percent: i64,
+) -> Result<bool> {
+    upsert_progress(pool, user_id, item_id, position_ms, duration_ms)?;
+    let conn = pool.get()?;
+    let runtime = match duration_ms.filter(|d| *d > 0) {
+        Some(d) => Some(d),
+        None => conn
+            .query_row(
+                "SELECT duration_ms FROM items WHERE id = ?1",
+                params![item_id],
+                |r| r.get::<_, Option<i64>>(0),
+            )
+            .optional()?
+            .flatten(),
+    };
+    let credits = crate::markers::credits_start_ms(&conn, item_id)?;
+    drop(conn);
+    let finished = kroma_domain::finished(position_ms, runtime, credits, played_percent);
+    if finished {
+        mark_finished(pool, user_id, item_id)?;
+    }
+    Ok(finished)
 }
 
 /// Upsert one item's playback position for a user.
@@ -101,6 +143,7 @@ fn row_to_progress(r: &Row) -> rusqlite::Result<ProgressEntry> {
 mod tests {
     use super::*;
     use crate::playback::test_support::*;
+    use kroma_domain::MarkerKind;
 
     #[test]
     fn progress_upsert_get_list_delete() {
@@ -164,6 +207,43 @@ mod tests {
         assert_eq!(ids, vec!["m3".to_string(), "m1".to_string()]);
         delete_progress(&pool, &uid, "does-not-exist").unwrap();
         assert_eq!(list_progress(&pool, &uid).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn saving_past_the_threshold_flags_the_item_watched_and_keeps_the_position() {
+        let (pool, uid) = pool_with_user();
+
+        assert!(!save_progress(&pool, &uid, "m1", 80_000, Some(100_000), 90).unwrap());
+        assert!(list_watched(&pool, &uid).unwrap().is_empty());
+        assert!(save_progress(&pool, &uid, "m1", 91_000, Some(100_000), 90).unwrap());
+
+        assert_eq!(list_watched(&pool, &uid).unwrap(), vec!["m1".to_string()]);
+        let kept = get_progress(&pool, &uid, "m1").unwrap().unwrap();
+        assert_eq!(kept.position_ms, 91_000);
+    }
+
+    #[test]
+    fn saving_into_the_credits_flags_the_item_watched_below_the_threshold() {
+        let (pool, uid) = pool_with_user();
+        crate::set_marker(&pool, "m1", MarkerKind::Credits, 70_000, 100_000, "video").unwrap();
+
+        assert!(!save_progress(&pool, &uid, "m1", 69_000, Some(100_000), 90).unwrap());
+        assert!(save_progress(&pool, &uid, "m1", 70_000, Some(100_000), 90).unwrap());
+
+        assert_eq!(list_watched(&pool, &uid).unwrap(), vec!["m1".to_string()]);
+    }
+
+    #[test]
+    fn a_player_that_reports_no_duration_borrows_the_catalogue_runtime() {
+        let (pool, uid) = pool_with_user();
+        pool.get()
+            .unwrap()
+            .execute("UPDATE items SET duration_ms = 100000 WHERE id = 'm1'", [])
+            .unwrap();
+        seed_movie(&pool, "m2");
+
+        assert!(save_progress(&pool, &uid, "m1", 95_000, None, 90).unwrap());
+        assert!(!save_progress(&pool, &uid, "m2", 95_000, None, 90).unwrap());
     }
 
     // Guards the `cast` reserved-keyword quoting in season_meta SQL.

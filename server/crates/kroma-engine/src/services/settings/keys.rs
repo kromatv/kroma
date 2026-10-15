@@ -102,6 +102,10 @@ fn declared() -> Declared {
     m.public("themeSongs", json!(false));
     // off | chapters (free, from embedded chapters) | fingerprint (heavy audio job).
     m.public("introDetection", json!("chapters"));
+    m.public(
+        "playedThreshold",
+        json!(kroma_domain::DEFAULT_PLAYED_PERCENT.to_string()),
+    );
     m.public("theme", json!("Sombre (Kroma)"));
     m.public("dateFormat", json!("JJ/MM/AAAA"));
     m.public("moduleAutoUpdate", json!(true));

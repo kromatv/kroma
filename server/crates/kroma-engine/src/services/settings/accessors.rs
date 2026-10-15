@@ -50,6 +50,14 @@ pub fn server_name(settings: &Settings) -> String {
     }
 }
 
+/// The percent of a runtime past which a title counts as watched when it carries
+/// no credits marker (`playedThreshold`), held between 50 and 100.
+pub fn played_percent(settings: &Settings) -> i64 {
+    settings
+        .get_i64("playedThreshold", kroma_domain::DEFAULT_PLAYED_PERCENT)
+        .clamp(50, 100)
+}
+
 /// Max concurrent HLS sessions (functional cap), 1..=32. Seeds the semaphore in
 /// [`kroma_media::hls::HlsEngine`].
 pub fn max_transcodes(settings: &Settings) -> usize {
@@ -425,6 +433,25 @@ mod tests {
             BTreeMap::from([("serverName".to_string(), json!("   "))]),
         );
         assert_eq!(server_name(&s), "KROMA"); // blank -> fallback
+    }
+
+    #[test]
+    fn the_played_threshold_defaults_to_ninety_and_stays_between_half_and_all() {
+        let pool = test_pool();
+        let s = settings(&pool);
+        assert_eq!(played_percent(&s), 90);
+
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("playedThreshold".to_string(), json!("20"))]),
+        );
+        assert_eq!(played_percent(&s), 50);
+
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("playedThreshold".to_string(), json!(85))]),
+        );
+        assert_eq!(played_percent(&s), 85);
     }
 
     #[test]

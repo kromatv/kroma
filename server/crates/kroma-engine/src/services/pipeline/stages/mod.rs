@@ -4,6 +4,7 @@
 
 mod common;
 
+pub mod credits;
 pub mod embed;
 pub mod loudness;
 pub mod markers;

@@ -52,6 +52,11 @@ pub const STAGE_KEYS: &[(&str, &str, &str)] = &[
         stages::markers::STAGE.subject_kind,
     ),
     (
+        stages::credits::STAGE.short,
+        stages::credits::STAGE.key,
+        stages::credits::STAGE.subject_kind,
+    ),
+    (
         stages::embed::STAGE.short,
         stages::embed::STAGE.key,
         stages::embed::STAGE.subject_kind,

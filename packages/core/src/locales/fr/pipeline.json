@@ -64,6 +64,7 @@
   "pipeline.subject.item": "éléments",
   "pipeline.subject.season": "saisons",
   "pipeline.subject.show": "séries",
+  "pipeline.t.credits": "Générique",
   "pipeline.t.embed": "Vecteur",
   "pipeline.t.markers": "Marqueurs",
   "pipeline.t.metadata": "TMDB",

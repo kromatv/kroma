@@ -233,6 +233,15 @@ pub fn groups(
                         g("introDetection"),
                         true,
                     ),
+                    row(
+                        "playedThreshold",
+                        t("admin.playedThreshold"),
+                        Some(t("admin.playedThresholdHint")),
+                        "select",
+                        &["75", "80", "85", "90", "95"],
+                        g("playedThreshold"),
+                        true,
+                    ),
                 ],
             ),
             group(

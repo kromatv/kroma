@@ -32,6 +32,28 @@ pub fn markers_from_chapters(
     out
 }
 
+const LAST_CHAPTER_REGION_PERCENT: u64 = 85;
+const MIN_CREDITS_CHAPTER_MS: u64 = 120_000;
+const MAX_CREDITS_CHAPTER_MS: u64 = 1_200_000;
+
+/// The credits of a film whose chapters carry no telling title: studios cut a
+/// chapter at the credits, so a last chapter of two to twenty minutes that
+/// opens in the final 15% of the runtime is taken as them. Wants at least three
+/// chapters, so a file merely split in two is not read as a layout.
+pub fn credits_from_last_chapter(chapters: &[Chapter], duration_ms: u64) -> Option<(u64, u64)> {
+    if chapters.len() < 3 || duration_ms == 0 {
+        return None;
+    }
+    let last = chapters.iter().max_by_key(|c| c.start_ms)?;
+    if last.start_ms < duration_ms * LAST_CHAPTER_REGION_PERCENT / 100 {
+        return None;
+    }
+    let len = duration_ms.saturating_sub(last.start_ms);
+    (MIN_CREDITS_CHAPTER_MS..=MAX_CREDITS_CHAPTER_MS)
+        .contains(&len)
+        .then_some((last.start_ms, duration_ms))
+}
+
 // Intro is checked first so "opening credits" counts as the opening, not the
 // end credits.
 fn classify(title: &str) -> Option<MarkerKind> {
@@ -121,6 +143,39 @@ mod tests {
     fn no_duration_trusts_title() {
         let m = markers_from_chapters(&[chap(0, 60, "Recap")], None);
         assert_eq!(m, vec![(MarkerKind::Intro, 0, 60_000)]);
+    }
+
+    #[test]
+    fn the_last_chapter_of_a_film_is_its_credits_when_it_opens_late_and_runs_minutes() {
+        let film = 7_200_000;
+        let chapters: Vec<Chapter> = (0..12)
+            .map(|i| chap(i * 600, (i + 1) * 600, &format!("Chapter {}", i + 1)))
+            .collect();
+
+        assert_eq!(
+            credits_from_last_chapter(&chapters, film),
+            Some((6_600_000, film))
+        );
+    }
+
+    #[test]
+    fn a_last_chapter_that_opens_too_early_or_is_too_short_is_not_the_credits() {
+        let film = 7_200_000;
+        let early = vec![
+            chap(0, 3000, "1"),
+            chap(3000, 5000, "2"),
+            chap(5000, 7200, "3"),
+        ];
+        let short = vec![
+            chap(0, 3000, "1"),
+            chap(3000, 7140, "2"),
+            chap(7140, 7200, "3"),
+        ];
+        let split = vec![chap(0, 6600, "1"), chap(6600, 7200, "2")];
+
+        assert_eq!(credits_from_last_chapter(&early, film), None);
+        assert_eq!(credits_from_last_chapter(&short, film), None);
+        assert_eq!(credits_from_last_chapter(&split, film), None);
     }
 
     #[test]

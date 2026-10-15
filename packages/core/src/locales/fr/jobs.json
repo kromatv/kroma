@@ -32,6 +32,8 @@
   "jobs.noRuns": "Aucune exécution pour l'instant.",
   "jobs.notifications.digest.desc": "Annonce aux comptes les films et épisodes ajoutés depuis le dernier résumé. Ne notifie personne au premier lancement : la bibliothèque existante devient la référence.",
   "jobs.notifications.digest.name": "Résumé des nouveautés",
+  "jobs.pipeline.credits.desc": "Repère le début du générique de chaque film, via sa découpe en chapitres et, en mode fingerprint, une analyse de l'image sur ses dernières minutes (image sombre portant un texte dense). Atteindre le générique compte alors comme vu. Incrémental : ignore les films dont le fichier est inchangé.",
+  "jobs.pipeline.credits.name": "Détection du générique des films",
   "jobs.pipeline.embed.desc": "Calcule le vecteur de contenu utilisé par « Pour vous » et les titres similaires à partir des métadonnées. Ré-encode quand le modèle change.",
   "jobs.pipeline.embed.name": "Vecteurs de contenu",
   "jobs.pipeline.loudness.desc": "Mesure la sonie EBU R128 de la piste audio par défaut de chaque fichier (et du canal des dialogues en 5.1) pour repérer les mix problématiques : dialogues faibles, dynamique excessive. Incrémental, un fichier à la fois, en pause pendant la lecture.",

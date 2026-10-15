@@ -6,12 +6,14 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
+use serde_json::json;
 
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::api::visibility;
 use crate::db;
 use crate::i18n::ReqLocale;
+use crate::services::settings;
 use crate::state::SharedState;
 
 #[derive(Debug, Deserialize)]
@@ -22,7 +24,10 @@ pub struct ProgressBody {
     pub duration_ms: Option<i64>,
 }
 
-/// `PUT /api/progress/:id` (Bearer) `{ positionMs, durationMs }` → 204.
+/// `PUT /api/progress/:id` (Bearer) `{ positionMs, durationMs }` → 200
+/// `{ watched }`. The server applies the watched rule here, once for every
+/// client: past the credits marker or the played threshold the item is flagged
+/// watched, and the position is kept.
 pub async fn save_progress(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -33,12 +38,20 @@ pub async fn save_progress(
         return resp;
     }
     let pos = body.position_ms.max(0);
+    let played_percent = settings::played_percent(&state.settings);
     match query(&state.db, move |pool| {
-        db::upsert_progress(&pool, &user.id, &item_id, pos, body.duration_ms)
+        db::save_progress(
+            &pool,
+            &user.id,
+            &item_id,
+            pos,
+            body.duration_ms,
+            played_percent,
+        )
     })
     .await
     {
-        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Ok(watched) => Json(json!({ "watched": watched })).into_response(),
         Err(resp) => resp,
     }
 }
@@ -106,8 +119,9 @@ pub async fn continue_watching(
     ReqLocale(locale): ReqLocale,
 ) -> Response {
     let uid = user.id.clone();
+    let played_percent = settings::played_percent(&state.settings);
     match query(&state.db, move |pool| {
-        let mut rows = db::continue_watching(&pool, &uid)?;
+        let mut rows = db::continue_watching(&pool, &uid, played_percent)?;
         db::localize::overlay_each(&pool, rows.iter_mut().map(|r| &mut r.item), locale)?;
         Ok(rows)
     })

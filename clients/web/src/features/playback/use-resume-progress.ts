@@ -5,8 +5,8 @@ import { useWatched } from '#web/shared/lib/watched';
 
 /**
  * Per-user resume + progress persistence for the player. Answers the second the
- * film opened on, and writes progress every 10 s / on pause / on close, clearing
- * it once ~finished.
+ * film opened on, and writes progress every 10 s / on pause / on close. The server
+ * decides when a position counts as watched and says so in its answer.
  */
 export function useResumeProgress(
   videoRef: React.RefObject<HTMLVideoElement | null>,
@@ -16,7 +16,7 @@ export function useResumeProgress(
   position?: { getPosition: () => number },
 ): number | null {
   const { client, user } = useAuth();
-  const { setWatched } = useWatched();
+  const { setWatched, noteWatched } = useWatched();
   const [resumeAt, setResumeAt] = useState<number | null>(null);
 
   useEffect(() => {
@@ -44,14 +44,13 @@ export function useResumeProgress(
     const pos = position ? position.getPosition() : v.currentTime;
     const durSec = item.durationMs ? item.durationMs / 1000 : v.duration;
     if (!Number.isFinite(durSec) || durSec <= 0 || pos < 5) return;
-    // ~Finished → mark watched (clears server-side resume too). Reaching the
-    // credits marker counts as finished too: a binge auto-advance unmounts the
-    // player there (below 97%), which would otherwise strand it as in-progress.
-    const creditsMs = (item.markers ?? []).find((m) => m.kind === 'credits')?.startMs;
-    const finished = pos > durSec * 0.97 || (creditsMs != null && pos >= creditsMs / 1000);
-    if (finished) setWatched(item.id, true);
-    else void client.playback.save(item.id, pos * 1000, durSec * 1000).catch(() => undefined);
-  }, [videoRef, client, user, item.id, item.durationMs, item.markers, position, setWatched]);
+    client.playback
+      .save(item.id, pos * 1000, durSec * 1000)
+      .then((receipt) => {
+        if (receipt.watched) noteWatched(item.id);
+      })
+      .catch(() => undefined);
+  }, [videoRef, client, user, item.id, item.durationMs, position, noteWatched]);
 
   useEffect(() => {
     if (!user) return;

@@ -25,3 +25,11 @@ export const PlaybackPing = z.object({
   subtitle: z.string().optional(),
 });
 export type PlaybackPing = z.infer<typeof PlaybackPing>;
+
+/** What the server answers a progress save with: whether that position finished
+ * the title. The rule lives server-side (the credits marker, else the played
+ * threshold), so every client learns the verdict the same way. */
+export const ProgressReceipt = z.object({
+  watched: z.boolean(),
+});
+export type ProgressReceipt = z.infer<typeof ProgressReceipt>;
