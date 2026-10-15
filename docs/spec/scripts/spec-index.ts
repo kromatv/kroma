@@ -44,20 +44,19 @@ function spaceOf(relPath: string): string {
 // Recursively list every .md chapter under docs/spec/, skipping the two root
 // artefacts and the scripts/ folder. Paths returned are relative to SPEC_DIR.
 async function chapters(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const found = await Promise.all(
-    entries.map((entry) => {
-      const full = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        return entry.name === 'scripts' ? Promise.resolve([]) : chapters(full);
-      }
-      if (!entry.name.endsWith('.md')) return Promise.resolve([]);
+  const here: string[] = [];
+  const below: Array<Promise<string[]>> = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== 'scripts') below.push(chapters(full));
+    } else if (entry.name.endsWith('.md')) {
       const rel = relative(SPEC_DIR, full);
-      const atRoot = rel.split(sep).length === 1;
-      return Promise.resolve(atRoot && ROOT_SKIP.has(entry.name) ? [] : [rel]);
-    }),
-  );
-  return found.flat().sort((a, b) => a.localeCompare(b));
+      if (rel.split(sep).length > 1 || !ROOT_SKIP.has(entry.name)) here.push(rel);
+    }
+  }
+  const nested = await Promise.all(below);
+  return [...here, ...nested.flat()].sort((a, b) => a.localeCompare(b));
 }
 
 const STATUSES = ['SHIPPED', 'AGREED', 'DRAFT', 'DESIGN, NOT IMPLEMENTED'] as const;
@@ -88,14 +87,14 @@ async function collect(): Promise<{ reqs: Requirement[]; errors: string[] }> {
   const prefixOwner = new Map<string, string>(); // prefix -> the space that owns it
   const spacePrefix = new Map<string, string>(); // space -> the one prefix it uses
 
-  const read = await Promise.all(
+  const opened = await Promise.all(
     (await chapters(SPEC_DIR)).map(async (rel) => ({
       rel,
       lines: (await readFile(join(SPEC_DIR, rel), 'utf8')).split('\n'),
     })),
   );
 
-  for (const { rel, lines } of read) {
+  for (const { rel, lines } of opened) {
     const space = spaceOf(rel);
     let inFence = false;
     lines.forEach((raw, i) => {
