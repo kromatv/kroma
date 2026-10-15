@@ -50,7 +50,7 @@ fn codec_and_source_score_lines() {
     let t = Target::Movie { year: None };
     let mut pr = profile();
 
-    pr.prefer_hevc = false;
+    pr.preferred_codec = None;
     let hevc = "Movie.2020.1080p.WEB-DL.x265";
     assert_eq!(
         line(
@@ -98,6 +98,26 @@ fn codec_and_source_score_lines() {
         ),
         Some(25)
     );
+}
+
+#[test]
+fn a_preferred_codec_earns_the_bonus_whichever_codec_it_is() {
+    let h264 = "Movie.2020.1080p.WEB-DL.x264";
+    let pr = Profile {
+        preferred_codec: Some(Codec::H264),
+        ..profile()
+    };
+
+    let scored = score(
+        &p(h264),
+        &cand(2, 10),
+        &Target::Movie { year: None },
+        &pr,
+        h264,
+    )
+    .unwrap();
+
+    assert_eq!(line(&scored, "codec"), Some(400));
 }
 
 #[test]

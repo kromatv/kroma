@@ -37,11 +37,11 @@ impl HostCtx for StubHost {
     fn session_user(&self, token: &str) -> Option<User> {
         self.sessions.lock().unwrap().get(token).cloned()
     }
-    fn require(&self, _user: &User, _perm: Permission) -> Result<(), Response> {
-        Ok(())
+    fn require(&self, user: &User, perm: Permission) -> Result<(), Response> {
+        self.gated(user.can(perm))
     }
-    fn require_any_admin(&self, _user: &User) -> Result<(), Response> {
-        Ok(())
+    fn require_any_admin(&self, user: &User) -> Result<(), Response> {
+        self.gated(user.is_any_admin())
     }
     fn lerr(&self, _user: &User, status: StatusCode, key: &str) -> Response {
         crate::json_error(status, key)

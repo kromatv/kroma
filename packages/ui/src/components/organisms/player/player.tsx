@@ -4,6 +4,7 @@ import type { LayoutChangeEvent, View } from 'react-native';
 import { Dimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
+import { ArrivalBadge } from '#ui/components/molecules/arrival-badge';
 import { styles } from '#ui/core';
 import { PLAYER_ROOT_ID, useIdleCursor } from './hooks/use-idle-cursor';
 import { usePlayerEnding } from './hooks/use-player-ending';
@@ -34,6 +35,7 @@ import { deriveChrome, hasUpNext, initialSettingsView } from './player-chrome-st
 import { playerInputHandlers } from './player-input';
 import {
   Actions,
+  ArrivalSlot,
   Credits as CreditsSlot,
   Media,
   Panel,
@@ -62,10 +64,10 @@ export interface PlayerRootProps {
   onClose: (details: PlayerCloseDetails) => void;
   ref?: React.Ref<View>;
   /** The parts. A `<Player.Media>`, then any of the faces (`Title`, `Subtitle`,
-   *  `Warning`, `Actions`, `Panel`) and the settings (`Transport`, `UpNext`,
-   *  `Credits`, `PostPlay`, `SkipIntro`, `Resume`, `Subtitles`, `Report`). Only
-   *  a DIRECT child takes its slot; anything else is drawn over the chrome, in
-   *  the order it was written. */
+   *  `Warning`, `Actions`, `Panel`) and the settings (`Arrival`, `Transport`,
+   *  `UpNext`, `Credits`, `PostPlay`, `SkipIntro`, `Resume`, `Subtitles`,
+   *  `Report`). Only a DIRECT child takes its slot; anything else is drawn over
+   *  the chrome, in the order it was written. */
   children?: ReactNode;
 }
 
@@ -334,6 +336,11 @@ function Root({
             <TopBar
               title={slots.title}
               subtitle={slots.subtitle}
+              arrival={
+                slots.arrival ? (
+                  <ArrivalBadge arrival={slots.arrival.arrival} scale={metrics.scale} />
+                ) : null
+              }
               warn={slots.warning}
               actions={slots.actions}
               scale={metrics.scale}
@@ -420,6 +427,7 @@ const Player = {
   Title,
   Subtitle,
   Warning,
+  Arrival: ArrivalSlot,
   Transport: TransportSlot,
   UpNext: UpNextSlot,
   Credits: CreditsSlot,

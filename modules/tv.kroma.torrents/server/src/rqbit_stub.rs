@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use anyhow::{bail, Result};
 
+use crate::engine::{IndexWarm, PieceLayout, Selection, TorrentStream};
 use crate::DownloadClient;
 
 #[derive(Debug, Clone, Default)]
@@ -34,6 +35,48 @@ impl RqbitEngine {
     pub fn set_rate_limits(&self, _download_bps: Option<u32>, _upload_bps: Option<u32>) {}
 
     pub fn client(self: &Arc<Self>) -> Box<dyn DownloadClient> {
+        unreachable!("stub RqbitEngine cannot be constructed")
+    }
+
+    pub(crate) async fn open_stream(
+        &self,
+        _client_ref: &str,
+        _file_index: usize,
+    ) -> Result<TorrentStream> {
+        unreachable!("stub RqbitEngine cannot be constructed")
+    }
+
+    pub(crate) fn resolved_files(&self, _client_ref: &str) -> Vec<(String, u64)> {
+        unreachable!("stub RqbitEngine cannot be constructed")
+    }
+
+    pub(crate) fn file_pieces(&self, _client_ref: &str, _file_index: usize) -> Result<PieceLayout> {
+        unreachable!("stub RqbitEngine cannot be constructed")
+    }
+
+    pub(crate) fn file_on_disk(&self, _client_ref: &str, _file_index: usize) -> Result<PathBuf> {
+        unreachable!("stub RqbitEngine cannot be constructed")
+    }
+
+    pub(crate) fn asking_for(
+        &self,
+        _client_ref: &str,
+        _file: usize,
+        _len: u64,
+    ) -> Vec<std::ops::Range<u64>> {
+        unreachable!("stub RqbitEngine cannot be constructed")
+    }
+
+    pub(crate) fn select_only_files(&self, _client_ref: &str, _files: &[usize]) -> Result<bool> {
+        unreachable!("stub RqbitEngine cannot be constructed")
+    }
+
+    pub(crate) fn warm_index(
+        self: &Arc<Self>,
+        _client_ref: &str,
+        _file_index: usize,
+        _selection: Selection,
+    ) -> IndexWarm {
         unreachable!("stub RqbitEngine cannot be constructed")
     }
 }

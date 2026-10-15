@@ -5,12 +5,14 @@ use crate::MatchSource;
 mod query;
 mod read;
 mod rollup;
+mod servable;
 mod sort;
 mod write;
 
 pub use query::*;
 pub use read::*;
 pub use rollup::*;
+pub use servable::*;
 pub use sort::*;
 pub use write::*;
 

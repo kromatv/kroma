@@ -15,6 +15,7 @@ interface Reply {
   status?: number;
   json?: unknown;
   text?: string;
+  headers?: Record<string, string>;
 }
 
 const BASE = 'http://kroma.test';
@@ -49,6 +50,7 @@ export function recordingClient(
     return {
       ok: r.ok ?? true,
       status: r.status ?? 200,
+      headers: new Headers(r.headers),
       body: null,
       text: async () => text,
       json: async () => (text ? JSON.parse(text) : undefined),

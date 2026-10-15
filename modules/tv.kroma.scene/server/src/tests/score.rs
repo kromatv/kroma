@@ -186,6 +186,39 @@ fn a_release_with_no_recognizable_resolution_is_refused() {
 }
 
 #[test]
+fn a_profile_that_accepts_an_unstated_resolution_scores_it_rather_than_refusing_it() {
+    let target = Target::Movie { year: Some(2010) };
+    let forgiving = Profile {
+        unstated_resolution: UnstatedResolution::RankLast,
+        ..profile()
+    };
+    let name = "Sintel (2010)";
+
+    let scored = score(&p(name), &cand(1, 50), &target, &forgiving, name).unwrap();
+
+    assert_eq!(res_delta(&scored), 25);
+    assert!(scored
+        .breakdown
+        .iter()
+        .any(|l| l.note == "unstated (preference R1080)"));
+}
+
+#[test]
+fn a_stated_resolution_outranks_an_unstated_one_under_that_same_profile() {
+    let target = Target::Movie { year: Some(2010) };
+    let forgiving = Profile {
+        unstated_resolution: UnstatedResolution::RankLast,
+        ..profile()
+    };
+    let (bare, stated) = ("Sintel (2010)", "Sintel.2010.720p.WEB-DL.x264");
+
+    let bare = score(&p(bare), &cand(1, 50), &target, &forgiving, bare).unwrap();
+    let stated = score(&p(stated), &cand(1, 50), &target, &forgiving, stated).unwrap();
+
+    assert!(bare.score < stated.score);
+}
+
+#[test]
 fn an_episode_target_refuses_a_release_carrying_no_episode_marker() {
     let t = Target::Episode {
         season: 1,

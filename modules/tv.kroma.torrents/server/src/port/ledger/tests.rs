@@ -33,6 +33,24 @@ fn seed_row(host: &DbHost, id: &str) {
     crate::db::insert_download(host.db(), &row_with_id(id)).unwrap();
 }
 
+fn seed_client(host: &DbHost) {
+    crate::db::insert_download_client(
+        host.store(),
+        &crate::db::DownloadClientRow {
+            id: "c1".into(),
+            kind: crate::engine::EMBEDDED_KIND.into(),
+            name: "Moteur intégré".into(),
+            url: String::new(),
+            username: String::new(),
+            password: String::new(),
+            enabled: true,
+            priority: 100,
+            created_at: 0,
+        },
+    )
+    .unwrap();
+}
+
 // The manager is NOT registered here, which is the state this process is in
 // between spawn and wiring.
 async fn call(path: &str, body: serde_json::Value) -> (StatusCode, serde_json::Value) {

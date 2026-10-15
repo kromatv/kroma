@@ -181,14 +181,17 @@ pub struct DownloadsView {
     pub stats: DownloadStatsView,
 }
 
-/// The engine-wide throughput and parallelism ceilings. `0` is unlimited in
-/// every field, which is also the default.
+/// The engine-wide throughput and parallelism ceilings, where `0` is unlimited
+/// and the default, and what happens to a film watched while it downloads. A
+/// save that leaves out either watch field keeps what is stored.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LimitsView {
     pub down_kbps: i64,
     pub up_kbps: i64,
     pub max_active: i64,
+    pub watch_keep_in_library: Option<bool>,
+    pub watch_cache_minutes: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

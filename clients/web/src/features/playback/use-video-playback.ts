@@ -1,9 +1,9 @@
-import type { PlaybackMode } from '@kromatv/client/playback';
-import { audioTracksOf, type EngineDecision, preferredAudioIndex } from '@kromatv/core';
+import { type EngineDecision, type PlayedStream, preferredAudioIndex } from '@kromatv/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { setWebEnginePref, type WebEnginePref } from '#web/features/playback/engine-pref';
 import { useFullscreenFrame } from '#web/features/playback/fullscreen-frame';
 import { bindMediaEvents } from '#web/features/playback/media-events';
+import type { PlaybackSource } from '#web/features/playback/playback-source';
 import { useEngineDecision } from '#web/features/playback/use-engine-decision';
 import { useResumeAnchor } from '#web/features/playback/use-resume-anchor';
 import { useStallRecovery } from '#web/features/playback/use-stall-recovery';
@@ -11,22 +11,22 @@ import { useStreamProbe } from '#web/features/playback/use-stream-probe';
 import { useVideoTransport } from '#web/features/playback/use-video-transport';
 import { useWaitReason } from '#web/features/playback/use-wait-reason';
 import { attachMediaSource, type VideoPlayback } from '#web/features/playback/video-engine';
-import type { MovieView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 
 export type { VideoPlayback } from '#web/features/playback/video-engine';
 
 const MAX_GIVE_UPS = 2;
 
-function modeOf(decision: EngineDecision): PlaybackMode {
-  if (decision.kind === 'direct') return 'direct';
-  return decision.aacMaster ? 'transcode' : 'remux';
+function askedFor(decision: EngineDecision): PlayedStream {
+  if (decision.kind === 'direct') return { mode: 'direct', aac: false };
+  return decision.aacMaster ? { mode: 'transcode', aac: true } : { mode: 'remux', aac: false };
 }
 
 /** Owns the `<video>` element: playback state, source decision (direct-play vs
  * HLS remux), fullscreen, and every transport action. The underlying HLS clock
- * is anchor-relative; positions reported by the hook are always absolute. */
-export function useVideoPlayback(item: MovieView): VideoPlayback {
+ * is anchor-relative; positions reported by the hook are always absolute.
+ * `source` must keep its identity for as long as the same thing plays. */
+export function useVideoPlayback(source: PlaybackSource): VideoPlayback {
   const videoRef = useRef<HTMLVideoElement>(null);
   const frame = useFullscreenFrame();
   const barRef = useRef<HTMLDivElement>(null);
@@ -34,7 +34,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   const [playing, setPlaying] = useState(true);
   const [ready, setReady] = useState(false);
   const [cur, setCur] = useState(0);
-  const [dur, setDur] = useState(item.durationMs ? item.durationMs / 1000 : 0);
+  const [dur, setDur] = useState(source.durationMs ? source.durationMs / 1000 : 0);
   const [bufEnd, setBufEnd] = useState(0);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
@@ -42,17 +42,17 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   const [fs, setFs] = useState(() => Boolean(document.fullscreenElement));
   const [useHls, setUseHls] = useState(false);
   const [audioIndex, setAudioIndex] = useState(() => {
-    const tracks = audioTracksOf(item);
+    const tracks = source.audioTracks;
     return (tracks.find((t) => t.default) ?? tracks[0])?.index ?? 0;
   });
   const { client, user } = useAuth();
-  const { anchor, setAnchor, bootAnchor } = useResumeAnchor(item, client, user);
+  const { anchor, setAnchor, bootAnchor } = useResumeAnchor(source, client, user);
   const audioIndexRef = useRef(0);
   audioIndexRef.current = audioIndex;
   const wantPlay = useRef(true);
   const giveUps = useRef(0);
 
-  const audioTracks = audioTracksOf(item);
+  const audioTracks = source.audioTracks;
 
   const audioPrefApplied = useRef(false);
   useEffect(() => {
@@ -62,15 +62,15 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     if (idx != null) setAudioIndex(idx);
   }, [user, audioTracks]);
 
-  const { env, decision, enginePref, setEnginePrefState, setForceHls } = useEngineDecision(item);
+  const { env, decision, enginePref, setEnginePrefState, setForceHls } = useEngineDecision(source);
   const hlsRef = useRef<import('hls.js').default | null>(null);
   const shakaRef = useRef<import('#web/features/playback/video-engine').ShakaPlayerLike | null>(
     null,
   );
 
   const restartAt = useCallback((absSec: number) => setAnchor(Math.max(0, absSec)), [setAnchor]);
-  const { baseSec, srcReady, serverDurSec, failure, refused, fail } = useStreamProbe({
-    itemId: item.id,
+  const { baseSec, srcReady, serverDurSec, played, failure, refused, fail } = useStreamProbe({
+    masterUrl: source.masterUrl,
     decision,
     anchor,
     audioIndex,
@@ -79,7 +79,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   });
 
   const knownDurationMs =
-    item.durationMs || (serverDurSec > 0 ? Math.round(serverDurSec * 1000) : 0);
+    source.durationMs || (serverDurSec > 0 ? Math.round(serverDurSec * 1000) : 0);
   useEffect(() => {
     if (knownDurationMs > 0) setDur(knownDurationMs / 1000);
   }, [knownDurationMs]);
@@ -92,7 +92,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     if (!v) return;
     return bindMediaEvents(
       v,
-      item,
+      source,
       {
         setCur,
         setDur,
@@ -113,7 +113,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
       knownDurationMs,
       wantPlay.current,
     );
-  }, [item, anchor, audioIndex, baseSec, knownDurationMs]);
+  }, [source, anchor, audioIndex, baseSec, knownDurationMs]);
 
   const absNow = useCallback(() => baseSec + (videoRef.current?.currentTime ?? 0), [baseSec]);
   const onRefused = useCallback((status: number) => refused(status, absNow()), [refused, absNow]);
@@ -133,7 +133,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     const safariNative = env.safari && enginePref !== 'shaka';
     return attachMediaSource({
       v,
-      item,
+      source,
       decision,
       useNativeHls: safariNative,
       useShaka: !safariNative && enginePref !== 'remux',
@@ -147,7 +147,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
       onRefused,
     });
   }, [
-    item,
+    source,
     decision,
     env.safari,
     enginePref,
@@ -194,10 +194,10 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     };
     v.addEventListener('error', onErr);
     return () => v.removeEventListener('error', onErr);
-  }, [decision.kind, item.id, anchor, audioIndex, setAnchor, setForceHls]);
+  }, [decision.kind, source, anchor, audioIndex, setAnchor, setForceHls]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: item.id is an intentional trigger (not referenced in the effect); reset forceHls whenever the item changes, not on every render.
-  useEffect(() => setForceHls(false), [item.id, setForceHls]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: source is an intentional trigger (not referenced in the effect); reset forceHls whenever what plays changes, not on every render.
+  useEffect(() => setForceHls(false), [source, setForceHls]);
 
   const transport = useVideoTransport({
     videoRef,
@@ -232,6 +232,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   );
 
   const healthy = failure === null;
+  const stream = played ?? askedFor(decision);
   return {
     videoRef,
     barRef,
@@ -241,7 +242,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     waiting: healthy && reason !== null,
     waitReason: healthy ? reason : null,
     failure,
-    mode: modeOf(decision),
+    mode: stream.mode,
     ready,
     cur,
     dur,
@@ -256,7 +257,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     setAudio,
     anchor,
     baseSec,
-    aac: decision.kind === 'direct' ? false : Boolean(decision.aacMaster),
+    aac: stream.aac,
     hlsRef,
     shakaRef,
     ...transport,

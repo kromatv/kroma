@@ -1,16 +1,22 @@
 //! The `acquisition` point: the routes this `.kmod` serves behind the core's
-//! `/api/requests/:id/search` and `/grab`.
+//! `/api/requests/:id/search` and `/grab`, and the `watch` that starts a film.
+
+use std::sync::Arc;
 
 use axum::extract::State;
 use axum::routing::post;
-use axum::{Json, Router};
+use axum::{Extension, Json, Router};
 use kroma_module_sdk::host::{port_reply, HostStorage};
 use serde::Deserialize;
+
+use crate::watch::WatchLocks;
 
 pub fn acqsearch_routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
         .route("/_port/acquisition/search", post(search_h::<S>))
         .route("/_port/acquisition/grab", post(grab_h::<S>))
+        .route("/_port/acquisition/watch", post(watch_h::<S>))
+        .layer(Extension(Arc::new(WatchLocks::default())))
 }
 
 #[derive(Deserialize)]
@@ -60,6 +66,14 @@ async fn grab_h<S: HostStorage + Clone + Send + Sync + 'static>(
         Ok(id)
     })
     .await
+}
+
+async fn watch_h<S: HostStorage + Clone + Send + Sync + 'static>(
+    State(host): State<S>,
+    Extension(locks): Extension<Arc<WatchLocks>>,
+    Json(req): Json<crate::watch::WatchRequest>,
+) -> Json<Result<crate::watch::WatchReply, String>> {
+    port_reply(move || crate::watch::watch(&host, &locks, &req)).await
 }
 
 #[cfg(test)]
@@ -161,6 +175,24 @@ mod tests {
         .await;
         assert_eq!(status, StatusCode::OK);
         assert!(body["Err"].as_str().is_some(), "{body}");
+    }
+
+    #[tokio::test]
+    async fn a_show_asked_for_without_its_episode_answers_err_inside_the_envelope() {
+        let body = serde_json::json!({
+            "tmdb_id": 1399,
+            "kind": "show",
+            "title": "Game of Thrones",
+            "year": null,
+        });
+
+        let (status, answer) = post("/_port/acquisition/watch", body).await;
+
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(
+            answer,
+            serde_json::json!({ "Err": "a season and an episode are needed to watch a show" })
+        );
     }
 
     #[tokio::test]

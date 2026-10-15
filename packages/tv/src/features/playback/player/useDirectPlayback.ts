@@ -16,6 +16,11 @@ import { useSeekGesture } from '#tv/features/playback/player/useSeekGesture';
 
 export type { Surface };
 
+export type PlaybackSurface = Pick<
+  Playback,
+  'surface' | 'videoRef' | 'objectRef' | 'engineRef' | 'surfaceNonce'
+>;
+
 export interface Playback {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   engineRef: React.RefObject<TvEngine | null>;
@@ -115,7 +120,7 @@ export function useDirectPlayback(
     client,
     enabled: client.hasAuth,
     eventsToken: () => client.sessionToken,
-    itemId: item.id,
+    subject: { itemId: item.id },
     durationMs: item.durationMs ?? null,
     getPosition,
     getState: () => {

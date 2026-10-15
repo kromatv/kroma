@@ -16,6 +16,7 @@ import { EnvProvider, type TvEnvOverrides } from '#tv/app/providers/env';
 import { LocaleProvider } from '#tv/app/providers/locale';
 import { MyListProvider } from '#tv/app/providers/mylist';
 import { RecommendProvider } from '#tv/app/providers/recommend';
+import { WatchableProvider } from '#tv/app/providers/watchable';
 import { WatchedProvider } from '#tv/app/providers/watched';
 import { TvClientProvider, TvNavProvider, TvOutlet, type TvScreens, useNav } from '#tv/app/router';
 import { onSearchRequest } from '#tv/app/searchRequest';
@@ -43,7 +44,7 @@ import { TvSearch } from '#tv/features/catalog/TvSearch';
 import { TvShowDetail } from '#tv/features/catalog/TvShowDetail';
 // Loading the player is a platform decision: the browser targets code-split it,
 // the native ones cannot.
-import { TvPlayer } from '#tv/features/playback/playerChunk';
+import { TvPlayer, TvWatch } from '#tv/features/playback/playerChunk';
 import { TvReleases } from '#tv/features/releases/TvReleases';
 import { TvReport } from '#tv/features/reports/TvReport';
 import { AUTH_BACKDROP } from '#tv/shared/ui';
@@ -121,23 +122,25 @@ export function TvApp({
                     <RecommendProvider>
                       <MyListProvider>
                         <WatchedProvider>
-                          {/* Above the router: a TV must be castable from its home
+                          <WatchableProvider>
+                            {/* Above the router: a TV must be castable from its home
                             screen, not only from the player. */}
-                          <CastReceiverProvider client={client} lan={lan} name={name}>
-                            {/* Also above the router: the beacon has to be up on
+                            <CastReceiverProvider client={client} lan={lan} name={name}>
+                              {/* Also above the router: the beacon has to be up on
                               whichever gate screen the TV is showing. */}
-                            <HandoffBeaconProvider client={client} lan={lan} name={name}>
-                              {/* A television cannot use React Native's <Modal>: its
+                              <HandoffBeaconProvider client={client} lan={lan} name={name}>
+                                {/* A television cannot use React Native's <Modal>: its
                               view controller never receives a press from a remote
                               (see @kromatv/ui lib/overlay-host). */}
-                              <OverlayHost>
-                                <TvRouterGuard />
-                                {/* Above the router so notices survive a screen
+                                <OverlayHost>
+                                  <TvRouterGuard />
+                                  {/* Above the router so notices survive a screen
                                 change; they never take focus. */}
-                                <Toaster position="top-right" inset={TOAST_INSET} />
-                              </OverlayHost>
-                            </HandoffBeaconProvider>
-                          </CastReceiverProvider>
+                                  <Toaster position="top-right" inset={TOAST_INSET} />
+                                </OverlayHost>
+                              </HandoffBeaconProvider>
+                            </CastReceiverProvider>
+                          </WatchableProvider>
                         </WatchedProvider>
                       </MyListProvider>
                     </RecommendProvider>
@@ -173,6 +176,7 @@ const SCREENS: TvScreens = {
   show: TvShowDetail,
   discover: TvDiscoverDetail,
   player: TvPlayer,
+  watch: TvWatch,
   report: TvReport,
   releases: TvReleases,
 };

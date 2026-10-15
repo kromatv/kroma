@@ -3,10 +3,13 @@
 
 import { classes, style } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
-import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
+import type { PlaybackSurface } from '#tv/features/playback/player/useDirectPlayback';
 
 const FILL = style({ width: '100%', height: '100%' });
-export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: string }>): ReactNode {
+export function PlayerSurface({
+  pb,
+  title,
+}: Readonly<{ pb: PlaybackSurface; title: string }>): ReactNode {
   if (pb.surface === 'avplay') {
     // NO child text: AVPlay renders to a hardware plane, not into this <object>'s
     // box, so fallback children draw visibly over the video. aria-label carries

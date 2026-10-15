@@ -170,11 +170,14 @@ export const BulkActionResult = z.object({
 });
 export type BulkActionResult = z.infer<typeof BulkActionResult>;
 
-/** The engine-wide ceilings. `0` is unlimited in every field. */
+/** The engine-wide ceilings, where `0` is unlimited, and what a title watched
+ *  while it downloads becomes. */
 export const LimitsView = z.object({
   downKbps: z.number(),
   upKbps: z.number(),
   maxActive: z.number(),
+  watchKeepInLibrary: z.boolean(),
+  watchCacheMinutes: z.number(),
 });
 export type LimitsView = z.infer<typeof LimitsView>;
 

@@ -1,4 +1,4 @@
-use super::test_support::{beat, ping, played_for, rewind, test_pool};
+use super::test_support::{beat, ping, played_for, rewind, test_pool, watching};
 use super::*;
 
 #[test]
@@ -237,4 +237,17 @@ async fn the_reaper_ends_stale_sessions_and_writes_them_to_history() {
         seen.try_recv().is_err(),
         "a sweep that finds nothing says nothing"
     );
+}
+
+#[test]
+fn a_live_watch_session_names_its_watch_where_an_item_id_would_be() {
+    let reg = Registry::new();
+    beat(&reg, watching("w1", 0), Some("u1"));
+
+    let listed = serde_json::to_value(reg.list()).unwrap();
+
+    assert_eq!(listed[0]["watch"]["id"], "dl1");
+    assert_eq!(listed[0]["title"], "Kaamelott");
+    assert_eq!(listed[0]["kind"], "episode");
+    assert!(listed[0].get("itemId").is_none());
 }

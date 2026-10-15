@@ -141,6 +141,8 @@ fn classify_word(
             out.dolby_vision = true;
         }
         "complete" | "integrale" | "intégrale" => out.full_season = true,
+        "disc" | "discs" | "disk" | "disks" | "iso" | "bdmv" | "bd25" | "bd50" | "bd66"
+        | "bd100" | "dvd" | "dvd-r" | "dvdr" | "dvd5" | "dvd9" => out.disc = true,
         "season" | "saison" => mark_season_word(out, first_marker, tokens, i),
         _ => mark_year_word(out, first_marker, i, t),
     }

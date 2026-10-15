@@ -26,6 +26,7 @@ export function TitleHero({
   inList,
   toggleList,
   onPlay,
+  watch,
   onRequest,
   back,
 }: Readonly<{
@@ -39,6 +40,7 @@ export function TitleHero({
   inList: (id: SubjectId) => boolean;
   toggleList: (id: SubjectId) => void;
   onPlay: (id: ItemId) => void;
+  watch: HostElement | null;
   onRequest: () => void;
   back: HostElement;
 }>) {
@@ -87,7 +89,21 @@ export function TitleHero({
       inList={listState.inList}
       onToggleList={listState.onToggleList}
       primaryAction={
-        owned ? undefined : <RequestCta view={view} busy={busy} onRequest={onRequest} />
+        owned ? undefined : (
+          <>
+            {watch ? (
+              <Button icon="player-play-filled" label={t('discover.watch')} asChild>
+                {watch}
+              </Button>
+            ) : null}
+            <RequestCta
+              view={view}
+              busy={busy}
+              onRequest={onRequest}
+              variant={watch ? 'glass' : 'primary'}
+            />
+          </>
+        )
       }
       back={back}
       onPlay={playable ? () => onPlay(playable.id) : undefined}
@@ -109,7 +125,13 @@ function RequestCta({
   view,
   busy,
   onRequest,
-}: Readonly<{ view: TitleView; busy: boolean; onRequest: () => void }>) {
+  variant,
+}: Readonly<{
+  view: TitleView;
+  busy: boolean;
+  onRequest: () => void;
+  variant: 'primary' | 'glass';
+}>) {
   const t = useT();
   if (view.requestStatus && view.requestStatus !== 'denied') {
     return (
@@ -119,6 +141,7 @@ function RequestCta({
   if (!view.canRequest) return null;
   return (
     <Button
+      variant={variant}
       icon="plus"
       label={view.kind === 'show' ? t('discover.requestShow') : t('discover.request')}
       onPress={onRequest}

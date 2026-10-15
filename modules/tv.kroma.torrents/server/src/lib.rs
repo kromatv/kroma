@@ -8,6 +8,7 @@
 #[cfg(feature = "rqbit")]
 mod announce;
 pub mod bandwidth;
+pub mod container_index;
 pub mod db;
 pub mod downloads;
 pub mod dtos;
@@ -23,7 +24,9 @@ mod rqbit;
 mod rqbit;
 #[cfg(feature = "rqbit")]
 mod rqbit_session;
+pub mod strings;
 pub mod torrent_file;
+pub mod watch;
 pub(crate) mod zero_as_none;
 
 pub use dtos::*;
@@ -57,7 +60,7 @@ impl<S: kroma_module_sdk::host::HostStorage + Clone + Send + Sync + 'static>
     }
 
     fn admin_routes(&self, _host: &S) -> Option<axum::Router<S>> {
-        Some(routes::routes::<S>())
+        Some(routes::routes::<S>().merge(watch::routes::<S>()))
     }
 
     async fn on_enable(&self, host: S) {

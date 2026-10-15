@@ -1,10 +1,9 @@
-import type { AudioTrack } from '@kromatv/client/media';
-import { pictureFormat } from '@kromatv/core';
+import type { AudioTrack, MediaItem } from '@kromatv/client/media';
+import { decimal, formatBytes, pictureFormat } from '@kromatv/core';
 import type { Locale, Translate } from '@kromatv/i18n';
-import type { PlayerMeter, PlayerStats } from '@kromatv/ui';
-import { formatTimecode as clock, decimal, formatBytes } from '@kromatv/ui/intl';
+import { type PlayerMeter, type PlayerStats, THROUGHPUT_CHART } from '@kromatv/ui';
+import { formatTimecode as clock } from '@kromatv/ui/intl';
 import type { EngineLiveStats } from '#web/features/playback/engine-stats';
-import type { MovieView } from '#web/shared/lib/api';
 
 const READY = ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT', 'HAVE_FUTURE', 'HAVE_ENOUGH'];
 const NETWORK = ['EMPTY', 'IDLE', 'LOADING', 'NO_SOURCE'];
@@ -27,9 +26,11 @@ interface ConnLike {
   effectiveType?: string;
 }
 
+export type StatsMedia = Pick<MediaItem, 'title' | 'container' | 'video' | 'audio'>;
+
 export interface WebStatsInput {
   v: HTMLVideoElement | null;
-  item: MovieView;
+  media: StatsMedia;
   cur: number;
   dur: number;
   bufEnd: number;
@@ -62,7 +63,7 @@ interface StatsMetrics {
 }
 
 function computeMetrics(s: WebStatsInput): StatsMetrics {
-  const { v, item, cur, dur, bufEnd } = s;
+  const { v, media, cur, dur, bufEnd } = s;
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
   const q = v?.getVideoPlaybackQuality?.();
   const conn =
@@ -70,8 +71,8 @@ function computeMetrics(s: WebStatsInput): StatsMetrics {
       ? (navigator as Navigator & { connection?: ConnLike }).connection
       : undefined) ?? {};
   return {
-    vw: v?.videoWidth || item.video?.width || 0,
-    vh: v?.videoHeight || item.video?.height || 0,
+    vw: v?.videoWidth || media.video?.width || 0,
+    vh: v?.videoHeight || media.video?.height || 0,
     dpr,
     dw: v ? Math.round(v.clientWidth * dpr) : 0,
     dh: v ? Math.round(v.clientHeight * dpr) : 0,
@@ -85,12 +86,12 @@ function computeMetrics(s: WebStatsInput): StatsMetrics {
   };
 }
 
-function videoCodecLabel(item: MovieView): string {
-  return item.video ? pictureFormat(item.video) : '-';
+function videoCodecLabel(media: StatsMedia): string {
+  return media.video ? pictureFormat(media.video) : '-';
 }
 
-function audioFormatLabel(selAudio: AudioTrack | undefined, item: MovieView): string {
-  const acodec = selAudio?.codec?.toUpperCase() ?? item.audio?.codec?.toUpperCase() ?? '-';
+function audioFormatLabel(selAudio: AudioTrack | undefined, media: StatsMedia): string {
+  const acodec = selAudio?.codec?.toUpperCase() ?? media.audio?.codec?.toUpperCase() ?? '-';
   const channels = selAudio?.channels ? ` ${selAudio.channels}.0` : '';
   const language = selAudio?.language ? ` (${selAudio.language})` : '';
   return `${acodec}${channels}${language}`;
@@ -100,37 +101,37 @@ function audioFormatLabel(selAudio: AudioTrack | undefined, item: MovieView): st
 type ExtraRow = { label: string; value: string; group?: string };
 
 function statsRows(s: WebStatsInput, m: StatsMetrics): ExtraRow[] {
-  const { v, item, cur, useHls, anchor, baseSec, engine, t } = s;
+  const { v, media, cur, useHls, anchor, baseSec, engine, t } = s;
   const { dw, dh, dpr, rel, conn, rate } = m;
   const position = useHls ? `${clock(cur)} · rel ${rel.toFixed(0)}s` : clock(cur);
   const push = (group: string, label: string, value: string | undefined) => {
     if (value != null && value !== '') rows.push({ group, label, value });
   };
-  const media = t('stats.groupMedia');
+  const mediaGroup = t('stats.groupMedia');
   const transport = t('stats.groupTransport');
   const client = t('stats.groupClient');
 
   const rows: ExtraRow[] = [
-    { group: media, label: t('stats.title2'), value: item.title },
-    { group: media, label: t('stats.container'), value: item.container.toUpperCase() },
-    { group: media, label: t('stats.position'), value: position },
+    { group: mediaGroup, label: t('stats.title2'), value: media.title },
+    { group: mediaGroup, label: t('stats.container'), value: media.container.toUpperCase() },
+    { group: mediaGroup, label: t('stats.position'), value: position },
     {
-      group: media,
+      group: mediaGroup,
       label: t('stats.size'),
       value: bytesH(s.bytes, s.locale) ?? '…',
     },
   ];
   if (useHls) {
     rows.push({
-      group: media,
+      group: mediaGroup,
       label: t('stats.anchor'),
       value: `${clock(anchor)} (${baseSec.toFixed(0)}s)`,
     });
   }
-  // Absent on direct-play / native HLS.
   if (engine) {
     push(transport, t('stats.streamBitrate'), kbps(engine.streamBitrateKbps, s.locale));
     push(transport, t('stats.bandwidth'), kbps(engine.estBandwidthKbps, s.locale));
+    // Absent on direct-play / native HLS.
     if (engine.stalls != null) {
       const buffering = engine.bufferingSec ? ` (${engine.bufferingSec.toFixed(1)}s)` : '';
       push(transport, t('stats.stalls'), `${engine.stalls}${buffering}`);
@@ -162,19 +163,16 @@ function statsRows(s: WebStatsInput, m: StatsMetrics): ExtraRow[] {
 // and 10 s is Shaka's own default `bufferingGoal`.
 const LOW_BUFFER_SEC = 10;
 
-// Bandwidth and bitrate share one chart: the gap between them is the
-// diagnostic. Colours are the panel's to assign, from a colourblind-safe palette.
 function buildMeters(s: WebStatsInput, m: StatsMetrics): PlayerMeter[] {
   const meters: PlayerMeter[] = [];
   const eng = s.engine;
-  // Bandwidth first: it owns the band drawn between the pair.
   if (eng?.estBandwidthKbps) {
     meters.push({
       key: 'bandwidth',
       label: s.t('stats.bandwidth'),
       value: eng.estBandwidthKbps,
       display: kbps(eng.estBandwidthKbps, s.locale) ?? '-',
-      chart: 'throughput',
+      chart: THROUGHPUT_CHART,
       chartLabel: s.t('stats.throughput'),
       band: true,
     });
@@ -185,7 +183,7 @@ function buildMeters(s: WebStatsInput, m: StatsMetrics): PlayerMeter[] {
       label: s.t('stats.streamBitrate'),
       value: eng.streamBitrateKbps,
       display: kbps(eng.streamBitrateKbps, s.locale) ?? '-',
-      chart: 'throughput',
+      chart: THROUGHPUT_CHART,
     });
   }
   meters.push({
@@ -203,7 +201,7 @@ function buildMeters(s: WebStatsInput, m: StatsMetrics): PlayerMeter[] {
 
 /** The "stats for nerds" snapshot for the shared StatsPanel. */
 export function buildWebStats(s: WebStatsInput): PlayerStats {
-  const { item, useHls, aac, audioTracks, audioIndex, t } = s;
+  const { media, useHls, aac, audioTracks, audioIndex, t } = s;
   const m = computeMetrics(s);
   const selAudio = audioTracks.find((a) => a.index === audioIndex) ?? audioTracks[0];
   const codecMode = aac ? 'AAC' : 'copy';
@@ -212,9 +210,9 @@ export function buildWebStats(s: WebStatsInput): PlayerStats {
   return {
     mode,
     resolution: m.vw && m.vh ? `${m.vw}×${m.vh}` : undefined,
-    videoCodec: videoCodecLabel(item),
+    videoCodec: videoCodecLabel(media),
     fps: s.fps && s.fps > 0 ? `${s.fps.toFixed(2)} fps` : undefined,
-    audioFormat: audioFormatLabel(selAudio, item),
+    audioFormat: audioFormatLabel(selAudio, media),
     bitrate: m.avgMbps ? `${m.avgMbps.toFixed(2)} Mb/s` : undefined,
     buffer: t('stats.bufferAhead', { seconds: m.bufferAhead.toFixed(1) }),
     dropped: `${m.dropped} / ${m.totalFrames}`,

@@ -11,6 +11,7 @@ import { Avatar, toast } from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useEnv } from '#tv/app/providers/env';
+import { useWatchable } from '#tv/app/providers/watchable';
 import { useNav } from '#tv/app/router';
 import { useStoredPref } from '#tv/app/settings/store';
 import { applyCastCommand } from '#tv/features/cast/applyCommand';
@@ -54,10 +55,11 @@ function CastReceiver({
   const { user, ready } = useAuth();
   const { platform } = useEnv();
   const [castable] = useStoredPref(castReceiverPrefStore);
+  const { choose } = useWatchable();
 
   // Read through a ref so the effect below doesn't reconnect on every render.
-  const deps = useRef({ client, nav, t, platform, name });
-  deps.current = { client, nav, t, platform, name };
+  const deps = useRef({ client, nav, t, platform, name, watchable: { choose } });
+  deps.current = { client, nav, t, platform, name, watchable: { choose } };
 
   const applied = useRef(0);
   const signedIn = ready && Boolean(user);

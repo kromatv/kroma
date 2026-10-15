@@ -1,8 +1,6 @@
 import { createTranslator } from '@kromatv/core';
 import { describe, expect, it, vi } from 'vitest';
 import {
-  decimal,
-  formatBytes,
   formatDuration,
   formatElapsed,
   formatHours,
@@ -15,56 +13,6 @@ import {
 const fr = createTranslator('fr');
 const en = createTranslator('en');
 const NOW = Date.parse('2024-06-15T12:00:00Z');
-
-describe('decimal', () => {
-  it('separates with a comma in French and a period in English', () => {
-    expect(decimal(1.5, 'fr')).toBe('1,5');
-    expect(decimal(1.5, 'en')).toBe('1.5');
-    expect(decimal(2, 'fr')).toBe('2,0');
-  });
-
-  it('honors a requested digit count, rounding', () => {
-    expect(decimal(Math.PI, 'fr', 2)).toBe('3,14');
-    expect(decimal(Math.PI, 'fr', 0)).toBe('3');
-    expect(decimal(Math.E, 'en', 3)).toBe('2.718');
-  });
-});
-
-describe('formatBytes', () => {
-  it('returns the smallest unit for zero and negatives', () => {
-    expect(formatBytes(0, 'fr')).toBe('0 o');
-    expect(formatBytes(-100, 'fr')).toBe('0 o');
-    expect(formatBytes(0, 'en')).toBe('0 B');
-  });
-
-  it('rounds a fractional byte count up rather than reading it as 512', () => {
-    expect(formatBytes(0.5, 'fr')).toBe('1 o');
-    expect(formatBytes(0.5, 'en')).toBe('1 B');
-  });
-
-  it('keeps bytes and kilobytes at zero decimals', () => {
-    expect(formatBytes(500, 'fr')).toBe('500 o');
-    expect(formatBytes(1024, 'fr')).toBe('1 Ko');
-    expect(formatBytes(1536, 'fr')).toBe('2 Ko');
-    expect(formatBytes(1536, 'en')).toBe('2 KB');
-  });
-
-  it('shows one decimal from megabytes up, below a mantissa of 100', () => {
-    expect(formatBytes(1024 ** 2, 'fr')).toBe('1,0 Mo');
-    expect(formatBytes(5 * 1024 ** 2, 'en')).toBe('5.0 MB');
-    expect(formatBytes(1024 ** 3, 'en')).toBe('1.0 GB');
-    expect(formatBytes(1024 ** 5, 'fr')).toBe('1,0 Po');
-  });
-
-  it('drops the decimal once the mantissa reaches 100', () => {
-    expect(formatBytes(150 * 1024 ** 2, 'fr')).toBe('150 Mo');
-  });
-
-  it('caps the unit at petabytes for huge inputs', () => {
-    expect(formatBytes(1024 ** 6, 'fr')).toBe('1024 Po');
-    expect(formatBytes(1024 ** 6, 'en')).toBe('1024 PB');
-  });
-});
 
 describe('formatMbps', () => {
   it('gives one decimal in the locale, and reads a NaN as zero', () => {

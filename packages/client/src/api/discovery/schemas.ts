@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { CastMember, CrewMember } from '../media';
 import { RequestId, RequestKind, RequestStatus } from '../requests';
 
-/** TMDB namespace filter for a discovery search. */
 export const DiscoverType = z.enum(['movie', 'tv', 'all']);
 export type DiscoverType = z.infer<typeof DiscoverType>;
 
@@ -13,8 +12,6 @@ export type TmdbKind = z.infer<typeof TmdbKind>;
 
 export const tmdbKindOf = (kind: RequestKind): TmdbKind => (kind === 'show' ? 'tv' : 'movie');
 
-/** One TMDB title as the request flow sees it: what the provider knows plus
- * what this library and this account's requests already cover. */
 export const DiscoverEntry = z.object({
   kind: RequestKind,
   tmdbId: z.number(),

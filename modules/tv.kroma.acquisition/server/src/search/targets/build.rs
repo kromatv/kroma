@@ -7,6 +7,7 @@ use kroma_module_sdk::db::WantedRow;
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_scene::Target;
 
+#[derive(Clone)]
 pub struct SearchTarget {
     pub query: Query,
     pub target: Target,

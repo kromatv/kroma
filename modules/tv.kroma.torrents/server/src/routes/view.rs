@@ -19,17 +19,24 @@ pub struct RowContext<'a> {
     pub live: &'a HashMap<String, LiveStat>,
 }
 
-fn display_title(row: &DownloadRow, request_title: Option<&str>) -> String {
-    request_title
-        .map(str::to_string)
-        .or_else(|| {
-            row.title
-                .as_ref()
-                .filter(|t| !t.trim().is_empty())
-                .cloned()
-                .filter(|_| row.tmdb_id.is_some())
-        })
-        .unwrap_or_else(|| row.release_title.clone())
+/// The name a row shows: the title of the request that grabbed it, else the
+/// title pinned to it, else the release name.
+pub(crate) fn display_title(named: Named<'_>) -> String {
+    named
+        .request_title
+        .or(named
+            .pinned_title
+            .filter(|t| !t.trim().is_empty())
+            .filter(|_| named.linked))
+        .unwrap_or(named.release_title)
+        .to_string()
+}
+
+pub(crate) struct Named<'a> {
+    pub request_title: Option<&'a str>,
+    pub pinned_title: Option<&'a str>,
+    pub linked: bool,
+    pub release_title: &'a str,
 }
 
 fn local_id(conn: &Connection, row: &DownloadRow, request_tmdb: Option<u64>) -> Option<String> {
@@ -46,7 +53,12 @@ pub fn to_view(conn: &Connection, ctx: &RowContext, row: DownloadRow) -> Downloa
         .request_id
         .as_deref()
         .and_then(|id| db::get_request(conn, id).ok().flatten());
-    let title = display_title(&row, request.as_ref().map(|r| r.title.as_str()));
+    let title = display_title(Named {
+        request_title: request.as_ref().map(|r| r.title.as_str()),
+        pinned_title: row.title.as_deref(),
+        linked: row.tmdb_id.is_some(),
+        release_title: &row.release_title,
+    });
     let poster_url = request.as_ref().and_then(|r| r.poster_url.clone());
     let local_id = local_id(conn, &row, request.as_ref().map(|r| r.tmdb_id));
     let indexer_name = row
@@ -142,19 +154,31 @@ mod tests {
         }
     }
 
+    fn named<'a>(row: &'a DownloadRow, request_title: Option<&'a str>) -> Named<'a> {
+        Named {
+            request_title,
+            pinned_title: row.title.as_deref(),
+            linked: row.tmdb_id.is_some(),
+            release_title: &row.release_title,
+        }
+    }
+
     #[test]
     fn a_linked_row_shows_its_pinned_title_and_an_unlinked_one_shows_the_release() {
         let linked = row(Some(603), Some("The Matrix"));
         let orphan = row(None, Some("stale guess"));
 
-        assert_eq!(display_title(&linked, None), "The Matrix");
-        assert_eq!(display_title(&orphan, None), orphan.release_title);
+        assert_eq!(display_title(named(&linked, None)), "The Matrix");
+        assert_eq!(display_title(named(&orphan, None)), orphan.release_title);
     }
 
     #[test]
     fn the_request_title_outranks_the_rows_own() {
         let linked = row(Some(603), Some("The Matrix"));
 
-        assert_eq!(display_title(&linked, Some("Matrix, The")), "Matrix, The");
+        assert_eq!(
+            display_title(named(&linked, Some("Matrix, The"))),
+            "Matrix, The"
+        );
     }
 }

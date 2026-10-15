@@ -3,7 +3,9 @@
 
 use serde::{Deserialize, Serialize};
 
-use kroma_module_sdk::host::{call, call_raw, pinned_resolver, HostCtx, Resolver};
+use kroma_module_sdk::host::{call, call_raw, call_raw_within, pinned_resolver, HostCtx, Resolver};
+
+const WAITED_ON_SECS: u32 = 5;
 
 pub const DOWNLOAD_GRAB: &str = "tv.kroma.torrents/grab";
 
@@ -31,6 +33,8 @@ pub struct GrabSpec {
     pub only_files: Option<Vec<usize>>,
     pub details_url: Option<String>,
     pub upgrade: bool,
+    pub client_id: Option<String>,
+    pub ephemeral: bool,
 }
 
 /// A ledger row, as the import pass reads it. Tolerant: the module that keeps the
@@ -85,6 +89,35 @@ pub fn list_files(
     )
 }
 
+/// The files of a download already in the engine, as its metadata resolved
+/// them. Empty means the swarm has not answered with a file list yet; an error
+/// means the provider cannot tell, so neither is evidence of what it holds.
+pub fn files(host: &dyn HostCtx, id: &str) -> anyhow::Result<Vec<TorrentFileEntry>> {
+    let listed: Result<Vec<TorrentFileEntry>, String> = call_raw_within(
+        &grabber(host)?,
+        &format!("{DOWNLOAD_GRAB}/files"),
+        &serde_json::json!({ "id": id }),
+        WAITED_ON_SECS,
+    )?;
+    listed.map_err(|e| anyhow::anyhow!(e))
+}
+
+/// Take a download back off: its row, its torrent and its data. Best effort.
+pub fn remove(host: &dyn HostCtx, id: &str) {
+    let removed = grabber(host).and_then(|resolve| {
+        let out: Result<bool, String> = call_raw_within(
+            &resolve,
+            &format!("{DOWNLOAD_GRAB}/remove"),
+            &serde_json::json!({ "id": id, "delete_data": true }),
+            WAITED_ON_SECS,
+        )?;
+        out.map_err(|e| anyhow::anyhow!(e))
+    });
+    if let Err(e) = removed {
+        tracing::warn!(target: "acquisition", download = %id, "could not take the download back off: {e:#}");
+    }
+}
+
 /// Whether the kill switch currently allows new grabs. A missing engine reads as
 /// closed, because a grab that cannot be handed anywhere is not a grab.
 pub fn gate_open(host: &dyn HostCtx) -> bool {
@@ -128,6 +161,31 @@ pub fn completed(host: &dyn HostCtx) -> anyhow::Result<Vec<DownloadRow>> {
         &ledger(host)?,
         &format!("{DOWNLOAD_DB}/completed"),
         &serde_json::json!({}),
+    )
+}
+
+/// The newest download of one title that `client_id` still holds: queued,
+/// running, finished or paused, never failed, removed or imported. With an
+/// `episode` (season, episode), a pack of that season whose files hold it, or a
+/// release carrying it.
+pub fn live_for_title(
+    host: &dyn HostCtx,
+    kind: &str,
+    tmdb_id: u64,
+    client_id: &str,
+    episode: Option<(u32, u32)>,
+) -> anyhow::Result<Option<DownloadRow>> {
+    let (season, episode) = episode.unzip();
+    call(
+        &ledger(host)?,
+        &format!("{DOWNLOAD_DB}/live-for-title"),
+        &serde_json::json!({
+            "kind": kind,
+            "tmdb_id": tmdb_id,
+            "client_id": client_id,
+            "season": season,
+            "episode": episode,
+        }),
     )
 }
 

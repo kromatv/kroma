@@ -380,6 +380,11 @@ pub struct ModuleManifest {
     /// Absent for a module that predates the field, which keeps the reach it had.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub settings: Option<SettingsScope>,
+    /// The account rights this module reads beyond the set every build of the
+    /// SDK can name, as their stored keys. A module that names none is sent that
+    /// base set alone.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub rights: Vec<String>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub library: bool,
 }
@@ -408,6 +413,7 @@ impl ModuleManifest {
             fe_remote: None,
             storage: None,
             settings: None,
+            rights: Vec::new(),
             library: false,
         }
     }

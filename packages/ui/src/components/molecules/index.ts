@@ -7,6 +7,10 @@ export type {
   LetterRange,
 } from './alphabet-rail';
 export { AlphabetRail } from './alphabet-rail';
+export type { ArrivalBadgeProps } from './arrival-badge';
+export { ArrivalBadge } from './arrival-badge';
+export type { ArrivalMapProps } from './arrival-map';
+export { ArrivalMap } from './arrival-map';
 export type { BackButtonProps } from './back-button';
 export { BackButton } from './back-button';
 export type {

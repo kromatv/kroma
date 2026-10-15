@@ -68,7 +68,6 @@
   "downloads.limitUp": "Upload limit",
   "downloads.limitedTo": "Limit to",
   "downloads.limitsFailed": "The limits could not be saved.",
-  "downloads.limitsTitle": "Speed and parallel downloads",
   "downloads.linkCurrent": "Current",
   "downloads.linkFailed": "The title could not be linked.",
   "downloads.linkNoResults": "Nothing matched. Try other words.",
@@ -132,6 +131,10 @@
   "downloads.vpnSealedDay": "{total} through the tunnel over the last 24 hours.",
   "downloads.vpnUnsealedDay": "{total} moved outside the tunnel over the last 24 hours.",
   "downloads.waiting": "{count} waiting",
+  "downloads.watchCache": "Erase the cache after (minutes)",
+  "downloads.watchCacheHint": "Counted from the moment the last viewer stopped.",
+  "downloads.watchKeep": "Keep watched titles in the library",
+  "downloads.watchKeepHint": "A film or an episode started with Play joins the library once downloaded. Off, it is only a cache, erased once nobody is watching.",
   "manual.add": "Add",
   "manual.addFailed": "Add failed",
   "manual.adding": "Adding...",
@@ -220,5 +223,11 @@
   "naming.seriesFolder": "Series folder",
   "naming.tokens": "Tokens",
   "naming.tokensTitle": "Filename tokens",
-  "nav.downloads": "Downloads"
+  "nav.downloads": "Downloads",
+  "watch.cancel": "Cancel",
+  "watch.downloaded": "Downloaded",
+  "watch.label": "Torrents",
+  "watch.slices": "Pieces received",
+  "watch.sources": "Peers",
+  "watch.speed": "Speed"
 }

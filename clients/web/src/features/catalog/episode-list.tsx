@@ -1,9 +1,3 @@
-// The unified season section: one switcher over ALL seasons; the selected
-// season renders its owned, playable episodes (with watched/progress) and its
-// gaps as tickable rows, so a partially-owned show plays what it has and asks
-// for exactly the episodes it is missing from one screen. The sticky request
-// bar below turns the ticks into one request.
-
 import type { CastMember, ItemId, MediaItem, SubjectId } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
 import { Box, Chip, classes, ringRoomBlock, styles, Text } from '@kromatv/ui/kit';
@@ -16,6 +10,8 @@ import { RequestBar, SeasonAsk } from '#web/features/catalog/request-bar';
 import { SeasonRequestCard } from '#web/features/catalog/season-card';
 import { discoverQueries } from '#web/shared/lib/queries';
 import type { TitleSeason } from '#web/shared/lib/titleView';
+import { watchLink } from '#web/shared/lib/watch-route';
+import { useWatchable } from '#web/shared/lib/watchable';
 
 // The page gutter is a fluid CSS custom property and `overflow-x` names one
 // axis, so both stay plain elements around kit content.
@@ -34,8 +30,6 @@ const s = styles({
   section: { mt: 40 },
 });
 
-/** Where the hero's "ask for it" button sends a show: the season list is where
- * the choice actually happens. */
 export const EPISODES_ANCHOR = 'episodes';
 
 function SeasonSwitcher({
@@ -112,7 +106,10 @@ export function SeasonSection({
   const hasOpen = canRequest && seasons.some((s) => !s.available && !s.requested);
   const seasonPickable = canRequest && !current.available && !current.requested;
 
-  const { ownedByNum, ordered, perEpisode } = mergeEpisodes(current, canRequest);
+  const { ownedByNum, ordered, perEpisode } = mergeEpisodes(
+    current,
+    canRequest || discoverTmdbId != null,
+  );
 
   return (
     <section id={EPISODES_ANCHOR} className={classes(s.section)}>
@@ -153,6 +150,8 @@ export function SeasonSection({
           </div>
           <SeasonEpisodes
             current={current}
+            discoverTmdbId={discoverTmdbId}
+            canRequest={canRequest}
             ordered={ordered}
             ownedByNum={ownedByNum}
             isWatched={isWatched}
@@ -186,15 +185,13 @@ export function SeasonSection({
   );
 }
 
-// Missing rows are only enumerated when the viewer can request AND TMDB gave us
-// the episode count; otherwise the list stays owned-only.
 function mergeEpisodes(
   current: TitleSeason,
-  canRequest: boolean,
+  listsGaps: boolean,
 ): { ownedByNum: Map<number, MediaItem>; ordered: number[]; perEpisode: boolean } {
   const ownedByNum = new Map<number, MediaItem>();
   for (const ep of current.episodes) if (ep.episode != null) ownedByNum.set(ep.episode, ep);
-  const perEpisode = canRequest && !current.available && current.episodeCount > 0;
+  const perEpisode = listsGaps && !current.available && current.episodeCount > 0;
   const epNumbers = new Set<number>(ownedByNum.keys());
   if (perEpisode) for (let n = 1; n <= current.episodeCount; n++) epNumbers.add(n);
   const ordered = [...epNumbers].sort((a, b) => a - b);
@@ -203,6 +200,8 @@ function mergeEpisodes(
 
 function SeasonEpisodes({
   current,
+  discoverTmdbId,
+  canRequest,
   ordered,
   ownedByNum,
   isWatched,
@@ -214,6 +213,8 @@ function SeasonEpisodes({
   pendingEpisodes,
 }: Readonly<{
   current: TitleSeason;
+  discoverTmdbId: number | null;
+  canRequest: boolean;
   ordered: number[];
   ownedByNum: Map<number, MediaItem>;
   isWatched: (id: SubjectId) => boolean;
@@ -224,6 +225,7 @@ function SeasonEpisodes({
   onToggleEpisode: (season: number, episode: number) => void;
   pendingEpisodes: Set<string>;
 }>) {
+  const { offered } = useWatchable();
   return (
     <div className={classes(s.gutter)}>
       <Box gap={14}>
@@ -249,7 +251,12 @@ function SeasonEpisodes({
               listed={current.missing.find((m) => m.episode === n) ?? null}
               pending={current.requested || pendingEpisodes.has(epKey(current.number, n))}
               selected={selected.has(epKey(current.number, n))}
-              onToggle={() => onToggleEpisode(current.number, n)}
+              onToggle={canRequest ? () => onToggleEpisode(current.number, n) : null}
+              watch={
+                offered
+                  ? watchLink('show', discoverTmdbId, { season: current.number, episode: n })
+                  : null
+              }
             />
           );
         })}

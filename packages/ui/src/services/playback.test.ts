@@ -11,6 +11,7 @@
 import { KromaApiError, type KromaClient } from '@kromatv/client';
 import { ItemId } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
+import { DownloadId } from '@kromatv/client/watchable';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePlaybackHeartbeat } from './playback';
@@ -47,7 +48,7 @@ const params = (over: Record<string, unknown> = {}) =>
   ({
     client: heartbeatClient().client,
     enabled: true,
-    itemId: ItemId.parse('item-1'),
+    subject: { itemId: ItemId.parse('item-1') },
     durationMs: 600_000,
     getPosition: () => 12.5,
     getState: () => 'playing' as const,
@@ -82,6 +83,22 @@ describe('pinging', () => {
     expect(ping).toHaveBeenCalledWith(
       expect.objectContaining({ itemId: 'item-1', positionMs: 12_500, state: 'playing' }),
     );
+  });
+
+  it('names a file of a watch download in place of an item', async () => {
+    const { client, ping } = heartbeatClient();
+    const watch = {
+      mount: '/api/module/tv.example.swarm',
+      id: DownloadId.parse('f13348a88094f2e1'),
+      file: 1,
+      title: 'Kaamelott',
+    };
+
+    renderHook(() => usePlaybackHeartbeat(params({ client, subject: { watch } })));
+    await settle();
+
+    expect(ping).toHaveBeenCalledWith(expect.objectContaining({ watch, positionMs: 12_500 }));
+    expect(ping.mock.calls[0]?.[0]).not.toHaveProperty('itemId');
   });
 
   it('keeps pinging on the interval', async () => {

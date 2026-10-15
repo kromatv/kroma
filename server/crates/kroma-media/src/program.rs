@@ -75,14 +75,15 @@ impl Program<'_> {
             .for_client_frame(self.frame(), declared.maxw.zip(declared.maxh))
     }
 
-    /// The media playlist of `session`, starting it over the file when none
-    /// runs, with every child URI carrying `credential`. `None` when ffmpeg
-    /// produced no playlist in time.
+    /// The media playlist of `session`, starting it over `input` (a path or a URL
+    /// ffmpeg opens) when none runs, with every child URI hung off `base` and
+    /// carrying `credential`. `None` when ffmpeg produced no playlist in time.
     pub async fn master<M: ByteMeter>(
         &self,
         engine: &HlsEngine,
         input: &str,
         session: Session,
+        base: &str,
         credential: &Credential,
         meter: M,
     ) -> Option<Response> {
@@ -94,7 +95,7 @@ impl Program<'_> {
         let (body, start) = engine
             .master(self.id, input, audio, mode, anchor, self.frame())
             .await?;
-        let body = playlist::with_credential(&body, credential);
+        let body = playlist::with_base(&body, base, credential);
         let mut resp = playlist_response(body, meter);
         // `X-Hls-Start` is the real start (the keyframe at-or-before the anchor, where
         // `-noaccurate_seek` begins); the client needs it to align clock and subtitles.

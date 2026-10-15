@@ -40,6 +40,28 @@ impl Caller {
         self.module.as_deref().unwrap_or("an unnamed caller")
     }
 
+    pub(super) fn rights_it_can_name(&self, mut user: kroma_domain::User) -> kroma_domain::User {
+        let declared = self
+            .module
+            .as_deref()
+            .map(|id| self.supervisor.rights_scope(id))
+            .unwrap_or_default();
+        let (kept, withheld): (Vec<_>, Vec<_>) =
+            user.permissions.iter().copied().partition(|right| {
+                right.known_to_every_module() || declared.iter().any(|key| key == right.key())
+            });
+        if !withheld.is_empty() {
+            let keys: Vec<&str> = withheld.iter().map(|right| right.key()).collect();
+            tracing::debug!(
+                module = %self.name(),
+                rights = %keys.join(", "),
+                "a right the account holds is withheld from a module whose manifest omits it",
+            );
+        }
+        user.permissions = kept;
+        user
+    }
+
     fn declaration(&self) -> Option<kroma_module_manifest::SettingsScope> {
         self.supervisor.settings_scope(self.module.as_deref()?)
     }

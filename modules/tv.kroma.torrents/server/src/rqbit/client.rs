@@ -17,15 +17,16 @@ fn mib_to_bytes(mbps: f64) -> u64 {
     (mbps * 1024.0 * 1024.0).max(0.0) as u64
 }
 
-fn status_of(handle: &ManagedTorrentHandle) -> TorrentStatus {
+fn status_of(handle: &ManagedTorrentHandle, selection_held: bool) -> TorrentStatus {
     use librqbit::TorrentStatsState as S;
     let stats = handle.stats();
-    let progress = if stats.total_bytes > 0 {
-        stats.progress_bytes as f64 / stats.total_bytes as f64
+    let (have, size) = measured(handle, &stats);
+    let progress = if size > 0 {
+        have as f64 / size as f64
     } else {
         0.0
     };
-    let done = stats.finished;
+    let done = stats.finished && !selection_held;
     let state = match stats.state {
         S::Initializing => TorrentState::Queued,
         S::Paused if done => TorrentState::Completed,
@@ -69,14 +70,32 @@ fn status_of(handle: &ManagedTorrentHandle) -> TorrentStatus {
         up_bps,
         peers,
         peers_seen,
-        size_bytes: stats.total_bytes,
+        size_bytes: size,
         // The manager sets an explicit per-download output folder at add time
         // and remembers it; the engine reports none.
         save_path: None,
         files,
         error: stats.error,
-        lifetime_downloaded_bytes: stats.progress_bytes,
+        lifetime_downloaded_bytes: have,
         lifetime_uploaded_bytes: stats.uploaded_bytes,
+    }
+}
+
+// A torrent whose selection is held empty reports nothing selected, which reads
+// as no size, no progress and nothing left to download. The whole torrent is the
+// measure until its files are chosen again.
+fn measured(handle: &ManagedTorrentHandle, stats: &librqbit::TorrentStats) -> (u64, u64) {
+    match stats.total_bytes {
+        0 => (
+            stats.file_progress.iter().sum(),
+            handle
+                .metadata
+                .load()
+                .as_ref()
+                .map(|m| m.info.lengths().total_length())
+                .unwrap_or_default(),
+        ),
+        size => (stats.progress_bytes, size),
     }
 }
 
@@ -183,7 +202,10 @@ impl DownloadClient for RqbitClient {
             .ok()
             .and_then(|id| self.engine.session().get(id))
         {
-            Some(handle) => Ok(Some(status_of(&handle))),
+            Some(handle) => Ok(Some(status_of(
+                &handle,
+                self.engine.selection_held(client_ref),
+            ))),
             None => Ok(None),
         }
     }

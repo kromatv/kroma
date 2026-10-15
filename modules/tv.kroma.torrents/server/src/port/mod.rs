@@ -3,6 +3,7 @@
 pub mod indexers;
 pub mod ledger;
 pub mod vpn;
+pub mod watchable;
 
 use std::sync::Arc;
 

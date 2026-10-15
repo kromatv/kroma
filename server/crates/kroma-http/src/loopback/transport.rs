@@ -26,6 +26,7 @@ pub struct Request<'a> {
     pub headers: &'a [(String, String)],
     pub body: Option<(&'a str, &'a [u8])>,
     pub timeout: Duration,
+    pub max_response_bytes: usize,
 }
 
 /// A way for one KROMA process to reach another.

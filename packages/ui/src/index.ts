@@ -32,8 +32,8 @@ export type { LocaleProviderProps } from './services/locale';
 export { LocaleProvider } from './services/locale';
 export type { PlaybackHeartbeatParams } from './services/playback';
 export { usePlaybackHeartbeat } from './services/playback';
-export type { Storyboard, StoryboardTile } from './services/storyboard';
-export { useStoryboard } from './services/storyboard';
+export type { Storyboard, StoryboardSheet, StoryboardTile } from './services/storyboard';
+export { useStoryboard, useStoryboardSheet } from './services/storyboard';
 export type {
   SubtitleGenerationsOptions,
   SubtitleGenerationsResult,

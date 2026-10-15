@@ -3,6 +3,7 @@
 
 pub mod monitor;
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
@@ -18,20 +19,32 @@ use kroma_module_sdk::host::HostCtx;
 use kroma_module_sdk::primitives::now_ms;
 
 mod bandwidth;
+mod cache;
 mod drops;
 mod engine;
+pub(crate) mod external_subtitles;
 mod fetch;
 mod gate;
 mod grab;
+mod grab_client;
 mod ledger;
 pub mod matching;
+mod play;
+mod readers;
+mod reuse;
 #[cfg(test)]
 pub(crate) mod test_support;
 mod throughput;
+mod watchable;
 
+pub use cache::{cache_minutes, importable, keeps_watched, CACHE_MINUTES_KEY, KEEP_WATCHED_KEY};
 pub use engine::LiveStat;
 pub use gate::active_proxy_url;
-pub use throughput::{bps_setting, DOWN_KBPS_KEY, MAX_ACTIVE_KEY, UP_KBPS_KEY};
+pub(crate) use play::Granted;
+pub(crate) use readers::{Reader, Reading};
+pub use reuse::Asked;
+pub use throughput::{bps_setting, Start, DOWN_KBPS_KEY, MAX_ACTIVE_KEY, UP_KBPS_KEY};
+pub(crate) use watchable::Offer;
 
 use fetch::fetch_torrent_file;
 
@@ -49,6 +62,10 @@ pub struct DownloadManager {
     starting_since: Mutex<Option<i64>>,
     engine_gate: tokio::sync::Mutex<()>,
     retiring: Mutex<Option<Arc<RqbitEngine>>>,
+    play_grants: Mutex<HashMap<String, play::PlayGrant>>,
+    minting: Mutex<()>,
+    readers: Mutex<HashMap<String, Arc<readers::Readers>>>,
+    video_files: Mutex<HashMap<String, Arc<[crate::watch::WatchableFileView]>>>,
     state_dir: PathBuf,
     downloads_dir: PathBuf,
     host: Arc<dyn HostCtx>,
@@ -78,6 +95,10 @@ impl DownloadManager {
             starting_since: Mutex::new(None),
             engine_gate: tokio::sync::Mutex::new(()),
             retiring: Mutex::new(None),
+            play_grants: Mutex::new(HashMap::new()),
+            minting: Mutex::new(()),
+            readers: Mutex::new(HashMap::new()),
+            video_files: Mutex::new(HashMap::new()),
             downloads_dir: state_dir.join("downloads"),
             state_dir,
             host,
@@ -222,35 +243,45 @@ pub struct GrabSpec {
     pub only_files: Option<Vec<usize>>,
     pub details_url: Option<String>,
     pub upgrade: bool,
+    pub client_id: Option<String>,
+    pub ephemeral: bool,
 }
 
 /// The `download-db` provider: the ledger reads the import pass makes over the
 /// port bridge.
-pub struct DownloadDb(Pool);
+pub struct DownloadDb {
+    core: Pool,
+    store: Pool,
+}
 
 impl DownloadDb {
-    pub fn new(core: Pool) -> Self {
-        Self(core)
+    pub fn new(core: Pool, store: Pool) -> Self {
+        Self { core, store }
     }
 
     pub fn get(&self, id: &str) -> Result<Option<DownloadRow>> {
-        let conn = self.0.get()?;
+        let conn = self.core.get()?;
         Ok(db::get_download(&conn, id)?)
     }
 
     /// Rows the engine finished but nothing has imported yet.
     pub fn completed(&self) -> Result<Vec<DownloadRow>> {
-        let conn = self.0.get()?;
+        let conn = self.core.get()?;
         Ok(db::completed_downloads(&conn)?)
     }
 
+    /// An imported row is no longer a watch download: the film has a catalogue
+    /// entry now, so the temporary-cache mark comes off and the eviction pass
+    /// leaves the library alone whatever the operator later sets.
     pub fn mark_imported(&self, id: &str, paths: &[String], now_ms: i64) -> Result<()> {
-        db::mark_download_imported(&self.0, id, paths, now_ms)
+        db::mark_download_imported(&self.core, id, paths, now_ms)?;
+        db::forget_ephemeral(&self.store, id)?;
+        db::forget_watch_starters(&self.store, id)
     }
 
     /// Move a row to `status`, with the reason when it failed. `false` when no row
     /// has that id.
     pub fn set_status(&self, id: &str, status: &str, error: Option<&str>) -> Result<bool> {
-        db::set_download_status(&self.0, id, status, error)
+        db::set_download_status(&self.core, id, status, error)
     }
 }

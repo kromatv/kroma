@@ -78,6 +78,7 @@ describe('<Player> as a compound', () => {
     expect(typeof Player).toBe('object');
     expect(Object.keys(Player).sort()).toEqual([
       'Actions',
+      'Arrival',
       'Credits',
       'Media',
       'Panel',

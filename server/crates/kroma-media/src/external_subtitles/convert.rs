@@ -34,6 +34,7 @@ pub fn to_vtt(file: &Path, out: &Path, cancel: &dyn Fn() -> bool) -> Result<(), 
     let landed = extract_vtt(
         &staged.to_string_lossy(),
         &[(0, out.to_path_buf())],
+        None,
         timeout_for(&staged.to_string_lossy()),
         cancel,
     );

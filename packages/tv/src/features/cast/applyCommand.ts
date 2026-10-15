@@ -5,10 +5,16 @@
 import type { KromaClient } from '@kromatv/client';
 import type { CastCommand } from '@kromatv/client/cast';
 import type { MediaItem } from '@kromatv/client/media';
-import { castTarget, requestCastSeek } from '#tv/features/cast/castBridge';
+import { type WatchSubject, watchSubjectOf } from '@kromatv/core';
+import { castKey, castTarget, requestCastSeek } from '#tv/features/cast/castBridge';
+
+type Target = NonNullable<ReturnType<typeof castTarget>>;
 
 export interface CastRouter {
-  reset: (name: 'player', params: { item: MediaItem }) => void;
+  reset: {
+    (name: 'player', params: { item: MediaItem }): void;
+    (name: 'watch', params: { subject: WatchSubject; poster?: string | null }): void;
+  };
   swap: (name: 'player', params: { item: MediaItem }) => void;
   home: () => void;
 }
@@ -16,21 +22,25 @@ export interface CastRouter {
 export interface CastDeps {
   client: Pick<KromaClient, 'media' | 'playback'>;
   nav: CastRouter;
+  watchable: { choose: (mount: string) => void };
+}
+
+function resumeHere(target: Target | null, key: string, positionMs = 0): boolean {
+  const controller = target?.controller;
+  // Already on this title: seek rather than remount the engine, which would
+  // black the screen for a second.
+  if (!target || !controller || castKey(target.playing) !== key) return false;
+  if (positionMs) controller.seekTo(positionMs / 1000);
+  if (!controller.playing) controller.togglePlay();
+  return true;
 }
 
 async function play(
   command: Extract<CastCommand, { type: 'play' }>,
   deps: CastDeps,
-  target: ReturnType<typeof castTarget>,
+  target: Target | null,
 ): Promise<void> {
-  const controller = target?.controller;
-  // Already on this title: seek rather than remount the engine, which would
-  // black the screen for a second.
-  if (target?.item.id === command.itemId) {
-    if (command.positionMs) controller?.seekTo(command.positionMs / 1000);
-    if (controller && !controller.playing) controller.togglePlay();
-    return;
-  }
+  if (resumeHere(target, command.itemId, command.positionMs)) return;
   const item = await deps.client.media.item(command.itemId).catch(() => null);
   if (!item) return;
   requestCastSeek(item.id, command.positionMs ?? 0);
@@ -38,11 +48,28 @@ async function play(
   deps.nav.reset('player', { item });
 }
 
-async function skipNext(
+function watch(
+  command: Extract<CastCommand, { type: 'watch' }>,
   deps: CastDeps,
-  target: NonNullable<ReturnType<typeof castTarget>>,
-): Promise<void> {
-  const next = await deps.client.playback.nextEpisode(target.item.id).catch(() => null);
+  target: Target | null,
+): void {
+  const key = castKey({ watch: command.watch });
+  if (resumeHere(target, key, command.positionMs)) return;
+  deps.watchable.choose(command.watch.mount);
+  requestCastSeek(key, command.positionMs ?? 0);
+  deps.nav.reset('watch', {
+    subject: watchSubjectOf(command.watch),
+    poster: command.watch.poster ?? null,
+  });
+}
+
+async function skipNext(deps: CastDeps, target: Target): Promise<void> {
+  const { playing } = target;
+  if (!('item' in playing)) {
+    playing.next?.();
+    return;
+  }
+  const next = await deps.client.playback.nextEpisode(playing.item.id).catch(() => null);
   // swap, not push: what is behind the player stays behind it.
   if (next) deps.nav.swap('player', { item: next });
 }
@@ -55,6 +82,8 @@ export async function applyCastCommand(command: CastCommand, deps: CastDeps): Pr
   switch (command.type) {
     case 'play':
       return play(command, deps, target);
+    case 'watch':
+      return watch(command, deps, target);
     case 'skipNext':
       return target ? skipNext(deps, target) : undefined;
     case 'pause':

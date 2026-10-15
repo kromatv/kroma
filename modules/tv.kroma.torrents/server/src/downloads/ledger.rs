@@ -27,7 +27,38 @@ impl DownloadManager {
         Ok(())
     }
 
+    /// Every file of one download, in torrent order, as the running engine has
+    /// already resolved them. Nothing is fetched from the swarm, so an empty
+    /// list means the metadata has not arrived yet, and a download an external
+    /// daemon holds has none here at all.
+    pub fn resolved_files(&self, id: &str) -> Result<Vec<crate::TorrentFileEntry>> {
+        let (row, client) = self.row_and_client(id)?;
+        if client.kind != crate::engine::EMBEDDED_KIND || row.client_ref.is_empty() {
+            return Ok(Vec::new());
+        }
+        let Some(engine) = self.rqbit() else {
+            return Ok(Vec::new());
+        };
+        Ok(engine
+            .resolved_files(&row.client_ref)
+            .into_iter()
+            .enumerate()
+            .map(|(index, (path, size_bytes))| crate::TorrentFileEntry {
+                index,
+                path,
+                size_bytes,
+            })
+            .collect())
+    }
+
     pub fn remove(&self, id: &str, delete_data: bool) -> Result<()> {
+        if delete_data && self.is_playing(id) {
+            return Err(anyhow!("download is being played"));
+        }
+        self.erase(id, delete_data)
+    }
+
+    pub(super) fn erase(&self, id: &str, delete_data: bool) -> Result<()> {
         let (row, client) = self.row_and_client(id)?;
         // Best-effort: the ledger must be cleanable even if the engine errors.
         if !row.client_ref.is_empty() {
@@ -37,6 +68,7 @@ impl DownloadManager {
                 }
             }
         }
+        self.forget_files(&row.client_ref);
         db::delete_download_row(self.core(), id)?;
         Ok(())
     }

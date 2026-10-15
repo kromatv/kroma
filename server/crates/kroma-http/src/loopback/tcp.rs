@@ -50,6 +50,7 @@ impl Transport for Tcp {
             .body(Full::new(body))
             .context("build the loopback request")?;
         let timeout = request.timeout;
+        let ceiling = request.max_response_bytes;
         block_on(async move {
             // The budget covers the body too: a peer that answers its head and
             // then stalls mid-body would otherwise hold this thread for as long
@@ -70,7 +71,7 @@ impl Transport for Tcp {
                         )
                     })
                     .collect();
-                let body = Limited::new(response.into_body(), MAX_BODY_BYTES)
+                let body = Limited::new(response.into_body(), ceiling)
                     .collect()
                     .await
                     .map_err(|e| anyhow::anyhow!("read the loopback response body: {e}"))?;

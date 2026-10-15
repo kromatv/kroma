@@ -1,4 +1,3 @@
-use axum::http::StatusCode;
 use serde_json::json;
 
 use kroma_module_wire::Permission;
@@ -70,6 +69,22 @@ fn each_builder_overrides_exactly_its_own_answer() {
 
     // An unseeded key still falls back, next to the seeded ones.
     assert_eq!(host.setting_str("other", "fallback"), "fallback");
+}
+
+#[test]
+fn an_enforced_gate_answers_from_the_rights_the_user_holds() {
+    let host = StubHost::new().with_gates_enforced();
+    let librarian = User {
+        permissions: vec![Permission::LibraryManage],
+        ..user()
+    };
+
+    let refused = host.require(&user(), Permission::LibraryManage).unwrap_err();
+
+    assert_eq!(refused.status(), StatusCode::FORBIDDEN);
+    assert!(host.require(&librarian, Permission::LibraryManage).is_ok());
+    assert!(host.require_any_admin(&librarian).is_ok());
+    assert!(host.require_any_admin(&user()).is_err());
 }
 
 #[test]

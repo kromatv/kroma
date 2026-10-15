@@ -53,6 +53,7 @@ pub struct Loopback {
     headers: Vec<(String, String)>,
     query: Vec<(String, String)>,
     max_time_secs: u32,
+    max_response_bytes: usize,
 }
 
 impl Default for Loopback {
@@ -61,6 +62,7 @@ impl Default for Loopback {
             headers: Vec::new(),
             query: Vec::new(),
             max_time_secs: DEFAULT_MAX_TIME_SECS,
+            max_response_bytes: MAX_BODY_BYTES,
         }
     }
 }
@@ -68,6 +70,13 @@ impl Default for Loopback {
 crate::builder::request_builder!(Loopback, query = "URL-encoded query parameter.");
 
 impl Loopback {
+    /// Ceiling on the answer's body, below the transport's own (default
+    /// [`MAX_BODY_BYTES`]).
+    pub fn max_response_bytes(mut self, bytes: usize) -> Self {
+        self.max_response_bytes = bytes;
+        self
+    }
+
     pub fn get(&self, url: &str) -> Result<Response> {
         self.send(Method::Get, url, None)
     }
@@ -112,6 +121,7 @@ impl Loopback {
             headers: &self.headers,
             body,
             timeout: Duration::from_secs(u64::from(self.max_time_secs)),
+            max_response_bytes: self.max_response_bytes,
         })
     }
 }

@@ -1,10 +1,4 @@
-import {
-  audioTrackLabel,
-  declaredAspect,
-  pictureBadge,
-  refineTrackLang,
-  streamNotice,
-} from '@kromatv/core';
+import { audioTrackLabel, pictureBadge, refineTrackLang } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import {
   type PlayerController,
@@ -17,12 +11,12 @@ import {
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isWebEnginePref } from '#web/features/playback/engine-pref';
 import { makeFpsSampler, readEngineStats } from '#web/features/playback/engine-stats';
+import type { PlaybackSource } from '#web/features/playback/playback-source';
 import type { StreamFailure } from '#web/features/playback/stream-failure';
 import { useVideoPlayback } from '#web/features/playback/use-video-playback';
 import { useVolumeBoost, VOLUME_BOOST_MAX } from '#web/features/playback/use-volume-boost';
-import { useWebSubtitles } from '#web/features/playback/use-web-subtitles';
+import type { WebSubtitles } from '#web/features/playback/use-web-subtitles';
 import { buildWebStats } from '#web/features/playback/web-stats';
-import { kromaClient, type MovieView } from '#web/shared/lib/api';
 import { useLangPrefs } from '#web/shared/lib/lang-pref';
 
 function failureCopy(t: Translate, failure: StreamFailure): { error: string; hint: string } {
@@ -51,11 +45,10 @@ export interface WebController {
  * `<Player>` consumes. Everything web-specific (HLS remux, PiP-as-shell, the
  * one-shot bitrate probe) is hidden behind the contract.
  */
-export function useWebController(item: MovieView): WebController {
+export function useWebController(source: PlaybackSource, subs: WebSubtitles): WebController {
   const t = useT();
   const locale = useLocale();
-  const pb = useVideoPlayback(item);
-  const subs = useWebSubtitles(item, t);
+  const pb = useVideoPlayback(source);
   const loud = useVolumeBoost(pb);
   const filter = useAudioFilter(pb.videoRef, `${pb.anchor}:${pb.audioIndex}`, loud.boost);
 
@@ -145,10 +138,12 @@ export function useWebController(item: MovieView): WebController {
     return () => v.removeEventListener('ended', onEnded);
   }, [pb.anchor, pb.audioIndex, pb.videoRef]);
 
-  const [bytes, setBytes] = useState(0);
+  const [measuredBytes, setBytes] = useState(0);
+  const { sizeBytes, directUrl } = source;
   useEffect(() => {
+    if (sizeBytes !== null || !directUrl) return;
     let cancelled = false;
-    fetch(kromaClient().media.streamUrl(item.id), { headers: { Range: 'bytes=0-1' } })
+    fetch(directUrl(), { headers: { Range: 'bytes=0-1' } })
       .then((r) => {
         const cr = r.headers.get('Content-Range');
         const total = cr ? Number(cr.split('/')[1]) : Number(r.headers.get('Content-Length') ?? 0);
@@ -158,14 +153,20 @@ export function useWebController(item: MovieView): WebController {
     return () => {
       cancelled = true;
     };
-  }, [item.id]);
+  }, [sizeBytes, directUrl]);
+  const bytes = sizeBytes ?? measuredBytes;
 
   const fpsSamplerRef = useRef(makeFpsSampler());
   const statsRef = useRef<() => PlayerStats>(() => ({}));
   statsRef.current = () =>
     buildWebStats({
       v: pb.videoRef.current,
-      item,
+      media: {
+        title: source.title,
+        container: source.container,
+        video: source.video,
+        audio: source.audioTracks[0] ?? null,
+      },
       cur: pb.cur,
       dur: pb.dur,
       bufEnd: pb.bufEnd,
@@ -184,9 +185,9 @@ export function useWebController(item: MovieView): WebController {
   const getStats = useCallback(() => statsRef.current(), []);
 
   const qualities = useMemo(() => {
-    const badge = pictureBadge(item.video);
+    const badge = pictureBadge(source.video);
     const badgeSuffix = badge ? ` · ${badge}` : '';
-    const notice = streamNotice(item, pb.mode);
+    const notice = source.notice(pb.mode);
     return [
       {
         id: 'auto',
@@ -194,18 +195,19 @@ export function useWebController(item: MovieView): WebController {
         note: notice ? t(notice.messageKey, notice.messageVars) : undefined,
       },
     ];
-  }, [item, pb.mode, t]);
+  }, [source, pb.mode, t]);
 
   const failure = pb.failure ? failureCopy(t, pb.failure) : null;
 
   const engines = useMemo(
-    () => [
-      { id: 'auto', label: t('playbackEngine.auto') },
-      { id: 'direct', label: t('playbackEngine.webview') },
-      { id: 'remux', label: t('playbackEngine.remux') },
-      { id: 'shaka', label: t('playbackEngine.shaka') },
-    ],
-    [t],
+    () =>
+      [
+        { id: 'auto', label: t('playbackEngine.auto') },
+        { id: 'direct', label: t('playbackEngine.webview') },
+        { id: 'remux', label: t('playbackEngine.remux') },
+        { id: 'shaka', label: t('playbackEngine.shaka') },
+      ].filter((engine) => engine.id !== 'direct' || directUrl !== null),
+    [t, directUrl],
   );
 
   const controller: PlayerController = {
@@ -222,7 +224,7 @@ export function useWebController(item: MovieView): WebController {
     errorHint: failure?.hint ?? null,
     endedNonce,
     surface: 'video',
-    aspect: decodedAspect ?? declaredAspect(item),
+    aspect: decodedAspect ?? source.aspect,
     togglePlay: pb.togglePlay,
     seekTo: pb.seekTo,
     skip: pb.skip,

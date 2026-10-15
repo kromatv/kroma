@@ -5,12 +5,20 @@
 // browser half; the hook that drives playback never learns which it got.
 
 import type { KromaClient } from '@kromatv/client';
-import type { MediaItem } from '@kromatv/client/media';
+import type { HlsMasterDeclaration, MediaItem } from '@kromatv/client/media';
+import type { WatchableProbe } from '@kromatv/client/watchable';
 import { beyondDecoder, nativeDirectPlayable, type PlayEnv } from '@kromatv/core';
 import type { AudioFilterMode } from '@kromatv/ui';
 import { Platform } from 'react-native';
 import type { EnginePref } from '#tv/app/enginePref';
-import type { EngineListeners, Surface, TvEngine } from '#tv/features/playback/player/engine';
+import {
+  type EngineListeners,
+  playlistFor,
+  type Surface,
+  type TvEngine,
+  type WatchDecoder,
+  type WatchMedia,
+} from '#tv/features/playback/player/engine';
 import { ExpoVideoEngine } from '#tv/features/playback/player/expoVideoEngine';
 import { VlcEngine } from '#tv/features/playback/player/vlcEngine';
 import { vlcAvailable } from '#tv/features/playback/player/vlcPlane';
@@ -81,6 +89,43 @@ export function planEngine(item: MediaItem, _env: PlayEnv, pref: EnginePref): En
   };
 }
 
+export function watchSurface(): Surface {
+  return 'video';
+}
+
+/** The native players decode what the file carries, so nothing is declared. */
+export function watchDeclaration(_decoder: WatchDecoder): HlsMasterDeclaration {
+  return {};
+}
+
+/** The native players decode the soundtrack, so the master is stream-copied. */
+export function watchPlan(
+  _probe: WatchableProbe,
+): Pick<EnginePlan, 'playbackMode' | 'deviceLabel'> {
+  return {
+    playbackMode: 'remux',
+    deviceLabel: Platform.OS === 'ios' ? 'Apple TV' : 'Android TV',
+  };
+}
+
+export function createWatchEngine(args: {
+  client: KromaClient;
+  media: WatchMedia;
+  startSec: number;
+  dom: { video: HTMLVideoElement | null; nativeHls: boolean | undefined };
+  listeners: EngineListeners;
+}): TvEngine | null {
+  return new ExpoVideoEngine({
+    client: args.client,
+    media: playlistFor(args.media, 'native'),
+    durationSec: args.media.durationSec,
+    initialRendition: 0,
+    startSec: args.startSec,
+    direct: false,
+    listeners: args.listeners,
+  });
+}
+
 /** Build the backend for a resolved plan. Always succeeds: unlike the web
  * `<video>` path there is no element to wait for, the player owns its surface -
  * which is also why `dom` is ignored here. */
@@ -95,10 +140,11 @@ export function createTvEngine(args: {
   dom: { video: HTMLVideoElement | null; nativeHls: boolean | undefined };
   listeners: EngineListeners;
 }): TvEngine | null {
+  const media = { kind: 'item', item: args.item } as const;
   if (args.plan.eng === 'vlc') {
     return new VlcEngine({
       client: args.client,
-      item: args.item,
+      media,
       durationSec: args.durationSec,
       initialRendition: args.rendition,
       startSec: args.startSec,
@@ -109,7 +155,7 @@ export function createTvEngine(args: {
   }
   return new ExpoVideoEngine({
     client: args.client,
-    item: args.item,
+    media,
     durationSec: args.durationSec,
     initialRendition: args.rendition,
     startSec: args.startSec,

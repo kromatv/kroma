@@ -6,8 +6,8 @@ use kroma_primitives::clean_label as clean;
 use crate::model::{CastPlayback, MediaItem};
 
 use super::{
-    trim_tracks, Announce, Announced, Hello, Receiver, Registry, StateChange, MAX_NAME,
-    MAX_PLATFORM, MAX_RECEIVERS,
+    bounded, Announce, Announced, Hello, Receiver, Registry, StateChange, MAX_NAME, MAX_PLATFORM,
+    MAX_RECEIVERS,
 };
 
 #[cfg(test)]
@@ -26,12 +26,13 @@ impl Registry {
     ) -> Announced {
         let name = clean(&ann.name, MAX_NAME);
         let platform = clean(&ann.platform, MAX_PLATFORM);
+        let playback = ann.playback.and_then(bounded);
         let mut map = self.inner.write().unwrap();
         map.retain(|_, r| r.live());
 
         let changed = match map.get(&ann.receiver_id) {
             Some(r) if r.user_id != user_id => return Announced::Taken,
-            Some(r) => r.differs(ann.playback.as_ref()) || r.name != name,
+            Some(r) => r.differs(playback.as_ref()) || r.name != name,
             None if map.len() >= MAX_RECEIVERS => return Announced::Full,
             None => true,
         };
@@ -57,13 +58,7 @@ impl Registry {
         entry.platform = platform;
         entry.username = username.to_string();
         entry.network = network;
-        if item.is_some() {
-            entry.item = item;
-        }
-        if ann.playback.is_none() {
-            entry.item = None;
-        }
-        entry.playback = ann.playback.map(trim_tracks);
+        entry.show(playback, item);
         entry.last_seen = Instant::now();
 
         // What is left after the ack is replayed: the WS push may never have landed.
@@ -105,19 +100,14 @@ impl Registry {
         playback: Option<CastPlayback>,
         item: Option<MediaItem>,
     ) -> Option<StateChange> {
+        let playback = playback.and_then(bounded);
         let mut map = self.inner.write().unwrap();
         let entry = map.get_mut(receiver_id)?;
         let material = entry.differs(playback.as_ref());
-        if item.is_some() {
-            entry.item = item;
-        }
-        if playback.is_none() {
-            entry.item = None;
-        }
-        entry.playback = playback.map(trim_tracks);
+        entry.show(playback, item);
         entry.last_seen = Instant::now();
         Some(if material {
-            StateChange::Row(entry.view())
+            StateChange::Row(Box::new(entry.view()))
         } else {
             match entry.playback.as_ref() {
                 Some(pb) => StateChange::Position {

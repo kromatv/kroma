@@ -11,7 +11,8 @@ fn p(name: &str) -> ParsedRelease {
 fn profile() -> Profile {
     Profile {
         resolution: Res::R1080,
-        prefer_hevc: true,
+        unstated_resolution: UnstatedResolution::Refuse,
+        preferred_codec: Some(Codec::Hevc),
         min_seeders: 2,
         max_size_bytes_movie: 15 * GB,
         max_size_bytes_episode: 3 * GB,

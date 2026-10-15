@@ -12,6 +12,7 @@ import { DeviceId, KromaApiError, type KromaClient } from '@kromatv/client';
 import type { CastReceiver } from '@kromatv/client/cast';
 import { ItemId } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
+import { DownloadId } from '@kromatv/client/watchable';
 import { act, render, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -165,6 +166,54 @@ describe('sending', () => {
     expect(result.current.active?.id).toBe(SALON_ID);
     // Optimistic, so the remote doesn't sit at 0:00 while the TV starts.
     expect(result.current.positionMs).toBeGreaterThanOrEqual(60_000);
+  });
+
+  it('starts a watch download and takes over that TV', async () => {
+    const client = castClient();
+    const { result } = mount(client);
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+    const watch = {
+      mount: '/api/module/tv.example.swarm',
+      id: DownloadId.parse('f13348a88094f2e1'),
+      file: 1,
+      title: 'Kaamelott',
+    };
+
+    await act(async () => {
+      await result.current.watchOn(SALON_ID, watch, 30_000);
+    });
+
+    expect(client.cast.command).toHaveBeenCalledWith(SALON_ID, {
+      type: 'watch',
+      watch,
+      positionMs: 30_000,
+    });
+    expect(result.current.active?.id).toBe(SALON_ID);
+    expect(result.current.positionMs).toBeGreaterThanOrEqual(30_000);
+  });
+
+  it('follows the position of a watch download the TV reports', async () => {
+    const watching = salon({
+      nowWatching: {
+        watch: {
+          mount: '/api/module/tv.example.swarm',
+          id: DownloadId.parse('f13348a88094f2e1'),
+          file: 1,
+          title: 'Kaamelott',
+        },
+        positionMs: 42_000,
+        state: 'paused',
+        audioTracks: [],
+        subtitles: [],
+      },
+    });
+    const client = castClient({ receivers: vi.fn(async () => [watching]) });
+    const { result } = mount(client);
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+
+    act(() => result.current.select(SALON_ID));
+
+    await waitFor(() => expect(result.current.positionMs).toBe(42_000));
   });
 
   it('reports a TV that went away, and stops driving it', async () => {

@@ -16,6 +16,11 @@ export interface PermissionMeta {
  * `Permission` enum (`server/src/domain/accounts.rs`). */
 export const PERMISSIONS: readonly PermissionMeta[] = [
   { key: 'playback', labelKey: 'permissions.playback', hintKey: 'permissions.playbackHint' },
+  {
+    key: 'watchable.play',
+    labelKey: 'permissions.watchablePlay',
+    hintKey: 'permissions.watchablePlayHint',
+  },
   { key: 'library.manage', labelKey: 'permissions.library', hintKey: 'permissions.libraryHint' },
   { key: 'users.manage', labelKey: 'permissions.users', hintKey: 'permissions.usersHint' },
   { key: 'settings.manage', labelKey: 'permissions.settings', hintKey: 'permissions.settingsHint' },

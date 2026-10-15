@@ -29,7 +29,7 @@ function engine(startSec = 0, L = listeners(), durationSec = 1470) {
     L,
     e: new VlcEngine({
       client,
-      item,
+      media: { kind: 'item', item },
       durationSec,
       initialRendition: 0,
       startSec,

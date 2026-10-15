@@ -10,3 +10,4 @@
 // See TvQuickConnect for the same trap, hit with the QR code library.
 
 export { TvPlayer } from '#tv/features/playback/TvPlayer';
+export { TvWatch } from '#tv/features/playback/watch/TvWatch';

@@ -75,8 +75,9 @@ export class AvplayEngine extends BaseTvEngine {
   /** A filtered master carries the loudness filter in its mode segment: AVPlay
    * has no client-side audio DSP, so the server's remux applies it instead. */
   protected sourceUrl(): string {
-    if (this.mode === 'master' && this.filter !== 'off') {
-      return this.client.media.hlsMasterUrl(this.item.id, false, this.baseSec, this.rendition, {
+    const media = this.media;
+    if (media.kind === 'item' && this.mode === 'master' && this.filter !== 'off') {
+      return this.client.media.hlsMasterUrl(media.item.id, false, this.baseSec, this.rendition, {
         filter: serverAudioFilter(this.filter),
         copyCodecs: this.declaredAudioCodecs(),
         videoCodecs: this.declaredVideoCodecs(),

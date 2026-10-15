@@ -8,10 +8,12 @@ mod accounts;
 mod audience;
 mod metadata;
 mod notifications;
+mod permission;
 mod streams;
 
 pub use accounts::*;
 pub use audience::*;
 pub use metadata::*;
 pub use notifications::*;
+pub use permission::*;
 pub use streams::*;

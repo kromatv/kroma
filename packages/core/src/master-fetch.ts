@@ -36,13 +36,20 @@ export async function fetchMaster(url: string, signal?: AbortSignal): Promise<Re
  * answers, or answers without naming its start, keeps the requested anchor. */
 export async function resolveMasterStart(url: string, requested: number): Promise<number> {
   if (requested <= AT_FILM_START_SEC) return 0;
+  return readyMasterStart(url, requested);
+}
+
+/** [`resolveMasterStart`] that asks the server at every anchor, zero included,
+ * for a native player that cannot retry a playlist it has not written yet. */
+export async function readyMasterStart(url: string, requested: number): Promise<number> {
+  const floor = requested <= AT_FILM_START_SEC ? 0 : requested;
   try {
     const r = await fetchMaster(url);
-    if (r.status >= 400) return requested;
+    if (r.status >= 400 || floor === 0) return floor;
     const real = namedStart(r);
-    return Number.isFinite(real) ? real : requested;
+    return Number.isFinite(real) ? real : floor;
   } catch {
-    return requested;
+    return floor;
   }
 }
 

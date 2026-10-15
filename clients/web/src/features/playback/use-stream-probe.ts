@@ -1,11 +1,17 @@
-import type { ItemId } from '@kromatv/client/media';
-import { decodableVideoCodecs, type EngineDecision, streamRefusal } from '@kromatv/core';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type EngineDecision,
+  fetchMaster,
+  type PlayedStream,
+  playedStream,
+  streamRefusal,
+} from '@kromatv/core';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { PlaybackSource } from '#web/features/playback/playback-source';
 import type { StreamFailure } from '#web/features/playback/stream-failure';
 import { kromaClient } from '#web/shared/lib/api';
 
 interface ProbeInput {
-  itemId: ItemId;
+  masterUrl: PlaybackSource['masterUrl'];
   decision: EngineDecision;
   anchor: number;
   audioIndex: number;
@@ -17,6 +23,7 @@ export interface StreamProbe {
   baseSec: number;
   srcReady: boolean;
   serverDurSec: number;
+  played: PlayedStream | null;
   failure: StreamFailure | null;
   refused: (status: number, resumeAt?: number) => void;
   fail: (failure: StreamFailure) => void;
@@ -36,7 +43,7 @@ function numberHeader(r: Response, name: string): number {
  * asks again from `resumeAt` when the refusal came mid-film.
  */
 export function useStreamProbe({
-  itemId,
+  masterUrl,
   decision,
   anchor,
   audioIndex,
@@ -46,6 +53,7 @@ export function useStreamProbe({
   const [baseSec, setBaseSec] = useState(0);
   const [srcReady, setSrcReady] = useState(false);
   const [serverDurSec, setServerDurSec] = useState(0);
+  const [modeToken, setModeToken] = useState<string | null>(null);
   const [failure, setFailure] = useState<StreamFailure | null>(null);
   const [renewals, setRenewals] = useState(0);
   const renewed = useRef(false);
@@ -78,16 +86,15 @@ export function useStreamProbe({
     if (!booted) return;
     setSrcReady(false);
     setFailure(null);
+    setModeToken(null);
     if (decision.kind === 'direct') {
       setBaseSec(0);
       setSrcReady(true);
       return;
     }
+    const abandoned = new AbortController();
     let cancelled = false;
-    const url = kromaClient().media.hlsMasterUrl(itemId, decision.aacMaster, anchor, audioIndex, {
-      videoCodecs: decodableVideoCodecs(),
-    });
-    fetch(url)
+    fetchMaster(masterUrl(decision.aacMaster, anchor, audioIndex), abandoned.signal)
       .then((r) => {
         if (cancelled) return;
         if (streamRefusal(r.status)) {
@@ -99,6 +106,7 @@ export function useStreamProbe({
         const total = numberHeader(r, 'X-Media-Duration');
         setBaseSec(Number.isFinite(start) ? start : anchor);
         if (Number.isFinite(total) && total > 0) setServerDurSec(total);
+        setModeToken(r.headers.get('X-Hls-Mode'));
         setSrcReady(true);
       })
       .catch(() => {
@@ -108,8 +116,10 @@ export function useStreamProbe({
       });
     return () => {
       cancelled = true;
+      abandoned.abort();
     };
-  }, [itemId, decision, anchor, audioIndex, booted, renewals, refused]);
+  }, [masterUrl, decision, anchor, audioIndex, booted, renewals, refused]);
 
-  return { baseSec, srcReady, serverDurSec, failure, refused, fail: setFailure };
+  const played = useMemo(() => playedStream(modeToken), [modeToken]);
+  return { baseSec, srcReady, serverDurSec, played, failure, refused, fail: setFailure };
 }

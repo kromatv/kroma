@@ -684,6 +684,7 @@
   "admin.vpnTitle": "VPN & kill switch",
   "admin.watchAutoScan": "Analyse automatique de la bibliothèque",
   "admin.watchAutoScanHint": "Détecte les ajouts/suppressions de fichiers et relance un scan automatiquement.",
+  "admin.watchDownloading": "En téléchargement",
   "admin.watchLog": "Journal de lecture",
   "admin.watchLogCount": "{count} lectures"
 }

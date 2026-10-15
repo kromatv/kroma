@@ -24,7 +24,7 @@ pub fn record(pool: &Pool, s: &Session) {
         &kroma_domain::PlayRecord {
             user_id: s.user_id.clone(),
             username: Some(s.username.clone()),
-            item_id: Some(s.item_id.clone()),
+            item_id: s.playing.item_id().map(str::to_owned),
             kind: s.kind.clone(),
             title: s.title.clone(),
             library: some(&s.library),

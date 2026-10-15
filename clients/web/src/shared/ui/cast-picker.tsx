@@ -5,6 +5,8 @@
 // state to ask. Its single root is mounted in the app shell.
 
 import type { DeviceId } from '@kromatv/client';
+import type { CastReceiver } from '@kromatv/client/cast';
+import { castShowing, castShownTitle } from '@kromatv/core';
 import { useCast, useT } from '@kromatv/ui';
 import { Dialog, EmptyState, Icon, type IconName, ListRow } from '@kromatv/ui/kit';
 import { createCallable } from 'react-call';
@@ -14,6 +16,11 @@ export interface CastPickerProps {
 }
 
 type Picked = DeviceId | null | undefined;
+
+function detailOf(receiver: CastReceiver): string | null {
+  const showing = castShowing(receiver);
+  return showing ? castShownTitle(showing) : null;
+}
 
 export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offerLocal }) => {
   const t = useT();
@@ -36,11 +43,7 @@ export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offer
               key={r.id}
               icon="device-tv"
               name={r.name}
-              detail={
-                r.nowPlaying
-                  ? (r.nowPlaying.item.metadata?.title ?? r.nowPlaying.item.title)
-                  : `${r.username} · ${t('cast.idle')}`
-              }
+              detail={detailOf(r) ?? `${r.username} · ${t('cast.idle')}`}
               selected={active?.id === r.id}
               onPick={() => call.end(r.id)}
             />

@@ -30,10 +30,7 @@ impl DownloadManager {
             );
         }
         drop(conn);
-        let clients = self.store().get()?;
-        let client = db::preferred_download_client(&clients)?
-            .ok_or_else(|| anyhow!("no enabled download client"))?;
-        drop(clients);
+        let client = self.grab_client(spec.client_id.as_deref())?;
 
         let id = kroma_module_sdk::primitives::short_hash(&format!(
             "download|{}|{}",
@@ -78,6 +75,9 @@ impl DownloadManager {
             match_source: spec.tmdb_id.map(|_| crate::MatchSource::Pinned),
         };
         db::insert_download(self.core(), &row)?;
+        if spec.ephemeral {
+            db::mark_ephemeral(self.store(), &row.id)?;
+        }
         db::set_wanted_status(self.core(), &spec.wanted_ids, "grabbed", now_ms())?;
         if let Some(req_id) = &row.request_id {
             // Deliberately not persisted: `downloading` is derived at read time
@@ -94,7 +94,11 @@ impl DownloadManager {
     /// Background phase of a grab: slow (up to a couple of minutes), and safe
     /// to run detached from the request that queued it.
     pub fn activate(&self, host: &dyn HostCtx, row: &DownloadRow) {
-        if !self.slot_available(host) {
+        let start = match self.ephemeral_ids().is_ok_and(|ids| ids.contains(&row.id)) {
+            true => super::Start::ForAViewer,
+            false => super::Start::Queued,
+        };
+        if !self.slot_available(host, start) {
             tracing::info!(
                 release = %row.release_title,
                 "parallelism cap reached; download held in the queue"

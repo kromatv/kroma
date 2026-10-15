@@ -2,6 +2,7 @@ import type { MediaItem } from '@kromatv/client/media';
 import {
   audioTrackId,
   audioTracksOf,
+  type BufferPlan,
   type DirectPlayVerdict,
   resolveAudioRelativeIndex,
 } from '@kromatv/core';
@@ -18,6 +19,26 @@ import type { AudioFilterMode, PlaneRect } from '@kromatv/ui';
 /** Why a title stopped, as the player renders it: a direct-play verdict without
  * the verdict, because the reasons are the same reasons. */
 export type PlayerFailure = Omit<DirectPlayVerdict, 'canDirectPlay'>;
+
+export type EngineMedia =
+  | { kind: 'item'; item: MediaItem }
+  | { kind: 'hls'; master: (anchorSec: number) => string; plan: BufferPlan };
+
+export type WatchDecoder = 'native' | 'mse';
+
+export interface WatchMedia {
+  playlist: (decoder: WatchDecoder, anchorSec: number) => string;
+  plan: BufferPlan;
+  durationSec: number;
+}
+
+export function playlistFor(media: WatchMedia, decoder: WatchDecoder): EngineMedia {
+  return {
+    kind: 'hls',
+    master: (anchorSec) => media.playlist(decoder, anchorSec),
+    plan: media.plan,
+  };
+}
 
 /** Normalised lifecycle callbacks the hook subscribes to (absolute seconds). */
 export interface EngineListeners {
@@ -51,6 +72,7 @@ export interface TvEngine {
   pause(): void;
   isPaused(): boolean;
   position(): number;
+  anchor(): number;
   duration(): number;
   /** How far ahead the backend holds, in absolute seconds, or `null` when it
    *  has no buffered range to report - libVLC's Android binding exposes how
@@ -68,6 +90,11 @@ export interface TvEngine {
   recoverStall?(): boolean;
   // Rebuild the source at `absSec`, discarding whatever the backend still holds.
   restart(absSec: number): void;
+  // Open the playlist it already holds again, landing on `absSec`, so a stream
+  // that stopped is read from the session it was already reading rather than a
+  // new anchor. Absent where a backend cannot, and the caller falls back to
+  // `restart`.
+  reload?(absSec: number): void;
   setAudioRendition(rendition: number): void;
   // Resize the native video plane to a fraction-rect, or `null` for fullscreen. Only AVPlay/mpv
   // implement it; the HTML `<video>` engine CSS-transforms its element instead.

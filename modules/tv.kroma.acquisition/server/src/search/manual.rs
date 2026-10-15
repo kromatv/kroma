@@ -44,7 +44,7 @@ fn query_for(body: &ManualSearchBody, text: &str) -> Query {
 /// Free-text manual search across every enabled indexer: parse each result for
 /// quality/episode hints and sort best-first, with no accept/reject scoring
 /// since there's no specific target.
-pub fn manual_search<S: HostStorage>(
+pub fn manual_search<S: HostStorage + Clone>(
     state: &S,
     body: &ManualSearchBody,
 ) -> Result<ManualSearchView> {
@@ -62,9 +62,9 @@ pub fn manual_search<S: HostStorage>(
         ));
     }
 
-    let query = query_for(body, q);
-    let (found, reports) = crate::search::sweep::sweep(&indexers, |indexer| {
-        Ok(crate::search_indexer(state, indexer, &query)?
+    let (asking, query) = (state.clone(), query_for(body, q));
+    let (found, reports) = crate::search::sweep::sweep(&indexers, None, move |indexer| {
+        Ok(crate::search_indexer(&asking, indexer, &query)?
             .into_iter()
             .map(|r| to_view(&r, &indexer.id, &indexer.name))
             .collect())

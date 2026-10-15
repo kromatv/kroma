@@ -15,5 +15,7 @@
   "permissions.settings": "Réglages",
   "permissions.settingsHint": "Configuration du serveur",
   "permissions.users": "Utilisateurs",
-  "permissions.usersHint": "Gérer les comptes + inviter"
+  "permissions.usersHint": "Gérer les comptes + inviter",
+  "permissions.watchablePlay": "Regarder maintenant",
+  "permissions.watchablePlayHint": "Lancer un film avant la fin de son téléchargement"
 }

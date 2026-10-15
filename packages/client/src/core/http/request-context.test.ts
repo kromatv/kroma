@@ -90,6 +90,28 @@ describe('the request itself', () => {
   });
 });
 
+describe('a transport rooted at a mount', () => {
+  it('hangs every path off the mount instead of the core api, bearer and all', async () => {
+    const { ctx, calls } = transport({ text: '{"id":"i1"}' });
+
+    await ctx.at('/api/module/tv.example.thing').get('/watch/:id', Item, { params: { id: 'd 1' } });
+
+    expect(calls[0]?.url).toBe('http://kroma.test/api/module/tv.example.thing/watch/d%201');
+    expect(calls[0]?.headers.get('Authorization')).toBe('Bearer tok');
+  });
+
+  it('builds a media URL under the mount too', () => {
+    const { ctx } = transport();
+
+    expect(
+      ctx.at('/api/module/tv.example.thing').url('/watch/:id/index.m3u8', {
+        params: { id: 'd1' },
+        query: { t: 'tok' },
+      }),
+    ).toBe('http://kroma.test/api/module/tv.example.thing/watch/d1/index.m3u8?t=tok');
+  });
+});
+
 describe('reading the answer', () => {
   it('parses the body through the response schema', async () => {
     const { ctx } = transport({ text: '{"id":"i1","extra":1}' });

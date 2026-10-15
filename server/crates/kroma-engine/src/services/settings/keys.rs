@@ -65,6 +65,7 @@ fn declared() -> Declared {
     let mut m = Declared::new();
     m.public("serverName", json!("KROMA"));
     m.minted("instanceId");
+    m.minted(crate::services::rights::CARRIED_KEY);
     // One key for the whole blob: `{ "<id>": { "enabled": bool, "config": {..} } }`.
     m.core_only("moduleStates", json!({}));
     // Empty = the built-in catalog (modules.json on this repo's GitHub Releases).

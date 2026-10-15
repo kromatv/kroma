@@ -47,7 +47,7 @@ pub fn extract_pending_locked(
         .lock()
         .map_err(|_| "subtitle extraction lock poisoned".to_string())?;
     let pending = pending_text_tracks(data_dir, abs, subs);
-    extract_vtt(abs, &pending, timeout_for(abs), cancel).map(drop)
+    extract_vtt(abs, &pending, None, timeout_for(abs), cancel).map(drop)
 }
 
 /// `<data>/subs/<hash>.vtt`, keyed by file path + mtime + track index so a replaced

@@ -8,3 +8,7 @@ import { lazy } from 'react';
 export const TvPlayer = lazy(() =>
   import('#tv/features/playback/TvPlayer').then((m) => ({ default: m.TvPlayer })),
 );
+
+export const TvWatch = lazy(() =>
+  import('#tv/features/playback/watch/TvWatch').then((m) => ({ default: m.TvWatch })),
+);

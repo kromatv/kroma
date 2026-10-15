@@ -79,6 +79,88 @@ fn other_active_download_with_ref_dedups_by_engine_ref() {
 }
 
 #[test]
+fn a_title_is_live_while_its_own_client_still_holds_a_download_of_it() {
+    let pool = test_db();
+    let seeded = [
+        (1, "queued", "embedded", "movie"),
+        (2, "downloading", "embedded", "movie"),
+        (3, "seeding", "embedded", "movie"),
+        (4, "completed", "embedded", "movie"),
+        (5, "paused", "embedded", "movie"),
+        (6, "failed", "embedded", "movie"),
+        (7, "removed", "embedded", "movie"),
+        (8, "imported", "embedded", "movie"),
+        (9, "downloading", "qbittorrent", "movie"),
+        (10, "downloading", "embedded", "season"),
+        (1, "paused", "embedded", "movie"),
+    ];
+    for (at, (tmdb_id, status, client_id, kind)) in (0..).zip(seeded) {
+        let row = DownloadRow {
+            tmdb_id: Some(tmdb_id),
+            client_id: client_id.into(),
+            kind: kind.into(),
+            ..download(&format!("d{at}"), status, at)
+        };
+        insert_download(&pool, &row).unwrap();
+    }
+    let conn = pool.get().unwrap();
+
+    let live: Vec<Option<String>> = (1..=10)
+        .map(|tmdb_id| live_downloads_for_title(&conn, tmdb_id, "embedded").unwrap())
+        .map(|rows| {
+            rows.into_iter()
+                .find(|row| covers(row, "movie", None) == Covers::Yes)
+                .map(|row| row.id)
+        })
+        .collect();
+
+    let newest_live = ["d10", "d1", "d2", "d3", "d4"].map(|id| Some(id.to_string()));
+    assert_eq!(live[..5], newest_live);
+    assert!(live[5..].iter().all(Option::is_none));
+}
+
+#[test]
+fn an_episode_is_live_in_its_own_release_and_a_pack_answers_for_its_files_alone() {
+    let pack = DownloadRow {
+        kind: "season".into(),
+        season: Some(1),
+        episodes: Some(Vec::new()),
+        ..download("p1", "downloading", 1)
+    };
+    let named = DownloadRow {
+        kind: "episode".into(),
+        season: Some(2),
+        episodes: Some(vec![3, 4]),
+        ..download("e3", "downloading", 2)
+    };
+
+    let verdicts = [
+        covers(&pack, "show", Some((1, 5))),
+        covers(&pack, "show", Some((2, 5))),
+        covers(&named, "show", Some((2, 4))),
+        covers(&named, "show", Some((2, 9))),
+    ];
+
+    assert_eq!(
+        verdicts,
+        [
+            Covers::IfItsFilesHold(5),
+            Covers::No,
+            Covers::Yes,
+            Covers::No
+        ]
+    );
+}
+
+#[test]
+fn a_title_with_no_episode_asked_for_is_covered_by_its_own_kind() {
+    let film = download("d1", "downloading", 1);
+
+    assert_eq!(covers(&film, "movie", None), Covers::Yes);
+    assert_eq!(covers(&film, "show", None), Covers::No);
+}
+
+#[test]
 fn requests_with_active_downloads_rollup() {
     let pool = test_db();
     seed_request(&pool, "req1", "T");

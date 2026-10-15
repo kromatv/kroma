@@ -1,6 +1,6 @@
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
-import type { MovieView } from '#web/shared/lib/api';
+import type { PlaybackSource } from '#web/features/playback/playback-source';
 
 /** The engine/subtitle surface the `useWebController` suites stub out. */
 export const H = {
@@ -81,12 +81,17 @@ function makeSubs(over: Record<string, unknown> = {}) {
   };
 }
 
-export const item = {
-  id: 'm1',
-  stream: '/stream.m3u8',
+export const source = {
+  itemId: 'm1',
+  title: 'Blade Runner',
+  container: 'mkv',
+  durationMs: 100_000,
   video: {},
-  subs: [],
-} as unknown as MovieView;
+  audioTracks: [],
+  sizeBytes: null,
+  directUrl: () => '/stream.m3u8',
+  notice: (mode: string) => (mode === 'remux' ? { messageKey: 'player.repackaged' } : null),
+} as unknown as PlaybackSource;
 
 /** Registers the per-test reset every `useWebController` suite shares. */
 export function installHarness(): void {

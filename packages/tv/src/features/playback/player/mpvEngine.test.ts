@@ -99,7 +99,7 @@ const props = (name: string, data: unknown) => ({ name, data });
 function opts(over: Partial<EngineOptions> = {}): EngineOptions {
   return {
     client,
-    item,
+    media: { kind: 'item', item },
     durationSec: 100,
     initialRendition: 0,
     startSec: 0,

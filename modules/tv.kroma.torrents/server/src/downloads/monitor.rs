@@ -91,6 +91,7 @@ impl DownloadManager {
         let had_active = self.tick(host);
         self.sample_bandwidth(host);
         self.retry_deferred_drops();
+        self.evict_idle_watches();
         had_active
     }
 

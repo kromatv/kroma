@@ -2,9 +2,8 @@ use axum::http::StatusCode;
 use serde_json::json;
 
 use crate::api::test_support::{
-    demo_item_id, demo_show_id, get, raw, seed_session, send, test_app, test_app_with_tmdb,
+    demo_item_id, demo_show_id, get, raw, send, test_app, test_app_with_tmdb,
 };
-use crate::model::Permission;
 
 #[tokio::test]
 async fn content_routes_reject_anonymous_callers() {
@@ -284,42 +283,4 @@ async fn metadata_404s_unknown_ids_once_a_key_is_configured() {
     assert_eq!(status, StatusCode::NOT_FOUND);
     let (status, _) = get(&t.app, "/api/shows/no-such-show/metadata", Some(&t.token)).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
-}
-
-#[tokio::test]
-async fn discover_is_gated_by_permission_then_by_tmdb() {
-    let t = test_app();
-
-    let (status, _) = get(&t.app, "/api/discover/search?q=dune", Some(&t.token)).await;
-    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
-
-    let (_, member) = seed_session(
-        &t.state,
-        "viewer@test.dev",
-        "viewer",
-        &[Permission::Playback],
-    );
-    let (status, _) = get(&t.app, "/api/discover/search?q=dune", Some(&member)).await;
-    assert_eq!(status, StatusCode::FORBIDDEN);
-}
-
-#[tokio::test]
-async fn discover_trending_and_detail_follow_the_same_gates() {
-    let t = test_app();
-    let (_, member) = seed_session(
-        &t.state,
-        "viewer2@test.dev",
-        "viewer2",
-        &[Permission::Playback],
-    );
-
-    let (status, _) = get(&t.app, "/api/discover/trending?type=movie", Some(&t.token)).await;
-    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
-    let (status, _) = get(&t.app, "/api/discover/trending", Some(&member)).await;
-    assert_eq!(status, StatusCode::FORBIDDEN);
-
-    let (status, _) = get(&t.app, "/api/discover/movie/603", Some(&t.token)).await;
-    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
-    let (status, _) = get(&t.app, "/api/discover/movie/603", Some(&member)).await;
-    assert_eq!(status, StatusCode::FORBIDDEN);
 }

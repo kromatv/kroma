@@ -16,7 +16,8 @@ import { type DeviceId, KromaApiError, type KromaClient } from '@kromatv/client'
 import type { CastCommand, CastReceiver } from '@kromatv/client/cast';
 import { KromaEvents } from '@kromatv/client/events';
 import type { ItemId } from '@kromatv/client/media';
-import type { LanDiscoveryBridge } from '@kromatv/core';
+import type { WatchItem } from '@kromatv/client/watchable';
+import { castShowing, type LanDiscoveryBridge } from '@kromatv/core';
 import {
   type ReactNode,
   useCallback,
@@ -152,7 +153,7 @@ export function CastProvider({
 
   // Advance the interpolated position while the active TV is playing. One timer,
   // only while it is needed: an idle or paused receiver costs nothing.
-  const playing = active?.nowPlaying?.state === 'playing';
+  const playing = castShowing(active)?.state === 'playing';
   useEffect(() => {
     if (!playing) return;
     const iv = setInterval(rerender, TICK_MS);
@@ -185,19 +186,32 @@ export function CastProvider({
     [client, refresh],
   );
 
-  const playOn = useCallback(
-    async (receiverId: DeviceId, itemId: ItemId, positionMs = 0) => {
-      const ok = await sendTo(receiverId, { type: 'play', itemId, positionMs });
+  const start = useCallback(
+    async (receiverId: DeviceId, command: Extract<CastCommand, { type: 'play' | 'watch' }>) => {
+      const ok = await sendTo(receiverId, command);
       if (ok) {
         setActiveId(receiverId);
         socket.current?.send({ type: 'cast.control', receiverId, name: name.current });
         // Optimistic: the TV's own heartbeat corrects this within a beat, but the
         // remote should not sit at 0:00 while it starts.
+        const positionMs = command.positionMs ?? 0;
         setBase({ id: receiverId, positionMs, playing: true, at: Date.now() });
       }
       return ok;
     },
     [sendTo],
+  );
+
+  const playOn = useCallback(
+    (receiverId: DeviceId, itemId: ItemId, positionMs = 0) =>
+      start(receiverId, { type: 'play', itemId, positionMs }),
+    [start],
+  );
+
+  const watchOn = useCallback(
+    (receiverId: DeviceId, watch: WatchItem, positionMs = 0) =>
+      start(receiverId, { type: 'watch', watch, positionMs }),
+    [start],
   );
 
   const send = useCallback(
@@ -218,12 +232,13 @@ export function CastProvider({
         : { type: 'cast.release' },
     );
     const next = receiverId ? receiversRef.current.find((r) => r.id === receiverId) : null;
+    const showing = castShowing(next);
     setBase(
-      next?.nowPlaying
+      next && showing
         ? {
             id: next.id,
-            positionMs: next.nowPlaying.positionMs,
-            playing: next.nowPlaying.state === 'playing',
+            positionMs: showing.positionMs,
+            playing: showing.state === 'playing',
             at: Date.now(),
           }
         : null,
@@ -239,10 +254,11 @@ export function CastProvider({
       positionMs,
       select,
       playOn,
+      watchOn,
       send,
       error,
     }),
-    [receivers, pairable, active, positionMs, select, playOn, send, error],
+    [receivers, pairable, active, positionMs, select, playOn, watchOn, send, error],
   );
 
   return <CastCtx.Provider value={value}>{children}</CastCtx.Provider>;

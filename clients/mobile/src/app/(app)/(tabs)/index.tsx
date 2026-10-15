@@ -13,6 +13,7 @@ import { KromaLockup } from '#mobile/components/KromaLockup';
 import { NotificationBell } from '#mobile/components/NotificationBell';
 import { ProgressRing } from '#mobile/components/ProgressRing';
 import { ErrorView, Loading, SectionTitle } from '#mobile/components/ui';
+import { WatchableRail } from '#mobile/components/WatchableRail';
 import { useDownloads } from '#mobile/lib/downloads';
 import { featuredProgress } from '#mobile/lib/featured';
 import { filterEntries, filterResume, type TitleFilter } from '#mobile/lib/homeFilter';
@@ -158,6 +159,7 @@ export default function Home() {
           <ContinueRail entries={resume} client={client} />
         </Box>
       ) : null}
+      <WatchableRail />
       <MyListRail filter={filter} />
       {sections.map((section) => (
         <Box key={section.id}>

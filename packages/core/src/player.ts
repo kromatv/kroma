@@ -1,5 +1,5 @@
 import type { KromaClient } from '@kromatv/client';
-import type { MediaItem } from '@kromatv/client/media';
+import type { MediaItem, VideoTrack } from '@kromatv/client/media';
 import { canDirectPlay, capabilities, type DirectPlayVerdict } from './hevc';
 
 export interface AttachOptions {
@@ -43,15 +43,17 @@ export function attachDirectPlay(
 }
 
 /**
- * The picture's display ratio (width / height) as the CATALOG declares it, or
- * undefined when the item carries no usable dimensions. Storage geometry, so an
- * anamorphic source is off by its pixel ratio: a player that can read the
- * decoder's own size should report that instead and keep this as the seed.
+ * The picture's display ratio (width / height) as the stream DECLARES it.
+ * Storage geometry, so an anamorphic source is off by its pixel ratio.
  */
-export function declaredAspect(item: MediaItem): number | undefined {
-  const width = item.video?.width ?? 0;
-  const height = item.video?.height ?? 0;
+export function videoAspect(video: VideoTrack | null | undefined): number | undefined {
+  const width = video?.width ?? 0;
+  const height = video?.height ?? 0;
   return width > 0 && height > 0 ? width / height : undefined;
+}
+
+export function declaredAspect(item: MediaItem): number | undefined {
+  return videoAspect(item.video);
 }
 
 /** Formats a runtime as `"2h08"` or `"47min"`. */

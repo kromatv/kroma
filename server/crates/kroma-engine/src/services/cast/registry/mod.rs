@@ -10,9 +10,10 @@ use std::time::{Duration, Instant};
 use kroma_primitives::clean_label as clean;
 
 use crate::model::{
-    CastCommandEnvelope, CastController, CastNowPlaying, CastPlayback, CastReceiver, CastState,
-    MediaItem,
+    CastCommandEnvelope, CastController, CastNowPlaying, CastNowWatching, CastPlayback,
+    CastReceiver, CastState, CastTransport, MediaItem,
 };
+use crate::services::playback::Playing;
 
 mod announce;
 mod controllers;
@@ -50,7 +51,7 @@ pub struct Hello {
 }
 
 pub enum StateChange {
-    Row(CastReceiver),
+    Row(Box<CastReceiver>),
     Position {
         position_ms: i64,
         duration_ms: Option<i64>,
@@ -99,21 +100,24 @@ impl Receiver {
     }
 
     fn view(&self) -> CastReceiver {
-        let now_playing = match (self.item.as_ref(), self.playback.as_ref()) {
-            (Some(item), Some(pb)) if pb.state != CastState::Idle => Some(CastNowPlaying {
-                item: item.clone(),
-                position_ms: pb.position_ms,
-                duration_ms: pb
-                    .duration_ms
-                    .or_else(|| item.duration_ms.and_then(|d| i64::try_from(d).ok())),
-                state: pb.state,
-                audio_tracks: pb.audio_tracks.clone(),
-                audio_index: pb.audio_index,
-                subtitles: pb.subtitles.clone(),
-                subtitle_index: pb.subtitle_index,
-            }),
-            _ => None,
-        };
+        let shown = self
+            .playback
+            .as_ref()
+            .filter(|pb| pb.state != CastState::Idle);
+        let now_playing = shown.and_then(|pb| {
+            let item = self.item.clone().filter(|_| pb.watch.is_none())?;
+            let runtime = item.duration_ms.and_then(|d| i64::try_from(d).ok());
+            Some(CastNowPlaying {
+                transport: transport(pb, runtime),
+                item,
+            })
+        });
+        let now_watching = shown.and_then(|pb| {
+            Some(CastNowWatching {
+                watch: pb.watch.clone()?,
+                transport: transport(pb, None),
+            })
+        });
         CastReceiver {
             id: self.id.clone(),
             name: self.name.clone(),
@@ -121,6 +125,7 @@ impl Receiver {
             username: self.username.clone(),
             network: self.network.clone(),
             now_playing,
+            now_watching,
             controllers: {
                 let mut list: Vec<CastController> =
                     self.controllers.values().map(|c| c.view.clone()).collect();
@@ -131,11 +136,22 @@ impl Receiver {
         }
     }
 
+    fn show(&mut self, playback: Option<CastPlayback>, item: Option<MediaItem>) {
+        if item.is_some() {
+            self.item = item;
+        }
+        if playback.as_ref().is_none_or(|pb| pb.item_id.is_none()) {
+            self.item = None;
+        }
+        self.playback = playback;
+    }
+
     fn differs(&self, next: Option<&CastPlayback>) -> bool {
         match (self.playback.as_ref(), next) {
             (None, None) => false,
             (Some(a), Some(b)) => {
                 a.item_id != b.item_id
+                    || a.watch != b.watch
                     || a.state != b.state
                     || a.audio_index != b.audio_index
                     || a.subtitle_index != b.subtitle_index
@@ -209,14 +225,30 @@ pub fn valid_receiver_id(id: &str) -> bool {
     kroma_primitives::valid_device_id(id)
 }
 
-fn trim_tracks(mut pb: CastPlayback) -> CastPlayback {
+fn transport(pb: &CastPlayback, runtime: Option<i64>) -> CastTransport {
+    CastTransport {
+        position_ms: pb.position_ms,
+        duration_ms: pb.duration_ms.or(runtime),
+        state: pb.state,
+        audio_tracks: pb.audio_tracks.clone(),
+        audio_index: pb.audio_index,
+        subtitles: pb.subtitles.clone(),
+        subtitle_index: pb.subtitle_index,
+    }
+}
+
+fn bounded(mut pb: CastPlayback) -> Option<CastPlayback> {
+    match Playing::named(pb.item_id.take(), pb.watch.take())? {
+        Playing::Item(id) => pb.item_id = Some(id),
+        Playing::Watch(watch) => pb.watch = Some(watch),
+    }
     for list in [&mut pb.audio_tracks, &mut pb.subtitles] {
         list.truncate(MAX_TRACKS);
         for track in list.iter_mut() {
             track.label = clean(&track.label, MAX_TRACK_LABEL);
         }
     }
-    pb
+    Some(pb)
 }
 
 #[cfg(test)]

@@ -1,14 +1,18 @@
+import { hasPermission } from '@kromatv/client/accounts';
 import { type DiscoverEntry, tmdbKindOf } from '@kromatv/client/discovery';
 import type { SubjectId } from '@kromatv/client/media';
 import type { RequestStatus } from '@kromatv/client/requests';
-import { posterColors, sizedImageUrl } from '@kromatv/core';
+import { posterColors, sizedImageUrl, watchableTitle } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Img, rhythm, Text } from '@kromatv/ui/kit';
+import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
 import { savedTitleId } from '#web/shared/lib/saved-title-id';
+import { watchRoute } from '#web/shared/lib/watch-route';
+import { useWatchable } from '#web/shared/lib/watchable';
 import { useWatched } from '#web/shared/lib/watched';
 import type { PosterAction } from '#web/shared/ui/poster-action-bar';
 import { PosterTile } from '#web/shared/ui/poster-tile';
@@ -45,14 +49,23 @@ interface TileToggles {
   requesting: boolean;
   bookmarked: boolean;
   seen: boolean;
+  onWatch: (() => void) | null;
   onRequest: () => void;
   onToggleList: (id: SubjectId) => void;
   onToggleWatched: (id: SubjectId) => void;
 }
 
 function cardActions(t: Translate, toggles: Readonly<TileToggles>): PosterAction[] {
-  const { listId, bookmarked, seen } = toggles;
+  const { listId, bookmarked, seen, onWatch } = toggles;
   const actions: PosterAction[] = [];
+  if (onWatch) {
+    actions.push({
+      key: 'watch',
+      icon: 'player-play-filled',
+      label: t('discover.watch'),
+      onSelect: onWatch,
+    });
+  }
   if (toggles.canRequest) {
     actions.push({
       key: 'request',
@@ -85,8 +98,10 @@ function cardActions(t: Translate, toggles: Readonly<TileToggles>): PosterAction
 
 export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; width?: number }>) {
   const t = useT();
-  const { client } = useAuth();
+  const { client, user } = useAuth();
+  const navigate = useNavigate();
   const { isWatched, toggleWatched } = useWatched();
+  const { offered } = useWatchable();
   const { inList, toggle: toggleMyList } = useMyList();
   const [imgOk, setImgOk] = useState(true);
   const [requesting, setRequesting] = useState(false);
@@ -108,12 +123,15 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
   };
 
   const seen = listId != null && isWatched(listId);
+  const film = owned || !offered ? null : watchableTitle(entry);
   const actions = cardActions(t, {
     listId,
-    canRequest: !owned && !optimisticStatus,
+    canRequest:
+      !owned && !optimisticStatus && user != null && hasPermission(user, 'requests.create'),
     requesting,
     bookmarked: listId != null && inList(listId),
     seen,
+    onWatch: film ? () => void navigate(watchRoute(entry.kind, film.tmdbId)) : null,
     onRequest: request,
     onToggleList: toggleMyList,
     onToggleWatched: toggleWatched,

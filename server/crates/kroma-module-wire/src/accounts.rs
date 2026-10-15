@@ -1,6 +1,8 @@
-//! The account a session resolves to, and the capabilities it may hold.
+//! The account a session resolves to, and which libraries it may see.
 
 use serde::{Deserialize, Serialize};
+
+use crate::Permission;
 
 /// A user account. `password_hash` lives only in the DB layer and is never part
 /// of this (serialized) shape, so a `User` is always safe to send to clients.
@@ -21,6 +23,7 @@ pub struct User {
     // no preference.
     #[serde(rename = "subtitleLanguage", skip_serializing_if = "Option::is_none")]
     pub subtitle_language: Option<String>,
+    #[serde(deserialize_with = "known_permissions")]
     pub permissions: Vec<Permission>,
     pub libraries: LibraryScope,
     #[serde(rename = "createdAt")]
@@ -101,62 +104,21 @@ impl User {
     }
 }
 
-/// A granular capability. Stored on each user as a JSON array of the string keys
-/// below. Extend this enum (and the TS mirror in `@kromatv/core`) to add more
-/// e.g. a `stats.view` for the upcoming stats pages.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Permission {
-    #[serde(rename = "users.manage")]
-    UsersManage,
-    #[serde(rename = "library.manage")]
-    LibraryManage,
-    #[serde(rename = "settings.manage")]
-    SettingsManage,
-    #[serde(rename = "playback")]
-    Playback,
-    #[serde(rename = "requests.create")]
-    RequestsCreate,
-    #[serde(rename = "requests.manage")]
-    RequestsManage,
-    #[serde(rename = "requests.auto")]
-    RequestsAuto,
-    #[serde(rename = "reports.manage")]
-    ReportsManage,
-}
-
-impl Permission {
-    /// Parse a stored key; `None` for unknown keys (tolerant forward-compat).
-    pub fn parse(s: &str) -> Option<Permission> {
-        match s {
-            "users.manage" => Some(Permission::UsersManage),
-            "library.manage" => Some(Permission::LibraryManage),
-            "settings.manage" => Some(Permission::SettingsManage),
-            "playback" => Some(Permission::Playback),
-            "requests.create" => Some(Permission::RequestsCreate),
-            "requests.manage" => Some(Permission::RequestsManage),
-            "requests.auto" => Some(Permission::RequestsAuto),
-            "reports.manage" => Some(Permission::ReportsManage),
-            _ => None,
-        }
-    }
-
-    /// Every permission granted to the owner account.
-    pub fn all() -> Vec<Permission> {
-        vec![
-            Permission::UsersManage,
-            Permission::LibraryManage,
-            Permission::SettingsManage,
-            Permission::Playback,
-            Permission::RequestsCreate,
-            Permission::RequestsManage,
-            Permission::RequestsAuto,
-            Permission::ReportsManage,
-        ]
-    }
+fn known_permissions<'de, D>(deserializer: D) -> Result<Vec<Permission>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let keys = Vec::<String>::deserialize(deserializer)?;
+    Ok(keys
+        .iter()
+        .filter_map(|key| Permission::parse(key))
+        .collect())
 }
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
 
     fn user(permissions: Vec<Permission>, libraries: LibraryScope) -> User {
@@ -217,6 +179,23 @@ mod tests {
             LibraryScope::Only(Vec::new()),
         );
         assert!(!moderator.sees_library("films"));
+    }
+
+    #[test]
+    fn a_right_this_build_has_never_heard_of_is_dropped_rather_than_losing_the_account() {
+        let sent = json!({
+            "id": "u1",
+            "email": "a@b.c",
+            "username": "alice",
+            "permissions": ["playback", "telepathy.read"],
+            "libraries": null,
+            "createdAt": "",
+            "hasPin": false,
+        });
+
+        let alice: User = serde_json::from_value(sent).expect("a session the host resolved");
+
+        assert_eq!(alice.permissions, vec![Permission::Playback]);
     }
 
     #[test]

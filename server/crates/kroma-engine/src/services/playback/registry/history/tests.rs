@@ -1,4 +1,4 @@
-use super::super::test_support::{beat, played_for, ping, test_pool};
+use super::super::test_support::{beat, beat_apart, played_for, ping, test_pool, watching};
 use super::super::Registry;
 use super::*;
 
@@ -100,4 +100,31 @@ fn record_appends_to_play_history() {
         .query_row("SELECT COUNT(*) FROM play_history", [], |r| r.get(0))
         .unwrap();
     assert_eq!(count, 1);
+}
+
+#[test]
+fn a_watch_session_is_logged_without_a_catalogue_item() {
+    let pool = test_pool();
+    let reg = Registry::new();
+    beat_apart(&reg, "w1", 5, None, |pos| watching("w1", pos));
+
+    record(&pool, &reg.remove("w1").expect("the session played"));
+
+    let (item, title, season): (Option<String>, String, Option<u32>) = pool
+        .get()
+        .unwrap()
+        .query_row(
+            "SELECT item_id, show_title, season FROM play_history",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .unwrap();
+    assert_eq!(item, None);
+    assert_eq!(title, "Kaamelott");
+    assert_eq!(season, Some(1));
+}
+
+#[test]
+fn unix_now_is_positive() {
+    assert!(unix_now() > 1_600_000_000);
 }

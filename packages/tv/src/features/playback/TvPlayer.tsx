@@ -9,7 +9,6 @@ import {
   useSubtitleAppearance,
   useT,
 } from '@kromatv/ui';
-import { Box, Button, Icon, style, Text } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -18,12 +17,11 @@ import { revealNativeSurface } from '#tv/features/playback/player/nativeSurface'
 import { PlayerSurface } from '#tv/features/playback/player/PlayerSurface';
 import { useNowPlaying } from '#tv/features/playback/player/useNowPlaying';
 import { useStoryboard } from '#tv/features/playback/player/useStoryboard';
+import { StoppedNotice } from '#tv/features/playback/stopped-notice';
 import { useTvController } from '#tv/features/playback/use-tv-controller';
 import { useTvUpNext } from '#tv/features/playback/use-tv-upnext';
 
 const PREVIEW_W = 256;
-
-const BACK = style({ radius: 999, mt: 8 });
 
 /**
  * The TV player: a thin wrapper adapting the native-plane engine to the
@@ -45,7 +43,7 @@ export function TvPlayer() {
   const { controller, pb, subtitleGen } = useTvController(client, item);
   // Publish this player to the cast receiver, so a phone can drive it (and pick
   // up the position a cast "play" asked to start from).
-  useCastTarget(item, controller);
+  useCastTarget({ item }, controller);
   const [appearance, setAppearance] = useSubtitleAppearance();
   const storyboard = useStoryboard(client, item.id);
   const tileAt = useCallback((sec: number) => storyboard.tile(sec, PREVIEW_W), [storyboard]);
@@ -157,22 +155,7 @@ export function TvPlayer() {
       </Player.Media>
       {pb.terminated != null ? (
         <Player.Panel>
-          <Box fill z={80} center gap={24} px={64} bg="black/92">
-            <Icon name="player-stop-filled" size={64} color="danger" />
-            <Text variant="headingTv" textAlign="center" color="white">
-              {t('player.stoppedTitle')}
-            </Text>
-            <Text variant="bodyTv" textAlign="center" maxW={672} color="text/72">
-              {pb.terminated || t('player.stoppedDefault')}
-            </Text>
-            <Button
-              icon="chevron-left"
-              label={t('player.back')}
-              onPress={nav.back}
-              style={BACK}
-              autoFocus
-            />
-          </Box>
+          <StoppedNotice message={pb.terminated} onBack={nav.back} />
         </Player.Panel>
       ) : null}
     </Player.Root>

@@ -1,6 +1,7 @@
 import type { DeviceId } from '@kromatv/client';
 import type { CastCommand, CastReceiver } from '@kromatv/client/cast';
 import type { ItemId } from '@kromatv/client/media';
+import type { WatchItem } from '@kromatv/client/watchable';
 import type { DiscoveredTv } from '@kromatv/core';
 import { createContext, useContext } from 'react';
 
@@ -22,6 +23,9 @@ export interface Cast {
   select: (receiverId: DeviceId | null) => void;
   /** Start a title on `receiverId`, and drive that TV from now on. */
   playOn: (receiverId: DeviceId, itemId: ItemId, positionMs?: number) => Promise<boolean>;
+  /** Start a file of a watch download on `receiverId`, and drive that TV from
+   * now on. */
+  watchOn: (receiverId: DeviceId, watch: WatchItem, positionMs?: number) => Promise<boolean>;
   /** Send an order to the active receiver. False when it failed / went away. */
   send: (command: CastCommand) => Promise<boolean>;
   /** The last failure, as a message key, or null. Cleared on the next success.
@@ -45,6 +49,7 @@ const IDLE: Cast = {
   positionMs: 0,
   select: () => undefined,
   playOn: async () => false,
+  watchOn: async () => false,
   send: async () => false,
   error: null,
 };

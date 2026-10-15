@@ -8,8 +8,9 @@ mod contents;
 mod limits;
 mod link;
 mod organize;
+mod play;
 mod queue;
-mod view;
+pub(crate) mod view;
 
 use std::sync::Arc;
 
@@ -32,6 +33,7 @@ pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
         .merge(add::routes::<S>())
         .merge(link::routes::<S>())
         .merge(contents::routes::<S>())
+        .merge(play::routes::<S>())
         .merge(organize::routes::<S>())
 }
 

@@ -3,6 +3,7 @@
 //! rule that fired.
 
 use std::collections::HashMap;
+use std::time::Duration;
 
 use anyhow::Result;
 use kroma_module_sdk::host::HostStorage;
@@ -13,11 +14,13 @@ use crate::peers::indexers::{IndexerRef, Release};
 use crate::search::sweep::sweep;
 use crate::search::targets::SearchTarget;
 
-/// A scored release and the link a grab of it can use.
+/// A scored release and the links a grab of it can use: `magnet_or_url` is the
+/// magnet when the indexer gave one, `torrent_url` the `.torrent` link.
 #[derive(Clone)]
 pub struct CachedRelease {
     pub view: ScoredReleaseView,
     pub magnet_or_url: String,
+    pub torrent_url: Option<String>,
     pub tmdb_id: u64,
 }
 
@@ -133,20 +136,25 @@ fn scored_hits(
         cached.push(CachedRelease {
             view,
             magnet_or_url,
+            torrent_url: hit.release.link,
             tmdb_id,
         });
     }
     cached
 }
 
-pub(crate) fn collect_search_hits<S: HostStorage>(
+pub(crate) fn collect_search_hits<S: HostStorage + Clone>(
     state: &S,
     indexers: &[IndexerRef],
     targets: &[SearchTarget],
     profile: &Profile,
     tmdb_id: u64,
+    budget: Option<Duration>,
 ) -> (Vec<CachedRelease>, Vec<IndexerReport>) {
-    let (hits, reports) = sweep(indexers, |indexer| ask_indexer(state, indexer, targets));
+    let (asking, asked) = (state.clone(), targets.to_vec());
+    let (hits, reports) = sweep(indexers, budget, move |indexer| {
+        ask_indexer(&asking, indexer, &asked)
+    });
     (
         scored_hits(hits, indexers, targets, profile, tmdb_id),
         reports,

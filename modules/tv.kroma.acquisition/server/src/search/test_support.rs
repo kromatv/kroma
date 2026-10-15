@@ -1,4 +1,4 @@
-use kroma_scene::{Profile, Res, Target};
+use kroma_scene::{Codec, Profile, Res, Target, UnstatedResolution};
 
 use crate::peers::indexers::{IndexerRef, Query, Release};
 use crate::search::targets::SearchTarget;
@@ -16,7 +16,8 @@ pub(crate) fn indexer(priority: i32) -> IndexerRef {
 pub(crate) fn profile() -> Profile {
     Profile {
         resolution: Res::R1080,
-        prefer_hevc: true,
+        unstated_resolution: UnstatedResolution::Refuse,
+        preferred_codec: Some(Codec::Hevc),
         min_seeders: 1,
         max_size_bytes_movie: 20 * 1_073_741_824,
         max_size_bytes_episode: 5 * 1_073_741_824,

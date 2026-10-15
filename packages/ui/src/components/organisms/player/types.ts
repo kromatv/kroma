@@ -1,3 +1,4 @@
+import type { Cue } from '@kromatv/core';
 import type { ColorValue } from '#ui/core';
 import type { PlayerAudioTrack } from './media-types';
 
@@ -66,6 +67,8 @@ export interface PlayerSub {
   codec: string;
   /** Resolved WebVTT url the renderer fetches (absent for picture subs). */
   url?: string | null;
+  /** Cues the host holds for a track it fetches itself; the renderer then fetches nothing. */
+  cues?: readonly Cue[];
   /** AI-generated (Whisper / translate) track → violet "IA" treatment. */
   ai?: boolean;
   /** false = a picture sub (PGS/VobSub) we cannot render as text → disabled. */
@@ -187,6 +190,8 @@ export interface PlayerController {
   cur: number;
   dur: number;
   bufEnd: number | null;
+  /** Spans already downloaded, in absolute seconds, drawn in place of the buffered fill. */
+  downloaded?: readonly (readonly [number, number])[];
   /** Pending scrub target while dragging / D-pad seeking; null when settled. */
   seekPreview: number | null;
   /** Any value that CHANGES when a re-anchored stream opens. */

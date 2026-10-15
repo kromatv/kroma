@@ -1,6 +1,6 @@
+import type { PlaybackSubject } from '@kromatv/client/playback';
 import { usePlaybackHeartbeat } from '@kromatv/ui';
 import type { RefObject } from 'react';
-import type { MovieView } from '#web/shared/lib/api';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -9,7 +9,8 @@ import { useAuth } from '#web/shared/lib/auth';
 // off the player's React `playing` state. See `usePlaybackHeartbeat` for the loop.
 
 interface Params {
-  item: MovieView;
+  subject: PlaybackSubject;
+  durationMs: number | null;
   getPosition: () => number;
   videoRef: RefObject<HTMLVideoElement | null>;
   /** Where the element's clock sits on the title's, so a buffered range reads as
@@ -57,8 +58,8 @@ export function usePlaybackSession(params: Params): void {
   usePlaybackHeartbeat({
     client,
     enabled: !!user,
-    itemId: params.item.id,
-    durationMs: params.item.durationMs ?? null,
+    subject: params.subject,
+    durationMs: params.durationMs,
     getPosition: params.getPosition,
     getBuffered: () => bufferedAhead(params.videoRef.current, params.baseSec),
     getState: () => {

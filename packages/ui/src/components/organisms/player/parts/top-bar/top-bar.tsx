@@ -19,6 +19,8 @@ const sizeOf = (fontSize: number) => sharedStyle(`top-bar:size:${fontSize}`, { f
 export interface TopBarProps {
   title: ReactNode;
   subtitle?: ReactNode;
+  /** How much of a still-arriving file is in, at the head of the right cluster. */
+  arrival?: ReactNode;
   /** Pre-translated warning, or nothing to hide the pill. */
   warn?: ReactNode;
   onBack: () => void;
@@ -38,6 +40,7 @@ const SCRIM = 'linear-gradient(180deg, rgba(0,0,0,0.65), transparent)';
 export const TopBar = memo(function TopBar({
   title,
   subtitle,
+  arrival,
   warn,
   onBack,
   backFocused,
@@ -83,8 +86,9 @@ export const TopBar = memo(function TopBar({
           </Text>
         ) : null}
       </Box>
-      {warn || actions ? (
+      {arrival || warn || actions ? (
         <Box shrink={1} ml="auto" row align="center" gap={px(12)}>
+          {arrival}
           {warn ? (
             // The pill is the one thing here that may lose width before the
             // title does: a codec notice is a sentence, and it wraps to two

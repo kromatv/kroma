@@ -61,6 +61,57 @@ pub fn other_active_download_with_ref(
     rows.next().transpose()
 }
 
+/// Every download of one title that a client still holds, newest first: queued,
+/// running, finished or paused. A failed, removed or imported one is not live.
+pub fn live_downloads_for_title(
+    conn: &Connection,
+    tmdb_id: u64,
+    client_id: &str,
+) -> rusqlite::Result<Vec<DownloadRow>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {DL_COLS} FROM downloads \
+         WHERE tmdb_id = ?1 AND client_id = ?2 \
+         AND status IN ('queued', 'downloading', 'seeding', 'completed', 'paused') \
+         ORDER BY grabbed_at DESC"
+    ))?;
+    let rows = stmt.query_map(params![tmdb_id as i64, client_id], row_to_download)?;
+    rows.collect()
+}
+
+/// What the ledger alone can say about one row answering for `kind` and the
+/// episode asked for: a pack was grabbed for a season, so whether it holds one
+/// episode is its files' answer and not the ledger's.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Covers {
+    Yes,
+    No,
+    IfItsFilesHold(u32),
+}
+
+pub fn covers(row: &DownloadRow, kind: &str, episode: Option<(u32, u32)>) -> Covers {
+    let Some((season, episode)) = episode else {
+        return match row.kind == kind {
+            true => Covers::Yes,
+            false => Covers::No,
+        };
+    };
+    if row.season != Some(season) {
+        return Covers::No;
+    }
+    match row.kind.as_str() {
+        "season" => Covers::IfItsFilesHold(episode),
+        "episode"
+            if row
+                .episodes
+                .as_ref()
+                .is_some_and(|all| all.contains(&episode)) =>
+        {
+            Covers::Yes
+        }
+        _ => Covers::No,
+    }
+}
+
 /// Completed rows awaiting import.
 pub fn completed_downloads(conn: &Connection) -> rusqlite::Result<Vec<DownloadRow>> {
     let mut stmt = conn.prepare(&format!(

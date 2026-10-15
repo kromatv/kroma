@@ -5,6 +5,8 @@ use std::any::{Any, TypeId};
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
+use axum::http::StatusCode;
+use axum::response::Response;
 use kroma_sqlite::testing::TempPool;
 use kroma_sqlite::Pool;
 use kroma_module_wire::{Audience, EpisodeInfo, MatchCandidate, NotificationSpec, User};
@@ -24,9 +26,10 @@ type StringSettings = Arc<dyn Fn(&str, &str) -> String + Send + Sync>;
 /// A [`HostCtx`] with no app behind it.
 ///
 /// Every answer is the neutral one until configured: settings hand back the
-/// caller's own default, both gates allow, the module is enabled, there are no
-/// libraries and no TMDB key. The bus methods record instead of delivering, so
-/// a test asserts on [`published`](Self::published) /
+/// caller's own default, both gates allow (see
+/// [`with_gates_enforced`](Self::with_gates_enforced)), the module is enabled,
+/// there are no libraries and no TMDB key. The bus methods record instead of
+/// delivering, so a test asserts on [`published`](Self::published) /
 /// [`notifications`](Self::notifications) / [`jobs`](Self::jobs).
 ///
 /// `data_dir()` is a scratch directory of this host's own, removed once the last
@@ -46,6 +49,7 @@ pub struct StubHost {
     metadata_candidates: Vec<MatchCandidate>,
     metadata_episodes: Vec<EpisodeInfo>,
     module_enabled: bool,
+    gates_enforced: bool,
     libraries: Vec<LibraryFolders>,
     settings: Arc<Mutex<BTreeMap<String, serde_json::Value>>>,
     string_settings: Option<StringSettings>,
@@ -96,6 +100,7 @@ impl StubHost {
             metadata_candidates: Vec::new(),
             metadata_episodes: Vec::new(),
             module_enabled: true,
+            gates_enforced: false,
             libraries: Vec::new(),
             settings: Arc::new(Mutex::new(BTreeMap::new())),
             string_settings: None,
@@ -172,6 +177,13 @@ impl StubHost {
     /// Answer `module_enabled()` with `on` for every id (default `true`).
     pub fn with_module_enabled(mut self, on: bool) -> Self {
         self.module_enabled = on;
+        self
+    }
+
+    /// Answer both gates from the rights the user holds, instead of allowing
+    /// every caller.
+    pub fn with_gates_enforced(mut self) -> Self {
+        self.gates_enforced = true;
         self
     }
 
@@ -258,6 +270,13 @@ impl StubHost {
     /// Every `set_settings()` patch, in order.
     pub fn settings_written(&self) -> Vec<BTreeMap<String, serde_json::Value>> {
         self.log.settings_written()
+    }
+
+    fn gated(&self, holds: bool) -> Result<(), Response> {
+        if holds || !self.gates_enforced {
+            return Ok(());
+        }
+        Err(crate::json_error(StatusCode::FORBIDDEN, "forbidden"))
     }
 }
 

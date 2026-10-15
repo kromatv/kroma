@@ -1,0 +1,72 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { sampleArrival, sampleSource } from '#ui/lib/sample-arrival';
+import { ArrivalPlayer } from './arrival-player';
+import { Player } from './player';
+import { fakeController } from './player.fixture';
+import { RELEASE, Surface, TV, WEB } from './player.fixtures';
+
+export const story = defineStory({
+  group: 'Player',
+  viewport: 'tv',
+  pad: 0,
+  args: { platform: 'web', percent: 34, stalled: false, figures: true, declared: true },
+  controls: { platform: ['web', 'tv'] },
+  render: ({ platform, percent, stalled, figures, declared }) => (
+    <ArrivalPlayer
+      controller={fakeController({ playing: true, dur: 888, cur: 128 })}
+      flags={platform === 'tv' ? TV : WEB}
+      title="Sintel"
+      release={RELEASE}
+      progress={figures ? sampleArrival(percent, stalled) : null}
+      source={declared ? sampleSource : null}
+      onClose={() => {}}
+    >
+      <Player.Media>
+        <Surface />
+      </Player.Media>
+    </ArrivalPlayer>
+  ),
+});
+
+The player over a file that is still being fetched. It is the ordinary chrome with three things added, all read off one `progress`: the share badge at the end of the top bar, the spans already on disk drawn along the scrub bar, and a download block in the stats panel.
+
+The line under the title stays the film's own. For a direct watch that is the release the source picked, which is the same string the preparation screen named while the viewer waited.
+
+Which figures the badge and the stats rows read is the `source`'s, not the kit's. It declares them, names them in the viewer's language and says what kind each is. Pass none and the payload reads back as the figures a download reported before a source could name its own.
+
+Nothing is taken away by this component. A file with no catalogue row can answer no subtitle list, no up next and no heartbeat, so a caller passes none of those and the chrome sheds them the way it sheds any slot nobody filled. Its own parts are written first, so a caller that writes a face again wins.
+
+```tsx
+<ArrivalPlayer controller={controller} flags={WEB_FLAGS} title={title} release={release} progress={progress} source={source} onClose={leave}>
+  <Player.Media><VideoSurface pb={pb} /></Player.Media>
+  <Player.Warning>{notice}</Player.Warning>
+</ArrivalPlayer>
+```
+
+<Scene name="Before the first figures">
+  The same screen the moment playback starts, before the server has answered with any progress: the badge reads zero rather than nothing, and the scrub bar draws the buffer rather than the spans.
+
+  <ArrivalPlayer
+    controller={fakeController({ playing: true, dur: 888, cur: 12 })}
+    flags={WEB}
+    title="Sintel"
+    release={RELEASE}
+    progress={null}
+    onClose={() => {}}
+  >
+    <Player.Media>
+      <Surface />
+    </Player.Media>
+  </ArrivalPlayer>
+</Scene>
+
+<Do>
+- Hand it the same `progress` the preparation screen was reading. Two polls on one file disagree with each other on screen.
+- Give it the whole screen. It is `Player.Root` underneath, which owns the stage.
+</Do>
+
+<Dont>
+- Wrap the surface. `<Player.Media>` holds it directly, and an element between the two breaks the rule that sizes a browser video.
+- Put the rate or the source count in the subtitle slot. That line is the film's; the badge carries the one figure worth watching and the stats panel carries the rest.
+- Reach for it for a catalogue item. That is `<Player.Root>` with every slot a title can fill.
+</Dont>

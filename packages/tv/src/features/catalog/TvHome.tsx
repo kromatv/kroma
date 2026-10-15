@@ -23,6 +23,7 @@ import { useRootBack } from '#tv/app/useRootBack';
 import { computeHero, Hero } from '#tv/features/catalog/home/Hero';
 import { HintBar } from '#tv/features/catalog/home/HintBar';
 import { entryId } from '#tv/features/catalog/home/sectionEntry';
+import { useWatchCards } from '#tv/features/catalog/home/watchRow';
 import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
 
 const RAIL_LIMIT = 20;
@@ -68,6 +69,7 @@ export function TvHome() {
   const titleMenu = useTitleMenu(useRootBack());
   useFocusNav({ onBack: titleMenu.onBack });
   const hold = titleMenu.open;
+  const arriving = useWatchCards();
 
   const onSelectMovie = useCallback((m: MediaItem) => go('movie', { item: m }), [go]);
   const onSelectShow = useCallback((s: Show) => go('show', { show: s }), [go]);
@@ -200,7 +202,8 @@ export function TvHome() {
             )),
         }
       : null;
-    return [continueRow, ...sectionRows, showRow].filter((r): r is Row => r !== null);
+    const arrivingRow: Row | null = arriving ? { key: 'arriving', ...arriving } : null;
+    return [continueRow, arrivingRow, ...sectionRows, showRow].filter((r): r is Row => r !== null);
   }, [
     shows,
     continueItems,
@@ -212,6 +215,7 @@ export function TvHome() {
     onSelectShow,
     isWatched,
     hold,
+    arriving,
     t,
   ]);
 

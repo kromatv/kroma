@@ -13,6 +13,9 @@ mod bandwidth;
 mod clients;
 mod downloads;
 mod drops;
+mod ephemeral;
+mod settings;
+mod starters;
 #[cfg(test)]
 pub(crate) mod test_support;
 
@@ -20,6 +23,9 @@ pub use bandwidth::*;
 pub use clients::*;
 pub use downloads::*;
 pub use drops::*;
+pub use ephemeral::*;
+pub use settings::*;
+pub use starters::*;
 
 // `IF NOT EXISTS` DDL only, so it runs harmlessly on every boot. Applied to this
 // module's OWN database (see `ServerModule::migrations`), which is why the
@@ -56,7 +62,20 @@ pub const MIGRATIONS: &str = "
     );
     CREATE INDEX IF NOT EXISTS idx_vpn_bandwidth_at ON vpn_bandwidth(at);
 
+    CREATE TABLE IF NOT EXISTS ephemeral_downloads (id TEXT PRIMARY KEY);
+
+    CREATE TABLE IF NOT EXISTS watch_starters (
+        download_id TEXT NOT NULL,
+        user_id     TEXT NOT NULL,
+        PRIMARY KEY (download_id, user_id)
+    );
+
     CREATE TABLE IF NOT EXISTS deferred_drops (id TEXT PRIMARY KEY);
+
+    CREATE TABLE IF NOT EXISTS module_settings (
+        key   TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );
 ";
 
 pub const EMBEDDED_CLIENT_ID: &str = "embedded";

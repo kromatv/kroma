@@ -3,13 +3,15 @@
   "schemaVersion": 2,
   "id": "tv.kroma.torrents",
   "name": "Torrent downloads",
-  "version": "0.6.8",
+  "version": "0.13.3",
   "description": "The embedded librqbit download engine + the downloads queue. Transmission and qBittorrent are their own engine sub-modules that plug into this one.",
   "engines": {
     "server": ">=0.1.39"
   },
   "settings": {
     "read": [
+      "maxConcurrent",
+      "mediaConcurrency",
       "namingCase",
       "namingEpisodeFile",
       "namingMovieFile",
@@ -36,6 +38,7 @@
       "torrentMaxActive"
     ]
   },
+  "rights": ["watchable.play"],
   "feRemote": {
     "module": "./remoteEntry.js"
   },
@@ -52,11 +55,11 @@
     },
     {
       "name": "grab",
-      "methods": ["grab", "list-files", "gate-open", "activate", "drop-data"]
+      "methods": ["grab", "list-files", "files", "gate-open", "activate", "drop-data", "remove"]
     },
     {
       "name": "db",
-      "methods": ["completed", "mark-imported", "set-status"]
+      "methods": ["completed", "mark-imported", "set-status", "live-for-title"]
     },
     {
       "name": "vpn",
@@ -76,6 +79,9 @@
     },
     {
       "point": "tv.kroma.torrents/vpn"
+    },
+    {
+      "point": "watchable"
     }
   ],
   "consumes": [
@@ -90,6 +96,10 @@
     },
     {
       "point": "tv.kroma.vpn/proxy",
+      "optional": true
+    },
+    {
+      "point": "acquisition",
       "optional": true
     }
   ],

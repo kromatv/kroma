@@ -20,6 +20,7 @@ import { useKromaEngine } from '#mobile/player/engine';
 import { useHeartbeat } from '#mobile/player/heartbeat';
 import { PlayerChrome } from '#mobile/player/PlayerChrome';
 import { type SheetView, TrackSheet } from '#mobile/player/TrackSheet';
+import { audioOptions, qualityBadge } from '#mobile/player/trackOptions';
 import { useStoryboard } from '#mobile/player/useStoryboard';
 import { useSubAppearance } from '#mobile/player/useSubAppearance';
 import { useSubtitles } from '#mobile/player/useSubtitles';
@@ -39,26 +40,18 @@ export function PlayerBody({
   const client = useClient();
   const router = useRouter();
   const prefs = useLangPrefs();
-  // The preferred audio language decides the OPENING track when the file carries
-  // it (same as TV). Offline keeps the file's default: local ordinals are the
-  // native player's business.
+  // Offline keeps the file's default: local ordinals are the native player's
+  // business.
   const startAudio = localUri ? 0 : (preferredAudioIndex(audioTracksOf(item), prefs.audio) ?? 0);
   const engine = useHeldSeek(useKromaEngine(client, item, startSec, localUri, startAudio));
   const navigation = useNavigation();
   const subs = useSubtitles(client, item, offline, prefs.subtitle);
   const tileFor = useStoryboard(client, item, !localUri, offline);
-  // Which sheet view is open, or null: the gear opens the menu, the CC capsule
-  // jumps straight to subtitles.
   const [sheet, setSheet] = useState<SheetView | null>(null);
   const [appearance, setAppearance] = useSubAppearance();
   const [statsOn, setStatsOn] = useState(false);
-  // Pinch-to-zoom, the YouTube gesture: pinch out fills the screen (cover),
-  // pinch in returns to letterboxed fit (contain).
   const [fill, setFill] = useState(false);
 
-  // Subtitle status for the chrome's top pill. The sheet closes on pick, so
-  // the wait (a first request can sit through the server extracting the whole
-  // file) and the give-up both have to be said on the VIDEO, not in the sheet.
   const [subFailedNote, setSubFailedNote] = useState<string | null>(null);
   const prevFailedCount = useRef(0);
   useEffect(() => {
@@ -79,11 +72,7 @@ export function PlayerBody({
     staleTime: 5 * 60_000,
   });
 
-  // Handing this film to a TV: the position travels with it, so the set picks
-  // up exactly where the phone was rather than at the last saved beat.
   const cast = useCast();
-  // Not the app's bottom sheet: this screen is a native fullScreenModal, which
-  // @gorhom's host sits behind. <CastPanel> is the player's own shell.
   const [castOpen, setCastOpen] = useState(false);
 
   const [terminated, setTerminated] = useState<string | null>(null);
@@ -194,8 +183,6 @@ export function PlayerBody({
           setCastOpen(false);
           if (!id) return;
           const ok = await cast.playOn(id, item.id, Math.round(engine.cur * 1000));
-          // Stop local playback once the TV picks up the same title, to avoid
-          // two screens playing it at once.
           if (ok) {
             engine.shutdown();
             goBack(router);
@@ -206,13 +193,34 @@ export function PlayerBody({
         visible={sheet !== null}
         initialView={sheet ?? 'menu'}
         onClose={() => setSheet(null)}
-        engine={engine}
-        subs={subs}
-        item={item}
-        appearance={appearance}
-        onAppearance={setAppearance}
+        audio={audioOptions(engine, item, t)}
+        audioIndex={engine.audioIndex}
+        onAudio={(track) => {
+          engine.setAudio(track.index);
+          if (track.prefCode) prefs.setAudio(track.prefCode);
+        }}
+        rate={engine.rate}
+        onRate={engine.setRate}
         statsOn={statsOn}
         onToggleStats={() => setStatsOn((v) => !v)}
+        extras={{
+          quality: `${t('player.qualityAuto')}${qualityBadge(item)}`,
+          filter: engine.offline ? undefined : { mode: engine.filter, onPick: engine.setFilter },
+          subtitles: {
+            of: subs,
+            onPick: (index, language) => {
+              subs.pick(index);
+              if (language) prefs.setSubtitle(language);
+            },
+          },
+          appearance: { value: appearance, onChange: setAppearance },
+          onReport: () => {
+            setSheet(null);
+            router.push(
+              `/report/${item.id}?kind=${item.kind === 'episode' ? 'episode' : 'movie'}` as never,
+            );
+          },
+        }}
       />
     </Box>
   );

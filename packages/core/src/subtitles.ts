@@ -56,7 +56,7 @@ export function parseVtt(raw: string): Cue[] {
 
 type CueHit = { text: string; index: number };
 
-function walkForwardCue(cues: Cue[], t: number, hint: number): CueHit | null {
+function walkForwardCue(cues: readonly Cue[], t: number, hint: number): CueHit | null {
   for (let i = hint + 1; i < cues.length && i <= hint + 3; i++) {
     const c = cues[i];
     if (!c) continue;
@@ -66,7 +66,7 @@ function walkForwardCue(cues: Cue[], t: number, hint: number): CueHit | null {
   return null;
 }
 
-function binarySearchCue(cues: Cue[], t: number): CueHit {
+function binarySearchCue(cues: readonly Cue[], t: number): CueHit {
   let lo = 0;
   let hi = cues.length - 1;
   while (lo <= hi) {
@@ -82,7 +82,7 @@ function binarySearchCue(cues: Cue[], t: number): CueHit {
 
 /** `hint` is the index this returned last time; passing it back keeps normal
  *  playback O(1) amortised, and a seek re-syncs with a binary search. */
-export function activeCueText(cues: Cue[], t: number, hint: number): CueHit {
+export function activeCueText(cues: readonly Cue[], t: number, hint: number): CueHit {
   if (cues.length === 0) return { text: '', index: 0 };
 
   const cur = cues[hint];

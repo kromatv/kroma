@@ -10,15 +10,14 @@
 
 import { KromaApiError, type KromaClient } from '@kromatv/client';
 import { KromaEvents } from '@kromatv/client/events';
-import type { ItemId } from '@kromatv/client/media';
-import { PlaybackSessionId } from '@kromatv/client/playback';
+import { PlaybackSessionId, type PlaybackSubject } from '@kromatv/client/playback';
 import { type RefObject, useEffect, useEffectEvent, useRef, useState } from 'react';
 
 export interface PlaybackHeartbeatParams {
   client: KromaClient;
   /** Gates pinging (web: signed-in; TV: `client.hasAuth`). */
   enabled: boolean;
-  itemId: ItemId;
+  subject: PlaybackSubject;
   durationMs: number | null;
   /** Absolute current position in seconds (offset-aware on the web seamless stream). */
   getPosition: () => number;
@@ -113,7 +112,7 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
     inFlight.current = params.client.playback
       .ping({
         sessionId,
-        itemId: params.itemId,
+        ...params.subject,
         positionMs,
         durationMs: params.durationMs,
         state,

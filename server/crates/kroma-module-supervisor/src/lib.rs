@@ -217,6 +217,16 @@ impl Supervisor {
             .find(|m| m.id == id)?
             .settings
     }
+
+    /// The account rights `id` declared it reads, as stored keys. Empty for a
+    /// module that declared none and for one nothing installed answers to.
+    pub fn rights_scope(&self, id: &str) -> Vec<String> {
+        self.installed_manifests()
+            .into_iter()
+            .find(|m| m.id == id)
+            .map(|m| m.rights)
+            .unwrap_or_default()
+    }
 }
 
 /// The major the module that DEFINES `point` serves, or `None` when no installed

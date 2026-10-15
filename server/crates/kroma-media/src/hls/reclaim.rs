@@ -188,7 +188,8 @@ impl Session {
 
     // A superseded session has minutes of an ordinary idle life taken off it: a
     // remux nobody re-anchored into keeps pulling its input at up to twice
-    // realtime, for a playlist nobody is reading.
+    // realtime, and over a stream still arriving that is the line a viewer is
+    // waiting on.
     async fn idle_past_its_limit(&self, now: Instant) -> bool {
         let limit = match self.superseded.load(Ordering::Relaxed) {
             true => BUDGET_GRACE,

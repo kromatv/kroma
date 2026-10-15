@@ -16,6 +16,7 @@
   "discover.noResultsHint": "Try another title or check the spelling.",
   "discover.notInLibrary": "Not in the library",
   "discover.pageOf": "Page {page} / {total}",
+  "discover.pickEpisode": "Pick the episode to play",
   "discover.placeholder": "A movie, a show...",
   "discover.prev": "Previous",
   "discover.request": "Request",
@@ -32,10 +33,11 @@
   "discover.seeAll": "See all",
   "discover.shows": "Shows",
   "discover.subtitle": "Search your library and TMDB to request new titles.",
-  "discover.subtitleLocal": "Search your library.",
+  "discover.subtitleBrowse": "Search your library and TMDB.",
   "discover.title": "Search",
   "discover.trending": "Trending this week",
   "discover.trendingMovies": "Trending movies",
   "discover.trendingShows": "Trending shows",
-  "discover.viewInLibrary": "View in library"
+  "discover.viewInLibrary": "View in library",
+  "discover.watch": "Play"
 }

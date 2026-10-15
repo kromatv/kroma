@@ -5,10 +5,12 @@
 mod ffprobe_output;
 mod parse;
 mod run;
+mod stream;
 
 use kroma_module_wire::{AudioStream, SubtitleTrack, VideoStream};
 
 pub use run::*;
+pub use stream::{duration_ms_within, probe_input};
 
 fn duration_of(printed: &[u8]) -> Option<u64> {
     let secs: f64 = String::from_utf8_lossy(printed).trim().parse().ok()?;

@@ -1,7 +1,10 @@
 //! Asking every enabled indexer at once, each one answering for itself in the
 //! report.
 
-use std::time::Instant;
+use std::collections::VecDeque;
+use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::sync::{mpsc, Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use crate::peers::indexers::IndexerRef;
 
@@ -9,34 +12,83 @@ use crate::dtos::IndexerReport;
 
 const MAX_PARALLEL: usize = 8;
 
-/// Run `ask` against every indexer concurrently, in indexer order, and report
-/// what each one answered. Never fails as a whole: an indexer that errors or
-/// panics contributes a report and no rows.
-pub fn sweep<T, F>(indexers: &[IndexerRef], ask: F) -> (Vec<T>, Vec<IndexerReport>)
+/// Run `ask` against every indexer, [`MAX_PARALLEL`] at a time, and report what
+/// each one answered, in indexer order. Never fails as a whole: an indexer that
+/// errors or panics contributes a report and no rows. Under a `budget`, one still
+/// searching when it runs out is left behind, rows and report both.
+pub fn sweep<T, F>(
+    indexers: &[IndexerRef],
+    budget: Option<Duration>,
+    ask: F,
+) -> (Vec<T>, Vec<IndexerReport>)
 where
-    T: Send,
-    F: Fn(&IndexerRef) -> anyhow::Result<Vec<T>> + Sync,
+    T: Send + 'static,
+    F: Fn(&IndexerRef) -> anyhow::Result<Vec<T>> + Send + Sync + 'static,
 {
-    let mut rows: Vec<T> = Vec::new();
-    let mut reports: Vec<IndexerReport> = Vec::new();
-    for chunk in indexers.chunks(MAX_PARALLEL) {
-        let answers = std::thread::scope(|scope| {
-            let handles: Vec<_> = chunk
-                .iter()
-                .map(|indexer| scope.spawn(|| ask_one(indexer, &ask)))
-                .collect();
-            handles
-                .into_iter()
-                .zip(chunk)
-                .map(|(handle, indexer)| handle.join().unwrap_or_else(|_| panicked(indexer)))
-                .collect::<Vec<_>>()
+    let deadline = budget.map(|budget| Instant::now() + budget);
+    let queue: Arc<Mutex<VecDeque<(usize, IndexerRef)>>> =
+        Arc::new(Mutex::new(indexers.iter().cloned().enumerate().collect()));
+    let ask = Arc::new(ask);
+    let (sender, answers) = mpsc::channel();
+    for _ in 0..MAX_PARALLEL.min(indexers.len()) {
+        let (queue, ask, sender) = (Arc::clone(&queue), Arc::clone(&ask), sender.clone());
+        std::thread::spawn(move || {
+            while let Some((slot, indexer)) = queue.lock().ok().and_then(|mut q| q.pop_front()) {
+                let answer = catch_unwind(AssertUnwindSafe(|| ask_one(&indexer, &*ask)))
+                    .unwrap_or_else(|_| panicked(&indexer));
+                if sender.send((slot, answer)).is_err() {
+                    return;
+                }
+            }
         });
-        for (report, found) in answers {
-            reports.push(report);
-            rows.extend(found);
-        }
+    }
+    drop(sender);
+    let mut answered: Vec<Option<(IndexerReport, Vec<T>)>> =
+        indexers.iter().map(|_| None).collect();
+    loop {
+        let answer = match deadline {
+            None => answers.recv().ok(),
+            Some(deadline) => deadline
+                .checked_duration_since(Instant::now())
+                .and_then(|left| answers.recv_timeout(left).ok()),
+        };
+        let Some((slot, answer)) = answer else {
+            break;
+        };
+        answered[slot] = Some(answer);
+    }
+    let (mut rows, mut reports) = (Vec::new(), Vec::new());
+    for (indexer, answer) in indexers.iter().zip(answered) {
+        let Some((report, found)) = answer else {
+            tracing::warn!(indexer = %indexer.name, "indexer too slow; left behind");
+            continue;
+        };
+        reports.push(report);
+        rows.extend(found);
     }
     (rows, reports)
+}
+
+pub struct IndexerFailure<'a> {
+    pub indexer: &'a str,
+    pub error: &'a str,
+}
+
+/// What each indexer said when not one of them answered, in indexer order. None
+/// as soon as one answered, however little it found.
+pub fn unanswered(reports: &[IndexerReport]) -> Option<Vec<IndexerFailure<'_>>> {
+    if reports.is_empty() {
+        return None;
+    }
+    reports
+        .iter()
+        .map(|report| {
+            Some(IndexerFailure {
+                indexer: &report.name,
+                error: report.error.as_deref()?,
+            })
+        })
+        .collect()
 }
 
 /// The report for a sweep that never ran: the scope selected nothing to ask for.
@@ -124,7 +176,7 @@ mod tests {
     #[test]
     fn results_keep_indexer_order_however_they_finish() {
         let indexers: Vec<IndexerRef> = ["a", "b", "c"].iter().map(|id| row(id)).collect();
-        let (rows, reports) = sweep(&indexers, |i| Ok(vec![i.id.clone()]));
+        let (rows, reports) = sweep(&indexers, None, |i| Ok(vec![i.id.clone()]));
         assert_eq!(rows, vec!["a", "b", "c"]);
         assert_eq!(
             reports.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(),
@@ -135,7 +187,7 @@ mod tests {
     #[test]
     fn a_failing_indexer_reports_and_the_others_still_answer() {
         let indexers: Vec<IndexerRef> = ["good", "bad"].iter().map(|id| row(id)).collect();
-        let (rows, reports) = sweep(&indexers, |i| {
+        let (rows, reports) = sweep(&indexers, None, |i| {
             if i.id == "bad" {
                 anyhow::bail!("connection refused");
             }
@@ -153,9 +205,64 @@ mod tests {
         let indexers: Vec<IndexerRef> = (0..MAX_PARALLEL * 2 + 1)
             .map(|n| row(&format!("i{n}")))
             .collect();
-        let (rows, reports) = sweep(&indexers, |i| Ok(vec![i.id.clone()]));
+        let (rows, reports) = sweep(&indexers, None, |i| Ok(vec![i.id.clone()]));
         assert_eq!(rows.len(), indexers.len());
         assert_eq!(reports.len(), indexers.len());
+    }
+
+    #[test]
+    fn an_indexer_still_searching_when_the_budget_runs_out_is_left_behind() {
+        let indexers: Vec<IndexerRef> = ["fast", "stuck"].iter().map(|id| row(id)).collect();
+        let held = Arc::new(Mutex::new(()));
+        let _hold = held.lock().unwrap();
+        let blocking = Arc::clone(&held);
+
+        let (rows, reports) = sweep(&indexers, Some(Duration::from_millis(200)), move |i| {
+            if i.id == "stuck" {
+                drop(blocking.lock());
+            }
+            Ok(vec![i.id.clone()])
+        });
+
+        assert_eq!(rows, vec!["fast"]);
+        assert_eq!(reports.len(), 1);
+    }
+
+    #[test]
+    fn a_sweep_not_one_indexer_answered_hands_back_what_each_of_them_said() {
+        let indexers: Vec<IndexerRef> = ["a", "b"].iter().map(|id| row(id)).collect();
+
+        let (_, reports) = sweep(&indexers, None, |i| -> anyhow::Result<Vec<String>> {
+            anyhow::bail!("{} is down", i.id)
+        });
+
+        let said = unanswered(&reports).expect("not one of them answered");
+
+        assert_eq!(
+            said.iter()
+                .map(|f| (f.indexer, f.error))
+                .collect::<Vec<_>>(),
+            [("A", "a is down"), ("B", "b is down")]
+        );
+    }
+
+    #[test]
+    fn one_indexer_answering_with_nothing_makes_the_sweep_answered() {
+        let indexers: Vec<IndexerRef> = ["quiet", "down"].iter().map(|id| row(id)).collect();
+
+        let (_, reports) = sweep(&indexers, None, |i| {
+            if i.id == "down" {
+                anyhow::bail!("connection refused");
+            }
+            Ok(Vec::<String>::new())
+        });
+
+        assert!(unanswered(&reports).is_none());
+    }
+
+    #[test]
+    fn a_sweep_that_never_ran_answered_nothing_and_failed_at_nothing() {
+        assert!(unanswered(&unasked(&[])).is_none());
     }
 
     #[test]

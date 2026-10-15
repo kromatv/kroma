@@ -6,12 +6,15 @@ import { VideoView } from 'expo-video';
 import type { ReactNode } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import type { ExpoVideoEngine } from '#tv/features/playback/player/expoVideoEngine';
-import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
+import type { PlaybackSurface } from '#tv/features/playback/player/useDirectPlayback';
 import type { VlcEngine } from '#tv/features/playback/player/vlcEngine';
 import { getVlcPlane } from '#tv/features/playback/player/vlcPlane';
 
 const CLIP = style({ overflow: 'hidden' });
-export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: string }>): ReactNode {
+export function PlayerSurface({
+  pb,
+  title,
+}: Readonly<{ pb: PlaybackSurface; title: string }>): ReactNode {
   // <VideoView> is backed by an AVPlayerLayer, which a rounded ancestor does
   // NOT clip; only clipping its own wrapper rounds the picture.
   const radius = useSurfaceRadius();
@@ -49,7 +52,7 @@ function VlcSurface({
   pb,
   title,
   radius,
-}: Readonly<{ pb: Playback; title: string; radius: SurfaceRadius }>): ReactNode {
+}: Readonly<{ pb: PlaybackSurface; title: string; radius: SurfaceRadius }>): ReactNode {
   const Plane = getVlcPlane();
   const current = pb.engineRef.current;
   // `surface` flips to vlc a render before the engine is rebuilt, so the ref still

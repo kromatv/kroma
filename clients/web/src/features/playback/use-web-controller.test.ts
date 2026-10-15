@@ -1,13 +1,16 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { H, installHarness, item, makePb } from '#web/features/playback/use-web-controller.fixture';
+import {
+  H,
+  installHarness,
+  makePb,
+  source,
+} from '#web/features/playback/use-web-controller.fixture';
+import type { WebSubtitles } from '#web/features/playback/use-web-subtitles';
 
 vi.mock('#web/features/playback/use-video-playback', () => ({
   useVideoPlayback: () => H.pb,
-}));
-vi.mock('#web/features/playback/use-web-subtitles', () => ({
-  useWebSubtitles: () => H.subs,
 }));
 vi.mock('#web/features/playback/web-stats', () => ({
   buildWebStats: (s: Record<string, unknown>) => {
@@ -35,7 +38,7 @@ const { useWebController } = await import('#web/features/playback/use-web-contro
 installHarness();
 
 function render() {
-  return renderHook(() => useWebController(item));
+  return renderHook(() => useWebController(source, H.subs as unknown as WebSubtitles));
 }
 
 describe('useWebController controller mapping', () => {

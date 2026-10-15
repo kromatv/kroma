@@ -6,13 +6,13 @@ use anyhow::{anyhow, Result};
 use kroma_module_sdk::db::{self, WantedRow};
 use kroma_module_sdk::host::HostStorage;
 
-use super::{cached_release, interactive_search, CachedRelease};
+use super::{cached_release, interactive_search};
 use crate::search::targets::SearchScope;
 
 /// Grab one release from the last interactive search of this request under the
 /// same scope. Returns the queued download row; the caller kicks off the (slow)
 /// engine add in the background via `DownloadManager::activate`.
-pub fn grab_cached<S: HostStorage>(
+pub fn grab_cached<S: HostStorage + Clone>(
     state: &S,
     request_id: &str,
     scope: SearchScope,
@@ -30,7 +30,8 @@ pub fn grab_cached<S: HostStorage>(
             })?
         }
     };
-    let magnet_or_url = resolve_grab_target(state, &cached)?;
+    let magnet_or_url =
+        crate::search::resolve_grab_target(state, &cached.view, &cached.magnet_or_url)?;
     if magnet_or_url.is_empty() {
         return Err(anyhow!("release has no magnet or download link"));
     }
@@ -55,22 +56,6 @@ pub fn grab_cached<S: HostStorage>(
         upgrade,
     );
     crate::peers::downloads::grab(state, &spec)
-}
-
-fn resolve_grab_target<S: HostStorage>(state: &S, cached: &CachedRelease) -> Result<String> {
-    let indexer = crate::peers::indexers::get(state, &cached.view.indexer_id)?;
-    match indexer {
-        Some(i) if i.kind == crate::peers::indexers::KIND_BUILTIN => {
-            crate::resolve_builtin_download(
-                state,
-                &i.id,
-                &cached.view.title,
-                cached.view.details_url.as_deref(),
-                &cached.magnet_or_url,
-            )
-        }
-        _ => Ok(cached.magnet_or_url.clone()),
-    }
 }
 
 fn approve_if_needed<S: HostStorage>(state: &S, request_id: &str) -> Result<()> {

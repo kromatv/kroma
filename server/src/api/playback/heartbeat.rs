@@ -1,4 +1,6 @@
-//! The live-session heartbeats that feed the admin dashboard.
+//! The live-session heartbeats that feed the admin dashboard: a player beats
+//! with what it plays, a catalogue item or a file of a watch download, and says
+//! when it stops.
 
 use std::net::SocketAddr;
 
@@ -8,24 +10,30 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
 
+use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::util::{client_ip, query};
 use crate::api::visibility;
 use crate::db;
+use crate::i18n;
 use crate::infra::events::ServerEvent;
-use crate::services::playback::{self, Beat, Ping};
+use crate::model::{MediaItem, Permission, User, WatchItem};
+use crate::services::playback::{self, Beat, Ping, Playing};
 use crate::services::settings;
 use crate::state::SharedState;
 
-/// A heartbeat is a few hundred bytes; this bounds one before it is parsed.
+/// A heartbeat is a few hundred bytes; this bounds one before it is parsed,
+/// with room for the longest title and poster address a watch item may carry.
 pub const MAX_BEAT_BYTES: usize = 16 * 1024;
 
 #[derive(Debug, Deserialize)]
 pub struct PingBody {
     #[serde(rename = "sessionId")]
     pub session_id: String,
-    #[serde(rename = "itemId")]
-    pub item_id: String,
+    #[serde(rename = "itemId", default)]
+    pub item_id: Option<String>,
+    #[serde(default)]
+    pub watch: Option<WatchItem>,
     #[serde(rename = "positionMs")]
     pub position_ms: i64,
     #[serde(rename = "durationMs", default)]
@@ -51,7 +59,34 @@ fn default_mode() -> String {
     "direct".into()
 }
 
+async fn gate(state: &SharedState, user: &User, playing: &Playing) -> Result<(), Response> {
+    match playing {
+        Playing::Item(id) => visibility::gate_item(state, user, id).await,
+        Playing::Watch(_) if user.can(Permission::WatchablePlay) => Ok(()),
+        Playing::Watch(_) => Err(lerr(
+            i18n::user_locale(user),
+            StatusCode::FORBIDDEN,
+            "error.permissionDenied",
+        )),
+    }
+}
+
+async fn first_sight(
+    state: &SharedState,
+    session_id: &str,
+    playing: &Playing,
+) -> Option<MediaItem> {
+    let id = playing.item_id()?.to_owned();
+    if state.playback.contains(session_id) {
+        return None;
+    }
+    (query(&state.db, move |pool| db::get_item(&pool, &id)).await).unwrap_or_default()
+}
+
 /// `POST /api/playback/ping` (Bearer) → 204. Upserts the caller's live session.
+/// The body names exactly one of `itemId` or `watch`, anything else is a 400. A
+/// catalogue item needs the caller's library grant and a watch download needs
+/// `watchable.play`, the right the capability listing is offered under.
 pub async fn ping(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -64,19 +99,20 @@ pub async fn ping(
     if state.playback.is_recently_terminated(&body.session_id) {
         return StatusCode::GONE.into_response();
     }
-    if let Err(resp) = visibility::gate_item(&state, &user, &body.item_id).await {
+    let Some(playing) = Playing::named(body.item_id, body.watch) else {
+        return lerr(
+            i18n::user_locale(&user),
+            StatusCode::BAD_REQUEST,
+            "error.playbackBadTitle",
+        );
+    };
+    if let Err(resp) = gate(&state, &user, &playing).await {
         return resp;
     }
 
     let ip = client_ip(&headers, &addr, &state.config.trusted_proxies);
     let network = playback::classify_network(&ip, &settings::local_networks(&state.settings));
-
-    let item = if state.playback.contains(&body.session_id) {
-        None
-    } else {
-        let id = body.item_id.clone();
-        (query(&state.db, move |pool| db::get_item(&pool, &id)).await).unwrap_or_default()
-    };
+    let item = first_sight(&state, &body.session_id, &playing).await;
 
     // First beat of a session: pre-warm the text-subtitle cache so a mid-film
     // toggle is a disk read, not a whole-file demux. `extract_pending_locked`
@@ -98,7 +134,7 @@ pub async fn ping(
 
     let ping = Ping {
         session_id: body.session_id,
-        item_id: body.item_id,
+        playing,
         position_ms: body.position_ms.max(0),
         duration_ms: body.duration_ms,
         state: body.state,

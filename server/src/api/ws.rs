@@ -245,26 +245,22 @@ fn cast_hello(
 }
 
 async fn cast_state(state: &SharedState, owner: &str, id: String, playback: Option<CastPlayback>) {
-    let item = match playback.as_ref() {
-        Some(pb) if state.cast.wants_item(&id, &pb.item_id) => {
+    let item = match state.cast.item_to_fetch(&id, playback.as_ref()) {
+        Some(wanted) => {
             let pool = state.db.clone();
-            let wanted = pb.item_id.clone();
             tokio::task::spawn_blocking(move || db::get_item(&pool, &wanted))
                 .await
                 .ok()
                 .and_then(|r| r.ok())
                 .flatten()
         }
-        _ => None,
+        None => None,
     };
     match state.cast.set_state(&id, playback, item) {
         Some(StateChange::Row(row)) => {
-            state.events.publish_to(
-                owner,
-                ServerEvent::CastReceiverChanged {
-                    receiver: Box::new(row),
-                },
-            );
+            state
+                .events
+                .publish_to(owner, ServerEvent::CastReceiverChanged { receiver: row });
         }
         Some(StateChange::Position {
             position_ms,

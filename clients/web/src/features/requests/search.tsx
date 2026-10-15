@@ -1,6 +1,6 @@
 // The discovery page: browse trending titles or search across the local
 // library + TMDB (Overseerr-style). A prominent search hero, trending rails as
-// the empty state, and counted result grids. TMDB is gated on requests.create.
+// the empty state, and counted result grids.
 
 import { hasPermission } from '@kromatv/client/accounts';
 import type { DiscoverType } from '@kromatv/client/discovery';
@@ -72,7 +72,8 @@ export function SearchPage({
 }>) {
   const t = useT();
   const { user } = useAuth();
-  const canDiscover = !!user && hasPermission(user, 'requests.create');
+  const canDiscover = user != null;
+  const canRequest = canDiscover && hasPermission(user, 'requests.create');
   const state = useDiscoverSearch(query, type);
   const trending = useTrending(canDiscover);
   const searching = query.trim().length > 0;
@@ -102,7 +103,7 @@ export function SearchPage({
           <PageHeader.Root>
             <PageHeader.Title>{t('discover.title')}</PageHeader.Title>
             <PageHeader.Subtitle>
-              {canDiscover ? t('discover.subtitle') : t('discover.subtitleLocal')}
+              {canRequest ? t('discover.subtitle') : t('discover.subtitleBrowse')}
             </PageHeader.Subtitle>
           </PageHeader.Root>
 

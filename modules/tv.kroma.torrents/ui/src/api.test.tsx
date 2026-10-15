@@ -176,7 +176,13 @@ describe('useTorrentsApi', () => {
 
   it('reads and writes the engine-wide ceilings at one address', async () => {
     const a = api();
-    const limits = { downKbps: 0, upKbps: 512, maxActive: 3 };
+    const limits = {
+      downKbps: 0,
+      upKbps: 512,
+      maxActive: 3,
+      watchKeepInLibrary: false,
+      watchCacheMinutes: 30,
+    };
     await a.limits();
     await a.saveLimits(limits);
     expect(calls).toEqual([

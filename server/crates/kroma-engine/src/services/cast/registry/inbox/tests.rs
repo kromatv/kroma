@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use super::*;
-use crate::services::cast::registry::test_support::{announce_ok, beat};
+use crate::services::cast::registry::test_support::{announce_ok, beat, watching};
 use crate::services::cast::registry::Hello;
 
 #[test]
@@ -136,6 +136,34 @@ fn positions_are_clamped_before_they_reach_the_tv() {
         play.command,
         CastCommand::Play {
             item_id: "it1".into(),
+            position_ms: MAX_SKIP_MS
+        }
+    );
+}
+
+#[test]
+fn a_watch_download_starts_no_later_than_a_title_would() {
+    let reg = Registry::new();
+    announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+    let watch = watching(0)
+        .watch
+        .expect("the fixture names a watch download");
+
+    let queued = reg
+        .enqueue(
+            "tv-salon-01",
+            "u1",
+            CastCommand::Watch {
+                watch: watch.clone(),
+                position_ms: i64::MAX,
+            },
+        )
+        .unwrap();
+
+    assert_eq!(
+        queued.command,
+        CastCommand::Watch {
+            watch,
             position_ms: MAX_SKIP_MS
         }
     );

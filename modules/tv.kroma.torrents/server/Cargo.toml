@@ -30,8 +30,9 @@ rqbit = ["dep:librqbit", "tokio/rt-multi-thread"]
 [dependencies]
 # `storage`: the downloads ledger is a core table this module holds a grant
 # on, and `download_clients` is its own. `engine`: the organize vertical
-# names the catalog model.
-kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["storage", "engine"] }
+# names the catalog model. `transcode`: it serves its own HLS over a file it is
+# still fetching, and that crate brings no database and no catalog with it.
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["storage", "engine", "transcode"] }
 # The two shared libraries, linked rather than reached over a point: naming
 # renders one path per imported file and the release parser scores every release
 # of every search, so a localhost round trip per call would be slower than the

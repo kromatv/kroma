@@ -1,5 +1,6 @@
-//! Playback progress types: a saved position and a "continue watching" entry,
-//! and the rule that turns a position into "watched".
+//! Playback types: a saved position, a "continue watching" entry, the rule
+//! that turns a position into "watched", and the file of a watch download a
+//! player names in place of a catalogue item.
 
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +25,33 @@ pub fn finished(
     match duration_ms {
         Some(d) if d > 0 => position_ms * 100 >= d * played_percent,
         _ => false,
+    }
+}
+
+/// One file of a download played while it arrives, named the way the
+/// `watchable` capability names it: the mount that answers, the download there
+/// and the file's index in it. The rest is what the player shows about it. The
+/// core holds and hands this on without reading it, because it cannot know the
+/// module behind the mount.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WatchItem {
+    pub mount: String,
+    pub id: String,
+    pub file: u32,
+    pub title: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub poster: Option<String>,
+    #[serde(rename = "tmdbId", default, skip_serializing_if = "Option::is_none")]
+    pub tmdb_id: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub season: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub episode: Option<u32>,
+}
+
+impl WatchItem {
+    pub fn is_episode(&self) -> bool {
+        self.season.is_some() && self.episode.is_some()
     }
 }
 

@@ -1,5 +1,6 @@
 //! Text subtitle streams of one input, written out as WebVTT.
 
+use std::ops::Range;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
@@ -31,11 +32,16 @@ pub fn timeout_for(input: &str) -> Duration {
 
 /// One ffmpeg pass writing each of `tracks` (a subtitle-relative index and
 /// where its WebVTT goes) out of `input`, so N tracks cost one read and not N.
-/// Each output lands atomically, and the count is how many did. Blocking; run
-/// it on a blocking thread.
+///
+/// `over_ms` bounds what is read, and the cues keep the input's own timestamps
+/// rather than being rebased on its start: a caller holding part of a file
+/// names the part it holds and nothing outside it is touched. `None` reads the
+/// whole input. Each output lands atomically, and the count is how many did.
+/// Blocking; run it on a blocking thread.
 pub fn extract_vtt(
     input: &str,
     tracks: &[(usize, PathBuf)],
+    over_ms: Option<Range<u64>>,
     timeout: Duration,
     cancel: &dyn Fn() -> bool,
 ) -> Result<usize, String> {
@@ -47,8 +53,11 @@ pub fn extract_vtt(
             .map_err(|e| format!("could not create the subtitle output dir: {e}"))?;
     }
     let tmps: Vec<PathBuf> = tracks.iter().map(|(_, out)| unique_tmp(out)).collect();
-    let outcome =
-        crate::ffmpeg_run::run_capturing_cancellable(pass(input, tracks, &tmps), timeout, cancel);
+    let outcome = crate::ffmpeg_run::run_capturing_cancellable(
+        pass(input, tracks, over_ms.as_ref(), &tmps),
+        timeout,
+        cancel,
+    );
     let mut landed = 0;
     for ((_, out), tmp) in tracks.iter().zip(&tmps) {
         match outcome.is_ok() && wrote_anything(tmp) && finalize(tmp, out) {
@@ -64,15 +73,33 @@ pub fn extract_vtt(
 
 // Text-subtitle decode is trivial; the cost is the demux read, so one thread
 // keeps this from competing with a live remux for cores.
-fn pass(input: &str, tracks: &[(usize, PathBuf)], tmps: &[PathBuf]) -> Command {
+fn pass(
+    input: &str,
+    tracks: &[(usize, PathBuf)],
+    over_ms: Option<&Range<u64>>,
+    tmps: &[PathBuf],
+) -> Command {
     let mut cmd = Command::new("ffmpeg");
     cmd.args(["-v", "error", "-nostdin", "-threads", "1", "-y"]);
+    if let Some(over) = over_ms.filter(|over| over.start > 0) {
+        cmd.args(["-ss", &seconds(over.start)]);
+    }
     cmd.arg("-i").arg(input);
     for ((track, _), tmp) in tracks.iter().zip(tmps) {
         cmd.arg("-map").arg(format!("0:s:{track}"));
+        // `-to` is an output option here on purpose: as an input one ffmpeg
+        // ignores it and reads to the end, and `-copyts` is what stops the cue
+        // times being rebased on `-ss`.
+        if let Some(over) = over_ms {
+            cmd.args(["-copyts", "-to", &seconds(over.end)]);
+        }
         cmd.args(["-f", "webvtt"]).arg(tmp);
     }
     cmd
+}
+
+fn seconds(ms: u64) -> String {
+    format!("{}.{:03}", ms / 1000, ms % 1000)
 }
 
 fn wrote_anything(vtt: &std::path::Path) -> bool {
@@ -103,11 +130,34 @@ mod tests {
     fn a_pass_over_a_whole_input_neither_seeks_nor_bounds_what_it_reads() {
         let tracks = [(2usize, PathBuf::from("/subs/a.vtt"))];
 
-        let args = worded(&pass("/films/one.mkv", &tracks, &[PathBuf::from("/t")]));
+        let args = worded(&pass(
+            "/films/one.mkv",
+            &tracks,
+            None,
+            &[PathBuf::from("/t")],
+        ));
 
         assert!(!args.contains(&"-ss".to_string()));
         assert!(!args.contains(&"-to".to_string()));
         assert_eq!(args.last().unwrap(), "/t");
+    }
+
+    #[test]
+    fn a_pass_over_one_span_keeps_the_input_own_timestamps() {
+        let tracks = [(0usize, PathBuf::from("/subs/a.vtt"))];
+
+        let args = worded(&pass(
+            "/films/one.mkv",
+            &tracks,
+            Some(&(90_500..180_000)),
+            &[PathBuf::from("/t")],
+        ));
+
+        let at = |flag: &str| args.iter().position(|a| a == flag).expect(flag);
+        assert_eq!(args[at("-ss") + 1], "90.500");
+        assert_eq!(args[at("-to") + 1], "180.000");
+        assert!(at("-copyts") > at("-i"));
+        assert!(at("-ss") < at("-i"));
     }
 
     #[test]
@@ -118,7 +168,7 @@ mod tests {
         ];
         let tmps = [PathBuf::from("/a.part"), PathBuf::from("/b.part")];
 
-        let args = worded(&pass("/films/one.mkv", &tracks, &tmps));
+        let args = worded(&pass("/films/one.mkv", &tracks, None, &tmps));
 
         assert_eq!(args.iter().filter(|a| *a == "-map").count(), 2, "{args:?}");
         assert!(args.contains(&"0:s:4".to_string()));
@@ -126,7 +176,7 @@ mod tests {
 
     #[test]
     fn nothing_asked_for_spawns_nothing() {
-        let ran = extract_vtt("/films/one.mkv", &[], Duration::ZERO, &|| false);
+        let ran = extract_vtt("/films/one.mkv", &[], None, Duration::ZERO, &|| false);
 
         assert_eq!(ran.unwrap(), 0);
     }

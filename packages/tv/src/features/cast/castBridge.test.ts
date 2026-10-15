@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import type { MediaItem } from '@kromatv/client/media';
+import { DownloadId } from '@kromatv/client/watchable';
 import type { Translate } from '@kromatv/i18n';
 import type { PlayerController, PlayerSub } from '@kromatv/ui';
 import { cleanup, renderHook } from '@testing-library/react';
@@ -52,7 +53,10 @@ describe('castReport', () => {
   });
 
   it('reports the position in whole milliseconds and the duration when known', () => {
-    setCastTarget({ item, controller: controller({ cur: 12.3456, dur: 100, playing: true }) });
+    setCastTarget({
+      playing: { item },
+      controller: controller({ cur: 12.3456, dur: 100, playing: true }),
+    });
     expect(castReport(t)).toMatchObject({
       itemId: 'm1',
       positionMs: 12346,
@@ -62,18 +66,18 @@ describe('castReport', () => {
   });
 
   it('reports no duration for a stream whose length is not known yet', () => {
-    setCastTarget({ item, controller: controller({ cur: -1, dur: 0 }) });
+    setCastTarget({ playing: { item }, controller: controller({ cur: -1, dur: 0 }) });
     expect(castReport(t)).toMatchObject({ positionMs: 0, durationMs: null, state: 'paused' });
   });
 
   it('reports a stalled player as buffering, so the sender keeps its pause button', () => {
-    setCastTarget({ item, controller: controller({ playing: true, waiting: true }) });
+    setCastTarget({ playing: { item }, controller: controller({ playing: true, waiting: true }) });
     expect(castReport(t)?.state).toBe('buffering');
   });
 
   it('numbers an audio track that names nothing rather than offering a blank row', () => {
     setCastTarget({
-      item,
+      playing: { item },
       controller: controller({
         audioIndex: 1,
         audioTracks: [
@@ -91,7 +95,7 @@ describe('castReport', () => {
 
   it('offers only the subtitles this player can actually switch to', () => {
     setCastTarget({
-      item,
+      playing: { item },
       controller: controller({
         subtitleIndex: 1,
         subtitles: [
@@ -112,7 +116,7 @@ describe('castReport', () => {
   });
 
   it('leaves the subtitle index out entirely when subtitles are off', () => {
-    setCastTarget({ item, controller: controller({ subtitleIndex: null }) });
+    setCastTarget({ playing: { item }, controller: controller({ subtitleIndex: null }) });
     expect(castReport(t)?.subtitleIndex).toBeUndefined();
   });
 });
@@ -122,20 +126,20 @@ describe('onCastReportChange', () => {
     const seen = vi.fn();
     const off = onCastReportChange(seen);
 
-    setCastTarget({ item, controller: controller({ playing: true }) });
+    setCastTarget({ playing: { item }, controller: controller({ playing: true }) });
     await microtask();
     expect(seen).toHaveBeenCalledTimes(1);
 
-    setCastTarget({ item, controller: controller({ playing: true, cur: 41.5 }) });
+    setCastTarget({ playing: { item }, controller: controller({ playing: true, cur: 41.5 }) });
     await microtask();
     expect(seen).toHaveBeenCalledTimes(1);
 
-    setCastTarget({ item, controller: controller({ playing: false }) });
+    setCastTarget({ playing: { item }, controller: controller({ playing: false }) });
     await microtask();
     expect(seen).toHaveBeenCalledTimes(2);
 
     off();
-    setCastTarget({ item, controller: controller({ playing: true }) });
+    setCastTarget({ playing: { item }, controller: controller({ playing: true }) });
     await microtask();
     expect(seen).toHaveBeenCalledTimes(2);
   });
@@ -143,22 +147,39 @@ describe('onCastReportChange', () => {
   it('collapses the player re-registering itself into a single notification', async () => {
     const seen = vi.fn();
     const off = onCastReportChange(seen);
-    setCastTarget({ item, controller: controller({ playing: true }) });
+    setCastTarget({ playing: { item }, controller: controller({ playing: true }) });
     await microtask();
     seen.mockClear();
 
     setCastTarget(null);
-    setCastTarget({ item, controller: controller({ playing: true }) });
+    setCastTarget({ playing: { item }, controller: controller({ playing: true }) });
     await microtask();
     expect(seen).not.toHaveBeenCalled();
     off();
   });
 });
 
+describe('a watch download on screen', () => {
+  it('is reported by the file it plays, not as a catalogue item', () => {
+    const watch = {
+      mount: '/api/module/tv.example.swarm',
+      id: DownloadId.parse('f13348a88094f2e1'),
+      file: 1,
+      title: 'Kaamelott',
+    };
+    setCastTarget({ playing: { watch, next: null }, controller: controller({ cur: 31 }) });
+
+    const report = castReport(t);
+
+    expect(report).toMatchObject({ watch, positionMs: 31_000 });
+    expect(report).not.toHaveProperty('itemId');
+  });
+});
+
 describe('useCastTarget', () => {
   it('registers the running player and clears it on unmount', () => {
-    const { unmount } = renderHook(() => useCastTarget(item, controller()));
-    expect(castTarget()?.item.id).toBe('m1');
+    const { unmount } = renderHook(() => useCastTarget({ item }, controller()));
+    expect(castTarget()?.playing).toEqual({ item });
     unmount();
     expect(castTarget()).toBeNull();
   });
@@ -167,7 +188,7 @@ describe('useCastTarget', () => {
     const seekTo = vi.fn();
     requestCastSeek('m1', 30_000);
     const { rerender } = renderHook(
-      ({ ready }) => useCastTarget(item, controller({ ready, seekTo })),
+      ({ ready }) => useCastTarget({ item }, controller({ ready, seekTo })),
       {
         initialProps: { ready: false },
       },
@@ -185,18 +206,20 @@ describe('useCastTarget', () => {
   it('leaves a position meant for another title alone', () => {
     const seekTo = vi.fn();
     requestCastSeek('m2', 30_000);
-    renderHook(() => useCastTarget(item, controller({ ready: true, seekTo })));
+    renderHook(() => useCastTarget({ item }, controller({ ready: true, seekTo })));
     expect(seekTo).not.toHaveBeenCalled();
 
     const otherSeek = vi.fn();
-    renderHook(() => useCastTarget(other, controller({ ready: true, seekTo: otherSeek })));
+    renderHook(() =>
+      useCastTarget({ item: other }, controller({ ready: true, seekTo: otherSeek })),
+    );
     expect(otherSeek).toHaveBeenCalledWith(30);
   });
 
   it('treats a cast from the start as nothing to restore', () => {
     const seekTo = vi.fn();
     requestCastSeek('m1', 0);
-    renderHook(() => useCastTarget(item, controller({ ready: true, seekTo })));
+    renderHook(() => useCastTarget({ item }, controller({ ready: true, seekTo })));
     expect(seekTo).not.toHaveBeenCalled();
   });
 });

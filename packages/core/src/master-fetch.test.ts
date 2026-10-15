@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fetchMaster, resolveMasterStart } from './master-fetch';
+import { fetchMaster, readyMasterStart, resolveMasterStart } from './master-fetch';
 
 function answers(...statuses: number[]) {
   const fetch = vi.fn();
@@ -176,5 +176,25 @@ describe('resolveMasterStart', () => {
       vi.fn(() => Promise.reject(new Error('offline'))),
     );
     expect(await resolveMasterStart('http://x/master.m3u8', 42)).toBe(42);
+  });
+});
+
+describe('readyMasterStart', () => {
+  it('waits for a playlist still being written even at the start of the film', async () => {
+    const fetch = answers(503, 503, 200);
+
+    const start = await settled(readyMasterStart('http://x/master.m3u8', 0));
+
+    expect(start).toBe(0);
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('reads the real start the server reports for a later anchor', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ status: 200, headers: { get: () => '112.5' } })),
+    );
+
+    expect(await readyMasterStart('http://x/master.m3u8', 117)).toBe(112.5);
   });
 });

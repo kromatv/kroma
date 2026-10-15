@@ -2,6 +2,7 @@ use std::time::{Duration, Instant};
 
 use crate::db::testing::TempPool;
 use crate::model::MediaItem;
+use crate::services::playback::Playing;
 
 use super::{Beat, Ping, Registry};
 
@@ -12,7 +13,7 @@ pub fn test_pool() -> TempPool {
 pub fn ping(session_id: &str, pos: i64, state: &str) -> Ping {
     Ping {
         session_id: session_id.into(),
-        item_id: "item1".into(),
+        playing: Playing::Item("item1".into()),
         position_ms: pos,
         duration_ms: Some(100_000),
         state: state.into(),
@@ -21,6 +22,22 @@ pub fn ping(session_id: &str, pos: i64, state: &str) -> Ping {
         device: "Chrome".into(),
         audio: None,
         subtitle: None,
+    }
+}
+
+pub fn watching(id: &str, pos: i64) -> Ping {
+    Ping {
+        playing: Playing::Watch(crate::model::WatchItem {
+            mount: "/api/module/tv.example.swarm".into(),
+            id: "dl1".into(),
+            file: 1,
+            title: "Kaamelott".into(),
+            poster: None,
+            tmdb_id: Some(11466),
+            season: Some(1),
+            episode: Some(2),
+        }),
+        ..ping(id, pos, "playing")
     }
 }
 

@@ -14,6 +14,7 @@ where something is in a folder you have never opened:
 player/
   index.ts              the public door: what the rest of the app may import
   player.tsx            Player.Root: assembles the parts, owns nothing else
+  arrival-player.tsx    one preset of the chrome, see below
   player-parts.tsx      the slots a host fills: Media, Actions, Panel, Resume, …
   types.ts              the contract shared across the folder (PlayerController)
   player.fixture.ts     a standing-still controller, so the parts have stories
@@ -65,6 +66,20 @@ Everything else the chrome needs is data rather than children: one
 wire (`chapters`, `markers`, `upNext`). Those are `DESIGN.md` §3 T2/T3. The up-next
 sheet is a virtualiser and a chapter list is a parsed payload, so neither can be
 written as JSX by a caller.
+
+## A preset is a second component, not a flag
+
+`ArrivalPlayer` is the chrome over a file that has not finished arriving: the
+same `Player.Root`, plus the sentence under the title, the spans already on disk
+along the scrub bar and a download block in the stats, all read off one
+`WatchableProgress`. It exists because the web, the televisions and the phone all
+reach that screen, and each had written the arrangement out.
+
+It composes the compound rather than extending it. Nothing in `player.tsx` knows
+what a download is, so a second arrangement is a second file here and never a
+prop on the Root. `lib/arrival-stats.ts` is the part worth testing directly, and
+it owns `THROUGHPUT_CHART`, the chart id the arrival rate joins so that bandwidth
+and the incoming rate land on one axis.
 
 ## Why the controller shape
 

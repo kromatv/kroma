@@ -4,7 +4,7 @@ import { formatRuntime, sizedImageUrl } from '@kromatv/core';
 import { useAskForTitle } from '@kromatv/core/react';
 import { Box, Button, styles, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { Redirect, useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { DiscoverEpisodes } from '#mobile/components/DiscoverEpisodes';
@@ -21,6 +21,7 @@ import { useGutters } from '#mobile/lib/layout';
 import { routeParam } from '#mobile/lib/nav';
 import { useClient, useSession } from '#mobile/lib/session';
 import { spacing, type } from '#mobile/lib/theme';
+import { useWatchable } from '#mobile/lib/watchable';
 
 const HERO_W = 1280;
 
@@ -54,7 +55,9 @@ export default function DiscoverRoute() {
 function DiscoverScreen({ kind, tmdbId }: Readonly<{ kind: TmdbKind; tmdbId: number }>) {
   const t = useT();
   const client = useClient();
+  const router = useRouter();
   const { user } = useSession();
+  const { offered } = useWatchable();
   const { width } = useWindowDimensions();
   const gutters = useGutters();
   const scrollY = useSharedValue(0);
@@ -111,12 +114,26 @@ function DiscoverScreen({ kind, tmdbId }: Readonly<{ kind: TmdbKind; tmdbId: num
       />
 
       <Box style={[s.body, gutters.style]}>
+        {offered && detail.kind === 'movie' ? (
+          <Button
+            icon="player-play-filled"
+            label={t('requests.watchNow')}
+            onPress={() => router.push(`/watch/title/movie/${detail.tmdbId}` as never)}
+          />
+        ) : null}
         {user && hasPermission(user, 'requests.create') ? <AskAction detail={detail} /> : null}
+        {offered === false ? (
+          <Text style={s.unsupported}>{t('requests.watchUnsupported')}</Text>
+        ) : null}
         {detail.overview ? <ExpandableText>{detail.overview}</ExpandableText> : null}
       </Box>
 
       {detail.kind === 'show' ? (
-        <DiscoverEpisodes tmdbId={detail.tmdbId} seasons={detail.seasons} />
+        <DiscoverEpisodes
+          tmdbId={detail.tmdbId}
+          seasons={detail.seasons}
+          playable={offered ?? false}
+        />
       ) : null}
 
       {detail.cast.length > 0 ? (
@@ -134,4 +151,5 @@ const s = styles({
   body: { gap: spacing.md, pt: spacing.md },
   metaText: { ...type.caption, color: 'text', fontWeight: '600' },
   rating: { ...type.caption, color: 'accentText', fontWeight: '700' },
+  unsupported: { ...type.small, color: 'textMuted' },
 });

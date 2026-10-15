@@ -13,12 +13,12 @@ import { type CardModel, movieCard, PosterCard, showCard } from '#mobile/compone
 import { FadeImage } from '#mobile/components/FadeImage';
 import { gridMetrics, PosterGrid } from '#mobile/components/PosterGrid';
 import { EmptyState, Loading, SectionTitle } from '#mobile/components/ui';
-import { discoverCard } from '#mobile/lib/discover';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
 import { radius, spacing, TAB_BAR_CLEARANCE, type } from '#mobile/lib/theme';
+import { discoverCard } from '#mobile/lib/watchable';
 
 function useDebounced(value: string, ms: number): string {
   const [debounced, setDebounced] = useState(value);

@@ -1,4 +1,5 @@
-// How fast the engine may go and how much of it may run at once.
+// How fast the engine may go, how much of it may run at once, and what a title
+// watched while it downloads becomes.
 
 import { useAsyncAction, useT } from '@kromatv/module-sdk';
 import {
@@ -8,8 +9,11 @@ import {
   Callout,
   Dialog,
   Field,
+  ListRow,
+  NumberField,
   Row,
   Spinner,
+  SwitchFace,
   Text,
 } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
@@ -21,6 +25,8 @@ const UNLIMITED = 0;
 const STRETCH = { alignSelf: 'stretch' } as const;
 const DEFAULT_RATE_KBPS = 5120;
 const DEFAULT_PARALLEL = 3;
+const DEFAULT_CACHE_MINUTES = 30;
+const MAX_CACHE_MINUTES = 7 * 24 * 60;
 
 /** Opened with `LimitsModal.call()`; resolves `true` once saved. */
 export const LimitsModal = createCallable<void, boolean>(({ call }) => {
@@ -33,7 +39,15 @@ export const LimitsModal = createCallable<void, boolean>(({ call }) => {
     torrents
       .limits()
       .then(setLimits)
-      .catch(() => setLimits({ downKbps: UNLIMITED, upKbps: UNLIMITED, maxActive: UNLIMITED }));
+      .catch(() =>
+        setLimits({
+          downKbps: UNLIMITED,
+          upKbps: UNLIMITED,
+          maxActive: UNLIMITED,
+          watchKeepInLibrary: false,
+          watchCacheMinutes: DEFAULT_CACHE_MINUTES,
+        }),
+      );
   }, [torrents]);
 
   const set = (patch: Partial<LimitsView>) =>
@@ -51,7 +65,7 @@ export const LimitsModal = createCallable<void, boolean>(({ call }) => {
   };
 
   return (
-    <Dialog.Root open title={t('downloads.limitsTitle')} onClose={() => call.end(false)} width="sm">
+    <Dialog.Root open title={t('downloads.settings')} onClose={() => call.end(false)} width="sm">
       {limits ? (
         <>
           <Box gap={18}>
@@ -76,6 +90,27 @@ export const LimitsModal = createCallable<void, boolean>(({ call }) => {
               whenOn={DEFAULT_PARALLEL}
               onValueChange={(maxActive) => set({ maxActive })}
             />
+            <ListRow.Root
+              role="switch"
+              checked={limits.watchKeepInLibrary}
+              onPress={() => set({ watchKeepInLibrary: !limits.watchKeepInLibrary })}
+            >
+              <ListRow.Label>{t('downloads.watchKeep')}</ListRow.Label>
+              <ListRow.Hint>{t('downloads.watchKeepHint')}</ListRow.Hint>
+              <ListRow.Trailing>
+                <SwitchFace checked={limits.watchKeepInLibrary} />
+              </ListRow.Trailing>
+            </ListRow.Root>
+            <Field.Root label={t('downloads.watchCache')}>
+              <NumberField
+                label={t('downloads.watchCache')}
+                value={limits.watchCacheMinutes}
+                onValueChange={(watchCacheMinutes) => set({ watchCacheMinutes })}
+                min={1}
+                max={MAX_CACHE_MINUTES}
+              />
+              <Field.Hint>{t('downloads.watchCacheHint')}</Field.Hint>
+            </Field.Root>
           </Box>
           {error ? (
             <Callout.Root size="sm" tone="danger" icon="alert-triangle">

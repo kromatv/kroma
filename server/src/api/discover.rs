@@ -1,8 +1,8 @@
-//! `/api/discover/*` TMDB discovery for the request flow: search titles the
-//! library may not have, trending for the empty state, a title detail (with the
-//! season list for the picker) and one season's episodes. Every result is
-//! flagged against the local catalog + open requests so cards render Play /
-//! chip / Demander directly. Gated on `requests.create`.
+//! `/api/discover/*` TMDB discovery: search titles the library may not have,
+//! trending for the empty state, a title detail (with the season list for the
+//! picker) and one season's episodes. Every result is flagged against the local catalog so cards
+//! render Play directly, and, for a viewer holding `requests.create`, against
+//! open requests for the chip and Demander. Reading needs only a session.
 
 mod flags;
 
@@ -20,7 +20,7 @@ use crate::api::util::blocking;
 use crate::i18n;
 use crate::i18n::AskedLocale;
 use crate::infra::metadata::{discover, season_episodes};
-use crate::model::{DiscoverEpisode, DiscoverResponse, Permission, RequestKind, User};
+use crate::model::{DiscoverEpisode, DiscoverResponse, RequestKind, User};
 use crate::services::settings;
 use crate::state::SharedState;
 
@@ -44,18 +44,6 @@ fn require_tmdb(state: &SharedState, user: &User) -> Result<String, Response> {
             "error.tmdbUnavailable",
         )
     })
-}
-
-fn require(user: &User, perm: Permission) -> Result<(), Response> {
-    if user.can(perm) {
-        Ok(())
-    } else {
-        Err(lerr(
-            i18n::user_locale(user),
-            StatusCode::FORBIDDEN,
-            "error.permissionDenied",
-        ))
-    }
 }
 
 fn scope_from_type(kind: Option<&str>) -> discover::DiscoverScope {
@@ -82,7 +70,6 @@ pub async fn search(
     AuthUser(user): AuthUser,
     Query(params): Query<SearchParams>,
 ) -> Result<Response, Response> {
-    require(&user, Permission::RequestsCreate)?;
     let key = require_tmdb(&state, &user)?;
     let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
     let query = params.q.trim().to_string();
@@ -127,7 +114,6 @@ pub async fn trending(
     AuthUser(user): AuthUser,
     Query(params): Query<TrendingParams>,
 ) -> Result<Response, Response> {
-    require(&user, Permission::RequestsCreate)?;
     let key = require_tmdb(&state, &user)?;
     let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
     let scope = scope_from_type(params.kind.as_deref());
@@ -153,7 +139,6 @@ pub async fn detail(
     AuthUser(user): AuthUser,
     Path((kind, tmdb_id)): Path<(String, u64)>,
 ) -> Result<Response, Response> {
-    require(&user, Permission::RequestsCreate)?;
     let key = require_tmdb(&state, &user)?;
     let loc = i18n::user_locale(&user);
     let kind = match kind.as_str() {
@@ -183,7 +168,6 @@ pub async fn season(
     AuthUser(user): AuthUser,
     Path((tmdb_id, season)): Path<(u64, u32)>,
 ) -> Result<Response, Response> {
-    require(&user, Permission::RequestsCreate)?;
     let key = require_tmdb(&state, &user)?;
     let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
     let found = blocking(move || Ok(season_episodes(&key, &lang, tmdb_id, season))).await?;
