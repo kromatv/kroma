@@ -106,3 +106,6 @@ pub(super) fn stem_of(path: &Path) -> &str {
         .and_then(std::ffi::OsStr::to_str)
         .unwrap_or_default()
 }
+
+#[cfg(test)]
+mod tests;

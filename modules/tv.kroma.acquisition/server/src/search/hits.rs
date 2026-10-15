@@ -157,6 +157,7 @@ pub(crate) fn collect_search_hits<S: HostStorage>(
 mod tests {
     use super::*;
     use crate::search::test_support::{episode_target, indexer, profile, release};
+    use kroma_module_sdk::host::testing::StubHost;
 
     #[test]
     fn a_scored_release_carries_the_target_it_was_judged_against() {
@@ -258,5 +259,50 @@ mod tests {
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].view.target, "season");
         assert!(found[0].view.score.is_some());
+    }
+
+    #[test]
+    fn a_hit_from_an_indexer_the_sweep_never_asked_is_dropped() {
+        let hits = vec![Hit {
+            indexer_id: "ghost".into(),
+            target: 0,
+            release: release("Show.S01E01.1080p.WEB-DL.x265-GRP", Some(9)),
+        }];
+
+        let found = scored_hits(hits, &[indexer(0)], &[episode_target()], &profile(), 42);
+
+        assert!(found.is_empty());
+    }
+
+    // No indexer module installed: every target fails for the same reason, which
+    // is the indexer's report to carry rather than the sweep's to fail on.
+    #[test]
+    fn an_indexer_nothing_answers_for_reports_its_error_and_no_rows() {
+        let host = StubHost::new();
+
+        let (found, reports) = collect_search_hits(
+            &host,
+            &[indexer(0)],
+            &[episode_target()],
+            &profile(),
+            42,
+        );
+
+        assert!(found.is_empty());
+        assert_eq!(reports.len(), 1);
+        assert_eq!(reports[0].id, "idx1");
+        assert_eq!(reports[0].found, 0);
+        assert!(reports[0].error.is_some());
+    }
+
+    #[test]
+    fn a_sweep_with_no_target_to_ask_about_finds_nothing_and_blames_nobody() {
+        let host = StubHost::new();
+
+        let (found, reports) = collect_search_hits(&host, &[indexer(0)], &[], &profile(), 42);
+
+        assert!(found.is_empty());
+        assert_eq!(reports.len(), 1);
+        assert_eq!(reports[0].error, None);
     }
 }
