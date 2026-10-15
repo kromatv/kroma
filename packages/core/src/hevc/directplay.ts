@@ -160,9 +160,7 @@ export function canRenderHdr(
   return profile == null || !DV_WITHOUT_A_BASE_LAYER.has(profile);
 }
 
-// A codec whose 10-bit profile is a decoder of its own: a device that draws the
-// 8-bit one may still refuse the deeper stream.
-function byDepth(options: {
+function depthVerdict(options: {
   tenBit: boolean;
   decodes: boolean;
   decodes10: boolean;
@@ -175,7 +173,7 @@ function byDepth(options: {
   return { canDirectPlay: true, messageKey: options.ok };
 }
 
-function byCodec(options: {
+function codecVerdict(options: {
   codec: string;
   tenBit: boolean;
   undescribed: boolean;
@@ -184,7 +182,7 @@ function byCodec(options: {
   const { caps, tenBit } = options;
   switch (options.codec) {
     case 'hevc':
-      return byDepth({
+      return depthVerdict({
         tenBit,
         decodes: caps.hevc,
         decodes10: caps.hevc10bit,
@@ -192,8 +190,8 @@ function byCodec(options: {
         unsupported10: 'player.hevc10Unsupported',
         ok: 'player.directPlayHevc',
       });
-    case H264:
-      return byDepth({
+    case 'h264':
+      return depthVerdict({
         tenBit,
         decodes: caps.h264,
         decodes10: caps.h26410bit,
@@ -244,7 +242,7 @@ export function canDirectPlay(
 
   if (!canRenderHdr(item, caps)) return undecodable('player.dolbyVisionUnsupported');
 
-  return byCodec({
+  return codecVerdict({
     codec: item.video?.codec ?? UNNAMED_CODEC,
     tenBit: (item.video?.bitDepth ?? 8) >= 10,
     undescribed: nameless(item, file),
