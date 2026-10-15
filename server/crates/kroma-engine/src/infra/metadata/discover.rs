@@ -4,13 +4,22 @@
 //! structs the services layer flags against the local catalog + open requests
 //! before they become wire types.
 
-use serde::Deserialize;
-
 use crate::domain::metadata::{CastMember, CrewMember};
 use crate::model::RequestKind;
 
 use super::client::{api, curl_json, IMG};
-use super::common::{build_cast, build_crew, RawCreatedBy, RawCredits};
+use super::common::{build_cast, build_crew};
+
+mod hits;
+mod release;
+#[cfg(test)]
+mod tests;
+mod wire;
+
+pub use hits::{search, trending};
+use hits::hit_from;
+use release::movie_dates;
+use wire::DetailResp;
 
 const MAX_CAST: usize = 12;
 const MAX_CREW: usize = 6;
@@ -70,6 +79,11 @@ pub struct DiscoverRawDetail {
     // Movie only: soonest home-availability date (digital > theatrical >
     // physical > basic release_date), `YYYY-MM-DD`; `None` for shows.
     pub available_date: Option<String>,
+    // Movie only: the theatrical release, else the basic release_date.
+    pub cinema_date: Option<String>,
+    // ISO 639-1, and the first ISO 3166-1 country of origin.
+    pub original_language: Option<String>,
+    pub origin_country: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -85,58 +99,6 @@ pub enum DiscoverScope {
     Movies,
     Shows,
     All,
-}
-
-/// Search TMDB. `All` uses multi-search (drops `person` hits); the scoped
-/// variants hit the movie/tv endpoints directly.
-// The `()` Err is the unit error threaded up from `curl_json` via `?`; callers only
-// care ok/err, so a richer error type would add nothing here.
-#[allow(clippy::result_unit_err)]
-pub fn search(
-    api_key: &str,
-    language: &str,
-    scope: DiscoverScope,
-    query: &str,
-    page: u32,
-) -> Result<DiscoverPage, ()> {
-    let params = vec![
-        ("language", language.to_string()),
-        ("query", query.to_string()),
-        ("include_adult", "false".to_string()),
-        ("page", page.max(1).to_string()),
-    ];
-    let path = match scope {
-        DiscoverScope::Movies => "search/movie",
-        DiscoverScope::Shows => "search/tv",
-        DiscoverScope::All => "search/multi",
-    };
-    let resp: PageResp = curl_json(&format!("{}/{path}", api()), api_key, &params)?;
-    Ok(map_page(resp, scope))
-}
-
-/// This week's trending titles. `All` (movies + shows, page 1) powers the
-/// discover empty-state rails; the scoped variants back the full "trending
-/// movies" / "trending shows" pages with real pagination.
-// The `()` Err is the unit error threaded up from `curl_json` via `?`; callers only
-// care ok/err, so a richer error type would add nothing here.
-#[allow(clippy::result_unit_err)]
-pub fn trending(
-    api_key: &str,
-    language: &str,
-    scope: DiscoverScope,
-    page: u32,
-) -> Result<DiscoverPage, ()> {
-    let path = match scope {
-        DiscoverScope::Movies => "trending/movie/week",
-        DiscoverScope::Shows => "trending/tv/week",
-        DiscoverScope::All => "trending/all/week",
-    };
-    let params = vec![
-        ("language", language.to_string()),
-        ("page", page.max(1).to_string()),
-    ];
-    let resp: PageResp = curl_json(&format!("{}/{path}", api()), api_key, &params)?;
-    Ok(map_page(resp, scope))
 }
 
 /// Fetch one title's detail (+ external ids for the wanted ledger).
@@ -211,11 +173,9 @@ pub fn detail(
             e.episode_number.unwrap_or(0),
         ))
     });
-    let available_date = match kind {
-        RequestKind::Movie => {
-            movie_available_date(d.release_dates.take(), d.release_date.as_deref())
-        }
-        RequestKind::Show => None,
+    let dates = match kind {
+        RequestKind::Movie => movie_dates(d.release_dates.take(), d.release_date.as_deref()),
+        RequestKind::Show => Default::default(),
     };
     Ok(Some(DiscoverRawDetail {
         kind,
@@ -240,361 +200,18 @@ pub fn detail(
         similar,
         status,
         next_air,
-        available_date,
+        available_date: dates.available,
+        cinema_date: dates.cinema,
+        original_language: d.original_language.filter(|l| !l.is_empty()),
+        origin_country: d.origin_country.into_iter().next(),
     }))
 }
 
-// TMDB release types we key on for a movie's home-availability date.
-const REL_THEATRICAL: u32 = 3;
-const REL_DIGITAL: u32 = 4;
-const REL_PHYSICAL: u32 = 5;
-
-// Prefers the digital release, then theatrical, then physical, then the basic
-// release_date. Reads the US window (most complete for digital) and falls
-// back to any country. All dates normalized to `YYYY-MM-DD`.
-fn movie_available_date(rd: Option<ReleaseDatesResp>, basic: Option<&str>) -> Option<String> {
-    let results = rd.map(|r| r.results).unwrap_or_default();
-    let block = results
-        .iter()
-        .find(|c| c.iso_3166_1.as_deref() == Some("US"))
-        .or_else(|| results.first());
-    let typed = block.and_then(|b| {
-        typed_release(b, REL_DIGITAL)
-            .or_else(|| typed_release(b, REL_THEATRICAL))
-            .or_else(|| typed_release(b, REL_PHYSICAL))
-    });
-    typed.or_else(|| basic.and_then(ymd))
-}
-
-fn typed_release(block: &ReleaseDatesCountry, want: u32) -> Option<String> {
-    block
-        .release_dates
-        .iter()
-        .find(|d| d.kind == want)
-        .and_then(|d| d.release_date.as_deref())
-        .and_then(ymd)
-}
-
 // Truncates a TMDB date/datetime ("2024-02-27T00:00:00.000Z") to `YYYY-MM-DD`.
-fn ymd(s: &str) -> Option<String> {
+pub(super) fn ymd(s: &str) -> Option<String> {
     s.get(..10).map(str::to_string)
 }
 
-// Skips rows with no usable title.
-fn hit_from(kind: RequestKind, h: RawHit) -> Option<DiscoverHit> {
-    let title = h.title.or(h.name)?;
-    Some(DiscoverHit {
-        kind,
-        tmdb_id: h.id,
-        title,
-        original_title: h.original_title.or(h.original_name).unwrap_or_default(),
-        year: year_of(h.release_date.as_deref().or(h.first_air_date.as_deref())),
-        poster_url: h.poster_path.map(|p| format!("{IMG}/w342{p}")),
-        backdrop_url: h.backdrop_path.map(|p| format!("{IMG}/w780{p}")),
-        overview: h.overview.filter(|s| !s.is_empty()),
-        rating: h.vote_average.filter(|v| *v > 0.0),
-    })
-}
-
-fn map_page(resp: PageResp, scope: DiscoverScope) -> DiscoverPage {
-    let hits = resp
-        .results
-        .into_iter()
-        .filter_map(|h| {
-            // Multi-search mixes movies, shows and people; scoped searches carry
-            // no media_type (the endpoint implies it).
-            let kind = match h.media_type.as_deref() {
-                Some("movie") => RequestKind::Movie,
-                Some("tv") => RequestKind::Show,
-                Some(_) => return None, // person / collection
-                None => match scope {
-                    DiscoverScope::Movies => RequestKind::Movie,
-                    DiscoverScope::Shows => RequestKind::Show,
-                    DiscoverScope::All => return None,
-                },
-            };
-            hit_from(kind, h)
-        })
-        .collect();
-    DiscoverPage {
-        hits,
-        page: resp.page.max(1),
-        total_pages: resp.total_pages.max(1),
-    }
-}
-
-fn year_of(date: Option<&str>) -> Option<u32> {
+pub(super) fn year_of(date: Option<&str>) -> Option<u32> {
     date.and_then(|d| d.get(..4)).and_then(|y| y.parse().ok())
-}
-
-#[derive(Debug, Deserialize)]
-struct PageResp {
-    #[serde(default)]
-    page: u32,
-    #[serde(default)]
-    total_pages: u32,
-    #[serde(default)]
-    results: Vec<RawHit>,
-}
-
-#[derive(Debug, Deserialize)]
-struct RawHit {
-    id: u64,
-    #[serde(default)]
-    media_type: Option<String>,
-    #[serde(default)]
-    title: Option<String>,
-    #[serde(default)]
-    name: Option<String>,
-    #[serde(default)]
-    original_title: Option<String>,
-    #[serde(default)]
-    original_name: Option<String>,
-    #[serde(default)]
-    overview: Option<String>,
-    #[serde(default)]
-    poster_path: Option<String>,
-    #[serde(default)]
-    backdrop_path: Option<String>,
-    #[serde(default)]
-    release_date: Option<String>,
-    #[serde(default)]
-    first_air_date: Option<String>,
-    #[serde(default)]
-    vote_average: Option<f32>,
-}
-
-#[derive(Debug, Deserialize)]
-struct DetailResp {
-    #[serde(default)]
-    title: Option<String>,
-    #[serde(default)]
-    name: Option<String>,
-    #[serde(default)]
-    overview: Option<String>,
-    #[serde(default)]
-    tagline: Option<String>,
-    #[serde(default)]
-    poster_path: Option<String>,
-    #[serde(default)]
-    backdrop_path: Option<String>,
-    #[serde(default)]
-    release_date: Option<String>,
-    #[serde(default)]
-    first_air_date: Option<String>,
-    #[serde(default)]
-    vote_average: Option<f32>,
-    #[serde(default)]
-    runtime: Option<u32>,
-    #[serde(default)]
-    genres: Vec<RawGenre>,
-    #[serde(default)]
-    imdb_id: Option<String>,
-    #[serde(default)]
-    external_ids: Option<RawExternalIds>,
-    #[serde(default)]
-    seasons: Vec<RawSeasonResp>,
-    #[serde(default)]
-    credits: Option<RawCredits>,
-    #[serde(default)]
-    created_by: Vec<RawCreatedBy>,
-    #[serde(default)]
-    recommendations: Option<PageResp>,
-    // Show: "Returning Series"/"Ended"/"Canceled"/"In Production"; movie:
-    // "Released"/"Post Production"/…
-    #[serde(default)]
-    status: Option<String>,
-    #[serde(default)]
-    next_episode_to_air: Option<RawEpisodeStub>,
-    // Parsed for the coming-soon calendar (later phase); not read yet.
-    #[serde(default)]
-    #[allow(dead_code)]
-    last_episode_to_air: Option<RawEpisodeStub>,
-    // Backs the calendar's completeness check (later phase); not read yet.
-    #[serde(default)]
-    #[allow(dead_code)]
-    number_of_episodes: Option<u32>,
-    #[serde(default)]
-    release_dates: Option<ReleaseDatesResp>,
-}
-
-#[derive(Debug, Deserialize)]
-struct RawGenre {
-    id: u32,
-    name: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct RawExternalIds {
-    #[serde(default)]
-    imdb_id: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct RawSeasonResp {
-    #[serde(default)]
-    season_number: Option<u32>,
-    #[serde(default)]
-    name: Option<String>,
-    #[serde(default)]
-    episode_count: Option<u32>,
-    #[serde(default)]
-    air_date: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct RawEpisodeStub {
-    #[serde(default)]
-    air_date: Option<String>,
-    #[serde(default)]
-    season_number: Option<u32>,
-    #[serde(default)]
-    episode_number: Option<u32>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ReleaseDatesResp {
-    #[serde(default)]
-    results: Vec<ReleaseDatesCountry>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ReleaseDatesCountry {
-    #[serde(default)]
-    iso_3166_1: Option<String>,
-    #[serde(default)]
-    release_dates: Vec<ReleaseDateEntry>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ReleaseDateEntry {
-    // 3 = theatrical, 4 = digital, 5 = physical (others exist).
-    #[serde(rename = "type", default)]
-    kind: u32,
-    #[serde(default)]
-    release_date: Option<String>,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // Network is not exercised; we validate the JSON→adapter mapping the way
-    // the sibling client does.
-    #[test]
-    fn maps_credits_and_recommendations() {
-        let raw = r#"{
-            "title": "Dune: Part Two",
-            "credits": {
-                "cast": [
-                    {"name": "Second", "character": "B", "profile_path": "/b.jpg", "order": 1},
-                    {"name": "First", "character": "A", "profile_path": "/a.jpg", "order": 0},
-                    {"name": "NoChar", "character": "", "order": 2}
-                ],
-                "crew": [
-                    {"name": "Editor Ed", "job": "Editor"},
-                    {"name": "Denis", "job": "Director"},
-                    {"name": "Writer Wanda", "job": "Writer"}
-                ]
-            },
-            "recommendations": {
-                "page": 1,
-                "total_pages": 1,
-                "results": [
-                    {"id": 693134, "title": "Rec One", "poster_path": "/r.jpg", "release_date": "2024-02-27", "vote_average": 8.2},
-                    {"id": 0, "title": null}
-                ]
-            }
-        }"#;
-        let d: DetailResp = serde_json::from_str(raw).unwrap();
-
-        let (raw_cast, raw_crew) = d.credits.map(|c| (c.cast, c.crew)).unwrap_or_default();
-        let cast = build_cast(raw_cast, MAX_CAST, true);
-        // Sorted by `order`; empty characters dropped; profile URL absolutized.
-        assert_eq!(cast[0].name, "First");
-        assert_eq!(cast[0].character.as_deref(), Some("A"));
-        assert_eq!(
-            cast[0].profile_url.as_deref(),
-            Some("https://image.tmdb.org/t/p/w342/a.jpg")
-        );
-        assert_eq!(cast[2].character, None);
-
-        let crew = build_crew(raw_crew, d.created_by, MAX_CREW);
-        // Non-authorship jobs (Editor) dropped; directors rank first.
-        assert_eq!(crew[0].name, "Denis");
-        assert!(crew.iter().all(|c| c.name != "Editor Ed"));
-
-        let similar: Vec<_> = d
-            .recommendations
-            .map(|r| r.results)
-            .unwrap_or_default()
-            .into_iter()
-            .filter_map(|h| hit_from(RequestKind::Movie, h))
-            .collect();
-        // The title-less row is skipped; the good one keeps the parent's kind.
-        assert_eq!(similar.len(), 1);
-        assert_eq!(similar[0].tmdb_id, 693134);
-        assert_eq!(similar[0].kind, RequestKind::Movie);
-        assert_eq!(similar[0].year, Some(2024));
-    }
-
-    #[test]
-    fn movie_available_date_prefers_digital_then_theatrical() {
-        let raw = r#"{
-            "release_dates": { "results": [
-                { "iso_3166_1": "FR", "release_dates": [
-                    { "type": 3, "release_date": "2024-02-28T00:00:00.000Z" }
-                ]},
-                { "iso_3166_1": "US", "release_dates": [
-                    { "type": 3, "release_date": "2024-03-01T00:00:00.000Z" },
-                    { "type": 4, "release_date": "2024-04-16T00:00:00.000Z" }
-                ]}
-            ]}
-        }"#;
-        let d: DetailResp = serde_json::from_str(raw).unwrap();
-        // US digital (type 4) wins over US/FR theatrical, truncated to a date.
-        assert_eq!(
-            movie_available_date(d.release_dates, Some("2024-03-01")).as_deref(),
-            Some("2024-04-16")
-        );
-        // No typed windows: fall back to the basic release_date.
-        assert_eq!(
-            movie_available_date(None, Some("2025-01-09")).as_deref(),
-            Some("2025-01-09")
-        );
-    }
-
-    #[test]
-    fn show_next_air_maps_from_next_episode() {
-        let raw = r#"{
-            "name": "Severance",
-            "status": "Returning Series",
-            "next_episode_to_air": { "air_date": "2026-01-17", "season_number": 2, "episode_number": 3 },
-            "number_of_episodes": 19
-        }"#;
-        let d: DetailResp = serde_json::from_str(raw).unwrap();
-        assert_eq!(d.status.as_deref(), Some("Returning Series"));
-        let n = d.next_episode_to_air.unwrap();
-        assert_eq!(n.air_date.as_deref(), Some("2026-01-17"));
-        assert_eq!(n.season_number, Some(2));
-        assert_eq!(n.episode_number, Some(3));
-    }
-
-    #[test]
-    fn tv_creators_fold_into_crew() {
-        let raw = r#"{
-            "name": "Severance",
-            "created_by": [{"name": "Dan Erickson"}],
-            "credits": {"cast": [], "crew": []}
-        }"#;
-        let d: DetailResp = serde_json::from_str(raw).unwrap();
-        let crew = build_crew(
-            d.credits.map(|c| c.crew).unwrap_or_default(),
-            d.created_by,
-            MAX_CREW,
-        );
-        assert_eq!(crew.len(), 1);
-        assert_eq!(crew[0].name, "Dan Erickson");
-        assert_eq!(crew[0].job, "Creator");
-    }
 }

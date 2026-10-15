@@ -59,7 +59,7 @@ pub fn set_coverage<S: HostStorage>(
 }
 
 /// Bring the ledger in line with what the request now covers, KEEPING the state
-/// of every row that survives. `insert_wanted` ignores rows already there and
+/// of every row that survives. `claim_wanted` keeps rows already there and
 /// `prune_wanted` drops the ones that fell out of scope; between them nothing
 /// that was grabbed or is on disk is forgotten.
 fn reconcile_wanted<S: HostStorage>(state: &S, id: &str) -> Result<()> {
@@ -67,8 +67,17 @@ fn reconcile_wanted<S: HostStorage>(state: &S, id: &str) -> Result<()> {
     let req = db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request not found"))?;
     drop(conn);
     let rows = build_wanted_rows(state, &req)?;
-    let keep: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
-    db::insert_wanted(state.db(), &rows, now_ms())?;
+    db::claim_wanted(state.db(), id, &rows, now_ms())?;
+    let conn = state.db().get()?;
+    let keep: Vec<String> = db::wanted_for_request(&conn, id)?
+        .into_iter()
+        .filter(|held| {
+            rows.iter()
+                .any(|row| (row.season, row.episode) == (held.season, held.episode))
+        })
+        .map(|held| held.id)
+        .collect();
+    drop(conn);
     db::prune_wanted(state.db(), id, &keep)?;
     Ok(())
 }
@@ -128,7 +137,7 @@ mod tests {
         insert_req(&host, "r1", RequestKind::Show, 42, RequestStatus::Approved);
         let mk = |id: &str, season: u32, episode: u32, status: &str| db::WantedRow {
             id: id.into(),
-            request_id: "r1".into(),
+            request_id: Some("r1".into()),
             kind: "episode".into(),
             tmdb_id: 42,
             imdb_id: None,
@@ -140,7 +149,7 @@ mod tests {
             status: status.into(),
             last_search_at: None,
         };
-        db::replace_wanted(
+        db::claim_wanted(
             host.db(),
             "r1",
             &[mk("keep", 1, 1, "available"), mk("drop", 2, 1, "wanted")],

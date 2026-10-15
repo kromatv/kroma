@@ -9,6 +9,7 @@ use super::{JobContext, JobKey, JobManager, Trigger};
 
 mod cache_cleanup;
 mod library_missing;
+mod library_monitoring;
 mod library_scan;
 mod metadata_enrich;
 mod notifications_digest;
@@ -45,6 +46,7 @@ const JOBS: &[Builtin] = &[
     sections_curate::SPEC,
     library_scan::SPEC,
     library_missing::SPEC,
+    library_monitoring::SPEC,
     metadata_enrich::SPEC,
     search_reindex::SPEC,
     notifications_digest::SPEC,

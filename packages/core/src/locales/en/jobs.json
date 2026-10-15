@@ -22,6 +22,8 @@
   "jobs.last": "Last",
   "jobs.library.missing.desc": "Compares each library show to TMDB and lists aired episodes that are not on disk (the Missing view).",
   "jobs.library.missing.name": "Missing episodes scan",
+  "jobs.library.monitoring.desc": "Re-reads monitored titles from TMDB so new episodes join, and keeps each one in step with the disk: a file that landed is available, one that vanished is missing again.",
+  "jobs.library.monitoring.name": "Monitored titles",
   "jobs.library.scan.desc": "Rescans folders, syncs the database, then kicks probing and enrichment.",
   "jobs.library.scan.name": "Library scan",
   "jobs.manual": "Manual",

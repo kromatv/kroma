@@ -22,6 +22,8 @@
   "jobs.last": "Dernière",
   "jobs.library.missing.desc": "Compare chaque série de la bibliothèque à TMDB et liste les épisodes diffusés absents du disque (vue Manquants).",
   "jobs.library.missing.name": "Analyse des épisodes manquants",
+  "jobs.library.monitoring.desc": "Relit les titres suivis sur TMDB pour ajouter les nouveaux épisodes, et les aligne sur le disque : un fichier arrivé est disponible, un fichier disparu redevient manquant.",
+  "jobs.library.monitoring.name": "Titres suivis",
   "jobs.library.scan.desc": "Réanalyse les dossiers, synchronise la base, puis lance le probing et l'enrichissement.",
   "jobs.library.scan.name": "Analyse de la bibliothèque",
   "jobs.manual": "Manuel",

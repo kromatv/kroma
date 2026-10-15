@@ -409,12 +409,39 @@ pub(crate) const SCHEMA: &str = "
     CREATE INDEX IF NOT EXISTS idx_requests_ident  ON requests(kind, tmdb_id);
     CREATE INDEX IF NOT EXISTS idx_requests_user   ON requests(requested_by, created_at DESC);
 
-    -- Episode-level wanted ledger, materialized when a request is approved.
-    -- Season packs are computed at search time by grouping rows on (tmdb_id,
-    -- season); there are no separate season rows.
+    -- Titles the server wants to hold: a movie, or a show with the seasons
+    -- whose new episodes join its ledger as TMDB announces them.
+    -- `last_season` is the highest season TMDB listed at the last refresh, so a
+    -- season above it is new; `known_episodes` maps each season to the last
+    -- episode TMDB had listed, so a refresh only adds what was announced since;
+    -- `original_language` is a tag (`en`, `fr-CA`). Keyed like `requests`.
+    CREATE TABLE IF NOT EXISTS monitored (
+        kind                TEXT NOT NULL,
+        tmdb_id             INTEGER NOT NULL,
+        title               TEXT NOT NULL,
+        year                INTEGER,
+        poster_url          TEXT,
+        seasons             TEXT NOT NULL DEFAULT '[]',
+        monitor_new_seasons INTEGER NOT NULL DEFAULT 0,
+        min_availability    TEXT NOT NULL DEFAULT 'released',
+        last_season         INTEGER,
+        known_episodes      TEXT NOT NULL DEFAULT '{}',
+        original_language   TEXT,
+        air_status          TEXT,
+        refreshed_at        INTEGER,
+        added_by            TEXT REFERENCES users(id) ON DELETE SET NULL,
+        added_at            INTEGER NOT NULL,
+        updated_at          INTEGER NOT NULL,
+        PRIMARY KEY (kind, tmdb_id)
+    );
+
+    -- One row per monitored unit: a movie, or one episode of a monitored show.
+    -- `request_id` is the request the row answers to, if any; deleting the
+    -- request leaves the row monitored. Season packs are computed at search time
+    -- by grouping rows on (tmdb_id, season); there are no separate season rows.
     CREATE TABLE IF NOT EXISTS wanted (
         id             TEXT PRIMARY KEY,
-        request_id     TEXT NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+        request_id     TEXT REFERENCES requests(id) ON DELETE SET NULL,
         kind           TEXT NOT NULL,
         tmdb_id        INTEGER NOT NULL,
         imdb_id        TEXT,

@@ -44,7 +44,7 @@ fn match_one_movie_flips_wanted_and_request_to_available() {
         603,
         RequestStatus::Approved,
     );
-    db::replace_wanted(
+    db::claim_wanted(
         host.db(),
         "r1",
         &[wanted("w1", "r1", None, None, None, "wanted")],
@@ -87,7 +87,7 @@ fn match_one_show_available_when_all_aired_episodes_present() {
         1396,
         RequestStatus::Approved,
     );
-    db::replace_wanted(
+    db::claim_wanted(
         host.db(),
         "r1",
         &[
@@ -116,7 +116,7 @@ fn match_one_show_partial_when_some_episodes_missing() {
         1396,
         RequestStatus::Approved,
     );
-    db::replace_wanted(
+    db::claim_wanted(
         host.db(),
         "r1",
         &[
@@ -156,7 +156,7 @@ fn availability_pass_checks_nonterminal_and_counts_changes() {
         603,
         RequestStatus::Approved,
     );
-    db::replace_wanted(
+    db::claim_wanted(
         host.db(),
         "r1",
         &[wanted("w1", "r1", None, None, None, "wanted")],
@@ -195,7 +195,7 @@ fn match_show_never_regresses_a_fully_available_request() {
         1396,
         RequestStatus::Available,
     );
-    db::replace_wanted(
+    db::claim_wanted(
         host.db(),
         "r1",
         &[
@@ -237,7 +237,7 @@ fn match_show_no_verdict_when_aired_but_none_present() {
         1396,
         RequestStatus::Approved,
     );
-    db::replace_wanted(
+    db::claim_wanted(
         host.db(),
         "r1",
         &[
@@ -262,7 +262,7 @@ fn a_film_already_marked_available_is_matched_again_without_a_second_announcemen
         603,
         RequestStatus::Available,
     );
-    db::replace_wanted(
+    db::claim_wanted(
         host.db(),
         "r1",
         &[wanted("w1", "r1", None, None, None, "wanted")],
@@ -293,7 +293,7 @@ fn a_show_that_is_still_exactly_as_partial_as_before_announces_nothing_new() {
         1396,
         RequestStatus::PartiallyAvailable,
     );
-    db::replace_wanted(
+    db::claim_wanted(
         host.db(),
         "r1",
         &[

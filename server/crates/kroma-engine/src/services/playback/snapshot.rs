@@ -173,6 +173,7 @@ mod tests {
             language: Some("eng".into()),
             title: None,
             default: true,
+            region: None,
         }
     }
 
