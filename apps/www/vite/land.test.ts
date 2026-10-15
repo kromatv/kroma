@@ -58,13 +58,13 @@ describe('landPlugin', () => {
     const plugin = landPlugin();
 
     expect(resolve(plugin, 'virtual:kroma-land')).toBe(RESOLVED_ID);
-    expect(resolve(plugin, 'virtual:something-else')).toBe(null);
+    expect(resolve(plugin, 'virtual:something-else')).toBeNull();
   });
 
   it('loads nothing for a module it did not resolve', async () => {
     const plugin = landPlugin();
 
-    expect(await load(plugin, './land.ts')).toBe(null);
+    expect(await load(plugin, './land.ts')).toBeNull();
   });
 
   it('compiles the dots in as a module the bundle can import', async () => {
