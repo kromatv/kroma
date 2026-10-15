@@ -20,48 +20,10 @@ import {
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
+import { NowPlayingThumb } from '#web/features/admin/now-playing-thumb';
 import { PillDot } from '#web/features/admin/pill';
-import { apiBase, kromaClient } from '#web/shared/lib/api';
-import { posterScrim } from '#web/shared/lib/art-styles';
+import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { useStoryboard } from '#web/shared/lib/use-storyboard';
-import { Image } from '#web/shared/ui';
-
-const THUMB_W = 132;
-
-// The current storyboard frame when the sheet is ready, else the item poster,
-// else a title-seeded gradient.
-function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
-  // Never kick/await lazy ffmpeg generation just to paint a 132px thumb: fetch
-  // once and only use the sheet if it already exists (else poster / gradient).
-  const story = useStoryboard(s.itemId, { generate: false });
-  const [posterFailed, setPosterFailed] = useState(false);
-  const frame = story.tile(s.positionMs / 1000, THUMB_W);
-  const poster = kromaClient().media.artwork.posterUrl(s.itemId);
-
-  return (
-    <Box w={THUMB_W} aspect={16 / 9} shrink={0} self="flex-start" radius="xs" overflow="hidden">
-      <Box fill style={posterScrim(s.title)} />
-      {posterFailed ? null : (
-        <Image src={poster} fit="cover" fill onError={() => setPosterFailed(true)} />
-      )}
-      {/* A storyboard tile is a window onto the sprite sheet: the sheet is drawn
-          at its scaled size and slid into place (see StoryboardThumb). */}
-      {frame ? (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `url("${frame.sheet}")`,
-            backgroundPosition: `${frame.offsetX}px ${frame.offsetY}px`,
-            backgroundSize: `${frame.sheetWidth * frame.scale}px ${frame.sheetHeight * frame.scale}px`,
-            backgroundRepeat: 'no-repeat',
-          }}
-        />
-      ) : null}
-    </Box>
-  );
-}
 
 function transportTone(state: string, t: Translate): { color: ColorValue; label: string } {
   if (state === 'buffering') return { color: 'accent', label: t('admin.buffering') };
@@ -121,6 +83,13 @@ export function NowPlayingCard({
                   {stateLabel}
                 </Text>
               </Row>
+              {s.watch ? (
+                <Row shrink={0} radius="xs" px={9} py={3} bg="accentWash/14">
+                  <Text variant="meta" color="accent">
+                    {t('admin.watchDownloading')}
+                  </Text>
+                </Row>
+              ) : null}
             </Row>
             <Text variant="meta" color="textDim" mt={4}>
               {[sub, s.videoLabel].filter((part) => part && part !== '-').join(' · ')}

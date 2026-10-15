@@ -4,6 +4,7 @@
 
 import type { CastAnnounceBody } from '@kromatv/client/cast';
 import type { MediaItem } from '@kromatv/client/media';
+import type { WatchItem } from '@kromatv/client/watchable';
 import { audioTrackLabel, langName } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import type { PlayerController } from '@kromatv/ui';
@@ -11,13 +12,21 @@ import { useEffect } from 'react';
 
 export type CastPlaybackReport = NonNullable<CastAnnounceBody['playback']>;
 
+export type CastPlaying = { item: MediaItem } | { watch: WatchItem; next: (() => void) | null };
+
 interface Target {
-  item: MediaItem;
+  playing: CastPlaying;
   controller: PlayerController;
 }
 
 let target: Target | null = null;
-let pendingSeek: { itemId: string; positionMs: number } | null = null;
+let pendingSeek: { key: string; positionMs: number } | null = null;
+
+export function castKey(playing: { item: Pick<MediaItem, 'id'> } | { watch: WatchItem }): string {
+  if ('item' in playing) return playing.item.id;
+  const { mount, id, file } = playing.watch;
+  return `watch:${mount}:${id}:${file}`;
+}
 
 const listeners = new Set<() => void>();
 let signature = '';
@@ -32,9 +41,9 @@ export function onCastReportChange(listener: () => void): () => void {
 
 function materialSignature(): string {
   if (!target) return '';
-  const { item, controller } = target;
+  const { playing, controller } = target;
   return [
-    item.id,
+    castKey(playing),
     transportState(controller),
     controller.audioIndex,
     controller.subtitleIndex ?? 'off',
@@ -76,12 +85,12 @@ export function castTarget(): Target | null {
 /** Remember where a freshly-cast title should start; consumed once its player
  * reports ready. A cast `play` arrives *before* that player exists, so the
  * position cannot simply be seeked at command time. */
-export function requestCastSeek(itemId: string, positionMs: number): void {
-  pendingSeek = positionMs > 0 ? { itemId, positionMs } : null;
+export function requestCastSeek(key: string, positionMs: number): void {
+  pendingSeek = positionMs > 0 ? { key, positionMs } : null;
 }
 
-function takeCastSeek(itemId: string): number | null {
-  if (pendingSeek?.itemId !== itemId) return null;
+function takeCastSeek(key: string): number | null {
+  if (pendingSeek?.key !== key) return null;
   const { positionMs } = pendingSeek;
   pendingSeek = null;
   return positionMs;
@@ -99,9 +108,9 @@ function transportState(controller: PlayerController): 'buffering' | 'playing' |
  * actually switch to. */
 export function castReport(t: Translate): CastPlaybackReport | null {
   if (!target) return null;
-  const { item, controller } = target;
+  const { playing, controller } = target;
   return {
-    itemId: item.id,
+    ...('item' in playing ? { itemId: playing.item.id } : { watch: playing.watch }),
     positionMs: Math.max(0, Math.round(controller.cur * 1000)),
     durationMs: controller.dur > 0 ? Math.round(controller.dur * 1000) : null,
     state: transportState(controller),
@@ -123,19 +132,20 @@ export function castReport(t: Translate): CastPlaybackReport | null {
 }
 
 /** Publish the running player to the cast receiver, and apply a position a
- * cast `play` asked for once the engine is ready to honour it. */
-export function useCastTarget(item: MediaItem, controller: PlayerController): void {
+ * cast `play` or `watch` asked for once the engine is ready to honour it. */
+export function useCastTarget(playing: CastPlaying, controller: PlayerController): void {
   // No dependency array: `controller` is a new object every playback tick, so
   // this re-registers as a plain assignment rather than a diffed effect.
   useEffect(() => {
-    setCastTarget({ item, controller });
+    setCastTarget({ playing, controller });
     return () => setCastTarget(null);
   });
 
   const { ready, seekTo } = controller;
+  const key = castKey(playing);
   useEffect(() => {
     if (!ready) return;
-    const positionMs = takeCastSeek(item.id);
+    const positionMs = takeCastSeek(key);
     if (positionMs != null) seekTo(positionMs / 1000);
-  }, [ready, item.id, seekTo]);
+  }, [ready, key, seekTo]);
 }

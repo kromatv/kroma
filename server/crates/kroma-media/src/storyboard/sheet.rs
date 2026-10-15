@@ -113,7 +113,7 @@ mod tests {
             &tiles,
             &plan,
             &[0],
-            Decode::Keyframes,
+            Decode::Frames,
             &|| false,
         );
         if drawn.is_err() {

@@ -12,6 +12,7 @@ mod invites;
 mod pin_attempts;
 mod preferences;
 mod resets;
+mod rights;
 mod sessions;
 mod verifications;
 
@@ -24,6 +25,7 @@ pub use invites::*;
 pub use pin_attempts::*;
 pub use preferences::*;
 pub use resets::*;
+pub use rights::*;
 pub use sessions::*;
 pub use verifications::*;
 

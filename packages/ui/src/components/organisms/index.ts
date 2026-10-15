@@ -66,6 +66,8 @@ export { Menu } from './menu';
 export type { NearbyTvListProps } from './nearby-tv-list';
 export { NearbyTvList } from './nearby-tv-list';
 export { PerfHud } from './perf-hud';
+export type { PreparationProps } from './preparation';
+export { Preparation } from './preparation';
 export type { RailListProps, RailRootProps, RailTitleProps } from './rail';
 export { RAIL_GAP, Rail } from './rail';
 export type {

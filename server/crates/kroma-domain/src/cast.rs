@@ -5,6 +5,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::media::MediaItem;
+use crate::playback::WatchItem;
 
 /// `Buffering` is "playing, but stalled" - senders keep the pause button.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -28,11 +29,14 @@ pub struct CastTrack {
     pub label: String,
 }
 
-/// What a receiver reports about its own playback on each heartbeat.
+/// What a receiver reports about its own playback on each heartbeat: a
+/// catalogue item by its id, or a file of a watch download.
 #[derive(Debug, Clone, Deserialize)]
 pub struct CastPlayback {
-    #[serde(rename = "itemId")]
-    pub item_id: String,
+    #[serde(rename = "itemId", default)]
+    pub item_id: Option<String>,
+    #[serde(default)]
+    pub watch: Option<WatchItem>,
     #[serde(rename = "positionMs")]
     pub position_ms: i64,
     #[serde(rename = "durationMs", default)]
@@ -49,9 +53,9 @@ pub struct CastPlayback {
     pub subtitle_index: Option<i64>,
 }
 
+/// Where a receiver's player stands, whatever it plays.
 #[derive(Debug, Clone, Serialize)]
-pub struct CastNowPlaying {
-    pub item: MediaItem,
+pub struct CastTransport {
     #[serde(rename = "positionMs")]
     pub position_ms: i64,
     #[serde(rename = "durationMs")]
@@ -64,6 +68,26 @@ pub struct CastNowPlaying {
     pub subtitles: Vec<CastTrack>,
     #[serde(rename = "subtitleIndex", skip_serializing_if = "Option::is_none")]
     pub subtitle_index: Option<i64>,
+}
+
+/// A catalogue item on a receiver's screen, resolved by the server so a sender
+/// renders a title the receiver cannot spoof.
+#[derive(Debug, Clone, Serialize)]
+pub struct CastNowPlaying {
+    pub item: MediaItem,
+    #[serde(flatten)]
+    pub transport: CastTransport,
+}
+
+/// A file of a watch download on a receiver's screen, as the receiver named it:
+/// the server has no row to resolve one against. A roster row carries it as
+/// `nowWatching`, beside `nowPlaying` rather than inside it, so a sender built
+/// before it reads that set as idle instead of failing on a missing `item`.
+#[derive(Debug, Clone, Serialize)]
+pub struct CastNowWatching {
+    pub watch: WatchItem,
+    #[serde(flatten)]
+    pub transport: CastTransport,
 }
 
 /// A sender currently driving a receiver. Presence is that sender's socket, so
@@ -91,6 +115,8 @@ pub struct CastReceiver {
     pub network: String,
     #[serde(rename = "nowPlaying", skip_serializing_if = "Option::is_none")]
     pub now_playing: Option<CastNowPlaying>,
+    #[serde(rename = "nowWatching", skip_serializing_if = "Option::is_none")]
+    pub now_watching: Option<CastNowWatching>,
     pub controllers: Vec<CastController>,
 }
 
@@ -102,6 +128,11 @@ pub enum CastCommand {
     Play {
         #[serde(rename = "itemId")]
         item_id: String,
+        #[serde(rename = "positionMs", default)]
+        position_ms: i64,
+    },
+    Watch {
+        watch: WatchItem,
         #[serde(rename = "positionMs", default)]
         position_ms: i64,
     },
@@ -174,5 +205,67 @@ mod tests {
             serde_json::from_str(r#"{"itemId":"i","positionMs":1,"state":"levitating"}"#).unwrap();
         assert_eq!(p.state, CastState::Unknown);
         assert_eq!(p.duration_ms, None);
+    }
+
+    fn episode_two() -> WatchItem {
+        WatchItem {
+            mount: "/api/module/tv.example.swarm".into(),
+            id: "dl1".into(),
+            file: 1,
+            title: "Kaamelott".into(),
+            poster: None,
+            tmdb_id: Some(11466),
+            season: Some(1),
+            episode: Some(2),
+        }
+    }
+
+    #[test]
+    fn a_watch_command_round_trips_with_the_file_it_names() {
+        let watch = CastCommand::Watch {
+            watch: episode_two(),
+            position_ms: 42,
+        };
+
+        let json = serde_json::to_string(&watch).unwrap();
+
+        assert_eq!(
+            json,
+            r#"{"type":"watch","watch":{"mount":"/api/module/tv.example.swarm","id":"dl1","file":1,"title":"Kaamelott","tmdbId":11466,"season":1,"episode":2},"positionMs":42}"#
+        );
+        assert_eq!(serde_json::from_str::<CastCommand>(&json).unwrap(), watch);
+    }
+
+    #[test]
+    fn a_report_may_name_a_watch_download_instead_of_an_item() {
+        let p: CastPlayback = serde_json::from_str(
+            r#"{"watch":{"mount":"/api/module/tv.example.swarm","id":"dl1","file":1,"title":"Kaamelott","season":1,"episode":2},"positionMs":1,"state":"playing"}"#,
+        )
+        .unwrap();
+
+        assert_eq!(p.item_id, None);
+        assert_eq!(p.watch.map(|w| (w.id, w.file)), Some(("dl1".into(), 1)));
+    }
+
+    #[test]
+    fn a_watch_on_screen_carries_the_transport_beside_it() {
+        let watching = CastNowWatching {
+            watch: episode_two(),
+            transport: CastTransport {
+                position_ms: 5,
+                duration_ms: None,
+                state: CastState::Playing,
+                audio_tracks: Vec::new(),
+                audio_index: None,
+                subtitles: Vec::new(),
+                subtitle_index: None,
+            },
+        };
+
+        let json = serde_json::to_value(&watching).unwrap();
+
+        assert_eq!(json["watch"]["id"], "dl1");
+        assert_eq!(json["positionMs"], 5);
+        assert_eq!(json["state"], "playing");
     }
 }

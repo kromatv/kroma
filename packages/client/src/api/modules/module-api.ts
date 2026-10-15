@@ -4,11 +4,7 @@ import type { ModuleId } from './ids';
 
 /** The request surface a module gets for its own admin routes. Paths are
  *  relative to the module's mount: `get('/clients', Clients)` reads
- *  `/api/admin/m/<id>/clients` and parses it.
- *
- *  A module owns the shape of its own API and ships on its own tag, so the core
- *  cannot hold its schemas: the module passes them in, and the parse happens at
- *  the same boundary and with the same errors as every core call. */
+ *  `/api/admin/m/<id>/clients` and parses it. */
 export interface ModuleApi {
   get<S extends z.ZodType>(path: string, response: S): Promise<z.output<S>>;
   post<S extends z.ZodType>(path: string, body: unknown, response: S): Promise<z.output<S>>;
@@ -17,7 +13,6 @@ export interface ModuleApi {
   put(path: string, body?: unknown): Promise<void>;
   delete<S extends z.ZodType>(path: string, response: S): Promise<z.output<S>>;
   delete(path: string): Promise<void>;
-  /** Raw bytes rather than JSON, for a file a module accepts directly. */
   upload<S extends z.ZodType>(
     path: string,
     file: Blob,
@@ -26,17 +21,16 @@ export interface ModuleApi {
   ): Promise<z.output<S>>;
 }
 
-/** Bind `ctx` to the admin mount of module `id`. */
 export function moduleApi(ctx: RequestContext, id: ModuleId): ModuleApi {
-  const at = (path: string) => `/admin/m/${encodeURIComponent(id)}${path}`;
+  const at = ctx.at(`/api/admin/m/${encodeURIComponent(id)}`);
   const send = (verb: 'post' | 'put') => (path: string, body?: unknown, response?: z.ZodType) =>
-    response ? ctx[verb](at(path), response, { body }) : ctx[verb](at(path), { body });
+    response ? at[verb](path, response, { body }) : at[verb](path, { body });
   return {
-    get: (path, response) => ctx.get(at(path), response),
+    get: (path, response) => at.get(path, response),
     post: send('post') as ModuleApi['post'],
     put: send('put') as ModuleApi['put'],
     delete: ((path: string, response?: z.ZodType) =>
-      response ? ctx.delete(at(path), response) : ctx.delete(at(path))) as ModuleApi['delete'],
-    upload: (path, file, response, headers) => ctx.upload(at(path), file, response, { headers }),
+      response ? at.delete(path, response) : at.delete(path)) as ModuleApi['delete'],
+    upload: (path, file, response, headers) => at.upload(path, file, response, { headers }),
   };
 }

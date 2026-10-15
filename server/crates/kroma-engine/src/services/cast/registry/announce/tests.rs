@@ -1,6 +1,6 @@
 use super::*;
 use crate::model::CastState;
-use crate::services::cast::registry::test_support::{announce_ok, beat, item, playing};
+use crate::services::cast::registry::test_support::{announce_ok, beat, item, playing, watching};
 use crate::services::cast::registry::MAX_RECEIVERS;
 
 #[test]
@@ -21,7 +21,7 @@ fn a_receiver_appears_with_what_it_is_playing() {
     assert_eq!(list[0].name, "Salon");
     let np = list[0].now_playing.as_ref().expect("now playing");
     assert_eq!(np.item.id, "it1");
-    assert_eq!(np.position_ms, 1000);
+    assert_eq!(np.transport.position_ms, 1000);
     assert_eq!(
         reg.row("tv-salon-01").map(|r| r.name),
         Some("Salon".to_string())
@@ -190,4 +190,73 @@ fn a_socket_attaches_a_receiver_and_reports_only_what_changed() {
         Some(StateChange::Nothing)
     ));
     assert!(reg.set_state("tv-ghost-01", None, None).is_none());
+}
+
+#[test]
+fn a_watch_download_on_screen_is_shown_as_the_receiver_named_it() {
+    let reg = Registry::new();
+
+    announce_ok(
+        &reg,
+        beat("tv-salon-01", 0, Some(watching(12_000))),
+        "u1",
+        None,
+    );
+
+    let list = reg.list("u1");
+    let now = list[0].now_watching.as_ref().expect("now watching");
+    assert_eq!((now.watch.id.as_str(), now.watch.file), ("dl1", 1));
+    assert_eq!(now.transport.position_ms, 12_000);
+    assert!(list[0].now_playing.is_none());
+}
+
+#[test]
+fn moving_from_a_title_to_a_watch_download_forgets_the_title() {
+    let reg = Registry::new();
+    announce_ok(
+        &reg,
+        beat("tv-salon-01", 0, Some(playing("it1", 10))),
+        "u1",
+        Some(item("it1")),
+    );
+
+    announce_ok(&reg, beat("tv-salon-01", 0, Some(watching(20))), "u1", None);
+
+    let row = &reg.list("u1")[0];
+    assert!(reg.wants_item("tv-salon-01", "it1"));
+    assert!(row.now_playing.is_none());
+    assert!(row.now_watching.is_some());
+}
+
+#[test]
+fn a_report_naming_both_a_title_and_a_watch_download_reads_as_idle() {
+    let reg = Registry::new();
+    let both = CastPlayback {
+        item_id: Some("it1".into()),
+        ..watching(10)
+    };
+
+    announce_ok(
+        &reg,
+        beat("tv-salon-01", 0, Some(both)),
+        "u1",
+        Some(item("it1")),
+    );
+
+    let row = &reg.list("u1")[0];
+    assert!(row.now_playing.is_none());
+    assert!(row.now_watching.is_none());
+}
+
+#[test]
+fn a_watch_download_outside_the_shape_the_core_holds_reads_as_idle() {
+    let reg = Registry::new();
+    let mut report = watching(10);
+    if let Some(watch) = report.watch.as_mut() {
+        watch.mount = "/api/../admin".into();
+    }
+
+    announce_ok(&reg, beat("tv-salon-01", 0, Some(report)), "u1", None);
+
+    assert!(reg.list("u1")[0].now_watching.is_none());
 }

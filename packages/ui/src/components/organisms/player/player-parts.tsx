@@ -23,7 +23,9 @@ import {
 } from './player-faces';
 import { PlayerScope } from './player-scope';
 import {
+  ArrivalSlot,
   Credits,
+  type PlayerArrivalProps,
   type PlayerCreditsProps,
   type PlayerPostPlayProps,
   type PlayerReportProps,
@@ -48,6 +50,7 @@ interface PlayerSlots {
   title: ReactNode;
   subtitle: ReactNode;
   warning: ReactNode;
+  arrival?: PlayerArrivalProps;
   transport?: PlayerTransportProps;
   upNext?: PlayerUpNextProps;
   credits?: PlayerCreditsProps;
@@ -69,6 +72,7 @@ const FACES = new Map<unknown, keyof PlayerSlots>([
 ]);
 
 const SETTINGS = new Map<unknown, keyof PlayerSlots>([
+  [ArrivalSlot, 'arrival'],
   [Transport, 'transport'],
   [UpNext, 'upNext'],
   [Credits, 'credits'],
@@ -111,6 +115,7 @@ function sortSlots(children: ReactNode): PlayerSlots {
 
 export type {
   PlayerActionsProps,
+  PlayerArrivalProps,
   PlayerCreditsProps,
   PlayerMediaProps,
   PlayerPanelProps,
@@ -127,6 +132,7 @@ export type {
 };
 export {
   Actions,
+  ArrivalSlot,
   Credits,
   Media,
   Panel,

@@ -2,12 +2,13 @@
 //! [`DownloadClient`] trait can drive it. Torrents are identified by their
 //! info-hash hex, stable across restarts.
 
+use std::collections::HashSet;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::{anyhow, Context, Result};
-use librqbit::api::TorrentIdOrHash;
+use librqbit::api::{Api, TorrentIdOrHash};
 use librqbit::limits::LimitsConfig;
 use librqbit::{
     AddTorrent, AddTorrentOptions, ConnectionOptions, DhtSessionConfig, ListenerMode,
@@ -20,6 +21,8 @@ use crate::DownloadClient;
 
 mod client;
 mod rate_limits;
+mod stream;
+mod warm;
 
 // Shorter than the 30s a caller reaching this over the module bridge waits, so
 // the answer is always OURS: a caller that gives up first reports a transport
@@ -37,11 +40,15 @@ pub struct RqbitConfig {
 }
 
 pub struct RqbitEngine {
-    session: Arc<Session>,
+    // The `Api` rather than the bare session, because the have-bitfield a
+    // progress poll reads has no other public door.
+    api: Api,
     handle: tokio::runtime::Handle,
     // The VPN socks5 the session dials through (if any), reused for our own
     // tracker announces so recovered peers are reachable from the same network.
     socks_proxy: Option<String>,
+    held_selections: warm::Holds,
+    warming: Mutex<HashSet<warm::ReadingFile>>,
 }
 
 impl RqbitEngine {
@@ -101,14 +108,16 @@ impl RqbitEngine {
             .await
             .context("start embedded torrent session")?;
         Ok(Arc::new(RqbitEngine {
-            session,
+            api: Api::new(session, None),
             handle: tokio::runtime::Handle::current(),
             socks_proxy: cfg.socks_proxy_url.clone(),
+            held_selections: warm::Holds::default(),
+            warming: Mutex::new(HashSet::new()),
         }))
     }
 
     fn session(&self) -> &Arc<Session> {
-        &self.session
+        self.api.session()
     }
 
     /// Drain the session (stops all torrent activity) without waiting for it.

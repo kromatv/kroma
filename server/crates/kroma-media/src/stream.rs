@@ -87,7 +87,7 @@ pub async fn stream_file<M: ByteMeter>(path: &Path, req_headers: &HeaderMap, met
 }
 
 /// [`stream_file`] over any seekable reader of `len` bytes.
-async fn stream_reader<R, M>(
+pub async fn stream_reader<R, M>(
     mut reader: R,
     len: u64,
     content_type: &str,
@@ -237,7 +237,7 @@ fn parse_range(headers: &HeaderMap, total_size: u64) -> RangeOutcome {
     RangeOutcome::Partial { start, end }
 }
 
-fn content_type_for(path: &Path) -> &'static str {
+pub fn content_type_for(path: &Path) -> &'static str {
     let ext = path
         .extension()
         .and_then(std::ffi::OsStr::to_str)

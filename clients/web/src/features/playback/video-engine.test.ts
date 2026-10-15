@@ -3,6 +3,7 @@ import { decodableVideoCodecs, type EngineDecision } from '@kromatv/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeVideo } from '#web/features/playback/fake-video.fixture';
 import type { MovieView } from '#web/shared/lib/api';
+import { catalogueSource } from './playback-source';
 import { type AttachSourceOptions, attachMediaSource } from './video-engine';
 
 const H = vi.hoisted(() => {
@@ -85,7 +86,7 @@ describe('attachMediaSource direct-play', () => {
   function base(over: Partial<AttachSourceOptions> = {}): AttachSourceOptions {
     return {
       v: fakeVideo().el,
-      item,
+      source: catalogueSource(item),
       decision: { kind: 'direct', aacMaster: false } as EngineDecision,
       useNativeHls: false,
       useShaka: false,
@@ -137,7 +138,7 @@ describe('attachMediaSource HLS master', () => {
   function hlsOpts(over: Partial<AttachSourceOptions> = {}): AttachSourceOptions {
     return {
       v: fakeVideo().el,
-      item,
+      source: catalogueSource(item),
       decision: { kind: 'web-mse', aacMaster: true } as EngineDecision,
       useNativeHls: false,
       useShaka: false,
@@ -210,7 +211,7 @@ describe('attachMediaSource HLS master via Shaka', () => {
   function shakaOpts(over: Partial<AttachSourceOptions> = {}): AttachSourceOptions {
     return {
       v: fakeVideo().el,
-      item,
+      source: catalogueSource(item),
       decision: { kind: 'web-mse', aacMaster: true } as EngineDecision,
       useNativeHls: false,
       useShaka: true,

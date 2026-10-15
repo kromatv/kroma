@@ -23,6 +23,7 @@ use super::ffmpeg::{detect_burst, keyframe_before, spawn_stream};
 use super::hwaccel::Pipeline;
 use super::live::Plan;
 use super::naming::{contains, content_type, is_safe_name, seg_index, session_dir};
+use super::root::empty_our_own;
 use super::window::Window;
 use super::{StreamMode, VideoMode};
 use crate::ffmpeg_gate;
@@ -71,8 +72,7 @@ pub struct Sessions {
 
 impl Sessions {
     pub fn new(root: PathBuf, cap: usize, budget: u64) -> Self {
-        let _ = std::fs::remove_dir_all(&root);
-        let _ = std::fs::create_dir_all(&root);
+        empty_our_own(&root);
         Sessions {
             root,
             cap: cap.max(1),

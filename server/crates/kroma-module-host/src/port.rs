@@ -103,16 +103,43 @@ pub fn call_raw<B: serde::Serialize, T: serde::de::DeserializeOwned>(
     path: &str,
     body: &B,
 ) -> anyhow::Result<T> {
+    exchange(resolve, path, body, None)?.json()
+}
+
+const WAITED_ON_MAX_RESPONSE_BYTES: usize = 8 * 1024 * 1024;
+
+/// [`call_raw`] on a shorter leash than the transport's own budget, for a call
+/// somebody is waiting on: a provider that is spawned but wedged costs the
+/// caller `secs` rather than the default half minute, and cannot make it
+/// allocate more than [`WAITED_ON_MAX_RESPONSE_BYTES`] while it does.
+pub fn call_raw_within<B: serde::Serialize, T: serde::de::DeserializeOwned>(
+    resolve: &Resolver,
+    path: &str,
+    body: &B,
+    secs: u32,
+) -> anyhow::Result<T> {
+    exchange(resolve, path, body, Some(secs))?.json()
+}
+
+fn exchange<B: serde::Serialize>(
+    resolve: &Resolver,
+    path: &str,
+    body: &B,
+    secs: Option<u32>,
+) -> anyhow::Result<kroma_http::Response> {
     let (base, token) =
         resolve().ok_or_else(|| anyhow::anyhow!("no module contributes this point"))?;
-    let resp = kroma_http::Loopback::new()
-        .header("authorization", format!("Bearer {token}"))
-        .post_json(
-            &format!("{base}/_port/{path}"),
-            &serde_json::to_value(body)?,
-        )?
-        .ensure_ok()?;
-    resp.json()
+    let mut call = kroma_http::Loopback::new().header("authorization", format!("Bearer {token}"));
+    if let Some(secs) = secs {
+        call = call
+            .max_time(secs)
+            .max_response_bytes(WAITED_ON_MAX_RESPONSE_BYTES);
+    }
+    call.post_json(
+        &format!("{base}/_port/{path}"),
+        &serde_json::to_value(body)?,
+    )?
+    .ensure_ok()
 }
 
 /// Wrap a provider-side point handler: run the blocking work off the runtime and

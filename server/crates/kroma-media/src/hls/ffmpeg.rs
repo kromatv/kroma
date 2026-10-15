@@ -14,6 +14,11 @@ use super::naming::contains;
 use super::{StreamMode, VideoMode};
 
 const SEGMENT_SECONDS: u32 = 6;
+// An input read over HTTP arrives at the network's pace rather than the disk's,
+// and nothing plays until the first segment is written: that is this many seconds
+// of media fetched before the first frame. A stream copy still cuts on a source
+// keyframe, so asking for less can only bring the first cut forward.
+const ARRIVING_SEGMENT_SECONDS: u32 = 2;
 /// The write pattern handed to `-hls_segment_filename`; `naming::seg_index`
 /// parses what it produces.
 pub const SEGMENT_PATTERN: &str = "seg_%05d.m4s";
@@ -23,17 +28,31 @@ const READRATE: &str = "2.0";
 // Seconds read at full speed before READRATE throttling starts (ffmpeg >= 6.1).
 const READRATE_BURST: &str = "60";
 
+pub(super) fn arriving_over_http(input: &Path) -> bool {
+    input
+        .to_str()
+        .is_some_and(|i| i.starts_with("http://") || i.starts_with("https://"))
+}
+
+fn segment_seconds(input: &Path) -> u32 {
+    if arriving_over_http(input) {
+        ARRIVING_SEGMENT_SECONDS
+    } else {
+        SEGMENT_SECONDS
+    }
+}
+
 /// A keyframe every segment, counted from the first frame OUT rather than from
 /// the source clock: a seek runs under `-copyts`, so an expression in absolute
-/// time would force a keyframe on every frame until `n_forced * SEGMENT_SECONDS`
-/// caught up with the anchor.
+/// time would force a keyframe on every frame until `n_forced * seconds` caught
+/// up with the anchor.
 ///
 /// Left alone, the encoder keys on its own schedule (~10 s at libx264's default
 /// keyint) and the HLS muxer can only cut where it finds one, so segments run
 /// half again as long as the playlist asks for and the first one costs that much
 /// media before anything can be played.
-fn keyframe_cadence() -> String {
-    format!("expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+{SEGMENT_SECONDS}))")
+fn keyframe_cadence(seconds: u32) -> String {
+    format!("expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+{seconds}))")
 }
 
 /// What `ffmpeg <args>` printed, both streams together because which one carries
@@ -112,6 +131,7 @@ pub fn spawn_stream(
 ) -> std::io::Result<Child> {
     let seeking = start_secs > 0.5;
     let copying_video = matches!(mode.video, VideoMode::Copy);
+    let segment_seconds = segment_seconds(input);
     let mut cmd = Command::new("ffmpeg");
     cmd.args(["-v", "error", "-nostdin"]);
     // `-threads` lands on the DECODER here (before `-i`): a remux never decodes
@@ -159,7 +179,8 @@ pub fn spawn_stream(
         // target reads. HDR sources are not tone-mapped (no zimg) and come out
         // washed-out.
         cmd.args(pipeline.accel.encoder_args(pipeline.effort));
-        cmd.arg("-force_key_frames").arg(keyframe_cadence());
+        cmd.arg("-force_key_frames")
+            .arg(keyframe_cadence(segment_seconds));
     }
     if mode.audio.transcode() {
         if let Some(af) = mode.audio.filter_chain() {
@@ -175,7 +196,7 @@ pub fn spawn_stream(
     cmd.arg("-progress")
         .arg(dir.join(super::progress::FILE))
         .args(["-stats_period", "1"]);
-    let hls_time = SEGMENT_SECONDS.to_string();
+    let hls_time = segment_seconds.to_string();
     cmd.args(["-f", "hls", "-hls_time", hls_time.as_str()])
         .args(["-hls_playlist_type", "event"])
         .args(["-hls_segment_type", "fmp4"])
@@ -236,7 +257,7 @@ mod tests {
 
     #[test]
     fn the_keyframe_cadence_is_measured_from_the_first_frame_out() {
-        let expr = keyframe_cadence();
+        let expr = keyframe_cadence(SEGMENT_SECONDS);
 
         assert!(expr.contains("prev_forced_t"), "{expr}");
         assert!(expr.contains("isnan"), "{expr}");
@@ -248,6 +269,16 @@ mod tests {
 
     #[test]
     fn a_keyframe_lands_on_every_segment_boundary() {
-        assert!(keyframe_cadence().contains(&format!("+{SEGMENT_SECONDS})")));
+        assert!(keyframe_cadence(SEGMENT_SECONDS).contains(&format!("+{SEGMENT_SECONDS})")));
+        assert!(keyframe_cadence(2).contains("+2)"));
+    }
+
+    #[test]
+    fn a_stream_still_arriving_is_cut_sooner_than_one_read_off_a_disk() {
+        let arriving = Path::new("http://127.0.0.1:4041/api/module/tv.x/play/abc");
+        let on_disk = Path::new("/media/Dune (2021)/dune.mkv");
+
+        assert!(segment_seconds(arriving) < segment_seconds(on_disk));
+        assert_eq!(segment_seconds(on_disk), SEGMENT_SECONDS);
     }
 }

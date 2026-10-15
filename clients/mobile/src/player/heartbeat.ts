@@ -57,7 +57,8 @@ function newSessionId(device: string): PlaybackSessionId {
   );
 }
 
-function deviceLabel(): string {
+/** What the admin's dashboard calls this phone: its model, else its platform. */
+export function deviceLabel(): string {
   return Device.modelName ?? (Platform.OS === 'ios' ? 'iPhone' : 'Android');
 }
 

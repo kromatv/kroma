@@ -73,6 +73,7 @@ function Transport({
           cur={c.cur}
           dur={c.dur}
           bufEnd={c.bufEnd}
+          downloaded={c.downloaded}
           seekPreview={c.seekPreview}
           chapters={chapters}
           tileAt={tileAt}

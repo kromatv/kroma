@@ -1,6 +1,9 @@
 //! What this module needs of a torrent engine, and how it reaches one.
 
 pub mod remote;
+mod stream;
+
+pub(crate) use stream::{IndexWarm, PieceLayout, Selection, TorrentStream, READ_AHEAD_BYTES};
 
 pub const EMBEDDED_KIND: &str = "rqbit";
 

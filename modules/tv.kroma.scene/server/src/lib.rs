@@ -49,6 +49,8 @@ pub struct ParsedRelease {
     pub repack: bool,
     pub hdr: bool,
     pub dolby_vision: bool,
+    #[serde(default)]
+    pub disc: bool,
 }
 
 /// What the caller is trying to fill; drives season/episode validation and
@@ -60,10 +62,18 @@ pub enum Target {
     Season { season: u32, episodes: u32 },
 }
 
+/// What the scorer does with a release whose name states no resolution.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnstatedResolution {
+    Refuse,
+    RankLast,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Profile {
     pub resolution: Res,
-    pub prefer_hevc: bool,
+    pub unstated_resolution: UnstatedResolution,
+    pub preferred_codec: Option<Codec>,
     pub min_seeders: u32,
     pub max_size_bytes_movie: u64,
     pub max_size_bytes_episode: u64,
@@ -103,10 +113,12 @@ pub struct Candidate {
 mod content;
 mod parse;
 mod score;
+mod unwatchable;
 
 pub use content::{classify, ContentFile, ContentKind, TorrentContent};
 pub use parse::parse_release_name;
 pub use score::score;
+pub use unwatchable::{unwatchable, Unwatchable};
 
 #[cfg(test)]
 mod tests;

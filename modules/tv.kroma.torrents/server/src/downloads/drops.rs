@@ -1,11 +1,13 @@
+use kroma_module_sdk::primitives::now_ms;
+
 use crate::db::{self, DownloadRow};
 
 use super::DownloadManager;
 
 impl DownloadManager {
-    /// Drops the engine torrent and its data but KEEPS the ledger row. A drop
-    /// the engine refuses stays owed in this module's own database until it
-    /// runs, so a restart does not lose it.
+    /// Drops the engine torrent and its data but KEEPS the ledger row. A drop a
+    /// reader holds back, or one the engine refuses, stays owed in this module's
+    /// own database until it runs, so a restart does not lose it.
     pub fn drop_data(&self, row: &DownloadRow) {
         if row.client_ref.is_empty() {
             self.forget_drop(&row.id);
@@ -34,6 +36,9 @@ impl DownloadManager {
     }
 
     fn drop_now(&self, row: &DownloadRow) -> Result<(), &'static str> {
+        if self.held(&row.id, self.idle_grace_ms(), now_ms()) {
+            return Err("a reader still holds it");
+        }
         let client = self
             .store()
             .get()
@@ -83,10 +88,12 @@ impl DownloadManager {
 #[cfg(test)]
 mod tests {
     use super::super::test_support::{added, manager_over, restarted};
+    use crate::downloads::Reading;
 
     #[test]
     fn a_drop_owed_again_every_tick_says_why_only_the_first_time() {
         let (_host, manager) = manager_over("torrents-drops-quiet", &[added("d1")]);
+        let _stream = manager.playing_guard("d1", Reading::ForAViewer);
 
         let first = crate::db::defer_drop(manager.store(), "d1").unwrap();
         let again = crate::db::defer_drop(manager.store(), "d1").unwrap();
@@ -96,8 +103,9 @@ mod tests {
     }
 
     #[test]
-    fn a_deferred_drop_survives_the_module_restarting() {
+    fn a_deferred_drop_survives_the_module_restarting_before_the_reader_closed() {
         let (host, manager) = manager_over("torrents-drops-restart", &[added("d1")]);
+        let _stream = manager.playing_guard("d1", Reading::ForAViewer);
         manager.drop_data(&added("d1"));
 
         let after_restart = restarted(&host);
@@ -106,10 +114,25 @@ mod tests {
     }
 
     #[test]
-    fn a_drop_the_engine_could_not_take_is_still_owed_after_a_retry() {
-        let (_host, manager) = manager_over("torrents-drops-engineless", &[added("d1")]);
+    fn a_drop_a_reader_holds_is_owed_rather_than_run() {
+        let (_host, manager) = manager_over("torrents-drops-held", &[added("d1")]);
+        let _stream = manager.playing_guard("d1", Reading::ForAViewer);
+
         manager.drop_data(&added("d1"));
 
+        assert_eq!(manager.deferred_drops(), ["d1"]);
+    }
+
+    #[test]
+    fn a_drop_the_engine_could_not_take_is_still_owed_once_the_reader_has_gone() {
+        let (_host, manager) = manager_over("torrents-drops-engineless", &[added("d1")]);
+        let stream = manager.playing_guard("d1", Reading::ForAViewer);
+        manager.drop_data(&added("d1"));
+
+        drop(stream);
+        manager
+            .track_readers("d1")
+            .backdate(manager.idle_grace_ms());
         manager.retry_deferred_drops();
 
         assert_eq!(manager.deferred_drops(), ["d1"]);
@@ -118,6 +141,7 @@ mod tests {
     #[test]
     fn a_drop_stops_being_owed_once_the_torrent_has_left_the_engine() {
         let (_host, manager) = manager_over("torrents-drops-settled", &[added("d1")]);
+        let _stream = manager.playing_guard("d1", Reading::ForAViewer);
         manager.drop_data(&added("d1"));
 
         crate::db::set_download_ref(manager.core(), "d1", "").unwrap();
@@ -129,9 +153,10 @@ mod tests {
     #[test]
     fn a_drop_owed_for_a_row_that_left_the_ledger_is_forgotten() {
         let (_host, manager) = manager_over("torrents-drops-erased", &[added("d1")]);
+        let _stream = manager.playing_guard("d1", Reading::ForAViewer);
         manager.drop_data(&added("d1"));
 
-        manager.remove("d1", false).unwrap();
+        manager.erase("d1", false).unwrap();
         manager.retry_deferred_drops();
 
         assert!(manager.deferred_drops().is_empty());

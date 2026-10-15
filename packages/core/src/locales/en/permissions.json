@@ -15,5 +15,7 @@
   "permissions.settings": "Settings",
   "permissions.settingsHint": "Server configuration",
   "permissions.users": "Users",
-  "permissions.usersHint": "Manage accounts + invite"
+  "permissions.usersHint": "Manage accounts + invite",
+  "permissions.watchablePlay": "Watch now",
+  "permissions.watchablePlayHint": "Play a film before the download has finished"
 }

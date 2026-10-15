@@ -31,6 +31,11 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
 - [`docs/tv-pairing.md`](docs/tv-pairing.md) for the three roads a television
   takes to an account, what "the same network" means, and which shells can hear
   a television on the link rather than being told about it.
+- [`docs/watch-while-downloading.md`](docs/watch-while-downloading.md) for the
+  `watchable` capability: what a viewer may play before it has finished
+  arriving, what is deliberately never offered, and why the whole server side of
+  it is one module's, reached through `GET /api/capabilities`. The rule that put
+  it there is [`docs/capability-surfaces.md`](docs/capability-surfaces.md).
 
 ## Checks
 
@@ -153,9 +158,12 @@ separate tags.
 
 A point is named by whoever defines it: a module writes `definesPoints` for what
 it invents (`<its id>/<local name>`), `contributes` for what it answers, and
-`consumes` for what it calls. The three the CORE calls are bare — `acquisition`,
-`transcriber`, `embedder` — because the core has no manifest to define one in and
-nothing else may. See [`docs/module-plugin-model.md`](docs/module-plugin-model.md)
+`consumes` for what it calls. The names the core holds are bare, because the core
+has no manifest to define one in and nothing else may: `acquisition`,
+`transcriber` and `embedder`, which it calls, and `watchable`, which it only
+names. A **capability** is one of those bare names a client draws a surface for:
+`GET /api/capabilities` answers the mount of whichever module contributes it, and
+the client speaks to that mount. The core learns no module id either way. See [`docs/module-plugin-model.md`](docs/module-plugin-model.md)
 for the model and what is still missing from it, and
 [`modules/README.md`](modules/README.md#calling-another-module) for how to write
 one end.

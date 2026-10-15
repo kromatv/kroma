@@ -1,8 +1,7 @@
-// Debounced dual search: the local catalog (always) + TMDB discovery (gated
-// on requests.create). Backed by TanStack Query (dedup + cache); latest-wins is
-// handled by the query key changing per (query, type).
+// Debounced dual search: the local catalog + TMDB discovery. Backed by TanStack
+// Query (dedup + cache); latest-wins is handled by the query key changing per
+// (query, type).
 
-import { hasPermission } from '@kromatv/client/accounts';
 import type { DiscoverEntry, DiscoverType } from '@kromatv/client/discovery';
 import type { SearchHit } from '@kromatv/client/media';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
@@ -29,7 +28,7 @@ export interface DiscoverSearchState {
 
 export function useDiscoverSearch(query: string, type: DiscoverType): DiscoverSearchState {
   const { user } = useAuth();
-  const canDiscover = !!user && hasPermission(user, 'requests.create');
+  const canDiscover = user != null;
   const q = useDebouncedValue(query.trim(), 250);
 
   const { data, isFetching } = useQuery({

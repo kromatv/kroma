@@ -3,6 +3,7 @@ import type { StoredSession } from '@kromatv/client/accounts';
 import type { DiscoverEntry } from '@kromatv/client/discovery';
 import type { MediaItem, Show } from '@kromatv/client/media';
 import type { ReportSubjectKind } from '@kromatv/client/reports';
+import type { WatchSubject } from '@kromatv/core';
 import { Box, ConfirmHost, FocusScope, PageMain, PerfHud } from '@kromatv/ui/kit';
 import {
   type ComponentType,
@@ -40,6 +41,7 @@ export interface TvRoutes {
   show: { show: Show };
   discover: { entry: DiscoverEntry };
   player: { item: MediaItem };
+  watch: { subject: WatchSubject; poster?: string | null };
   report: {
     kind: ReportSubjectKind;
     id: string;
@@ -245,6 +247,12 @@ function subjectKey(route: TvRoute): string {
     return `${route.name}:${route.params.item.id}`;
   }
   if (route.name === 'discover') return `discover:${route.params.entry.tmdbId}`;
+  if (route.name === 'watch') {
+    const { subject } = route.params;
+    if (subject.kind === 'download') return `watch:${subject.downloadId}:${subject.file}`;
+    const { tmdbId, season, episode } = subject.title;
+    return `watch:${tmdbId}:${season}:${episode}`;
+  }
   return route.name;
 }
 

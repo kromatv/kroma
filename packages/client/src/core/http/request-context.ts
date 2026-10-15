@@ -15,9 +15,6 @@ export interface KromaClientOptions {
 
 type ResponseSchema = z.ZodType;
 
-/** What a request carries beyond its path and its response schema: the query,
- * the JSON body, and a `RequestInit` for the rare caller that needs an
- * `AbortSignal` or a one-off header. */
 export interface RequestOptions {
   query?: Query;
   body?: unknown;
@@ -64,6 +61,9 @@ interface Verb {
  * reaches a caller as a lie. */
 export interface RequestContext {
   readonly baseUrl: string;
+  /** The same transport rooted at `mount`, a path from the server's ORIGIN
+   * rather than from `/api`. */
+  at(mount: string): RequestContext;
   /** The absolute URL, for what fetches itself: a `<video>` src, an `<img>`, the
    * native downloader, a link the user opens. */
   url<const P extends string>(path: P, ...args: PathArgs<P>): string;
@@ -79,7 +79,6 @@ export interface RequestContext {
   put: Verb;
   patch: Verb;
   delete: Verb;
-  /** Send raw bytes (an avatar, a backup archive) rather than JSON. */
   upload: {
     <const P extends string, S extends ResponseSchema>(
       path: P,
@@ -89,9 +88,7 @@ export interface RequestContext {
     ): Promise<z.output<S>>;
     <const P extends string>(path: P, file: Blob, ...args: PathArgs<P>): Promise<void>;
   };
-  /** Raw bytes back, for a file download. */
   blob<const P extends string>(path: P, ...args: PathArgs<P>): Promise<Blob>;
-  /** A `text/plain` endpoint (the server log tail). */
   text<const P extends string>(path: P, ...args: PathArgs<P>): Promise<string>;
   /** The response itself, for the few endpoints whose STATUS is the answer (a
    * storyboard still being generated answers 202). Never throws on a non-2xx. */
@@ -117,7 +114,6 @@ export interface TransportConfig {
 
 const JSON_HEADERS = { 'content-type': 'application/json' };
 
-/** Wrap `fetchFn` so every request it makes carries `ua`. */
 export function withUserAgent(
   fetchFn: typeof globalThis.fetch,
   ua: string,
@@ -150,8 +146,9 @@ function split(rest: readonly unknown[]) {
 }
 
 /** The shared transport: path templates, auth and locale headers, the 64 MiB
- * body bound, one silent refresh per 401, and a zod parse of every JSON answer. */
-export function createRequestContext(config: TransportConfig): RequestContext {
+ * body bound, one silent refresh per 401, and a zod parse of every JSON answer.
+ * `root` is what every path hangs off, `/api` for the core's own routes. */
+export function createRequestContext(config: TransportConfig, root = '/api'): RequestContext {
   const { baseUrl, fetchFn } = config;
   const underPolicy = concurrencyGate();
   const resolve = (template: string, options?: AnyOptions) =>
@@ -163,7 +160,7 @@ export function createRequestContext(config: TransportConfig): RequestContext {
     const locale = config.locale();
     if (token) headers.set('Authorization', `Bearer ${token}`);
     if (locale) headers.set('Accept-Language', locale);
-    return fetchFn(`${baseUrl}/api${path}`, {
+    return fetchFn(`${baseUrl}${root}${path}`, {
       ...init,
       headers,
       signal: init?.signal ?? config.signal,
@@ -220,7 +217,8 @@ export function createRequestContext(config: TransportConfig): RequestContext {
 
   return {
     baseUrl,
-    url: (template, ...args) => `${baseUrl}/api${resolve(template, args[0])}`,
+    at: (mount) => createRequestContext(config, mount),
+    url: (template, ...args) => `${baseUrl}${root}${resolve(template, args[0])}`,
     mediaTicket: config.mediaTicket,
     setMediaTicket: config.setMediaTicket,
     get: ((path: string, ...rest: unknown[]) => {

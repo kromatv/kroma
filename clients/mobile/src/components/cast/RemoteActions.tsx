@@ -1,10 +1,8 @@
-import type { useCast } from '@kromatv/ui';
+import type { CastShowing } from '@kromatv/core';
 import { Box, Icon, type IconName, styles, Text } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { radius, spacing, type } from '#mobile/lib/theme';
-
-type NowPlaying = NonNullable<NonNullable<ReturnType<typeof useCast>['active']>['nowPlaying']>;
 
 export function RemoteActions({
   playing,
@@ -16,7 +14,7 @@ export function RemoteActions({
   onContinueHere,
   onStop,
 }: Readonly<{
-  playing: NowPlaying;
+  playing: CastShowing;
   isEpisode: boolean;
   deviceName: string;
   onAudio: () => void;

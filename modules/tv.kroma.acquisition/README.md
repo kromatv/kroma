@@ -11,8 +11,14 @@ consuming `tv.kroma.indexer/{search,db}` and `tv.kroma.torrents/{grab,db}`, and
 `dependencies` the Downloads module (`tv.kroma.torrents`) because the grab has to
 land somewhere.
 
-`acquisition` is one of the three points the CORE calls, so it is bare rather
-than namespaced, and nothing but the core may define one.
+`acquisition` is one of the four points the CORE calls, so it is bare rather
+than namespaced, and nothing but the core may define one. Besides `search` and
+`grab`, it answers `watch` (`/_port/acquisition/watch`): search the indexers for
+a film, or for one episode of a show and the season pack that holds it, pick the
+release that streams best, and start it on the embedded engine so it plays while
+it downloads. A watch grab is `ephemeral`, so the Downloads module keeps it as a
+cache rather than handing it to the import. See
+[`docs/watch-while-downloading.md`](../../docs/watch-while-downloading.md).
 
 The settings page is the shared `/api/admin/settings?view=acquisition` view.
 Disabling the module removes search, grab and the automatic pass, and hides that

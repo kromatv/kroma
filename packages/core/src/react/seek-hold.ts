@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 // asked for and an exact match would never come.
 const REACHED_WITHIN_SEC = 1.5;
 
-// A seek re-anchors the remux, and this is what hls.js gives a manifest before
-// it abandons one.
+// A direct watch re-anchors, which starts a new remux and can wait on the
+// swarm, and this is what hls.js gives a manifest before it abandons one.
 const GIVE_UP_MS = 20_000;
 
 const DRIFT_SEC = 2;

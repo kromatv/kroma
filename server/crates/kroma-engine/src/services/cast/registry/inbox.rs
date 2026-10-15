@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::model::{CastCommand, CastCommandEnvelope};
+use crate::model::{CastCommand, CastCommandEnvelope, CastPlayback};
 
 use super::{Registry, MAX_INBOX, MAX_SKIP_MS};
 
@@ -32,6 +32,18 @@ impl Registry {
             .get(receiver_id)
             .and_then(|r| r.item.as_ref())
             .is_none_or(|item| item.id != item_id)
+    }
+
+    /// The catalogue item a report names that the caller must fetch before
+    /// announcing it: `None` for a watch download, which has no row, and for an
+    /// item this receiver already holds.
+    pub fn item_to_fetch(
+        &self,
+        receiver_id: &str,
+        playback: Option<&CastPlayback>,
+    ) -> Option<String> {
+        let id = playback?.item_id.as_ref()?;
+        self.wants_item(receiver_id, id).then(|| id.clone())
     }
 
     /// Queue a command and hand back its seq. `None` when the receiver is gone or
@@ -71,6 +83,10 @@ fn clamp(command: CastCommand) -> CastCommand {
             position_ms,
         } => CastCommand::Play {
             item_id,
+            position_ms: position_ms.clamp(0, MAX_SKIP_MS),
+        },
+        CastCommand::Watch { watch, position_ms } => CastCommand::Watch {
+            watch,
             position_ms: position_ms.clamp(0, MAX_SKIP_MS),
         },
         CastCommand::Seek { position_ms } => CastCommand::Seek {

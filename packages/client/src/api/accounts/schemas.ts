@@ -11,6 +11,7 @@ export const Permission = z.enum([
   'requests.manage',
   'requests.auto',
   'reports.manage',
+  'watchable.play',
 ]);
 export type Permission = z.infer<typeof Permission>;
 

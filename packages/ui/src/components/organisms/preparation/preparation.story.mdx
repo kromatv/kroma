@@ -1,0 +1,77 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Choice, Screen, STAGE_NAMES } from './preparation.fixtures';
+
+export const story = defineStory({
+  group: 'Player',
+  viewport: 'tv',
+  pad: 0,
+  args: { stage: 'buffering', percent: 34, stalled: false, art: true },
+  controls: { stage: STAGE_NAMES },
+  render: ({ stage, percent, stalled, art }) => (
+    <Screen stage={stage} percent={percent} stalled={stalled} art={art} />
+  ),
+});
+
+A title before its first frame, over its own art. A viewer who presses play on something the library does not hold yet is waiting on a search, then on the machines that have it, then on enough of the file to read: three waits with nothing in common but the screen they happen on, so this is one screen that reads the stage and prints where it stands.
+
+The line at the top is the stage's own; the release under it appears once the server has named one; the bar, the readouts and the map appear once there is a file to measure. A way back sits in the corner at every stage, and a way to cancel sits under the column, except on a refusal, where cancelling nothing would be the only thing offered.
+
+What the readouts SAY is not this component's. A source declares its figures, their kinds and its own already localized words for them, and the screen prints what it is handed: a torrent module names peers, another names something else, and neither is written down here. Pass no `source` and the payload is read as the three figures and the map every download reported before a source could name its own.
+
+It takes the whole region it is given, so a shell mounts it over its own chrome rather than inside a page.
+
+```tsx
+<Preparation
+  stage={stage}
+  progress={progress}
+  source={source}
+  sources={sources}
+  onSourceChange={choose}
+  title={title}
+  art={imageUrl(entry?.posterUrl)}
+  onBack={leave}
+  onCancel={cancel}
+/>
+```
+
+<Scene name="Nothing is coming in">
+  The same file with the rate at zero: the bar breathes instead of sitting still, the speed reads 0 and no source is connected. This is what a viewer sees while a reader waits on machines that have stopped answering, and it is the one state the figures alone would not tell them about.
+
+  <Screen stage="buffering" percent={12} stalled />
+</Scene>
+
+<Scene name="Two modules answer">
+  Where more than one source answers the capability and a viewer has settled on none, the choice takes the place of the standing block: a source is a whole server to speak to, so nothing is started until one is named. With a single source there is no choice and this never draws.
+
+  <Choice />
+</Scene>
+
+<Scene name="Words the kit never wrote">
+  The same file with no declaration behind it, which is what a module shipped before sources existed sends. The readouts fall back to the three every download reported, in the core's words rather than the module's.
+
+  <Screen stage="buffering" percent={34} declared={false} />
+</Scene>
+
+<Scene name="No release found">
+  The server looked and found nothing, and said so in its own words. A refusal carries the server's sentence under the kit's, because a sidecar knows why and the screen does not.
+
+  <Screen stage="noSource" percent={0} />
+</Scene>
+
+<Scene name="No art to stand on">
+  A download opened by its link, before the listing has said what it is: no art, no title, and the stage line carrying the screen on its own.
+
+  <Screen stage="connecting" percent={0} art={false} />
+</Scene>
+
+<Do>
+- Hand it one `progress` and let the player it hands over to keep reading the same one: two polls on one file disagree with each other on screen.
+- Pass the title the caller already composed, episode numbers and all. The screen prints what it is given.
+- Print a source's `label` as it stands. It is already in the viewer's language, because a sidecar has no catalog to look a key up in.
+</Do>
+
+<Dont>
+- Wrap it in a page. It fills what it is given and expects the shell's chrome to be behind it, not around it.
+- Keep it up once the file can be read. The player replaces it, and a viewer who has seen a picture should never see this screen again.
+- Translate a figure's label or decide what it should be called. The source named it; the kind is all the kit is told, and all it needs to format the value.
+</Dont>

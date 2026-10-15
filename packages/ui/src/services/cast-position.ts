@@ -1,4 +1,5 @@
 import type { CastReceiver } from '@kromatv/client/cast';
+import { castShowing } from '@kromatv/core';
 
 /** What a receiver last reported, and when this sender heard it. */
 interface PositionBase {
@@ -16,11 +17,12 @@ function livePosition(
   base: PositionBase | null,
   playing: boolean,
 ): number {
-  const reported = active?.nowPlaying?.positionMs ?? 0;
+  const showing = castShowing(active);
+  const reported = showing?.positionMs ?? 0;
   const from = base && base.id === active?.id ? base : null;
   const start = from ? Math.max(from.positionMs, reported) : reported;
   const elapsed = from && (from.playing || playing) ? Math.max(0, Date.now() - from.at) : 0;
-  const duration = active?.nowPlaying?.durationMs;
+  const duration = showing?.durationMs;
   const out = start + elapsed;
   return duration ? Math.min(out, duration) : out;
 }

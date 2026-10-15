@@ -1,7 +1,6 @@
 // A paginated grid of this week's trending movies OR shows, reached from the
-// discover rails. TMDB-gated on `requests.create`.
+// discover rails.
 
-import { hasPermission } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
 import {
   Box,
@@ -40,7 +39,7 @@ const s = styles({
 export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
   const t = useT();
   const { user } = useAuth();
-  const canDiscover = !!user && hasPermission(user, 'requests.create');
+  const canDiscover = user != null;
   const [page, setPage] = useState(1);
   const state = useTrendingPage(type, page, canDiscover);
   const title = type === 'movie' ? t('discover.trendingMovies') : t('discover.trendingShows');

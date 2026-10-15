@@ -57,6 +57,20 @@ fn a_peer_that_answers_its_head_and_then_stalls_still_costs_only_the_budget() {
 }
 
 #[test]
+fn a_peer_answering_more_than_the_ceiling_is_refused_rather_than_allocated_for() {
+    let (url, server) = one_shot_server("HTTP/1.1 200 OK", &"x".repeat(4096));
+
+    let err = Loopback::new()
+        .max_response_bytes(512)
+        .get(&url)
+        .unwrap_err()
+        .to_string();
+
+    server.join().unwrap();
+    assert!(err.contains("read the loopback response body"), "{err}");
+}
+
+#[test]
 fn a_post_round_trips_status_headers_and_body() {
     let (url, server) = one_shot_server("HTTP/1.1 200 OK", r#"{"ok":true}"#);
 

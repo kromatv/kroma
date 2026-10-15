@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { DeviceId } from '../../core/ids';
 import { ItemId, MediaItem } from '../media';
+import { WatchItem } from '../watchable/watch-item';
 import { ControllerId } from './ids';
 
 /** The catch-all keeps an older client from rejecting a state a newer receiver
@@ -21,9 +22,7 @@ export type ReportedCastState = z.infer<typeof ReportedCastState>;
 export const CastTrack = z.object({ index: z.number(), label: z.string() });
 export type CastTrack = z.infer<typeof CastTrack>;
 
-/** Carries the full catalog item so a remote needs no second fetch. */
-export const CastNowPlaying = z.object({
-  item: MediaItem,
+const CastTransport = z.object({
   positionMs: z.number(),
   durationMs: z.number().nullable().optional(),
   state: CastState,
@@ -32,7 +31,15 @@ export const CastNowPlaying = z.object({
   subtitles: z.array(CastTrack).default([]),
   subtitleIndex: z.number().optional(),
 });
+
+/** Carries the full catalog item so a remote needs no second fetch. */
+export const CastNowPlaying = CastTransport.extend({ item: MediaItem });
 export type CastNowPlaying = z.infer<typeof CastNowPlaying>;
+
+/** A file of a watch download on a receiver's screen, as the receiver named
+ * it: the server holds no row for one. */
+export const CastNowWatching = CastTransport.extend({ watch: WatchItem });
+export type CastNowWatching = z.infer<typeof CastNowWatching>;
 
 /** A sender currently driving a receiver: the phone or browser holding its
  * remote. */
@@ -54,6 +61,7 @@ export const CastReceiver = z.object({
   username: z.string(),
   network: z.enum(['LAN', 'WAN']).catch('WAN'),
   nowPlaying: CastNowPlaying.optional(),
+  nowWatching: CastNowWatching.optional(),
   controllers: z.array(CastController).default([]),
 });
 export type CastReceiver = z.infer<typeof CastReceiver>;
@@ -62,6 +70,7 @@ export type CastReceiver = z.infer<typeof CastReceiver>;
  * what it is playing, and resolving it sender-side would race the TV. */
 export const CastCommand = z.discriminatedUnion('type', [
   z.object({ type: z.literal('play'), itemId: ItemId, positionMs: z.number().optional() }),
+  z.object({ type: z.literal('watch'), watch: WatchItem, positionMs: z.number().optional() }),
   z.object({ type: z.literal('pause') }),
   z.object({ type: z.literal('resume') }),
   z.object({ type: z.literal('togglePlay') }),
@@ -82,9 +91,7 @@ export const CastCommandEnvelope = z.object({
 });
 export type CastCommandEnvelope = z.infer<typeof CastCommandEnvelope>;
 
-/** What a receiver says it is doing. */
-export const CastPlaybackReport = z.object({
-  itemId: ItemId,
+const ReportedTransport = z.object({
   positionMs: z.number(),
   durationMs: z.number().nullish(),
   state: ReportedCastState,
@@ -93,6 +100,12 @@ export const CastPlaybackReport = z.object({
   subtitles: z.array(CastTrack).optional(),
   subtitleIndex: z.number().optional(),
 });
+
+/** What a receiver says it is doing. */
+export const CastPlaybackReport = z.union([
+  ReportedTransport.extend({ itemId: ItemId, watch: z.never().optional() }),
+  ReportedTransport.extend({ watch: WatchItem, itemId: z.never().optional() }),
+]);
 export type CastPlaybackReport = z.infer<typeof CastPlaybackReport>;
 
 /** Sent UP the event socket, by a receiver or a sender: hello once, then only

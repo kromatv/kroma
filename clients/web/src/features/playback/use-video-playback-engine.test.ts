@@ -35,6 +35,7 @@ vi.mock('#web/shared/lib/auth', () => ({
 }));
 
 const { useVideoPlayback } = await import('#web/features/playback/use-video-playback');
+const { catalogueSource } = await import('#web/features/playback/playback-source');
 const { attachMediaSource } = await import('#web/features/playback/video-engine');
 const { bindMediaEvents } = await import('#web/features/playback/media-events');
 
@@ -48,7 +49,8 @@ const lastAttach = () => {
 installHarness();
 
 function render(item = movie()) {
-  const view = renderHook(() => useVideoPlayback(item));
+  const source = catalogueSource(item);
+  const view = renderHook(() => useVideoPlayback(source));
   const v = fakeVideo();
   view.result.current.videoRef.current = v as unknown as HTMLVideoElement;
   return { ...view, v };
@@ -169,8 +171,8 @@ describe('useVideoPlayback direct-play safety net', () => {
 describe('useVideoPlayback without an element', () => {
   it('re-anchors from zero when audio or engine changes before it exists', async () => {
     H.decision = { kind: 'web-mse', aacMaster: false };
-    const item = movie();
-    const { result } = renderHook(() => useVideoPlayback(item));
+    const source = catalogueSource(movie());
+    const { result } = renderHook(() => useVideoPlayback(source));
     await settle();
 
     act(() => result.current.setAudio(1));

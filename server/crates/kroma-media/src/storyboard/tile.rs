@@ -11,6 +11,9 @@ use crate::ffmpeg_run::{run_capturing, run_capturing_cancellable, Cancel};
 use super::{Plan, TILE_H, TILE_W};
 
 const TILE_TIMEOUT: Duration = Duration::from_secs(120);
+// What one head-to-head seek may read to find its frame. A complete file answers
+// with the keyframe at the seek point, so this only has to clear a long GOP.
+const MEASURE_WINDOW_S: u32 = 30;
 const MAX_WORKERS: usize = 8;
 const HWACCEL_MARGIN: f64 = 0.9;
 
@@ -22,6 +25,9 @@ pub enum Decode {
     Hardware,
     /// Software, with the decoder told to hand back keyframes only.
     Keyframes,
+    /// Software, decoding every frame. What an input with holes in it needs:
+    /// the keyframe filter reads on past the bytes on hand looking for one.
+    Frames,
 }
 
 impl Decode {
@@ -32,6 +38,7 @@ impl Decode {
             // and the pass takes the first.
             Decode::Hardware => &["-hwaccel", "auto"],
             Decode::Keyframes => &["-skip_frame", "nokey"],
+            Decode::Frames => &[],
         }
     }
 }
@@ -59,15 +66,19 @@ fn measure(input: &str, dur_s: f64) -> Decode {
         return Decode::Keyframes;
     };
     let frame = scratch.path().join("frame.png");
+    let cell = Cell {
+        at_s: at,
+        within_s: MEASURE_WINDOW_S,
+    };
     // Warm the GOP into cache, and confirm software decode works at all.
-    if extract_one(input, at, &frame, Decode::Keyframes, &|| false).is_err() {
+    if extract_one(input, cell, &frame, Decode::Keyframes, &|| false).is_err() {
         return Decode::Keyframes;
     }
     // Interleaved and best of two, so scheduling noise and any residual warming
     // do not systematically favour one path.
     let timed = |decode: Decode| -> Option<Duration> {
         let started = Instant::now();
-        extract_one(input, at, &frame, decode, &|| false)
+        extract_one(input, cell, &frame, decode, &|| false)
             .ok()
             .map(|()| started.elapsed())
     };
@@ -98,6 +109,9 @@ fn measure(input: &str, dur_s: f64) -> Decode {
 /// landed: one failed seek is tolerated (it becomes black padding through
 /// [`fill_gaps`]), and nothing landing at all is an error carrying the first
 /// cause captured. Blocking; run it on a blocking thread.
+///
+/// A cell whose own second cannot be read answers nothing rather than whatever
+/// the demuxer resyncs to, which over a file still arriving is minutes later.
 pub fn grab_tiles(
     input: &str,
     scratch: &Path,
@@ -120,7 +134,11 @@ pub fn grab_tiles(
                         break;
                     }
                     let out = scratch.join(name_of(index));
-                    match extract_one(input, plan.at(index), &out, decode, cancel) {
+                    let cell = Cell {
+                        at_s: plan.at(index),
+                        within_s: plan.interval,
+                    };
+                    match extract_one(input, cell, &out, decode, cancel) {
                         Ok(()) => landed.lock().unwrap().push(index),
                         Err(why) => {
                             let mut held = first_err.lock().unwrap();
@@ -189,11 +207,19 @@ fn workers() -> usize {
         .clamp(2, MAX_WORKERS)
 }
 
+#[derive(Clone, Copy)]
+struct Cell {
+    at_s: u32,
+    within_s: u32,
+}
+
 // `-ss` before `-i` is a fast input seek: ffmpeg jumps to the GOP at `at_s`
-// without decoding up to it.
+// without decoding up to it. `-copyts` keeps the frame's own timestamp and the
+// output `-to` then refuses one later than the cell: a seek into a stretch of the
+// file that has not arrived resyncs forward, and that frame is somebody else's.
 fn extract_one(
     input: &str,
-    at_s: u32,
+    cell: Cell,
     out: &Path,
     decode: Decode,
     cancel: Cancel,
@@ -206,10 +232,11 @@ fn extract_one(
     // decoder pool only multiplies into oversubscription.
     cmd.args(["-v", "error", "-nostdin", "-threads", "2"]);
     cmd.args(decode.args());
-    cmd.args(["-ss", &at_s.to_string()])
-        .args(["-noaccurate_seek", "-i"])
+    cmd.args(["-ss", &cell.at_s.to_string()])
+        .args(["-noaccurate_seek", "-copyts", "-i"])
         .arg(input)
         .args(["-an", "-sn", "-dn", "-frames:v", "1"])
+        .args(["-to", &(cell.at_s + cell.within_s).to_string()])
         .args(["-vf", &filter])
         // A ten bit source writes 16 bits a channel, and ffmpeg 8.1 laid a
         // grid of those out as a black sheet.

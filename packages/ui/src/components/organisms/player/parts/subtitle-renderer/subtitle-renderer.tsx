@@ -14,6 +14,8 @@ const MAX_VTT_BYTES = 8 * 1024 * 1024;
 
 const NO_POINTER = style({ pointerEvents: 'none' });
 
+const NO_CUES: readonly Cue[] = [];
+
 const now = (): number => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 interface SubtitleRendererProps {
@@ -52,12 +54,14 @@ export function SubtitleRenderer({
   onTrackFailed,
 }: Readonly<SubtitleRendererProps>) {
   const [text, setText] = useState('');
-  const [cues, setCues] = useState<Cue[]>([]);
-  const cache = useRef<Map<string, Cue[]>>(new Map());
+  const [fetched, setFetched] = useState<readonly Cue[]>(NO_CUES);
+  const cache = useRef<Map<string, readonly Cue[]>>(new Map());
   const pointer = useRef(0);
 
-  const activeUrl =
-    activeIndex == null ? null : (subtitles.find((s) => s.index === activeIndex)?.url ?? null);
+  const active = activeIndex == null ? undefined : subtitles.find((s) => s.index === activeIndex);
+  const held = active?.cues;
+  const activeUrl = held ? null : (active?.url ?? null);
+  const cues = held ?? fetched;
 
   const reportFailed = useEffectEvent(() => {
     if (activeIndex != null) onTrackFailed?.(activeIndex);
@@ -68,12 +72,12 @@ export function SubtitleRenderer({
   useEffect(() => {
     pointer.current = 0;
     if (!activeUrl) {
-      setCues([]);
+      setFetched(NO_CUES);
       return;
     }
     const cached = cache.current.get(activeUrl);
     if (cached) {
-      setCues(cached);
+      setFetched(cached);
       return;
     }
     let cancelled = false;
@@ -90,12 +94,12 @@ export function SubtitleRenderer({
         const parsed = parseVtt(raw);
         if (parsed.length === 0) throw new Error('empty track');
         cache.current.set(activeUrl, parsed);
-        if (!cancelled) setCues(parsed);
+        if (!cancelled) setFetched(parsed);
         return undefined;
       })
       .catch(() => {
         if (cancelled) return;
-        setCues([]);
+        setFetched(NO_CUES);
         reportFailed();
       });
     return () => {

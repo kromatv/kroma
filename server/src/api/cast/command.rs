@@ -13,11 +13,29 @@ use crate::api::util::query;
 use crate::db;
 use crate::i18n;
 use crate::infra::events::ServerEvent;
-use crate::model::CastCommand;
+use crate::model::{CastCommand, Permission, User, WatchItem};
 use crate::services::cast::valid_receiver_id;
+use crate::services::playback::accept_watch_item;
 use crate::state::SharedState;
 
 use super::{bad_id, require_playback};
+
+fn castable_watch(user: &User, watch: WatchItem) -> Result<WatchItem, Response> {
+    if !user.can(Permission::WatchablePlay) {
+        return Err(lerr(
+            i18n::user_locale(user),
+            StatusCode::FORBIDDEN,
+            "error.permissionDenied",
+        ));
+    }
+    accept_watch_item(watch).ok_or_else(|| {
+        lerr(
+            i18n::user_locale(user),
+            StatusCode::BAD_REQUEST,
+            "error.playbackBadTitle",
+        )
+    })
+}
 
 #[derive(Debug, Deserialize)]
 pub struct CommandBody {
@@ -34,7 +52,8 @@ pub struct CommandReply {
 /// Owner-scoped: only the account the receiver is signed into may drive it, and
 /// anybody else's receiver answers exactly like a missing one. A `play` is
 /// checked against the catalog first, so the TV is never handed an id the server
-/// did not recognize.
+/// did not recognize. A `watch` names no row: it needs `watchable.play` and the
+/// shape the core holds a watch item in, and goes on as it was named.
 pub async fn command(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -81,7 +100,15 @@ pub async fn command(
         }
     }
 
-    let Some(envelope) = state.cast.enqueue(&id, &user.id, body.command) else {
+    let command = match body.command {
+        CastCommand::Watch { watch, position_ms } => CastCommand::Watch {
+            watch: castable_watch(&user, watch)?,
+            position_ms,
+        },
+        other => other,
+    };
+
+    let Some(envelope) = state.cast.enqueue(&id, &user.id, command) else {
         return Err(lerr(
             i18n::user_locale(&user),
             StatusCode::NOT_FOUND,

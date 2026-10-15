@@ -22,6 +22,11 @@ async fn every_route_is_mounted_where_a_consumer_calls_it() {
             "/_port/tv.kroma.torrents/grab/drop-data",
             json!({ "id": "d1" }),
         ),
+        ("/_port/tv.kroma.torrents/grab/files", json!({ "id": "d1" })),
+        (
+            "/_port/tv.kroma.torrents/grab/remove",
+            json!({ "id": "d1", "delete_data": true }),
+        ),
         ("/_port/tv.kroma.torrents/db/completed", json!({})),
         (
             "/_port/tv.kroma.torrents/db/mark-imported",
@@ -30,6 +35,10 @@ async fn every_route_is_mounted_where_a_consumer_calls_it() {
         (
             "/_port/tv.kroma.torrents/db/set-status",
             json!({ "id": "d1", "status": "failed" }),
+        ),
+        (
+            "/_port/tv.kroma.torrents/db/live-for-title",
+            json!({ "kind": "movie", "tmdb_id": 1, "client_id": "embedded" }),
         ),
     ] {
         let (status, _) = call(path, body).await;
@@ -133,6 +142,74 @@ async fn dropping_the_data_of_a_row_leaves_the_row_in_the_ledger() {
     let conn = host.db().get().unwrap();
     assert_eq!(answer["Ok"], json!(true));
     assert!(crate::db::get_download(&conn, "d1").unwrap().is_some());
+}
+
+#[tokio::test]
+async fn removing_a_row_that_is_gone_is_false_rather_than_an_error() {
+    let host = with_manager(migrated_host());
+
+    let (_, answer) = post(
+        host,
+        "/_port/tv.kroma.torrents/grab/remove",
+        json!({ "id": "ghost", "delete_data": true }),
+    )
+    .await;
+
+    assert_eq!(answer["Ok"], json!(false));
+}
+
+#[tokio::test]
+async fn removing_a_row_takes_it_out_of_the_ledger_rather_than_leaving_it_behind() {
+    let host = with_manager(migrated_host());
+    seed_client(&host);
+    seed_row(&host, "d1");
+
+    let (_, answer) = post(
+        host.clone(),
+        "/_port/tv.kroma.torrents/grab/remove",
+        json!({ "id": "d1", "delete_data": true }),
+    )
+    .await;
+
+    let conn = host.db().get().unwrap();
+    assert_eq!(answer["Ok"], json!(true));
+    assert!(crate::db::get_download(&conn, "d1").unwrap().is_none());
+}
+
+#[tokio::test]
+async fn a_download_the_engine_has_no_metadata_for_answers_an_empty_file_list() {
+    let host = with_manager(migrated_host());
+    seed_client(&host);
+    seed_row(&host, "d1");
+
+    let (_, answer) = post(
+        host,
+        "/_port/tv.kroma.torrents/grab/files",
+        json!({ "id": "d1" }),
+    )
+    .await;
+
+    assert_eq!(answer["Ok"], json!([]));
+}
+
+#[tokio::test]
+async fn an_imported_row_stops_being_a_watch_download() {
+    let host = migrated_host();
+    seed_row(&host, "d1");
+    crate::db::mark_ephemeral(host.store(), "d1").unwrap();
+    crate::db::mark_watch_starter(host.store(), "d1", "ana").unwrap();
+
+    let (status, answer) = post(
+        host.clone(),
+        "/_port/tv.kroma.torrents/db/mark-imported",
+        json!({ "id": "d1", "paths": ["/films/one.mkv"], "now_ms": 1 }),
+    )
+    .await;
+
+    assert_eq!((status, &answer["Ok"]), (StatusCode::OK, &json!(null)));
+    let conn = host.store().get().unwrap();
+    assert!(crate::db::ephemeral_ids(&conn).unwrap().is_empty());
+    assert!(!crate::db::started_the_watch(&conn, "d1", "ana").unwrap());
 }
 
 #[tokio::test]

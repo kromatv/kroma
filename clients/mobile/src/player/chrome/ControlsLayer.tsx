@@ -6,11 +6,11 @@
 // the UX stays the phone's own, which is why this file mirrors those parts
 // rather than importing them.
 
-import type { MediaItem } from '@kromatv/client/media';
-import { audioTracksOf, episodeTag } from '@kromatv/core';
+import type { Arrival } from '@kromatv/core';
 import { BACK_10_ICON, FWD_10_ICON } from '@kromatv/ui';
 import { formatTimecode } from '@kromatv/ui/intl';
 import {
+  ArrivalBadge,
   BackButton,
   Box,
   fonts,
@@ -29,54 +29,65 @@ import type { EdgeInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
 import { colors, spacing } from '#mobile/lib/theme';
 import { useControlsHold } from '#mobile/player/chrome/useControlsHold';
-import type { Engine } from '#mobile/player/engine';
 import { ScrubBar } from '#mobile/player/ScrubBar';
-import type { SheetView } from '#mobile/player/TrackSheet';
 import type { StoryboardTile } from '#mobile/player/useStoryboard';
 
+export interface ChromePlayback {
+  cur: number;
+  dur: number;
+  buffered: number;
+  downloaded?: readonly (readonly [number, number])[];
+  playing: boolean;
+  waiting: boolean;
+  togglePlay(): void;
+  seekTo(abs: number): void;
+  skip(delta: number): void;
+}
+
+/** Each action draws only where the screen hands one over, so a file with no
+ * catalogue row is missing the rows it cannot answer rather than refusing
+ * them. */
+export interface ChromeActions {
+  onAudio?(): void;
+  onSubtitles?(): void;
+  onSpeed?(): void;
+  onSettings?(): void;
+  onPlayNext?(): void;
+  onCast?(): void;
+  onPip?(): void;
+}
+
 export function ControlsLayer({
-  engine,
-  item,
+  playback,
+  title,
+  subtitle,
+  arrival,
   insets,
   poke,
   hold,
   onBack,
-  onOpenSheet,
+  markers,
   tileFor,
-  next,
-  onPlayNext,
-  onPip,
-  onCast,
+  actions,
 }: Readonly<{
-  engine: Engine;
-  item: MediaItem;
+  playback: ChromePlayback;
+  title: string;
+  subtitle?: string;
+  arrival?: Arrival;
   insets: EdgeInsets;
-  poke(): void;
+  poke?(): void;
   hold?(): () => void;
   onBack(): void;
-  onOpenSheet(view?: SheetView): void;
+  markers?: readonly number[];
   tileFor?: (abs: number) => StoryboardTile | null;
-  next?: MediaItem | null;
-  onPlayNext?(): void;
-  onPip?(): void;
-  onCast?(): void;
+  actions: ChromeActions;
 }>) {
   const t = useT();
-  const title = item.showTitle ?? item.metadata?.title ?? item.title;
-  // For an episode the big line is the SHOW, so the subtitle carries both the
-  // tag and the episode's own name: "S1E2 · The Kingsroad", the way the TV
-  // player's top bar reads.
-  const tag = episodeTag(item);
-  const episodeName = item.showTitle ? (item.metadata?.title ?? item.title) : undefined;
-  const sub = [tag, episodeName].filter(Boolean).join(' · ') || undefined;
-
-  const open = (view?: SheetView) => {
-    onOpenSheet(view);
-    poke();
-  };
-  // The audio shortcut earns its spot only when there is a choice to make.
-  const audioCount = engine.offline ? engine.localAudio.length : audioTracksOf(item).length;
   const touch = useControlsHold(hold);
+  const pressed = (run: () => void) => () => {
+    run();
+    poke?.();
+  };
 
   return (
     <View
@@ -111,18 +122,17 @@ export function ControlsLayer({
         pointerEvents="box-none"
       >
         <BackButton diameter={42} onPress={onBack} label={t('common.back')} />
-        {/* Beside the back button, like the TV bar: the title reads from the
-            corner, not the centre of the picture. */}
         <Box style={s.titleBox}>
           <Text lines={1} style={s.title}>
             {title}
           </Text>
-          {sub ? (
+          {subtitle ? (
             <Text lines={1} style={s.subtitle}>
-              {sub}
+              {subtitle}
             </Text>
           ) : null}
         </Box>
+        {arrival ? <ArrivalBadge arrival={arrival} scale={0.9} /> : null}
       </Box>
 
       <Box style={s.centerRow} pointerEvents="box-none">
@@ -130,38 +140,26 @@ export function ControlsLayer({
           diameter={56}
           icon={BACK_10_ICON}
           glyph={28}
-          onPress={() => {
-            engine.skip(-10);
-            poke();
-          }}
+          onPress={pressed(() => playback.skip(-10))}
           label={t('player.back10')}
         />
-        {/* Buffering lives IN the play button while controls are up: a second
-            spinner floating behind the cluster read as two half-drawn
-            controls fighting over the same centre. */}
         <IconButton
           diameter={72}
           variant="primary"
-          onPress={() => {
-            engine.togglePlay();
-            poke();
-          }}
-          label={engine.playing ? t('player.pause') : t('player.play')}
+          onPress={pressed(playback.togglePlay)}
+          label={playback.playing ? t('player.pause') : t('player.play')}
         >
           {(() => {
-            if (engine.waiting) return <Spinner size={30} color={colors.accentInk} />;
-            const glyph = engine.playing ? 'player-pause-filled' : 'player-play-filled';
-            return <Icon name={glyph} size={engine.playing ? 30 : 32} color={colors.accentInk} />;
+            if (playback.waiting) return <Spinner size={30} color={colors.accentInk} />;
+            const glyph = playback.playing ? 'player-pause-filled' : 'player-play-filled';
+            return <Icon name={glyph} size={playback.playing ? 30 : 32} color={colors.accentInk} />;
           })()}
         </IconButton>
         <IconButton
           diameter={56}
           icon={FWD_10_ICON}
           glyph={28}
-          onPress={() => {
-            engine.skip(10);
-            poke();
-          }}
+          onPress={pressed(() => playback.skip(10))}
           label={t('player.fwd10')}
         />
       </Box>
@@ -176,53 +174,36 @@ export function ControlsLayer({
           },
         ]}
       >
-        <ScrubRow engine={engine} onInteract={poke} hold={hold} tileFor={tileFor} item={item} />
-        {/* Icon-only: labels ride on accessibility, not the row itself. */}
+        <ScrubRow
+          playback={playback}
+          onInteract={poke}
+          hold={hold}
+          tileFor={tileFor}
+          markers={markers}
+        />
         <Box style={s.actionsRow}>
           <Box style={s.actionsGroup}>
-            {audioCount > 1 ? (
-              <RowShortcut
-                icon="wave-sine"
-                label={t('player.audioTracks')}
-                onPress={() => open('audio')}
-              />
-            ) : null}
-            <RowShortcut
-              icon="badge-cc"
-              label={t('player.subtitles')}
-              onPress={() => open('subtitles')}
-            />
-            <RowShortcut icon="gauge" label={t('player.speed')} onPress={() => open('speed')} />
+            <Shortcut icon="wave-sine" label={t('player.audioTracks')} onPress={actions.onAudio} />
+            <Shortcut icon="badge-cc" label={t('player.subtitles')} onPress={actions.onSubtitles} />
+            <Shortcut icon="gauge" label={t('player.speed')} onPress={actions.onSpeed} />
           </Box>
           <Box style={s.actionsGroup}>
-            {next && onPlayNext ? (
-              <RowShortcut
-                icon="player-track-next"
-                label={t('player.nextEpisode')}
-                onPress={onPlayNext}
-              />
-            ) : null}
-            {onCast ? (
-              <RowShortcut
-                icon="cast"
-                label={t('cast.moveToTv')}
-                onPress={() => {
-                  onCast();
-                  poke();
-                }}
-              />
-            ) : null}
-            {onPip ? (
-              <RowShortcut
-                icon="picture-in-picture"
-                label={t('player.pip')}
-                onPress={() => {
-                  onPip();
-                  poke();
-                }}
-              />
-            ) : null}
-            <RowShortcut icon="settings" label={t('player.settings')} onPress={() => open()} />
+            <Shortcut
+              icon="player-track-next"
+              label={t('player.nextEpisode')}
+              onPress={actions.onPlayNext}
+            />
+            <Shortcut
+              icon="cast"
+              label={t('cast.moveToTv')}
+              onPress={actions.onCast && pressed(actions.onCast)}
+            />
+            <Shortcut
+              icon="picture-in-picture"
+              label={t('player.pip')}
+              onPress={actions.onPip && pressed(actions.onPip)}
+            />
+            <Shortcut icon="settings" label={t('player.settings')} onPress={actions.onSettings} />
           </Box>
         </Box>
       </Box>
@@ -230,47 +211,48 @@ export function ControlsLayer({
   );
 }
 
-function RowShortcut({
+function Shortcut({
   icon,
   label,
   onPress,
-}: Readonly<{ icon: IconName; label: string; onPress(): void }>) {
+}: Readonly<{ icon: IconName; label: string; onPress?: () => void }>) {
+  if (!onPress) return null;
   return <IconButton diameter={40} icon={icon} glyph={20} onPress={onPress} label={label} />;
 }
 
 function ScrubRow({
-  engine,
+  playback,
   onInteract,
   hold,
   tileFor,
-  item,
+  markers,
 }: Readonly<{
-  engine: Engine;
-  onInteract(): void;
+  playback: ChromePlayback;
+  onInteract?: () => void;
   hold?: () => () => void;
   tileFor?: (abs: number) => StoryboardTile | null;
-  item: MediaItem;
+  markers?: readonly number[];
 }>) {
-  const markers = (item.markers ?? []).map((m) => m.startMs / 1000);
   const scrub = useControlsHold(hold);
   return (
     <Box>
       <ScrubBar
-        cur={engine.cur}
-        dur={engine.dur}
-        buffered={engine.buffered}
+        cur={playback.cur}
+        dur={playback.dur}
+        buffered={playback.buffered}
+        downloaded={playback.downloaded}
         tileFor={tileFor}
         markers={markers}
         onScrubStart={scrub.take}
         onScrubEnd={scrub.give}
         onSeek={(abs) => {
-          engine.seekTo(abs);
-          onInteract();
+          playback.seekTo(abs);
+          onInteract?.();
         }}
       />
       <Box style={s.timeRow}>
-        <Text style={s.time}>{formatTimecode(engine.cur)}</Text>
-        <Text style={s.time}>{formatTimecode(engine.dur)}</Text>
+        <Text style={s.time}>{formatTimecode(playback.cur)}</Text>
+        <Text style={s.time}>{formatTimecode(playback.dur)}</Text>
       </Box>
     </Box>
   );

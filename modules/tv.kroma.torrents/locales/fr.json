@@ -68,7 +68,6 @@
   "downloads.limitUp": "Limite d'envoi",
   "downloads.limitedTo": "Limiter à",
   "downloads.limitsFailed": "Les limites n'ont pas pu être enregistrées.",
-  "downloads.limitsTitle": "Vitesse et téléchargements en parallèle",
   "downloads.linkCurrent": "Actuel",
   "downloads.linkFailed": "Le titre n'a pas pu être associé.",
   "downloads.linkNoResults": "Aucun résultat. Essayez d'autres mots.",
@@ -132,6 +131,10 @@
   "downloads.vpnSealedDay": "{total} sont passés par le tunnel ces dernières 24 heures.",
   "downloads.vpnUnsealedDay": "{total} sont passés hors du tunnel ces dernières 24 heures.",
   "downloads.waiting": "{count} en attente",
+  "downloads.watchCache": "Effacer le cache après (minutes)",
+  "downloads.watchCacheHint": "Le délai part de la fin de la dernière lecture.",
+  "downloads.watchKeep": "Garder les titres regardés dans la bibliothèque",
+  "downloads.watchKeepHint": "Un film ou un épisode lancé avec Lire rejoint la bibliothèque une fois téléchargé. Désactivé, ce n'est qu'un cache, effacé quand plus personne ne le regarde.",
   "manual.add": "Ajouter",
   "manual.addFailed": "L'ajout a échoué",
   "manual.adding": "Ajout...",
@@ -220,5 +223,11 @@
   "naming.seriesFolder": "Dossier des séries",
   "naming.tokens": "Jetons",
   "naming.tokensTitle": "Jetons de nom de fichier",
-  "nav.downloads": "Téléchargements"
+  "nav.downloads": "Téléchargements",
+  "watch.cancel": "Annuler",
+  "watch.downloaded": "Téléchargé",
+  "watch.label": "Torrents",
+  "watch.slices": "Morceaux reçus",
+  "watch.sources": "Pairs",
+  "watch.speed": "Vitesse"
 }

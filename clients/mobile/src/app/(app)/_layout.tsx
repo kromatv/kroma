@@ -28,6 +28,16 @@ export default function AppLayout() {
           orientation: PLAYER_ORIENTATION,
         }}
       />
+      <Stack.Screen
+        name="watch/[downloadId]"
+        options={{
+          autoHideHomeIndicator: true,
+          animation: 'fade',
+          gestureEnabled: false,
+          presentation: 'fullScreenModal',
+          orientation: PLAYER_ORIENTATION,
+        }}
+      />
     </Stack>
   );
 }

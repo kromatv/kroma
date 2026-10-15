@@ -2,6 +2,7 @@
 
 import { tmdbKindOf } from '@kromatv/client/discovery';
 import { ItemId, type SubjectId } from '@kromatv/client/media';
+import { watchableTitle } from '@kromatv/core';
 import { useCast, useT } from '@kromatv/ui';
 import { classes, type HostElement, styles, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
@@ -16,6 +17,8 @@ import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
 import { userQueries } from '#web/shared/lib/queries';
 import type { SimilarTarget, TitleView } from '#web/shared/lib/titleView';
+import { watchLink } from '#web/shared/lib/watch-route';
+import { useWatchable } from '#web/shared/lib/watchable';
 import { useWatched } from '#web/shared/lib/watched';
 import { page } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
@@ -170,7 +173,12 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
   const { isWatched, toggleWatched } = useWatched();
   const { inList, toggle: toggleList } = useMyList();
 
+  const { offered } = useWatchable();
   const owned = view.localId != null && view.playable != null;
+  const canWatch = !owned && offered === true;
+  const firstSeason = view.seasons.find((season) => season.number > 0) ?? view.seasons[0];
+  const first = firstSeason ? { season: firstSeason.number, episode: 1 } : null;
+  const start = canWatch ? watchableTitle(view, first) : null;
   const localId = view.localId;
   let backTo: '/' | '/shows' | '/search' = '/search';
   if (owned) backTo = view.kind === 'show' ? '/shows' : '/';
@@ -216,6 +224,7 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
         inList={inList}
         toggleList={toggleList}
         onPlay={play}
+        watch={watchLink(view.kind, start?.tmdbId ?? null, first)}
         onRequest={onRequestClick}
         back={<RouteLink to={backTo} />}
       />

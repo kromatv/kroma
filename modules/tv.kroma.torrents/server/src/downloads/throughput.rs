@@ -15,6 +15,14 @@ pub const DOWN_KBPS_KEY: &str = "rqbitDownKbps";
 pub const UP_KBPS_KEY: &str = "rqbitUpKbps";
 pub const MAX_ACTIVE_KEY: &str = "torrentMaxActive";
 
+/// Who a download is starting for. One somebody is waiting in front of does not
+/// queue behind the parallelism cap.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Start {
+    ForAViewer,
+    Queued,
+}
+
 /// A kbps setting as bytes per second, with `<= 0` meaning unlimited.
 pub fn bps_setting(host: &dyn HostCtx, key: &str) -> Option<u32> {
     let kbps = host.setting_i64(key, 0);
@@ -58,7 +66,12 @@ impl DownloadManager {
     /// Whether one more download may start right now. An unset cap always says
     /// yes, and so does a ledger we cannot read: refusing to start on a failed
     /// count would strand the queue.
-    pub fn slot_available(&self, host: &dyn HostCtx) -> bool {
+    ///
+    /// A download started to be watched does not wait for a slot.
+    pub fn slot_available(&self, host: &dyn HostCtx, start: Start) -> bool {
+        if matches!(start, Start::ForAViewer) {
+            return true;
+        }
         let Some(max) = self.max_active(host) else {
             return true;
         };
@@ -72,24 +85,30 @@ impl DownloadManager {
         running < max
     }
 
-    /// The queued downloads that may start now, oldest grab first.
+    /// The queued downloads that may start now: the ones a viewer is waiting on
+    /// first, then the oldest grab.
     pub fn claim_free_slots(&self, host: &dyn HostCtx) -> Vec<crate::db::DownloadRow> {
         let Ok(conn) = self.core().get() else {
             return Vec::new();
         };
-        let waiting: Vec<crate::db::DownloadRow> = db::queued_downloads(&conn)
+        let waiting = db::queued_downloads(&conn)
             .unwrap_or_default()
             .into_iter()
-            .filter(crate::db::DownloadRow::never_reached_an_engine)
-            .collect();
-        let Some(max) = self.max_active(host) else {
-            return waiting;
+            .filter(crate::db::DownloadRow::never_reached_an_engine);
+        let watched = self.ephemeral_ids().unwrap_or_default();
+        let (watch_grabs, rest): (Vec<_>, Vec<_>) =
+            waiting.partition(|row| watched.contains(&row.id));
+        let free = match self
+            .max_active(host)
+            .zip(db::running_download_count(&conn).ok())
+        {
+            Some((max, running)) => (max - running).max(0) as usize,
+            None => rest.len(),
         };
-        let Ok(running) = db::running_download_count(&conn) else {
-            return waiting;
-        };
-        let free = (max - running).max(0) as usize;
-        waiting.into_iter().take(free).collect()
+        watch_grabs
+            .into_iter()
+            .chain(rest.into_iter().take(free))
+            .collect()
     }
 }
 
@@ -97,6 +116,48 @@ impl DownloadManager {
 mod tests {
     use super::*;
     use kroma_module_sdk::host::testing::StubHost;
+
+    use crate::db;
+    use crate::downloads::test_support::{added, manager_over};
+
+    #[test]
+    fn a_download_started_to_be_watched_never_waits_for_a_slot() {
+        let (host, manager) = manager_over("torrents-slot-watched", &[added("d1")]);
+        let full = host.with_setting(MAX_ACTIVE_KEY, serde_json::json!(1));
+        db::set_download_status(manager.core(), "d1", "downloading", None).unwrap();
+
+        let ordinary = manager.slot_available(&full, Start::Queued);
+        let watched = manager.slot_available(&full, Start::ForAViewer);
+
+        assert!(!ordinary, "the cap is full");
+        assert!(watched, "somebody is waiting in front of the screen");
+    }
+
+    #[test]
+    fn the_queue_hands_out_the_watch_grabs_before_the_cap_is_counted() {
+        let (host, manager) = manager_over(
+            "torrents-slot-order",
+            &[queued("ordinary"), queued("watched"), queued("running")],
+        );
+        let full = host.with_setting(MAX_ACTIVE_KEY, serde_json::json!(1));
+        db::mark_ephemeral(manager.store(), "watched").unwrap();
+        db::set_download_status(manager.core(), "running", "downloading", None).unwrap();
+
+        let claimed = manager.claim_free_slots(&full);
+
+        assert_eq!(
+            claimed.into_iter().map(|row| row.id).collect::<Vec<_>>(),
+            ["watched"]
+        );
+    }
+
+    fn queued(id: &str) -> crate::db::DownloadRow {
+        crate::db::DownloadRow {
+            client_ref: String::new(),
+            status: "queued".into(),
+            ..added(id)
+        }
+    }
 
     #[test]
     fn a_kbps_ceiling_becomes_bytes_and_zero_means_unlimited() {

@@ -1,6 +1,6 @@
 //! Flagging TMDB hits against this server: the catalogue row a title already
-//! has in a library the viewer was granted, and the request covering it with
-//! its live download.
+//! has in a library the viewer was granted, and for a viewer who may request,
+//! the request covering it with its live download.
 
 use std::collections::HashMap;
 
@@ -10,8 +10,37 @@ use crate::api::downloads_overlay::{active_downloads, ActiveDownload};
 use crate::db;
 use crate::infra::metadata::discover;
 use crate::model::{
-    DiscoverDetail, DiscoverEntry, DiscoverSeason, RequestKind, RequestStatus, User,
+    DiscoverDetail, DiscoverEntry, DiscoverSeason, Permission, RequestKind, RequestStatus, User,
 };
+
+/// What a viewer is shown beside the catalogue flags.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Overlay {
+    Requests,
+    Catalogue,
+}
+
+impl Overlay {
+    pub fn for_viewer(user: &User) -> Self {
+        if user.can(Permission::RequestsCreate) {
+            Self::Requests
+        } else {
+            Self::Catalogue
+        }
+    }
+
+    fn request_for(
+        self,
+        conn: &Connection,
+        kind: RequestKind,
+        tmdb_id: u64,
+    ) -> rusqlite::Result<Option<(String, RequestStatus)>> {
+        match self {
+            Self::Requests => db::latest_request_for(conn, kind, tmdb_id),
+            Self::Catalogue => Ok(None),
+        }
+    }
+}
 
 fn local_id_for(
     conn: &Connection,
@@ -44,10 +73,11 @@ fn flag_hits_with(
     active: &HashMap<String, ActiveDownload>,
     viewer: &User,
 ) -> anyhow::Result<Vec<DiscoverEntry>> {
+    let overlay = Overlay::for_viewer(viewer);
     hits.into_iter()
         .map(|h| {
             let local_id = local_id_for(conn, h.kind, h.tmdb_id, viewer)?;
-            let request = db::latest_request_for(conn, h.kind, h.tmdb_id)?;
+            let request = overlay.request_for(conn, h.kind, h.tmdb_id)?;
             let (status, progress) = overlay_active(active, request.as_ref());
             Ok(DiscoverEntry {
                 kind: h.kind,
@@ -97,8 +127,9 @@ pub fn flag_detail(
     d: discover::DiscoverRawDetail,
     viewer: &User,
 ) -> anyhow::Result<DiscoverDetail> {
+    let overlay = Overlay::for_viewer(viewer);
     let local_id = local_id_for(conn, d.kind, d.tmdb_id, viewer)?;
-    let request = db::latest_request_for(conn, d.kind, d.tmdb_id)?;
+    let request = overlay.request_for(conn, d.kind, d.tmdb_id)?;
 
     let active = active_downloads(conn);
     let (request_status, request_progress) = overlay_active(&active, request.as_ref());
@@ -115,7 +146,10 @@ pub fn flag_detail(
         for (s, _e) in present {
             *per_season.entry(s).or_default() += 1;
         }
-        let open_request = db::find_open_request(conn, RequestKind::Show, d.tmdb_id)?;
+        let open_request = match overlay {
+            Overlay::Requests => db::find_open_request(conn, RequestKind::Show, d.tmdb_id)?,
+            Overlay::Catalogue => None,
+        };
         let requested_seasons: Option<Vec<u32>> = open_request.as_ref().map(|r| {
             r.seasons
                 .clone()

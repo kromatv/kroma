@@ -4,6 +4,8 @@
 
 import type { KromaClient } from '@kromatv/client';
 import type { ItemId, StoryboardManifest } from '@kromatv/client/media';
+import { drawnTileIndex } from '@kromatv/core';
+import { useLoadedSheet } from '@kromatv/core/react';
 import { useCallback, useEffect, useState } from 'react';
 import { Image } from 'react-native';
 import { webDocument } from '#ui/lib/dom';
@@ -34,6 +36,15 @@ export interface Storyboard {
   tile: (sec: number, displayW: number) => StoryboardTile | null;
 }
 
+/** A sheet at an absolute `url`. `ready` marks, one character per tile, which
+ * tiles a sheet still being drawn has drawn (`1`); a sheet without it is whole. */
+export type StoryboardSheet = StoryboardManifest & { ready?: string };
+
+// `Image.prefetch`, not `new Image()`: the DOM constructor doesn't exist on a
+// television, and inside a promise chain the ReferenceError was swallowed by
+// `.catch` - the scrub preview silently never got a picture.
+const prefetchSheet = (url: string): Promise<boolean> => Image.prefetch(url);
+
 const POLL_MS = 1500;
 const FAST_POLLS = 40;
 const SLOW_MS = 15000;
@@ -48,9 +59,7 @@ export function useStoryboard(
   itemId: ItemId,
   { generate = true }: { generate?: boolean } = {},
 ): Storyboard {
-  const [manifest, setManifest] = useState<StoryboardManifest | null>(null);
-  const [sheetUrl, setSheetUrl] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [manifest, setManifest] = useState<StoryboardSheet | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,19 +67,6 @@ export function useStoryboard(
     let timer: ReturnType<typeof setTimeout> | null = null;
     let tries = 0;
     setManifest(null);
-    setSheetUrl(null);
-    setLoaded(false);
-
-    // `Image.prefetch`, not `new Image()`: the DOM constructor doesn't exist on
-    // a television, and inside this poll's promise chain the ReferenceError was
-    // swallowed by `.catch` - the scrub preview silently never got a picture.
-    const preload = (url: string) => {
-      Image.prefetch(url)
-        .then(() => {
-          if (!cancelled) setLoaded(true);
-        })
-        .catch(() => undefined); // unreachable sheet: fall back to the time label
-    };
 
     const poll = () => {
       client.media
@@ -86,10 +82,7 @@ export function useStoryboard(
           }
           if (!res) return; // no usable file/duration: silently fall back to the time label
           resolved = true;
-          const url = client.media.artwork.resolve(res.url) ?? res.url;
-          setManifest(res);
-          setSheetUrl(url);
-          preload(url);
+          setManifest({ ...res, url: client.media.artwork.resolve(res.url) ?? res.url });
         })
         .catch(() => undefined);
     };
@@ -116,18 +109,30 @@ export function useStoryboard(
     };
   }, [client, itemId, generate]);
 
+  return useStoryboardSheet(manifest);
+}
+
+/**
+ * The tiles of one sheet, once its picture has loaded. A tile the sheet marks as
+ * not drawn yet has no thumbnail, and a sheet at a new `url` takes over only once
+ * its own picture has loaded.
+ */
+export function useStoryboardSheet(sheet: StoryboardSheet | null): Storyboard {
+  const shown = useLoadedSheet(sheet, prefetchSheet);
+
   const tile = useCallback(
     (sec: number, displayW: number): StoryboardTile | null => {
-      if (!manifest || !sheetUrl || !loaded) return null;
-      const { interval, tileW, tileH, cols, rows, count } = manifest;
-      const idx = Math.max(0, Math.min(count - 1, Math.floor(sec / interval)));
-      const col = idx % cols;
-      const row = Math.floor(idx / cols);
+      if (!shown) return null;
+      const index = drawnTileIndex(shown, sec);
+      if (index === null) return null;
+      const { tileW, tileH, cols, rows } = shown;
+      const col = index % cols;
+      const row = Math.floor(index / cols);
       const scale = displayW / tileW;
       return {
         width: displayW,
         height: Math.round(tileH * scale),
-        sheet: sheetUrl,
+        sheet: shown.url,
         sheetWidth: cols * tileW,
         sheetHeight: rows * tileH,
         offsetX: -Math.round(col * tileW * scale),
@@ -135,8 +140,8 @@ export function useStoryboard(
         scale,
       };
     },
-    [manifest, sheetUrl, loaded],
+    [shown],
   );
 
-  return { ready: loaded && manifest != null, tile };
+  return { ready: shown !== null, tile };
 }

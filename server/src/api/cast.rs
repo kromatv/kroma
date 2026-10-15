@@ -94,14 +94,14 @@ pub async fn announce(
     let network = classify_network(&ip, &settings::local_networks(&state.settings));
 
     // Resolved server-side: senders must render a title the receiver cannot spoof.
-    let item = match body.playback.as_ref() {
-        Some(pb) if state.cast.wants_item(&body.receiver_id, &pb.item_id) => {
-            let id = pb.item_id.clone();
-            query(&state.db, move |pool| db::get_item(&pool, &id))
-                .await
-                .unwrap_or_default()
-        }
-        _ => None,
+    let item = match state
+        .cast
+        .item_to_fetch(&body.receiver_id, body.playback.as_ref())
+    {
+        Some(id) => query(&state.db, move |pool| db::get_item(&pool, &id))
+            .await
+            .unwrap_or_default(),
+        None => None,
     };
 
     let position = body

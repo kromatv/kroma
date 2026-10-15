@@ -13,12 +13,13 @@ pub mod peers;
 pub mod routes;
 pub mod search;
 mod serve;
+pub mod watch;
 
 pub use dtos::*;
 pub use serve::acqsearch_routes;
 
 use kroma_module_sdk::host::HostStorage;
-use kroma_scene::{Profile, Res};
+use kroma_scene::{Codec, Profile, Res, UnstatedResolution};
 
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use peers::indexers::IndexerRef;
@@ -50,7 +51,10 @@ pub fn profile_from_settings<S: HostStorage>(state: &S) -> Profile {
     };
     Profile {
         resolution,
-        prefer_hevc: state.setting_bool("acqPreferHevc", true),
+        unstated_resolution: UnstatedResolution::Refuse,
+        preferred_codec: state
+            .setting_bool("acqPreferHevc", true)
+            .then_some(Codec::Hevc),
         min_seeders: state.setting_i64("acqMinSeeders", 2).max(0) as u32,
         max_size_bytes_movie: (state.setting_i64("acqMaxSizeGbMovie", 15).max(0) as u64) * GB,
         max_size_bytes_episode: (state.setting_i64("acqMaxSizeGbEpisode", 3).max(0) as u64) * GB,

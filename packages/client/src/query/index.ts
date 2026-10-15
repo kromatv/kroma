@@ -4,6 +4,8 @@ import type { Domains } from '../core/client';
 import { createRequestContext, type KromaClientOptions } from '../core/http';
 import { assembleClient, type KromaClient, kromaClientParts } from '../kroma-client';
 
+export { watchableList } from './watchable';
+
 type Read = (...args: never[]) => Promise<unknown>;
 
 /** The reads of one namespace, and its sub-namespaces, as query factories. A

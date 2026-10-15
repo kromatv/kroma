@@ -15,6 +15,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./react": "./src/react/index.ts",
+    "./test": "./src/react/watch.fixture.ts",
     "./vite": "./vite/index.ts"
   },
   "scripts": {

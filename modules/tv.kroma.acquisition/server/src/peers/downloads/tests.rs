@@ -11,6 +11,7 @@ fn a_spec_crosses_under_the_keys_the_provider_parses() {
         release_title: "The.Matrix.1999.1080p".into(),
         wanted_ids: vec!["w1".into()],
         upgrade: true,
+        client_id: Some("embedded".into()),
         ..Default::default()
     };
 
@@ -21,6 +22,7 @@ fn a_spec_crosses_under_the_keys_the_provider_parses() {
     assert_eq!(json["release_title"], "The.Matrix.1999.1080p");
     assert_eq!(json["wanted_ids"][0], "w1");
     assert_eq!(json["upgrade"], true);
+    assert_eq!(json["client_id"], "embedded");
 }
 
 // The provider's row carries engine bookkeeping this module does not read, and

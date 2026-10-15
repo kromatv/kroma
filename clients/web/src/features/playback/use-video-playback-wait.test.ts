@@ -35,6 +35,7 @@ vi.mock('#web/shared/lib/auth', () => ({
 }));
 
 const { useVideoPlayback } = await import('#web/features/playback/use-video-playback');
+const { catalogueSource } = await import('#web/features/playback/playback-source');
 const { attachMediaSource } = await import('#web/features/playback/video-engine');
 
 installHarness();
@@ -42,7 +43,8 @@ installHarness();
 type Element = ReturnType<typeof fakeVideo> & { readyState: number };
 
 function render() {
-  const view = renderHook(() => useVideoPlayback(movie()));
+  const source = catalogueSource(movie());
+  const view = renderHook(() => useVideoPlayback(source));
   const v = fakeVideo({ readyState: 0, networkState: 2, seeking: false, ended: false }) as Element;
   view.result.current.videoRef.current = v as unknown as HTMLVideoElement;
   return { ...view, v };
@@ -61,7 +63,8 @@ describe('useVideoPlayback while it waits', () => {
   it('is loading from the first render, before any source is attached', () => {
     H.decision = { kind: 'web-mse', aacMaster: false };
 
-    const { result } = renderHook(() => useVideoPlayback(movie()));
+    const source = catalogueSource(movie());
+    const { result } = renderHook(() => useVideoPlayback(source));
 
     expect(result.current.waiting).toBe(true);
     expect(result.current.waitReason).toBe('loading');
@@ -110,7 +113,8 @@ describe('useVideoPlayback while it waits', () => {
   it('knows the playback mode before a source is attached', () => {
     H.decision = { kind: 'web-mse', aacMaster: true };
 
-    const { result } = renderHook(() => useVideoPlayback(movie()));
+    const source = catalogueSource(movie());
+    const { result } = renderHook(() => useVideoPlayback(source));
 
     expect(result.current.mode).toBe('transcode');
   });

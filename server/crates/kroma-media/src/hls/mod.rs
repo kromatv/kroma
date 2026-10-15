@@ -21,6 +21,7 @@ mod mode;
 mod naming;
 mod progress;
 mod reclaim;
+mod root;
 mod session;
 mod software;
 mod window;
@@ -35,14 +36,30 @@ use std::sync::Arc;
 use key::session_key;
 use session::Sessions;
 
+const DURATION_WAIT: std::time::Duration = std::time::Duration::from_secs(10);
+
+/// The operator setting that sizes a session cache, and what it means where
+/// nothing is set. A module reads the same key as the core, so one knob moves
+/// every engine on the box.
+pub const MAX_CONCURRENT_KEY: &str = "maxConcurrent";
+pub const DEFAULT_MAX_CONCURRENT: i64 = 8;
+
+/// How many live sessions [`MAX_CONCURRENT_KEY`] asks a cache to keep, held to
+/// 1..=32.
+pub fn live_sessions(setting: i64) -> usize {
+    setting.clamp(1, 32) as usize
+}
+
 pub struct HlsEngine {
     sessions: Arc<Sessions>,
-    durations: std::sync::Mutex<std::collections::HashMap<String, Option<u64>>>,
+    durations: std::sync::Mutex<std::collections::HashMap<String, u64>>,
 }
 
 impl HlsEngine {
     /// `root` is the directory the engine writes its sessions in, and it is
-    /// emptied on construction. `max_concurrent` hard-caps live sessions;
+    /// emptied on construction: an engine derives no path of its own, because two
+    /// of them in two processes over one data directory would each delete the
+    /// other's live sessions. `max_concurrent` hard-caps live sessions;
     /// `cache_budget` is the on-disk byte budget that trims idle / superseded
     /// sessions (0 = unlimited).
     pub fn new(root: PathBuf, max_concurrent: usize, cache_budget: u64) -> Self {
@@ -56,22 +73,20 @@ impl HlsEngine {
     /// header read) and kept. Lets the player show the real length when the
     /// catalog row was never probed: otherwise the growing EVENT playlist's
     /// duration is all the client can see (it reads the live edge as the total).
+    ///
+    /// Only an answer is kept. An input that has not yet arrived far enough to
+    /// carry one is asked again on the next reload, and the ffprobe behind the
+    /// question is given [`DURATION_WAIT`] and no longer.
     pub async fn input_duration_ms(&self, input: &str) -> Option<u64> {
         if let Some(known) = self.durations.lock().unwrap().get(input).copied() {
-            return known;
+            return Some(known);
         }
-        let path = input.to_string();
-        let read = tokio::task::spawn_blocking(move || {
-            crate::probe::probe_duration_ms(Path::new(&path))
-        })
-        .await
-        .ok()
-        .flatten();
+        let read = crate::probe::duration_ms_within(input, DURATION_WAIT).await?;
         self.durations
             .lock()
             .unwrap()
             .insert(input.to_string(), read);
-        read
+        Some(read)
     }
 
     pub fn spawn_reaper(&self) {
@@ -135,5 +150,23 @@ impl HlsEngine {
     ) -> Option<(Vec<u8>, &'static str)> {
         let key = session_key(item_id, mode, anchor, audio);
         self.sessions.file(&key, name).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn a_length_the_input_did_not_answer_is_not_remembered_as_its_length() {
+        let data = kroma_testing::temp_dir("hls-duration");
+        let engine = HlsEngine::new(data.path().join("hls"), 1, 0);
+
+        let read = engine
+            .input_duration_ms("http://127.0.0.1:1/clip.mp4")
+            .await;
+
+        assert_eq!(read, None);
+        assert!(engine.durations.lock().unwrap().is_empty());
     }
 }

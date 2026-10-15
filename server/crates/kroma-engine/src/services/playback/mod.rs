@@ -3,8 +3,12 @@
 //! reaped after [`SESSION_TTL`] into `play_history`. Process-local, cleared on restart.
 
 mod network;
+mod playing;
 mod registry;
 mod snapshot;
+mod watch_item;
 
 pub use network::*;
+pub use playing::Playing;
 pub use registry::*;
+pub use watch_item::accept_watch_item;

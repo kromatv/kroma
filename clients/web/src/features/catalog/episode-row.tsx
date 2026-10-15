@@ -17,6 +17,7 @@ import {
   CheckboxFace,
   color,
   Focusable,
+  type HostElement,
   IconButton,
   styles,
   sv,
@@ -24,6 +25,7 @@ import {
   WatchedBadge,
 } from '@kromatv/ui/kit';
 import { IconPlayerPlayFilled } from '@tabler/icons-react';
+import { useState } from 'react';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
 import { kromaClient } from '#web/shared/lib/api';
 import { wash } from '#web/shared/lib/art-styles';
@@ -38,6 +40,7 @@ const s = styles({
   dimmed: { opacity: 0.6 },
   frost: backdropBlur(2),
   lift: { ...backdropBlur(2), transform: [{ scale: 1.1 }] },
+  rowHover: { bg: 'white/5' },
   scrim: {
     backgroundImage: `linear-gradient(170deg, ${color('black/5')}, ${color('black/45')})`,
   },
@@ -156,68 +159,74 @@ export function EpisodeRow({
   );
 }
 
-const missingRow = sv({
-  base: {
-    row: true,
-    align: 'center',
-    gap: ROW_GAP,
-    radius: 'xl',
-    p: 14,
-    bg: 'white/1.5',
-    border: 'white/5',
-    _hover: { bg: 'white/5' },
-  },
-  variants: {
-    selected: { true: { border: 'accent/45', bg: 'accentWash/8' }, false: {} },
-  },
-  defaults: { selected: false },
+const missingPick = sv({
+  base: { row: true, align: 'center', gap: ROW_GAP, radius: 'xl', flex: true, minW: 0 },
 });
 
-/** A gap in the season the viewer can ask for. The whole row is the toggle, so
- * picking three episodes is three presses and one request from the bar below;
- * a row already asked for shows its status instead. What the provider lists
- * for the episode (title, still, air date, synopsis, runtime) rides along once
- * enrichment has fetched the season. */
+/** A gap in the season. `watch` is the link the play action beside the toggle
+ * follows, inside the same row. */
 export function MissingEpisodeRow({
   episode,
   listed,
   pending,
   selected,
   onToggle,
+  watch,
 }: Readonly<{
   season: number;
   episode: number;
   listed: SeasonGap | null;
   pending: boolean;
   selected: boolean;
-  onToggle: () => void;
+  onToggle: (() => void) | null;
+  watch: HostElement | null;
 }>) {
   const t = useT();
+  const [hovered, setHovered] = useState(false);
   const label = listed?.title
     ? `${episode}. ${listed.title}`
     : t('content.episodeN', { n: episode });
-  if (pending) {
+  const play = watch ? (
+    <IconButton icon="player-play-filled" label={t('discover.watch')} asChild>
+      {watch}
+    </IconButton>
+  ) : null;
+  if (pending || !onToggle) {
     return (
       <Box row align="center" gap={ROW_GAP} radius="xl" p={14} bg="white/1.5" border="white/5">
         <MissingStill episode={episode} still={listed?.stillUrl ?? null} />
         <MissingText label={label} listed={listed} color="white/70" />
-        <RequestStatusChip status="pending" size="card" />
+        {pending ? <RequestStatusChip status="pending" size="card" /> : null}
+        {play}
       </Box>
     );
   }
   return (
-    <Focusable
-      role="checkbox"
-      checked={selected}
-      sv={missingRow}
-      vars={{ selected }}
-      label={label}
-      onPress={onToggle}
+    <Box
+      row
+      align="center"
+      gap={ROW_GAP}
+      radius="xl"
+      p={14}
+      bg={selected ? 'accentWash/8' : 'white/1.5'}
+      border={selected ? 'accent/45' : 'white/5'}
+      style={hovered ? s.rowHover : null}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
     >
-      <MissingStill episode={episode} still={listed?.stillUrl ?? null} />
-      <MissingText label={label} listed={listed} color={selected ? 'text' : 'white/70'} />
-      <CheckboxFace checked={selected} />
-    </Focusable>
+      <Focusable
+        role="checkbox"
+        checked={selected}
+        sv={missingPick}
+        label={label}
+        onPress={onToggle}
+      >
+        <MissingStill episode={episode} still={listed?.stillUrl ?? null} />
+        <MissingText label={label} listed={listed} color={selected ? 'text' : 'white/70'} />
+        <CheckboxFace checked={selected} />
+      </Focusable>
+      {play}
+    </Box>
   );
 }
 

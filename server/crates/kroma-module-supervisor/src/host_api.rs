@@ -62,14 +62,14 @@ struct SessionBody {
 // token: a query string is the one place a secret reliably ends up in a log.
 async fn session_user<S: HostCtx + Clone>(
     State(host): State<S>,
+    Extension(caller): Extension<Caller>,
     Json(body): Json<SessionBody>,
 ) -> Json<Option<kroma_domain::User>> {
-    Json(
-        tokio::task::spawn_blocking(move || host.session_user(&body.token))
-            .await
-            .ok()
-            .flatten(),
-    )
+    let resolved = tokio::task::spawn_blocking(move || host.session_user(&body.token))
+        .await
+        .ok()
+        .flatten();
+    Json(resolved.map(|user| caller.rights_it_can_name(user)))
 }
 
 #[derive(serde::Deserialize)]

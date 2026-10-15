@@ -155,5 +155,20 @@
   "requests.toastDeleted": "supprimée",
   "requests.toastDenied": "refusée",
   "requests.totalLabel": "demandes",
-  "requests.unknownUser": "Utilisateur supprimé"
+  "requests.unknownUser": "Utilisateur supprimé",
+  "requests.watchAhead": "La lecture devance le téléchargement : elle peut s'interrompre le temps que la suite arrive.",
+  "requests.watchBuffering": "Mise en mémoire tampon…",
+  "requests.watchConnecting": "Connexion à la source…",
+  "requests.watchNoSource": "Aucune source trouvée pour ce titre.",
+  "requests.watchNow": "Regarder maintenant",
+  "requests.watchPickSource": "Choisissez comment le lire",
+  "requests.watchPieces": "Morceaux reçus",
+  "requests.watchRelease": "Version : {release}",
+  "requests.watchSearching": "Recherche d'une source…",
+  "requests.watchSourceDownload": "Téléchargement",
+  "requests.watchStartFailed": "Impossible de lancer la lecture.",
+  "requests.watchStatDownloaded": "Téléchargé",
+  "requests.watchStatPeers": "Pairs",
+  "requests.watchStatSpeed": "Vitesse",
+  "requests.watchUnsupported": "Ce serveur ne sait pas lire ce qu'il n'a pas encore."
 }

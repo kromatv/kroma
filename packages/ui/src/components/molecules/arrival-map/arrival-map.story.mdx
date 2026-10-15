@@ -1,0 +1,55 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { ENDS_FIRST, fetching, INDEX_READ, OverFilm, received } from './arrival-map.fixtures';
+
+export const story = defineStory({
+  group: 'Feedback',
+  width: { min: 280, max: 560 },
+  args: { whole: 38, partial: 6, asked: 4 },
+  render: ({ whole, partial, asked }) => (
+    <OverFilm
+      slices={received(whole, partial)}
+      arriving={fetching(whole, asked)}
+      label="Morceaux reçus"
+    />
+  ),
+});
+
+A file as it arrives, left to right. One block per slice, in the file's own order: lit where a slice is whole, half lit where it has begun, and ringed and breathing where the source is fetching it right now. A viewer waiting on a film can see the difference between a download that is moving and one that is not. A progress bar says how much; this says where, which is what tells a stall from a reader working ahead of the picture.
+
+It is drawn over film, so its ink is white rather than the theme's, and it draws nothing at all for an empty list rather than an empty row: a server that has not answered yet has no slices to show.
+
+```tsx
+<ArrivalMap
+  slices={arrival.slices}
+  arriving={arrival.arriving}
+  label={arrival.mapLabel ?? undefined}
+/>
+```
+
+<Scene name="The ends first">
+  A reader told where the container keeps its index takes the head and the tail before anything in between, which is why the first thing a viewer sees is a map lit at both ends. Nothing is wrong here.
+
+  <OverFilm slices={ENDS_FIRST} label="Morceaux reçus" />
+</Scene>
+
+<Scene name="Asked for, none of it whole">
+  A release cut into large pieces over a slow line holds nothing whole for minutes while its bytes flow, because a slice counts only once its pieces are verified. The slices the source is fetching breathe in the meantime, so the map says where the download is working before any of it has landed. A viewer who asked for less motion sees the same ring, held still.
+
+  <OverFilm slices={INDEX_READ.slices} arriving={INDEX_READ.arriving} label="Morceaux reçus" />
+</Scene>
+
+<Scene name="Nothing yet">
+  No slices, and so no map: the block above it is empty rather than holding a dead bar.
+
+  <OverFilm slices={[]} label="Morceaux reçus" />
+</Scene>
+
+<Do>
+- Hand it the slices exactly as the server counted them: their order is the file's order, and the map means nothing renumbered.
+- Leave the `label` off inside a block that already names the readouts under it.
+</Do>
+
+<Dont>
+- Draw it on a light surface. Its ink is white because it belongs over artwork.
+- Read a percentage off it. A slice counts as arrived only once it is whole, so the lit blocks always trail the bar.
+</Dont>

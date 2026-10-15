@@ -173,8 +173,12 @@ Three manifest verbs, and any module may use all three:
 
 - **`definesPoints: [{ name, version?, methods? }]`** invents a point. `name` is
   local: the full name is `<this module's id>/<name>`, so ownership reads off the
-  name and two authors cannot collide. The handful the CORE calls (`acquisition`,
-  `transcriber`, `embedder`) are bare, and nothing but the core may define one.
+  name and two authors cannot collide. The handful the core holds (`acquisition`,
+  `transcriber`, `embedder`, `watchable`) are bare, and nothing but the core may
+  define one. It calls the first three; `watchable` it only names and asks to
+  describe itself, so a client can ask `GET /api/capabilities` which mounts
+  answer it and talk to them directly (see
+  [Answering a capability](#answering-a-capability)).
 - **`contributes: [{ point, version?, id?, label?, fields?, flow? }]`** answers a
   point, its own included. `id` is the instance name for a point several modules
   answer at once, the way a download client is picked, and absent for a point
@@ -196,6 +200,58 @@ Two rules make this hold together across independently released modules:
   unknown fields ignored, and a test on each side asserting the exact JSON it
   sends or expects. That test is the contract. Without it a rename fails in
   someone's install rather than in CI.
+
+### Answering a capability
+
+A **capability** is a bare point a CLIENT draws a surface for. Contributing one
+is two things: the routes the capability's own vocabulary names, under your
+mount, and a `describe` method saying what you are so a client can draw you.
+
+Module UI cannot run as code on a television or a phone, so a module brings its
+interface as DATA. You declare a label, an icon, the figures you report, the
+slice map you report if you report one, and the actions you offer beyond the
+capability's main one. One client screen draws any number of such sources, so a
+second module answering the same capability appears beside yours with its own
+words:
+
+```rust
+use kroma_module_sdk::capability::{self, FigureKind, Source};
+
+pub fn routes<S: Clone + Send + Sync + 'static>() -> Router<S> {
+    capability::routes("watchable", describe)
+}
+
+fn describe(locale: &str) -> Source {
+    let t = strings::for_locale(locale);
+    Source::new(t.t("watch.label", &[]), "magnet")
+        .figure("speed", t.t("watch.speed", &[]), FigureKind::Rate)
+        .figure("sources", t.t("watch.sources", &[]), FigureKind::Ratio)
+        .slice_map(t.t("watch.slices", &[]))
+        .action("cancel", t.t("watch.cancel", &[]))
+}
+```
+
+Mount it beside your other point routes. The core calls it once per viewer, with
+that viewer's locale, and forwards the answer with the mount it reached you at
+added: **you localize your own words**, because the core cannot resolve a key
+against a catalog embedded in your binary. It is also why this is a point method
+and not a manifest field.
+
+Four rules:
+
+- **A figure's `key` is what your own payload spells it with**, and is never
+  shown. The `label` beside it is. That is the whole point: `sources` is the key
+  every client reads, `Pairs` is what a swarm calls it, and a Usenet module
+  labels the same key `Serveurs`.
+- **`kind` is closed**: `percent` (a fraction of one), `rate` (bytes per
+  second), `ratio` (two counts), `count`, `text`. A client can only draw what it
+  was built to draw, so a kind outside the set reaches nobody.
+- **`icon` is a word from the store's icon vocabulary**
+  (`clients/web/src/modules/module-icons.ts`), never a URL.
+- **A screen shape nobody declared cannot be drawn.** A chart, a table, a picker
+  of your own: there is no way to declare one, and adding one means adding it to
+  `@kromatv/ui` and shipping the clients. Fitting the vocabulary is what buys
+  you every screen at once.
 
 ### Reacting to what happens
 
@@ -347,6 +403,26 @@ the reach that will be refused when it is.
 - **`settings`** is the core settings keys you read and write, as
   `{ "read": [...], "write": [...] }`. Absent is not empty: a manifest without it
   predates the field and keeps the reach it had.
+- **`rights`** is the account rights you read beyond the set every build of the
+  SDK can name, as their stored keys (`["watchable.play"]`). See below.
+
+### The rights a session answer carries
+
+`/_host/session` answers with the account, and its rights list is narrowed to
+what your build can name: the eight the SDK has always had, plus whatever
+`rights` asks for. A right you did not declare is simply absent, so `user.can()`
+reads false for it and the routes you gate on it refuse.
+
+The narrowing exists because the core grows rights on its own tag. A bundle built
+before one existed parses the answer with a strict enum, and a single key it
+cannot name fails the whole parse, which its runtime reads as no session at all:
+every route behind `AuthUser` starts answering `401` the day an operator ticks
+the new right for themselves. Declaring what you read is what keeps that from
+happening to the next one.
+
+```jsonc
+"rights": ["watchable.play"]
+```
 
 ## Storage
 

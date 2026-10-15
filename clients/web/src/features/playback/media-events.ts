@@ -2,7 +2,7 @@
 // state/effects that drive these helpers.
 
 import { reachableBufferEnd } from '@kromatv/core';
-import type { MovieView } from '#web/shared/lib/api';
+import type { PlaybackSource } from '#web/features/playback/playback-source';
 
 export interface MediaEventSetters {
   setCur: (n: number) => void;
@@ -26,7 +26,7 @@ export interface MediaEventSetters {
  */
 export function bindMediaEvents(
   v: HTMLVideoElement,
-  item: MovieView,
+  source: Pick<PlaybackSource, 'durationMs'>,
   setters: MediaEventSetters,
   baseSec = 0,
   // Preferred over the element's `duration`, which for a growing HLS EVENT
@@ -45,7 +45,7 @@ export function bindMediaEvents(
     setRate,
     setReady,
   } = setters;
-  const durMs = knownDurationMs || item.durationMs || 0;
+  const durMs = knownDurationMs || source.durationMs || 0;
   const onTime = () => setCur(baseSec + v.currentTime);
   const onDur = () => {
     const total = durMs ? durMs / 1000 : 0;

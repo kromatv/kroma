@@ -2,6 +2,7 @@
 // because the region is the Root's own furniture: a transport row a caller could
 // rearrange would break D-pad traversal (DESIGN.md §3, T5).
 
+import type { Arrival } from '@kromatv/core';
 import type { StoryboardTile } from '#ui/services/storyboard';
 import type { SubtitleAppearance } from './lib/subtitle-appearance';
 import type { PlayerMarker, PlayerReportCategory } from './media-types';
@@ -11,6 +12,16 @@ import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
 import type { UpNextData, UpNextItem } from './parts/up-next-sheet';
 import { useSlot } from './player-scope';
 import type { Chapter } from './types';
+
+interface PlayerArrivalProps {
+  arrival: Arrival;
+}
+
+/** How much of the file has arrived, at the head of the top bar's right cluster. */
+function ArrivalSlot(_: Readonly<PlayerArrivalProps>) {
+  useSlot('Arrival');
+  return null;
+}
 
 interface PlayerTransportProps {
   /** Chapter stops on the scrub bar. */
@@ -96,8 +107,9 @@ function Resume(_: Readonly<PlayerResumeProps>) {
 interface PlayerSubtitlesProps {
   appearance: SubtitleAppearance;
   onAppearanceChange: (next: Partial<SubtitleAppearance>) => void;
-  /** Everything the panel needs to drive generation. */
-  gen: SubtitleGenBundle;
+  /** Everything the panel needs to drive generation. Written none, the panel
+   *  offers no way to make a track. */
+  gen?: SubtitleGenBundle;
 }
 
 /** The subtitles half of the settings panel: the picked track, how it looks, and
@@ -119,6 +131,7 @@ function Report(_: Readonly<PlayerReportProps>) {
 }
 
 export type {
+  PlayerArrivalProps,
   PlayerCreditsProps,
   PlayerPostPlayProps,
   PlayerReportProps,
@@ -128,4 +141,4 @@ export type {
   PlayerTransportProps,
   PlayerUpNextProps,
 };
-export { Credits, PostPlay, Report, Resume, SkipIntro, Subtitles, Transport, UpNext };
+export { ArrivalSlot, Credits, PostPlay, Report, Resume, SkipIntro, Subtitles, Transport, UpNext };

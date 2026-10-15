@@ -3,8 +3,8 @@ import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { useDragTrack } from '#ui/components/organisms/player/hooks/use-drag-track';
-import { clamp01 } from '#ui/components/organisms/player/lib/fmt';
 import { scaler } from '#ui/components/organisms/player/lib/metrics';
+import { heldSpansMs, playedRows, trackRows } from '#ui/components/organisms/player/lib/seek-rows';
 import { msAtOffset, offsetAt, SEGMENT_GAP } from '#ui/components/organisms/player/lib/seek-track';
 import { seekBar } from '#ui/components/organisms/player/lib/style';
 import { StoryboardThumb } from '#ui/components/organisms/player/parts/storyboard-thumb';
@@ -26,6 +26,8 @@ export interface SeekBarProps {
   /** How far ahead the backend holds, in absolute seconds. `null` when it has
    *  none to report, and then the track carries no buffered fill at all. */
   bufEnd: number | null;
+  /** Spans already downloaded, in absolute seconds, drawn in place of the buffered fill. */
+  downloaded?: readonly (readonly [number, number])[];
   seekPreview: number | null;
   /** Empty = one continuous segment over the whole runtime. */
   chapters: Chapter[];
@@ -50,6 +52,7 @@ export function SeekBar({
   cur,
   dur,
   bufEnd,
+  downloaded,
   seekPreview,
   chapters,
   tileAt,
@@ -144,7 +147,9 @@ export function SeekBar({
   );
 
   const shownMs = shown * 1000;
-  const bufMs = bufEnd == null ? null : bufEnd * 1000;
+  const held = useMemo(() => heldSpansMs(bufEnd, downloaded), [bufEnd, downloaded]);
+  const rows = useMemo(() => trackRows(segs, held), [segs, held]);
+  const drawn = playedRows(rows, shownMs, playedFill());
   const playheadX = offsetAt(shownMs, segs, trackWidth);
 
   let previewSec: number | null = null;
@@ -211,41 +216,24 @@ export function SeekBar({
 
         {/* segmented track */}
         <View ref={trackRef} onLayout={onTrackLayout} {...pan.panHandlers} style={sized.track}>
-          {segs.map((seg) => {
-            const span = Math.max(1, seg.endMs - seg.startMs);
-            const played = clamp01((shownMs - seg.startMs) / span);
-            const buffed = bufMs == null ? null : clamp01((bufMs - seg.startMs) / span);
-            return (
-              // `flex={span}`: a segment is as wide as its chapter is long, so the
-              // playhead agrees with its fill. `h="100%"` mints one shared style,
-              // not one per chapter per scale.
-              <Box
-                key={seg.startMs}
-                flex={span}
-                h="100%"
-                radius="pill"
-                overflow="hidden"
-                bg={seekBar().track}
-                style={s.inert}
-              >
-                {/* Insets vary per tick, so they bypass the shared cache via `style`.
-                    Not scaleX: that would stretch the gradient and the pill caps. */}
-                {buffed == null ? null : (
-                  <Box
-                    fill
-                    radius="pill"
-                    bg={seekBar().buffered}
-                    style={{ right: `${(1 - buffed) * 100}%` }}
-                  />
-                )}
-                <Box
-                  fill
-                  radius="pill"
-                  style={[playedFill(), { right: `${(1 - played) * 100}%` }]}
-                />
-              </Box>
-            );
-          })}
+          {/* `flex`: a segment is as wide as its chapter is long, so the playhead
+              agrees with its fill. */}
+          {drawn.map((row) => (
+            <Box
+              key={row.key}
+              flex={row.span}
+              h="100%"
+              radius="pill"
+              overflow="hidden"
+              bg={seekBar().track}
+              style={s.inert}
+            >
+              {row.arrived.map((part) => (
+                <Box key={part.key} fill radius="pill" bg={seekBar().buffered} style={part.style} />
+              ))}
+              <Box fill radius="pill" style={row.played} />
+            </Box>
+          ))}
 
           {/* The offset is folded into the transform so a tick only moves a
               composited layer. */}

@@ -18,7 +18,9 @@ pub use targets::{
     targets_for_scope, targets_for_wanted, wanted_ids_by, SearchScope, SearchTarget,
 };
 
+use anyhow::Result;
 use kroma_module_sdk::db::WantedRow;
+use kroma_module_sdk::host::HostStorage;
 
 use crate::dtos::ScoredReleaseView;
 
@@ -53,6 +55,27 @@ pub fn grab_spec_from_release(
         only_files: None,
         details_url: release.details_url.clone(),
         upgrade,
+        ..Default::default()
+    }
+}
+
+pub(crate) fn resolve_grab_target<S: HostStorage>(
+    state: &S,
+    release: &ScoredReleaseView,
+    magnet_or_url: &str,
+) -> Result<String> {
+    let indexer = crate::peers::indexers::get(state, &release.indexer_id)?;
+    match indexer {
+        Some(i) if i.kind == crate::peers::indexers::KIND_BUILTIN => {
+            crate::resolve_builtin_download(
+                state,
+                &i.id,
+                &release.title,
+                release.details_url.as_deref(),
+                magnet_or_url,
+            )
+        }
+        _ => Ok(magnet_or_url.to_string()),
     }
 }
 

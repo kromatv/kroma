@@ -1,4 +1,6 @@
-use crate::model::{CastCommandEnvelope, CastPlayback, CastState, CastTrack, Kind, MediaItem};
+use crate::model::{
+    CastCommandEnvelope, CastPlayback, CastState, CastTrack, Kind, MediaItem, WatchItem,
+};
 
 use super::{Announce, Announced, Registry};
 
@@ -35,7 +37,8 @@ pub(super) fn item(id: &str) -> MediaItem {
 
 pub(super) fn playing(item_id: &str, position_ms: i64) -> CastPlayback {
     CastPlayback {
-        item_id: item_id.into(),
+        item_id: Some(item_id.into()),
+        watch: None,
         position_ms,
         duration_ms: Some(7_200_000),
         state: CastState::Playing,
@@ -46,6 +49,24 @@ pub(super) fn playing(item_id: &str, position_ms: i64) -> CastPlayback {
         audio_index: Some(0),
         subtitles: Vec::new(),
         subtitle_index: None,
+    }
+}
+
+pub(super) fn watching(position_ms: i64) -> CastPlayback {
+    CastPlayback {
+        item_id: None,
+        watch: Some(WatchItem {
+            mount: "/api/module/tv.example.swarm".into(),
+            id: "dl1".into(),
+            file: 1,
+            title: "Kaamelott".into(),
+            poster: None,
+            tmdb_id: Some(11466),
+            season: Some(1),
+            episode: Some(2),
+        }),
+        duration_ms: Some(70_000),
+        ..playing("unused", position_ms)
     }
 }
 

@@ -1,9 +1,12 @@
 import { tmdbKindOf } from '@kromatv/client/discovery';
 import { KromaEvents, type ServerEvent } from '@kromatv/client/events';
+import { watchableList } from '@kromatv/client/query';
 import type { DownloadProgressEvent, MediaRequest } from '@kromatv/client/requests';
+import { watchableByRequest } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
 import { Box, Button, EmptyState, Icon, IconButton, PageHeader, Row, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ViewProps } from 'react-native';
 import { RequestCard, RequestCardSkeleton } from '#web/features/requests/request-card';
@@ -11,6 +14,8 @@ import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
 import { requestStatusMeta, seasonsSummary } from '#web/shared/lib/request-status';
+import { streamRoute } from '#web/shared/lib/watch-route';
+import { useWatchable } from '#web/shared/lib/watchable';
 import { PageFrame } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 import { RouteLink } from '#web/shared/ui/route-link';
@@ -27,6 +32,12 @@ export function MyRequestsPage() {
   });
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
+  const { data: watchable } = useQuery({
+    ...watchableList(useWatchable().api),
+    refetchInterval: 15000,
+    select: (v) => watchableByRequest(v.entries),
+  });
+  const navigate = useNavigate();
 
   const lastReloadRef = useRef(0);
   useEffect(() => {
@@ -77,15 +88,19 @@ export function MyRequestsPage() {
       ) : null}
 
       <Box mt={24} gap={10}>
-        {(requests ?? []).map((req) => (
-          <RequestRow
-            key={req.id}
-            req={req}
-            progress={progress[req.id]}
-            busy={busyId === req.id}
-            onCancel={() => cancel(req)}
-          />
-        ))}
+        {(requests ?? []).map((req) => {
+          const target = watchable?.get(req.id);
+          return (
+            <RequestRow
+              key={req.id}
+              req={req}
+              progress={progress[req.id]}
+              busy={busyId === req.id}
+              onCancel={() => cancel(req)}
+              onWatch={target ? () => navigate(streamRoute(target)) : undefined}
+            />
+          );
+        })}
       </Box>
     </PageFrame>
   );
@@ -121,11 +136,13 @@ function RequestRow({
   progress,
   busy,
   onCancel,
+  onWatch,
 }: Readonly<{
   req: MediaRequest;
   progress?: number;
   busy: boolean;
   onCancel: () => void;
+  onWatch?: () => void;
 }>) {
   const t = useT();
   const locale = useLocale();
@@ -138,6 +155,31 @@ function RequestRow({
           date: new Date(`${req.nextAirDate}T00:00:00`).toLocaleDateString(locale),
         })
       : null;
+
+  const cancellable = req.status === 'pending';
+  const aside =
+    onWatch || cancellable ? (
+      <Row gap={8}>
+        {onWatch ? (
+          <Button
+            size="sm"
+            variant="glass"
+            icon="player-play-filled"
+            label={t('requests.watchNow')}
+            onPress={onWatch}
+          />
+        ) : null}
+        {cancellable ? (
+          <IconButton
+            control="sm"
+            icon="x"
+            label={t('requests.cancel')}
+            onPress={onCancel}
+            disabled={busy}
+          />
+        ) : null}
+      </Row>
+    ) : null;
 
   // The status rides INSIDE the control: the whole row is the one press target,
   // so a chip parked beside it would leave two thirds of the card dead and ring
@@ -177,17 +219,7 @@ function RequestRow({
       trailing={
         <RequestStatusChip status={req.status} progress={progress ?? req.progress ?? null} />
       }
-      aside={
-        req.status === 'pending' ? (
-          <IconButton
-            control="sm"
-            icon="x"
-            label={t('requests.cancel')}
-            onPress={onCancel}
-            disabled={busy}
-          />
-        ) : null
-      }
+      aside={aside}
       link={<RequestLink req={req} />}
     />
   );

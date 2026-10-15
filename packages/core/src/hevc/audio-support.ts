@@ -58,6 +58,14 @@ export function canSeamlessAudioSwitch(
   return audioTracksOf(item).length > 1;
 }
 
+export type CopyableAudio = Readonly<{ codec: string }>;
+
+export function copiesAsIs(track: CopyableAudio, caps: PlaybackCapabilities): boolean {
+  return (
+    !!track.codec && canDecodeAudioCodec(track.codec, caps) && FMP4_COPY_CODECS.has(track.codec)
+  );
+}
+
 /**
  * For a master stream, whether audio must be transcoded to stereo AAC (true) or
  * can be stream-copied (false). Copy preserves surround and needs EVERY track to
@@ -65,15 +73,19 @@ export function canSeamlessAudioSwitch(
  * stream-copying a codec the browser cannot decode stalls the load on
  * `HAVE_NOTHING`.
  */
+export function tracksNeedAac(
+  tracks: readonly CopyableAudio[],
+  caps: PlaybackCapabilities = capabilities(),
+): boolean {
+  if (tracks.length === 0) return true;
+  return !tracks.every((track) => copiesAsIs(track, caps));
+}
+
 export function masterNeedsAac(
   item: MediaItem,
   caps: PlaybackCapabilities = capabilities(),
 ): boolean {
-  const tracks = audioTracksOf(item);
-  if (tracks.length === 0) return true;
-  return !tracks.every(
-    (t) => !!t.codec && canDecodeAudioCodec(t.codec, caps) && FMP4_COPY_CODECS.has(t.codec),
-  );
+  return tracksNeedAac(audioTracksOf(item), caps);
 }
 
 /**

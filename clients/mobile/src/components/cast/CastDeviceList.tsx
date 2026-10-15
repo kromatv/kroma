@@ -7,6 +7,8 @@
 import type { DeviceId } from '@kromatv/client';
 import type { CastReceiver } from '@kromatv/client/cast';
 import {
+  castShowing,
+  castShownTitle,
   checkRetryable,
   type DiscoveredTv,
   type FinalRefusal,
@@ -213,8 +215,8 @@ function detailOfPairable(state: PairingState | null, t: ReturnType<typeof useT>
 }
 
 function detailOf(r: CastReceiver, t: ReturnType<typeof useT>): string {
-  const playing = r.nowPlaying?.item;
-  if (playing) return playing.metadata?.title ?? playing.title;
+  const playing = castShowing(r);
+  if (playing) return castShownTitle(playing);
   return `${r.username} · ${t('cast.idle')}`;
 }
 

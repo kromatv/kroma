@@ -10,13 +10,14 @@ afterEach(cleanup);
 // The one face this pins: an engine's forward buffer, drawn between the
 // playhead and where it reaches. It is a percentage inset, so it survives the
 // track being laid out at any width, which is what a jsdom render never gives.
-function bar(bufEnd: number | null, cur = 0) {
+function bar(bufEnd: number | null, cur = 0, downloaded?: readonly (readonly [number, number])[]) {
   const { container } = render(
     <I18nProvider locale="en">
       <SeekBar
         cur={cur}
         dur={100}
         bufEnd={bufEnd}
+        downloaded={downloaded}
         seekPreview={null}
         chapters={[]}
         tileAt={() => null}
@@ -49,5 +50,16 @@ describe('the forward buffer on the track', () => {
 
   it('never reaches past the end of the track', () => {
     expect(bar(500)).toContain('0%');
+  });
+});
+
+describe('the downloaded spans on the track', () => {
+  it('draws each span where it sits, in place of the forward buffer', () => {
+    expect(
+      bar(40, 0, [
+        [10, 30],
+        [60, 100],
+      ]),
+    ).toEqual(['70%', '0%', '100%']);
   });
 });

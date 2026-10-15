@@ -11,6 +11,7 @@ pub mod poster;
 pub mod ws;
 
 mod accounts;
+mod capabilities;
 mod cast;
 mod diagnostics;
 mod discover;
@@ -66,15 +67,21 @@ mod it_backup;
 #[cfg(test)]
 mod it_cast;
 #[cfg(test)]
+mod it_cast_watch;
+#[cfg(test)]
 mod it_content;
 #[cfg(test)]
 mod it_diagnostics;
+#[cfg(test)]
+mod it_discover;
 #[cfg(test)]
 mod it_external_subtitles;
 #[cfg(test)]
 mod it_first_run;
 #[cfg(test)]
 mod it_handoff;
+#[cfg(test)]
+mod it_host_session;
 #[cfg(test)]
 mod it_host_settings;
 #[cfg(test)]
@@ -103,6 +110,8 @@ mod it_pin_lockout;
 mod it_playback;
 #[cfg(test)]
 mod it_playback_faults;
+#[cfg(test)]
+mod it_playback_watch;
 #[cfg(test)]
 mod it_releases;
 #[cfg(test)]
@@ -231,6 +240,7 @@ pub fn router(
         .merge(notifications::routes())
         .merge(releases::routes())
         .merge(modules::routes())
+        .merge(capabilities::routes())
         .route_layer(from_fn_with_state(state.clone(), require_session));
 
     // The admin subtree self-gates per-handler (permission checks), so it lives

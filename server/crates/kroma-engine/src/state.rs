@@ -120,6 +120,12 @@ impl AppState {
         // serve `/api/health`.
         let instance_id = crate::services::settings::ensure_instance_id(&settings, &db);
         let media_ticket_key = crate::services::media_ticket::signing_key(&settings, &db);
+        crate::services::rights::carry_to_equivalent_accounts(
+            &settings,
+            &db,
+            kroma_domain::Permission::WatchablePlay,
+            &crate::services::rights::AS_POWERFUL_AS_DIRECT_PLAY,
+        );
         // Minted here rather than on the statistics job's first run: the settings
         // page shows it and an operator quotes it to have their row erased, so it
         // has to exist from the moment the feature is on rather than an hour later.

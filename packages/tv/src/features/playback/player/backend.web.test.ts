@@ -32,7 +32,15 @@ vi.mock('#tv/features/playback/player/htmlEngine', () => ({
   },
 }));
 
-import { createTvEngine, type EnginePlan, planEngine } from './backend.web';
+import {
+  createTvEngine,
+  createWatchEngine,
+  type EnginePlan,
+  planEngine,
+  watchDeclaration,
+  watchSurface,
+} from './backend.web';
+import type { EngineMedia } from './engine';
 
 function track(p: Partial<AudioTrack> & { index: number }): AudioTrack {
   return {
@@ -313,5 +321,83 @@ describe('createTvEngine', () => {
         forceNativeHls: true,
       }),
     );
+  });
+});
+
+describe('createWatchEngine', () => {
+  const client = {} as KromaClient;
+  const listeners = {} as never;
+  const media = {
+    playlist: vi.fn(
+      (decoder: 'native' | 'mse', anchorSec: number) => `/playlist/${decoder}@${anchorSec}.m3u8`,
+    ),
+    plan: { forwardSec: 120, backSec: 30, maxBytes: 48_000_000 },
+    durationSec: 888,
+  };
+
+  const args = (video: HTMLVideoElement | null = null) => ({
+    client,
+    media,
+    startSec: 2400,
+    dom: { video, nativeHls: true },
+    listeners,
+  });
+
+  const handed = (engine: ReturnType<typeof vi.fn>) => {
+    const opts = engine.mock.calls[0]?.[0] as { media: EngineMedia };
+    return opts.media.kind === 'hls' ? opts.media.master(2400) : null;
+  };
+
+  beforeEach(() => {
+    E.mpv.mockClear();
+    E.start.mockClear();
+    E.avplay.mockClear();
+    E.html.mockClear();
+    media.playlist.mockClear();
+  });
+
+  it('gives the television plane the master its own decoders take, anchored where it resumes', () => {
+    vi.stubGlobal('webapis', { avplay: { play: () => {} } });
+
+    expect(createWatchEngine(args())).not.toBeNull();
+
+    expect(watchSurface()).toBe('avplay');
+    expect(handed(E.avplay)).toBe('/playlist/native@2400.m3u8');
+    expect(E.avplay).toHaveBeenCalledWith(
+      expect.objectContaining({ direct: false, startSec: 2400, durationSec: 888 }),
+    );
+  });
+
+  it('asks for what MSE can decode where an in-page element plays it', () => {
+    const video = document.createElement('video');
+
+    expect(createWatchEngine(args(video))).not.toBeNull();
+
+    expect(watchSurface()).toBe('video');
+    expect(handed(E.html)).toBe('/playlist/mse@2400.m3u8');
+    expect(E.html).toHaveBeenCalledWith(
+      expect.objectContaining({ video, direct: false, startSec: 2400, forceNativeHls: true }),
+    );
+  });
+
+  it('waits for the in-page element rather than building a video engine without one', () => {
+    expect(createWatchEngine(args())).toBeNull();
+    expect(E.html).not.toHaveBeenCalled();
+  });
+});
+
+describe('watchDeclaration', () => {
+  it('holds a Samsung to the audio AVPlay plays from an HLS master', () => {
+    vi.stubGlobal('webapis', { avplay: { play: () => {} } });
+
+    expect(watchDeclaration('native').copyCodecs).toEqual(['aac', 'ac3', 'eac3', 'mp3']);
+  });
+
+  it('declares nothing where the engine carries its own decoders', () => {
+    expect(watchDeclaration('native')).toEqual({});
+  });
+
+  it('hands an in-page element what this browser itself probed', () => {
+    expect(watchDeclaration('mse')).toEqual({ copyCodecs: [], videoCodecs: [] });
   });
 });

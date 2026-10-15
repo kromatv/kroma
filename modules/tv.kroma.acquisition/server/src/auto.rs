@@ -302,6 +302,7 @@ fn take_best(
                 crate::search::CachedRelease {
                     view,
                     magnet_or_url,
+                    torrent_url: release.link,
                     tmdb_id,
                 },
                 score,

@@ -81,7 +81,7 @@ pub async fn hls_master(
     };
     let sink = byte_sink(&state, &headers, &addr);
     match program
-        .master(&state.hls, &abs, session, &credential, sink)
+        .master(&state.hls, &abs, session, "", &credential, sink)
         .await
     {
         Some(resp) => resp,

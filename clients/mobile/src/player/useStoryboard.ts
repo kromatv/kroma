@@ -3,6 +3,7 @@
 
 import type { KromaClient } from '@kromatv/client';
 import type { MediaItem, StoryboardManifest } from '@kromatv/client/media';
+import { drawnTileIndex } from '@kromatv/core';
 import { useEffect, useState } from 'react';
 import type { DownloadEntry } from '#mobile/lib/downloads';
 
@@ -14,6 +15,25 @@ export interface StoryboardTile {
   tileH: number;
   sheetW: number;
   sheetH: number;
+}
+
+/** The tile under a second, cut from a sheet at an absolute `url`: none for a
+ * tile a sheet still being drawn has not reached. */
+export function sheetTile(
+  sheet: StoryboardManifest & { ready?: string },
+  absSec: number,
+): StoryboardTile | null {
+  const index = drawnTileIndex(sheet, absSec);
+  if (index === null) return null;
+  return {
+    sheet: sheet.url,
+    x: (index % sheet.cols) * sheet.tileW,
+    y: Math.floor(index / sheet.cols) * sheet.tileH,
+    tileW: sheet.tileW,
+    tileH: sheet.tileH,
+    sheetW: sheet.cols * sheet.tileW,
+    sheetH: sheet.rows * sheet.tileH,
+  };
 }
 
 export function useStoryboard(
@@ -49,16 +69,8 @@ export function useStoryboard(
   }, [client, item.id, enabled, localSprite]);
 
   return (absSec: number): StoryboardTile | null => {
-    if (!manifest || manifest.count === 0 || manifest.interval <= 0) return null;
-    const index = Math.min(manifest.count - 1, Math.max(0, Math.floor(absSec / manifest.interval)));
-    return {
-      sheet: localSprite ?? client.media.artwork.resolve(manifest.url) ?? manifest.url,
-      x: (index % manifest.cols) * manifest.tileW,
-      y: Math.floor(index / manifest.cols) * manifest.tileH,
-      tileW: manifest.tileW,
-      tileH: manifest.tileH,
-      sheetW: manifest.cols * manifest.tileW,
-      sheetH: manifest.rows * manifest.tileH,
-    };
+    if (!manifest) return null;
+    const url = localSprite ?? client.media.artwork.resolve(manifest.url) ?? manifest.url;
+    return sheetTile({ ...manifest, url }, absSec);
   };
 }

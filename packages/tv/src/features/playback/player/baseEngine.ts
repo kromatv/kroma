@@ -1,10 +1,9 @@
 // Shared base for the native video-plane backends (Samsung AVPlay, Android
 // ExoPlayer, desktop mpv): a `direct` mode on the original file's absolute
-// timeline, and a `master` mode on the server's HLS remux anchored at `baseSec`
-// (its clock restarts at 0, so the absolute position is `baseSec + elSec`).
+// timeline, and a `master` mode on an HLS remux anchored at `baseSec` (its clock
+// restarts at 0, so the absolute position is `baseSec + elSec`).
 
 import type { KromaClient } from '@kromatv/client';
-import type { MediaItem } from '@kromatv/client/media';
 import {
   decodableAudioCodecs,
   decodableVideoCodecs,
@@ -12,11 +11,11 @@ import {
   STALL_NUDGE_SEC,
 } from '@kromatv/core';
 import type { AudioFilterMode } from '@kromatv/ui';
-import type { EngineListeners, TvEngine } from '#tv/features/playback/player/engine';
+import type { EngineListeners, EngineMedia, TvEngine } from '#tv/features/playback/player/engine';
 
 export interface EngineOptions {
   client: KromaClient;
-  item: MediaItem;
+  media: EngineMedia;
   durationSec: number;
   initialRendition: number;
   startSec: number;
@@ -41,7 +40,7 @@ export function serverAudioFilter(mode: AudioFilterMode): 'standard' | 'night' |
 export abstract class BaseTvEngine implements TvEngine {
   abstract readonly kind: TvEngine['kind'];
   protected readonly client: KromaClient;
-  protected readonly item: MediaItem;
+  protected readonly media: EngineMedia;
   protected readonly listeners: EngineListeners;
   protected mode: 'direct' | 'master';
   protected fellBack = false;
@@ -58,7 +57,7 @@ export abstract class BaseTvEngine implements TvEngine {
 
   protected constructor(opts: EngineOptions) {
     this.client = opts.client;
-    this.item = opts.item;
+    this.media = opts.media;
     this.listeners = opts.listeners;
     this.durSec = opts.durationSec;
     this.rendition = opts.initialRendition;
@@ -72,15 +71,14 @@ export abstract class BaseTvEngine implements TvEngine {
   }
 
   protected sourceUrl(): string {
+    const media = this.media;
+    if (media.kind === 'hls') return media.master(this.baseSec);
     return this.mode === 'direct'
-      ? this.client.media.streamUrl(this.item.id)
-      : this.client.media.hlsMasterUrl(this.item.id, this.forceAac, this.baseSec, this.rendition, {
-          // Declared on every master, not just the fallback one: the server copies
-          // audio unless it is told what this device decodes, so a master that says
-          // nothing is served a codec it may only be able to play as silence.
+      ? this.client.media.streamUrl(media.item.id)
+      : this.client.media.hlsMasterUrl(media.item.id, this.forceAac, this.baseSec, this.rendition, {
           copyCodecs: this.declaredAudioCodecs(),
           videoCodecs: this.declaredVideoCodecs(),
-          maxFrame: decoderMaxFrame(this.item),
+          maxFrame: decoderMaxFrame(media.item),
         });
   }
 
@@ -128,6 +126,9 @@ export abstract class BaseTvEngine implements TvEngine {
 
   position(): number {
     return this.baseSec + this.elSec;
+  }
+  anchor(): number {
+    return this.baseSec;
   }
   duration(): number {
     return this.durSec;

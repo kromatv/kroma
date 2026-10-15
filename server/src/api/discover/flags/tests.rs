@@ -1,7 +1,5 @@
 use super::*;
 
-use crate::model::Permission;
-
 use crate::api::test_support::{demo_item_id, demo_library_ids, grant_libraries, seed_session, test_app, TestApp};
 use crate::db::metadata_core::{self, MetaCore};
 
@@ -66,6 +64,32 @@ fn a_viewer_who_may_request_sees_the_request_someone_else_made() {
 
     assert_eq!(entry.request_id.as_deref(), Some("r1"));
     assert_eq!(entry.request_status, Some(RequestStatus::Pending));
+}
+
+#[test]
+fn a_viewer_who_may_not_request_sees_no_one_s_request() {
+    let t = test_app();
+    requested_by_someone_else(&t);
+    let member = viewer(&t, "ana", &[]);
+
+    let entry = flagged(&t, &member, SINTEL);
+
+    assert_eq!(entry.request_id, None);
+    assert_eq!(entry.request_status, None);
+    assert_eq!(entry.request_progress, None);
+}
+
+#[test]
+fn the_overlay_follows_the_permission_to_request() {
+    let t = test_app();
+    let users = [
+        viewer(&t, "ana", &[]),
+        viewer(&t, "bo", &[Permission::RequestsCreate]),
+    ];
+
+    let overlays = users.each_ref().map(Overlay::for_viewer);
+
+    assert_eq!(overlays, [Overlay::Catalogue, Overlay::Requests]);
 }
 
 #[test]

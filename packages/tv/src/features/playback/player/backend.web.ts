@@ -4,16 +4,31 @@
 // learns which one it got.
 
 import type { KromaClient } from '@kromatv/client';
-import type { MediaItem } from '@kromatv/client/media';
-import { avplayDirectPlayable, type PlayEnv, selectEngine } from '@kromatv/core';
+import type { HlsMasterDeclaration, MediaItem } from '@kromatv/client/media';
+import type { WatchableProbe } from '@kromatv/client/watchable';
+import {
+  AVPLAY_HLS_CAPS,
+  avplayDirectPlayable,
+  capabilities,
+  MSE_CAPS,
+  type PlayEnv,
+  selectEngine,
+  tracksNeedAac,
+  watchableDeclaration,
+} from '@kromatv/core';
 import type { AudioFilterMode } from '@kromatv/ui';
 import type { EnginePref } from '#tv/app/enginePref';
 import { AvplayEngine } from '#tv/features/playback/player/avplayEngine';
 import {
+  avplayAvailable,
   type EngineListeners,
+  mpvAvailable,
+  playlistFor,
   type Surface,
   shakaAvailable,
   type TvEngine,
+  type WatchDecoder,
+  type WatchMedia,
 } from '#tv/features/playback/player/engine';
 import {
   deviceLabelFor,
@@ -105,6 +120,66 @@ export function planEngine(item: MediaItem, env: PlayEnv, pref: EnginePref): Eng
   };
 }
 
+export function watchSurface(): Surface {
+  if (mpvAvailable()) return 'mpv';
+  if (avplayAvailable()) return 'avplay';
+  return 'video';
+}
+
+/** What the engine this shell will build can take of a still-arriving file. */
+export function watchDeclaration(decoder: WatchDecoder): HlsMasterDeclaration {
+  if (decoder === 'mse') return watchableDeclaration(capabilities());
+  if (!mpvAvailable() && avplayAvailable()) return watchableDeclaration(AVPLAY_HLS_CAPS);
+  return {};
+}
+
+export function watchPlan(probe: WatchableProbe): Pick<EnginePlan, 'playbackMode' | 'deviceLabel'> {
+  const plane = mpvAvailable() || avplayAvailable();
+  return {
+    playbackMode: !plane && tracksNeedAac(probe.audio, MSE_CAPS) ? 'transcode' : 'remux',
+    deviceLabel: deviceLabelFor(mpvAvailable()),
+  };
+}
+
+export function createWatchEngine(args: {
+  client: KromaClient;
+  media: WatchMedia;
+  startSec: number;
+  dom: { video: HTMLVideoElement | null; nativeHls: boolean | undefined };
+  listeners: EngineListeners;
+}): TvEngine | null {
+  const { client, media, startSec, listeners } = args;
+  const common = { client, durationSec: media.durationSec, initialRendition: 0, startSec };
+  if (mpvAvailable()) {
+    const engine = new MpvEngine({
+      ...common,
+      media: playlistFor(media, 'native'),
+      direct: false,
+      listeners,
+    });
+    engine.start();
+    return engine;
+  }
+  if (avplayAvailable()) {
+    return new AvplayEngine({
+      ...common,
+      media: playlistFor(media, 'native'),
+      direct: false,
+      listeners,
+    });
+  }
+  if (!args.dom.video) return null;
+  return new HtmlEngine({
+    ...common,
+    video: args.dom.video,
+    media: playlistFor(media, 'mse'),
+    direct: false,
+    masterShaka: shakaAvailable(),
+    forceNativeHls: args.dom.nativeHls,
+    listeners,
+  });
+}
+
 /** Build the concrete backend for a resolved plan. Returns `null` only when the
  * in-page `<video>` surface isn't mounted yet (the caller retries next render); the
  * native-plane engines are always constructed. */
@@ -130,12 +205,13 @@ export function createTvEngine(args: {
     dom: { video, nativeHls: forceNativeHls },
     listeners,
   } = args;
+  const media = { kind: 'item', item } as const;
   if (eng === 'mpv') {
     // Native mpv opens the original file directly (VA-API decode); an internal
     // direct->master fallback covers the rare file it cannot demux.
     const engine = new MpvEngine({
       client,
-      item,
+      media,
       durationSec,
       initialRendition: rendition,
       startSec,
@@ -149,7 +225,7 @@ export function createTvEngine(args: {
   if (eng === 'avplay') {
     return new AvplayEngine({
       client,
-      item,
+      media,
       durationSec,
       initialRendition: rendition,
       startSec,
@@ -162,7 +238,7 @@ export function createTvEngine(args: {
   return new HtmlEngine({
     video,
     client,
-    item,
+    media,
     direct,
     masterAac: aacMaster,
     masterShaka,

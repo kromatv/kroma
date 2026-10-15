@@ -11,7 +11,7 @@ use crate::db::Pool;
 use crate::infra::events::{Bus, ServerEvent};
 use crate::model::MediaItem;
 
-use super::snapshot::snapshot;
+use super::playing::Playing;
 
 mod history;
 
@@ -25,7 +25,7 @@ const REAP_INTERVAL: Duration = Duration::from_secs(10);
 
 pub struct Ping {
     pub session_id: String,
-    pub item_id: String,
+    pub playing: Playing,
     pub position_ms: i64,
     pub duration_ms: Option<i64>,
     pub state: String,
@@ -43,8 +43,8 @@ pub struct Session {
     #[serde(rename = "userId", skip_serializing_if = "Option::is_none")]
     pub user_id: Option<String>,
     pub username: String,
-    #[serde(rename = "itemId")]
-    pub item_id: String,
+    #[serde(flatten)]
+    pub playing: Playing,
     pub title: String,
     pub year: Option<u32>,
     pub kind: String,
@@ -134,7 +134,8 @@ impl Registry {
     /// and writes nothing, under the one write lock the check shares with the
     /// write, so the viewer the dashboard names cannot be whoever beat last.
     ///
-    /// `item` is only read on first sight, to build the title/streams snapshot.
+    /// `item` is only read on first sight, to build the title/streams snapshot
+    /// of a catalogue item. A watch download is drawn from what its ping said.
     pub fn upsert(
         &self,
         ping: Ping,
@@ -152,12 +153,12 @@ impl Registry {
         }
         let is_new = live.is_none();
         let entry = map.entry(ping.session_id.clone()).or_insert_with(|| {
-            let snap = item.map(snapshot).unwrap_or_default();
+            let snap = ping.playing.snapshot(item);
             Session {
                 id: ping.session_id.clone(),
                 user_id: user_id.clone(),
                 username: username.clone(),
-                item_id: ping.item_id.clone(),
+                playing: ping.playing.clone(),
                 title: snap.title,
                 year: snap.year,
                 kind: snap.kind,

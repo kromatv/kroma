@@ -100,19 +100,48 @@ export function UpNextCard({
   onPlayNext(): void;
   bottom: number;
 }>) {
-  const t = useT();
   const client = useClient();
   const thumb = sizedImageUrl(
     client.media.artwork.backdropFor(next) ?? client.media.artwork.posterFor(next),
-    320,
+    UP_NEXT_THUMB_W,
   );
   return (
+    <UpNextTile
+      title={next.episodeTitle ?? next.title}
+      thumb={thumb}
+      seed={next.id}
+      onPlayNext={onPlayNext}
+      bottom={bottom}
+    />
+  );
+}
+
+/** The width an up-next thumbnail is fetched at. */
+export const UP_NEXT_THUMB_W = 320;
+
+/** The next episode offered over the picture, whatever it comes from: a
+ * catalogue item or a file of a watch download. */
+export function UpNextTile({
+  title,
+  thumb,
+  seed,
+  onPlayNext,
+  bottom,
+}: Readonly<{
+  title: string;
+  thumb: string | null;
+  seed: string;
+  onPlayNext(): void;
+  bottom: number;
+}>) {
+  const t = useT();
+  return (
     <Pressable onPress={onPlayNext} style={[s.upNext, { bottom }]}>
-      <FadeImage uri={thumb} seed={next.id} radius={6} style={s.upNextThumb} />
+      <FadeImage uri={thumb} seed={seed} radius={6} style={s.upNextThumb} />
       <Box style={s.upNextText}>
         <Text style={s.upNextLabel}>{t('player.nextEpisode')}</Text>
         <Text lines={1} style={s.upNextTitle}>
-          {next.episodeTitle ?? next.title}
+          {title}
         </Text>
       </Box>
       <Icon name="player-play-filled" size={20} />

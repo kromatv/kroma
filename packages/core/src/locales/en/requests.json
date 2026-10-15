@@ -154,5 +154,20 @@
   "requests.toastDeleted": "deleted",
   "requests.toastDenied": "denied",
   "requests.totalLabel": "requests",
-  "requests.unknownUser": "Deleted user"
+  "requests.unknownUser": "Deleted user",
+  "requests.watchAhead": "Playback runs ahead of the download, so it may pause while the rest arrives.",
+  "requests.watchBuffering": "Buffering…",
+  "requests.watchConnecting": "Connecting to the source…",
+  "requests.watchNoSource": "No source was found for this title.",
+  "requests.watchNow": "Watch now",
+  "requests.watchPickSource": "Choose how to play it",
+  "requests.watchPieces": "Pieces received",
+  "requests.watchRelease": "Release: {release}",
+  "requests.watchSearching": "Looking for a source…",
+  "requests.watchSourceDownload": "Download",
+  "requests.watchStartFailed": "Playback could not be started.",
+  "requests.watchStatDownloaded": "Downloaded",
+  "requests.watchStatPeers": "Peers",
+  "requests.watchStatSpeed": "Speed",
+  "requests.watchUnsupported": "This server cannot play titles it does not have yet."
 }

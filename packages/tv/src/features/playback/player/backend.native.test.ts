@@ -193,7 +193,7 @@ describe('building the engine', () => {
   it('hands the engine where to start and what to start with', () => {
     createTvEngine(args('expo-direct'));
     expect(built.args.at(-1)).toMatchObject({
-      item,
+      media: { kind: 'item', item },
       durationSec: 1200,
       initialRendition: 2,
       startSec: 40,
@@ -219,7 +219,11 @@ describe('the libVLC engine', () => {
 
   it('is built with the resume point and never with the remux', () => {
     expect(createTvEngine(args('vlc'))).not.toBeNull();
-    expect(vlc.args.at(-1)).toMatchObject({ item, startSec: 40, direct: true });
+    expect(vlc.args.at(-1)).toMatchObject({
+      media: { kind: 'item', item },
+      startSec: 40,
+      direct: true,
+    });
     expect(built.args).toHaveLength(0);
   });
 });

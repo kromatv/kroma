@@ -12,6 +12,17 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { radius } from '#mobile/lib/theme';
 import type { StoryboardTile } from './useStoryboard';
 
+function heldFractions(
+  dur: number,
+  buffered: number,
+  downloaded: readonly (readonly [number, number])[] | undefined,
+): [number, number][] {
+  if (dur <= 0) return [];
+  const clamp = (sec: number) => Math.max(0, Math.min(1, sec / dur));
+  if (!downloaded) return [[0, clamp(buffered)]];
+  return downloaded.map(([from, to]) => [clamp(from), clamp(to)]);
+}
+
 const BAR_H = 6;
 const THUMB_W = 148;
 const KNOB = 14;
@@ -21,6 +32,7 @@ export function ScrubBar({
   cur,
   dur,
   buffered,
+  downloaded,
   onSeek,
   onScrubStart,
   onScrubEnd,
@@ -30,11 +42,14 @@ export function ScrubBar({
   cur: number;
   dur: number;
   buffered: number;
+  /** Spans of the runtime already on disk, in absolute seconds. Given some, they
+   * are drawn in place of the single buffered fill. */
+  downloaded?: readonly (readonly [number, number])[];
   onSeek(abs: number): void;
   onScrubStart?(): void;
   onScrubEnd?(): void;
   tileFor?: (abs: number) => StoryboardTile | null;
-  markers?: number[];
+  markers?: readonly number[];
 }>) {
   const [preview, setPreview] = useState<number | null>(null);
   const [width, setWidth] = useState(1);
@@ -72,7 +87,7 @@ export function ScrubBar({
   const paint = seekBar();
   const shown = preview ?? cur;
   const playedFrac = dur > 0 ? Math.min(1, shown / dur) : 0;
-  const bufFrac = dur > 0 ? Math.min(1, buffered / dur) : 0;
+  const held = heldFractions(dur, buffered, downloaded);
   const active = preview != null;
   const knob = active ? KNOB_ACTIVE : KNOB;
   const tile = active && tileFor ? tileFor(shown) : null;
@@ -112,9 +127,19 @@ export function ScrubBar({
           </Box>
         ) : null}
         <Box style={[s.track, { backgroundColor: paint.track }]}>
-          <Box
-            style={[s.buffered, { backgroundColor: paint.buffered, width: `${bufFrac * 100}%` }]}
-          />
+          {held.map(([from, to]) => (
+            <Box
+              key={from}
+              style={[
+                s.buffered,
+                {
+                  backgroundColor: paint.buffered,
+                  left: `${from * 100}%`,
+                  width: `${(to - from) * 100}%`,
+                },
+              ]}
+            />
+          ))}
           <LinearGradient
             colors={paint.played}
             start={{ x: 0, y: 0.5 }}
@@ -147,7 +172,7 @@ export function ScrubBar({
 const s = styles({
   touch: { justify: 'center', h: 40 },
   track: { h: BAR_H, radius: BAR_H / 2, overflow: 'hidden' },
-  buffered: { absolute: true, top: 0, bottom: 0, left: 0, radius: BAR_H / 2 },
+  buffered: { absolute: true, top: 0, bottom: 0, radius: BAR_H / 2 },
   played: { absolute: true, top: 0, bottom: 0, left: 0, radius: BAR_H / 2 },
   markerTick: { absolute: true, top: 0, bottom: 0, w: 2.5, bg: 'bg/90' },
   // The border stands in for a box-shadow ring, which native cannot spread.

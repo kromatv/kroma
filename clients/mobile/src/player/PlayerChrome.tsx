@@ -1,7 +1,7 @@
 // Pure presentation over the Engine; all playback logic lives in engine/.
 
 import type { MediaItem } from '@kromatv/client/media';
-import { audioTracksOf } from '@kromatv/core';
+import { audioTracksOf, episodeTag } from '@kromatv/core';
 import {
   audioFilterLabels,
   buildLeanStats,
@@ -189,6 +189,16 @@ export function PlayerChrome({
     return Gesture.Race(pinch, Gesture.Exclusive(doubleTap, tap));
   }, [screenWidth]);
 
+  const title = item.showTitle ?? item.metadata?.title ?? item.title;
+  const episodeName = item.showTitle ? (item.metadata?.title ?? item.title) : undefined;
+  const sub = [episodeTag(item), episodeName].filter(Boolean).join(' · ') || undefined;
+  const markers = (item.markers ?? []).map((m) => m.startMs / 1000);
+  const audioCount = engine.offline ? engine.localAudio.length : audioTracksOf(item).length;
+  const open = (view?: SheetView) => {
+    onOpenSheet(view);
+    poke();
+  };
+
   const intro = (item.markers ?? []).find(
     (m) => m.kind === 'intro' && engine.cur * 1000 >= m.startMs && engine.cur * 1000 < m.endMs,
   );
@@ -254,18 +264,24 @@ export function PlayerChrome({
 
         {visible ? (
           <ControlsLayer
-            engine={engine}
-            item={item}
+            playback={engine}
+            title={title}
+            subtitle={sub}
             insets={insets}
             poke={poke}
             hold={hold}
             onBack={onBack}
-            onOpenSheet={onOpenSheet}
+            markers={markers}
             tileFor={tileFor}
-            next={next}
-            onPlayNext={onPlayNext}
-            onPip={onPip}
-            onCast={onCast}
+            actions={{
+              onAudio: audioCount > 1 ? () => open('audio') : undefined,
+              onSubtitles: () => open('subtitles'),
+              onSpeed: () => open('speed'),
+              onSettings: () => open(),
+              onPlayNext: next && onPlayNext ? onPlayNext : undefined,
+              onCast,
+              onPip,
+            }}
           />
         ) : null}
       </Box>

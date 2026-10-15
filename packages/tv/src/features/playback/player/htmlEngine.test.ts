@@ -2,7 +2,7 @@
 
 import type { MediaItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
-import { decodableAudioCodecs, decodableVideoCodecs } from '@kromatv/core';
+import { type BufferPlan, decodableAudioCodecs, decodableVideoCodecs } from '@kromatv/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineListeners } from './engine';
 import { HtmlEngine } from './htmlEngine';
@@ -148,6 +148,9 @@ function mkListeners(): EngineListeners {
 }
 
 const item = { id: 'vid1' } as unknown as MediaItem;
+const PLAN: BufferPlan = { forwardSec: 120, backSec: 30, maxBytes: 48_000_000 };
+const arrivingMaster = (anchorSec: number) =>
+  `/api/module/tv.kroma.torrents/watch/dl_1/files/7/hls/copy/${anchorSec}/0/index.m3u8?t=abc`;
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
 function mkClient() {
@@ -172,6 +175,7 @@ function makeEngine(opts: {
   masterShaka?: boolean;
   forceNativeHls?: boolean;
   durationSec?: number;
+  arriving?: boolean;
   listeners?: EngineListeners;
 }) {
   const { client, hlsMasterUrl, streamUrl } = mkClient();
@@ -179,7 +183,9 @@ function makeEngine(opts: {
   const engine = new HtmlEngine({
     video: opts.fv.el,
     client,
-    item,
+    media: opts.arriving
+      ? { kind: 'hls', master: arrivingMaster, plan: PLAN }
+      : { kind: 'item', item },
     direct: opts.direct,
     masterAac: opts.masterAac ?? false,
     masterShaka: opts.masterShaka ?? false,
@@ -240,10 +246,71 @@ describe('HtmlEngine master construction', () => {
   });
 });
 
+describe('HtmlEngine file still arriving', () => {
+  it("opens the file's own master at the second it resumes from", async () => {
+    const fv = fakeVideo();
+
+    const { hlsMasterUrl, streamUrl } = makeEngine({
+      fv,
+      direct: false,
+      arriving: true,
+      startSec: 2400,
+    });
+
+    await tick();
+    expect(fv.get('src')).toBe(arrivingMaster(2400));
+    expect(hlsMasterUrl).not.toHaveBeenCalled();
+    expect(streamUrl).not.toHaveBeenCalled();
+  });
+
+  it('never plays one as a direct file, since it has no stream but its master', async () => {
+    const fv = fakeVideo();
+
+    makeEngine({ fv, direct: true, arriving: true, startSec: 30 });
+
+    await tick();
+    expect(fv.get('src')).toBe(arrivingMaster(30));
+  });
+
+  it('reads the clock from the keyframe the module started on', async () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false, arriving: true, startSec: 30 });
+
+    await tick();
+    fv.set('currentTime', 2);
+
+    expect(engine.position()).toBe(9.5);
+  });
+
+  it('seeks natively inside what the remux has produced', async () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false, arriving: true });
+    await tick();
+    fv.setBuffered([[0, 100]]);
+
+    engine.seekTo(45);
+
+    expect(fv.get('currentTime')).toBe(45);
+    expect(fv.get('src')).toBe(arrivingMaster(0));
+  });
+
+  it('asks the module for a new remux at a far seek', async () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false, arriving: true });
+    await tick();
+    fv.setBuffered([[0, 10]]);
+
+    engine.seekTo(1500);
+    await tick();
+
+    expect(fv.get('src')).toBe(arrivingMaster(1500));
+  });
+});
+
 describe('HtmlEngine joining a master the remux ran ahead of', () => {
   it('starts a stream the element opened near its live edge at its top', async () => {
     const fv = fakeVideo();
-    makeEngine({ fv, direct: false });
+    makeEngine({ fv, direct: false, arriving: true });
     await tick();
 
     fv.set('currentTime', 25);
@@ -254,7 +321,7 @@ describe('HtmlEngine joining a master the remux ran ahead of', () => {
 
   it('leaves a stream that opened at its own start where it is', async () => {
     const fv = fakeVideo();
-    makeEngine({ fv, direct: false });
+    makeEngine({ fv, direct: false, arriving: true });
     await tick();
 
     fv.set('currentTime', 0.4);
@@ -265,7 +332,7 @@ describe('HtmlEngine joining a master the remux ran ahead of', () => {
 
   it('lets the stream play on once it has landed', async () => {
     const fv = fakeVideo();
-    makeEngine({ fv, direct: false });
+    makeEngine({ fv, direct: false, arriving: true });
     await tick();
     fv.fire('loadedmetadata');
 
@@ -277,7 +344,7 @@ describe('HtmlEngine joining a master the remux ran ahead of', () => {
 
   it('gives up after three tries on an engine that will not land', async () => {
     const fv = fakeVideo();
-    makeEngine({ fv, direct: false });
+    makeEngine({ fv, direct: false, arriving: true });
     await tick();
 
     const seen: unknown[] = [];
@@ -292,7 +359,7 @@ describe('HtmlEngine joining a master the remux ran ahead of', () => {
 
   it('keeps a seek inside the buffer where the viewer put it', async () => {
     const fv = fakeVideo();
-    const { engine } = makeEngine({ fv, direct: false });
+    const { engine } = makeEngine({ fv, direct: false, arriving: true });
     await tick();
     fv.setBuffered([[0, 100]]);
 
@@ -315,6 +382,20 @@ describe('HtmlEngine joining a master the remux ran ahead of', () => {
 
     expect(fv.get('src')).toBe('master:vid1:false:0:1');
     expect(fv.get('currentTime')).toBe(0);
+  });
+
+  it('opens the stalled second again on the master it was already reading', async () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false, arriving: true, startSec: 2400 });
+    await tick();
+    fv.fire('loadedmetadata');
+
+    engine.reload(2410);
+    fv.set('currentTime', 60);
+    fv.fire('loadedmetadata');
+
+    expect(fv.get('src')).toBe(arrivingMaster(2400));
+    expect(fv.get('currentTime')).toBe(2402.5);
   });
 });
 

@@ -1,20 +1,19 @@
 import type { AudioTrack } from '@kromatv/client/media';
 import type { Translate } from '@kromatv/i18n';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { MovieView } from '../../shared/lib/api';
-import { buildWebStats, type WebStatsInput } from './web-stats';
+import { buildWebStats, type StatsMedia, type WebStatsInput } from './web-stats';
 
 // Echoes the key + vars, so an assertion names the catalog string a field used
 // without depending on the real catalog.
 const t: Translate = ((key: string, vars?: unknown) =>
   vars ? `${key}(${JSON.stringify(vars)})` : key) as Translate;
 
-const item = {
+const media = {
   title: 'Blade Runner 2049',
   container: 'mkv',
   video: { codec: 'hevc', bitDepth: 10, hdr: true, width: 3840, height: 2160 },
   audio: { codec: 'eac3' },
-} as unknown as MovieView;
+} as unknown as StatsMedia;
 
 const audioTracks: AudioTrack[] = [
   { index: 0, codec: 'eac3', channels: 6, language: 'fr', default: true } as AudioTrack,
@@ -25,7 +24,7 @@ const audioTracks: AudioTrack[] = [
 const input = (over: Partial<WebStatsInput> = {}): WebStatsInput =>
   ({
     v: null,
-    item,
+    media,
     cur: 40,
     dur: 3600,
     bufEnd: 100,
@@ -76,8 +75,8 @@ describe('buildWebStats', () => {
   });
 
   it('omits the resolution when there are no video dimensions', () => {
-    const noDims = { ...item, video: null } as unknown as MovieView;
-    expect(buildWebStats(input({ item: noDims })).resolution).toBeUndefined();
+    const noDims = { ...media, video: null };
+    expect(buildWebStats(input({ media: noDims })).resolution).toBeUndefined();
   });
 
   it('selects the audio track by index, falling back to the first', () => {
@@ -172,8 +171,8 @@ describe('buildWebStats', () => {
 
   it('falls back to the file audio, then to a dash, when the track says nothing', () => {
     expect(buildWebStats(input({ audioTracks: [] })).audioFormat).toBe('EAC3');
-    const noAudio = { ...item, audio: null } as unknown as MovieView;
-    expect(buildWebStats(input({ audioTracks: [], item: noAudio })).audioFormat).toBe('-');
+    const noAudio = { ...media, audio: null };
+    expect(buildWebStats(input({ audioTracks: [], media: noAudio })).audioFormat).toBe('-');
     expect(
       buildWebStats(input({ audioTracks: [{ index: 0, codec: 'aac' } as AudioTrack] })).audioFormat,
     ).toBe('AAC');

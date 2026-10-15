@@ -9,16 +9,14 @@ import type { AudioTrack } from '@kromatv/client/media';
 import type { PlaybackMode } from '@kromatv/client/playback';
 import {
   attachHlsRecovery,
-  decodableVideoCodecs,
   type EngineDecision,
   hlsBufferConfig,
-  itemBufferPlan,
   shakaConfig,
   type WaitReason,
 } from '@kromatv/core';
 import type { WebEnginePref } from '#web/features/playback/engine-pref';
+import type { PlaybackSource } from '#web/features/playback/playback-source';
 import { type StreamFailure, shakaHttpStatus } from '#web/features/playback/stream-failure';
-import { kromaClient, type MovieView } from '#web/shared/lib/api';
 
 export type HlsInstance = import('hls.js').default;
 
@@ -98,7 +96,7 @@ export interface VideoPlayback {
 
 export interface AttachSourceOptions {
   v: HTMLVideoElement;
-  item: MovieView;
+  source: PlaybackSource;
   decision: EngineDecision;
   useNativeHls: boolean;
   useShaka: boolean;
@@ -140,7 +138,7 @@ function seekToAnchor(v: HTMLVideoElement, startSec: number): void {
 export function attachMediaSource(opts: AttachSourceOptions): () => void {
   const {
     v,
-    item,
+    source,
     decision,
     useNativeHls,
     useShaka,
@@ -155,9 +153,9 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
   } = opts;
   setReady(false);
 
-  if (decision.kind === 'direct') {
+  if (decision.kind === 'direct' && source.directUrl) {
     setUseHls(false);
-    v.src = kromaClient().media.streamUrl(item.id);
+    v.src = source.directUrl();
     v.preload = 'auto';
     seekToAnchor(v, startSec);
     return () => {
@@ -167,14 +165,10 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
   }
 
   setUseHls(true);
-  // Sized from THIS title's bitrate: a flat seconds goal that a web-dl fits in
-  // asks a remux for gigabytes, and the browser answers by evicting all film.
-  const plan = itemBufferPlan(item);
+  const plan = source.plan;
   // Remuxed from `startSec`; hls.js plays it from relative 0 and the hook adds
   // the server's reported start back to report the absolute position.
-  const url = kromaClient().media.hlsMasterUrl(item.id, decision.aacMaster, startSec, audioRel, {
-    videoCodecs: decodableVideoCodecs(),
-  });
+  const url = source.masterUrl(decision.aacMaster, startSec, audioRel);
   let destroyed = false;
 
   // Checked before `useNativeHls`: an explicit Shaka override wins, so the choice

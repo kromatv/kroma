@@ -115,6 +115,34 @@ fn proper_repack_flags_and_group_edge_cases() {
 }
 
 #[test]
+fn a_name_that_says_disc_says_so_without_moving_the_title() {
+    let r = p("Big Buck Bunny (2008) German Blu-ray Disc");
+
+    assert!(r.disc);
+    assert_eq!(r.title, "Big Buck Bunny");
+    assert_eq!(r.year, Some(2008));
+    assert_eq!(r.source, Some(Source::BluRay));
+}
+
+#[test]
+fn the_other_spellings_of_a_disc_are_read_and_an_encode_of_one_is_not() {
+    let disc = [
+        "Film.2008.BD50",
+        "Film 2008 DVD9",
+        "Film.2008.BDMV",
+        "Film 2008 ISO",
+    ];
+    let encodes = [
+        "Film.2008.1080p.BluRay.x264",
+        "Film.2008.2160p.UHD.BluRay.REMUX",
+        "Film.2008.720p.DVDRip.XviD",
+    ];
+
+    assert!(disc.iter().all(|name| p(name).disc), "{disc:?}");
+    assert!(encodes.iter().all(|name| !p(name).disc), "{encodes:?}");
+}
+
+#[test]
 fn source_codec_and_group_edge_branches() {
     // "WEB" then "RIP" split across tokens resolves to WEBRip.
     assert_eq!(p("Show.S01E01.WEB.RIP.x264").source, Some(Source::WebRip));

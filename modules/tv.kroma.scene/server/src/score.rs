@@ -4,6 +4,7 @@
 
 use crate::{
     Candidate, Codec, ParsedRelease, Profile, Reject, Res, ScoreLine, Scored, Source, Target,
+    UnstatedResolution,
 };
 
 fn reject(rule: &str, note: impl Into<String>) -> Reject {
@@ -42,9 +43,9 @@ pub fn score(
             format!("{seeders} < {}", profile.min_seeders),
         ));
     }
-    let Some(resolution) = parsed.resolution else {
+    if parsed.resolution.is_none() && profile.unstated_resolution == UnstatedResolution::Refuse {
         return Err(reject("resolution", "no recognizable resolution"));
-    };
+    }
 
     let max_size = target_budget(parsed, target, profile)?;
     if max_size > 0 {
@@ -59,7 +60,13 @@ pub fn score(
     }
 
     let lines = score_lines(
-        parsed, candidate, target, profile, resolution, max_size, seeders,
+        parsed,
+        candidate,
+        target,
+        profile,
+        parsed.resolution,
+        max_size,
+        seeders,
     );
     Ok(Scored {
         parsed: parsed.clone(),
@@ -173,21 +180,22 @@ fn score_lines(
     candidate: &Candidate,
     target: &Target,
     profile: &Profile,
-    resolution: Res,
+    resolution: Option<Res>,
     max_size: u64,
     seeders: u32,
 ) -> Vec<ScoreLine> {
     let mut lines: Vec<ScoreLine> = Vec::new();
 
+    let stated = resolution.map_or_else(|| "unstated".to_string(), |res| format!("{res:?}"));
     push_line(
         &mut lines,
         "resolution",
         resolution_delta(resolution, profile.resolution),
-        format!("{resolution:?} (preference {:?})", profile.resolution),
+        format!("{stated} (preference {:?})", profile.resolution),
     );
 
     if let Some((delta, label)) = codec_line(parsed, profile) {
-        push_line(&mut lines, "codec", delta, label.into());
+        push_line(&mut lines, "codec", delta, label);
     }
 
     if let Some(source) = parsed.source {
@@ -240,21 +248,25 @@ fn score_lines(
     lines
 }
 
-fn resolution_delta(got: Res, want: Res) -> i32 {
+fn resolution_delta(got: Option<Res>, want: Res) -> i32 {
     match (got, want) {
-        (g, w) if g == w => 1000,
-        (Res::R2160, Res::R1080) => 100,
-        (Res::R1080, Res::R2160) | (Res::R720, Res::R1080) => 400,
-        (Res::R720, Res::R2160) => 50,
+        (None, _) => 25,
+        (Some(g), w) if g == w => 1000,
+        (Some(Res::R2160), Res::R1080) => 100,
+        (Some(Res::R1080), Res::R2160) | (Some(Res::R720), Res::R1080) => 400,
+        (Some(Res::R720), Res::R2160) => 50,
         _ => 100,
     }
 }
 
-fn codec_line(parsed: &ParsedRelease, profile: &Profile) -> Option<(i32, &'static str)> {
-    match parsed.codec {
-        Some(Codec::Hevc) if profile.prefer_hevc => Some((400, "HEVC (HEVC-first)")),
-        Some(Codec::Hevc) => Some((100, "HEVC")),
-        Some(Codec::Av1) => Some((150, "AV1")),
+fn codec_line(parsed: &ParsedRelease, profile: &Profile) -> Option<(i32, String)> {
+    let codec = parsed.codec?;
+    match codec {
+        _ if profile.preferred_codec == Some(codec) => {
+            Some((400, format!("{codec:?} (preferred)")))
+        }
+        Codec::Hevc => Some((100, "HEVC".into())),
+        Codec::Av1 => Some((150, "AV1".into())),
         _ => None,
     }
 }

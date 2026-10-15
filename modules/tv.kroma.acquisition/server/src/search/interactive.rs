@@ -55,7 +55,7 @@ fn cache_results(request_id: &str, scope: SearchScope, releases: Vec<CachedRelea
 /// Interactive search for one request over `scope`: sweep every enabled indexer
 /// and return everything, scored or rejected-with-reason, accepted-best first.
 /// Synchronous and network-heavy: call from a blocking context only.
-pub fn interactive_search<S: HostStorage>(
+pub fn interactive_search<S: HostStorage + Clone>(
     state: &S,
     request_id: &str,
     scope: SearchScope,
@@ -102,7 +102,7 @@ pub fn interactive_search<S: HostStorage>(
         "interactive search starting",
     );
     let (mut cached, indexer_reports) =
-        collect_search_hits(state, &indexers, &targets, &profile, req.tmdb_id);
+        collect_search_hits(state, &indexers, &targets, &profile, req.tmdb_id, None);
 
     // Against the REAL ledger, not the forced-wanted clone above: what the row
     // shows has to be what the grab will do.
@@ -182,6 +182,7 @@ mod tests {
             vec![CachedRelease {
                 view,
                 magnet_or_url: "magnet:?xt=2".into(),
+                torrent_url: None,
                 tmdb_id: 42,
             }],
         );

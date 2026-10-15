@@ -1,0 +1,43 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { OverFilm } from './arrival-badge.fixtures';
+
+export const story = defineStory({
+  group: 'Feedback',
+  width: { min: 200, max: 420 },
+  args: { share: 42 },
+  render: ({ share }) => <OverFilm shares={[share / 100]} />,
+});
+
+How much of a film has arrived, for a player showing one that is still downloading. It is the only arrival figure a viewer watches continuously, so it is the only one here: the rate and the source count move four times a second and answer a different question, and the stats panel already carries them under their own heading.
+
+It reads whatever the source declared as its `percent` figure, in that source's own words, so a module counting something other than pieces is named correctly without the badge learning what it counts.
+
+The player draws it for you: `<Player.Arrival arrival={...} />` puts it in the top bar at the chrome's own scale. Reach for the component directly only on a surface that draws its own chrome, as the phone does.
+
+```tsx
+<ArrivalBadge arrival={arrivalOf({ source, progress, t, locale })} scale={0.9} />
+```
+
+<Scene name="From nothing to whole">
+  The text holds four figures of room whatever the share is, so a film crossing 9 to 10 per cent does not shift the title beside it.
+
+  <OverFilm shares={[0, 0.07, 1]} />
+</Scene>
+
+<Scene name="On a narrow window">
+  The chrome measures itself against the stage and the badge follows, so the same part reads on a television at full size and in a phone's top bar.
+
+  <OverFilm shares={[0.42]} scale={0.7} />
+</Scene>
+
+<Do>
+- Put it in the top bar, beside what is playing, where it is read without being looked for.
+- Pass the chrome's own `scale`, so it shrinks with the rest of the bar on a narrow window.
+- Leave it to `<Player.Arrival>` inside the shared chrome, which measures the scale itself.
+</Do>
+
+<Dont>
+- Put it in the subtitle slot. That line is the film's own: its year, its release.
+- Make it pressable. It takes no focus, so a D-pad walking the chrome never stops on it.
+- Add the rate or the source count beside it. Two of the three figures are diagnostics.
+</Dont>

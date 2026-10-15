@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { UserId } from '../accounts';
 import { ItemId, LibraryId, ShowId } from '../media';
 import { PlaybackMode, PlaybackSessionId, PlaybackState } from '../playback';
+import { WatchItem } from '../watchable/watch-item';
 
 export const WatchKind = z.enum(['movie', 'tv']);
 export type WatchKind = z.infer<typeof WatchKind>;
@@ -58,12 +59,10 @@ export const PlayEntry = z.object({
 });
 export type PlayEntry = z.infer<typeof PlayEntry>;
 
-/** A live playback session, serialized for the admin dashboard. */
-export const PlaybackSession = z.object({
+const SessionFields = z.object({
   id: PlaybackSessionId,
   userId: UserId.nullish(),
   username: z.string(),
-  itemId: ItemId,
   title: z.string(),
   year: z.number().nullable(),
   kind: z.string(),
@@ -85,6 +84,12 @@ export const PlaybackSession = z.object({
   durationMs: z.number().nullable(),
   startedAt: z.number(),
 });
+
+/** A live playback session, serialized for the admin dashboard. */
+export const PlaybackSession = z.union([
+  SessionFields.extend({ itemId: ItemId, watch: z.never().optional() }),
+  SessionFields.extend({ watch: WatchItem, itemId: z.never().optional() }),
+]);
 export type PlaybackSession = z.infer<typeof PlaybackSession>;
 
 /** One entry of the history screen's library filter. */

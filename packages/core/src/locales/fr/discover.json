@@ -16,6 +16,7 @@
   "discover.noResultsHint": "Essayez un autre titre ou vérifiez l'orthographe.",
   "discover.notInLibrary": "Pas dans la bibliothèque",
   "discover.pageOf": "Page {page} / {total}",
+  "discover.pickEpisode": "Choisissez l'épisode à lire",
   "discover.placeholder": "Un film, une série...",
   "discover.prev": "Précédent",
   "discover.request": "Demander",
@@ -32,10 +33,11 @@
   "discover.seeAll": "Voir tout",
   "discover.shows": "Séries",
   "discover.subtitle": "Cherchez dans votre bibliothèque et sur TMDB pour demander de nouveaux titres.",
-  "discover.subtitleLocal": "Cherchez dans votre bibliothèque.",
+  "discover.subtitleBrowse": "Cherchez dans votre bibliothèque et sur TMDB.",
   "discover.title": "Rechercher",
   "discover.trending": "Tendances cette semaine",
   "discover.trendingMovies": "Films tendance",
   "discover.trendingShows": "Séries tendance",
-  "discover.viewInLibrary": "Voir dans la bibliothèque"
+  "discover.viewInLibrary": "Voir dans la bibliothèque",
+  "discover.watch": "Lire"
 }

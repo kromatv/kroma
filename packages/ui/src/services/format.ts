@@ -10,10 +10,9 @@
 // fallback `useTDefault` documents. That is the whole contract, and the test
 // beside this file holds it in place.
 
+import { decimal, formatBytes } from '@kromatv/core';
 import type { Locale, Translate } from '@kromatv/i18n';
 import {
-  decimal,
-  formatBytes,
   formatDuration,
   formatElapsed,
   formatHours,

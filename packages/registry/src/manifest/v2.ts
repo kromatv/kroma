@@ -55,6 +55,11 @@ export type CoreScope = z.infer<typeof CoreScope>;
 // (`notifications.vapid.publicKey`). Matched exactly, so the spelling has to be.
 const SettingKey = z.string().regex(/^[A-Za-z][\w]*(?:\.[A-Za-z][\w]*)*$/);
 
+// An account right, as the core stores it (`watchable.play`). Not an enum: the
+// core grows rights on its own tag, and a module built against a newer one may
+// name a key this build has never heard of.
+const PermissionKey = z.string().regex(/^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)*$/);
+
 /** The CORE settings keys a module reads and writes. */
 export const SettingsScope = z.object({
   read: z
@@ -165,6 +170,12 @@ export const Manifest = z.object({
   settings: SettingsScope.nullish().describe(
     'The core settings keys this module reads and writes. Absent is not the same as empty: a manifest with no settings object predates the field, so it keeps every ordinary preference and reaches none of the credentials a module has to declare.',
   ),
+  rights: z
+    .array(PermissionKey)
+    .nullish()
+    .describe(
+      'The account rights this module reads beyond the set every build of the SDK can name. A module that names none is sent that base set alone, because a strict parse of a key its build predates reads to it as no session at all.',
+    ),
   feRemote: z
     .object({ module: z.string() })
     .nullish()

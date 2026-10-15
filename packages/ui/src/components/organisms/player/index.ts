@@ -1,8 +1,17 @@
 // One player chrome for web + TV. Styled with Tailwind, legacy-safe: flex only,
 // no /opacity (see ./tw).
 
+export type { ArrivalPlayerProps } from './arrival-player';
+export { ArrivalPlayer } from './arrival-player';
 export { PLAYER_ROOT_ID } from './hooks/use-idle-cursor';
 export { RESUME_WINDOW, type ResumeNotice, useResumeNotice } from './hooks/use-resume-notice';
+export {
+  useWatchUpNext,
+  type WatchUpNextParams,
+  type WatchUpNextParts,
+} from './hooks/use-watch-up-next';
+export { THROUGHPUT_CHART, withArrivalStats } from './lib/arrival-stats';
+export { arrivalSubtitles } from './lib/arrival-subtitles';
 export {
   AUDIO_FILTER_KEY,
   audioFilterLabels,
@@ -34,6 +43,7 @@ export {
   useSubtitleAppearance,
   withOpacity,
 } from './lib/subtitle-appearance';
+export { keepWatchPosition, useRememberWatchPosition, watchResumeAt } from './lib/watch-resume';
 export type {
   PlayerAudioTrack,
   PlayerMarker,
@@ -59,7 +69,12 @@ export { UP_NEXT_ART_W } from './parts/up-next-card';
 export type { UpNextData, UpNextItem } from './parts/up-next-sheet';
 export type { PlayerRootProps } from './player';
 export { Player } from './player';
-export type { PlayerActionsProps, PlayerMediaProps, PlayerPanelProps } from './player-parts';
+export type {
+  PlayerActionsProps,
+  PlayerArrivalProps,
+  PlayerMediaProps,
+  PlayerPanelProps,
+} from './player-parts';
 export type {
   AudioFilterMode,
   Chapter,

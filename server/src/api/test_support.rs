@@ -6,6 +6,7 @@
 //! [`tower::ServiceExt::oneshot`]: no socket, no network, no module sidecar.
 
 mod media;
+mod module;
 mod requests;
 
 use std::collections::HashMap;
@@ -20,11 +21,12 @@ use crate::config::Config;
 use crate::db;
 use crate::model::Permission;
 use crate::services::settings::{self, LibraryDef, Settings};
-use crate::state::{AppState, SharedState};
+use crate::state::{AppState, Contributions, SharedState};
 
 pub use media::{
     byte_routes, device_of, household_where_the_viewer_only_sees_films, ticketed, FILM,
 };
+pub use module::{describing, test_app_answering, test_app_contributing, CONTRIBUTOR};
 pub use requests::{get, raw, send, text};
 
 static SEQ: AtomicU32 = AtomicU32::new(0);
@@ -76,29 +78,38 @@ fn test_supervisor(data_dir: &Path) -> Arc<kroma_module_supervisor::Supervisor> 
 }
 
 pub fn test_app() -> TestApp {
-    build_app(None, &[], None)
+    build_app(None, &[], None, no_module())
 }
 
 /// Like [`test_app`] but speaking to a mail relay at `relay_url`, a stub a
 /// test runs on a local port, rather than the closed port the default aims at.
 pub fn test_app_with_mail_relay(relay_url: &str) -> TestApp {
-    build_app(None, &[], Some(relay_url))
+    build_app(None, &[], Some(relay_url), no_module())
 }
 
 /// Like [`test_app`] but with a fake TMDB key, so handlers clear their
 /// `require_tmdb_key` gate. Only request *unknown* ids: no network fetch happens.
 pub fn test_app_with_tmdb() -> TestApp {
-    build_app(Some("test-tmdb-key"), &[], None)
+    build_app(Some("test-tmdb-key"), &[], None, no_module())
 }
 
 /// Like [`test_app`] but with a built web SPA on the same origin, as the
 /// single-binary deploy has. `files` are written verbatim under the served
 /// directory; `_shell.html` is the client-side-routing fallback.
 pub fn test_app_with_web(files: &[(&str, &str)]) -> TestApp {
-    build_app(None, files, None)
+    build_app(None, files, None, no_module())
 }
 
-fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)], relay_url: Option<&str>) -> TestApp {
+fn no_module() -> Contributions {
+    Arc::new(|_| Vec::new())
+}
+
+fn build_app(
+    tmdb_api_key: Option<&str>,
+    web: &[(&str, &str)],
+    relay_url: Option<&str>,
+    contributions: Contributions,
+) -> TestApp {
     let tmp = unique_data_dir();
     let data_dir = tmp.path().to_path_buf();
     let db = db::init(&data_dir.join("kroma.db")).expect("init db");
@@ -136,7 +147,7 @@ fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)], relay_url: Option
         kroma_engine::state::ModuleWiring {
             services: HashMap::new(),
             jobs: &[],
-            contributions: std::sync::Arc::new(|_| Vec::new()),
+            contributions,
             official_modules: std::sync::Arc::new(Vec::new),
         },
     );

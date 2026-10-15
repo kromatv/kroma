@@ -35,11 +35,13 @@ vi.mock('#web/shared/lib/auth', () => ({
 }));
 
 const { useVideoPlayback } = await import('#web/features/playback/use-video-playback');
+const { catalogueSource } = await import('#web/features/playback/playback-source');
 
 installHarness();
 
 function render(item = movie()) {
-  const view = renderHook(() => useVideoPlayback(item));
+  const source = catalogueSource(item);
+  const view = renderHook(() => useVideoPlayback(source));
   const v = fakeVideo();
   view.result.current.videoRef.current = v as unknown as HTMLVideoElement;
   return { ...view, v };

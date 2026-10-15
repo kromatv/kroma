@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ItemId } from '../media';
+import { WatchItem } from '../watchable/watch-item';
 import { PlaybackSessionId } from './ids';
 
 export const PlaybackState = z.enum(['playing', 'paused', 'buffering']);
@@ -8,12 +9,8 @@ export type PlaybackState = z.infer<typeof PlaybackState>;
 export const PlaybackMode = z.enum(['direct', 'remux', 'transcode']);
 export type PlaybackMode = z.infer<typeof PlaybackMode>;
 
-/** What a client reports on each playback heartbeat (`POST /api/playback/ping`).
- * `bufferedMs` is the absolute position the surface has buffered up to, for the
- * dashboard's seek bar; a client that cannot read its own buffer omits it. */
-export const PlaybackPing = z.object({
+const PingFields = z.object({
   sessionId: PlaybackSessionId,
-  itemId: ItemId,
   positionMs: z.number(),
   durationMs: z.number().nullish(),
   bufferedMs: z.number().nullish(),
@@ -24,6 +21,14 @@ export const PlaybackPing = z.object({
   audio: z.string().optional(),
   subtitle: z.string().optional(),
 });
+
+/** What a client reports on each playback heartbeat (`POST /api/playback/ping`).
+ * `bufferedMs` is the absolute position the surface has buffered up to, for the
+ * dashboard's seek bar; a client that cannot read its own buffer omits it. */
+export const PlaybackPing = z.union([
+  PingFields.extend({ itemId: ItemId, watch: z.never().optional() }),
+  PingFields.extend({ watch: WatchItem, itemId: z.never().optional() }),
+]);
 export type PlaybackPing = z.infer<typeof PlaybackPing>;
 
 /** What the server answers a progress save with: whether that position finished
@@ -33,3 +38,5 @@ export const ProgressReceipt = z.object({
   watched: z.boolean(),
 });
 export type ProgressReceipt = z.infer<typeof ProgressReceipt>;
+
+export type PlaybackSubject = { itemId: ItemId } | { watch: WatchItem };

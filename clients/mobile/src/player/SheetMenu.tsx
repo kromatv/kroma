@@ -14,27 +14,29 @@ export type SheetView =
 export function SheetMenu(
   at: Readonly<{
     t: ReturnType<typeof useT>;
-    quality: string;
+    quality?: string;
     audioCount: number;
     audio: string | undefined;
-    filter: string | null;
-    subtitles: string;
-    appearance: string;
+    filter?: string;
+    subtitles?: string;
+    appearance?: string;
     speed: string;
-    statsOn: boolean;
-    onToggleStats(): void;
+    statsOn?: boolean;
+    onToggleStats?(): void;
     go(view: SheetView): void;
-    onReport(): void;
+    onReport?(): void;
   }>,
 ) {
   return (
     <Box style={s.menuList}>
-      <MenuRow
-        icon="badge-4k"
-        label={at.t('player.quality')}
-        value={at.quality}
-        onPress={() => at.go('quality')}
-      />
+      {at.quality === undefined ? null : (
+        <MenuRow
+          icon="badge-4k"
+          label={at.t('player.quality')}
+          value={at.quality}
+          onPress={() => at.go('quality')}
+        />
+      )}
       {at.audioCount > 1 ? (
         <MenuRow
           icon="wave-sine"
@@ -43,7 +45,7 @@ export function SheetMenu(
           onPress={() => at.go('audio')}
         />
       ) : null}
-      {at.filter === null ? null : (
+      {at.filter === undefined ? null : (
         <MenuRow
           icon="adjustments-horizontal"
           label={at.t('player.audioFilters')}
@@ -51,32 +53,40 @@ export function SheetMenu(
           onPress={() => at.go('audioFilter')}
         />
       )}
-      <MenuRow
-        icon="badge-cc"
-        label={at.t('player.subtitles')}
-        value={at.subtitles}
-        onPress={() => at.go('subtitles')}
-      />
-      <MenuRow
-        icon="typography"
-        label={at.t('player.subAppearance')}
-        value={at.appearance}
-        onPress={() => at.go('appearance')}
-      />
+      {at.subtitles === undefined ? null : (
+        <MenuRow
+          icon="badge-cc"
+          label={at.t('player.subtitles')}
+          value={at.subtitles}
+          onPress={() => at.go('subtitles')}
+        />
+      )}
+      {at.appearance === undefined ? null : (
+        <MenuRow
+          icon="typography"
+          label={at.t('player.subAppearance')}
+          value={at.appearance}
+          onPress={() => at.go('appearance')}
+        />
+      )}
       <MenuRow
         icon="gauge"
         label={at.t('player.speed')}
         value={at.speed}
         onPress={() => at.go('speed')}
       />
-      <MenuRow
-        icon="chart-bar"
-        label={at.t('player.stats')}
-        toggle
-        on={at.statsOn}
-        onPress={at.onToggleStats}
-      />
-      <MenuRow icon="flag" label={at.t('reports.sheet')} onPress={at.onReport} />
+      {at.onToggleStats ? (
+        <MenuRow
+          icon="chart-bar"
+          label={at.t('player.stats')}
+          toggle
+          on={at.statsOn}
+          onPress={at.onToggleStats}
+        />
+      ) : null}
+      {at.onReport ? (
+        <MenuRow icon="flag" label={at.t('reports.sheet')} onPress={at.onReport} />
+      ) : null}
     </Box>
   );
 }

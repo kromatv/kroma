@@ -6,6 +6,7 @@ describe('PERMISSIONS', () => {
     const keys = PERMISSIONS.map((p) => p.key);
     expect(keys).toEqual([
       'playback',
+      'watchable.play',
       'library.manage',
       'users.manage',
       'settings.manage',

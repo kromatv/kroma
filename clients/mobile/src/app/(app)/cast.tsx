@@ -2,7 +2,8 @@
 // (position interpolated between heartbeats), never what this phone just asked for.
 
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useCast } from '@kromatv/ui';
+import { type CastShowing, castShowing, castShowsEpisode, watchResumeId } from '@kromatv/core';
+import { keepWatchPosition, useCast } from '@kromatv/ui';
 import { formatTimecode } from '@kromatv/ui/intl';
 import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
@@ -19,6 +20,13 @@ import { useT } from '#mobile/lib/i18n';
 import { goBack } from '#mobile/lib/nav';
 import { spacing, type } from '#mobile/lib/theme';
 import { ScrubBar } from '#mobile/player/ScrubBar';
+
+function continueHere(playing: CastShowing, atSec: number): string {
+  if ('item' in playing) return `/player/${playing.item.id}?start=${atSec}`;
+  const { id, file } = playing.watch;
+  keepWatchPosition(watchResumeId(id, file), atSec, (playing.durationMs ?? 0) / 1000);
+  return `/watch/${id}?file=${file}`;
+}
 
 export default function CastRemoteScreen() {
   const t = useT();
@@ -41,8 +49,7 @@ export default function CastRemoteScreen() {
     );
   }
 
-  const playing = active.nowPlaying;
-  const item = playing?.item;
+  const playing = castShowing(active);
   const durationMs = playing?.durationMs ?? 0;
   const isPlaying = playing?.state === 'playing';
   const buffering = playing?.state === 'buffering';
@@ -62,7 +69,7 @@ export default function CastRemoteScreen() {
 
       {playing ? (
         <ScrollView contentContainerStyle={s.body}>
-          <RemoteArtwork item={item} />
+          <RemoteArtwork showing={playing} />
 
           <Box style={s.scrub}>
             <ScrubBar
@@ -90,7 +97,7 @@ export default function CastRemoteScreen() {
 
           <RemoteActions
             playing={playing}
-            isEpisode={item?.kind === 'episode'}
+            isEpisode={castShowsEpisode(playing)}
             deviceName={active.name}
             onAudio={() => audio.current?.present()}
             onSubtitles={() => subtitles.current?.present()}
@@ -99,8 +106,7 @@ export default function CastRemoteScreen() {
               const at = Math.round(positionMs / 1000);
               void send({ type: 'stop' });
               select(null);
-              if (item) router.replace(`/player/${item.id}?start=${at}` as never);
-              else goBack(router);
+              router.replace(continueHere(playing, at) as never);
             }}
             onStop={() => {
               void send({ type: 'stop' });

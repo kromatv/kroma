@@ -2,8 +2,7 @@
 // drives a TV. It shows what the TV last reported, not what was last asked of
 // it, with the position interpolated between the receiver's heartbeats.
 
-import type { CastNowPlaying } from '@kromatv/client/cast';
-import type { MediaItem } from '@kromatv/client/media';
+import { type CastShowing, castShowing, castShownTitle, castShowsEpisode } from '@kromatv/core';
 import { BACK_10_ICON, type Cast, FWD_10_ICON, useCast, useT } from '@kromatv/ui';
 import { formatTimecode } from '@kromatv/ui/intl';
 import {
@@ -22,7 +21,7 @@ import {
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { kromaClient } from '#web/shared/lib/api';
+import { imageUrl, kromaClient } from '#web/shared/lib/api';
 import { castPicker } from '#web/shared/ui/cast-picker';
 
 const SKIP_MS = 10_000;
@@ -34,13 +33,13 @@ export function CastBar() {
 
   if (!active) return null;
 
-  const playing = active.nowPlaying;
+  const playing = castShowing(active);
   const playingOn = t('cast.playingOn', { device: active.name });
 
   return (
     <aside aria-label={playingOn} className={classes(s.bar)}>
       <Row self="center" w="100%" maxW={1024} gap={12} px={16} py={10}>
-        <NowPlaying item={playing?.item} playingOn={playingOn} onSelect={select} />
+        <NowPlaying showing={playing} playingOn={playingOn} onSelect={select} />
 
         {playing ? (
           <>
@@ -66,13 +65,19 @@ export function CastBar() {
   );
 }
 
+function posterOf(showing: CastShowing | null): string | null {
+  if (!showing) return null;
+  if ('item' in showing) return kromaClient().media.artwork.posterFor(showing.item, 96);
+  return imageUrl(showing.watch.poster);
+}
+
 function NowPlaying({
-  item,
+  showing,
   playingOn,
   onSelect,
-}: Readonly<{ item?: MediaItem; playingOn: string; onSelect: Cast['select'] }>) {
+}: Readonly<{ showing: CastShowing | null; playingOn: string; onSelect: Cast['select'] }>) {
   const t = useT();
-  const poster = item ? kromaClient().media.artwork.posterFor(item, 96) : null;
+  const poster = posterOf(showing);
   return (
     <>
       {poster ? (
@@ -83,7 +88,7 @@ function NowPlaying({
 
       <Box minW={0} shrink={0} basis={{ base: 112, md: 192 }}>
         <Text variant="meta" lines={1}>
-          {item ? (item.metadata?.title ?? item.title) : t('cast.idle')}
+          {showing ? castShownTitle(showing) : t('cast.idle')}
         </Text>
         <Focusable
           label={playingOn}
@@ -111,10 +116,7 @@ function NowPlaying({
   );
 }
 
-function TransportKeys({
-  playing,
-  send,
-}: Readonly<{ playing: CastNowPlaying; send: Cast['send'] }>) {
+function TransportKeys({ playing, send }: Readonly<{ playing: CastShowing; send: Cast['send'] }>) {
   const t = useT();
   // Buffering is playing, stalled: the button a viewer needs is still Pause.
   const isPlaying = playing.state === 'playing' || playing.state === 'buffering';
@@ -136,7 +138,7 @@ function TransportKeys({
         label={t('player.fwd10')}
         onPress={() => void send({ type: 'skip', deltaMs: SKIP_MS })}
       />
-      {playing.item.kind === 'episode' ? (
+      {castShowsEpisode(playing) ? (
         <Transport
           icon="player-track-next"
           label={t('player.nextEpisode')}
@@ -151,7 +153,7 @@ function Scrubber({
   playing,
   positionMs,
   send,
-}: Readonly<{ playing: CastNowPlaying; positionMs: number; send: Cast['send'] }>) {
+}: Readonly<{ playing: CastShowing; positionMs: number; send: Cast['send'] }>) {
   const t = useT();
   // While a drag is in flight the bar follows the finger: the receiver's
   // heartbeats would otherwise yank the handle back mid-gesture.

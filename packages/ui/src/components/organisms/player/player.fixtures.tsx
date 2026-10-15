@@ -12,6 +12,8 @@ export const WEB: PlayerFlags = { volume: true, pip: true, fullscreen: true, poi
 
 export const TV: PlayerFlags = { volume: false, pip: false, fullscreen: false, pointer: false };
 
+export const RELEASE = 'Sintel.2010.1080p.BluRay.x264-CtrlHD';
+
 export const NO_GEN: SubtitleGenBundle = {
   canCreate: false,
   caps: null,

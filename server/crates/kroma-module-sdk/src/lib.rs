@@ -21,6 +21,10 @@ pub mod host {
     pub use kroma_module_host::*;
 }
 
+/// Declaring a capability's surface: the figures, the slice map and the actions
+/// a client draws, and the `describe` route the core collects them through.
+pub mod capability;
+
 /// The application surface: `state::SharedState`, `services::*`, `model::*`.
 /// Behind the `engine` feature: this is the whole core.
 #[cfg(feature = "engine")]

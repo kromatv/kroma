@@ -3,7 +3,7 @@ import { fakeClient } from '@kromatv/client/test';
 import type { AudioFilterMode } from '@kromatv/ui';
 import { describe, expect, it, vi } from 'vitest';
 import { BaseTvEngine, type EngineOptions } from './baseEngine';
-import type { EngineListeners } from './engine';
+import type { EngineListeners, EngineMedia } from './engine';
 
 // BaseTvEngine is the platform-free transport shared by the three native
 // backends (AVPlay / mpv / ExoPlayer). This suite drives that shared logic
@@ -36,6 +36,11 @@ const client = fakeClient({
 });
 
 const item = { id: 'm1' } as unknown as MediaItem;
+const ARRIVING: EngineMedia = {
+  kind: 'hls',
+  master: (anchorSec) => `watch:dl_1/7@${anchorSec}`,
+  plan: { forwardSec: 120, backSec: 30, maxBytes: 48_000_000 },
+};
 
 class TestEngine extends BaseTvEngine {
   readonly kind = 'mpv' as const;
@@ -101,7 +106,7 @@ class TestEngine extends BaseTvEngine {
 function make(over: Partial<EngineOptions> = {}): TestEngine {
   const opts: EngineOptions = {
     client,
-    item,
+    media: { kind: 'item', item },
     durationSec: 120,
     initialRendition: 0,
     startSec: 0,
@@ -138,6 +143,18 @@ describe('BaseTvEngine sourceUrl', () => {
   it('master mode returns the anchored HLS master with the chosen audio rendition', () => {
     const e = make({ direct: false, startSec: 30, initialRendition: 2 });
     expect(e.url()).toBe('master:m1:false:30:2');
+  });
+
+  it('plays a file with no catalogue row from its own master, anchored where it starts', () => {
+    const e = make({ direct: false, startSec: 2400, media: ARRIVING });
+
+    expect(e.url()).toBe('watch:dl_1/7@2400');
+  });
+
+  it('never hands a file with no catalogue row the item stream', () => {
+    const e = make({ direct: true, startSec: 12, media: ARRIVING });
+
+    expect(e.url()).toBe('watch:dl_1/7@0');
   });
 });
 

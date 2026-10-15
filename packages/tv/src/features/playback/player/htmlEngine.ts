@@ -5,7 +5,6 @@
 // the buffered range re-anchors (reloads the master at the new offset).
 
 import type { KromaClient } from '@kromatv/client';
-import type { MediaItem } from '@kromatv/client/media';
 import {
   attachDirectPlay,
   type BufferPlan,
@@ -18,7 +17,7 @@ import {
   resolveMasterStart,
   STALL_NUDGE_SEC,
 } from '@kromatv/core';
-import type { EngineListeners, TvEngine } from '#tv/features/playback/player/engine';
+import type { EngineListeners, EngineMedia, TvEngine } from '#tv/features/playback/player/engine';
 import {
   bindMediaEvents,
   seekOnceOnMetadata,
@@ -31,10 +30,10 @@ type HlsInstance = import('hls.js').default;
 export interface HtmlOptions {
   video: HTMLVideoElement;
   client: KromaClient;
-  item: MediaItem;
+  media: EngineMedia;
   direct: boolean;
   /** Request the AAC renditions of the master (MSE can't decode AC3). */
-  masterAac: boolean;
+  masterAac?: boolean;
   /** Drive the MSE master through Shaka Player rather than hls.js, the default
    * everywhere Shaka ships, like the web client; `false` is the `remux`
    * preference's explicit hls.js. Native HLS (Safari/WKWebView, legacy webOS)
@@ -53,6 +52,7 @@ export class HtmlEngine implements TvEngine {
   readonly kind = 'video';
   private readonly v: HTMLVideoElement;
   private readonly opts: HtmlOptions;
+  private readonly direct: boolean;
   private readonly durSec: number;
   private readonly plan: BufferPlan;
   private baseSec: number;
@@ -61,6 +61,7 @@ export class HtmlEngine implements TvEngine {
   private shaka: ShakaPlayerLike | null = null;
   private destroyed = false;
   private attachSeq = 0;
+  private playlistUrl: string | null = null;
   private landing: (() => void) | null = null;
   private resumeOnCanPlay: (() => void) | null = null;
   private readonly cleanupEvents: () => void;
@@ -68,17 +69,18 @@ export class HtmlEngine implements TvEngine {
   constructor(opts: HtmlOptions) {
     this.opts = opts;
     this.v = opts.video;
+    this.direct = opts.direct && opts.media.kind === 'item';
     this.durSec = opts.durationSec;
     // Sized from THIS title's bitrate: a flat seconds goal that a web-dl fits in
     // asks a remux for gigabytes, and the browser answers by evicting all film.
-    this.plan = itemBufferPlan(opts.item);
+    this.plan = opts.media.kind === 'hls' ? opts.media.plan : itemBufferPlan(opts.media.item);
     this.baseSec = opts.startSec;
     this.rendition = opts.initialRendition;
     const v = this.v;
     this.cleanupEvents = bindMediaEvents(v, opts.listeners, opts.durationSec, () => this.baseSec);
 
-    if (opts.direct) {
-      attachDirectPlay(v, opts.client, opts.item, { autoplay: false });
+    if (this.direct && opts.media.kind === 'item') {
+      attachDirectPlay(v, opts.client, opts.media.item, { autoplay: false });
       if (opts.startSec > 0.5) {
         const events = this.cleanupEvents;
         const stopSeek = seekOnceOnMetadata(v, opts.startSec);
@@ -110,6 +112,7 @@ export class HtmlEngine implements TvEngine {
 
   private attachPlaylist(url: string, fromSec: number): void {
     const seq = ++this.attachSeq;
+    this.playlistUrl = url;
     if (this.playsHlsItself()) {
       this.attachNative(url, fromSec);
       return;
@@ -133,16 +136,20 @@ export class HtmlEngine implements TvEngine {
   }
 
   private attachMaster(): void {
+    const media = this.opts.media;
     const seq = ++this.attachSeq;
     // The URL must carry both the anchor and the audio track: without the anchor
     // the server always starts at t=0 and the picture ignores every seek.
-    const url = this.opts.client.media.hlsMasterUrl(
-      this.opts.item.id,
-      this.opts.masterAac,
-      this.baseSec,
-      this.rendition,
-      { copyCodecs: decodableAudioCodecs(), videoCodecs: decodableVideoCodecs() },
-    );
+    const url =
+      media.kind === 'hls'
+        ? media.master(this.baseSec)
+        : this.opts.client.media.hlsMasterUrl(
+            media.item.id,
+            this.opts.masterAac === true,
+            this.baseSec,
+            this.rendition,
+            { copyCodecs: decodableAudioCodecs(), videoCodecs: decodableVideoCodecs() },
+          );
     // The stream really starts at the keyframe AT-OR-BEFORE the anchor; correct
     // `baseSec` from X-Hls-Start so the clock + subtitle cues don't drift a GOP.
     void resolveMasterStart(url, this.baseSec).then((realStart) => {
@@ -205,6 +212,9 @@ export class HtmlEngine implements TvEngine {
   position(): number {
     return this.baseSec + this.v.currentTime;
   }
+  anchor(): number {
+    return this.baseSec;
+  }
   duration(): number {
     if (this.durSec > 0) return this.durSec;
     return Number.isFinite(this.v.duration) ? this.v.duration : 0;
@@ -226,8 +236,20 @@ export class HtmlEngine implements TvEngine {
     this.reanchor(absSec);
   }
 
+  reload(absSec: number): void {
+    const url = this.playlistUrl;
+    if (url === null) {
+      this.reanchor(absSec);
+      return;
+    }
+    const wasPlaying = !this.v.paused;
+    this.release();
+    this.attachPlaylist(url, Math.max(0, absSec - this.baseSec));
+    if (wasPlaying) this.resumeWhenPlayable();
+  }
+
   seekTo(absSec: number): void {
-    if (this.opts.direct) {
+    if (this.direct) {
       this.v.currentTime = absSec; // direct-play timeline is absolute
       return;
     }
@@ -241,7 +263,7 @@ export class HtmlEngine implements TvEngine {
   }
 
   setAudioRendition(rendition: number): void {
-    if (rendition === this.rendition || this.opts.direct) return;
+    if (rendition === this.rendition || this.direct) return;
     this.rendition = rendition;
     // The audio track is muxed in by the URL (no alternate renditions), so a
     // language switch reloads the master at the current position.

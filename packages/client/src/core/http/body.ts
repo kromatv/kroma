@@ -4,7 +4,7 @@ function bodyTooLarge(path: string, bytes: number): Error {
   return new Error(`${path} answered more than ${MAX_JSON_BODY_BYTES} bytes (${bytes})`);
 }
 
-async function readBoundedText(res: Response, path: string): Promise<string> {
+export async function readBoundedText(res: Response, path: string): Promise<string> {
   const reader = res.body?.getReader();
   if (!reader) {
     const text = await res.text();

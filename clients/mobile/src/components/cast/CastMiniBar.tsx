@@ -1,5 +1,7 @@
 // The strip above the tab bar while this phone is driving a TV.
 
+import type { KromaClient } from '@kromatv/client';
+import { type CastShowing, castShowing, castShownTitle } from '@kromatv/core';
 import { useCast } from '@kromatv/ui';
 import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
 import { Image } from 'expo-image';
@@ -9,6 +11,11 @@ import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
+function posterOf(playing: CastShowing, client: KromaClient): string | null {
+  if ('item' in playing) return client.media.artwork.posterFor(playing.item);
+  return client.media.artwork.resolve(playing.watch.poster);
+}
+
 export function CastMiniBar() {
   const t = useT();
   const router = useRouter();
@@ -17,9 +24,9 @@ export function CastMiniBar() {
 
   if (!active) return null;
 
-  const playing = active.nowPlaying;
-  const title = playing ? (playing.item.metadata?.title ?? playing.item.title) : t('cast.idle');
-  const poster = playing ? client.media.artwork.posterFor(playing.item) : null;
+  const playing = castShowing(active);
+  const title = playing ? castShownTitle(playing) : t('cast.idle');
+  const poster = playing ? posterOf(playing, client) : null;
   const duration = playing?.durationMs ?? 0;
   const progress = duration > 0 ? Math.min(1, positionMs / duration) : 0;
   const isPlaying = playing?.state === 'playing';

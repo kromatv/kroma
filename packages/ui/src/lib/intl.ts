@@ -1,16 +1,5 @@
-// Locale-aware rendering of values, next door to i18n.ts which renders
-// messages. The split is what varies with the language: a separator or a unit
-// symbol is a convention this file can hold, so those functions take a Locale
-// and stay callable outside React. Anything with words in it takes a Translate
-// instead and reads them from the catalogs, because the words belong to
-// whoever writes the language, not to this file.
-
+import { decimal } from '@kromatv/core';
 import type { Locale, Translate } from '@kromatv/i18n';
-
-const BYTE_UNITS: Record<Locale, readonly string[]> = {
-  fr: ['o', 'Ko', 'Mo', 'Go', 'To', 'Po'],
-  en: ['B', 'KB', 'MB', 'GB', 'TB', 'PB'],
-};
 
 const DATES = new Map<Locale, Intl.DateTimeFormat | null>();
 const RELATIVE = new Map<Locale, Intl.RelativeTimeFormat | null>();
@@ -30,21 +19,6 @@ function relativeFormat(locale: Locale): Intl.RelativeTimeFormat | null {
   RELATIVE.set(locale, made);
   return made;
 }
-const NUMBERS = new Map<string, Intl.NumberFormat>();
-
-function numberFormat(locale: Locale, digits: number): Intl.NumberFormat {
-  const key = `${locale}${digits}`;
-  const cached = NUMBERS.get(key);
-  if (cached) return cached;
-  const made = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-    useGrouping: false,
-  });
-  NUMBERS.set(key, made);
-  return made;
-}
-
 // `dateStyle` is Chromium 76, and the legacy television tier runs engines older
 // than that; Hermes without full ICU refuses it too. Both throw at construction
 // rather than ignoring it, so the shape is tried once per locale and a plain
@@ -72,28 +46,6 @@ function dateFormat(locale: Locale): Intl.DateTimeFormat | null {
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
-}
-
-/** A fixed-point number with the locale's decimal separator: `1,5` in French,
- *  `1.5` in English. Grouping is off: these sit in tabular columns beside a
- *  unit, where a thousands separator reads as a second number. */
-export function decimal(n: number, locale: Locale, digits = 1): string {
-  return numberFormat(locale, digits).format(n);
-}
-
-/** A byte size in the locale's units: `1,5 Go` in French, `1.5 GB` in English.
- *  Zero and negatives render as the smallest unit rather than empty. */
-export function formatBytes(bytes: number, locale: Locale): string {
-  const units = BYTE_UNITS[locale];
-  const smallest = units[0] as string;
-  if (!bytes || bytes < 0) return `0 ${smallest}`;
-  // Clamped at both ends: a fractional byte count logs negative, and an
-  // unclamped index would divide by 1024 to the minus one and read a
-  // half-byte transfer rate back as 512.
-  const step = Math.floor(Math.log(bytes) / Math.log(1024));
-  const i = Math.max(0, Math.min(units.length - 1, step));
-  const v = bytes / 1024 ** i;
-  return `${decimal(v, locale, v >= 100 || i <= 1 ? 0 : 1)} ${units[i] ?? smallest}`;
 }
 
 /** A throughput figure, one decimal, no unit: the caller supplies `Mb/s`. */

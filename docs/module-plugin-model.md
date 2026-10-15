@@ -56,10 +56,46 @@ tv.kroma.torrents/client
 tv.kroma.indexer/engine
 ```
 
-The handful the CORE calls are bare — `acquisition`, `transcriber`, `embedder` —
-because the core has no manifest to define one in and nothing else may define
-one. A bare name is the core's; a name with a `/` belongs to the module before
+The handful the CORE holds are bare, `acquisition`, `transcriber`, `embedder`
+and `watchable`, because the core has no manifest to define one in and nothing
+else may define one. A bare name is the core's; a name with a `/` belongs to the
+module before it.
+
+It calls the first three. `watchable` it names and asks to describe itself: a
+bare name a CLIENT draws a surface for is a **capability**, and the core's whole
+part in one is
+
+```
+GET /api/capabilities
+{"capabilities": {"watchable": {
+  "mount": "/api/module/tv.kroma.torrents",
+  "sources": [{"mount": "...", "label": "Torrents", "icon": "magnet",
+               "figures": [...], "map": {...}, "actions": [...]}]
+}}}
+```
+
+The mounts come out of the running registry. Everything beside them is the
+module's own answer to `POST /_port/watchable/describe`, forwarded whole: the
+core adds where it reached a source and reads nothing else, so it gains no word
+for what a figure means. It is a point method rather than a manifest field
+because every label in it is in the VIEWER's language and a sidecar's catalog is
+embedded in the sidecar's binary, where the core cannot resolve a key against
 it.
+
+That is what lets a capability have several kinds of answer at once. A swarm
+counts peers, a Usenet server counts nothing of the sort, and each declares what
+it is instead of pretending to be the other. The client then speaks the
+capability's own vocabulary to each mount, the module localizes its own
+refusals, and neither end learns anything about the other beyond the shape they
+agreed on. A capability nothing answers is absent from the map, which is how a
+client knows not to offer it.
+
+The limit is honest and worth naming: **a module contributes data, not code.**
+The figures, the slice map and the actions are a closed vocabulary, so a source
+nobody here has thought of draws on a television the day it is installed, and a
+screen shape nobody declared cannot be drawn at all. See
+[`capability-surfaces.md`](capability-surfaces.md) for why a feature goes there
+rather than into the core, and what the vocabulary costs.
 
 Three manifest verbs, and every module may use all three:
 
@@ -286,7 +322,14 @@ Four gaps stand between that and "a module can do whatever we want":
   data. That is an auth change on stored records, not a refactor, and it is the
   one gap here still worth a deliberate decision. `manifest.permissions` used to
   advertise it: no module ever populated the field and nothing read it, so it is
-  removed rather than left lying.
+  removed rather than left lying. A right named after a CAPABILITY is a different
+  thing and is allowed: `watchable.play` is the core's own, defined beside the
+  others, and a module reads it rather than inventing it. The name says what a
+  viewer may do, so it survives whichever module answers the point. What a module
+  DOES declare is which of those rights it reads, in `manifest.rights`, because
+  the session answer is narrowed to the set every SDK can name plus what the
+  caller asked for: a bundle built before a right existed parses the answer with a
+  strict enum and reads one key it cannot name as no session at all.
 - **`tmdb_api_key()` named a vendor** in a general contract. Closed: `HostCtx`
   now has `secret(name)`, the callback API answers `/_host/secret?name=` and
   `/_host/metadata-language`, and the core's three callers ask for `"tmdb"`. The
@@ -456,7 +499,13 @@ under a new id is picked up by the download module at runtime, and neither the
 core nor the download module is edited to accept it.
 
 Mechanically, today: `server/Cargo.toml` deps no crate under `modules/`; no crate
-under `server/` names a module's domain in a type, trait or function; the three
-point names the core holds — `acquisition`, `transcriber`, `embedder` — are bare
-capability names in its own route table and composition root. The remaining
-`tv.kroma.*` and point-name hits under `server/` are test fixtures and prose.
+under `server/` names a module's domain in a type, trait or function; the four
+point names the core holds, `acquisition`, `transcriber`, `embedder` and
+`watchable`, are bare capability names in its own route table and composition
+root. The remaining `tv.kroma.*` and point-name hits under `server/` are test
+fixtures and prose.
+
+The newest proof is `watchable`. Watching a film while it downloads was
+`server/src/api/watchable*`, two settings keys and a loopback that read a
+module's bytes back through the core's own proxy. It is now the module's, whole,
+and the core's side of it is one generic route over the registry.

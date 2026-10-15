@@ -7,19 +7,20 @@ import {
   useT,
   WEB_FLAGS,
 } from '@kromatv/ui';
-import { Box, Button, backdropBlur, classes, Icon, styles, Text } from '@kromatv/ui/kit';
 import { useCallback, useMemo, useState } from 'react';
+import { catalogueSource } from '#web/features/playback/playback-source';
+import { StoppedNotice } from '#web/features/playback/stopped-notice';
 import { usePlaybackSession } from '#web/features/playback/use-playback-session';
 import { useResumeProgress } from '#web/features/playback/use-resume-progress';
 import { useWebController } from '#web/features/playback/use-web-controller';
+import { useWebSubtitles } from '#web/features/playback/use-web-subtitles';
 import { useWebUpNext } from '#web/features/playback/use-web-upnext';
+import { VideoSurface } from '#web/features/playback/video-surface';
 import { kromaClient, type MovieView } from '#web/shared/lib/api';
 import { useStoryboard } from '#web/shared/lib/use-storyboard';
 import { castPicker } from '#web/shared/ui/cast-picker';
 
 const PREVIEW_W = 176;
-
-const s = styles({ frost: backdropBlur(4), inheritCorner: { borderRadius: 'inherit' } });
 
 /** Adapts the web engine to the shared unified `<Player>`; layers on web-only
  *  concerns (admin-stop overlay, session heartbeat). */
@@ -42,7 +43,9 @@ export function Player({
 }>) {
   const t = useT();
   const cast = useCast();
-  const wc = useWebController(item);
+  const source = useMemo(() => catalogueSource(item), [item]);
+  const subs = useWebSubtitles(item, t);
+  const wc = useWebController(source, subs);
   const { controller, videoRef, pb, subtitleGen } = wc;
   const [appearance, setAppearance] = useSubtitleAppearance();
   const storyboard = useStoryboard(item.id);
@@ -55,7 +58,8 @@ export function Player({
   const [terminated, setTerminated] = useState<string | null>(null);
 
   usePlaybackSession({
-    item,
+    subject: { itemId: item.id },
+    durationMs: item.durationMs ?? null,
     getPosition: pb.getPosition,
     videoRef,
     baseSec: pb.baseSec,
@@ -97,19 +101,6 @@ export function Player({
       }
     : null;
 
-  const surface = (
-    <video
-      key={`${pb.anchor}:${pb.audioIndex}`}
-      ref={videoRef}
-      playsInline
-      crossOrigin="anonymous"
-      className={classes(s.inheritCorner)}
-    >
-      {/* Empty track satisfies the captions requirement; SubtitleRenderer renders cues out-of-band. */}
-      <track kind="captions" />
-    </video>
-  );
-
   return (
     <UnifiedPlayer.Root
       controller={controller}
@@ -146,22 +137,12 @@ export function Player({
         />
       ) : null}
       {resumeAt != null ? <UnifiedPlayer.Resume at={resumeAt} /> : null}
-      <UnifiedPlayer.Media>{surface}</UnifiedPlayer.Media>
+      <UnifiedPlayer.Media>
+        <VideoSurface pb={pb} />
+      </UnifiedPlayer.Media>
       {terminated ? (
         <UnifiedPlayer.Panel>
-          <Box fill z={80} center gap={20} px={32} bg="black/85" style={s.frost}>
-            <Icon name="player-stop-filled" size={52} color="danger" />
-            <Text variant="body" color="white/80" maxW={460} textAlign="center">
-              {terminated}
-            </Text>
-            <Button
-              variant="primary"
-              size="sm"
-              icon="chevron-left"
-              label={t('player.back')}
-              onPress={onClose}
-            />
-          </Box>
+          <StoppedNotice message={terminated} onBack={onClose} />
         </UnifiedPlayer.Panel>
       ) : null}
     </UnifiedPlayer.Root>
