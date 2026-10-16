@@ -1,6 +1,12 @@
 use super::*;
 
-fn title(kind: RequestKind, tmdb_id: u64, name: &str, year: Option<u32>, aliases: &[&str]) -> MonitoredTitle {
+fn title(
+    kind: RequestKind,
+    tmdb_id: u64,
+    name: &str,
+    year: Option<u32>,
+    aliases: &[&str],
+) -> MonitoredTitle {
     MonitoredTitle {
         kind,
         tmdb_id,
@@ -41,7 +47,13 @@ fn row(id: &str, season: Option<u32>, episode: Option<u32>) -> WantedRow {
 
 fn library() -> Vec<MonitoredTitle> {
     vec![
-        title(RequestKind::Show, 1, "La Casa de papel", None, &["Money Heist"]),
+        title(
+            RequestKind::Show,
+            1,
+            "La Casa de papel",
+            None,
+            &["Money Heist"],
+        ),
         title(RequestKind::Movie, 2, "Dune", Some(2021), &[]),
         title(RequestKind::Movie, 3, "Dune", Some(1984), &[]),
     ]
@@ -88,7 +100,11 @@ fn an_episode_never_matches_a_film_and_a_film_never_a_show() {
 #[test]
 fn an_episode_release_aims_at_the_rows_it_holds() {
     let show = title(RequestKind::Show, 1, "Show", None, &[]);
-    let rows = [row("a", Some(1), Some(1)), row("b", Some(1), Some(2)), row("c", Some(1), Some(3))];
+    let rows = [
+        row("a", Some(1), Some(1)),
+        row("b", Some(1), Some(2)),
+        row("c", Some(1), Some(3)),
+    ];
     let parsed = kroma_scene::parse_release_name("Show.S01E01-E02.1080p.WEB");
 
     let (target, covered) = target_for(&show, &parsed, &rows).unwrap();
@@ -100,7 +116,11 @@ fn an_episode_release_aims_at_the_rows_it_holds() {
 #[test]
 fn a_pack_aims_at_every_monitored_episode_of_its_season() {
     let show = title(RequestKind::Show, 1, "Show", None, &[]);
-    let rows = [row("a", Some(1), Some(1)), row("b", Some(1), Some(2)), row("z", Some(2), Some(1))];
+    let rows = [
+        row("a", Some(1), Some(1)),
+        row("b", Some(1), Some(2)),
+        row("z", Some(2), Some(1)),
+    ];
     let parsed = kroma_scene::parse_release_name("Show.S01.1080p.WEB");
 
     let (target, covered) = target_for(&show, &parsed, &rows).unwrap();

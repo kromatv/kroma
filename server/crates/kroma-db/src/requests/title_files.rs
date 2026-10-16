@@ -1,9 +1,9 @@
 //! A title's files, as the quality rules judge them.
 
 use kroma_domain::{MediaFile, RequestKind};
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 
-use crate::{row_to_file, FILE_COLS};
+use crate::{FILE_COLS, row_to_file};
 
 /// One file of a title, with the episodes it holds (none for a film).
 #[derive(Debug, Clone)]
@@ -88,7 +88,10 @@ mod tests {
         let files = title_files(&conn, RequestKind::Show, 77).unwrap();
 
         assert_eq!(files.len(), 1);
-        assert_eq!((files[0].season, files[0].episode, files[0].episode_end), (Some(1), Some(1), Some(2)));
+        assert_eq!(
+            (files[0].season, files[0].episode, files[0].episode_end),
+            (Some(1), Some(1), Some(2))
+        );
         assert_eq!(files[0].file.video.as_ref().unwrap().width, Some(1920));
         assert_eq!(files[0].file.audio_tracks[0].region.as_deref(), Some("CA"));
     }

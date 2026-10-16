@@ -28,7 +28,10 @@ pub fn routes() -> Router<SharedState> {
             get(one).put(monitor).delete(unmonitor),
         )
         .route("/monitoring/{kind}/{tmdb_id}/ledger", get(ledger))
-        .route("/monitoring/{kind}/{tmdb_id}/ledger/{season}", get(season_ledger))
+        .route(
+            "/monitoring/{kind}/{tmdb_id}/ledger/{season}",
+            get(season_ledger),
+        )
         .route("/monitoring/{kind}/{tmdb_id}/episodes", put(episodes))
 }
 
@@ -131,7 +134,10 @@ pub async fn episodes(
 ) -> Result<Response, Response> {
     require(&user)?;
     if kind_of(&kind)? != RequestKind::Show {
-        return Err(json_error(StatusCode::BAD_REQUEST, "a movie has no episodes"));
+        return Err(json_error(
+            StatusCode::BAD_REQUEST,
+            "a movie has no episodes",
+        ));
     }
     let title = service(move || monitoring::set_episodes(&state, tmdb_id, &body)).await?;
     Ok(Json(title).into_response())
@@ -145,13 +151,19 @@ pub async fn bulk(
 ) -> Result<Response, Response> {
     require(&user)?;
     if body.titles.len() > 500 {
-        return Err(json_error(StatusCode::BAD_REQUEST, "at most 500 titles at once"));
+        return Err(json_error(
+            StatusCode::BAD_REQUEST,
+            "at most 500 titles at once",
+        ));
     }
-    let summary = service(move || Ok(monitoring::monitor_many(&state, &body, Some(&user.id)))).await?;
+    let summary =
+        service(move || Ok(monitoring::monitor_many(&state, &body, Some(&user.id)))).await?;
     let failed: Vec<serde_json::Value> = summary
         .failed
         .iter()
-        .map(|(title, error)| json!({ "kind": title.kind, "tmdbId": title.tmdb_id, "error": error }))
+        .map(
+            |(title, error)| json!({ "kind": title.kind, "tmdbId": title.tmdb_id, "error": error }),
+        )
         .collect();
     Ok(Json(json!({ "monitored": summary.monitored, "failed": failed })).into_response())
 }
@@ -165,8 +177,9 @@ pub async fn ledger(
 ) -> Result<Response, Response> {
     require(&user)?;
     let kind = kind_of(&kind)?;
-    let view = service(move || crate::services::request_ledger::title_ledger(&state, kind, tmdb_id))
-        .await?;
+    let view =
+        service(move || crate::services::request_ledger::title_ledger(&state, kind, tmdb_id))
+            .await?;
     Ok(Json(view).into_response())
 }
 

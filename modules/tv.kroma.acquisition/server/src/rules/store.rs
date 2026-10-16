@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use kroma_module_sdk::db::Pool;
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_scene::{CustomFormat, QualityProfile, Sizes};
-use rusqlite::{params, OptionalExtension};
+use rusqlite::{OptionalExtension, params};
 
 /// This module's own tables, applied to its private database.
 pub const MIGRATIONS: &str = "

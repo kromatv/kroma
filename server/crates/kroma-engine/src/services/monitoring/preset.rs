@@ -69,9 +69,7 @@ pub(crate) fn select(
         }
         MonitorPreset::FirstSeason => (vec![1], false),
         MonitorPreset::LatestSeason => (latest.into_iter().collect(), false),
-        MonitorPreset::Existing | MonitorPreset::Pilot | MonitorPreset::None => {
-            (Vec::new(), false)
-        }
+        MonitorPreset::Existing | MonitorPreset::Pilot | MonitorPreset::None => (Vec::new(), false),
     };
     Selection {
         episodes: roster
@@ -183,10 +181,22 @@ mod tests {
     fn a_preset_reads_only_the_seasons_it_looks_at() {
         let seasons = [1, 2, 3];
 
-        assert_eq!(seasons_to_read(MonitorPreset::Pilot, &seasons, &disk()), [1]);
-        assert_eq!(seasons_to_read(MonitorPreset::LatestSeason, &seasons, &disk()), [3]);
-        assert_eq!(seasons_to_read(MonitorPreset::Existing, &seasons, &disk()), [1, 2]);
-        assert_eq!(seasons_to_read(MonitorPreset::All, &seasons, &disk()), [1, 2, 3]);
+        assert_eq!(
+            seasons_to_read(MonitorPreset::Pilot, &seasons, &disk()),
+            [1]
+        );
+        assert_eq!(
+            seasons_to_read(MonitorPreset::LatestSeason, &seasons, &disk()),
+            [3]
+        );
+        assert_eq!(
+            seasons_to_read(MonitorPreset::Existing, &seasons, &disk()),
+            [1, 2]
+        );
+        assert_eq!(
+            seasons_to_read(MonitorPreset::All, &seasons, &disk()),
+            [1, 2, 3]
+        );
         assert!(seasons_to_read(MonitorPreset::None, &seasons, &disk()).is_empty());
     }
 }

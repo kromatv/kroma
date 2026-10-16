@@ -39,7 +39,14 @@ fn an_episode_announced_since_joins_and_wakes_the_search() {
     let host = host();
     {
         let _tmdb = tmdb();
-        monitor(&host, RequestKind::Show, SHOW, &MonitorBody::default(), None).unwrap();
+        monitor(
+            &host,
+            RequestKind::Show,
+            SHOW,
+            &MonitorBody::default(),
+            None,
+        )
+        .unwrap();
     }
     age(&host);
     let _later = later_tmdb(&[1, 2]);
@@ -48,7 +55,11 @@ fn an_episode_announced_since_joins_and_wakes_the_search() {
 
     assert_eq!(refreshed, 1);
     assert!(held(&host).contains(&(Some(1), Some(3))));
-    assert!(host.jobs().iter().any(|(key, _)| *key == "acquisition.search"));
+    assert!(
+        host.jobs()
+            .iter()
+            .any(|(key, _)| *key == "acquisition.search")
+    );
 }
 
 #[test]
@@ -56,7 +67,14 @@ fn an_episode_switched_off_stays_off() {
     let host = host();
     {
         let _tmdb = tmdb();
-        monitor(&host, RequestKind::Show, SHOW, &MonitorBody::default(), None).unwrap();
+        monitor(
+            &host,
+            RequestKind::Show,
+            SHOW,
+            &MonitorBody::default(),
+            None,
+        )
+        .unwrap();
         let off = EpisodeMonitoringBody {
             episodes: vec![EpisodeSwitch {
                 episode: EpisodeRef {
@@ -82,7 +100,14 @@ fn a_new_season_joins_a_show_that_takes_new_seasons() {
     let host = host();
     {
         let _tmdb = tmdb();
-        monitor(&host, RequestKind::Show, SHOW, &MonitorBody::default(), None).unwrap();
+        monitor(
+            &host,
+            RequestKind::Show,
+            SHOW,
+            &MonitorBody::default(),
+            None,
+        )
+        .unwrap();
     }
     age(&host);
     let _later = later_tmdb(&[1, 2, 3]);
@@ -90,7 +115,10 @@ fn a_new_season_joins_a_show_that_takes_new_seasons() {
     refresh_pass(&host).unwrap();
 
     assert!(held(&host).contains(&(Some(3), Some(1))));
-    assert_eq!(monitored(&host, RequestKind::Show, SHOW).unwrap().seasons, [1, 2, 3]);
+    assert_eq!(
+        monitored(&host, RequestKind::Show, SHOW).unwrap().seasons,
+        [1, 2, 3]
+    );
 }
 
 #[test]
@@ -98,7 +126,14 @@ fn a_new_season_stays_out_of_a_show_that_does_not() {
     let host = host();
     {
         let _tmdb = tmdb();
-        monitor(&host, RequestKind::Show, SHOW, &with_preset(MonitorPreset::FirstSeason), None).unwrap();
+        monitor(
+            &host,
+            RequestKind::Show,
+            SHOW,
+            &with_preset(MonitorPreset::FirstSeason),
+            None,
+        )
+        .unwrap();
     }
     age(&host);
     let _later = later_tmdb(&[1, 2, 3]);
@@ -112,7 +147,14 @@ fn a_new_season_stays_out_of_a_show_that_does_not() {
 fn a_title_refreshed_recently_is_left_alone() {
     let host = host();
     let _tmdb = tmdb();
-    monitor(&host, RequestKind::Show, SHOW, &MonitorBody::default(), None).unwrap();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
 
     assert_eq!(refresh_pass(&host).unwrap(), 0);
 }
@@ -122,9 +164,19 @@ fn an_ended_show_is_not_read_again() {
     let host = host();
     {
         let _tmdb = tmdb();
-        monitor(&host, RequestKind::Show, SHOW, &MonitorBody::default(), None).unwrap();
+        monitor(
+            &host,
+            RequestKind::Show,
+            SHOW,
+            &MonitorBody::default(),
+            None,
+        )
+        .unwrap();
     }
-    exec(&host, "UPDATE monitored SET refreshed_at = 0, air_status = 'Ended'");
+    exec(
+        &host,
+        "UPDATE monitored SET refreshed_at = 0, air_status = 'Ended'",
+    );
 
     assert_eq!(refresh_pass(&host).unwrap(), 0);
 }

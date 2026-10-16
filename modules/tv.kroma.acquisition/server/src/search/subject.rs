@@ -1,7 +1,7 @@
 //! What a search is for: a request, or a title by its TMDB identity, and the
 //! ledger rows each one is searched against.
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use kroma_module_sdk::db::{self, WantedRow};
 use kroma_module_sdk::engine::model::{MediaRequest, RequestKind};
 use kroma_module_sdk::host::HostStorage;
@@ -48,7 +48,11 @@ pub struct Resolved {
     pub searched: Vec<WantedRow>,
 }
 
-pub fn resolve<S: HostStorage>(state: &S, subject: &Subject, scope: SearchScope) -> Result<Resolved> {
+pub fn resolve<S: HostStorage>(
+    state: &S,
+    subject: &Subject,
+    scope: SearchScope,
+) -> Result<Resolved> {
     match subject {
         Subject::Request { request_id } => resolve_request(state, request_id, scope),
         Subject::Title { kind, tmdb_id } => resolve_title(state, *kind, *tmdb_id, scope),
@@ -120,7 +124,9 @@ fn resolve_title<S: HostStorage>(
             .map(|m| m.title.clone())
             .or_else(|| sample.map(|w| w.title.clone()))
             .unwrap_or_default(),
-        year: monitored.and_then(|m| m.year).or(sample.and_then(|w| w.year)),
+        year: monitored
+            .and_then(|m| m.year)
+            .or(sample.and_then(|w| w.year)),
         request_id,
         ledger,
         searched,
@@ -170,16 +176,21 @@ mod tests {
             tmdb_id: 603,
         };
 
-        assert_ne!(request.cache_key(SearchScope::All), title.cache_key(SearchScope::All));
+        assert_ne!(
+            request.cache_key(SearchScope::All),
+            title.cache_key(SearchScope::All)
+        );
     }
 
     #[test]
     fn a_subject_reads_from_its_json() {
-        let title: Subject =
-            serde_json::from_value(serde_json::json!({ "type": "title", "kind": "show", "tmdbId": 77 }))
-                .unwrap();
+        let title: Subject = serde_json::from_value(
+            serde_json::json!({ "type": "title", "kind": "show", "tmdbId": 77 }),
+        )
+        .unwrap();
         let request: Subject =
-            serde_json::from_value(serde_json::json!({ "type": "request", "requestId": "r1" })).unwrap();
+            serde_json::from_value(serde_json::json!({ "type": "request", "requestId": "r1" }))
+                .unwrap();
 
         assert_eq!(
             title,

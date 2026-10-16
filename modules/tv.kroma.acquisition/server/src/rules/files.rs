@@ -9,7 +9,7 @@ use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::host::HostStorage;
 use kroma_module_sdk::primitives::language::language_code;
 use kroma_scene::{
-    evaluate, AudioCodec, AudioFact, Evaluation, Facts, HdrFormat, Language, Probe, Rules,
+    AudioCodec, AudioFact, Evaluation, Facts, HdrFormat, Language, Probe, Rules, evaluate,
 };
 use serde::Serialize;
 
@@ -36,9 +36,9 @@ impl JudgedFile {
             (Some(s), None) => self.season == Some(s),
             (Some(s), Some(e)) => {
                 self.season == Some(s)
-                    && self
-                        .episode
-                        .is_some_and(|first| (first..=self.episode_end.unwrap_or(first)).contains(&e))
+                    && self.episode.is_some_and(|first| {
+                        (first..=self.episode_end.unwrap_or(first)).contains(&e)
+                    })
             }
             (None, Some(_)) => false,
         }

@@ -4,15 +4,31 @@ use super::*;
 fn a_show_monitored_for_the_first_time_takes_every_episode() {
     let host = host();
     let _tmdb = tmdb();
-    exec(&host, "INSERT INTO users (id,email,username,password_hash,permissions,created_at) VALUES ('u1','a@b.c','alice','h','[]','t')");
+    exec(
+        &host,
+        "INSERT INTO users (id,email,username,password_hash,permissions,created_at) VALUES ('u1','a@b.c','alice','h','[]','t')",
+    );
 
-    let title = monitor(&host, RequestKind::Show, SHOW, &MonitorBody::default(), Some("u1")).unwrap();
+    let title = monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &MonitorBody::default(),
+        Some("u1"),
+    )
+    .unwrap();
 
     assert_eq!(title.seasons, [1, 2]);
     assert!(title.monitor_new_seasons);
     assert_eq!(title.original_language.as_deref(), Some("en-US"));
     assert_eq!(units(&host, RequestKind::Show, SHOW).len(), 4);
-    assert_eq!(monitored(&host, RequestKind::Show, SHOW).unwrap().added_by.as_deref(), Some("u1"));
+    assert_eq!(
+        monitored(&host, RequestKind::Show, SHOW)
+            .unwrap()
+            .added_by
+            .as_deref(),
+        Some("u1")
+    );
 }
 
 #[test]
@@ -21,9 +37,20 @@ fn an_episode_already_on_disk_is_monitored_as_available() {
     let _tmdb = tmdb();
     seed_show_on_disk(&host, &[(1, 1)]);
 
-    monitor(&host, RequestKind::Show, SHOW, &MonitorBody::default(), None).unwrap();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
 
-    assert!(units(&host, RequestKind::Show, SHOW).contains(&(Some(1), Some(1), wanted("available"))));
+    assert!(units(&host, RequestKind::Show, SHOW).contains(&(
+        Some(1),
+        Some(1),
+        wanted("available")
+    )));
 }
 
 #[test]
@@ -32,24 +59,51 @@ fn the_missing_preset_leaves_out_what_is_on_disk() {
     let _tmdb = tmdb();
     seed_show_on_disk(&host, &[(1, 1)]);
 
-    monitor(&host, RequestKind::Show, SHOW, &with_preset(MonitorPreset::Missing), None).unwrap();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &with_preset(MonitorPreset::Missing),
+        None,
+    )
+    .unwrap();
 
     let held: Vec<(Option<u32>, Option<u32>)> = units(&host, RequestKind::Show, SHOW)
         .into_iter()
         .map(|(s, e, _)| (s, e))
         .collect();
-    assert_eq!(held, [(Some(1), Some(2)), (Some(2), Some(1)), (Some(2), Some(2))]);
+    assert_eq!(
+        held,
+        [(Some(1), Some(2)), (Some(2), Some(1)), (Some(2), Some(2))]
+    );
 }
 
 #[test]
 fn reapplying_a_preset_drops_what_it_no_longer_chooses() {
     let host = host();
     let _tmdb = tmdb();
-    monitor(&host, RequestKind::Show, SHOW, &MonitorBody::default(), None).unwrap();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
 
-    let title = monitor(&host, RequestKind::Show, SHOW, &with_preset(MonitorPreset::Pilot), None).unwrap();
+    let title = monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &with_preset(MonitorPreset::Pilot),
+        None,
+    )
+    .unwrap();
 
-    assert_eq!(units(&host, RequestKind::Show, SHOW), [(Some(1), Some(1), wanted("wanted"))]);
+    assert_eq!(
+        units(&host, RequestKind::Show, SHOW),
+        [(Some(1), Some(1), wanted("wanted"))]
+    );
     assert!(title.seasons.is_empty());
     assert!(!title.monitor_new_seasons);
 }
@@ -58,7 +112,14 @@ fn reapplying_a_preset_drops_what_it_no_longer_chooses() {
 fn a_preset_never_takes_an_episode_from_an_open_request() {
     let host = host();
     let _tmdb = tmdb();
-    monitor(&host, RequestKind::Show, SHOW, &with_preset(MonitorPreset::None), None).unwrap();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &with_preset(MonitorPreset::None),
+        None,
+    )
+    .unwrap();
     db::insert_request(
         host.db(),
         &db::NewRequest {
@@ -92,7 +153,14 @@ fn a_preset_never_takes_an_episode_from_an_open_request() {
     };
     db::claim_wanted(host.db(), "r1", &[asked], 1).unwrap();
 
-    monitor(&host, RequestKind::Show, SHOW, &with_preset(MonitorPreset::Pilot), None).unwrap();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &with_preset(MonitorPreset::Pilot),
+        None,
+    )
+    .unwrap();
 
     let held: Vec<(Option<u32>, Option<u32>)> = units(&host, RequestKind::Show, SHOW)
         .into_iter()
@@ -128,7 +196,11 @@ fn searching_now_wakes_the_search() {
 
     monitor(&host, RequestKind::Show, SHOW, &body, None).unwrap();
 
-    assert!(host.jobs().iter().any(|(key, _)| *key == "acquisition.search"));
+    assert!(
+        host.jobs()
+            .iter()
+            .any(|(key, _)| *key == "acquisition.search")
+    );
 }
 
 #[test]
@@ -145,10 +217,19 @@ fn a_movie_is_searched_from_its_minimum_availability() {
     };
     let date = |host: &StubHost| {
         let conn = host.db().get().unwrap();
-        db::wanted_for_title(&conn, RequestKind::Movie, MOVIE).unwrap()[0].air_date.clone()
+        db::wanted_for_title(&conn, RequestKind::Movie, MOVIE).unwrap()[0]
+            .air_date
+            .clone()
     };
 
-    monitor(&host, RequestKind::Movie, MOVIE, &MonitorBody::default(), None).unwrap();
+    monitor(
+        &host,
+        RequestKind::Movie,
+        MOVIE,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
     let released = date(&host);
     monitor(&host, RequestKind::Movie, MOVIE, &in_cinemas, None).unwrap();
     let cinema = date(&host);
@@ -165,7 +246,14 @@ fn a_movie_is_searched_from_its_minimum_availability() {
 fn switching_a_season_off_unmonitors_its_episodes() {
     let host = host();
     let _tmdb = tmdb();
-    monitor(&host, RequestKind::Show, SHOW, &MonitorBody::default(), None).unwrap();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
     let body = EpisodeMonitoringBody {
         seasons: vec![SeasonSwitch {
             season: 2,
@@ -177,14 +265,25 @@ fn switching_a_season_off_unmonitors_its_episodes() {
     let title = set_episodes(&host, SHOW, &body).unwrap();
 
     assert_eq!(title.seasons, [1]);
-    assert!(units(&host, RequestKind::Show, SHOW).iter().all(|(s, _, _)| *s == Some(1)));
+    assert!(
+        units(&host, RequestKind::Show, SHOW)
+            .iter()
+            .all(|(s, _, _)| *s == Some(1))
+    );
 }
 
 #[test]
 fn switching_one_episode_on_monitors_just_that_episode() {
     let host = host();
     let _tmdb = tmdb();
-    monitor(&host, RequestKind::Show, SHOW, &with_preset(MonitorPreset::None), None).unwrap();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &with_preset(MonitorPreset::None),
+        None,
+    )
+    .unwrap();
     let body = EpisodeMonitoringBody {
         episodes: vec![EpisodeSwitch {
             episode: EpisodeRef {
@@ -198,7 +297,10 @@ fn switching_one_episode_on_monitors_just_that_episode() {
 
     let title = set_episodes(&host, SHOW, &body).unwrap();
 
-    assert_eq!(units(&host, RequestKind::Show, SHOW), [(Some(2), Some(1), wanted("wanted"))]);
+    assert_eq!(
+        units(&host, RequestKind::Show, SHOW),
+        [(Some(2), Some(1), wanted("wanted"))]
+    );
     assert!(title.seasons.is_empty());
 }
 
@@ -213,7 +315,14 @@ fn switching_episodes_of_a_show_nobody_monitors_is_refused() {
 fn unmonitoring_forgets_the_title_and_its_rows() {
     let host = host();
     let _tmdb = tmdb();
-    monitor(&host, RequestKind::Show, SHOW, &MonitorBody::default(), None).unwrap();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
 
     let removed = unmonitor(&host, RequestKind::Show, SHOW).unwrap();
 

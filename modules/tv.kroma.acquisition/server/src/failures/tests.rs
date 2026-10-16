@@ -6,7 +6,11 @@ use super::*;
 fn host() -> StubHost {
     let host = StubHost::with_core(db::testing::temp_pool("acq-failures"))
         .with_setting("acqStallHours", serde_json::json!(0));
-    db::apply_migrations(&host.store().get().unwrap(), crate::rules::store::MIGRATIONS).unwrap();
+    db::apply_migrations(
+        &host.store().get().unwrap(),
+        crate::rules::store::MIGRATIONS,
+    )
+    .unwrap();
     host
 }
 
@@ -100,7 +104,11 @@ fn an_episode_whose_download_was_removed_is_missing_again() {
 
     assert_eq!(status_of(&host, "w1"), "wanted");
     assert_eq!(status_of(&host, "w2"), "grabbed");
-    assert!(host.jobs().iter().any(|(key, _)| *key == "acquisition.search"));
+    assert!(
+        host.jobs()
+            .iter()
+            .any(|(key, _)| *key == "acquisition.search")
+    );
 }
 
 #[test]
@@ -144,5 +152,12 @@ fn a_download_unfinished_past_the_limit_has_stalled() {
     assert!(stalled(&d, 72 * HOUR_MS, 72));
     assert!(!stalled(&d, 71 * HOUR_MS, 72));
     assert!(!stalled(&d, 1000 * HOUR_MS, 0));
-    assert!(!stalled(&Download { status: "completed".into(), ..d }, 1000 * HOUR_MS, 72));
+    assert!(!stalled(
+        &Download {
+            status: "completed".into(),
+            ..d
+        },
+        1000 * HOUR_MS,
+        72
+    ));
 }

@@ -70,12 +70,22 @@ pub fn failure_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<F
     let mut summary = FailureSummary::default();
     let mut downloads = read_downloads(state)?;
     let stall_hours = state.setting_i64("acqStallHours", 72).max(0);
-    for d in downloads.iter_mut().filter(|d| stalled(d, now, stall_hours)) {
-        if let Err(e) = crate::peers::downloads::set_status(state, &d.id, "failed", Some("stalled")) {
-            log(format!("could not give up on \"{}\": {e:#}", d.release_title));
+    for d in downloads
+        .iter_mut()
+        .filter(|d| stalled(d, now, stall_hours))
+    {
+        if let Err(e) = crate::peers::downloads::set_status(state, &d.id, "failed", Some("stalled"))
+        {
+            log(format!(
+                "could not give up on \"{}\": {e:#}",
+                d.release_title
+            ));
             continue;
         }
-        log(format!("\"{}\" stalled for {stall_hours} h; giving up", d.release_title));
+        log(format!(
+            "\"{}\" stalled for {stall_hours} h; giving up",
+            d.release_title
+        ));
         d.status = "failed".into();
         d.error = Some("stalled".into());
         summary.stalled += 1;
@@ -96,7 +106,10 @@ pub fn failure_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<F
     if !orphaned.is_empty() {
         kroma_module_sdk::db::set_wanted_status(state.db(), &orphaned, "wanted", now)?;
         kroma_module_sdk::db::reset_wanted_search(state.db(), &orphaned, now)?;
-        log(format!("{} episode(s) or film(s) lost their download; searching again", orphaned.len()));
+        log(format!(
+            "{} episode(s) or film(s) lost their download; searching again",
+            orphaned.len()
+        ));
         state.trigger_job("acquisition.search", "download-failed");
     }
     summary.missing_again = orphaned.len();

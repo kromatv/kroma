@@ -109,8 +109,10 @@ mod tests {
     fn with_a_recycle_bin_a_replaced_file_is_moved_under_the_day() {
         let lib = dir("recycle-lib");
         let bin = dir("recycle-bin");
-        let host = StubHost::new()
-            .with_setting("acqRecycleBin", serde_json::json!(bin.path().to_string_lossy()));
+        let host = StubHost::new().with_setting(
+            "acqRecycleBin",
+            serde_json::json!(bin.path().to_string_lossy()),
+        );
         let file = lib.path().join("Film 1080p.mkv");
         std::fs::write(&file, b"x").unwrap();
 
@@ -127,8 +129,10 @@ mod tests {
     fn a_second_file_of_the_same_name_does_not_overwrite_the_first() {
         let lib = dir("recycle-twice-lib");
         let bin = dir("recycle-twice-bin");
-        let host = StubHost::new()
-            .with_setting("acqRecycleBin", serde_json::json!(bin.path().to_string_lossy()));
+        let host = StubHost::new().with_setting(
+            "acqRecycleBin",
+            serde_json::json!(bin.path().to_string_lossy()),
+        );
         let file = lib.path().join("Film.mkv");
         std::fs::write(&file, b"one").unwrap();
         let first = retire(&host, &file).unwrap();
@@ -142,8 +146,10 @@ mod tests {
     #[test]
     fn a_fresh_file_survives_emptying_the_bin() {
         let bin = dir("recycle-fresh");
-        let host = StubHost::new()
-            .with_setting("acqRecycleBin", serde_json::json!(bin.path().to_string_lossy()));
+        let host = StubHost::new().with_setting(
+            "acqRecycleBin",
+            serde_json::json!(bin.path().to_string_lossy()),
+        );
         std::fs::write(bin.path().join("kept.mkv"), b"x").unwrap();
 
         let removed = empty_recycle_bin(&host);

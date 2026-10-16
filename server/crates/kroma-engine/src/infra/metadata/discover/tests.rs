@@ -1,4 +1,4 @@
-use super::release::{movie_dates, MovieDates};
+use super::release::{MovieDates, movie_dates};
 use super::*;
 
 // Network is not exercised; we validate the JSON→adapter mapping the way

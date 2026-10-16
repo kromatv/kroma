@@ -10,14 +10,14 @@ use kroma_module_sdk::db::{self, WantedRow};
 use kroma_module_sdk::engine::model::{MonitoredTitle, RequestKind};
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::host::HostStorage;
-use kroma_scene::{cutoff_unmet, Evaluation, QualityProfile, Verdict};
+use kroma_scene::{Evaluation, QualityProfile, Verdict, cutoff_unmet};
 
-use crate::auto::{grab_candidate, target_label, AutoSummary, Grab, Pass, MAX_TARGETS};
-use crate::rules::files::{judge_title_files, JudgedFile};
+use crate::auto::{AutoSummary, Grab, MAX_TARGETS, Pass, grab_candidate, target_label};
+use crate::rules::files::{JudgedFile, judge_title_files};
 use crate::rules::store;
-use crate::search::best::{best_release, Aim};
-use crate::search::judge::Judge;
 use crate::search::SearchTarget;
+use crate::search::best::{Aim, best_release};
+use crate::search::judge::Judge;
 
 const MAX_TITLES: usize = 5;
 const MAX_TARGETS_PER_TITLE: usize = 3;

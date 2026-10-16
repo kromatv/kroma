@@ -12,13 +12,13 @@ use serde_json::json;
 use kroma_module_sdk::domain::{Permission, User};
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::engine::services::jobs::now_ms;
-use kroma_module_sdk::host::{json_error, AuthUser, HostStorage};
+use kroma_module_sdk::host::{AuthUser, HostStorage, json_error};
 use kroma_scene::{
-    cutoff_unmet, evaluate, CustomFormat, Evaluation, Facts, FormatSet, Language, Quality,
-    QualityProfile, Sizes,
+    CustomFormat, Evaluation, Facts, FormatSet, Language, Quality, QualityProfile, Sizes,
+    cutoff_unmet, evaluate,
 };
 
-use super::files::{judge_title_files, JudgedFile};
+use super::files::{JudgedFile, judge_title_files};
 use super::{load, original_language, set_default_profile, store};
 
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
@@ -128,7 +128,9 @@ async fn delete_profile<S: HostStorage + Clone + Send + Sync + 'static>(
     let removed = run(move || {
         let book = load(&state)?;
         if book.default_profile == id {
-            anyhow::bail!("the default profile cannot be deleted; make another one the default first");
+            anyhow::bail!(
+                "the default profile cannot be deleted; make another one the default first"
+            );
         }
         store::delete_profile(state.store(), &id)
     })
@@ -166,7 +168,9 @@ async fn save_format<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
     if format.id != id || id.trim().is_empty() || format.name.trim().is_empty() {
-        return Err(bad("a format needs a name, and its id must match the address"));
+        return Err(bad(
+            "a format needs a name, and its id must match the address",
+        ));
     }
     FormatSet::compile(std::slice::from_ref(&format))
         .map_err(|e| bad(format!("{}: {}", e.format, e.reason)))?;
@@ -215,7 +219,10 @@ fn validate_sizes(sizes: &Sizes) -> Result<(), String> {
         let max = limit.max.unwrap_or(f64::INFINITY);
         let preferred = limit.preferred.unwrap_or(limit.min);
         if limit.min < 0.0 || limit.min > max || preferred < limit.min || preferred > max {
-            return Err(format!("the limits for {} are out of order", limit.quality.id()));
+            return Err(format!(
+                "the limits for {} are out of order",
+                limit.quality.id()
+            ));
         }
     }
     Ok(())
@@ -302,7 +309,13 @@ async fn title<S: HostStorage + Clone + Send + Sync + 'static>(
         let chosen = store::title_profile(state.store(), kind, tmdb_id)?;
         let profile = book.profile(chosen.as_deref());
         let original = original_language(&state, kind, tmdb_id)?;
-        let files = judge_title_files(&state, kind, tmdb_id, &book.rules(profile), original.as_ref())?;
+        let files = judge_title_files(
+            &state,
+            kind,
+            tmdb_id,
+            &book.rules(profile),
+            original.as_ref(),
+        )?;
         let held: Vec<Evaluation> = files.iter().map(|f| f.evaluation.clone()).collect();
         Ok(TitleView {
             profile_id: profile.id.clone(),

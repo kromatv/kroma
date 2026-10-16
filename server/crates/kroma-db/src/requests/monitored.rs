@@ -1,6 +1,6 @@
 //! The `monitored` table: the titles the server wants to hold.
 
-use rusqlite::{params, Connection, OptionalExtension, Row};
+use rusqlite::{Connection, OptionalExtension, Row, params};
 
 use kroma_domain::{MinAvailability, MonitoredSummary, MonitoredTitle, RequestKind};
 
@@ -152,7 +152,7 @@ pub fn unit_kind(kind: RequestKind) -> &'static str {
 mod tests {
     use super::*;
     use crate::requests::tests::*;
-    use crate::requests::{insert_wanted, wanted_for_title, WantedRow};
+    use crate::requests::{WantedRow, insert_wanted, wanted_for_title};
 
     fn show(tmdb_id: u64, seasons: Vec<u32>) -> MonitoredTitle {
         MonitoredTitle {
@@ -206,7 +206,9 @@ mod tests {
         upsert_monitored(&p, &later).unwrap();
 
         let conn = p.get().unwrap();
-        let read = get_monitored(&conn, RequestKind::Show, 1396).unwrap().unwrap();
+        let read = get_monitored(&conn, RequestKind::Show, 1396)
+            .unwrap()
+            .unwrap();
 
         assert_eq!(read.seasons, [1, 2, 3]);
         assert_eq!((read.added_at, read.updated_at), (1, 99));
@@ -235,7 +237,10 @@ mod tests {
         let summaries = monitored_summaries(&conn, "2026-01-01").unwrap();
 
         let s = &summaries[0];
-        assert_eq!((s.monitored, s.available, s.missing, s.grabbed), (4, 1, 1, 1));
+        assert_eq!(
+            (s.monitored, s.available, s.missing, s.grabbed),
+            (4, 1, 1, 1)
+        );
     }
 
     #[test]
@@ -260,8 +265,21 @@ mod tests {
 
         let conn = p.get().unwrap();
         assert!(removed);
-        assert!(get_monitored(&conn, RequestKind::Show, 1396).unwrap().is_none());
-        assert!(wanted_for_title(&conn, RequestKind::Show, 1396).unwrap().is_empty());
-        assert_eq!(wanted_for_title(&conn, RequestKind::Show, 1400).unwrap().len(), 1);
+        assert!(
+            get_monitored(&conn, RequestKind::Show, 1396)
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            wanted_for_title(&conn, RequestKind::Show, 1396)
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(
+            wanted_for_title(&conn, RequestKind::Show, 1400)
+                .unwrap()
+                .len(),
+            1
+        );
     }
 }

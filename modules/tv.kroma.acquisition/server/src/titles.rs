@@ -13,15 +13,18 @@ use serde_json::json;
 use kroma_module_sdk::db;
 use kroma_module_sdk::domain::{Permission, User};
 use kroma_module_sdk::engine::model::RequestKind;
-use kroma_module_sdk::host::{json_error, AuthUser, HostStorage};
-use kroma_scene::{cutoff_unmet, Evaluation};
+use kroma_module_sdk::host::{AuthUser, HostStorage, json_error};
+use kroma_scene::{Evaluation, cutoff_unmet};
 
 use crate::rules::files::judge_title_files;
 use crate::search::{SearchScope, Subject};
 
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
-        .route("/acquisition/titles/{kind}/{tmdb_id}/search", post(search::<S>))
+        .route(
+            "/acquisition/titles/{kind}/{tmdb_id}/search",
+            post(search::<S>),
+        )
         .route("/acquisition/titles/{kind}/{tmdb_id}/grab", post(grab::<S>))
         .route("/acquisition/cutoff", get(cutoff::<S>))
 }

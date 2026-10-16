@@ -13,13 +13,13 @@ use kroma_module_sdk::engine::services::requests::today_ymd;
 use kroma_module_sdk::host::HostStorage;
 use kroma_scene::{ParsedRelease, Verdict};
 
-use crate::auto::{grab_candidate, Grab};
+use crate::auto::{Grab, grab_candidate};
 use crate::peers::indexers::{IndexerRef, Query, Release};
-use crate::rules::files::judge_title_files;
 use crate::rules::RuleBook;
-use crate::search::hits::CachedRelease;
-use crate::search::judge::{units_of, verdict_for, Judge};
+use crate::rules::files::judge_title_files;
 use crate::search::SearchTarget;
+use crate::search::hits::CachedRelease;
+use crate::search::judge::{Judge, units_of, verdict_for};
 
 const LAST_RUN: &str = "rss_last_at";
 
@@ -49,9 +49,16 @@ pub fn rss_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<RssSu
     let by_name = index_titles(&titles);
     let book = crate::rules::load(state)?;
     let mut summary = RssSummary::default();
-    let mut picks: HashMap<(RequestKind, u64, String), (CachedRelease, Vec<String>)> = HashMap::new();
+    let mut picks: HashMap<(RequestKind, u64, String), (CachedRelease, Vec<String>)> =
+        HashMap::new();
     for indexer in &indexers {
-        let latest = match crate::search_indexer(state, indexer, &Query::Text { query: String::new() }) {
+        let latest = match crate::search_indexer(
+            state,
+            indexer,
+            &Query::Text {
+                query: String::new(),
+            },
+        ) {
             Ok(releases) => releases,
             Err(e) => {
                 log(format!("rss: {} did not answer: {e:#}", indexer.name));
@@ -73,7 +80,9 @@ pub fn rss_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<RssSu
         let conn = state.db().get()?;
         let request_id = db::find_open_request(&conn, kind, tmdb_id)?.map(|r| r.id);
         drop(conn);
-        let title = titles.iter().find(|t| (t.kind, t.tmdb_id) == (kind, tmdb_id));
+        let title = titles
+            .iter()
+            .find(|t| (t.kind, t.tmdb_id) == (kind, tmdb_id));
         log(format!("rss: grabbing \"{}\"", candidate.view.title));
         let grab = Grab {
             title: title.map(|t| (t.title.clone(), t.year)),
@@ -169,7 +178,12 @@ pub(crate) fn target_for(
     };
     if title.kind == RequestKind::Movie {
         let w = row(None, None)?;
-        let st = SearchTarget::movie(title.tmdb_id, w.imdb_id.clone(), title.title.clone(), title.year);
+        let st = SearchTarget::movie(
+            title.tmdb_id,
+            w.imdb_id.clone(),
+            title.title.clone(),
+            title.year,
+        );
         return Some((st, vec![w.id.clone()]));
     }
     let season = parsed.season?;
@@ -237,7 +251,12 @@ fn judge_for<S: HostStorage>(
         return Ok(None);
     };
     let files = judge_title_files(state, kind, tmdb_id, &judge.rules, original.as_ref())?;
-    let verdict = verdict_for(&judged.evaluation, &units_of(&view, &files), &files, profile);
+    let verdict = verdict_for(
+        &judged.evaluation,
+        &units_of(&view, &files),
+        &files,
+        profile,
+    );
     let grabbed = rows
         .iter()
         .filter(|w| covered.contains(&w.id))
@@ -275,12 +294,12 @@ fn keep_best(
     let mut unit = rows.clone();
     unit.sort();
     let key = (title.kind, title.tmdb_id, unit.join(","));
-    let better = picks.get(&key).is_none_or(|(held, _)| {
-        match (&pick.judged, &held.judged) {
+    let better = picks
+        .get(&key)
+        .is_none_or(|(held, _)| match (&pick.judged, &held.judged) {
             (Some(new), Some(old)) => kroma_scene::rank(new, old).is_gt(),
             _ => false,
-        }
-    });
+        });
     if better {
         picks.insert(key, (pick, rows));
     }

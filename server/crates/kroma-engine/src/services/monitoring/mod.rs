@@ -13,7 +13,7 @@ mod tests;
 
 use std::collections::{BTreeSet, HashSet};
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 use kroma_module_host::HostStorage;
 
@@ -26,7 +26,7 @@ use crate::model::{
 use crate::services::jobs::now_ms;
 use crate::services::requests::today_ymd;
 
-pub use reconcile::{reconcile_pass, ReconcileSummary};
+pub use reconcile::{ReconcileSummary, reconcile_pass};
 pub use refresh::refresh_pass;
 
 use preset::RosterEpisode;
@@ -276,10 +276,7 @@ fn apply_preset<S: HostStorage>(
 
 // A row an open request answers to is the requester's, so a preset the admin
 // applies to the title never takes it away from them.
-fn rows_of_open_requests(
-    conn: &db::PooledConn,
-    rows: &[db::WantedRow],
-) -> Result<HashSet<String>> {
+fn rows_of_open_requests(conn: &db::PooledConn, rows: &[db::WantedRow]) -> Result<HashSet<String>> {
     let mut open: std::collections::HashMap<&str, bool> = std::collections::HashMap::new();
     let mut held = HashSet::new();
     for row in rows {

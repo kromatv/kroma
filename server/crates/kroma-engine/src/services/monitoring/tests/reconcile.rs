@@ -72,7 +72,10 @@ fn a_show_the_catalogue_lost_entirely_keeps_its_episodes() {
 #[test]
 fn many_files_vanishing_at_once_are_held_back() {
     let host = host();
-    exec(&host, "INSERT OR IGNORE INTO libraries (id,name,kind,path,added_at) VALUES ('lib1','L','movies','/x','now')");
+    exec(
+        &host,
+        "INSERT OR IGNORE INTO libraries (id,name,kind,path,added_at) VALUES ('lib1','L','movies','/x','now')",
+    );
     let rows: Vec<db::WantedRow> = (0..30)
         .map(|n| db::WantedRow {
             id: format!("m{n}"),
@@ -91,10 +94,13 @@ fn many_files_vanishing_at_once_are_held_back() {
         .collect();
     db::insert_wanted(host.db(), &rows, 0).unwrap();
     for n in 0..30 {
-        exec(&host, &format!(
-            "INSERT INTO monitored (kind,tmdb_id,title,added_at,updated_at) VALUES ('movie',{},'M',0,0)",
-            1000 + n
-        ));
+        exec(
+            &host,
+            &format!(
+                "INSERT INTO monitored (kind,tmdb_id,title,added_at,updated_at) VALUES ('movie',{},'M',0,0)",
+                1000 + n
+            ),
+        );
     }
 
     let summary = reconcile_pass(&host).unwrap();
@@ -107,10 +113,26 @@ fn many_files_vanishing_at_once_are_held_back() {
 fn an_imported_film_is_on_disk_before_enrichment_matches_it() {
     let host = host();
     let _tmdb = tmdb();
-    monitor(&host, RequestKind::Movie, MOVIE, &MonitorBody::default(), None).unwrap();
-    exec(&host, "INSERT OR IGNORE INTO libraries (id,name,kind,path,added_at) VALUES ('lib1','L','movies','/x','now')");
-    exec(&host, "INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('m1','movie','The Matrix','mkv','lib1','now')");
-    exec(&host, "INSERT INTO files (id,item_id,abs_path,rel_path,container) VALUES ('f1','m1','/x/m.mkv','m.mkv','mkv')");
+    monitor(
+        &host,
+        RequestKind::Movie,
+        MOVIE,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
+    exec(
+        &host,
+        "INSERT OR IGNORE INTO libraries (id,name,kind,path,added_at) VALUES ('lib1','L','movies','/x','now')",
+    );
+    exec(
+        &host,
+        "INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('m1','movie','The Matrix','mkv','lib1','now')",
+    );
+    exec(
+        &host,
+        "INSERT INTO files (id,item_id,abs_path,rel_path,container) VALUES ('f1','m1','/x/m.mkv','m.mkv','mkv')",
+    );
     db::set_file_tmdb(host.db(), "/x/m.mkv", MOVIE).unwrap();
 
     reconcile_pass(&host).unwrap();

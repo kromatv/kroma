@@ -1,12 +1,13 @@
-use kroma_module_sdk::host::testing::StubHost;
 use kroma_module_sdk::host::HostStorage;
+use kroma_module_sdk::host::testing::StubHost;
 use kroma_scene::{Quality, Res};
 
 use super::*;
 
 fn host() -> StubHost {
     let host = StubHost::with_core(kroma_module_sdk::db::testing::temp_pool("acq-rules"));
-    kroma_module_sdk::db::apply_migrations(&host.store().get().unwrap(), store::MIGRATIONS).unwrap();
+    kroma_module_sdk::db::apply_migrations(&host.store().get().unwrap(), store::MIGRATIONS)
+        .unwrap();
     host
 }
 
@@ -50,8 +51,14 @@ fn a_title_can_be_judged_by_another_profile() {
 
     let book = load(&host).unwrap();
 
-    assert_eq!(book.profile_for(&host, RequestKind::Show, 77).unwrap().id, "strict");
-    assert_eq!(book.profile_for(&host, RequestKind::Show, 78).unwrap().id, DEFAULT_PROFILE_ID);
+    assert_eq!(
+        book.profile_for(&host, RequestKind::Show, 77).unwrap().id,
+        "strict"
+    );
+    assert_eq!(
+        book.profile_for(&host, RequestKind::Show, 78).unwrap().id,
+        DEFAULT_PROFILE_ID
+    );
 }
 
 #[test]
@@ -64,7 +71,10 @@ fn deleting_a_profile_puts_its_titles_back_on_the_default() {
 
     store::delete_profile(host.store(), "other").unwrap();
 
-    assert_eq!(store::title_profile(host.store(), RequestKind::Movie, 603).unwrap(), None);
+    assert_eq!(
+        store::title_profile(host.store(), RequestKind::Movie, 603).unwrap(),
+        None
+    );
 }
 
 #[test]
@@ -105,7 +115,9 @@ fn the_release_an_import_placed_is_remembered_by_path() {
     store::record_release(host.store(), "/x/a.mkv", "A.2020.1080p.WEB-DL-GRP", 1).unwrap();
 
     assert_eq!(
-        store::release_of(host.store(), "/x/a.mkv").unwrap().as_deref(),
+        store::release_of(host.store(), "/x/a.mkv")
+            .unwrap()
+            .as_deref(),
         Some("A.2020.1080p.WEB-DL-GRP")
     );
     assert_eq!(store::release_of(host.store(), "/x/b.mkv").unwrap(), None);

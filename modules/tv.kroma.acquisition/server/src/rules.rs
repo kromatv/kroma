@@ -7,8 +7,8 @@ use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::host::HostStorage;
 use kroma_scene::{
-    default_formats, default_sizes, CustomFormat, FormatSet, Language, LegacySettings,
-    QualityProfile, Res, Rules, Sizes,
+    CustomFormat, FormatSet, Language, LegacySettings, QualityProfile, Res, Rules, Sizes,
+    default_formats, default_sizes,
 };
 
 pub mod blocklist;

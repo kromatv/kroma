@@ -1,12 +1,18 @@
 use axum::http::StatusCode;
 use serde_json::json;
 
-use crate::api::test_support::{get, seed_session, send, test_app, TestApp};
+use crate::api::test_support::{TestApp, get, seed_session, send, test_app};
 use crate::db;
 use crate::model::{MinAvailability, MonitoredTitle, Permission, RequestKind};
 
 fn admin(t: &TestApp) -> String {
-    seed_session(&t.state, "lib@test.dev", "librarian", &[Permission::LibraryManage]).1
+    seed_session(
+        &t.state,
+        "lib@test.dev",
+        "librarian",
+        &[Permission::LibraryManage],
+    )
+    .1
 }
 
 fn viewer(t: &TestApp) -> String {
@@ -119,8 +125,22 @@ async fn unmonitoring_drops_the_title_and_says_whether_it_was_there() {
     let token = admin(&t);
     seed_monitored(&t, 95396);
 
-    let (_, first) = send(&t.app, "DELETE", "/api/monitoring/show/95396", Some(&token), None).await;
-    let (_, second) = send(&t.app, "DELETE", "/api/monitoring/show/95396", Some(&token), None).await;
+    let (_, first) = send(
+        &t.app,
+        "DELETE",
+        "/api/monitoring/show/95396",
+        Some(&token),
+        None,
+    )
+    .await;
+    let (_, second) = send(
+        &t.app,
+        "DELETE",
+        "/api/monitoring/show/95396",
+        Some(&token),
+        None,
+    )
+    .await;
     let (_, list) = get(&t.app, "/api/monitoring", Some(&token)).await;
 
     assert_eq!(first["ok"], json!(true));

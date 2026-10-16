@@ -4,8 +4,8 @@ use crate::test_support::FakeTmdb;
 use kroma_module_host::testing::StubHost;
 
 fn host(key: Option<&str>) -> StubHost {
-    let host =
-        StubHost::with_core(crate::db::testing::temp_pool("ledger")).with_metadata_language("en-US");
+    let host = StubHost::with_core(crate::db::testing::temp_pool("ledger"))
+        .with_metadata_language("en-US");
     match key {
         Some(k) => host.with_tmdb_key(k),
         None => host,
@@ -17,18 +17,37 @@ fn exec(host: &StubHost, sql: &str) {
 }
 
 fn seed_show(host: &StubHost, show_id: &str, tmdb: u64, present: &[(u32, u32)]) {
-    exec(host, "INSERT OR IGNORE INTO libraries (id,name,kind,path,added_at) VALUES ('lib1','L','mixed','/x','now')");
-    exec(host, &format!("INSERT INTO shows (id,library,title,added_at) VALUES ('{show_id}','lib1','Show','now')"));
-    exec(host, &format!("INSERT INTO metadata_core (subject_kind,subject_id,tmdb_id,updated_at) VALUES ('show','{show_id}',{tmdb},0)"));
+    exec(
+        host,
+        "INSERT OR IGNORE INTO libraries (id,name,kind,path,added_at) VALUES ('lib1','L','mixed','/x','now')",
+    );
+    exec(
+        host,
+        &format!(
+            "INSERT INTO shows (id,library,title,added_at) VALUES ('{show_id}','lib1','Show','now')"
+        ),
+    );
+    exec(
+        host,
+        &format!(
+            "INSERT INTO metadata_core (subject_kind,subject_id,tmdb_id,updated_at) VALUES ('show','{show_id}',{tmdb},0)"
+        ),
+    );
     for (s, e) in present {
-        exec(host, &format!(
-            "INSERT INTO items (id,kind,title,container,library,show_id,season,episode,duration_ms,added_at) \
+        exec(
+            host,
+            &format!(
+                "INSERT INTO items (id,kind,title,container,library,show_id,season,episode,duration_ms,added_at) \
              VALUES ('{show_id}-s{s}e{e}','episode','E','mkv','lib1','{show_id}',{s},{e},1200000,'now')"
-        ));
-        exec(host, &format!(
-            "INSERT INTO files (id,item_id,abs_path,rel_path,container,probed,duration_ms,v_codec,v_width,v_height) \
+            ),
+        );
+        exec(
+            host,
+            &format!(
+                "INSERT INTO files (id,item_id,abs_path,rel_path,container,probed,duration_ms,v_codec,v_width,v_height) \
              VALUES ('{show_id}-f{s}{e}','{show_id}-s{s}e{e}','/x/{show_id}-{s}-{e}.mkv','x.mkv','mkv',1,1200000,'hevc',3840,2160)"
-        ));
+            ),
+        );
     }
 }
 
@@ -114,10 +133,12 @@ fn a_ledger_needs_tmdb_to_describe_anything() {
 #[test]
 fn an_unknown_request_is_an_error_not_an_empty_ledger() {
     let host = host(Some("k"));
-    assert!(ledger(&host, "nope")
-        .unwrap_err()
-        .to_string()
-        .contains("request not found"));
+    assert!(
+        ledger(&host, "nope")
+            .unwrap_err()
+            .to_string()
+            .contains("request not found")
+    );
 }
 
 #[test]
@@ -175,9 +196,18 @@ fn a_season_is_tallied_against_the_request_and_the_library() {
 #[test]
 fn a_movie_ledger_has_no_seasons_and_says_whether_the_film_is_held() {
     let host = host(Some("k"));
-    exec(&host, "INSERT OR IGNORE INTO libraries (id,name,kind,path,added_at) VALUES ('lib1','L','mixed','/x','now')");
-    exec(&host, "INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('m1','movie','T','mkv','lib1','now')");
-    exec(&host, "INSERT INTO metadata_core (subject_kind,subject_id,tmdb_id,updated_at) VALUES ('item','m1',7,0)");
+    exec(
+        &host,
+        "INSERT OR IGNORE INTO libraries (id,name,kind,path,added_at) VALUES ('lib1','L','mixed','/x','now')",
+    );
+    exec(
+        &host,
+        "INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('m1','movie','T','mkv','lib1','now')",
+    );
+    exec(
+        &host,
+        "INSERT INTO metadata_core (subject_kind,subject_id,tmdb_id,updated_at) VALUES ('item','m1',7,0)",
+    );
     seed_request(&host, "r1", RequestKind::Movie, 7, None);
     let _tmdb = FakeTmdb::start(|path| match path {
         "/movie/7" => (
@@ -258,9 +288,10 @@ fn preview_rows_describe_a_season_the_request_never_covered() {
 
     let rows = preview_season_rows(&host, &req, 2).unwrap();
     assert_eq!(rows.len(), 2, "a searchable row per episode of the season");
-    assert!(rows
-        .iter()
-        .all(|r| r.season == Some(2) && r.status == "wanted"));
+    assert!(
+        rows.iter()
+            .all(|r| r.season == Some(2) && r.status == "wanted")
+    );
     // Never persisted: the request still covers only what it covered.
     let conn = host.db().get().unwrap();
     assert!(db::wanted_for_request(&conn, "r1").unwrap().is_empty());
@@ -307,6 +338,10 @@ fn a_title_ledger_counts_every_row_whatever_it_answers_to() {
     assert_eq!(view.title, "Show");
     assert_eq!(view.seasons[0].requested, 2);
     assert_eq!(view.seasons[0].on_disk, 1);
-    let monitored: Vec<bool> = season.episodes.iter().map(|e| e.wanted_id.is_some()).collect();
+    let monitored: Vec<bool> = season
+        .episodes
+        .iter()
+        .map(|e| e.wanted_id.is_some())
+        .collect();
     assert_eq!(monitored, [true, true, false]);
 }

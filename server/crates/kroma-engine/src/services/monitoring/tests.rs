@@ -1,7 +1,7 @@
 pub(super) use serde_json::json;
 
-pub(super) use kroma_module_host::testing::StubHost;
 pub(super) use kroma_module_host::HostStorage;
+pub(super) use kroma_module_host::testing::StubHost;
 
 pub(super) use super::*;
 pub(super) use crate::model::{EpisodeRef, EpisodeSwitch, MinAvailability, SeasonSwitch};
@@ -63,18 +63,36 @@ pub(super) fn tmdb() -> FakeTmdb {
 }
 
 pub(super) fn seed_show_on_disk(host: &StubHost, episodes: &[(u32, u32)]) {
-    exec(host, "INSERT OR IGNORE INTO libraries (id,name,kind,path,added_at) VALUES ('lib1','L','shows','/x','now')");
-    exec(host, "INSERT OR IGNORE INTO shows (id,library,title,added_at) VALUES ('s1','lib1','Show','now')");
-    exec(host, &format!("INSERT OR IGNORE INTO metadata_core (subject_kind,subject_id,tmdb_id,updated_at) VALUES ('show','s1',{SHOW},0)"));
+    exec(
+        host,
+        "INSERT OR IGNORE INTO libraries (id,name,kind,path,added_at) VALUES ('lib1','L','shows','/x','now')",
+    );
+    exec(
+        host,
+        "INSERT OR IGNORE INTO shows (id,library,title,added_at) VALUES ('s1','lib1','Show','now')",
+    );
+    exec(
+        host,
+        &format!(
+            "INSERT OR IGNORE INTO metadata_core (subject_kind,subject_id,tmdb_id,updated_at) VALUES ('show','s1',{SHOW},0)"
+        ),
+    );
     for (s, e) in episodes {
-        exec(host, &format!(
-            "INSERT INTO items (id,kind,title,container,library,show_id,season,episode,added_at) \
+        exec(
+            host,
+            &format!(
+                "INSERT INTO items (id,kind,title,container,library,show_id,season,episode,added_at) \
              VALUES ('e{s}{e}','episode','E','mkv','lib1','s1',{s},{e},'now')"
-        ));
+            ),
+        );
     }
 }
 
-pub(super) fn units(host: &StubHost, kind: RequestKind, tmdb_id: u64) -> Vec<(Option<u32>, Option<u32>, String)> {
+pub(super) fn units(
+    host: &StubHost,
+    kind: RequestKind,
+    tmdb_id: u64,
+) -> Vec<(Option<u32>, Option<u32>, String)> {
     let conn = host.db().get().unwrap();
     db::wanted_for_title(&conn, kind, tmdb_id)
         .unwrap()
@@ -83,7 +101,11 @@ pub(super) fn units(host: &StubHost, kind: RequestKind, tmdb_id: u64) -> Vec<(Op
         .collect()
 }
 
-pub(super) fn monitored(host: &StubHost, kind: RequestKind, tmdb_id: u64) -> Option<MonitoredTitle> {
+pub(super) fn monitored(
+    host: &StubHost,
+    kind: RequestKind,
+    tmdb_id: u64,
+) -> Option<MonitoredTitle> {
     let conn = host.db().get().unwrap();
     db::get_monitored(&conn, kind, tmdb_id).unwrap()
 }

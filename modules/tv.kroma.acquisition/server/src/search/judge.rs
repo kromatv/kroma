@@ -2,8 +2,8 @@
 //! the files the title already holds.
 
 use kroma_scene::{
-    judge, upgrade_verdict, Candidate, Evaluation, Facts, Judged, Language, Query,
-    QualityProfile, Rules, Verdict,
+    Candidate, Evaluation, Facts, Judged, Language, QualityProfile, Query, Rules, Verdict, judge,
+    upgrade_verdict,
 };
 
 use crate::dtos::{FormatScoreView, ScoredReleaseView};
@@ -72,7 +72,12 @@ fn view_of(
                 })
                 .collect(),
         ),
-        Err(r) => (None, Vec::new(), Some(format!("{}: {}", r.rule, r.note)), Vec::new()),
+        Err(r) => (
+            None,
+            Vec::new(),
+            Some(format!("{}: {}", r.rule, r.note)),
+            Vec::new(),
+        ),
     };
     ScoredReleaseView {
         title: release.title.clone(),

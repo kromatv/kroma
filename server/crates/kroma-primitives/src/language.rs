@@ -94,11 +94,21 @@ const DUB_REGIONS: &[(&str, &[&str])] = &[
     (
         "CA",
         &[
-            "vfq", "vq", "quebec", "québec", "quebecois", "québécois", "canada", "canadian",
+            "vfq",
+            "vq",
+            "quebec",
+            "québec",
+            "quebecois",
+            "québécois",
+            "canada",
+            "canadian",
             "canadien",
         ],
     ),
-    ("FR", &["vff", "vfi", "truefrench", "france", "parisian", "parisien"]),
+    (
+        "FR",
+        &["vff", "vfi", "truefrench", "france", "parisian", "parisien"],
+    ),
     ("BE", &["belgique", "belgian", "belge"]),
     ("CH", &["suisse", "swiss"]),
 ];
@@ -151,8 +161,14 @@ mod tests {
 
     #[test]
     fn a_language_tag_wins_over_the_title() {
-        assert_eq!(track_region(Some("fr-CA"), Some("VFF")).as_deref(), Some("CA"));
-        assert_eq!(track_region(Some("fre"), Some("VFQ")).as_deref(), Some("CA"));
+        assert_eq!(
+            track_region(Some("fr-CA"), Some("VFF")).as_deref(),
+            Some("CA")
+        );
+        assert_eq!(
+            track_region(Some("fre"), Some("VFQ")).as_deref(),
+            Some("CA")
+        );
         assert_eq!(track_region(Some("fre"), None), None);
         assert_eq!(track_region(Some("en-gb"), None).as_deref(), Some("GB"));
     }

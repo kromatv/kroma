@@ -24,7 +24,9 @@ impl Blocked {
     /// Whether a release by this name is this entry. Any indexer: the same
     /// release fails the same way wherever it is offered.
     pub fn matches(&self, release_title: &str) -> bool {
-        self.release_title.trim().eq_ignore_ascii_case(release_title.trim())
+        self.release_title
+            .trim()
+            .eq_ignore_ascii_case(release_title.trim())
     }
 }
 
@@ -93,8 +95,11 @@ mod tests {
 
     fn pool() -> kroma_module_sdk::db::testing::TempPool {
         let pool = kroma_module_sdk::db::testing::temp_pool("acq-blocklist");
-        kroma_module_sdk::db::apply_migrations(&pool.get().unwrap(), super::super::store::MIGRATIONS)
-            .unwrap();
+        kroma_module_sdk::db::apply_migrations(
+            &pool.get().unwrap(),
+            super::super::store::MIGRATIONS,
+        )
+        .unwrap();
         pool
     }
 
