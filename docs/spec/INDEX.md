@@ -3,7 +3,7 @@
 
 # Requirement index
 
-454 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+460 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -231,7 +231,7 @@
 - **LIB-50** (SHIPPED) - Refreshing metadata and re-running identification are two actions, and <sub>[README.md](library/README.md)</sub>
 - **LIB-51** (AGREED) - A movie or a show can be **monitored**: the server wants to hold it. <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-52** (AGREED) - Inside a monitored show, each episode is monitored or not, on its own. <sub>[monitoring.md](library/monitoring.md)</sub>
-- **LIB-53** (AGREED) - Monitoring a show applies one preset, once: all episodes, future ones, <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-53** (AGREED) - A show is monitored with one of these presets: every episode; the episodes <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-54** (AGREED) - A preset never takes an episode away from a request that is still open: <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-55** (AGREED) - A season is monitored when its episodes are: switching a season on <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-56** (AGREED) - An episode announced in a monitored season joins monitored. An episode a <sub>[monitoring.md](library/monitoring.md)</sub>
@@ -245,8 +245,9 @@
 - **LIB-64** (AGREED) - The missing list shows monitored units, and beside them, kept apart, the <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-65** (AGREED) - What is missing stays true in both directions: a file that lands makes <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-66** (AGREED) - A unit goes back to missing only after it has been without its file for <sub>[monitoring.md](library/monitoring.md)</sub>
-- **LIB-67** (AGREED) - When more monitored files vanish at once than a person deletes, none of <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-67** (AGREED) - When more monitored units lose their file in one pass than 20, or than a <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-68** (AGREED) - A file holding several episodes answers for every episode in it, in the <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-69** (AGREED) - A preset is applied once. Afterwards each season and each episode is <sub>[monitoring.md](library/monitoring.md)</sub>
 
 ## MEDIA - [media](media/)
 
@@ -296,7 +297,7 @@
 - **MEDIA-44** (SHIPPED) - An undescribed stream is *not direct-playable*, because KROMA will
 - **MEDIA-45** (SHIPPED) - A file that will not open at all, a truncated or corrupt container,
 - **MEDIA-46** (AGREED) - Undescribed and unreadable are distinct states. The first is "we
-- **MEDIA-47** (AGREED) - An audio stream says which regional dub it is when the file says so:
+- **MEDIA-47** (AGREED) - An audio stream carries the region of its language when the file says
 
 ## MOD - [modules](modules/)
 
@@ -353,27 +354,32 @@
 - **MOD-51** (SHIPPED) - It may not read or write the server's own credentials. A settings key <sub>[README.md](modules/README.md)</sub>
 - **MOD-52** (SHIPPED) - The server refuses to **update** a module past the range an enabled <sub>[README.md](modules/README.md)</sub>
 - **MOD-53** (SHIPPED) - A credential whose consumer *is* a module reaches the module that <sub>[README.md](modules/README.md)</sub>
-- **MOD-54** (AGREED) - The rules that decide what is good enough are data an admin edits, not <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-54** (AGREED) - An admin can change every rule below while the server runs: qualities and <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-55** (AGREED) - A **quality** is a source at a resolution, from a fixed vocabulary: cam, <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-56** (AGREED) - Each quality has a size range in megabytes per minute of runtime, <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-57** (AGREED) - A **custom format** is a named test made of conditions on the release <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-58** (AGREED) - A condition can be negated or required. A format matches when every <sub>[acquisition.md](modules/acquisition.md)</sub>
-- **MOD-59** (AGREED) - A **profile** ranks the qualities it allows (several may share a rank), <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-59** (AGREED) - A **profile** ranks the qualities it allows, several of them sharing a rank <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-60** (AGREED) - One profile is the default. Any title may be judged by another. <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-61** (AGREED) - The rules can be tested against a release name: the editor shows what was <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-62** (AGREED) - One set of rules judges a release and a file on disk. A file's facts come <sub>[acquisition.md](modules/acquisition.md)</sub>
-- **MOD-63** (AGREED) - A release name says which French dub it carries: TRUEFRENCH and VFF are <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-63** (AGREED) - A release name says which French dub it carries (a file says it as <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-64** (AGREED) - Releases are ranked by their quality's rank in the profile, then their <sub>[acquisition.md](modules/acquisition.md)</sub>
-- **MOD-65** (AGREED) - A release **upgrades** a file when upgrades are on and its quality ranks <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-65** (AGREED) - With upgrades on, a release **upgrades** a file in three cases, and in no <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-66** (AGREED) - A title is **cutoff unmet** when its best file is below the cutoff, or no <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-67** (AGREED) - With **add beside** on, a release that wins on formats and loses on <sub>[acquisition.md](modules/acquisition.md)</sub>
-- **MOD-68** (AGREED) - Missing units are searched first, each title under its own profile, and a <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-68** (AGREED) - Missing units are searched first, each title under its own profile. A unit <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-69** (AGREED) - Titles that are cutoff unmet are searched for a better copy with what the <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-70** (AGREED) - Every indexer's latest releases are read on an interval, fifteen minutes <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-71** (AGREED) - Any title can be searched by hand from its page, monitored or not. Each <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-72** (AGREED) - A download that fails, stalls past a limit, or is removed puts the units <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-73** (AGREED) - A release whose download failed is blocklisted for its title, so the next <sub>[acquisition.md](modules/acquisition.md)</sub>
-- **MOD-74** (AGREED) - A file an upgrade replaces goes to the recycle bin when one is set, and is <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-74** (AGREED) - The library never deletes (LIB-48). Replacing a file is acquisition acting <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-75** (AGREED) - A server that had acquisition settings before rules existed starts with <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-76** (AGREED) - A profile scores each custom format, and sets the minimum format score a <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-77** (AGREED) - A profile names terms a release must contain and terms it must not, and a <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-78** (AGREED) - A release outside the profile's qualities, below its minimum format score, <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-79** (AGREED) - A file an upgrade replaces goes to the recycle bin when one is set, and is <sub>[acquisition.md](modules/acquisition.md)</sub>
 
 ## PLAY - [playback](playback/)
 

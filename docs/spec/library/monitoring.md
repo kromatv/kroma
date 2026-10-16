@@ -8,6 +8,15 @@ the missing list is built from and what acquisition ([`../modules/acquisition.md
 works from. Monitoring is useful without any acquisition installed: it is still the list of
 what is missing.
 
+## Requests, as monitoring meets them
+
+Status: **AGREED**
+
+A **request** is a person asking for a title the library does not hold, or for some of its
+seasons or episodes; an admin approves or denies it. A request is **open** until it is
+available, denied or failed, and **settled** after. This chapter states only how requests and
+monitoring meet; the request queue itself is not specified yet.
+
 ## Monitored titles
 
 Status: **AGREED**
@@ -18,10 +27,12 @@ be monitored before a single file of it exists.
 
 **LIB-52** (AGREED) - Inside a monitored show, each episode is monitored or not, on its own.
 
-**LIB-53** (AGREED) - Monitoring a show applies one preset, once: all episodes, future ones,
-missing ones (not on disk, or still to come), existing ones (on disk), the first season, the
-latest season, the pilot, or none. Afterwards each season and each episode is switched on its
-own, and applying a preset again chooses again.
+**LIB-53** (AGREED) - A show is monitored with one of these presets: every episode; the episodes
+still to come; the episodes not on disk, aired or still to come; the episodes on disk; the first
+season; the latest season; the pilot; none.
+
+**LIB-69** (AGREED) - A preset is applied once. Afterwards each season and each episode is
+switched on its own, and applying a preset again chooses the episodes again.
 
 **LIB-54** (AGREED) - A preset never takes an episode away from a request that is still open:
 what someone asked for stays monitored until their request is settled.
@@ -35,7 +46,8 @@ person switched off stays off when the show is next read from its provider.
 
 **LIB-57** (AGREED) - A monitored show may **take new seasons**: a season its provider announces
 after the show was monitored joins, every episode of it monitored. The presets that look ahead
-(all, future, missing) turn this on; the others leave it off; a person can set it either way.
+(every episode, those still to come, those not on disk) turn this on; the others leave it off; a
+person can set it either way.
 
 **LIB-58** (AGREED) - A monitored film becomes searchable at its **minimum availability**: when
 it is announced, when it is in cinemas, or when it is released for viewing at home. Released is
@@ -65,15 +77,17 @@ aired episodes of shows nobody monitors, which a person can still turn into a re
 
 **LIB-65** (AGREED) - What is missing stays true in both directions: a file that lands makes
 its unit available, and a unit whose file vanished from a title still in the library is missing
-again, so it gets searched.
+again, so it gets searched. The file is absent at once (LIB-45); the unit is missing only once
+LIB-66 allows it.
 
 **LIB-66** (AGREED) - A unit goes back to missing only after it has been without its file for
 half a day. A file imported a moment ago is on disk before the library has matched it, and must
 not read as gone in between.
 
-**LIB-67** (AGREED) - When more monitored files vanish at once than a person deletes, none of
-them goes back to missing, and the pass says how many it held back. A source going offline must
-never cause a library to be downloaded again.
+**LIB-67** (AGREED) - When more monitored units lose their file in one pass than 20, or than a
+tenth of the units that pass found available, whichever is larger, none of them goes back to
+missing, and the pass says how many it held back. A source going offline must never cause a
+library to be downloaded again.
 
 **LIB-68** (AGREED) - A file holding several episodes answers for every episode in it, in the
 missing list and wherever the library says what it holds.

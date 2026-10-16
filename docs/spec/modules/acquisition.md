@@ -11,10 +11,13 @@ already holds.
 
 Status: **AGREED**
 
-**MOD-54** (AGREED) - The rules that decide what is good enough are data an admin edits, not
-code: qualities and their sizes, custom formats, and profiles. A server starts with rules that
-rank releases the way its settings did before rules existed, so nothing changes until someone
-edits one.
+**MOD-54** (AGREED) - An admin can change every rule below while the server runs: qualities and
+their sizes, custom formats, and profiles. A change applies from the next search.
+
+**MOD-75** (AGREED) - A server that had acquisition settings before rules existed starts with
+rules built from them: its resolution, HEVC preference, minimum seeders, size caps and required
+and forbidden words become the default profile and sizes, so it keeps refusing and preferring
+what it did.
 
 **MOD-55** (AGREED) - A **quality** is a source at a resolution, from a fixed vocabulary: cam,
 SD sources, HDTV, WEBRip, WEB-DL, Blu-ray and remux at 720p, 1080p and 2160p, and unknown at each
@@ -33,10 +36,16 @@ format, the audio codec and channels, the size, or an indexer flag.
 required condition holds and, for each kind of condition that has optional ones, at least one of
 them holds.
 
-**MOD-59** (AGREED) - A **profile** ranks the qualities it allows (several may share a rank),
-names a cutoff, scores each custom format, and sets a minimum format score, an upgrade-until
-score, a minimum increment, terms a release must and must not contain, a minimum number of
-seeders, whether upgrades happen at all, and whether a copy may be added beside a file.
+**MOD-59** (AGREED) - A **profile** ranks the qualities it allows, several of them sharing a rank
+when they are equals, names the cutoff where quality upgrades stop, and says whether upgrades
+happen at all.
+
+**MOD-76** (AGREED) - A profile scores each custom format, and sets the minimum format score a
+release needs, the upgrade-until score where format upgrades stop, and the minimum increment a
+format upgrade must clear.
+
+**MOD-77** (AGREED) - A profile names terms a release must contain and terms it must not, and a
+minimum number of seeders.
 
 **MOD-60** (AGREED) - One profile is the default. Any title may be judged by another.
 
@@ -52,35 +61,45 @@ from what its probe measured and, for what only a name says (source, group, edit
 release it was imported under or else its own name. Where the probe measured something, the
 probe wins: a file named 2160p that decodes at 1080p is 1080p.
 
-**MOD-63** (AGREED) - A release name says which French dub it carries: TRUEFRENCH and VFF are
+**MOD-63** (AGREED) - A release name says which French dub it carries (a file says it as
+MEDIA-47 describes): TRUEFRENCH and VFF are
 the France dub, VFQ the Québec one, VF2 both, FRENCH a dub of unstated origin, MULTi the
 original audio plus a dub, VOSTFR the original audio with French subtitles. A name with no
 language tag is in the title's original language.
 
 **MOD-64** (AGREED) - Releases are ranked by their quality's rank in the profile, then their
 format score, then their revision (a PROPER or REPACK), then how many episodes one grab covers,
-then the indexer's priority, the seeders, and how close the size is to the preferred one. A
-release outside the profile's qualities, below its minimum format score, outside the size range
-or short of seeders is refused with the rule it broke.
+then the indexer's priority, the seeders, and how close the size is to the preferred one.
 
-**MOD-65** (AGREED) - A release **upgrades** a file when upgrades are on and its quality ranks
-above the file's while the file is below the cutoff, or it ranks the same and its format score
-beats the file's by the minimum increment while no file reaches the upgrade-until score, or it
-is a newer revision of the same quality. A release never replaces a file of better quality.
+**MOD-78** (AGREED) - A release outside the profile's qualities, below its minimum format score,
+outside its quality's size range, short of seeders, or breaking a must or must-not term is
+refused, and says which rule refused it.
+
+**MOD-65** (AGREED) - With upgrades on, a release **upgrades** a file in three cases, and in no
+other. A release never replaces a file of better quality.
+
+- Its quality ranks above the file's, and the file is below the cutoff.
+- Its quality ranks the same, its format score beats the file's by the minimum increment, and
+  no file of the title reaches the upgrade-until score.
+- It is a newer revision of the same quality.
 
 **MOD-66** (AGREED) - A title is **cutoff unmet** when its best file is below the cutoff, or no
 file of it reaches the upgrade-until score.
 
 **MOD-67** (AGREED) - With **add beside** on, a release that wins on formats and loses on
 quality is placed next to the file instead of being refused: a 1080p release with the France dub
-beside a 2160p file in English only. Add beside is off by default.
+beside a 2160p file in English only. Add beside is off by default, because the file a viewer is
+served is still chosen by picture first (MEDIA-8), so the copy beside is not played unless a
+person picks it.
 
 ## Searching
 
 Status: **AGREED**
 
-**MOD-68** (AGREED) - Missing units are searched first, each title under its own profile, and a
-unit searched without result waits longer the longer ago it aired.
+**MOD-68** (AGREED) - Missing units are searched first, each title under its own profile. A unit
+searched without result waits before the next search by how long ago it aired: 15 minutes
+within a day, an hour within a week, 6 hours within a month, a day within a year, a week beyond.
+Each fruitless search stretches that wait, up to five times, and never past a week.
 
 **MOD-69** (AGREED) - Titles that are cutoff unmet are searched for a better copy with what the
 missing search leaves, on their own wait: half a day after a search, doubling with each one that
@@ -105,9 +124,12 @@ it covered back to missing. The stall limit is 72 hours by default and can be tu
 **MOD-73** (AGREED) - A release whose download failed is blocklisted for its title, so the next
 search skips it from every indexer. The blocklist is visible, and an admin can clear an entry.
 
-**MOD-74** (AGREED) - A file an upgrade replaces goes to the recycle bin when one is set, and is
-cleared after a number of days, 30 by default. With no bin it is deleted at once. Only a file of
-the same cut is ever replaced.
+**MOD-74** (AGREED) - The library never deletes (LIB-48). Replacing a file is acquisition acting
+on an admin's standing choice, replace on upgrade, on by default; turned off, the upgrade lands
+beside the file and both are kept. Only a file of the same edition is ever replaced (MEDIA-2).
+
+**MOD-79** (AGREED) - A file an upgrade replaces goes to the recycle bin when one is set, and is
+cleared after a number of days, 30 by default. With no bin it is deleted at once.
 
 ## Not in scope
 
