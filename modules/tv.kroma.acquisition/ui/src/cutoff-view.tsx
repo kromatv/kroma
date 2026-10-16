@@ -58,8 +58,8 @@ function CutoffRow({ entry }: Readonly<{ entry: CutoffEntry }>) {
     <Table.Row onPress={() => navigate({ to: `/admin/monitoring/${entry.kind}/${entry.tmdbId}` })}>
       <Table.Cell>
         <Row gap={10} align="center">
-          <Box w={POSTER_W} h={POSTER_H} shrink={0}>
-            <Img src={entry.posterUrl ?? null} radius="sm" background="rgba(255,255,255,0.05)" />
+          <Box w={POSTER_W} h={POSTER_H} shrink={0} radius={4} overflow="hidden" bg="tint/5">
+            {entry.posterUrl ? <Img src={entry.posterUrl} fill /> : null}
           </Box>
           <Box minW={0} flex>
             <Text variant="meta" lines={1}>

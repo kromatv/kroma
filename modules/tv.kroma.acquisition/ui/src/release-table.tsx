@@ -8,7 +8,7 @@ import { filterReleases, type ReleaseFilter, type ReleaseSort, sortReleases } fr
 
 const COLUMNS: TableColumn[] = [
   {},
-  { width: 116 },
+  { width: 136 },
   { width: 150, from: 'md' },
   { width: 92, from: 'md' },
   { width: 84, from: 'md' },

@@ -4,7 +4,7 @@ import { FormatPills, QualityPill, ScorePill } from './judgement-pills';
 import { reasonKey } from './release-verdict';
 import type { JudgedFile } from './rules-schemas';
 
-const COLUMNS: TableColumn[] = [{}, { width: 96 }, { width: 116 }, { width: 74 }];
+const COLUMNS: TableColumn[] = [{}, { width: 96 }, { width: 136 }, { width: 74 }];
 
 export function TitleFilesTable({ files }: Readonly<{ files: readonly JudgedFile[] }>) {
   const t = useT();

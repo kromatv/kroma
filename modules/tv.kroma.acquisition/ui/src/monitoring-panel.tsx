@@ -141,9 +141,6 @@ function ProfilePicker({
             ))}
           </Select.Root>
         </Box>
-        <Text variant="meta" color="textDim">
-          {view.profileName}
-        </Text>
       </Row>
       {action.error ? (
         <Callout.Root tone="danger">

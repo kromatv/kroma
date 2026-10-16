@@ -19,7 +19,7 @@ export function QualityPill({
       py={2}
       shrink={0}
     >
-      <Text variant="meta" color={allowed ? 'text' : 'dangerHover'}>
+      <Text variant="meta" color={allowed ? 'text' : 'dangerHover'} lines={1}>
         {quality}
       </Text>
     </Row>

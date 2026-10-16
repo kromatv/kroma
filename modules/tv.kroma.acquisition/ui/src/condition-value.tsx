@@ -1,5 +1,6 @@
 import { useT } from '@kromatv/module-sdk';
 import { Box, Field, Row, Select, Text } from '@kromatv/ui/kit';
+import { factLabel } from './fact-labels';
 import {
   AudioCodec,
   type Condition,
@@ -274,7 +275,7 @@ function Choice<Option extends string>({
         <Select.Trigger size="sm" block />
         {anyLabel ? <Select.Item value={ANY} label={anyLabel} /> : null}
         {options.map((option) => (
-          <Select.Item key={option} value={option} label={option} />
+          <Select.Item key={option} value={option} label={factLabel(option)} />
         ))}
       </Select.Root>
     </Box>

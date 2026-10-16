@@ -3,7 +3,7 @@ import { TABULAR, Table, useT } from '@kromatv/module-sdk';
 import { Box, Divider, Icon, Row, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { FormatPills, QualityPill, ScorePill, VerdictLine } from './judgement-pills';
-import { BLANK, ReleaseFacts } from './release-cells';
+import { BLANK, IndexerCell, SeedersCell, SizeCell } from './release-cells';
 import { targetLabel } from './release-sort';
 
 export function ReleaseRow({
@@ -63,12 +63,9 @@ export function ReleaseRow({
             </Text>
           )}
         </Table.Cell>
-        <ReleaseFacts
-          indexerName={release.indexerName}
-          detailsUrl={release.detailsUrl}
-          sizeBytes={release.sizeBytes}
-          seeders={release.seeders}
-        />
+        <IndexerCell indexerName={release.indexerName} detailsUrl={release.detailsUrl} />
+        <SizeCell sizeBytes={release.sizeBytes} />
+        <SeedersCell seeders={release.seeders} />
         <Table.Cell>
           {release.score == null ? (
             <Text variant="meta" color="textDim" style={TABULAR}>
