@@ -14,9 +14,8 @@ use kroma_module_sdk::db;
 use kroma_module_sdk::domain::{Permission, User};
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::host::{AuthUser, HostStorage, json_error};
-use kroma_scene::{Evaluation, cutoff_unmet};
 
-use crate::rules::files::judge_title_files;
+use crate::rules::files::{held_units, judge_title_files, unit_below_target};
 use crate::search::{SearchScope, Subject};
 
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
@@ -150,20 +149,10 @@ pub fn cutoff_list<S: HostStorage>(state: &S) -> anyhow::Result<Vec<CutoffEntry>
         if files.is_empty() {
             continue;
         }
-        let mut units: Vec<(Option<u32>, Option<u32>)> =
-            files.iter().map(|f| (f.season, f.episode)).collect();
-        units.sort_unstable();
-        units.dedup();
+        let units = held_units(&files);
         let below = units
             .iter()
-            .filter(|&&(season, episode)| {
-                let held: Vec<Evaluation> = files
-                    .iter()
-                    .filter(|f| f.holds(season, episode))
-                    .map(|f| f.evaluation.clone())
-                    .collect();
-                cutoff_unmet(&held, profile)
-            })
+            .filter(|&&(season, episode)| unit_below_target(&files, season, episode, profile))
             .count();
         if below == 0 {
             continue;

@@ -69,7 +69,9 @@ fn scored_hits(
         let (view, judged) = judge.release(&hit.release, indexer, &targets[hit.target]);
         let key = (hit.indexer_id.clone(), hit.release.guid.clone());
         if let Some(&at) = seen.get(&key) {
-            if cached[at].judged.is_none() && judged.is_some() {
+            let kept = &cached[at];
+            let better = judged.is_some() || (misfit(&kept.view) && !misfit(&view));
+            if kept.judged.is_none() && better {
                 cached[at].view = view;
                 cached[at].judged = judged;
             }
@@ -90,6 +92,10 @@ fn scored_hits(
         });
     }
     cached
+}
+
+fn misfit(view: &ScoredReleaseView) -> bool {
+    view.rejected.as_deref().is_some_and(|why| why.starts_with("wrong-"))
 }
 
 pub(crate) fn collect_search_hits<S: HostStorage>(
@@ -232,6 +238,26 @@ mod tests {
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].view.target, "season");
         assert!(found[0].view.score.is_some());
+    }
+
+    #[test]
+    fn a_release_every_target_refuses_keeps_the_reason_of_the_one_it_fits() {
+        let episode = |target| Hit {
+            indexer_id: "idx1".into(),
+            target,
+            release: release("Show.S01E01.1080p.WEB-DL.x265-GRP", Some(0)),
+        };
+        let targets = [
+            SearchTarget::season(42, "Show".into(), 1, 10, None),
+            episode_target(),
+        ];
+        let rules = TestRules::new();
+
+        let found = scored_hits(vec![episode(0), episode(1)], &[indexer(0)], &targets, &rules.judge(), 42);
+
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].view.target, "episode");
+        assert!(found[0].view.rejected.as_deref().is_some_and(|why| why.starts_with("seeders")));
     }
 
     #[test]

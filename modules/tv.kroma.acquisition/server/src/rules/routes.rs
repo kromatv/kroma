@@ -14,11 +14,10 @@ use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::host::{AuthUser, HostStorage, json_error};
 use kroma_scene::{
-    CustomFormat, Evaluation, Facts, FormatSet, Language, Quality, QualityProfile, Sizes,
-    cutoff_unmet, evaluate,
+    CustomFormat, Evaluation, Facts, FormatSet, Language, Quality, QualityProfile, Sizes, evaluate,
 };
 
-use super::files::{JudgedFile, judge_title_files};
+use super::files::{JudgedFile, held_units, judge_title_files, unit_below_target};
 use super::{load, original_language, set_default_profile, store};
 
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
@@ -316,12 +315,14 @@ async fn title<S: HostStorage + Clone + Send + Sync + 'static>(
             &book.rules(profile),
             original.as_ref(),
         )?;
-        let held: Vec<Evaluation> = files.iter().map(|f| f.evaluation.clone()).collect();
+        let cutoff_unmet = held_units(&files)
+            .into_iter()
+            .any(|(season, episode)| unit_below_target(&files, season, episode, profile));
         Ok(TitleView {
             profile_id: profile.id.clone(),
             profile_name: profile.name.clone(),
             custom_profile: chosen.is_some(),
-            cutoff_unmet: cutoff_unmet(&held, profile),
+            cutoff_unmet,
             files,
         })
     })

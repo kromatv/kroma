@@ -10,10 +10,10 @@ use kroma_module_sdk::db::{self, WantedRow};
 use kroma_module_sdk::engine::model::{MonitoredTitle, RequestKind};
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::host::HostStorage;
-use kroma_scene::{Evaluation, QualityProfile, Verdict, cutoff_unmet};
+use kroma_scene::{QualityProfile, Verdict};
 
 use crate::auto::{AutoSummary, Grab, MAX_TARGETS, Pass, grab_candidate, target_label};
-use crate::rules::files::{JudgedFile, judge_title_files};
+use crate::rules::files::{JudgedFile, judge_title_files, unit_below_target};
 use crate::rules::store;
 use crate::search::SearchTarget;
 use crate::search::best::{Aim, best_release};
@@ -137,14 +137,7 @@ pub(crate) fn upgrade_targets(
     files: &[JudgedFile],
     profile: &QualityProfile,
 ) -> Vec<(SearchTarget, Vec<String>)> {
-    let unmet = |season: Option<u32>, episode: Option<u32>| {
-        let held: Vec<Evaluation> = files
-            .iter()
-            .filter(|f| f.holds(season, episode))
-            .map(|f| f.evaluation.clone())
-            .collect();
-        cutoff_unmet(&held, profile)
-    };
+    let unmet = |season, episode| unit_below_target(files, season, episode, profile);
     if kind == RequestKind::Movie {
         return rows
             .iter()
@@ -195,7 +188,7 @@ pub(crate) fn upgrade_targets(
 mod tests {
     use super::*;
     use crate::search::test_support::TestRules;
-    use kroma_scene::Quality;
+    use kroma_scene::{Evaluation, Quality};
 
     fn row(id: &str, season: Option<u32>, episode: Option<u32>) -> WantedRow {
         WantedRow {

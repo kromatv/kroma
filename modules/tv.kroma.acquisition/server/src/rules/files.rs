@@ -9,8 +9,8 @@ use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::host::HostStorage;
 use kroma_module_sdk::primitives::language::language_code;
 use kroma_scene::{
-    AudioCodec, AudioFact, Evaluation, Facts, HdrFormat, Language, Probe, Rules, cutoff_unmet,
-    evaluate,
+    AudioCodec, AudioFact, Evaluation, Facts, HdrFormat, Language, Probe, QualityProfile, Rules,
+    cutoff_unmet, evaluate,
 };
 use serde::Serialize;
 
@@ -45,6 +45,30 @@ impl JudgedFile {
             (None, Some(_)) => false,
         }
     }
+}
+
+/// Each unit the files hold, once, by the episode each file starts at.
+pub fn held_units(files: &[JudgedFile]) -> Vec<(Option<u32>, Option<u32>)> {
+    let mut units: Vec<_> = files.iter().map(|f| (f.season, f.episode)).collect();
+    units.sort_unstable();
+    units.dedup();
+    units
+}
+
+/// Whether the files holding `episode` of `season` (the film, for `None`)
+/// leave it below `profile`'s target.
+pub fn unit_below_target(
+    files: &[JudgedFile],
+    season: Option<u32>,
+    episode: Option<u32>,
+    profile: &QualityProfile,
+) -> bool {
+    let held: Vec<Evaluation> = files
+        .iter()
+        .filter(|f| f.holds(season, episode))
+        .map(|f| f.evaluation.clone())
+        .collect();
+    cutoff_unmet(&held, profile)
 }
 
 /// Every file of a title, judged under `rules`.
@@ -163,7 +187,28 @@ fn hdr_of(video: &kroma_module_sdk::domain::VideoStream) -> Vec<HdrFormat> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::search::test_support::TestRules;
     use kroma_module_sdk::domain::{AudioStream, VideoStream};
+    use kroma_scene::Quality;
+
+    fn judged(season: u32, episode: u32, quality: Quality, rank: u32) -> JudgedFile {
+        JudgedFile {
+            file_id: format!("s{season}e{episode}"),
+            rel_path: None,
+            season: Some(season),
+            episode: Some(episode),
+            episode_end: None,
+            release: None,
+            evaluation: Evaluation {
+                quality,
+                quality_rank: Some(rank),
+                formats: Vec::new(),
+                format_score: 0,
+                revision: 1,
+            },
+            below_target: false,
+        }
+    }
 
     fn file() -> MediaFile {
         MediaFile {
@@ -239,6 +284,22 @@ mod tests {
 
         assert_eq!(facts.resolution, Some(kroma_scene::Res::R1080));
         assert!(facts.languages.original);
+    }
+
+    #[test]
+    fn an_episode_below_target_is_told_apart_from_one_at_it() {
+        let rules = TestRules::new();
+        let files = [
+            judged(1, 1, Quality::WebDl720, 1),
+            judged(1, 2, Quality::Bluray1080, rules.profile.cutoff_rank()),
+        ];
+
+        let below: Vec<_> = held_units(&files)
+            .into_iter()
+            .filter(|&(season, episode)| unit_below_target(&files, season, episode, &rules.profile))
+            .collect();
+
+        assert_eq!(below, [(Some(1), Some(1))]);
     }
 
     #[test]
