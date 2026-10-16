@@ -61,8 +61,6 @@ function CastReceiver({
 
   const applied = useRef(0);
   const signedIn = ready && Boolean(user);
-  // Tizen suspends the app on Home or a source switch and leaves the socket
-  // open, so the server would keep offering a television nothing can draw on.
   const inFront = useForeground();
 
   // Say on the link that this television is up and castable, for as long as it
@@ -174,9 +172,6 @@ function CastReceiver({
       },
       onClose: () => {
         attached = false;
-        // The server destroys the entry with the socket and numbers the next
-        // attachment's commands from 1 again, so a sequence remembered across a
-        // reconnect would swallow every order up to the one before it.
         applied.current = 0;
         // The remotes were driving us THROUGH that socket; with it gone the
         // server has already dropped them, so the top bar must not keep

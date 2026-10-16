@@ -32,6 +32,18 @@ export interface PlayerKeysParams {
   postPlay?: { active: boolean; onKey: (key: RemoteKey) => void };
 }
 
+function overFilmKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): boolean {
+  if (p.resume?.active && key === 'Back') {
+    p.resume.onDismiss();
+    return true;
+  }
+  if (p.intro?.active && key === 'Enter') {
+    p.intro.onSkip();
+    return true;
+  }
+  return p.credits?.active === true && p.credits.onKey(key);
+}
+
 /**
  * Route one logical remote key (§3, §15). While locked only Back / OK get
  * through, and both mean "dismiss". The end-of-film screen takes everything.
@@ -57,21 +69,7 @@ export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): v
     return;
   }
 
-  // Asked before the chrome because they outlive it: a press belongs to what
-  // the viewer can see, and spending the first one on the reveal instead
-  // leaves a lit pill doing nothing.
-  if (p.resume?.active && key === 'Back') {
-    p.resume.onDismiss();
-    return;
-  }
-  if (p.intro?.active && key === 'Enter') {
-    p.intro.onSkip();
-    return;
-  }
-  if (p.credits?.active && p.credits.onKey(key)) return;
-
-  // Never spent on the reveal: with the chrome already away there is nothing
-  // left for Back to put away, so it leaves the player (see usePlayerNav).
+  if (overFilmKey(p, key)) return;
   if (key === 'Back' && !nav.revealed) {
     nav.handleKey(key);
     return;

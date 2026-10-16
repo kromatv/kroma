@@ -116,8 +116,6 @@ function handleDpadKey(key: RemoteKey, ctx: DpadContext): void {
       else if (focused) ctx.activate(focused);
       return;
     case 'Back':
-      // Put the chrome away. With nothing left on screen to dismiss, the next
-      // Back is the one that leaves the player (see usePlayerNav).
       ctx.clearHide();
       ctx.setRevealed(false);
       return;
