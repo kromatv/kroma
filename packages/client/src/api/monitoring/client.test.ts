@@ -25,8 +25,7 @@ describe('the monitoring endpoints', () => {
     },
     {
       name: 'setEpisodes',
-      call: (c) =>
-        c.monitoring.setEpisodes(77, { seasons: [{ season: 2, monitored: false }] }),
+      call: (c) => c.monitoring.setEpisodes(77, { seasons: [{ season: 2, monitored: false }] }),
       method: 'PUT',
       path: '/monitoring/show/77/episodes',
       body: { seasons: [{ season: 2, monitored: false }] },

@@ -80,6 +80,24 @@ pub fn missing_items(
     rows.collect()
 }
 
+/// Missing units only monitoring wants, no request answering for them: what a
+/// library manager's own view adds, since [`missing_items`] scoped to a
+/// requester leaves them out.
+pub fn monitored_missing(
+    conn: &Connection,
+    today: &str,
+    limit: usize,
+) -> rusqlite::Result<Vec<CalendarEntry>> {
+    let mut stmt = conn.prepare(&format!(
+        "{CALENDAR_SELECT} \
+         WHERE w.status = 'wanted' AND (w.air_date IS NULL OR w.air_date <= ?1) \
+           AND w.request_id IS NULL \
+         ORDER BY w.title ASC, w.season ASC, w.episode ASC LIMIT ?2"
+    ))?;
+    let rows = stmt.query_map(params![today, limit as i64], row_to_calendar_entry)?;
+    rows.collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -242,5 +260,25 @@ mod tests {
         assert_eq!(managers.len(), 1);
         assert_eq!(managers[0].request_id, None);
         assert!(requester.is_empty());
+    }
+
+    #[test]
+    fn a_managers_own_view_adds_what_only_monitoring_wants() {
+        let pool = pool();
+        req_by(&pool, "r-1", 1, RequestStatus::Approved, Some("ana"));
+        let mut free = wanted_row("w-free", "unused", Some("2020-01-01"), "wanted");
+        free.request_id = None;
+        insert_wanted(
+            &pool,
+            &[free, wanted_row("w-asked", "r-1", Some("2020-01-01"), "wanted")],
+            1_000,
+        )
+        .unwrap();
+
+        let conn = pool.get().unwrap();
+        let monitored = monitored_missing(&conn, "2026-01-01", 50).unwrap();
+
+        assert_eq!(monitored.len(), 1);
+        assert_eq!(monitored[0].request_id, None);
     }
 }

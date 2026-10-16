@@ -170,18 +170,23 @@ pub async fn calendar(
 
 /// `GET /api/requests/missing` the "missing / wanted" list: aired/released wanted
 /// rows still not on disk (the inverse of the calendar), grouped client-side by
-/// title. Own requests, or everyone's for a `requests.manage` holder.
+/// title. Own requests, or everyone's for a `requests.manage` holder; a
+/// `library.manage` holder also sees what only monitoring wants.
 pub async fn missing(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     Query(params): Query<ListParams>,
 ) -> Result<Response, Response> {
     let (all, uid) = list_scope(&user, &params)?;
+    let librarian = user.can(Permission::LibraryManage);
     let today = crate::services::requests::today_ymd();
     let entries = query(&state.db, move |pool| {
         let conn = pool.get()?;
         let scope = if all { None } else { Some(uid.as_str()) };
         let mut entries = db::missing_items(&conn, &today, scope, 500)?;
+        if !all && librarian {
+            entries.extend(db::monitored_missing(&conn, &today, 500)?);
+        }
         // Library-scan gaps: shows with aired episodes not on disk that were never
         // requested (the `library.missing` job fills these). Library-wide, not
         // request-scoped; the query already excludes shows with a live request.
