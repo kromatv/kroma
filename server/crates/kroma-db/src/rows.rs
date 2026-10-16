@@ -84,7 +84,14 @@ pub(crate) fn row_to_file(r: &Row) -> rusqlite::Result<MediaFile> {
     let subs_json: String = r.get(15)?;
     let subtitles: Vec<SubtitleTrack> = serde_json::from_str(&subs_json).unwrap_or_default();
     let tracks_json: String = r.get(17)?;
-    let audio_tracks: Vec<AudioStream> = serde_json::from_str(&tracks_json).unwrap_or_default();
+    let mut audio_tracks: Vec<AudioStream> =
+        serde_json::from_str(&tracks_json).unwrap_or_default();
+    for track in audio_tracks.iter_mut().filter(|t| t.region.is_none()) {
+        track.region = kroma_primitives::language::track_region(
+            track.language.as_deref(),
+            track.title.as_deref(),
+        );
+    }
     // Representative audio = first listed track. Fall back to the legacy
     // a_codec/a_channels/a_language columns for rows probed before audio_tracks
     // existed (their JSON is still `[]`).
@@ -99,6 +106,7 @@ pub(crate) fn row_to_file(r: &Row) -> rusqlite::Result<MediaFile> {
                 language: r.get(14).ok().flatten(),
                 title: None,
                 default: true,
+                region: None,
             })
     });
 

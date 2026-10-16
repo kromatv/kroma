@@ -1,32 +1,31 @@
-//! Interactive search for one request: sweep every enabled indexer over the
-//! requested scope, score everything, remember the results so a grab can reuse
-//! a magnet without a re-sweep.
+//! Interactive search for one request or one title: sweep every enabled
+//! indexer over the scope, judge everything by the title's rules and against
+//! what it holds, and remember the results so a grab can reuse a magnet
+//! without a re-sweep.
 
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
 use anyhow::{anyhow, Result};
-use kroma_module_sdk::db;
 use kroma_module_sdk::engine::services::requests::today_ymd;
 use kroma_module_sdk::host::HostStorage;
 
 use crate::dtos::{InteractiveSearchView, ScoredReleaseView};
+use crate::rules::files::{judge_title_files, JudgedFile};
 use crate::search::hits::{collect_search_hits, CachedRelease};
+use crate::search::judge::{units_of, verdict_for, Judge};
+use crate::search::subject::{resolve, Subject};
 use crate::search::targets::{targets_for_scope, SearchScope};
 
 mod grab;
 
-pub use grab::grab_cached;
-use grab::is_upgrade;
+pub use grab::{grab_cached, replaces};
 
 static SEARCH_CACHE: Mutex<Option<HashMap<String, Vec<CachedRelease>>>> = Mutex::new(None);
 
-fn cache_key(request_id: &str, scope: SearchScope) -> String {
-    format!("{request_id}|{}", scope.cache_key())
-}
-
 pub fn cached_release(
-    request_id: &str,
+    subject: &Subject,
     scope: SearchScope,
     guid: &str,
     indexer_id: &str,
@@ -35,7 +34,7 @@ pub fn cached_release(
         .lock()
         .unwrap()
         .as_ref()
-        .and_then(|m| m.get(&cache_key(request_id, scope)))
+        .and_then(|m| m.get(&subject.cache_key(scope)))
         .and_then(|list| {
             list.iter()
                 .find(|c| c.view.guid == guid && c.view.indexer_id == indexer_id)
@@ -43,49 +42,31 @@ pub fn cached_release(
         })
 }
 
-fn cache_results(request_id: &str, scope: SearchScope, releases: Vec<CachedRelease>) {
+fn cache_results(subject: &Subject, scope: SearchScope, releases: Vec<CachedRelease>) {
     let mut guard = SEARCH_CACHE.lock().unwrap();
     let map = guard.get_or_insert_with(HashMap::new);
     if map.len() > 24 {
         map.clear();
     }
-    map.insert(cache_key(request_id, scope), releases);
+    map.insert(subject.cache_key(scope), releases);
 }
 
-/// Interactive search for one request over `scope`: sweep every enabled indexer
-/// and return everything, scored or rejected-with-reason, accepted-best first.
+/// Interactive search for `subject` over `scope`: sweep every enabled indexer
+/// and return everything, judged or rejected-with-reason, best first.
 /// Synchronous and network-heavy: call from a blocking context only.
 pub fn interactive_search<S: HostStorage>(
     state: &S,
-    request_id: &str,
+    subject: &Subject,
     scope: SearchScope,
 ) -> Result<InteractiveSearchView> {
-    let conn = state.db().get()?;
-    let req = db::get_request(&conn, request_id)?.ok_or_else(|| anyhow!("request not found"))?;
-    let mut wanted = db::wanted_for_request(&conn, request_id)?;
+    let resolved = resolve(state, subject, scope)?;
     let indexers = crate::peers::indexers::enabled(state)?;
-    drop(conn);
     if indexers.is_empty() {
         return Err(anyhow!(
             "no enabled indexer; add one under Admin > Indexeurs"
         ));
     }
-    // A pending request has no ledger yet: search as if it were approved, so a
-    // moderator can look before green-lighting.
-    if wanted.is_empty() {
-        kroma_module_sdk::engine::services::requests::preview_wanted(state, &req, &mut wanted)?;
-    }
-    // An explicit admin search covers the request's full content regardless of
-    // ledger status, so already-grabbed rows can still be (re)searched.
-    // The target builders only look at `wanted` rows, so force them on a clone.
-    let mut search_wanted = wanted.clone();
-    for w in &mut search_wanted {
-        w.status = "wanted".into();
-    }
-    search_wanted.extend(rows_outside_request(state, &req, &search_wanted, scope)?);
-
-    let profile = crate::profile_from_settings(state);
-    let targets = targets_for_scope(req.kind, &search_wanted, &today_ymd(), scope);
+    let targets = targets_for_scope(resolved.kind, &resolved.searched, &today_ymd(), scope);
     if targets.is_empty() {
         return Ok(InteractiveSearchView {
             releases: Vec::new(),
@@ -93,106 +74,173 @@ pub fn interactive_search<S: HostStorage>(
         });
     }
 
+    let book = crate::rules::load(state)?;
+    let profile = book.profile_for(state, resolved.kind, resolved.tmdb_id)?;
+    let original = crate::rules::original_language(state, resolved.kind, resolved.tmdb_id)?;
+    let judge = Judge {
+        rules: book.rules(profile),
+        original: original.as_ref(),
+        runtime_minutes: None,
+    };
     tracing::info!(
-        request = %req.id,
-        title = %req.title,
-        scope = %scope.cache_key(),
+        subject = %subject.cache_key(scope),
+        title = %resolved.title,
         targets = targets.len(),
         indexers = indexers.len(),
         "interactive search starting",
     );
     let (mut cached, indexer_reports) =
-        collect_search_hits(state, &indexers, &targets, &profile, req.tmdb_id);
-
-    // Against the REAL ledger, not the forced-wanted clone above: what the row
-    // shows has to be what the grab will do.
+        collect_search_hits(state, &indexers, &targets, &judge, resolved.tmdb_id);
+    let files = judge_title_files(
+        state,
+        resolved.kind,
+        resolved.tmdb_id,
+        &judge.rules,
+        original.as_ref(),
+    )?;
+    let blocked = crate::rules::blocklist::for_title(state.store(), resolved.kind, resolved.tmdb_id)?;
     for c in &mut cached {
-        let ids = crate::search::wanted_ids_for(&wanted, &c.view);
-        c.view.upgrade = is_upgrade(&wanted, &ids);
+        if blocked.iter().any(|b| b.matches(&c.view.title)) {
+            refuse(c, "blocklist: an earlier grab of this release failed");
+            continue;
+        }
+        settle_verdict(c, &files, judge.profile());
     }
 
-    cached.sort_by_key(|c| (c.view.score.is_none(), -(c.view.score.unwrap_or(0))));
+    cached.sort_by(best_first);
     cached.truncate(150);
     let releases: Vec<ScoredReleaseView> = cached.iter().map(|c| c.view.clone()).collect();
     tracing::info!(
-        request = %req.id,
+        subject = %subject.cache_key(scope),
         total = releases.len(),
         accepted = releases.iter().filter(|r| r.score.is_some()).count(),
         "interactive search done",
     );
-    cache_results(&req.id, scope, cached);
+    cache_results(subject, scope, cached);
     Ok(InteractiveSearchView {
         releases,
         indexers: indexer_reports,
     })
 }
 
-// The rows are synthesized from TMDB and never persisted, so a grab of one flips
-// no ledger row: the availability pass picks the file up once it lands.
-fn rows_outside_request<S: HostStorage>(
-    state: &S,
-    req: &kroma_module_sdk::engine::model::MediaRequest,
-    wanted: &[db::WantedRow],
-    scope: SearchScope,
-) -> Result<Vec<db::WantedRow>> {
-    let Some(season) = scope.season() else {
-        return Ok(Vec::new());
+fn settle_verdict(c: &mut CachedRelease, files: &[JudgedFile], profile: &kroma_scene::QualityProfile) {
+    let Some(judged) = &c.judged else {
+        return;
     };
-    if wanted.iter().any(|w| w.season == Some(season)) {
-        return Ok(Vec::new());
+    let units = units_of(&c.view, files);
+    let verdict = verdict_for(&judged.evaluation, &units, files, profile);
+    c.view.verdict = Some(verdict);
+    c.view.upgrade = replaces(Some(verdict));
+}
+
+fn refuse(c: &mut CachedRelease, why: &str) {
+    c.judged = None;
+    c.view.score = None;
+    c.view.breakdown.clear();
+    c.view.rejected = Some(why.to_string());
+}
+
+/// Accepted releases first, by the rules' ranking; refused ones after.
+pub(crate) fn best_first(a: &CachedRelease, b: &CachedRelease) -> Ordering {
+    match (&a.judged, &b.judged) {
+        (Some(x), Some(y)) => kroma_scene::rank(y, x),
+        (Some(_), None) => Ordering::Less,
+        (None, Some(_)) => Ordering::Greater,
+        (None, None) => Ordering::Equal,
     }
-    kroma_module_sdk::engine::services::request_ledger::preview_season_rows(state, req, season)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::search::hits::score_release;
-    use crate::search::test_support::{episode_target, indexer, profile, release};
+    use crate::search::test_support::{episode_target, indexer, release, TestRules};
+
+    fn cached(name: &str, seeders: u32, rules: &TestRules) -> CachedRelease {
+        let (view, judged) = rules
+            .judge()
+            .release(&release(name, Some(seeders)), &indexer(0), &episode_target());
+        CachedRelease {
+            view,
+            judged,
+            magnet_or_url: "magnet:?xt=2".into(),
+            tmdb_id: 42,
+        }
+    }
 
     #[test]
-    fn two_scopes_of_one_request_do_not_share_a_cache_slot() {
-        let a = cache_key("r1", SearchScope::Season { season: 1 });
-        let b = cache_key(
-            "r1",
-            SearchScope::Episode {
-                season: 1,
-                episode: 1,
-            },
-        );
+    fn two_scopes_of_one_subject_do_not_share_a_cache_slot() {
+        let subject = Subject::request("r1");
+
+        let a = subject.cache_key(SearchScope::Season { season: 1 });
+        let b = subject.cache_key(SearchScope::Episode {
+            season: 1,
+            episode: 1,
+        });
+
         assert_ne!(a, b);
-        assert_ne!(a, cache_key("r2", SearchScope::Season { season: 1 }));
+        assert_ne!(a, Subject::request("r2").cache_key(SearchScope::Season { season: 1 }));
     }
 
     #[test]
     fn the_cache_hands_a_grab_back_the_release_the_search_showed() {
+        let rules = TestRules::new();
+        let subject = Subject::request("req-cache");
         let scope = SearchScope::Episode {
             season: 4,
             episode: 2,
         };
-        let view = score_release(
-            &release("Show.S04E02.1080p", Some(9)),
-            &indexer(0),
-            &episode_target(),
-            &profile(),
-        );
-        cache_results(
-            "req-cache",
-            scope,
-            vec![CachedRelease {
-                view,
-                magnet_or_url: "magnet:?xt=2".into(),
-                tmdb_id: 42,
-            }],
-        );
+        cache_results(&subject, scope, vec![cached("Show.S04E02.1080p", 9, &rules)]);
 
-        let found = cached_release("req-cache", scope, "g1", "idx1").expect("cached");
+        let found = cached_release(&subject, scope, "g1", "idx1").expect("cached");
+
+        assert_eq!(found.magnet_or_url, "magnet:?xt=2");
+        assert!(cached_release(&subject, SearchScope::All, "g1", "idx1").is_none());
+        assert!(cached_release(&subject, scope, "other", "idx1").is_none());
+        assert!(cached_release(&subject, scope, "g1", "other").is_none());
+    }
+
+    #[test]
+    fn the_rules_rank_order_puts_the_best_first_and_the_refused_last() {
+        let rules = TestRules::new();
+        let mut list = [
+            cached("Show.S01E01.1080p.WEB-DL.x264", 50, &rules),
+            cached("Show.S01E01.2160p.WEB-DL.x265", 50, &rules),
+            cached("Show.S01E01.1080p.WEB-DL.x265", 50, &rules),
+        ];
+
+        list.sort_by(best_first);
+
+        let order: Vec<&str> = list.iter().map(|c| c.view.title.as_str()).collect();
         assert_eq!(
-            found.magnet_or_url, "magnet:?xt=2",
-            "so a grab needs no re-sweep"
+            order,
+            [
+                "Show.S01E01.1080p.WEB-DL.x265",
+                "Show.S01E01.1080p.WEB-DL.x264",
+                "Show.S01E01.2160p.WEB-DL.x265"
+            ]
         );
-        assert!(cached_release("req-cache", SearchScope::All, "g1", "idx1").is_none());
-        assert!(cached_release("req-cache", scope, "other", "idx1").is_none());
-        assert!(cached_release("req-cache", scope, "g1", "other").is_none());
+    }
+
+    #[test]
+    fn a_release_with_nothing_on_disk_fills_the_slot() {
+        let rules = TestRules::new();
+        let mut c = cached("Show.S01E01.1080p.WEB-DL.x265", 50, &rules);
+
+        settle_verdict(&mut c, &[], &rules.profile);
+
+        assert_eq!(c.view.verdict, Some(kroma_scene::Verdict::Fill));
+        assert!(!c.view.upgrade);
+    }
+
+    #[test]
+    fn a_refused_release_loses_its_rank_and_says_why() {
+        let rules = TestRules::new();
+        let mut c = cached("Show.S01E01.1080p.WEB-DL.x265", 50, &rules);
+
+        refuse(&mut c, "blocklist: x");
+
+        assert!(c.judged.is_none());
+        assert_eq!(c.view.score, None);
+        assert_eq!(c.view.rejected.as_deref(), Some("blocklist: x"));
     }
 }

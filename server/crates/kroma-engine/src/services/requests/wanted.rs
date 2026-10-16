@@ -52,12 +52,15 @@ pub(super) fn merge_target(
     (seasons, normalize_episodes(Some(episodes)))
 }
 
+/// Puts an approved request's rows in the ledger and monitors its title.
 pub(super) fn materialize_wanted<S: HostStorage>(state: &S, id: &str) -> Result<()> {
     let conn = state.db().get()?;
     let req = db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request not found"))?;
     drop(conn);
-    let rows = build_wanted_rows(state, &req)?;
-    db::replace_wanted(state.db(), &req.id, &rows, now_ms())
+    let detail = fetch_detail(state, &req)?;
+    let rows = build_wanted_rows_from(state, &req, &detail)?;
+    db::claim_wanted(state.db(), &req.id, &rows, now_ms())?;
+    crate::services::monitoring::monitor_for_request(state, &req, &detail)
 }
 
 /// The wanted rows a request WOULD get on approval, persisting nothing.
@@ -74,12 +77,18 @@ pub(super) fn build_wanted_rows<S: HostStorage>(
     state: &S,
     req: &MediaRequest,
 ) -> Result<Vec<db::WantedRow>> {
-    let key = tmdb_key(state)?;
-    let lang = language(state);
-    let detail = discover::detail(&key, &lang, req.kind, req.tmdb_id)
-        .map_err(|()| anyhow!("TMDB lookup failed"))?
-        .ok_or_else(|| anyhow!("title not found on TMDB"))?;
+    let detail = fetch_detail(state, req)?;
     build_wanted_rows_from(state, req, &detail)
+}
+
+fn fetch_detail<S: HostStorage>(
+    state: &S,
+    req: &MediaRequest,
+) -> Result<discover::DiscoverRawDetail> {
+    let key = tmdb_key(state)?;
+    discover::detail(&key, &language(state), req.kind, req.tmdb_id)
+        .map_err(|()| anyhow!("TMDB lookup failed"))?
+        .ok_or_else(|| anyhow!("title not found on TMDB"))
 }
 
 pub(super) fn build_wanted_rows_from<S: HostStorage>(
@@ -91,13 +100,10 @@ pub(super) fn build_wanted_rows_from<S: HostStorage>(
     let lang = language(state);
 
     let mut rows: Vec<db::WantedRow> = Vec::new();
-    let mint = |salt: &str| {
-        crate::services::scan::short_hash(&format!("wanted|{}|{}|{salt}", req.id, req.tmdb_id))
-    };
     match req.kind {
         RequestKind::Movie => rows.push(db::WantedRow {
-            id: mint("movie"),
-            request_id: req.id.clone(),
+            id: db::unit_id("movie", req.tmdb_id, None, None),
+            request_id: Some(req.id.clone()),
             kind: "movie".into(),
             tmdb_id: req.tmdb_id,
             imdb_id: detail.imdb_id.clone(),
@@ -137,8 +143,8 @@ pub(super) fn build_wanted_rows_from<S: HostStorage>(
                         continue;
                     }
                     rows.push(db::WantedRow {
-                        id: mint(&format!("s{season:02}e{:03}", ep.episode)),
-                        request_id: req.id.clone(),
+                        id: db::unit_id("episode", req.tmdb_id, Some(season), Some(ep.episode)),
+                        request_id: Some(req.id.clone()),
                         kind: "episode".into(),
                         tmdb_id: req.tmdb_id,
                         imdb_id: detail.imdb_id.clone(),

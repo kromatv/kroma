@@ -7,6 +7,7 @@ import {
   IconBell,
   IconClockBolt,
   IconDatabase,
+  IconEye,
   IconFlag,
   IconHistory,
   IconInbox,
@@ -85,6 +86,12 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         labelKey: 'admin.navLibraries',
         cap: 'library.manage',
         icon: IconLibrary,
+      },
+      {
+        to: '/admin/monitoring',
+        labelKey: 'admin.navMonitoring',
+        cap: 'library.manage',
+        icon: IconEye,
       },
       {
         to: '/admin/transcoder',

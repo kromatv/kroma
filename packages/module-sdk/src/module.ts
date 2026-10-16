@@ -66,6 +66,15 @@ export interface SlotProps {
   /** Beside one episode row of the request page's catalogue: how far along the
    *  download of that episode is, if anything is downloading it. */
   'requests.episode.progress': { requestId: RequestId; season: number; episode: number };
+  /** The acquisition half of the admin page of one title: which quality profile
+   *  judges it, how its files measure up, and a search for a better copy.
+   *  `monitored` is false for a library title nobody monitors yet. */
+  'monitoring.detail': {
+    kind: 'movie' | 'show';
+    tmdbId: number;
+    title: string;
+    monitored: boolean;
+  };
 }
 
 export type SlotName = keyof SlotProps;

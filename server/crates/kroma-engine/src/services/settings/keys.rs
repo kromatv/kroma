@@ -148,6 +148,16 @@ fn declared() -> Declared {
     m.public("acqAutoApprove", json!(false));
     m.public("acqDeleteAfterImport", json!(false));
     m.public("acqReplaceOnUpgrade", json!(true));
+    // A file an upgrade replaces moves here instead of being deleted ("" =
+    // delete at once), and is cleared after `acqRecycleDays`.
+    m.public("acqRecycleBin", json!(""));
+    m.public("acqRecycleDays", json!(30));
+    // A download still unfinished this many hours after its grab has failed
+    // (0 = never).
+    m.public("acqStallHours", json!(72));
+    // How often the indexers' latest releases are read for monitored titles,
+    // in minutes (0 = never).
+    m.public("acqRssMinutes", json!(15));
     m.public("acqResolution", json!("1080p"));
     m.public("acqPreferHevc", json!(true));
     m.public("acqMinSeeders", json!(2));

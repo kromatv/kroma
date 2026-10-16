@@ -27,7 +27,7 @@ async fn search_h<S: HostStorage + Clone + Send + Sync + 'static>(
     port_reply(move || {
         Ok(serde_json::to_value(crate::search::interactive_search(
             &host,
-            &req.request_id,
+            &crate::search::Subject::request(&req.request_id),
             req.scope,
         )?)?)
     })
@@ -50,7 +50,7 @@ async fn grab_h<S: HostStorage + Clone + Send + Sync + 'static>(
     port_reply(move || {
         let row = crate::search::grab_cached(
             &host,
-            &req.request_id,
+            &crate::search::Subject::request(&req.request_id),
             req.scope,
             &req.guid,
             &req.indexer_id,

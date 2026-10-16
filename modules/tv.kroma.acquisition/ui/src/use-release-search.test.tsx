@@ -41,6 +41,7 @@ function release(): ScoredReleaseView {
     grabbable: true,
     upgrade: false,
     detailsUrl: null,
+    formats: [],
   };
 }
 

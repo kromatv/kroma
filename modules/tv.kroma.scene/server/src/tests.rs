@@ -1,26 +1,98 @@
 use crate::*;
 
-mod lines;
+mod formats;
+mod judge;
+mod languages;
 mod parse;
-mod score;
+mod rank;
+mod tags;
+mod upgrades;
+
+const GB: u64 = 1_073_741_824;
 
 fn p(name: &str) -> ParsedRelease {
     parse_release_name(name)
 }
 
-fn profile() -> Profile {
-    Profile {
+fn legacy() -> LegacySettings {
+    LegacySettings {
         resolution: Res::R1080,
         prefer_hevc: true,
         min_seeders: 2,
-        max_size_bytes_movie: 15 * GB,
-        max_size_bytes_episode: 3 * GB,
+        max_gb_movie: 15,
+        max_gb_episode: 3,
         required_keywords: vec![],
         forbidden_keywords: vec!["cam".into(), "hdcam".into(), "screener".into()],
     }
 }
 
-const GB: u64 = 1_073_741_824;
+struct Fixture {
+    profile: QualityProfile,
+    formats: FormatSet,
+    sizes: Sizes,
+}
+
+fn fixture_with(legacy: LegacySettings) -> Fixture {
+    Fixture {
+        profile: QualityProfile::from_legacy("default", "Default", &legacy),
+        formats: FormatSet::compile(&default_formats()).unwrap(),
+        sizes: default_sizes(&legacy),
+    }
+}
+
+fn fixture() -> Fixture {
+    fixture_with(legacy())
+}
+
+fn movie() -> Target {
+    Target::Movie { year: Some(2020) }
+}
+
+fn english() -> Language {
+    Language::new("en", None)
+}
+
+impl Fixture {
+    fn rules(&self) -> Rules<'_> {
+        Rules {
+            profile: &self.profile,
+            formats: &self.formats,
+            sizes: &self.sizes,
+        }
+    }
+
+    fn judge_with(
+        &self,
+        name: &str,
+        candidate: Candidate,
+        target: Target,
+    ) -> Result<Judged, Reject> {
+        let parsed = p(name);
+        let facts = Facts::from_release(name, &parsed, candidate.size_bytes);
+        let original = english();
+        let query = Query {
+            target,
+            runtime_minutes: None,
+            original: Some(&original),
+        };
+        judge(&parsed, &facts, &candidate, &query, &self.rules())
+    }
+
+    fn judge(
+        &self,
+        name: &str,
+        size_gb: u64,
+        seeders: u32,
+        target: Target,
+    ) -> Result<Judged, Reject> {
+        self.judge_with(name, cand(size_gb, seeders), target)
+    }
+
+    fn evaluate(&self, name: &str) -> Evaluation {
+        let facts = Facts::from_release(name, &p(name), None);
+        evaluate(&facts, Some(&english()), &self.rules())
+    }
+}
 
 fn cand(size_gb: u64, seeders: u32) -> Candidate {
     Candidate {
@@ -28,16 +100,4 @@ fn cand(size_gb: u64, seeders: u32) -> Candidate {
         seeders: Some(seeders),
         indexer_priority: 0,
     }
-}
-
-fn res_delta(s: &Scored) -> i32 {
-    s.breakdown
-        .iter()
-        .find(|l| l.rule == "resolution")
-        .unwrap()
-        .delta
-}
-
-fn line(s: &Scored, rule: &str) -> Option<i32> {
-    s.breakdown.iter().find(|l| l.rule == rule).map(|l| l.delta)
 }

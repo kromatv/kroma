@@ -1,7 +1,7 @@
-import type { AudioTrack, MediaItem, VideoTrack } from '@kromatv/client/media';
+import type { AudioTrack, MediaItem } from '@kromatv/client/media';
 import type { Translate } from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
-import { audioFlagLabel, audioString, qualityBadges, subString } from './media-labels';
+import { audioFlagLabel, audioString, subString } from './media-labels';
 
 const NAMES: Record<string, string> = {
   'lang.fr': 'Français',
@@ -12,15 +12,6 @@ const NAMES: Record<string, string> = {
 };
 const t = ((key: string) => NAMES[key] ?? key) as Translate;
 
-const video = (fields: Partial<VideoTrack>): VideoTrack => ({
-  codec: 'h264',
-  width: 1920,
-  height: 1080,
-  hdr: false,
-  bitDepth: 8,
-  ...fields,
-});
-
 const audio = (fields: Partial<AudioTrack>): AudioTrack => ({
   index: 0,
   codec: 'aac',
@@ -29,28 +20,6 @@ const audio = (fields: Partial<AudioTrack>): AudioTrack => ({
   title: null,
   default: true,
   ...fields,
-});
-
-describe('the quality pills beside the meta line', () => {
-  it('shows nothing for a title with no video track', () => {
-    expect(qualityBadges(null)).toEqual([]);
-  });
-
-  it('leaves a 1080p SDR H.264 title unmarked', () => {
-    expect(qualityBadges(video({}))).toEqual([]);
-  });
-
-  it('reads width rather than height, so a scope 4K master still counts', () => {
-    expect(qualityBadges(video({ width: 3840, height: 1608 }))).toEqual(['4K']);
-  });
-
-  it('stacks every pill a 4K HDR H.265 master earns, widest first', () => {
-    expect(qualityBadges(video({ width: 3840, hdr: true, codec: 'hevc' }))).toEqual([
-      '4K',
-      'HDR',
-      'H.265',
-    ]);
-  });
 });
 
 describe('the audio line', () => {

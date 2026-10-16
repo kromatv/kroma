@@ -1,6 +1,6 @@
 import { type CalendarEntry, RequestId } from '@kromatv/client/requests';
 import { describe, expect, it } from 'vitest';
-import { epKey, groupByTitle } from './missing-model';
+import { entryOrigin, epKey, groupByTitle } from './missing-model';
 
 const req = (id: string) => RequestId.parse(id);
 
@@ -42,6 +42,21 @@ describe('epKey', () => {
   });
 });
 
+describe('entryOrigin', () => {
+  it('reads a row a request answers for as that request, whatever its status', () => {
+    expect(entryOrigin(entry({ requestId: req('req_7'), status: 'wanted' }))).toBe('request');
+    expect(entryOrigin(entry({ requestId: req('req_7'), status: 'missing' }))).toBe('request');
+  });
+
+  it('reads an unrequested wanted row as one monitoring holds', () => {
+    expect(entryOrigin(entry({ requestId: null, status: 'wanted' }))).toBe('monitored');
+  });
+
+  it('reads an unrequested missing row as a library-scan gap', () => {
+    expect(entryOrigin(entry({ requestId: null, status: 'missing' }))).toBe('gap');
+  });
+});
+
 describe('groupByTitle', () => {
   it('gathers the entries of one title under one group, in arrival order', () => {
     const groups = groupByTitle([
@@ -78,6 +93,16 @@ describe('groupByTitle', () => {
     expect(groups).toHaveLength(2);
     expect(groups[0]?.requestId).toBe('req_1');
     expect(groups[1]?.requestId).toBeNull();
+  });
+
+  it('marks the group with what put its first row on the list', () => {
+    const groups = groupByTitle([
+      entry({ requestId: req('req_1') }),
+      entry({ tmdbId: 2, status: 'wanted' }),
+      entry({ tmdbId: 3, status: 'missing' }),
+    ]);
+
+    expect(groups.map((g) => g.origin)).toEqual(['request', 'monitored', 'gap']);
   });
 
   it('carries the title fields off the first entry of each group', () => {

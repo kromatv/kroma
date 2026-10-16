@@ -19,7 +19,7 @@ mod test_support;
 pub use availability::{availability_pass, match_one, MatchSummary};
 pub use coverage::set_coverage;
 pub use create::create_request;
-pub use imported::on_download_imported;
+pub use imported::{on_download_imported, Imported};
 pub use refresh::refresh_pass;
 pub use review::{approve_request, deny_request};
 pub use wanted::preview_wanted;

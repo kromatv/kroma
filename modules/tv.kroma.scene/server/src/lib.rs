@@ -1,35 +1,36 @@
 //! Release-name intelligence for the acquisition stack: parse scene/P2P
 //! release titles ("Movie.2023.1080p.BluRay.x265-GROUP") into structured facts,
-//! and score candidate releases against a quality profile. Pure computation,
-//! zero I/O.
+//! and judge releases and files against the quality rules an admin writes.
+//! Pure computation, zero I/O.
 
 use serde::{Deserialize, Serialize};
 
-/// Video resolution tiers we distinguish (anything below 720p is rejected by
-/// the decision engine, so it needs no variant).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Res {
+    Sd,
     R720,
     R1080,
     R2160,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Codec {
     Hevc,
     H264,
     Av1,
+    Vp9,
     Xvid,
 }
 
-/// Where the encode came from, best first (Remux = untouched disc stream).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// Where the encode came from (Remux = untouched disc stream).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Source {
     Remux,
     BluRay,
     WebDl,
     WebRip,
     Hdtv,
+    Dvd,
     Cam,
 }
 
@@ -48,7 +49,21 @@ pub struct ParsedRelease {
     pub proper: bool,
     pub repack: bool,
     pub hdr: bool,
+    pub hdr10_plus: bool,
+    pub hlg: bool,
     pub dolby_vision: bool,
+    #[serde(default)]
+    pub languages: Vec<Language>,
+    #[serde(default)]
+    pub multi: bool,
+    #[serde(default)]
+    pub subtitles: Vec<Language>,
+    #[serde(default)]
+    pub edition: Option<String>,
+    #[serde(default)]
+    pub audio_codec: Option<AudioCodec>,
+    #[serde(default)]
+    pub audio_channels: Option<u32>,
 }
 
 /// What the caller is trying to fill; drives season/episode validation and
@@ -60,31 +75,23 @@ pub enum Target {
     Season { season: u32, episodes: u32 },
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Profile {
-    pub resolution: Res,
-    pub prefer_hevc: bool,
-    pub min_seeders: u32,
-    pub max_size_bytes_movie: u64,
-    pub max_size_bytes_episode: u64,
-    pub required_keywords: Vec<String>,
-    pub forbidden_keywords: Vec<String>,
+impl Target {
+    /// How many episodes a release filling this target covers (a movie is one).
+    pub fn episode_count(&self) -> u32 {
+        match *self {
+            Target::Season { episodes, .. } => episodes.max(1),
+            _ => 1,
+        }
+    }
 }
 
-/// One line of the score explanation, persisted with the grab so "why this
-/// release" stays answerable later.
+/// One line of the explanation, persisted with the grab so "why this release"
+/// stays answerable later.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ScoreLine {
     pub rule: String,
     pub delta: i32,
     pub note: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Scored {
-    pub parsed: ParsedRelease,
-    pub score: i32,
-    pub breakdown: Vec<ScoreLine>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -101,12 +108,27 @@ pub struct Candidate {
 }
 
 mod content;
+mod decide;
+mod defaults;
+mod facts;
+mod format;
+mod language;
 mod parse;
-mod score;
+mod profile;
+mod quality;
+mod shape;
+mod upgrade;
 
 pub use content::{classify, ContentFile, ContentKind, TorrentContent};
+pub use decide::{evaluate, judge, rank, Evaluation, Judged, MatchedFormat, Query, Rules};
+pub use defaults::{default_formats, default_sizes, LegacySettings};
+pub use facts::{AudioCodec, AudioFact, Facts, HdrFormat, IndexerFlag, LanguageSet, Probe};
+pub use format::{Condition, CustomFormat, FormatError, FormatSet, Spec};
+pub use language::Language;
 pub use parse::parse_release_name;
-pub use score::score;
+pub use profile::{QualityProfile, QualityTier, SizeLimit, Sizes};
+pub use quality::Quality;
+pub use upgrade::{cutoff_unmet, upgrade_verdict, Reason, Verdict};
 
 #[cfg(test)]
 mod tests;

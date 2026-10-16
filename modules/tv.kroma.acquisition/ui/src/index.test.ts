@@ -8,6 +8,13 @@ describe('acquisitionModule', () => {
     expect(acquisitionModule.dependencies).toEqual({ 'tv.kroma.torrents': '>=0.3.0' });
   });
 
+  it('fills both core slots only this module can answer', () => {
+    expect(acquisitionModule.slots?.map((entry) => entry.slot)).toEqual([
+      'requests.detail',
+      'monitoring.detail',
+    ]);
+  });
+
   it('derives its nav link from the route it points at', () => {
     expect(acquisitionModule.routes?.map((r) => r.path)).toEqual(['acquisition']);
     expect(acquisitionModule.navItems).toEqual([

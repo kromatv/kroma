@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { AdminHostProvider } from './admin/context';
 import { defineModule } from './define';
 import { ModuleRegistry } from './registry';
+import { useModuleApi } from './scope';
 import { ModuleSlot, ModuleSlotProvider } from './slot';
 
 const MANIFEST = { id: 'tv.kroma.acq', version: '1.0.0' };
@@ -28,12 +29,19 @@ function mod(id: string, label: string, order?: number) {
   );
 }
 
+function OwnId() {
+  const api = useModuleApi() as unknown as { id: string };
+  return <span>{api.id}</span>;
+}
+
 function mount(registry: ModuleRegistry, enabled: { id: string; enabled?: boolean }[]) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   // The enabled flags come from `GET /api/modules`, which the slot reads through
   // the shared ['modules'] query; seeding it keeps the test off the network.
   queryClient.setQueryData(['modules'], enabled);
-  const client = { modules: { list: () => Promise.resolve(enabled) } } as never;
+  const client = {
+    modules: { list: () => Promise.resolve(enabled), api: (id: string) => ({ id }) },
+  } as never;
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <AdminHostProvider value={{ client, user: null, apiBase: '' }}>
@@ -59,6 +67,16 @@ describe('ModuleSlot', () => {
     const registry = new ModuleRegistry().register(mod('tv.kroma.acq', 'acq'));
     mount(registry, [{ id: 'tv.kroma.acq', enabled: true }]);
     expect(screen.getByText('acq:Alien')).toBeTruthy();
+  });
+
+  it('mounts each contribution inside its own module scope', () => {
+    const registry = new ModuleRegistry().register(
+      defineModule(MANIFEST, { slots: [{ slot: 'requests.detail' as const, component: OwnId }] }),
+    );
+
+    mount(registry, [{ id: 'tv.kroma.acq', enabled: true }]);
+
+    expect(screen.getByText('tv.kroma.acq')).toBeTruthy();
   });
 
   it('falls back when nothing is registered for the slot', () => {

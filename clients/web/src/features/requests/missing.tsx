@@ -55,6 +55,7 @@ export function MissingPage() {
   const query = userQueries.missing();
   const { data: entries, isPending } = useQuery({ ...query, refetchInterval: 30_000 });
   const canManage = !!user && hasPermission(user, 'requests.manage');
+  const canMonitor = !!user && hasPermission(user, 'library.manage');
 
   const groups = useMemo(() => groupByTitle(entries ?? []), [entries]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -168,6 +169,7 @@ export function MissingPage() {
             key={g.requestId ?? `tmdb:${g.tmdbId}`}
             group={g}
             canManage={canManage}
+            canMonitor={canMonitor}
             busyKeys={busyKeys}
             doneKeys={doneKeys}
             selected={selected}

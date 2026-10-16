@@ -14,7 +14,9 @@ use kroma_domain::{EpisodeRef, MediaRequest, RequestKind, RequestStatus};
 mod availability;
 mod calendar;
 mod gaps;
+mod monitored;
 mod search_queue;
+mod title_files;
 mod wanted;
 
 #[cfg(test)]
@@ -23,7 +25,9 @@ mod tests;
 pub use availability::*;
 pub use calendar::*;
 pub use gaps::*;
+pub use monitored::*;
 pub use search_queue::*;
+pub use title_files::*;
 pub use wanted::*;
 
 // New columns must be appended, never inserted: callers read rows by position.

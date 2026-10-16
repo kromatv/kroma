@@ -3,10 +3,10 @@
   "schemaVersion": 2,
   "id": "tv.kroma.acquisition",
   "name": "Acquisition",
-  "version": "0.3.12",
+  "version": "0.4.0",
   "description": "The acquisition feature: interactive/manual release search, quality scoring, grab + import, and the automatic wanted-list pass. Rides on the Downloads engine and the indexers. Disable it to remove search/grab/auto and hide the settings page.",
   "engines": {
-    "server": ">=0.1.39"
+    "server": ">=0.1.40"
   },
   "settings": {
     "read": [
@@ -18,7 +18,11 @@
       "acqMinSeeders",
       "acqMovieLibrary",
       "acqPreferHevc",
+      "acqRecycleBin",
+      "acqRecycleDays",
       "acqReplaceOnUpgrade",
+      "acqRssMinutes",
+      "acqStallHours",
       "acqRequiredKeywords",
       "acqResolution",
       "acqSeriesLibrary",
@@ -60,6 +64,8 @@
       "read": [
         "requests",
         "wanted",
+        "monitored",
+        "downloads",
         "acq_file_tmdb",
         "items",
         "shows",

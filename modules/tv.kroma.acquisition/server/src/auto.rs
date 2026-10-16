@@ -1,31 +1,50 @@
-//! The automatic wanted-list search: what makes an approved request download
-//! itself. Runs as the `acquisition.search` job (cron + on-approve trigger).
-//! Every due row is stamped and pushed out by its own backoff, so a freshly-aired
-//! episode comes back within minutes while an ancient gap steps aside.
+//! The automatic search: what makes a monitored title download itself. Runs as
+//! the `acquisition.search` job (cron + triggers). Missing rows come first,
+//! each title judged by its own profile; whatever budget is left goes to
+//! titles that could still be upgraded. Every searched row is pushed out by its
+//! own backoff, so a freshly-aired episode comes back within minutes while an
+//! ancient gap steps aside.
 
 use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
 
 use kroma_module_sdk::db;
+use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::engine::services::requests::today_ymd;
+use kroma_module_sdk::host::HostStorage;
+use kroma_scene::Verdict;
 
+use crate::rules::files::judge_title_files;
+use crate::rules::RuleBook;
 use crate::search::backoff::base_delay_ms;
-use crate::search::{score_release, targets_for_wanted, wanted_ids_by};
+use crate::search::best::{best_release, Aim};
+use crate::search::judge::Judge;
+use crate::search::{targets_for_wanted, wanted_ids_by, SearchTarget};
 
 const BATCH: usize = 60;
-const MAX_TARGETS: usize = 40;
+pub(crate) const MAX_TARGETS: usize = 40;
 
 #[derive(Debug, Default)]
 pub struct AutoSummary {
-    pub requests: usize,
+    pub titles: usize,
     pub targets: usize,
     pub grabbed: usize,
+    pub upgrades: usize,
     pub errors: Vec<String>,
 }
 
-pub fn auto_search_pass<S: kroma_module_sdk::host::HostStorage>(
+/// What one pass shares across titles.
+pub(crate) struct Pass<'a, S: HostStorage> {
+    pub(crate) state: &'a S,
+    pub(crate) indexers: &'a [crate::peers::indexers::IndexerRef],
+    pub(crate) book: &'a RuleBook,
+    pub(crate) log: &'a dyn Fn(String),
+    pub(crate) cancelled: &'a dyn Fn() -> bool,
+}
+
+pub fn auto_search_pass<S: HostStorage>(
     state: &S,
     log: &dyn Fn(String),
     cancelled: &dyn Fn() -> bool,
@@ -39,70 +58,83 @@ pub fn auto_search_pass<S: kroma_module_sdk::host::HostStorage>(
         log("VPN kill switch is closed; skipping the search pass".into());
         return Ok(summary);
     }
-
-    let today = today_ymd();
-    let now = now_ms();
-    let conn = state.db().get()?;
-    let due = db::wanted_searchable(&conn, &today, now, BATCH)?;
     let indexers = crate::peers::indexers::enabled(state)?;
-    drop(conn);
-    if due.is_empty() {
-        log("nothing wanted right now".into());
-        return Ok(summary);
-    }
     if indexers.is_empty() {
         log("no enabled indexer; configure one under Indexeurs".into());
         return Ok(summary);
     }
-
-    let mut request_ids: Vec<String> = Vec::new();
-    for w in &due {
-        if !request_ids.contains(&w.request_id) {
-            request_ids.push(w.request_id.clone());
-        }
-    }
-    let profile = crate::profile_from_settings(state);
-
-    let due_ids: HashSet<String> = due.iter().map(|w| w.id.clone()).collect();
-    let mut searched: HashSet<String> = HashSet::new();
-    let pass = SearchPass {
+    let book = crate::rules::load(state)?;
+    let pass = Pass {
         state,
         indexers: &indexers,
-        profile: &profile,
-        due_ids: &due_ids,
+        book: &book,
         log,
         cancelled,
     };
-    for request_id in &request_ids {
-        if cancelled() || summary.targets >= MAX_TARGETS {
+    fill_missing(&pass, &mut summary)?;
+    if summary.targets < MAX_TARGETS && !cancelled() {
+        crate::upgrades::upgrade_pass(&pass, &mut summary)?;
+    }
+    log(format!(
+        "{} target(s) searched across {} title(s), {} grabbed, {} upgrade(s)",
+        summary.targets, summary.titles, summary.grabbed, summary.upgrades
+    ));
+    Ok(summary)
+}
+
+fn fill_missing<S: HostStorage>(pass: &Pass<'_, S>, summary: &mut AutoSummary) -> Result<()> {
+    let today = today_ymd();
+    let now = now_ms();
+    let conn = pass.state.db().get()?;
+    let due = db::wanted_searchable(&conn, &today, now, BATCH)?;
+    drop(conn);
+    if due.is_empty() {
+        (pass.log)("nothing missing right now".into());
+        return Ok(());
+    }
+    let due_ids: HashSet<String> = due.iter().map(|w| w.id.clone()).collect();
+    let mut searched: HashSet<String> = HashSet::new();
+    for (kind, tmdb_id) in titles_of(&due) {
+        if (pass.cancelled)() || summary.targets >= MAX_TARGETS {
             break;
         }
-        // One request failing is not the pass failing: the rows already searched
+        // One title failing is not the pass failing: the rows already searched
         // still have to be charged below, or the next pass repeats this one.
-        if let Err(e) = search_request(&pass, request_id, &mut summary, &mut searched) {
+        if let Err(e) = search_title(pass, (kind, tmdb_id), &due_ids, summary, &mut searched) {
             summary
                 .errors
-                .push(format!("search failed for request {request_id}: {e:#}"));
+                .push(format!("search failed for title {tmdb_id}: {e:#}"));
         }
     }
-
     // Push each SEARCHED row out by its own backoff, grabbed or not: the next
     // pass then rotates to whatever is both due and freshest. A row the target
     // budget or a cancel never reached is not charged an attempt, or a fresh
     // episode behind a backlog would back off to hours out without one indexer
     // ever having been asked for it.
     let charged: Vec<&db::WantedRow> = due.iter().filter(|w| searched.contains(&w.id)).collect();
-    schedule_retries(state, &charged, &today, now)?;
-    log(format!(
-        "{} target(s) searched across {} request(s), {} grabbed",
-        summary.targets, summary.requests, summary.grabbed
-    ));
-    Ok(summary)
+    schedule_retries(pass.state, &charged, &today, now)
+}
+
+/// The titles due rows belong to, freshest first and each once.
+fn titles_of(due: &[db::WantedRow]) -> Vec<(RequestKind, u64)> {
+    let mut seen = HashSet::new();
+    due.iter()
+        .map(|w| (title_kind(&w.kind), w.tmdb_id))
+        .filter(|title| seen.insert(*title))
+        .collect()
+}
+
+pub(crate) fn title_kind(unit_kind: &str) -> RequestKind {
+    if unit_kind == "movie" {
+        RequestKind::Movie
+    } else {
+        RequestKind::Show
+    }
 }
 
 // Rows sharing an air-recency bucket share a base delay, so one UPDATE per
 // bucket covers the batch instead of one per row.
-fn schedule_retries<S: kroma_module_sdk::host::HostStorage>(
+fn schedule_retries<S: HostStorage>(
     state: &S,
     due: &[&db::WantedRow],
     today: &str,
@@ -121,14 +153,14 @@ fn schedule_retries<S: kroma_module_sdk::host::HostStorage>(
     Ok(())
 }
 
-fn wanted_row_ids(wanted: &[db::WantedRow], st: &crate::search::SearchTarget) -> Vec<String> {
+fn wanted_row_ids(wanted: &[db::WantedRow], st: &SearchTarget) -> Vec<String> {
     wanted_ids_by(wanted, st.kind, st.season, st.episodes.as_deref())
         .into_iter()
         .filter(|id| wanted.iter().any(|w| &w.id == id && w.status == "wanted"))
         .collect()
 }
 
-// The request's whole open list becomes targets, so without the due-batch rule
+// The title's whole open list becomes targets, so without the due-batch rule
 // an old unfindable season spends every slot ahead of the episode that just
 // aired, is charged no backoff for it (only due rows are), and does it again
 // forever.
@@ -142,7 +174,7 @@ fn worth_a_slot(
         && target_rows.iter().any(|id| due_ids.contains(id))
 }
 
-fn target_label(st: &crate::search::SearchTarget) -> String {
+pub(crate) fn target_label(st: &SearchTarget) -> String {
     match (st.season, st.episodes.as_ref().and_then(|e| e.first())) {
         (Some(s), _) if st.kind == "season" => format!("S{s:02} pack"),
         (Some(s), Some(e)) => format!("S{s:02}E{e:02}"),
@@ -150,41 +182,35 @@ fn target_label(st: &crate::search::SearchTarget) -> String {
     }
 }
 
-struct SearchPass<'a, S: kroma_module_sdk::host::HostStorage> {
-    state: &'a S,
-    indexers: &'a [crate::peers::indexers::IndexerRef],
-    profile: &'a kroma_scene::Profile,
-    due_ids: &'a HashSet<String>,
-    log: &'a dyn Fn(String),
-    cancelled: &'a dyn Fn() -> bool,
+fn fills(verdict: Verdict) -> bool {
+    verdict.is_wanted()
 }
 
-fn search_request<S: kroma_module_sdk::host::HostStorage>(
-    pass: &SearchPass<'_, S>,
-    request_id: &str,
+fn search_title<S: HostStorage>(
+    pass: &Pass<'_, S>,
+    (kind, tmdb_id): (RequestKind, u64),
+    due_ids: &HashSet<String>,
     summary: &mut AutoSummary,
     searched: &mut HashSet<String>,
 ) -> Result<()> {
-    let SearchPass {
-        state,
-        indexers,
-        profile,
-        due_ids,
-        log,
-        cancelled,
-    } = *pass;
+    let state = pass.state;
     let conn = state.db().get()?;
-    let Some(req) = db::get_request(&conn, request_id)? else {
-        return Ok(());
-    };
-    let wanted = db::wanted_for_request(&conn, request_id)?;
+    let wanted = db::wanted_for_title(&conn, kind, tmdb_id)?;
+    let request_id = db::find_open_request(&conn, kind, tmdb_id)?.map(|r| r.id);
     drop(conn);
-
-    summary.requests += 1;
-    let targets = targets_for_wanted(req.kind, &wanted, &today_ymd());
+    summary.titles += 1;
+    let profile = pass.book.profile_for(state, kind, tmdb_id)?;
+    let original = crate::rules::original_language(state, kind, tmdb_id)?;
+    let judge = Judge {
+        rules: pass.book.rules(profile),
+        original: original.as_ref(),
+        runtime_minutes: None,
+    };
+    let files = judge_title_files(state, kind, tmdb_id, &judge.rules, original.as_ref())?;
+    let blocked = crate::rules::blocklist::for_title(state.store(), kind, tmdb_id)?;
     let mut covered: HashSet<String> = HashSet::new();
-    for st in &targets {
-        if cancelled() || summary.targets >= MAX_TARGETS {
+    for st in &targets_for_wanted(kind, &wanted, &today_ymd()) {
+        if (pass.cancelled)() || summary.targets >= MAX_TARGETS {
             break;
         }
         let target_rows = wanted_row_ids(&wanted, st);
@@ -193,19 +219,19 @@ fn search_request<S: kroma_module_sdk::host::HostStorage>(
         }
         summary.targets += 1;
         searched.extend(target_rows.iter().cloned());
-
-        let outcome = best_candidate(
-            state,
-            indexers,
-            st,
-            profile,
-            req.tmdb_id,
-            &mut summary.errors,
-        );
-        let Some((candidate, score)) = outcome.best else {
-            log(format!(
-                "no release for \"{}\" {} ({} seen{})",
-                req.title,
+        let aim = Aim {
+            target: st,
+            judge: &judge,
+            tmdb_id,
+            files: &files,
+            blocked: &blocked,
+            accept: fills,
+        };
+        let outcome = best_release(state, pass.indexers, &aim, &mut summary.errors);
+        let title = wanted.first().map(|w| w.title.as_str()).unwrap_or_default();
+        let Some(candidate) = outcome.best else {
+            (pass.log)(format!(
+                "no release for \"{title}\" {} ({} seen{})",
                 target_label(st),
                 outcome.seen,
                 outcome
@@ -215,25 +241,18 @@ fn search_request<S: kroma_module_sdk::host::HostStorage>(
             ));
             continue;
         };
-        log(format!(
-            "grabbing \"{}\" (score {score}) for \"{}\"",
-            candidate.view.title, req.title
+        (pass.log)(format!(
+            "grabbing \"{}\" (score {}) for \"{title}\"",
+            candidate.view.title,
+            candidate.view.score.unwrap_or(0)
         ));
-        let spec = crate::search::grab_spec_from_release(
-            &candidate.view,
-            &candidate.magnet_or_url,
-            candidate.tmdb_id,
-            Some(req.title.clone()),
-            req.year,
-            Some(request_id.to_string()),
-            target_rows.clone(),
-            // The automatic pass only ever fills gaps: an upgrade is always a
-            // deliberate act from the request page.
-            false,
-        );
-        match crate::peers::downloads::grab(state, &spec) {
-            Ok(row) => {
-                crate::peers::downloads::activate(state, &row.id);
+        let grab = Grab {
+            title: wanted.first().map(|w| (w.title.clone(), w.year)),
+            request_id: request_id.clone(),
+            rows: target_rows.clone(),
+        };
+        match grab_candidate(state, &candidate, grab) {
+            Ok(()) => {
                 summary.grabbed += 1;
                 covered.extend(target_rows);
             }
@@ -243,71 +262,35 @@ fn search_request<S: kroma_module_sdk::host::HostStorage>(
     Ok(())
 }
 
-#[derive(Default)]
-struct Outcome {
-    best: Option<(crate::search::CachedRelease, i32)>,
-    seen: usize,
-    top_reject: Option<String>,
+/// Who a grab answers to.
+pub(crate) struct Grab {
+    pub(crate) title: Option<(String, Option<u32>)>,
+    pub(crate) request_id: Option<String>,
+    pub(crate) rows: Vec<String>,
 }
 
-fn best_candidate<S: kroma_module_sdk::host::HostStorage>(
+pub(crate) fn grab_candidate<S: HostStorage>(
     state: &S,
-    indexers: &[crate::peers::indexers::IndexerRef],
-    st: &crate::search::SearchTarget,
-    profile: &kroma_scene::Profile,
-    tmdb_id: u64,
-    errors: &mut Vec<String>,
-) -> Outcome {
-    let mut out = Outcome::default();
-    for indexer in indexers {
-        let found = match crate::search_indexer(state, indexer, &st.query) {
-            Ok(f) => f,
-            Err(e) => {
-                errors.push(format!("{}: {e:#}", indexer.name));
-                continue;
-            }
-        };
-        out.seen += found.len();
-        take_best(found, indexer, st, profile, tmdb_id, &mut out);
+    candidate: &crate::search::CachedRelease,
+    grab: Grab,
+) -> Result<()> {
+    let (title, year) = grab.title.unzip();
+    let spec = crate::search::grab_spec_from_release(
+        &candidate.view,
+        &candidate.magnet_or_url,
+        candidate.tmdb_id,
+        title,
+        year.flatten(),
+        grab.request_id,
+        grab.rows,
+        candidate.view.upgrade,
+    );
+    let row = crate::peers::downloads::grab(state, &spec)?;
+    if matches!(candidate.view.verdict, Some(Verdict::Beside(_))) {
+        crate::rules::store::place_beside(state.store(), &row.id)?;
     }
-    out
-}
-
-fn take_best(
-    found: Vec<crate::peers::indexers::Release>,
-    indexer: &crate::peers::indexers::IndexerRef,
-    st: &crate::search::SearchTarget,
-    profile: &kroma_scene::Profile,
-    tmdb_id: u64,
-    out: &mut Outcome,
-) {
-    for release in found {
-        let view = score_release(&release, indexer, st, profile);
-        let Some(score) = view.score else {
-            if out.top_reject.is_none() {
-                out.top_reject = view.rejected;
-            }
-            continue;
-        };
-        let magnet_or_url = release
-            .magnet
-            .clone()
-            .or_else(|| release.link.clone())
-            .unwrap_or_default();
-        if magnet_or_url.is_empty() {
-            continue;
-        }
-        if out.best.as_ref().is_none_or(|(_, s)| score > *s) {
-            out.best = Some((
-                crate::search::CachedRelease {
-                    view,
-                    magnet_or_url,
-                    tmdb_id,
-                },
-                score,
-            ));
-        }
-    }
+    crate::peers::downloads::activate(state, &row.id);
+    Ok(())
 }
 
 #[cfg(test)]
@@ -320,8 +303,8 @@ mod tests {
         kind: &'static str,
         season: Option<u32>,
         episodes: Option<Vec<u32>>,
-    ) -> crate::search::SearchTarget {
-        crate::search::SearchTarget {
+    ) -> SearchTarget {
+        SearchTarget {
             query: Query::Movie {
                 tmdb_id: None,
                 imdb_id: None,
@@ -339,14 +322,29 @@ mod tests {
         v.iter().map(|s| (*s).to_string()).collect()
     }
 
+    fn row(id: &str, kind: &str, tmdb_id: u64) -> db::WantedRow {
+        db::WantedRow {
+            id: id.into(),
+            request_id: None,
+            kind: kind.into(),
+            tmdb_id,
+            imdb_id: None,
+            title: "T".into(),
+            year: None,
+            season: None,
+            episode: None,
+            air_date: None,
+            status: "wanted".into(),
+            last_search_at: None,
+        }
+    }
+
     #[test]
     fn only_a_target_holding_a_due_row_spends_a_slot() {
         let due = ids(&["s05e10"]);
         let backlog = vec!["s01e01".to_string(), "s01e02".to_string()];
-        assert!(
-            !worth_a_slot(&backlog, &HashSet::new(), &due),
-            "a backed-off season must not spend the budget the fresh episode needs"
-        );
+
+        assert!(!worth_a_slot(&backlog, &HashSet::new(), &due));
         assert!(worth_a_slot(&["s05e10".to_string()], &HashSet::new(), &due));
     }
 
@@ -354,11 +352,9 @@ mod tests {
     fn a_pack_already_grabbed_this_pass_does_not_spend_a_second_slot() {
         let due = ids(&["s01e01"]);
         let rows = vec!["s01e01".to_string()];
+
         assert!(!worth_a_slot(&rows, &ids(&["s01e01"]), &due));
-        assert!(
-            !worth_a_slot(&[], &HashSet::new(), &due),
-            "nothing open is nothing to search"
-        );
+        assert!(!worth_a_slot(&[], &HashSet::new(), &due));
     }
 
     #[test]
@@ -369,5 +365,25 @@ mod tests {
             target_label(&target("episode", Some(3), Some(vec![7]))),
             "S03E07"
         );
+    }
+
+    #[test]
+    fn due_rows_are_searched_title_by_title_in_the_order_they_came() {
+        let due = vec![
+            row("a", "episode", 7),
+            row("b", "movie", 603),
+            row("c", "episode", 7),
+        ];
+
+        let titles = titles_of(&due);
+
+        assert_eq!(titles, [(RequestKind::Show, 7), (RequestKind::Movie, 603)]);
+    }
+
+    #[test]
+    fn a_pass_fills_a_slot_and_upgrades_but_never_takes_a_worse_copy() {
+        assert!(fills(Verdict::Fill));
+        assert!(fills(Verdict::Upgrade(kroma_scene::Reason::Quality)));
+        assert!(!fills(Verdict::NotBetter(kroma_scene::Reason::LowerQuality)));
     }
 }

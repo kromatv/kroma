@@ -3,14 +3,25 @@
 
 import type { CalendarEntry, RequestId } from '@kromatv/client/requests';
 
+export type MissingOrigin = 'gap' | 'monitored' | 'request';
+
 export interface MissingGroup {
   requestId: RequestId | null;
+  origin: MissingOrigin;
   tmdbId: number;
   kind: CalendarEntry['kind'];
   title: string;
   year: number | null;
   posterUrl: string | null;
   items: CalendarEntry[];
+}
+
+/** `GET /api/requests/missing` merges three sources into one list: a library
+ * gap arrives as `missing`, and a `wanted` row with no request behind it is one
+ * monitoring holds. */
+export function entryOrigin(entry: CalendarEntry): MissingOrigin {
+  if (entry.requestId !== null) return 'request';
+  return entry.status === 'missing' ? 'gap' : 'monitored';
 }
 
 /** A stable key for one missing row (unique across the whole list). */
@@ -30,6 +41,7 @@ export function groupByTitle(entries: CalendarEntry[]): MissingGroup[] {
     if (!g) {
       g = {
         requestId: e.requestId,
+        origin: entryOrigin(e),
         tmdbId: e.tmdbId,
         kind: e.kind,
         title: e.title,

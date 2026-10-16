@@ -478,6 +478,42 @@ pub fn groups(
                             true,
                         ),
                         row(
+                            "acqRecycleBin",
+                            t("admin.acqRecycleBin"),
+                            Some(t("admin.acqRecycleBinHint")),
+                            "text",
+                            &[],
+                            g("acqRecycleBin"),
+                            true,
+                        ),
+                        row(
+                            "acqRecycleDays",
+                            t("admin.acqRecycleDays"),
+                            None,
+                            "select",
+                            &["1", "7", "14", "30", "90"],
+                            g("acqRecycleDays"),
+                            true,
+                        ),
+                        row(
+                            "acqStallHours",
+                            t("admin.acqStallHours"),
+                            Some(t("admin.acqStallHoursHint")),
+                            "select",
+                            &["0", "12", "24", "48", "72", "168"],
+                            g("acqStallHours"),
+                            true,
+                        ),
+                        row(
+                            "acqRssMinutes",
+                            t("admin.acqRssMinutes"),
+                            Some(t("admin.acqRssMinutesHint")),
+                            "select",
+                            &["0", "15", "30", "60", "120"],
+                            g("acqRssMinutes"),
+                            true,
+                        ),
+                        row(
                             "acqMovieLibrary",
                             t("admin.acqMovieLibrary"),
                             None,
@@ -493,75 +529,6 @@ pub fn groups(
                             "select",
                             &show_opts.iter().map(String::as_str).collect::<Vec<_>>(),
                             g("acqSeriesLibrary"),
-                            true,
-                        ),
-                    ],
-                ),
-                group(
-                    "admin.acqQuality",
-                    Some("admin.acqQualityDesc"),
-                    vec![
-                        row(
-                            "acqResolution",
-                            t("admin.acqResolution"),
-                            None,
-                            "select",
-                            &["720p", "1080p", "2160p"],
-                            g("acqResolution"),
-                            true,
-                        ),
-                        row(
-                            "acqPreferHevc",
-                            t("admin.acqPreferHevc"),
-                            Some(t("admin.acqPreferHevcHint")),
-                            "toggle",
-                            &[],
-                            g("acqPreferHevc"),
-                            true,
-                        ),
-                        row(
-                            "acqMinSeeders",
-                            t("admin.acqMinSeeders"),
-                            None,
-                            "select",
-                            &["0", "1", "2", "5", "10"],
-                            g("acqMinSeeders"),
-                            true,
-                        ),
-                        row(
-                            "acqMaxSizeGbMovie",
-                            t("admin.acqMaxSizeGbMovie"),
-                            None,
-                            "select",
-                            &["5", "10", "15", "25", "40", "80"],
-                            g("acqMaxSizeGbMovie"),
-                            true,
-                        ),
-                        row(
-                            "acqMaxSizeGbEpisode",
-                            t("admin.acqMaxSizeGbEpisode"),
-                            None,
-                            "select",
-                            &["1", "2", "3", "5", "8"],
-                            g("acqMaxSizeGbEpisode"),
-                            true,
-                        ),
-                        row(
-                            "acqRequiredKeywords",
-                            t("admin.acqRequiredKeywords"),
-                            Some(t("admin.acqRequiredKeywordsHint")),
-                            "text",
-                            &[],
-                            g("acqRequiredKeywords"),
-                            true,
-                        ),
-                        row(
-                            "acqForbiddenKeywords",
-                            t("admin.acqForbiddenKeywords"),
-                            Some(t("admin.acqForbiddenKeywordsHint")),
-                            "text",
-                            &[],
-                            g("acqForbiddenKeywords"),
                             true,
                         ),
                     ],
@@ -968,7 +935,9 @@ mod tests {
         let mut cfg = test_config();
         cfg.movies_dirs = vec![PathBuf::from("/media/films")];
         let groups = groups("acquisition", &s, &cfg, "en");
-        assert_eq!(groups.len(), 3);
+        assert_eq!(groups.len(), 2);
+        assert!(find_row(&groups, "acqResolution").is_none());
+        assert_eq!(find_row(&groups, "acqStallHours").unwrap().value, json!(72));
         let movie_lib = find_row(&groups, "acqMovieLibrary").unwrap();
         assert_eq!(movie_lib.options.first().map(String::as_str), Some("Auto"));
         assert!(movie_lib.options.contains(&"Films".to_string()));

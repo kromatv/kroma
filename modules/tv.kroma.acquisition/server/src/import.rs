@@ -15,8 +15,11 @@ use kroma_module_sdk::host::{HostStorage, LibraryFolders};
 
 mod naming;
 mod place;
+mod recycle;
 mod replace;
 mod subtitles;
+
+pub use recycle::empty_recycle_bin;
 
 use naming::{episode_ctx, movie_ctx, resolve_meta, stem_of};
 use place::{ext_of, files_under, largest, video_files, Placement};
@@ -31,28 +34,46 @@ pub struct ImportSummary {
 }
 
 fn finalize_import<S: HostStorage>(state: &S, row: &DownloadRow, written: &[String]) {
-    if let Some(req_id) = row.request_id.as_deref() {
-        if let Err(e) =
-            kroma_module_sdk::engine::services::requests::on_download_imported(state, req_id)
-        {
-            tracing::warn!(request = %req_id, error = %format!("{e:#}"), "post-import request update failed");
-        }
-    }
+    use kroma_module_sdk::engine::services::requests::{on_download_imported, Imported};
     if row.tmdb_id != 0 {
+        let imported = Imported {
+            kind: crate::auto::title_kind(&row.kind),
+            tmdb_id: row.tmdb_id,
+            season: row.season,
+            episodes: row.episodes.as_deref(),
+            request_id: row.request_id.as_deref(),
+        };
+        if let Err(e) = on_download_imported(state, &imported) {
+            tracing::warn!(download = %row.id, error = %format!("{e:#}"), "post-import ledger update failed");
+        }
         record_file_tmdb(state, row.tmdb_id, written);
     }
+    record_releases(state, &row.release_title, written);
     if state.setting_bool("acqDeleteAfterImport", false) {
         crate::peers::downloads::drop_data(state, &row.id);
     }
+}
+
+fn record_releases<S: HostStorage>(state: &S, release_title: &str, written: &[String]) {
+    for path in written {
+        let key = canonical(path);
+        if let Err(e) = crate::rules::store::record_release(state.store(), &key, release_title, now_ms()) {
+            tracing::debug!(path = %key, error = %format!("{e:#}"), "could not record the release name");
+        }
+    }
+}
+
+fn canonical(path: &str) -> String {
+    std::fs::canonicalize(path)
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| path.to_string())
 }
 
 fn record_file_tmdb<S: HostStorage>(state: &S, tmdb_id: u64, written: &[String]) {
     for path in written {
         // Keyed by canonical path to match the scanner's `files.abs_path`, so the
         // enrichment join lines up regardless of title-parse differences.
-        let key = std::fs::canonicalize(path)
-            .map(|p| p.to_string_lossy().into_owned())
-            .unwrap_or_else(|_| path.clone());
+        let key = canonical(path);
         if let Err(e) = db::set_file_tmdb(state.db(), &key, tmdb_id) {
             tracing::debug!(path = %key, error = %format!("{e:#}"), "could not record file tmdbId");
         }
@@ -118,7 +139,9 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
             .ok_or_else(|| anyhow!("library {} has no folder", lib.name))?,
     );
     let tpl = kroma_naming::NamingTemplates::read(|k, d| state.setting_str(k, d));
-    let replacing = row.upgrade && state.setting_bool("acqReplaceOnUpgrade", true);
+    let replacing = row.upgrade
+        && state.setting_bool("acqReplaceOnUpgrade", true)
+        && !crate::rules::store::is_beside(state.store(), &row.id)?;
     let mode = match (row.upgrade, replacing) {
         (true, true) => Placement::Replace,
         (true, false) => Placement::Beside,

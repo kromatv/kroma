@@ -24,21 +24,21 @@ import {
   WatchedButton,
 } from '#web/features/catalog/detail-hero-parts';
 import { HeroBackdrop } from '#web/features/catalog/hero-backdrop';
-import type { QualityTone } from '#web/features/catalog/media-labels';
 import { wash } from '#web/shared/lib/art-styles';
+import type { QualityTone } from '#web/shared/lib/quality-badges';
 import { Image } from '#web/shared/ui';
 import { CastButton } from '#web/shared/ui/cast-button';
 
 export type { SimilarItem } from '#web/features/catalog/detail-rails';
 export { CastRail, initials, SimilarRail } from '#web/features/catalog/detail-rails';
-export type { QualityTone } from '#web/features/catalog/media-labels';
 export {
   audioFlagLabel,
   audioString,
   langName,
-  qualityBadges,
   subString,
 } from '#web/features/catalog/media-labels';
+export type { QualityTone } from '#web/shared/lib/quality-badges';
+export { qualityBadges } from '#web/shared/lib/quality-badges';
 
 // The text column is an element rather than a <Box>, and a flex column at
 // that: a plain block leaves react-native-web's <Text> at its own `display:

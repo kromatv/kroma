@@ -16,6 +16,7 @@ license = "MIT"
 # the SDK facade can re-export it (kroma_module_sdk::scene) to consumer modules.
 kroma-module-manifest = { path = "../../../server/crates/kroma-module-manifest" }
 serde_json = "1"
+regex = "1"
 serde = { version = "1", features = ["derive"] }
 
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =

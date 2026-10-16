@@ -22,6 +22,7 @@ function episodesOf(group: MissingGroup): CalendarEntry[] {
 export function MissingGroupCard({
   group,
   canManage,
+  canMonitor,
   busyKeys,
   doneKeys,
   selected,
@@ -31,6 +32,7 @@ export function MissingGroupCard({
 }: Readonly<{
   group: MissingGroup;
   canManage: boolean;
+  canMonitor: boolean;
   busyKeys: Set<string>;
   doneKeys: Set<string>;
   selected: Set<string>;
@@ -48,7 +50,8 @@ export function MissingGroupCard({
   const pickedCount = keys.filter((k) => selected.has(k)).length;
   const allPicked = keys.length > 0 && pickedCount === keys.length;
   // A gap is actionable by any requester; a request needs manage.
-  const canAct = group.requestId ? canManage : true;
+  const monitored = group.origin === 'monitored';
+  const canAct = !monitored && (group.requestId === null || canManage);
 
   const movie = group.kind === 'movie';
   const rel = movie ? relativeAirDate(group.items[0]?.airDate ?? null, locale) : '';
@@ -83,13 +86,16 @@ export function MissingGroupCard({
         )
       }
       aside={
-        canAct ? (
-          <GroupSearchButton
-            busy={groupBusy}
-            done={groupDone}
-            onPress={() => onSearch(group.items)}
-          />
-        ) : null
+        <GroupAside
+          monitored={monitored}
+          canAct={canAct}
+          canMonitor={canMonitor}
+          kind={group.kind}
+          tmdbId={group.tmdbId}
+          busy={groupBusy}
+          done={groupDone}
+          onSearch={() => onSearch(group.items)}
+        />
       }
       link={
         <RouteLink
@@ -110,6 +116,38 @@ export function MissingGroupCard({
       />
     </RequestCard>
   );
+}
+
+function GroupAside({
+  monitored,
+  canAct,
+  canMonitor,
+  kind,
+  tmdbId,
+  busy,
+  done,
+  onSearch,
+}: Readonly<{
+  monitored: boolean;
+  canAct: boolean;
+  canMonitor: boolean;
+  kind: MissingGroup['kind'];
+  tmdbId: number;
+  busy: boolean;
+  done: boolean;
+  onSearch: () => void;
+}>) {
+  const t = useT();
+  if (monitored) {
+    if (!canMonitor) return null;
+    return (
+      <Button variant="glass" size="sm" icon="eye" label={t('monitoring.action')} asChild>
+        <RouteLink to="/admin/monitoring/$kind/$tmdbId" params={{ kind, tmdbId: String(tmdbId) }} />
+      </Button>
+    );
+  }
+  if (!canAct) return null;
+  return <GroupSearchButton busy={busy} done={done} onPress={onSearch} />;
 }
 
 function GroupSearchButton({

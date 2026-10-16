@@ -23,6 +23,7 @@ import { RematchDialog } from '#web/features/catalog/rematch-dialog';
 import { kromaClient } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 type Kind = 'item' | 'show';
 
@@ -43,14 +44,20 @@ export function TreatmentsPanel({
   kind,
   id,
   title,
-}: Readonly<{ kind: Kind; id: string; title: string }>) {
+  tmdbId,
+}: Readonly<{
+  kind: Kind;
+  id: string;
+  title: string;
+  tmdbId: number | null;
+}>) {
   const t = useT();
   const { user, client } = useAuth();
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
   const subjectId = kind === 'show' ? ShowId.parse(id) : ItemId.parse(id);
   const admin = !!user && hasPermission(user, 'settings.manage');
-  const canFix = !!user && hasPermission(user, 'library.manage');
+  const canManageLibrary = !!user && hasPermission(user, 'library.manage');
 
   const queryKey = ['treatments', kind, id] as const;
   const { data: treatments = null } = useQuery({
@@ -70,7 +77,7 @@ export function TreatmentsPanel({
 
   // Nothing to offer without either permission; with `settings.manage` we also
   // wait for the treatment list so the strip does not flash in empty.
-  if (!admin && !canFix) return null;
+  if (!admin && !canManageLibrary) return null;
   if (admin && !treatments) return null;
 
   const reprocess = () => {
@@ -134,6 +141,14 @@ export function TreatmentsPanel({
           );
         })}
         <Box row align="center" gap={8} ml="auto">
+          {canManageLibrary && tmdbId !== null ? (
+            <Button variant="glass" size="sm" icon="eye" label={t('monitoring.action')} asChild>
+              <RouteLink
+                to="/admin/monitoring/$kind/$tmdbId"
+                params={{ kind: kind === 'show' ? 'show' : 'movie', tmdbId: String(tmdbId) }}
+              />
+            </Button>
+          ) : null}
           {admin && kind === 'item' ? (
             <Button
               variant="glass"
@@ -143,7 +158,7 @@ export function TreatmentsPanel({
               onPress={() => void MediaInfoModal.call({ id, title })}
             />
           ) : null}
-          {canFix ? (
+          {canManageLibrary ? (
             <Button
               variant="glass"
               size="sm"

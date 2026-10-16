@@ -7,24 +7,9 @@
 // it. It lives HERE rather than in the console because all of it is acquisition:
 // with this module gone the page has nothing to show but the fallback.
 
-import type {
-  LedgerSeason,
-  RequestId,
-  ScoredReleaseView,
-  SearchScope,
-} from '@kromatv/client/requests';
+import type { LedgerSeason, RequestId, SearchScope } from '@kromatv/client/requests';
 import { type SlotProps, useAdminHost, useLocale, useT } from '@kromatv/module-sdk';
-import {
-  Box,
-  Button,
-  Callout,
-  Dialog,
-  Row,
-  SegmentGroup,
-  Surface,
-  TableSkeleton,
-  Text,
-} from '@kromatv/ui/kit';
+import { Box, Button, Callout, Row, SegmentGroup, Surface, Text } from '@kromatv/ui/kit';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -37,11 +22,11 @@ import {
   toggleEpisode,
   toggleSeason,
 } from './coverage-draft';
-import { ReleaseTable } from './release-table';
 import { RequestFreeSearch } from './request-free-search';
 import { RequestLedger } from './request-ledger';
 import { seasonToOpen } from './request-ledger-state';
-import { type SearchState, useReleaseSearch } from './use-release-search';
+import { SearchResultsDialog } from './search-results-dialog';
+import { useReleaseSearch } from './use-release-search';
 import { useRequestLedger, useSeasonLedger } from './use-request-ledger';
 
 type Mode = 'catalog' | 'free';
@@ -165,7 +150,7 @@ export function RequestSearchPanel({
         </Box>
       </Surface>
 
-      <ResultsDialog
+      <SearchResultsDialog
         state={search.state}
         canGrab={canGrab}
         onGrab={search.grab}
@@ -296,65 +281,5 @@ function Catalog({
         if (ep.itemId) openMediaInfo?.(ep.itemId, ep.name ?? '');
       }}
     />
-  );
-}
-
-function ResultsDialog({
-  state,
-  canGrab,
-  onGrab,
-  onClose,
-}: Readonly<{
-  state: SearchState;
-  canGrab: boolean;
-  onGrab: (release: ScoredReleaseView) => void;
-  onClose: () => void;
-}>) {
-  const t = useT();
-  const open = state.busy || state.view != null || state.error != null;
-  return (
-    <Dialog.Root open={open} onClose={onClose} width="xl" title={t('requests.interactiveSearch')}>
-      <Dialog.Header>
-        <Text variant="title" accessibilityRole="header">
-          {t('requests.interactiveSearch')}
-        </Text>
-        <Text variant="meta" color="textDim">
-          {t(state.busy ? 'requests.searchRunning' : 'requests.searchAnswered')}
-        </Text>
-      </Dialog.Header>
-      <Dialog.Panel>
-        <Box gap={12}>
-          {state.error ? (
-            <Callout.Root tone="danger">
-              <Callout.Title>{state.error}</Callout.Title>
-            </Callout.Root>
-          ) : null}
-          {state.grabbed ? (
-            <Callout.Root tone={state.grabbed.error ? 'danger' : 'success'}>
-              <Callout.Title>
-                {state.grabbed.error
-                  ? state.grabbed.title
-                  : `${t('requests.grabbed')} ${state.grabbed.title}`}
-              </Callout.Title>
-            </Callout.Root>
-          ) : null}
-          {state.busy ? <TableSkeleton rows={6} /> : null}
-          {!state.busy && state.view ? (
-            <ReleaseTable
-              releases={state.view.releases}
-              indexers={state.view.indexers}
-              canGrab={canGrab}
-              busy={state.grabbing}
-              onGrab={onGrab}
-            />
-          ) : null}
-        </Box>
-      </Dialog.Panel>
-      <Dialog.Footer>
-        <Dialog.Actions>
-          <Button variant="ghost" label={t('common.close')} onPress={onClose} />
-        </Dialog.Actions>
-      </Dialog.Footer>
-    </Dialog.Root>
   );
 }

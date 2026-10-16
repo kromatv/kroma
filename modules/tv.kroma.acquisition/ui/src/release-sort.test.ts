@@ -21,6 +21,7 @@ function release(over: Partial<ScoredReleaseView>): ScoredReleaseView {
     grabbable: true,
     upgrade: false,
     detailsUrl: null,
+    formats: [],
     ...over,
   };
 }

@@ -74,6 +74,7 @@ mod tests {
             language: None,
             title: None,
             default: false,
+            region: None,
         }
     }
 

@@ -65,7 +65,7 @@ pub fn refresh_pass<S: HostStorage>(state: &S) -> Result<usize> {
         tracing::info!(target: "requests", count = newly_aired.len(), "newly aired, searching now");
         state.trigger_job("acquisition.search", "episode-aired");
     }
-    Ok(refreshed)
+    Ok(refreshed + crate::services::monitoring::refresh_pass(state)?)
 }
 
 // The ids of rows this refresh found to be airable now: newly inserted rows
@@ -157,7 +157,7 @@ fn refresh_wanted<S: HostStorage>(
             }
         }
     }
-    db::insert_wanted(state.db(), &to_insert, now_ms())?;
+    db::claim_wanted(state.db(), &req.id, &to_insert, now_ms())?;
     Ok(newly_aired)
 }
 
