@@ -116,7 +116,8 @@ function handleDpadKey(key: RemoteKey, ctx: DpadContext): void {
       else if (focused) ctx.activate(focused);
       return;
     case 'Back':
-      a.onExit('back');
+      ctx.clearHide();
+      ctx.setRevealed(false);
       return;
   }
 }

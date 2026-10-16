@@ -6,7 +6,7 @@ import type { KromaClient } from '@kromatv/client';
 import type { CastCommand, CastController } from '@kromatv/client/cast';
 import { KromaEvents } from '@kromatv/client/events';
 import { beaconTxt, type LanDiscoveryBridge } from '@kromatv/core';
-import { useT } from '@kromatv/ui';
+import { useForeground, useT } from '@kromatv/ui';
 import { Avatar, toast } from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
@@ -61,6 +61,7 @@ function CastReceiver({
 
   const applied = useRef(0);
   const signedIn = ready && Boolean(user);
+  const inFront = useForeground();
 
   // Say on the link that this television is up and castable, for as long as it
   // is. The phone's picker is fed by the server, which knows whose television
@@ -90,7 +91,7 @@ function CastReceiver({
   }, [signedIn, castable, platform, lan, name]);
 
   useEffect(() => {
-    if (!signedIn || castable === 'off') return;
+    if (!signedIn || castable === 'off' || !inFront) return;
     const id = deviceId();
     let stopped = false;
     let fallback: ReturnType<typeof setTimeout> | undefined;
@@ -171,6 +172,7 @@ function CastReceiver({
       },
       onClose: () => {
         attached = false;
+        applied.current = 0;
         // The remotes were driving us THROUGH that socket; with it gone the
         // server has already dropped them, so the top bar must not keep
         // advertising a list nothing can act on.
@@ -209,7 +211,7 @@ function CastReceiver({
       events.close();
       if (client.hasAuth) client.cast.unregister(id).catch(() => undefined);
     };
-  }, [signedIn, castable, client]);
+  }, [signedIn, castable, client, inFront]);
 
   return null;
 }

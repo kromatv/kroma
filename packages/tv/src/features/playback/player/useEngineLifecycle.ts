@@ -49,7 +49,7 @@ export interface EngineLifecycle {
   resumedAt: number | null;
   decodedAspect: number | undefined;
   audioIndex: number;
-  setAudioIndex: React.Dispatch<React.SetStateAction<number>>;
+  pickAudio: (index: number) => void;
   endedNonce: number;
   surfaceNonce: number;
 }
@@ -92,6 +92,11 @@ export function useEngineLifecycle(
   const [audioIndex, setAudioIndex] = useState(() => openingAudioIndex(item, audioLanguage));
   const audioIndexRef = useRef(audioIndex);
   audioIndexRef.current = audioIndex;
+  const [audioPickNonce, setAudioPickNonce] = useState(0);
+  const pickAudio = useCallback((index: number) => {
+    setAudioIndex(index);
+    setAudioPickNonce((n) => n + 1);
+  }, []);
 
   // Keyed by id so a manual switch during playback is never undone.
   const prefItemRef = useRef(item.id);
@@ -207,9 +212,10 @@ export function useEngineLifecycle(
     // `rebuildKey` stands in for every backend flag the plan resolved.
   }, [client, item, rebuildKey, durationSec, startSec, failure.messageKey]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: audioPickNonce is an intentional dep, not read in the body; it carries the pick that landed on the rendition already playing, which AVPlay's direct source has to re-assert.
   useEffect(() => {
     engineRef.current?.setAudioRendition(renditionFor(item, audioIndex));
-  }, [item, audioIndex]);
+  }, [item, audioIndex, audioPickNonce]);
 
   // AVPlay is excluded: it reports its own prepare errors.
   // biome-ignore lint/correctness/useExhaustiveDependencies: loadBeat is an intentional dep, not read in the body; each buffering beat re-arms the grace timer (see note below).
@@ -277,7 +283,7 @@ export function useEngineLifecycle(
     resumedAt,
     decodedAspect,
     audioIndex,
-    setAudioIndex,
+    pickAudio,
     endedNonce,
     surfaceNonce,
   };

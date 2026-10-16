@@ -131,3 +131,37 @@ fn tv_creators_fold_into_crew() {
     assert_eq!(crew[0].name, "Dan Erickson");
     assert_eq!(crew[0].job, "Creator");
 }
+
+#[test]
+fn a_director_and_a_creator_carry_their_portrait() {
+    let raw = r#"{
+        "name": "Severance",
+        "created_by": [{"name": "Dan Erickson", "profile_path": "/de.jpg"}],
+        "credits": {"cast": [], "crew": [
+            {"name": "Ben Stiller", "job": "Director", "profile_path": "/bs.jpg"},
+            {"name": "No Photo", "job": "Writer", "profile_path": ""}
+        ]}
+    }"#;
+    let d: DetailResp = serde_json::from_str(raw).unwrap();
+
+    let crew = build_crew(
+        d.credits.map(|c| c.crew).unwrap_or_default(),
+        d.created_by,
+        MAX_CREW,
+    );
+
+    let url = |name: &str| {
+        crew.iter()
+            .find(|c| c.name == name)
+            .and_then(|c| c.profile_url.clone())
+    };
+    assert_eq!(
+        url("Ben Stiller").as_deref(),
+        Some("https://image.tmdb.org/t/p/w342/bs.jpg")
+    );
+    assert_eq!(
+        url("Dan Erickson").as_deref(),
+        Some("https://image.tmdb.org/t/p/w342/de.jpg")
+    );
+    assert_eq!(url("No Photo"), None);
+}

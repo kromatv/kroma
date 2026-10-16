@@ -44,6 +44,8 @@ pub(super) struct RawCrew {
     pub name: String,
     #[serde(default)]
     pub job: String,
+    #[serde(default)]
+    pub profile_path: Option<String>,
 }
 
 /// TV `created_by` block (top-level on series details) the show's creators.
@@ -53,6 +55,8 @@ pub(super) struct RawCreatedBy {
     pub id: Option<u64>,
     #[serde(default)]
     pub name: String,
+    #[serde(default)]
+    pub profile_path: Option<String>,
 }
 
 /// Top-billed cast (TMDB orders by `order` ascending; sort defensively), capped at
@@ -72,9 +76,14 @@ pub(super) fn build_cast(
             name: m.name,
             tmdb_id: m.id,
             character: m.character.filter(|s| !s.is_empty()),
-            profile_url: m.profile_path.map(|p| format!("{IMG}/w342{p}")),
+            profile_url: portrait(m.profile_path),
         })
         .collect()
+}
+
+fn portrait(path: Option<String>) -> Option<String> {
+    path.filter(|p| !p.is_empty())
+        .map(|p| format!("{IMG}/w342{p}"))
 }
 
 /// Build the capped, deduped authorship-crew list from the `crew` block plus TV
@@ -103,7 +112,7 @@ pub(super) fn build_crew(
                     name: c.name,
                     tmdb_id: c.id,
                     job: c.job,
-                    profile_url: None,
+                    profile_url: portrait(c.profile_path),
                 },
             )
         })
@@ -116,7 +125,7 @@ pub(super) fn build_crew(
                 name: cb.name,
                 tmdb_id: cb.id,
                 job: "Creator".into(),
-                profile_url: None,
+                profile_url: portrait(cb.profile_path),
             },
         ));
     }

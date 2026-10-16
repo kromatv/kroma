@@ -63,6 +63,8 @@ export interface PlayerNav {
   /** Mouse focus helpers (hover moves focus, §15). */
   focusControl(id: ControlId): void;
   focusProgress(): void;
+  /** Leave the player, told why, without going through the key chain. */
+  exit(reason: PlayerCloseReason): void;
 }
 
 /**
@@ -155,6 +157,7 @@ export function usePlayerNav(
     [controls],
   );
   const focusProgress = useCallback(() => setZone('progress'), []);
+  const exit = useEffectEvent((reason: PlayerCloseReason) => actions.onExit(reason));
 
   const activate = useEffectEvent((id: ControlId) => {
     const a = actions;
@@ -187,9 +190,10 @@ export function usePlayerNav(
   const handleKey = useEffectEvent((key: RemoteKey) => {
     if (handleMediaKey(key, actions)) return;
 
-    // While hidden, the first key just brings the chrome back (§3, §16).
+    // While hidden, the first key just brings the chrome back (§3, §16), except Back.
     if (!revealed) {
-      poke();
+      if (key === 'Back') actions.onExit('back');
+      else poke();
       return;
     }
     poke();
@@ -253,5 +257,6 @@ export function usePlayerNav(
     activate,
     focusControl,
     focusProgress,
+    exit,
   };
 }

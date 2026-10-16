@@ -6,7 +6,7 @@
 
 import type { DeviceId } from '@kromatv/client';
 import { useCast, useT } from '@kromatv/ui';
-import { Dialog, EmptyState, Icon, type IconName, ListRow } from '@kromatv/ui/kit';
+import { Box, Dialog, EmptyState, Icon, type IconName, ListRow, Text } from '@kromatv/ui/kit';
 import { createCallable } from 'react-call';
 
 export interface CastPickerProps {
@@ -52,7 +52,13 @@ export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offer
           <EmptyState.Title>{t('cast.noDevices')}</EmptyState.Title>
           <EmptyState.Hint>{t('cast.noDevicesHint')}</EmptyState.Hint>
         </EmptyState.Root>
-      ) : null}
+      ) : (
+        <Box pt={12}>
+          <Text variant="meta" color="textDim">
+            {t('cast.openHint')}
+          </Text>
+        </Box>
+      )}
     </Dialog.Root>
   );
 });

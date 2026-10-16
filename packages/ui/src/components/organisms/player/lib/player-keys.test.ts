@@ -105,28 +105,33 @@ describe('routeRemoteKey while locked', () => {
   function locked() {
     const handleKey = vi.fn();
     const poke = vi.fn();
+    const exit = vi.fn();
     const params = {
-      nav: nav({ handleKey, poke, revealed: true, overlay: null }),
+      nav: nav({ handleKey, poke, exit, revealed: true, overlay: null }),
       panelRef: { current: null },
       locked: true,
     } as unknown as PlayerKeysParams;
-    return { params, handleKey, poke };
+    return { params, handleKey, poke, exit };
   }
 
   it.each<[string, 'Back' | 'Enter']>([
     ['Back', 'Back'],
     ['OK', 'Enter'],
-  ])('lets %s through as a dismissal', (_label, key) => {
-    const { params, handleKey } = locked();
+  ])('leaves the player on %s', (_label, key) => {
+    const { params, exit, handleKey } = locked();
+
     routeRemoteKey(params, key);
-    expect(handleKey).toHaveBeenCalledWith('Back');
+
+    expect(exit).toHaveBeenCalledWith('back');
+    expect(handleKey).not.toHaveBeenCalled();
   });
 
   it('swallows every other key, chrome included', () => {
-    const { params, handleKey, poke } = locked();
+    const { params, handleKey, poke, exit } = locked();
     for (const key of ['Right', 'Down', 'PlayPause'] as const) routeRemoteKey(params, key);
     expect(handleKey).not.toHaveBeenCalled();
     expect(poke).not.toHaveBeenCalled();
+    expect(exit).not.toHaveBeenCalled();
   });
 });
 
@@ -238,5 +243,55 @@ describe('routeRemoteKey while the chrome is hidden', () => {
 
     expect(handleKey).not.toHaveBeenCalled();
     expect(poke).toHaveBeenCalledOnce();
+  });
+
+  it('hands Back straight to the player rather than bringing the chrome back', () => {
+    const { params, handleKey, poke } = hidden();
+
+    routeRemoteKey(params, 'Back');
+
+    expect(handleKey).toHaveBeenCalledWith('Back');
+    expect(poke).not.toHaveBeenCalled();
+  });
+});
+
+describe('routeRemoteKey while the skip pill is up', () => {
+  function pilled(revealed: boolean) {
+    const handleKey = vi.fn();
+    const onSkip = vi.fn();
+    const params = {
+      nav: nav({ handleKey, poke: vi.fn(), revealed, overlay: null }),
+      panelRef: { current: null },
+      locked: false,
+      intro: { active: true, onSkip },
+    } as unknown as PlayerKeysParams;
+    return { params, handleKey, onSkip };
+  }
+
+  it.each([true, false])('skips the intro on OK with the chrome shown: %s', (revealed) => {
+    const { params, handleKey, onSkip } = pilled(revealed);
+
+    routeRemoteKey(params, 'Enter');
+
+    expect(onSkip).toHaveBeenCalledOnce();
+    expect(handleKey).not.toHaveBeenCalled();
+  });
+});
+
+describe('routeRemoteKey while the credits card counts down', () => {
+  it('moves along the card with the chrome away, rather than waking it', () => {
+    const onKey = vi.fn(() => true);
+    const handleKey = vi.fn();
+    const params = {
+      nav: nav({ handleKey, poke: vi.fn(), revealed: false, overlay: null }),
+      panelRef: { current: null },
+      locked: false,
+      credits: { active: true, onKey },
+    } as unknown as PlayerKeysParams;
+
+    routeRemoteKey(params, 'Right');
+
+    expect(onKey).toHaveBeenCalledWith('Right');
+    expect(handleKey).not.toHaveBeenCalled();
   });
 });

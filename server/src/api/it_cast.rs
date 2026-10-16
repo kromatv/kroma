@@ -248,9 +248,10 @@ async fn the_cast_surface_is_closed_to_strangers() {
 }
 
 #[tokio::test]
-async fn commands_are_refused_for_a_missing_receiver_or_title() {
+async fn a_command_for_a_receiver_that_is_not_there_names_the_set() {
     let t = test_app();
-    let (status, _) = send(
+
+    let (status, body) = send(
         &t.app,
         "POST",
         "/api/cast/receivers/tv-ghost-99/command",
@@ -258,10 +259,14 @@ async fn commands_are_refused_for_a_missing_receiver_or_title() {
         Some(json!({ "type": "pause" })),
     )
     .await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
 
-    // A live receiver, but a title that isn't in the catalog: the TV is never
-    // handed an id the server didn't recognize.
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["code"], json!("error.castReceiverGone"));
+}
+
+#[tokio::test]
+async fn a_play_for_a_title_outside_the_catalog_names_the_title() {
+    let t = test_app();
     send(
         &t.app,
         "POST",
@@ -270,7 +275,8 @@ async fn commands_are_refused_for_a_missing_receiver_or_title() {
         Some(beat("tv-salon-01", None)),
     )
     .await;
-    let (status, _) = send(
+
+    let (status, body) = send(
         &t.app,
         "POST",
         "/api/cast/receivers/tv-salon-01/command",
@@ -278,7 +284,9 @@ async fn commands_are_refused_for_a_missing_receiver_or_title() {
         Some(json!({ "type": "play", "itemId": "no-such-item" })),
     )
     .await;
+
     assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["code"], json!("error.itemNotFound"));
 }
 
 #[tokio::test]
