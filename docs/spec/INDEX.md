@@ -366,7 +366,7 @@
 - **MOD-63** (AGREED) - A release name says which French dub it carries (a file says it as <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-64** (AGREED) - Releases are ranked by their quality's rank in the profile, then their <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-65** (AGREED) - With upgrades on, a release **upgrades** a file in three cases, and in no <sub>[acquisition.md](modules/acquisition.md)</sub>
-- **MOD-66** (AGREED) - A title is **cutoff unmet** when its best file is below the cutoff, or no <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-66** (AGREED) - A film or an episode is **cutoff unmet** when the best file holding it is <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-67** (AGREED) - With **add beside** on, a release that wins on formats and loses on <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-68** (AGREED) - Missing units are searched first, each title under its own profile. A unit <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-69** (AGREED) - Titles that are cutoff unmet are searched for a better copy with what the <sub>[acquisition.md](modules/acquisition.md)</sub>

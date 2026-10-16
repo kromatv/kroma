@@ -3445,7 +3445,7 @@
     "space": "modules",
     "number": 66,
     "status": "AGREED",
-    "text": "A title is **cutoff unmet** when its best file is below the cutoff, or no",
+    "text": "A film or an episode is **cutoff unmet** when the best file holding it is",
     "file": "docs/spec/modules/acquisition.md",
     "line": 86
   },
@@ -3457,7 +3457,7 @@
     "status": "AGREED",
     "text": "With **add beside** on, a release that wins on formats and loses on",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 89
+    "line": 90
   },
   {
     "id": "MOD-68",
@@ -3467,7 +3467,7 @@
     "status": "AGREED",
     "text": "Missing units are searched first, each title under its own profile. A unit",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 99
+    "line": 100
   },
   {
     "id": "MOD-69",
@@ -3477,7 +3477,7 @@
     "status": "AGREED",
     "text": "Titles that are cutoff unmet are searched for a better copy with what the",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 104
+    "line": 105
   },
   {
     "id": "MOD-70",
@@ -3487,7 +3487,7 @@
     "status": "AGREED",
     "text": "Every indexer's latest releases are read on an interval, fifteen minutes",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 108
+    "line": 109
   },
   {
     "id": "MOD-71",
@@ -3497,7 +3497,7 @@
     "status": "AGREED",
     "text": "Any title can be searched by hand from its page, monitored or not. Each",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 113
+    "line": 114
   },
   {
     "id": "MOD-72",
@@ -3507,7 +3507,7 @@
     "status": "AGREED",
     "text": "A download that fails, stalls past a limit, or is removed puts the units",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 121
+    "line": 122
   },
   {
     "id": "MOD-73",
@@ -3517,7 +3517,7 @@
     "status": "AGREED",
     "text": "A release whose download failed is blocklisted for its title, so the next",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 124
+    "line": 125
   },
   {
     "id": "MOD-74",
@@ -3527,7 +3527,7 @@
     "status": "AGREED",
     "text": "The library never deletes (LIB-48). Replacing a file is acquisition acting",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 127
+    "line": 128
   },
   {
     "id": "MOD-75",
@@ -3577,7 +3577,7 @@
     "status": "AGREED",
     "text": "A file an upgrade replaces goes to the recycle bin when one is set, and is",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 131
+    "line": 132
   },
   {
     "id": "PLAY-1",

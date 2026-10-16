@@ -83,8 +83,9 @@ other. A release never replaces a file of better quality.
   no file of the title reaches the upgrade-until score.
 - It is a newer revision of the same quality.
 
-**MOD-66** (AGREED) - A title is **cutoff unmet** when its best file is below the cutoff, or no
-file of it reaches the upgrade-until score.
+**MOD-66** (AGREED) - A film or an episode is **cutoff unmet** when the best file holding it is
+below the cutoff, or no file holding it reaches the upgrade-until score. A show is cutoff unmet
+when one of its episodes is.
 
 **MOD-67** (AGREED) - With **add beside** on, a release that wins on formats and loses on
 quality is placed next to the file instead of being refused: a 1080p release with the France dub
