@@ -76,6 +76,7 @@ pub struct MonitoredTitle {
     pub refreshed_at: Option<i64>,
     #[serde(skip)]
     pub known_episodes: std::collections::BTreeMap<u32, u32>,
+    pub aliases: Vec<String>,
 }
 
 /// One monitored title with how much of it the library holds, for the

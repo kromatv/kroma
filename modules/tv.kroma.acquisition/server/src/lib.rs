@@ -11,6 +11,7 @@ pub mod failures;
 pub mod import;
 pub mod peers;
 pub mod routes;
+pub mod rss;
 pub mod rules;
 pub mod search;
 mod serve;
@@ -117,6 +118,12 @@ impl<S: HostStorage + Clone + Send + Sync + 'static> kroma_module_sdk::host::Ser
                 run: run_search::<S>,
             },
             ModuleJob {
+                key: "acquisition.rss",
+                category: "acquisition",
+                schedule: Some("*/5 * * * *"),
+                run: run_rss::<S>,
+            },
+            ModuleJob {
                 key: "acquisition.match",
                 category: "acquisition",
                 schedule: Some("30 5 * * *"),
@@ -138,6 +145,11 @@ fn run_search<S: HostStorage>(host: &S) -> anyhow::Result<()> {
         &|l| tracing::info!(target: "acquisition", "{l}"),
         &|| false,
     )?;
+    Ok(())
+}
+
+fn run_rss<S: HostStorage>(host: &S) -> anyhow::Result<()> {
+    rss::rss_pass(host, &|l| tracing::info!(target: "acquisition", "{l}"))?;
     Ok(())
 }
 

@@ -94,6 +94,10 @@ pub(super) struct DetailResp {
     #[serde(default)]
     pub(super) original_language: Option<String>,
     #[serde(default)]
+    pub(super) original_title: Option<String>,
+    #[serde(default)]
+    pub(super) original_name: Option<String>,
+    #[serde(default)]
     pub(super) origin_country: Vec<String>,
 }
 

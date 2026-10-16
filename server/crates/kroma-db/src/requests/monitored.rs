@@ -8,7 +8,7 @@ use crate::{Pool, Result};
 
 const MONITORED_COLS: &str = "m.kind, m.tmdb_id, m.title, m.year, m.poster_url, m.seasons, \
     m.monitor_new_seasons, m.min_availability, m.last_season, m.added_by, m.added_at, m.updated_at, \
-    m.original_language, m.air_status, m.refreshed_at, m.known_episodes";
+    m.original_language, m.air_status, m.refreshed_at, m.known_episodes, m.aliases";
 
 fn row_to_monitored(r: &Row) -> rusqlite::Result<MonitoredTitle> {
     let kind: String = r.get(0)?;
@@ -31,6 +31,7 @@ fn row_to_monitored(r: &Row) -> rusqlite::Result<MonitoredTitle> {
         air_status: r.get(13)?,
         refreshed_at: r.get(14)?,
         known_episodes: serde_json::from_str(&r.get::<_, String>(15)?).unwrap_or_default(),
+        aliases: serde_json::from_str(&r.get::<_, String>(16)?).unwrap_or_default(),
     })
 }
 
@@ -40,15 +41,15 @@ pub fn upsert_monitored(pool: &Pool, title: &MonitoredTitle) -> Result<()> {
     conn.execute(
         "INSERT INTO monitored (kind, tmdb_id, title, year, poster_url, seasons, \
              monitor_new_seasons, min_availability, last_season, added_by, added_at, updated_at, \
-             original_language, air_status, refreshed_at, known_episodes) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16) \
+             original_language, air_status, refreshed_at, known_episodes, aliases) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17) \
          ON CONFLICT(kind, tmdb_id) DO UPDATE SET \
              title = excluded.title, year = excluded.year, poster_url = excluded.poster_url, \
              seasons = excluded.seasons, monitor_new_seasons = excluded.monitor_new_seasons, \
              min_availability = excluded.min_availability, last_season = excluded.last_season, \
              updated_at = excluded.updated_at, original_language = excluded.original_language, \
              air_status = excluded.air_status, refreshed_at = excluded.refreshed_at, \
-             known_episodes = excluded.known_episodes",
+             known_episodes = excluded.known_episodes, aliases = excluded.aliases",
         params![
             title.kind.as_str(),
             title.tmdb_id as i64,
@@ -66,6 +67,7 @@ pub fn upsert_monitored(pool: &Pool, title: &MonitoredTitle) -> Result<()> {
             title.air_status,
             title.refreshed_at,
             serde_json::to_string(&title.known_episodes).unwrap_or_else(|_| "{}".into()),
+            serde_json::to_string(&title.aliases).unwrap_or_else(|_| "[]".into()),
         ],
     )?;
     Ok(())
@@ -113,10 +115,10 @@ pub fn monitored_summaries(
     let rows = stmt.query_map(params![today], |r| {
         Ok(MonitoredSummary {
             title: row_to_monitored(r)?,
-            monitored: r.get(16)?,
-            available: r.get(17)?,
-            missing: r.get(18)?,
-            grabbed: r.get(19)?,
+            monitored: r.get(17)?,
+            available: r.get(18)?,
+            missing: r.get(19)?,
+            grabbed: r.get(20)?,
         })
     })?;
     rows.collect()
@@ -170,6 +172,7 @@ mod tests {
             air_status: Some("Returning Series".into()),
             refreshed_at: Some(5),
             known_episodes: [(1, 10)].into(),
+            aliases: vec!["Show Original".into()],
         }
     }
 

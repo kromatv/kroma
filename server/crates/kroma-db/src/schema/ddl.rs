@@ -414,7 +414,8 @@ pub(crate) const SCHEMA: &str = "
     -- `last_season` is the highest season TMDB listed at the last refresh, so a
     -- season above it is new; `known_episodes` maps each season to the last
     -- episode TMDB had listed, so a refresh only adds what was announced since;
-    -- `original_language` is a tag (`en`, `fr-CA`). Keyed like `requests`.
+    -- `original_language` is a tag (`en`, `fr-CA`) and `aliases` the other names
+    -- a release may carry it under. Keyed like `requests`.
     CREATE TABLE IF NOT EXISTS monitored (
         kind                TEXT NOT NULL,
         tmdb_id             INTEGER NOT NULL,
@@ -427,6 +428,7 @@ pub(crate) const SCHEMA: &str = "
         last_season         INTEGER,
         known_episodes      TEXT NOT NULL DEFAULT '{}',
         original_language   TEXT,
+        aliases             TEXT NOT NULL DEFAULT '[]',
         air_status          TEXT,
         refreshed_at        INTEGER,
         added_by            TEXT REFERENCES users(id) ON DELETE SET NULL,

@@ -113,6 +113,7 @@ pub(super) fn raw_detail(imdb: Option<&str>, avail: Option<&str>) -> discover::D
         available_date: avail.map(str::to_string),
         cinema_date: None,
         original_language: None,
+        original_title: None,
         origin_country: None,
     }
 }
@@ -155,6 +156,7 @@ pub(super) fn detail(
         available_date: available.map(str::to_string),
         cinema_date: None,
         original_language: None,
+        original_title: None,
         origin_country: None,
     }
 }

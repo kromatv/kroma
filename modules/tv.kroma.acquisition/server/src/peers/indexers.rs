@@ -72,6 +72,10 @@ pub enum Query {
         title: String,
         season: u32,
     },
+    /// Free text; empty asks for the indexer's latest releases.
+    Text {
+        query: String,
+    },
 }
 
 /// One indexer's answer. A per-indexer error alongside real results is not fatal:

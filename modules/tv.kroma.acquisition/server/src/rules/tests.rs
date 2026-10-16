@@ -141,6 +141,7 @@ fn an_upgrade_search_that_found_nothing_waits_longer_each_time() {
         air_status: None,
         refreshed_at: None,
         known_episodes: Default::default(),
+        aliases: Vec::new(),
     };
     const HOUR: i64 = 60 * 60 * 1000;
     let due = |at: i64| store::upgrade_due(host.store(), RequestKind::Movie, 603, at).unwrap();

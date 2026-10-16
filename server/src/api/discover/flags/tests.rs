@@ -108,6 +108,7 @@ fn raw(kind: RequestKind, tmdb_id: u64) -> discover::DiscoverRawDetail {
         available_date: None,
         cinema_date: None,
         original_language: None,
+        original_title: None,
         origin_country: None,
     }
 }

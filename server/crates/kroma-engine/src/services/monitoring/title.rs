@@ -80,6 +80,7 @@ pub(crate) fn new_title(
         air_status: detail.status.clone(),
         refreshed_at: Some(now),
         known_episodes: Default::default(),
+        aliases: detail.original_title.clone().into_iter().collect(),
     }
 }
 
@@ -99,6 +100,11 @@ pub(crate) fn apply_detail(title: &mut MonitoredTitle, detail: &DiscoverRawDetai
     title.original_language = original_language(detail).or(title.original_language.take());
     title.air_status = detail.status.clone();
     title.last_season = detail.seasons.iter().map(|s| s.season).max();
+    if let Some(original) = &detail.original_title {
+        if !title.aliases.contains(original) {
+            title.aliases.push(original.clone());
+        }
+    }
     title.refreshed_at = Some(now);
     title.updated_at = now;
 }

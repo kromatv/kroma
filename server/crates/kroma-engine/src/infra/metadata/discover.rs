@@ -83,6 +83,8 @@ pub struct DiscoverRawDetail {
     pub cinema_date: Option<String>,
     // ISO 639-1, and the first ISO 3166-1 country of origin.
     pub original_language: Option<String>,
+    // The title in its own language, when TMDB gives it one apart from `title`.
+    pub original_title: Option<String>,
     pub origin_country: Option<String>,
 }
 
@@ -177,6 +179,11 @@ pub fn detail(
         RequestKind::Movie => movie_dates(d.release_dates.take(), d.release_date.as_deref()),
         RequestKind::Show => Default::default(),
     };
+    let original_title = d
+        .original_title
+        .take()
+        .or(d.original_name.take())
+        .filter(|o| !o.is_empty() && *o != title);
     Ok(Some(DiscoverRawDetail {
         kind,
         tmdb_id,
@@ -203,6 +210,7 @@ pub fn detail(
         available_date: dates.available,
         cinema_date: dates.cinema,
         original_language: d.original_language.filter(|l| !l.is_empty()),
+        original_title,
         origin_country: d.origin_country.into_iter().next(),
     }))
 }

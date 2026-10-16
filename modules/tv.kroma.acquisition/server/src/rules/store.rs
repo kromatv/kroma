@@ -76,7 +76,7 @@ pub(super) const SEEDED: &str = "seeded";
 pub(super) const SIZES: &str = "sizes";
 pub(super) const DEFAULT_PROFILE: &str = "default_profile";
 
-pub(super) fn setting(pool: &Pool, key: &str) -> Result<Option<String>> {
+pub fn setting(pool: &Pool, key: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     Ok(conn
         .query_row(
@@ -87,7 +87,7 @@ pub(super) fn setting(pool: &Pool, key: &str) -> Result<Option<String>> {
         .optional()?)
 }
 
-pub(super) fn set_setting(pool: &Pool, key: &str, value: &str) -> Result<()> {
+pub fn set_setting(pool: &Pool, key: &str, value: &str) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
         "INSERT INTO rule_settings (key, value) VALUES (?1, ?2) \

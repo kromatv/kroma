@@ -33,6 +33,7 @@ fn seed_monitored(t: &TestApp, tmdb_id: u64) {
             air_status: None,
             refreshed_at: None,
             known_episodes: Default::default(),
+            aliases: Vec::new(),
         },
     )
     .unwrap();
