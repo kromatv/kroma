@@ -117,6 +117,7 @@ function TitleBody({
           kind={view.kind === 'show' ? 'show' : 'item'}
           id={localId}
           title={view.title}
+          tmdbId={view.tmdbId}
         />
       ) : null}
 

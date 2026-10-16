@@ -54,10 +54,12 @@ import { Route as AppShowsIdRouteImport } from './routes/_app.shows.$id';
 import { Route as AppTrendingTypeRouteImport } from './routes/_app.trending.$type';
 import { Route as AdminModulesIndexRouteImport } from './routes/admin.modules.index';
 import { Route as AdminModulesIdRouteImport } from './routes/admin.modules.$id';
+import { Route as AdminMonitoringIndexRouteImport } from './routes/admin.monitoring.index';
 import { Route as AdminRequestsIndexRouteImport } from './routes/admin.requests.index';
 import { Route as AdminRequestsIdRouteImport } from './routes/admin.requests.$id';
 import { Route as AppPlayerWatchIdRouteImport } from './routes/_app._player.watch.$id';
 import { Route as AppDiscoverTypeTmdbIdRouteImport } from './routes/_app.discover.$type.$tmdbId';
+import { Route as AdminMonitoringKindTmdbIdRouteImport } from './routes/admin.monitoring.$kind.$tmdbId';
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -282,6 +284,11 @@ const AdminModulesIdRoute = AdminModulesIdRouteImport.update({
   path: '/modules/$id',
   getParentRoute: () => AdminRoute,
 } as any);
+const AdminMonitoringIndexRoute = AdminMonitoringIndexRouteImport.update({
+  id: '/monitoring/',
+  path: '/monitoring/',
+  getParentRoute: () => AdminRoute,
+} as any);
 const AdminRequestsIndexRoute = AdminRequestsIndexRouteImport.update({
   id: '/requests/',
   path: '/requests/',
@@ -302,6 +309,12 @@ const AppDiscoverTypeTmdbIdRoute = AppDiscoverTypeTmdbIdRouteImport.update({
   path: '/discover/$type/$tmdbId',
   getParentRoute: () => AppRoute,
 } as any);
+const AdminMonitoringKindTmdbIdRoute =
+  AdminMonitoringKindTmdbIdRouteImport.update({
+    id: '/monitoring/$kind/$tmdbId',
+    path: '/monitoring/$kind/$tmdbId',
+    getParentRoute: () => AdminRoute,
+  } as any);
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute;
@@ -348,9 +361,11 @@ export interface FileRoutesByFullPath {
   '/movies/': typeof AppMoviesIndexRoute;
   '/shows/': typeof AppShowsIndexRoute;
   '/admin/modules/': typeof AdminModulesIndexRoute;
+  '/admin/monitoring/': typeof AdminMonitoringIndexRoute;
   '/admin/requests/': typeof AdminRequestsIndexRoute;
   '/watch/$id': typeof AppPlayerWatchIdRoute;
   '/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute;
+  '/admin/monitoring/$kind/$tmdbId': typeof AdminMonitoringKindTmdbIdRoute;
 }
 export interface FileRoutesByTo {
   '/join': typeof JoinRoute;
@@ -396,9 +411,11 @@ export interface FileRoutesByTo {
   '/movies': typeof AppMoviesIndexRoute;
   '/shows': typeof AppShowsIndexRoute;
   '/admin/modules': typeof AdminModulesIndexRoute;
+  '/admin/monitoring': typeof AdminMonitoringIndexRoute;
   '/admin/requests': typeof AdminRequestsIndexRoute;
   '/watch/$id': typeof AppPlayerWatchIdRoute;
   '/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute;
+  '/admin/monitoring/$kind/$tmdbId': typeof AdminMonitoringKindTmdbIdRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -448,9 +465,11 @@ export interface FileRoutesById {
   '/_app/movies/': typeof AppMoviesIndexRoute;
   '/_app/shows/': typeof AppShowsIndexRoute;
   '/admin/modules/': typeof AdminModulesIndexRoute;
+  '/admin/monitoring/': typeof AdminMonitoringIndexRoute;
   '/admin/requests/': typeof AdminRequestsIndexRoute;
   '/_app/_player/watch/$id': typeof AppPlayerWatchIdRoute;
   '/_app/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute;
+  '/admin/monitoring/$kind/$tmdbId': typeof AdminMonitoringKindTmdbIdRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -499,9 +518,11 @@ export interface FileRouteTypes {
     | '/movies/'
     | '/shows/'
     | '/admin/modules/'
+    | '/admin/monitoring/'
     | '/admin/requests/'
     | '/watch/$id'
-    | '/discover/$type/$tmdbId';
+    | '/discover/$type/$tmdbId'
+    | '/admin/monitoring/$kind/$tmdbId';
   fileRoutesByTo: FileRoutesByTo;
   to:
     | '/join'
@@ -547,9 +568,11 @@ export interface FileRouteTypes {
     | '/movies'
     | '/shows'
     | '/admin/modules'
+    | '/admin/monitoring'
     | '/admin/requests'
     | '/watch/$id'
-    | '/discover/$type/$tmdbId';
+    | '/discover/$type/$tmdbId'
+    | '/admin/monitoring/$kind/$tmdbId';
   id:
     | '__root__'
     | '/_app'
@@ -598,9 +621,11 @@ export interface FileRouteTypes {
     | '/_app/movies/'
     | '/_app/shows/'
     | '/admin/modules/'
+    | '/admin/monitoring/'
     | '/admin/requests/'
     | '/_app/_player/watch/$id'
-    | '/_app/discover/$type/$tmdbId';
+    | '/_app/discover/$type/$tmdbId'
+    | '/admin/monitoring/$kind/$tmdbId';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -929,6 +954,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminModulesIdRouteImport;
       parentRoute: typeof AdminRoute;
     };
+    '/admin/monitoring/': {
+      id: '/admin/monitoring/';
+      path: '/monitoring';
+      fullPath: '/admin/monitoring/';
+      preLoaderRoute: typeof AdminMonitoringIndexRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/requests/': {
       id: '/admin/requests/';
       path: '/requests';
@@ -956,6 +988,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/discover/$type/$tmdbId';
       preLoaderRoute: typeof AppDiscoverTypeTmdbIdRouteImport;
       parentRoute: typeof AppRoute;
+    };
+    '/admin/monitoring/$kind/$tmdbId': {
+      id: '/admin/monitoring/$kind/$tmdbId';
+      path: '/monitoring/$kind/$tmdbId';
+      fullPath: '/admin/monitoring/$kind/$tmdbId';
+      preLoaderRoute: typeof AdminMonitoringKindTmdbIdRouteImport;
+      parentRoute: typeof AdminRoute;
     };
   }
 }
@@ -1043,7 +1082,9 @@ interface AdminRouteChildren {
   AdminModulesIdRoute: typeof AdminModulesIdRoute;
   AdminRequestsIdRoute: typeof AdminRequestsIdRoute;
   AdminModulesIndexRoute: typeof AdminModulesIndexRoute;
+  AdminMonitoringIndexRoute: typeof AdminMonitoringIndexRoute;
   AdminRequestsIndexRoute: typeof AdminRequestsIndexRoute;
+  AdminMonitoringKindTmdbIdRoute: typeof AdminMonitoringKindTmdbIdRoute;
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -1067,7 +1108,9 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminModulesIdRoute: AdminModulesIdRoute,
   AdminRequestsIdRoute: AdminRequestsIdRoute,
   AdminModulesIndexRoute: AdminModulesIndexRoute,
+  AdminMonitoringIndexRoute: AdminMonitoringIndexRoute,
   AdminRequestsIndexRoute: AdminRequestsIndexRoute,
+  AdminMonitoringKindTmdbIdRoute: AdminMonitoringKindTmdbIdRoute,
 };
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren);
