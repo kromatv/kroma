@@ -7,57 +7,28 @@
 
 pub mod auto;
 pub mod dtos;
+pub mod failures;
 pub mod import;
-pub mod jobs;
 pub mod peers;
 pub mod routes;
+pub mod rules;
 pub mod search;
 mod serve;
+pub mod titles;
+mod upgrades;
 
 pub use dtos::*;
 pub use serve::acqsearch_routes;
 
 use kroma_module_sdk::host::HostStorage;
-use kroma_scene::{Profile, Res};
 
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use peers::indexers::IndexerRef;
-
-const GB: u64 = 1_073_741_824;
-
-pub const JOBS: &[kroma_module_sdk::engine::services::jobs::Builtin] =
-    &[jobs::import::SPEC, jobs::search::SPEC, jobs::match_::SPEC];
 
 pub const MODULE_ID: &str = "tv.kroma.acquisition";
 
 use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
-
-pub fn profile_from_settings<S: HostStorage>(state: &S) -> Profile {
-    let resolution = match state.setting_str("acqResolution", "1080p").as_str() {
-        "720p" => Res::R720,
-        "2160p" => Res::R2160,
-        _ => Res::R1080,
-    };
-    let list = |key: &str| -> Vec<String> {
-        state
-            .setting_str(key, "")
-            .split(',')
-            .map(str::trim)
-            .filter(|k| !k.is_empty())
-            .map(str::to_string)
-            .collect()
-    };
-    Profile {
-        resolution,
-        prefer_hevc: state.setting_bool("acqPreferHevc", true),
-        min_seeders: state.setting_i64("acqMinSeeders", 2).max(0) as u32,
-        max_size_bytes_movie: (state.setting_i64("acqMaxSizeGbMovie", 15).max(0) as u64) * GB,
-        max_size_bytes_episode: (state.setting_i64("acqMaxSizeGbEpisode", 3).max(0) as u64) * GB,
-        required_keywords: list("acqRequiredKeywords"),
-        forbidden_keywords: list("acqForbiddenKeywords"),
-    }
-}
 
 /// Run one query against one indexer, whatever its kind, returning normalized
 /// releases.
@@ -116,8 +87,16 @@ impl<S: HostStorage + Clone + Send + Sync + 'static> kroma_module_sdk::host::Ser
         MODULE_ID
     }
 
+    fn migrations(&self) -> &'static str {
+        rules::store::MIGRATIONS
+    }
+
     fn admin_routes(&self, _host: &S) -> Option<axum::Router<S>> {
-        Some(routes::routes::<S>())
+        Some(
+            routes::routes::<S>()
+                .merge(rules::routes::routes::<S>())
+                .merge(titles::routes::<S>()),
+        )
     }
 
     fn jobs(&self) -> Vec<kroma_module_sdk::host::ModuleJob<S>> {
@@ -163,12 +142,18 @@ fn run_search<S: HostStorage>(host: &S) -> anyhow::Result<()> {
 }
 
 fn run_import<S: HostStorage>(host: &S) -> anyhow::Result<()> {
-    import::import_pass(host, &|l| tracing::info!(target: "acquisition", "{l}"))?;
+    let log = |l: String| tracing::info!(target: "acquisition", "{l}");
+    import::import_pass(host, &log)?;
+    failures::failure_pass(host, &log)?;
     Ok(())
 }
 
 fn run_match<S: HostStorage>(host: &S) -> anyhow::Result<()> {
     kroma_module_sdk::engine::services::requests::availability_pass(host)?;
+    let cleared = import::empty_recycle_bin(host);
+    if cleared > 0 {
+        tracing::info!(target: "acquisition", "cleared {cleared} file(s) from the recycle bin");
+    }
     Ok(())
 }
 

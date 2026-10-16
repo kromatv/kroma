@@ -289,3 +289,18 @@ fn a_whole_show_request_monitors_new_seasons_too() {
     assert_eq!(title.seasons, [1, 2]);
     assert!(title.monitor_new_seasons);
 }
+
+#[test]
+fn a_preview_aims_at_a_title_without_monitoring_it() {
+    let host = host();
+    let _tmdb = tmdb();
+
+    let season = preview_rows(&host, RequestKind::Show, SHOW, Some(2)).unwrap();
+    let movie = preview_rows(&host, RequestKind::Movie, MOVIE, None).unwrap();
+
+    assert_eq!(season.len(), 2);
+    assert!(season.iter().all(|r| r.season == Some(2)));
+    assert_eq!(movie[0].air_date.as_deref(), Some("1999-09-21"));
+    assert!(monitored(&host, RequestKind::Show, SHOW).is_none());
+    assert!(units(&host, RequestKind::Show, SHOW).is_empty());
+}

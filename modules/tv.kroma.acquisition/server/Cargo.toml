@@ -45,6 +45,7 @@ walkdir = "2"
 # subvolumes on one filesystem (e.g. Synology @appdata -> a media shared folder),
 # where a hard link fails and the kernel is too old for std::fs::copy to reflink.
 rustix = { version = "1", features = ["fs"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
 
 [dev-dependencies]
 # The shared HostCtx doubles, the throwaway pool and the self-deleting scratch

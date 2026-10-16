@@ -252,6 +252,15 @@ pub fn wanted_for_request(conn: &Connection, request_id: &str) -> rusqlite::Resu
     rows.collect()
 }
 
+/// Every row in one status, across every title.
+pub fn wanted_in_status(conn: &Connection, status: &str) -> rusqlite::Result<Vec<WantedRow>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {WANTED_COLS} FROM wanted WHERE status = ?1 ORDER BY tmdb_id, season, episode"
+    ))?;
+    let rows = stmt.query_map(params![status], row_to_wanted)?;
+    rows.collect()
+}
+
 /// Every row a title has, whichever request it answers to.
 pub fn wanted_for_title(
     conn: &Connection,

@@ -2000,6 +2000,7 @@ name = "kroma-scene"
 version = "0.1.0"
 dependencies = [
  "kroma-module-manifest",
+ "regex",
  "serde",
  "serde_json",
 ]

@@ -168,6 +168,30 @@ pub fn set_episodes<S: HostStorage>(
     Ok(title)
 }
 
+/// The rows a title WOULD have, persisting nothing: a film's one row, or the
+/// episodes of `season` (every season when `None`). What a search for a title
+/// nobody monitors is aimed at.
+pub fn preview_rows<S: HostStorage>(
+    state: &S,
+    kind: RequestKind,
+    tmdb_id: u64,
+    season: Option<u32>,
+) -> Result<Vec<db::WantedRow>> {
+    let detail = fetch_detail(state, kind, tmdb_id)?;
+    let title = new_title(&detail, None, now_ms());
+    if kind == RequestKind::Movie {
+        return Ok(vec![movie_row(&title, &detail)]);
+    }
+    let seasons: Vec<u32> = match season {
+        Some(season) => vec![season],
+        None => detail.seasons.iter().map(|s| s.season).collect(),
+    };
+    Ok(roster(state, tmdb_id, &seasons)?
+        .iter()
+        .map(|e| episode_row(&title, detail.imdb_id.as_deref(), e))
+        .collect())
+}
+
 /// Monitors what an approved request asked for: its seasons join the title's,
 /// and a request for the whole show also takes the seasons still to come.
 pub(crate) fn monitor_for_request<S: HostStorage>(

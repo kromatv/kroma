@@ -16,6 +16,7 @@ mod calendar;
 mod gaps;
 mod monitored;
 mod search_queue;
+mod title_files;
 mod wanted;
 
 #[cfg(test)]
@@ -26,6 +27,7 @@ pub use calendar::*;
 pub use gaps::*;
 pub use monitored::*;
 pub use search_queue::*;
+pub use title_files::*;
 pub use wanted::*;
 
 // New columns must be appended, never inserted: callers read rows by position.

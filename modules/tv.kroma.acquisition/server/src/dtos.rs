@@ -13,6 +13,24 @@ pub struct ScoreLineView {
     pub note: String,
 }
 
+impl From<&kroma_scene::ScoreLine> for ScoreLineView {
+    fn from(line: &kroma_scene::ScoreLine) -> Self {
+        Self {
+            rule: line.rule.clone(),
+            delta: line.delta,
+            note: line.note.clone(),
+        }
+    }
+}
+
+/// A custom format a release matched, and what the profile scores it.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FormatScoreView {
+    pub name: String,
+    pub score: i32,
+}
+
 /// One release from an interactive search, scored (or rejected with the rule
 /// that fired). Sorted accepted-first, best score first.
 #[derive(Debug, Clone, Serialize)]
@@ -38,6 +56,10 @@ pub struct ScoredReleaseView {
     /// same scope the grab will use, because it is what the grab acts on.
     pub upgrade: bool,
     pub details_url: Option<String>,
+    pub quality: Option<String>,
+    pub formats: Vec<FormatScoreView>,
+    /// What grabbing it does to what the title holds, judged by its profile.
+    pub verdict: Option<kroma_scene::Verdict>,
 }
 
 /// What one indexer made of a sweep. Every enabled indexer gets a row whether it

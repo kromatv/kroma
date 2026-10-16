@@ -8,6 +8,7 @@ pub fn quality_from_parsed(
 ) -> (Option<String>, Option<String>, Option<String>) {
     use kroma_scene::{Codec, Res, Source};
     let res = parsed.resolution.map(|r| match r {
+        Res::Sd => "480p",
         Res::R720 => "720p",
         Res::R1080 => "1080p",
         Res::R2160 => "2160p",
@@ -16,6 +17,7 @@ pub fn quality_from_parsed(
         Codec::Hevc => "x265",
         Codec::H264 => "x264",
         Codec::Av1 => "AV1",
+        Codec::Vp9 => "VP9",
         Codec::Xvid => "Xvid",
     });
     let source = parsed.source.map(|s| match s {
@@ -24,6 +26,7 @@ pub fn quality_from_parsed(
         Source::WebDl => "WEBDL",
         Source::WebRip => "WEBRip",
         Source::Hdtv => "HDTV",
+        Source::Dvd => "DVD",
         Source::Cam => "Cam",
     });
     (

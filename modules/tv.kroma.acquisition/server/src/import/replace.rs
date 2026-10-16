@@ -27,15 +27,21 @@ pub(super) fn drop_replaced<S: HostStorage>(
         if kept.contains(&canonical(&path)) {
             continue;
         }
-        match std::fs::remove_file(&path) {
-            // The one place the product deletes a user's media: say so where
-            // they will look for it.
-            Ok(()) => tracing::info!(
+        // The one place the product removes a user's media: say so where they
+        // will look for it.
+        match super::recycle::retire(state, Path::new(&path)) {
+            Ok(super::recycle::Retired::Deleted) => tracing::info!(
                 target: "acquisition",
                 release = %row.release_title,
                 "replaced by the upgrade, deleted {path}"
             ),
-            Err(e) => tracing::warn!(target: "acquisition", "could not delete {path}: {e}"),
+            Ok(super::recycle::Retired::Recycled(to)) => tracing::info!(
+                target: "acquisition",
+                release = %row.release_title,
+                "replaced by the upgrade, moved {path} to {}",
+                to.display()
+            ),
+            Err(e) => tracing::warn!(target: "acquisition", "could not remove {path}: {e}"),
         }
     }
 }

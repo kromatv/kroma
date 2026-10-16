@@ -1272,6 +1272,7 @@ dependencies = [
  "kroma-module-sdk",
  "kroma-naming",
  "kroma-scene",
+ "rusqlite",
  "rustix",
  "serde",
  "serde_json",
@@ -1507,6 +1508,7 @@ name = "kroma-scene"
 version = "0.1.0"
 dependencies = [
  "kroma-module-manifest",
+ "regex",
  "serde",
  "serde_json",
 ]
