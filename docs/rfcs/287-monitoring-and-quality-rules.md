@@ -1,10 +1,10 @@
-# RFC NNNN: monitored titles, wanted lists and quality rules the admin writes
+# RFC 287: monitored titles, wanted lists and quality rules the admin writes
 
 - Status: **DRAFT**
-- PR: #NNNN
-- Affects: a new spec space `docs/spec/acquisition/` (prefix `ACQ`),
-  `docs/spec/library/README.md` (LIB-42, LIB-45 to LIB-48), `docs/spec/media/README.md`
-  (MEDIA-8, audio language), the core `requests` and `wanted` model, the modules
+- PR: #287
+- Affects: two new chapters, `docs/spec/library/monitoring.md` (LIB-51 to LIB-69) and
+  `docs/spec/modules/acquisition.md` (MOD-54 to MOD-79), `docs/spec/media/README.md`
+  (MEDIA-47, the dub a track is), the core `requests` and `wanted` model, the modules
   `tv.kroma.acquisition`, `tv.kroma.scene`, `tv.kroma.indexer`, `tv.kroma.torrents`, and the
   web title page and admin
 
