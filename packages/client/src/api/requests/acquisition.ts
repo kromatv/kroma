@@ -107,8 +107,38 @@ export const ScoreLineView = z.object({
 });
 export type ScoreLineView = z.infer<typeof ScoreLineView>;
 
+/** Why a release would or would not improve what a title holds. */
+export const VerdictReason = z.enum([
+  'quality',
+  'formats',
+  'revision',
+  'upgradesOff',
+  'cutoffReached',
+  'lowerQuality',
+  'noBetterFormats',
+  'notAllowed',
+]);
+export type VerdictReason = z.infer<typeof VerdictReason>;
+
+/** What grabbing a release does to what the title holds: fill an empty slot,
+ * upgrade a file, sit beside one, or nothing worth having. */
+export const ReleaseVerdict = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('fill') }),
+  z.object({ kind: z.literal('upgrade'), reason: VerdictReason }),
+  z.object({ kind: z.literal('beside'), reason: VerdictReason }),
+  z.object({ kind: z.literal('notBetter'), reason: VerdictReason }),
+]);
+export type ReleaseVerdict = z.infer<typeof ReleaseVerdict>;
+
+/** A custom format a release matched, and what the title's profile scores it. */
+export const FormatScore = z.object({ name: z.string(), score: z.number() });
+export type FormatScore = z.infer<typeof FormatScore>;
+
 /** One scored release from an interactive search. `guid` is an opaque release
- * id; `target` is an open string (`movie` | `episode` | `season`). */
+ * id; `target` is an open string (`movie` | `episode` | `season`); `quality` a
+ * quality id (`webdl-1080p`). `quality`, `formats` and `verdict` come from an
+ * acquisition module that judges by profile, and are absent from one that does
+ * not. */
 export const ScoredReleaseView = z.object({
   title: z.string(),
   guid: z.string(),
@@ -127,6 +157,9 @@ export const ScoredReleaseView = z.object({
   grabbable: z.boolean(),
   upgrade: z.boolean(),
   detailsUrl: z.string().nullable(),
+  quality: z.string().nullish(),
+  formats: z.array(FormatScore).default([]),
+  verdict: ReleaseVerdict.nullish(),
 });
 export type ScoredReleaseView = z.infer<typeof ScoredReleaseView>;
 
