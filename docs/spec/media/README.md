@@ -143,6 +143,11 @@ objects, is a first-class property.
   enumerated and selectable. The default follows the file's own disposition flags, then the
   profile's language preference.
 
+**MEDIA-47** (AGREED) - An audio stream says which regional dub it is when the file says so:
+from its language tag (`fr-CA`), else from the words of its title (VFQ or Québécois is the
+Québec dub, VFF or TrueFrench the France one). A stream that says neither is its language with
+no region. The quality rules read it ([`../modules/acquisition.md`](../modules/acquisition.md)).
+
 ## Subtitles
 
 Status: **AGREED**

@@ -320,6 +320,8 @@ Status: **AGREED**
 
 - **Getting bytes onto disk** as a library concern, covering matching, scanning and deletions, is
   [`library/`](../library/). The library observes; modules acquire.
+- **How acquisition judges a release** against what a title wants and holds is
+  [`acquisition.md`](acquisition.md).
 - **Running the server**, meaning installing, enabling and diagnosing modules from the
   admin surface, is [`admin/`](../admin/).
 - **Registry wiring and precedence**, covering official-vs-added, shadowing, https and

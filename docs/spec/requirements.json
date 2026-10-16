@@ -2130,6 +2130,186 @@
     "line": 234
   },
   {
+    "id": "LIB-51",
+    "domain": "LIB",
+    "space": "library",
+    "number": 51,
+    "status": "AGREED",
+    "text": "A movie or a show can be **monitored**: the server wants to hold it.",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 15
+  },
+  {
+    "id": "LIB-52",
+    "domain": "LIB",
+    "space": "library",
+    "number": 52,
+    "status": "AGREED",
+    "text": "Inside a monitored show, each episode is monitored or not, on its own.",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 19
+  },
+  {
+    "id": "LIB-53",
+    "domain": "LIB",
+    "space": "library",
+    "number": 53,
+    "status": "AGREED",
+    "text": "Monitoring a show applies one preset, once: all episodes, future ones,",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 21
+  },
+  {
+    "id": "LIB-54",
+    "domain": "LIB",
+    "space": "library",
+    "number": 54,
+    "status": "AGREED",
+    "text": "A preset never takes an episode away from a request that is still open:",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 26
+  },
+  {
+    "id": "LIB-55",
+    "domain": "LIB",
+    "space": "library",
+    "number": 55,
+    "status": "AGREED",
+    "text": "A season is monitored when its episodes are: switching a season on",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 29
+  },
+  {
+    "id": "LIB-56",
+    "domain": "LIB",
+    "space": "library",
+    "number": 56,
+    "status": "AGREED",
+    "text": "An episode announced in a monitored season joins monitored. An episode a",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 33
+  },
+  {
+    "id": "LIB-57",
+    "domain": "LIB",
+    "space": "library",
+    "number": 57,
+    "status": "AGREED",
+    "text": "A monitored show may **take new seasons**: a season its provider announces",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 36
+  },
+  {
+    "id": "LIB-58",
+    "domain": "LIB",
+    "space": "library",
+    "number": 58,
+    "status": "AGREED",
+    "text": "A monitored film becomes searchable at its **minimum availability**: when",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 40
+  },
+  {
+    "id": "LIB-59",
+    "domain": "LIB",
+    "space": "library",
+    "number": 59,
+    "status": "AGREED",
+    "text": "Approving a request monitors its title with what the request asked for,",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 44
+  },
+  {
+    "id": "LIB-60",
+    "domain": "LIB",
+    "space": "library",
+    "number": 60,
+    "status": "AGREED",
+    "text": "Deleting a request leaves its title monitored. Wanting a title and having",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 47
+  },
+  {
+    "id": "LIB-61",
+    "domain": "LIB",
+    "space": "library",
+    "number": 61,
+    "status": "AGREED",
+    "text": "Many titles of the library can be monitored at once, with one preset and",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 50
+  },
+  {
+    "id": "LIB-62",
+    "domain": "LIB",
+    "space": "library",
+    "number": 62,
+    "status": "AGREED",
+    "text": "Unmonitoring a title forgets which of its units were wanted. Its files and",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 53
+  },
+  {
+    "id": "LIB-63",
+    "domain": "LIB",
+    "space": "library",
+    "number": 63,
+    "status": "AGREED",
+    "text": "A monitored episode or film that is available (aired, or past its minimum",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 60
+  },
+  {
+    "id": "LIB-64",
+    "domain": "LIB",
+    "space": "library",
+    "number": 64,
+    "status": "AGREED",
+    "text": "The missing list shows monitored units, and beside them, kept apart, the",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 63
+  },
+  {
+    "id": "LIB-65",
+    "domain": "LIB",
+    "space": "library",
+    "number": 65,
+    "status": "AGREED",
+    "text": "What is missing stays true in both directions: a file that lands makes",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 66
+  },
+  {
+    "id": "LIB-66",
+    "domain": "LIB",
+    "space": "library",
+    "number": 66,
+    "status": "AGREED",
+    "text": "A unit goes back to missing only after it has been without its file for",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 70
+  },
+  {
+    "id": "LIB-67",
+    "domain": "LIB",
+    "space": "library",
+    "number": 67,
+    "status": "AGREED",
+    "text": "When more monitored files vanish at once than a person deletes, none of",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 74
+  },
+  {
+    "id": "LIB-68",
+    "domain": "LIB",
+    "space": "library",
+    "number": 68,
+    "status": "AGREED",
+    "text": "A file holding several episodes answers for every episode in it, in the",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 78
+  },
+  {
     "id": "MEDIA-1",
     "domain": "MEDIA",
     "space": "media",
@@ -2407,7 +2587,7 @@
     "status": "AGREED",
     "text": "A subtitle stream is either **embedded**, a track inside the media",
     "file": "docs/spec/media/README.md",
-    "line": 150
+    "line": 155
   },
   {
     "id": "MEDIA-29",
@@ -2417,7 +2597,7 @@
     "status": "AGREED",
     "text": "The first-class subtitle formats are **SRT**, **WebVTT** and",
     "file": "docs/spec/media/README.md",
-    "line": 154
+    "line": 159
   },
   {
     "id": "MEDIA-30",
@@ -2427,7 +2607,7 @@
     "status": "AGREED",
     "text": "The **forced** disposition, only the foreign-language lines a",
     "file": "docs/spec/media/README.md",
-    "line": 158
+    "line": 163
   },
   {
     "id": "MEDIA-31",
@@ -2437,7 +2617,7 @@
     "status": "AGREED",
     "text": "**Burning in**, rendering a subtitle permanently into the video, is",
     "file": "docs/spec/media/README.md",
-    "line": 161
+    "line": 166
   },
   {
     "id": "MEDIA-32",
@@ -2447,7 +2627,7 @@
     "status": "SHIPPED",
     "text": "Every title carries a **poster**, a **backdrop**, a **logo** and, per",
     "file": "docs/spec/media/README.md",
-    "line": 171
+    "line": 176
   },
   {
     "id": "MEDIA-33",
@@ -2457,7 +2637,7 @@
     "status": "AGREED",
     "text": "Image sources rank by trust: embedded in the media file, then a",
     "file": "docs/spec/media/README.md",
-    "line": 174
+    "line": 179
   },
   {
     "id": "MEDIA-34",
@@ -2467,7 +2647,7 @@
     "status": "AGREED",
     "text": "KROMA derives a fixed set of sizes per image, a small grid",
     "file": "docs/spec/media/README.md",
-    "line": 177
+    "line": 182
   },
   {
     "id": "MEDIA-35",
@@ -2477,7 +2657,7 @@
     "status": "AGREED",
     "text": "Derived sizes are cached and served without re-deriving, and a",
     "file": "docs/spec/media/README.md",
-    "line": 180
+    "line": 185
   },
   {
     "id": "MEDIA-36",
@@ -2487,7 +2667,7 @@
     "status": "AGREED",
     "text": "Artwork is never a reason a title fails to appear. A title with no",
     "file": "docs/spec/media/README.md",
-    "line": 182
+    "line": 187
   },
   {
     "id": "MEDIA-37",
@@ -2497,7 +2677,7 @@
     "status": "SHIPPED",
     "text": "KROMA learns a file's streams by **probing** it once, when the",
     "file": "docs/spec/media/README.md",
-    "line": 189
+    "line": 194
   },
   {
     "id": "MEDIA-38",
@@ -2507,7 +2687,7 @@
     "status": "AGREED",
     "text": "A probe is the authoritative stream truth until the file's bytes",
     "file": "docs/spec/media/README.md",
-    "line": 199
+    "line": 204
   },
   {
     "id": "MEDIA-39",
@@ -2517,7 +2697,7 @@
     "status": "AGREED",
     "text": "When a direct play fails in a way that implicates the stream",
     "file": "docs/spec/media/README.md",
-    "line": 202
+    "line": 207
   },
   {
     "id": "MEDIA-40",
@@ -2527,7 +2707,7 @@
     "status": "AGREED",
     "text": "Trust is per-file and durable: a corrected probe is written back,",
     "file": "docs/spec/media/README.md",
-    "line": 207
+    "line": 212
   },
   {
     "id": "MEDIA-41",
@@ -2537,7 +2717,7 @@
     "status": "AGREED",
     "text": "A file whose container opens and whose streams enumerate, but which",
     "file": "docs/spec/media/README.md",
-    "line": 221
+    "line": 226
   },
   {
     "id": "MEDIA-42",
@@ -2547,7 +2727,7 @@
     "status": "AGREED",
     "text": "The title **appears** in the library with whatever *is* known. A",
     "file": "docs/spec/media/README.md",
-    "line": 225
+    "line": 230
   },
   {
     "id": "MEDIA-43",
@@ -2557,7 +2737,7 @@
     "status": "AGREED",
     "text": "The unknown stream is marked **undescribed** and carries its raw",
     "file": "docs/spec/media/README.md",
-    "line": 228
+    "line": 233
   },
   {
     "id": "MEDIA-44",
@@ -2567,7 +2747,7 @@
     "status": "SHIPPED",
     "text": "An undescribed stream is *not direct-playable*, because KROMA will",
     "file": "docs/spec/media/README.md",
-    "line": 230
+    "line": 235
   },
   {
     "id": "MEDIA-45",
@@ -2577,7 +2757,7 @@
     "status": "SHIPPED",
     "text": "A file that will not open at all, a truncated or corrupt container,",
     "file": "docs/spec/media/README.md",
-    "line": 233
+    "line": 238
   },
   {
     "id": "MEDIA-46",
@@ -2587,7 +2767,17 @@
     "status": "AGREED",
     "text": "Undescribed and unreadable are distinct states. The first is \"we",
     "file": "docs/spec/media/README.md",
-    "line": 236
+    "line": 241
+  },
+  {
+    "id": "MEDIA-47",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 47,
+    "status": "AGREED",
+    "text": "An audio stream says which regional dub it is when the file says so:",
+    "file": "docs/spec/media/README.md",
+    "line": 146
   },
   {
     "id": "MOD-1",
@@ -3118,6 +3308,216 @@
     "text": "A credential whose consumer *is* a module reaches the module that",
     "file": "docs/spec/modules/README.md",
     "line": 64
+  },
+  {
+    "id": "MOD-54",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 54,
+    "status": "AGREED",
+    "text": "The rules that decide what is good enough are data an admin edits, not",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 14
+  },
+  {
+    "id": "MOD-55",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 55,
+    "status": "AGREED",
+    "text": "A **quality** is a source at a resolution, from a fixed vocabulary: cam,",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 19
+  },
+  {
+    "id": "MOD-56",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 56,
+    "status": "AGREED",
+    "text": "Each quality has a size range in megabytes per minute of runtime,",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 23
+  },
+  {
+    "id": "MOD-57",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 57,
+    "status": "AGREED",
+    "text": "A **custom format** is a named test made of conditions on the release",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 27
+  },
+  {
+    "id": "MOD-58",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 58,
+    "status": "AGREED",
+    "text": "A condition can be negated or required. A format matches when every",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 32
+  },
+  {
+    "id": "MOD-59",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 59,
+    "status": "AGREED",
+    "text": "A **profile** ranks the qualities it allows (several may share a rank),",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 36
+  },
+  {
+    "id": "MOD-60",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 60,
+    "status": "AGREED",
+    "text": "One profile is the default. Any title may be judged by another.",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 41
+  },
+  {
+    "id": "MOD-61",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 61,
+    "status": "AGREED",
+    "text": "The rules can be tested against a release name: the editor shows what was",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 43
+  },
+  {
+    "id": "MOD-62",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 62,
+    "status": "AGREED",
+    "text": "One set of rules judges a release and a file on disk. A file's facts come",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 50
+  },
+  {
+    "id": "MOD-63",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 63,
+    "status": "AGREED",
+    "text": "A release name says which French dub it carries: TRUEFRENCH and VFF are",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 55
+  },
+  {
+    "id": "MOD-64",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 64,
+    "status": "AGREED",
+    "text": "Releases are ranked by their quality's rank in the profile, then their",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 60
+  },
+  {
+    "id": "MOD-65",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 65,
+    "status": "AGREED",
+    "text": "A release **upgrades** a file when upgrades are on and its quality ranks",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 66
+  },
+  {
+    "id": "MOD-66",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 66,
+    "status": "AGREED",
+    "text": "A title is **cutoff unmet** when its best file is below the cutoff, or no",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 71
+  },
+  {
+    "id": "MOD-67",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 67,
+    "status": "AGREED",
+    "text": "With **add beside** on, a release that wins on formats and loses on",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 74
+  },
+  {
+    "id": "MOD-68",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 68,
+    "status": "AGREED",
+    "text": "Missing units are searched first, each title under its own profile, and a",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 82
+  },
+  {
+    "id": "MOD-69",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 69,
+    "status": "AGREED",
+    "text": "Titles that are cutoff unmet are searched for a better copy with what the",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 85
+  },
+  {
+    "id": "MOD-70",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 70,
+    "status": "AGREED",
+    "text": "Every indexer's latest releases are read on an interval, fifteen minutes",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 89
+  },
+  {
+    "id": "MOD-71",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 71,
+    "status": "AGREED",
+    "text": "Any title can be searched by hand from its page, monitored or not. Each",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 94
+  },
+  {
+    "id": "MOD-72",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 72,
+    "status": "AGREED",
+    "text": "A download that fails, stalls past a limit, or is removed puts the units",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 102
+  },
+  {
+    "id": "MOD-73",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 73,
+    "status": "AGREED",
+    "text": "A release whose download failed is blocklisted for its title, so the next",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 105
+  },
+  {
+    "id": "MOD-74",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 74,
+    "status": "AGREED",
+    "text": "A file an upgrade replaces goes to the recycle bin when one is set, and is",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 108
   },
   {
     "id": "PLAY-1",

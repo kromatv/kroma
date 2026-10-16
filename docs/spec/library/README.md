@@ -274,6 +274,8 @@ Status: **AGREED**
 
 - **Acquisition.** Getting files onto disk, meaning downloads and indexers, is a module
   concern, [`modules/`](../modules/). The library observes what appears; it does not fetch it.
+  What the server wants to hold, and what it still lacks, is monitoring,
+  [`monitoring.md`](monitoring.md).
 - **What a matched title technically is**, meaning containers, codecs, streams and artwork
   sizes, is [`media/`](../media/).
 - **Choosing what to send a client** at play time is [`playback/`](../playback/).

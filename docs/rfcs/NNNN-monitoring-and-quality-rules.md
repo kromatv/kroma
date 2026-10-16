@@ -230,8 +230,10 @@ With **add beside** on, that release is grabbed and placed next to the 2160p fil
 stays. With it off, the release is rejected and the title waits for a 2160p `MULTi.VFF`.
 
 Keeping two files only helps if the right one plays. So the preferred file for a viewer
-(MEDIA-8) considers their audio language first: a viewer whose language is French gets the
-file that has a French track, then resolution and the rest of today's rank apply.
+(MEDIA-8) should consider their audio language first: a viewer whose language is French gets
+the file that has a French track, then resolution and the rest of today's rank apply. That
+change to playback is left out of this RFC's first delivery (see Unresolved); add beside ships
+off by default until it lands.
 
 Merging the VFF track into the existing file, instead of keeping two, is out of scope here
 (see Unresolved).
@@ -298,7 +300,7 @@ Each step is a pull request that ships on its own.
    bin.
 6. Failed downloads and the blocklist.
 7. RSS sync.
-8. Add beside and the preferred file by language.
+8. Add beside. The preferred file by language follows separately.
 
 ## What this costs
 
@@ -318,10 +320,11 @@ Each step is a pull request that ships on its own.
 
 - **Existing requests** become monitored titles with exactly their current scope, and their
   wanted rows keep their status and backoff.
-- **The acquisition point** keeps accepting a request id, and gains a title and a scope
-  without one. A core that predates this keeps working with a new module, and the reverse.
-- **Modules release on their own tags.** The core change (monitoring, the slot, the audio
-  region) ships first, and acquisition checks for it before showing anything that needs it.
+- **The acquisition point** is unchanged: the core still searches a request through it. A
+  title is searched through the module's own routes, which only its own pages call.
+- **Modules release on their own tags.** Acquisition needs the core's monitored titles, so
+  its manifest asks for the server release that brings them, and a server before it keeps the
+  acquisition it has.
 - **Clients that do not update** see what they saw: the new surfaces are admin web pages.
 - **Libraries** are untouched until an admin monitors something. Monitoring nothing is the
   default after the upgrade, apart from what requests already wanted.
@@ -341,8 +344,12 @@ Each step is a pull request that ships on its own.
 
 ## Unresolved
 
-- **Add beside, on or off by default.** Off matches Sonarr and never uses more disk than
-  asked. On is what makes the VFF case work without a second 2160p release.
+- **The preferred file by language** (MEDIA-8). Until a viewer's language picks the file,
+  a copy added beside is chosen by picture first, so add beside stays off by default, which
+  also matches Sonarr and never uses more disk than asked.
+- **RSS from an external Torznab endpoint.** A query with no keywords reaches an endpoint's
+  movie categories only, so RSS sync catches new episodes from built-in indexer definitions
+  and not yet from Jackett or Prowlarr endpoints. The backoff search still finds them.
 - **Merging an audio track into the existing file.** Muxing the VFF track of a 1080p release
   into the 2160p file keeps one file and the best picture. It needs the same cut at the same
   frame rate, which a PAL dub at 25 frames per second breaks. Deferred until add beside has
