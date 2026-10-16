@@ -86,6 +86,7 @@ pub enum IndexerFlag {
 /// title's own language when the name implies it without naming it: a release
 /// with no language tag, or a `MULTi` one.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LanguageSet {
     pub original: bool,
     pub explicit: Vec<Language>,
@@ -107,6 +108,7 @@ impl LanguageSet {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AudioFact {
     pub language: Option<Language>,
     pub codec: Option<AudioCodec>,
@@ -116,6 +118,7 @@ pub struct AudioFact {
 /// Everything the rules judge, read the same way from a release and from a
 /// file on disk so one rule decides both.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Facts {
     pub name: String,
     pub group: Option<String>,

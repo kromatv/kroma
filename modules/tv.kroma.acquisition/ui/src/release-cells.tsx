@@ -8,6 +8,9 @@
 import { TABULAR, Table, useFormat, useT } from '@kromatv/module-sdk';
 import { Icon, Row, Text } from '@kromatv/ui/kit';
 
+/** What a numeric cell shows when the indexer gave no number. */
+export const BLANK = '-';
+
 export function ReleaseFacts({
   indexerName,
   detailsUrl,
@@ -43,12 +46,12 @@ export function ReleaseFacts({
       </Table.Cell>
       <Table.Cell>
         <Text variant="meta" color="textDim" style={TABULAR}>
-          {sizeBytes != null ? fmt.bytes(sizeBytes) : '—'}
+          {sizeBytes != null ? fmt.bytes(sizeBytes) : BLANK}
         </Text>
       </Table.Cell>
       <Table.Cell>
         <Text variant="meta" color="success" style={TABULAR}>
-          {seeders ?? '—'}
+          {seeders ?? BLANK}
         </Text>
       </Table.Cell>
     </>

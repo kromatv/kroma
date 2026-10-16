@@ -9,7 +9,8 @@ use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::host::HostStorage;
 use kroma_module_sdk::primitives::language::language_code;
 use kroma_scene::{
-    AudioCodec, AudioFact, Evaluation, Facts, HdrFormat, Language, Probe, Rules, evaluate,
+    AudioCodec, AudioFact, Evaluation, Facts, HdrFormat, Language, Probe, Rules, cutoff_unmet,
+    evaluate,
 };
 use serde::Serialize;
 
@@ -26,6 +27,7 @@ pub struct JudgedFile {
     pub episode_end: Option<u32>,
     pub release: Option<String>,
     pub evaluation: Evaluation,
+    pub below_target: bool,
 }
 
 impl JudgedFile {
@@ -73,13 +75,15 @@ fn judge_file<S: HostStorage>(
         None => None,
     };
     let facts = file_facts(&held.file, release.as_deref());
+    let evaluation = evaluate(&facts, original, rules);
     Ok(JudgedFile {
         file_id: held.file.id.clone(),
         rel_path: held.file.rel_path.clone(),
         season: held.season,
         episode: held.episode,
         episode_end: held.episode_end,
-        evaluation: evaluate(&facts, original, rules),
+        below_target: cutoff_unmet(std::slice::from_ref(&evaluation), rules.profile),
+        evaluation,
         release,
     })
 }
@@ -253,6 +257,7 @@ mod tests {
                 format_score: 0,
                 revision: 1,
             },
+            below_target: false,
         };
 
         assert!(judged.holds(Some(1), Some(4)));

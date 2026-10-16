@@ -229,6 +229,7 @@ mod tests {
                 format_score: 0,
                 revision: 1,
             },
+            below_target: false,
         }
     }
 
