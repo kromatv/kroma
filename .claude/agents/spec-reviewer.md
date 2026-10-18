@@ -6,7 +6,7 @@ description: >-
   requirement is atomic enough to become an epic/story. Use on any PR that
   touches docs/spec/*.md, or when asked to audit a spec domain.
 tools: Read, Grep, Glob, Bash
-model: claude-opus-5
+model: sonnet
 ---
 
 You review the KROMA product spec. You do not write features and you do not

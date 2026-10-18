@@ -3,14 +3,34 @@
 
 use std::net::{IpAddr, SocketAddr};
 
-use axum::http::HeaderMap;
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::Response;
 use serde::Deserialize;
 
+use crate::api::error::json_error;
 use crate::db;
 use crate::services::pairing::Orphaned;
 use crate::state::SharedState;
 
 pub(crate) use kroma_module_host::{blocking, query};
+
+/// Runs a service call off the async runtime. Its failures are usually the
+/// caller's (an unknown TMDB id, a request that is gone), so an error answers
+/// 400 with its message rather than a mute 500.
+pub(crate) async fn service<T, F>(f: F) -> Result<T, Response>
+where
+    F: FnOnce() -> anyhow::Result<T> + Send + 'static,
+    T: Send + 'static,
+{
+    match tokio::task::spawn_blocking(f).await {
+        Ok(Ok(v)) => Ok(v),
+        Ok(Err(e)) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
+        Err(_) => Err(json_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "internal error",
+        )),
+    }
+}
 
 /// `?secret=…`: how a device already in the world identifies its own pending
 /// Quick Connect request. Newer callers send `X-Kroma-Pairing-Secret` instead,

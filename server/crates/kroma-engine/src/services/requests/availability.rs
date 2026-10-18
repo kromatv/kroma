@@ -18,8 +18,10 @@ pub struct MatchSummary {
     pub changed: usize,
 }
 
-/// Re-derive availability for every non-terminal request.
+/// Re-derive availability for every monitored title, then for every
+/// non-terminal request.
 pub fn availability_pass<S: HostStorage>(state: &S) -> Result<MatchSummary> {
+    crate::services::monitoring::reconcile_pass(state)?;
     let conn = state.db().get()?;
     let all = db::list_requests(&conn, None)?;
     drop(conn);

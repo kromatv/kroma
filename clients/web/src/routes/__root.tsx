@@ -26,7 +26,7 @@ const ReactQueryDevtools = import.meta.env.DEV
     )
   : () => null;
 
-const BROWSER_KIT = { formFactor: 'browser' } as const;
+const BROWSER_KIT = { formFactor: 'browser', ground: 'dark' } as const;
 
 const sDefinition = styles({
   toasts: { position: 'fixed', inset: 0, zIndex: 90, pointerEvents: 'none' },
@@ -83,7 +83,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
     // The app is dark-only for now: an unstamped root is the `system` choice and
     // would follow prefers-color-scheme into a light palette nothing here has
     // been designed against.
-    <html lang="fr" data-theme="dark">
+    <html lang="fr" data-theme={BROWSER_KIT.ground}>
       <head>
         <HeadContent />
       </head>

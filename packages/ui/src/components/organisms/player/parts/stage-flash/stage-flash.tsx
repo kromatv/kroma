@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Animated } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { FADE_MS, useFadeRise } from '#ui/components/organisms/player/hooks/use-fade-rise';
 import { scaler } from '#ui/components/organisms/player/lib/metrics';
 import {
   IconBack10,
@@ -15,6 +14,7 @@ import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { backdropBlur } from '#ui/lib/css';
 import { formatTimecode } from '#ui/lib/intl';
+import { FADE_MS, useFadeRise } from '#ui/lib/use-fade-rise';
 import { useT } from '#ui/services/i18n';
 
 /** What a keyboard or remote shortcut just did to the film, for the stage to

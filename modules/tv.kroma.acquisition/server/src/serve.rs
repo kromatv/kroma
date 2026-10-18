@@ -10,6 +10,7 @@ use serde::Deserialize;
 pub fn acqsearch_routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
         .route("/_port/acquisition/search", post(search_h::<S>))
+        .route("/_port/acquisition/search-now", post(search_now_h::<S>))
         .route("/_port/acquisition/grab", post(grab_h::<S>))
 }
 
@@ -27,9 +28,29 @@ async fn search_h<S: HostStorage + Clone + Send + Sync + 'static>(
     port_reply(move || {
         Ok(serde_json::to_value(crate::search::interactive_search(
             &host,
-            &req.request_id,
+            &crate::search::Subject::request(&req.request_id),
             req.scope,
         )?)?)
+    })
+    .await
+}
+
+#[derive(Deserialize)]
+struct SearchNowReq {
+    kind: String,
+    tmdb_id: u64,
+    #[serde(default)]
+    units: Vec<crate::on_demand::Unit>,
+}
+
+async fn search_now_h<S: HostStorage + Clone + Send + Sync + 'static>(
+    State(host): State<S>,
+    Json(req): Json<SearchNowReq>,
+) -> Json<Result<crate::on_demand::Started, String>> {
+    port_reply(move || {
+        let kind = kroma_module_sdk::engine::model::RequestKind::parse(&req.kind)
+            .ok_or_else(|| anyhow::anyhow!("unknown kind {}", req.kind))?;
+        crate::on_demand::start_title_search(&host, kind, req.tmdb_id, &req.units)
     })
     .await
 }
@@ -50,7 +71,7 @@ async fn grab_h<S: HostStorage + Clone + Send + Sync + 'static>(
     port_reply(move || {
         let row = crate::search::grab_cached(
             &host,
-            &req.request_id,
+            &crate::search::Subject::request(&req.request_id),
             req.scope,
             &req.guid,
             &req.indexer_id,
@@ -97,7 +118,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn both_routes_are_mounted_where_the_core_calls_them() {
+    async fn every_route_is_mounted_where_the_core_calls_them() {
         let (status, _) = post(
             "/_port/acquisition/search",
             serde_json::json!({ "request_id": "r1" }),
@@ -111,6 +132,38 @@ mod tests {
         )
         .await;
         assert_eq!(status, StatusCode::OK);
+
+        let (status, _) = post(
+            "/_port/acquisition/search-now",
+            serde_json::json!({ "kind": "show", "tmdb_id": 1396 }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn the_core_can_ask_this_module_to_search_a_title_now() {
+        let (status, body) = post(
+            "/_port/acquisition/search-now",
+            serde_json::json!({ "kind": "show", "tmdb_id": 1396 }),
+        )
+        .await;
+
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(body["Ok"]["started"], false, "{body}");
+        assert_eq!(body["Ok"]["reason"], "vpnClosed", "{body}");
+    }
+
+    #[tokio::test]
+    async fn a_search_now_for_a_kind_nobody_has_answers_err_not_a_500() {
+        let (status, body) = post(
+            "/_port/acquisition/search-now",
+            serde_json::json!({ "kind": "sideways", "tmdb_id": 1 }),
+        )
+        .await;
+
+        assert_eq!(status, StatusCode::OK);
+        assert!(body["Err"].as_str().is_some(), "{body}");
     }
 
     #[tokio::test]

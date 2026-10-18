@@ -142,7 +142,7 @@ function Actions({ children }: Readonly<{ children: ReactNode }>) {
   const s = useStyles(sDefinition);
 
   return (
-    <Box row wrap align="center" gap={12} style={s.push}>
+    <Box row wrap shrink={1} align="center" gap={12} style={[s.minW, s.push]}>
       {children}
     </Box>
   );

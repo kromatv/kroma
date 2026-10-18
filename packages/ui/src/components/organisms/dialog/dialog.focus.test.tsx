@@ -2,6 +2,7 @@
 
 import { cleanup, screen } from '@testing-library/react';
 import { act } from 'react';
+import { TextInput } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 
@@ -174,5 +175,82 @@ describe('a dialog over a navigated screen', () => {
     press('ArrowDown');
     expect(lit('Voisin')).toBe(true);
     expect(lit('Derriere')).toBe(false);
+  });
+});
+
+function opener(): HTMLButtonElement {
+  const button = document.createElement('button');
+  document.body.append(button);
+  button.focus();
+  return button;
+}
+
+describe('where a dialog opens the keyboard on a browser', () => {
+  it('opens on the first control, never on the panel that scrolls', () => {
+    opener();
+
+    render(
+      <Dialog.Root open title="Modifier">
+        <Focusable label="Annuler" onPress={() => {}} />
+        <Focusable label="Confirmer" onPress={() => {}} />
+      </Dialog.Root>,
+    );
+
+    expect(document.activeElement).toBe(screen.getByLabelText('Annuler'));
+  });
+
+  it('takes the focus itself where it holds no control, so its title is read', () => {
+    opener();
+
+    render(
+      <Dialog.Root open title="Patientez">
+        <Focusable label="Rien" disabled />
+      </Dialog.Root>,
+    );
+
+    expect(document.activeElement).toBe(screen.getByRole('dialog', { name: 'Patientez' }));
+  });
+
+  it('hands the focus on when the panel itself claims it', () => {
+    opener();
+    const view = render(
+      <Dialog.Root open title="Modifier">
+        <Focusable label="Annuler" onPress={() => {}} />
+      </Dialog.Root>,
+    );
+    const panel = screen.getByRole('dialog', { name: 'Modifier' }).querySelector('div');
+
+    act(() => {
+      panel?.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    });
+
+    expect(document.activeElement).toBe(screen.getByLabelText('Annuler'));
+    view.unmount();
+  });
+
+  it('hands the focus back to whatever opened it', () => {
+    const trigger = opener();
+
+    const view = render(
+      <Dialog.Root open title="Modifier">
+        <Focusable label="Annuler" onPress={() => {}} />
+      </Dialog.Root>,
+    );
+    view.unmount();
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('leaves content that already claimed the focus where it is', () => {
+    opener();
+
+    render(
+      <Dialog.Root open title="Chercher">
+        <Focusable label="Annuler" onPress={() => {}} />
+        <TextInput accessibilityLabel="Titre" autoFocus />
+      </Dialog.Root>,
+    );
+
+    expect(document.activeElement).toBe(screen.getByRole('textbox'));
   });
 });

@@ -122,6 +122,19 @@ literal hex/rgb/hsl colours in known colour properties, literal font sizes, and
 literal radii. Zero radius resets are allowed. The token/core layer, icon data,
 tests, and fixtures are excluded. Computed values and CSS strings are not checked.
 
+### re-export-from
+
+Re-export with `export … from` when a file imports a binding only to export it
+again. A binding the file also uses, in code or in a type, stays as it is.
+Mirrors Sonar S7763, which oxlint's `unicorn/prefer-export-from` port cannot:
+the port counts the `export type { … }` line itself as a use.
+
+### use-state-pair
+
+Destructure `useState` into `[value, setValue]`, the setter named after the
+value. Keeping the value alone, `[slide]`, is allowed. Mirrors Sonar S6754,
+which accepts a lone value where `react/hook-use-state` does not.
+
 For every rule above, run `bun run --cwd packages/lint-rules rules <rule-name>` for the full scope,
 exceptions, examples, and verification steps.
 
@@ -162,3 +175,25 @@ and coverage differences. JavaScript plugins are still
 [alpha upstream](https://oxc.rs/docs/guide/usage/linter/js-plugins.html), so Oxlint
 is pinned. Its [plugin guide](https://oxc.rs/docs/guide/usage/linter/writing-js-plugins.html)
 documents the ESLint-compatible API and RuleTester.
+
+## The SonarCloud mirror
+
+`bun run lint:sonar` runs `.oxlintrc.sonar.json`, and `bun run check` runs it,
+so a change that would fail the SonarCloud quality gate fails locally first.
+The file is generated: `bun run sonar:rules` reads the project's TypeScript
+quality profile from SonarCloud and `sonar-project.properties`, then writes:
+
+- every active rule SonarSource ships in `eslint-plugin-sonarjs`, with the
+  profile's parameters, run through oxlint's JavaScript plugin bridge;
+- the borrowed rules with a faithful equivalent: S3863 `import/no-duplicates`,
+  S7761 `unicorn/prefer-dom-node-dataset`, S7776 `unicorn/prefer-set-has`,
+  S7763 `kroma/re-export-from`, S6754 `kroma/use-state-pair`;
+- Sonar's scope: test files and `sonar.exclusions` ignored, and one override per
+  `sonar.issue.ignore.multicriteria` entry, so an issue the project accepted
+  there is accepted here too.
+
+Left to the CI scan: rules that need type information (oxlint's plugin bridge
+has none), and borrowed rules whose oxlint port disagrees with Sonar on code
+Sonar accepts: S6481 (the port also flags function-call results), S7721 and
+S7787 (`export {}` is flagged by the port only). Regenerate after the profile
+or the ignores change, and commit the result.

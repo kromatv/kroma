@@ -51,7 +51,7 @@ pub(super) fn new_req(
 pub(super) fn ep_row(id: &str, season: u32, episode: u32, status: &str) -> WantedRow {
     WantedRow {
         id: id.into(),
-        request_id: "r1".into(),
+        request_id: Some("r1".into()),
         kind: "episode".into(),
         tmdb_id: 1396,
         imdb_id: None,
@@ -110,9 +110,9 @@ pub(super) fn req_by(pool: &Pool, id: &str, tmdb: u64, status: RequestStatus, ow
 pub(super) fn wanted_row(id: &str, request_id: &str, air: Option<&str>, status: &str) -> WantedRow {
     WantedRow {
         id: id.into(),
-        request_id: request_id.into(),
+        request_id: Some(request_id.into()),
         kind: "movie".into(),
-        tmdb_id: 1,
+        tmdb_id: id.bytes().fold(7u64, |h, b| h.wrapping_mul(31).wrapping_add(u64::from(b))) % 1_000_000,
         imdb_id: None,
         title: "T".into(),
         year: Some(2020),
@@ -201,7 +201,7 @@ fn request_roundtrip_merge_and_cascade() {
 
     let rows = vec![WantedRow {
         id: "w1".into(),
-        request_id: "r1".into(),
+        request_id: Some("r1".into()),
         kind: "episode".into(),
         tmdb_id: 1396,
         imdb_id: None,
@@ -213,7 +213,7 @@ fn request_roundtrip_merge_and_cascade() {
         status: "wanted".into(),
         last_search_at: None,
     }];
-    replace_wanted(&p, "r1", &rows, 4000).unwrap();
+    claim_wanted(&p, "r1", &rows, 4000).unwrap();
     let conn = p.get().unwrap();
     assert_eq!(wanted_for_request(&conn, "r1").unwrap().len(), 1);
     drop(conn);

@@ -1,6 +1,13 @@
 import { type CalendarEntry, RequestId } from '@kromatv/client/requests';
 import { describe, expect, it } from 'vitest';
-import { epKey, groupByTitle } from './missing-model';
+import {
+  entryOrigin,
+  episodeRefs,
+  epKey,
+  groupByTitle,
+  splitByFollowing,
+  unitCount,
+} from './missing-model';
 
 const req = (id: string) => RequestId.parse(id);
 
@@ -14,6 +21,7 @@ function entry(over: Partial<CalendarEntry> = {}): CalendarEntry {
     posterUrl: null,
     season: 1,
     episode: 2,
+    episodeTitle: null,
     airDate: null,
     status: 'missing',
     ...over,
@@ -39,6 +47,21 @@ describe('epKey', () => {
   it('separates every row of one season', () => {
     const rows = [1, 2, 3].map((episode) => epKey(entry({ episode })));
     expect(new Set(rows).size).toBe(3);
+  });
+});
+
+describe('entryOrigin', () => {
+  it('reads a row a request answers for as that request, whatever its status', () => {
+    expect(entryOrigin(entry({ requestId: req('req_7'), status: 'wanted' }))).toBe('request');
+    expect(entryOrigin(entry({ requestId: req('req_7'), status: 'missing' }))).toBe('request');
+  });
+
+  it('reads an unrequested wanted row as one monitoring holds', () => {
+    expect(entryOrigin(entry({ requestId: null, status: 'wanted' }))).toBe('monitored');
+  });
+
+  it('reads an unrequested missing row as a library-scan gap', () => {
+    expect(entryOrigin(entry({ requestId: null, status: 'missing' }))).toBe('gap');
   });
 });
 
@@ -80,6 +103,16 @@ describe('groupByTitle', () => {
     expect(groups[1]?.requestId).toBeNull();
   });
 
+  it('marks the group with what put its first row on the list', () => {
+    const groups = groupByTitle([
+      entry({ requestId: req('req_1') }),
+      entry({ tmdbId: 2, status: 'wanted' }),
+      entry({ tmdbId: 3, status: 'missing' }),
+    ]);
+
+    expect(groups.map((g) => g.origin)).toEqual(['request', 'monitored', 'gap']);
+  });
+
   it('carries the title fields off the first entry of each group', () => {
     const [group] = groupByTitle([
       entry({ requestId: req('req_1'), year: 2011, posterUrl: '/api/images/a' }),
@@ -90,5 +123,43 @@ describe('groupByTitle', () => {
 
   it('answers an empty list with no groups', () => {
     expect(groupByTitle([])).toEqual([]);
+  });
+});
+
+describe('splitByFollowing', () => {
+  it('keeps what the server wants apart from the gaps nobody follows', () => {
+    const groups = groupByTitle([
+      entry({ requestId: req('req_1') }),
+      entry({ tmdbId: 2, status: 'wanted' }),
+      entry({ tmdbId: 3, status: 'missing' }),
+    ]);
+
+    const { followed, unfollowed } = splitByFollowing(groups);
+
+    expect(followed.map((g) => g.origin)).toEqual(['request', 'monitored']);
+    expect(unfollowed.map((g) => g.origin)).toEqual(['gap']);
+  });
+});
+
+describe('unitCount', () => {
+  it('counts the rows of every group, not the groups', () => {
+    const groups = groupByTitle([
+      entry({ requestId: req('req_1'), episode: 1 }),
+      entry({ requestId: req('req_1'), episode: 2 }),
+      entry({ tmdbId: 2, status: 'wanted' }),
+    ]);
+
+    expect(unitCount(groups)).toBe(3);
+  });
+});
+
+describe('episodeRefs', () => {
+  it('drops a film, which has neither a season nor an episode', () => {
+    const refs = episodeRefs([
+      entry({ season: 2, episode: 7 }),
+      entry({ kind: 'movie', season: null, episode: null }),
+    ]);
+
+    expect(refs).toEqual([{ season: 2, episode: 7 }]);
   });
 });

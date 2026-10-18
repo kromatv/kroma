@@ -1,8 +1,10 @@
+import { hasPermission } from '@kromatv/client/accounts';
 import type { PlaybackSession } from '@kromatv/client/admin';
 import { useT } from '@kromatv/ui';
 import { Box, EmptyState, Section } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { useAccountRoster } from '#web/features/admin/dashboard-accounts';
+import { MissingCallout } from '#web/features/admin/dashboard-library';
 import { BandwidthSection, CpuSection, RamSection } from '#web/features/admin/dashboard-metrics';
 import { MostWatchedSection } from '#web/features/admin/dashboard-most-watched';
 import { NowPlayingCard, StopStreamModal } from '#web/features/admin/dashboard-now-playing';
@@ -18,8 +20,9 @@ const TRANSCODES_POLL_MS = 3000;
 
 export function DashboardScreen() {
   const t = useT();
-  const { client } = useAuth();
+  const { user, client } = useAuth();
   const { serverInfo } = useAdmin();
+  const canManageLibrary = !!user && hasPermission(user, 'library.manage');
 
   const { data: sessionsData, reload: reloadSessions } = usePoll(
     ['admin', 'sessions'],
@@ -53,6 +56,12 @@ export function DashboardScreen() {
           <RealtimeBadge />
         </PageHeader.Actions>
       </PageHeader.Root>
+
+      {canManageLibrary ? (
+        <Box mt={24}>
+          <MissingCallout />
+        </Box>
+      ) : null}
 
       <Section.Root mt={28}>
         <Section.Header>

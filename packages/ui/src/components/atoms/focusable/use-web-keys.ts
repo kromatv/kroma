@@ -8,12 +8,13 @@ function useWebKeys(
   active: boolean,
   role: FocusRole,
   press: RefObject<() => void>,
+  tabbable = true,
 ): { pressable: WebKeys; view: WebKeys } | null {
   const { mirror } = useFocusServices();
   return useMemo(() => {
     if (!WEB || !active) return null;
     const answering = (owns: (key: string) => boolean): WebKeys => ({
-      tabIndex: 0,
+      tabIndex: tabbable ? 0 : -1,
       onKeyDown: (event) => {
         if (!owns(event.nativeEvent.key)) return;
         event.preventDefault();
@@ -28,7 +29,7 @@ function useWebKeys(
           !mirror.isMirrored(webDocument()?.activeElement ?? null),
       ),
     };
-  }, [active, role, press, mirror]);
+  }, [active, role, press, mirror, tabbable]);
 }
 
 export { useWebKeys };

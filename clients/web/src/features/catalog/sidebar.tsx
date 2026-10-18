@@ -13,9 +13,7 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import {
-  IconAlertTriangle,
   IconBookmark,
-  IconCalendarClock,
   IconCategory,
   IconDeviceDesktop,
   IconDeviceTv,
@@ -130,8 +128,7 @@ function SidebarNav() {
         </SideNav.Item>
       ))}
       <RequestsLink />
-      <ComingSoonLink />
-      <MissingLink />
+
       <ModuleNavLinks />
       <SideNav.Footer>
         <InviteLink />
@@ -209,28 +206,6 @@ function RequestsLink() {
   return (
     <SideNav.Item to="/requests" icon={IconInbox}>
       <SideNav.Label>{t('nav.requests')}</SideNav.Label>
-    </SideNav.Item>
-  );
-}
-
-function ComingSoonLink() {
-  const t = useT();
-  const { user } = useAuth();
-  if (!user || !hasPermission(user, 'requests.create')) return null;
-  return (
-    <SideNav.Item to="/coming-soon" icon={IconCalendarClock}>
-      <SideNav.Label>{t('nav.comingSoon')}</SideNav.Label>
-    </SideNav.Item>
-  );
-}
-
-function MissingLink() {
-  const t = useT();
-  const { user } = useAuth();
-  if (!user || !hasPermission(user, 'requests.create')) return null;
-  return (
-    <SideNav.Item to="/missing" icon={IconAlertTriangle}>
-      <SideNav.Label>{t('nav.missing')}</SideNav.Label>
     </SideNav.Item>
   );
 }

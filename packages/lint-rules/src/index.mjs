@@ -9,6 +9,8 @@ import noRedundantJsdocTags from './rules/no-redundant-jsdoc-tags.mjs';
 import noRelativeWorkspaceImports from './rules/no-relative-workspace-imports.mjs';
 import noUnknownRecordAssertions from './rules/no-unknown-record-assertions.mjs';
 import ownedTaskComments from './rules/owned-task-comments.mjs';
+import reExportFrom from './rules/re-export-from.mjs';
+import useStatePair from './rules/use-state-pair.mjs';
 
 export default {
   meta: { name: 'kroma', version: '0.0.0' },
@@ -24,5 +26,7 @@ export default {
     'no-module-mutable-bindings': noModuleMutableBindings,
     'no-react-forward-ref': noReactForwardRef,
     'no-comment-banners': noCommentBanners,
+    're-export-from': reExportFrom,
+    'use-state-pair': useStatePair,
   },
 };

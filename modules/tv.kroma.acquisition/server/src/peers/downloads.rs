@@ -58,6 +58,7 @@ pub struct DownloadRow {
     pub details_url: Option<String>,
     pub only_files: Option<Vec<usize>>,
     pub upgrade: bool,
+    pub content_rel_paths: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]

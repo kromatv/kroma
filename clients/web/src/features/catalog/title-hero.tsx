@@ -10,6 +10,7 @@ import {
   qualityBadges,
   subString,
 } from '#web/features/catalog/detail';
+import { FollowState } from '#web/features/catalog/follow-state';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
 import { savedTitleId } from '#web/shared/lib/saved-title-id';
 import { type TitleView, tmdbMetaLine } from '#web/shared/lib/titleView';
@@ -88,6 +89,9 @@ export function TitleHero({
       onToggleList={listState.onToggleList}
       primaryAction={
         owned ? undefined : <RequestCta view={view} busy={busy} onRequest={onRequest} />
+      }
+      adminAction={
+        <FollowState kind={view.kind === 'show' ? 'show' : 'movie'} tmdbId={view.tmdbId ?? null} />
       }
       back={back}
       onPlay={playable ? () => onPlay(playable.id) : undefined}

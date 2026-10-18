@@ -77,6 +77,7 @@ mod tests {
             language: Some("eng".into()),
             title: None,
             default,
+            region: None,
         }
     }
 

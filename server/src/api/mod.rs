@@ -27,6 +27,7 @@ mod media;
 pub mod media_ticket;
 mod metadata;
 mod modules;
+mod monitoring;
 mod notifications;
 pub mod online_subs;
 mod origin;
@@ -92,6 +93,8 @@ mod it_media_bearer;
 #[cfg(test)]
 mod it_media_ticket;
 #[cfg(test)]
+mod it_monitoring;
+#[cfg(test)]
 mod it_notification_images;
 #[cfg(test)]
 mod it_notifications;
@@ -109,6 +112,10 @@ mod it_releases;
 mod it_rematch;
 #[cfg(test)]
 mod it_reports;
+#[cfg(test)]
+mod it_requests_calendar;
+#[cfg(test)]
+mod it_requests_ledger;
 #[cfg(test)]
 mod it_reset;
 #[cfg(test)]
@@ -226,6 +233,7 @@ pub fn router(
         .merge(handoff::routes())
         .merge(discover::routes())
         .merge(rematch::routes())
+        .merge(monitoring::routes())
         .merge(requests::routes())
         .merge(reports::routes())
         .merge(notifications::routes())

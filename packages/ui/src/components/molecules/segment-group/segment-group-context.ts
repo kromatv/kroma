@@ -1,6 +1,7 @@
 import type { StyleScope } from '#ui/core';
 // What the group tells its segments, and the geometry both sides measure against.
 
+import type { View } from 'react-native';
 import { nestedRadius } from '#ui/core/tokens';
 import type { Radius } from '#ui/core/tokens/layout';
 import { CONTROL, type ControlSize, controlRadius } from '#ui/lib/field-shell';
@@ -21,6 +22,8 @@ interface SegmentGroupContext {
   size: ControlSize;
   stretch: boolean;
   report: (value: string, box: Box2D) => void;
+  tabStop: string | undefined;
+  mount: (value: string, view: View | null) => void;
 }
 
 const [Context, useSegmentGroup] = partContext<SegmentGroupContext>('SegmentGroup.Root');

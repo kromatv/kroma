@@ -7,6 +7,9 @@ index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2
 diff --git a/node_modules/react-native-web/.bun-tag-7388d1148b8587d6 b/.bun-tag-7388d1148b8587d6
 new file mode 100644
 index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/react-native-web/.bun-tag-802e55d89ecae70c b/.bun-tag-802e55d89ecae70c
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/node_modules/react-native-web/.bun-tag-819891abbb95d2f5 b/.bun-tag-819891abbb95d2f5
 new file mode 100644
 index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
@@ -232,7 +235,7 @@ index 1d03735f0e5ba42b0da8bbfa5692d572db95e38d..0197413399735d05e66125f986aca51e
    text$raw: textStyle,
    textHasAncestor$raw: (0, _objectSpread2.default)((0, _objectSpread2.default)({}, textStyle), {}, {
 diff --git a/dist/cjs/exports/TextInput/index.js b/dist/cjs/exports/TextInput/index.js
-index ec9227892217fedcd6ad92b836ad8afb55f7ce40..f9fac41ff5bba18591cc255094cdb7de8d020d2f 100644
+index ec9227892217fedcd6ad92b836ad8afb55f7ce40..c85965c3169a2f51406b2fc2f044dfd5027f789a 100644
 --- a/dist/cjs/exports/TextInput/index.js
 +++ b/dist/cjs/exports/TextInput/index.js
 @@ -381,9 +381,7 @@ var TextInput = /*#__PURE__*/React.forwardRef((props, forwardedRef) => {
@@ -256,7 +259,7 @@ index ec9227892217fedcd6ad92b836ad8afb55f7ce40..f9fac41ff5bba18591cc255094cdb7de
 +function placeholderStyle(color) {
 +  if (!placeholderStyles[color]) placeholderStyles[color] = _StyleSheet.default.create({
 +    placeholder: {
-+      '--placeholderTextColor': color
++      '--placeholder-text-color': color
 +    }
 +  }).placeholder;
 +  return placeholderStyles[color];
@@ -264,6 +267,15 @@ index ec9227892217fedcd6ad92b836ad8afb55f7ce40..f9fac41ff5bba18591cc255094cdb7de
  var styles = _StyleSheet.default.create({
    textinput$raw: {
      MozAppearance: 'textfield',
+@@ -414,7 +423,7 @@ var styles = _StyleSheet.default.create({
+     resize: 'none'
+   },
+   placeholder: {
+-    placeholderTextColor: 'var(--placeholderTextColor)'
++    placeholderTextColor: 'var(--placeholder-text-color)'
+   },
+   caretHidden: {
+     caretColor: 'transparent'
 diff --git a/dist/exports/Modal/ModalPortal.js b/dist/exports/Modal/ModalPortal.js
 index df3bcbbd4dee13c614466ca30af52f10bf20398c..320adbb723af18ce36b514123d8bc5853fc19f94 100644
 --- a/dist/exports/Modal/ModalPortal.js
@@ -476,7 +488,7 @@ index 1076f551ead7bb506f128b65412dc90df2dda0b7..cfe60f2e205b284d6c3a6398ede89cd7
    text$raw: textStyle,
    textHasAncestor$raw: _objectSpread(_objectSpread({}, textStyle), {}, {
 diff --git a/dist/exports/TextInput/index.js b/dist/exports/TextInput/index.js
-index 0f476a7db2658a4f969ec7a0736d57e4656b2356..ed031dd1706945f1b69dbff041f498eb8a38f207 100644
+index 0f476a7db2658a4f969ec7a0736d57e4656b2356..3d9ca82dadb517c5617aac99d5725aa4968a6685 100644
 --- a/dist/exports/TextInput/index.js
 +++ b/dist/exports/TextInput/index.js
 @@ -376,9 +376,7 @@ var TextInput = /*#__PURE__*/React.forwardRef((props, forwardedRef) => {
@@ -500,7 +512,7 @@ index 0f476a7db2658a4f969ec7a0736d57e4656b2356..ed031dd1706945f1b69dbff041f498eb
 +function placeholderStyle(color) {
 +  if (!placeholderStyles[color]) placeholderStyles[color] = StyleSheet.create({
 +    placeholder: {
-+      '--placeholderTextColor': color
++      '--placeholder-text-color': color
 +    }
 +  }).placeholder;
 +  return placeholderStyles[color];
@@ -508,3 +520,12 @@ index 0f476a7db2658a4f969ec7a0736d57e4656b2356..ed031dd1706945f1b69dbff041f498eb
  var styles = StyleSheet.create({
    textinput$raw: {
      MozAppearance: 'textfield',
+@@ -409,7 +418,7 @@ var styles = StyleSheet.create({
+     resize: 'none'
+   },
+   placeholder: {
+-    placeholderTextColor: 'var(--placeholderTextColor)'
++    placeholderTextColor: 'var(--placeholder-text-color)'
+   },
+   caretHidden: {
+     caretColor: 'transparent'

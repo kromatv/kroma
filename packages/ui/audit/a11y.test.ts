@@ -193,6 +193,24 @@ describe('what it calls unreachable', () => {
     expect(kinds(owner(' aria-controls="gone"') + row)).toEqual(['unreachable-control']);
   });
 
+  it('reads a radio group as one Tab stop with the arrows inside it', () => {
+    const group =
+      '<div role="radiogroup" aria-label="Mode">' +
+      '<div role="radio" aria-label="Tous" aria-checked="true" tabindex="0"></div>' +
+      '<div role="radio" aria-label="Films" aria-checked="false" tabindex="-1"></div></div>';
+
+    expect(kinds(group)).toEqual([]);
+  });
+
+  it('still reads a group nothing can Tab into as unreachable', () => {
+    const group =
+      '<div role="radiogroup" aria-label="Mode">' +
+      '<div role="radio" aria-label="Tous" aria-checked="true" tabindex="-1"></div>' +
+      '<div role="radio" aria-label="Films" aria-checked="false" tabindex="-1"></div></div>';
+
+    expect(kinds(group)).toEqual(['unreachable-control', 'unreachable-control']);
+  });
+
   it('says nothing about a range, whose gesture and key map are not in the DOM', () => {
     expect(kinds('<div role="slider" aria-label="Seek bar" aria-valuenow="164"></div>')).toEqual(
       [],

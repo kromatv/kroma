@@ -41,6 +41,7 @@ const TABLES: &[&str] = &[
     "users",
     "settings",
     "requests",
+    "monitored",
     "wanted",
     "invites",
     "play_history",

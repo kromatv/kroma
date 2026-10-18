@@ -240,6 +240,21 @@ mod tests {
     }
 
     #[test]
+    fn a_providers_volume_factors_reach_the_release_a_sweep_reads() {
+        let json = serde_json::json!({
+            "title": "The.Matrix.1999.1080p",
+            "guid": "g",
+            "download_volume_factor": 0.0,
+            "upload_volume_factor": 2.0,
+        });
+
+        let release: Release = serde_json::from_value(json).unwrap();
+
+        assert_eq!(release.download_volume_factor, Some(0.0));
+        assert_eq!(release.upload_volume_factor, Some(2.0));
+    }
+
+    #[test]
     fn caps_deserialize_from_what_the_provider_reports() {
         let json = serde_json::json!({ "search_tmdb": true, "server_title": "Jackett" });
 

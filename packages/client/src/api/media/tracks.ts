@@ -31,6 +31,8 @@ export const VideoTrack = z.object({
 });
 export type VideoTrack = z.infer<typeof VideoTrack>;
 
+/** One audio track. `region` is the dub's region when the file says which
+ * (`CA` for a Québec dub, `FR` for a France one), from its tag or its title. */
 export const AudioTrack = z.object({
   index: z.number(),
   codec: z.string(),
@@ -38,6 +40,7 @@ export const AudioTrack = z.object({
   language: z.string().nullable(),
   title: z.string().nullish(),
   default: z.boolean(),
+  region: z.string().nullish(),
 });
 export type AudioTrack = z.infer<typeof AudioTrack>;
 

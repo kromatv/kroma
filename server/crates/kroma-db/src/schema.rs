@@ -8,6 +8,7 @@ use kroma_sqlite::{open_with, Pool};
 
 mod ddl;
 mod migrations;
+mod titled_wanted;
 
 pub(crate) use ddl::{FILE_COLS, ITEM_COLS, SCHEMA};
 pub(crate) use migrations::MIGRATIONS;
@@ -24,6 +25,9 @@ pub fn init(path: &Path) -> Result<Pool> {
 fn migrate(conn: &Connection) {
     for sql in MIGRATIONS {
         let _ = conn.execute(sql, []);
+    }
+    if let Err(e) = titled_wanted::apply(conn) {
+        tracing::error!("the wanted ledger could not move to one row per title: {e}");
     }
 }
 

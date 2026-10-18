@@ -7,7 +7,7 @@ fn ep(season: u32, episode: u32, air_date: Option<&str>) -> WantedRow {
 fn row(season: u32, episode: u32, air_date: Option<&str>, status: &str) -> WantedRow {
     WantedRow {
         id: format!("s{season}e{episode}"),
-        request_id: "r1".into(),
+        request_id: Some("r1".into()),
         kind: "episode".into(),
         tmdb_id: 42,
         imdb_id: None,
@@ -24,7 +24,7 @@ fn row(season: u32, episode: u32, air_date: Option<&str>, status: &str) -> Wante
 fn movie_row(year: Option<u32>, air_date: Option<&str>) -> WantedRow {
     WantedRow {
         id: "m1".into(),
-        request_id: "r1".into(),
+        request_id: Some("r1".into()),
         kind: "movie".into(),
         tmdb_id: 7,
         imdb_id: Some("tt1".into()),

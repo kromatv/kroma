@@ -19,7 +19,7 @@ mod test_support;
 pub use availability::{availability_pass, match_one, MatchSummary};
 pub use coverage::set_coverage;
 pub use create::create_request;
-pub use imported::on_download_imported;
+pub use imported::{on_download_imported, Imported};
 pub use refresh::refresh_pass;
 pub use review::{approve_request, deny_request};
 pub use wanted::preview_wanted;
@@ -40,12 +40,27 @@ fn language<S: HostStorage>(state: &S) -> String {
 
 /// Today as `YYYY-MM-DD` in UTC, the wanted ledger's air-date vocabulary.
 pub fn today_ymd() -> String {
-    let now = time::OffsetDateTime::now_utc();
+    ymd(time::OffsetDateTime::now_utc().date())
+}
+
+/// `from` moved by `days`, in the same vocabulary; `None` when `from` is not a
+/// `YYYY-MM-DD` date.
+pub fn shift_ymd(from: &str, days: i64) -> Option<String> {
+    let mut parts = from.split('-');
+    let year: i32 = parts.next()?.parse().ok()?;
+    let month: u8 = parts.next()?.parse().ok()?;
+    let day: u8 = parts.next()?.parse().ok()?;
+    let date =
+        time::Date::from_calendar_date(year, time::Month::try_from(month).ok()?, day).ok()?;
+    Some(ymd(date.checked_add(time::Duration::days(days))?))
+}
+
+fn ymd(date: time::Date) -> String {
     format!(
         "{:04}-{:02}-{:02}",
-        now.year(),
-        u8::from(now.month()),
-        now.day()
+        date.year(),
+        u8::from(date.month()),
+        date.day()
     )
 }
 
@@ -70,5 +85,14 @@ mod tests {
         assert!(y >= 2020);
         assert!((1..=12).contains(&m));
         assert!((1..=31).contains(&d));
+    }
+
+    #[test]
+    fn shifting_a_date_crosses_months_and_years() {
+        assert_eq!(shift_ymd("2026-03-01", 90).as_deref(), Some("2026-05-30"));
+        assert_eq!(shift_ymd("2026-12-31", 1).as_deref(), Some("2027-01-01"));
+        assert_eq!(shift_ymd("2026-03-01", -1).as_deref(), Some("2026-02-28"));
+        assert_eq!(shift_ymd("", 1), None);
+        assert_eq!(shift_ymd("2026-13-01", 1), None);
     }
 }

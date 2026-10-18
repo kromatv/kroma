@@ -40,7 +40,7 @@ pub(super) fn req(kind: RequestKind, status: RequestStatus) -> MediaRequest {
 pub(super) fn wr(season: u32, episode: u32, air: Option<&str>, status: &str) -> db::WantedRow {
     db::WantedRow {
         id: format!("s{season}e{episode}"),
-        request_id: "r1".into(),
+        request_id: Some("r1".into()),
         kind: "episode".into(),
         tmdb_id: 42,
         imdb_id: None,
@@ -71,7 +71,7 @@ pub(super) fn wanted(
 ) -> db::WantedRow {
     db::WantedRow {
         id: id.into(),
-        request_id: req_id.into(),
+        request_id: Some(req_id.into()),
         kind: if season.is_some() {
             "episode".into()
         } else {
@@ -111,6 +111,11 @@ pub(super) fn raw_detail(imdb: Option<&str>, avail: Option<&str>) -> discover::D
         status: None,
         next_air: None,
         available_date: avail.map(str::to_string),
+        home_date: avail.map(str::to_string),
+        cinema_date: None,
+        original_language: None,
+        original_title: None,
+        origin_country: None,
     }
 }
 
@@ -150,6 +155,11 @@ pub(super) fn detail(
         status: None,
         next_air: None,
         available_date: available.map(str::to_string),
+        home_date: available.map(str::to_string),
+        cinema_date: None,
+        original_language: None,
+        original_title: None,
+        origin_country: None,
     }
 }
 

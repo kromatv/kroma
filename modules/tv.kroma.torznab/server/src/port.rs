@@ -110,6 +110,8 @@ mod tests {
             guid: "g".into(),
             size_bytes: Some(42),
             seeders: Some(9),
+            download_volume_factor: Some(0.0),
+            upload_volume_factor: Some(2.0),
             ..Default::default()
         };
 
@@ -119,6 +121,8 @@ mod tests {
         assert_eq!(json["guid"], "g");
         assert_eq!(json["size_bytes"], 42);
         assert_eq!(json["seeders"], 9);
+        assert_eq!(json["download_volume_factor"], 0.0);
+        assert_eq!(json["upload_volume_factor"], 2.0);
         assert!(json["magnet"].is_null());
     }
 

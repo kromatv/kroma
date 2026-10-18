@@ -2,8 +2,8 @@ import { type StyleDecl, sharedStyle, style, svFor, useStyleScope, useSv } from 
 import { typeSpec as textRoles } from '#ui/core/tokens';
 // One segment: a radio in the group's row, and the shell it is drawn in.
 
-import type { ReactNode } from 'react';
-import type { LayoutChangeEvent } from 'react-native';
+import { type ReactNode, useCallback } from 'react';
+import type { LayoutChangeEvent, View } from 'react-native';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
@@ -59,7 +59,7 @@ function Item({ value, label, icon, disabled, children }: Readonly<ItemProps>) {
 
   const scope = useStyleScope();
 
-  const { value: picked, select, size, stretch, report } = useSegmentGroup('Item');
+  const { value: picked, select, size, stretch, report, tabStop, mount } = useSegmentGroup('Item');
   const active = value === picked;
   const glyph = Math.round(CONTROL[size].fontSize * 1.2);
   const corner = sharedStyle(
@@ -68,11 +68,14 @@ function Item({ value, label, icon, disabled, children }: Readonly<ItemProps>) {
     scope,
   );
   const slots = segmentGroupVariantsScoped({ size, active });
+  const keep = useCallback((view: View | null) => mount(value, view), [mount, value]);
   return (
     <ItemContext.Provider value={slots}>
       <Focusable
+        ref={keep}
         role="radio"
         checked={active}
+        tabbable={value === tabStop}
         label={label ?? nameOf(children)}
         disabled={disabled}
         onPress={() => select(value)}

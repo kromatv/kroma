@@ -5,7 +5,7 @@
 import { Table, type TableColumn, useT } from '@kromatv/module-sdk';
 import { Box, EmptyState, Row, Text } from '@kromatv/ui/kit';
 import { type IndexerAnswer, nothingAnswered } from './indexer-report';
-import { ReleaseFacts } from './release-cells';
+import { IndexerCell, SeedersCell, SizeCell } from './release-cells';
 import type { ManualReleaseView } from './schemas';
 
 const COLUMNS: TableColumn[] = [
@@ -103,12 +103,9 @@ function ManualRow({
           ) : null}
         </Row>
       </Table.Cell>
-      <ReleaseFacts
-        indexerName={r.indexerName}
-        detailsUrl={r.detailsUrl}
-        sizeBytes={r.sizeBytes}
-        seeders={r.seeders}
-      />
+      <IndexerCell indexerName={r.indexerName} detailsUrl={r.detailsUrl} />
+      <SizeCell sizeBytes={r.sizeBytes} />
+      <SeedersCell seeders={r.seeders} />
       <Table.Cell>
         {canGrab && grabbable ? (
           <Table.Action

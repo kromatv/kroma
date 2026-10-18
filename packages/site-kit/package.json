@@ -27,10 +27,12 @@
   },
   "peerDependencies": {
     "@tanstack/react-router": ">=1.170",
+    "@tanstack/react-start": ">=1.168",
     "react": ">=18"
   },
   "devDependencies": {
     "@tanstack/react-router": "^1.170.29",
+    "@tanstack/react-start": "^1.168.46",
     "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",

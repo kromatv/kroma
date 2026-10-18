@@ -1,7 +1,7 @@
 import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
-import { Text } from '#ui/components/atoms/text';
+import { Text, type TextProps } from '#ui/components/atoms/text';
 import { style } from '#ui/core';
 
 interface SectionRootProps extends Omit<BoxProps, 'children'> {
@@ -52,10 +52,16 @@ function Header({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-/** The overline naming the band. */
+// A band sits under whatever titles the screen it is on, so it is a level-2
+// heading. `aria-level` is react-native-web's prop: React Native's types stop
+// at what its own platforms read, and a header given no level renders as an
+// <h1>, which is the screen's.
+const BAND_HEADING = { accessibilityRole: 'header', 'aria-level': 2 } as TextProps;
+
+/** The overline naming the band, and the band's heading to assistive tech. */
 function Title({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <Text variant="overline" color="accentText">
+    <Text {...BAND_HEADING} variant="overline" color="accentText">
       {children}
     </Text>
   );

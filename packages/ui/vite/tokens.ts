@@ -131,6 +131,8 @@ const effects = () => [
   `--hover-lift: ${motion.focusLift}px;`,
 ];
 
+const stillDurations = () => Object.keys(motion.duration).map((k) => `--dur-${k}: 0s;`);
+
 /** Every design token as CSS custom properties, grounded by `data-theme`. */
 export function tokensCss(roots: readonly string[] = SOURCE_ROOTS): string {
   const alphas = new Set([...scanAlphas(roots, KNOWN_COLOR_NAMES), ...DERIVED]);
@@ -155,6 +157,7 @@ export function tokensCss(roots: readonly string[] = SOURCE_ROOTS): string {
       '(prefers-color-scheme: light)',
       rule(':root:not([data-theme]),\n[data-kroma-theme]:not([data-theme])', light),
     ),
+    media('(prefers-reduced-motion: reduce)', rule(':root,\n[data-kroma-theme]', stillDurations())),
   ].join('\n\n');
 }
 

@@ -187,6 +187,7 @@ over their own account is total; their power over anyone else's, or over the ser
 | Revoke another account's device | ✓ | no |
 | Grant / revoke admin | owner | no |
 | Install / update / remove modules | ✓ | no |
+| Monitor and unmonitor titles, edit quality rules | ✓ | no |
 | Change server settings, run and cancel jobs | ✓ | no |
 
 Everything in the admin column is [`admin/`](../admin/)'s subject in depth.

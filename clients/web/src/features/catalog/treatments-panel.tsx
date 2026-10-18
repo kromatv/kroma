@@ -72,7 +72,7 @@ export function TreatmentsPanel({
   const [busy, setBusy] = useState(false);
   const subjectId = kind === 'show' ? ShowId.parse(id) : ItemId.parse(id);
   const admin = !!user && hasPermission(user, 'settings.manage');
-  const canFix = !!user && hasPermission(user, 'library.manage');
+  const canManageLibrary = !!user && hasPermission(user, 'library.manage');
 
   const queryKey = ['treatments', kind, id] as const;
   const { data: treatments = null } = useQuery({
@@ -92,7 +92,7 @@ export function TreatmentsPanel({
 
   // Nothing to offer without either permission; with `settings.manage` we also
   // wait for the treatment list so the strip does not flash in empty.
-  if (!admin && !canFix) return null;
+  if (!admin && !canManageLibrary) return null;
   if (admin && !treatments) return null;
 
   const reprocess = () => {
@@ -165,7 +165,7 @@ export function TreatmentsPanel({
               onPress={() => void MediaInfoModal.call({ id, title })}
             />
           ) : null}
-          {canFix ? (
+          {canManageLibrary ? (
             <Button
               variant="glass"
               size="sm"

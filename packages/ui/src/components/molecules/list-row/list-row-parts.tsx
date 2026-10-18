@@ -23,11 +23,17 @@ function Label({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
+interface HintProps {
+  /** Clamp to N lines with an ellipsis. Unclamped by default. */
+  lines?: number;
+  children: ReactNode;
+}
+
 /** The quieter second line: the fact that settles the row. */
-function Hint({ children }: Readonly<{ children: ReactNode }>) {
+function Hint({ lines, children }: Readonly<HintProps>) {
   const { slots } = useListRow('Hint');
   return (
-    <Text color="textDim" lines={2} style={slots.hint}>
+    <Text color="textDim" lines={lines} style={slots.hint}>
       {children}
     </Text>
   );
@@ -53,5 +59,5 @@ function Trailing({ shrink = false, children }: Readonly<TrailingProps>) {
   );
 }
 
-export type { TrailingProps };
+export type { HintProps, TrailingProps };
 export { Hint, Label, Leading, Trailing };

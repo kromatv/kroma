@@ -71,6 +71,14 @@ describe('the console pages', () => {
     expect(new Set(sections).size).toBe(sections.length);
   });
 
+  it('opens the library to whoever can manage titles or requests', () => {
+    const moderator = (cap: Permission | null) => cap === 'requests.manage';
+
+    const items = adminNavSections([], moderator).sections.flatMap((section) => section.items);
+
+    expect(items.map((item) => item.to)).toEqual(['/admin/monitoring']);
+  });
+
   it('keeps the watch history beside the dashboard, behind the users permission', () => {
     const beside = NAV_GROUPS.find((group) => group.items.some((item) => item.to === '/admin'));
 

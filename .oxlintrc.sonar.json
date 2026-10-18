@@ -1,0 +1,428 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["import", "unicorn"],
+  "categories": {
+    "correctness": "off"
+  },
+  "jsPlugins": [
+    {
+      "name": "sonarjs",
+      "specifier": "eslint-plugin-sonarjs"
+    },
+    {
+      "name": "kroma",
+      "specifier": "./packages/lint-rules/src/index.mjs"
+    }
+  ],
+  "rules": {
+    "import/no-duplicates": "error",
+    "kroma/re-export-from": "error",
+    "kroma/use-state-pair": "error",
+    "sonarjs/assertions-in-test-cases": "error",
+    "sonarjs/async-test-assertions": "error",
+    "sonarjs/avoid-mutating-nested-properties-of-shallow-clones": "error",
+    "sonarjs/aws-apigateway-public-api": "error",
+    "sonarjs/aws-ec2-rds-dms-public": "error",
+    "sonarjs/aws-ec2-unencrypted-ebs-volume": "error",
+    "sonarjs/aws-efs-unencrypted": "error",
+    "sonarjs/aws-iam-all-privileges": "error",
+    "sonarjs/aws-iam-privilege-escalation": "error",
+    "sonarjs/aws-iam-public-access": "error",
+    "sonarjs/aws-opensearchservice-domain": "error",
+    "sonarjs/aws-rds-unencrypted-databases": "error",
+    "sonarjs/aws-restricted-ip-admin-access": "error",
+    "sonarjs/aws-s3-bucket-granted-access": "error",
+    "sonarjs/aws-s3-bucket-insecure-http": "error",
+    "sonarjs/aws-s3-bucket-public-access": "error",
+    "sonarjs/aws-s3-bucket-versioning": "error",
+    "sonarjs/aws-sagemaker-unencrypted-notebook": "error",
+    "sonarjs/aws-sns-unencrypted-topics": "error",
+    "sonarjs/aws-sqs-unencrypted-queue": "error",
+    "sonarjs/block-scoped-var": "error",
+    "sonarjs/call-argument-line": "error",
+    "sonarjs/chai-determinate-assertion": "error",
+    "sonarjs/class-name": [
+      "error",
+      {
+        "format": "^\\$?[A-Z][a-zA-Z0-9]*$"
+      }
+    ],
+    "sonarjs/code-eval": "error",
+    "sonarjs/cognitive-complexity": ["error", 15],
+    "sonarjs/comma-or-logical-or-case": "error",
+    "sonarjs/constructor-for-side-effects": "error",
+    "sonarjs/content-length": [
+      "error",
+      {
+        "fileUploadSizeLimit": 8000000,
+        "standardSizeLimit": 2000000
+      }
+    ],
+    "sonarjs/content-security-policy": "error",
+    "sonarjs/cookie-no-httponly": "error",
+    "sonarjs/cors": "error",
+    "sonarjs/csrf": "error",
+    "sonarjs/disabled-timeout": "error",
+    "sonarjs/dynamically-constructed-templates": "error",
+    "sonarjs/encryption-secure-mode": "error",
+    "sonarjs/explicit-test-skip": "error",
+    "sonarjs/file-permissions": "error",
+    "sonarjs/file-uploads": "error",
+    "sonarjs/fixme-tag": "error",
+    "sonarjs/for-loop-increment-sign": "error",
+    "sonarjs/function-inside-loop": "error",
+    "sonarjs/generator-without-yield": "error",
+    "sonarjs/hardcoded-secret-signatures": "error",
+    "sonarjs/hashing": "error",
+    "sonarjs/hooks-before-test-cases": "error",
+    "sonarjs/insecure-cookie": "error",
+    "sonarjs/insecure-jwt-token": "error",
+    "sonarjs/inverted-assertion-arguments": "error",
+    "sonarjs/label-position": "error",
+    "sonarjs/link-with-target-blank": "error",
+    "sonarjs/max-switch-cases": ["error", 30],
+    "sonarjs/memoize-cache-key": "error",
+    "sonarjs/misplaced-loop-counter": "error",
+    "sonarjs/no-all-duplicated-branches": "error",
+    "sonarjs/no-angular-bypass-sanitization": "error",
+    "sonarjs/no-case-label-in-switch": "error",
+    "sonarjs/no-clear-text-protocols": "error",
+    "sonarjs/no-code-after-done": "error",
+    "sonarjs/no-dead-store": "error",
+    "sonarjs/no-debounce-throttle-in-render": "error",
+    "sonarjs/no-debug-commands-in-ui-tests": "error",
+    "sonarjs/no-default-utility-imports": "error",
+    "sonarjs/no-delete-var": "error",
+    "sonarjs/no-duplicate-in-composite": "error",
+    "sonarjs/no-duplicate-parameterized-test-case": "error",
+    "sonarjs/no-duplicate-test-title": "error",
+    "sonarjs/no-duplicated-branches": "error",
+    "sonarjs/no-element-overwrite": "error",
+    "sonarjs/no-empty-collection": "error",
+    "sonarjs/no-empty-parameterized-test-dataset": "error",
+    "sonarjs/no-empty-test-file": "error",
+    "sonarjs/no-empty-test-title": "error",
+    "sonarjs/no-equals-in-for-termination": "error",
+    "sonarjs/no-exclusive-tests": "error",
+    "sonarjs/no-fallthrough": "error",
+    "sonarjs/no-fixed-wait-in-tests": "error",
+    "sonarjs/no-floating-point-equality": "error",
+    "sonarjs/no-forced-browser-interaction": "error",
+    "sonarjs/no-global-this": "error",
+    "sonarjs/no-globals-shadowing": "error",
+    "sonarjs/no-gratuitous-expressions": "error",
+    "sonarjs/no-hardcoded-ip": "error",
+    "sonarjs/no-hardcoded-passwords": [
+      "error",
+      {
+        "passwordWords": ["password", "pwd", "passwd", "passphrase"]
+      }
+    ],
+    "sonarjs/no-hardcoded-secrets": [
+      "error",
+      {
+        "secretWords": "api[_.-]?key,auth,credential,secret,token",
+        "randomnessSensibility": 5
+      }
+    ],
+    "sonarjs/no-hook-setter-in-body": "error",
+    "sonarjs/no-identical-conditions": "error",
+    "sonarjs/no-identical-expressions": "error",
+    "sonarjs/no-identical-functions": "error",
+    "sonarjs/no-ignored-exceptions": "error",
+    "sonarjs/no-incomplete-assertions": "error",
+    "sonarjs/no-internal-api-use": "error",
+    "sonarjs/no-interpolation-in-inline-snapshots": "error",
+    "sonarjs/no-invariant-returns": "error",
+    "sonarjs/no-inverted-boolean-check": "error",
+    "sonarjs/no-labels": "error",
+    "sonarjs/no-literal-call": "error",
+    "sonarjs/no-mime-sniff": "error",
+    "sonarjs/no-mutate-reactive-state-in-updated-hook": "error",
+    "sonarjs/no-nested-assignment": "error",
+    "sonarjs/no-nested-conditional": "error",
+    "sonarjs/no-nested-functions": [
+      "error",
+      {
+        "threshold": 5
+      }
+    ],
+    "sonarjs/no-nested-template-literals": "error",
+    "sonarjs/no-os-command-from-path": "error",
+    "sonarjs/no-parameter-reassignment": "error",
+    "sonarjs/no-primitive-wrappers": "error",
+    "sonarjs/no-redundant-assignments": "error",
+    "sonarjs/no-redundant-boolean": "error",
+    "sonarjs/no-redundant-jump": "error",
+    "sonarjs/no-referrer-policy": "error",
+    "sonarjs/no-same-argument-assert": "error",
+    "sonarjs/no-same-line-conditional": "error",
+    "sonarjs/no-session-cookies-on-static-assets": "error",
+    "sonarjs/no-skipped-tests": "error",
+    "sonarjs/no-table-as-layout": "error",
+    "sonarjs/no-unenclosed-multiline-block": "error",
+    "sonarjs/no-uniq-key": "error",
+    "sonarjs/no-unthrown-error": "error",
+    "sonarjs/no-unused-collection": "error",
+    "sonarjs/no-use-of-empty-return-value": "error",
+    "sonarjs/no-useless-catch": "error",
+    "sonarjs/no-useless-increment": "error",
+    "sonarjs/no-useless-react-setstate": "error",
+    "sonarjs/no-vue-class-component": "error",
+    "sonarjs/no-vue-mixins": "error",
+    "sonarjs/no-weak-cipher": "error",
+    "sonarjs/no-weak-keys": "error",
+    "sonarjs/non-existent-operator": "error",
+    "sonarjs/object-alt-content": "error",
+    "sonarjs/parameterized-tests": "error",
+    "sonarjs/prefer-cypress-should": "error",
+    "sonarjs/prefer-default-last": "error",
+    "sonarjs/prefer-native-axios-alternative": "error",
+    "sonarjs/prefer-native-jquery-alternative": "error",
+    "sonarjs/prefer-native-lodash-alternative": "error",
+    "sonarjs/prefer-promise-shorthand": "error",
+    "sonarjs/prefer-specific-assertions": "error",
+    "sonarjs/prefer-type-guard": "error",
+    "sonarjs/prefer-while": "error",
+    "sonarjs/production-debug": "error",
+    "sonarjs/pseudo-random": "error",
+    "sonarjs/public-static-readonly": "error",
+    "sonarjs/publicly-writable-directories": "error",
+    "sonarjs/redundant-type-aliases": "error",
+    "sonarjs/review-blockchain-mnemonic": "error",
+    "sonarjs/session-regeneration": "error",
+    "sonarjs/stable-tests": "error",
+    "sonarjs/stateful-regex": "error",
+    "sonarjs/strict-transport-security": "error",
+    "sonarjs/super-linear-regex": "error",
+    "sonarjs/synchronous-suite-callback": "error",
+    "sonarjs/table-header": "error",
+    "sonarjs/table-header-reference": "error",
+    "sonarjs/test-check-exception": "error",
+    "sonarjs/testing-library-prefer-query-by-disappearance": "error",
+    "sonarjs/testing-library-query-assertion": "error",
+    "sonarjs/todo-tag": "error",
+    "sonarjs/unverified-certificate": "error",
+    "sonarjs/unverified-hostname": "error",
+    "sonarjs/updated-loop-counter": "error",
+    "sonarjs/use-type-alias": "error",
+    "sonarjs/vitest-mock-at-module-scope": "error",
+    "sonarjs/weak-ssl": "error",
+    "sonarjs/x-powered-by": "error",
+    "sonarjs/xml-parser-xxe": "error",
+    "unicorn/prefer-dom-node-dataset": "error",
+    "unicorn/prefer-set-has": "error"
+  },
+  "ignorePatterns": [
+    ".claude/worktrees",
+    "**/dist",
+    "**/dist-*",
+    "**/build",
+    "clients/webos/service",
+    "**/.tanstack",
+    "**/*.gen.ts",
+    "**/routeTree.gen.ts",
+    "packages/core/src/locales/messages.d.ts",
+    "apps/www/src/paraglide",
+    "**/*.template.html",
+    "clients/synology",
+    "server",
+    "apps/www/src/styles.css",
+    "clients/mobile/google-services.json",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/*.test.mjs",
+    "packages/cli/templates/**",
+    "**/node_modules/**",
+    "**/__pycache__/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/target/**",
+    "**/generated/**",
+    "clients/synology/.cache/**",
+    "**/*.min.js",
+    "**/vendor/**",
+    "data/**"
+  ],
+  "overrides": [
+    {
+      "files": ["apps/www/src/components/download/families/nas.tsx"],
+      "rules": {
+        "sonarjs/no-clear-text-protocols": "off"
+      }
+    },
+    {
+      "files": ["clients/desktop/scripts/**"],
+      "rules": {
+        "sonarjs/no-os-command-from-path": "off"
+      }
+    },
+    {
+      "files": ["clients/mobile/src/player/TrackSheet.tsx"],
+      "rules": {
+        "sonarjs/cognitive-complexity": "off"
+      }
+    },
+    {
+      "files": ["clients/tizen/scripts/index.dev.html"],
+      "rules": {
+        "sonarjs/no-clear-text-protocols": "off"
+      }
+    },
+    {
+      "files": ["clients/tizen/scripts/package-all.ts"],
+      "rules": {
+        "sonarjs/no-os-command-from-path": "off"
+      }
+    },
+    {
+      "files": ["clients/tizen/src/deviceName.ts"],
+      "rules": {
+        "sonarjs/no-clear-text-protocols": "off"
+      }
+    },
+    {
+      "files": ["clients/tv-build/**"],
+      "rules": {
+        "sonarjs/no-os-command-from-path": "off"
+      }
+    },
+    {
+      "files": ["clients/web/src/features/admin/pipeline.tsx"],
+      "rules": {
+        "sonarjs/cognitive-complexity": "off"
+      }
+    },
+    {
+      "files": ["clients/web/src/features/playback/use-video-playback.ts"],
+      "rules": {
+        "kroma/use-state-pair": "off"
+      }
+    },
+    {
+      "files": ["clients/web/src/sw.fixture.ts"],
+      "rules": {
+        "sonarjs/code-eval": "off"
+      }
+    },
+    {
+      "files": ["clients/webos/src/deviceName.ts"],
+      "rules": {
+        "sonarjs/no-unused-collection": "off"
+      }
+    },
+    {
+      "files": ["clients/webos/src/lan.ts"],
+      "rules": {
+        "sonarjs/no-unused-collection": "off"
+      }
+    },
+    {
+      "files": ["modules/tv.kroma.indexer/ui/src/torznab-indexer-form.tsx"],
+      "rules": {
+        "sonarjs/no-clear-text-protocols": "off"
+      }
+    },
+    {
+      "files": ["packages/bundler/src/**"],
+      "rules": {
+        "sonarjs/no-os-command-from-path": "off"
+      }
+    },
+    {
+      "files": ["packages/core/src/discover.ts"],
+      "rules": {
+        "sonarjs/no-clear-text-protocols": "off"
+      }
+    },
+    {
+      "files": ["packages/mdns-beacon/src/wire.ts"],
+      "rules": {
+        "sonarjs/no-hardcoded-ip": "off"
+      }
+    },
+    {
+      "files": ["packages/synology-repo/src/**"],
+      "rules": {
+        "sonarjs/no-os-command-from-path": "off"
+      }
+    },
+    {
+      "files": ["packages/synology-repo/src/spk.ts"],
+      "rules": {
+        "sonarjs/hashing": "off"
+      }
+    },
+    {
+      "files": ["packages/tv-installer/src/discovery/ssdp.ts"],
+      "rules": {
+        "sonarjs/no-hardcoded-ip": "off"
+      }
+    },
+    {
+      "files": ["packages/tv-installer/src/local-network.ts"],
+      "rules": {
+        "sonarjs/no-hardcoded-ip": "off"
+      }
+    },
+    {
+      "files": ["packages/tv/src/features/playback/player/PlayerSurface.web.tsx"],
+      "rules": {
+        "sonarjs/object-alt-content": "off"
+      }
+    },
+    {
+      "files": ["packages/tv/src/features/playback/player/useDirectPlayback.ts"],
+      "rules": {
+        "kroma/use-state-pair": "off"
+      }
+    },
+    {
+      "files": ["packages/tv/src/shared/device.ts"],
+      "rules": {
+        "sonarjs/pseudo-random": "off"
+      }
+    },
+    {
+      "files": ["packages/tv/src/shared/preview/service.ts"],
+      "rules": {
+        "sonarjs/no-clear-text-protocols": "off"
+      }
+    },
+    {
+      "files": [
+        "packages/ui/src/components/organisms/player/parts/subtitle-renderer/subtitle-renderer.tsx"
+      ],
+      "rules": {
+        "sonarjs/super-linear-regex": "off"
+      }
+    },
+    {
+      "files": ["packages/ui/src/components/organisms/player/player.tsx"],
+      "rules": {
+        "sonarjs/cognitive-complexity": "off"
+      }
+    },
+    {
+      "files": ["packages/ui/src/services/playback.ts"],
+      "rules": {
+        "sonarjs/pseudo-random": "off"
+      }
+    },
+    {
+      "files": ["packages/workbench/src/demos.ts"],
+      "rules": {
+        "sonarjs/todo-tag": "off"
+      }
+    },
+    {
+      "files": ["packages/workbench/src/workbench.tsx"],
+      "rules": {
+        "kroma/use-state-pair": "off",
+        "sonarjs/cognitive-complexity": "off"
+      }
+    }
+  ]
+}

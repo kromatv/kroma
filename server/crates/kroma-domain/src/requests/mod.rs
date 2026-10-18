@@ -9,13 +9,15 @@ use serde::{Deserialize, Serialize};
 
 mod discover;
 mod ledger;
+mod monitoring;
 
 pub use discover::*;
 pub use ledger::*;
+pub use monitoring::*;
 
 /// What a request targets. Requests key on TMDB ids, so this mirrors TMDB's
 /// movie/tv split under the catalog's own vocabulary (a "show", not a "tv").
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum RequestKind {
     Movie,

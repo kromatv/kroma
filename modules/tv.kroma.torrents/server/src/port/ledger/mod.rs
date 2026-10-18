@@ -5,9 +5,9 @@
 use axum::extract::State;
 use axum::routing::post;
 use axum::{Json, Router};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-use kroma_module_sdk::host::{port_reply, HostStorage};
+use kroma_module_sdk::host::{HostStorage, port_reply};
 
 use super::manager;
 use crate::db::DownloadRow;
@@ -115,10 +115,30 @@ async fn drop_data<S: HostStorage + Clone + Send + Sync + 'static>(
     .await
 }
 
+#[derive(Serialize)]
+struct CompletedRow {
+    #[serde(flatten)]
+    row: DownloadRow,
+    content_rel_paths: Vec<String>,
+}
+
 async fn completed<S: HostStorage + Clone + Send + Sync + 'static>(
     State(host): State<S>,
-) -> Json<Result<Vec<DownloadRow>, String>> {
-    port_reply(move || ledger(&host).completed()).await
+) -> Json<Result<Vec<CompletedRow>, String>> {
+    port_reply(move || {
+        ledger(&host)
+            .completed()?
+            .into_iter()
+            .map(|row| {
+                let content_rel_paths = crate::db::download_contents(host.store(), &row.id)?;
+                Ok(CompletedRow {
+                    row,
+                    content_rel_paths,
+                })
+            })
+            .collect()
+    })
+    .await
 }
 
 #[derive(Deserialize)]

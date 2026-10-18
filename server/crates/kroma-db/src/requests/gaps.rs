@@ -1,7 +1,7 @@
 //! Library-scan gaps: aired episodes a show on disk is missing.
 
 use anyhow::Result;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 
 use crate::Pool;
 use kroma_domain::{CalendarEntry, RequestKind};
@@ -46,8 +46,8 @@ pub fn replace_show_gaps(
 }
 
 /// Library-scan gaps as [`CalendarEntry`] with `request_id = None` — they are not
-/// requests yet. Shows with an open request for the same tmdb id are excluded,
-/// since that request's ledger already tracks them.
+/// requests yet. Shows that are monitored, or have an open request, are left
+/// out, since their own ledger already tracks them.
 pub fn library_gaps_list(conn: &Connection, limit: usize) -> rusqlite::Result<Vec<CalendarEntry>> {
     let mut stmt = conn.prepare(
         "SELECT g.tmdb_id, g.title, g.poster_url, g.season, g.episode, g.air_date \
@@ -56,6 +56,9 @@ pub fn library_gaps_list(conn: &Connection, limit: usize) -> rusqlite::Result<Ve
              SELECT 1 FROM requests r \
              WHERE r.tmdb_id = g.tmdb_id AND r.kind = 'show' \
                AND r.status NOT IN ('denied', 'failed') \
+         ) \
+         AND NOT EXISTS ( \
+             SELECT 1 FROM monitored m WHERE m.kind = 'show' AND m.tmdb_id = g.tmdb_id \
          ) \
          ORDER BY g.title ASC, g.season ASC, g.episode ASC LIMIT ?1",
     )?;
@@ -69,6 +72,7 @@ pub fn library_gaps_list(conn: &Connection, limit: usize) -> rusqlite::Result<Ve
             poster_url: r.get(2)?,
             season: r.get(3)?,
             episode: r.get(4)?,
+            episode_title: None,
             air_date: r.get(5)?,
             status: "missing".into(),
         })

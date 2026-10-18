@@ -62,6 +62,7 @@ function Focusable<R extends AnySv = AnySv>({
   hitSlop,
   href,
   inert = false,
+  tabbable = true,
   focusScale = 1,
   ring = true,
   style,
@@ -101,7 +102,7 @@ function Focusable<R extends AnySv = AnySv>({
   const ringToken = typeof ring === 'string' ? ring : (scopedRing ?? 'focusLift');
   const showRing = ring !== false;
 
-  const webKeys = useWebKeys(!disabled && !inert && Boolean(onPress), role, pressRef);
+  const webKeys = useWebKeys(!disabled && !inert && Boolean(onPress), role, pressRef, tabbable);
 
   const lift = useFocusLift();
   const [hovered, setHovered] = useState(false);

@@ -2,7 +2,13 @@
 //! token (resolution, codec, source, season/episode markers, flags); the title
 //! is everything before the first structural marker.
 
-use crate::{Codec, ParsedRelease, Res, Source};
+mod markers;
+mod tags;
+
+use self::markers::{
+    parse_air_date, parse_codec, parse_episode_marker, parse_resolution, parse_source, parse_year,
+};
+use crate::{ParsedRelease, Source};
 
 pub fn parse_release_name(name: &str) -> ParsedRelease {
     let (body, group) = split_group(name);
@@ -30,7 +36,9 @@ pub fn parse_release_name(name: &str) -> ParsedRelease {
     }
 
     let title_end = first_marker.unwrap_or(tokens.len());
-    out.title = strip_trailing_noise(&tokens[..title_end]).join(" ");
+    let title = strip_trailing_noise(&tokens[..title_end]);
+    out.title = title.join(" ");
+    tags::read_tags(&mut out, &tokens[title.len()..]);
     out
 }
 
@@ -54,6 +62,7 @@ const TRAILING_NOISE: &[&str] = &[
     "vff",
     "vfi",
     "vfq",
+    "vq",
     "vo",
     "vost",
     "vostfr",
@@ -61,6 +70,11 @@ const TRAILING_NOISE: &[&str] = &[
     "stfr",
     "english",
     "eng",
+    "extended",
+    "unrated",
+    "uncut",
+    "remastered",
+    "imax",
 ];
 
 fn strip_trailing_noise(run: &[String]) -> &[String] {
@@ -111,12 +125,13 @@ fn classify_token(
         mark(first_marker, i);
         return;
     }
-    if let Some((season, ep, ep_end, full)) = parse_episode_marker(&t) {
-        out.season = out.season.or(Some(season));
-        if let Some(e) = ep {
-            out.episode = out.episode.or(Some(e));
-            out.episode_end = out.episode_end.or(ep_end);
-        } else if full {
+    if let Some(marker) = parse_episode_marker(&t) {
+        out.season = out.season.or(Some(marker.season));
+        out.season_end = out.season_end.or(marker.season_end);
+        if let Some(episode) = marker.episode {
+            out.episode = out.episode.or(Some(episode));
+            out.episode_end = out.episode_end.or(marker.episode_end);
+        } else if marker.full_season {
             out.full_season = true;
         }
         mark(first_marker, i);
@@ -135,14 +150,21 @@ fn classify_word(
     match t {
         "proper" => out.proper = true,
         "repack" | "rerip" => out.repack = true,
-        "hdr" | "hdr10" | "hdr10+" => out.hdr = true,
+        "hdr" | "hdr10" => out.hdr = true,
+        "hdr10+" | "hdr10plus" | "hdr10p" => {
+            out.hdr = true;
+            out.hdr10_plus = true;
+        }
+        "hlg" => out.hlg = true,
         "dv" | "dovi" => out.dolby_vision = true,
         "vision" if i > 0 && tokens[i - 1].eq_ignore_ascii_case("dolby") => {
             out.dolby_vision = true;
         }
         "complete" | "integrale" | "intégrale" => out.full_season = true,
-        "season" | "saison" => mark_season_word(out, first_marker, tokens, i),
-        _ => mark_year_word(out, first_marker, i, t),
+        "season" | "seasons" | "saison" | "saisons" => {
+            mark_season_word(out, first_marker, tokens, i);
+        }
+        _ => mark_date_or_year(out, first_marker, tokens, i, t),
     }
 }
 
@@ -152,13 +174,54 @@ fn mark_season_word(
     tokens: &[String],
     i: usize,
 ) {
-    if let Some(n) = tokens.get(i + 1).and_then(|n| n.parse::<u32>().ok()) {
-        if n <= 100 {
-            out.season = out.season.or(Some(n));
-            out.full_season = out.episode.is_none();
+    let Some((first, last)) = season_span(&tokens[i + 1..]) else {
+        return;
+    };
+    out.season = out.season.or(Some(first));
+    out.season_end = out.season_end.or(last);
+    out.full_season = out.episode.is_none();
+    mark(first_marker, i);
+}
+
+const RANGE_WORDS: &[&str] = &["a", "à", "to", "-"];
+
+fn season_span(rest: &[String]) -> Option<(u32, Option<u32>)> {
+    let head = rest.first()?;
+    let (first, last) = match head.split_once('-') {
+        Some((first, last)) => (season_number(first)?, season_number(last)),
+        None => (season_number(head)?, spelled_range_end(rest)),
+    };
+    Some((first, last.filter(|&last| last > first)))
+}
+
+fn spelled_range_end(rest: &[String]) -> Option<u32> {
+    let word = rest.get(1)?.to_lowercase();
+    if !RANGE_WORDS.contains(&word.as_str()) {
+        return None;
+    }
+    season_number(rest.get(2)?)
+}
+
+fn season_number(token: &str) -> Option<u32> {
+    token.parse::<u32>().ok().filter(|&season| season <= 100)
+}
+
+fn mark_date_or_year(
+    out: &mut ParsedRelease,
+    first_marker: &mut Option<usize>,
+    tokens: &[String],
+    i: usize,
+    t: &str,
+) {
+    if i > 0 {
+        if let Some(date) = parse_air_date(&tokens[i..]) {
+            out.air_date = Some(date);
+            out.year = Some(date.year);
             mark(first_marker, i);
+            return;
         }
     }
+    mark_year_word(out, first_marker, i, t);
 }
 
 fn mark_year_word(out: &mut ParsedRelease, first_marker: &mut Option<usize>, i: usize, t: &str) {
@@ -194,119 +257,4 @@ fn split_group(name: &str) -> (String, Option<String>) {
         }
     }
     (trimmed.to_string(), None)
-}
-
-fn parse_resolution(t: &str) -> Option<Res> {
-    match t {
-        "2160p" | "4k" | "uhd" => Some(Res::R2160),
-        "1080p" | "1080i" => Some(Res::R1080),
-        "720p" => Some(Res::R720),
-        // "1920x1080" style: dimensions, not an SxE marker (see the guard in
-        // parse_episode_marker too).
-        _ => match t.split_once('x') {
-            Some((w, h)) => {
-                let (w, h) = (w.parse::<u32>().ok()?, h.parse::<u32>().ok()?);
-                match (w, h) {
-                    (3840.., _) | (_, 2000..) => Some(Res::R2160),
-                    (1900.., _) | (_, 1000..) => Some(Res::R1080),
-                    (1200.., _) | (_, 700..) => Some(Res::R720),
-                    _ => None,
-                }
-            }
-            None => None,
-        },
-    }
-}
-
-fn parse_codec(t: &str) -> Option<Codec> {
-    match t {
-        "x265" | "h265" | "h.265" | "hevc" => Some(Codec::Hevc),
-        "x264" | "h264" | "h.264" | "avc" => Some(Codec::H264),
-        "av1" => Some(Codec::Av1),
-        "xvid" | "divx" => Some(Codec::Xvid),
-        _ => None,
-    }
-}
-
-fn parse_source(t: &str, next: Option<&str>) -> Option<Source> {
-    match t {
-        "remux" => Some(Source::Remux),
-        "bluray" | "blu-ray" | "bdrip" | "brrip" | "bdremux" => Some(Source::BluRay),
-        "web-dl" | "webdl" => Some(Source::WebDl),
-        "webrip" | "web-rip" => Some(Source::WebRip),
-        // Bare "WEB": WEB-DL unless the next token says otherwise ("WEB DL" /
-        // "WEB RIP" split across tokens).
-        "web" => match next.map(str::to_ascii_lowercase).as_deref() {
-            Some("rip") => Some(Source::WebRip),
-            _ => Some(Source::WebDl),
-        },
-        "hdtv" | "pdtv" | "dsr" => Some(Source::Hdtv),
-        "cam" | "hdcam" | "camrip" | "ts" | "telesync" | "hdts" | "telecine" | "screener"
-        | "dvdscr" | "workprint" => Some(Source::Cam),
-        _ => None,
-    }
-}
-
-fn parse_episode_marker(t: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
-    if let Some(rest) = t.strip_prefix('s') {
-        return parse_s_marker(rest);
-    }
-    // NxMM: small left side only, so 1920x1080 stays a resolution.
-    if let Some((s, e)) = t.split_once('x') {
-        return parse_x_marker(s, e);
-    }
-    None
-}
-
-fn parse_s_marker(rest: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
-    let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
-    if digits.is_empty() || digits.len() > 2 {
-        return None;
-    }
-    let season: u32 = digits.parse().ok()?;
-    let tail = &rest[digits.len()..];
-    if tail.is_empty() {
-        return Some((season, None, None, true));
-    }
-    let mut eps: Vec<u32> = Vec::new();
-    for part in tail.split(['e', '-']) {
-        if part.is_empty() {
-            continue;
-        }
-        if !part.chars().all(|c| c.is_ascii_digit()) || part.len() > 3 {
-            return None;
-        }
-        eps.push(part.parse().ok()?);
-    }
-    if !tail.starts_with('e') || eps.is_empty() {
-        return None;
-    }
-    let first = eps[0];
-    let last = eps.last().copied().filter(|&l| l > first);
-    Some((season, Some(first), last, false))
-}
-
-fn parse_x_marker(s: &str, e: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
-    if !s.is_empty()
-        && !e.is_empty()
-        && s.chars().all(|c| c.is_ascii_digit())
-        && e.chars().all(|c| c.is_ascii_digit())
-        && s.len() <= 2
-        && (2..=3).contains(&e.len())
-    {
-        let season: u32 = s.parse().ok()?;
-        let episode: u32 = e.parse().ok()?;
-        if season <= 50 && episode <= 999 {
-            return Some((season, Some(episode), None, false));
-        }
-    }
-    None
-}
-
-fn parse_year(t: &str) -> Option<u32> {
-    if t.len() != 4 || !t.chars().all(|c| c.is_ascii_digit()) {
-        return None;
-    }
-    let y: u32 = t.parse().ok()?;
-    (1900..=2035).contains(&y).then_some(y)
 }
