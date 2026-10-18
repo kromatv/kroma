@@ -75,6 +75,18 @@ export interface SlotProps {
     title: string;
     monitored: boolean;
   };
+  /** The search actions for one title, one season or one episode, wherever a
+   *  core page lists them: an automatic search and a hand-picked one. `season`
+   *  and `episode` narrow the search; both null searches the whole title.
+   *  `compact` asks for icon buttons that fit a table row. */
+  'monitoring.search': {
+    kind: 'movie' | 'show';
+    tmdbId: number;
+    title: string;
+    season: number | null;
+    episode: number | null;
+    compact: boolean;
+  };
 }
 
 export type SlotName = keyof SlotProps;
