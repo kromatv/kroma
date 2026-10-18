@@ -61,7 +61,8 @@
     "@kromatv/spatial-nav": "workspace:*",
     "@tabler/icons-react": "^3.46.0",
     "@tabler/icons-react-native": "^3.46.0",
-    "react-native-svg": "^15.15.5"
+    "react-native-svg": "^15.15.5",
+    "zod": "^4.5.4"
   },
   "peerDependencies": {
     "react": ">=18",
@@ -83,8 +84,7 @@
     "react-dom": "19.2.8",
     "react-native": "npm:react-native-tvos@0.86.0-2",
     "react-native-web": "^0.21.2",
-    "typescript": "^7.0.2",
-    "zod": "^4.5.4"
+    "typescript": "^7.0.2"
   },
   "peerDependenciesMeta": {
     "expo-image": {

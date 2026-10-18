@@ -23,6 +23,13 @@ serve the TV, the phone or the web client belongs in
 [`@kromatv/ui`](../ui/README.md) instead, at whichever level
 [`components/README.md`](../ui/src/components/README.md) says it earns.
 
+Engine-add dialogs belong to the admin root. The host wraps its subtree with
+`<AddEngineHost>{children}</AddEngineHost>`; module components obtain the function
+with `const addEngine = useAddEngine()` from `@kromatv/module-sdk` and await
+`addEngine(options)`. The former module-level `addEngine` export is removed.
+Requests resolve `false` without a host or when their owning host unmounts, and
+one root's teardown cannot disconnect another root's queue.
+
 ## Which import door
 
 The public ones:

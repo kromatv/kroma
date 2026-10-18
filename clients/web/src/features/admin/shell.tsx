@@ -1,5 +1,5 @@
 import { KromaEvents } from '@kromatv/client/events';
-import { AdminHostProvider, ModuleSlotProvider } from '@kromatv/module-sdk';
+import { AddEngineHost, AdminHostProvider, ModuleSlotProvider } from '@kromatv/module-sdk';
 import { Box, useBreakpoint } from '@kromatv/ui/kit';
 import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useMemo } from 'react';
@@ -70,9 +70,11 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <AdminHostProvider value={kit}>
       <ModuleSlotProvider registry={moduleRegistry}>
-        <StoreOpsProvider>
-          <AdminContext.Provider value={adminValue}>{children}</AdminContext.Provider>
-        </StoreOpsProvider>
+        <AddEngineHost>
+          <StoreOpsProvider>
+            <AdminContext.Provider value={adminValue}>{children}</AdminContext.Provider>
+          </StoreOpsProvider>
+        </AddEngineHost>
       </ModuleSlotProvider>
     </AdminHostProvider>
   );

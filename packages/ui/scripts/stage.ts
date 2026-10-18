@@ -120,6 +120,7 @@ const manifest = {
   // still say so. Node and TypeScript both read an `imports` map from the
   // package that declares it, so the specifier resolves inside the tarball.
   imports: { '#ui/*': { types: './*.d.ts', default: './*.js' } },
+  dependencies: { zod: source.dependencies.zod },
   peerDependencies: {
     react: '>=18',
     'react-dom': '>=18',

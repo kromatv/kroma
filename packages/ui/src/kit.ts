@@ -163,4 +163,3 @@ export {
   WHEEL_VIEWBOX,
 } from './lib/wheel-paths';
 export type { KitI18n } from './services/i18n-instance';
-export { setKitI18n } from './services/i18n-instance';

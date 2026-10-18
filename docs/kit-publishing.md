@@ -94,20 +94,19 @@ design system that ships someone else's catalogs is carrying their whole
 vocabulary to say ninety-five things.
 
 ```tsx
-import { createI18n, I18nProvider, setKitI18n } from '@kromatv/ui/i18n';
+import { createI18n, I18nProvider } from '@kromatv/ui/i18n';
 
 const i18n = createI18n({
   catalogs: { en: { 'player.play': 'Play' }, sv: { 'player.play': 'Spela' } },
   defaultLocale: 'en',
 });
-setKitI18n(i18n, 'en');
 
-<I18nProvider locale="sv">{children}</I18nProvider>;
+<I18nProvider i18n={i18n} locale="sv">{children}</I18nProvider>;
 ```
 
-`createI18n` is re-exported from the package, so there is no second install. Until
-`setKitI18n` is called every key renders as itself, which is a legible
-placeholder rather than a crash. `src/services/i18n-instance.ts` names the
+`createI18n` is re-exported from the package, so there is no second install. A published kit component outside a provider renders each key as itself.
+Pass the instance as an `i18n` prop so separate app roots retain their own
+catalogs; the former global `setKitI18n` registration is removed. `src/services/i18n-instance.ts` names the
 instance for this repo and the build swaps it for the published one, the same
 way `glyph-source.ts` is swapped for the icon subset.
 

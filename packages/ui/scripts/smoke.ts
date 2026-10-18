@@ -81,15 +81,14 @@ writeFileSync(
 import { IconHeart } from '@tabler/icons-react';
 import { createRoot } from 'react-dom/client';
 import { addGlyphs, Button, Icon, Text } from '@kromatv/ui';
-import { createI18n, I18nProvider, setKitI18n } from '@kromatv/ui/i18n';
+import { createI18n, I18nProvider } from '@kromatv/ui/i18n';
 
 addGlyphs({ IconHeart });
 const i18n = createI18n({ catalogs: { en: { 'player.play': 'Play' } }, defaultLocale: 'en' });
-setKitI18n(i18n, 'en');
 
 function App() {
   return (
-    <I18nProvider locale="en">
+    <I18nProvider i18n={i18n} locale="en">
       <Text variant="body">hello</Text>
       <Button variant="primary" icon="player-play-filled" label="Play" onPress={() => {}} />
       <Icon name="heart" size={24} color="danger" />

@@ -10,19 +10,27 @@
 import type { Locale, Translate } from '@kromatv/i18n';
 import { I18nContext, I18nProvider as Provider } from '@kromatv/i18n/react';
 import { type ReactNode, useContext } from 'react';
-import { fallbackLocale, providerI18n, translatorFor } from './i18n-instance';
+import { fallbackLocale, type KitI18n, providerI18n, translatorFor } from './i18n-instance';
 
 export { useI18n, useLocale, useScopedT, useSetLocale, useT } from '@kromatv/i18n/react';
 
 export interface I18nProviderProps {
+  /** The instance owned by this app root; defaults to KROMA within this repo. */
+  i18n?: KitI18n;
   locale: Locale;
   onLocaleChange?: (locale: Locale) => void;
   children: ReactNode;
 }
 
-export function I18nProvider({ locale, onLocaleChange, children }: Readonly<I18nProviderProps>) {
+export function I18nProvider({
+  i18n = providerI18n(),
+  locale,
+  onLocaleChange,
+  children,
+}: Readonly<I18nProviderProps>) {
+  if (!i18n) return children;
   return (
-    <Provider i18n={providerI18n()} locale={locale} onLocaleChange={onLocaleChange}>
+    <Provider i18n={i18n} locale={locale} onLocaleChange={onLocaleChange}>
       {children}
     </Provider>
   );
@@ -41,5 +49,5 @@ export function useLocaleDefault(): Locale {
  * requirement for every consumer of a dialog. */
 export function useTDefault(): Translate {
   const ctx = useContext(I18nContext);
-  return translatorFor((ctx?.locale as Locale) ?? fallbackLocale());
+  return ctx ? (ctx.translator() as Translate) : translatorFor(fallbackLocale());
 }

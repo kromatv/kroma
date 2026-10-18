@@ -25,6 +25,11 @@ Each host owns its queue. Dismissal, missing hosts, and host teardown resolve to
 `false`; unmounting one root does not affect another root's questions. The former
 module-level `confirm` export is replaced by `useConfirm`.
 
+Custom catalog instances are passed to `<I18nProvider i18n={instance} locale={locale}>`.
+The kit's fallback translation hooks use that provider's instance; there is no
+module-level `setKitI18n` installer. See [publishing](../../docs/kit-publishing.md)
+for an external-host example.
+
 ## Performance recording
 
 Wrap an instrumented app with `<PerfProvider>` and read its recorder through
