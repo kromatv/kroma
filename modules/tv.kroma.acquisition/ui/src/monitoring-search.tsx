@@ -87,6 +87,7 @@ export function MonitoringSearch({
       )}
       {opened ? (
         <SearchResultsDialog
+          subject={what}
           state={search.state}
           canGrab={canGrab}
           onGrab={search.grab}

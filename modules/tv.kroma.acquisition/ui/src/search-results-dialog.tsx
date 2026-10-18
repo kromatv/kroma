@@ -12,20 +12,24 @@ export function SearchResultsDialog({
   canGrab,
   onGrab,
   onClose,
+  subject,
 }: Readonly<{
   state: SearchState;
   canGrab: boolean;
   onGrab: (release: ScoredReleaseView) => void;
   onClose: () => void;
+  /** What is being searched, « Severance · S01E03 », named in the title. */
+  subject?: string;
 }>) {
   const t = useT();
+  const heading = subject ? t('acq.searchFor', { subject }) : t('requests.interactiveSearch');
   const view = useReleaseView(state.view?.releases ?? NO_RELEASES);
   const open = state.busy || state.view != null || state.error != null;
   return (
-    <Dialog.Root open={open} onClose={onClose} width="2xl" title={t('requests.interactiveSearch')}>
+    <Dialog.Root open={open} onClose={onClose} width="2xl" title={heading}>
       <Dialog.Header>
         <Text variant="title" accessibilityRole="header">
-          {t('requests.interactiveSearch')}
+          {heading}
         </Text>
         <Text variant="meta" color="textDim">
           {t(state.busy ? 'requests.searchRunning' : 'requests.searchAnswered')}

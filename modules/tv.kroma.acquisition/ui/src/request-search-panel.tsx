@@ -151,6 +151,7 @@ export function RequestSearchPanel({
       </Surface>
 
       <SearchResultsDialog
+        subject={title}
         state={search.state}
         canGrab={canGrab}
         onGrab={search.grab}

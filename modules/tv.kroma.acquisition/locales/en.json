@@ -268,6 +268,20 @@
   "acq.verdict.upgrade": "Improves",
   "downloads.viewOnTracker": "View on the tracker",
   "nav.acquisition": "Acquisition",
-  "acq.colEffect": "Effect",
-  "acq.verdict.refused": "Refused"
+  "acq.effect.fill_one": "Fills a gap · {count}",
+  "acq.effect.fill_other": "Fill a gap · {count}",
+  "acq.effect.upgrade_one": "Improves · {count}",
+  "acq.effect.upgrade_other": "Improve · {count}",
+  "acq.effect.beside_one": "Sits beside · {count}",
+  "acq.effect.beside_other": "Sit beside · {count}",
+  "acq.effect.notBetter_one": "Nothing better · {count}",
+  "acq.effect.notBetter_other": "Nothing better · {count}",
+  "acq.effect.refused_one": "Refused · {count}",
+  "acq.effect.refused_other": "Refused · {count}",
+  "acq.searchFor": "Search: {subject}",
+  "acq.breakdownScore": "Score",
+  "acq.breakdownDetails": "Details",
+  "acq.noScoredFormat": "No format counts for this profile.",
+  "acq.publishedOn": "Published {date}",
+  "acq.peers": "{seeders} seeders, {leechers} leechers"
 }

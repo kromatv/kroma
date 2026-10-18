@@ -1,13 +1,13 @@
 import type { IndexerReport, ScoredReleaseView } from '@kromatv/client/requests';
 import { Table, type TableColumn, useT } from '@kromatv/module-sdk';
-import { Box, EmptyState } from '@kromatv/ui/kit';
+import { Box, EmptyState, Row, Text } from '@kromatv/ui/kit';
 import { IndexerReportStrip, nothingAnswered } from './indexer-report';
+import { EFFECT_DOT, EFFECT_GROUP, groupByEffect } from './release-effect';
 import { ReleaseRow } from './release-row';
 import { releaseSortOf } from './release-sort';
 import type { ReleaseView } from './use-release-view';
 
 const COLUMNS: TableColumn[] = [
-  { width: 150, from: 'md' },
   { min: 360 },
   { width: 128, from: 'md' },
   { width: 104, from: 'md', column: 'size' },
@@ -54,34 +54,45 @@ export function ReleaseTable({
   return (
     <Box gap={12}>
       {report ? <IndexerReportStrip indexers={indexers} /> : null}
-      <Table.Root
-        columns={COLUMNS}
-        label={t('acq.releaseTable')}
-        sort={view.columns}
-        onSortChange={(_, details) => {
-          const picked = releaseSortOf(details.column);
-          if (picked) view.setSort(picked);
-        }}
-      >
-        <Table.Header>
-          <Table.Column>{t('acq.colEffect')}</Table.Column>
-          <Table.Column>{t('acq.colRelease')}</Table.Column>
-          <Table.Column>{t('acq.colQuality')}</Table.Column>
-          <Table.Column>{t('requests.colSize')}</Table.Column>
-          <Table.Column>{t('acq.colSeeders')}</Table.Column>
-          <Table.Column>{t('requests.colScore')}</Table.Column>
-          <Table.Cell />
-        </Table.Header>
-        {view.rows.map((release) => (
-          <ReleaseRow
-            key={`${release.indexerId}-${release.guid}`}
-            release={release}
-            canGrab={canGrab}
-            busy={busy}
-            onGrab={onGrab}
-          />
-        ))}
-      </Table.Root>
+      {groupByEffect(view.rows).map((group, at) => (
+        <Box key={group.effect} gap={8} mt={at === 0 ? 0 : 12}>
+          <Row gap={8} align="center">
+            <Box w={8} h={8} radius="pill" bg={EFFECT_DOT[group.effect]} />
+            <Text variant="overline" color="textMuted">
+              {t(EFFECT_GROUP[group.effect], { count: group.rows.length })}
+            </Text>
+          </Row>
+          <Table.Root
+            columns={COLUMNS}
+            label={t(EFFECT_GROUP[group.effect], { count: group.rows.length })}
+            sort={view.columns}
+            onSortChange={(_, details) => {
+              const picked = releaseSortOf(details.column);
+              if (picked) view.setSort(picked);
+            }}
+          >
+            {at === 0 ? (
+              <Table.Header>
+                <Table.Column>{t('acq.colRelease')}</Table.Column>
+                <Table.Column>{t('acq.colQuality')}</Table.Column>
+                <Table.Column>{t('requests.colSize')}</Table.Column>
+                <Table.Column>{t('acq.colSeeders')}</Table.Column>
+                <Table.Column>{t('requests.colScore')}</Table.Column>
+                <Table.Cell />
+              </Table.Header>
+            ) : null}
+            {group.rows.map((release) => (
+              <ReleaseRow
+                key={`${release.indexerId}-${release.guid}`}
+                release={release}
+                canGrab={canGrab}
+                busy={busy}
+                onGrab={onGrab}
+              />
+            ))}
+          </Table.Root>
+        </Box>
+      ))}
     </Box>
   );
 }
