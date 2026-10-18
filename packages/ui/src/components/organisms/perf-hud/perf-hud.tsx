@@ -8,24 +8,26 @@ import { Dimensions, PixelRatio } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
-import { type PerfReport, perfReport, startPerf, stopPerf } from '#ui/lib/perf';
+import type { PerfReport } from '#ui/lib/perf';
+import { usePerfSampler } from '#ui/lib/perf-provider';
 import { PerfChart } from './perf-chart';
 
 // Slow enough to read, fast enough to blame the thing you just did.
 const REFRESH_MS = 500;
 
 function PerfHud({ enabled }: Readonly<{ enabled: boolean }>) {
+  const perf = usePerfSampler();
   const [report, setReport] = useState<PerfReport | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
-    startPerf();
-    const timer = setInterval(() => setReport(perfReport()), REFRESH_MS);
+    if (!enabled || !perf) return;
+    perf.startPerf();
+    const timer = setInterval(() => setReport(perf.perfReport()), REFRESH_MS);
     return () => {
       clearInterval(timer);
-      stopPerf();
+      perf.stopPerf();
     };
-  }, [enabled]);
+  }, [enabled, perf]);
 
   if (!enabled || !report) return null;
   return (

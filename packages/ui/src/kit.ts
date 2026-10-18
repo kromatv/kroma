@@ -125,7 +125,8 @@ export type { LoopKind } from './lib/loop';
 export { useLoop } from './lib/loop';
 export { OverlayHost } from './lib/overlay-host';
 export type { PerfReport } from './lib/perf';
-export { perfReport, perfRunning, resetPerf, startPerf, stopPerf } from './lib/perf';
+export { createPerfSampler } from './lib/perf';
+export { PerfProvider, usePerfSampler } from './lib/perf-provider';
 export { Portal, PortalHost } from './lib/portal';
 export {
   armPressGuard,

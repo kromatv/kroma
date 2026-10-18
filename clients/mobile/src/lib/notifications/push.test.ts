@@ -40,9 +40,7 @@ vi.mock('expo-device', () => ({
   },
 }));
 
-const { nativePush, registerAndroidChannels, registerCategories, setPushTranslator } = await import(
-  './push'
-);
+const { nativePush, registerAndroidChannels, registerCategories } = await import('./push');
 
 beforeEach(() => {
   platform.OS = 'ios';
@@ -146,8 +144,7 @@ describe('turning push on', () => {
 
 describe('the labels handed to the OS', () => {
   it('registers the action buttons in the reader s language', async () => {
-    setPushTranslator(((key: string) => `fr:${key}`) as never);
-    await registerCategories();
+    await registerCategories(((key: string) => `fr:${key}`) as never);
 
     const [name, actions] = notifications.setNotificationCategoryAsync.mock.calls[0] ?? [];
     expect(name).toBe('request_review');

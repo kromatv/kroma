@@ -15,7 +15,7 @@ import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
 import { MovingStrip } from '#ui/components/organisms/virtual/moving-strip';
 import { styles } from '#ui/core';
 import { FocusReporter } from '#ui/lib/focus-report';
-import { markGridFocus } from '#ui/lib/perf';
+import { usePerfSampler } from '#ui/lib/perf-provider';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { GridRow } from './grid-row';
 import { freeOffset, type GridRows, rowMetrics, rowTop, rowWindow, stripOffset } from './grid-rows';
@@ -101,6 +101,7 @@ function VirtualGrid<T>({
   onEndReached,
   initialIndex,
 }: Readonly<VirtualGridProps<T>>) {
+  const perf = usePerfSampler();
   const viewport = useRef<View>(null);
   // What to divide until the grid has measured its own box. A television never
   // resizes, so the measurement settles on the first layout and never moves
@@ -202,7 +203,7 @@ function VirtualGrid<T>({
     const row = Math.floor(index / geometry.count);
     // Which cell took focus, for the on-screen read-out: a remote bug on a
     // television has no inspector to ask.
-    markGridFocus(row, index % geometry.count);
+    perf?.markGridFocus(row, index % geometry.count);
     ringed.current = row + metrics.headerRows;
     setFocusedRow(row + metrics.headerRows);
   });

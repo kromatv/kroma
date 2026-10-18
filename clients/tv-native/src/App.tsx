@@ -7,14 +7,7 @@
 // owns is the platform's boot sequence (fonts, splash, keep-awake) and the
 // stage the app is laid out on.
 
-import {
-  type DeviceNameSource,
-  setBuildInfo,
-  setHardwareSource,
-  setLauncherBackend,
-  setServerBrowse,
-  TvApp,
-} from '@kromatv/tv';
+import { type DeviceNameSource, setBuildInfo, setHardwareSource, TvApp } from '@kromatv/tv';
 import { expoImageBackend } from '@kromatv/ui/expo-image';
 import { KIT_FONTS } from '@kromatv/ui/fonts';
 import { configureKit, TvStage } from '@kromatv/ui/kit';
@@ -64,11 +57,9 @@ setHardwareSource(nativeHardware);
 setDecoderFrameLimits(decoderFrameLimits());
 // The television's own home screen, which on Android TV an app may publish rows
 // onto. Null on Apple TV, where there is no such list (see the module).
-setLauncherBackend(nativeLauncher);
 // Hearing the server announce itself on the LAN. Only a native shell can browse
 // DNS-SD, and it is the one route that finds a server on a port nothing would
 // have thought to scan - or behind a reverse proxy on 443 (see the module).
-setServerBrowse(browseForServers);
 // The decoder that draws artwork, and the platform's backdrop blur, which
 // frosts the kit's glass surfaces (episode cards, glass buttons). tvOS
 // composites UIVisualEffectView on the GPU, so the shell hands it over; the kit
@@ -120,6 +111,8 @@ export function App() {
       <TvApp
         voiceSearch={nativeVoiceSearch}
         searchShell={nativeSearchShell}
+        launcher={nativeLauncher}
+        serverBrowse={browseForServers}
         platform={Platform.OS === 'ios' ? 'AppleTV' : 'AndroidTV'}
         // This television announces itself on its own link, so a phone in the
         // room can sign it in without the server having to place the two by

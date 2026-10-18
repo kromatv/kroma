@@ -12,18 +12,19 @@ import {
 import { blockerOf, NOTIFICATION_CATEGORY_LABEL, PUSH_BLOCKER_LABEL } from '@kromatv/core';
 import { Box, color, Switch, styles, Text, fontSizes as textSizes } from '@kromatv/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
-import { nativePush } from '#mobile/lib/notifications/push';
+import { createNativePush } from '#mobile/lib/notifications/push';
 import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 export default function NotificationSettings() {
   const t = useT();
+  const nativePush = useMemo(() => createNativePush(t), [t]);
   const client = useClient();
   const qc = useQueryClient();
   const [blocker, setBlocker] = useState<PushBlocker | null>(null);
@@ -32,7 +33,7 @@ export default function NotificationSettings() {
   // Reads native state, so it can only run on the device.
   useEffect(() => {
     void nativePush.blocker().then(setBlocker);
-  }, []);
+  }, [nativePush]);
 
   const pushKeyQuery = client.query.notifications.push.key();
   const prefsQuery = client.query.notifications.prefs();

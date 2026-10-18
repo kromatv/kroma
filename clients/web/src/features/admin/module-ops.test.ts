@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 import { ModuleId } from '@kromatv/client/modules';
 import { act, cleanup, renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  createStoreOps,
   foldOpEvent,
   type OpModule,
   opPct,
   runningPct,
   type StoreOp,
+  StoreOpsProvider,
   useStoreOps,
 } from '#web/features/admin/module-ops';
 
@@ -34,6 +36,9 @@ vi.mock('@kromatv/client/events', async (importOriginal) => ({
 
 vi.mock('#web/shared/lib/api', () => ({ apiBase: () => 'http://kroma.test' }));
 
+beforeEach(() => {
+  H.sockets.length = 0;
+});
 afterEach(() => cleanup());
 
 const started = {
@@ -202,30 +207,49 @@ describe('runningPct', () => {
   });
 });
 
-describe('useStoreOps', () => {
-  it('shares one socket across consumers and closes it with the last of them', () => {
-    const page = renderHook(() => useStoreOps());
-    const dialog = renderHook(() => useStoreOps());
+describe('app-owned module operations', () => {
+  it('shares a lazy socket between subscriptions and closes it with the last one', () => {
+    const owner = createStoreOps('http://kroma.test');
+    const page = owner.subscribe(vi.fn());
+    const dialog = owner.subscribe(vi.fn());
     expect(H.sockets).toHaveLength(1);
     const socket = H.sockets[0];
     expect(socket?.connect).toHaveBeenCalledTimes(1);
+    socket?.onEvent({ ...started, op: 'live' });
+    expect(owner.getSnapshot().live?.finished).toBe(false);
+    page();
+    expect(socket?.close).not.toHaveBeenCalled();
+    dialog();
+    expect(socket?.close).toHaveBeenCalledTimes(1);
+  });
 
+  it('gives consumers within one root the same live history and active-module view', () => {
+    const view = renderHook(() => [useStoreOps(), useStoreOps()], { wrapper: StoreOpsProvider });
+    expect(H.sockets).toHaveLength(1);
+    const socket = H.sockets[0];
     act(() => socket?.onEvent({ type: 'library.changed' }));
-    expect(page.result.current.ops).toEqual({});
-
+    expect(view.result.current[0]?.ops).toEqual({});
     act(() => socket?.onEvent({ ...started, op: 'live' }));
-    expect(dialog.result.current.ops).toBe(page.result.current.ops);
-    expect(page.result.current.activeByModule.get('tv.kroma.indexer')).toMatchObject({
+    expect(view.result.current[0]?.ops).toBe(view.result.current[1]?.ops);
+    expect(view.result.current[0]?.activeByModule.get('tv.kroma.indexer')).toMatchObject({
       op: 'live',
       phase: 'wait',
     });
-
     act(() => socket?.onEvent({ type: 'module.op.finished', op: 'live', ok: true }));
-    expect(page.result.current.activeByModule.size).toBe(0);
+    expect(view.result.current[0]?.activeByModule.size).toBe(0);
+  });
 
-    page.unmount();
-    expect(socket?.close).not.toHaveBeenCalled();
-    dialog.unmount();
-    expect(socket?.close).toHaveBeenCalledTimes(1);
+  it('keeps roots and their socket cleanup independent', () => {
+    const first = renderHook(useStoreOps, { wrapper: StoreOpsProvider });
+    const second = renderHook(useStoreOps, { wrapper: StoreOpsProvider });
+    expect(H.sockets).toHaveLength(2);
+    const a = H.sockets[0];
+    const b = H.sockets[1];
+    act(() => a?.onEvent({ ...started, op: 'first' }));
+    expect(first.result.current.ops.first).toBeTruthy();
+    expect(second.result.current.ops).toEqual({});
+    first.unmount();
+    expect(a?.close).toHaveBeenCalledTimes(1);
+    expect(b?.close).not.toHaveBeenCalled();
   });
 });

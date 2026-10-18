@@ -3,6 +3,8 @@
 // webOS, desktop, web), both calls are silent no-ops. Payloads stay JSON strings
 // so a provider's `lastPushed` guard can compare two of them with `===`.
 
+import { createContext, useContext } from 'react';
+
 export interface LauncherBackend {
   // JSON array of `{id,title,subtitle?,imageUrl?,backdropUrl?,progressMs,
   // durationMs,kind,showId?,updatedAtMs}`; `[]` clears it.
@@ -12,13 +14,9 @@ export interface LauncherBackend {
   setHomeChannel(json: string): void;
 }
 
-let current: LauncherBackend | null = null;
+const Context = createContext<LauncherBackend | null>(null);
+export const LauncherProvider = Context.Provider;
 
-/** Call once at the app root, before the first render; null restores the no-op default. */
-export function setLauncherBackend(backend: LauncherBackend | null): void {
-  current = backend;
-}
-
-export function launcherBackend(): LauncherBackend | null {
-  return current;
+export function useLauncherBackend(): LauncherBackend | null {
+  return useContext(Context);
 }

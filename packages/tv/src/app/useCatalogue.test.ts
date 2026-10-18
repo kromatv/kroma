@@ -543,3 +543,15 @@ describe('useCatalogue live event stream', () => {
     expect(H.publishPreview).toHaveBeenCalledWith(H.instances[0], [{ id: 'm1' }]);
   });
 });
+
+describe('app-owned server discovery', () => {
+  it('passes each root’s native browser to discovery without registration', async () => {
+    const first = vi.fn(async () => []);
+    const second = vi.fn(async () => []);
+    renderHook(() => useCatalogue('TV', first));
+    renderHook(() => useCatalogue('TV', second));
+    await settle();
+    expect(H.discoverServer).toHaveBeenCalledWith({ browse: first });
+    expect(H.discoverServer).toHaveBeenCalledWith({ browse: second });
+  });
+});

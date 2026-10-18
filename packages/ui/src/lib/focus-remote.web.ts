@@ -3,11 +3,12 @@
 
 import { type Direction, Directions } from '@kromatv/spatial-nav';
 import { configureRemote as configureNavigatorRemote } from '@kromatv/spatial-nav/react';
+import { useEffect } from 'react';
 import { holdsCaret, webDocument } from './dom';
 import { focusBox, focusSeq } from './focus-here';
 import { isMirrored } from './focus-mirror';
 import { walkTab } from './focus-tab';
-import { markPress } from './perf';
+import { usePerfSampler } from './perf-provider';
 
 const PROBE = { seq: focusSeq, box: focusBox };
 
@@ -95,7 +96,6 @@ export function configureRemote(): void {
         if (event.key === 'Tab' || (!event.key && legacyCode(event) === TAB_CODE)) {
           event.preventDefault();
           dropStrayFocus(document);
-          markPress();
           walkTab(handle, PROBE, event.shiftKey);
           return;
         }
@@ -116,7 +116,6 @@ export function configureRemote(): void {
         // arrow key and the focused control walks out of the viewport.
         event.preventDefault();
         dropStrayFocus(document);
-        markPress();
         handle(direction);
       };
       const onKeyUp = (event: KeyboardEvent) => {
@@ -144,10 +143,25 @@ export function postRemoteDirection(direction: Direction): void {
   for (const handle of handlers) handle(direction);
 }
 
-/** Nothing to mount: the listener above is not tied to a screen. Kept so
- * <FocusScope> can call it on every target. */
-export function useRemoteBridge(_on = true): void {
-  // Intentionally empty.
+/** A screen records its own remote latency through its app's sampler. */
+export function useRemoteBridge(on = true): void {
+  const perf = usePerfSampler();
+  useEffect(() => {
+    const document = webDocument();
+    if (!on || !perf || !document) return;
+    const pressed = (event: KeyboardEvent) => {
+      if (
+        KEYS[event.key] ||
+        CODES[legacyCode(event)] ||
+        event.key === 'Tab' ||
+        legacyCode(event) === TAB_CODE
+      ) {
+        perf.markPress();
+      }
+    };
+    document.addEventListener('keydown', pressed, true);
+    return () => document.removeEventListener('keydown', pressed, true);
+  }, [on, perf]);
 }
 
 /** Nothing to subscribe to: a browser shell already reads its hardware keyboard

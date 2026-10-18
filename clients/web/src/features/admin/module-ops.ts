@@ -1,15 +1,23 @@
 // Live `module.op.*` state: the store's install / update / uninstall progress
 // frames folded into a map the UI renders as per-module progress bars. The
-// fold is a pure reducer so it is testable without a socket. One module-level
-// socket + state store is shared by every consumer (page, install dialog,
-// detail drawer), so a late-mounting dialog still sees the frames that came
-// before it and one tab holds one extra connection, not three. Plus the
+// fold is a pure reducer so it is testable without a socket. One admin root
+// owns the socket and history shared by its page, install dialog, and detail
+// drawer, so a late dialog sees earlier frames without opening another socket. Plus the
 // sidecar restart, the one module op the server answers in a single call.
 
 import { KromaEvents, type ServerEvent, type StoreOpEvent } from '@kromatv/client/events';
 import type { ModuleId } from '@kromatv/client/modules';
 import type { MessageKey } from '@kromatv/i18n';
-import { useMemo, useState, useSyncExternalStore } from 'react';
+import {
+  createContext,
+  createElement,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { message, restartModule } from '#web/features/admin/module-api';
 import { apiBase } from '#web/shared/lib/api';
 
@@ -124,29 +132,54 @@ export function runningPct(phase: OpPhase, pct: number | null): number {
   return phase === 'wait' ? 0 : 100;
 }
 
-let ops: Record<string, StoreOp> = {};
-const listeners = new Set<() => void>();
-let socket: KromaEvents<ServerEvent | StoreOpEvent> | null = null;
+const EMPTY_OPS: Record<string, StoreOp> = Object.freeze({});
+const emptySnapshot = () => EMPTY_OPS;
+const noSubscription = () => () => {};
 
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  if (!socket) {
-    socket = new KromaEvents<ServerEvent | StoreOpEvent>(apiBase(), {
-      onEvent: (e) => {
-        if (!e.type.startsWith('module.op.')) return;
-        ops = foldOpEvent(ops, e as StoreOpEvent);
-        for (const l of listeners) l();
-      },
-    });
-    socket.connect();
+/** One admin root owns its operation history and lazy socket connection. */
+export function createStoreOps(baseUrl: string) {
+  let ops: Record<string, StoreOp> = EMPTY_OPS;
+  const listeners = new Set<() => void>();
+  let socket: KromaEvents<ServerEvent | StoreOpEvent> | null = null;
+
+  function subscribe(listener: () => void): () => void {
+    listeners.add(listener);
+    if (!socket) {
+      socket = new KromaEvents<ServerEvent | StoreOpEvent>(baseUrl, {
+        onEvent: (e) => {
+          if (!e.type.startsWith('module.op.')) return;
+          ops = foldOpEvent(ops, e as StoreOpEvent);
+          for (const l of listeners) l();
+        },
+      });
+      socket.connect();
+    }
+    return () => {
+      listeners.delete(listener);
+      if (listeners.size === 0) {
+        socket?.close();
+        socket = null;
+      }
+    };
   }
-  return () => {
-    listeners.delete(listener);
-    if (listeners.size === 0) {
+
+  return {
+    subscribe,
+    getSnapshot: () => ops,
+    dispose() {
       socket?.close();
       socket = null;
-    }
+      listeners.clear();
+    },
   };
+}
+
+const Context = createContext<ReturnType<typeof createStoreOps> | null>(null);
+
+export function StoreOpsProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const [store] = useState(() => createStoreOps(apiBase()));
+  useEffect(() => () => store.dispose(), [store]);
+  return createElement(Context.Provider, { value: store }, children);
 }
 
 export function useStoreOps(): {
@@ -154,7 +187,12 @@ export function useStoreOps(): {
   /** The in-flight state of each module currently part of an unfinished op. */
   activeByModule: Map<string, OpModule & { op: string }>;
 } {
-  const snapshot = useSyncExternalStore(subscribe, () => ops);
+  const store = useContext(Context);
+  const snapshot = useSyncExternalStore(
+    store?.subscribe ?? noSubscription,
+    store?.getSnapshot ?? emptySnapshot,
+    emptySnapshot,
+  );
   const activeByModule = useMemo(() => {
     const map = new Map<string, OpModule & { op: string }>();
     for (const op of Object.values(snapshot)) {

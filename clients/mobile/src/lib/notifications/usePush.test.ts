@@ -37,7 +37,6 @@ const native = vi.hoisted(() => ({ module: null as unknown }));
 vi.mock('./native', () => ({ push: () => native.module }));
 
 const labels = vi.hoisted(() => ({
-  setPushTranslator: vi.fn(),
   registerCategories: vi.fn(async () => undefined),
   registerAndroidChannels: vi.fn(async () => undefined),
 }));
@@ -67,7 +66,6 @@ beforeEach(() => {
   session.status = 'signedIn';
   native.module = notifications;
   translator.current = (key: string) => key;
-  labels.setPushTranslator.mockClear();
   labels.registerCategories.mockClear();
   labels.registerAndroidChannels.mockClear();
   notifications.setNotificationHandler.mockClear();
@@ -83,7 +81,8 @@ beforeEach(() => {
 describe('keeping the OS labels in the app language', () => {
   it('hands the translator over and registers the categories and channels', () => {
     renderHook(() => usePushLabels());
-    expect(labels.setPushTranslator).toHaveBeenCalledWith(expect.any(Function));
+    expect(labels.registerCategories).toHaveBeenCalledWith(translator.current);
+    expect(labels.registerAndroidChannels).toHaveBeenCalledWith(translator.current);
     expect(labels.registerCategories).toHaveBeenCalledTimes(1);
     expect(labels.registerAndroidChannels).toHaveBeenCalledTimes(1);
   });

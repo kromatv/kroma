@@ -6,6 +6,7 @@ import { type ReactNode, useEffect, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { usePoll } from '#web/features/admin/hooks';
 import { AdminModalHosts } from '#web/features/admin/modal-hosts';
+import { StoreOpsProvider } from '#web/features/admin/module-ops';
 import { AdminContext } from '#web/features/admin/shell-context';
 import { AdminMobileTopbar, AdminSidebar } from '#web/features/admin/shell-sidebar';
 import { ADMIN_SCROLLER, ADMIN_SCROLLER_CONTENT } from '#web/features/admin/web-style';
@@ -69,7 +70,9 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <AdminHostProvider value={kit}>
       <ModuleSlotProvider registry={moduleRegistry}>
-        <AdminContext.Provider value={adminValue}>{children}</AdminContext.Provider>
+        <StoreOpsProvider>
+          <AdminContext.Provider value={adminValue}>{children}</AdminContext.Provider>
+        </StoreOpsProvider>
       </ModuleSlotProvider>
     </AdminHostProvider>
   );

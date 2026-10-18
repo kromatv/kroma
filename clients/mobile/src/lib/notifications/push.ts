@@ -15,16 +15,9 @@ import { deviceLabel } from '#mobile/lib/device';
 import { push as loadPush } from './native';
 import { forgetGrant, grantFor, storedGrant } from './relay';
 
-// OS-facing labels (category buttons, channel names) are handed to iOS/Android
-// imperatively, once, so the live translator is pushed in here rather than
-// read from context.
-let translate: Translate = createTranslator(DEFAULT_LOCALE);
-
-/** Point the OS labels at the reader's language. Re-registering is the caller's
- * job: text already handed to the system does not change on its own. */
-export function setPushTranslator(next: Translate): void {
-  translate = next;
-}
+// A registration receives its language explicitly; concurrent roots cannot
+// change the translator underneath an in-flight permission request.
+const DEFAULT_TRANSLATE: Translate = createTranslator(DEFAULT_LOCALE);
 
 // APNs/Android only show actions from a category registered up front; add a
 // variant on both sides (kroma-domain's `PushCategory`) when adding one.
@@ -48,8 +41,8 @@ function transportFor(type: string): 'apns' | 'fcm' | null {
 }
 
 /** Register the categories whose buttons the server may ask for, labelled in the
- * language {@link setPushTranslator} was last given. */
-export async function registerCategories(): Promise<void> {
+ * language supplied by its owning app. */
+export async function registerCategories(translate: Translate = DEFAULT_TRANSLATE): Promise<void> {
   const Notifications = loadPush();
   if (!Notifications) return;
   await Promise.all(
@@ -69,7 +62,9 @@ export async function registerCategories(): Promise<void> {
 /** Android requires every notification to name a channel, which (not the
  * payload) owns importance and sound; one per category so a user can silence
  * one kind of alert while keeping another loud. */
-export async function registerAndroidChannels(): Promise<void> {
+export async function registerAndroidChannels(
+  translate: Translate = DEFAULT_TRANSLATE,
+): Promise<void> {
   if (Platform.OS !== 'android') return;
   const Notifications = loadPush();
   if (!Notifications) return;
@@ -99,62 +94,66 @@ export async function registerAndroidChannels(): Promise<void> {
   );
 }
 
-export const nativePush: PushCapability = {
-  // Does not reject a simulator: it shows the permission dialog fine and can
-  // often register for real; only minting a token may fail, which `subscribe`
-  // reports once it actually tries.
-  async blocker(): Promise<PushBlocker | null> {
-    if (Platform.OS !== 'ios' && Platform.OS !== 'android') return 'unsupported';
-    const Notifications = loadPush();
-    // Native module missing: this build predates the dependency, needs `expo prebuild`.
-    if (!Notifications) return 'needs-rebuild';
-    const { status } = await Notifications.getPermissionsAsync();
-    // iOS only prompts once; `denied` can only be undone in Settings.
-    return status === 'denied' ? 'denied' : null;
-  },
+export function createNativePush(translate: Translate): PushCapability {
+  return {
+    // Does not reject a simulator: it shows the permission dialog fine and can
+    // often register for real; only minting a token may fail, which `subscribe`
+    // reports once it actually tries.
+    async blocker(): Promise<PushBlocker | null> {
+      if (Platform.OS !== 'ios' && Platform.OS !== 'android') return 'unsupported';
+      const Notifications = loadPush();
+      // Native module missing: this build predates the dependency, needs `expo prebuild`.
+      if (!Notifications) return 'needs-rebuild';
+      const { status } = await Notifications.getPermissionsAsync();
+      // iOS only prompts once; `denied` can only be undone in Settings.
+      return status === 'denied' ? 'denied' : null;
+    },
 
-  async subscribe(): Promise<SubscribeBody> {
-    const Notifications = loadPush();
-    if (!Notifications) throw new Error('needs-rebuild');
+    async subscribe(): Promise<SubscribeBody> {
+      const Notifications = loadPush();
+      if (!Notifications) throw new Error('needs-rebuild');
 
-    const { status } = await Notifications.requestPermissionsAsync({
-      ios: { allowAlert: true, allowBadge: true, allowSound: true },
-    });
-    if (status !== 'granted') throw new Error('denied');
+      const { status } = await Notifications.requestPermissionsAsync({
+        ios: { allowAlert: true, allowBadge: true, allowSound: true },
+      });
+      if (status !== 'granted') throw new Error('denied');
 
-    await registerCategories();
-    await registerAndroidChannels();
+      await registerCategories(translate);
+      await registerAndroidChannels(translate);
 
-    // Only now can a simulator fail: it has shown the dialog, but may have no
-    // APNs/FCM registration behind it.
-    let token: Awaited<ReturnType<typeof Notifications.getDevicePushTokenAsync>>;
-    try {
-      token = await Notifications.getDevicePushTokenAsync();
-    } catch (e) {
-      throw new Error(Device.isDevice ? 'unsupported' : 'simulator', { cause: e });
-    }
-    const transport = transportFor(token.type);
-    if (!transport) throw new Error('unsupported');
+      // Only now can a simulator fail: it has shown the dialog, but may have no
+      // APNs/FCM registration behind it.
+      let token: Awaited<ReturnType<typeof Notifications.getDevicePushTokenAsync>>;
+      try {
+        token = await Notifications.getDevicePushTokenAsync();
+      } catch (e) {
+        throw new Error(Device.isDevice ? 'unsupported' : 'simulator', { cause: e });
+      }
+      const transport = transportFor(token.type);
+      if (!transport) throw new Error('unsupported');
 
-    // The raw token stops here; the server gets a grant instead (see ./relay):
-    // a self-hosted server holds no Apple/Google credential to spend it.
-    return {
-      transport: 'relay',
-      endpoint: await grantFor(transport, String(token.data)),
-      device: deviceLabel(),
-    };
-  },
+      // The raw token stops here; the server gets a grant instead (see ./relay):
+      // a self-hosted server holds no Apple/Google credential to spend it.
+      return {
+        transport: 'relay',
+        endpoint: await grantFor(transport, String(token.data)),
+        device: deviceLabel(),
+      };
+    },
 
-  // The grant, not the device token: `disablePush` names this exact string
-  // when asking the server to forget the device, so minting a fresh grant
-  // here instead would leave the server unable to find the row to delete.
-  async endpoint() {
-    return storedGrant();
-  },
+    // The grant, not the device token: `disablePush` names this exact string
+    // when asking the server to forget the device, so minting a fresh grant
+    // here instead would leave the server unable to find the row to delete.
+    async endpoint() {
+      return storedGrant();
+    },
 
-  // `disablePush` reads `endpoint()` before calling this, so the grant must
-  // still be on file when the server is told what to remove.
-  async unsubscribe() {
-    await forgetGrant();
-  },
-};
+    // `disablePush` reads `endpoint()` before calling this, so the grant must
+    // still be on file when the server is told what to remove.
+    async unsubscribe() {
+      await forgetGrant();
+    },
+  };
+}
+
+export const nativePush = createNativePush(DEFAULT_TRANSLATE);

@@ -25,6 +25,14 @@ Each host owns its queue. Dismissal, missing hosts, and host teardown resolve to
 `false`; unmounting one root does not affect another root's questions. The former
 module-level `confirm` export is replaced by `useConfirm`.
 
+## Performance recording
+
+Wrap an instrumented app with `<PerfProvider>` and read its recorder through
+`usePerfSampler()`. `TvApp` supplies this provider and enables its benchmark API:
+`globalThis.KROMA_PERF` exists while that app root is mounted. Unmount stops its
+animation loop. Standalone measurement tools can own a `createPerfSampler()`
+instance directly; the former module-level recorder functions are removed.
+
 ```
 src/
   core/                     the styling engine: the vocabulary, `sv`, themes (see "Styling")

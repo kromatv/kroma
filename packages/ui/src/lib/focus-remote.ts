@@ -17,7 +17,8 @@ import {
 } from 'react-native';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import { inputHeld } from './input-gate';
-import { markPress } from './perf';
+import type { PerfSampler } from './perf';
+import { usePerfSampler } from './perf-provider';
 import { isRemoteKeyUp } from './tv-remote';
 
 // Both Siri Remote input paths, clickpad and touch-surface swipes, land here:
@@ -59,10 +60,10 @@ const handlers = new Set<(direction: Direction) => void>();
 type Transport = 'events' | 'host';
 let owner: Transport | null = null;
 
-function stepRing(direction: Direction, from: Transport): void {
+function stepRing(direction: Direction, from: Transport, perf?: PerfSampler | null): void {
   owner ??= from;
   if (owner !== from) return;
-  markPress();
+  perf?.markPress();
   for (const handle of handlers) handle(direction);
 }
 
@@ -111,11 +112,12 @@ const useRemoteEvents: (handler: (event: HWEvent) => void) => void = HAS_TV_EVEN
  * this posts to EVERY registered navigator, so two live bridges would deliver
  * each press twice. See <FocusScope>'s `bridge` prop. */
 export function useRemoteBridge(on = true): void {
+  const perf = usePerfSampler();
   useRemoteEvents((event: HWEvent) => {
     if (!on) return;
     // A full-screen overlay (the brand intro) owns the remote while it's up.
     if (inputHeld()) return;
-    for (const direction of directionsOf(event)) stepRing(direction, 'events');
+    for (const direction of directionsOf(event)) stepRing(direction, 'events', perf);
   });
 }
 
@@ -175,30 +177,38 @@ const NO_HOST_PROPS: RemoteHostProps = {};
  * BUBBLE, so a scope nested inside another must not carry a second host or one
  * press walks the ring twice. */
 export function useRemoteHostProps(on = true): RemoteHostProps {
-  const onKeyDown = useCallback((event: NativeSyntheticEvent<TVKeyEvent>) => {
-    if (inputHeld()) return;
-    const { code, key, altKey, ctrlKey, metaKey } = event.nativeEvent;
-    // Auto-repeat from a held direction is how a TV scrolls a long rail.
-    const direction = KEY_CODES[code];
-    if (direction) {
-      if (direction !== Directions.ENTER || !event.nativeEvent.repeat) stepRing(direction, 'host');
-      // Fanned to the player chrome as well, the same way `useTVEventHandler`
-      // feeds both the navigator bridge and the player on tvOS. Sent whatever
-      // `stepRing` decided: the chrome keeps its own virtual focus and counts
-      // its own presses (see player/hooks/use-player-keys), so suppressing this
-      // to match the ring would leave the player deaf instead of steady.
-      const remoteKey = REMOTE_KEY[code];
-      if (remoteKey) for (const sub of remoteKeys) sub(remoteKey);
-      return;
-    }
-    // Not a direction: may be someone typing. See `useHardwareKeys`.
-    if (altKey || ctrlKey || metaKey) return;
-    if (key !== 'Backspace' && key.length !== 1) return;
-    for (const handle of typists) handle(key);
-  }, []);
-  const onKeyUp = useCallback((event: NativeSyntheticEvent<TVKeyEvent>) => {
-    if (KEY_CODES[event.nativeEvent.code] === Directions.ENTER) stepRing(RELEASE, 'host');
-  }, []);
+  const perf = usePerfSampler();
+  const onKeyDown = useCallback(
+    (event: NativeSyntheticEvent<TVKeyEvent>) => {
+      if (inputHeld()) return;
+      const { code, key, altKey, ctrlKey, metaKey } = event.nativeEvent;
+      // Auto-repeat from a held direction is how a TV scrolls a long rail.
+      const direction = KEY_CODES[code];
+      if (direction) {
+        if (direction !== Directions.ENTER || !event.nativeEvent.repeat)
+          stepRing(direction, 'host', perf);
+        // Fanned to the player chrome as well, the same way `useTVEventHandler`
+        // feeds both the navigator bridge and the player on tvOS. Sent whatever
+        // `stepRing` decided: the chrome keeps its own virtual focus and counts
+        // its own presses (see player/hooks/use-player-keys), so suppressing this
+        // to match the ring would leave the player deaf instead of steady.
+        const remoteKey = REMOTE_KEY[code];
+        if (remoteKey) for (const sub of remoteKeys) sub(remoteKey);
+        return;
+      }
+      // Not a direction: may be someone typing. See `useHardwareKeys`.
+      if (altKey || ctrlKey || metaKey) return;
+      if (key !== 'Backspace' && key.length !== 1) return;
+      for (const handle of typists) handle(key);
+    },
+    [perf],
+  );
+  const onKeyUp = useCallback(
+    (event: NativeSyntheticEvent<TVKeyEvent>) => {
+      if (KEY_CODES[event.nativeEvent.code] === Directions.ENTER) stepRing(RELEASE, 'host', perf);
+    },
+    [perf],
+  );
   return IS_ANDROID && on ? { onKeyDown, onKeyUp } : NO_HOST_PROPS;
 }
 

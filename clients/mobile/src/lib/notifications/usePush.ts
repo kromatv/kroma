@@ -10,7 +10,7 @@ import { useT } from '#mobile/lib/i18n';
 import { useSession } from '#mobile/lib/session';
 
 import { push as loadPush } from './native';
-import { registerAndroidChannels, registerCategories, setPushTranslator } from './push';
+import { registerAndroidChannels, registerCategories } from './push';
 import { refreshGrant } from './relay';
 import { handleTap } from './taps';
 
@@ -22,9 +22,8 @@ import { handleTap } from './taps';
 export function usePushLabels(): void {
   const t = useT();
   useEffect(() => {
-    setPushTranslator(t);
-    void registerCategories();
-    void registerAndroidChannels();
+    void registerCategories(t);
+    void registerAndroidChannels(t);
   }, [t]);
 }
 

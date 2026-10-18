@@ -27,7 +27,7 @@ import { useFocusScale } from '#ui/lib/focus-transition';
 import { useFocusVisible } from '#ui/lib/focus-visible';
 import { useHoverPassthrough } from '#ui/lib/hover-passthrough';
 import { inputHeld } from '#ui/lib/input-gate';
-import { markFocus } from '#ui/lib/perf';
+import { usePerfSampler } from '#ui/lib/perf-provider';
 import { WEB } from '#ui/lib/platform';
 import { pressGuardActive } from '#ui/lib/press-guard';
 import { useRingScope } from '#ui/lib/ring-scope';
@@ -79,6 +79,7 @@ function Focusable<R extends AnySv = AnySv>({
   value,
   ref,
 }: Readonly<FocusableProps<R>>) {
+  const perf = usePerfSampler();
   const [selfFocused, setSelfFocused] = useState(false);
   const pressRef = useRef<() => void>(() => {});
 
@@ -138,7 +139,7 @@ function Focusable<R extends AnySv = AnySv>({
     lift?.(true);
     // Where the ring landed, for the reading-order walk Tab does.
     noteFocus(box.current);
-    markFocus();
+    perf?.markFocus();
     // The screen now has a focus owner, so a control that mounts later must not
     // take it away.
     markFocusSettled();
@@ -146,7 +147,7 @@ function Focusable<R extends AnySv = AnySv>({
     reveal();
     report?.();
     onFocus?.();
-  }, [lift, onFocus, reveal, report]);
+  }, [lift, onFocus, reveal, report, perf]);
 
   const handleBlur = useCallback(() => {
     lift?.(false);

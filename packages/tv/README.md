@@ -32,6 +32,9 @@ Native shells pass search capabilities directly as
 Both props are optional; missing or unavailable backends retain the on-screen
 keyboard and hide the microphone. Each mounted app owns these providers; the
 former `setVoiceSearchBackend` and `setSearchShell` registrations are removed.
+Native launcher publishing and discovery follow the same ownership model:
+pass `launcher={nativeLauncher}` and `serverBrowse={browseForServers}` to `TvApp`
+instead of calling their former registration setters.
 
 
 `react` / `react-dom` are peer dependencies (≥ 19.2). Built on
