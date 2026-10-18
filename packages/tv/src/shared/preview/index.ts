@@ -11,5 +11,5 @@
 // on webOS and in the browser dev server.
 
 export { onDeepLink, readDeepLink, requestDeepLink } from '#tv/shared/preview/deeplink';
-export { publishPreview } from '#tv/shared/preview/service';
+export { createPreviewPublisher } from '#tv/shared/preview/service';
 export type { DeepLink } from '#tv/shared/preview/types';

@@ -85,7 +85,7 @@ vi.mock('#tv/shared/server', () => ({ initialServers: H.initialServers }));
 vi.mock('#tv/shared/preview', () => ({
   readDeepLink: H.readDeepLink,
   onDeepLink: H.onDeepLink,
-  publishPreview: H.publishPreview,
+  createPreviewPublisher: () => H.publishPreview,
 }));
 
 // Imported after the mocks are registered (vi.mock is hoisted above this line).
