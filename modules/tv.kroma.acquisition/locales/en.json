@@ -286,5 +286,15 @@
   "acq.grab.replace": "Replace",
   "acq.grab.anyway": "Grab anyway",
   "acq.sortLabel": "Sort:",
-  "acq.sortDate": "Date"
+  "acq.sortDate": "Date",
+  "acq.tab.accepted": "Accepted · {count}",
+  "acq.tab.refused": "Refused · {count}",
+  "acq.tab.all": "All · {count}",
+  "acq.releaseTabs": "Releases shown",
+  "acq.showMore": "Show {count} more ({rest} left)",
+  "acq.showRest_one": "Show the last one",
+  "acq.showRest_other": "Show the last {count}",
+  "acq.noneAccepted": "No release passes the profile's rules.",
+  "acq.noneRefused": "The profile refused no release.",
+  "acq.nothingPassed": "No release passes the profile's rules. Here are the ones it refuses, and why."
 }

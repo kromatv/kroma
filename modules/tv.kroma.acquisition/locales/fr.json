@@ -286,5 +286,15 @@
   "acq.grab.replace": "Remplacer",
   "acq.grab.anyway": "Prendre quand même",
   "acq.sortLabel": "Trier :",
-  "acq.sortDate": "Date"
+  "acq.sortDate": "Date",
+  "acq.tab.accepted": "Acceptées · {count}",
+  "acq.tab.refused": "Refusées · {count}",
+  "acq.tab.all": "Toutes · {count}",
+  "acq.releaseTabs": "Versions affichées",
+  "acq.showMore": "Afficher {count} de plus (reste {rest})",
+  "acq.showRest_one": "Afficher la dernière",
+  "acq.showRest_other": "Afficher les {count} dernières",
+  "acq.noneAccepted": "Aucune version ne passe les règles du profil.",
+  "acq.noneRefused": "Le profil n'a refusé aucune version.",
+  "acq.nothingPassed": "Aucune version ne passe les règles du profil. Voici celles qu'il refuse, et pourquoi."
 }

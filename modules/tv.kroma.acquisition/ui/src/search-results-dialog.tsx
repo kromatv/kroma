@@ -4,6 +4,7 @@ import { Box, Callout, Dialog, IconButton, Row, Skeleton, Text } from '@kromatv/
 import { IndexerReportStrip } from './indexer-report';
 import { ReleaseList } from './release-list';
 import { ReleaseSortSelect } from './release-sort-select';
+import { ReleaseTabs } from './release-tabs';
 import { NO_RELEASES, useReleaseView } from './use-release-view';
 import type { SearchState } from './use-search-runner';
 
@@ -28,7 +29,7 @@ export function SearchResultsDialog({
   const view = useReleaseView(state.view?.releases ?? NO_RELEASES);
   const open = state.busy || state.view != null || state.error != null;
   return (
-    <Dialog.Root open={open} onClose={onClose} width="2xl" title={heading}>
+    <Dialog.Root open={open} onClose={onClose} width="2xl" fullHeight title={heading}>
       <Dialog.Header>
         <Row between align="center" gap={16}>
           <Text variant="title" accessibilityRole="header" lines={1} flex minW={0}>
@@ -42,9 +43,12 @@ export function SearchResultsDialog({
           </Text>
         ) : null}
         {state.view && !state.busy ? (
-          <Row wrap between gap={12} align="center" mt={4}>
-            <IndexerReportStrip indexers={state.view.indexers} />
-            {view.rows.length > 1 ? <ReleaseSortSelect view={view} /> : null}
+          <Row wrap between gapX={16} gapY={10} align="center" mt={4}>
+            <ReleaseTabs view={view} />
+            <Row wrap gap={12} align="center" shrink={1} minW={0}>
+              <IndexerReportStrip indexers={state.view.indexers} />
+              <ReleaseSortSelect view={view} />
+            </Row>
           </Row>
         ) : null}
       </Dialog.Header>
@@ -73,7 +77,10 @@ export function SearchResultsDialog({
           ) : null}
           {!state.busy && state.view ? (
             <ReleaseList
+              key={`${view.tab}:${view.sort}`}
+              tab={view.tab}
               rows={view.rows}
+              counts={view.counts}
               indexers={state.view.indexers}
               canGrab={canGrab}
               busy={state.grabbing}

@@ -16,19 +16,20 @@ const hit = sv({
   base: { fill: true, _hover: { bg: 'tint/4' } },
 });
 
+/** What a card needs to offer its grab button. */
+export interface GrabActions {
+  canGrab: boolean;
+  busy: boolean;
+  onGrab: (release: ScoredReleaseView) => void;
+}
+
 export function ReleaseCard({
   release,
   picked,
   canGrab,
   busy,
   onGrab,
-}: Readonly<{
-  release: ScoredReleaseView;
-  picked: boolean;
-  canGrab: boolean;
-  busy: boolean;
-  onGrab: (release: ScoredReleaseView) => void;
-}>) {
+}: Readonly<GrabActions & { release: ScoredReleaseView; picked: boolean }>) {
   const [open, setOpen] = useState(false);
   const narrow = useBreakpoint() === 'base';
   const button =

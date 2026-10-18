@@ -32,6 +32,9 @@ interface DialogRootProps {
   /** The panel's step on the kit's width ladder, named for the densest thing it
    *  holds rather than measured in pixels. See {@link SURFACE_WIDTH}. */
   width?: SurfaceWidth;
+  /** Take the full height the window allows, so content that changes height
+   *  (a tabbed list) does not move the header under the pointer. */
+  fullHeight?: boolean;
   /** Panel padding, defaulting to the step the window is wide enough for (see
    *  {@link dialogPad}). 0 hands the surface to content that owns its own
    *  layout (a routed detail sheet); such a dialog names itself via `title`
@@ -49,6 +52,7 @@ function Root({
   description,
   children,
   width = 'md',
+  fullHeight = false,
   pad,
   titleHidden = false,
 }: Readonly<DialogRootProps>) {
@@ -67,6 +71,7 @@ function Root({
     <DialogSurface
       onClose={onClose}
       width={width}
+      fullHeight={fullHeight}
       pad={pad}
       titleHidden={titleHidden}
       title={title}
@@ -94,6 +99,7 @@ function Root({
 function DialogSurface({
   onClose,
   width,
+  fullHeight,
   pad,
   title,
   titleHidden,
@@ -104,6 +110,7 @@ function DialogSurface({
 }: Readonly<
   Omit<DialogRootProps, 'open'> & {
     width: SurfaceWidth;
+    fullHeight: boolean;
     trapped: boolean;
     bridge: boolean;
   }
@@ -147,6 +154,7 @@ function DialogSurface({
       <Box
         ref={box}
         w={SURFACE_WIDTH[width]}
+        h={fullHeight ? '100%' : undefined}
         maxW="100%"
         maxH="100%"
         bg="surface2"

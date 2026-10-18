@@ -11,6 +11,8 @@ afterEach(cleanup);
 
 const width = (name: string) => getComputedStyle(screen.getByRole('dialog', { name })).width;
 
+const height = (name: string) => getComputedStyle(screen.getByRole('dialog', { name })).height;
+
 const pad = (name: string) => {
   const band = screen.getByRole('dialog', { name }).firstElementChild as HTMLElement;
   return getComputedStyle(band).paddingLeft;
@@ -42,6 +44,23 @@ describe("a panel's width", () => {
       </Drawer.Root>,
     );
     expect(width('Registres')).toBe(`${SURFACE_WIDTH.xs}px`);
+  });
+});
+
+describe("a panel's height", () => {
+  it('follows its content unless asked to take the window', () => {
+    render(
+      <>
+        <Dialog.Root open title="Court">
+          <Text>Corps</Text>
+        </Dialog.Root>
+        <Dialog.Root open title="Liste" fullHeight>
+          <Text>Corps</Text>
+        </Dialog.Root>
+      </>,
+    );
+
+    expect([height('Court'), height('Liste')]).toEqual(['auto', '100%']);
   });
 });
 

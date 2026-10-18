@@ -1,23 +1,23 @@
 import type { IndexerReport, ScoredReleaseView } from '@kromatv/client/requests';
 import { useT } from '@kromatv/module-sdk';
-import { Box, Disclosure, EmptyState, Row, Text } from '@kromatv/ui/kit';
+import { Box, EmptyState, Text } from '@kromatv/ui/kit';
 import { nothingAnswered } from './indexer-report';
-import { ReleaseCard } from './release-card';
-import { autoPickOf, EFFECT_DOT, EFFECT_GROUP, type Effect, groupByEffect } from './release-effect';
-
-interface CardActions {
-  canGrab: boolean;
-  busy: boolean;
-  onGrab: (release: ScoredReleaseView) => void;
-}
+import type { GrabActions } from './release-card';
+import { autoPickOf, groupByEffect } from './release-effect';
+import { ReleaseGroup } from './release-group';
+import type { ReleaseTab, TabCounts } from './release-tab';
 
 export function ReleaseList({
+  tab,
   rows,
+  counts,
   indexers,
   ...actions
 }: Readonly<
-  CardActions & {
+  GrabActions & {
+    tab: ReleaseTab;
     rows: readonly ScoredReleaseView[];
+    counts: TabCounts;
     indexers: readonly IndexerReport[];
   }
 >) {
@@ -27,57 +27,41 @@ export function ReleaseList({
     return (
       <Box py={32}>
         <EmptyState.Root icon={unsearched ? 'alert-triangle' : 'search'}>
-          <EmptyState.Title>
-            {t(unsearched ? 'requests.indexersAllFailed' : 'requests.noReleases')}
-          </EmptyState.Title>
+          <EmptyState.Title>{t(emptyKeyOf(tab, counts, unsearched))}</EmptyState.Title>
         </EmptyState.Root>
+      </Box>
+    );
+  }
+  if (tab === 'refused') {
+    return (
+      <Box gap={16}>
+        {counts.accepted === 0 ? (
+          <Text variant="meta" color="textMuted">
+            {t('acq.nothingPassed')}
+          </Text>
+        ) : null}
+        <ReleaseGroup effect={null} rows={rows} picked={null} {...actions} />
       </Box>
     );
   }
   const groups = groupByEffect(rows);
   const picked = autoPickOf(groups);
-  const kept = groups.filter((group) => group.effect !== 'refused');
-  const refused = groups.find((group) => group.effect === 'refused');
-  const cards = (list: readonly ScoredReleaseView[]) => (
-    <Box gap={8}>
-      {list.map((release) => (
-        <ReleaseCard
-          key={`${release.indexerId}-${release.guid}`}
-          release={release}
-          picked={release === picked}
+  return (
+    <Box gap={28}>
+      {groups.map((group) => (
+        <ReleaseGroup
+          key={group.effect}
+          effect={group.effect}
+          rows={group.rows}
+          picked={picked}
           {...actions}
         />
       ))}
     </Box>
   );
-  return (
-    <Box gap={28}>
-      {kept.map((group) => (
-        <Box key={group.effect} gap={12}>
-          <GroupHeading effect={group.effect} count={group.rows.length} />
-          {cards(group.rows)}
-        </Box>
-      ))}
-      {refused ? (
-        <Disclosure.Root defaultOpen={kept.length === 0}>
-          <Disclosure.Trigger>
-            {t(EFFECT_GROUP.refused, { count: refused.rows.length })}
-          </Disclosure.Trigger>
-          <Disclosure.Panel>{cards(refused.rows)}</Disclosure.Panel>
-        </Disclosure.Root>
-      ) : null}
-    </Box>
-  );
 }
 
-function GroupHeading({ effect, count }: Readonly<{ effect: Effect; count: number }>) {
-  const t = useT();
-  return (
-    <Row gap={8} align="center">
-      <Box w={8} h={8} radius="pill" bg={EFFECT_DOT[effect]} />
-      <Text variant="overline" color="textMuted" accessibilityRole="header">
-        {t(EFFECT_GROUP[effect], { count })}
-      </Text>
-    </Row>
-  );
+function emptyKeyOf(tab: ReleaseTab, counts: TabCounts, unsearched: boolean): string {
+  if (counts.all === 0) return unsearched ? 'requests.indexersAllFailed' : 'requests.noReleases';
+  return tab === 'refused' ? 'acq.noneRefused' : 'acq.noneAccepted';
 }
