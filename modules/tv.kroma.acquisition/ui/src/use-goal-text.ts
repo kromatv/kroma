@@ -78,7 +78,6 @@ function named(t: Translate, formats: Extract<GoalFormats, { kind: 'one' | 'eith
 }
 
 function neither(t: Translate, formats: readonly GoalFormat[]): string {
-  return formats
-    .map((format) => format.name)
-    .reduce((first, second) => t('acq.short.nor', { first, second }));
+  const [head = '', ...rest] = formats.map((format) => format.name);
+  return rest.reduce((first, second) => t('acq.short.nor', { first, second }), head);
 }

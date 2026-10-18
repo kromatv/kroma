@@ -1,4 +1,4 @@
-import type {} from '@kromatv/client/monitoring';
+import type { TitleRef } from '@kromatv/client/monitoring';
 import type { LedgerEpisode, SearchScope } from '@kromatv/client/requests';
 import { type SlotProps, useAdminHost, useCap, useT } from '@kromatv/module-sdk';
 import { Button, IconButton, Row } from '@kromatv/ui/kit';
@@ -33,7 +33,7 @@ export function MonitoringSearch({
 
   const improve = () =>
     searchNow.start(async () => {
-      const units = await unitsOf(client, kind, tmdbId, season, episode);
+      const units = await unitsOf(client, { kind, tmdbId }, season, episode);
       return acquisition.searchNow(kind, tmdbId, units);
     });
 
@@ -119,14 +119,13 @@ type Client = ReturnType<typeof useAdminHost>['client'];
  *  which would match nothing. */
 async function unitsOf(
   client: Client,
-  kind: 'movie' | 'show',
-  tmdbId: number,
+  title: TitleRef,
   season: number | null,
   episode: number | null,
 ): Promise<SearchUnit[]> {
-  if (kind === 'movie' || season === null) return [];
+  if (title.kind === 'movie' || season === null) return [];
   if (episode !== null) return [{ season, episode }];
-  const ledger = await client.monitoring.seasonLedger(tmdbId, season);
+  const ledger = await client.monitoring.seasonLedger(title.tmdbId, season);
   return ledger.episodes.map((one: LedgerEpisode) => ({ season, episode: one.episode }));
 }
 

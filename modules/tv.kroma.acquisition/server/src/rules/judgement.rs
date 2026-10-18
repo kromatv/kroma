@@ -10,9 +10,10 @@ use kroma_scene::{
     Candidate, Evaluation, Facts, Language, ParsedRelease, Query, Target, evaluate, judge,
 };
 
-use super::routes::{bad, require_reader, run};
+use super::routes::require_reader;
 use super::{RuleBook, load};
 use crate::dtos::RefusalView;
+use crate::http::{bad, run};
 
 pub(super) fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new().route("/acquisition/rules/test", axum::routing::post(test::<S>))

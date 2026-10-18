@@ -111,13 +111,13 @@ pub(crate) fn clean_title(name: &str) -> String {
     let mut out = String::with_capacity(name.len());
     for c in name.to_lowercase().replace('&', " and ").chars() {
         let folded = match c {
-            'à' | 'á' | 'â' | 'ä' | 'ã' | 'å' => 'a',
+            'à'..='å' => 'a',
             'ç' => 'c',
-            'è' | 'é' | 'ê' | 'ë' => 'e',
-            'ì' | 'í' | 'î' | 'ï' => 'i',
+            'è'..='ë' => 'e',
+            'ì'..='ï' => 'i',
             'ñ' => 'n',
-            'ò' | 'ó' | 'ô' | 'ö' | 'õ' => 'o',
-            'ù' | 'ú' | 'û' | 'ü' => 'u',
+            'ò'..='ö' => 'o',
+            'ù'..='ü' => 'u',
             'ý' | 'ÿ' => 'y',
             other => other,
         };

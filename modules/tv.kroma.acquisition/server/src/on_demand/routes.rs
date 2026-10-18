@@ -12,6 +12,7 @@ use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::host::{AuthUser, HostStorage, json_error};
 
 use super::{Unit, start_cutoff_search, start_title_search};
+use crate::http::run;
 
 const MAX_UNITS: usize = 500;
 
@@ -71,19 +72,4 @@ async fn cutoff_now<S: HostStorage + Clone + Send + Sync + 'static>(
     require(&state, &user)?;
     let answer = run(move || start_cutoff_search(&state)).await?;
     Ok(Json(answer).into_response())
-}
-
-async fn run<T, F>(f: F) -> Result<T, Response>
-where
-    F: FnOnce() -> anyhow::Result<T> + Send + 'static,
-    T: Send + 'static,
-{
-    match tokio::task::spawn_blocking(f).await {
-        Ok(Ok(v)) => Ok(v),
-        Ok(Err(e)) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
-        Err(_) => Err(json_error(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "internal error",
-        )),
-    }
 }

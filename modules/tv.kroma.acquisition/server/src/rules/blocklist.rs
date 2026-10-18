@@ -13,7 +13,8 @@ use rusqlite::params;
 use serde::Serialize;
 use serde_json::json;
 
-use super::routes::{require_reader, run};
+use super::routes::require_reader;
+use crate::http::run;
 
 pub(super) fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()

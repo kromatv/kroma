@@ -10,14 +10,15 @@ use axum::{Json, Router};
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::api::error::{json_error, lerr};
+use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
-use crate::api::util::{blocking, query};
+use crate::api::util::{blocking, query, service};
 use crate::db;
 use crate::i18n;
 use crate::i18n::ReqLocale;
 use crate::model::{
-    CreateRequestBody, MediaRequest, Permission, RequestCounts, RequestStatus, RequestsView, User,
+    CalendarEntry, CreateRequestBody, MediaRequest, Permission, RequestCounts, RequestStatus,
+    RequestsView, User,
 };
 use crate::state::SharedState;
 
@@ -61,23 +62,6 @@ fn list_scope(user: &User, params: &ListParams) -> Result<(bool, String), Respon
     require(user, Permission::RequestsCreate)?;
     let all = user.can(Permission::RequestsManage) && !params.mine.unwrap_or(false);
     Ok((all, user.id.clone()))
-}
-
-// Failures here are usually user-relevant (bad TMDB id, unknown request...), so
-// surface the message as a 400 instead of a mute 500.
-async fn service<T, F>(f: F) -> Result<T, Response>
-where
-    F: FnOnce() -> anyhow::Result<T> + Send + 'static,
-    T: Send + 'static,
-{
-    match tokio::task::spawn_blocking(f).await {
-        Ok(Ok(v)) => Ok(v),
-        Ok(Err(e)) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
-        Err(_) => Err(json_error(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "internal error",
-        )),
-    }
 }
 
 fn counts_of(list: &[MediaRequest]) -> RequestCounts {
@@ -159,22 +143,15 @@ pub async fn calendar(
     AuthUser(user): AuthUser,
     Query(params): Query<ListParams>,
 ) -> Result<Response, Response> {
-    let (all, uid) = list_scope(&user, &params)?;
-    let librarian = user.can(Permission::LibraryManage);
-    let today = crate::services::requests::today_ymd();
-    let entries = query(&state.db, move |pool| {
-        let conn = pool.get()?;
-        let scope = if all { None } else { Some(uid.as_str()) };
-        let mut entries = db::upcoming_calendar(&conn, &today, scope, 300)?;
-        if !all && librarian {
-            entries.extend(db::monitored_upcoming(&conn, &today, 300)?);
+    wanted_feed(&state, &user, &params, locale, |conn, scope| {
+        let mut entries = db::upcoming_calendar(conn, &scope.today, scope.owner(), 300)?;
+        if scope.adds_followed() {
+            entries.extend(db::monitored_upcoming(conn, &scope.today, 300)?);
             entries.sort_by(|a, b| a.air_date.cmp(&b.air_date).then(a.title.cmp(&b.title)));
         }
-        db::fill_episode_titles(&conn, &mut entries, locale)?;
         Ok(entries)
     })
-    .await?;
-    Ok(Json(entries).into_response())
+    .await
 }
 
 /// `GET /api/requests/missing` the "missing / wanted" list: aired/released wanted
@@ -187,20 +164,63 @@ pub async fn missing(
     AuthUser(user): AuthUser,
     Query(params): Query<ListParams>,
 ) -> Result<Response, Response> {
-    let (all, uid) = list_scope(&user, &params)?;
-    let librarian = user.can(Permission::LibraryManage);
-    let today = crate::services::requests::today_ymd();
-    let entries = query(&state.db, move |pool| {
-        let conn = pool.get()?;
-        let scope = if all { None } else { Some(uid.as_str()) };
-        let mut entries = db::missing_items(&conn, &today, scope, 500)?;
-        if !all && librarian {
-            entries.extend(db::monitored_missing(&conn, &today, 500)?);
+    wanted_feed(&state, &user, &params, locale, |conn, scope| {
+        let mut entries = db::missing_items(conn, &scope.today, scope.owner(), 500)?;
+        if scope.adds_followed() {
+            entries.extend(db::monitored_missing(conn, &scope.today, 500)?);
         }
         // Library-scan gaps: shows with aired episodes not on disk that were never
         // requested (the `library.missing` job fills these). Library-wide, not
         // request-scoped; the query already excludes shows with a live request.
-        entries.extend(db::library_gaps_list(&conn, 500)?);
+        entries.extend(db::library_gaps_list(conn, 500)?);
+        Ok(entries)
+    })
+    .await
+}
+
+struct WantedScope {
+    all: bool,
+    uid: String,
+    librarian: bool,
+    today: String,
+}
+
+impl WantedScope {
+    fn owner(&self) -> Option<&str> {
+        if self.all {
+            None
+        } else {
+            Some(self.uid.as_str())
+        }
+    }
+
+    fn adds_followed(&self) -> bool {
+        !self.all && self.librarian
+    }
+}
+
+async fn wanted_feed<F>(
+    state: &SharedState,
+    user: &User,
+    params: &ListParams,
+    locale: &'static str,
+    rows: F,
+) -> Result<Response, Response>
+where
+    F: FnOnce(&rusqlite::Connection, &WantedScope) -> anyhow::Result<Vec<CalendarEntry>>
+        + Send
+        + 'static,
+{
+    let (all, uid) = list_scope(user, params)?;
+    let scope = WantedScope {
+        all,
+        uid,
+        librarian: user.can(Permission::LibraryManage),
+        today: crate::services::requests::today_ymd(),
+    };
+    let entries = query(&state.db, move |pool| {
+        let conn = pool.get()?;
+        let mut entries = rows(&conn, &scope)?;
         db::fill_episode_titles(&conn, &mut entries, locale)?;
         Ok(entries)
     })

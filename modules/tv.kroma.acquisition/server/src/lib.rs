@@ -8,6 +8,7 @@
 pub mod auto;
 pub mod dtos;
 pub mod failures;
+mod http;
 pub mod import;
 pub mod on_demand;
 pub mod peers;

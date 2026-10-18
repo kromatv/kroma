@@ -215,12 +215,11 @@ function HeldCell({ row }: Readonly<{ row: LibraryTitle }>) {
   const t = useT();
   const ratio = heldRatio(row);
   if (ratio === null) {
+    const movie = row.onDisk > 0 ? 'monitoring.st.available' : 'monitoring.st.untracked';
     return (
       <Box w={COLUMN.held} shrink={0}>
         <Text variant="meta" color="textMuted" lines={1}>
-          {row.kind === 'show'
-            ? t('monitoring.onDiskCount', { count: row.onDisk })
-            : t(row.onDisk > 0 ? 'monitoring.st.available' : 'monitoring.st.untracked')}
+          {row.kind === 'show' ? t('monitoring.onDiskCount', { count: row.onDisk }) : t(movie)}
         </Text>
       </Box>
     );

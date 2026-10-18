@@ -53,7 +53,7 @@ const QUALITY_RESOLUTION: Record<string, string> = {
   '2160p': '2160p',
 };
 
-const SD_ONLY_SOURCES: readonly string[] = ['cam', 'sdtv', 'dvd'];
+const SD_ONLY_SOURCES: ReadonlySet<string> = new Set(['cam', 'sdtv', 'dvd']);
 
 export function factLabel(value: string): string {
   return LABEL[value as keyof typeof LABEL] ?? value;
@@ -76,6 +76,6 @@ export function qualityLabel(quality: string): string | null {
 export function qualityResolution(quality: string): string | null {
   const [head, tail] = quality.split('-');
   if (tail !== undefined) return QUALITY_RESOLUTION[tail] ?? null;
-  if (SD_ONLY_SOURCES.includes(head ?? '')) return QUALITY_RESOLUTION.sd ?? null;
+  if (SD_ONLY_SOURCES.has(head ?? '')) return QUALITY_RESOLUTION.sd ?? null;
   return QUALITY_RESOLUTION[head ?? ''] ?? null;
 }

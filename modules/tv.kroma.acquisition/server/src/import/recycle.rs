@@ -1,6 +1,7 @@
 //! Where a file an upgrade replaced goes: into the recycle bin when one is set,
 //! kept there for a number of days, or straight away when none is.
 
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
@@ -56,8 +57,8 @@ pub(super) fn retire(host: &dyn HostCtx, path: &Path) -> std::io::Result<Retired
 fn free_name(dir: &Path, path: &Path) -> PathBuf {
     let name = path.file_name().map(PathBuf::from).unwrap_or_default();
     let mut target = dir.join(&name);
-    let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
-    let ext = path.extension().and_then(|s| s.to_str());
+    let stem = path.file_stem().and_then(OsStr::to_str).unwrap_or("file");
+    let ext = path.extension().and_then(OsStr::to_str);
     let mut n = 2;
     while target.exists() {
         let numbered = match ext {

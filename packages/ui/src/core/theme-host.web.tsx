@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import { StyleSheet } from 'react-native';
 import { classes } from '#ui/lib/classed';
 import { stepsReached } from './breakpoint-cascade';
@@ -9,6 +9,11 @@ import type { ThemeHostProps } from './theme-host.types';
 const HOST = StyleSheet.create({
   host: { display: 'flex', flexDirection: 'column', width: '100%', height: '100%' },
 }).host;
+
+function stampGround(page: HTMLElement, ground: 'light' | 'dark' | undefined): void {
+  if (ground) page.dataset.theme = ground;
+  else delete page.dataset.theme;
+}
 
 /** Stamps a styling root's theme, ground and breakpoint steps on an element of
  *  its own, and hands them to whatever renders outside it. The outermost root
@@ -26,9 +31,13 @@ export function ThemeHost({ runtime, themeScope = true, children }: Readonly<The
   );
   const ground = !themeScope || mode === 'system' ? undefined : mode;
   const steps = stepsReached(step);
-  const marks: ScopeMarks = themeScope
-    ? { 'data-kroma-theme': id, 'data-theme': ground, 'data-kroma-bp': steps }
-    : { ...parent, 'data-kroma-bp': steps };
+  const marks = useMemo<ScopeMarks>(
+    () =>
+      themeScope
+        ? { 'data-kroma-theme': id, 'data-theme': ground, 'data-kroma-bp': steps }
+        : { ...parent, 'data-kroma-bp': steps },
+    [themeScope, id, ground, steps, parent],
+  );
   useLayoutEffect(() => {
     if (host.current && themeScope) return runtime.theme.attach(host.current, id);
   }, [runtime, id, themeScope]);
@@ -36,8 +45,7 @@ export function ThemeHost({ runtime, themeScope = true, children }: Readonly<The
   useLayoutEffect(() => {
     const page = host.current?.ownerDocument.documentElement;
     if (!outermost || !page) return;
-    if (ground) page.setAttribute('data-theme', ground);
-    else page.removeAttribute('data-theme');
+    stampGround(page, ground);
   }, [outermost, ground]);
   return (
     <div

@@ -15,6 +15,7 @@ use kroma_module_sdk::domain::{Permission, User};
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::host::{AuthUser, HostStorage, json_error};
 
+use crate::http::run;
 use crate::rules::files::{held_units, judge_title_files, unit_below_target};
 use crate::search::{SearchScope, Subject};
 
@@ -39,21 +40,6 @@ fn subject_of(kind: &str, tmdb_id: u64) -> Result<Subject, Response> {
     let kind = RequestKind::parse(kind)
         .ok_or_else(|| json_error(StatusCode::BAD_REQUEST, "unknown kind"))?;
     Ok(Subject::Title { kind, tmdb_id })
-}
-
-async fn run<T, F>(f: F) -> Result<T, Response>
-where
-    F: FnOnce() -> anyhow::Result<T> + Send + 'static,
-    T: Send + 'static,
-{
-    match tokio::task::spawn_blocking(f).await {
-        Ok(Ok(v)) => Ok(v),
-        Ok(Err(e)) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
-        Err(_) => Err(json_error(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "internal error",
-        )),
-    }
 }
 
 #[derive(Deserialize)]

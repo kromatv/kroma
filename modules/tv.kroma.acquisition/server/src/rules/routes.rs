@@ -2,7 +2,6 @@
 //! test them against a release name, and how one title's files measure up.
 
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, put};
 use axum::{Json, Router};
@@ -12,11 +11,12 @@ use serde_json::json;
 use kroma_module_sdk::domain::{Permission, User};
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::engine::services::jobs::now_ms;
-use kroma_module_sdk::host::{AuthUser, HostStorage, json_error};
+use kroma_module_sdk::host::{AuthUser, HostStorage};
 use kroma_scene::{CustomFormat, FormatSet, Quality, QualityProfile, Sizes};
 
 use super::files::{JudgedFile, held_units, judge_title_files, unit_below_target};
 use super::{load, original_language, set_default_profile, store};
+use crate::http::{bad, run};
 
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
@@ -47,24 +47,6 @@ pub(super) fn require_reader<S: HostStorage>(state: &S, user: &User) -> Result<(
     state.require(user, Permission::SettingsManage)
 }
 
-pub(super) fn bad(reason: impl std::fmt::Display) -> Response {
-    json_error(StatusCode::BAD_REQUEST, &reason.to_string())
-}
-
-pub(super) async fn run<T, F>(f: F) -> Result<T, Response>
-where
-    F: FnOnce() -> anyhow::Result<T> + Send + 'static,
-    T: Send + 'static,
-{
-    match tokio::task::spawn_blocking(f).await {
-        Ok(Ok(v)) => Ok(v),
-        Ok(Err(e)) => Err(bad(format!("{e:#}"))),
-        Err(_) => Err(json_error(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "internal error",
-        )),
-    }
-}
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

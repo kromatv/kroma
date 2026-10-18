@@ -18,7 +18,7 @@ export interface ReleaseView {
 
 export function useReleaseView(releases: readonly ScoredReleaseView[]): ReleaseView {
   const [sort, setSort] = useState<ReleaseSort>('score');
-  const [chosen, setTab] = useState<ReleaseTab | null>(null);
+  const [chosen, setChosen] = useState<ReleaseTab | null>(null);
   const counts = useMemo(() => countByTab(releases), [releases]);
   const tab = chosen ?? openingTab(counts);
   const rows = useMemo(
@@ -29,5 +29,5 @@ export function useReleaseView(releases: readonly ScoredReleaseView[]): ReleaseV
       ),
     [releases, tab, sort],
   );
-  return { tab, setTab, sort, setSort, counts, rows };
+  return { tab, setTab: setChosen, sort, setSort, counts, rows };
 }

@@ -14,19 +14,11 @@ import { type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
 import { WEB } from '#ui/lib/platform';
 import { useFadeRise } from '#ui/lib/use-fade-rise';
-import { Actions, type SelectionBarActionsProps } from './selection-bar-actions';
+import { Actions } from './selection-bar-actions';
 import { Announce } from './selection-bar-announce';
 import { SelectionBarContext, type SelectionBarState } from './selection-bar-context';
 import { useSelectionKeys } from './selection-bar-keys';
-import {
-  Clear,
-  Item,
-  SelectAll,
-  type SelectionBarItemProps,
-  type SelectionBarSelectAllProps,
-  type SelectionBarTone,
-  Status,
-} from './selection-bar-parts';
+import { Clear, Item, SelectAll, Status } from './selection-bar-parts';
 
 type SelectionBarPlacement = 'floating' | 'inline';
 
@@ -184,12 +176,11 @@ const sDefinition = styles({
  */
 const SelectionBar = { Root, Clear, Status, SelectAll, Actions, Item };
 
+export type { SelectionBarActionsProps } from './selection-bar-actions';
 export type {
-  SelectionBarActionsProps,
   SelectionBarItemProps,
-  SelectionBarPlacement,
-  SelectionBarRootProps,
   SelectionBarSelectAllProps,
   SelectionBarTone,
-};
+} from './selection-bar-parts';
+export type { SelectionBarPlacement, SelectionBarRootProps };
 export { SelectionBar };

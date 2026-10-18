@@ -10,7 +10,7 @@ use serde_json::json;
 
 use crate::api::error::{json_error, lerr};
 use crate::api::extract::AuthUser;
-use crate::api::util::query;
+use crate::api::util::{query, service};
 use crate::db;
 use crate::i18n;
 use crate::i18n::AskedLocale;
@@ -52,21 +52,6 @@ fn require(user: &User) -> Result<(), Response> {
 
 fn kind_of(raw: &str) -> Result<RequestKind, Response> {
     RequestKind::parse(raw).ok_or_else(|| json_error(StatusCode::BAD_REQUEST, "unknown kind"))
-}
-
-async fn service<T, F>(f: F) -> Result<T, Response>
-where
-    F: FnOnce() -> anyhow::Result<T> + Send + 'static,
-    T: Send + 'static,
-{
-    match tokio::task::spawn_blocking(f).await {
-        Ok(Ok(v)) => Ok(v),
-        Ok(Err(e)) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
-        Err(_) => Err(json_error(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "internal error",
-        )),
-    }
 }
 
 pub async fn list(

@@ -72,10 +72,11 @@ export function useMissingActions(groups: readonly MissingGroup[]): MissingActio
   const follow = async (group: MissingGroup, items: CalendarEntry[]) => {
     await client.monitoring.monitor(group.kind, group.tmdbId, { preset: 'none' });
     const episodes = episodeRefs(items);
-    if (episodes.length === 0) return true;
-    await client.monitoring.setEpisodes(group.tmdbId, {
-      episodes: episodes.map((episode) => ({ ...episode, monitored: true })),
-    });
+    if (episodes.length > 0) {
+      await client.monitoring.setEpisodes(group.tmdbId, {
+        episodes: episodes.map((episode) => ({ ...episode, monitored: true })),
+      });
+    }
     return true;
   };
 

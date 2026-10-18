@@ -71,7 +71,7 @@ export function freeId(name: string, taken: readonly string[]): string {
       .normalize('NFD')
       .replace(/[̀-ͯ]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
+      .replace(/^-|-$/g, '')
       .slice(0, 48) || 'profile';
   if (!taken.includes(slug)) return slug;
   let suffix = 2;

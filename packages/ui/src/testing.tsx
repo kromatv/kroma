@@ -107,7 +107,9 @@ export { createStyleTestHost } from './testing-style';
 /** The first product node beneath any root styling hosts. */
 export function contentRoot(container: Element): HTMLElement {
   let node = container.firstElementChild;
-  while (node?.hasAttribute('data-kroma-bp')) node = node.firstElementChild;
+  while (node instanceof HTMLElement && node.dataset.kromaBp !== undefined) {
+    node = node.firstElementChild;
+  }
   if (!(node instanceof HTMLElement)) throw new Error('expected rendered screen content');
   return node;
 }
