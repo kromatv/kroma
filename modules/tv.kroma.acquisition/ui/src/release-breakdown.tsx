@@ -1,10 +1,11 @@
 import type { ScoredReleaseView } from '@kromatv/client/requests';
 import { TABULAR, useFormat, useT } from '@kromatv/module-sdk';
-import { Box, Divider, Row, Text } from '@kromatv/ui/kit';
+import { Box, Divider, Icon, Row, Text } from '@kromatv/ui/kit';
 import { useRefusalText } from './refusal-text';
 import { useScoreLineText } from './score-line-text';
 
 const COLUMN_MIN = 260;
+const SCORE_MAX = 400;
 
 export function ScoreBreakdown({ release }: Readonly<{ release: ScoredReleaseView }>) {
   const t = useT();
@@ -12,15 +13,14 @@ export function ScoreBreakdown({ release }: Readonly<{ release: ScoredReleaseVie
   const lineText = useScoreLineText();
   const refusal = useRefusalText()(release.refusal, release.rejected);
   const kind = (line: ScoredReleaseView['breakdown'][number]) => line.code || line.rule;
-  const scored = release.breakdown.filter((line) => kind(line) === 'format' && line.delta !== 0);
+  const scored = release.breakdown
+    .filter((line) => kind(line) === 'format' && line.delta !== 0)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
   const ranking = release.breakdown.filter((line) => kind(line) !== 'format');
   return (
-    <Box px={16} py={14} gap={14} bg="surface1">
-      <Text variant="meta" color="text" selectable>
-        {release.title}
-      </Text>
-      <Row wrap gap={32} align="flex-start">
-        <Box flex minW={COLUMN_MIN} gap={6}>
+    <Box px={18} py={16} bg="surface1">
+      <Row wrap gapX={48} gapY={20} align="flex-start">
+        <Box flex minW={COLUMN_MIN} maxW={SCORE_MAX} gap={6}>
           <Text variant="overline" color="textMuted">
             {t('acq.breakdownScore')}
           </Text>
@@ -82,8 +82,23 @@ export function ScoreBreakdown({ release }: Readonly<{ release: ScoredReleaseVie
               {t('acq.peers', { seeders: release.seeders ?? 0, leechers: release.leechers })}
             </Text>
           )}
+          {release.detailsUrl ? <TrackerLink href={release.detailsUrl} /> : null}
         </Box>
       </Row>
     </Box>
+  );
+}
+
+function TrackerLink({ href }: Readonly<{ href: string }>) {
+  const t = useT();
+  return (
+    <a href={href} target="_blank" rel="noreferrer">
+      <Row gap={5} align="center" mt={4}>
+        <Text variant="meta" color="accentText">
+          {t('downloads.viewOnTracker')}
+        </Text>
+        <Icon name="external-link" size={12} thickness={2} color="accentText" />
+      </Row>
+    </a>
   );
 }

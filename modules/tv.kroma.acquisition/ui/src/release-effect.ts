@@ -36,3 +36,16 @@ export function groupByEffect<Row extends Pick<ScoredReleaseView, 'score' | 'ver
     rows: rows.filter((row) => effectOf(row) === effect),
   })).filter((group) => group.rows.length > 0);
 }
+
+/** The release an automatic search would take: the best scored of the first
+ *  group, when grabbing it fills a gap or improves a file. */
+export function autoPickOf<Row extends Pick<ScoredReleaseView, 'score' | 'verdict'>>(
+  groups: readonly { effect: Effect; rows: readonly Row[] }[],
+): Row | null {
+  const first = groups[0];
+  if (!first || (first.effect !== 'fill' && first.effect !== 'upgrade')) return null;
+  return first.rows.reduce<Row | null>(
+    (best, row) => (best == null || (row.score ?? 0) > (best.score ?? 0) ? row : best),
+    null,
+  );
+}

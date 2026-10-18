@@ -11,29 +11,6 @@ import { Icon, Row, Text } from '@kromatv/ui/kit';
 /** What a numeric cell shows when the indexer gave no number. */
 export const BLANK = '-';
 
-/** The indexer a release came from, linked to the tracker's page for it when
- *  the indexer gave one. */
-export function IndexerName({
-  name,
-  detailsUrl,
-}: Readonly<{ name: string; detailsUrl: string | null }>) {
-  const t = useT();
-  const label = (
-    <Text variant="meta" color="textDim" lines={1}>
-      {name}
-    </Text>
-  );
-  if (!detailsUrl) return label;
-  return (
-    <a href={detailsUrl} target="_blank" rel="noreferrer" title={t('downloads.viewOnTracker')}>
-      <Row gap={4} align="center">
-        {label}
-        <Icon name="external-link" size={11} thickness={2} color="textDim" />
-      </Row>
-    </a>
-  );
-}
-
 export function IndexerCell({
   indexerName,
   detailsUrl,

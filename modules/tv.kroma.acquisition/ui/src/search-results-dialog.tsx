@@ -1,11 +1,13 @@
 import type { ScoredReleaseView } from '@kromatv/client/requests';
 import { useT } from '@kromatv/module-sdk';
-import { Box, Button, Callout, Dialog, Row, TableSkeleton, Text } from '@kromatv/ui/kit';
+import { Box, Callout, Dialog, IconButton, Row, Skeleton, Text } from '@kromatv/ui/kit';
 import { IndexerReportStrip } from './indexer-report';
-import { NO_RELEASES, ReleaseFilters } from './release-filters';
-import { ReleaseTable } from './release-table';
-import { useReleaseView } from './use-release-view';
+import { ReleaseList } from './release-list';
+import { ReleaseSortSelect } from './release-sort-select';
+import { NO_RELEASES, useReleaseView } from './use-release-view';
 import type { SearchState } from './use-search-runner';
+
+const PLACEHOLDERS = ['a', 'b', 'c', 'd'] as const;
 
 export function SearchResultsDialog({
   state,
@@ -28,21 +30,26 @@ export function SearchResultsDialog({
   return (
     <Dialog.Root open={open} onClose={onClose} width="2xl" title={heading}>
       <Dialog.Header>
-        <Text variant="title" accessibilityRole="header">
-          {heading}
-        </Text>
-        <Text variant="meta" color="textDim">
-          {t(state.busy ? 'requests.searchRunning' : 'requests.searchAnswered')}
-        </Text>
-        {state.view ? (
+        <Row between align="center" gap={16}>
+          <Text variant="title" accessibilityRole="header" lines={1} flex minW={0}>
+            {heading}
+          </Text>
+          <IconButton control="sm" icon="x" label={t('common.close')} onPress={onClose} />
+        </Row>
+        {state.busy ? (
+          <Text variant="meta" color="textDim">
+            {t('requests.searchRunning')}
+          </Text>
+        ) : null}
+        {state.view && !state.busy ? (
           <Row wrap between gap={12} align="center" mt={4}>
-            <ReleaseFilters view={view} />
             <IndexerReportStrip indexers={state.view.indexers} />
+            {view.rows.length > 1 ? <ReleaseSortSelect view={view} /> : null}
           </Row>
         ) : null}
       </Dialog.Header>
       <Dialog.Panel>
-        <Box gap={12}>
+        <Box gap={16} pb={8}>
           {state.error ? (
             <Callout.Root tone="danger">
               <Callout.Title>{state.error}</Callout.Title>
@@ -57,12 +64,17 @@ export function SearchResultsDialog({
               </Callout.Title>
             </Callout.Root>
           ) : null}
-          {state.busy ? <TableSkeleton rows={6} /> : null}
+          {state.busy ? (
+            <Box gap={8}>
+              {PLACEHOLDERS.map((key) => (
+                <Skeleton key={key} h={92} radius="lg" />
+              ))}
+            </Box>
+          ) : null}
           {!state.busy && state.view ? (
-            <ReleaseTable
-              view={view}
+            <ReleaseList
+              rows={view.rows}
               indexers={state.view.indexers}
-              report={false}
               canGrab={canGrab}
               busy={state.grabbing}
               onGrab={onGrab}
@@ -70,11 +82,6 @@ export function SearchResultsDialog({
           ) : null}
         </Box>
       </Dialog.Panel>
-      <Dialog.Footer>
-        <Dialog.Actions>
-          <Button variant="ghost" label={t('common.close')} onPress={onClose} />
-        </Dialog.Actions>
-      </Dialog.Footer>
     </Dialog.Root>
   );
 }

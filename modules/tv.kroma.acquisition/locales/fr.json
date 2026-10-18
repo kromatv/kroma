@@ -27,7 +27,6 @@
   "acq.colProfile": "Profil",
   "acq.colQuality": "Qualité",
   "acq.colReason": "Motif",
-  "acq.colRelease": "Version",
   "acq.colSeeders": "Seeders",
   "acq.condition.audio": "Audio",
   "acq.condition.edition": "Édition",
@@ -75,7 +74,6 @@
   "acq.factRevision": "Révision",
   "acq.factSource": "Source",
   "acq.factSubtitles": "Sous-titres",
-  "acq.filterReleases": "Versions affichées",
   "acq.flag.doubleUpload": "Double upload",
   "acq.flag.freeleech": "Freeleech",
   "acq.flag.halfleech": "Demi-freeleech",
@@ -283,5 +281,10 @@
   "acq.breakdownDetails": "Détails",
   "acq.noScoredFormat": "Aucun format ne compte pour ce profil.",
   "acq.publishedOn": "Publiée le {date}",
-  "acq.peers": "{seeders} seeders, {leechers} leechers"
+  "acq.peers": "{seeders} seeders, {leechers} leechers",
+  "acq.grab.take": "Prendre",
+  "acq.grab.replace": "Remplacer",
+  "acq.grab.anyway": "Prendre quand même",
+  "acq.sortLabel": "Trier :",
+  "acq.sortDate": "Date"
 }

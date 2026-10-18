@@ -7,20 +7,8 @@ import type { ScoredReleaseView } from '@kromatv/client/requests';
 export const RELEASE_SORTS = ['score', 'size', 'seeders', 'date'] as const;
 export type ReleaseSort = (typeof RELEASE_SORTS)[number];
 
-export const RELEASE_FILTERS = ['accepted', 'rejected', 'all'] as const;
-export type ReleaseFilter = (typeof RELEASE_FILTERS)[number];
-
 export function releaseSortOf(column: string): ReleaseSort | null {
   return RELEASE_SORTS.find((one) => one === column) ?? null;
-}
-
-export function filterReleases(
-  releases: readonly ScoredReleaseView[],
-  filter: ReleaseFilter,
-): ScoredReleaseView[] {
-  if (filter === 'all') return [...releases];
-  const accepted = filter === 'accepted';
-  return releases.filter((r) => (r.score != null) === accepted);
 }
 
 // A rejected release has no score, so it sorts last whatever the column: it is

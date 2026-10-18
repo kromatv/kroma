@@ -1,6 +1,6 @@
 import type { ScoredReleaseView } from '@kromatv/client/requests';
 import { describe, expect, it } from 'vitest';
-import { filterReleases, sortReleases, targetLabel } from './release-sort';
+import { sortReleases, targetLabel } from './release-sort';
 
 function release(over: Partial<ScoredReleaseView>): ScoredReleaseView {
   return {
@@ -26,20 +26,6 @@ function release(over: Partial<ScoredReleaseView>): ScoredReleaseView {
     ...over,
   };
 }
-
-describe('filterReleases', () => {
-  const list = [release({ guid: 'a' }), release({ guid: 'b', score: null, rejected: 'too-big' })];
-
-  it('splits on whether the engine accepted the release', () => {
-    expect(filterReleases(list, 'accepted').map((r) => r.guid)).toEqual(['a']);
-    expect(filterReleases(list, 'rejected').map((r) => r.guid)).toEqual(['b']);
-    expect(filterReleases(list, 'all')).toHaveLength(2);
-  });
-
-  it('copies rather than reordering the array it was handed', () => {
-    expect(filterReleases(list, 'all')).not.toBe(list);
-  });
-});
 
 describe('sortReleases', () => {
   it('ranks by the chosen column, best first', () => {
