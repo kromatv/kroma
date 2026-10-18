@@ -5,19 +5,36 @@ The root `lint` command runs Oxlint; `check` runs it before Biome. CI runs the
 rule tests and `check`. Biome continues enforcing its existing rules, formatting,
 and import organization. Oxfmt is available for evaluation only.
 
+## Commands
+
+The root package keeps the existing `lint`, `format`, `check`, and `check:fix`
+scripts. Rule development lives in this workspace package. From the repository
+root, use `bun run --cwd packages/lint-rules <command>`, or change into this
+package and use:
+
+| Command | Purpose |
+| --- | --- |
+| `bun run rules [name] [--json]` | Read repair guides |
+| `bun run new <name>` | Scaffold an inactive rule draft |
+| `bun run test` | Test the rules and tooling |
+| `bun run compare [--rounds 5] [--output /tmp/results.json]` | Run the comparison |
+
+Use `bun run lint --format agent` at the repository root for agent diagnostics.
+Oxfmt remains available with `bunx oxfmt --check .` for evaluation.
+
 ## Use the rules
 
 ```sh
 bun run lint
-bun run lint:agent
-bun run lint:rules
-bun run lint:rules no-relative-workspace-imports
-bun run lint:rules --json
-bun run lint:rules:test
+bun run lint --format agent
+bun run --cwd packages/lint-rules rules
+bun run --cwd packages/lint-rules rules no-relative-workspace-imports
+bun run --cwd packages/lint-rules rules --json
+bun run --cwd packages/lint-rules test
 ```
 
-`lint:agent` uses Oxlint's agent output format. Every custom diagnostic includes
-a concrete action and the local repair-guide command. `lint:rules --json` emits
+`bun run lint --format agent` uses Oxlint's agent output format. Every custom
+diagnostic includes a concrete action and the local repair-guide command. `bun run rules --json` emits
 structured guidance that an agent can read before editing: `id`, `description`,
 `why`, `scope`, `repair`, `exceptions`, `verification`, `invalid`, and `valid`.
 Guidance lives beside each rule implementation. The helper rejects missing fields,
@@ -33,7 +50,7 @@ Use package names and public exports between declared workspaces. Inspects
 static imports, re-exports, literal dynamic imports, and unshadowed `require()`.
 Same-workspace relative imports remain valid. The source and destination must
 both belong to a declared workspace under one of the root workspace folders.
-Run `bun run lint:rules no-relative-workspace-imports` for repair steps.
+Run `bun run --cwd packages/lint-rules rules no-relative-workspace-imports` for repair steps.
 
 ### no-module-mutable-bindings
 
@@ -42,21 +59,21 @@ runtime source folders. Tests and declaration files are excluded. Move mutable
 state to its owner rather than hiding it in a `const` object. Theme-version caches
 need an individually reviewed exception with a reason. This rule does not claim
 to detect arbitrary mutation of `const` objects, Maps, or Sets.
-Run `bun run lint:rules no-module-mutable-bindings` for repair steps.
+Run `bun run --cwd packages/lint-rules rules no-module-mutable-bindings` for repair steps.
 
 ### no-react-forward-ref
 
 Reject React's `forwardRef` named imports/re-exports and default/namespace member
 accesses. Aliases and computed string properties are covered; shadowed variables
 and unrelated libraries are allowed. Use a plain component with `ref` as a prop.
-Run `bun run lint:rules no-react-forward-ref` for repair steps.
+Run `bun run --cwd packages/lint-rules rules no-react-forward-ref` for repair steps.
 
 ### no-comment-banners
 
 Reject comment lines framed with hyphens/equals and decorative separators.
 Strings and prose are allowed. Preserve workaround and safety rationale while
 removing decoration or extracting a named function/module.
-Run `bun run lint:rules no-comment-banners` for repair steps.
+Run `bun run --cwd packages/lint-rules rules no-comment-banners` for repair steps.
 
 ### index-reexports-only
 
@@ -102,13 +119,13 @@ literal hex/rgb/hsl colours in known colour properties, literal font sizes, and
 literal radii. Zero radius resets are allowed. The token/core layer, icon data,
 tests, and fixtures are excluded. Computed values and CSS strings are not checked.
 
-For every rule above, run `bun run lint:rules <rule-name>` for the full scope,
+For every rule above, run `bun run --cwd packages/lint-rules rules <rule-name>` for the full scope,
 exceptions, examples, and verification steps.
 
 ## Add a rule
 
 ```sh
-bun run lint:rule:new no-example-pattern
+bun run --cwd packages/lint-rules new no-example-pattern
 ```
 
 The command creates `drafts/no-example-pattern/rule.mjs` and refuses to overwrite
@@ -120,7 +137,7 @@ and the config integration test for examples.
 Move the implementation into `src/rules/`, update the helper import to
 `../define-rule.mjs`, and register it in `src/index.mjs`. Add the named rule to
 `.oxlintrc.json` as an error, using an override when scope is part of the policy.
-Run `bun run lint:rules:test`, `bun run lint:rules <name>`, and `bun run lint`.
+Run `bun run --cwd packages/lint-rules test`, `bun run --cwd packages/lint-rules rules <name>`, and `bun run lint`.
 For a rule with options, define `meta.schema` and test each supported option.
 
 A good diagnostic names the violation, its consequence, the next action, and the

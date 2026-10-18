@@ -24,7 +24,7 @@ export default defineRule(
     meta: {
       messages: {
         violation:
-          'Record<string, unknown> assertions bypass shape validation. Parse external input with a bounded Zod schema, or model the trusted value without a cast. Run bun run lint:rules no-unknown-record-assertions for the repair guide.',
+          'Record<string, unknown> assertions bypass shape validation. Parse external input with a bounded Zod schema, or model the trusted value without a cast. Run bun run --cwd packages/lint-rules rules no-unknown-record-assertions for the repair guide.',
       },
     },
     create(context) {

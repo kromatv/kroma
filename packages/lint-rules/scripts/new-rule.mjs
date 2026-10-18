@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 const name = process.argv[2];
 if (!name || !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(name)) {
-  console.error('Usage: bun run lint:rule:new <kebab-case-name>');
+  console.error('Usage: bun run --cwd packages/lint-rules new <kebab-case-name>');
   process.exit(1);
 }
 const directory = fileURLToPath(new URL(`../drafts/${name}/`, import.meta.url));

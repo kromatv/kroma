@@ -20,7 +20,7 @@ export default defineRule(
     meta: {
       messages: {
         violation:
-          'This task comment needs a real owner and a task: TODO(owner): action or FIXME(owner): action. Assign responsibility or remove the obsolete marker. Run bun run lint:rules owned-task-comments for the repair guide.',
+          'This task comment needs a real owner and a task: TODO(owner): action or FIXME(owner): action. Assign responsibility or remove the obsolete marker. Run bun run --cwd packages/lint-rules rules owned-task-comments for the repair guide.',
       },
     },
     create(context) {

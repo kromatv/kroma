@@ -23,7 +23,7 @@ export default defineRule(
     meta: {
       messages: {
         violation:
-          'Barrels must directly re-export public symbols. Move this statement into a named module and re-export from it; preserve any initialization behavior. Run bun run lint:rules index-reexports-only for the repair guide.',
+          'Barrels must directly re-export public symbols. Move this statement into a named module and re-export from it; preserve any initialization behavior. Run bun run --cwd packages/lint-rules rules index-reexports-only for the repair guide.',
       },
     },
     create(context) {

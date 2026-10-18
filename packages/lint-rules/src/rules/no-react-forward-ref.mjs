@@ -25,7 +25,7 @@ export default defineRule(
     meta: {
       messages: {
         forwardRef:
-          'React forwardRef violates the ref-as-prop contract and can retain stale effect-event closures. Use a plain function component accepting ref in props. Run bun run lint:rules no-react-forward-ref for types and verification.',
+          'React forwardRef violates the ref-as-prop contract and can retain stale effect-event closures. Use a plain function component accepting ref in props. Run bun run --cwd packages/lint-rules rules no-react-forward-ref for types and verification.',
       },
     },
     create(context) {

@@ -142,9 +142,9 @@ component library and thin shells. Each package and client carries its own
 README.
 
 House conventions are enforced by the [Oxc lint plugin](packages/lint-rules/README.md)
-alongside Biome. Run `bun run check` and `bun run lint:rules:test` before a PR.
-Agents can read repair guides with `bun run lint:rules --json`; new rules start
-with `bun run lint:rule:new <name>`. The current
+alongside Biome. Run `bun run check` and
+`bun run --cwd packages/lint-rules test` before a PR. Agents can read repair guides
+with `bun run --cwd packages/lint-rules rules --json`; new rules start with `bun run --cwd packages/lint-rules new <name>`. The current
 [evaluation and rollout backlog](docs/tooling/oxc-evaluation.md) records the
 existing findings that must be reviewed before enabling a green gate.
 

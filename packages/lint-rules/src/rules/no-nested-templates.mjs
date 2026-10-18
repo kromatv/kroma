@@ -20,7 +20,7 @@ export default defineRule(
     meta: {
       messages: {
         violation:
-          'Nested template literals obscure interpolation boundaries. Name the inner value before constructing the outer string, preserving conditional evaluation. Run bun run lint:rules no-nested-templates for the repair guide.',
+          'Nested template literals obscure interpolation boundaries. Name the inner value before constructing the outer string, preserving conditional evaluation. Run bun run --cwd packages/lint-rules rules no-nested-templates for the repair guide.',
       },
     },
     create(context) {

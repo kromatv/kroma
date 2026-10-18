@@ -20,7 +20,7 @@ export default defineRule(
     meta: {
       messages: {
         violation:
-          'This raw colour, radius, or font size bypasses the design system. Use the named palette/radius/type token or add the missing token at its source. Run bun run lint:rules no-raw-design-values for the repair guide.',
+          'This raw colour, radius, or font size bypasses the design system. Use the named palette/radius/type token or add the missing token at its source. Run bun run --cwd packages/lint-rules rules no-raw-design-values for the repair guide.',
       },
     },
     create(context) {

@@ -23,7 +23,7 @@ export default defineRule(
     meta: {
       messages: {
         mutable:
-          'Module-scope {{kind}} survives remounts and shares state across consumers. Use const for immutable values or move state into its owning component/hook/factory. Run bun run lint:rules no-module-mutable-bindings for the repair guide.',
+          'Module-scope {{kind}} survives remounts and shares state across consumers. Use const for immutable values or move state into its owning component/hook/factory. Run bun run --cwd packages/lint-rules rules no-module-mutable-bindings for the repair guide.',
       },
     },
     create(context) {

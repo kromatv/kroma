@@ -20,7 +20,7 @@ export default defineRule(
     meta: {
       messages: {
         violation:
-          'An em dash violates the house prose style. Rewrite the sentence with a comma, colon, or full stop while preserving its meaning. Run bun run lint:rules no-em-dashes for the repair guide.',
+          'An em dash violates the house prose style. Rewrite the sentence with a comma, colon, or full stop while preserving its meaning. Run bun run --cwd packages/lint-rules rules no-em-dashes for the repair guide.',
       },
     },
     create(context) {

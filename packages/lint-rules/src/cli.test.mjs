@@ -7,7 +7,8 @@ import plugin from './index.mjs';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 function run(script, ...args) {
-  return spawnSync('bun', [`packages/lint-rules/scripts/${script}.mjs`, ...args], {
+  const command = script === 'explain' ? 'rules' : 'new';
+  return spawnSync('bun', ['run', '--cwd', 'packages/lint-rules', command, ...args], {
     cwd: root,
     encoding: 'utf8',
   });

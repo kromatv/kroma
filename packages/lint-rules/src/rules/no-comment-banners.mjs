@@ -23,7 +23,7 @@ export default defineRule(
     meta: {
       messages: {
         banner:
-          'Decorative comment banners hide a naming or file-boundary problem. Extract a named function/module and remove the banner, preserving any workaround or safety rationale. Run bun run lint:rules no-comment-banners for the repair guide.',
+          'Decorative comment banners hide a naming or file-boundary problem. Extract a named function/module and remove the banner, preserving any workaround or safety rationale. Run bun run --cwd packages/lint-rules rules no-comment-banners for the repair guide.',
       },
     },
     create(context) {

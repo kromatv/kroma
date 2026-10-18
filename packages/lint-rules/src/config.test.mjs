@@ -49,7 +49,7 @@ it('loads all custom rules through the real config and preserves runtime exclusi
         .diagnostics.length,
       0,
     );
-    assert.match(lint('agent.ts', code, 'agent'), /lint:rules/);
+    assert.match(lint('agent.ts', code, 'agent'), /bun run --cwd packages\/lint-rules rules/);
     const cases = [
       ['index.ts', 'export const value = 1;', 'index-reexports-only'],
       ['template.ts', `const text = \`hello \${\`user \${name}\`}\`;`, 'no-nested-templates'],

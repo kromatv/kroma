@@ -27,7 +27,7 @@ export default defineRule(
     exceptions:
       'Root scripts, paths outside declared workspaces, and same-workspace imports are outside this rule. Nonliteral dynamic imports and TS import-equals are not inspected. No automatic fix: the public export and dependency must be chosen deliberately.',
     verification:
-      'Run bun run lint:oxc, the importing workspace typecheck, and its focused tests. Confirm the dependency is declared and the chosen subpath exists in exports. Source: CONVENTIONS.md, A package is reached by name, never by path.',
+      'Run bun run lint, the importing workspace typecheck, and its focused tests. Confirm the dependency is declared and the chosen subpath exists in exports. Source: CONVENTIONS.md, A package is reached by name, never by path.',
     invalid: ["import { tvShellConfig } from '../../packages/bundler/src/shell';"],
     valid: ["import { tvShellConfig } from '@kromatv/bundler';"],
   },
@@ -35,7 +35,7 @@ export default defineRule(
     meta: {
       messages: {
         boundary:
-          'Relative import "{{source}}" crosses into {{packageName}}, hiding the workspace dependency. Use its package name/public exports and declare workspace:* in the importing package.json. Run bun run lint:rules no-relative-workspace-imports for the repair guide.',
+          'Relative import "{{source}}" crosses into {{packageName}}, hiding the workspace dependency. Use its package name/public exports and declare workspace:* in the importing package.json. Run bun run --cwd packages/lint-rules rules no-relative-workspace-imports for the repair guide.',
       },
     },
     create(context) {

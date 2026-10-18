@@ -9,6 +9,9 @@
     ".": "./src/index.mjs"
   },
   "scripts": {
-    "test": "node --test src/*.test.mjs src/rules/*.test.mjs"
+    "test": "node --test src/*.test.mjs src/rules/*.test.mjs",
+    "rules": "bun scripts/explain.mjs",
+    "new": "bun scripts/new-rule.mjs",
+    "compare": "bun scripts/compare.mjs"
   }
 }

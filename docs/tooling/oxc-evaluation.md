@@ -20,8 +20,8 @@ scaffolder, tests, and CI integration. `bun run lint` now runs Oxlint;
 - Consumer styles use colour, radius, and typography tokens.
 
 Each rule has rationale, scope, repair steps, exceptions, before/after examples,
-and verification commands. Run `bun run lint:rules --json` for structured guides
-or `bun run lint:agent` for actionable diagnostics. See the
+and verification commands. Run `bun run --cwd packages/lint-rules rules --json` for structured guides
+or `bun run lint --format agent` for actionable diagnostics. See the
 [authoring instructions](../../packages/lint-rules/README.md).
 
 The full scan reports **852 existing findings**, detailed in the table below. The new `lint` and `check` intentionally return a
@@ -100,17 +100,17 @@ not establish that replacing Biome linting is universally much faster.
 Oxfmt is faster in this run, but would change 38 files. Its output and
 import sorting are not Biome parity. Import and package sorting are disabled
 in the candidate's sorting options to avoid an unrelated import/package rewrite;
-formatting itself is enabled. The canonical formatter stays Biome. `format:oxc:check`
-and `check:oxc` are evaluation commands, not the CI gate. The Oxfmt candidate was
-created with its built-in Biome migration, then reviewed.
+formatting itself is enabled. The canonical formatter stays Biome.
+`bunx oxfmt --check .` is an evaluation command, not the CI gate. The Oxfmt
+candidate was created with its built-in Biome migration, then reviewed.
 
 Reproduce without rewriting source:
 
 ```sh
 bun install --frozen-lockfile --ignore-scripts
-bun run lint:rules:test
-bun run lint:compare --rounds 5 --output /tmp/kroma-oxc-comparison.json
-bun run lint:agent
+bun run --cwd packages/lint-rules test
+bun run --cwd packages/lint-rules compare --rounds 5 --output /tmp/kroma-oxc-comparison.json
+bun run lint --format agent
 ```
 
 The [raw benchmark](oxc-results.json) records versions, host, revision, config, plugin, and

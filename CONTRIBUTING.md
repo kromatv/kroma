@@ -52,7 +52,7 @@ that breaks this.
 Everything must build and typecheck cleanly:
 
 ```bash
-bun run lint:rules:test    # custom Oxc rules and agent guidance
+bun run --cwd packages/lint-rules test    # custom Oxc rules and agent guidance
 bun run check             # Oxc house rules + Biome checks
 bun run typecheck          # all TS packages
 bun run build              # all frontends
@@ -74,8 +74,8 @@ cargo fmt                   # rustfmt is canonical; run before every PR
 - Write clear commit messages and describe the *why* in your PR.
 
 Custom lint rules live in [`packages/lint-rules`](packages/lint-rules/README.md).
-Use `bun run lint:rules --json` for agent-readable guidance, or
-`bun run lint:rule:new <name>` to scaffold a rule. The rollout findings and
+Use `bun run --cwd packages/lint-rules rules --json` for agent-readable guidance, or
+`bun run --cwd packages/lint-rules new <name>` to scaffold a rule. The rollout findings and
 benchmark methodology are in [`docs/tooling/oxc-evaluation.md`](docs/tooling/oxc-evaluation.md).
 
 ## Reporting bugs

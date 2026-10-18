@@ -21,7 +21,7 @@ export default defineRule(
     meta: {
       messages: {
         violation:
-          'JSDoc repeats information owned by the TypeScript signature. Remove redundant tags and keep only public-contract details as prose. Run bun run lint:rules no-redundant-jsdoc-tags for the repair guide.',
+          'JSDoc repeats information owned by the TypeScript signature. Remove redundant tags and keep only public-contract details as prose. Run bun run --cwd packages/lint-rules rules no-redundant-jsdoc-tags for the repair guide.',
       },
     },
     create(context) {

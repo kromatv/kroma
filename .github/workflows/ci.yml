@@ -94,7 +94,7 @@ jobs:
         with:
           node-version: '22'
       - run: bun install --frozen-lockfile
-      - run: bun run lint:rules:test
+      - run: bun run --cwd packages/lint-rules test
       - run: bun run typecheck
       - run: bun run check
       - run: bun run ci embeds
