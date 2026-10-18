@@ -5,7 +5,7 @@
   "type": "module",
   "description": "The spine the KROMA site apps share: the document shell and its head, the header and footer chrome, and the Cloudflare worker environment lookup.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
-  "license": "GPL-2.0-or-later",
+  "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kromatv/kroma.git",

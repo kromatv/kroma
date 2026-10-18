@@ -2,6 +2,8 @@
 
 One package leaves this repository, public on npm: **`@kromatv/sdk`**. It is the whole
 of what a module written elsewhere depends on, and the only thing published.
+It is MIT, like every crate and package it is assembled from, so a module built
+on it can carry any license. The server it plugs into is AGPL-3.0-or-later.
 
 | Inside it | From |
 |---|---|
@@ -9,7 +11,7 @@ of what a module written elsewhere depends on, and the only thing published.
 | `types/<pkg>/` declarations | `packages/{module-sdk,ui,core,client,registry,i18n,spatial-nav}` |
 | `types/react-native/` | the declaration files of the React Native fork the kit is typed against, so a module installs no React Native (it and its toolchain are most of a 250 MB `node_modules`; the runtime is the host's) |
 | `tsconfig.module.json` | `packages/cli/tsconfig.module.json` plus `paths` mapping every `@kromatv/*` specifier and `react-native` onto `types/` |
-| `rust/` | the eleven crates a sidecar links, out of `server/crates` (400 KB: the SDK's own, not the server's) |
+| `rust/` | the twelve crates a sidecar links, out of `server/crates` (400 KB: the SDK's own, not the server's) |
 | `templates/` | what `kroma create` renders |
 
 Every workspace package stays `private: true`; `bun run ci sdk stage` assembles
@@ -47,7 +49,7 @@ delivers both halves at one version.
 
 The closure is `kroma-module-sdk`, `kroma-module-runtime`, `kroma-module-host`,
 `kroma-module-manifest`, `kroma-module-macros`, `kroma-module-wire`,
-`kroma-media`, `kroma-sqlite`, `kroma-http`, `kroma-primitives`,
+`kroma-media`, `kroma-sqlite`, `kroma-http`, `kroma-i18n`, `kroma-primitives`,
 `kroma-testing`.
 
 None of it is server code, and that is the rule the split enforces. A sidecar

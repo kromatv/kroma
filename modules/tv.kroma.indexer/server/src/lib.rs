@@ -1,6 +1,6 @@
 //! Native Cardigann indexer engine: runs Cardigann YAML tracker definitions
 //! directly, as an alternative to Torznab/Jackett/Prowlarr. Definitions are
-//! GPL and fetched at runtime by [`store`], not vendored into this MIT repo.
+//! GPL and fetched at runtime by [`store`], not vendored into this repo.
 
 use serde::{Deserialize, Serialize};
 

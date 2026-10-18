@@ -4,7 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 description = "KROMA's two HTTP transports: a curl process per call for the outside world, and a pooled client for the loopback seam between the core and its module sidecars"
-license.workspace = true
+license = "MIT"
 
 [dependencies]
 anyhow = { workspace = true }

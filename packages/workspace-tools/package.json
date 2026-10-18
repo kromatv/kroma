@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Project-agnostic workspace analysis: build a dependency graph from native manifests, find the projects a change affects (transitively, dependency bumps included), and verify every dependency edge and minServer floor resolves. Pure core, no build logic \u2014 it names the affected artifacts and leaves building to the existing scripts.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
-  "license": "GPL-2.0-or-later",
+  "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kromatv/kroma.git",

@@ -9,7 +9,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
 description = "KROMA VPN module (backend): the managed WireGuard-to-SOCKS5 bridge (wireproxy) over the HostCtx seam (no dependency on the app)."
-license = "MIT"
+license = "AGPL-3.0-or-later"
 
 [[bin]]
 name = "kroma-module-vpn"

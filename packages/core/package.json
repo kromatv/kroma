@@ -5,7 +5,7 @@
   "type": "module",
   "description": "KROMA shared core API client, media types, HEVC capability detection, remote-control mapping, direct-play helpers.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
-  "license": "GPL-2.0-or-later",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kromatv/kroma.git",
