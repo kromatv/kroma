@@ -6,7 +6,7 @@ import { Pressable } from 'react-native';
 import { FlagBadges, FormatPills, QualityPill, ScorePill, VerdictLine } from './judgement-pills';
 import { useRefusalText } from './refusal-text';
 import { ScoreBreakdown } from './release-breakdown';
-import { BLANK, IndexerCell, SeedersCell, SizeCell } from './release-cells';
+import { BLANK, IndexerName, SeedersCell, SizeCell } from './release-cells';
 import { targetLabel } from './release-sort';
 
 export function ReleaseRow({
@@ -35,7 +35,6 @@ export function ReleaseRow({
           <Table.Cell>
             <Quality release={release} />
           </Table.Cell>
-          <IndexerCell indexerName={release.indexerName} detailsUrl={release.detailsUrl} />
           <SizeCell sizeBytes={release.sizeBytes} />
           <SeedersCell seeders={release.seeders} />
           <Table.Cell>
@@ -80,19 +79,17 @@ function ReleaseHeading({
               {target}
             </Text>
           ) : null}
-          <Text variant="meta" color="textDim" lines={1}>
-            {release.indexerName}
-          </Text>
+          <IndexerName name={release.indexerName} detailsUrl={release.detailsUrl} />
           {release.publishedAt ? <Published at={release.publishedAt} /> : null}
           {release.verdict ? <VerdictLine verdict={release.verdict} /> : null}
           <FlagBadges flags={release.flags} />
+          <FormatPills formats={release.formats} />
         </Row>
         {refusal ? (
           <Text variant="meta" color="dangerHover" lines={2}>
             {t('acq.refusedBy', { reason: refusal })}
           </Text>
         ) : null}
-        <FormatPills formats={release.formats} />
       </Box>
     </Row>
   );

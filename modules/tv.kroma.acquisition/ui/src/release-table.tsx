@@ -7,13 +7,12 @@ import { releaseSortOf } from './release-sort';
 import type { ReleaseView } from './use-release-view';
 
 const COLUMNS: TableColumn[] = [
-  { min: 220 },
+  { min: 320 },
   { width: 136, from: 'md' },
-  { width: 150, from: 'md' },
-  { width: 104, from: 'md', column: 'size' },
+  { width: 92, from: 'md', column: 'size' },
   { width: 116, from: 'md', column: 'seeders' },
-  { width: 104, from: 'md', column: 'score' },
-  { width: 44, from: 'md' },
+  { width: 96, from: 'md', column: 'score' },
+  { width: 48, from: 'md' },
 ];
 
 export function ReleaseTable({
@@ -62,7 +61,6 @@ export function ReleaseTable({
         <Table.Header>
           <Table.Column>{t('acq.colRelease')}</Table.Column>
           <Table.Column>{t('acq.colQuality')}</Table.Column>
-          <Table.Column>{t('requests.colIndexer')}</Table.Column>
           <Table.Column>{t('requests.colSize')}</Table.Column>
           <Table.Column>{t('acq.colSeeders')}</Table.Column>
           <Table.Column>{t('requests.colScore')}</Table.Column>
