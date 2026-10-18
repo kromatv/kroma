@@ -14,6 +14,14 @@ fn multi_with_a_dub_tag_names_the_dub() {
 }
 
 #[test]
+fn bare_multi_carries_the_original_audio_and_a_french_dub_of_unstated_region() {
+    let r = p("Movie.2020.MULTi.1080p.BluRay.x264");
+
+    assert!(r.multi);
+    assert_eq!(r.languages, [fr(None)]);
+}
+
+#[test]
 fn truefrench_is_the_france_dub() {
     assert_eq!(
         p("Movie.2020.TRUEFRENCH.1080p.BluRay").languages,

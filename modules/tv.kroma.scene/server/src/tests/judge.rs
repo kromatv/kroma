@@ -211,6 +211,51 @@ fn a_required_term_must_be_in_the_name() {
 }
 
 #[test]
+fn one_required_term_out_of_several_is_enough() {
+    let mut f = fixture();
+    f.profile.must_contain = vec!["VOSTFR".into(), "MULTi".into()];
+
+    let one = f.judge("Movie.2020.MULTi.1080p.WEB.x265", 2, 10, movie());
+    let neither = f.judge("Movie.2020.1080p.WEB.x265", 2, 10, movie());
+
+    assert!(one.is_ok());
+    assert_eq!(rule(neither), "missing-required-keyword");
+}
+
+#[test]
+fn a_term_is_found_wherever_it_sits_in_the_name() {
+    let mut f = fixture();
+    f.profile.must_not_contain = vec!["WEB-DL".into()];
+
+    let result = f.judge("Movie.2020.1080p.WEB-DL.x265", 2, 10, movie());
+
+    assert_eq!(rule(result), "forbidden-keyword");
+}
+
+#[test]
+fn a_term_between_slashes_is_a_regular_expression() {
+    let mut f = fixture();
+    f.profile.must_contain = vec!["/x26[45]$/".into()];
+
+    let present = f.judge("Movie.2020.1080p.WEB-DL.x265", 2, 10, movie());
+    let missing = f.judge("Movie.2020.1080p.WEB-DL.AV1", 2, 10, movie());
+
+    assert!(present.is_ok());
+    assert_eq!(rule(missing), "missing-required-keyword");
+}
+
+#[test]
+fn a_term_that_cannot_be_read_is_skipped_rather_than_refusing_everything() {
+    let mut f = fixture();
+    f.profile.must_contain = vec!["/(/".into(), "  ".into()];
+    f.profile.must_not_contain = vec!["/(/".into()];
+
+    let result = f.judge("Movie.2020.1080p.WEB-DL.x265", 2, 10, movie());
+
+    assert!(result.is_ok());
+}
+
+#[test]
 fn a_release_with_no_reported_size_is_still_judged() {
     let f = fixture();
     let sizeless = Candidate {

@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
 
 use crate::shape::{check_shape, reject};
+use crate::terms::check_terms;
 use crate::{
     Candidate, Facts, FormatSet, Language, ParsedRelease, Quality, QualityProfile, Reject,
     ScoreLine, Sizes, Target,
@@ -128,28 +129,6 @@ pub fn judge(
         preferred_bytes,
         breakdown,
     })
-}
-
-fn has_token(title: &str, needle: &str) -> bool {
-    let needle = needle.trim();
-    !needle.is_empty()
-        && title
-            .split(['.', ' ', '_', '-', '[', ']', '(', ')'])
-            .any(|t| t.eq_ignore_ascii_case(needle))
-}
-
-fn check_terms(profile: &QualityProfile, name: &str) -> Result<(), Reject> {
-    if let Some(term) = profile.must_not_contain.iter().find(|t| has_token(name, t)) {
-        return Err(reject("forbidden-keyword", term.clone()));
-    }
-    if let Some(term) = profile
-        .must_contain
-        .iter()
-        .find(|t| !t.trim().is_empty() && !has_token(name, t))
-    {
-        return Err(reject("missing-required-keyword", term.clone()));
-    }
-    Ok(())
 }
 
 const MB: f64 = 1_048_576.0;

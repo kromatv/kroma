@@ -43,6 +43,8 @@ pub struct ParsedRelease {
     pub source: Option<Source>,
     pub group: Option<String>,
     pub season: Option<u32>,
+    #[serde(default)]
+    pub season_end: Option<u32>,
     pub episode: Option<u32>,
     pub episode_end: Option<u32>,
     pub full_season: bool,
@@ -64,6 +66,8 @@ pub struct ParsedRelease {
     pub audio_codec: Option<AudioCodec>,
     #[serde(default)]
     pub audio_channels: Option<u32>,
+    #[serde(default)]
+    pub air_date: Option<AirDate>,
 }
 
 /// What the caller is trying to fill; drives season/episode validation and
@@ -107,6 +111,8 @@ pub struct Candidate {
     pub indexer_priority: i32,
 }
 
+mod air_date;
+mod condition;
 mod content;
 mod decide;
 mod defaults;
@@ -117,13 +123,18 @@ mod parse;
 mod profile;
 mod quality;
 mod shape;
+mod terms;
 mod upgrade;
 
+pub use air_date::AirDate;
+pub use condition::{Condition, Spec};
 pub use content::{classify, ContentFile, ContentKind, TorrentContent};
 pub use decide::{evaluate, judge, rank, Evaluation, Judged, MatchedFormat, Query, Rules};
 pub use defaults::{default_formats, default_sizes, LegacySettings};
-pub use facts::{AudioCodec, AudioFact, Facts, HdrFormat, IndexerFlag, LanguageSet, Probe};
-pub use format::{Condition, CustomFormat, FormatError, FormatSet, Spec};
+pub use facts::{
+    AudioCodec, AudioFact, Facts, HdrFormat, IndexerFlag, LanguageSet, Probe, ReleaseType,
+};
+pub use format::{CustomFormat, FormatError, FormatSet};
 pub use language::Language;
 pub use parse::parse_release_name;
 pub use profile::{QualityProfile, QualityTier, SizeLimit, Sizes};

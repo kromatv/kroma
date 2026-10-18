@@ -57,6 +57,32 @@ fn a_better_quality_past_the_cutoff_is_not_wanted() {
 }
 
 #[test]
+fn a_better_quality_past_the_cutoff_upgrades_when_it_wins_on_formats() {
+    let f = languages_profile();
+
+    let v = verdict(
+        &f,
+        "Show.S01E01.MULTi.VFF.2160p.BluRay.REMUX.x265",
+        &["Show.S01E01.2160p.BluRay.x265"],
+    );
+
+    assert_eq!(v, Verdict::Upgrade(Reason::Formats));
+}
+
+#[test]
+fn a_better_quality_past_the_cutoff_that_wins_nothing_on_formats_is_refused() {
+    let f = languages_profile();
+
+    let v = verdict(
+        &f,
+        "Show.S01E01.2160p.BluRay.REMUX.x265",
+        &["Show.S01E01.2160p.BluRay.x265"],
+    );
+
+    assert_eq!(v, Verdict::NotBetter(Reason::CutoffReached));
+}
+
+#[test]
 fn the_same_quality_with_no_better_formats_is_not_wanted() {
     let f = fixture();
 

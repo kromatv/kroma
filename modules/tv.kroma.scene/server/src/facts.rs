@@ -82,6 +82,29 @@ pub enum IndexerFlag {
     Scene,
 }
 
+/// What a release covers, as its name says it. A film says nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ReleaseType {
+    SingleEpisode,
+    MultiEpisode,
+    SeasonPack,
+}
+
+impl ReleaseType {
+    pub fn of(parsed: &ParsedRelease) -> Option<Self> {
+        if parsed.full_season {
+            Some(Self::SeasonPack)
+        } else if parsed.episode_end.is_some() {
+            Some(Self::MultiEpisode)
+        } else if parsed.episode.is_some() {
+            Some(Self::SingleEpisode)
+        } else {
+            None
+        }
+    }
+}
+
 /// The audio languages a release or a file carries. `original` stands for the
 /// title's own language when the name implies it without naming it: a release
 /// with no language tag, or a `MULTi` one.
@@ -123,6 +146,10 @@ pub struct Facts {
     pub name: String,
     pub group: Option<String>,
     pub edition: Option<String>,
+    #[serde(default)]
+    pub release_type: Option<ReleaseType>,
+    #[serde(default)]
+    pub year: Option<u32>,
     pub resolution: Option<Res>,
     pub source: Option<Source>,
     pub codec: Option<Codec>,
@@ -154,6 +181,8 @@ impl Facts {
             name: name.to_string(),
             group: parsed.group.clone(),
             edition: parsed.edition.clone(),
+            release_type: ReleaseType::of(parsed),
+            year: parsed.year,
             resolution: parsed.resolution,
             source: parsed.source,
             codec: parsed.codec,
@@ -168,6 +197,11 @@ impl Facts {
             revision: 1 + u32::from(parsed.proper) + u32::from(parsed.repack),
             flags: Vec::new(),
         }
+    }
+
+    pub fn with_flags(mut self, flags: impl IntoIterator<Item = IndexerFlag>) -> Self {
+        self.flags = flags.into_iter().collect();
+        self
     }
 
     pub fn overlay_probe(mut self, probe: Probe) -> Self {

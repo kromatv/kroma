@@ -1,4 +1,4 @@
-use crate::{Codec, Res, Source};
+use crate::{AirDate, Codec, Res, Source};
 
 pub(super) fn parse_resolution(t: &str) -> Option<Res> {
     match t {
@@ -55,7 +55,43 @@ pub(super) fn parse_source(t: &str, next: Option<&str>) -> Option<Source> {
     }
 }
 
-pub(super) fn parse_episode_marker(t: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
+pub(super) struct EpisodeMarker {
+    pub season: u32,
+    pub season_end: Option<u32>,
+    pub episode: Option<u32>,
+    pub episode_end: Option<u32>,
+    pub full_season: bool,
+}
+
+impl EpisodeMarker {
+    fn whole_season(season: u32) -> Self {
+        Self {
+            season,
+            season_end: None,
+            episode: None,
+            episode_end: None,
+            full_season: true,
+        }
+    }
+
+    fn seasons(season: u32, season_end: u32) -> Self {
+        Self {
+            season_end: Some(season_end),
+            ..Self::whole_season(season)
+        }
+    }
+
+    fn episodes(season: u32, episode: u32, episode_end: Option<u32>) -> Self {
+        Self {
+            episode: Some(episode),
+            episode_end,
+            full_season: false,
+            ..Self::whole_season(season)
+        }
+    }
+}
+
+pub(super) fn parse_episode_marker(t: &str) -> Option<EpisodeMarker> {
     if let Some(rest) = t.strip_prefix('s') {
         return parse_s_marker(rest);
     }
@@ -66,7 +102,7 @@ pub(super) fn parse_episode_marker(t: &str) -> Option<(u32, Option<u32>, Option<
     None
 }
 
-fn parse_s_marker(rest: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
+fn parse_s_marker(rest: &str) -> Option<EpisodeMarker> {
     let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
     if digits.is_empty() || digits.len() > 2 {
         return None;
@@ -74,8 +110,23 @@ fn parse_s_marker(rest: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
     let season: u32 = digits.parse().ok()?;
     let tail = &rest[digits.len()..];
     if tail.is_empty() {
-        return Some((season, None, None, true));
+        return Some(EpisodeMarker::whole_season(season));
     }
+    if let Some(end) = last_season(tail, season) {
+        return Some(EpisodeMarker::seasons(season, end));
+    }
+    parse_episodes(season, tail)
+}
+
+fn last_season(tail: &str, season: u32) -> Option<u32> {
+    let digits = tail.strip_prefix("-s")?;
+    if digits.is_empty() || digits.len() > 2 || !digits.chars().all(|c| c.is_ascii_digit()) {
+        return None;
+    }
+    digits.parse().ok().filter(|&end| end > season)
+}
+
+fn parse_episodes(season: u32, tail: &str) -> Option<EpisodeMarker> {
     let mut eps: Vec<u32> = Vec::new();
     for part in tail.split(['e', '-']) {
         if part.is_empty() {
@@ -91,10 +142,10 @@ fn parse_s_marker(rest: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
     }
     let first = eps[0];
     let last = eps.last().copied().filter(|&l| l > first);
-    Some((season, Some(first), last, false))
+    Some(EpisodeMarker::episodes(season, first, last))
 }
 
-fn parse_x_marker(s: &str, e: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
+fn parse_x_marker(s: &str, e: &str) -> Option<EpisodeMarker> {
     if !s.is_empty()
         && !e.is_empty()
         && s.chars().all(|c| c.is_ascii_digit())
@@ -105,7 +156,7 @@ fn parse_x_marker(s: &str, e: &str) -> Option<(u32, Option<u32>, Option<u32>, bo
         let season: u32 = s.parse().ok()?;
         let episode: u32 = e.parse().ok()?;
         if season <= 50 && episode <= 999 {
-            return Some((season, Some(episode), None, false));
+            return Some(EpisodeMarker::episodes(season, episode, None));
         }
     }
     None
@@ -117,4 +168,12 @@ pub(super) fn parse_year(t: &str) -> Option<u32> {
     }
     let y: u32 = t.parse().ok()?;
     (1900..=2035).contains(&y).then_some(y)
+}
+
+pub(super) fn parse_air_date(from: &[String]) -> Option<AirDate> {
+    let head = from.first()?;
+    AirDate::parse(head).or_else(|| {
+        let joined = format!("{head}-{}-{}", from.get(1)?, from.get(2)?);
+        AirDate::parse(&joined)
+    })
 }

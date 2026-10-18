@@ -1,5 +1,6 @@
 use crate::*;
 
+mod conditions;
 mod formats;
 mod judge;
 mod languages;
@@ -92,6 +93,35 @@ impl Fixture {
         let facts = Facts::from_release(name, &p(name), None);
         evaluate(&facts, Some(&english()), &self.rules())
     }
+}
+
+fn names(set: &FormatSet, name: &str, original: Option<&Language>) -> Vec<String> {
+    let facts = Facts::from_release(name, &p(name), Some(4 * GB));
+    set.matching(&facts, original)
+        .into_iter()
+        .map(|format| format.id.clone())
+        .collect()
+}
+
+fn defaults() -> FormatSet {
+    FormatSet::compile(&default_formats()).unwrap()
+}
+
+fn spec(spec: Spec) -> Condition {
+    Condition {
+        negate: false,
+        required: false,
+        spec,
+    }
+}
+
+fn single(spec: Spec) -> FormatSet {
+    FormatSet::compile(&[CustomFormat {
+        id: "x".into(),
+        name: "X".into(),
+        conditions: vec![self::spec(spec)],
+    }])
+    .unwrap()
 }
 
 fn cand(size_gb: u64, seeders: u32) -> Candidate {

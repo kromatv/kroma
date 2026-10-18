@@ -78,6 +78,42 @@ fn keeps_the_last_year_for_year_titles() {
 }
 
 #[test]
+fn a_daily_episode_reads_the_date_it_aired() {
+    let r = p("Show.Name.2024.05.01.1080p.WEB-DL.x264-GRP");
+
+    assert_eq!(r.air_date, Some(AirDate::new(2024, 5, 1)));
+    assert_eq!(r.title, "Show Name");
+}
+
+#[test]
+fn an_air_date_written_with_hyphens_reads_the_same() {
+    let r = p("Show.2024-05-01.1080p.WEB");
+
+    assert_eq!(r.air_date, Some(AirDate::new(2024, 5, 1)));
+    assert_eq!(r.title, "Show");
+}
+
+#[test]
+fn a_year_in_a_film_name_is_not_an_air_date() {
+    let r = p("Blade.Runner.2049.2017.2160p.BluRay.x265");
+
+    assert_eq!(r.air_date, None);
+    assert_eq!(r.year, Some(2017));
+}
+
+#[test]
+fn an_air_date_travels_as_the_day_it_names() {
+    let json = serde_json::to_string(&AirDate::new(2024, 5, 1)).unwrap();
+
+    assert_eq!(json, r#""2024-05-01""#);
+    assert_eq!(
+        serde_json::from_str::<AirDate>(&json).unwrap(),
+        AirDate::new(2024, 5, 1)
+    );
+    assert!(serde_json::from_str::<AirDate>(r#""2024-13-01""#).is_err());
+}
+
+#[test]
 fn parses_episodes_spans_and_alt_notation() {
     let r = p("Show.Name.S02E05.720p.HDTV.x264-ABC");
     assert_eq!((r.season, r.episode), (Some(2), Some(5)));
@@ -118,6 +154,43 @@ fn detects_season_packs() {
     // French pack vocabulary.
     let r = p("Serie.Integrale.S01.1080p.WEB");
     assert!(r.full_season);
+}
+
+#[test]
+fn a_multi_season_pack_says_which_seasons_it_covers() {
+    let r = p("Show.Name.S01-S03.COMPLETE.1080p.BluRay.x265-PACK");
+
+    assert_eq!((r.season, r.season_end), (Some(1), Some(3)));
+    assert!(r.full_season);
+    assert_eq!(r.title, "Show Name");
+}
+
+#[test]
+fn a_spelled_out_season_range_is_read_in_both_languages() {
+    let french = p("Serie.Saison.1.a.3.FRENCH.1080p.WEB");
+    let accented = p("Serie Saisons 1 à 3 MULTi 1080p WEB");
+    let english = p("Show Seasons 1 to 3 1080p WEB-DL");
+    let hyphenated = p("Show.Season.1-3.1080p.WEB-DL");
+
+    for r in [french, accented, english, hyphenated] {
+        assert_eq!((r.season, r.season_end), (Some(1), Some(3)));
+        assert!(r.full_season);
+    }
+}
+
+#[test]
+fn a_complete_series_pack_covers_every_season_and_names_none() {
+    let r = p("Show.Name.COMPLETE.SERIES.1080p.BluRay.x265");
+
+    assert!(r.full_season);
+    assert_eq!((r.season, r.season_end), (None, None));
+}
+
+#[test]
+fn one_season_has_no_range() {
+    let r = p("Show.Name.S03.COMPLETE.1080p.BluRay.x265-PACK");
+
+    assert_eq!((r.season, r.season_end), (Some(3), None));
 }
 
 #[test]

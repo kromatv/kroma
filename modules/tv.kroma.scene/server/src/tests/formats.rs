@@ -1,34 +1,5 @@
 use super::*;
 
-fn names(set: &FormatSet, name: &str, original: Option<&Language>) -> Vec<String> {
-    let facts = Facts::from_release(name, &p(name), Some(4 * GB));
-    set.matching(&facts, original)
-        .into_iter()
-        .map(|format| format.id.clone())
-        .collect()
-}
-
-fn defaults() -> FormatSet {
-    FormatSet::compile(&default_formats()).unwrap()
-}
-
-fn spec(spec: Spec) -> Condition {
-    Condition {
-        negate: false,
-        required: false,
-        spec,
-    }
-}
-
-fn single(spec: Spec) -> FormatSet {
-    FormatSet::compile(&[CustomFormat {
-        id: "x".into(),
-        name: "X".into(),
-        conditions: vec![self::spec(spec)],
-    }])
-    .unwrap()
-}
-
 #[test]
 fn a_multi_vff_release_matches_vo_vff_and_multi() {
     let set = defaults();
@@ -59,6 +30,18 @@ fn a_truefrench_release_is_vff_without_the_original() {
     assert!(matched.contains(&"french".to_string()));
     assert!(!matched.contains(&"vo".to_string()));
     assert!(!matched.contains(&"vo-vff".to_string()));
+}
+
+#[test]
+fn a_bare_multi_release_is_french_without_being_a_named_dub() {
+    let set = defaults();
+
+    let matched = names(&set, "Movie.2020.MULTi.1080p.BluRay.x264", Some(&english()));
+
+    assert!(matched.contains(&"vo".to_string()));
+    assert!(matched.contains(&"french".to_string()));
+    assert!(!matched.contains(&"vff".to_string()));
+    assert!(!matched.contains(&"vfq".to_string()));
 }
 
 #[test]
@@ -185,82 +168,6 @@ fn a_negated_condition_holds_when_its_test_fails() {
 }
 
 #[test]
-fn a_title_pattern_ignores_case() {
-    let set = single(Spec::ReleaseTitle {
-        pattern: r"\bamzn\b".into(),
-    });
-
-    assert_eq!(names(&set, "Show.S01E01.1080p.AMZN.WEB-DL", None), ["x"]);
-}
-
-#[test]
-fn a_group_pattern_reads_the_group_alone() {
-    let set = single(Spec::ReleaseGroup {
-        pattern: "^ntb$".into(),
-    });
-
-    assert_eq!(names(&set, "Show.S01E01.1080p.WEB-DL-NTb", None), ["x"]);
-    assert!(names(&set, "NTb.Show.S01E01.1080p.WEB-DL-GRP", None).is_empty());
-}
-
-#[test]
-fn an_edition_pattern_reads_the_cut() {
-    let set = single(Spec::Edition {
-        pattern: "director".into(),
-    });
-
-    assert_eq!(
-        names(&set, "Movie.2020.Directors.Cut.1080p.BluRay", None),
-        ["x"]
-    );
-}
-
-#[test]
-fn a_size_range_bounds_the_release() {
-    let set = single(Spec::Size {
-        min_gb: Some(3.0),
-        max_gb: Some(5.0),
-    });
-
-    assert_eq!(names(&set, "Movie.2020.1080p.WEB", None), ["x"]);
-}
-
-#[test]
-fn an_audio_condition_reads_codec_and_channels() {
-    let set = single(Spec::Audio {
-        codec: Some(AudioCodec::TrueHd),
-        min_channels: Some(8),
-    });
-
-    assert_eq!(
-        names(&set, "Movie.2020.2160p.BluRay.TrueHD.7.1.Atmos", None),
-        ["x"]
-    );
-    assert!(names(&set, "Movie.2020.2160p.BluRay.TrueHD.5.1", None).is_empty());
-}
-
-#[test]
-fn any_hdr_matches_every_hdr_format() {
-    let set = single(Spec::Hdr { value: None });
-
-    assert_eq!(names(&set, "Movie.2020.2160p.WEB.HLG", None), ["x"]);
-    assert!(names(&set, "Movie.2020.2160p.WEB", None).is_empty());
-}
-
-#[test]
-fn an_indexer_flag_is_read_from_the_facts() {
-    let set = single(Spec::IndexerFlag {
-        value: IndexerFlag::Freeleech,
-    });
-    let mut facts = Facts::from_release("Movie.2020.1080p.WEB", &p("Movie.2020.1080p.WEB"), None);
-    facts.flags.push(IndexerFlag::Freeleech);
-
-    let matched = set.matching(&facts, None);
-
-    assert_eq!(matched.len(), 1);
-}
-
-#[test]
 fn an_invalid_pattern_refuses_the_format_by_name() {
     let formats = [CustomFormat {
         id: "x".into(),
@@ -281,20 +188,6 @@ fn a_format_with_no_condition_is_refused() {
         id: "x".into(),
         name: "Empty".into(),
         conditions: vec![],
-    }];
-
-    assert!(FormatSet::compile(&formats).is_err());
-}
-
-#[test]
-fn an_inverted_size_range_is_refused() {
-    let formats = [CustomFormat {
-        id: "x".into(),
-        name: "Size".into(),
-        conditions: vec![spec(Spec::Size {
-            min_gb: Some(5.0),
-            max_gb: Some(1.0),
-        })],
     }];
 
     assert!(FormatSet::compile(&formats).is_err());

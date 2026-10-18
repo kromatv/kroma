@@ -6,7 +6,7 @@ mod markers;
 mod tags;
 
 use self::markers::{
-    parse_codec, parse_episode_marker, parse_resolution, parse_source, parse_year,
+    parse_air_date, parse_codec, parse_episode_marker, parse_resolution, parse_source, parse_year,
 };
 use crate::{ParsedRelease, Source};
 
@@ -125,12 +125,13 @@ fn classify_token(
         mark(first_marker, i);
         return;
     }
-    if let Some((season, ep, ep_end, full)) = parse_episode_marker(&t) {
-        out.season = out.season.or(Some(season));
-        if let Some(e) = ep {
-            out.episode = out.episode.or(Some(e));
-            out.episode_end = out.episode_end.or(ep_end);
-        } else if full {
+    if let Some(marker) = parse_episode_marker(&t) {
+        out.season = out.season.or(Some(marker.season));
+        out.season_end = out.season_end.or(marker.season_end);
+        if let Some(episode) = marker.episode {
+            out.episode = out.episode.or(Some(episode));
+            out.episode_end = out.episode_end.or(marker.episode_end);
+        } else if marker.full_season {
             out.full_season = true;
         }
         mark(first_marker, i);
@@ -160,8 +161,10 @@ fn classify_word(
             out.dolby_vision = true;
         }
         "complete" | "integrale" | "intégrale" => out.full_season = true,
-        "season" | "saison" => mark_season_word(out, first_marker, tokens, i),
-        _ => mark_year_word(out, first_marker, i, t),
+        "season" | "seasons" | "saison" | "saisons" => {
+            mark_season_word(out, first_marker, tokens, i);
+        }
+        _ => mark_date_or_year(out, first_marker, tokens, i, t),
     }
 }
 
@@ -171,13 +174,54 @@ fn mark_season_word(
     tokens: &[String],
     i: usize,
 ) {
-    if let Some(n) = tokens.get(i + 1).and_then(|n| n.parse::<u32>().ok()) {
-        if n <= 100 {
-            out.season = out.season.or(Some(n));
-            out.full_season = out.episode.is_none();
+    let Some((first, last)) = season_span(&tokens[i + 1..]) else {
+        return;
+    };
+    out.season = out.season.or(Some(first));
+    out.season_end = out.season_end.or(last);
+    out.full_season = out.episode.is_none();
+    mark(first_marker, i);
+}
+
+const RANGE_WORDS: &[&str] = &["a", "à", "to", "-"];
+
+fn season_span(rest: &[String]) -> Option<(u32, Option<u32>)> {
+    let head = rest.first()?;
+    let (first, last) = match head.split_once('-') {
+        Some((first, last)) => (season_number(first)?, season_number(last)),
+        None => (season_number(head)?, spelled_range_end(rest)),
+    };
+    Some((first, last.filter(|&last| last > first)))
+}
+
+fn spelled_range_end(rest: &[String]) -> Option<u32> {
+    let word = rest.get(1)?.to_lowercase();
+    if !RANGE_WORDS.contains(&word.as_str()) {
+        return None;
+    }
+    season_number(rest.get(2)?)
+}
+
+fn season_number(token: &str) -> Option<u32> {
+    token.parse::<u32>().ok().filter(|&season| season <= 100)
+}
+
+fn mark_date_or_year(
+    out: &mut ParsedRelease,
+    first_marker: &mut Option<usize>,
+    tokens: &[String],
+    i: usize,
+    t: &str,
+) {
+    if i > 0 {
+        if let Some(date) = parse_air_date(&tokens[i..]) {
+            out.air_date = Some(date);
+            out.year = Some(date.year);
             mark(first_marker, i);
+            return;
         }
     }
+    mark_year_word(out, first_marker, i, t);
 }
 
 fn mark_year_word(out: &mut ParsedRelease, first_marker: &mut Option<usize>, i: usize, t: &str) {

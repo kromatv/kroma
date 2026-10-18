@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use regex::{Regex, RegexBuilder};
 use serde::{Deserialize, Serialize};
 
-use crate::{AudioCodec, Codec, Facts, HdrFormat, IndexerFlag, Language, Res, Source};
+use crate::condition::spec_holds;
+use crate::{Condition, Facts, Language, Spec};
 
 /// A named test on a release or a file, built from conditions.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -12,83 +13,6 @@ pub struct CustomFormat {
     pub id: String,
     pub name: String,
     pub conditions: Vec<Condition>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Condition {
-    #[serde(default)]
-    pub negate: bool,
-    #[serde(default)]
-    pub required: bool,
-    #[serde(flatten)]
-    pub spec: Spec,
-}
-
-/// What one condition tests. `language` takes a tag (`fr`, `fr-CA`) or
-/// `original`, the title's own language.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
-pub enum Spec {
-    ReleaseTitle {
-        pattern: String,
-    },
-    ReleaseGroup {
-        pattern: String,
-    },
-    Edition {
-        pattern: String,
-    },
-    Language {
-        value: String,
-    },
-    Subtitle {
-        value: String,
-    },
-    Source {
-        value: Source,
-    },
-    Resolution {
-        value: Res,
-    },
-    VideoCodec {
-        value: Codec,
-    },
-    Hdr {
-        value: Option<HdrFormat>,
-    },
-    #[serde(rename_all = "camelCase")]
-    Audio {
-        codec: Option<AudioCodec>,
-        min_channels: Option<u32>,
-    },
-    #[serde(rename_all = "camelCase")]
-    Size {
-        min_gb: Option<f64>,
-        max_gb: Option<f64>,
-    },
-    IndexerFlag {
-        value: IndexerFlag,
-    },
-}
-
-impl Spec {
-    fn kind(&self) -> &'static str {
-        match self {
-            Spec::ReleaseTitle { .. } => "releaseTitle",
-            Spec::ReleaseGroup { .. } => "releaseGroup",
-            Spec::Edition { .. } => "edition",
-            Spec::Language { .. } => "language",
-            Spec::Subtitle { .. } => "subtitle",
-            Spec::Source { .. } => "source",
-            Spec::Resolution { .. } => "resolution",
-            Spec::VideoCodec { .. } => "videoCodec",
-            Spec::Hdr { .. } => "hdr",
-            Spec::Audio { .. } => "audio",
-            Spec::Size { .. } => "size",
-            Spec::IndexerFlag { .. } => "indexerFlag",
-        }
-    }
 }
 
 /// Why a format cannot be used as written.
@@ -219,6 +143,10 @@ fn compile_test(spec: &Spec) -> Result<Test, String> {
             min_gb: Some(min),
             max_gb: Some(max),
         } if min > max => Err(format!("size range {min} > {max}")),
+        Spec::Year {
+            min: Some(min),
+            max: Some(max),
+        } if min > max => Err(format!("year range {min} > {max}")),
         other => Ok(Test::Spec(other.clone())),
     }
 }
@@ -262,34 +190,5 @@ impl Field {
             Field::Group => facts.group.as_deref(),
             Field::Edition => facts.edition.as_deref(),
         }
-    }
-}
-
-fn spec_holds(spec: &Spec, facts: &Facts) -> bool {
-    match spec {
-        Spec::Source { value } => facts.source == Some(*value),
-        Spec::Resolution { value } => facts.resolution == Some(*value),
-        Spec::VideoCodec { value } => facts.codec == Some(*value),
-        Spec::Hdr { value: None } => !facts.hdr.is_empty(),
-        Spec::Hdr {
-            value: Some(format),
-        } => facts.hdr.contains(format),
-        Spec::Audio {
-            codec,
-            min_channels,
-        } => facts.audio.iter().any(|track| {
-            codec.is_none_or(|codec| track.codec == Some(codec))
-                && min_channels.is_none_or(|min| track.channels.is_some_and(|c| c >= min))
-        }),
-        Spec::Size { min_gb, max_gb } => facts.size_bytes.is_some_and(|bytes| {
-            let gb = bytes as f64 / 1_073_741_824.0;
-            min_gb.is_none_or(|min| gb >= min) && max_gb.is_none_or(|max| gb <= max)
-        }),
-        Spec::IndexerFlag { value } => facts.flags.contains(value),
-        Spec::ReleaseTitle { .. }
-        | Spec::ReleaseGroup { .. }
-        | Spec::Edition { .. }
-        | Spec::Language { .. }
-        | Spec::Subtitle { .. } => false,
     }
 }

@@ -54,6 +54,9 @@ pub(super) fn read_tags(out: &mut ParsedRelease, tail: &[String]) {
 fn read_language(out: &mut ParsedRelease, token: &str) {
     if is_multi(token) {
         out.multi = true;
+        if is_french_multi(token) {
+            push_language(&mut out.languages, "fr");
+        }
         return;
     }
     if token == "vf2" {
@@ -74,10 +77,13 @@ fn read_language(out: &mut ParsedRelease, token: &str) {
 }
 
 fn is_multi(token: &str) -> bool {
-    matches!(token, "dual" | "dualaudio")
-        || token
-            .strip_prefix("multi")
-            .is_some_and(|rest| rest.chars().all(|c| c.is_ascii_digit()))
+    matches!(token, "dual" | "dualaudio") || is_french_multi(token)
+}
+
+fn is_french_multi(token: &str) -> bool {
+    token
+        .strip_prefix("multi")
+        .is_some_and(|rest| rest.chars().all(|c| c.is_ascii_digit()))
 }
 
 fn push_language(languages: &mut Vec<Language>, tag: &str) {

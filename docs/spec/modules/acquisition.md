@@ -30,7 +30,8 @@ minimum, preferred and maximum, for films and for episodes separately, so one li
 **MOD-57** (AGREED) - A **custom format** is a named test made of conditions on the release
 name, group or edition (a pattern), the audio language with its regional dub or the title's
 original language, the subtitle language, the source, the resolution, the video codec, the HDR
-format, the audio codec and channels, the size, or an indexer flag.
+format, the audio codec and channels, the size, the release type (one episode, a span of
+episodes, or a season pack, of one season or of several), the year, or an indexer flag.
 
 **MOD-58** (AGREED) - A condition can be negated or required. A format matches when every
 required condition holds and, for each kind of condition that has optional ones, at least one of
@@ -45,7 +46,14 @@ release needs, the upgrade-until score where format upgrades stop, and the minim
 format upgrade must clear.
 
 **MOD-77** (AGREED) - A profile names terms a release must contain and terms it must not, and a
-minimum number of seeders.
+minimum number of seeders. A release is kept when it carries at least one of the must-contain
+terms and none of the must-not ones.
+
+**MOD-81** (AGREED) - A term is found anywhere in the release name, ignoring case. Written
+between slashes it is a regular expression, searched the same way and as case-insensitively.
+
+**MOD-82** (AGREED) - A term that is empty, or an expression that does not compile, refuses
+nothing and requires nothing.
 
 **MOD-60** (AGREED) - One profile is the default. Any title may be judged by another.
 
@@ -64,8 +72,15 @@ probe wins: a file named 2160p that decodes at 1080p is 1080p.
 **MOD-63** (AGREED) - A release name says which French dub it carries (a file says it as
 MEDIA-47 describes): TRUEFRENCH and VFF are
 the France dub, VFQ the Québec one, VF2 both, FRENCH a dub of unstated origin, MULTi the
-original audio plus a dub, VOSTFR the original audio with French subtitles. A name with no
-language tag is in the title's original language.
+original audio plus a French dub, of unstated origin unless another tag in the name names one,
+VOSTFR the original audio with French subtitles. A name with no language tag is in the title's
+original language.
+
+**MOD-80** (AGREED) - A release name says what it covers: one episode, a span of episodes, one
+season, or a span of seasons, written for example `S01-S03` or `Saison 1 a 3`. A release of
+every season (`COMPLETE SERIES`, `INTEGRALE`) names no season at all. A daily episode is
+covered by the date it aired (`Show.2024.05.01`), which is also its year, instead of by a
+season and an episode.
 
 **MOD-64** (AGREED) - Releases are ranked by their quality's rank in the profile, then their
 format score, then their revision (a PROPER or REPACK), then how many episodes one grab covers,
@@ -79,9 +94,12 @@ refused, and says which rule refused it.
 other. A release never replaces a file of better quality.
 
 - Its quality ranks above the file's, and the file is below the cutoff.
-- Its quality ranks the same, its format score beats the file's by the minimum increment, and
-  no file of the title reaches the upgrade-until score.
-- It is a newer revision of the same quality.
+- Its quality ranks above the file's or the same, its format score beats the file's by the
+  minimum increment, and no file of the title reaches the upgrade-until score, cutoff reached
+  or not: a 2160p remux with the France dub replaces a 2160p Blu-ray in the original audio
+  alone.
+- Its quality ranks the same, it is a newer revision, and its format score is not below the
+  file's.
 
 **MOD-66** (AGREED) - A film or an episode is **cutoff unmet** when the best file holding it is
 below the cutoff, or no file holding it reaches the upgrade-until score. A show is cutoff unmet
