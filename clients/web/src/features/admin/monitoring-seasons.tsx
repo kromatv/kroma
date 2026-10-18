@@ -1,9 +1,12 @@
-import type { EpisodeMonitoringBody } from '@kromatv/client/monitoring';
-import type { LedgerSeason } from '@kromatv/client/requests';
-import { useT } from '@kromatv/ui';
+import type { LedgerEpisode, LedgerSeason } from '@kromatv/client/requests';
+import { datedDayLabel, sizedImageUrl } from '@kromatv/core';
+import { ModuleSlot } from '@kromatv/module-sdk';
+import { useLocale, useT } from '@kromatv/ui';
 import {
   Box,
-  Checkbox,
+  Button,
+  Callout,
+  confirm,
   Divider,
   EmptyState,
   Focusable,
@@ -18,24 +21,47 @@ import {
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { EpisodeTable } from '#web/features/admin/monitoring-episodes';
-import { useSeasonLedger } from '#web/features/admin/use-monitoring';
+import { FollowToggle } from '#web/features/admin/monitoring-follow-toggle';
+import { isSpecials, seasonFollow, seasonToOpen } from '#web/features/admin/monitoring-model';
+import { type EpisodeUnit, useSeasonLedger } from '#web/features/admin/use-monitoring';
+import { Image } from '#web/shared/ui';
+
+const POSTER_W = 36;
+const POSTER_H = 54;
+const THUMB_COLUMN = 96;
+const FOLLOW_COLUMN = 60;
+const ROW_PX = 14;
 
 const s = styles({
-  header: { row: true, align: 'center', gap: 12, flex: true, minW: 0, pr: 14, py: 12 },
+  header: { row: true, align: 'center', gap: 12, flex: true, minW: 0, py: 12 },
 });
+
+export function useSeasonName(): (season: number) => string {
+  const t = useT();
+  return (season) =>
+    isSpecials(season)
+      ? t('monitoring.seasonSpecials')
+      : t('monitoring.seasonLabel', { number: season });
+}
 
 export function SeasonList({
   tmdbId,
+  title,
+  poster,
   seasons,
   today,
-  busy,
-  onEpisodes,
+  followed,
+  isSaving,
+  onToggle,
 }: Readonly<{
   tmdbId: number;
+  title: string;
+  poster: string | null;
   seasons: readonly LedgerSeason[];
   today: string;
-  busy: boolean;
-  onEpisodes: (body: EpisodeMonitoringBody) => void;
+  followed: boolean;
+  isSaving: (unit: EpisodeUnit) => boolean;
+  onToggle: (unit: EpisodeUnit, monitored: boolean) => void;
 }>) {
   const t = useT();
   if (seasons.length === 0) {
@@ -48,17 +74,26 @@ export function SeasonList({
       </Surface>
     );
   }
+  const opened = seasonToOpen(seasons);
   return (
     <Box gap={10}>
-      {seasons.map((season, index) => (
+      {followed ? null : (
+        <Text variant="meta" color="textDim">
+          {t('monitoring.seasonsLocked')}
+        </Text>
+      )}
+      {seasons.map((season) => (
         <SeasonCard
           key={season.season}
           tmdbId={tmdbId}
+          title={title}
+          poster={poster}
           season={season}
           today={today}
-          busy={busy}
-          defaultOpen={index === 0 && seasons.length === 1}
-          onEpisodes={onEpisodes}
+          followed={followed}
+          isSaving={isSaving}
+          defaultOpen={season.season === opened}
+          onToggle={onToggle}
         />
       ))}
     </Box>
@@ -67,40 +102,57 @@ export function SeasonList({
 
 function SeasonCard({
   tmdbId,
+  title,
+  poster,
   season,
   today,
-  busy,
+  followed,
+  isSaving,
   defaultOpen,
-  onEpisodes,
+  onToggle,
 }: Readonly<{
   tmdbId: number;
+  title: string;
+  poster: string | null;
   season: LedgerSeason;
   today: string;
-  busy: boolean;
+  followed: boolean;
+  isSaving: (unit: EpisodeUnit) => boolean;
   defaultOpen: boolean;
-  onEpisodes: (body: EpisodeMonitoringBody) => void;
+  onToggle: (unit: EpisodeUnit, monitored: boolean) => void;
 }>) {
   const t = useT();
   const [open, setOpen] = useState(defaultOpen);
-  const { data, isPending, isError } = useSeasonLedger(tmdbId, season.season, open);
-  const name =
-    season.season === 0
-      ? t('monitoring.specials')
-      : t('monitoring.seasonLabel', { number: season.season });
-  const partly = season.requested > 0 && season.requested < season.episodeCount;
+  const { data, isPending, isError, refetch } = useSeasonLedger(tmdbId, season.season, open);
+  const name = useSeasonName()(season.season);
+  const busy = isSaving({ season: season.season });
+  const episodes = data?.episodes ?? [];
+
+  const switchSeason = async (monitored: boolean) => {
+    if (!monitored) {
+      const ok = await confirm({
+        title: t('monitoring.seasonOff', { name }),
+        message: t('monitoring.seasonOffHint'),
+        confirmLabel: t('monitoring.unfollow'),
+        cancelLabel: t('common.cancel'),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    onToggle({ season: season.season }, monitored);
+  };
 
   return (
     <Surface pad="none" radius="xl" border="border" overflow="hidden">
-      <Row minW={0} align="center">
-        <Box pl={14} justify="center">
-          <Checkbox
-            checked={season.requested > 0}
-            indeterminate={partly}
-            onCheckedChange={(monitored) =>
-              onEpisodes({ seasons: [{ season: season.season, monitored }] })
-            }
-            label={t('monitoring.seasonSwitch', { number: season.season })}
-            disabled={busy}
+      <Row minW={0} align="center" px={ROW_PX}>
+        <Box w={FOLLOW_COLUMN} shrink={0}>
+          <FollowToggle
+            state={seasonFollow(season)}
+            name={`${name} · ${title}`}
+            busy={busy}
+            disabled={!followed}
+            reason={followed ? undefined : t('monitoring.seasonsLocked')}
+            onToggle={(next) => void switchSeason(next)}
           />
         </Box>
         <Focusable
@@ -110,20 +162,31 @@ function SeasonCard({
           ring="focusInset"
           style={s.header}
         >
+          <Box w={THUMB_COLUMN} shrink={0} align="flex-start">
+            <Box w={POSTER_W} h={POSTER_H} radius="xs" overflow="hidden" bg="tint/6">
+              <Image src={sizedImageUrl(season.posterUrl ?? poster, 185)} fit="cover" fill />
+            </Box>
+          </Box>
           <Box flex minW={0}>
             <Text variant="label" lines={1}>
               {name}
             </Text>
-            <Text variant="meta" color="textDim" mt={2}>
-              {t('monitoring.seasonCounts', {
-                monitored: season.requested,
-                onDisk: season.onDisk,
-              })}
-            </Text>
+            <SeasonMeta season={season} />
           </Box>
           <SeasonProgress season={season} />
           <Icon name={open ? 'chevron-up' : 'chevron-down'} size={18} color="textMuted" />
         </Focusable>
+        <Box pl={8}>
+          <ModuleSlot
+            name="monitoring.search"
+            kind="show"
+            tmdbId={tmdbId}
+            title={title}
+            season={season.season}
+            episode={null}
+            compact
+          />
+        </Box>
       </Row>
 
       {open ? <Divider spacing={0} /> : null}
@@ -133,14 +196,78 @@ function SeasonCard({
         </Row>
       ) : null}
       {open && isError ? (
-        <Text variant="meta" color="danger" px={14} py={14}>
-          {t('monitoring.seasonFailed')}
-        </Text>
+        <Box p={14}>
+          <Callout.Root tone="danger" icon="alert-triangle">
+            <Callout.Title>{t('monitoring.seasonFailed')}</Callout.Title>
+            <Callout.Actions>
+              <Button
+                variant="glass"
+                size="sm"
+                icon="refresh"
+                label={t('error.retry')}
+                onPress={() => void refetch()}
+              />
+            </Callout.Actions>
+          </Callout.Root>
+        </Box>
       ) : null}
-      {open && data ? (
-        <EpisodeTable episodes={data.episodes} today={today} busy={busy} onEpisodes={onEpisodes} />
+      {open && data && episodes.length === 0 ? <NotListedYet /> : null}
+      {open && episodes.length > 0 ? (
+        <Box px={ROW_PX} pb={6}>
+          <EpisodeTable
+            episodes={episodes}
+            tmdbId={tmdbId}
+            title={title}
+            today={today}
+            followed={followed}
+            isSaving={isSaving}
+            onToggle={(episode: LedgerEpisode, monitored: boolean) =>
+              onToggle({ season: episode.season, episode: episode.episode }, monitored)
+            }
+          />
+        </Box>
       ) : null}
     </Surface>
+  );
+}
+
+function NotListedYet() {
+  const t = useT();
+  return (
+    <Box px={ROW_PX} py={18}>
+      <EmptyState.Root size="sm" icon="calendar-time">
+        <EmptyState.Title>{t('monitoring.seasonNotListed')}</EmptyState.Title>
+        <EmptyState.Hint>{t('monitoring.seasonNotListedHint')}</EmptyState.Hint>
+      </EmptyState.Root>
+    </Box>
+  );
+}
+
+function SeasonMeta({ season }: Readonly<{ season: LedgerSeason }>) {
+  const t = useT();
+  const locale = useLocale();
+  if (season.episodeCount === 0) {
+    const premiere = season.airDate
+      ? t('monitoring.seasonPremiere', { date: datedDayLabel(season.airDate, locale) })
+      : t('monitoring.seasonDateUnknown');
+    return (
+      <Text variant="meta" color="textDim" mt={2}>
+        {`${t('monitoring.seasonAnnounced')} · ${premiere}`}
+      </Text>
+    );
+  }
+  const parts = [
+    season.airDate ? season.airDate.slice(0, 4) : null,
+    t('content.episodeCount', { count: season.episodeCount }),
+    season.requested > 0
+      ? t('monitoring.seasonFollowed', { count: season.requested })
+      : t('monitoring.seasonNone'),
+    t('monitoring.seasonOnDisk', { count: season.onDisk }),
+  ].filter(Boolean);
+  return (
+    <Text variant="meta" color="textDim" mt={2}>
+      {parts.join(' · ')}
+    </Text>
   );
 }
 
@@ -158,6 +285,7 @@ function SeasonProgress({ season }: Readonly<{ season: LedgerSeason }>) {
         value={held / season.requested}
         thickness={4}
         color={held === season.requested ? 'success' : 'accent'}
+        label={t('monitoring.statOnDisk')}
       />
     </Box>
   );

@@ -1,35 +1,40 @@
 import { apiErrorText } from '@kromatv/client';
-import type { MinAvailability, MonitorPreset, TitleRef } from '@kromatv/client/monitoring';
+import type { TitleRef } from '@kromatv/client/monitoring';
 import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
   Callout,
   Dialog,
-  Divider,
   EmptyState,
   Field,
   ListRow,
-  Surface,
-  Switch,
+  SegmentGroup,
+  Spinner,
   Text,
 } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { AddOptions, type AddSettings } from '#web/features/admin/monitoring-add-options';
 import { CandidateRow, CandidatesSkeleton } from '#web/features/admin/monitoring-candidate-row';
+import { useDiscoveredTitles } from '#web/features/admin/monitoring-discover';
 import {
   type MonitorCandidate,
   monitorCandidates,
   searchCandidates,
 } from '#web/features/admin/monitoring-model';
-import {
-  AvailabilitySelect,
-  PresetSelect,
-  SettingRow,
-} from '#web/features/admin/monitoring-options';
 import { useAuth } from '#web/shared/lib/auth';
 
 const SHOWN = 150;
+
+type Source = 'library' | 'tmdb';
+
+const FRESH: AddSettings = {
+  preset: 'all',
+  monitorSpecials: false,
+  minAvailability: 'released',
+  searchNow: false,
+};
 
 const keyOf = (title: TitleRef) => `${title.kind}:${title.tmdbId}`;
 
@@ -46,22 +51,21 @@ export function MonitorTitlesDialog({
 }>) {
   const t = useT();
   const { client } = useAuth();
-  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [source, setSource] = useState<Source>('library');
+  const [picked, setPicked] = useState<ReadonlyMap<string, MonitorCandidate>>(() => new Map());
   const [needle, setNeedle] = useState('');
-  const [preset, setPreset] = useState<MonitorPreset>('all');
-  const [availability, setAvailability] = useState<MinAvailability>('released');
-  const [searchNow, setSearchNow] = useState(false);
+  const [settings, setSettings] = useState<AddSettings>(FRESH);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refused, setRefused] = useState<string[]>([]);
 
   const { data: library } = useQuery({
-    queryKey: ['admin', 'monitoring', 'library'],
+    queryKey: ['admin', 'monitoring', 'catalog'],
     queryFn: async () => {
       const [movies, shows] = await Promise.all([client.media.movies(), client.media.shows()]);
       return { movies, shows };
     },
-    enabled: open,
+    enabled: open && source === 'library',
     staleTime: 60_000,
   });
 
@@ -70,10 +74,19 @@ export function MonitorTitlesDialog({
     [library, monitored],
   );
   const matching = useMemo(() => searchCandidates(candidates, needle), [candidates, needle]);
-  const shown = matching.slice(0, SHOWN);
+  const discovered = useDiscoveredTitles(needle, open && source === 'tmdb');
+  const taken = useMemo(() => new Set(monitored.map(keyOf)), [monitored]);
+  const shown =
+    source === 'library'
+      ? matching.slice(0, SHOWN)
+      : (discovered.results ?? []).filter((entry) => !taken.has(keyOf(entry)));
+
+  const chosen = [...picked.values()];
+  const shows = chosen.some((entry) => entry.kind === 'show');
+  const films = chosen.some((entry) => entry.kind === 'movie');
 
   const close = () => {
-    setPicked(new Set());
+    setPicked(new Map());
     setNeedle('');
     setError(null);
     setRefused([]);
@@ -82,25 +95,29 @@ export function MonitorTitlesDialog({
 
   const toggle = (candidate: MonitorCandidate) =>
     setPicked((previous) => {
-      const next = new Set(previous);
+      const next = new Map(previous);
       const key = keyOf(candidate);
       if (next.has(key)) next.delete(key);
-      else next.add(key);
+      else next.set(key, candidate);
       return next;
     });
 
+  const pickSource = (next: Source) => {
+    setSource(next);
+    setNeedle('');
+  };
+
   const monitor = () => {
-    const chosen = candidates.filter((candidate) => picked.has(keyOf(candidate)));
     setBusy(true);
     setError(null);
     setRefused([]);
     client.monitoring
       .bulk(
         chosen.map(({ kind, tmdbId }) => ({ kind, tmdbId })),
-        { preset, minAvailability: availability, searchNow },
+        settings,
       )
       .then((result) => {
-        setPicked(new Set());
+        setPicked(new Map());
         setRefused(
           result.failed.map((ref) =>
             t('monitoring.bulkFailedRow', {
@@ -111,7 +128,7 @@ export function MonitorTitlesDialog({
         );
         onDone(t('monitoring.bulkDone', { count: result.monitored }));
       })
-      .catch((cause) => setError(apiErrorText(cause, t('monitoring.actionFailed'))))
+      .catch((cause: unknown) => setError(apiErrorText(cause, t('monitoring.actionFailed'))))
       .finally(() => setBusy(false));
   };
 
@@ -122,40 +139,44 @@ export function MonitorTitlesDialog({
           {t('monitoring.addTitle')}
         </Text>
         <Text variant="meta" color="textDim" mt={6}>
-          {t('monitoring.addHint')}
+          {source === 'library' ? t('monitoring.addHint') : t('monitoring.addExternalHint')}
         </Text>
       </Dialog.Header>
 
       <Dialog.Panel>
         <Box gap={14}>
-          <Surface pad="none" radius="xl" border="border" overflow="hidden">
-            <SettingRow label={t('monitoring.preset')} hint={t('monitoring.presetHint')}>
-              <PresetSelect value={preset} onChange={setPreset} />
-            </SettingRow>
-            <Divider spacing={0} />
-            <SettingRow
-              label={t('monitoring.minAvailability')}
-              hint={t('monitoring.minAvailabilityHint')}
-            >
-              <AvailabilitySelect value={availability} onChange={setAvailability} />
-            </SettingRow>
-            <Divider spacing={0} />
-            <SettingRow label={t('monitoring.searchNow')} hint={t('monitoring.searchNowHint')}>
-              <Switch
-                checked={searchNow}
-                onCheckedChange={setSearchNow}
-                label={t('monitoring.searchNow')}
-              />
-            </SettingRow>
-          </Surface>
+          <SegmentGroup.Root
+            value={source}
+            onValueChange={pickSource}
+            label={t('monitoring.addTitle')}
+          >
+            <SegmentGroup.Item value="library">
+              <SegmentGroup.Label>{t('monitoring.addLibrary')}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+            <SegmentGroup.Item value="tmdb">
+              <SegmentGroup.Label>{t('monitoring.addExternal')}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+          </SegmentGroup.Root>
 
-          <Field.Root label={t('monitoring.addSearch')} value={needle} onValueChange={setNeedle}>
-            <Field.Input icon="search" placeholder={t('monitoring.addSearchPlaceholder')} />
+          <Field.Root
+            label={source === 'library' ? t('monitoring.addSearch') : t('monitoring.addExternal')}
+            value={needle}
+            onValueChange={setNeedle}
+          >
+            <Field.Input
+              icon="search"
+              placeholder={
+                source === 'library'
+                  ? t('monitoring.addSearchPlaceholder')
+                  : t('monitoring.addExternalPlaceholder')
+              }
+              trailing={discovered.busy ? <Spinner size={16} /> : null}
+            />
           </Field.Root>
 
-          {error ? (
+          {(error ?? discovered.error) ? (
             <Callout.Root tone="danger">
-              <Callout.Title>{error}</Callout.Title>
+              <Callout.Title>{error ?? discovered.error}</Callout.Title>
             </Callout.Root>
           ) : null}
 
@@ -164,21 +185,6 @@ export function MonitorTitlesDialog({
               <Callout.Title>{t('monitoring.bulkFailed', { count: refused.length })}</Callout.Title>
               <Callout.Detail>{refused.join('\n')}</Callout.Detail>
             </Callout.Root>
-          ) : null}
-
-          {library === undefined ? <CandidatesSkeleton /> : null}
-
-          {library && candidates.length === 0 ? (
-            <EmptyState.Root icon="circle-check">
-              <EmptyState.Title>{t('monitoring.addEmpty')}</EmptyState.Title>
-              <EmptyState.Hint>{t('monitoring.addEmptyHint')}</EmptyState.Hint>
-            </EmptyState.Root>
-          ) : null}
-
-          {candidates.length > 0 && matching.length === 0 ? (
-            <EmptyState.Root icon="search">
-              <EmptyState.Title>{t('monitoring.addNoMatch')}</EmptyState.Title>
-            </EmptyState.Root>
           ) : null}
 
           {shown.length > 0 ? (
@@ -192,13 +198,23 @@ export function MonitorTitlesDialog({
                 />
               ))}
             </ListRow.Group>
-          ) : null}
+          ) : (
+            <NothingShown
+              source={source}
+              loading={source === 'library' ? library === undefined : discovered.busy}
+              searched={needle.trim().length > 0}
+              offers={candidates.length > 0}
+              answered={discovered.results !== null}
+            />
+          )}
 
-          {matching.length > shown.length ? (
+          {source === 'library' && matching.length > shown.length ? (
             <Text variant="meta" color="textDim">
               {t('monitoring.addMore', { count: matching.length - shown.length })}
             </Text>
           ) : null}
+
+          <AddOptions settings={settings} shows={shows} films={films} onChange={setSettings} />
         </Box>
       </Dialog.Panel>
 
@@ -215,5 +231,50 @@ export function MonitorTitlesDialog({
         </Dialog.Actions>
       </Dialog.Footer>
     </Dialog.Root>
+  );
+}
+
+function NothingShown({
+  source,
+  loading,
+  searched,
+  offers,
+  answered,
+}: Readonly<{
+  source: Source;
+  loading: boolean;
+  searched: boolean;
+  offers: boolean;
+  answered: boolean;
+}>) {
+  const t = useT();
+  if (loading) return <CandidatesSkeleton />;
+  if (source === 'tmdb') {
+    if (!searched) {
+      return (
+        <EmptyState.Root icon="search">
+          <EmptyState.Title>{t('monitoring.addExternalIdle')}</EmptyState.Title>
+        </EmptyState.Root>
+      );
+    }
+    if (!answered) return null;
+    return (
+      <EmptyState.Root icon="search">
+        <EmptyState.Title>{t('monitoring.addExternalNothing')}</EmptyState.Title>
+      </EmptyState.Root>
+    );
+  }
+  if (!offers) {
+    return (
+      <EmptyState.Root icon="circle-check">
+        <EmptyState.Title>{t('monitoring.addEmpty')}</EmptyState.Title>
+        <EmptyState.Hint>{t('monitoring.addEmptyHint')}</EmptyState.Hint>
+      </EmptyState.Root>
+    );
+  }
+  return (
+    <EmptyState.Root icon="search">
+      <EmptyState.Title>{t('monitoring.addNoMatch')}</EmptyState.Title>
+    </EmptyState.Root>
   );
 }

@@ -1,16 +1,21 @@
-import type { EpisodeMonitoringBody, MonitorBody } from '@kromatv/client/monitoring';
-import type { RequestKind } from '@kromatv/client/requests';
+import type { MonitorBody, SearchNow } from '@kromatv/client/monitoring';
+import type { RequestKind, RequestLedgerView } from '@kromatv/client/requests';
+import { episodeTag } from '@kromatv/core';
+import type { MessageKey, Translate } from '@kromatv/i18n';
 import { ModuleSlot } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 import { Box, Button, Callout, EmptyState, Section, Surface } from '@kromatv/ui/kit';
+import { MonitoringDetailSkeleton } from '#web/features/admin/monitoring-detail-skeleton';
 import { MonitoringHero } from '#web/features/admin/monitoring-hero';
-import { SeasonList } from '#web/features/admin/monitoring-seasons';
+import { filesOnDisk } from '#web/features/admin/monitoring-model';
+import { MonitoringNotice, useMonitoringNotice } from '#web/features/admin/monitoring-notice';
+import { SeasonList, useSeasonName } from '#web/features/admin/monitoring-seasons';
 import { MonitoringSettings } from '#web/features/admin/monitoring-settings';
 import { MonitoringStats } from '#web/features/admin/monitoring-stats';
-import { DetailSkeleton } from '#web/features/admin/request-cards';
 import { Denied, PageHeader, useAsyncAction, useCap } from '#web/features/admin/shell';
-import { ConsoleToast, useConsoleToast } from '#web/features/admin/table-console';
 import {
+  type EpisodeUnit,
+  useEpisodeMonitoring,
   useMonitoredTitles,
   useMonitoringRefresh,
   useTitleLedger,
@@ -19,6 +24,25 @@ import { useAuth } from '#web/shared/lib/auth';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 const SECTION_GAP = 28;
+
+const REFUSED: Record<string, MessageKey> = {
+  busy: 'monitoring.searchBusy',
+  noIndexer: 'monitoring.searchNoIndexer',
+  vpnClosed: 'monitoring.searchVpnClosed',
+  noModule: 'monitoring.searchNoModule',
+};
+
+function searchSaid(t: Translate, search: SearchNow | null): string {
+  if (!search) return t('monitoring.searchStarted');
+  if (!search.started) return t(REFUSED[search.reason ?? ''] ?? 'monitoring.searchRefused');
+  if (search.units > 0) return t('monitoring.searchStartedCount', { count: search.units });
+  return t('monitoring.searchStarted');
+}
+
+function onDiskOf(kind: RequestKind, ledger: RequestLedgerView | undefined): number {
+  if (!ledger) return 0;
+  return kind === 'show' ? filesOnDisk(ledger.seasons) : Number(ledger.onDisk);
+}
 
 export function MonitoringDetailPage({
   kind,
@@ -31,41 +55,63 @@ export function MonitoringDetailPage({
 function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId: number }>) {
   const t = useT();
   const { client } = useAuth();
-  const { toast, flash } = useConsoleToast();
+  const { notice, on, say } = useMonitoringNotice();
   const { busy, run } = useAsyncAction();
   const refresh = useMonitoringRefresh();
+  const seasonName = useSeasonName();
 
   const { data: titles, loading: listLoading } = useMonitoredTitles();
   const ledger = useTitleLedger(kind, tmdbId);
   const monitored = titles?.find((row) => row.kind === kind && row.tmdbId === tmdbId) ?? null;
   const title = monitored?.title ?? ledger.data?.title ?? '';
 
+  const unitSaid = (unit: EpisodeUnit, following: boolean) => {
+    if (unit.episode === undefined) {
+      const key = following ? 'monitoring.toastSeasonOn' : 'monitoring.toastSeasonOff';
+      return t(key, { name: seasonName(unit.season) });
+    }
+    const key = following ? 'monitoring.toastEpisodeOn' : 'monitoring.toastEpisodeOff';
+    return t(key, { tag: episodeTag({ season: unit.season, episode: unit.episode }) });
+  };
+
+  const episodes = useEpisodeMonitoring({
+    tmdbId,
+    onSaved: (unit, following, undo) => say(unitSaid(unit, following), undo),
+    onFailed: () => say(t('monitoring.actionFailed')),
+  });
+
   const act = (done: string, call: () => Promise<unknown>) => {
     void run(() =>
       call().then(
         async () => {
-          flash(`« ${title} » ${done}`);
+          say(`« ${title} » ${done}`);
           await refresh();
         },
-        () => flash(t('monitoring.actionFailed')),
+        () => say(t('monitoring.actionFailed')),
+      ),
+    );
+  };
+
+  const search = () => {
+    void run(() =>
+      client.monitoring.monitor(kind, tmdbId, { searchNow: true }).then(
+        async (result) => {
+          say(searchSaid(t, result.search ?? null));
+          await refresh();
+        },
+        () => say(t('monitoring.actionFailed')),
       ),
     );
   };
 
   const monitor = (body: MonitorBody) => {
-    if (body.searchNow) {
-      act(t('monitoring.toastSearching'), () => client.monitoring.monitor(kind, tmdbId, body));
-      return;
-    }
     const done = monitored ? t('monitoring.toastUpdated') : t('monitoring.toastFollowed');
     act(done, () => client.monitoring.monitor(kind, tmdbId, body));
   };
   const unmonitor = () =>
     act(t('monitoring.toastUnfollowed'), () => client.monitoring.unmonitor(kind, tmdbId));
-  const setEpisodes = (body: EpisodeMonitoringBody) =>
-    act(t('monitoring.toastUpdated'), () => client.monitoring.setEpisodes(tmdbId, body));
 
-  if (ledger.isPending || listLoading) return <DetailSkeleton />;
+  if (ledger.isPending || listLoading) return <MonitoringDetailSkeleton />;
 
   return (
     <>
@@ -73,7 +119,6 @@ function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId
         <PageHeader.Back label={t('monitoring.title')} asChild>
           <RouteLink to="/admin/monitoring" />
         </PageHeader.Back>
-        <PageHeader.Title>{title}</PageHeader.Title>
       </PageHeader.Root>
 
       {ledger.isError ? (
@@ -91,12 +136,14 @@ function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId
             monitored={monitored}
             busy={busy}
             onFollow={() => monitor({})}
-            onSearch={() => monitor({ searchNow: true })}
+            onSearch={search}
             onUnfollow={unmonitor}
           />
         ) : null}
 
-        {monitored ? <MonitoringStats kind={kind} monitored={monitored} /> : null}
+        {monitored ? (
+          <MonitoringStats kind={kind} monitored={monitored} onDisk={onDiskOf(kind, ledger.data)} />
+        ) : null}
 
         <Section.Root>
           <Section.Header>
@@ -112,10 +159,13 @@ function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId
             </Section.Header>
             <SeasonList
               tmdbId={tmdbId}
+              title={title}
+              poster={ledger.data.posterUrl}
               seasons={ledger.data.seasons}
               today={ledger.data.today}
-              busy={busy}
-              onEpisodes={setEpisodes}
+              followed={monitored !== null}
+              isSaving={episodes.isSaving}
+              onToggle={episodes.set}
             />
           </Section.Root>
         ) : null}
@@ -130,7 +180,7 @@ function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId
         />
       </Box>
 
-      <ConsoleToast toast={toast} />
+      <MonitoringNotice notice={notice} on={on} />
     </>
   );
 }

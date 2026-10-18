@@ -1,20 +1,13 @@
 import type { VideoTrack } from '@kromatv/client/media';
-import type { MonitoredSummary, TitleRef } from '@kromatv/client/monitoring';
+import type { TitleRef } from '@kromatv/client/monitoring';
 import type { LedgerEpisode, LedgerSeason, RequestKind } from '@kromatv/client/requests';
 import { codecLabel } from '@kromatv/core';
 import type { MessageKey } from '@kromatv/i18n';
+import type { FollowState } from '#web/features/admin/monitoring-follow-toggle';
 
-export type MonitoringKind = RequestKind | 'all';
-
-interface MonitoringFilter {
-  kind: MonitoringKind;
-  onlyMissing: boolean;
-  needle: string;
-}
+const SPECIALS_SEASON = 0;
 
 export type EpisodeState = 'available' | 'grabbed' | 'missing' | 'untracked' | 'upcoming';
-
-export type MonitoredRow = Pick<MonitoredSummary, 'kind' | 'title' | 'missing'>;
 
 type EpisodeRow = Pick<LedgerEpisode, 'airDate' | 'onDisk' | 'wantedId' | 'wantedStatus'>;
 
@@ -45,33 +38,14 @@ const AIR_STATUS_KEYS: Record<string, MessageKey> = {
  * with the search gate. */
 export function episodeState(episode: EpisodeRow, today: string): EpisodeState {
   if (episode.onDisk || episode.wantedStatus === 'available') return 'available';
+  if (episode.airDate !== null && episode.airDate > today) return 'upcoming';
   if (episode.wantedId === null) return 'untracked';
   if (episode.wantedStatus === 'grabbed') return 'grabbed';
-  return episode.airDate !== null && episode.airDate > today ? 'upcoming' : 'missing';
+  return 'missing';
 }
 
 function matches(title: string, needle: string): boolean {
   return !needle || title.toLocaleLowerCase().includes(needle);
-}
-
-function needleOf(filter: Pick<MonitoringFilter, 'needle'>): string {
-  return filter.needle.trim().toLocaleLowerCase();
-}
-
-/** The monitored titles this filter leaves, by title. */
-export function filterMonitored<T extends MonitoredRow>(
-  rows: readonly T[],
-  filter: MonitoringFilter,
-): T[] {
-  const needle = needleOf(filter);
-  return rows
-    .filter(
-      (row) =>
-        (filter.kind === 'all' || row.kind === filter.kind) &&
-        (!filter.onlyMissing || row.missing > 0) &&
-        matches(row.title, needle),
-    )
-    .sort((a, b) => a.title.localeCompare(b.title));
 }
 
 /**
@@ -113,10 +87,31 @@ export function searchCandidates(
   return candidates.filter((candidate) => matches(candidate.title, trimmed));
 }
 
-/** The message naming a TMDB air status, or null for one the catalog has no
- * word for. */
 export function airStatusKey(status: string | null): MessageKey | null {
   return status === null ? null : (AIR_STATUS_KEYS[status] ?? null);
+}
+
+type SeasonTally = Pick<LedgerSeason, 'season' | 'episodeCount' | 'requested' | 'onDisk'>;
+
+export function filesOnDisk(seasons: readonly Pick<LedgerSeason, 'onDisk'>[]): number {
+  return seasons.reduce((total, season) => total + season.onDisk, 0);
+}
+
+/** The season a reader wants open: the first with a gap, or the only one. */
+export function seasonToOpen(seasons: readonly SeasonTally[]): number | null {
+  const gap = seasons.find((season) => season.requested > season.onDisk);
+  if (gap) return gap.season;
+  return seasons.length === 1 ? (seasons[0]?.season ?? null) : null;
+}
+
+/** TMDB files the specials as season 0, which no preset monitors. */
+export function isSpecials(season: number): boolean {
+  return season === SPECIALS_SEASON;
+}
+
+export function seasonFollow(season: SeasonTally): FollowState {
+  if (season.requested === 0) return 'off';
+  return season.requested >= season.episodeCount ? 'on' : 'partly';
 }
 
 /** What a show runs to, specials left out: TMDB files them as season 0. */
@@ -124,7 +119,7 @@ export function showTotals(seasons: readonly Pick<LedgerSeason, 'season' | 'epis
   seasons: number;
   episodes: number;
 } {
-  const runs = seasons.filter((season) => season.season > 0);
+  const runs = seasons.filter((season) => !isSpecials(season.season));
   return {
     seasons: runs.length,
     episodes: runs.reduce((total, season) => total + season.episodeCount, 0),

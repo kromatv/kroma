@@ -23,7 +23,6 @@ import { RematchDialog } from '#web/features/catalog/rematch-dialog';
 import { kromaClient } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal';
-import { RouteLink } from '#web/shared/ui/route-link';
 
 type Kind = 'item' | 'show';
 
@@ -44,12 +43,10 @@ export function TreatmentsPanel({
   kind,
   id,
   title,
-  tmdbId,
 }: Readonly<{
   kind: Kind;
   id: string;
   title: string;
-  tmdbId: number | null;
 }>) {
   const t = useT();
   const { user, client } = useAuth();
@@ -141,14 +138,6 @@ export function TreatmentsPanel({
           );
         })}
         <Box row align="center" gap={8} ml="auto">
-          {canManageLibrary && tmdbId !== null ? (
-            <Button variant="glass" size="sm" icon="eye" label={t('monitoring.action')} asChild>
-              <RouteLink
-                to="/admin/monitoring/$kind/$tmdbId"
-                params={{ kind: kind === 'show' ? 'show' : 'movie', tmdbId: String(tmdbId) }}
-              />
-            </Button>
-          ) : null}
           {admin && kind === 'item' ? (
             <Button
               variant="glass"

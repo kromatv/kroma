@@ -21,6 +21,7 @@ describe('the console navigation', () => {
     expect(labels([], anyAdmin)).toEqual([
       'admin.groupManagement',
       'admin.groupMedia',
+      'admin.groupLibrary',
       'admin.groupSystem',
       'admin.groupMaintenance',
     ]);
@@ -69,6 +70,16 @@ describe('the console pages', () => {
     expect(new Set(paths).size).toBe(paths.length);
     const sections = NAV_GROUPS.map((group) => group.section);
     expect(new Set(sections).size).toBe(sections.length);
+  });
+
+  it('gathers what the library follows, what it misses and what was asked for', () => {
+    const group = NAV_GROUPS.find((g) => g.labelKey === 'admin.groupLibrary');
+
+    expect(group?.items.map((item) => item.to)).toEqual([
+      '/admin/monitoring',
+      '/missing',
+      '/admin/requests',
+    ]);
   });
 
   it('keeps the watch history beside the dashboard, behind the users permission', () => {

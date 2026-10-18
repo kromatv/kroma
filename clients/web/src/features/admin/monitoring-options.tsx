@@ -1,7 +1,7 @@
 import { MinAvailability, MonitorPreset } from '@kromatv/client/monitoring';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Box, Row, Select, Text } from '@kromatv/ui/kit';
+import { Box, Select, Switch, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 
 export function usePresetLabel(): (preset: MonitorPreset) => string {
@@ -12,11 +12,20 @@ export function usePresetLabel(): (preset: MonitorPreset) => string {
 export function SettingRow({
   label,
   hint,
+  block = false,
   children,
-}: Readonly<{ label: string; hint?: string; children: ReactNode }>) {
+}: Readonly<{ label: string; hint?: string; block?: boolean; children: ReactNode }>) {
   return (
-    <Row between gap={20} align="center" wrap px={{ base: 16, md: 22 }} py={16}>
-      <Box shrink={1} minW={160} gap={2}>
+    <Box
+      row={{ base: !block, md: true }}
+      justify="space-between"
+      align={{ base: block ? 'stretch' : 'center', md: 'center' }}
+      gap={{ base: block ? 10 : 16, md: 20 }}
+      wrap
+      px={{ base: 16, md: 22 }}
+      py={16}
+    >
+      <Box shrink={1} minW={{ base: 0, md: 160 }} gap={2}>
         <Text variant="label">{label}</Text>
         {hint ? (
           <Text variant="meta" color="textDim">
@@ -24,10 +33,14 @@ export function SettingRow({
           </Text>
         ) : null}
       </Box>
-      <Box minW={{ base: '100%', md: 220 }} align="flex-end">
+      <Box
+        shrink={0}
+        w={block ? { base: '100%', md: 340 } : undefined}
+        align={block ? { base: 'stretch', md: 'flex-end' } : 'flex-end'}
+      >
         {children}
       </Box>
-    </Row>
+    </Box>
   );
 }
 
@@ -36,7 +49,7 @@ export function PresetSelect({
   onChange,
   disabled,
 }: Readonly<{
-  value: MonitorPreset;
+  value: MonitorPreset | null;
   onChange: (next: MonitorPreset) => void;
   disabled?: boolean;
 }>) {
@@ -45,11 +58,12 @@ export function PresetSelect({
   return (
     <Select.Root
       label={t('monitoring.preset')}
-      value={value}
+      placeholder={t('monitoring.presetCustom')}
+      value={value ?? ''}
       onValueChange={(next) => onChange(MonitorPreset.parse(next))}
       disabled={disabled}
     >
-      <Select.Trigger />
+      <Select.Trigger block />
       {MonitorPreset.options.map((preset) => (
         <Select.Item key={preset} value={preset} label={label(preset)} />
       ))}
@@ -74,7 +88,7 @@ export function AvailabilitySelect({
       onValueChange={(next) => onChange(MinAvailability.parse(next))}
       disabled={disabled}
     >
-      <Select.Trigger />
+      <Select.Trigger block />
       {MinAvailability.options.map((option) => (
         <Select.Item
           key={option}
@@ -83,5 +97,23 @@ export function AvailabilitySelect({
         />
       ))}
     </Select.Root>
+  );
+}
+
+export function SpecialsSwitch({
+  checked,
+  onChange,
+  disabled,
+}: Readonly<{ checked: boolean; onChange: (next: boolean) => void; disabled?: boolean }>) {
+  const t = useT();
+  return (
+    <SettingRow label={t('monitoring.specials')} hint={t('monitoring.specialsHint')}>
+      <Switch
+        checked={checked}
+        onCheckedChange={onChange}
+        label={t('monitoring.specials')}
+        disabled={disabled}
+      />
+    </SettingRow>
   );
 }

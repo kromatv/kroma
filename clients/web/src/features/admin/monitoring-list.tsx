@@ -1,28 +1,44 @@
-import { Table } from '@kromatv/module-sdk';
+import type { LibraryTitle, MonitorPreset } from '@kromatv/client/monitoring';
 import { useT } from '@kromatv/ui';
-import { Box, Button, EmptyState, Grid, Row, SegmentGroup, StatCard } from '@kromatv/ui/kit';
-import { useNavigate } from '@tanstack/react-router';
+import {
+  Box,
+  Button,
+  Divider,
+  EmptyState,
+  Pagination,
+  Row,
+  Surface,
+  Text,
+  useBreakpoint,
+} from '@kromatv/ui/kit';
 import { useMemo, useState } from 'react';
 import { MonitorTitlesDialog } from '#web/features/admin/monitoring-add-dialog';
-import { filterMonitored, type MonitoringKind } from '#web/features/admin/monitoring-model';
-import { MonitoredRowView } from '#web/features/admin/monitoring-row';
-import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
+import { BulkBar } from '#web/features/admin/monitoring-bulk';
 import {
-  Chip,
-  ConsoleSearch,
-  ConsoleToast,
-  useConsoleToast,
-} from '#web/features/admin/table-console';
-import { useMonitoredTitles } from '#web/features/admin/use-monitoring';
+  filterLibrary,
+  type LibraryFilter,
+  libraryTotals,
+  titleKey,
+} from '#web/features/admin/monitoring-index-model';
+import { MonitoringNotice, useMonitoringNotice } from '#web/features/admin/monitoring-notice';
+import { Stat, StatGrid } from '#web/features/admin/monitoring-stats';
+import { LibraryRow, type RowColumns } from '#web/features/admin/monitoring-title-row';
+import { LibraryFilters, LibraryHead } from '#web/features/admin/monitoring-toolbar';
+import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
+import { ConsoleSearch } from '#web/features/admin/table-console';
+import { useLibraryIndex, useTitleFollow } from '#web/features/admin/use-monitoring';
+import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
-const COLUMNS = [
-  {},
-  { width: 110, from: 'md' },
-  { width: 190, from: 'md' },
-  { width: 150, from: 'lg' },
-  { width: 44 },
-] as const;
+const PER_PAGE = 50;
+
+const FRESH: LibraryFilter = {
+  kind: 'all',
+  state: 'all',
+  needle: '',
+  sort: 'title',
+  descending: false,
+};
 
 export function MonitoringListPage() {
   if (!useCap('library.manage')) return <Denied />;
@@ -31,22 +47,84 @@ export function MonitoringListPage() {
 
 function MonitoringList() {
   const t = useT();
-  const navigate = useNavigate();
-  const { toast, flash } = useConsoleToast();
-  const { data, reload } = useMonitoredTitles();
+  const { client } = useAuth();
+  const { notice, on, say } = useMonitoringNotice();
+  const { data, reload } = useLibraryIndex();
+  const breakpoint = useBreakpoint();
 
-  const [kind, setKind] = useState<MonitoringKind>('all');
-  const [onlyMissing, setOnlyMissing] = useState(false);
-  const [needle, setNeedle] = useState('');
+  const [filter, setFilter] = useState<LibraryFilter>(FRESH);
   const [adding, setAdding] = useState(false);
+  const [picked, setPicked] = useState<ReadonlyMap<string, LibraryTitle>>(() => new Map());
+  const [selecting, setSelecting] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [at, setAt] = useState(1);
 
-  const titles = data ?? [];
-  const rows = useMemo(
-    () => filterMonitored(titles, { kind, onlyMissing, needle }),
-    [titles, kind, onlyMissing, needle],
+  const follow = useTitleFollow({
+    onSaved: (row, monitored, undo) =>
+      say(
+        t(monitored ? 'monitoring.saidFollowed' : 'monitoring.saidUnfollowed', {
+          title: row.title,
+        }),
+        undo,
+      ),
+    onFailed: () => say(t('monitoring.actionFailed')),
+  });
+
+  const loading = data === null;
+  const rows = useMemo(() => data ?? [], [data]);
+  const shown = useMemo(() => filterLibrary(rows, filter), [rows, filter]);
+  const totals = useMemo(() => libraryTotals(rows), [rows]);
+  const columns: RowColumns = {
+    counts: breakpoint !== 'base',
+    extras: breakpoint === 'lg' || breakpoint === 'tv',
+  };
+  const chosen = [...picked.values()];
+  const pageCount = Math.max(1, Math.ceil(shown.length / PER_PAGE));
+  const page = shown.slice(
+    (Math.min(at, pageCount) - 1) * PER_PAGE,
+    Math.min(at, pageCount) * PER_PAGE,
   );
-  const withGaps = titles.filter((title) => title.missing > 0).length;
-  const missing = titles.reduce((total, title) => total + title.missing, 0);
+
+  const pick = (row: LibraryTitle) =>
+    setPicked((previous) => {
+      const next = new Map(previous);
+      const key = titleKey(row);
+      if (next.has(key)) next.delete(key);
+      else next.set(key, row);
+      return next;
+    });
+
+  const leaveSelect = () => {
+    setSelecting(false);
+    setPicked(new Map());
+  };
+
+  const bulk = (run: () => Promise<unknown>, said: string) => {
+    setBusy(true);
+    run()
+      .then(async () => {
+        say(said);
+        leaveSelect();
+        await reload();
+      })
+      .catch(() => say(t('monitoring.actionFailed')))
+      .finally(() => setBusy(false));
+  };
+
+  const refs = () =>
+    chosen.flatMap((row) => (row.tmdbId === null ? [] : [{ kind: row.kind, tmdbId: row.tmdbId }]));
+
+  const bulkFollow = (preset: MonitorPreset | undefined) =>
+    bulk(
+      () => client.monitoring.bulk(refs(), preset ? { preset } : {}),
+      t('monitoring.bulkDone', { count: chosen.length }),
+    );
+
+  const bulkUnfollow = () =>
+    bulk(
+      () => Promise.all(refs().map((ref) => client.monitoring.unmonitor(ref.kind, ref.tmdbId))),
+      t('monitoring.bulkUndone', { count: chosen.length }),
+    );
 
   return (
     <>
@@ -55,9 +133,17 @@ function MonitoringList() {
         <PageHeader.Subtitle>{t('monitoring.subtitle')}</PageHeader.Subtitle>
         <PageHeader.Actions>
           <ConsoleSearch
-            value={needle}
-            onChange={setNeedle}
+            value={filter.needle}
+            onChange={(needle) => setFilter({ ...filter, needle })}
             placeholder={t('monitoring.searchPlaceholder')}
+          />
+          <Button
+            size="sm"
+            variant="glass"
+            icon="checkbox"
+            active={selecting}
+            label={t('monitoring.select')}
+            onPress={() => (selecting ? leaveSelect() : setSelecting(true))}
           />
           <Button
             size="sm"
@@ -67,99 +153,121 @@ function MonitoringList() {
           />
         </PageHeader.Actions>
       </PageHeader.Root>
-      <Box mt={24} mb={24}>
-        <Grid min={220} gap={16}>
-          <StatCard.Root>
-            <StatCard.Label>{t('monitoring.totalLabel')}</StatCard.Label>
-            <StatCard.Value unit={t('monitoring.statTitles', { count: titles.length })}>
-              {titles.length}
-            </StatCard.Value>
-          </StatCard.Root>
-          <StatCard.Root>
-            <StatCard.Label>{t('monitoring.gapsLabel')}</StatCard.Label>
-            <StatCard.Value
-              unit={t('monitoring.statTitles', { count: withGaps })}
-              color={withGaps > 0 ? 'accentText' : 'success'}
-            >
-              {withGaps}
-            </StatCard.Value>
-          </StatCard.Root>
-          <StatCard.Root>
-            <StatCard.Label>{t('monitoring.colMissing')}</StatCard.Label>
-            <StatCard.Value color={missing > 0 ? 'accentText' : 'success'}>
-              {missing}
-            </StatCard.Value>
-          </StatCard.Root>
-        </Grid>
+
+      <Box mt={24} mb={20}>
+        <StatGrid>
+          <Stat
+            label={t('monitoring.statLibrary')}
+            value={totals.titles}
+            unit={t('monitoring.statTitles', { count: totals.titles })}
+            loading={loading}
+          />
+          <Stat
+            label={t('monitoring.colTracked')}
+            value={totals.monitored}
+            unit={t('monitoring.statTitles', { count: totals.monitored })}
+            loading={loading}
+          />
+          <Stat
+            label={t('monitoring.colMissing')}
+            value={totals.missing}
+            color={totals.missing > 0 ? 'accentText' : 'success'}
+            loading={loading}
+          />
+        </StatGrid>
       </Box>
 
-      <Row wrap gap={10} mb={16}>
-        <SegmentGroup.Root value={kind} onValueChange={setKind} label={t('monitoring.colTitle')}>
-          <SegmentGroup.Item value="all">
-            <SegmentGroup.Label>{t('monitoring.filter.all')}</SegmentGroup.Label>
-          </SegmentGroup.Item>
-          <SegmentGroup.Item value="movie">
-            <SegmentGroup.Label>{t('monitoring.filter.movies')}</SegmentGroup.Label>
-          </SegmentGroup.Item>
-          <SegmentGroup.Item value="show">
-            <SegmentGroup.Label>{t('monitoring.filter.shows')}</SegmentGroup.Label>
-          </SegmentGroup.Item>
-        </SegmentGroup.Root>
-        <Chip
-          label={t('monitoring.filter.withMissing')}
-          count={withGaps}
-          dot="accent"
-          on={onlyMissing}
-          onClick={() => setOnlyMissing((on) => !on)}
-        />
-      </Row>
-
-      <Table.Root label={t('monitoring.title')} columns={COLUMNS}>
-        <Table.Header>
-          <Table.Column>{t('monitoring.colTitle')}</Table.Column>
-          <Table.Column>{t('monitoring.colTracked')}</Table.Column>
-          <Table.Column>{t('monitoring.colMissing')}</Table.Column>
-          <Table.Column>{t('monitoring.colStatus')}</Table.Column>
-          <Table.Cell />
-        </Table.Header>
-
-        {rows.map((title) => (
-          <MonitoredRowView
-            key={`${title.kind}:${title.tmdbId}`}
-            title={title}
-            onOpen={() =>
-              void navigate({
-                to: '/admin/monitoring/$kind/$tmdbId',
-                params: { kind: title.kind, tmdbId: String(title.tmdbId) },
-              })
-            }
+      <Box gap={12} mb={16}>
+        <LibraryFilters filter={filter} onChange={setFilter} />
+        {selecting ? (
+          <BulkBar
+            count={chosen.length}
+            shows={chosen.some((row) => row.kind === 'show')}
+            busy={busy}
+            onFollow={bulkFollow}
+            onUnfollow={bulkUnfollow}
+            onClear={leaveSelect}
           />
-        ))}
+        ) : null}
+      </Box>
 
-        {data === null ? <TableSkeleton rows={8} /> : null}
+      {loading ? <TableSkeleton rows={8} /> : null}
 
-        {data && rows.length === 0 ? (
-          <EmptyState.Root icon="device-tv">
+      {loading || shown.length > 0 ? null : (
+        <Surface radius="xl" pad="lg" border="border">
+          <EmptyState.Root icon={rows.length === 0 ? 'eye' : 'search'}>
             <EmptyState.Title>
-              {titles.length === 0 ? t('monitoring.empty') : t('monitoring.noMatch')}
+              {rows.length === 0 ? t('monitoring.empty') : t('monitoring.noMatch')}
             </EmptyState.Title>
-            {titles.length === 0 ? (
+            {rows.length === 0 ? (
               <EmptyState.Hint>{t('monitoring.emptyHint')}</EmptyState.Hint>
             ) : null}
+            {rows.length === 0 ? (
+              <EmptyState.Actions>
+                <Button
+                  icon="plus"
+                  label={t('monitoring.addTitle')}
+                  onPress={() => setAdding(true)}
+                />
+              </EmptyState.Actions>
+            ) : null}
           </EmptyState.Root>
-        ) : null}
-      </Table.Root>
+        </Surface>
+      )}
+
+      {loading || shown.length === 0 ? null : (
+        <Box gap={16}>
+          <Surface radius="xl" pad="none" border="border" overflow="hidden">
+            <LibraryHead
+              filter={filter}
+              columns={columns}
+              selecting={selecting}
+              onChange={setFilter}
+            />
+            {page.map((row) => (
+              <Box key={titleKey(row)}>
+                <Divider spacing={0} color="tint/4" />
+                <LibraryRow
+                  row={row}
+                  columns={columns}
+                  selecting={selecting}
+                  selected={picked.has(titleKey(row))}
+                  saving={follow.isSaving(row)}
+                  onFollow={follow.set}
+                  onSelect={pick}
+                />
+              </Box>
+            ))}
+          </Surface>
+          {pageCount > 1 ? (
+            <Row wrap gap={12} align="center" justify="space-between">
+              <Text variant="meta" color="textDim">
+                {t('monitoring.shownOf', { shown: page.length, total: shown.length })}
+              </Text>
+              <Pagination.Root
+                page={at}
+                pageCount={pageCount}
+                onPageChange={setAt}
+                label={t('monitoring.title')}
+                size="sm"
+              />
+            </Row>
+          ) : null}
+        </Box>
+      )}
 
       <MonitorTitlesDialog
         open={adding}
-        monitored={titles}
+        monitored={rows.flatMap((row) =>
+          row.monitored && row.tmdbId !== null ? [{ kind: row.kind, tmdbId: row.tmdbId }] : [],
+        )}
         onClose={() => setAdding(false)}
         onDone={(message) => {
-          flash(message);
+          say(message);
           void reload();
         }}
       />
-      <ConsoleToast toast={toast} />
+      <MonitoringNotice notice={notice} on={on} />
     </>
   );
 }

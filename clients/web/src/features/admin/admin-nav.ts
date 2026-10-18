@@ -2,6 +2,7 @@ import type { Permission } from '@kromatv/client/accounts';
 import type { MessageKey } from '@kromatv/i18n';
 import type { ModuleNav } from '@kromatv/module-sdk';
 import {
+  IconAlertTriangle,
   IconApps,
   IconArchive,
   IconBell,
@@ -64,12 +65,6 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         icon: IconHistory,
       },
       {
-        to: '/admin/requests',
-        labelKey: 'admin.navRequests',
-        cap: 'requests.manage',
-        icon: IconInbox,
-      },
-      {
         to: '/admin/reports',
         labelKey: 'admin.navReports',
         cap: 'reports.manage',
@@ -88,18 +83,36 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         icon: IconLibrary,
       },
       {
-        to: '/admin/monitoring',
-        labelKey: 'admin.navMonitoring',
-        cap: 'library.manage',
-        icon: IconEye,
-      },
-      {
         to: '/admin/transcoder',
         labelKey: 'admin.navTranscoder',
         cap: 'settings.manage',
         icon: IconTransform,
       },
       { to: '/admin/ai', labelKey: 'admin.navAi', cap: 'settings.manage', icon: IconSparkles },
+    ],
+  },
+  {
+    labelKey: 'admin.groupLibrary',
+    section: 'monitoring',
+    items: [
+      {
+        to: '/admin/monitoring',
+        labelKey: 'admin.navMonitoring',
+        cap: 'library.manage',
+        icon: IconEye,
+      },
+      {
+        to: '/missing',
+        labelKey: 'requests.missingTitle',
+        cap: 'library.manage',
+        icon: IconAlertTriangle,
+      },
+      {
+        to: '/admin/requests',
+        labelKey: 'admin.navRequests',
+        cap: 'requests.manage',
+        icon: IconInbox,
+      },
     ],
   },
   {

@@ -1,144 +1,64 @@
-// "Manquants": episode-level rows grouped under their series (or a single movie
-// row), with the search actions that turn a library gap into a request.
-
 import { hasPermission } from '@kromatv/client/accounts';
-import type { CalendarEntry } from '@kromatv/client/requests';
 import { useT } from '@kromatv/ui';
 import {
-  Badge,
   Box,
   Button,
-  Divider,
   EmptyState,
   IconButton,
   PageHeader,
   Row,
-  Surface,
+  Section,
   Text,
 } from '@kromatv/ui/kit';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { MissingGroupCard } from '#web/features/requests/missing-group';
-import { epKey, groupByTitle, type MissingGroup } from '#web/features/requests/missing-model';
+import {
+  groupByTitle,
+  type MissingGroup,
+  splitByFollowing,
+  unitCount,
+} from '#web/features/requests/missing-model';
+import { MissingSkeleton } from '#web/features/requests/missing-skeleton';
+import { type MissingActions, useMissingActions } from '#web/features/requests/use-missing-actions';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
-import { PageFrame, Skeleton } from '#web/shared/ui';
+import { PageFrame } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
 
-function toggleKey(prev: Set<string>, key: string): Set<string> {
-  const n = new Set(prev);
-  if (n.has(key)) n.delete(key);
-  else n.add(key);
-  return n;
-}
-
-function toggleKeys(prev: Set<string>, keys: string[], pick: boolean): Set<string> {
-  const n = new Set(prev);
-  for (const k of keys) {
-    if (pick) n.add(k);
-    else n.delete(k);
-  }
-  return n;
-}
-
-// The grabs run server-side, so "done" only means the batch was started.
-type SearchAllState = 'idle' | 'busy' | 'done';
-
-// How long a row wears its "search started" mark: long enough for the refetch
-// to drop a grabbed row, then back to searchable so a fruitless pass can rerun.
-const DONE_DECAY_MS = 30_000;
+type SearchAllState = 'idle' | 'busy' | 'started';
 
 export function MissingPage() {
   const t = useT();
   const { user, client } = useAuth();
-  const queryClient = useQueryClient();
   const query = userQueries.missing();
   const { data: entries, isPending } = useQuery({ ...query, refetchInterval: 30_000 });
   const canManage = !!user && hasPermission(user, 'requests.manage');
-  const canMonitor = !!user && hasPermission(user, 'library.manage');
 
   const groups = useMemo(() => groupByTitle(entries ?? []), [entries]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [busyKeys, setBusyKeys] = useState<Set<string>>(new Set());
-  const [doneKeys, setDoneKeys] = useState<Set<string>>(new Set());
+  const { followed, unfollowed } = useMemo(() => splitByFollowing(groups), [groups]);
+  const actions = useMissingActions(groups);
   const [searchAll, setSearchAll] = useState<SearchAllState>('idle');
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: query.queryKey });
-
-  // Acquire a subset of one group's episodes: a requested title re-runs its grab;
-  // a library gap becomes a request for those episodes, then (if we can) grabs.
-  const acquire = async (g: MissingGroup, items: CalendarEntry[]) => {
-    if (g.requestId) {
-      await client.requests.autoSearch(g.requestId);
-      return;
-    }
-    const episodes = items
-      .filter((i) => i.season != null && i.episode != null)
-      .map((i) => ({ season: i.season as number, episode: i.episode as number }));
-    const req = await client.requests.create({
-      kind: 'show',
-      tmdbId: g.tmdbId,
-      seasons: null,
-      episodes,
-    });
-    if (canManage) await client.requests.autoSearch(req.id);
-  };
-
-  const runGroup = (g: MissingGroup, items: CalendarEntry[]) => {
-    const keys = items.map(epKey);
-    setBusyKeys((b) => toggleKeys(b, keys, true));
-    acquire(g, items)
-      .then(() => {
-        setDoneKeys((d) => toggleKeys(d, keys, true));
-        // Only rows whose search started leave the selection; a failed batch
-        // stays picked so it can be retried in one press.
-        setSelected((s) => toggleKeys(s, keys, false));
-        setTimeout(() => setDoneKeys((d) => toggleKeys(d, keys, false)), DONE_DECAY_MS);
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        setBusyKeys((b) => toggleKeys(b, keys, false));
-        invalidate();
-      });
-  };
-
-  const searchSelected = () => {
-    for (const g of groups) {
-      const picked = g.items.filter((i) => selected.has(epKey(i)));
-      if (picked.length > 0) runGroup(g, picked);
-    }
-  };
-
+  const followedCount = unitCount(followed);
   const onSearchAll = () => {
     setSearchAll('busy');
     client.requests
       .searchAllMissing()
-      .then(() => {
-        setSearchAll('done');
-        setTimeout(invalidate, 4000);
-      })
+      .then(() => setSearchAll('started'))
       .catch(() => setSearchAll('idle'));
   };
 
   return (
     <PageFrame>
       <PageHeader.Root>
-        <PageHeader.Title
-          suffix={entries && entries.length > 0 ? String(entries.length) : undefined}
-        >
+        <PageHeader.Title suffix={followedCount > 0 ? String(followedCount) : undefined}>
           {t('requests.missingTitle')}
         </PageHeader.Title>
         <PageHeader.Subtitle>{t('requests.missingSubtitle')}</PageHeader.Subtitle>
-        {groups.length > 0 && (canManage || selected.size > 0) ? (
+        {actions.selectedCount > 0 ? (
           <PageHeader.Actions>
-            <MissingActions
-              canManage={canManage}
-              selectedCount={selected.size}
-              searchAll={searchAll}
-              onSearchSelected={searchSelected}
-              onClearSelection={() => setSelected(new Set())}
-              onSearchAll={onSearchAll}
-            />
+            <SelectionActions actions={actions} />
           </PageHeader.Actions>
         ) : null}
       </PageHeader.Root>
@@ -163,121 +83,108 @@ export function MissingPage() {
         </EmptyState.Root>
       ) : null}
 
-      <Box mt={24} gap={12}>
-        {groups.map((g) => (
-          <MissingGroupCard
-            key={g.requestId ?? `tmdb:${g.tmdbId}`}
-            group={g}
-            canManage={canManage}
-            canMonitor={canMonitor}
-            busyKeys={busyKeys}
-            doneKeys={doneKeys}
-            selected={selected}
-            onToggleRow={(key) => setSelected((s) => toggleKey(s, key))}
-            onToggleGroup={(pick) => setSelected((s) => toggleKeys(s, g.items.map(epKey), pick))}
-            onSearch={(items) => runGroup(g, items)}
-          />
-        ))}
-      </Box>
+      {followed.length > 0 ? (
+        <Section.Root mt={24}>
+          <Section.Header>
+            <Section.Title>{t('requests.missingFollowed')}</Section.Title>
+            {canManage && followedCount > 0 ? (
+              <Section.Actions>
+                <SearchAllButton state={searchAll} count={followedCount} onPress={onSearchAll} />
+              </Section.Actions>
+            ) : null}
+          </Section.Header>
+          <GroupList groups={followed} actions={actions} />
+        </Section.Root>
+      ) : null}
+
+      {unfollowed.length > 0 ? (
+        <Section.Root mt={32}>
+          <Section.Header>
+            <Section.Title>{t('requests.missingUnfollowed')}</Section.Title>
+          </Section.Header>
+          <Text variant="meta" color="textDim">
+            {t('requests.missingUnfollowedHint')}
+          </Text>
+          <GroupList groups={unfollowed} actions={actions} />
+        </Section.Root>
+      ) : null}
     </PageFrame>
   );
 }
 
-function MissingActions({
-  canManage,
-  selectedCount,
-  searchAll,
-  onSearchSelected,
-  onClearSelection,
-  onSearchAll,
-}: Readonly<{
-  canManage: boolean;
-  selectedCount: number;
-  searchAll: SearchAllState;
-  onSearchSelected: () => void;
-  onClearSelection: () => void;
-  onSearchAll: () => void;
-}>) {
+function GroupList({
+  groups,
+  actions,
+}: Readonly<{ groups: readonly MissingGroup[]; actions: MissingActions }>) {
+  return (
+    <Box gap={12}>
+      {groups.map((group) => (
+        <MissingGroupCard
+          key={group.requestId ?? `tmdb:${group.tmdbId}`}
+          group={group}
+          action={actions.actionOf(group)}
+          canMonitor={actions.canMonitor}
+          busyKeys={actions.busyKeys}
+          startedKeys={actions.startedKeys}
+          selected={actions.selected}
+          onToggleRow={actions.toggleRow}
+          onToggleGroup={(pick) => actions.toggleGroup(group, pick)}
+          onRun={(items) => actions.run(group, items)}
+        />
+      ))}
+    </Box>
+  );
+}
+
+const SELECTION_KEY = {
+  search: 'requests.searchSelectedCount',
+  follow: 'requests.followSelectedCount',
+  request: 'requests.askSelectedCount',
+  none: 'requests.applySelectedCount',
+  mixed: 'requests.applySelectedCount',
+} as const;
+
+function SelectionActions({ actions }: Readonly<{ actions: MissingActions }>) {
   const t = useT();
   return (
     <Row wrap gap={8}>
-      {selectedCount > 0 ? (
-        <>
-          <Button
-            variant="outline"
-            active
-            size="sm"
-            icon="search"
-            label={t('requests.searchSelectedCount', { count: selectedCount })}
-            onPress={onSearchSelected}
-          >
-            <Text variant="label">{t('requests.searchSelected')}</Text>
-            <Badge tone="neutral">{selectedCount}</Badge>
-          </Button>
-          <IconButton
-            variant="ghost"
-            control="sm"
-            icon="x"
-            label={t('common.clear')}
-            onPress={onClearSelection}
-          />
-        </>
-      ) : null}
-      {canManage ? <SearchAllButton state={searchAll} onClick={onSearchAll} /> : null}
+      <Button
+        variant="outline"
+        active
+        size="sm"
+        icon={actions.selectedAction === 'search' ? 'search' : 'check'}
+        onPress={actions.runSelected}
+        label={t(SELECTION_KEY[actions.selectedAction], { count: actions.selectedCount })}
+      />
+      <IconButton
+        variant="ghost"
+        control="sm"
+        icon="x"
+        label={t('common.clear')}
+        onPress={actions.clearSelection}
+      />
     </Row>
   );
 }
 
 function SearchAllButton({
   state,
-  onClick,
-}: Readonly<{ state: SearchAllState; onClick: () => void }>) {
+  count,
+  onPress,
+}: Readonly<{ state: SearchAllState; count: number; onPress: () => void }>) {
   const t = useT();
   return (
     <Button
       size="sm"
-      icon={state === 'done' ? 'check' : 'search'}
-      label={t(state === 'done' ? 'requests.searchStarted' : 'requests.searchAll')}
-      onPress={onClick}
+      icon={state === 'started' ? 'check' : 'search'}
+      label={
+        state === 'started'
+          ? t('requests.searchStarted')
+          : t('requests.searchMissingCount', { count })
+      }
+      onPress={onPress}
       loading={state === 'busy'}
-      disabled={state === 'done'}
+      disabled={state === 'started'}
     />
-  );
-}
-
-const SKELETON_ROWS = [3, 2, 4];
-
-function MissingSkeleton() {
-  return (
-    <Box mt={24} gap={12} aria-busy>
-      {SKELETON_ROWS.map((rows, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder cards
-        <GroupSkeleton key={i} rows={rows} />
-      ))}
-    </Box>
-  );
-}
-
-function GroupSkeleton({ rows }: Readonly<{ rows: number }>) {
-  return (
-    <Surface pad="none" radius="xl" border="border" overflow="hidden">
-      <Row gap={16} p={14}>
-        <Skeleton w={20} h={20} radius="sm" />
-        <Skeleton w={46} h={68} radius="sm" />
-        <Box minW={0} flex>
-          <Skeleton shape="text" lines={2} variant="meta" maxW={220} />
-        </Box>
-        <Skeleton w={110} h={40} radius="md" />
-      </Row>
-      <Divider color="tint/6" />
-      {Array.from({ length: rows }, (_, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
-        <Row key={i} gap={16} px={14} py={14}>
-          <Skeleton w={20} h={20} radius="sm" />
-          <Skeleton w={62} h={12} radius="pill" />
-          <Skeleton w="28%" h={12} radius="pill" />
-        </Row>
-      ))}
-    </Surface>
   );
 }

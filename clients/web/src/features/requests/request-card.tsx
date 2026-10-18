@@ -4,6 +4,9 @@ import { cloneElement, type ReactElement, type ReactNode } from 'react';
 import { Skeleton } from '#web/shared/ui';
 
 const POSTER = { w: 46, h: 68 } as const;
+// A phone gives the row's own controls their own line: beside the title they
+// would sit on top of the poster.
+const ASIDE_WIDTH = { base: '100%', md: 'auto' } as const;
 const HEIGHT = POSTER.h + 28;
 
 /** The poster every requests page draws: one size, one corner, the title's
@@ -58,7 +61,7 @@ export function RequestCard({
 }>) {
   return (
     <Surface pad="none" radius="xl" border="border" overflow="hidden">
-      <Row align="center" gap={16} p={14}>
+      <Row align="center" gap={16} p={14} wrap>
         {leading}
         <Focusable asChild label={label} style={s.head}>
           {cloneElement(
@@ -75,7 +78,11 @@ export function RequestCard({
             trailing,
           )}
         </Focusable>
-        {aside}
+        {aside ? (
+          <Box w={ASIDE_WIDTH} align="flex-end">
+            {aside}
+          </Box>
+        ) : null}
       </Row>
       {children}
     </Surface>

@@ -5,17 +5,10 @@ import {
   airStatusKey,
   episodeState,
   fileLabel,
-  filterMonitored,
-  type MonitoredRow,
   monitorCandidates,
+  seasonFollow,
   showTotals,
 } from './monitoring-model';
-
-const EVERY = { kind: 'all', onlyMissing: false, needle: '' } as const;
-
-function row(over: Partial<MonitoredRow> = {}): MonitoredRow {
-  return { kind: 'show', title: 'Severance', missing: 0, ...over };
-}
 
 function episode(over: Partial<Parameters<typeof episodeState>[0]> = {}) {
   return {
@@ -62,6 +55,12 @@ describe('episodeState', () => {
     expect(episodeState(episode({ airDate: '2026-10-17' }), '2026-10-16')).toBe('upcoming');
   });
 
+  it('reads an episode nobody follows that has not aired as upcoming, not untracked', () => {
+    const ahead = episode({ wantedId: null, wantedStatus: null, airDate: '2026-10-17' });
+
+    expect(episodeState(ahead, '2026-10-16')).toBe('upcoming');
+  });
+
   it('reads an episode airing today as missing, since the search gate opens on it', () => {
     expect(episodeState(episode({ airDate: '2026-10-16' }), '2026-10-16')).toBe('missing');
   });
@@ -72,48 +71,6 @@ describe('episodeState', () => {
 
   it('keeps an available row available even with nothing on disk yet', () => {
     expect(episodeState(episode({ wantedStatus: 'available' }), '2026-10-16')).toBe('available');
-  });
-});
-
-describe('filterMonitored', () => {
-  it('sorts by title rather than by the order the server sent', () => {
-    const rows = filterMonitored(
-      [row({ title: 'Zoulou' }), row({ title: 'Alpha' }), row({ title: 'Milieu' })],
-      EVERY,
-    );
-
-    expect(rows.map((r) => r.title)).toEqual(['Alpha', 'Milieu', 'Zoulou']);
-  });
-
-  it('keeps only the kind the filter names', () => {
-    const rows = [row({ kind: 'movie', title: 'Dune' }), row({ title: 'Severance' })];
-
-    expect(filterMonitored(rows, { ...EVERY, kind: 'movie' }).map((r) => r.title)).toEqual([
-      'Dune',
-    ]);
-    expect(filterMonitored(rows, { ...EVERY, kind: 'show' }).map((r) => r.title)).toEqual([
-      'Severance',
-    ]);
-  });
-
-  it('keeps only the titles with a gap when asked for them', () => {
-    const rows = [row({ title: 'Complet' }), row({ title: 'Troué', missing: 3 })];
-
-    expect(filterMonitored(rows, { ...EVERY, onlyMissing: true }).map((r) => r.title)).toEqual([
-      'Troué',
-    ]);
-  });
-
-  it('matches the text filter inside the title, ignoring case and spacing', () => {
-    const rows = [row({ title: 'Le Trône de fer' }), row({ title: 'Severance' })];
-
-    expect(filterMonitored(rows, { ...EVERY, needle: '  TRÔNE ' }).map((r) => r.title)).toEqual([
-      'Le Trône de fer',
-    ]);
-  });
-
-  it('answers an empty list with no rows', () => {
-    expect(filterMonitored([], EVERY)).toEqual([]);
   });
 });
 
@@ -214,5 +171,19 @@ describe('airStatusKey', () => {
   it('leaves a status it does not know untranslated rather than guessing', () => {
     expect(airStatusKey('Pilot ordered')).toBeNull();
     expect(airStatusKey(null)).toBeNull();
+  });
+});
+
+describe('a season', () => {
+  it('is partly followed when some of its episodes are', () => {
+    expect(seasonFollow({ season: 1, episodeCount: 9, requested: 8, onDisk: 4 })).toBe('partly');
+  });
+
+  it('is followed once every episode it lists is', () => {
+    expect(seasonFollow({ season: 1, episodeCount: 9, requested: 9, onDisk: 4 })).toBe('on');
+  });
+
+  it('is not followed when nothing in it is', () => {
+    expect(seasonFollow({ season: 2, episodeCount: 10, requested: 0, onDisk: 0 })).toBe('off');
   });
 });
