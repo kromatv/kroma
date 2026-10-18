@@ -56,7 +56,7 @@ function useStageView(story: Story | undefined) {
 
   // An effect rather than derived state so switching frame by hand is not
   // undone on the next render.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the story, not on the frame the user may have chosen since
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- keyed on the story, not on the frame the user may have chosen since
   useEffect(() => {
     setViewport(story?.viewport ?? 'fit');
     setRotate(false);

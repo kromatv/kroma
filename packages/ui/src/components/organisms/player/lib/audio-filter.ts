@@ -46,7 +46,7 @@ interface Graph {
 }
 
 interface FilterDebugHandle {
-  // biome-ignore lint/style/noRestrictedGlobals: a TYPE reference, erased at build; no value is read.
+  // oxlint-disable-next-line no-restricted-globals -- a TYPE reference, erased at build; no value is read.
   ctx: AudioContext;
   graph: Graph;
   mode: AudioFilterMode;
@@ -91,7 +91,7 @@ function configure(g: Graph, mode: Exclude<AudioFilterMode, 'off'>): void {
   }
 }
 
-// biome-ignore lint/style/noRestrictedGlobals: a TYPE reference, erased at build; no value is read.
+// oxlint-disable-next-line no-restricted-globals -- a TYPE reference, erased at build; no value is read.
 function build(ctx: AudioContext, el: HTMLMediaElement): Graph {
   const source = ctx.createMediaElementSource(el);
   const comp = ctx.createDynamicsCompressor();
@@ -111,15 +111,15 @@ function build(ctx: AudioContext, el: HTMLMediaElement): Graph {
 
 /** Audio graph lifetime matches the player controller that owns its video ref. */
 export function createAudioFilterOwner() {
-  // biome-ignore lint/style/noRestrictedGlobals: audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
+  // oxlint-disable-next-line no-restricted-globals -- audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
   let sharedCtx: AudioContext | null = null;
   let unlisten = () => {};
-  // biome-ignore lint/style/noRestrictedGlobals: audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
+  // oxlint-disable-next-line no-restricted-globals -- audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
   function audioCtx(): AudioContext | null {
-    // biome-ignore lint/style/noRestrictedGlobals: audited - Web Audio is the browser's own leveling path; the native engines do their own (mpv af, Exo DynamicsProcessing, server-side aac-night), and this returns null there.
+    // oxlint-disable-next-line no-restricted-globals -- audited - Web Audio is the browser's own leveling path; the native engines do their own (mpv af, Exo DynamicsProcessing, server-side aac-night), and this returns null there.
     if (typeof AudioContext === 'undefined') return null;
     if (!sharedCtx) {
-      // biome-ignore lint/style/noRestrictedGlobals: audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
+      // oxlint-disable-next-line no-restricted-globals -- audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
       sharedCtx = new AudioContext();
       // Hydrating a persisted filter isn't a user gesture, so the context can be
       // born suspended (a suspended context MUTES routed audio); any interaction un-sticks it.
@@ -218,12 +218,12 @@ export function useAudioFilter(
   const [supported, setSupported] = useState(false);
 
   useEffect(() => {
-    // biome-ignore lint/style/noRestrictedGlobals: audited - this IS the capability probe; false on native, where the engines level audio themselves.
+    // oxlint-disable-next-line no-restricted-globals -- audited - this IS the capability probe; false on native, where the engines level audio themselves.
     setSupported(typeof AudioContext !== 'undefined');
     setModeState(storedAudioFilter(store));
   }, [store]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: remountKey tracks the element identity.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- remountKey tracks the element identity.
   useEffect(() => {
     const v = videoRef.current;
     if (v) owner.wire(v, modeState, boost);

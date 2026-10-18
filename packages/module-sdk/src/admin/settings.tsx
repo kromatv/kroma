@@ -70,7 +70,7 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
   // One fetch, reused as the retry: a view that failed offers to ask again
   // rather than stranding the page on an empty panel.
   const [attempt, setAttempt] = useState(0);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `attempt` is an intentional re-run key (the retry), not something the effect reads
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- `attempt` is an intentional re-run key (the retry), not something the effect reads
   useEffect(() => {
     let active = true;
     setFailure(null);

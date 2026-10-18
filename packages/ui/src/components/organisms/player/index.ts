@@ -13,11 +13,7 @@ export { currentChapter, currentChapterIndex, normalizeChapters } from './lib/ch
 // NOT `clamp01`: the kit already exports it, and `@kromatv/ui` re-exports this
 // barrel, so listing it here puts the same name on both entry points.
 export { endsAtClock, pct } from './lib/fmt';
-export {
-  buildLeanStats,
-  type LeanStatsInput,
-  type LeanStatsVideoHandle,
-} from './lib/lean-stats';
+export { buildLeanStats, type LeanStatsInput, type LeanStatsVideoHandle } from './lib/lean-stats';
 export { type SeekBarPaint, seekBar } from './lib/style';
 export {
   DEFAULT_SUB_APPEARANCE,

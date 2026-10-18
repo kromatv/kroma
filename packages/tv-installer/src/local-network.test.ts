@@ -40,7 +40,7 @@ const home = { iface: 'en0', address: '192.168.1.10', prefix: '192.168.1' };
 
 const labelsOf = (query: Buffer): string[] => {
   const labels: string[] = [];
-  for (let at = 12; query[at]; ) {
+  for (let at = 12; query[at];) {
     const length = Number(query[at]);
     labels.push(query.subarray(at + 1, at + 1 + length).toString('ascii'));
     at += length + 1;

@@ -88,7 +88,7 @@ function Skeleton({
       <Animated.View style={[rhythmOf(leading, scope), boxOf(box, scope), style, pulse]}>
         {Array.from({ length: lines }, (_, i) => (
           <View
-            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder lines
+            // oxlint-disable-next-line react/no-array-index-key -- fixed-length placeholder lines
             key={i}
             style={[s.line, barOf(bar, scope), lines > 1 && i === lines - 1 ? LAST : null]}
           />

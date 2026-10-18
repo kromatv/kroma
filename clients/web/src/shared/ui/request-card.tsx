@@ -96,7 +96,7 @@ export function RequestCardSkeleton({ rows }: Readonly<{ rows: number }>) {
   return (
     <Box mt={24} gap={10}>
       {Array.from({ length: rows }, (_, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
+        // oxlint-disable-next-line react/no-array-index-key -- fixed-length placeholder rows
         <Skeleton key={i} h={HEIGHT} radius="xl" />
       ))}
     </Box>

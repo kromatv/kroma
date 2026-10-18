@@ -135,7 +135,7 @@ async function restore(deps: BootDeps, cancelled: Cancelled): Promise<void> {
 }
 
 export function useBootRestore(deps: BootDeps): void {
-  // biome-ignore lint/correctness/useExhaustiveDependencies: cold start runs ONCE per mount; re-running it would re-enter a session the user just left
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- cold start runs ONCE per mount; re-running it would re-enter a session the user just left
   useEffect(() => {
     let stopped = false;
     void restore(deps, () => stopped);

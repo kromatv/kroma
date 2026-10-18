@@ -62,7 +62,7 @@ export const c = Object.defineProperties({} as typeof actualClient & typeof stub
   ...Object.getOwnPropertyDescriptors(stubs),
 });
 
-// biome-ignore lint/suspicious/noExplicitAny: the options are heterogeneous by design
+// oxlint-disable-next-line typescript/no-explicit-any -- the options are heterogeneous by design
 export async function run(opts: any) {
   return await opts.queryFn({});
 }

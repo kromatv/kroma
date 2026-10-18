@@ -69,7 +69,7 @@ function FocusScopeHost({
   const remote = bridge && platform.owner !== 'platform';
   useRemoteBridge(remote);
   // A replacement screen gets a fresh claim before children render.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: entryKey explicitly names the lifetime of this screen.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- entryKey explicitly names the lifetime of this screen.
   const entry = useMemo(() => createFocusEntry(), [entryKey]);
   return (
     // Lets a kit control exist OUTSIDE any scope (a phone screen, a plain web

@@ -98,7 +98,7 @@ function Loaders({ count }: Readonly<{ count: number }>) {
   return (
     <Box row wrap gap={12} mt={24}>
       {Array.from({ length: count }, (_, n) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the identity - these are N copies of one thing.
+        // oxlint-disable-next-line react/no-array-index-key -- the index IS the identity - these are N copies of one thing.
         <Box key={n} row align="center" gap={8}>
           <Spinner size={28} />
           <Skeleton w={90} h={14} />

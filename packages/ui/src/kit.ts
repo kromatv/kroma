@@ -112,12 +112,7 @@ export type {
 export { msg, useForm } from './lib/form';
 export { genreIcon } from './lib/genre-icon';
 export type { GlyphExports } from './lib/glyph';
-export {
-  DEFAULT_ICON_SIZE,
-  DEFAULT_ICON_THICKNESS,
-  hasGlyph,
-  iconNames,
-} from './lib/glyph';
+export { DEFAULT_ICON_SIZE, DEFAULT_ICON_THICKNESS, hasGlyph, iconNames } from './lib/glyph';
 export type { IconCatalog, IconCatalogIndex, IconEntry } from './lib/icon-catalog';
 export { createIconCatalog } from './lib/icon-catalog';
 export type { IconCatalogLoader, IconLibrary, IconLibraryOptions } from './lib/icons/library';

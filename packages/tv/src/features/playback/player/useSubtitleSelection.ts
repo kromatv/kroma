@@ -42,7 +42,7 @@ export function useSubtitleSelection(
   const [beside, setBeside] = useState<{ itemId: string; tracks: SubtitleTrack[] } | null>(null);
   const [nonce, setNonce] = useState(0);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `nonce` is the reload trigger (bumped by reload()) that forces a re-fetch after a generation completes; it is intentionally a dependency though the body does not read it.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- `nonce` is the reload trigger (bumped by reload()) that forces a re-fetch after a generation completes; it is intentionally a dependency though the body does not read it.
   useEffect(() => {
     let cancelled = false;
     client.subtitles

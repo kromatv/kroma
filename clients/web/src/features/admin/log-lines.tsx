@@ -54,7 +54,7 @@ export function LogLines({
   const s = useStyles(sDefinition);
 
   const scroller = useRef<HTMLDivElement>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on new lines
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- scroll on new lines
   useEffect(() => {
     if (follow && scroller.current) {
       scroller.current.scrollTop = scroller.current.scrollHeight;

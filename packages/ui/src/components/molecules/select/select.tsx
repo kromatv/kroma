@@ -181,11 +181,10 @@ function Root(props: Readonly<SelectRootProps>) {
   );
 }
 
-interface SelectTriggerProps
-  extends Omit<
-    FocusableProps,
-    'children' | 'sv' | 'vars' | 'role' | 'label' | 'expanded' | 'disabled' | 'onPress' | 'style'
-  > {
+interface SelectTriggerProps extends Omit<
+  FocusableProps,
+  'children' | 'sv' | 'vars' | 'role' | 'label' | 'expanded' | 'disabled' | 'onPress' | 'style'
+> {
   /** The control shell's size; see <TextField>. */
   size?: ControlSize;
   invalid?: boolean;

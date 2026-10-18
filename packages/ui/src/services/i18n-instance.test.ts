@@ -16,25 +16,33 @@ const CATALOGS_LOAD = 30_000;
 const load = () => import('./i18n-instance');
 
 describe('the instance the kit translates through', () => {
-  it("speaks KROMA's catalogs by default", {
-    timeout: CATALOGS_LOAD,
-  }, async () => {
-    const { fallbackLocale, providerI18n, translatorFor } = await load();
+  it(
+    "speaks KROMA's catalogs by default",
+    {
+      timeout: CATALOGS_LOAD,
+    },
+    async () => {
+      const { fallbackLocale, providerI18n, translatorFor } = await load();
 
-    expect(translatorFor('en')('player.play')).toBe('Play');
-    expect(fallbackLocale()).toBe('fr');
-    expect(providerI18n()).toBeDefined();
-  });
+      expect(translatorFor('en')('player.play')).toBe('Play');
+      expect(fallbackLocale()).toBe('fr');
+      expect(providerI18n()).toBeDefined();
+    },
+  );
 
-  it('uses an explicit instance without replacing the default', {
-    timeout: CATALOGS_LOAD,
-  }, async () => {
-    const { fallbackLocale, providerI18n, translatorFor } = await load();
+  it(
+    'uses an explicit instance without replacing the default',
+    {
+      timeout: CATALOGS_LOAD,
+    },
+    async () => {
+      const { fallbackLocale, providerI18n, translatorFor } = await load();
 
-    expect(translatorFor('fr', shouting)('player.play')).toBe('PLAYER.PLAY');
-    expect(fallbackLocale()).toBe('fr');
-    expect(providerI18n()).not.toBe(shouting);
-  });
+      expect(translatorFor('fr', shouting)('player.play')).toBe('PLAYER.PLAY');
+      expect(fallbackLocale()).toBe('fr');
+      expect(providerI18n()).not.toBe(shouting);
+    },
+  );
 });
 
 describe('the instance the published package translates through', () => {

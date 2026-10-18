@@ -11,7 +11,7 @@
 // where Metro's folding can see it.
 //
 // A text substitution rather than a babel visitor ON PURPOSE: the module has
-// one export, the kit imports it one way (biome pins the spelling), and the
+// one export, the kit imports it one way, and the
 // replacement keeps line numbers - source maps stay honest without a remap.
 
 /** Matches the one legal way to import the constant. `platform.web.ts` never

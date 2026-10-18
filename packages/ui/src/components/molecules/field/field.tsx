@@ -134,8 +134,7 @@ function useEntry(part: string, own: Readonly<EntryValue>, focus?: FocusHandlers
 }
 
 interface FieldInputProps
-  extends Omit<TextFieldProps, 'label' | 'invalid' | 'size' | 'onValueChange'>,
-    EntryValue {}
+  extends Omit<TextFieldProps, 'label' | 'invalid' | 'size' | 'onValueChange'>, EntryValue {}
 
 /** The single-line entry. `type` wires the keyboard, the autofill and the
  *  masking; the label, the invalid tint and the shell size come from the Root. */
@@ -149,8 +148,7 @@ function Input({ value, defaultValue, onValueChange, ...props }: Readonly<FieldI
 }
 
 interface FieldTextareaProps
-  extends Omit<TextAreaProps, 'label' | 'invalid' | 'size' | 'onValueChange'>,
-    EntryValue {}
+  extends Omit<TextAreaProps, 'label' | 'invalid' | 'size' | 'onValueChange'>, EntryValue {}
 
 /** The multi-line entry: it opens `rows` tall and grows to `maxRows`. One of its
  *  lines is one line of a <Field.Input>, so the two align in a form. */

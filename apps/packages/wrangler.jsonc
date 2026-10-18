@@ -6,11 +6,11 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   "vars": {
-    "GITHUB_REPO": "kromatv/kroma"
+    "GITHUB_REPO": "kromatv/kroma",
   },
   "assets": {
     "directory": "./dist/client",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
-  "routes": [{ "pattern": "packages.kroma.tv", "custom_domain": true }]
+  "routes": [{ "pattern": "packages.kroma.tv", "custom_domain": true }],
 }

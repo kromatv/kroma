@@ -23,7 +23,7 @@ export function ReleaseRowList({
     <FocusColumn style={s.rows}>
       {rows.map((row, at) => (
         <ListRow.Root
-          // biome-ignore lint/suspicious/noArrayIndexKey: a row is its slot, so the focused one outlives a change of version.
+          // oxlint-disable-next-line react/no-array-index-key -- a row is its slot, so the focused one outlives a change of version.
           key={at}
           icon={ROW_ICON[row.kind]}
           autoFocus={at === 0}

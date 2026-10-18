@@ -17,8 +17,10 @@ import { bySize, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell'
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { useTDefault } from '#ui/services/i18n';
 
-interface NumberFieldProps
-  extends Omit<TextFieldProps, 'value' | 'defaultValue' | 'onValueChange' | 'type' | 'trailing'> {
+interface NumberFieldProps extends Omit<
+  TextFieldProps,
+  'value' | 'defaultValue' | 'onValueChange' | 'type' | 'trailing'
+> {
   value: number;
   onValueChange: (next: number) => void;
   min?: number;

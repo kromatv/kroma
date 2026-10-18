@@ -149,7 +149,7 @@ export class Simulator {
   } = {}): Promise<Simulator> {
     const proc = spawn(
       simulatorBinary(),
-      // biome-ignore format: one flag per line reads worse than one pair per line
+      // oxfmt-ignore
       [
         '--platform', 'tv',
         '--tizentvversion', tizenVersion,

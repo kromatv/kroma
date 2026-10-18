@@ -29,7 +29,7 @@ export function SkeletonRow({ count = 7 }: Readonly<{ count?: number }>) {
     <TileGrid>
       {(width) =>
         Array.from({ length: count }, (_, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder grid
+          // oxlint-disable-next-line react/no-array-index-key -- fixed-length placeholder grid
           <PosterSkeleton key={i} width={width} />
         ))
       }
@@ -43,7 +43,7 @@ export function RailSkeleton({ count = 7 }: Readonly<{ count?: number }>) {
       <Skeleton h={24} w={208} mt={40} mb={20} />
       <Box row gap={rhythm.rowGap} overflow="hidden" py={16}>
         {Array.from({ length: count }, (_, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rail
+          // oxlint-disable-next-line react/no-array-index-key -- fixed-length placeholder rail
           <PosterSkeleton key={i} width={rhythm.cardWidth} />
         ))}
       </Box>
@@ -60,7 +60,7 @@ export function PageSkeleton({ rails = 3 }: Readonly<{ rails?: number }>) {
         <Skeleton h="100%" w="100%" radius="xl" />
       </div>
       {Array.from({ length: rails }, (_, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rails
+        // oxlint-disable-next-line react/no-array-index-key -- fixed-length placeholder rails
         <RailSkeleton key={i} />
       ))}
     </PageFrame>

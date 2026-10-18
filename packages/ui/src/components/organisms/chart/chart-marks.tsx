@@ -133,7 +133,7 @@ function Bar({ series }: Readonly<ChartBarProps>) {
           <Path
             // The slot IS the identity: bar 3 is always bar 3, holding whatever
             // sample is current.
-            // biome-ignore lint/suspicious/noArrayIndexKey: the position is the identity here
+            // oxlint-disable-next-line react/no-array-index-key -- the position is the identity here
             key={at}
             d={barPath(whole, span, BAR_CORNER)}
             fill={paint}

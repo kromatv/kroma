@@ -73,7 +73,7 @@ export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readon
 
   useIntroKeys({ exit, replay, unblock });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only intro timeline; arm audio once. clearTimers is a stable useCallback and the rest are effect events, all intentionally omitted so the effect never re-arms (which would restart the sting) on unrelated re-renders.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- mount-only intro timeline; arm audio once. clearTimers is a stable useCallback and the rest are effect events, all intentionally omitted so the effect never re-arms (which would restart the sting) on unrelated re-renders.
   useEffect(() => {
     const a = new Audio(DEFAULT_AUDIO);
     a.preload = 'auto';

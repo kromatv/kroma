@@ -44,7 +44,7 @@ function screen(locale: 'en' | 'fr' = 'fr') {
     createElement(I18nProvider, {
       i18n: messages(),
       locale,
-      // biome-ignore lint/correctness/noChildrenProp: createElement types the provider's children as a required prop, and a .ts file cannot write JSX.
+      // oxlint-disable-next-line react/no-children-prop -- createElement types the provider's children as a required prop, and a .ts file cannot write JSX.
       children: createElement(Greeting),
     }),
   );

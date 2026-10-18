@@ -88,7 +88,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
 
   // Re-binds on anchor/audio change: those remount the <video> (keyed by
   // anchor+audio in the parent), so this must rebind to the fresh element.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: rebind on remount.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- rebind on remount.
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -190,7 +190,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
 
   // A media error on the bare `<video src>` swaps to the HLS master anchored at
   // the position we died at.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: rebind on remount.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- rebind on remount.
   useEffect(() => {
     const v = videoRef.current;
     if (!v || decision.kind !== 'direct') return;
@@ -202,7 +202,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     return () => v.removeEventListener('error', onErr);
   }, [decision.kind, item.id, anchor, audioIndex, setAnchor, setForceHls]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: item.id is an intentional trigger (not referenced in the effect); reset forceHls whenever the item changes, not on every render.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- item.id is an intentional trigger (not referenced in the effect); reset forceHls whenever the item changes, not on every render.
   useEffect(() => setForceHls(false), [item.id, setForceHls]);
 
   const transport = useVideoTransport({

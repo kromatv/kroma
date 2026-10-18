@@ -21,7 +21,7 @@ bun run ci sonar prepare                  the tree as the scanner wants it
 ## ci.yml: the gate
 
 ```
-lanes ─┬─ checks (typecheck + biome)                    code
+lanes ─┬─ checks (typecheck + lint)                     code
        ├─ test 1..4 ──── test-report (merge → lcov)     code
        ├─ build {web, site, tizen, webos, tv-native}    fleet
        ├─ android (Kotlin compile)                      android
@@ -64,7 +64,7 @@ Measured over the last forty runs before the rebuild:
 
 | | before | after |
 |---|---|---|
-| PR, required checks green | 6 to 8 min (one job: typecheck 60 s, vitest 250 to 344 s, biome) | 3.5 min measured on #126 (typecheck + lint 1:12, four shards merged at 3:40) |
+| PR, required checks green | 6 to 8 min (one job: typecheck 60 s, vitest 250 to 344 s, lint) | 3.5 min measured on #126 (typecheck + lint 1:12, four shards merged at 3:40) |
 | PR, Sonar done | 9 to 10 min (its own workflow, vitest with coverage again: 274 to 424 s) | about 5.5 min on a JS change (the scan itself is 1:45 and reads the shards' coverage); a Rust change waits for the Rust job |
 | main, Sonar done | 12 to 21 min | about 10 min (the Rust job, then a 4.5 min main-branch scan) |
 | Android compile (6 min) | every fleet PR | only `clients/tv-native/**` and install changes |

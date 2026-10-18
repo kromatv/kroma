@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { readMode, THEME_BOOTSTRAP, THEME_MODES, writeMode } from './theme.ts';
 
 beforeEach(() => {
-  // biome-ignore lint/suspicious/noDocumentCookie: same reason as theme.ts, and this is the API under test
+  // oxlint-disable-next-line unicorn/no-document-cookie -- same reason as theme.ts, and this is the API under test
   document.cookie = 'kroma-theme=;path=/;max-age=0';
   delete document.documentElement.dataset.theme;
 });
@@ -21,7 +21,7 @@ describe('readMode', () => {
   });
 
   it('falls back to system rather than trusting a cookie it did not write', () => {
-    // biome-ignore lint/suspicious/noDocumentCookie: same reason as theme.ts, and this is the API under test
+    // oxlint-disable-next-line unicorn/no-document-cookie -- same reason as theme.ts, and this is the API under test
     document.cookie = 'kroma-theme=sepia;path=/';
 
     expect(readMode()).toBe('system');
@@ -48,7 +48,7 @@ describe('writeMode', () => {
 
 describe('THEME_BOOTSTRAP', () => {
   it('stamps the stored ground when it runs before the first paint', () => {
-    // biome-ignore lint/suspicious/noDocumentCookie: same reason as theme.ts, and this is the API under test
+    // oxlint-disable-next-line unicorn/no-document-cookie -- same reason as theme.ts, and this is the API under test
     document.cookie = 'kroma-theme=light;path=/';
 
     new Function(THEME_BOOTSTRAP)();

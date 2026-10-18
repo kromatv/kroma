@@ -185,9 +185,9 @@ function Seam({
       {/* The seam wears the cursor too: react-native-web gives a pressable
           `cursor: pointer`, so without this the middle of the strip reads as a
           button while the rest reads as a seam. */}
-      {/* biome-ignore lint/a11y/useValidAriaRole: React Native's vocabulary, not ARIA's - react-native-web renders `adjustable` as the ARIA `slider`. */}
       <Focusable
         label={label}
+        // oxlint-disable-next-line jsx-a11y/aria-role -- React Native's vocabulary, not ARIA's - react-native-web renders `adjustable` as the ARIA `slider`.
         role="adjustable"
         // A slider with no value announces as one, so the seam reports the share
         // it has given the panel before it.

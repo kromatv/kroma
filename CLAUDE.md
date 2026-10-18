@@ -40,7 +40,7 @@ These are the CI hard gates (`.github/workflows/ci.yml`, see
 ```bash
 bun run typecheck        # every TS workspace (= `bun run ci typecheck`, a bounded pool)
 bun run test             # vitest (two projects: web + native)
-bun run check            # biome format + lint  (check:fix to write)
+bun run check            # oxlint + oxfmt  (check:fix to write)
 bun run ci rust clippy   # server workspace + every module workspace
 bun run ci rust test     # the same, under coverage (cargo llvm-cov)
 ```

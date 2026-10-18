@@ -21,7 +21,7 @@ function Grows() {
         add
       </button>
       {Array.from({ length: rows }, (_, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the row's identity here.
+        // oxlint-disable-next-line react/no-array-index-key -- the index IS the row's identity here.
         <Leaf key={i} label={`row ${i}`} />
       ))}
     </>

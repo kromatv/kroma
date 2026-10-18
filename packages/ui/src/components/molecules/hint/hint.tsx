@@ -60,12 +60,12 @@ function Hint({ text, size = 15, color = 'textDim', textStyle, ...box }: Readonl
     <Box row align="center" {...box}>
       {parts.map((part, index) =>
         !(part in KEYS) ? (
-          // biome-ignore lint/suspicious/noArrayIndexKey: the parts of one line are a fixed, ordered split; there is no stable id to key on.
+          // oxlint-disable-next-line react/no-array-index-key -- the parts of one line are a fixed, ordered split; there is no stable id to key on.
           <Text key={index} color={color} style={[sizeOf(size, scope), textStyle]}>
             {part}
           </Text>
         ) : (
-          // biome-ignore lint/suspicious/noArrayIndexKey: same fixed split.
+          // oxlint-disable-next-line react/no-array-index-key -- same fixed split.
           <Icon key={index} name={KEYS[part as HintKey]} size={size + 3} color={color} />
         ),
       )}

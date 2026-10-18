@@ -159,7 +159,7 @@ export function MobileTopbar() {
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const step = useBreakpoint();
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run key; pathname closes the drawer on navigation
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- intentional re-run key; pathname closes the drawer on navigation
   useEffect(() => setOpen(false), [pathname]);
   if (step === 'lg' || step === 'tv') return null;
   return (

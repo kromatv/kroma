@@ -41,13 +41,13 @@
     "html_handling": "drop-trailing-slash",
     // Everything else is an asset and never wakes the script. Without this the
     // asset router would answer /api/* with the prerendered 404 document.
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api/*"],
   },
   // Served at https://kroma.tv/ and https://www.kroma.tv/. Requires the kroma.tv
   // zone on this Cloudflare account; wrangler provisions the custom domains + DNS
   // records on deploy. (tv.kroma.tv is the 10-foot app — see clients/tv-web.)
   "routes": [
     { "pattern": "kroma.tv", "custom_domain": true },
-    { "pattern": "www.kroma.tv", "custom_domain": true }
-  ]
+    { "pattern": "www.kroma.tv", "custom_domain": true },
+  ],
 }

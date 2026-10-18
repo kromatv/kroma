@@ -4,8 +4,10 @@ import { createLocales, labelKey } from './locales';
 import type { Locale, Messages } from './registry';
 import type { Catalog, LocaleSet } from './types';
 
-export interface DefineI18nConfig
-  extends Pick<I18nConfig<Record<string, Catalog>>, 'plural' | 'lazy'> {
+export interface DefineI18nConfig extends Pick<
+  I18nConfig<Record<string, Catalog>>,
+  'plural' | 'lazy'
+> {
   /** One catalog per locale, keyed by code, holding what ships up front. The
    *  default locale's names every language under `lang.<code>`, which is what
    *  the locale set reads before any other message is needed. */

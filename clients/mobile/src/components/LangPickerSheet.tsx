@@ -224,7 +224,10 @@ function LangRow({
 // Combining-marks range, not `\p{Diacritic}`: not every Hermes build supports
 // unicode property escapes.
 function fold(text: string): string {
-  return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
 }
 
 const sDefinition = styles({

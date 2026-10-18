@@ -13,7 +13,7 @@ export type { Query, RequestContext } from './http';
  * its own `src/api/<name>/client.ts`, and the runtime finds the same folder by
  * globbing, so adding a domain is adding a folder.
  */
-// biome-ignore lint/suspicious/noEmptyInterface: every domain augments it from its own file.
+// oxlint-disable-next-line typescript/no-empty-interface -- every domain augments it from its own file.
 export interface Domains {}
 
 /** A domain's endpoints over the shared transport. Each `client.ts` default-exports one. */

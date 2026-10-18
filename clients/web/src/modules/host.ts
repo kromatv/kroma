@@ -44,7 +44,7 @@ export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost
 
   const [host, setHost] = useState<KromaHost | null>(null);
   const authed = auth.user != null;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run key; revision re-wires modules after install/uninstall/enable
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- intentional re-run key; revision re-wires modules after install/uninstall/enable
   useEffect(() => {
     if (!authed) return;
     let alive = true;

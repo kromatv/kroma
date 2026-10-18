@@ -180,8 +180,8 @@ The same instinct applies to the code:
   closure it had at mount. A memoised component that needs one stable, fresh
   callback uses `useStableCallback` (`#ui/lib/stable-callback`).
 - **No dead code, no unused exports.** `bun run deadcode` catches them.
-- Follow `.oxlintrc.json` for additional house-rule enforcement and `biome.json`
-  for formatting, import organization, and existing lint coverage. Run
+- Follow `.oxlintrc.json` for lint and house rules and `.oxfmtrc.json` for
+  formatting. Run
   `bun run check` before a PR. Read `bun run --cwd packages/lint-rules rules <rule-name>` for a
   custom rule's rationale and repair steps.
 - For Rust, rustfmt is canonical: run `cargo fmt` before a PR. The root

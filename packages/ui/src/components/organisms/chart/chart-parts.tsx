@@ -115,7 +115,7 @@ function ChartAxis({ edge, ticks = TICKS, room, every, format }: Readonly<ChartA
           <Box
             // The sample's position IS its identity: nothing reorders a series,
             // and two samples an hour apart can carry the same name.
-            // biome-ignore lint/suspicious/noArrayIndexKey: the position is the identity here
+            // oxlint-disable-next-line react/no-array-index-key -- the position is the identity here
             key={at}
             absolute
             top={AXIS_GAP / 2}

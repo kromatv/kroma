@@ -20,7 +20,7 @@ import type { TVars } from './types';
  * types widen to `string`, so the package is usable before it is configured
  * and a consumer that never augments it still compiles.
  */
-// biome-ignore lint/suspicious/noEmptyInterface: the augmentation target; a type alias cannot be reopened.
+// oxlint-disable-next-line typescript/no-empty-interface -- the augmentation target; a type alias cannot be reopened.
 export interface Register {}
 
 /** The locales the project registered, or `string` before it registers any. */
