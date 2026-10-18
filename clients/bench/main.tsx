@@ -15,6 +15,7 @@ import {
   useGrowingCount,
 } from '@kromatv/ui/kit';
 import { createRoot } from 'react-dom/client';
+import { mountBench } from './mount';
 
 const params = new URLSearchParams(location.search);
 const RAILS = Number(params.get('rails') ?? 8);
@@ -109,4 +110,5 @@ function Loaders({ count }: Readonly<{ count: number }>) {
 }
 
 const root = document.getElementById('root');
-if (root) createRoot(root).render(<Bench />);
+if (root && params.has('mount')) mountBench(params, root);
+else if (root) createRoot(root).render(<Bench />);
