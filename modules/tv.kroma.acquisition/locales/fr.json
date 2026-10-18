@@ -296,5 +296,6 @@
   "acq.showRest_other": "Afficher les {count} dernières",
   "acq.noneAccepted": "Aucune version ne passe les règles du profil.",
   "acq.noneRefused": "Le profil n'a refusé aucune version.",
-  "acq.nothingPassed": "Aucune version ne passe les règles du profil. Voici celles qu'il refuse, et pourquoi."
+  "acq.nothingPassed": "Aucune version ne passe les règles du profil. Voici celles qu'il refuse, et pourquoi.",
+  "acq.openOnIndexer": "Ouvrir sur {indexer}"
 }

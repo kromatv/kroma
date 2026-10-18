@@ -2,6 +2,7 @@ import type { ScoredReleaseView } from '@kromatv/client/requests';
 import { Box, Divider, Focusable, Row, sv, Text, useBreakpoint } from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { GrabButton } from './grab-button';
+import { IndexerLink } from './indexer-link';
 import { ScorePill } from './judgement-pills';
 import { ScoreBreakdown } from './release-breakdown';
 import { ReleaseFacts } from './release-facts';
@@ -10,7 +11,8 @@ import { ReleaseNumbers } from './release-numbers';
 
 const SCORE_W = 64;
 const BUTTON_W = 128;
-const TRAIL_W = SCORE_W + 16 + BUTTON_W;
+const LINK_W = 40;
+const TRAIL_W = SCORE_W + 16 + LINK_W + 8 + BUTTON_W;
 
 const hit = sv({
   base: { fill: true, _hover: { bg: 'tint/4' } },
@@ -37,6 +39,9 @@ export function ReleaseCard({
       <GrabButton release={release} picked={picked} busy={busy} block onGrab={onGrab} />
     ) : null;
   const score = release.score == null ? null : <ScorePill score={release.score} />;
+  const link = release.detailsUrl ? (
+    <IndexerLink href={release.detailsUrl} indexer={release.indexerName} title={release.title} />
+  ) : null;
   const lines = (
     <Box flex={!narrow} minW={0} gap={6} pointerEvents="none">
       <ReleaseFacts release={release} />
@@ -63,13 +68,16 @@ export function ReleaseCard({
               <ReleaseNumbers release={release} aligned={false} />
               {score}
             </Row>
-            {button}
+            <Row gap={8} align="center" pointerEvents="box-none">
+              {link}
+              <Box flex>{button}</Box>
+            </Row>
           </Box>
         ) : (
           <Row pointerEvents="box-none" px={18} py={14} gap={24} align="center">
             {lines}
             <ReleaseNumbers release={release} aligned />
-            <Trail score={score} button={button} />
+            <Trail score={score} link={link} button={button} />
           </Row>
         )}
       </Box>
@@ -83,7 +91,11 @@ export function ReleaseCard({
   );
 }
 
-function Trail({ score, button }: Readonly<{ score: ReactNode; button: ReactNode }>) {
+function Trail({
+  score,
+  link,
+  button,
+}: Readonly<{ score: ReactNode; link: ReactNode; button: ReactNode }>) {
   return (
     <Row w={TRAIL_W} justify="flex-end" align="center" gap={16} pointerEvents="box-none">
       {score ? (
@@ -91,6 +103,7 @@ function Trail({ score, button }: Readonly<{ score: ReactNode; button: ReactNode
           {score}
         </Row>
       ) : null}
+      <Box w={LINK_W}>{link}</Box>
       {button ? <Box minW={BUTTON_W}>{button}</Box> : null}
     </Row>
   );

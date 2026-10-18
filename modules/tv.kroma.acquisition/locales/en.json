@@ -296,5 +296,6 @@
   "acq.showRest_other": "Show the last {count}",
   "acq.noneAccepted": "No release passes the profile's rules.",
   "acq.noneRefused": "The profile refused no release.",
-  "acq.nothingPassed": "No release passes the profile's rules. Here are the ones it refuses, and why."
+  "acq.nothingPassed": "No release passes the profile's rules. Here are the ones it refuses, and why.",
+  "acq.openOnIndexer": "Open on {indexer}"
 }
