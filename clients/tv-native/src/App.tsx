@@ -7,12 +7,11 @@
 // owns is the platform's boot sequence (fonts, splash, keep-awake) and the
 // stage the app is laid out on.
 
-import { type DeviceNameSource, setBuildInfo, setHardwareSource, TvApp } from '@kromatv/tv';
+import { createDeepLinks, createSearchRequests, type DeviceNameSource, TvApp } from '@kromatv/tv';
 import { expoImageBackend } from '@kromatv/ui/expo-image';
 import { KIT_FONTS } from '@kromatv/ui/fonts';
 import { configureKit, TvStage } from '@kromatv/ui/kit';
 import { BlurView } from 'expo-blur';
-import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { useFonts } from 'expo-font';
 import { useKeepAwake } from 'expo-keep-awake';
@@ -26,19 +25,12 @@ import { useEffect, useState } from 'react';
 import { decoderFrameLimits } from '../modules/device-hardware';
 import { browseForServers } from '../modules/server-discovery';
 import { startLauncherLinks } from './lib/launcher-links';
-import { nativeHardware } from './lib/native-hardware';
 import { nativeLauncher } from './lib/native-launcher';
 import { nativeSearchShell } from './lib/native-search';
 import { startSiriSearch } from './lib/siri-search';
 import { hydrateSessionStorage } from './lib/storage';
 import { installVlcPlane } from './lib/vlc-plane';
 import { nativeVoiceSearch } from './lib/voice-search';
-
-// Which build this is. The browser shells get it from a Vite `define`; Metro has
-// no such thing, so the identity travels in Expo's `extra` (see app.config.ts)
-// and the shell hands it over here - at module scope, before the first render,
-// like the backends below.
-setBuildInfo(Constants.expoConfig?.extra?.buildInfo ?? {});
 
 // What the set is called, when the platform will say. On Android TV this is the
 // name typed in setup. On tvOS it is `UIDevice.current.name`, which since
@@ -48,9 +40,6 @@ setBuildInfo(Constants.expoConfig?.extra?.buildInfo ?? {});
 // port drops an empty answer for us. No `subscribe`: this one is already there
 // when the app starts, unlike the buses the browser shells have to ask.
 const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
-// Hermes exposes no `navigator.hardwareConcurrency` / `deviceMemory`, so the
-// About screen's numbers come from the native module instead.
-setHardwareSource(nativeHardware);
 // How large a picture this set's decoders take, which decides whether a title
 // direct-plays at all. Every other client guesses from the codec alone, and a
 // television that stops at 1080p answers a 4K file with a slideshow.
@@ -78,6 +67,8 @@ configureKit({ image: expoImageBackend, frost: BlurView });
 installVlcPlane();
 
 export function App() {
+  const [deepLinks] = useState(createDeepLinks);
+  const [searchRequests] = useState(createSearchRequests);
   // A TV must never sleep mid-film, and unlike a phone there is no user
   // interaction to keep it awake.
   useKeepAwake();
@@ -90,10 +81,10 @@ export function App() {
   }, []);
   // Siri is the Apple TV's voice input (the remote's microphone is the system's
   // and no app may open it): a request spoken to it lands on the search screen.
-  useEffect(startSiriSearch, []);
+  useEffect(() => startSiriSearch(searchRequests.requestSearch), [searchRequests]);
   // A row KROMA published to the Android TV home, selected: the launcher opens
   // the app on `kroma://item/<id>` and the detail screen follows.
-  useEffect(startLauncherLinks, []);
+  useEffect(() => startLauncherLinks(deepLinks.requestDeepLink), [deepLinks]);
   // Render on FAILURE as well as on success. A missing font is a cosmetic
   // problem; blocking on it renders nothing at all, and on a television that is
   // indistinguishable from a frozen app, with no way to find out why.
@@ -109,6 +100,8 @@ export function App() {
           Android TV client too, and reporting "AppleTV" there was wrong in the
           admin dashboard and the About screen alike. */}
       <TvApp
+        deepLinks={deepLinks}
+        searchRequests={searchRequests}
         voiceSearch={nativeVoiceSearch}
         searchShell={nativeSearchShell}
         launcher={nativeLauncher}

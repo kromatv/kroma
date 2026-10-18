@@ -16,7 +16,11 @@ import {
   type TvScreens,
   useNav,
 } from '#tv/app/router';
-import { requestSearch, takePendingSearch } from '#tv/app/searchRequest';
+import {
+  createSearchRequests,
+  type SearchRequests,
+  SearchRequestsProvider,
+} from '#tv/app/searchRequest';
 import { type SearchShell, type SearchShellProps, SearchShellProvider } from '#tv/app/searchShell';
 import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voiceSearch';
 import { addRecentSearch } from '#tv/features/catalog/searchHistory';
@@ -63,6 +67,7 @@ function mount({
   discover = vi.fn(async () => known()),
   movies = [] as MediaItem[],
   shows = [] as Show[],
+  requests = createSearchRequests(),
   voiceSearch = null,
   searchShell = null,
 }: {
@@ -70,6 +75,7 @@ function mount({
   discover?: () => Promise<DiscoverResponse>;
   movies?: MediaItem[];
   shows?: Show[];
+  requests?: SearchRequests;
   voiceSearch?: VoiceSearchBackend | null;
   searchShell?: SearchShell | null;
 } = {}) {
@@ -87,24 +93,26 @@ function mount({
   let nav!: TvNav;
   render(
     onScreen(
-      <VoiceSearchProvider value={voiceSearch}>
-        <SearchShellProvider value={searchShell}>
-          <EnvProvider platform="TV" overrides={{ physicalKeyboard: false }}>
-            <ConnectionProvider value={{ movies, shows } as Connection}>
-              <TvClientProvider client={client}>
-                <TvNavProvider screens={{} as TvScreens}>
-                  <NavHandle
-                    onReady={(n) => {
-                      nav = n;
-                    }}
-                  />
-                  <TvSearch />
-                </TvNavProvider>
-              </TvClientProvider>
-            </ConnectionProvider>
-          </EnvProvider>
-        </SearchShellProvider>
-      </VoiceSearchProvider>,
+      <SearchRequestsProvider value={requests}>
+        <VoiceSearchProvider value={voiceSearch}>
+          <SearchShellProvider value={searchShell}>
+            <EnvProvider platform="TV" overrides={{ physicalKeyboard: false }}>
+              <ConnectionProvider value={{ movies, shows } as Connection}>
+                <TvClientProvider client={client}>
+                  <TvNavProvider screens={{} as TvScreens}>
+                    <NavHandle
+                      onReady={(n) => {
+                        nav = n;
+                      }}
+                    />
+                    <TvSearch />
+                  </TvNavProvider>
+                </TvClientProvider>
+              </ConnectionProvider>
+            </EnvProvider>
+          </SearchShellProvider>
+        </VoiceSearchProvider>
+      </SearchRequestsProvider>,
     ),
   );
   // The screen arms the press guard as it mounts, and would otherwise swallow
@@ -130,7 +138,6 @@ beforeEach(() => {
   // The router mirrors its stack to sessionStorage under a dev build, which the
   // runner is; without this each mount resumes the previous test's stack.
   sessionStorage.clear();
-  takePendingSearch();
 });
 
 afterEach(() => {
@@ -259,12 +266,13 @@ describe('TvSearch', () => {
   });
 
   it('opens on a query asked for from outside the app, and re-targets a second one', async () => {
-    requestSearch('alien');
-    const { search } = mount();
+    const requests = createSearchRequests();
+    requests.requestSearch('alien');
+    const { search } = mount({ requests });
     await waitFor(() => expect(search).toHaveBeenCalledWith('alien'));
 
     act(() => {
-      requestSearch('aliens');
+      requests.requestSearch('aliens');
     });
     await waitFor(() => expect(search).toHaveBeenCalledWith('aliens'));
   });

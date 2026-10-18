@@ -1,6 +1,5 @@
 // Siri -> the app's search screen. Apple TV has no microphone an app may open,
 // so Siri is the voice input; `kroma://search?q=...` reaches the same door.
-import { requestSearch } from '@kromatv/tv';
 import { Linking } from 'react-native';
 import { SiriSearch } from '../../modules/siri-search';
 
@@ -23,7 +22,7 @@ function searchInUrl(url: string | null): string | null {
 
 /** Start forwarding Siri's media requests (and search links) to the app.
  * Returns a cleanup function. */
-export function startSiriSearch(): () => void {
+export function startSiriSearch(requestSearch: (query: string) => void): () => void {
   // Whatever was asked for before JavaScript existed: Siri launches the app to
   // handle an intent, and a link launches it the same way.
   const pending = SiriSearch?.takePendingQuery();

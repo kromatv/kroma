@@ -2,8 +2,7 @@
 // `okhttp/…`); only the browser shell is allowed to say nothing itself.
 
 import { clientUserAgent } from '@kromatv/client';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { setBuildInfo } from '#tv/app/clientBuild';
+import { describe, expect, it, vi } from 'vitest';
 
 const platform = vi.hoisted<{
   current: { OS: string; isTV?: boolean; constants?: Record<string, string> };
@@ -18,10 +17,6 @@ vi.mock('react-native', () => ({
 
 import { makeClient, tvIdentity } from './apiClient';
 
-beforeEach(() => {
-  setBuildInfo({ version: '0.1.35' });
-});
-
 describe('tvIdentity', () => {
   it('names an Apple TV by its platform, which is the only model there is', () => {
     platform.current = {
@@ -29,8 +24,10 @@ describe('tvIdentity', () => {
       isTV: true,
       constants: { systemName: 'tvOS', osVersion: '26.0' },
     };
-    expect(tvIdentity()).toEqual({ version: '0.1.35', model: 'Apple TV', os: 'tvOS 26.0' });
-    expect(clientUserAgent(tvIdentity() as never)).toBe('Kroma/0.1.35 (Apple TV; tvOS 26.0)');
+    expect(tvIdentity('0.1.35')).toEqual({ version: '0.1.35', model: 'Apple TV', os: 'tvOS 26.0' });
+    expect(clientUserAgent(tvIdentity('0.1.35') as never)).toBe(
+      'Kroma/0.1.35 (Apple TV; tvOS 26.0)',
+    );
   });
 
   it('names an Android television by its hardware, and says it is a television', () => {
@@ -41,7 +38,11 @@ describe('tvIdentity', () => {
     };
     // "Android TV" rather than "Android" is what keeps the account page from
     // listing a television as a very large phone.
-    expect(tvIdentity()).toEqual({ version: '0.1.35', model: 'BRAVIA 4K', os: 'Android TV 14' });
+    expect(tvIdentity('0.1.35')).toEqual({
+      version: '0.1.35',
+      model: 'BRAVIA 4K',
+      os: 'Android TV 14',
+    });
   });
 
   it('does not claim to be a television when the same bundle runs on a phone', () => {
@@ -50,7 +51,11 @@ describe('tvIdentity', () => {
       isTV: false,
       constants: { systemName: 'iOS', osVersion: '18.2' },
     };
-    expect(tvIdentity()).toEqual({ version: '0.1.35', model: 'Apple device', os: 'iOS 18.2' });
+    expect(tvIdentity('0.1.35')).toEqual({
+      version: '0.1.35',
+      model: 'Apple device',
+      os: 'iOS 18.2',
+    });
   });
 
   it('leaves "TV" off an Android device that is not one', () => {
@@ -59,12 +64,12 @@ describe('tvIdentity', () => {
       isTV: false,
       constants: { Model: 'Pixel 8', Release: '14', uiMode: 'normal' },
     };
-    expect(tvIdentity()).toEqual({ version: '0.1.35', model: 'Pixel 8', os: 'Android 14' });
+    expect(tvIdentity('0.1.35')).toEqual({ version: '0.1.35', model: 'Pixel 8', os: 'Android 14' });
   });
 
   it('says nothing in a browser shell, which owns its own User-Agent', () => {
     platform.current = { OS: 'web' };
-    expect(tvIdentity()).toBeNull();
+    expect(tvIdentity('0.1.35')).toBeNull();
   });
 });
 
@@ -99,7 +104,7 @@ describe('makeClient', () => {
       constants: { systemName: 'tvOS', osVersion: '26.0' },
     };
     const seen = recorded();
-    await makeClient('http://kroma.test').media.health();
+    await makeClient('http://kroma.test', '0.1.35').media.health();
     expect(seen[0]?.get('User-Agent')).toBe('Kroma/0.1.35 (Apple TV; tvOS 26.0)');
     vi.unstubAllGlobals();
   });
@@ -107,7 +112,7 @@ describe('makeClient', () => {
   it('leaves the header alone in a browser shell', async () => {
     platform.current = { OS: 'web' };
     const seen = recorded();
-    await makeClient('http://kroma.test').media.health();
+    await makeClient('http://kroma.test', '0.1.35').media.health();
     expect(seen[0]?.get('User-Agent')).toBeNull();
     vi.unstubAllGlobals();
   });

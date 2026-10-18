@@ -36,6 +36,19 @@ Native launcher publishing and discovery follow the same ownership model:
 pass `launcher={nativeLauncher}` and `serverBrowse={browseForServers}` to `TvApp`
 instead of calling their former registration setters.
 
+Native shells create `createSearchRequests()` and `createDeepLinks()` with
+`useState`, pass the instances through `searchRequests` / `deepLinks`, and give
+their request callbacks to native listeners. Requests queued during font or
+session loading remain available when the TV mounts; separate roots never share
+them. The former global request functions are removed.
+
+Cast rosters, socket controls, playback reports and pending cast seeks belong to
+the mounted receiver provider. Preview refresh throttling belongs to the mounted
+catalogue. Build metadata and hardware adapters are selected at build time:
+Metro maps the TV adapters to the native shell, while browser builds use Vite's
+stamp and Web APIs. The former `setBuildInfo` and `setHardwareSource` startup
+registrations are removed. Shared immutable helpers are available from
+`@kromatv/tv/build-info` and `@kromatv/tv/hardware`.
 
 `react` / `react-dom` are peer dependencies (≥ 19.2). Built on
 [`@kromatv/core`](../core/README.md) (API, capabilities, remote map) and

@@ -3,7 +3,13 @@
 import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { setHardwareSource } from '#tv/app/clientHardware';
+import * as hardware from '#tv/app/clientHardware';
+import { type HardwareSource, readClientHardware } from '#tv/app/hardwareReadings';
+
+function hardwareSource(source: HardwareSource) {
+  vi.spyOn(hardware, 'clientHardware').mockImplementation(() => readClientHardware(source));
+}
+
 import { EnvProvider } from '#tv/app/providers/env';
 import { TvNavProvider } from '#tv/app/router';
 import { TvAbout } from '#tv/features/accounts/TvAbout';
@@ -18,7 +24,7 @@ afterEach(() => {
   cleanup();
   auth.current = null;
   vi.unstubAllGlobals();
-  setHardwareSource(null);
+  vi.restoreAllMocks();
   sessionStorage.clear();
 });
 
@@ -67,7 +73,7 @@ describe('TvAbout hardware rows', () => {
     // wins, and memory arrives in bytes to be shown as coarse GB.
     withNavigator({});
     vi.stubGlobal('performance', {});
-    setHardwareSource({
+    hardwareSource({
       cpuCores: () => 6,
       memoryBytes: () => 8 * GB,
       freeMemoryBytes: () => null,
@@ -79,7 +85,7 @@ describe('TvAbout hardware rows', () => {
 
   it('shows the free RAM alongside the total when the source reports it', () => {
     withNavigator({});
-    setHardwareSource({
+    hardwareSource({
       cpuCores: () => 4,
       memoryBytes: () => 8 * GB,
       // The reading that explains a struggling television, and the one the
@@ -92,7 +98,7 @@ describe('TvAbout hardware rows', () => {
 
   it('keeps a decimal on a set with well under a gigabyte to spare', () => {
     withNavigator({});
-    setHardwareSource({
+    hardwareSource({
       cpuCores: () => 4,
       memoryBytes: () => 2 * GB,
       freeMemoryBytes: () => 0.4 * GB,
@@ -106,7 +112,7 @@ describe('TvAbout hardware rows', () => {
   it('hides the rows when the injected source answers null', () => {
     withNavigator({});
     vi.stubGlobal('performance', {});
-    setHardwareSource({
+    hardwareSource({
       cpuCores: () => null,
       memoryBytes: () => null,
       freeMemoryBytes: () => null,

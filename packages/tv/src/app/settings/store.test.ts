@@ -19,6 +19,7 @@ class MemoryStorage {
 }
 
 beforeEach(() => {
+  vi.restoreAllMocks();
   Object.defineProperty(window, 'localStorage', {
     value: new MemoryStorage(),
     configurable: true,
@@ -123,7 +124,10 @@ describe('the artwork default', () => {
     vi.resetModules();
     const media = await import('@kromatv/client/media');
     const hardware = await import('#tv/app/clientHardware');
-    hardware.setHardwareSource(reporting(gb));
+    const { readClientHardware } = await import('#tv/app/hardwareReadings');
+    vi.spyOn(hardware, 'clientHardware').mockImplementation(() =>
+      readClientHardware(reporting(gb)),
+    );
     const store = await import('./store');
     return { hardware, media, store };
   };
@@ -157,16 +161,12 @@ describe('the artwork default', () => {
     window.localStorage.removeItem('kroma:artwork');
   });
 
-  it('reads the hardware source a native shell installs after this module is evaluated', async () => {
-    vi.resetModules();
-    const hardware = await import('#tv/app/clientHardware');
-    hardware.setHardwareSource(null);
-    const store = await import('./store');
-    expect(store.artworkPrefStore.get()).toBe('full');
-
-    hardware.setHardwareSource(reporting(2));
-
+  it('probes the immutable hardware adapter once for the default', async () => {
+    const { store, hardware } = await boot(2);
+    const before = vi.mocked(hardware.clientHardware).mock.calls.length;
     expect(store.artworkPrefStore.get()).toBe('high');
+    expect(store.artworkPrefStore.get()).toBe('high');
+    expect(vi.mocked(hardware.clientHardware).mock.calls.length).toBe(before);
   });
 });
 

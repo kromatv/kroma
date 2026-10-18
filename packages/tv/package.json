@@ -14,7 +14,9 @@
   "exports": {
     ".": "./src/index.tsx",
     "./mount": "./src/mount.web.tsx",
-    "./stage": "./src/shared/stage.ts"
+    "./stage": "./src/shared/stage.ts",
+    "./build-info": "./src/app/buildMetadata.ts",
+    "./hardware": "./src/app/hardwareReadings.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

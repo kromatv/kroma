@@ -25,7 +25,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav } from '#tv/app/router';
-import { onSearchRequest, takePendingSearch } from '#tv/app/searchRequest';
+import { useSearchRequests } from '#tv/app/searchRequest';
 import { useSearchShell } from '#tv/app/searchShell';
 import { useVoiceSearchBackend } from '#tv/app/voiceSearch';
 import { addRecentSearch, getRecentSearches } from '#tv/features/catalog/searchHistory';
@@ -43,6 +43,7 @@ import { KromaMark, SearchKeyboard } from '#tv/shared/ui';
  * `app/searchShell`). Falls back to the in-memory catalogue when the server's
  * `/api/search` request fails. */
 export function TvSearch() {
+  const { onSearchRequest, takePendingSearch } = useSearchRequests();
   const { movies, shows } = useConnection();
   const client = useClient();
   const t = useT();
@@ -65,7 +66,7 @@ export function TvSearch() {
 
   // Asking Siri again while the screen is already open re-targets it rather than
   // reopening it, so the second request is not silently dropped.
-  useEffect(() => onSearchRequest(setQuery), []);
+  useEffect(() => onSearchRequest(setQuery), [onSearchRequest]);
 
   // A search "counts" once the user opens one of its results, and `found` is the
   // query that produced that result, not the prefix left in the box by then.

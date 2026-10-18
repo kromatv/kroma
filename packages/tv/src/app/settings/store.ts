@@ -80,18 +80,11 @@ export type ArtworkQuality = keyof typeof ARTWORK_SCALE;
 
 const LOW_MEMORY_GB = 2;
 
-// Latched on the first answer rather than read per call: a set's RAM does not
-// move mid-session, and a native shell installs its hardware source after this
-// module is evaluated, so the reads before that have nothing to answer with.
-let lowMemory: boolean | null = null;
-
+// Hardware adapters are selected by the bundler, before this module loads.
+// Total RAM is immutable, so probe once without a late-registration latch.
+const MEMORY_GB = clientHardware().memoryGb;
 function defaultArtworkQuality(): ArtworkQuality {
-  if (lowMemory === null) {
-    const gb = clientHardware().memoryGb;
-    if (gb === null) return 'full';
-    lowMemory = gb <= LOW_MEMORY_GB;
-  }
-  return lowMemory ? 'high' : 'full';
+  return MEMORY_GB !== null && MEMORY_GB <= LOW_MEMORY_GB ? 'high' : 'full';
 }
 
 export const artworkPrefStore = reactivePref(

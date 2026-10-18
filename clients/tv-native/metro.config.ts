@@ -6,5 +6,7 @@ import path from 'node:path';
 import { expoWorkspaceConfig } from '../expo-build/metro-workspace.ts';
 
 export default expoWorkspaceConfig(import.meta.dirname, {
+  '#tv/app/clientHardware': path.resolve(import.meta.dirname, 'src/hardware.ts'),
+  '#tv/app/clientBuild': path.resolve(import.meta.dirname, 'src/build-info.ts'),
   '#tv': path.resolve(import.meta.dirname, '../../packages/tv/src'),
 });

@@ -83,8 +83,7 @@ vi.mock('#tv/app/useServerHealth', async (importOriginal) => {
 
 vi.mock('#tv/shared/server', () => ({ initialServers: H.initialServers }));
 vi.mock('#tv/shared/preview', () => ({
-  readDeepLink: H.readDeepLink,
-  onDeepLink: H.onDeepLink,
+  createDeepLinks: () => ({ readDeepLink: H.readDeepLink, onDeepLink: H.onDeepLink }),
   createPreviewPublisher: () => H.publishPreview,
 }));
 

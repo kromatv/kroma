@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requestDeepLink = vi.hoisted(() => vi.fn());
-vi.mock('@kromatv/tv', () => ({ requestDeepLink }));
 
 const linking = vi.hoisted(() => ({
   initial: null as string | null,
@@ -93,14 +92,14 @@ describe('reading a launcher URL', () => {
 describe('forwarding a selection', () => {
   it('handles a tile that COLD-STARTED the app', async () => {
     linking.initial = 'kroma://item/abc123';
-    startLauncherLinks();
+    startLauncherLinks(requestDeepLink);
     await vi.waitFor(() =>
       expect(requestDeepLink).toHaveBeenCalledWith({ type: 'movie', id: 'abc123' }),
     );
   });
 
   it('handles a tile selected while the app was open', () => {
-    startLauncherLinks();
+    startLauncherLinks(requestDeepLink);
     linking.handler?.({ url: 'kroma://show/xyz' });
     // Re-targeting a running app is the other half; handling only one is a
     // launcher row that works exactly half the time.
@@ -109,7 +108,7 @@ describe('forwarding a selection', () => {
 
   it('pushes nothing for an ordinary launch', async () => {
     linking.initial = null;
-    startLauncherLinks();
+    startLauncherLinks(requestDeepLink);
     await Promise.resolve();
     expect(requestDeepLink).not.toHaveBeenCalled();
   });
@@ -117,20 +116,20 @@ describe('forwarding a selection', () => {
   it('survives a platform that cannot say what launched the app', async () => {
     linking.initialFails = true;
 
-    expect(() => startLauncherLinks()).not.toThrow();
+    expect(() => startLauncherLinks(requestDeepLink)).not.toThrow();
 
     await vi.waitFor(() => expect(linking.handler).not.toBeNull());
     expect(requestDeepLink).not.toHaveBeenCalled();
   });
 
   it('pushes nothing for a URL it does not recognise', () => {
-    startLauncherLinks();
+    startLauncherLinks(requestDeepLink);
     linking.handler?.({ url: 'https://example.test/' });
     expect(requestDeepLink).not.toHaveBeenCalled();
   });
 
   it('keeps listening for a second selection', () => {
-    startLauncherLinks();
+    startLauncherLinks(requestDeepLink);
     linking.handler?.({ url: 'kroma://item/one' });
     linking.handler?.({ url: 'kroma://item/two' });
     // A user browsing the home screen selects more than one tile.
@@ -138,7 +137,7 @@ describe('forwarding a selection', () => {
   });
 
   it('stops listening when told to', () => {
-    const stop = startLauncherLinks();
+    const stop = startLauncherLinks(requestDeepLink);
     stop();
     expect(linking.removed).toBe(1);
     linking.handler?.({ url: 'kroma://item/abc' });

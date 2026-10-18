@@ -15,10 +15,10 @@ import type { ServerBrowse } from '#tv/app/serverBrowse';
 import { useCatalogueSync } from '#tv/app/useCatalogueSync';
 import { useServerHealth } from '#tv/app/useServerHealth';
 import {
+  createDeepLinks,
   createPreviewPublisher,
   type DeepLink,
-  onDeepLink,
-  readDeepLink,
+  type DeepLinks,
 } from '#tv/shared/preview';
 import { initialServers } from '#tv/shared/server';
 
@@ -48,7 +48,13 @@ export interface Catalogue {
 /** Owns the TV's multi-server connection + catalogue state: discovery, the
  * active client, the movies/shows catalogue, the live event stream, Smart-Hub
  * preview publishing and deep links. */
-export function useCatalogue(platform: string, browse?: ServerBrowse): Catalogue {
+export function useCatalogue(
+  platform: string,
+  browse?: ServerBrowse,
+  suppliedDeepLinks?: DeepLinks,
+): Catalogue {
+  const [ownedDeepLinks] = useState(createDeepLinks);
+  const { readDeepLink, onDeepLink } = suppliedDeepLinks ?? ownedDeepLinks;
   const [publishPreview] = useState(createPreviewPublisher);
   // Read once, so the first client starts pointed at the right server with its
   // token applied and "Reprendre" does not flicker.
@@ -168,7 +174,7 @@ export function useCatalogue(platform: string, browse?: ServerBrowse): Catalogue
     return () => clearTimeout(id);
   }, [status, client, movies, publishPreview]);
 
-  useEffect(() => onDeepLink(setDeepLink), []);
+  useEffect(() => onDeepLink(setDeepLink), [onDeepLink]);
 
   const connection = useMemo<Connection>(
     () => ({

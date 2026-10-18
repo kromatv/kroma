@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requestSearch = vi.hoisted(() => vi.fn());
-vi.mock('@kromatv/tv', () => ({ requestSearch }));
 
 const linking = vi.hoisted(() => ({
   initial: null as string | null,
@@ -121,7 +120,7 @@ describe('reading a search link', () => {
 describe('a request that launched the app', () => {
   it('runs the query Siri was holding', () => {
     siri.pending = 'blade runner';
-    startSiriSearch();
+    startSiriSearch(requestSearch);
     // Siri launches the app to handle the intent, so the query exists before
     // any JavaScript does.
     expect(requestSearch).toHaveBeenCalledWith('blade runner');
@@ -129,12 +128,12 @@ describe('a request that launched the app', () => {
 
   it('runs the query a link was carrying', async () => {
     linking.initial = 'kroma://search?q=dune';
-    startSiriSearch();
+    startSiriSearch(requestSearch);
     await vi.waitFor(() => expect(requestSearch).toHaveBeenCalledWith('dune'));
   });
 
   it('runs nothing on an ordinary launch', async () => {
-    startSiriSearch();
+    startSiriSearch(requestSearch);
     await Promise.resolve();
     expect(requestSearch).not.toHaveBeenCalled();
   });
@@ -142,25 +141,25 @@ describe('a request that launched the app', () => {
 
 describe('a request made while the app was open', () => {
   it('runs what Siri heard', () => {
-    startSiriSearch();
+    startSiriSearch(requestSearch);
     siri.handler?.({ text: 'blade runner' });
     expect(requestSearch).toHaveBeenCalledWith('blade runner');
   });
 
   it('runs what a link asked for', () => {
-    startSiriSearch();
+    startSiriSearch(requestSearch);
     linking.handler?.({ url: 'kroma://search?q=dune' });
     expect(requestSearch).toHaveBeenCalledWith('dune');
   });
 
   it('ignores a link that is not a search', () => {
-    startSiriSearch();
+    startSiriSearch(requestSearch);
     linking.handler?.({ url: 'kroma://item/abc' });
     expect(requestSearch).not.toHaveBeenCalled();
   });
 
   it('keeps answering, request after request', () => {
-    startSiriSearch();
+    startSiriSearch(requestSearch);
     siri.handler?.({ text: 'one' });
     siri.handler?.({ text: 'two' });
     expect(requestSearch).toHaveBeenCalledTimes(2);
@@ -171,7 +170,7 @@ describe('a platform that cannot say what launched the app', () => {
   it('still opens the link door', async () => {
     linking.initialFails = true;
 
-    expect(() => startSiriSearch()).not.toThrow();
+    expect(() => startSiriSearch(requestSearch)).not.toThrow();
 
     await vi.waitFor(() => expect(linking.handler).not.toBeNull());
     linking.handler?.({ url: 'kroma://search?q=dune' });
@@ -183,7 +182,7 @@ describe('on a build with no Siri module', () => {
   it('still starts, and the link door still works', () => {
     // Android TV, and any future shell. `SiriSearch` is null there.
     siri.present = false;
-    expect(() => startSiriSearch()).not.toThrow();
+    expect(() => startSiriSearch(requestSearch)).not.toThrow();
 
     linking.handler?.({ url: 'kroma://search?q=dune' });
     expect(requestSearch).toHaveBeenCalledWith('dune');
@@ -191,7 +190,7 @@ describe('on a build with no Siri module', () => {
 
   it('cleans up without a Siri subscription to remove', () => {
     siri.present = false;
-    const stop = startSiriSearch();
+    const stop = startSiriSearch(requestSearch);
     expect(() => stop()).not.toThrow();
     expect(linking.removed).toBe(1);
   });
@@ -199,7 +198,7 @@ describe('on a build with no Siri module', () => {
 
 describe('stopping', () => {
   it('lets go of BOTH doors', () => {
-    const stop = startSiriSearch();
+    const stop = startSiriSearch(requestSearch);
     stop();
     expect(siri.removed).toBe(1);
     expect(linking.removed).toBe(1);

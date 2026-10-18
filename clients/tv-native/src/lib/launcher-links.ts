@@ -2,7 +2,6 @@
 // React Native's `Linking`, which no code inside @kromatv/tv can subscribe to.
 // A launcher publishes the SHOW id for an episode, never the episode's own.
 
-import { requestDeepLink } from '@kromatv/tv';
 import { Linking } from 'react-native';
 
 type LauncherLink = { type: 'movie' | 'show'; id: string };
@@ -22,7 +21,7 @@ export function linkInUrl(url: string | null): LauncherLink | null {
   return { type, id };
 }
 
-export function startLauncherLinks(): () => void {
+export function startLauncherLinks(requestDeepLink: (link: LauncherLink) => void): () => void {
   void Linking.getInitialURL()
     .then((url) => {
       const link = linkInUrl(url);

@@ -14,8 +14,7 @@ import { buildInfo } from '#tv/app/clientBuild';
 
 /** This television, as `clientUserAgent` wants it. `null` in a browser shell,
  * where the browser's own User-Agent is both better and unchangeable. */
-export function tvIdentity(): DeviceIdentity | null {
-  const version = buildInfo().version;
+export function tvIdentity(version = buildInfo().version): DeviceIdentity | null {
   if (Platform.OS === 'ios') {
     // tvOS exposes no model API without a native module.
     const { systemName, osVersion } = Platform.constants;
@@ -32,8 +31,8 @@ export function tvIdentity(): DeviceIdentity | null {
   return null;
 }
 
-export function makeClient(baseUrl: string): KromaClient {
-  const identity = tvIdentity();
+export function makeClient(baseUrl: string, version = buildInfo().version): KromaClient {
+  const identity = tvIdentity(version);
   return createKromaClient({
     baseUrl,
     locale: activeLocale(),
