@@ -5,7 +5,7 @@
   "type": "module",
   "description": "KROMA shared 10-foot TV experience spatial remote navigation, home, player. Mounted by the Tizen and webOS shells.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
-  "license": "GPL-2.0-or-later",
+  "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kromatv/kroma.git",

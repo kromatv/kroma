@@ -9,7 +9,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
 description = "KROMA Remote access module (backend): the managed Cloudflare Tunnel connector + its admin routes, over the HostCtx seam (no dependency on the app)."
-license = "MIT"
+license = "AGPL-3.0-or-later"
 
 # The out-of-process module binary: `kroma run` → `serve()`. The lib target stays
 # for the (transitional) in-process path; the bin is the .kmod entrypoint.

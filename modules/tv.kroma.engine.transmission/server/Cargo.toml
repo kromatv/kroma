@@ -9,7 +9,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
 description = "KROMA Transmission download sub-engine: a DownloadClient over the Transmission RPC. Plugs into the kroma-torrent registry."
-license = "MIT"
+license = "AGPL-3.0-or-later"
 
 [[bin]]
 # This module's `.kmod` entrypoint: a point-provider-only sidecar serving the

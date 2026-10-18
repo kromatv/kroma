@@ -9,7 +9,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
 description = "Release-name parsing and the acquisition decision engine (pure, zero I/O)"
-license = "MIT"
+license = "AGPL-3.0-or-later"
 
 [dependencies]
 # Pure parser/scorer: only needs the low manifest layer for its MODULE const, so

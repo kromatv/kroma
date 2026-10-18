@@ -5,7 +5,7 @@
   "type": "module",
   "description": "KROMA's in-app i18n dev tools: a floating panel that switches the locale for the session, marks every string on the page with what answered it, and names the key and file behind the one under the pointer. Engine-agnostic: it inspects whatever engine an adapter hands it. Loaded only by the dev server, through its own Vite plugin.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
-  "license": "GPL-2.0-or-later",
+  "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kromatv/kroma.git",

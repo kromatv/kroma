@@ -5,7 +5,7 @@ name = "__CRATE__"
 version = "__VERSION__"
 edition = "2021"
 rust-version = "1.88"
-license = "MIT"
+license = "AGPL-3.0-or-later"
 
 [[bin]]
 name = "kroma-module-__SLUG__"

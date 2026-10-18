@@ -81,7 +81,7 @@ A registry is a set of JSON files a plain file host (Cloudflare, Pages, S3, ngin
     "description": "…",
     "author": "Max Scharwath",
     "homepage": "https://…",
-    "license": "GPL-2.0-or-later",
+    "license": "AGPL-3.0-or-later",
     "keywords": ["download", "torrent"],
     "tags": ["download-client"],           // capability kinds it provides, for filtering
     "icon": "…",

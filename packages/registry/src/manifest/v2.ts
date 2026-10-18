@@ -174,7 +174,7 @@ export const Manifest = z.object({
   // Store metadata, all optional.
   author: z.string().nullish().describe('Who published it, shown on the Store page.'),
   homepage: z.string().nullish().describe('Where to read more about it.'),
-  license: z.string().nullish().describe('SPDX identifier, e.g. GPL-2.0-or-later.'),
+  license: z.string().nullish().describe('SPDX identifier, e.g. AGPL-3.0-or-later.'),
   keywords: z
     .array(z.string())
     .nullish()
