@@ -1,13 +1,12 @@
 // @vitest-environment jsdom
 
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { configureRemote } from '#ui/lib/focus-remote';
-import { clearPressGuard } from '#ui/lib/press-guard';
+import { act, fireEvent, screen, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { layout, measuring } from '#ui/testing';
+import { createInputTestHost } from '#ui/testing-input';
 import { SelectionBar } from './selection-bar';
 
-beforeAll(() => configureRemote());
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(() => {
   clearPressGuard();

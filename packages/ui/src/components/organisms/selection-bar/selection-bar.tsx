@@ -9,8 +9,8 @@ import {
 } from 'react';
 import { Animated, type LayoutChangeEvent, type View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { styles } from '#ui/core';
-import { type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { styles, useStyles } from '#ui/core';
+import { type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
 import { WEB } from '#ui/lib/platform';
 import { useFadeRise } from '#ui/lib/use-fade-rise';
@@ -85,7 +85,10 @@ function Root({
   size,
   children,
 }: Readonly<SelectionBarRootProps>) {
-  const shell = size ?? entryDefaultSize();
+  const s = useStyles(sDefinition);
+  const dock = WEB ? s.dockWeb : s.dockNative;
+  const defaults = useEntryDefaults();
+  const shell = size ?? defaults.size;
   const shown = count > 0;
   const fade = useFadeRise(shown);
   const bar = useRef<View>(null);
@@ -113,7 +116,7 @@ function Root({
         <Box
           onLayout={measure}
           pointerEvents={shown ? 'box-none' : 'none'}
-          style={floating ? DOCK : s.inline}
+          style={floating ? dock : s.inline}
         >
           <Animated.View style={fade.style}>
             <FocusRegion>
@@ -135,7 +138,7 @@ function Root({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   dockWeb: {
     position: 'sticky',
     bottom: 0,
@@ -162,8 +165,6 @@ const s = styles({
   middle: { row: true, align: 'center', gap: 4, shrink: 1, minW: 0, pr: 8 },
   stacked: { shrink: 1, minW: 0, pr: 8 },
 });
-
-const DOCK = WEB ? s.dockWeb : s.dockNative;
 
 /**
  * The bar that appears while rows are selected: how many, a way to widen the

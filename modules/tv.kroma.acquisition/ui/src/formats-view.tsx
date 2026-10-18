@@ -4,12 +4,12 @@ import {
   Box,
   Button,
   Callout,
-  confirm,
   EmptyState,
   Menu,
   Row,
   Surface,
   Text,
+  useConfirm,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAcquisitionApi } from './api';
@@ -34,6 +34,7 @@ export function FormatsView({
   onSaved,
 }: Readonly<{ rules: RulesView; onSaved: () => Promise<void> }>) {
   const t = useT();
+  const confirm = useConfirm();
   const acquisition = useAcquisitionApi();
   const [editing, setEditing] = useState<CustomFormat | null>(null);
   const action = useAsyncAction();

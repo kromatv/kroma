@@ -10,6 +10,7 @@ import {
   styles,
   Text,
   useBreakpoint,
+  useStyles,
 } from '@kromatv/ui/kit';
 import type {
   LibraryFilter,
@@ -19,7 +20,7 @@ import type {
 } from '#web/features/admin/monitoring-index-model';
 import { COLUMN, POSTER_W, type RowColumns } from '#web/features/admin/monitoring-title-row';
 
-const s = styles({
+const sDefinition = styles({
   head: { row: true, align: 'center', gap: 8 },
 });
 
@@ -169,6 +170,7 @@ function SortName({
   label: string;
   onPress: (sort: LibrarySort) => void;
 }>) {
+  const s = useStyles(sDefinition);
   const on = filter.sort === sort;
   return (
     <Focusable

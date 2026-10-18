@@ -6,7 +6,7 @@ import type {
 } from '@kromatv/client/monitoring';
 import type { RequestKind } from '@kromatv/client/requests';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout, confirm, Divider, Row, Surface, Switch } from '@kromatv/ui/kit';
+import { Box, Button, Callout, Divider, Row, Surface, Switch, useConfirm } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { isSpecials } from '#web/features/admin/monitoring-model';
 import {
@@ -66,6 +66,7 @@ function ShowSettings({
   onMonitor: (body: MonitorBody) => void;
 }>) {
   const t = useT();
+  const confirm = useConfirm();
   const [preset, setPreset] = useState<MonitorPreset | null>(null);
   const [specials, setSpecials] = useState(monitored.seasons.some(isSpecials));
   const presetLabel = usePresetLabel();

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
+import { styles, useStyles } from '#ui/core';
 import { WEB } from '#ui/lib/platform';
 
 /** Says `text` to a screen reader each time it changes, and nothing while it
@@ -10,6 +10,7 @@ import { WEB } from '#ui/lib/platform';
  *  mounted while the bar comes and goes, since a region mounted with its first
  *  words never speaks them; a native reader is handed it directly. */
 export function Announce({ text }: Readonly<{ text: string }>) {
+  const s = useStyles(sDefinition);
   useEffect(() => {
     if (WEB || text === '') return;
     AccessibilityInfo.announceForAccessibility(text);
@@ -22,7 +23,7 @@ export function Announce({ text }: Readonly<{ text: string }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   unseen: {
     absolute: true,
     w: 1,

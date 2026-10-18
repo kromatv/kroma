@@ -3,7 +3,7 @@
 import { cleanup, screen } from '@testing-library/react';
 import { act } from 'react';
 import { TextInput } from 'react-native';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 
 import { FocusScope } from '#ui/lib/focus-scope';

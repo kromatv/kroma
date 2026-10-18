@@ -4,7 +4,7 @@ import { CheckboxFace } from '#ui/components/atoms/checkbox';
 import { Divider } from '#ui/components/atoms/divider';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
+import { styles, useStyles } from '#ui/core';
 import type { ControlSize } from '#ui/lib/field-shell';
 import { SelectionBar, type SelectionBarPlacement } from './selection-bar';
 
@@ -28,6 +28,7 @@ function TitleRows({
   selected,
   onToggle,
 }: Readonly<{ selected: ReadonlySet<string>; onToggle: (title: string) => void }>) {
+  const s = useStyles(sDefinition);
   return (
     <Box radius="xl" border="border" bg="surface1" overflow="hidden">
       {TITLES.map((title, at) => (
@@ -116,6 +117,6 @@ export function Narrow({ children }: Readonly<{ children: ReactNode }>) {
   return <Box w={360}>{children}</Box>;
 }
 
-const s = styles({
+const sDefinition = styles({
   row: { row: true, align: 'center', gap: 14, px: 16, py: 12 },
 });

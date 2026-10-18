@@ -1,5 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { Box, Button, classes, Row, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, classes, Row, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useState } from 'react';
 
 const STAY_MS = 6000;
@@ -31,6 +31,7 @@ export function MonitoringNotice({
   on,
   lifted = false,
 }: Readonly<Pick<MonitoringNoticeState, 'notice' | 'on'> & { lifted?: boolean }>) {
+  const s = useStyles(sDefinition);
   const t = useT();
   return (
     <div
@@ -59,7 +60,7 @@ export function MonitoringNotice({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   bar: {
     position: 'fixed',
     bottom: 24,

@@ -7,7 +7,6 @@ import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
-  confirm,
   IconButton,
   Row,
   Surface,
@@ -15,6 +14,8 @@ import {
   Text,
   Tooltip,
   useBreakpoint,
+  useConfirm,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { airStatusKey, showTotals } from '#web/features/admin/monitoring-model';
 import { Pill } from '#web/features/admin/pill';
@@ -29,7 +30,7 @@ const PAD_Y = { base: 20, md: 26 } as const;
 
 const SURFACE = 'var(--kroma-surface-2)';
 
-const s = styles({
+const sDefinition = styles({
   art: { fill: true, opacity: 0.42 },
   sideFade: {
     backgroundImage: [
@@ -126,6 +127,7 @@ function MetaLine({
 }
 
 function Backdrop({ url }: Readonly<{ url: string | null }>) {
+  const s = useStyles(sDefinition);
   if (!url) return null;
   return (
     <>
@@ -154,6 +156,7 @@ function HeroActions({
   onUnfollow: () => void;
 }>) {
   const t = useT();
+  const confirm = useConfirm();
   const followed = missing !== null;
   const stop = async () => {
     const ok = await confirm({

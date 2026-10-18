@@ -1,6 +1,6 @@
 import type { ScoredReleaseView } from '@kromatv/client/requests';
 import { useT } from '@kromatv/module-sdk';
-import { Button, type ButtonVariant, confirm, type IconName } from '@kromatv/ui/kit';
+import { Button, type ButtonVariant, type IconName, useConfirm } from '@kromatv/ui/kit';
 
 export function GrabButton({
   release,
@@ -16,6 +16,7 @@ export function GrabButton({
   onGrab: (release: ScoredReleaseView) => void;
 }>) {
   const t = useT();
+  const confirm = useConfirm();
   const refused = release.score == null;
   const take = async () => {
     const yes =

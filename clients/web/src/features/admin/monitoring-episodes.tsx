@@ -2,7 +2,7 @@ import type { LedgerEpisode } from '@kromatv/client/requests';
 import { datedDayLabel, episodeTag, sizedImageUrl } from '@kromatv/core';
 import { ModuleSlot } from '@kromatv/module-sdk';
 import { useLocale, useT } from '@kromatv/ui';
-import { Badge, Box, Icon, Row, styles, Table, Text } from '@kromatv/ui/kit';
+import { Badge, Box, Icon, Row, styles, Table, Text, useStyles } from '@kromatv/ui/kit';
 import { FollowToggle } from '#web/features/admin/monitoring-follow-toggle';
 import { type EpisodeState, episodeState, fileLabel } from '#web/features/admin/monitoring-model';
 import { Image } from '#web/shared/ui';
@@ -28,7 +28,7 @@ const COLUMNS = [
   { width: 88 },
 ] as const;
 
-const s = styles({
+const sDefinition = styles({
   tag: { fontVariant: ['tabular-nums'] },
   unnamed: { fontStyle: 'italic' },
 });
@@ -100,6 +100,7 @@ function EpisodeRow({
   saving: boolean;
   onToggle: (episode: LedgerEpisode, monitored: boolean) => void;
 }>) {
+  const s = useStyles(sDefinition);
   const t = useT();
   const locale = useLocale();
   const tag = episodeTag(episode);

@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   Callout,
-  confirm,
   Divider,
   EmptyState,
   Focusable,
@@ -18,6 +17,8 @@ import {
   styles,
   Text,
   useBreakpoint,
+  useConfirm,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { EpisodeTable } from '#web/features/admin/monitoring-episodes';
@@ -32,7 +33,7 @@ const THUMB_COLUMN = 96;
 const FOLLOW_COLUMN = 60;
 const ROW_PX = 14;
 
-const s = styles({
+const sDefinition = styles({
   header: { row: true, align: 'center', gap: 12, flex: true, minW: 0, py: 12 },
 });
 
@@ -120,7 +121,9 @@ function SeasonCard({
   defaultOpen: boolean;
   onToggle: (unit: EpisodeUnit, monitored: boolean) => void;
 }>) {
+  const s = useStyles(sDefinition);
   const t = useT();
+  const confirm = useConfirm();
   const [open, setOpen] = useState(defaultOpen);
   const { data, isPending, isError, refetch } = useSeasonLedger(tmdbId, season.season, open);
   const name = useSeasonName()(season.season);

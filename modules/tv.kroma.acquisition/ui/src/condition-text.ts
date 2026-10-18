@@ -69,7 +69,10 @@ function testedValue(t: Translate, condition: Condition): string {
 export function useConditionText(): (condition: Condition) => string {
   const t = useT();
   return useCallback(
-    (condition) => `${t(`acq.condition.${condition.type}`)} = ${testedValue(t, condition)}`,
+    (condition) => {
+      const key = `acq.condition.${condition.type}`;
+      return `${t(key)} = ${testedValue(t, condition)}`;
+    },
     [t],
   );
 }

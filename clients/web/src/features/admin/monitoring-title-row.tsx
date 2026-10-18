@@ -3,7 +3,17 @@ import { datedDayLabel } from '@kromatv/core';
 import type { MessageKey } from '@kromatv/i18n';
 import { ModuleSlot } from '@kromatv/module-sdk';
 import { useFormat, useLocale, useT } from '@kromatv/ui';
-import { Badge, Box, CheckboxFace, Focusable, Progress, Row, styles, Text } from '@kromatv/ui/kit';
+import {
+  Badge,
+  Box,
+  CheckboxFace,
+  Focusable,
+  Progress,
+  Row,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { FollowToggle } from '#web/features/admin/monitoring-follow-toggle';
 import { heldRatio } from '#web/features/admin/monitoring-index-model';
 import { airStatusKey } from '#web/features/admin/monitoring-model';
@@ -31,7 +41,7 @@ export interface RowColumns {
   airing: boolean;
 }
 
-const s = styles({
+const sDefinition = styles({
   row: { row: true, align: 'center', gap: 16, flex: true, minW: 0, px: 16, py: 12 },
 });
 
@@ -52,6 +62,7 @@ export function LibraryRow({
   onFollow: (row: LibraryTitle, monitored: boolean) => void;
   onSelect: (row: LibraryTitle) => void;
 }>) {
+  const s = useStyles(sDefinition);
   const t = useT();
   return (
     <Row align="center" gap={16} minW={0} flex self="stretch">

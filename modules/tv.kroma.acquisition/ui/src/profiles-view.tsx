@@ -1,6 +1,6 @@
 import { apiErrorText } from '@kromatv/client';
 import { Table, type TableColumn, useAsyncAction, useT } from '@kromatv/module-sdk';
-import { Badge, Box, Button, Callout, confirm, Menu, Row, Text } from '@kromatv/ui/kit';
+import { Badge, Box, Button, Callout, Menu, Row, Text, useConfirm } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAcquisitionApi } from './api';
 import { allowedQualities, copyOfProfile } from './profile-draft';
@@ -21,6 +21,7 @@ export function ProfilesView({
   onSaved,
 }: Readonly<{ rules: RulesView; onSaved: () => Promise<void> }>) {
   const t = useT();
+  const confirm = useConfirm();
   const acquisition = useAcquisitionApi();
   const [editing, setEditing] = useState<Editing | null>(null);
   const action = useAsyncAction();

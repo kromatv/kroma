@@ -9,7 +9,7 @@ import {
   type MissingGroup,
 } from '#web/features/requests/missing-model';
 import { useAuth } from '#web/shared/lib/auth';
-import { userQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 /** `search` queues what the server already wants, `follow` records the want,
  * `request` asks for it. */
@@ -42,9 +42,10 @@ function withKeys(prev: ReadonlySet<string>, keys: string[], present: boolean): 
 }
 
 export function useMissingActions(groups: readonly MissingGroup[]): MissingActions {
+  const webRuntime = useWebRuntime();
   const { user, client } = useAuth();
   const queryClient = useQueryClient();
-  const { queryKey } = userQueries.missing();
+  const { queryKey } = webRuntime.queries.userQueries.missing();
   const canMonitor = !!user && hasPermission(user, 'library.manage');
   const canManage = !!user && hasPermission(user, 'requests.manage');
 
