@@ -2,12 +2,13 @@
 
 import type { ReleasesView } from '@kromatv/client/releases';
 import { fakeClient } from '@kromatv/client/test';
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { onScreen } from '@kromatv/ui/testing';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider, TvNavProvider } from '#tv/app/router';
 import { TvReleases } from '#tv/features/releases/TvReleases';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 vi.mock('#tv/app/providers/auth', async (importOriginal) => ({
   ...(await importOriginal<typeof import('#tv/app/providers/auth')>()),

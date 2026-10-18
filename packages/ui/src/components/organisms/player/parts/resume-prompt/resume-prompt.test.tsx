@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 
 import { act, render, screen } from '@testing-library/react';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { configureRemote } from '#ui/lib/focus-remote';
-import { declared, onScreen, wearsRing } from '#ui/testing';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { onScreen as baseOnScreen, declared, wearsRing } from '#ui/testing';
 import { ResumePrompt } from './resume-prompt';
 
-beforeAll(() => configureRemote());
+const onScreen = (ui: Parameters<typeof baseOnScreen>[0]) => baseOnScreen(ui, { remote: true });
 
 afterEach(() => vi.restoreAllMocks());
 

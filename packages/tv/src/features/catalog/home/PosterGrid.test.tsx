@@ -1,11 +1,13 @@
+import { createInputTestHost } from '@kromatv/ui/testing';
 import type { ReactElement } from 'react';
 // @vitest-environment jsdom
 
-import { clearPressGuard } from '@kromatv/ui/kit';
 import { onScreen } from '@kromatv/ui/testing';
-import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid';
+
+const { clearPressGuard, render: renderRaw } = createInputTestHost();
 
 // Every kit control is a node of the spatial navigator; render inside the
 // same scope the router gives a real screen.

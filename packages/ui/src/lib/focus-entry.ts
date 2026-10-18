@@ -25,6 +25,8 @@ const Context = createContext<ReturnType<typeof createFocusEntry> | null>(null);
 export const FocusEntryProvider = Context.Provider;
 export function useFocusEntry() {
   const provided = useContext(Context);
-  const [owned] = useState(createFocusEntry);
-  return provided ?? owned;
+  const [owned] = useState(() => (provided ? null : createFocusEntry()));
+  const entry = provided ?? owned;
+  if (!entry) throw new Error('Focus entry requires its owning screen');
+  return entry;
 }

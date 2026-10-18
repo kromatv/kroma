@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
+
 import { I18nProvider } from '@kromatv/ui';
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { onScreen } from '@kromatv/ui/testing';
-import { cleanup, render, screen } from '@testing-library/react';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
+import { cleanup, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { groupItem, PROFILE_SETTINGS, SETTINGS_GROUPS } from '#tv/app/settings/registry';
 import { SettingsRows } from '#tv/features/accounts/SettingsRows';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(cleanup);
 afterEach(clearPressGuard);

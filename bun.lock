@@ -1011,6 +1011,7 @@
         "typescript": "^7.0.2",
       },
       "peerDependencies": {
+        "@testing-library/react": ">=16",
         "expo-image": "~57.0.3",
         "expo-video": "~57.0.2",
         "react": ">=18",
@@ -1018,6 +1019,7 @@
         "react-native": "*",
       },
       "optionalPeers": [
+        "@testing-library/react",
         "expo-image",
         "expo-video",
       ],

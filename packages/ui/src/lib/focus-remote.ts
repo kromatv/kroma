@@ -1,3 +1,5 @@
+import { useFocusServices } from './focus-services-context';
+import type { RemoteTransportOptions } from './remote-transport-types';
 /// <reference path="types/react-native-tv.d.ts" />
 // Feeds the TV remote into the spatial navigator, which reacts only to a posted
 // stream of directions.
@@ -6,7 +8,6 @@
 // emitter export has been unreliable.
 
 import { type Direction, Directions } from '@kromatv/spatial-nav';
-import { configureRemote as configureNavigatorRemote } from '@kromatv/spatial-nav/react';
 import { useCallback, useEffect, useEffectEvent } from 'react';
 import {
   type HWEvent,
@@ -16,7 +17,7 @@ import {
   useTVEventHandler,
 } from 'react-native';
 import type { RemoteKey } from '#ui/lib/remote-keys';
-import { inputHeld } from './input-gate';
+import { useInputGate } from './input-gate';
 import type { PerfSampler } from './perf';
 import { usePerfSampler } from './perf-provider';
 import { isRemoteKeyUp } from './tv-remote';
@@ -40,66 +41,33 @@ const TAP: readonly Direction[] = [Directions.ENTER, RELEASE];
 const NONE: readonly Direction[] = [];
 const IS_ANDROID = Platform.OS === 'android';
 
-// A SET, not a single slot: screens stack, so two navigators can be subscribed
-// for a moment, and React tears the old subscription down AFTER the new one is
-// up. One slot would let that teardown null the live handler.
-const handlers = new Set<(direction: Direction) => void>();
-
-// One physical press reaches this module by two transports: `useTVEventHandler`
-// below and, on Android's new architecture, the key host further down. WHICH of
-// them is live is a property of the build, not something readable here, so on a
-// build where both fire the ring steps twice for one press and the viewer sees
-// the focus skip every other item.
-//
-// The first transport to deliver a press owns the ring from then on. Which one
-// wins does not matter, only that it never changes: a build where both fire
-// keeps the one that spoke first, and a build where one fires never notices.
-// Deliberately not a time window - that would have to guess how fast a remote's
-// auto-repeat comes back, and swallowing THAT is what stops a long rail
-// scrolling under a held d-pad.
 type Transport = 'events' | 'host';
-let owner: Transport | null = null;
-
-function stepRing(direction: Direction, from: Transport, perf?: PerfSampler | null): void {
-  owner ??= from;
-  if (owner !== from) return;
-  perf?.markPress();
-  for (const handle of handlers) handle(direction);
-}
-
-let configured = false;
-
-/**
- * False on a phone, which has no remote and never calls {@link configureRemote}:
- * a chrome driving its own focus (the player) must then post the presses itself,
- * and posting them where a transport IS named would walk the ring twice.
- */
-export function remoteConfigured(): boolean {
-  return configured;
-}
-
-/** Call once at startup, before the first screen renders; a navigator mounted
- * first never subscribes. Calling it twice is harmless. */
-export function configureRemote(): void {
-  configured = true;
-  configureNavigatorRemote({
-    subscribe: (handle) => {
+export function createRemoteTransport({ enabled }: RemoteTransportOptions) {
+  const handlers = new Set<(direction: Direction) => void>();
+  const typists = new Set<(key: string) => void>();
+  const remoteKeys = new Set<(key: RemoteKey) => void>();
+  let owner: Transport | null = null;
+  return {
+    enabled,
+    typists,
+    remoteKeys,
+    subscribe(handle: (direction: Direction) => void) {
+      if (!enabled) return () => {};
       handlers.add(handle);
       return () => {
         handlers.delete(handle);
       };
     },
-  });
-}
-
-/**
- * Posts a direction the app never heard as a press. One caller: a platform
- * chrome that answered the press itself and is handing the focus over (see
- * lib/focus-platform), where the navigator has to pick the ring up in the
- * direction the viewer was already moving.
- */
-export function postRemoteDirection(direction: Direction): void {
-  for (const handle of handlers) handle(direction);
+    stepRing(direction: Direction, from: Transport, perf?: PerfSampler | null) {
+      owner ??= from;
+      if (owner !== from) return;
+      perf?.markPress();
+      for (const handle of handlers) handle(direction);
+    },
+    postRemoteDirection(direction: Direction) {
+      for (const handle of handlers) handle(direction);
+    },
+  };
 }
 
 // Resolved at module scope so the hook count never changes between builds.
@@ -112,12 +80,14 @@ const useRemoteEvents: (handler: (event: HWEvent) => void) => void = HAS_TV_EVEN
  * this posts to EVERY registered navigator, so two live bridges would deliver
  * each press twice. See <FocusScope>'s `bridge` prop. */
 export function useRemoteBridge(on = true): void {
+  const { remote } = useFocusServices();
+  const { inputHeld } = useInputGate();
   const perf = usePerfSampler();
   useRemoteEvents((event: HWEvent) => {
     if (!on) return;
     // A full-screen overlay (the brand intro) owns the remote while it's up.
     if (inputHeld()) return;
-    for (const direction of directionsOf(event)) stepRing(direction, 'events', perf);
+    for (const direction of directionsOf(event)) remote.stepRing(direction, 'events', perf);
   });
 }
 
@@ -163,20 +133,14 @@ export interface RemoteHostProps {
   onKeyUp?: (event: NativeSyntheticEvent<TVKeyEvent>) => void;
 }
 
-// Same Set-not-slot reasoning as `handlers` above.
-const typists = new Set<(key: string) => void>();
-
-// The player chrome's d-pad subscribers. Fed by the Android key host below, so
-// a chrome that keeps its own virtual focus still hears the remote where
-// `useTVEventHandler` never fires (the new architecture, see the host comment).
-const remoteKeys = new Set<(key: RemoteKey) => void>();
-
 const NO_HOST_PROPS: RemoteHostProps = {};
 
 /** Spread by <FocusRoot>. `on` takes <FocusScope>'s `bridge`: the key events
  * BUBBLE, so a scope nested inside another must not carry a second host or one
  * press walks the ring twice. */
 export function useRemoteHostProps(on = true): RemoteHostProps {
+  const { remote } = useFocusServices();
+  const { inputHeld } = useInputGate();
   const perf = usePerfSampler();
   const onKeyDown = useCallback(
     (event: NativeSyntheticEvent<TVKeyEvent>) => {
@@ -186,28 +150,29 @@ export function useRemoteHostProps(on = true): RemoteHostProps {
       const direction = KEY_CODES[code];
       if (direction) {
         if (direction !== Directions.ENTER || !event.nativeEvent.repeat)
-          stepRing(direction, 'host', perf);
+          remote.stepRing(direction, 'host', perf);
         // Fanned to the player chrome as well, the same way `useTVEventHandler`
         // feeds both the navigator bridge and the player on tvOS. Sent whatever
         // `stepRing` decided: the chrome keeps its own virtual focus and counts
         // its own presses (see player/hooks/use-player-keys), so suppressing this
         // to match the ring would leave the player deaf instead of steady.
         const remoteKey = REMOTE_KEY[code];
-        if (remoteKey) for (const sub of remoteKeys) sub(remoteKey);
+        if (remoteKey) for (const sub of remote.remoteKeys) sub(remoteKey);
         return;
       }
       // Not a direction: may be someone typing. See `useHardwareKeys`.
       if (altKey || ctrlKey || metaKey) return;
       if (key !== 'Backspace' && key.length !== 1) return;
-      for (const handle of typists) handle(key);
+      for (const handle of remote.typists) handle(key);
     },
-    [perf],
+    [perf, inputHeld, remote],
   );
   const onKeyUp = useCallback(
     (event: NativeSyntheticEvent<TVKeyEvent>) => {
-      if (KEY_CODES[event.nativeEvent.code] === Directions.ENTER) stepRing(RELEASE, 'host', perf);
+      if (KEY_CODES[event.nativeEvent.code] === Directions.ENTER)
+        remote.stepRing(RELEASE, 'host', perf);
     },
-    [perf],
+    [perf, remote],
   );
   return IS_ANDROID && on ? { onKeyDown, onKeyUp } : NO_HOST_PROPS;
 }
@@ -222,13 +187,14 @@ export function useRemoteHostProps(on = true): RemoteHostProps {
 export function useHardwareKeys(handle: (key: string) => void): void {
   // An effect event: one identity in the set for the subscriber's lifetime,
   // always calling the latest `handle`.
+  const { remote } = useFocusServices();
   const forward = useEffectEvent((key: string) => handle(key));
   useEffect(() => {
-    typists.add(forward);
+    remote.typists.add(forward);
     return () => {
-      typists.delete(forward);
+      remote.typists.delete(forward);
     };
-  }, []);
+  }, [remote]);
 }
 
 /**
@@ -237,11 +203,12 @@ export function useHardwareKeys(handle: (key: string) => void): void {
  * tvOS. Same effect-event identity trick as {@link useHardwareKeys}.
  */
 export function useRemoteKeys(handle: (key: RemoteKey) => void): void {
+  const { remote } = useFocusServices();
   const forward = useEffectEvent((key: RemoteKey) => handle(key));
   useEffect(() => {
-    remoteKeys.add(forward);
+    remote.remoteKeys.add(forward);
     return () => {
-      remoteKeys.delete(forward);
+      remote.remoteKeys.delete(forward);
     };
-  }, []);
+  }, [remote]);
 }

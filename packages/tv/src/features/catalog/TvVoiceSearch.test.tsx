@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
 
 import { I18nProvider } from '@kromatv/ui';
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { onScreen } from '@kromatv/ui/testing';
-import { act, cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -13,6 +12,8 @@ import {
 } from '#tv/app/voiceSearch';
 
 import { TvVoiceSearch } from '#tv/features/catalog/TvVoiceSearch';
+
+const { clearPressGuard, render: renderRaw } = createInputTestHost();
 
 // Kit controls are spatial-navigator nodes, and a node needs a navigator scope.
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));

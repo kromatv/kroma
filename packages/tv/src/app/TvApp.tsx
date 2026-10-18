@@ -1,12 +1,5 @@
 import type { DecoderFrameLimits, LanDiscoveryBridge } from '@kromatv/core';
-import {
-  configureKit,
-  configureRemote,
-  KitProvider,
-  OverlayHost,
-  PerfProvider,
-  Toaster,
-} from '@kromatv/ui/kit';
+import { configureKit, KitProvider, OverlayHost, PerfProvider, Toaster } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { canExitOnBack, exitOnBack } from '#tv/app/appQuit';
 import { BrandIntro } from '#tv/app/BrandIntro';
@@ -101,12 +94,11 @@ export interface TvAppProps {
 }
 
 // Module scope, so the remote is wired before the first screen renders.
-configureRemote();
 
 // This app's form factor, stated once instead of at every control: a television
 // is read across a room and driven by a D-pad, so its entries take the shell's
 // ten-foot size and never the physical-keyboard spelling (see lib/field-shell).
-const TV_KIT = configureKit({ formFactor: 'tv' });
+const TV_KIT = configureKit({ formFactor: 'tv', remote: true });
 
 // The layers the outlet keeps mounted across a route set: the browse top bar,
 // and the gate's artwork beneath every sign-in screen.

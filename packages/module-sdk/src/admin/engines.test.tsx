@@ -7,9 +7,10 @@
 
 import { type EngineField, ModuleId, type ModuleInfo } from '@kromatv/client/modules';
 import { I18nProvider } from '@kromatv/ui';
-import { clearPressGuard, KitProvider } from '@kromatv/ui/kit';
+import { KitProvider } from '@kromatv/ui/kit';
+import { createInputTestHost } from '@kromatv/ui/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, cleanup, fireEvent, renderHook, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AdminHostProvider } from './context';
@@ -21,6 +22,8 @@ import {
   useEnabledEngines,
   useModuleEnabled,
 } from './engines';
+
+const { clearPressGuard, renderHook } = createInputTestHost();
 
 // A provider whose `client.modules.list()` answers `modules`; retries off so a
 // rejected fetch settles once instead of backing off through the test.

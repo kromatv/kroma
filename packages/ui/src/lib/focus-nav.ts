@@ -7,8 +7,7 @@ import { useEffect } from 'react';
 import { BackHandler, type HWEvent, Platform, useTVEventHandler } from 'react-native';
 import { useFocusEntry } from './focus-entry';
 import type { FocusNavHandlers } from './focus-types';
-import { inputHeld } from './input-gate';
-import { armPressGuard } from './press-guard';
+import { useInputGate } from './input-gate';
 import { isRemoteKeyUp } from './tv-remote';
 import { useMenuKeys } from './use-menu-keys';
 
@@ -27,6 +26,7 @@ const useRemoteEvents: (handler: (event: HWEvent) => void) => void = HAS_TV_EVEN
 
 function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers): void {
   const menuKeys = useMenuKeys();
+  const { inputHeld, armPressGuard } = useInputGate();
   const { resetFocusEntry } = useFocusEntry();
   // biome-ignore lint/correctness/useExhaustiveDependencies: resetKey is an intentional re-run trigger, mirroring the web engine; it is not read inside the effect.
   useEffect(() => {
@@ -34,7 +34,7 @@ function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers): void 
     // OS auto-focuses here.
     armPressGuard();
     resetFocusEntry();
-  }, [resetKey, resetFocusEntry]);
+  }, [resetKey, resetFocusEntry, armPressGuard]);
 
   useEffect(() => {
     if (!onBack) return;
@@ -61,7 +61,7 @@ function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers): void 
       sub?.remove();
       releaseMenuKey();
     };
-  }, [onBack, menuKeys]);
+  }, [onBack, menuKeys, inputHeld]);
 
   useRemoteEvents((evt: HWEvent) => {
     if (isRemoteKeyUp(evt) || inputHeld()) return;

@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { onScreen } from '@kromatv/ui/testing';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { STORY_COMPONENTS, StoryDocContext } from '@kromatv/workbench';
-import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { STORIES } from './stories';
+
+const { clearPressGuard, render: renderRaw } = createInputTestHost();
 
 // Every story compiled, which is the one place in the suite that wants the
 // whole library at once: the point is that none of them throws.

@@ -2,9 +2,8 @@
 
 import { type CastController, ControllerId } from '@kromatv/client/cast';
 import { fakeClient } from '@kromatv/client/test';
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { onScreen } from '@kromatv/ui/testing';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type Connection, ConnectionProvider } from '#tv/app/providers/connection';
 import { CastRemotes } from '#tv/features/cast/CastRemotes';
@@ -12,6 +11,8 @@ import {
   CastControllerStoreProvider,
   createCastControllerStore,
 } from '#tv/features/cast/controllers';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 const phone = (id: string, username: string, name: string): CastController => ({
   id: ControllerId.parse(id),

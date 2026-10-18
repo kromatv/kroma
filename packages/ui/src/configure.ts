@@ -3,6 +3,7 @@ import {
   createElement,
   type ReactElement,
   type ReactNode,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -10,7 +11,11 @@ import type { FrostBackdropProps } from './components/atoms/frost';
 import { applyMode, setTheme, type Theme, type ThemeMode } from './core';
 import type { DeviceStore } from './lib/device-store';
 import type { ControlSize } from './lib/field-shell';
+import { createFocusServices } from './lib/focus-services';
+import { FocusServicesProvider, useFocusServicesParent } from './lib/focus-services-context';
 import type { ImageBackend } from './lib/image-backend';
+import { createInputGate, InputGateProvider, useInputGateParent } from './lib/input-gate';
+import { createInputSource, InputSourceProvider, useInputSourceParent } from './lib/input-source';
 import { KitSettingsContext, useKitSettings } from './lib/kit-settings';
 import { createMenuKeys } from './lib/menu-keys';
 import { createScrollLock } from './lib/scroll-lock';
@@ -42,6 +47,7 @@ const FORM_FACTOR: Readonly<
 
 export interface KitConfig<P extends FrostBackdropProps = FrostBackdropProps> {
   formFactor?: FormFactor;
+  remote?: boolean;
   deviceStore?: DeviceStore | null;
   frostEnabled?: boolean;
   entry?: Partial<EntryDefaults>;
@@ -72,6 +78,17 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
   children?: ReactNode;
 }): ReactElement {
   const parent = useKitSettings();
+  const inheritedInput = useInputSourceParent();
+  const [ownedInput] = useState(createInputSource);
+  const input = inheritedInput ?? ownedInput;
+  useEffect(() => input.retain(), [input]);
+  const inheritedGate = useInputGateParent();
+  const [ownedGate] = useState(createInputGate);
+  const inheritedFocus = useFocusServicesParent();
+  const [ownedFocus] = useState(() =>
+    createFocusServices(config.remote ?? false, inheritedGate ?? ownedGate, input),
+  );
+  const focus = config.remote === undefined ? (inheritedFocus ?? ownedFocus) : ownedFocus;
   const [menuKeys] = useState(createMenuKeys);
   const [scrollLock] = useState(createScrollLock);
   const value = useMemo(() => {
@@ -87,5 +104,17 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
       frost: (config.frost ?? parent.frost) as ComponentType<FrostBackdropProps> | null,
     };
   }, [parent, config, scrollLock, menuKeys]);
-  return createElement(KitSettingsContext.Provider, { value }, children);
+  return createElement(
+    FocusServicesProvider,
+    { value: focus },
+    createElement(
+      InputSourceProvider,
+      { value: input },
+      createElement(
+        InputGateProvider,
+        { value: inheritedGate ?? ownedGate },
+        createElement(KitSettingsContext.Provider, { value }, children),
+      ),
+    ),
+  );
 }

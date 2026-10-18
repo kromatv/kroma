@@ -2,13 +2,14 @@
 
 import { cleanup, render } from '@testing-library/react';
 import { act, StrictMode } from 'react';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { configureRemote } from '#ui/lib/focus-remote';
-import { layout, onScreen, wearsRing } from '#ui/testing';
+
+import { onScreen as baseOnScreen, layout, wearsRing } from '#ui/testing';
 import { VirtualGrid } from './virtual-grid';
 
-beforeAll(() => configureRemote());
+const onScreen = (ui: Parameters<typeof baseOnScreen>[0]) => baseOnScreen(ui, { remote: true });
+
 afterEach(cleanup);
 
 const ROW = 68;

@@ -18,12 +18,13 @@
 //
 // The web half has its own engine and its own test: focus-nav.test.ts.
 
-import { act, cleanup, renderHook } from '@testing-library/react';
+import { act, cleanup } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import type { HWEvent } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KitSettingsContext, useKitSettings } from '#ui/lib/kit-settings';
 import { createMenuKeys } from '#ui/lib/menu-keys';
+import { createInputTestHost } from '#ui/testing-input';
 
 const rn = vi.hoisted(() => ({
   remote: null as ((event: HWEvent) => void) | null,
@@ -64,8 +65,9 @@ vi.mock('react-native', () => ({
 
 import { createFocusEntry, FocusEntryProvider } from './focus-entry';
 import { useFocusNav } from './focus-nav';
-import { clearInputHolds, holdInput } from './input-gate';
-import { clearPressGuard, pressGuardActive } from './press-guard';
+
+const { clearInputHolds, clearPressGuard, holdInput, pressGuardActive, renderHook } =
+  createInputTestHost();
 
 function pressBack(): boolean {
   let consumed = false;

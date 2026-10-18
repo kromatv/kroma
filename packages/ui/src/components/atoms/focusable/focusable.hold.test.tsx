@@ -1,14 +1,15 @@
 // @vitest-environment jsdom
 
-import { cleanup, render } from '@testing-library/react';
+import { cleanup } from '@testing-library/react';
 import { act } from 'react';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { configureRemote } from '#ui/lib/focus-remote';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { FocusScope } from '#ui/lib/focus-scope';
-import { armPressGuard, clearPressGuard } from '#ui/lib/press-guard';
+import { createInputTestHost } from '#ui/testing-input';
+
 import { Focusable } from './focusable';
 
-beforeAll(() => configureRemote());
+const { armPressGuard, clearPressGuard, render } = createInputTestHost();
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });

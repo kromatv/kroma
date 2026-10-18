@@ -687,3 +687,18 @@ image decoding and the native frost view. Nested providers inherit unspecified
 capabilities. `setEntryDefaults`, `setSurfacePresentation`, `setImageBackend`, and
 `registerFrost` are removed; rendered controls use `useEntryDefaults`,
 `useControlMetrics`, and `useImageBackend`.
+
+### Input ownership in tests
+
+`KitProvider` owns overlay input holds and the 300 ms press guard across screen
+transitions. Tests can import `createInputTestHost` from `@kromatv/ui/testing`
+to get `render`, `renderHook`, `clearPressGuard` and the other controls bound to
+the same real gate as their rendered tree. The test entry requires the optional
+`@testing-library/react` peer; applications do not need that package.
+
+`KitProvider` also owns focus geometry, mirrored DOM focus, and remote transport
+subscriptions. TV shells set `config={{ remote: true }}`. Nested focus scopes
+share that host, while standalone scopes own a transport for their lifetime.
+The spatial navigator receives it through `RemoteProvider`; importing a shell
+no longer configures another app’s navigator. Native platform chrome can hand a
+direction back through `useFocusServices().remote.postRemoteDirection(direction)`.

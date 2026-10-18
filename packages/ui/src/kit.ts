@@ -88,11 +88,12 @@ export {
 export { useFocusNav } from './lib/focus-nav';
 export type { FocusDirection, FocusOwner } from './lib/focus-platform';
 export { usePlatformFocus } from './lib/focus-platform';
-export { configureRemote, postRemoteDirection, useHardwareKeys } from './lib/focus-remote';
+export { useHardwareKeys } from './lib/focus-remote';
 export type { FocusScopeProps, ScreenScopeProps } from './lib/focus-scope';
 export { FocusColumn, FocusRegion, FocusScope } from './lib/focus-scope';
 export type { FocusScrollProps } from './lib/focus-scroll';
 export { FocusLine, FocusRail, FocusScroll, FocusSlot } from './lib/focus-scroll';
+export { useFocusServices } from './lib/focus-services-context';
 export type { FocusNavHandlers } from './lib/focus-types';
 export { useFocusVisible } from './lib/focus-visible';
 export type {
@@ -123,7 +124,7 @@ export {
 } from './lib/icons/library';
 export type { ImageBackend, ImageBackendProps } from './lib/image-backend';
 export { reactNativeImage, useImageBackend } from './lib/image-backend';
-export { clearInputHolds, holdInput, inputHeld } from './lib/input-gate';
+export { createInputGate, InputGateProvider, useInputGate } from './lib/input-gate';
 export { PageMain } from './lib/landmark';
 export type { LoopKind } from './lib/loop';
 export { useLoop } from './lib/loop';
@@ -132,12 +133,7 @@ export type { PerfReport } from './lib/perf';
 export { createPerfSampler } from './lib/perf';
 export { PerfProvider, usePerfSampler } from './lib/perf-provider';
 export { Portal, PortalHost } from './lib/portal';
-export {
-  armPressGuard,
-  clearPressGuard,
-  PRESS_GUARD_MS,
-  pressGuardActive,
-} from './lib/press-guard';
+export { createPressGuard, PRESS_GUARD_MS } from './lib/press-guard';
 export type { ReportCategoryMeta } from './lib/report-categories';
 export { REPORT_CATEGORIES } from './lib/report-categories';
 export type { RingGeometry, RingProps } from './lib/ring';

@@ -69,7 +69,8 @@
     "react-dom": ">=18",
     "react-native": "*",
     "expo-image": "~57.0.3",
-    "expo-video": "~57.0.2"
+    "expo-video": "~57.0.2",
+    "@testing-library/react": ">=16"
   },
   "devDependencies": {
     "@kromatv/client": "workspace:*",
@@ -91,6 +92,9 @@
       "optional": true
     },
     "expo-video": {
+      "optional": true
+    },
+    "@testing-library/react": {
       "optional": true
     }
   },

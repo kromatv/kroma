@@ -2,13 +2,14 @@
 
 import type { MediaItem, Show } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { onScreen } from '@kromatv/ui/testing';
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
+import { act, cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider, TvNavProvider, TvOutlet } from '#tv/app/router';
 import { stubScreens } from '#tv/app/router.fixtures';
 import { type HeldTitle, useTitleMenu } from '#tv/features/catalog/TitleMenu';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 const state = vi.hoisted(() => ({
   listed: new Set<string>(),

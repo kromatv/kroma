@@ -21,7 +21,7 @@ import { gradient, maskImage } from '#ui/lib/css';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { FocusColumn, FocusRegion, FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { FocusScroll } from '#ui/lib/focus-scroll';
-import { pointerDriving } from '#ui/lib/input-source';
+import { usePointerDriving } from '#ui/lib/input-source';
 import { useT } from '#ui/services/i18n';
 import { SheetKeys } from './sheet-keys';
 import { useSheetSlide } from './slide';
@@ -285,6 +285,7 @@ function SheetHeader({
   // press and not two - the header is the way out, not a stop on the way. Only
   // on the remote: a cursor sweeping over it must not close anything, and the
   // navigator focuses on mouse-enter (see lib/input-source).
+  const pointerDriving = usePointerDriving();
   const leave = () => {
     if (!pointerDriving()) onToggle();
   };

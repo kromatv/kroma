@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { clearInputHolds, holdInput, inputHeld } from './input-gate';
-import { clearPressGuard, pressGuardActive } from './press-guard';
+import { createInputTestHost } from '#ui/testing-input';
+import { createInputGate } from './input-gate';
+
+const { clearInputHolds, clearPressGuard, holdInput, inputHeld, pressGuardActive } =
+  createInputTestHost();
 
 beforeEach(() => {
   clearInputHolds();
@@ -8,6 +11,18 @@ beforeEach(() => {
 });
 
 describe('input gate', () => {
+  it('keeps holds and the release guard within the owning root', () => {
+    const first = createInputGate();
+    const second = createInputGate();
+    const release = first.holdInput();
+    expect(first.inputHeld()).toBe(true);
+    expect(second.inputHeld()).toBe(false);
+    release();
+    expect(first.pressGuardActive()).toBe(true);
+    expect(second.pressGuardActive()).toBe(false);
+    expect(createInputGate().pressGuardActive()).toBe(false);
+  });
+
   it('is open until an overlay takes the remote', () => {
     expect(inputHeld()).toBe(false);
     const release = holdInput();

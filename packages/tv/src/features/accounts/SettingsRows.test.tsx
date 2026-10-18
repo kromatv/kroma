@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
+
 import { I18nProvider } from '@kromatv/ui';
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { onScreen } from '@kromatv/ui/testing';
-import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { actionItem, choiceItem, type SettingsEntry, toggleItem } from '#tv/app/settings/items';
 import { reactivePref, useStoredPref } from '#tv/app/settings/store';
 import { SettingsRows } from './SettingsRows';
+
+const { clearPressGuard, render: renderRaw } = createInputTestHost();
 
 // Every kit control is a node of the spatial navigator; render inside the
 // same scope the router gives a real screen.

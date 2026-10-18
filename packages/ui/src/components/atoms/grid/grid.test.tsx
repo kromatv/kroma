@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 
 import { render, screen } from '@testing-library/react';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
-import { configureRemote } from '#ui/lib/focus-remote';
+
 import { FocusScope } from '#ui/lib/focus-scope';
 import { declared, layout } from '#ui/testing';
 import { cellWidth, columnsFor, Grid } from './grid';
@@ -79,8 +79,6 @@ describe('a grid that was handed no width', () => {
     expect(rows()).toHaveLength(4);
   });
 });
-
-beforeAll(() => configureRemote());
 
 const TILES = ['Un', 'Deux', 'Trois', 'Quatre'];
 

@@ -7,10 +7,10 @@
 
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { useState } from 'react';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { wearsRing } from '#ui/testing';
-import { configureRemote } from './focus-remote';
+
 import { FocusRegion, FocusScope } from './focus-scope';
 import { FocusSlot, nearestOffset, pageOffset } from './focus-scroll';
 
@@ -55,7 +55,6 @@ describe('nearestOffset', () => {
   });
 });
 
-beforeAll(() => configureRemote());
 afterEach(cleanup);
 
 const LABELS = ['Back', 'Pill', 'Avatar'];

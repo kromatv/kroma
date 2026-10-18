@@ -1,7 +1,7 @@
 // The shell: what is selected, where that lives in the URL, and where the three
 // regions go. One story on the canvas is `story-view.tsx`.
 
-import { Box, configureRemote, Focusable, FocusScope, Resizable, styles } from '@kromatv/ui/kit';
+import { Box, Focusable, FocusScope, KitProvider, Resizable, styles } from '@kromatv/ui/kit';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { RULE } from './chrome';
 import { CommandPalette, useCommandKey } from './command';
@@ -35,14 +35,12 @@ interface WorkbenchProps {
 }
 
 function Workbench(props: Readonly<WorkbenchProps>) {
-  // In render rather than at module load or in an effect: a module-scope call
-  // would reconfigure the host app's navigator on mere import, and an effect
-  // runs after the children that subscribe to the remote.
-  useState(configureRemote);
   return (
-    <FocusScope>
-      <WorkbenchShell {...props} />
-    </FocusScope>
+    <KitProvider config={{ remote: true }}>
+      <FocusScope>
+        <WorkbenchShell {...props} />
+      </FocusScope>
+    </KitProvider>
   );
 }
 

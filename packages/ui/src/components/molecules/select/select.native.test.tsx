@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
 import { KitProvider } from '#ui/configure';
-import { configureRemote } from '#ui/lib/focus-remote';
-import { clearPressGuard } from '#ui/lib/press-guard';
-import { onScreen } from '#ui/testing';
+
+import { onScreen as baseOnScreen } from '#ui/testing';
+import { createInputTestHost } from '#ui/testing-input';
 import { Select } from './select';
 
-beforeAll(() => configureRemote());
+const onScreen = (ui: Parameters<typeof baseOnScreen>[0]) => baseOnScreen(ui, { remote: true });
+
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(() => {
   cleanup();

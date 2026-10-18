@@ -1,5 +1,5 @@
 export type { RemoteConfig, RemoteHandler } from './react/configure-remote';
-export { configureRemote } from './react/configure-remote';
+export { RemoteProvider } from './react/configure-remote';
 export type { DefaultFocusProps } from './react/default-focus';
 export { DefaultFocus } from './react/default-focus';
 export { useNavigator } from './react/navigator-context';

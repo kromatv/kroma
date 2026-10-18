@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { useEffect, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Badge } from '#ui/components/atoms/badge';
 import { pinDesignWidth } from '#ui/core';
-import { clearPressGuard } from '#ui/lib/press-guard';
+import { createInputTestHost } from '#ui/testing-input';
+
 import { type SortColumn, Table, type TableColumn } from './table';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(() => {
   cleanup();

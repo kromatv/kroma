@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
-import { clearPressGuard } from '#ui/lib/press-guard';
 import { onScreen } from '#ui/testing';
+import { createInputTestHost } from '#ui/testing-input';
 import { Disclosure } from './disclosure';
+
+const { clearPressGuard, render: renderRaw } = createInputTestHost();
 
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 

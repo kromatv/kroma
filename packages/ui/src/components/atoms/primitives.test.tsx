@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { createInputTestHost } from '#ui/testing-input';
 // @vitest-environment jsdom
 //
 // Renders the universal primitives through react-native-web and asserts the DOM
@@ -7,13 +8,13 @@ import type { ReactElement } from 'react';
 // claim; the native half is covered by the pure logic tests (focal, sv, boxStyle)
 // plus the platform files' shared contracts.
 
-import { act, cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Field } from '#ui/components/molecules/field';
 import { Dialog } from '#ui/components/organisms/dialog';
 import { typeSpec } from '#ui/core/tokens';
 import { CONTROL } from '#ui/lib/field-shell';
-import { clearPressGuard } from '#ui/lib/press-guard';
+
 import { onScreen } from '#ui/testing';
 import { AVATAR_GRADIENTS, Avatar, gradientFor, initialsOf } from './avatar';
 import { Badge } from './badge';
@@ -26,6 +27,8 @@ import { Skeleton } from './skeleton';
 import { Text } from './text';
 import { TextArea } from './text-area';
 import { TextField } from './text-field';
+
+const { clearPressGuard, render: renderRaw } = createInputTestHost();
 
 // Every kit control is a node of the spatial navigator; a test renders inside
 // the same scope the router gives every real screen.

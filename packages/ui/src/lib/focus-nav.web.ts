@@ -1,3 +1,4 @@
+import { useInputGate } from './input-gate';
 // The browser targets' half of the remote (Tizen / webOS / desktop).
 //
 // Directional movement is NOT here any more: the spatial navigator owns it, on
@@ -11,7 +12,6 @@ import { useEffect } from 'react';
 import { dispatchRemoteKey, registerTvMediaKeys } from '#ui/lib/remote-keys';
 import { useFocusEntry } from './focus-entry';
 import type { FocusNavHandlers } from './focus-types';
-import { armPressGuard } from './press-guard';
 
 function inTextField(): boolean {
   const active = document.activeElement;
@@ -19,6 +19,7 @@ function inTextField(): boolean {
 }
 
 export function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers): void {
+  const { armPressGuard } = useInputGate();
   const { resetFocusEntry } = useFocusEntry();
   // biome-ignore lint/correctness/useExhaustiveDependencies: resetKey is an intentional re-run trigger (a view switch re-focuses the first element); it is not read inside the effect.
   useEffect(() => {
@@ -81,5 +82,5 @@ export function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers)
     return () => {
       window.removeEventListener('keydown', onKey);
     };
-  }, [onBack, onPlayPause, resetKey, resetFocusEntry]);
+  }, [onBack, onPlayPause, resetKey, resetFocusEntry, armPressGuard]);
 }

@@ -1,7 +1,7 @@
 // Native (Apple TV / Android TV) brand intro, played via expo-video. No CSS
 // fallback: unlike the browser shells, a native TV always has an HEVC decoder.
 
-import { holdInput, styles } from '@kromatv/ui/kit';
+import { styles, useInputGate } from '@kromatv/ui/kit';
 import { EXIT_MS, SAFETY_SLACK_MS } from '@kromatv/ui/kit/organisms/kroma-intro';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -46,6 +46,7 @@ export function BrandIntro({ videoSrc }: Readonly<BrandIntroProps>) {
 // Mounted only while it plays: unmounting is what releases the player, so the
 // app behind it never shares a decoder with an intro that ended.
 function IntroFilm({ source, onDone }: Readonly<{ source: string | number; onDone: () => void }>) {
+  const { holdInput } = useInputGate();
   const player = useVideoPlayer(source, (p) => {
     p.loop = false;
     p.muted = false;
@@ -127,7 +128,7 @@ function IntroFilm({ source, onDone }: Readonly<{ source: string | number; onDon
       clearTimeout(handoff.current);
       clearInterval(audioFade.current);
     };
-  }, [armSafety]);
+  }, [armSafety, holdInput]);
 
   useRemoteEvents((event: HWEvent) => {
     // No key-up filter: Android reports a press twice and `exit` is single-shot,

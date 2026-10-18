@@ -3,9 +3,8 @@
 import type { DiscoverEntry, DiscoverResponse } from '@kromatv/client/discovery';
 import type { MediaItem, SearchResponse, Show } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { onScreen } from '@kromatv/ui/testing';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type Connection, ConnectionProvider } from '#tv/app/providers/connection';
 import { EnvProvider } from '#tv/app/providers/env';
@@ -25,6 +24,8 @@ import { type SearchShell, type SearchShellProps, SearchShellProvider } from '#t
 import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voiceSearch';
 import { addRecentSearch } from '#tv/features/catalog/searchHistory';
 import { TvSearch } from '#tv/features/catalog/TvSearch';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 const movie = (id: string, title: string, genre = 'sci-fi'): MediaItem =>
   ({ id, title, video: null, metadata: { genres: [genre] } }) as unknown as MediaItem;

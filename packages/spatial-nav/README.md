@@ -53,7 +53,7 @@ React and no React Native. `./react` is the only half that renders anything.
 
 | `react-tv-space-navigation` | `@kromatv/spatial-nav` |
 | --- | --- |
-| `SpatialNavigation.configureRemoteControl({ remoteControlSubscriber, remoteControlUnsubscriber })` | `configureRemote({ subscribe })` |
+| `SpatialNavigation.configureRemoteControl({ remoteControlSubscriber, remoteControlUnsubscriber })` | `<RemoteProvider value={{ subscribe }}>` |
 | `Directions` (a TS enum, used as a type) | `Directions` (a const object) + `type Direction` |
 | `SpatialNavigationRoot isActive onDirectionHandledWithoutMovement` | `<NavigatorRoot active onEdge>` |
 | `SpatialNavigationNode orientation alignInGrid onActive onInactive` | `<NavigatorNode orientation alignInGrid index onActive onInactive>` |

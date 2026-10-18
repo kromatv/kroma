@@ -7,7 +7,11 @@ const undo: (() => void)[] = [];
 
 async function load() {
   vi.resetModules();
-  return import('./focus-mirror');
+  const mirror = await import('./focus-mirror');
+  const { createInputSource } = await import('./input-source');
+  const source = createInputSource();
+  undo.push(source.retain());
+  return mirror.createFocusMirror(source.pointerDriving);
 }
 
 function control(parent: HTMLElement = document.body): HTMLElement {

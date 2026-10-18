@@ -1,3 +1,4 @@
+import { KitProvider } from './configure';
 // Test helpers for anything that renders kit components.
 //
 // A <Focusable> is a node of the spatial navigator, and a node needs a navigator
@@ -60,11 +61,13 @@ export function wearsRing(el: Element | null | undefined): boolean {
 
 /** Wrap a tree in the same navigator and locale a real screen runs inside.
  * English, because an assertion reads better against the words in the test. */
-export function onScreen(ui: ReactElement): ReactElement {
+export function onScreen(ui: ReactElement, options?: { remote?: boolean }): ReactElement {
   return (
-    <I18nProvider locale="en">
-      <FocusScope>{ui}</FocusScope>
-    </I18nProvider>
+    <KitProvider config={{ remote: options?.remote ?? false }}>
+      <I18nProvider locale="en">
+        <FocusScope>{ui}</FocusScope>
+      </I18nProvider>
+    </KitProvider>
   );
 }
 
@@ -96,3 +99,5 @@ export function layout(node: Element, box: Partial<LayoutRectangle>): void {
     } as LayoutChangeEvent);
   });
 }
+
+export { createInputTestHost } from './testing-input';

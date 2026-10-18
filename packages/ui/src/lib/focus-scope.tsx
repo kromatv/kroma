@@ -1,10 +1,14 @@
+import { createFocusServices } from './focus-services';
+import { FocusServicesProvider, useFocusServicesParent } from './focus-services-context';
+import { InputGateProvider, useInputGate } from './input-gate';
+import { InputSourceProvider, useInputSourceParent } from './input-source';
 // <FocusScope>: the navigator for one screen, and the groups inside it.
 // Exactly one navigator answers the remote at a time; shared between web and
 // native on purpose so behaviour can't drift between them (only the screen
 // root is forked, into focus-root.tsx / focus-root.web.tsx).
 
-import { NavigatorView, useLockNavigator } from '@kromatv/spatial-nav/react';
-import { type ReactNode, useEffect, useMemo } from 'react';
+import { NavigatorView, RemoteProvider, useLockNavigator } from '@kromatv/spatial-nav/react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { createFocusEntry, FocusEntryProvider } from './focus-entry';
 import { FocusLiftHost, GROUNDED, LIFTED } from './focus-lift';
@@ -51,7 +55,7 @@ interface FocusColumnProps extends FocusScopeProps {
  * browser targets it also resets device-type to remote-keys mode regardless
  * of where the pointer was left.
  */
-function FocusScope({
+function FocusScopeHost({
   children,
   style,
   entryKey,
@@ -85,6 +89,29 @@ function FocusScope({
         </PlatformFocusProvider>
       </FocusPresenceProvider>
     </FocusEntryProvider>
+  );
+}
+
+function FocusScope(props: Readonly<ScreenScopeProps>) {
+  const parent = useFocusServicesParent();
+  const input = useInputGate();
+  const source = useInputSourceParent();
+  const [owned] = useState(() =>
+    parent ? null : createFocusServices(true, input, source ?? undefined),
+  );
+  const services = parent ?? owned;
+  if (!services) throw new Error('Focus scope requires its owning host');
+  useEffect(() => services.source.retain(), [services]);
+  return (
+    <FocusServicesProvider value={services}>
+      <InputGateProvider value={services.input}>
+        <InputSourceProvider value={services.source}>
+          <RemoteProvider value={services.remote}>
+            <FocusScopeHost {...props} />
+          </RemoteProvider>
+        </InputSourceProvider>
+      </InputGateProvider>
+    </FocusServicesProvider>
   );
 }
 
