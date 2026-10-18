@@ -4,7 +4,7 @@
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post, put};
+use axum::routing::{get, put};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -13,17 +13,16 @@ use kroma_module_sdk::domain::{Permission, User};
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::host::{AuthUser, HostStorage, json_error};
-use kroma_scene::{
-    CustomFormat, Evaluation, Facts, FormatSet, Language, Quality, QualityProfile, Sizes, evaluate,
-};
+use kroma_scene::{CustomFormat, FormatSet, Quality, QualityProfile, Sizes};
 
 use super::files::{JudgedFile, held_units, judge_title_files, unit_below_target};
 use super::{load, original_language, set_default_profile, store};
 
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
+        .merge(super::blocklist::routes::<S>())
+        .merge(super::judgement::routes::<S>())
         .route("/acquisition/rules", get(rules::<S>))
-        .route("/acquisition/rules/test", post(test::<S>))
         .route(
             "/acquisition/profiles/{id}",
             put(save_profile::<S>).delete(delete_profile::<S>),
@@ -39,25 +38,20 @@ pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
             "/acquisition/titles/{kind}/{tmdb_id}/profile",
             put(title_profile::<S>),
         )
-        .route("/acquisition/blocklist", get(blocklist_list::<S>))
-        .route(
-            "/acquisition/blocklist/{id}",
-            axum::routing::delete(blocklist_remove::<S>),
-        )
 }
 
-fn require_reader<S: HostStorage>(state: &S, user: &User) -> Result<(), Response> {
+pub(super) fn require_reader<S: HostStorage>(state: &S, user: &User) -> Result<(), Response> {
     if user.can(Permission::RequestsManage) || user.can(Permission::LibraryManage) {
         return Ok(());
     }
     state.require(user, Permission::SettingsManage)
 }
 
-fn bad(reason: impl std::fmt::Display) -> Response {
+pub(super) fn bad(reason: impl std::fmt::Display) -> Response {
     json_error(StatusCode::BAD_REQUEST, &reason.to_string())
 }
 
-async fn run<T, F>(f: F) -> Result<T, Response>
+pub(super) async fn run<T, F>(f: F) -> Result<T, Response>
 where
     F: FnOnce() -> anyhow::Result<T> + Send + 'static,
     T: Send + 'static,
@@ -227,59 +221,6 @@ fn validate_sizes(sizes: &Sizes) -> Result<(), String> {
     Ok(())
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct TestBody {
-    name: String,
-    #[serde(default)]
-    original: Option<String>,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct ProfileVerdict {
-    profile_id: String,
-    profile_name: String,
-    evaluation: Evaluation,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct TestView {
-    facts: Facts,
-    profiles: Vec<ProfileVerdict>,
-}
-
-/// `POST /acquisition/rules/test`: what the rules make of a release name.
-async fn test<S: HostStorage + Clone + Send + Sync + 'static>(
-    State(state): State<S>,
-    AuthUser(user): AuthUser,
-    Json(body): Json<TestBody>,
-) -> Result<Response, Response> {
-    require_reader(&state, &user)?;
-    if body.name.trim().is_empty() || body.name.len() > 512 {
-        return Err(bad("give a release name of at most 512 characters"));
-    }
-    let view = run(move || {
-        let book = load(&state)?;
-        let name = body.name.trim();
-        let facts = Facts::from_release(name, &kroma_scene::parse_release_name(name), None);
-        let original = body.original.as_deref().and_then(Language::parse);
-        let profiles = book
-            .profiles
-            .iter()
-            .map(|profile| ProfileVerdict {
-                profile_id: profile.id.clone(),
-                profile_name: profile.name.clone(),
-                evaluation: evaluate(&facts, original.as_ref(), &book.rules(profile)),
-            })
-            .collect();
-        Ok(TestView { facts, profiles })
-    })
-    .await?;
-    Ok(Json(view).into_response())
-}
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct TitleView {
@@ -356,25 +297,4 @@ async fn title_profile<S: HostStorage + Clone + Send + Sync + 'static>(
     })
     .await?;
     Ok(Json(json!({ "ok": true })).into_response())
-}
-
-/// `GET /acquisition/blocklist`: releases no title will be grabbed from again.
-async fn blocklist_list<S: HostStorage + Clone + Send + Sync + 'static>(
-    State(state): State<S>,
-    AuthUser(user): AuthUser,
-) -> Result<Response, Response> {
-    require_reader(&state, &user)?;
-    let entries = run(move || super::blocklist::list(state.store())).await?;
-    Ok(Json(entries).into_response())
-}
-
-/// `DELETE /acquisition/blocklist/:id`: let a release back.
-async fn blocklist_remove<S: HostStorage + Clone + Send + Sync + 'static>(
-    State(state): State<S>,
-    AuthUser(user): AuthUser,
-    Path(id): Path<String>,
-) -> Result<Response, Response> {
-    require_reader(&state, &user)?;
-    let removed = run(move || super::blocklist::remove(state.store(), &id)).await?;
-    Ok(Json(json!({ "ok": removed })).into_response())
 }

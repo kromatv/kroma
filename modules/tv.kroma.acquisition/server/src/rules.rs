@@ -12,8 +12,11 @@ use kroma_scene::{
 };
 
 pub mod blocklist;
+pub mod file_facts;
 pub mod files;
+mod judgement;
 pub mod routes;
+pub mod schema;
 pub mod store;
 
 #[cfg(test)]

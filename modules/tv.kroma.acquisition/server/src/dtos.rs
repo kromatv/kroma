@@ -58,6 +58,7 @@ pub struct ScoredReleaseView {
     pub details_url: Option<String>,
     pub quality: Option<String>,
     pub formats: Vec<FormatScoreView>,
+    pub flags: Vec<crate::release_flags::ReleaseFlag>,
     /// What grabbing it does to what the title holds, judged by its profile.
     pub verdict: Option<kroma_scene::Verdict>,
 }

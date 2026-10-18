@@ -95,6 +95,7 @@ mod tests {
             details_url: Some("https://t/1".into()),
             quality: None,
             formats: Vec::new(),
+            flags: Vec::new(),
             verdict: None,
         }
     }

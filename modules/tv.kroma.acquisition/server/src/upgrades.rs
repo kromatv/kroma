@@ -3,28 +3,55 @@
 //! starts at half a day and stretches to a week, so upgrades never starve a
 //! missing episode.
 
-use std::collections::BTreeMap;
-
 use anyhow::Result;
 use kroma_module_sdk::db::{self, WantedRow};
-use kroma_module_sdk::engine::model::{MonitoredTitle, RequestKind};
+use kroma_module_sdk::engine::model::MonitoredTitle;
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::host::HostStorage;
-use kroma_scene::{QualityProfile, Verdict};
+use kroma_scene::Verdict;
 
 use crate::auto::{AutoSummary, Grab, MAX_TARGETS, Pass, grab_candidate, target_label};
-use crate::rules::files::{JudgedFile, judge_title_files, unit_below_target};
+use crate::rules::files::judge_title_files;
 use crate::rules::store;
-use crate::search::SearchTarget;
 use crate::search::best::{Aim, best_release};
 use crate::search::judge::Judge;
 
+mod targets;
+
+use targets::upgrade_targets;
+
 const MAX_TITLES: usize = 5;
+const MAX_TITLES_NOW: usize = 25;
 const MAX_TARGETS_PER_TITLE: usize = 3;
+
+/// How far one upgrade sweep goes, and whether a title's own wait holds it
+/// back. An admin who pressed the button is not waiting on MOD-69's cadence.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Sweep {
+    titles: usize,
+    honour_backoff: bool,
+}
+
+impl Sweep {
+    pub(crate) fn scheduled() -> Self {
+        Self {
+            titles: MAX_TITLES,
+            honour_backoff: true,
+        }
+    }
+
+    pub(crate) fn now() -> Self {
+        Self {
+            titles: MAX_TITLES_NOW,
+            honour_backoff: false,
+        }
+    }
+}
 
 pub(crate) fn upgrade_pass<S: HostStorage>(
     pass: &Pass<'_, S>,
     summary: &mut AutoSummary,
+    sweep: Sweep,
 ) -> Result<()> {
     let conn = pass.state.db().get()?;
     let titles = db::list_monitored(&conn)?;
@@ -32,10 +59,12 @@ pub(crate) fn upgrade_pass<S: HostStorage>(
     let now = now_ms();
     let mut visited = 0;
     for title in titles {
-        if (pass.cancelled)() || summary.targets >= MAX_TARGETS || visited >= MAX_TITLES {
+        if (pass.cancelled)() || summary.targets >= MAX_TARGETS || visited >= sweep.titles {
             break;
         }
-        if !store::upgrade_due(pass.state.store(), title.kind, title.tmdb_id, now)? {
+        if sweep.honour_backoff
+            && !store::upgrade_due(pass.state.store(), title.kind, title.tmdb_id, now)?
+        {
             continue;
         }
         match upgrade_title(pass, &title, summary) {
@@ -77,12 +106,9 @@ fn upgrade_title<S: HostStorage>(
         return Ok(None);
     }
     let original = crate::rules::original_language(state, kind, tmdb_id)?;
-    let judge = Judge {
-        rules: pass.book.rules(profile),
-        original: original.as_ref(),
-        runtime_minutes: None,
-    };
-    let files = judge_title_files(state, kind, tmdb_id, &judge.rules, original.as_ref())?;
+    let rules = pass.book.rules(profile);
+    let files = judge_title_files(state, kind, tmdb_id, &rules, original.as_ref())?;
+    let judge = Judge::for_title(rules, original.as_ref(), &files);
     let targets = upgrade_targets(kind, &rows, &files, profile);
     if targets.is_empty() {
         return Ok(None);
@@ -128,161 +154,9 @@ fn upgrade_title<S: HostStorage>(
     Ok(Some(grabbed))
 }
 
-/// What to search to upgrade a title: the film, or per season the pack when
-/// every monitored episode there could be improved, else the episodes that
-/// could. Each target comes with the rows it covers.
-pub(crate) fn upgrade_targets(
-    kind: RequestKind,
-    rows: &[WantedRow],
-    files: &[JudgedFile],
-    profile: &QualityProfile,
-) -> Vec<(SearchTarget, Vec<String>)> {
-    let unmet = |season, episode| unit_below_target(files, season, episode, profile);
-    if kind == RequestKind::Movie {
-        return rows
-            .iter()
-            .find(|w| w.kind == "movie" && unmet(None, None))
-            .map(|w| {
-                let st = SearchTarget::movie(w.tmdb_id, w.imdb_id.clone(), w.title.clone(), w.year);
-                (st, vec![w.id.clone()])
-            })
-            .into_iter()
-            .collect();
-    }
-    let mut seasons: BTreeMap<u32, Vec<&WantedRow>> = BTreeMap::new();
-    for w in rows {
-        if let Some(season) = w.season {
-            seasons.entry(season).or_default().push(w);
-        }
-    }
-    let mut out = Vec::new();
-    for (season, held) in seasons {
-        let open: Vec<&&WantedRow> = held.iter().filter(|w| unmet(w.season, w.episode)).collect();
-        if open.is_empty() {
-            continue;
-        }
-        let sample = held[0];
-        if open.len() == held.len() && held.len() > 1 {
-            let episodes: Vec<u32> = held.iter().filter_map(|w| w.episode).collect();
-            let st = SearchTarget::season(
-                sample.tmdb_id,
-                sample.title.clone(),
-                season,
-                held.len() as u32,
-                Some(episodes),
-            );
-            out.push((st, held.iter().map(|w| w.id.clone()).collect()));
-            continue;
-        }
-        for w in open {
-            if let Some(episode) = w.episode {
-                let st = SearchTarget::episode(w.tmdb_id, w.title.clone(), season, episode);
-                out.push((st, vec![w.id.clone()]));
-            }
-        }
-    }
-    out
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::search::test_support::TestRules;
-    use kroma_scene::{Evaluation, Quality};
-
-    fn row(id: &str, season: Option<u32>, episode: Option<u32>) -> WantedRow {
-        WantedRow {
-            id: id.into(),
-            request_id: None,
-            kind: if season.is_some() { "episode" } else { "movie" }.into(),
-            tmdb_id: 7,
-            imdb_id: None,
-            title: "T".into(),
-            year: None,
-            season,
-            episode,
-            air_date: None,
-            status: "available".into(),
-            last_search_at: None,
-        }
-    }
-
-    fn file(season: Option<u32>, episode: Option<u32>, quality: Quality, rank: u32) -> JudgedFile {
-        JudgedFile {
-            file_id: format!("f{season:?}{episode:?}"),
-            rel_path: None,
-            season,
-            episode,
-            episode_end: None,
-            release: None,
-            evaluation: Evaluation {
-                quality,
-                quality_rank: Some(rank),
-                formats: Vec::new(),
-                format_score: 0,
-                revision: 1,
-            },
-            below_target: false,
-        }
-    }
-
-    fn cutoff_rank(rules: &TestRules) -> u32 {
-        rules.profile.cutoff_rank()
-    }
-
-    #[test]
-    fn a_film_below_its_cutoff_is_searched() {
-        let rules = TestRules::new();
-        let rows = [row("m", None, None)];
-        let files = [file(None, None, Quality::WebDl720, 1)];
-
-        let targets = upgrade_targets(RequestKind::Movie, &rows, &files, &rules.profile);
-
-        assert_eq!(targets.len(), 1);
-        assert_eq!(targets[0].0.kind, "movie");
-        assert_eq!(targets[0].1, ["m"]);
-    }
-
-    #[test]
-    fn a_film_at_its_cutoff_is_left_alone() {
-        let rules = TestRules::new();
-        let rows = [row("m", None, None)];
-        let files = [file(None, None, Quality::Bluray1080, cutoff_rank(&rules))];
-
-        assert!(upgrade_targets(RequestKind::Movie, &rows, &files, &rules.profile).is_empty());
-    }
-
-    #[test]
-    fn a_season_whose_every_episode_is_below_takes_a_pack() {
-        let rules = TestRules::new();
-        let rows = [row("a", Some(1), Some(1)), row("b", Some(1), Some(2))];
-        let files = [
-            file(Some(1), Some(1), Quality::WebDl720, 1),
-            file(Some(1), Some(2), Quality::WebDl720, 1),
-        ];
-
-        let targets = upgrade_targets(RequestKind::Show, &rows, &files, &rules.profile);
-
-        assert_eq!(targets.len(), 1);
-        assert_eq!(targets[0].0.kind, "season");
-        assert_eq!(targets[0].1, ["a", "b"]);
-    }
-
-    #[test]
-    fn a_season_partly_below_takes_the_episodes_that_are() {
-        let rules = TestRules::new();
-        let rows = [row("a", Some(1), Some(1)), row("b", Some(1), Some(2))];
-        let files = [
-            file(Some(1), Some(1), Quality::WebDl720, 1),
-            file(Some(1), Some(2), Quality::Bluray1080, cutoff_rank(&rules)),
-        ];
-
-        let targets = upgrade_targets(RequestKind::Show, &rows, &files, &rules.profile);
-
-        assert_eq!(targets.len(), 1);
-        assert_eq!(targets[0].0.kind, "episode");
-        assert_eq!(targets[0].1, ["a"]);
-    }
 
     #[test]
     fn only_a_better_copy_counts_as_an_upgrade() {

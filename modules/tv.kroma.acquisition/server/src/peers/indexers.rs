@@ -27,6 +27,8 @@ pub struct Release {
     pub imdb_id: Option<String>,
     pub published_at: Option<String>,
     pub details_url: Option<String>,
+    pub download_volume_factor: Option<f64>,
+    pub upload_volume_factor: Option<f64>,
 }
 
 /// The configured indexers and their per-sweep result.
@@ -232,6 +234,21 @@ mod tests {
         assert_eq!(indexer.id, "idx-1");
         assert_eq!(indexer.priority, 30);
         assert!(indexer.enabled);
+    }
+
+    #[test]
+    fn a_release_carries_the_volume_factors_its_tracker_announced() {
+        let json = serde_json::json!({
+            "title": "R",
+            "guid": "g",
+            "download_volume_factor": 0.0,
+            "upload_volume_factor": 2.0,
+        });
+
+        let release: Release = serde_json::from_value(json).unwrap();
+
+        assert_eq!(release.download_volume_factor, Some(0.0));
+        assert_eq!(release.upload_volume_factor, Some(2.0));
     }
 
     #[test]

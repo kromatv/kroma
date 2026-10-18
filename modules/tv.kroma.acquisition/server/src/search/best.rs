@@ -54,6 +54,12 @@ pub fn best_release<S: HostStorage>(
     out
 }
 
+fn blocked(aim: &Aim, release: &crate::peers::indexers::Release) -> bool {
+    aim.blocked
+        .iter()
+        .any(|b| b.matches(&release.title, release.info_hash.as_deref()))
+}
+
 fn consider(
     aim: &Aim,
     release: &crate::peers::indexers::Release,
@@ -67,7 +73,7 @@ fn consider(
         }
         return;
     };
-    if aim.blocked.iter().any(|b| b.matches(&release.title)) {
+    if blocked(aim, release) {
         return;
     }
     let verdict = verdict_for(
@@ -99,6 +105,7 @@ fn consider(
             view,
             judged: Some(judged),
             magnet_or_url,
+            info_hash: release.info_hash.clone(),
             tmdb_id: aim.tmdb_id,
         });
     }

@@ -187,6 +187,17 @@ pub fn set_download_status(
     Ok(n > 0)
 }
 
+/// Records the hash the engine resolved, for a row grabbed from a link that
+/// did not carry one. Leaves a hash already on the row alone.
+pub fn set_download_info_hash(pool: &Pool, id: &str, info_hash: &str) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "UPDATE downloads SET info_hash = ?2 WHERE id = ?1 AND info_hash IS NULL",
+        params![id, info_hash],
+    )?;
+    Ok(())
+}
+
 pub fn delete_download_row(pool: &Pool, id: &str) -> Result<bool> {
     let conn = pool.get()?;
     Ok(conn.execute("DELETE FROM downloads WHERE id = ?1", params![id])? > 0)
@@ -455,5 +466,18 @@ mod tests {
         let d = get_download(&conn, "d1").unwrap().unwrap();
         assert_eq!(d.match_source, Some(MatchSource::Pinned));
         assert_eq!(d.tmdb_id, Some(1399));
+    }
+
+    #[test]
+    fn the_hash_an_engine_resolves_lands_on_a_row_that_was_grabbed_without_one() {
+        let pool = test_db();
+        insert_download(&pool, &download("d1", "downloading", 10)).unwrap();
+
+        set_download_info_hash(&pool, "d1", "ABC123").unwrap();
+        set_download_info_hash(&pool, "d1", "LATER").unwrap();
+
+        let conn = pool.get().unwrap();
+        let row = get_download(&conn, "d1").unwrap().unwrap();
+        assert_eq!(row.info_hash.as_deref(), Some("ABC123"));
     }
 }

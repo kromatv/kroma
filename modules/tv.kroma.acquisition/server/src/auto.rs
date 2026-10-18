@@ -73,7 +73,7 @@ pub fn auto_search_pass<S: HostStorage>(
     };
     fill_missing(&pass, &mut summary)?;
     if summary.targets < MAX_TARGETS && !cancelled() {
-        crate::upgrades::upgrade_pass(&pass, &mut summary)?;
+        crate::upgrades::upgrade_pass(&pass, &mut summary, crate::upgrades::Sweep::scheduled())?;
     }
     log(format!(
         "{} target(s) searched across {} title(s), {} grabbed, {} upgrade(s)",
@@ -186,7 +186,7 @@ fn fills(verdict: Verdict) -> bool {
     verdict.is_wanted()
 }
 
-fn search_title<S: HostStorage>(
+pub(crate) fn search_title<S: HostStorage>(
     pass: &Pass<'_, S>,
     (kind, tmdb_id): (RequestKind, u64),
     due_ids: &HashSet<String>,
@@ -201,12 +201,9 @@ fn search_title<S: HostStorage>(
     summary.titles += 1;
     let profile = pass.book.profile_for(state, kind, tmdb_id)?;
     let original = crate::rules::original_language(state, kind, tmdb_id)?;
-    let judge = Judge {
-        rules: pass.book.rules(profile),
-        original: original.as_ref(),
-        runtime_minutes: None,
-    };
-    let files = judge_title_files(state, kind, tmdb_id, &judge.rules, original.as_ref())?;
+    let rules = pass.book.rules(profile);
+    let files = judge_title_files(state, kind, tmdb_id, &rules, original.as_ref())?;
+    let judge = Judge::for_title(rules, original.as_ref(), &files);
     let blocked = crate::rules::blocklist::for_title(state.store(), kind, tmdb_id)?;
     let mut covered: HashSet<String> = HashSet::new();
     for st in &targets_for_wanted(kind, &wanted, &today_ymd()) {

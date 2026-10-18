@@ -13,6 +13,7 @@ use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::host::{HostStorage, LibraryFolders};
 
+mod content;
 mod naming;
 mod place;
 mod recycle;
@@ -21,8 +22,9 @@ mod subtitles;
 
 pub use recycle::empty_recycle_bin;
 
+use content::{largest, Content};
 use naming::{episode_ctx, movie_ctx, resolve_meta, stem_of};
-use place::{ext_of, files_under, largest, video_files, Placement};
+use place::{ext_of, Placement};
 use replace::drop_replaced;
 use subtitles::place_with_subtitles;
 
@@ -126,8 +128,8 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
         .save_path
         .as_deref()
         .ok_or_else(|| anyhow!("download folder unknown (external client did not report it)"))?;
-    let around = files_under(Path::new(save_path));
-    let videos = video_files(Path::new(save_path))?;
+    let content = Content::under(Path::new(save_path), &row.content_rel_paths);
+    let videos = content.videos();
     let Some(largest_video) = largest(&videos) else {
         bail!("no video file found under {save_path}");
     };
@@ -154,7 +156,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
         "movie" => {
             let ctx = movie_ctx(&meta, largest_video);
             let dest = lib_root.join(tpl.movie_rel_path(&ctx, ext_of(largest_video)));
-            let at = place_with_subtitles(largest_video, &around, &dest, mode)?;
+            let at = place_with_subtitles(state, largest_video, content.files(), &dest, mode)?;
             placed.push((Replaced::Movie, at.to_string_lossy().into_owned()));
         }
         "episode" => {
@@ -168,7 +170,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
             let season = row.season.or(parsed.season).unwrap_or(1);
             let ctx = episode_ctx(&meta, season, episode, &parsed);
             let dest = lib_root.join(tpl.episode_rel_path(&ctx, ext_of(largest_video)));
-            let at = place_with_subtitles(largest_video, &around, &dest, mode)?;
+            let at = place_with_subtitles(state, largest_video, content.files(), &dest, mode)?;
             placed.push((
                 Replaced::Episode(season, episode),
                 at.to_string_lossy().into_owned(),
@@ -196,7 +198,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
                 }
                 let ctx = episode_ctx(&meta, season, episode, &parsed);
                 let dest = lib_root.join(tpl.episode_rel_path(&ctx, ext_of(src)));
-                let at = place_with_subtitles(src, &around, &dest, mode)?;
+                let at = place_with_subtitles(state, src, content.files(), &dest, mode)?;
                 placed.push((
                     Replaced::Episode(season, episode),
                     at.to_string_lossy().into_owned(),

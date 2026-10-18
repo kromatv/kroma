@@ -11,7 +11,7 @@ use kroma_module_sdk::engine::model::{MonitoredTitle, RequestKind};
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::engine::services::requests::today_ymd;
 use kroma_module_sdk::host::HostStorage;
-use kroma_scene::{ParsedRelease, Verdict};
+use kroma_scene::ParsedRelease;
 
 use crate::auto::{Grab, grab_candidate};
 use crate::peers::indexers::{IndexerRef, Query, Release};
@@ -235,22 +235,19 @@ fn judge_for<S: HostStorage>(
     };
     if crate::rules::blocklist::for_title(state.store(), kind, tmdb_id)?
         .iter()
-        .any(|b| b.matches(&release.title))
+        .any(|b| b.matches(&release.title, release.info_hash.as_deref()))
     {
         return Ok(None);
     }
     let profile = book.profile_for(state, kind, tmdb_id)?;
     let original = crate::rules::original_language(state, kind, tmdb_id)?;
-    let judge = Judge {
-        rules: book.rules(profile),
-        original: original.as_ref(),
-        runtime_minutes: None,
-    };
+    let rules = book.rules(profile);
+    let files = judge_title_files(state, kind, tmdb_id, &rules, original.as_ref())?;
+    let judge = Judge::for_title(rules, original.as_ref(), &files);
     let (mut view, judged) = judge.release(release, indexer, &st);
     let Some(judged) = judged else {
         return Ok(None);
     };
-    let files = judge_title_files(state, kind, tmdb_id, &judge.rules, original.as_ref())?;
     let verdict = verdict_for(
         &judged.evaluation,
         &units_of(&view, &files),
@@ -265,7 +262,7 @@ fn judge_for<S: HostStorage>(
         return Ok(None);
     }
     view.verdict = Some(verdict);
-    view.upgrade = matches!(verdict, Verdict::Upgrade(_) | Verdict::Beside(_));
+    view.upgrade = crate::search::interactive::replaces(Some(verdict));
     let magnet_or_url = release
         .magnet
         .clone()
@@ -279,6 +276,7 @@ fn judge_for<S: HostStorage>(
             view,
             judged: Some(judged),
             magnet_or_url,
+            info_hash: release.info_hash.clone(),
             tmdb_id,
         },
         covered,

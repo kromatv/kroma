@@ -8,7 +8,7 @@ fn host() -> StubHost {
         .with_setting("acqStallHours", serde_json::json!(0));
     db::apply_migrations(
         &host.store().get().unwrap(),
-        crate::rules::store::MIGRATIONS,
+        crate::rules::schema::MIGRATIONS,
     )
     .unwrap();
     host
@@ -38,8 +38,8 @@ fn download(host: &StubHost, id: &str, episodes: &str, status: &str) {
         .unwrap()
         .execute(
             "INSERT INTO downloads (id, client_id, client_ref, kind, tmdb_id, season, episodes, \
-                 release_title, magnet_or_url, status, error, grabbed_at) \
-             VALUES (?1, 'embedded', '', 'episode', 77, 1, ?2, ?3, 'magnet:?x', ?4, 'tracker gone', 1)",
+                 release_title, magnet_or_url, status, error, progress, grabbed_at) \
+             VALUES (?1, 'embedded', '', 'episode', 77, 1, ?2, ?3, 'magnet:?x', ?4, 'tracker gone', 0.4, 1)",
             rusqlite::params![id, episodes, format!("Show.S01.{id}.1080p-GRP"), status],
         )
         .unwrap();
@@ -134,7 +134,7 @@ fn a_season_pack_covers_every_episode_of_its_season() {
 }
 
 #[test]
-fn a_download_unfinished_past_the_limit_has_stalled() {
+fn a_download_that_has_not_moved_for_the_limit_has_stalled() {
     let d = Download {
         id: "d".into(),
         kind: "movie".into(),
@@ -146,18 +146,50 @@ fn a_download_unfinished_past_the_limit_has_stalled() {
         indexer_id: None,
         status: "downloading".into(),
         error: None,
+        progress: 0.4,
         grabbed_at: 0,
     };
 
-    assert!(stalled(&d, 72 * HOUR_MS, 72));
-    assert!(!stalled(&d, 71 * HOUR_MS, 72));
-    assert!(!stalled(&d, 1000 * HOUR_MS, 0));
+    assert!(stalled(&d, Some(0), 72 * HOUR_MS, 72));
+    assert!(!stalled(&d, Some(0), 71 * HOUR_MS, 72));
+    assert!(!stalled(&d, Some(0), 1000 * HOUR_MS, 0));
     assert!(!stalled(
         &Download {
             status: "completed".into(),
             ..d
         },
+        Some(0),
         1000 * HOUR_MS,
         72
     ));
+}
+
+#[test]
+fn a_download_still_moving_is_not_given_up_on_however_long_ago_it_was_grabbed() {
+    let d = Download {
+        id: "d".into(),
+        kind: "movie".into(),
+        tmdb_id: 1,
+        season: None,
+        episodes: None,
+        release_title: "M".into(),
+        info_hash: None,
+        indexer_id: None,
+        status: "downloading".into(),
+        error: None,
+        progress: 0.9,
+        grabbed_at: 0,
+    };
+
+    assert!(!stalled(&d, Some(1000 * HOUR_MS), 1001 * HOUR_MS, 72));
+}
+
+#[test]
+fn a_download_grabbed_long_ago_but_still_moving_survives_the_pass() {
+    let host = host().with_setting("acqStallHours", serde_json::json!(72));
+    download(&host, "d1", "[1]", "downloading");
+
+    let summary = failure_pass(&host, &|_| {}).unwrap();
+
+    assert_eq!(summary.stalled, 0);
 }

@@ -5,12 +5,37 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
 use kroma_module_sdk::host::HostCtx;
+use kroma_module_sdk::media::external_subtitles::beside;
 
 /// What became of a replaced file.
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum Retired {
     Deleted,
     Recycled(PathBuf),
+}
+
+pub(super) fn retire_with_subtitles(host: &dyn HostCtx, video: &Path) -> std::io::Result<Retired> {
+    for subtitle in subtitles_of(video) {
+        if let Err(e) = retire(host, &subtitle) {
+            tracing::warn!(file = %subtitle.display(), "a subtitle file stayed behind: {e}");
+        }
+    }
+    retire(host, video)
+}
+
+fn subtitles_of(video: &Path) -> Vec<PathBuf> {
+    let folder = video.parent().unwrap_or_else(|| Path::new("."));
+    let siblings: Vec<PathBuf> = std::fs::read_dir(folder)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.is_file())
+        .collect();
+    beside(video, &siblings)
+        .into_iter()
+        .map(|found| found.path)
+        .collect()
 }
 
 /// Takes a replaced file out of the library.
@@ -48,13 +73,24 @@ fn free_name(dir: &Path, path: &Path) -> PathBuf {
 // A rename cannot cross filesystems, and a recycle bin on another disk than the
 // library is the common case on a NAS: copy, then remove the original.
 fn move_file(from: &Path, to: &Path) -> std::io::Result<()> {
-    match std::fs::rename(from, to) {
-        Ok(()) => Ok(()),
-        Err(_) => {
-            std::fs::copy(from, to)?;
-            std::fs::remove_file(from)
-        }
+    if std::fs::rename(from, to).is_err() {
+        std::fs::copy(from, to)?;
+        std::fs::remove_file(from)?;
     }
+    if let Err(e) = touch(to) {
+        tracing::warn!(file = %to.display(), "the recycled file kept its old date: {e}");
+    }
+    Ok(())
+}
+
+// Retention counts from the move, and a rename carries the file's own date,
+// which is the day it was imported: a file older than the retention would be
+// cleared on the next pass.
+fn touch(path: &Path) -> std::io::Result<()> {
+    std::fs::OpenOptions::new()
+        .write(true)
+        .open(path)?
+        .set_modified(SystemTime::now())
 }
 
 /// Clears what has sat in the recycle bin longer than `acqRecycleDays`.
@@ -87,6 +123,7 @@ pub fn empty_recycle_bin(host: &dyn HostCtx) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kroma_module_sdk::engine::services::requests::today_ymd;
     use kroma_module_sdk::host::testing::StubHost;
 
     fn dir(tag: &str) -> kroma_module_sdk::testing::TempDir {
@@ -141,6 +178,57 @@ mod tests {
         let second = retire(&host, &file).unwrap();
 
         assert_ne!(first, second);
+    }
+
+    #[test]
+    fn a_file_older_than_the_retention_survives_the_cleanup_that_follows_its_move() {
+        let lib = dir("recycle-old-lib");
+        let bin = dir("recycle-old-bin");
+        let host = StubHost::new().with_setting(
+            "acqRecycleBin",
+            serde_json::json!(bin.path().to_string_lossy()),
+        );
+        let file = lib.path().join("Film 1080p.mkv");
+        std::fs::write(&file, b"x").unwrap();
+        let long_ago = SystemTime::now() - Duration::from_secs(90 * 24 * 60 * 60);
+        std::fs::OpenOptions::new()
+            .write(true)
+            .open(&file)
+            .unwrap()
+            .set_modified(long_ago)
+            .unwrap();
+
+        let Retired::Recycled(at) = retire(&host, &file).unwrap() else {
+            panic!("expected the file in the bin");
+        };
+
+        assert_eq!(empty_recycle_bin(&host), 0);
+        assert!(at.exists());
+    }
+
+    #[test]
+    fn the_subtitles_of_a_replaced_file_follow_it_out_of_the_library() {
+        let lib = dir("recycle-subs-lib");
+        let bin = dir("recycle-subs-bin");
+        let host = StubHost::new().with_setting(
+            "acqRecycleBin",
+            serde_json::json!(bin.path().to_string_lossy()),
+        );
+        let film = lib.path().join("Film 1080p.mkv");
+        let subtitle = lib.path().join("Film 1080p.fr.srt");
+        std::fs::write(&film, b"x").unwrap();
+        std::fs::write(&subtitle, b"1\n00:00:01,000 --> 00:00:02,000\nbonjour\n").unwrap();
+
+        retire_with_subtitles(&host, &film).unwrap();
+
+        assert!(!film.exists());
+        assert!(!subtitle.exists(), "the subtitle named a file that is gone");
+        assert_eq!(
+            std::fs::read_dir(bin.path().join(today_ymd()))
+                .unwrap()
+                .count(),
+            2
+        );
     }
 
     #[test]

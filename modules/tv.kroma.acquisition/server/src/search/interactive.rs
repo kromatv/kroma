@@ -77,11 +77,14 @@ pub fn interactive_search<S: HostStorage>(
     let book = crate::rules::load(state)?;
     let profile = book.profile_for(state, resolved.kind, resolved.tmdb_id)?;
     let original = crate::rules::original_language(state, resolved.kind, resolved.tmdb_id)?;
-    let judge = Judge {
-        rules: book.rules(profile),
-        original: original.as_ref(),
-        runtime_minutes: None,
-    };
+    let files = judge_title_files(
+        state,
+        resolved.kind,
+        resolved.tmdb_id,
+        &book.rules(profile),
+        original.as_ref(),
+    )?;
+    let judge = Judge::for_title(book.rules(profile), original.as_ref(), &files);
     tracing::info!(
         subject = %subject.cache_key(scope),
         title = %resolved.title,
@@ -91,16 +94,12 @@ pub fn interactive_search<S: HostStorage>(
     );
     let (mut cached, indexer_reports) =
         collect_search_hits(state, &indexers, &targets, &judge, resolved.tmdb_id);
-    let files = judge_title_files(
-        state,
-        resolved.kind,
-        resolved.tmdb_id,
-        &judge.rules,
-        original.as_ref(),
-    )?;
     let blocked = crate::rules::blocklist::for_title(state.store(), resolved.kind, resolved.tmdb_id)?;
     for c in &mut cached {
-        if blocked.iter().any(|b| b.matches(&c.view.title)) {
+        if blocked
+            .iter()
+            .any(|b| b.matches(&c.view.title, c.info_hash.as_deref()))
+        {
             refuse(c, "blocklist: an earlier grab of this release failed");
             continue;
         }
@@ -163,6 +162,7 @@ mod tests {
             view,
             judged,
             magnet_or_url: "magnet:?xt=2".into(),
+            info_hash: None,
             tmdb_id: 42,
         }
     }

@@ -38,7 +38,7 @@
     "module": "./remoteEntry.js"
   },
   "dependencies": {
-    "tv.kroma.torrents": ">=0.3.0"
+    "tv.kroma.torrents": ">=0.6.10"
   },
   "contributes": [
     {

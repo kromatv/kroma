@@ -60,9 +60,12 @@ pub fn grab_cached<S: HostStorage>(
     Ok(row)
 }
 
-/// Whether a grab with this verdict lands on media already on disk.
+/// Whether a grab with this verdict lands on media already on disk, so the
+/// import places it against the file it meets instead of skipping. An admin
+/// who grabs a release the rules called no better has overridden the verdict,
+/// not asked for nothing to happen.
 pub fn replaces(verdict: Option<Verdict>) -> bool {
-    matches!(verdict, Some(Verdict::Upgrade(_) | Verdict::Beside(_)))
+    !matches!(verdict, None | Some(Verdict::Fill))
 }
 
 fn resolve_grab_target<S: HostStorage>(state: &S, cached: &CachedRelease) -> Result<String> {
@@ -104,9 +107,13 @@ mod tests {
     }
 
     #[test]
+    fn grabbing_a_release_the_rules_called_no_better_still_lands_on_what_is_on_disk() {
+        assert!(replaces(Some(Verdict::NotBetter(Reason::LowerQuality))));
+    }
+
+    #[test]
     fn a_fill_or_an_unjudged_release_lands_in_an_empty_slot() {
         assert!(!replaces(Some(Verdict::Fill)));
         assert!(!replaces(None));
-        assert!(!replaces(Some(Verdict::NotBetter(Reason::LowerQuality))));
     }
 }

@@ -11,6 +11,7 @@ pub use kroma_module_sdk::db::*;
 
 mod bandwidth;
 mod clients;
+mod contents;
 mod downloads;
 mod drops;
 #[cfg(test)]
@@ -18,6 +19,7 @@ pub(crate) mod test_support;
 
 pub use bandwidth::*;
 pub use clients::*;
+pub use contents::*;
 pub use downloads::*;
 pub use drops::*;
 
@@ -57,6 +59,14 @@ pub const MIGRATIONS: &str = "
     CREATE INDEX IF NOT EXISTS idx_vpn_bandwidth_at ON vpn_bandwidth(at);
 
     CREATE TABLE IF NOT EXISTS deferred_drops (id TEXT PRIMARY KEY);
+
+    -- The paths one torrent holds, relative to its save path, as JSON. An
+    -- external client saves every torrent into one shared folder, so an import
+    -- that scanned that folder would take the largest video in all of it.
+    CREATE TABLE IF NOT EXISTS download_contents (
+        download_id TEXT PRIMARY KEY,
+        paths       TEXT NOT NULL
+    );
 ";
 
 pub const EMBEDDED_CLIENT_ID: &str = "embedded";

@@ -2,6 +2,8 @@
 //! missing so it is searched again, and a failed release is blocklisted for
 //! its title so the next search skips it.
 
+use std::collections::HashMap;
+
 use anyhow::Result;
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::engine::services::jobs::now_ms;
@@ -10,6 +12,8 @@ use rusqlite::params;
 
 use crate::auto::title_kind;
 use crate::rules::blocklist::{self, Blocked};
+
+mod progress;
 
 const HOUR_MS: i64 = 60 * 60 * 1000;
 
@@ -33,6 +37,7 @@ struct Download {
     indexer_id: Option<String>,
     status: String,
     error: Option<String>,
+    progress: f64,
     grabbed_at: i64,
 }
 
@@ -70,9 +75,10 @@ pub fn failure_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<F
     let mut summary = FailureSummary::default();
     let mut downloads = read_downloads(state)?;
     let stall_hours = state.setting_i64("acqStallHours", 72).max(0);
+    let moved_at = last_progress(state, &downloads, now)?;
     for d in downloads
         .iter_mut()
-        .filter(|d| stalled(d, now, stall_hours))
+        .filter(|d| stalled(d, moved_at.get(&d.id).copied(), now, stall_hours))
     {
         if let Err(e) = crate::peers::downloads::set_status(state, &d.id, "failed", Some("stalled"))
         {
@@ -83,7 +89,7 @@ pub fn failure_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<F
             continue;
         }
         log(format!(
-            "\"{}\" stalled for {stall_hours} h; giving up",
+            "\"{}\" made no progress for {stall_hours} h; giving up",
             d.release_title
         ));
         d.status = "failed".into();
@@ -116,8 +122,25 @@ pub fn failure_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<F
     Ok(summary)
 }
 
-fn stalled(d: &Download, now: i64, stall_hours: i64) -> bool {
-    stall_hours > 0 && d.unfinished() && now - d.grabbed_at >= stall_hours * HOUR_MS
+fn stalled(d: &Download, moved_at: Option<i64>, now: i64, stall_hours: i64) -> bool {
+    let since = moved_at.unwrap_or(d.grabbed_at);
+    stall_hours > 0 && d.unfinished() && now - since >= stall_hours * HOUR_MS
+}
+
+fn last_progress<S: HostStorage>(
+    state: &S,
+    downloads: &[Download],
+    now: i64,
+) -> Result<HashMap<String, i64>> {
+    let live: Vec<String> = downloads.iter().map(|d| d.id.clone()).collect();
+    progress::forget_all_but(state.store(), &live)?;
+    downloads
+        .iter()
+        .map(|d| {
+            let at = progress::note(state.store(), &d.id, d.progress, now)?;
+            Ok((d.id.clone(), at.min(now).max(d.grabbed_at)))
+        })
+        .collect()
 }
 
 fn blocklist_once<S: HostStorage>(state: &S, d: &Download, now: i64) -> Result<bool> {
@@ -151,7 +174,7 @@ fn read_downloads<S: HostStorage>(state: &S) -> Result<Vec<Download>> {
     let conn = state.db().get()?;
     let mut stmt = conn.prepare(
         "SELECT id, kind, tmdb_id, season, episodes, release_title, info_hash, indexer_id, \
-                status, error, grabbed_at FROM downloads",
+                status, error, progress, grabbed_at FROM downloads",
     )?;
     let rows = stmt.query_map([], |r| {
         let episodes: Option<String> = r.get(4)?;
@@ -166,7 +189,8 @@ fn read_downloads<S: HostStorage>(state: &S) -> Result<Vec<Download>> {
             indexer_id: r.get(7)?,
             status: r.get(8)?,
             error: r.get(9)?,
-            grabbed_at: r.get(10)?,
+            progress: r.get(10)?,
+            grabbed_at: r.get(11)?,
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)

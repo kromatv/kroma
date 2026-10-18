@@ -20,6 +20,7 @@ pub struct CachedRelease {
     pub view: ScoredReleaseView,
     pub judged: Option<Judged>,
     pub magnet_or_url: String,
+    pub info_hash: Option<String>,
     pub tmdb_id: u64,
 }
 
@@ -88,6 +89,7 @@ fn scored_hits(
             view,
             judged,
             magnet_or_url,
+            info_hash: hit.release.info_hash.clone(),
             tmdb_id,
         });
     }

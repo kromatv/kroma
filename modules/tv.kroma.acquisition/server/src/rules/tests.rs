@@ -6,7 +6,7 @@ use super::*;
 
 fn host() -> StubHost {
     let host = StubHost::with_core(kroma_module_sdk::db::testing::temp_pool("acq-rules"));
-    kroma_module_sdk::db::apply_migrations(&host.store().get().unwrap(), store::MIGRATIONS)
+    kroma_module_sdk::db::apply_migrations(&host.store().get().unwrap(), schema::MIGRATIONS)
         .unwrap();
     host
 }

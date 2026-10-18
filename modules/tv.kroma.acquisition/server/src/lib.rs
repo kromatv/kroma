@@ -9,14 +9,16 @@ pub mod auto;
 pub mod dtos;
 pub mod failures;
 pub mod import;
+pub mod on_demand;
 pub mod peers;
+pub mod release_flags;
 pub mod routes;
 pub mod rss;
 pub mod rules;
 pub mod search;
 mod serve;
 pub mod titles;
-mod upgrades;
+pub mod upgrades;
 
 pub use dtos::*;
 pub use serve::acqsearch_routes;
@@ -89,12 +91,13 @@ impl<S: HostStorage + Clone + Send + Sync + 'static> kroma_module_sdk::host::Ser
     }
 
     fn migrations(&self) -> &'static str {
-        rules::store::MIGRATIONS
+        rules::schema::MIGRATIONS
     }
 
     fn admin_routes(&self, _host: &S) -> Option<axum::Router<S>> {
         Some(
             routes::routes::<S>()
+                .merge(on_demand::routes::<S>())
                 .merge(rules::routes::routes::<S>())
                 .merge(titles::routes::<S>()),
         )

@@ -5,10 +5,7 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-
-// How far under a download folder a release may bury its files before the
-// import stops looking.
-const DEEPEST_RELEASE: usize = 6;
+use kroma_module_sdk::host::HostCtx;
 
 pub(super) fn ext_of(path: &Path) -> &str {
     path.extension()
@@ -25,9 +22,14 @@ pub(crate) enum Placement {
 
 // An upgrade must land even when its rendered name matches the file it
 // replaces (a PROPER of the same quality). With replacement on it writes beside
-// the destination and renames over it; with replacement off both files are
-// kept; a plain import still leaves an existing file alone.
-pub(crate) fn place(src: &Path, dest: &Path, mode: Placement) -> Result<PathBuf> {
+// the destination, retires what is there and renames over it; with replacement
+// off both files are kept; a plain import still leaves an existing file alone.
+pub(crate) fn place(
+    host: &dyn HostCtx,
+    src: &Path,
+    dest: &Path,
+    mode: Placement,
+) -> Result<PathBuf> {
     if dest.exists() {
         match mode {
             Placement::Skip => return Ok(dest.to_path_buf()),
@@ -35,6 +37,7 @@ pub(crate) fn place(src: &Path, dest: &Path, mode: Placement) -> Result<PathBuf>
                 let staged = dest.with_extension("kroma-upgrade");
                 let _ = std::fs::remove_file(&staged);
                 write_to(src, &staged)?;
+                super::recycle::retire(host, dest)?;
                 std::fs::rename(&staged, dest)?;
                 return Ok(dest.to_path_buf());
             }
@@ -98,43 +101,10 @@ fn try_reflink(src: &Path, dest: &Path) -> std::io::Result<()> {
     }
 }
 
-pub(super) fn files_under(root: &Path) -> Vec<PathBuf> {
-    walkdir::WalkDir::new(root)
-        .max_depth(DEEPEST_RELEASE)
-        .into_iter()
-        .flatten()
-        .filter(|entry| entry.file_type().is_file())
-        .map(walkdir::DirEntry::into_path)
-        .collect()
-}
-
-pub(super) fn video_files(root: &Path) -> Result<Vec<PathBuf>> {
-    Ok(files_under(root)
-        .into_iter()
-        .filter(|path| {
-            kroma_module_sdk::media::video::has_video_extension(path) && !is_a_sample(path)
-        })
-        .collect())
-}
-
-fn is_a_sample(path: &Path) -> bool {
-    path.file_name()
-        .and_then(std::ffi::OsStr::to_str)
-        .unwrap_or_default()
-        .to_ascii_lowercase()
-        .contains("sample")
-}
-
-pub(super) fn largest(files: &[PathBuf]) -> Option<&Path> {
-    files
-        .iter()
-        .max_by_key(|p| std::fs::metadata(p).map(|m| m.len()).unwrap_or(0))
-        .map(PathBuf::as_path)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kroma_module_sdk::host::testing::StubHost;
 
     fn write(path: &Path, body: &str) {
         if let Some(parent) = path.parent() {
@@ -157,7 +127,7 @@ mod tests {
         write(&src, "new");
         write(&dest, "old");
 
-        let at = place(&src, &dest, Placement::Skip).unwrap();
+        let at = place(&StubHost::new(), &src, &dest, Placement::Skip).unwrap();
         assert_eq!(std::fs::read_to_string(&dest).unwrap(), "old");
         assert_eq!(at, dest);
     }
@@ -174,7 +144,7 @@ mod tests {
         write(&src, "new");
         write(&dest, "old");
 
-        let at = place(&src, &dest, Placement::Replace).unwrap();
+        let at = place(&StubHost::new(), &src, &dest, Placement::Replace).unwrap();
         assert_eq!(std::fs::read_to_string(&dest).unwrap(), "new");
         assert_eq!(at, dest);
         assert!(
@@ -193,7 +163,7 @@ mod tests {
         write(&src, "new");
         write(&dest, "old");
 
-        let at = place(&src, &dest, Placement::Beside).unwrap();
+        let at = place(&StubHost::new(), &src, &dest, Placement::Beside).unwrap();
         assert_eq!(
             std::fs::read_to_string(&dest).unwrap(),
             "old",
@@ -217,8 +187,8 @@ mod tests {
         write(&src, "new");
         write(&dest, "old");
 
-        let first = place(&src, &dest, Placement::Beside).unwrap();
-        let second = place(&src, &dest, Placement::Beside).unwrap();
+        let first = place(&StubHost::new(), &src, &dest, Placement::Beside).unwrap();
+        let second = place(&StubHost::new(), &src, &dest, Placement::Beside).unwrap();
         assert_ne!(first, second);
         assert!(first.exists() && second.exists());
     }
@@ -232,27 +202,35 @@ mod tests {
         );
         write(&src, "new");
 
-        let at = place(&src, &dest, Placement::Skip).unwrap();
+        let at = place(&StubHost::new(), &src, &dest, Placement::Skip).unwrap();
         assert_eq!(std::fs::read_to_string(&dest).unwrap(), "new");
         assert_eq!(at, dest);
     }
 
     #[test]
-    fn the_largest_of_no_video_file_is_nothing() {
-        assert!(largest(&[]).is_none());
-    }
-
-    #[test]
-    fn the_largest_video_is_the_one_with_the_most_bytes() {
-        let scratch = tmp("largest");
-        let (sample, feature) = (
-            scratch.path().join("sample.mkv"),
-            scratch.path().join("feature.mkv"),
+    fn a_same_name_replacement_sends_the_file_it_overwrites_to_the_bin() {
+        let scratch = tmp("replace-bin");
+        let bin = tmp("replace-bin-target");
+        let host = StubHost::new().with_setting(
+            "acqRecycleBin",
+            serde_json::json!(bin.path().to_string_lossy()),
         );
-        write(&sample, "x");
-        write(&feature, "xxxxxxxx");
-        let files = vec![sample, feature.clone()];
+        let (src, dest) = (
+            scratch.path().join("new.mkv"),
+            scratch.path().join("out/same.mkv"),
+        );
+        write(&src, "new");
+        write(&dest, "old");
 
-        assert_eq!(largest(&files), Some(feature.as_path()));
+        place(&host, &src, &dest, Placement::Replace).unwrap();
+
+        assert_eq!(std::fs::read_to_string(&dest).unwrap(), "new");
+        let recycled: Vec<_> = walkdir::WalkDir::new(bin.path())
+            .into_iter()
+            .flatten()
+            .filter(|e| e.file_type().is_file())
+            .map(|e| std::fs::read_to_string(e.path()).unwrap())
+            .collect();
+        assert_eq!(recycled, ["old"]);
     }
 }

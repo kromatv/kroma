@@ -4,16 +4,12 @@
 
 use anyhow::Result;
 use kroma_module_sdk::db::{self, TitleFile};
-use kroma_module_sdk::domain::{HdrFormat as ProbedHdr, MediaFile};
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::host::HostStorage;
-use kroma_module_sdk::primitives::language::language_code;
-use kroma_scene::{
-    AudioCodec, AudioFact, Evaluation, Facts, HdrFormat, Language, Probe, QualityProfile, Rules,
-    cutoff_unmet, evaluate,
-};
+use kroma_scene::{Evaluation, Language, QualityProfile, Rules, cutoff_unmet, evaluate};
 use serde::Serialize;
 
+use super::file_facts::file_facts;
 use super::store;
 
 /// One file on disk, judged.
@@ -26,6 +22,7 @@ pub struct JudgedFile {
     pub episode: Option<u32>,
     pub episode_end: Option<u32>,
     pub release: Option<String>,
+    pub runtime_minutes: Option<u32>,
     pub evaluation: Evaluation,
     pub below_target: bool,
 }
@@ -45,6 +42,23 @@ impl JudgedFile {
             (None, Some(_)) => false,
         }
     }
+}
+
+/// How long one unit of the title runs, as the files on disk measure it. The
+/// middle value, so one short extra does not drag a per-minute size limit.
+pub fn title_runtime(files: &[JudgedFile]) -> Option<u32> {
+    let mut minutes: Vec<u32> = files.iter().filter_map(|f| f.runtime_minutes).collect();
+    minutes.sort_unstable();
+    minutes.get(minutes.len() / 2).copied()
+}
+
+fn unit_runtime(held: &TitleFile) -> Option<u32> {
+    let episodes = match (held.episode, held.episode_end) {
+        (Some(first), Some(last)) if last >= first => last - first + 1,
+        _ => 1,
+    };
+    let minutes = held.file.duration_ms? / 60_000 / u64::from(episodes);
+    (minutes > 0).then_some(minutes as u32)
 }
 
 /// Each unit the files hold, once, by the episode each file starts at.
@@ -106,89 +120,18 @@ fn judge_file<S: HostStorage>(
         season: held.season,
         episode: held.episode,
         episode_end: held.episode_end,
+        runtime_minutes: unit_runtime(&held),
         below_target: cutoff_unmet(std::slice::from_ref(&evaluation), rules.profile),
         evaluation,
         release,
     })
 }
 
-/// The facts a file shows: its release name (or its own name) for what only a
-/// name says, its probe for everything the probe measured.
-pub fn file_facts(file: &MediaFile, release: Option<&str>) -> Facts {
-    let name = release.map(str::to_string).unwrap_or_else(|| stem(file));
-    let parsed = kroma_scene::parse_release_name(&name);
-    let mut facts = Facts::from_release(&name, &parsed, file.size);
-    if file.edition.is_some() {
-        facts.edition = file.edition.clone();
-    }
-    if !file.probed {
-        return facts;
-    }
-    facts.overlay_probe(probe_of(file))
-}
-
-fn stem(file: &MediaFile) -> String {
-    let path = file.rel_path.as_deref().unwrap_or(&file.id);
-    let name = path.rsplit(['/', '\\']).next().unwrap_or(path);
-    match name.rsplit_once('.') {
-        Some((stem, _)) => stem.to_string(),
-        None => name.to_string(),
-    }
-}
-
-fn probe_of(file: &MediaFile) -> Probe {
-    let video = file.video.as_ref();
-    Probe {
-        width: video.and_then(|v| v.width),
-        height: video.and_then(|v| v.height),
-        video_codec: video.map(|v| v.codec.clone()),
-        hdr: video.map(hdr_of).unwrap_or_default(),
-        audio: file
-            .audio_tracks
-            .iter()
-            .map(|track| AudioFact {
-                language: spoken(track.language.as_deref(), track.region.as_deref()),
-                codec: AudioCodec::from_probe(&track.codec),
-                channels: track.channels,
-            })
-            .collect(),
-        subtitles: file
-            .subtitles
-            .iter()
-            .filter_map(|track| spoken(track.language.as_deref(), None))
-            .collect(),
-        size_bytes: file.size,
-    }
-}
-
-fn spoken(language: Option<&str>, region: Option<&str>) -> Option<Language> {
-    language
-        .and_then(language_code)
-        .map(|code| Language::new(code, region))
-}
-
-// A Dolby Vision profile 7 or 8 stream carries an HDR10 base layer, which is
-// what a player without Dolby Vision shows, so it counts as both.
-fn hdr_of(video: &kroma_module_sdk::domain::VideoStream) -> Vec<HdrFormat> {
-    let mut formats = match video.hdr_format {
-        Some(ProbedHdr::DolbyVision) => vec![HdrFormat::DolbyVision],
-        Some(ProbedHdr::Hdr10Plus) => vec![HdrFormat::Hdr10Plus],
-        Some(ProbedHdr::Hdr10) => vec![HdrFormat::Hdr10],
-        Some(ProbedHdr::Hlg) => vec![HdrFormat::Hlg],
-        None if video.hdr => vec![HdrFormat::Hdr10],
-        None => Vec::new(),
-    };
-    if matches!(video.dolby_vision_profile, Some(7 | 8)) {
-        formats.push(HdrFormat::Hdr10);
-    }
-    formats
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::search::test_support::TestRules;
-    use kroma_module_sdk::domain::{AudioStream, VideoStream};
+    use kroma_module_sdk::domain::MediaFile;
     use kroma_scene::Quality;
 
     fn judged(season: u32, episode: u32, quality: Quality, rank: u32) -> JudgedFile {
@@ -199,6 +142,7 @@ mod tests {
             episode: Some(episode),
             episode_end: None,
             release: None,
+            runtime_minutes: None,
             evaluation: Evaluation {
                 quality,
                 quality_rank: Some(rank),
@@ -208,82 +152,6 @@ mod tests {
             },
             below_target: false,
         }
-    }
-
-    fn file() -> MediaFile {
-        MediaFile {
-            id: "f1".into(),
-            rel_path: Some("Show/Season 01/Show - S01E01 - 1080p.mkv".into()),
-            container: "mkv".into(),
-            size: Some(2_000_000_000),
-            edition: None,
-            probed: true,
-            unreadable: None,
-            duration_ms: Some(2_700_000),
-            abs_path: Some("/x/e1.mkv".into()),
-            video: Some(VideoStream {
-                codec: "hevc".into(),
-                width: Some(3840),
-                height: Some(2160),
-                hdr: true,
-                bit_depth: Some(10),
-                hdr_format: Some(ProbedHdr::DolbyVision),
-                dolby_vision_profile: Some(8),
-                color: None,
-            }),
-            audio: None,
-            audio_tracks: vec![
-                AudioStream {
-                    index: 0,
-                    codec: "eac3".into(),
-                    channels: Some(6),
-                    language: Some("eng".into()),
-                    title: None,
-                    default: true,
-                    region: None,
-                },
-                AudioStream {
-                    index: 1,
-                    codec: "ac3".into(),
-                    channels: Some(6),
-                    language: Some("fre".into()),
-                    title: Some("VFQ".into()),
-                    default: false,
-                    region: Some("CA".into()),
-                },
-            ],
-            subtitles: Vec::new(),
-            edition_id: None,
-        }
-    }
-
-    #[test]
-    fn a_probed_file_is_judged_by_what_it_decodes_to() {
-        let facts = file_facts(&file(), None);
-
-        assert_eq!(facts.resolution, Some(kroma_scene::Res::R2160));
-        assert_eq!(facts.hdr, [HdrFormat::DolbyVision, HdrFormat::Hdr10]);
-        assert!(facts.languages.has(&Language::new("fr", Some("CA")), None));
-        assert!(!facts.languages.has(&Language::new("fr", Some("FR")), None));
-    }
-
-    #[test]
-    fn the_release_it_came_under_says_what_the_name_lost() {
-        let facts = file_facts(&file(), Some("Show.S01E01.2160p.BluRay.REMUX.HEVC-GRP"));
-
-        assert_eq!(facts.source, Some(kroma_scene::Source::Remux));
-        assert_eq!(facts.group.as_deref(), Some("GRP"));
-    }
-
-    #[test]
-    fn an_unprobed_file_keeps_what_its_name_says() {
-        let mut unprobed = file();
-        unprobed.probed = false;
-
-        let facts = file_facts(&unprobed, None);
-
-        assert_eq!(facts.resolution, Some(kroma_scene::Res::R1080));
-        assert!(facts.languages.original);
     }
 
     #[test]
@@ -311,6 +179,7 @@ mod tests {
             episode: Some(3),
             episode_end: Some(4),
             release: None,
+            runtime_minutes: None,
             evaluation: Evaluation {
                 quality: kroma_scene::Quality::WebDl1080,
                 quality_rank: Some(1),
@@ -325,5 +194,65 @@ mod tests {
         assert!(judged.holds(Some(1), None));
         assert!(!judged.holds(Some(1), Some(5)));
         assert!(!judged.holds(None, None));
+    }
+
+    fn with_runtime(episode: u32, minutes: u32, spans: u32) -> JudgedFile {
+        JudgedFile {
+            runtime_minutes: Some(minutes),
+            episode_end: Some(episode + spans - 1),
+            ..judged(1, episode, Quality::WebDl1080, 1)
+        }
+    }
+
+    #[test]
+    fn the_runtime_a_size_limit_uses_is_the_middle_of_what_the_title_holds() {
+        let files = [
+            with_runtime(1, 21, 1),
+            with_runtime(2, 22, 1),
+            with_runtime(3, 48, 1),
+        ];
+
+        assert_eq!(title_runtime(&files), Some(22));
+    }
+
+    #[test]
+    fn a_title_whose_files_report_no_duration_leaves_the_runtime_unknown() {
+        let files = [judged(1, 1, Quality::WebDl1080, 1)];
+
+        assert_eq!(title_runtime(&files), None);
+    }
+
+    fn run_of(episodes: u32, duration_ms: u64) -> TitleFile {
+        TitleFile {
+            season: Some(1),
+            episode: Some(1),
+            episode_end: Some(episodes),
+            file: MediaFile {
+                id: "f1".into(),
+                rel_path: None,
+                container: "mkv".into(),
+                size: None,
+                edition: None,
+                probed: false,
+                unreadable: None,
+                duration_ms: Some(duration_ms),
+                abs_path: None,
+                video: None,
+                audio: None,
+                audio_tracks: Vec::new(),
+                subtitles: Vec::new(),
+                edition_id: None,
+            },
+        }
+    }
+
+    #[test]
+    fn a_file_holding_a_run_of_episodes_counts_as_one_episode_long() {
+        assert_eq!(unit_runtime(&run_of(3, 3 * 22 * 60_000)), Some(22));
+    }
+
+    #[test]
+    fn a_file_the_probe_timed_at_nothing_says_nothing_about_the_runtime() {
+        assert_eq!(unit_runtime(&run_of(1, 0)), None);
     }
 }

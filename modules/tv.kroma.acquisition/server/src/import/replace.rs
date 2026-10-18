@@ -29,7 +29,7 @@ pub(super) fn drop_replaced<S: HostStorage>(
         }
         // The one place the product removes a user's media: say so where they
         // will look for it.
-        match super::recycle::retire(state, Path::new(&path)) {
+        match super::recycle::retire_with_subtitles(state, Path::new(&path)) {
             Ok(super::recycle::Retired::Deleted) => tracing::info!(
                 target: "acquisition",
                 release = %row.release_title,

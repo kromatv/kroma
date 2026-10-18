@@ -214,6 +214,8 @@ fn apply_attr(rel: &mut Release, name: &str, value: &str) {
         "imdbid" => rel.imdb_id = Some(value.to_string()),
         "tmdbid" => rel.tmdb_id = value.parse().ok(),
         "size" => rel.size_bytes = rel.size_bytes.or_else(|| value.parse().ok()),
+        "downloadvolumefactor" => rel.download_volume_factor = value.parse().ok(),
+        "uploadvolumefactor" => rel.upload_volume_factor = value.parse().ok(),
         _ => {}
     }
 }
@@ -486,6 +488,32 @@ mod tests {
         let items = parse_items(xml.as_bytes()).unwrap();
         assert_eq!(items.len(), 1);
         assert_eq!(items[0].title, "Rel 1080p");
+    }
+
+    #[test]
+    fn a_freeleech_item_carries_the_volume_factors_the_tracker_announced() {
+        let xml = r#"<rss xmlns:torznab="http://torznab.com/"><channel><item>
+          <title>Rel 1080p</title><guid>g</guid>
+          <torznab:attr name="downloadvolumefactor" value="0" />
+          <torznab:attr name="uploadvolumefactor" value="2" />
+        </item></channel></rss>"#;
+
+        let items = parse_items(xml.as_bytes()).unwrap();
+
+        assert_eq!(items[0].download_volume_factor, Some(0.0));
+        assert_eq!(items[0].upload_volume_factor, Some(2.0));
+    }
+
+    #[test]
+    fn an_item_that_announces_no_volume_factor_carries_none() {
+        let xml = r#"<rss><channel><item>
+          <title>Rel 1080p</title><guid>g</guid>
+        </item></channel></rss>"#;
+
+        let items = parse_items(xml.as_bytes()).unwrap();
+
+        assert_eq!(items[0].download_volume_factor, None);
+        assert_eq!(items[0].upload_volume_factor, None);
     }
 
     #[test]
