@@ -84,6 +84,29 @@ export function VerdictLine({ verdict }: Readonly<{ verdict: ReleaseVerdict }>) 
   );
 }
 
+const EFFECT_PAINT = {
+  fill: { bg: 'success/13', ink: 'success' },
+  upgrade: { bg: 'accent/12', ink: 'accentText' },
+  beside: { bg: 'info/16', ink: 'info' },
+  notBetter: { bg: 'tint/8', ink: 'textDim' },
+  refused: { bg: 'danger/13', ink: 'dangerHover' },
+} as const;
+
+/** What grabbing a release would do, in one word: fill a gap, improve a file,
+ *  sit beside one, change nothing, or nothing at all because a rule refuses it. */
+export function EffectPill({ verdict }: Readonly<{ verdict?: ReleaseVerdict | null }>) {
+  const t = useT();
+  const kind = verdict?.kind ?? 'refused';
+  const paint = EFFECT_PAINT[kind];
+  return (
+    <Box self="flex-start" radius="pill" bg={paint.bg} px={10} py={3}>
+      <Text variant="meta" color={paint.ink} lines={1}>
+        {t(verdict ? verdictLabelKey(verdict) : 'acq.verdict.refused')}
+      </Text>
+    </Box>
+  );
+}
+
 /** A release's or a file's total, painted by its sign: a zero is not a win. */
 export function ScorePill({ score }: Readonly<{ score: number }>) {
   const paint = SCORE_PAINT[Math.sign(score) as -1 | 0 | 1];

@@ -1,4 +1,4 @@
-type SurfaceWidth = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+type SurfaceWidth = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
 /**
  * THE overlay ladder: how wide a `<Dialog>` or a `<Drawer>` may be, by the
@@ -22,6 +22,7 @@ export const SURFACE_WIDTH: Record<SurfaceWidth, number> = {
   md: 600,
   lg: 760,
   xl: 960,
+  '2xl': 1240,
 };
 
 /** The gutter a `<Dialog>`'s three bands share on a window wide enough for it. */

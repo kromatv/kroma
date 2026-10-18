@@ -7,23 +7,28 @@ import { releaseSortOf } from './release-sort';
 import type { ReleaseView } from './use-release-view';
 
 const COLUMNS: TableColumn[] = [
-  { min: 320 },
-  { width: 136, from: 'md' },
-  { width: 92, from: 'md', column: 'size' },
-  { width: 116, from: 'md', column: 'seeders' },
-  { width: 96, from: 'md', column: 'score' },
+  { width: 150, from: 'md' },
+  { min: 360 },
+  { width: 128, from: 'md' },
+  { width: 104, from: 'md', column: 'size' },
+  { width: 108, from: 'md', column: 'seeders' },
+  { width: 104, from: 'md', column: 'score' },
   { width: 48, from: 'md' },
 ];
 
 export function ReleaseTable({
   view,
   indexers = [],
+  report = true,
   canGrab,
   busy,
   onGrab,
 }: Readonly<{
   view: ReleaseView;
   indexers?: IndexerReport[];
+  /** Show which indexers answered above the rows. Off where the caller shows
+   *  it elsewhere. Defaults to true. */
+  report?: boolean;
   canGrab: boolean;
   busy: boolean;
   onGrab: (release: ScoredReleaseView) => void;
@@ -34,7 +39,7 @@ export function ReleaseTable({
   if (view.rows.length === 0) {
     return (
       <Box gap={12}>
-        <IndexerReportStrip indexers={indexers} />
+        {report ? <IndexerReportStrip indexers={indexers} /> : null}
         <Box py={20}>
           <EmptyState.Root icon={unsearched ? 'alert-triangle' : 'search'}>
             <EmptyState.Title>
@@ -48,7 +53,7 @@ export function ReleaseTable({
 
   return (
     <Box gap={12}>
-      <IndexerReportStrip indexers={indexers} />
+      {report ? <IndexerReportStrip indexers={indexers} /> : null}
       <Table.Root
         columns={COLUMNS}
         label={t('acq.releaseTable')}
@@ -59,6 +64,7 @@ export function ReleaseTable({
         }}
       >
         <Table.Header>
+          <Table.Column>{t('acq.colEffect')}</Table.Column>
           <Table.Column>{t('acq.colRelease')}</Table.Column>
           <Table.Column>{t('acq.colQuality')}</Table.Column>
           <Table.Column>{t('requests.colSize')}</Table.Column>

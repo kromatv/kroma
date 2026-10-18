@@ -1,6 +1,7 @@
 import type { ScoredReleaseView } from '@kromatv/client/requests';
 import { useT } from '@kromatv/module-sdk';
-import { Box, Button, Callout, Dialog, TableSkeleton, Text } from '@kromatv/ui/kit';
+import { Box, Button, Callout, Dialog, Row, TableSkeleton, Text } from '@kromatv/ui/kit';
+import { IndexerReportStrip } from './indexer-report';
 import { NO_RELEASES, ReleaseFilters } from './release-filters';
 import { ReleaseTable } from './release-table';
 import { useReleaseView } from './use-release-view';
@@ -21,7 +22,7 @@ export function SearchResultsDialog({
   const view = useReleaseView(state.view?.releases ?? NO_RELEASES);
   const open = state.busy || state.view != null || state.error != null;
   return (
-    <Dialog.Root open={open} onClose={onClose} width="xl" title={t('requests.interactiveSearch')}>
+    <Dialog.Root open={open} onClose={onClose} width="2xl" title={t('requests.interactiveSearch')}>
       <Dialog.Header>
         <Text variant="title" accessibilityRole="header">
           {t('requests.interactiveSearch')}
@@ -29,7 +30,12 @@ export function SearchResultsDialog({
         <Text variant="meta" color="textDim">
           {t(state.busy ? 'requests.searchRunning' : 'requests.searchAnswered')}
         </Text>
-        {state.view ? <ReleaseFilters view={view} /> : null}
+        {state.view ? (
+          <Row wrap between gap={12} align="center" mt={4}>
+            <ReleaseFilters view={view} />
+            <IndexerReportStrip indexers={state.view.indexers} />
+          </Row>
+        ) : null}
       </Dialog.Header>
       <Dialog.Panel>
         <Box gap={12}>
@@ -52,6 +58,7 @@ export function SearchResultsDialog({
             <ReleaseTable
               view={view}
               indexers={state.view.indexers}
+              report={false}
               canGrab={canGrab}
               busy={state.grabbing}
               onGrab={onGrab}

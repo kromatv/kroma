@@ -264,8 +264,10 @@
   "acq.upgradesOffShort": "no upgrades",
   "acq.verdict.beside": "Added beside",
   "acq.verdict.fill": "Fills a gap",
-  "acq.verdict.notBetter": "No better",
+  "acq.verdict.notBetter": "Nothing better",
   "acq.verdict.upgrade": "Improves",
   "downloads.viewOnTracker": "View on the tracker",
-  "nav.acquisition": "Acquisition"
+  "nav.acquisition": "Acquisition",
+  "acq.colEffect": "Effect",
+  "acq.verdict.refused": "Refused"
 }

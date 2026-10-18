@@ -263,9 +263,11 @@
   "acq.upgradesAllowedHint": "Désactivé, un fichier sur le disque n'est jamais remplacé.",
   "acq.upgradesOffShort": "sans amélioration",
   "acq.verdict.beside": "À côté",
-  "acq.verdict.fill": "Remplit un manque",
-  "acq.verdict.notBetter": "Pas mieux",
+  "acq.verdict.fill": "Comble un manque",
+  "acq.verdict.notBetter": "Rien de mieux",
   "acq.verdict.upgrade": "Améliore",
   "downloads.viewOnTracker": "Voir sur le tracker",
-  "nav.acquisition": "Acquisition"
+  "nav.acquisition": "Acquisition",
+  "acq.colEffect": "Effet",
+  "acq.verdict.refused": "Refusée"
 }

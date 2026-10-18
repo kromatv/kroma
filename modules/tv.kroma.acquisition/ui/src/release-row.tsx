@@ -3,7 +3,7 @@ import { TABULAR, Table, useFormat, useT } from '@kromatv/module-sdk';
 import { Box, confirm, Icon, Table as Kit, Row, Text, useBreakpoint } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { Pressable } from 'react-native';
-import { FlagBadges, FormatPills, QualityPill, ScorePill, VerdictLine } from './judgement-pills';
+import { EffectPill, FlagBadges, FormatPills, QualityPill, ScorePill } from './judgement-pills';
 import { useRefusalText } from './refusal-text';
 import { ScoreBreakdown } from './release-breakdown';
 import { BLANK, IndexerName, SeedersCell, SizeCell } from './release-cells';
@@ -27,6 +27,9 @@ export function ReleaseRow({
       <Kit.Row asChild>
         <Pressable accessibilityState={{ expanded: open }} onPress={() => setOpen((was) => !was)}>
           <Table.Cell>
+            <EffectPill verdict={release.verdict} />
+          </Table.Cell>
+          <Table.Cell>
             <ReleaseHeading release={release} open={open} />
             {narrow ? (
               <StackedFacts release={release} canGrab={canGrab} busy={busy} onGrab={onGrab} />
@@ -45,6 +48,13 @@ export function ReleaseRow({
           </Table.Cell>
         </Pressable>
       </Kit.Row>
+      {open ? (
+        <Box px={16} pt={10} bg="surface1">
+          <Text variant="meta" color="text" selectable>
+            {release.title}
+          </Text>
+        </Box>
+      ) : null}
       {open ? <ScoreBreakdown release={release} /> : null}
     </>
   );
@@ -59,9 +69,10 @@ function ReleaseHeading({
   const rejected = release.score == null;
   const target = targetLabel(release);
   const refusal = refusalText(release.refusal, release.rejected);
+  const scored = release.formats.filter((format) => format.score !== 0);
   return (
-    <Row gap={8} align="flex-start">
-      <Box pt={3}>
+    <Row gap={8} align="flex-start" minW={0}>
+      <Box pt={2}>
         <Icon
           name={open ? 'chevron-down' : 'chevron-right'}
           size={13}
@@ -69,11 +80,11 @@ function ReleaseHeading({
           color="textDim"
         />
       </Box>
-      <Box minW={0} flex gap={3}>
-        <Text variant="meta" lines={2} color={rejected ? 'textDim' : 'text'}>
+      <Box minW={0} flex gap={4}>
+        <Text variant="label" lines={1} color={rejected ? 'textDim' : 'text'}>
           {release.title}
         </Text>
-        <Row wrap gapX={10} gapY={2} align="center">
+        <Row wrap gapX={10} gapY={4} align="center" minW={0}>
           {target ? (
             <Text variant="meta" color="info">
               {target}
@@ -81,15 +92,15 @@ function ReleaseHeading({
           ) : null}
           <IndexerName name={release.indexerName} detailsUrl={release.detailsUrl} />
           {release.publishedAt ? <Published at={release.publishedAt} /> : null}
-          {release.verdict ? <VerdictLine verdict={release.verdict} /> : null}
           <FlagBadges flags={release.flags} />
-          <FormatPills formats={release.formats} />
+          {refusal ? (
+            <Text variant="meta" color="dangerHover" lines={1}>
+              {t('acq.refusedBy', { reason: refusal })}
+            </Text>
+          ) : (
+            <FormatPills formats={scored} />
+          )}
         </Row>
-        {refusal ? (
-          <Text variant="meta" color="dangerHover" lines={2}>
-            {t('acq.refusedBy', { reason: refusal })}
-          </Text>
-        ) : null}
       </Box>
     </Row>
   );
@@ -119,6 +130,7 @@ function StackedFacts({
   return (
     <Row wrap between gap={10} align="center" pt={8}>
       <Row wrap gapX={12} gapY={6} align="center" flex minW={0}>
+        <EffectPill verdict={release.verdict} />
         <Quality release={release} />
         <Text variant="meta" color="textDim" style={TABULAR}>
           {release.sizeBytes == null ? BLANK : fmt.bytes(release.sizeBytes)}
