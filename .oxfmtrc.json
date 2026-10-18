@@ -13,6 +13,7 @@
   "bracketSpacing": true,
   "ignorePatterns": [
     ".claude/worktrees",
+    ".claude/skills",
     "**/dist",
     "**/dist-*",
     "**/build",
