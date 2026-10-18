@@ -166,7 +166,7 @@ describe('the artwork default', () => {
     const before = vi.mocked(hardware.clientHardware).mock.calls.length;
     expect(store.artworkPrefStore.get()).toBe('high');
     expect(store.artworkPrefStore.get()).toBe('high');
-    expect(vi.mocked(hardware.clientHardware).mock.calls.length).toBe(before);
+    expect(vi.mocked(hardware.clientHardware).mock.calls).toHaveLength(before);
   });
 });
 

@@ -16,7 +16,8 @@
     "./mount": "./src/mount.web.tsx",
     "./stage": "./src/shared/stage.ts",
     "./build-info": "./src/app/buildMetadata.ts",
-    "./hardware": "./src/app/hardwareReadings.ts"
+    "./hardware": "./src/app/hardwareReadings.ts",
+    "./vlc-plane": "./src/features/playback/player/vlcBackend.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

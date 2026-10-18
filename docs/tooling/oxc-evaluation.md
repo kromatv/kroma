@@ -26,7 +26,7 @@ or `bun run lint --format agent` for actionable diagnostics. See the
 
 The initial scan reported **852 findings**, inventoried below. The rollout now
 requires repairing that backlog before merging; the draft PR must pass the full
-gate. The current repair batch leaves **48 findings**, all module mutable bindings. There is no suppression baseline. Registries,
+gate. The current repair batch leaves **44 findings**, all module mutable bindings. There is no suppression baseline. Registries,
 stores, and caches need an ownership review; converting them to const containers
 would merely hide their mutability.
 
@@ -140,7 +140,7 @@ Native Expo keeps its supported Babel pipeline.
 - The staged kit passes its external TypeScript/Vite consumer smoke test; Zod
   is an explicit runtime dependency of the published artifact.
 - Biome, `bun run sonar:lint`, and `git diff --check` pass.
-- `bun run check` still fails on the 48 remaining policy findings. The PR stays
+- `bun run check` still fails on the 44 remaining policy findings. The PR stays
   draft until repairs and required CI checks pass.
 
 ## Existing policy findings

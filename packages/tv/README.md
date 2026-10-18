@@ -47,7 +47,11 @@ the mounted receiver provider. Preview refresh throttling belongs to the mounted
 catalogue. Build metadata and hardware adapters are selected at build time:
 Metro maps the TV adapters to the native shell, while browser builds use Vite's
 stamp and Web APIs. The former `setBuildInfo` and `setHardwareSource` startup
-registrations are removed. Shared immutable helpers are available from
+registrations are removed. VLC follows the same adapter selection through
+`@kromatv/tv/vlc-plane`; no `registerVlcPlane` call is needed. Native decoder
+ceilings are passed as `decoderFrameLimits` to `TvApp`, and follow that root into
+its engine choice and server master requests instead of changing core globals.
+Shared immutable helpers are available from
 `@kromatv/tv/build-info` and `@kromatv/tv/hardware`.
 
 `react` / `react-dom` are peer dependencies (≥ 19.2). Built on

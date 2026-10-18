@@ -1,5 +1,6 @@
 import type { MediaItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
+import { detectCapabilities } from '@kromatv/core';
 import type { AudioFilterMode } from '@kromatv/ui';
 import { describe, expect, it, vi } from 'vitest';
 import { BaseTvEngine, type EngineOptions } from './baseEngine';
@@ -248,4 +249,34 @@ describe('BaseTvEngine restart', () => {
 
     expect(e.reanchorCalls).toEqual([1800]);
   });
+});
+
+it('declares each engine owner decoder ceiling in its server master request', () => {
+  const hlsMasterUrl = vi.fn<typeof client.media.hlsMasterUrl>(() => 'master');
+  const ownedClient = fakeClient({ media: { hlsMasterUrl } });
+  const a = make({
+    client: ownedClient,
+    direct: false,
+    capabilities: detectCapabilities({
+      hevc: { width: 3840, height: 2160 },
+      h264: { width: 1920, height: 1080 },
+    }),
+  });
+  const b = make({
+    client: ownedClient,
+    direct: false,
+    capabilities: detectCapabilities({
+      hevc: { width: 1920, height: 1080 },
+      h264: { width: 1280, height: 720 },
+    }),
+  });
+  a.url();
+  b.url();
+  a.url();
+  const frames = hlsMasterUrl.mock.calls.map((call) => call[4]);
+  expect(frames).toEqual([
+    expect.objectContaining({ maxFrame: { width: 1920, height: 1080 } }),
+    expect.objectContaining({ maxFrame: { width: 1280, height: 720 } }),
+    expect.objectContaining({ maxFrame: { width: 1920, height: 1080 } }),
+  ]);
 });

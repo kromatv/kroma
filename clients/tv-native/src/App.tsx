@@ -19,7 +19,6 @@ import { LogBox, Platform } from 'react-native';
 
 LogBox.ignoreAllLogs(true);
 
-import { setDecoderFrameLimits } from '@kromatv/core';
 import { lanBeacon } from '@kromatv/lan-beacon';
 import { useEffect, useState } from 'react';
 import { decoderFrameLimits } from '../modules/device-hardware';
@@ -29,7 +28,6 @@ import { nativeLauncher } from './lib/native-launcher';
 import { nativeSearchShell } from './lib/native-search';
 import { startSiriSearch } from './lib/siri-search';
 import { hydrateSessionStorage } from './lib/storage';
-import { installVlcPlane } from './lib/vlc-plane';
 import { nativeVoiceSearch } from './lib/voice-search';
 
 // What the set is called, when the platform will say. On Android TV this is the
@@ -43,7 +41,6 @@ const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
 // How large a picture this set's decoders take, which decides whether a title
 // direct-plays at all. Every other client guesses from the codec alone, and a
 // television that stops at 1080p answers a 4K file with a slideshow.
-setDecoderFrameLimits(decoderFrameLimits());
 // The television's own home screen, which on Android TV an app may publish rows
 // onto. Null on Apple TV, where there is no such list (see the module).
 // Hearing the server announce itself on the LAN. Only a native shell can browse
@@ -62,11 +59,8 @@ setDecoderFrameLimits(decoderFrameLimits());
 // the design falls back to anyway.
 configureKit({ image: expoImageBackend, frost: BlurView });
 
-// Android builds the libVLC plane; Apple has no module and registers nothing,
-// which is what keeps that engine out of its picker.
-installVlcPlane();
-
 export function App() {
+  const [frameLimits] = useState(decoderFrameLimits);
   const [deepLinks] = useState(createDeepLinks);
   const [searchRequests] = useState(createSearchRequests);
   // A TV must never sleep mid-film, and unlike a phone there is no user
@@ -100,6 +94,7 @@ export function App() {
           Android TV client too, and reporting "AppleTV" there was wrong in the
           admin dashboard and the About screen alike. */}
       <TvApp
+        decoderFrameLimits={frameLimits ?? undefined}
         deepLinks={deepLinks}
         searchRequests={searchRequests}
         voiceSearch={nativeVoiceSearch}
