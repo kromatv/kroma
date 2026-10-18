@@ -15,12 +15,10 @@ export interface ConfirmOptions {
 }
 
 interface Ask extends ConfirmOptions {
-  id: number;
   resolve: (answer: boolean) => void;
 }
 
 let accept: ((ask: Ask) => void) | null = null;
-let nextId = 1;
 
 /**
  * Ask a yes/no question. Resolves `true` on confirm, `false` when dismissed -
@@ -30,7 +28,7 @@ let nextId = 1;
 export function confirm(options: Readonly<ConfirmOptions>): Promise<boolean> {
   const take = accept;
   if (!take) return Promise.resolve(false);
-  return new Promise((resolve) => take({ id: nextId++, ...options, resolve }));
+  return new Promise((resolve) => take({ ...options, resolve }));
 }
 
 /** Mount once, near the root. Draws whatever `confirm()` asks, one at a time. */

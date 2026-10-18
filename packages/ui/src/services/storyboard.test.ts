@@ -12,7 +12,7 @@ import { useStoryboard } from './storyboard';
 
 const prefetch = vi.hoisted(() => vi.fn(async () => true));
 vi.mock('react-native', async (real) => {
-  const actual = (await real()) as Record<string, unknown>;
+  const actual = await real<typeof import('react-native')>();
   return { ...actual, Image: { ...(actual.Image as object), prefetch } };
 });
 

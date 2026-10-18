@@ -20,8 +20,13 @@ import type { Beacon } from '@kromatv/mdns-beacon';
 import { publish } from '@kromatv/mdns-beacon';
 
 import Service from 'webos-service';
+import { z } from 'zod';
 
 const SERVICE_ID = 'tv.kroma.webos.service';
+const txtSchema = z
+  .record(z.string().min(1).max(63), z.unknown())
+  .refine((value) => Object.keys(value).length <= 64);
+const txtValue = z.string().min(1).max(255);
 
 const service = new Service(SERVICE_ID);
 
@@ -45,11 +50,13 @@ service.register('publish', (message) => {
     return;
   }
   const txt: Record<string, string> = {};
-  const given = message.payload.txt;
-  if (given && typeof given === 'object') {
-    for (const [key, value] of Object.entries(given as Record<string, unknown>)) {
-      const line = text(value);
-      if (line) txt[key] = line;
+  const given = txtSchema.safeParse(message.payload.txt);
+  if (given.success) {
+    for (const [key, value] of Object.entries(given.data)) {
+      const line = txtValue.safeParse(value);
+      if (line.success && new TextEncoder().encode(`${key}=${line.data}`).length <= 255) {
+        txt[key] = line.data;
+      }
     }
   }
   stop();

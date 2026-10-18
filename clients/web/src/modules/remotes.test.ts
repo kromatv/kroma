@@ -109,7 +109,7 @@ describe('loadRuntimeRemotes (the host contract)', () => {
     stubFetch(() => oneRemote('order'));
     const seen: string[] = [];
     const importRemote = vi.fn(async (entry: string) => {
-      seen.push(entry, JSON.stringify((globalThis as Record<string, unknown>)[SHARED_GLOBAL]));
+      seen.push(entry, JSON.stringify(Reflect.get(globalThis, SHARED_GLOBAL)));
       return { default: { id: 'order', version: '1.0.0' } };
     });
     await loadRuntimeRemotes(new ModuleRegistry(), loaders({ importRemote }));

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { TextStyle, ViewStyle } from 'react-native';
+import { z } from 'zod';
 import type { ColorValue } from '#ui/core';
 import { sharedStyle } from '#ui/core';
 import { radius as cornerRadius } from '#ui/core/tokens';
@@ -43,20 +44,6 @@ export interface SubtitleAppearance {
   windowOpacity: number;
 }
 
-/** Deliberately not CEA-708's defaults (white on an opaque black box): a film
- * should open with captions that sit on the picture, not a slab across it. */
-export const DEFAULT_SUB_APPEARANCE: SubtitleAppearance = {
-  size: 'md',
-  color: 'white',
-  edge: 'shadow',
-  font: 'default',
-  opacity: 100,
-  bgColor: '#000000',
-  bgOpacity: 0,
-  windowColor: '#000000',
-  windowOpacity: 0,
-};
-
 export const SUB_COLORS = [
   '#FFFFFF',
   '#000000',
@@ -67,6 +54,20 @@ export const SUB_COLORS = [
   '#FF00FF',
   '#00FFFF',
 ] as const satisfies readonly ColorValue[];
+
+/** Deliberately not CEA-708's defaults (white on an opaque black box): a film
+ * should open with captions that sit on the picture, not a slab across it. */
+export const DEFAULT_SUB_APPEARANCE: SubtitleAppearance = {
+  size: 'md',
+  color: SUB_COLORS[0],
+  edge: 'shadow',
+  font: 'default',
+  opacity: 100,
+  bgColor: '#000000',
+  bgOpacity: 0,
+  windowColor: '#000000',
+  windowOpacity: 0,
+};
 
 /** CEA-708 order, also the order ◀▶ steps through them. The single source of
  * truth: a treatment missing here would compile but be unreachable. */
@@ -129,11 +130,31 @@ function colour(v: unknown, fallback: string): string {
   return (SUB_COLORS as readonly string[]).includes(mapped) ? mapped : fallback;
 }
 
+// Each field falls back independently so one damaged preference does not erase
+// the viewer's other choices. Unknown keys never enter the current model.
+const storedAppearance = z
+  .object({
+    size: z.enum(['sm', 'md', 'lg', 'xl']).optional().catch(undefined),
+    edge: z.string().max(32).optional().catch(undefined),
+    font: z.string().max(32).optional().catch(undefined),
+    color: z.string().max(32).optional().catch(undefined),
+    bgColor: z.string().max(32).optional().catch(undefined),
+    windowColor: z.string().max(32).optional().catch(undefined),
+    opacity: z
+      .number()
+      .transform((value) => Math.max(20, clampPct(value)))
+      .optional()
+      .catch(undefined),
+    bgOpacity: z.number().optional().catch(undefined),
+    windowOpacity: z.number().transform(clampPct).optional().catch(undefined),
+  })
+  .catch({});
+
 /** Bring a stored choice onto the current model, mapping retired option names
  * (`outline` → `uniform`, `box` → `none` edge + background) so a viewer's old
  * choice isn't silently lost. */
 export function migrateAppearance(raw: unknown): SubtitleAppearance {
-  const v = (raw ?? {}) as Record<string, unknown>;
+  const v = storedAppearance.parse(raw);
   const boxed = v.edge === 'box';
   const edge = typeof v.edge === 'string' ? (LEGACY_EDGE[v.edge] ?? v.edge) : undefined;
   const font = typeof v.font === 'string' ? (LEGACY_FONT[v.font] ?? v.font) : undefined;
@@ -149,7 +170,9 @@ export function migrateAppearance(raw: unknown): SubtitleAppearance {
 
   return {
     ...DEFAULT_SUB_APPEARANCE,
-    ...v,
+    size: v.size ?? DEFAULT_SUB_APPEARANCE.size,
+    opacity: v.opacity ?? DEFAULT_SUB_APPEARANCE.opacity,
+    windowOpacity: v.windowOpacity ?? DEFAULT_SUB_APPEARANCE.windowOpacity,
     edge: isEdge(edge) ? edge : DEFAULT_SUB_APPEARANCE.edge,
     font: isFont(font) ? font : DEFAULT_SUB_APPEARANCE.font,
     // Every colour goes through the same gate: anything the panel cannot select

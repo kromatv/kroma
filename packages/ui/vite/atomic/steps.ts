@@ -25,7 +25,8 @@ function stated(value: unknown, property: string): string | number {
 function stepsOf(perStep: readonly Record<string, unknown>[], property: string): Step[] {
   const steps: Step[] = [{ at: 0, value: stated(perStep[0]?.[property], property) }];
   for (let at = 1; at < perStep.length; at++) {
-    const layer = perStep[at] as Record<string, unknown>;
+    const layer = perStep[at];
+    if (!layer) throw new Unstatic('a missing breakpoint layer');
     if (!(property in layer)) {
       throw new Unstatic(`a ${property} stated at some breakpoints and not others`);
     }
@@ -74,7 +75,8 @@ function readsPerStep(property: string, steps: readonly Step[]): [string, Compil
  * passes through untouched.
  */
 export function compileSteps(perStep: readonly Record<string, unknown>[]): StepLayer {
-  const base = perStep[0] as Record<string, unknown>;
+  const base = perStep[0];
+  if (!base) throw new Unstatic('no breakpoint layers');
   if (perStep.length === 1) return { values: base, rules: [] };
   const values: Record<string, unknown> = {};
   const rules: CompiledRule[] = [];

@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { z } from 'zod';
 import type { Graph, Project } from '../core/graph';
 
 // Read a repo into a Graph. This is the only filesystem-touching code; the graph
@@ -14,9 +15,23 @@ interface LoadOptions {
   modulesDir?: string;
 }
 
-function readJson(path: string): Record<string, unknown> | null {
+const rangesSchema = z
+  .record(z.string().min(1).max(256), z.string().max(256))
+  .refine((ranges) => Object.keys(ranges).length <= 1000, 'Too many dependencies');
+const manifestSchema = z.object({
+  name: z.string().min(1).max(256).optional(),
+  id: z.string().min(1).max(256).optional(),
+  version: z.string().max(128).optional(),
+  dependencies: rangesSchema.optional(),
+  devDependencies: rangesSchema.optional(),
+  engines: rangesSchema.optional().catch(undefined),
+});
+
+function readJson(path: string): z.infer<typeof manifestSchema> | null {
   try {
-    return JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
+    const source = readFileSync(path, 'utf8');
+    if (source.length > 1_000_000) return null;
+    return manifestSchema.parse(JSON.parse(source));
   } catch {
     return null;
   }
@@ -28,13 +43,6 @@ function subdirs(root: string, rel: string): string[] {
   return readdirSync(abs, { withFileTypes: true })
     .filter((e) => e.isDirectory())
     .map((e) => `${rel}/${e.name}`);
-}
-
-// `engines: { "<name>": "<range>" }`, as a module declares what its host must be.
-function engineRange(engines: unknown, name: string): string | undefined {
-  if (!engines || typeof engines !== 'object' || Array.isArray(engines)) return undefined;
-  const value = (engines as Record<string, unknown>)[name];
-  return typeof value === 'string' ? value : undefined;
 }
 
 function cargoVersion(text: string): string {
@@ -63,8 +71,8 @@ function npmProjects(root: string, workspaceRoots: string[]): Project[] {
       const pkg = readJson(join(root, dir, 'package.json'));
       if (!pkg || typeof pkg.name !== 'string') continue;
       const deps = {
-        ...(pkg.dependencies as Record<string, string> | undefined),
-        ...(pkg.devDependencies as Record<string, string> | undefined),
+        ...pkg.dependencies,
+        ...pkg.devDependencies,
       };
       found.push({
         project: {
@@ -91,9 +99,7 @@ function moduleProjects(root: string, modulesDir: string): Project[] {
   for (const dir of subdirs(root, modulesDir)) {
     const manifest = readJson(join(root, dir, 'module.json'));
     if (!manifest || typeof manifest.id !== 'string') continue;
-    const declared = manifest.dependencies;
-    const ranges =
-      declared && !Array.isArray(declared) ? (declared as Record<string, string>) : undefined;
+    const ranges = manifest.dependencies;
     out.push({
       name: manifest.id,
       dir,
@@ -101,7 +107,7 @@ function moduleProjects(root: string, modulesDir: string): Project[] {
       version: typeof manifest.version === 'string' ? manifest.version : '0.0.0',
       deps: ranges ? Object.keys(ranges) : [],
       ranges,
-      serverRange: engineRange(manifest.engines, 'server'),
+      serverRange: manifest.engines?.server,
     });
   }
   return out;

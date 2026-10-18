@@ -30,7 +30,7 @@ import type { FontToken, TypeRole } from '#ui/core/tokens';
  * needs resolving.
  */
 export function splitShorthand(
-  props: Readonly<Record<string, unknown>>,
+  props: object,
   names: ReadonlySet<string> = BOX_STYLE_PROPS,
 ): {
   shorthand: Record<string, unknown>;
@@ -47,8 +47,7 @@ export function splitShorthand(
   const parts: string[] = [];
   let any = false;
   let breakpoints = 0;
-  for (const name of Object.keys(props)) {
-    const value = props[name];
+  for (const [name, value] of Object.entries(props)) {
     if (!names.has(name)) {
       rest[name] = value;
       continue;
@@ -74,12 +73,12 @@ export function splitShorthand(
  * belongs on the breakpoint axis at all.
  */
 export function declaredBreakpoints(
-  decl: Readonly<Record<string, unknown>>,
+  decl: object,
   names: ReadonlySet<string> = BOX_STYLE_PROPS,
 ): number {
   let breakpoints = 0;
-  for (const name of Object.keys(decl)) {
-    if (names.has(name)) breakpoints |= breakpointBits(decl[name]);
+  for (const [name, value] of Object.entries(decl)) {
+    if (names.has(name)) breakpoints |= breakpointBits(value);
   }
   return breakpoints;
 }

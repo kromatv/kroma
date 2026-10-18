@@ -63,8 +63,8 @@ function tanstackRouter({
   return function useTanstackRoute() {
     // Loose reads: this adapter does not know which of the two routes matched,
     // and it does not need to - the params say everything.
-    const params = useParams({ strict: false }) as Record<string, unknown>;
-    const search = useSearch({ strict: false }) as Record<string, unknown>;
+    const params = useParams({ strict: false });
+    const search = useSearch({ strict: false });
     const navigate = useNavigate();
 
     const at = useMemo<WorkbenchLocation>(

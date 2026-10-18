@@ -26,8 +26,7 @@ or `bun run lint --format agent` for actionable diagnostics. See the
 
 The initial scan reported **852 findings**, inventoried below. The rollout now
 requires repairing that backlog before merging; the draft PR must pass the full
-gate. The current repair batch leaves **155 findings**: 89 module mutable bindings
-and 66 unknown-record assertions. There is no suppression baseline. Registries,
+gate. The current repair batch leaves **86 findings**, all module mutable bindings. There is no suppression baseline. Registries,
 stores, and caches need an ownership review; converting them to const containers
 would merely hide their mutability.
 
@@ -128,10 +127,12 @@ include existing failures. The benchmark deliberately does not apply fixes.
 - 140 focused lint-tooling tests pass, including actual CLI/config loading,
   AST false positives, structured guidance, and scaffolder path safety.
 - Whole-workspace typechecking passes.
+- The record-assertion repair batch passes 1,882 focused tests across 181 files,
+  including malformed stored preferences, manifest stamping, and bounded TXT data.
 - 159 focused application test files pass (2,104 tests), covering UI core,
   registry, metadata, discovery, relays, mobile services/player, and Vite adapters.
 - Biome, `bun run sonar:lint`, and `git diff --check` pass.
-- `bun run check` still fails on the 155 remaining policy findings. The PR stays
+- `bun run check` still fails on the 86 remaining policy findings. The PR stays
   draft until repairs and required CI checks pass.
 
 ## Existing policy findings

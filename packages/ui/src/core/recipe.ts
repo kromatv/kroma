@@ -112,11 +112,10 @@ export function sv(
   // sees only the slotted form.
   const flat = 'base' in config;
   const slots = flat ? { root: config.base } : config.slots;
-  const wrap = (layer: unknown): Record<string, unknown> =>
-    (flat ? { root: layer } : layer) as Record<string, unknown>;
+  const wrap = (layer: object): object => (flat ? { root: layer } : layer);
 
-  const variants = config.variants as Record<string, Record<string, unknown>> | undefined;
-  const compound = config.compound as readonly CompoundVariant<unknown, unknown>[] | undefined;
+  const variants = config.variants as Record<string, Record<string, object>> | undefined;
+  const compound = config.compound as readonly CompoundVariant<unknown, object>[] | undefined;
   const defaults = (config.defaults ?? {}) as Record<string, PropertyKey | undefined>;
   const groups = variants ? Object.keys(variants) : [];
   const names = Object.keys(slots);
@@ -128,10 +127,17 @@ export function sv(
     const declared = new Set<SvStateName>();
     let breakpoints = 0;
     const at = breakpointIndex();
-    const layersOf = (layer: unknown): (Split | undefined)[] => {
+    const layersOf = (layer: object): (Split | undefined)[] => {
       const wrapped = wrap(layer);
       return names.map((name) => {
-        const piece = split(wrapped[name] as Record<string, unknown>, at);
+        const declaration: unknown = Reflect.get(wrapped, name);
+        if (
+          declaration !== undefined &&
+          (typeof declaration !== 'object' || declaration === null)
+        ) {
+          throw new Error(`sv: slot "${name}" must be a style object.`);
+        }
+        const piece = split(declaration, at);
         for (const state of piece?.declared ?? []) declared.add(state);
         breakpoints |= piece?.breakpoints ?? 0;
         return piece;
@@ -139,7 +145,7 @@ export function sv(
     };
 
     const bases = names.map((name) => {
-      const piece = split(slots[name] as Record<string, unknown>, at) as Split;
+      const piece = split(slots[name], at) as Split;
       for (const state of piece.declared) declared.add(state);
       breakpoints |= piece.breakpoints;
       return piece;

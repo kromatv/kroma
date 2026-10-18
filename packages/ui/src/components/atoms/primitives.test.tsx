@@ -148,7 +148,7 @@ describe('Button', () => {
 
   it('deepens under the finger, a step PAST hover rather than a repeat of it', () => {
     const at = (state: Record<string, boolean>) =>
-      buttonVariants({ variant: 'primary' }, state).root as Record<string, unknown>;
+      buttonVariants({ variant: 'primary' }, state).root;
     expect(at({ hover: true }).backgroundColor).toBe('var(--kroma-accent-hover)');
     expect(at({ hover: true, press: true }).backgroundColor).toBe('var(--kroma-accent-press)');
   });

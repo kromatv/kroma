@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, render } from '@testing-library/react';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, type StyleProp, StyleSheet, type TextStyle, type ViewStyle } from 'react-native';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
@@ -30,7 +30,7 @@ const at = (width: number) => {
   return width;
 };
 
-const flat = (s: unknown) => StyleSheet.flatten(s as never) as Record<string, unknown>;
+const flat = (s: StyleProp<ViewStyle & TextStyle>) => StyleSheet.flatten(s);
 
 const css = (el: Element) => getComputedStyle(el);
 

@@ -4,6 +4,8 @@
 // breakpoint hands the same group a different number of panels, and a layout
 // written for three of them says nothing about two.
 
+import { z } from 'zod';
+
 /**
  * The two calls a `<Resizable.Root autoSaveId>` needs from a key/value store.
  * `localStorage` satisfies it, and so does a native app's own device store -
@@ -27,21 +29,25 @@ function browserStorage(): ResizableStorage | null {
   }
 }
 
+const savedLayouts = z
+  .record(z.string().max(256), z.unknown())
+  .refine((value) => Object.keys(value).length <= 256);
+const savedSizes = z.array(z.number().nonnegative()).max(128);
+
 function layoutsOf(value: unknown): SavedLayouts {
-  if (typeof value !== 'object' || value === null) return {};
+  const layouts = savedLayouts.safeParse(value);
+  if (!layouts.success) return {};
   const out: SavedLayouts = {};
-  for (const [key, sizes] of Object.entries(value as Record<string, unknown>)) {
-    if (!Array.isArray(sizes)) continue;
-    if (sizes.every((size) => typeof size === 'number' && Number.isFinite(size) && size >= 0)) {
-      out[key] = sizes as number[];
-    }
+  for (const [key, value] of Object.entries(layouts.data)) {
+    const sizes = savedSizes.safeParse(value);
+    if (sizes.success) out[key] = sizes.data;
   }
   return out;
 }
 
 function readLayouts(store: ResizableStorage | null, id: string): SavedLayouts {
   const raw = store?.getItem(id);
-  if (!raw) return {};
+  if (!raw || raw.length > 1_000_000) return {};
   try {
     return layoutsOf(JSON.parse(raw));
   } catch {

@@ -61,7 +61,7 @@ const hasDom = typeof document !== 'undefined';
 for (const name of hasDom ? (['localStorage', 'sessionStorage'] as const) : []) {
   let usable = false;
   try {
-    usable = Boolean((globalThis as Record<string, unknown>)[name]);
+    usable = Boolean(Reflect.get(globalThis, name));
   } catch {
     usable = false;
   }

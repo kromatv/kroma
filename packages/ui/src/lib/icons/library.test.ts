@@ -5,8 +5,8 @@ import { iconLibraryReady, loadIconLibrary, setIconCatalogLoader } from './libra
 
 // One glyph stands in for the chunk the web half fetches: the runner resolves
 // `./every-glyph` to that half, and it would hand back all six thousand.
-const chunk = vi.hoisted(() => ({
-  glyphs: { IconNotShipped: () => null } as Record<string, unknown>,
+const chunk = vi.hoisted<{ glyphs: Record<string, () => null> }>(() => ({
+  glyphs: { IconNotShipped: () => null },
 }));
 vi.mock('./every-glyph', () => ({ everyGlyph: async () => chunk.glyphs }));
 

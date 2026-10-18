@@ -112,16 +112,16 @@ export async function lowerJs(
   if (polyfill) await bundleInPlace(path, true);
 }
 
-function walk(node: unknown, visit: (node: Record<string, unknown>) => void): void {
+function walk(node: unknown, visit: (type: string, kind: unknown) => void): void {
   if (node === null || typeof node !== 'object') return;
   if (Array.isArray(node)) {
     for (const child of node) walk(child, visit);
     return;
   }
-  const record = node as Record<string, unknown>;
-  if (typeof record.type === 'string') visit(record);
-  for (const key of Object.keys(record)) {
-    if (key !== 'type') walk(record[key], visit);
+  const type: unknown = Reflect.get(node, 'type');
+  if (typeof type === 'string') visit(type, Reflect.get(node, 'kind'));
+  for (const [key, value] of Object.entries(node)) {
+    if (key !== 'type') walk(value, visit);
   }
 }
 
@@ -138,14 +138,14 @@ export function syntaxAboveDeepFloor(code: string): string[] {
     sourceType: 'script',
     allowReturnOutsideFunction: true,
   });
-  walk(ast, (node) => {
-    if (node.type === 'VariableDeclaration' && (node.kind === 'let' || node.kind === 'const')) {
-      found.add(`${node.kind} declaration`);
-    } else if (node.type === 'ClassDeclaration' || node.type === 'ClassExpression') {
+  walk(ast, (type, kind) => {
+    if (type === 'VariableDeclaration' && (kind === 'let' || kind === 'const')) {
+      found.add(`${kind} declaration`);
+    } else if (type === 'ClassDeclaration' || type === 'ClassExpression') {
       found.add('class');
-    } else if (node.type === 'ObjectPattern' || node.type === 'ArrayPattern') {
+    } else if (type === 'ObjectPattern' || type === 'ArrayPattern') {
       found.add('destructuring');
-    } else if (node.type === 'AssignmentPattern') {
+    } else if (type === 'AssignmentPattern') {
       found.add('default parameter');
     }
   });

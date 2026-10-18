@@ -54,7 +54,7 @@ export function styles<const S extends Record<string, StyleDecl>>(decls: S): Sty
       const index = breakpointIndex();
       breakpoints = 0;
       for (const name of Object.keys(decls)) {
-        const decl = decls[name] as Record<string, unknown>;
+        const decl = decls[name] ?? {};
         breakpoints |= declaredBreakpoints(decl);
         resolved[name] = stabilise(normalize(decl, index)) as AnyStyle;
       }
@@ -85,7 +85,7 @@ export function style<const T extends StyleDecl>(decl: T): AnyStyle {
   return styles({ only: decl }).only;
 }
 
-const shared = themedCache<AnyStyle>(4096);
+const shared = themedCache<AnyStyle & Record<string, unknown>>(4096);
 
 const rebuilt = themedCache<AnyStyle>(4096);
 
@@ -97,7 +97,7 @@ const rebuilt = themedCache<AnyStyle>(4096);
  * every link carrying the same paint shares one entry and one set of classes.
  */
 export function registered(style: StyleProp<AnyStyle>): AnyStyle {
-  const flat = (StyleSheet.flatten(style) ?? {}) as Record<string, unknown>;
+  const flat = StyleSheet.flatten(style) ?? {};
   return rebuilt(JSON.stringify(flat), () => stabilise(flat) as AnyStyle);
 }
 
@@ -113,9 +113,6 @@ export function registered(style: StyleProp<AnyStyle>): AnyStyle {
  * carries the step it was resolved at (see <Text>); the breakpoint is not part
  * of the key by itself, which is what keeps a flat declaration at one entry.
  */
-export function sharedStyle(key: string, decl: StyleDecl): AnyStyle {
-  return shared(
-    key,
-    () => stabilise(normalize(decl as Record<string, unknown>, breakpointIndex())) as AnyStyle,
-  );
+export function sharedStyle(key: string, decl: StyleDecl): AnyStyle & Record<string, unknown> {
+  return shared(key, () => stabilise(normalize(decl, breakpointIndex())));
 }

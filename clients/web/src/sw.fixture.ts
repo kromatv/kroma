@@ -9,7 +9,7 @@ type Listener = (event: unknown) => void;
 export type Shown = { title: string; options: Record<string, unknown> };
 
 export interface Harness {
-  fire: (type: string, event: unknown) => Promise<void>;
+  fire: (type: string, event: object) => Promise<void>;
   shown: Shown[];
   fetches: Array<{ url: string; init?: RequestInit }>;
   opened: string[];
@@ -102,7 +102,7 @@ export function load(clientList: Array<Record<string, unknown>> = []): Harness {
       const fn = listeners.get(type);
       if (!fn) throw new Error(`the worker never registered a "${type}" listener`);
       const withWaitUntil = {
-        ...(event as Record<string, unknown>),
+        ...event,
         waitUntil: (p: Promise<unknown>) => {
           pending = p;
         },

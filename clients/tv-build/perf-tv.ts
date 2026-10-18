@@ -289,9 +289,6 @@ for (const row of bottomUp(profile).slice(0, 25)) {
 }
 console.log('');
 
-await Bun.write(
-  `perf/tv-${SCENARIO}.cpuprofile`,
-  JSON.stringify(profile as unknown as Record<string, unknown>),
-);
+await Bun.write(`perf/tv-${SCENARIO}.cpuprofile`, JSON.stringify(profile));
 console.log(`  written: perf/tv-${SCENARIO}.cpuprofile (open in DevTools > Performance)\n`);
 socket.close();

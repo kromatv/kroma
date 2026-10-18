@@ -19,9 +19,7 @@ import { WEB } from '#ui/lib/platform';
 import type { Resolve } from './focusable-types';
 
 function coat(decl: StyleDecl | undefined): ViewStyle | undefined {
-  return decl
-    ? (stabilise(normalize(decl as Record<string, unknown>, breakpointIndex())) as ViewStyle)
-    : undefined;
+  return decl ? (stabilise(normalize(decl, breakpointIndex())) as ViewStyle) : undefined;
 }
 
 const NO_SLOTS = Object.freeze({ root: undefined }) as unknown as ReturnType<AnySv>;
@@ -33,7 +31,7 @@ function deltaOf(base: object | undefined, next: object | undefined): ViewStyle 
   const out: Record<string, unknown> = {};
   let any = false;
   for (const [key, value] of Object.entries(next)) {
-    if ((base as Record<string, unknown>)[key] === value) continue;
+    if (Reflect.get(base, key) === value) continue;
     out[key] = value;
     any = true;
   }

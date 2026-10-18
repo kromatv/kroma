@@ -13,9 +13,10 @@ import { sharedStyle } from '#ui/core';
 import type { DriftSpec } from './splash-motion';
 
 /** react-native-web's keyframe extension, absent from React Native's style types. */
-type CssDrift = ViewStyle & {
+export type CssDrift = ViewStyle & {
   animationKeyframes?: Record<string, { transform?: string }>[];
   animationTimingFunction?: string;
+  animationDuration?: string;
   animationIterationCount?: string;
   willChange?: string;
 };

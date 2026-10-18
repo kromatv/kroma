@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const platform = vi.hoisted(() => ({ current: { OS: 'web' } as Record<string, unknown> }));
+const platform = vi.hoisted<{
+  current: { OS: string; isTV?: boolean; constants?: Record<string, string> };
+}>(() => ({ current: { OS: 'web' } }));
 vi.mock('react-native', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {

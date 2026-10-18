@@ -25,10 +25,12 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const route = vi.hoisted(() => ({
-  params: {} as Record<string, unknown>,
-  search: {} as Record<string, unknown>,
-}));
+const route = vi.hoisted<{ params: Record<string, unknown>; search: Record<string, unknown> }>(
+  () => ({
+    params: {},
+    search: {},
+  }),
+);
 const navigate = vi.hoisted(() => vi.fn());
 
 vi.mock('@tanstack/react-router', () => ({

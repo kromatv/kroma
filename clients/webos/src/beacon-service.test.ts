@@ -98,3 +98,16 @@ describe('the webOS beacon service', () => {
     expect(stop.calls).toBe(1);
   });
 });
+
+describe('bounded Luna TXT payloads', () => {
+  it('drops entries exceeding the DNS TXT byte limit', () => {
+    send('publish', {
+      name: 'Salon',
+      txt: { proof: 'abc', tooLong: 'é'.repeat(128), ['k'.repeat(64)]: 'value' },
+    });
+    // An invalid key rejects the complete TXT map.
+    expect(raised[0]?.txt).toEqual({});
+    send('publish', { name: 'Salon', txt: { proof: 'abc', tooLong: 'é'.repeat(128) } });
+    expect(raised[1]?.txt).toEqual({ proof: 'abc' });
+  });
+});

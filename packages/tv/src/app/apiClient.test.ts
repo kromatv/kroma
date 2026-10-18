@@ -5,8 +5,10 @@ import { clientUserAgent } from '@kromatv/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setBuildInfo } from '#tv/app/clientBuild';
 
-const platform = vi.hoisted(() => ({
-  current: { OS: 'web' } as Record<string, unknown>,
+const platform = vi.hoisted<{
+  current: { OS: string; isTV?: boolean; constants?: Record<string, string> };
+}>(() => ({
+  current: { OS: 'web' },
 }));
 vi.mock('react-native', () => ({
   get Platform() {

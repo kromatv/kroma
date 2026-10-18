@@ -35,14 +35,14 @@ const CONDITION_KEYS: ReadonlySet<string> = new Set(['base', ...SV_STATES]);
 // A value stated per interaction state, `base` for the rest: an object whose
 // keys are all conditions and at least one of them a state, which is what
 // tells it apart from a value stated per breakpoint.
-function conditional(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
+function conditional(value: unknown): value is Partial<Record<'base' | SvStateName, unknown>> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
   const keys = Object.keys(value);
   const stated =
     keys.length > 0 &&
     keys.every((key) => CONDITION_KEYS.has(key)) &&
     keys.some((key) => key !== 'base');
-  return stated ? (value as Record<string, unknown>) : null;
+  return stated;
 }
 
 type StateLayers = Partial<Record<SvStateName, Record<string, unknown>>>;
@@ -50,7 +50,7 @@ type StateLayers = Partial<Record<SvStateName, Record<string, unknown>>>;
 interface Sorted {
   authored: Record<string, unknown>;
   byState: StateLayers;
-  explicit: StateLayers;
+  explicit: Partial<Record<SvStateName, object>>;
 }
 
 function stateOf(key: string): SvStateName {
@@ -63,11 +63,11 @@ function stateOf(key: string): SvStateName {
 }
 
 function sortValue(key: string, value: unknown, into: Sorted): void {
-  const stated = conditional(value);
-  if (!stated) {
+  if (!conditional(value)) {
     into.authored[key] = value;
     return;
   }
+  const stated = value;
   if ('base' in stated) into.authored[key] = stated.base;
   for (const name of SV_STATES) {
     if (!(name in stated)) continue;
@@ -77,17 +77,22 @@ function sortValue(key: string, value: unknown, into: Sorted): void {
   }
 }
 
-function sortKeys(decl: Record<string, unknown>): Sorted {
+function sortKeys(decl: object): Sorted {
   const sorted: Sorted = { authored: {}, byState: {}, explicit: {} };
-  for (const key of Object.keys(decl)) {
-    const value = decl[key];
-    if (key.startsWith('_')) sorted.explicit[stateOf(key)] = value as Record<string, unknown>;
-    else sortValue(key, value, sorted);
+  for (const [key, value] of Object.entries(decl)) {
+    if (key.startsWith('_')) {
+      const state = stateOf(key);
+      if (value === undefined) continue;
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+        throw new Error(`sv: state "${key}" must be a style object.`);
+      }
+      sorted.explicit[state] = value;
+    } else sortValue(key, value, sorted);
   }
   return sorted;
 }
 
-export function split(decl: Record<string, unknown> | undefined, index: number): Split | undefined {
+export function split(decl: object | undefined, index: number): Split | undefined {
   if (!decl) return undefined;
   if (isStaticStyle(decl)) {
     const states = staticStates(decl);
@@ -126,7 +131,7 @@ export function split(decl: Record<string, unknown> | undefined, index: number):
  *
  * A layer the build already compiled is its own canonical form.
  */
-export function normalize(decl: Record<string, unknown>, index: number): Record<string, unknown> {
+export function normalize(decl: object, index: number): Record<string, unknown> {
   if (isStaticStyle(decl)) return decl;
   const { shorthand, rest, any } = splitShorthand(decl);
   // Text before colour: `text` may bring keys the loop below never touches, and

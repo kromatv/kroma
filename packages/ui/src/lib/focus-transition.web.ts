@@ -32,7 +32,7 @@ const scaled = (
     transitionProperty: 'transform',
     transitionDuration: duration,
     transitionTimingFunction: timing,
-  } as never) as Record<string, unknown>;
+  });
 
 export function useFocusScale(focused: boolean, to: number): Record<string, unknown> {
   if (to === 1) return RING_ONLY;
