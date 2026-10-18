@@ -13,12 +13,13 @@ import {
 } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
-import { kickCastController, useCastControllers } from '#tv/features/cast/controllers';
+import { useCastControllerStore, useCastControllers } from '#tv/features/cast/controllers';
 
 export function CastRemotes() {
   const t = useT();
   const { client } = useConnection();
   const controllers = useCastControllers();
+  const { kickCastController } = useCastControllerStore();
   const [open, setOpen] = useState(false);
   const count = controllers.length;
 

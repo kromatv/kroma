@@ -14,9 +14,9 @@ import { useEnv } from '#tv/app/providers/env';
 import { useNav } from '#tv/app/router';
 import { useStoredPref } from '#tv/app/settings/store';
 import { applyCastCommand } from '#tv/features/cast/applyCommand';
-import { castReport, onCastReportChange } from '#tv/features/cast/castBridge';
+import { CastPlaybackProvider, useCastBridge } from '#tv/features/cast/castBridge';
 import { castReceiverPrefStore } from '#tv/features/cast/castPref';
-import { setCastControllers, setCastUplink } from '#tv/features/cast/controllers';
+import { CastControllersProvider, useCastControllerStore } from '#tv/features/cast/controllers';
 import { deviceId } from '#tv/shared/device';
 
 const DRIFT_MS = 20_000;
@@ -37,10 +37,12 @@ export function CastReceiverProvider({
   children: ReactNode;
 }>) {
   return (
-    <>
-      {client ? <CastReceiver client={client} lan={lan} name={name} /> : null}
-      {children}
-    </>
+    <CastControllersProvider>
+      <CastPlaybackProvider>
+        {client ? <CastReceiver client={client} lan={lan} name={name} /> : null}
+        {children}
+      </CastPlaybackProvider>
+    </CastControllersProvider>
   );
 }
 
@@ -49,6 +51,9 @@ function CastReceiver({
   lan,
   name,
 }: Readonly<{ client: KromaClient; lan?: LanDiscoveryBridge; name: string }>) {
+  const { setCastControllers, setCastUplink } = useCastControllerStore();
+  const bridge = useCastBridge();
+  const { castReport, onCastReportChange } = bridge;
   const nav = useNav();
   const t = useT();
   const { user, ready } = useAuth();
@@ -56,8 +61,8 @@ function CastReceiver({
   const [castable] = useStoredPref(castReceiverPrefStore);
 
   // Read through a ref so the effect below doesn't reconnect on every render.
-  const deps = useRef({ client, nav, t, platform, name });
-  deps.current = { client, nav, t, platform, name };
+  const deps = useRef({ client, nav, t, platform, name, bridge });
+  deps.current = { client, nav, t, platform, name, bridge };
 
   const applied = useRef(0);
   const signedIn = ready && Boolean(user);
@@ -211,7 +216,16 @@ function CastReceiver({
       events.close();
       if (client.hasAuth) client.cast.unregister(id).catch(() => undefined);
     };
-  }, [signedIn, castable, client, inFront]);
+  }, [
+    signedIn,
+    castable,
+    client,
+    inFront,
+    setCastControllers,
+    setCastUplink,
+    castReport,
+    onCastReportChange,
+  ]);
 
   return null;
 }
