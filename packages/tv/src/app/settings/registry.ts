@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { canQuitApp, quitApp } from '#tv/app/appQuit';
 import { crashReportingPrefStore } from '#tv/app/crashReportingPref';
 import { getGpuRendering, gpuToggleAvailable, setGpuRendering } from '#tv/app/desktopGpu';
-import { availableEngines, ENGINE_LABEL_KEY, enginePrefStore } from '#tv/app/enginePref';
+import { availableEngines, ENGINE_LABEL_KEY, useEnginePref } from '#tv/app/enginePref';
 import {
   ALL_KEYBOARD_LAYOUTS,
   KEYBOARD_LAYOUT_LABEL_KEY,
@@ -91,7 +91,7 @@ export const engineSetting: SettingsItem = choiceItem({
   icon: 'movie',
   options: availableEngines,
   valueLabel: (v) => ENGINE_LABEL_KEY[v],
-  useValue: () => useStoredPref(enginePrefStore),
+  useValue: () => useStoredPref(useEnginePref()),
 });
 
 export const gpuRenderingSetting: SettingsItem = toggleItem({

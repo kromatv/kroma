@@ -9,11 +9,7 @@ import {
 } from '@kromatv/core';
 import { storedAudioFilter } from '@kromatv/ui';
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import {
-  type EnginePref,
-  getEnginePref,
-  setEnginePref as persistEnginePref,
-} from '#tv/app/enginePref';
+import { type EnginePref, useEnginePref } from '#tv/app/enginePref';
 import { usePlaybackCapabilities } from '#tv/app/providers/playbackCapabilities';
 import { createTvEngine, type EnginePlan, planEngine } from '#tv/features/playback/player/backend';
 import { detectTvEnv } from '#tv/features/playback/player/detectTvEnv';
@@ -67,6 +63,7 @@ export function useEngineLifecycle(
   item: MediaItem,
   audioLanguage?: string | null,
 ): EngineLifecycle {
+  const { get: getEnginePref, set: persistEnginePref } = useEnginePref();
   const playbackCapabilities = usePlaybackCapabilities();
   const videoRef = useRef<HTMLVideoElement>(null);
   const engineRef = useRef<TvEngine | null>(null);
@@ -262,7 +259,7 @@ export function useEngineLifecycle(
       setVlcFallbackFor(null);
       setEnginePref(p);
     },
-    [enginePref, setStartSec],
+    [enginePref, setStartSec, persistEnginePref],
   );
 
   return {
