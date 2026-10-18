@@ -1,61 +1,66 @@
 import type { MonitorPreset } from '@kromatv/client/monitoring';
-import { useT } from '@kromatv/ui';
-import { Box, Button, Row, Surface, Text } from '@kromatv/ui/kit';
+import { useFormat, useT } from '@kromatv/ui';
+import { Box, SelectionBar } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { PresetSelect } from '#web/features/admin/monitoring-options';
 
 export function BulkBar({
   count,
+  matching,
+  everything,
   shows,
   busy,
   onFollow,
   onUnfollow,
+  onSelectAll,
   onClear,
 }: Readonly<{
   count: number;
+  matching: number;
+  everything: boolean;
   shows: boolean;
   busy: boolean;
   onFollow: (preset: MonitorPreset | undefined) => void;
   onUnfollow: () => void;
+  onSelectAll: () => void;
   onClear: () => void;
 }>) {
   const t = useT();
+  const fmt = useFormat();
   const [preset, setPreset] = useState<MonitorPreset | null>(null);
   return (
-    <Surface tone="raised" radius="xl" pad="none" border="borderStrong">
-      <Row wrap gap={12} align="center" px={16} py={12}>
-        <Text variant="label">{t('monitoring.bulkPicked', { count })}</Text>
+    <SelectionBar.Root count={count} onClear={onClear} label={t('monitoring.bulkLabel')}>
+      <SelectionBar.Clear label={t('monitoring.bulkClear')} />
+      <SelectionBar.Status>
+        {t('monitoring.bulkPicked', { count, amount: fmt.decimal(count, 0) })}
+      </SelectionBar.Status>
+      {everything ? null : (
+        <SelectionBar.SelectAll
+          label={t('monitoring.bulkSelectAll', { total: fmt.decimal(matching, 0) })}
+          onPress={onSelectAll}
+        />
+      )}
+      <SelectionBar.Actions label={t('monitoring.bulkMore')}>
         {shows ? (
-          <Box w={{ base: '100%', md: 230 }}>
+          <Box w={{ base: 190, md: 230 }}>
             <PresetSelect value={preset} onChange={setPreset} disabled={busy} />
           </Box>
         ) : null}
-        <Row gap={8} align="center" wrap>
-          <Button
-            size="sm"
-            icon="radar"
-            label={t('monitoring.bulkFollow')}
-            onPress={() => onFollow(preset ?? undefined)}
-            loading={busy}
-            disabled={count === 0}
-          />
-          <Button
-            size="sm"
-            variant="dangerGhost"
-            icon="radar-off"
-            label={t('monitoring.bulkUnfollow')}
-            onPress={onUnfollow}
-            disabled={busy || count === 0}
-          />
-          <Button
-            size="sm"
-            variant="ghost"
-            label={t('monitoring.bulkLeave')}
-            onPress={onClear}
-            disabled={busy}
-          />
-        </Row>
-      </Row>
-    </Surface>
+        <SelectionBar.Item
+          icon="radar"
+          tone="accent"
+          label={t('monitoring.bulkFollow')}
+          loading={busy}
+          onPress={() => onFollow(preset ?? undefined)}
+        />
+        <SelectionBar.Item
+          icon="radar-off"
+          tone="danger"
+          label={t('monitoring.bulkUnfollow')}
+          disabled={busy}
+          onPress={onUnfollow}
+        />
+      </SelectionBar.Actions>
+    </SelectionBar.Root>
   );
 }

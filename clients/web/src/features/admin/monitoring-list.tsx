@@ -83,6 +83,8 @@ export function LibraryTitles({ view, onView }: Readonly<ViewProps>) {
       (breakpoint === 'lg' || breakpoint === 'tv') && rows.some((row) => row.nextAirDate !== null),
   };
   const chosen = [...picked.values()];
+  const selectable = shown.filter((row) => row.tmdbId !== null);
+  const everything = selectable.every((row) => picked.has(titleKey(row)));
   const pageCount = Math.max(1, Math.ceil(shown.length / PER_PAGE));
   const page = shown.slice(
     (Math.min(at, pageCount) - 1) * PER_PAGE,
@@ -95,6 +97,13 @@ export function LibraryTitles({ view, onView }: Readonly<ViewProps>) {
       const key = titleKey(row);
       if (next.has(key)) next.delete(key);
       else next.set(key, row);
+      return next;
+    });
+
+  const selectAll = () =>
+    setPicked((previous) => {
+      const next = new Map(previous);
+      for (const row of selectable) next.set(titleKey(row), row);
       return next;
     });
 
@@ -156,18 +165,8 @@ export function LibraryTitles({ view, onView }: Readonly<ViewProps>) {
         />
       </Row>
 
-      <Box gap={12} mt={16} mb={16}>
+      <Box mt={16} mb={16}>
         <LibraryFilters filter={filter} onChange={setFilter} />
-        {selecting ? (
-          <BulkBar
-            count={chosen.length}
-            shows={chosen.some((row) => row.kind === 'show')}
-            busy={busy}
-            onFollow={bulkFollow}
-            onUnfollow={bulkUnfollow}
-            onClear={leaveSelect}
-          />
-        ) : null}
       </Box>
 
       {loading ? <TableSkeleton rows={8} /> : null}
@@ -232,6 +231,18 @@ export function LibraryTitles({ view, onView }: Readonly<ViewProps>) {
         </Box>
       )}
 
+      <BulkBar
+        count={chosen.length}
+        matching={selectable.length}
+        everything={everything}
+        shows={chosen.some((row) => row.kind === 'show')}
+        busy={busy}
+        onFollow={bulkFollow}
+        onUnfollow={bulkUnfollow}
+        onSelectAll={selectAll}
+        onClear={() => setPicked(new Map())}
+      />
+
       <MonitorTitlesDialog
         open={adding}
         monitored={rows.flatMap((row) =>
@@ -243,7 +254,7 @@ export function LibraryTitles({ view, onView }: Readonly<ViewProps>) {
           void reload();
         }}
       />
-      <MonitoringNotice notice={notice} on={on} />
+      <MonitoringNotice notice={notice} on={on} lifted={chosen.length > 0} />
     </>
   );
 }

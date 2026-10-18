@@ -19,6 +19,10 @@ usually something that BEHAVES.
 - **`Command`** is the ⌘K palette: a ranked, grouped list with a cursor the arrows
   and the pointer share. Its rows are data rather than children, which is
   [`DESIGN.md`](../DESIGN.md) §3's T2 and T5.
+- **`SelectionBar`** is what appears while rows are selected: how many, a way to
+  widen the selection to the whole set, the actions, and a way to drop it. It owns
+  Escape, the spoken count and how much room its actions get, and the ones that do
+  not fit go into a `Menu`.
 - **`PerfHud`** is the on-device frame read-out. A television is the only place its
   numbers mean anything and the hardest place to attach a profiler, so the app
   carries its own.

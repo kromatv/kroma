@@ -70,12 +70,14 @@ input device, never a boolean spelled as a string.
 | `Group` / `Separator` | A section of items; a divider. | A separator is always semantic. |
 | `Slot` | One fixed position in a composite value: a character of a code. | Never pressable. Its place comes from its position in its `Group`, never from an index prop, because a hand-written index duplicates what the tree already says and a wrong one fails silently. |
 | `Close` / `Title` | Dismisses; names the surface. | |
+| `Clear` | Empties what a surface is about: the selection a `SelectionBar` counts. | Not `Close`: a closed surface keeps its state, a cleared selection is gone, and the surface leaves because nothing is left to show. |
+| `SelectAll` | Widens a partial selection to the whole set it was drawn from. | Written while part of the set is selected, left out once all of it is. Not a checkbox: it widens, and `Clear` is the way back. |
 | `List` | The scrollable container of items. | Only where a virtualiser needs a real node. |
 | `Empty` | What a collection shows in place of itself when it holds nothing. | A sibling of the `List`, never a child of it: exactly one of the two draws. Distinct from `<EmptyState>`, the molecule it is usually made of. |
 | `Handle` | The grip on a boundary a reader may move: a seam between panels. | The WHOLE strip is the control, so nothing inside it is pressable. Not `Resizer`, not `Splitter`, not `Divider`: a divider draws, a handle moves. |
 | `Addon` | A member of a group that nothing can press, shaped like the controls beside it: a protocol, a unit, a suffix. | Named for the role, not the content. `InputGroup.Addon` and `ButtonGroup.Addon` are the same thing. |
 | `Previous` / `Next` | A step backwards or forwards through a sequence. | Named for the direction, never for the glyph that draws it. |
-| `Pages` / `Ellipsis` / `Status` | The run of page entries; the gap standing for the pages it skips; the "12 of 40" readout. | Pagination's own three. `Status` reports, it does not control. |
+| `Pages` / `Ellipsis` / `Status` | The run of page entries; the gap standing for the pages it skips; the "12 of 40" readout. | Pagination's three. `Status` reports, it does not control; `SelectionBar.Status`, the count a selection is at, is the same role. |
 | `Resume` | The prompt saying a film opened where it was left, and offering the beginning. | The player's. It states what happened, so its words are a fact and never an offer, and it must not answer OK: a film that resumed would restart on a press of play. |
 | `Line` / `Area` / `Bar` | One series of a plot, drawn as the mark that names it. | Named for the MARK, never for what the data means. A series' paint and its scale are the Root's; a mark only says which field it draws. |
 | `Grid` | The ruled ground a plot is read against. | Furniture: it draws no value, and it is never a data mark. |

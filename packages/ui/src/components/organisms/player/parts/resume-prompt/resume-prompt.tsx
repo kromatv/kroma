@@ -4,11 +4,11 @@ import { Button } from '#ui/components/atoms/button';
 import { Frost } from '#ui/components/atoms/frost';
 import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
-import { useFadeRise } from '#ui/components/organisms/player/hooks/use-fade-rise';
 import { RESUME_WINDOW } from '#ui/components/organisms/player/hooks/use-resume-notice';
 import { GUTTER, scaler } from '#ui/components/organisms/player/lib/metrics';
 import { scaledRadius, sharedStyle, styles, sv } from '#ui/core';
 import { formatTimecode } from '#ui/lib/intl';
+import { useFadeRise } from '#ui/lib/use-fade-rise';
 import { useT } from '#ui/services/i18n';
 
 const LABEL_SIZE = 17;

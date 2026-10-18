@@ -1,0 +1,98 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { SelectionBar } from './selection-bar';
+import { Narrow, TitlePicker } from './selection-bar.fixtures';
+
+export const story = defineStory({
+  group: 'Actions',
+  width: { min: 320, max: 900 },
+  args: { placement: 'floating', size: 'sm', initial: 2 },
+  controls: {
+    placement: ['floating', 'inline'],
+    size: ['sm', 'md', 'tv'],
+    initial: { min: 0, max: 8 },
+  },
+  render: ({ placement, size, initial }) => (
+    <TitlePicker key={initial} placement={placement} size={size} initial={initial} />
+  ),
+});
+
+The bar that appears while rows are selected. It says how many, offers to widen the selection to the whole set, carries what can be done to the rows, and drops the selection. With nothing selected it draws nothing; it arrives and leaves with the kit's fade and rise, which the platform's reduced-motion setting cuts to nothing.
+
+```tsx
+<SelectionBar.Root count={picked.size} onClear={clear} label={t('library.selection')}>
+  <SelectionBar.Clear label={t('library.deselect')} />
+  <SelectionBar.Status>{t('library.selected', { count: picked.size })}</SelectionBar.Status>
+  {allPicked ? null : (
+    <SelectionBar.SelectAll
+      label={t('library.selectAll', { count: matching.length })}
+      onPress={selectMatching}
+    />
+  )}
+  <SelectionBar.Actions label={t('library.moreActions')}>
+    <SelectionBar.Item icon="radar" tone="accent" label={t('library.follow')} onPress={follow} />
+    <SelectionBar.Item icon="radar-off" tone="danger" label={t('library.unfollow')} onPress={unfollow} />
+  </SelectionBar.Actions>
+</SelectionBar.Root>
+```
+
+## The parts
+
+- **SelectionBar.Root** takes the `count` and `onClear`, names the bar with `label`, and owns everything that is behaviour: when the bar shows, Escape, the announcement, and how much room the actions get. It reads its direct children once: **Clear** leads the bar and **Actions** ends it wherever they are written, and everything else sits between them in written order.
+- **SelectionBar.Clear** is the round ✕ that empties the selection. It draws a glyph alone, so its `label` is its name and its tooltip.
+- **SelectionBar.Status** is the count, in the caller's words. Hand it the finished sentence: its text is what a screen reader hears.
+- **SelectionBar.SelectAll** widens a page or a filter to the whole set. Render it while part of the set is selected and leave it out once all of it is: only the caller knows which rows the set holds.
+- **SelectionBar.Actions** holds the **SelectionBar.Item**s, in order of importance, and names the overflow menu with its `label`. Any other control written in it, a `<Select>` the actions read, stays on the bar before the items.
+- **SelectionBar.Item** is one action. `tone="accent"` is the action the rows were picked for, at most one; `tone="danger"` is the destructive one.
+
+Every control on the bar stands at one control shell, the app's unless `size` names another: 40px in the browser. The ✕, the buttons, the overflow trigger and a select written among the actions line up.
+
+<Scene name="Inline" args={{ placement: 'inline' }}>
+  Flat in the flow, above or below a short list, or inside a panel where a raised bar would crowd the content. It pushes what follows it down when it arrives, which is the price of lying in the flow.
+</Scene>
+
+<Scene name="More actions than room">
+  A wide bar keeps three items and the rest go into the menu at its end, in the order they were written. A destructive item that follows others there gets a rule above it, and each row has the words its button had.
+
+  <TitlePicker
+    extra={[
+      <SelectionBar.Item key="search" icon="search" label="Chercher" onPress={() => {}} />,
+      <SelectionBar.Item key="refresh" icon="refresh" label="Rafraîchir" onPress={() => {}} />,
+    ]}
+  />
+</Scene>
+
+<Scene name="On a phone">
+  Below 600px the bar measures itself compact: the count stacks over the select-all, one item keeps its button, and the others join the menu. The bar wraps to a second line before it squeezes a label.
+
+  <Narrow>
+    <TitlePicker initial={3} />
+  </Narrow>
+</Scene>
+
+## Where it sits
+
+`floating`, the default, raises the bar and centres it. In a browser it sticks to the bottom of the viewport while the list above it scrolls and settles under the last row at the end, so it never hides a row for good. That is why it is the default: the bar exists while rows are being picked, and picking happens down the list, where a bar at the top of the table has already scrolled away. Write the Root right after the collection, in the same column: the sticking is bounded by that column, and Tab from the last row reaches the bar. On native nothing sticks, so the Root is written below the scroller, at the foot of the screen.
+
+`inline` is the shape [Carbon](https://carbondesignsystem.com/components/data-table/usage/) and [Shopify](https://shopify.dev/docs/apps/build/app-home/migrate-from-polaris-react/unstable-bulk-actions) give their batch bars, over the table's own toolbar. Reach for it when the whole list fits on screen.
+
+## Accessibility
+
+- The bar is a labelled group. It is not a `toolbar`: a toolbar promises arrow keys between its controls, and these are reached with Tab like any others.
+- The count is announced politely each time it moves, from a live region that stays mounted while the bar comes and goes, since a region that mounts with its first words never speaks them. A native reader is handed the same words through `AccessibilityInfo`.
+- Opening the bar leaves the focus on the row that was just picked. Closing it with the focus inside hands the focus back to where it came from, as [React Spectrum's ActionBar](https://react-spectrum.adobe.com/react-spectrum/ActionBar.html) does.
+- In a browser, Escape anywhere on the page clears the selection, unless a field holding a caret, an open menu or a modal dialog claimed the key first.
+- While the bar leaves it keeps the last count it showed and takes no presses.
+
+<Do>
+- Give `Status` the whole sentence, plural rules applied: "4 titres sélectionnés".
+- Offer `SelectAll` when the rows on screen are a page or a filter of a larger set, and say the number it reaches.
+- Keep one `accent` item, the action the rows were picked for, and put the destructive one last.
+- Keep the Root mounted with `count={0}` rather than unmounting it, so it can leave with its motion and its live region is already there for the first count.
+</Do>
+
+<Dont>
+- Wrap an `Item` in a fragment or a component of your own: only a direct `Item` can move into the menu.
+- Write a second way to clear the selection beside `Clear`.
+- Start a destructive action on thousands of rows without a confirmation that names the number.
+- Mount the floating bar inside a box that clips or scrolls on its own: it sticks to the nearest one.
+</Dont>

@@ -29,11 +29,12 @@ export function useMonitoringNotice(): MonitoringNoticeState {
 export function MonitoringNotice({
   notice,
   on,
-}: Readonly<Pick<MonitoringNoticeState, 'notice' | 'on'>>) {
+  lifted = false,
+}: Readonly<Pick<MonitoringNoticeState, 'notice' | 'on'> & { lifted?: boolean }>) {
   const t = useT();
   return (
     <div
-      className={classes(s.bar, on ? s.shown : s.hidden)}
+      className={classes(s.bar, lifted ? s.lifted : null, on ? s.shown : s.hidden)}
       role="status"
       aria-live="polite"
       aria-atomic="true"
@@ -65,8 +66,9 @@ const s = styles({
     left: '50%',
     zIndex: 80,
     transition:
-      'opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out)',
+      'opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out), bottom var(--dur-base) var(--ease-out)',
   },
+  lifted: { bottom: 88 },
   shown: { opacity: 1, transform: [{ translateX: '-50%' }, { translateY: 0 }] },
   hidden: {
     opacity: 0,

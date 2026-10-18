@@ -79,6 +79,15 @@ export type {
   ResizableStorage,
 } from './resizable';
 export { Resizable, useResizablePanel } from './resizable';
+export type {
+  SelectionBarActionsProps,
+  SelectionBarItemProps,
+  SelectionBarPlacement,
+  SelectionBarRootProps,
+  SelectionBarSelectAllProps,
+  SelectionBarTone,
+} from './selection-bar';
+export { SelectionBar } from './selection-bar';
 export type { SplashBackdropProps, SplashCover } from './splash-backdrop';
 export { SplashBackdrop } from './splash-backdrop';
 export type {
