@@ -13,7 +13,9 @@ use kroma_domain::{EpisodeRef, MediaRequest, RequestKind, RequestStatus};
 
 mod availability;
 mod calendar;
+mod episode_titles;
 mod gaps;
+mod library_index;
 mod monitored;
 mod search_queue;
 mod title_files;
@@ -24,7 +26,9 @@ mod tests;
 
 pub use availability::*;
 pub use calendar::*;
+pub use episode_titles::*;
 pub use gaps::*;
+pub use library_index::*;
 pub use monitored::*;
 pub use search_queue::*;
 pub use title_files::*;
@@ -135,6 +139,38 @@ pub fn get_request(conn: &Connection, id: &str) -> rusqlite::Result<Option<Media
     ))?;
     let mut rows = stmt.query_map(params![id], row_to_request)?;
     rows.next().transpose()
+}
+
+/// Of the wanted rows handed in, those an OPEN request answers to: a row the
+/// requester owns, which monitoring may not take away from them (LIB-54).
+pub fn rows_held_by_requests(
+    conn: &Connection,
+    rows: &[WantedRow],
+) -> rusqlite::Result<std::collections::HashSet<String>> {
+    let mut open: std::collections::HashMap<&str, bool> = std::collections::HashMap::new();
+    let mut held = std::collections::HashSet::new();
+    for row in rows {
+        let Some(request_id) = row.request_id.as_deref() else {
+            continue;
+        };
+        let live = match open.get(request_id) {
+            Some(known) => *known,
+            None => {
+                let answer = get_request(conn, request_id)?.is_some_and(|r| {
+                    !matches!(
+                        r.status,
+                        RequestStatus::Available | RequestStatus::Denied | RequestStatus::Failed
+                    )
+                });
+                open.insert(request_id, answer);
+                answer
+            }
+        };
+        if live {
+            held.insert(row.id.clone());
+        }
+    }
+    Ok(held)
 }
 
 /// The open (mergeable) request for a title, if any. Denied/failed and

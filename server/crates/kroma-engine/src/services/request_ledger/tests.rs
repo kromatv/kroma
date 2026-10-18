@@ -367,3 +367,39 @@ fn a_title_ledger_counts_every_row_whatever_it_answers_to() {
         .collect();
     assert_eq!(monitored, [true, true, false]);
 }
+
+#[test]
+fn an_episode_an_open_request_asks_for_is_marked_as_held() {
+    let host = host(Some("k"));
+    seed_show(&host, "show1", 42, &[]);
+    seed_request(&host, "r1", RequestKind::Show, 42, Some(vec![1]));
+    wanted(&host, "r1", &[(1, 1, "wanted")]);
+    let _tmdb = FakeTmdb::start(|path| match path {
+        "/tv/42" => (200, show_json(&[(1, 2)])),
+        "/tv/42/season/1" => (200, episodes_json(&[1, 2])),
+        _ => (404, serde_json::json!({})),
+    });
+
+    let view = season_ledger(&host, "r1", 1, LANG).unwrap();
+
+    assert!(view.episodes[0].held_by_request, "the requester owns it");
+    assert!(!view.episodes[1].held_by_request);
+}
+
+#[test]
+fn an_episode_a_settled_request_asked_for_is_monitorings_to_drop() {
+    let host = host(Some("k"));
+    seed_show(&host, "show1", 42, &[]);
+    seed_request(&host, "r1", RequestKind::Show, 42, Some(vec![1]));
+    wanted(&host, "r1", &[(1, 1, "wanted")]);
+    db::set_request_status(host.db(), "r1", RequestStatus::Available, None, None, 1).unwrap();
+    let _tmdb = FakeTmdb::start(|path| match path {
+        "/tv/42" => (200, show_json(&[(1, 1)])),
+        "/tv/42/season/1" => (200, episodes_json(&[1])),
+        _ => (404, serde_json::json!({})),
+    });
+
+    let view = season_ledger(&host, "r1", 1, LANG).unwrap();
+
+    assert!(!view.episodes[0].held_by_request);
+}

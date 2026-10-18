@@ -120,6 +120,7 @@ fn season(number: u32, episode_count: u32) -> discover::RawSeason {
         name: Some(format!("Saison {number}")),
         episode_count,
         air_date: Some("2005-09-20".into()),
+        poster_url: None,
     }
 }
 

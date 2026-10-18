@@ -1,7 +1,7 @@
 //! Library-scan gaps: aired episodes a show on disk is missing.
 
 use anyhow::Result;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 
 use crate::Pool;
 use kroma_domain::{CalendarEntry, RequestKind};
@@ -72,6 +72,7 @@ pub fn library_gaps_list(conn: &Connection, limit: usize) -> rusqlite::Result<Ve
             poster_url: r.get(2)?,
             season: r.get(3)?,
             episode: r.get(4)?,
+            episode_title: None,
             air_date: r.get(5)?,
             status: "missing".into(),
         })

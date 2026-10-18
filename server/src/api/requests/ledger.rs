@@ -1,9 +1,9 @@
 //! What a request covers and how much of it the library already holds: the
 //! wanted ledger and the TMDB view of it.
 
+use axum::Json;
 use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Response};
-use axum::Json;
 
 use crate::api::extract::AuthUser;
 use crate::api::util::query;

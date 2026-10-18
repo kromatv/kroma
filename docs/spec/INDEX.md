@@ -3,7 +3,7 @@
 
 # Requirement index
 
-468 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+471 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -253,6 +253,9 @@
 - **LIB-72** (AGREED) - A film in cinemas is not released at home yet. A film whose minimum <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-73** (AGREED) - A film whose home release is unknown, or still ahead, is read again from <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-74** (AGREED) - A person asks for the specials when they choose the preset, for one title <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-75** (AGREED) - What is still coming is the missing list read forwards: a monitored <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-76** (AGREED) - Whoever decides what the library monitors sees every title of it in one <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-77** (AGREED) - Asking for a title's missing units to be searched now reaches whatever <sub>[monitoring.md](library/monitoring.md)</sub>
 
 ## MEDIA - [media](media/)
 

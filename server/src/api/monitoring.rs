@@ -15,7 +15,8 @@ use crate::db;
 use crate::i18n;
 use crate::i18n::AskedLocale;
 use crate::model::{
-    BulkMonitorBody, EpisodeMonitoringBody, MonitorBody, Permission, RequestKind, User,
+    BulkMonitorBody, EpisodeMonitoringBody, MonitorBody, Permission, RequestKind, SearchUnitsBody,
+    User,
 };
 use crate::services::{monitoring, settings};
 use crate::state::SharedState;
@@ -23,6 +24,7 @@ use crate::state::SharedState;
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/monitoring", get(list))
+        .route("/monitoring/library", get(library))
         .route("/monitoring/bulk", post(bulk))
         .route(
             "/monitoring/{kind}/{tmdb_id}",
@@ -34,6 +36,7 @@ pub fn routes() -> Router<SharedState> {
             get(season_ledger),
         )
         .route("/monitoring/{kind}/{tmdb_id}/episodes", put(episodes))
+        .route("/monitoring/{kind}/{tmdb_id}/search", post(search))
 }
 
 fn require(user: &User) -> Result<(), Response> {
@@ -66,7 +69,6 @@ where
     }
 }
 
-/// `GET /api/monitoring`: every monitored title, with what the library holds.
 pub async fn list(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -79,6 +81,20 @@ pub async fn list(
     })
     .await?;
     Ok(Json(titles).into_response())
+}
+
+pub async fn library(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    require(&user)?;
+    let today = crate::services::requests::today_ymd();
+    let rows = query(&state.db, move |pool| {
+        let conn = pool.get()?;
+        Ok(db::library_index(&conn, &today)?)
+    })
+    .await?;
+    Ok(Json(rows).into_response())
 }
 
 /// `GET /api/monitoring/:kind/:tmdbId`: how a title is monitored, or 404.
@@ -100,7 +116,16 @@ pub async fn one(
     }
 }
 
-/// `PUT /api/monitoring/:kind/:tmdbId`: monitor a title, or change how.
+#[derive(serde::Serialize)]
+struct MonitorResult {
+    #[serde(flatten)]
+    title: crate::model::MonitoredTitle,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    search: Option<crate::model::SearchNow>,
+}
+
+/// `PUT /api/monitoring/:kind/:tmdbId`: monitor a title, or change how. With
+/// `searchNow`, the answer also carries whether the search started.
 pub async fn monitor(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -109,12 +134,18 @@ pub async fn monitor(
 ) -> Result<Response, Response> {
     require(&user)?;
     let kind = kind_of(&kind)?;
-    let title =
-        service(move || monitoring::monitor(&state, kind, tmdb_id, &body, Some(&user.id))).await?;
-    Ok(Json(title).into_response())
+    let result = service(move || {
+        let title = monitoring::monitor(&state, kind, tmdb_id, &body, Some(&user.id))?;
+        let search = match body.search_now {
+            true => Some(monitoring::search_now(&state, kind, tmdb_id, &[])?),
+            false => None,
+        };
+        Ok(MonitorResult { title, search })
+    })
+    .await?;
+    Ok(Json(result).into_response())
 }
 
-/// `DELETE /api/monitoring/:kind/:tmdbId`: stop monitoring a title.
 pub async fn unmonitor(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -126,7 +157,6 @@ pub async fn unmonitor(
     Ok(Json(json!({ "ok": removed })).into_response())
 }
 
-/// `PUT /api/monitoring/show/:tmdbId/episodes`: switch seasons and episodes.
 pub async fn episodes(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -144,7 +174,22 @@ pub async fn episodes(
     Ok(Json(title).into_response())
 }
 
-/// `POST /api/monitoring/bulk`: the same settings for many titles.
+/// `POST /api/monitoring/:kind/:tmdbId/search`: look again for what the title
+/// is missing, narrowed to `units` when the body names some. It asks; nothing
+/// is downloaded on the caller's behalf, and a refusal carries its reason.
+pub async fn search(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+    Path((kind, tmdb_id)): Path<(String, u64)>,
+    body: Option<Json<SearchUnitsBody>>,
+) -> Result<Response, Response> {
+    require(&user)?;
+    let kind = kind_of(&kind)?;
+    let units = body.map(|Json(b)| b.units).unwrap_or_default();
+    let answer = service(move || monitoring::search_now(&state, kind, tmdb_id, &units)).await?;
+    Ok(Json(answer).into_response())
+}
+
 pub async fn bulk(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -169,8 +214,6 @@ pub async fn bulk(
     Ok(Json(json!({ "monitored": summary.monitored, "failed": failed })).into_response())
 }
 
-/// `GET /api/monitoring/:kind/:tmdbId/ledger`: the title as TMDB knows it,
-/// against its rows and the library.
 pub async fn ledger(
     State(state): State<SharedState>,
     AskedLocale(reader): AskedLocale,
@@ -187,7 +230,6 @@ pub async fn ledger(
     Ok(Json(view).into_response())
 }
 
-/// `GET /api/monitoring/show/:tmdbId/ledger/:season`: one season's episodes.
 pub async fn season_ledger(
     State(state): State<SharedState>,
     AskedLocale(reader): AskedLocale,

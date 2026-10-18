@@ -24,6 +24,13 @@ describe('the monitoring endpoints', () => {
       path: '/monitoring/movie/603',
     },
     {
+      name: 'search',
+      call: (c) => c.monitoring.search('show', 77, [{ season: 1, episode: 3 }]),
+      method: 'POST',
+      path: '/monitoring/show/77/search',
+      body: { units: [{ season: 1, episode: 3 }] },
+    },
+    {
       name: 'setEpisodes',
       call: (c) => c.monitoring.setEpisodes(77, { seasons: [{ season: 2, monitored: false }] }),
       method: 'PUT',

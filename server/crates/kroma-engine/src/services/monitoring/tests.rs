@@ -193,3 +193,4 @@ pub(super) fn wanted(status: &str) -> String {
 mod monitor;
 mod reconcile;
 mod refresh;
+mod search;

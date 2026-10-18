@@ -73,7 +73,8 @@ export type RequestsView = z.infer<typeof RequestsView>;
 
 /** Shared by `GET /api/requests/calendar` (future-dated, `airDate` always set)
  * and `GET /api/requests/missing` (aired but not on disk, `airDate` may be
- * null). `requestId` is null for a library-scan row nobody requested. */
+ * null). `requestId` is null for a library-scan row nobody requested;
+ * `episodeTitle` is set only where the library holds the show's season guide. */
 export const CalendarEntry = z.object({
   requestId: RequestId.nullable(),
   tmdbId: z.number(),
@@ -83,6 +84,7 @@ export const CalendarEntry = z.object({
   posterUrl: z.string().nullable(),
   season: z.number().nullable(),
   episode: z.number().nullable(),
+  episodeTitle: z.string().nullable().default(null),
   airDate: z.string().nullable(),
   status: z.string(),
 });

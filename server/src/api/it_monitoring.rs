@@ -221,3 +221,33 @@ async fn a_bulk_change_reports_each_title_it_could_not_set() {
     assert_eq!(body["monitored"], json!(0));
     assert_eq!(body["failed"][0]["tmdbId"], json!(1));
 }
+
+#[tokio::test]
+async fn the_library_index_lists_a_title_nothing_monitors() {
+    let t = test_app();
+    let token = admin(&t);
+    t.state
+        .db
+        .get()
+        .unwrap()
+        .execute_batch(
+            "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('l1','Films','movies','/m','now');
+             INSERT INTO items (id,kind,title,year,container,library,added_at)
+                 VALUES ('m1','movie','Dune',2021,'mkv','l1','2026-01-01');",
+        )
+        .unwrap();
+
+    let (status, body) = get(&t.app, "/api/monitoring/library", Some(&token)).await;
+
+    assert_eq!(status, StatusCode::OK);
+    let dune = body
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|row| row["title"] == json!("Dune"))
+        .expect("the film on disk is in the index");
+    assert_eq!(dune["monitored"], json!(false));
+    assert_eq!(dune["onDisk"], json!(1));
+    assert_eq!(dune["kind"], json!("movie"));
+}
+

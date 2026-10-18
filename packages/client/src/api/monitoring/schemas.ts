@@ -65,7 +65,42 @@ export const MonitorBody = z.object({
 });
 export type MonitorBody = z.infer<typeof MonitorBody>;
 
-/** A title by its TMDB identity. */
+/** What an acquisition module made of a "search now": whether it started, how
+ * many units it aimed at, and the word for why it did not (`busy`, `noIndexer`,
+ * `vpnClosed`, `noModule`, `failed`). */
+export const SearchNow = z.object({
+  started: z.boolean(),
+  units: z.number().default(0),
+  reason: z.string().nullish(),
+});
+export type SearchNow = z.infer<typeof SearchNow>;
+
+export const MonitorResult = MonitoredTitle.extend({ search: SearchNow.nullish() });
+export type MonitorResult = z.infer<typeof MonitorResult>;
+
+/** `tmdbId` is null for a title no provider matched, which nothing can
+ * monitor. */
+export const LibraryTitle = z.object({
+  kind: RequestKind,
+  tmdbId: z.number().nullable(),
+  localId: z.string().nullable(),
+  title: z.string(),
+  year: z.number().nullable(),
+  posterUrl: z.string().nullable(),
+  addedAt: z.string().nullable(),
+  onDisk: z.number(),
+  seasonCount: z.number(),
+  sizeBytes: z.number(),
+  monitored: z.boolean(),
+  monitoredUnits: z.number(),
+  available: z.number(),
+  missing: z.number(),
+  grabbed: z.number(),
+  airStatus: z.string().nullable(),
+  nextAirDate: z.string().nullable(),
+});
+export type LibraryTitle = z.infer<typeof LibraryTitle>;
+
 export const TitleRef = z.object({ kind: RequestKind, tmdbId: z.number() });
 export type TitleRef = z.infer<typeof TitleRef>;
 
@@ -77,8 +112,6 @@ export const EpisodeMonitoringBody = z.object({
 });
 export type EpisodeMonitoringBody = z.infer<typeof EpisodeMonitoringBody>;
 
-/** `POST /api/monitoring/bulk` answer: how many titles were set, and why each
- * other one could not be. */
 export const BulkMonitorResult = z.object({
   monitored: z.number(),
   failed: z.array(TitleRef.extend({ error: z.string() })),

@@ -1,12 +1,16 @@
 import { z } from 'zod';
 import type { RequestContext } from '../../core/client';
+import type { EpisodeRef } from '../requests';
 import { type RequestKind, RequestLedgerView, SeasonLedgerView } from '../requests';
 import {
   BulkMonitorResult,
   type EpisodeMonitoringBody,
+  LibraryTitle,
   type MonitorBody,
   MonitoredSummary,
   MonitoredTitle,
+  MonitorResult,
+  SearchNow,
   type TitleRef,
 } from './schemas';
 
@@ -21,17 +25,29 @@ export default function monitoringApi(ctx: RequestContext) {
     /** Every monitored title with what the library holds of it. */
     list: () => ctx.get('/monitoring', MonitoredSummary.array()),
 
+    /** The whole library, each title with what monitoring knows of it. */
+    library: () => ctx.get('/monitoring/library', LibraryTitle.array()),
+
     /** How a title is monitored; a 404 when it is not. */
     get: (kind: RequestKind, tmdbId: number) =>
       ctx.get('/monitoring/:kind/:tmdbId', MonitoredTitle, title(kind, tmdbId)),
 
-    /** Monitor a title, or change how. A preset re-chooses a show's episodes. */
+    /** Monitor a title, or change how. A preset re-chooses a show's episodes;
+     * with `searchNow` the answer carries whether the search started. */
     monitor: (kind: RequestKind, tmdbId: number, body: MonitorBody = {}) =>
-      ctx.put('/monitoring/:kind/:tmdbId', MonitoredTitle, { ...title(kind, tmdbId), body }),
+      ctx.put('/monitoring/:kind/:tmdbId', MonitorResult, { ...title(kind, tmdbId), body }),
 
     /** Stop monitoring a title: its rows go with it, requests stay. */
     unmonitor: (kind: RequestKind, tmdbId: number) =>
       ctx.delete('/monitoring/:kind/:tmdbId', Removed, title(kind, tmdbId)),
+
+    /** Look again for what the title is missing, or just for `units`. It asks
+     * and downloads nothing on the caller's behalf. */
+    search: (kind: RequestKind, tmdbId: number, units: EpisodeRef[] = []) =>
+      ctx.post('/monitoring/:kind/:tmdbId/search', SearchNow, {
+        ...title(kind, tmdbId),
+        body: { units },
+      }),
 
     /** Switch whole seasons and single episodes of a monitored show. */
     setEpisodes: (tmdbId: number, body: EpisodeMonitoringBody) =>

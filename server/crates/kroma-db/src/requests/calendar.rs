@@ -1,14 +1,10 @@
-//! Reading the ledger as a calendar: what is coming, and what is still missing.
-
-use rusqlite::{params, Connection, Row};
+use rusqlite::{Connection, Params, Row, Statement, params};
 
 use kroma_domain::{CalendarEntry, RequestKind};
 
 use super::wanted::AIRED;
 
-// Callers append their own `WHERE`/`ORDER BY`/`LIMIT` and map rows with `row_to_calendar_entry`.
-const CALENDAR_SELECT: &str =
-    "SELECT w.request_id, w.tmdb_id, w.kind, w.title, w.year, \
+const SELECT: &str = "SELECT w.request_id, w.tmdb_id, w.kind, w.title, w.year, \
                 COALESCE(r.poster_url, m.poster_url), \
                 w.season, w.episode, w.air_date, w.status \
          FROM wanted w \
@@ -20,6 +16,18 @@ const CALENDAR_SELECT: &str =
 // only monitoring holds is listed to managers, never in a requester's view.
 const LIVE: &str = "(r.id IS NULL OR r.status NOT IN ('denied', 'failed')) \
     AND (?2 IS NULL OR r.requested_by = ?2)";
+
+// The column list and the mapper are coupled by position, so the only way to
+// reach either is through this pair.
+fn calendar_rows<P: Params>(
+    conn: &Connection,
+    tail: &str,
+    args: P,
+) -> rusqlite::Result<Vec<CalendarEntry>> {
+    let mut stmt: Statement = conn.prepare(&format!("{SELECT} {tail}"))?;
+    let rows = stmt.query_map(args, row_to_calendar_entry)?;
+    rows.collect()
+}
 
 fn row_to_calendar_entry(r: &Row) -> rusqlite::Result<CalendarEntry> {
     let kind: String = r.get(2)?;
@@ -36,6 +44,7 @@ fn row_to_calendar_entry(r: &Row) -> rusqlite::Result<CalendarEntry> {
         poster_url: r.get(5)?,
         season: r.get(6)?,
         episode: r.get(7)?,
+        episode_title: None,
         air_date: r.get(8)?,
         status: r.get(9)?,
     })
@@ -49,17 +58,15 @@ pub fn upcoming_calendar(
     requester: Option<&str>,
     limit: usize,
 ) -> rusqlite::Result<Vec<CalendarEntry>> {
-    let mut stmt = conn.prepare(&format!(
-        "{CALENDAR_SELECT} \
-         WHERE w.air_date IS NOT NULL AND w.air_date > ?1 \
-           AND w.status IN ('wanted', 'grabbed') AND {LIVE} \
-         ORDER BY w.air_date ASC, w.title ASC LIMIT ?3"
-    ))?;
-    let rows = stmt.query_map(
+    calendar_rows(
+        conn,
+        &format!(
+            "WHERE w.air_date IS NOT NULL AND w.air_date > ?1 \
+               AND w.status IN ('wanted', 'grabbed') AND {LIVE} \
+             ORDER BY w.air_date ASC, w.title ASC LIMIT ?3"
+        ),
         params![today, requester, limit as i64],
-        row_to_calendar_entry,
-    )?;
-    rows.collect()
+    )
 }
 
 /// The inverse of [`upcoming_calendar`]: aired-or-undated rows still `wanted`.
@@ -70,16 +77,14 @@ pub fn missing_items(
     requester: Option<&str>,
     limit: usize,
 ) -> rusqlite::Result<Vec<CalendarEntry>> {
-    let mut stmt = conn.prepare(&format!(
-        "{CALENDAR_SELECT} \
-         WHERE w.status = 'wanted' AND {AIRED} AND {LIVE} \
-         ORDER BY w.title ASC, w.season ASC, w.episode ASC LIMIT ?3"
-    ))?;
-    let rows = stmt.query_map(
+    calendar_rows(
+        conn,
+        &format!(
+            "WHERE w.status = 'wanted' AND {AIRED} AND {LIVE} \
+             ORDER BY w.title ASC, w.season ASC, w.episode ASC LIMIT ?3"
+        ),
         params![today, requester, limit as i64],
-        row_to_calendar_entry,
-    )?;
-    rows.collect()
+    )
 }
 
 /// Missing units only monitoring wants, no request answering for them: what a
@@ -90,21 +95,38 @@ pub fn monitored_missing(
     today: &str,
     limit: usize,
 ) -> rusqlite::Result<Vec<CalendarEntry>> {
-    let mut stmt = conn.prepare(&format!(
-        "{CALENDAR_SELECT} \
-         WHERE w.status = 'wanted' AND {AIRED} \
+    calendar_rows(
+        conn,
+        &format!(
+            "WHERE w.status = 'wanted' AND {AIRED} \
+               AND w.request_id IS NULL \
+             ORDER BY w.title ASC, w.season ASC, w.episode ASC LIMIT ?2"
+        ),
+        params![today, limit as i64],
+    )
+}
+
+/// The future-dated units a monitored title wants that no request asked for.
+pub fn monitored_upcoming(
+    conn: &Connection,
+    today: &str,
+    limit: usize,
+) -> rusqlite::Result<Vec<CalendarEntry>> {
+    calendar_rows(
+        conn,
+        "WHERE w.air_date IS NOT NULL AND w.air_date > ?1 \
+           AND w.status IN ('wanted', 'grabbed') \
            AND w.request_id IS NULL \
-         ORDER BY w.title ASC, w.season ASC, w.episode ASC LIMIT ?2"
-    ))?;
-    let rows = stmt.query_map(params![today, limit as i64], row_to_calendar_entry)?;
-    rows.collect()
+         ORDER BY w.air_date ASC, w.title ASC LIMIT ?2",
+        params![today, limit as i64],
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::requests::tests::*;
-    use crate::requests::{insert_request, insert_wanted, claim_wanted, WantedRow};
+    use crate::requests::{WantedRow, claim_wanted, insert_request, insert_wanted};
     use kroma_domain::RequestStatus;
 
     #[test]
@@ -144,9 +166,11 @@ mod tests {
         let mut eps: Vec<u32> = missing.iter().filter_map(|e| e.episode).collect();
         eps.sort_unstable();
         assert_eq!(eps, vec![1], "an undated episode has not aired");
-        assert!(missing_items(&conn, "2026-07-05", Some("someone-else"), 50)
-            .unwrap()
-            .is_empty());
+        assert!(
+            missing_items(&conn, "2026-07-05", Some("someone-else"), 50)
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
@@ -265,6 +289,35 @@ mod tests {
     }
 
     #[test]
+    fn what_is_still_coming_to_a_monitored_title_is_kept_from_a_requesters_calendar() {
+        let pool = pool();
+        req_by(&pool, "r-1", 1, RequestStatus::Approved, Some("ana"));
+        let mut free = wanted_row("w-free", "unused", Some("2030-01-01"), "wanted");
+        free.request_id = None;
+        insert_wanted(
+            &pool,
+            &[
+                free,
+                wanted_row("w-asked", "r-1", Some("2030-02-01"), "wanted"),
+            ],
+            1_000,
+        )
+        .unwrap();
+
+        let conn = pool.get().unwrap();
+        let monitored = monitored_upcoming(&conn, "2026-01-01", 50).unwrap();
+
+        assert_eq!(monitored.len(), 1);
+        assert_eq!(monitored[0].request_id, None);
+        assert!(
+            upcoming_calendar(&conn, "2026-01-01", Some("ana"), 50)
+                .unwrap()
+                .iter()
+                .all(|e| e.request_id.is_some())
+        );
+    }
+
+    #[test]
     fn a_managers_own_view_adds_what_only_monitoring_wants() {
         let pool = pool();
         req_by(&pool, "r-1", 1, RequestStatus::Approved, Some("ana"));
@@ -272,7 +325,10 @@ mod tests {
         free.request_id = None;
         insert_wanted(
             &pool,
-            &[free, wanted_row("w-asked", "r-1", Some("2020-01-01"), "wanted")],
+            &[
+                free,
+                wanted_row("w-asked", "r-1", Some("2020-01-01"), "wanted"),
+            ],
             1_000,
         )
         .unwrap();

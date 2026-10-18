@@ -25,12 +25,14 @@ export const LedgerSeason = z.object({
   episodeCount: z.number(),
   requested: z.number(),
   onDisk: z.number(),
+  posterUrl: z.string().nullish(),
 });
 export type LedgerSeason = z.infer<typeof LedgerSeason>;
 
 /** One episode as TMDB describes it, joined with what the request and the
  * library know. `wantedId` is null for an episode the request does not cover: it
- * can still be searched, it is simply not tracked. */
+ * can still be searched, it is simply not tracked. `heldByRequest` marks a unit
+ * an open request asks for, which monitoring keeps whatever it is told. */
 export const LedgerEpisode = EpisodeRef.extend({
   name: z.string().nullable(),
   overview: z.string().nullable(),
@@ -40,6 +42,7 @@ export const LedgerEpisode = EpisodeRef.extend({
   onDisk: z.boolean(),
   wantedId: WantedId.nullable(),
   wantedStatus: z.string().nullable(),
+  heldByRequest: z.boolean().default(false),
   itemId: ItemId.nullable(),
   video: VideoTrack.nullable(),
   durationMs: z.number().nullable(),
@@ -99,13 +102,28 @@ export const GrabBody = z.intersection(
 );
 export type GrabBody = z.infer<typeof GrabBody>;
 
-/** One score-explanation line. */
+/** One score-explanation line. `code` is the stable key a screen translates
+ * with `params`; `note` is the English a caller that reads neither can show. */
 export const ScoreLineView = z.object({
   rule: z.string(),
   delta: z.number(),
   note: z.string(),
+  code: z.string().default(''),
+  params: z.record(z.string(), z.unknown()).default({}),
 });
 export type ScoreLineView = z.infer<typeof ScoreLineView>;
+
+/** Why a rule refused a release, as a screen says it in the reader's own
+ * language: a stable `rule` and whatever its sentence needs. */
+export const ReleaseRefusal = z.object({
+  rule: z.string(),
+  params: z.record(z.string(), z.unknown()).default({}),
+});
+export type ReleaseRefusal = z.infer<typeof ReleaseRefusal>;
+
+/** What a tracker's volume factors say about a release. */
+export const ReleaseFlag = z.enum(['freeleech', 'halfleech', 'doubleUpload']);
+export type ReleaseFlag = z.infer<typeof ReleaseFlag>;
 
 /** Why a release would or would not improve what a title holds. */
 export const VerdictReason = z.enum([
@@ -154,6 +172,8 @@ export const ScoredReleaseView = z.object({
   score: z.number().nullable(),
   breakdown: z.array(ScoreLineView),
   rejected: z.string().nullable(),
+  refusal: ReleaseRefusal.nullish(),
+  flags: z.array(ReleaseFlag).default([]),
   grabbable: z.boolean(),
   upgrade: z.boolean(),
   detailsUrl: z.string().nullable(),

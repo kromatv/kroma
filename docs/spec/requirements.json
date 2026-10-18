@@ -2257,7 +2257,7 @@
     "status": "AGREED",
     "text": "A monitored episode or film that is available (aired, or past its minimum",
     "file": "docs/spec/library/monitoring.md",
-    "line": 93
+    "line": 102
   },
   {
     "id": "LIB-64",
@@ -2267,7 +2267,7 @@
     "status": "AGREED",
     "text": "The missing list shows monitored units, and beside them, kept apart, the",
     "file": "docs/spec/library/monitoring.md",
-    "line": 97
+    "line": 106
   },
   {
     "id": "LIB-65",
@@ -2277,7 +2277,7 @@
     "status": "AGREED",
     "text": "What is missing stays true in both directions: a file that lands makes",
     "file": "docs/spec/library/monitoring.md",
-    "line": 100
+    "line": 109
   },
   {
     "id": "LIB-66",
@@ -2287,7 +2287,7 @@
     "status": "AGREED",
     "text": "A unit goes back to missing only after it has been without its file for",
     "file": "docs/spec/library/monitoring.md",
-    "line": 105
+    "line": 114
   },
   {
     "id": "LIB-67",
@@ -2297,7 +2297,7 @@
     "status": "AGREED",
     "text": "When more monitored units lose their file in one pass than 20, or than a",
     "file": "docs/spec/library/monitoring.md",
-    "line": 109
+    "line": 118
   },
   {
     "id": "LIB-68",
@@ -2307,7 +2307,7 @@
     "status": "AGREED",
     "text": "A file holding several episodes answers for every episode in it, in the",
     "file": "docs/spec/library/monitoring.md",
-    "line": 114
+    "line": 123
   },
   {
     "id": "LIB-69",
@@ -2368,6 +2368,36 @@
     "text": "A person asks for the specials when they choose the preset, for one title",
     "file": "docs/spec/library/monitoring.md",
     "line": 42
+  },
+  {
+    "id": "LIB-75",
+    "domain": "LIB",
+    "space": "library",
+    "number": 75,
+    "status": "AGREED",
+    "text": "What is still coming is the missing list read forwards: a monitored",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 126
+  },
+  {
+    "id": "LIB-76",
+    "domain": "LIB",
+    "space": "library",
+    "number": 76,
+    "status": "AGREED",
+    "text": "Whoever decides what the library monitors sees every title of it in one",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 89
+  },
+  {
+    "id": "LIB-77",
+    "domain": "LIB",
+    "space": "library",
+    "number": 77,
+    "status": "AGREED",
+    "text": "Asking for a title's missing units to be searched now reaches whatever",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 94
   },
   {
     "id": "MEDIA-1",

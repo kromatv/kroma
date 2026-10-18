@@ -86,6 +86,15 @@ one minimum availability.
 alone, and so is any request about it: what an open request asked for keeps being searched for
 until that request is settled.
 
+**LIB-76** (AGREED) - Whoever decides what the library monitors sees every title of it in one
+list, monitored or not, with a monitored title the library holds nothing of yet among them, and
+switches any of them from there. A title no provider matched is listed and cannot be monitored,
+since monitoring is keyed on the provider's identity.
+
+**LIB-77** (AGREED) - Asking for a title's missing units to be searched now reaches whatever
+acquisition is installed and says what became of it: how many units it took, or why it refused.
+With nothing installed to search, it says that instead of reporting a search that never ran.
+
 ## Missing
 
 Status: **AGREED**
@@ -113,6 +122,10 @@ library to be downloaded again.
 
 **LIB-68** (AGREED) - A file holding several episodes answers for every episode in it, in the
 missing list and wherever the library says what it holds.
+
+**LIB-75** (AGREED) - What is still coming is the missing list read forwards: a monitored
+unit whose date is ahead is listed beside the units a person's own requests are waiting on.
+Someone who does not decide what the library monitors sees only their own requests there.
 
 ## Not in scope
 

@@ -218,20 +218,46 @@ fn an_explicit_new_seasons_switch_wins_over_the_preset() {
 }
 
 #[test]
-fn searching_now_wakes_the_search() {
+fn searching_named_units_puts_back_only_those_and_creates_nothing() {
     let host = host();
     let _tmdb = tmdb();
-    let body = MonitorBody {
-        search_now: true,
-        ..MonitorBody::default()
-    };
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
+    let all: Vec<String> = db::wanted_for_title(&host.db().get().unwrap(), RequestKind::Show, SHOW)
+        .unwrap()
+        .into_iter()
+        .map(|w| w.id)
+        .collect();
+    db::schedule_next_search(host.db(), &all, now_ms(), 60_000).unwrap();
 
-    monitor(&host, RequestKind::Show, SHOW, &body, None).unwrap();
+    search_now(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &[EpisodeRef {
+            season: 1,
+            episode: 2,
+        }],
+    )
+    .unwrap();
 
+    let due = db::wanted_searchable(&host.db().get().unwrap(), "2999-01-01", now_ms(), 50).unwrap();
+    assert_eq!(
+        due.iter()
+            .map(|w| (w.season, w.episode))
+            .collect::<Vec<_>>(),
+        vec![(Some(1), Some(2))]
+    );
     assert!(
-        host.jobs()
-            .iter()
-            .any(|(key, _)| *key == "acquisition.search")
+        db::list_requests(&host.db().get().unwrap(), None)
+            .unwrap()
+            .is_empty()
     );
 }
 

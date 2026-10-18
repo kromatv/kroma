@@ -94,6 +94,53 @@ pub struct MonitoredSummary {
     pub grabbed: u32,
 }
 
+/// What an acquisition module made of a "search now": whether it started, how
+/// many units it aimed at, and the word for why it did not (`busy`,
+/// `noIndexer`, `vpnClosed`, `noModule`).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchNow {
+    pub started: bool,
+    #[serde(default)]
+    pub units: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+}
+
+impl SearchNow {
+    pub fn refused(reason: &str) -> Self {
+        Self {
+            started: false,
+            units: 0,
+            reason: Some(reason.to_string()),
+        }
+    }
+}
+
+/// One title of the library, with what monitoring knows of it. `tmdb_id` is
+/// absent for a title no provider matched, which nothing can monitor.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryTitle {
+    pub kind: RequestKind,
+    pub tmdb_id: Option<u64>,
+    pub local_id: Option<String>,
+    pub title: String,
+    pub year: Option<u32>,
+    pub poster_url: Option<String>,
+    pub added_at: Option<String>,
+    pub on_disk: u32,
+    pub season_count: u32,
+    pub size_bytes: i64,
+    pub monitored: bool,
+    pub monitored_units: u32,
+    pub available: u32,
+    pub missing: u32,
+    pub grabbed: u32,
+    pub air_status: Option<String>,
+    pub next_air_date: Option<String>,
+}
+
 /// `PUT /api/monitoring/:kind/:tmdbId` body. Monitors the title when it is not
 /// yet; `preset` is applied to a show's episodes, and absent fields keep what
 /// the title has. `monitor_specials` widens the preset to season 0, which it
@@ -155,4 +202,13 @@ pub struct EpisodeSwitch {
     #[serde(flatten)]
     pub episode: EpisodeRef,
     pub monitored: bool,
+}
+
+/// `POST /api/monitoring/:kind/:tmdbId/search` body: which of the title's
+/// missing units to look for. An empty list means every one of them.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchUnitsBody {
+    #[serde(default)]
+    pub units: Vec<EpisodeRef>,
 }

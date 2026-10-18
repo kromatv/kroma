@@ -15,6 +15,7 @@ use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
 use crate::db;
 use crate::i18n;
+use crate::i18n::ReqLocale;
 use crate::model::{
     CreateRequestBody, MediaRequest, Permission, RequestCounts, RequestStatus, RequestsView, User,
 };
@@ -154,15 +155,23 @@ fn overlay_active_downloads(
 /// (unless `?mine=true` forces own-only, like `GET /requests`).
 pub async fn calendar(
     State(state): State<SharedState>,
+    ReqLocale(locale): ReqLocale,
     AuthUser(user): AuthUser,
     Query(params): Query<ListParams>,
 ) -> Result<Response, Response> {
     let (all, uid) = list_scope(&user, &params)?;
+    let librarian = user.can(Permission::LibraryManage);
     let today = crate::services::requests::today_ymd();
     let entries = query(&state.db, move |pool| {
         let conn = pool.get()?;
         let scope = if all { None } else { Some(uid.as_str()) };
-        Ok(db::upcoming_calendar(&conn, &today, scope, 300)?)
+        let mut entries = db::upcoming_calendar(&conn, &today, scope, 300)?;
+        if !all && librarian {
+            entries.extend(db::monitored_upcoming(&conn, &today, 300)?);
+            entries.sort_by(|a, b| a.air_date.cmp(&b.air_date).then(a.title.cmp(&b.title)));
+        }
+        db::fill_episode_titles(&conn, &mut entries, locale)?;
+        Ok(entries)
     })
     .await?;
     Ok(Json(entries).into_response())
@@ -174,6 +183,7 @@ pub async fn calendar(
 /// `library.manage` holder also sees what only monitoring wants.
 pub async fn missing(
     State(state): State<SharedState>,
+    ReqLocale(locale): ReqLocale,
     AuthUser(user): AuthUser,
     Query(params): Query<ListParams>,
 ) -> Result<Response, Response> {
@@ -191,6 +201,7 @@ pub async fn missing(
         // requested (the `library.missing` job fills these). Library-wide, not
         // request-scoped; the query already excludes shows with a live request.
         entries.extend(db::library_gaps_list(&conn, 500)?);
+        db::fill_episode_titles(&conn, &mut entries, locale)?;
         Ok(entries)
     })
     .await?;

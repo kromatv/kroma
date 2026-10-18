@@ -97,6 +97,7 @@ pub struct RawSeason {
     pub name: Option<String>,
     pub episode_count: u32,
     pub air_date: Option<String>,
+    pub poster_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -153,6 +154,7 @@ pub fn detail(
             name: s.name.filter(|n| !n.is_empty()),
             episode_count: s.episode_count.unwrap_or(0),
             air_date: s.air_date.filter(|a| !a.is_empty()),
+            poster_url: s.poster_path.map(|p| format!("{IMG}/w185{p}")),
         })
         .collect();
     let (raw_cast, raw_crew) = d.credits.map(|c| (c.cast, c.crew)).unwrap_or_default();

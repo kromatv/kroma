@@ -149,6 +149,7 @@ fn build_ledger<S: HostStorage>(
                 .keys()
                 .filter(|(season, _)| *season == s.season)
                 .count() as u32,
+            poster_url: s.poster_url.clone(),
         })
         .collect();
 
@@ -183,6 +184,7 @@ fn build_season<S: HostStorage>(
     }
     let conn = state.db().get()?;
     let present = on_disk(&conn, subject.kind, subject.tmdb_id)?;
+    let held = db::rows_held_by_requests(&conn, &subject.rows)?;
     drop(conn);
 
     let episodes = season_episodes(state, subject.tmdb_id, season, language)?
@@ -203,6 +205,7 @@ fn build_season<S: HostStorage>(
                 rating: ep.rating,
                 on_disk: file.is_some(),
                 wanted_id: row.map(|w| w.id.clone()),
+                held_by_request: row.is_some_and(|w| held.contains(&w.id)),
                 wanted_status: row.map(|w| w.status.clone()),
                 item_id: file.map(|f| f.item_id.clone()),
                 video: file.and_then(video_of),

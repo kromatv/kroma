@@ -123,6 +123,8 @@ pub(super) struct RawSeasonResp {
     pub(super) episode_count: Option<u32>,
     #[serde(default)]
     pub(super) air_date: Option<String>,
+    #[serde(default)]
+    pub(super) poster_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
