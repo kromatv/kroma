@@ -2,8 +2,8 @@
 // On a TV it locks the navigator behind it and mounts its own, so the remote
 // cannot reach (or fire OK on) anything under the panel.
 
-import { type ReactNode, useId, useMemo } from 'react';
-import { Modal, useWindowDimensions } from 'react-native';
+import { type ReactNode, useId, useMemo, useRef } from 'react';
+import { Modal, useWindowDimensions, type View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
@@ -15,10 +15,12 @@ import { FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { useModalPortalRepair } from '#ui/lib/modal-portal';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
 import { WEB } from '#ui/lib/platform';
+import { ScopeCarrier } from '#ui/lib/scope-carrier';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { surfaceBands } from '#ui/lib/surface-bands';
-import { DIALOG_PAD, SURFACE_WIDTH, type SurfaceWidth, surfaceGutter } from '#ui/lib/surface-shell';
+import { dialogPad, SURFACE_WIDTH, type SurfaceWidth, surfaceGutter } from '#ui/lib/surface-shell';
 import { Actions } from './dialog-actions';
+import { useDialogEntryFocus } from './dialog-entry-focus';
 import { Footer, Header, Panel, type Shell, ShellContext } from './dialog-parts';
 
 interface DialogRootProps {
@@ -32,9 +34,13 @@ interface DialogRootProps {
   /** The panel's step on the kit's width ladder, named for the densest thing it
    *  holds rather than measured in pixels. See {@link SURFACE_WIDTH}. */
   width?: SurfaceWidth;
-  /** Panel padding. 0 hands the surface to content that owns its own layout
-   *  (a routed detail sheet); such a dialog names itself via `title` even
-   *  though nothing visible renders it. */
+  /** Take the full height the window allows, so content that changes height
+   *  (a tabbed list) does not move the header under the pointer. */
+  fullHeight?: boolean;
+  /** Panel padding, defaulting to the step the window is wide enough for (see
+   *  {@link dialogPad}). 0 hands the surface to content that owns its own
+   *  layout (a routed detail sheet); such a dialog names itself via `title`
+   *  even though nothing visible renders it. */
   pad?: number;
   /** Keep `title` as the accessible name only; the visible header is the
    *  content's own. */
@@ -48,7 +54,8 @@ function Root({
   description,
   children,
   width = 'md',
-  pad = DIALOG_PAD,
+  fullHeight = false,
+  pad,
   titleHidden = false,
 }: Readonly<DialogRootProps>) {
   // react-native-web's Modal loses its portal container under StrictMode, and a
@@ -66,6 +73,7 @@ function Root({
     <DialogSurface
       onClose={onClose}
       width={width}
+      fullHeight={fullHeight}
       pad={pad}
       titleHidden={titleHidden}
       title={title}
@@ -83,7 +91,7 @@ function Root({
   if (!open || hosted) return null;
   return (
     <Modal transparent visible animationType="fade" onRequestClose={onClose}>
-      {surface}
+      <ScopeCarrier>{surface}</ScopeCarrier>
     </Modal>
   );
 }
@@ -93,6 +101,7 @@ function Root({
 function DialogSurface({
   onClose,
   width,
+  fullHeight,
   pad,
   title,
   titleHidden,
@@ -103,7 +112,7 @@ function DialogSurface({
 }: Readonly<
   Omit<DialogRootProps, 'open'> & {
     width: SurfaceWidth;
-    pad: number;
+    fullHeight: boolean;
     trapped: boolean;
     bridge: boolean;
   }
@@ -111,7 +120,11 @@ function DialogSurface({
   const s = useStyles(sDefinition);
 
   useFocusNav({ onBack: onClose });
-  const gutter = surfaceGutter(useWindowDimensions().width);
+  const windowWidth = useWindowDimensions().width;
+  const gutter = surfaceGutter(windowWidth);
+  const padding = pad ?? dialogPad(windowWidth);
+  const box = useRef<View>(null);
+  useDialogEntryFocus(box);
   const titleId = useId();
   const descriptionId = useId();
   const showsTitle = Boolean(title) && !titleHidden;
@@ -125,7 +138,10 @@ function DialogSurface({
     headerPart ?? defaultHeader({ showsTitle, title, description, titleId, descriptionId });
   const hasHeader = Boolean(header);
   const hasFooter = Boolean(footerPart);
-  const shell = useMemo<Shell>(() => ({ pad, hasHeader, hasFooter }), [pad, hasHeader, hasFooter]);
+  const shell = useMemo<Shell>(
+    () => ({ pad: padding, hasHeader, hasFooter }),
+    [padding, hasHeader, hasFooter],
+  );
   // By reference only when this panel rendered the node carrying the id: a
   // composed <Dialog.Header> replaces the fallback, and those ids go with it.
   const namesOwnTitle = !headerPart && showsTitle;
@@ -140,7 +156,9 @@ function DialogSurface({
     <Box flex center bg="overlay" p={gutter}>
       <DismissBackdrop onPress={onClose} />
       <Box
+        ref={box}
         w={SURFACE_WIDTH[width]}
+        h={fullHeight ? '100%' : undefined}
         maxW="100%"
         maxH="100%"
         bg="surface2"

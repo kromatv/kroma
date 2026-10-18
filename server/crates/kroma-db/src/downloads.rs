@@ -59,6 +59,17 @@ pub fn acq_tmdb_for_show(conn: &Connection, show_id: &str) -> rusqlite::Result<O
     .optional()
 }
 
+/// True when a file an import pinned to `tmdb_id` is in the catalogue, matched
+/// or not: a film just imported is on disk before enrichment says so.
+pub fn acquired_file_present(conn: &Connection, tmdb_id: u64) -> rusqlite::Result<bool> {
+    conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM acq_file_tmdb act \
+         JOIN files f ON f.abs_path = act.abs_path WHERE act.tmdb_id = ?1)",
+        params![tmdb_id as i64],
+        |r| r.get(0),
+    )
+}
+
 /// Every movie item that has an acquisition TMDB hint, keyed by item id. Loaded
 /// once per enrichment run instead of a per-item query (the table is empty on a
 /// library that never used the built-in acquisition).

@@ -33,6 +33,9 @@ pub struct LedgerSeason {
     pub episode_count: u32,
     pub requested: u32,
     pub on_disk: u32,
+    /// The season's own art, when the provider has one; the show's poster
+    /// stands in where it does not.
+    pub poster_url: Option<String>,
 }
 
 /// One episode of a season, as TMDB describes it, joined with what the request
@@ -50,6 +53,9 @@ pub struct LedgerEpisode {
     pub rating: Option<f32>,
     pub on_disk: bool,
     pub wanted_id: Option<String>,
+    /// An OPEN request asks for this episode, so monitoring keeps it whatever
+    /// it is told (LIB-54).
+    pub held_by_request: bool,
     /// The wanted row's status (`wanted` | `grabbed` | `available`), or `None`
     /// when the request does not cover this episode.
     pub wanted_status: Option<String>,
@@ -120,6 +126,7 @@ pub struct CalendarEntry {
     // Present for a show episode; `None` for a movie.
     pub season: Option<u32>,
     pub episode: Option<u32>,
+    pub episode_title: Option<String>,
     // `YYYY-MM-DD`. Always set on the calendar feed; may be `None` on the missing
     // feed (an undated aired row).
     pub air_date: Option<String>,

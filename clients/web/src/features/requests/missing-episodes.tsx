@@ -1,9 +1,5 @@
-// The missing-episode rows inside a "Manquants" group card: the whole row is
-// the selection control, and long lists collapse behind a "show more" toggle so
-// one gappy series can't swallow the page.
-
 import type { CalendarEntry } from '@kromatv/client/requests';
-import { episodeTag, relativeAirDate, sentenceCase } from '@kromatv/core';
+import { datedDayLabel, episodeTag } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
 import {
   Box,
@@ -23,39 +19,49 @@ import {
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { epKey } from '#web/features/requests/missing-model';
+import type { GroupAction } from '#web/features/requests/use-missing-actions';
 
-// Episode lists longer than this collapse behind a "show more" toggle.
 const COLLAPSE_OVER = 12;
-// How many rows a collapsed list keeps visible.
 const COLLAPSED_ROWS = 10;
+
+const ROW_ACTION = {
+  search: { icon: 'search', key: 'requests.searchUnit', started: 'requests.searchStarted' },
+  follow: { icon: 'plus', key: 'requests.followUnit', started: 'monitoring.action' },
+  request: { icon: 'plus', key: 'requests.askUnit', started: 'requests.asked' },
+} as const;
 
 const sDefinition = styles({
   list: { m: 0, p: 0, listStyleType: 'none' },
   listItem: { display: 'block' },
   italic: { fontStyle: 'italic' },
   episode: { row: true, align: 'center', gap: 16, flex: true, minW: 0, py: 10, pl: 14 },
-  tag: { w: 62, shrink: 0, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  tag: { w: 62, shrink: 0, fontVariant: ['tabular-nums'] },
 });
+
+function unitLabel(title: string, entry: CalendarEntry): string {
+  return [title, episodeTag(entry), entry.episodeTitle].filter(Boolean).join(' · ');
+}
 
 export function EpisodeList({
   entries,
-  canAct,
+  title,
+  action,
   busyKeys,
-  doneKeys,
+  startedKeys,
   selected,
   onToggleRow,
-  onSearch,
+  onRun,
 }: Readonly<{
   entries: CalendarEntry[];
-  canAct: boolean;
-  busyKeys: Set<string>;
-  doneKeys: Set<string>;
-  selected: Set<string>;
+  title: string;
+  action: GroupAction;
+  busyKeys: ReadonlySet<string>;
+  startedKeys: ReadonlySet<string>;
+  selected: ReadonlySet<string>;
   onToggleRow: (key: string) => void;
-  onSearch: (items: CalendarEntry[]) => void;
+  onRun: (items: CalendarEntry[]) => void;
 }>) {
   const s = useStyles(sDefinition);
-
   const t = useT();
   const [expanded, setExpanded] = useState(false);
   if (entries.length === 0) return null;
@@ -69,13 +75,14 @@ export function EpisodeList({
           <EpisodeRow
             key={epKey(e)}
             entry={e}
+            name={unitLabel(title, e)}
             ruled={index > 0}
-            canAct={canAct}
+            action={action}
             busy={busyKeys.has(epKey(e))}
-            done={doneKeys.has(epKey(e))}
+            started={startedKeys.has(epKey(e))}
             picked={selected.has(epKey(e))}
             onToggle={() => onToggleRow(epKey(e))}
-            onSearch={() => onSearch([e])}
+            onRun={() => onRun([e])}
           />
         ))}
         {entries.length > COLLAPSE_OVER ? (
@@ -103,33 +110,35 @@ export function EpisodeList({
 
 function EpisodeRow({
   entry,
+  name,
   ruled,
-  canAct,
+  action,
   busy,
-  done,
+  started,
   picked,
   onToggle,
-  onSearch,
+  onRun,
 }: Readonly<{
   entry: CalendarEntry;
+  name: string;
   ruled: boolean;
-  canAct: boolean;
+  action: GroupAction;
   busy: boolean;
-  done: boolean;
+  started: boolean;
   picked: boolean;
   onToggle: () => void;
-  onSearch: () => void;
+  onRun: () => void;
 }>) {
   const s = useStyles(sDefinition);
-
+  const t = useT();
   const cells = <EpisodeCells entry={entry} />;
   const rule = ruled ? <Divider color="tint/4" /> : null;
 
-  if (!canAct) {
+  if (action === 'none') {
     return (
       <li className={classes(s.listItem)}>
         {rule}
-        <Row gap={16} py={10} pl={50} pr={14}>
+        <Row gap={16} py={10} px={14}>
           {cells}
         </Row>
       </li>
@@ -143,14 +152,14 @@ function EpisodeRow({
           role="checkbox"
           checked={picked}
           onPress={onToggle}
-          label={episodeTag(entry)}
+          label={t('requests.selectUnit', { item: name })}
           style={s.episode}
         >
           <CheckboxFace checked={picked} />
           {cells}
         </Focusable>
         <Box px={8} justify="center">
-          <RowAction busy={busy} done={done} onSearch={onSearch} />
+          <RowAction action={action} name={name} busy={busy} started={started} onRun={onRun} />
         </Box>
       </Row>
     </li>
@@ -159,21 +168,26 @@ function EpisodeRow({
 
 function EpisodeCells({ entry }: Readonly<{ entry: CalendarEntry }>) {
   const s = useStyles(sDefinition);
-
   const t = useT();
   const locale = useLocale();
-  const rel = relativeAirDate(entry.airDate, locale);
   return (
     <>
-      <Text variant="meta" font="mono" color="accent" style={s.tag}>
+      <Text variant="meta" font="mono" color="textDim" style={s.tag}>
         {episodeTag(entry)}
       </Text>
-      {rel ? (
-        <Text variant="meta" color="textDim" lines={1} flex minW={0}>
-          {sentenceCase(rel, locale)}
+      {entry.episodeTitle ? (
+        <Text variant="meta" lines={1} flex minW={0}>
+          {entry.episodeTitle}
         </Text>
       ) : (
-        <Text variant="meta" color="white/35" lines={1} flex minW={0} style={s.italic}>
+        <Box flex minW={0} />
+      )}
+      {entry.airDate ? (
+        <Text variant="meta" color="textDim" lines={1} shrink={0}>
+          {datedDayLabel(entry.airDate, locale)}
+        </Text>
+      ) : (
+        <Text variant="meta" color="textMuted" lines={1} shrink={0} style={s.italic}>
           {t('requests.noDate')}
         </Text>
       )}
@@ -182,14 +196,23 @@ function EpisodeCells({ entry }: Readonly<{ entry: CalendarEntry }>) {
 }
 
 function RowAction({
+  action,
+  name,
   busy,
-  done,
-  onSearch,
-}: Readonly<{ busy: boolean; done: boolean; onSearch: () => void }>) {
+  started,
+  onRun,
+}: Readonly<{
+  action: Exclude<GroupAction, 'none'>;
+  name: string;
+  busy: boolean;
+  started: boolean;
+  onRun: () => void;
+}>) {
   const t = useT();
-  if (done) {
+  const { icon, key, started: startedKey } = ROW_ACTION[action];
+  if (started) {
     return (
-      <IconButton variant="ghost" control="sm" label={t('requests.searchStarted')} disabled>
+      <IconButton variant="ghost" control="sm" label={t(startedKey)} disabled>
         <Icon name="check" size={16} color="success" />
       </IconButton>
     );
@@ -199,9 +222,9 @@ function RowAction({
       variant="ghost"
       control="sm"
       ring="focusEdge"
-      icon="search"
-      label={t('requests.searchTitle')}
-      onPress={onSearch}
+      icon={icon}
+      label={t(key, { item: name })}
+      onPress={onRun}
       disabled={busy}
     >
       {busy ? <Spinner size={15} /> : null}

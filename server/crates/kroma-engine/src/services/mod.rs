@@ -12,6 +12,7 @@ pub mod embeddings;
 pub mod enrich;
 pub mod jobs;
 pub mod library_missing;
+pub mod monitoring;
 pub mod llm;
 pub mod loginguard;
 pub mod markers;

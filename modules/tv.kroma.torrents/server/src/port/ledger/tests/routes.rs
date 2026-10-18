@@ -147,3 +147,37 @@ async fn a_malformed_body_is_rejected_by_the_extractor() {
     let (status, _) = call("/_port/tv.kroma.torrents/grab/list-files", json!({})).await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 }
+
+#[tokio::test]
+async fn a_completed_row_names_the_files_the_torrent_itself_holds() {
+    let host = migrated_host();
+    seed_row(&host, "d1");
+    crate::db::set_download_contents(
+        host.store(),
+        "d1",
+        &[
+            "Pack/The.Matrix.mkv".to_string(),
+            "Pack/sample.mkv".to_string(),
+        ],
+    )
+    .unwrap();
+    crate::db::update_download_progress(host.db(), "d1", "completed", 1.0, None, None).unwrap();
+
+    let (_, answer) = post(host, "/_port/tv.kroma.torrents/db/completed", json!({})).await;
+
+    assert_eq!(
+        answer["Ok"][0]["content_rel_paths"],
+        json!(["Pack/The.Matrix.mkv", "Pack/sample.mkv"])
+    );
+}
+
+#[tokio::test]
+async fn a_completed_row_whose_engine_named_no_file_carries_an_empty_list() {
+    let host = migrated_host();
+    seed_row(&host, "d1");
+    crate::db::update_download_progress(host.db(), "d1", "completed", 1.0, None, None).unwrap();
+
+    let (_, answer) = post(host, "/_port/tv.kroma.torrents/db/completed", json!({})).await;
+
+    assert_eq!(answer["Ok"][0]["content_rel_paths"], json!([]));
+}

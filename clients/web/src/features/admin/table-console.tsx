@@ -3,6 +3,7 @@
 // chips, column heads, a count summary, a floating toast and an event-driven,
 // throttled reload. These live here once instead of being copy/pasted per page.
 
+import { useT } from '@kromatv/ui';
 import {
   Box,
   type ColorValue,
@@ -47,6 +48,7 @@ export function ConsoleSearch({
   onChange,
   placeholder,
 }: Readonly<{ value: string; onChange: (v: string) => void; placeholder: string }>) {
+  const t = useT();
   return (
     <Box w={320} maxW="100%">
       <Field.Root label={placeholder} hideLabel>
@@ -63,6 +65,7 @@ export function ConsoleSearch({
                 diameter={28}
                 glyph={16}
                 icon="x"
+                label={t('common.clear')}
                 onPress={() => onChange('')}
               />
             ) : null
@@ -142,7 +145,13 @@ export function ConsoleToast({ toast }: Readonly<{ toast: { text: string; on: bo
   const s = useStyles(sDefinition);
 
   return (
-    <div className={classes(s.toast, toast.on ? s.toastOn : s.toastOff)}>
+    <div
+      className={classes(s.toast, toast.on ? s.toastOn : s.toastOff)}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-hidden={!toast.on}
+    >
       <Row gap={10} px={18} py={10} radius="pill" bg="surface2" border="borderStrong">
         <Box w={8} h={8} shrink={0} radius="circle" bg="accent" />
         <Text variant="label">{toast.text}</Text>

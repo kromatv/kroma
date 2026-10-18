@@ -62,6 +62,8 @@ pub struct Release {
     pub imdb_id: Option<String>,
     pub published_at: Option<String>,
     pub details_url: Option<String>,
+    pub download_volume_factor: Option<f64>,
+    pub upload_volume_factor: Option<f64>,
 }
 
 /// What an indexer advertises via `t=caps`: which query parameters its backing

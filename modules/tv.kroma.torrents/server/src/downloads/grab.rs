@@ -57,7 +57,7 @@ impl DownloadManager {
             episodes: spec.episodes,
             release_title: spec.release_title,
             indexer_id: spec.indexer_id,
-            info_hash: None,
+            info_hash: crate::engine::magnet_info_hash(&spec.magnet_or_url),
             magnet_or_url: spec.magnet_or_url,
             size_bytes: spec.size_bytes,
             score: spec.score,

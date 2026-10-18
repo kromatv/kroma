@@ -14,6 +14,7 @@ import { createContext, type ReactNode, useContext, useMemo } from 'react';
 import { useModuleEnabledCheck } from './admin/engines';
 import type { SlotName, SlotProps } from './module';
 import type { ModuleRegistry, ModuleSlotEntry } from './registry';
+import { ModuleScope } from './scope';
 
 const SlotRegistryContext = createContext<ModuleRegistry | null>(null);
 
@@ -70,7 +71,11 @@ export function ModuleSlot<Name extends SlotName>({
     <>
       {entries.map((entry) => {
         const Component = entry.component as (p: Record<string, unknown>) => ReactNode;
-        return <Component key={`${entry.moduleId}:${entry.slot}`} {...props} />;
+        return (
+          <ModuleScope key={`${entry.moduleId}:${entry.slot}`} id={entry.moduleId}>
+            <Component {...props} />
+          </ModuleScope>
+        );
       })}
     </>
   );

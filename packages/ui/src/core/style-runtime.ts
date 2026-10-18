@@ -10,6 +10,9 @@ export interface StyleRuntime extends StyleScope {
   readonly breakpoints: BreakpointRuntime;
   styleScope(): StyleScope;
   mode(): ThemeMode;
+  /** The mode a server renders with: it reads no visitor storage, so only a
+   *  configured ground reaches it. What hydration must match. */
+  serverMode(): ThemeMode;
   setMode(mode: ThemeMode): void;
   onModeChange(listener: () => void): () => void;
 }
@@ -26,6 +29,7 @@ export function createStyleRuntime(
   parent?: StyleRuntime,
 ): StyleRuntime {
   let mode = options.ground ?? parent?.mode() ?? readMode(undefined, options.deviceStore);
+  const rendered = options.ground ?? parent?.serverMode() ?? 'system';
   const ownsTheme = !parent || options.theme !== undefined || options.ground !== undefined;
   const initial =
     options.theme ?? (!CSS_COLORS && resolveMode(mode) === 'light' ? KROMA_LIGHT : KROMA);
@@ -50,6 +54,7 @@ export function createStyleRuntime(
       return snapshot;
     },
     mode: inheritedTheme ? inheritedTheme.mode : () => mode,
+    serverMode: inheritedTheme ? inheritedTheme.serverMode : () => rendered,
     setMode(next) {
       if (inheritedTheme) {
         inheritedTheme.setMode(next);

@@ -19,6 +19,7 @@ function ep(episode: number, patch: Partial<LedgerEpisode> = {}): LedgerEpisode 
     itemId: null,
     video: null,
     durationMs: null,
+    heldByRequest: false,
     ...patch,
   };
 }

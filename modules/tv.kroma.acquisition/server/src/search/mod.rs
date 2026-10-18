@@ -3,16 +3,21 @@
 //! scoring -> ordered candidate views.
 
 pub mod backoff;
+pub mod best;
 pub mod hits;
 pub mod interactive;
+pub mod judge;
 pub mod manual;
+pub mod subject;
 pub mod sweep;
 pub mod targets;
+pub mod verdict;
 #[cfg(test)]
 pub(crate) mod test_support;
 
-pub use hits::{score_release, CachedRelease};
+pub use hits::CachedRelease;
 pub use interactive::{cached_release, grab_cached, interactive_search};
+pub use subject::Subject;
 pub use manual::manual_search;
 pub use targets::{
     targets_for_scope, targets_for_wanted, wanted_ids_by, SearchScope, SearchTarget,
@@ -84,18 +89,25 @@ mod tests {
                 rule: "res".into(),
                 delta: 10,
                 note: "1080p".into(),
+                code: "res".into(),
+                params: Default::default(),
             }],
             rejected: None,
+            refusal: None,
             grabbable: true,
             upgrade: false,
             details_url: Some("https://t/1".into()),
+            quality: None,
+            formats: Vec::new(),
+            flags: Vec::new(),
+            verdict: None,
         }
     }
 
     fn row(id: &str, season: u32, episode: u32, status: &str) -> WantedRow {
         WantedRow {
             id: id.into(),
-            request_id: "r1".into(),
+            request_id: Some("r1".into()),
             kind: "episode".into(),
             tmdb_id: 42,
             imdb_id: None,

@@ -68,6 +68,32 @@ describe('SegmentGroup', () => {
     expect(onValueChange).toHaveBeenCalledWith('c');
   });
 
+  it('is one Tab stop, which is the segment that is selected', () => {
+    render(<Group value="b" onValueChange={() => {}} />);
+
+    const stops = screen.getAllByRole('radio').map((s) => s.getAttribute('tabindex'));
+
+    expect(stops).toEqual(['-1', '0', '-1']);
+  });
+
+  it('offers the first segment to Tab when nothing in the group answers to the value', () => {
+    render(<Group value="z" onValueChange={() => {}} />);
+
+    const stops = screen.getAllByRole('radio').map((s) => s.getAttribute('tabindex'));
+
+    expect(stops).toEqual(['0', '-1', '-1']);
+  });
+
+  it('takes the focus with the selection, so the reader is never left behind', () => {
+    const view = render(<Group value="a" onValueChange={() => {}} />);
+    screen.getByRole('radio', { name: 'A' }).focus();
+
+    fireEvent.keyDown(screen.getByRole('radiogroup', { name: 'Mode' }), { key: 'ArrowRight' });
+    view.rerender(onScreen(<Group value="b" onValueChange={() => {}} />));
+
+    expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'B' }));
+  });
+
   it('names the part that was rendered outside its Root', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 

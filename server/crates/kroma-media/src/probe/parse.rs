@@ -103,12 +103,14 @@ fn build_video(stream: &FfStream) -> VideoStream {
 }
 
 fn build_audio(stream: &FfStream, index: u32) -> AudioStream {
+    let (language, title) = (stream.language(), stream.title());
     AudioStream {
         index,
         codec: normalize_codec(stream.codec_name.as_deref()),
         channels: stream.channels,
-        language: stream.language(),
-        title: stream.title(),
+        region: kroma_primitives::language::track_region(language.as_deref(), title.as_deref()),
+        language,
+        title,
         default: stream
             .disposition
             .as_ref()

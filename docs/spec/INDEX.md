@@ -3,7 +3,7 @@
 
 # Requirement index
 
-414 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+471 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -179,56 +179,83 @@
 
 ## LIB - [library](library/)
 
-- **LIB-1** (AGREED) - A **source** is a directory tree the server is told to watch, tagged
-- **LIB-2** (AGREED) - A movie source never produces episodes and a show source never produces
-- **LIB-3** (AGREED) - A server has zero or more sources, any number of them may point at the
-- **LIB-4** (AGREED) - A source is an input, not a category a person browses by. Filtering the
-- **LIB-5** (SHIPPED) - A source tree may be assembled from symlinks. A curated folder of links
-- **LIB-6** (SHIPPED) - A link the server cannot resolve is reported, never silently skipped,
-- **LIB-7** (AGREED) - A source records its mount path, its content kind and its scan schedule.
-- **LIB-8** (AGREED) - Nothing about a source is destructive. Removing one drops its titles
-- **LIB-9** (AGREED) - Matching is convention-first: a correctly named file matches offline,
-- **LIB-10** (SHIPPED) - The `Title (Year)` stem is what is matched. The year is not
-- **LIB-11** (SHIPPED) - A trailing tag after ` - `, a resolution, an edition or a source, is
-- **LIB-12** (SHIPPED) - A loose file directly under the source root, with no folder, is
-- **LIB-13** (SHIPPED) - A season folder is what makes the folder above it the show. With one
-- **LIB-14** (SHIPPED) - Without a season folder the folder proves nothing, because a flat pool
-- **LIB-15** (SHIPPED) - An episode whose filename is only its marker (`S01E01.mkv`) takes the
-- **LIB-16** (SHIPPED) - The show folder name and the `SxxEyy` marker are load-bearing; the
-- **LIB-17** (SHIPPED) - `Specials` is accepted as an alias for `Season 00`.
-- **LIB-18** (SHIPPED) - A multi-episode file is named with a range (`S01E01-E02`) and matched
-- **LIB-19** (AGREED) - A show folder MAY carry a `(Year)` for disambiguation
-- **LIB-20** (SHIPPED) - Case is ignored, and separators may be spaces, dots or underscores.
-- **LIB-21** (SHIPPED) - Only recognised video containers are considered files to match.
-- **LIB-22** (AGREED) - The scheme is a convention rather than configuration, so a library is
-- **LIB-23** (SHIPPED) - An **initial scan** runs when a source is added: the whole tree is
-- **LIB-24** (AGREED) - An **incremental rescan** keeps the catalogue true to disk afterwards.
-- **LIB-25** (AGREED) - An incremental rescan only reconsiders what changed, meaning new paths,
-- **LIB-26** (AGREED) - Scanning is safe to run at any time, including while files are being
-- **LIB-27** (AGREED) - A file is matched only once it looks **settled**, its size and
-- **LIB-28** (SHIPPED) - Scanning **reads only**. It never writes, moves, renames or deletes
-- **LIB-29** (AGREED) - KROMA never demands exclusive access to a library and never blocks the
-- **LIB-30** (AGREED) - Matching resolves a settled file to an identity: a convention parse
-- **LIB-31** (AGREED) - A file that parses to no confident identity, whether from an
-- **LIB-32** (AGREED) - Unmatched items appear in a browsable **Unmatched** view in the library
-- **LIB-33** (AGREED) - **Manual match.** A person searches the provider, picks the correct
-- **LIB-34** (AGREED) - **Rename on disk.** A name fixed to the convention above matches
-- **LIB-35** (AGREED) - A file that could be more than one identity, a title shared by a remake
-- **LIB-36** (AGREED) - One unplaceable file never stalls a source. The catalogue is always the
-- **LIB-37** (AGREED) - Every field and image a provider returns is written to the server's own
-- **LIB-38** (AGREED) - With no internet, everything already matched browses and plays exactly
-- **LIB-39** (AGREED) - Offline, a brand-new file that needs a first provider lookup stays
-- **LIB-40** (AGREED) - Offline, a forced refresh queues rather than fails.
-- **LIB-41** (SHIPPED) - A newly matched item fetches its metadata once.
-- **LIB-42** (AGREED) - Running series are re-checked on a slow cadence, so a new episode's air
-- **LIB-43** (AGREED) - A "Refresh metadata" action on any title, season or whole source
-- **LIB-44** (AGREED) - A forced refresh **never** discards a manual match or user-chosen
-- **LIB-45** (AGREED) - When a file disappears from a source, its title is **marked absent**:
-- **LIB-46** (AGREED) - Content that reappears, because a NAS remounts or a file is moved back
-- **LIB-47** (AGREED) - A **move** is therefore not a special case. It is an absent path plus a
-- **LIB-48** (AGREED) - A rescan **only ever marks absent**. It never deletes user data.
-- **LIB-49** (AGREED) - Permanently deleting a title's history is an explicit, person-initiated
-- **LIB-50** (SHIPPED) - Refreshing metadata and re-running identification are two actions, and
+- **LIB-1** (AGREED) - A **source** is a directory tree the server is told to watch, tagged <sub>[README.md](library/README.md)</sub>
+- **LIB-2** (AGREED) - A movie source never produces episodes and a show source never produces <sub>[README.md](library/README.md)</sub>
+- **LIB-3** (AGREED) - A server has zero or more sources, any number of them may point at the <sub>[README.md](library/README.md)</sub>
+- **LIB-4** (AGREED) - A source is an input, not a category a person browses by. Filtering the <sub>[README.md](library/README.md)</sub>
+- **LIB-5** (SHIPPED) - A source tree may be assembled from symlinks. A curated folder of links <sub>[README.md](library/README.md)</sub>
+- **LIB-6** (SHIPPED) - A link the server cannot resolve is reported, never silently skipped, <sub>[README.md](library/README.md)</sub>
+- **LIB-7** (AGREED) - A source records its mount path, its content kind and its scan schedule. <sub>[README.md](library/README.md)</sub>
+- **LIB-8** (AGREED) - Nothing about a source is destructive. Removing one drops its titles <sub>[README.md](library/README.md)</sub>
+- **LIB-9** (AGREED) - Matching is convention-first: a correctly named file matches offline, <sub>[README.md](library/README.md)</sub>
+- **LIB-10** (SHIPPED) - The `Title (Year)` stem is what is matched. The year is not <sub>[README.md](library/README.md)</sub>
+- **LIB-11** (SHIPPED) - A trailing tag after ` - `, a resolution, an edition or a source, is <sub>[README.md](library/README.md)</sub>
+- **LIB-12** (SHIPPED) - A loose file directly under the source root, with no folder, is <sub>[README.md](library/README.md)</sub>
+- **LIB-13** (SHIPPED) - A season folder is what makes the folder above it the show. With one <sub>[README.md](library/README.md)</sub>
+- **LIB-14** (SHIPPED) - Without a season folder the folder proves nothing, because a flat pool <sub>[README.md](library/README.md)</sub>
+- **LIB-15** (SHIPPED) - An episode whose filename is only its marker (`S01E01.mkv`) takes the <sub>[README.md](library/README.md)</sub>
+- **LIB-16** (SHIPPED) - The show folder name and the `SxxEyy` marker are load-bearing; the <sub>[README.md](library/README.md)</sub>
+- **LIB-17** (SHIPPED) - `Specials` is accepted as an alias for `Season 00`. <sub>[README.md](library/README.md)</sub>
+- **LIB-18** (SHIPPED) - A multi-episode file is named with a range (`S01E01-E02`) and matched <sub>[README.md](library/README.md)</sub>
+- **LIB-19** (AGREED) - A show folder MAY carry a `(Year)` for disambiguation <sub>[README.md](library/README.md)</sub>
+- **LIB-20** (SHIPPED) - Case is ignored, and separators may be spaces, dots or underscores. <sub>[README.md](library/README.md)</sub>
+- **LIB-21** (SHIPPED) - Only recognised video containers are considered files to match. <sub>[README.md](library/README.md)</sub>
+- **LIB-22** (AGREED) - The scheme is a convention rather than configuration, so a library is <sub>[README.md](library/README.md)</sub>
+- **LIB-23** (SHIPPED) - An **initial scan** runs when a source is added: the whole tree is <sub>[README.md](library/README.md)</sub>
+- **LIB-24** (AGREED) - An **incremental rescan** keeps the catalogue true to disk afterwards. <sub>[README.md](library/README.md)</sub>
+- **LIB-25** (AGREED) - An incremental rescan only reconsiders what changed, meaning new paths, <sub>[README.md](library/README.md)</sub>
+- **LIB-26** (AGREED) - Scanning is safe to run at any time, including while files are being <sub>[README.md](library/README.md)</sub>
+- **LIB-27** (AGREED) - A file is matched only once it looks **settled**, its size and <sub>[README.md](library/README.md)</sub>
+- **LIB-28** (SHIPPED) - Scanning **reads only**. It never writes, moves, renames or deletes <sub>[README.md](library/README.md)</sub>
+- **LIB-29** (AGREED) - KROMA never demands exclusive access to a library and never blocks the <sub>[README.md](library/README.md)</sub>
+- **LIB-30** (AGREED) - Matching resolves a settled file to an identity: a convention parse <sub>[README.md](library/README.md)</sub>
+- **LIB-31** (AGREED) - A file that parses to no confident identity, whether from an <sub>[README.md](library/README.md)</sub>
+- **LIB-32** (AGREED) - Unmatched items appear in a browsable **Unmatched** view in the library <sub>[README.md](library/README.md)</sub>
+- **LIB-33** (AGREED) - **Manual match.** A person searches the provider, picks the correct <sub>[README.md](library/README.md)</sub>
+- **LIB-34** (AGREED) - **Rename on disk.** A name fixed to the convention above matches <sub>[README.md](library/README.md)</sub>
+- **LIB-35** (AGREED) - A file that could be more than one identity, a title shared by a remake <sub>[README.md](library/README.md)</sub>
+- **LIB-36** (AGREED) - One unplaceable file never stalls a source. The catalogue is always the <sub>[README.md](library/README.md)</sub>
+- **LIB-37** (AGREED) - Every field and image a provider returns is written to the server's own <sub>[README.md](library/README.md)</sub>
+- **LIB-38** (AGREED) - With no internet, everything already matched browses and plays exactly <sub>[README.md](library/README.md)</sub>
+- **LIB-39** (AGREED) - Offline, a brand-new file that needs a first provider lookup stays <sub>[README.md](library/README.md)</sub>
+- **LIB-40** (AGREED) - Offline, a forced refresh queues rather than fails. <sub>[README.md](library/README.md)</sub>
+- **LIB-41** (SHIPPED) - A newly matched item fetches its metadata once. <sub>[README.md](library/README.md)</sub>
+- **LIB-42** (AGREED) - Running series are re-checked on a slow cadence, so a new episode's air <sub>[README.md](library/README.md)</sub>
+- **LIB-43** (AGREED) - A "Refresh metadata" action on any title, season or whole source <sub>[README.md](library/README.md)</sub>
+- **LIB-44** (AGREED) - A forced refresh **never** discards a manual match or user-chosen <sub>[README.md](library/README.md)</sub>
+- **LIB-45** (AGREED) - When a file disappears from a source, its title is **marked absent**: <sub>[README.md](library/README.md)</sub>
+- **LIB-46** (AGREED) - Content that reappears, because a NAS remounts or a file is moved back <sub>[README.md](library/README.md)</sub>
+- **LIB-47** (AGREED) - A **move** is therefore not a special case. It is an absent path plus a <sub>[README.md](library/README.md)</sub>
+- **LIB-48** (AGREED) - A rescan **only ever marks absent**. It never deletes user data. <sub>[README.md](library/README.md)</sub>
+- **LIB-49** (AGREED) - Permanently deleting a title's history is an explicit, person-initiated <sub>[README.md](library/README.md)</sub>
+- **LIB-50** (SHIPPED) - Refreshing metadata and re-running identification are two actions, and <sub>[README.md](library/README.md)</sub>
+- **LIB-51** (AGREED) - A movie or a show can be **monitored**: the server wants to hold it. <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-52** (AGREED) - Inside a monitored show, each episode is monitored or not, on its own. <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-53** (AGREED) - A show is monitored with one of these presets, each of which leaves the <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-54** (AGREED) - Nothing a person switches takes an episode away from a request that is <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-55** (AGREED) - A season is monitored when its episodes are: switching a season on <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-56** (AGREED) - An episode announced in a monitored season joins monitored. An episode a <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-57** (AGREED) - A monitored show may **take new seasons**: a season its provider announces <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-58** (AGREED) - A monitored film becomes searchable at its **minimum availability**: when <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-59** (AGREED) - Approving a request monitors its title with what the request asked for, <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-60** (AGREED) - Deleting a request leaves its title monitored. Wanting a title and having <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-61** (AGREED) - Many titles of the library can be monitored at once, with one preset and <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-62** (AGREED) - Unmonitoring a title forgets which units it wanted. Its files are left <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-63** (AGREED) - A monitored episode or film that is available (aired, or past its minimum <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-64** (AGREED) - The missing list shows monitored units, and beside them, kept apart, the <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-65** (AGREED) - What is missing stays true in both directions: a file that lands makes <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-66** (AGREED) - A unit goes back to missing only after it has been without its file for <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-67** (AGREED) - When more monitored units lose their file in one pass than 20, or than a <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-68** (AGREED) - A file holding several episodes answers for every episode in it, in the <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-69** (AGREED) - A preset is applied once. Afterwards each season and each episode is <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-70** (AGREED) - A show can also be monitored with the recent preset: the episodes that <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-71** (AGREED) - The specials, the episodes of season 0, are left out: no preset monitors <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-72** (AGREED) - A film in cinemas is not released at home yet. A film whose minimum <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-73** (AGREED) - A film whose home release is unknown, or still ahead, is read again from <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-74** (AGREED) - A person asks for the specials when they choose the preset, for one title <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-75** (AGREED) - What is still coming is the missing list read forwards: a monitored <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-76** (AGREED) - Whoever decides what the library monitors sees every title of it in one <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-77** (AGREED) - Asking for a title's missing units to be searched now reaches whatever <sub>[monitoring.md](library/monitoring.md)</sub>
 
 ## MEDIA - [media](media/)
 
@@ -278,62 +305,92 @@
 - **MEDIA-44** (SHIPPED) - An undescribed stream is *not direct-playable*, because KROMA will
 - **MEDIA-45** (SHIPPED) - A file that will not open at all, a truncated or corrupt container,
 - **MEDIA-46** (AGREED) - Undescribed and unreadable are distinct states. The first is "we
+- **MEDIA-47** (AGREED) - An audio stream carries the region of its language when the file says
 
 ## MOD - [modules](modules/)
 
-- **MOD-1** (SHIPPED) - The base build ships **zero modules**. Everything past playback and
-- **MOD-2** (SHIPPED) - A module is a self-contained capability with a reverse-DNS id
-- **MOD-3** (SHIPPED) - Within its own process a module has wide latitude: it registers
-- **MOD-4** (SHIPPED) - A database is a **declared capability**, not something every module
-- **MOD-5** (SHIPPED) - It may not reach into the server's process or another module's
-- **MOD-6** (SHIPPED) - It may not replace core. Playback, catalogue, accounts and the
-- **MOD-7** (SHIPPED) - It may not claim a first-party module id it does not own.
-- **MOD-8** (SHIPPED) - It may not assume it is present. Because any module is uninstallable,
-- **MOD-9** (SHIPPED) - A module *may* depend on another module, hard or optional, and that
-- **MOD-10** (SHIPPED) - A module ships as a single `.kmod` file: a manifest, the native
-- **MOD-11** (SHIPPED) - **Identity and version.** The reverse-DNS id and a hand-set version.
-- **MOD-12** (SHIPPED) - The release process refuses to publish changed bytes under an
-- **MOD-13** (SHIPPED) - **`minServer`, the compatibility floor.** The minimum server version
-- **MOD-14** (SHIPPED) - **Dependencies.** Hard ones that must be installed alongside it, and
-- **MOD-15** (SHIPPED) - **Target.** Which platform the backend was built for. A library-only
-- **MOD-16** (SHIPPED) - The server checks the bytes it downloads against a published SHA-256
-- **MOD-17** (SHIPPED) - Integrity is not safety: a matching checksum proves the bytes are the
-- **MOD-18** (SHIPPED) - **From the Store**, by id. The server resolves hard dependencies
-- **MOD-19** (SHIPPED) - **By upload**, handing the server a `.kmod` by hand: same unpack,
-- **MOD-20** (SHIPPED) - Both are admin actions on the [`admin/`](../admin/) surface.
-- **MOD-21** (SHIPPED) - The Store (Admin → Modules) is the in-app browser over the configured
-- **MOD-22** (SHIPPED) - The official registry is pinned first and cannot be removed; operators
-- **MOD-23** (SHIPPED) - For each module the Store shows **this server's verdict**, not just the
-- **MOD-24** (AGREED) - **First-party is trusted by default.** The official registry is
-- **MOD-25** (AGREED) - **A third-party registry is an explicit operator opt-in.** Adding one
-- **MOD-26** (AGREED) - The operator is told, in plain terms, that a module is a native binary
-- **MOD-27** (AGREED) - **Checksums guarantee integrity, never safety**, and the server says so
-- **MOD-28** (SHIPPED) - **Enable.** The server spawns the sidecar and the module's routes,
-- **MOD-29** (SHIPPED) - **Disable.** The sidecar is stopped, the module stops running, and
-- **MOD-30** (SHIPPED) - **Update.** A newer version replaces the bundle and the sidecar is
-- **MOD-31** (SHIPPED) - `minServer` is re-checked on update, so an update that outgrows the
-- **MOD-32** (SHIPPED) - **Uninstall.** The module is removed entirely. It is the one
-- **MOD-33** (SHIPPED) - The server refuses to uninstall a module another enabled module still
-- **MOD-34** (SHIPPED) - Uninstalling a module never touches media on disk. A downloads module
-- **MOD-35** (SHIPPED) - **A crashed module cannot take down the server.** The sidecar is a
-- **MOD-36** (SHIPPED) - **An incompatible module never runs by accident.** `minServer` is
-- **MOD-37** (SHIPPED) - **Failure is visible, not silent.** A module that will not start or
-- **MOD-38** (SHIPPED) - The server is forward-compatible with older modules. A module declares
-- **MOD-39** (SHIPPED) - A module installed today keeps working as the server is updated,
-- **MOD-40** (SHIPPED) - A *newer* module may raise its `minServer`, and the Store says so
-- **MOD-41** (SHIPPED) - A module **may** ship UI, and the position is deliberate: a module's
-- **MOD-42** (AGREED) - A module renders **its own admin surface**: configuration, status and
-- **MOD-43** (SHIPPED) - A module's UI is served through the same reverse proxy as its backend
-- **MOD-44** (AGREED) - **The compatibility gate is the early warning.** As the server moves
-- **MOD-45** (AGREED) - **Data is retained.** An incompatible or abandoned module is not
-- **MOD-46** (AGREED) - **The signal is honest.** The person is told the module has not kept
-- **MOD-47** (SHIPPED) - Every capability below could have been core and is a module instead,
-- **MOD-48** (AGREED) - The Store names the registry every module came from, on the listing and
-- **MOD-49** (AGREED) - Installing from a registry the operator added is gated once, per
-- **MOD-50** (AGREED) - A module that has disappeared from every configured registry is flagged
-- **MOD-51** (SHIPPED) - It may not read or write the server's own credentials. A settings key
-- **MOD-52** (SHIPPED) - The server refuses to **update** a module past the range an enabled
-- **MOD-53** (SHIPPED) - A credential whose consumer *is* a module reaches the module that
+- **MOD-1** (SHIPPED) - The base build ships **zero modules**. Everything past playback and <sub>[README.md](modules/README.md)</sub>
+- **MOD-2** (SHIPPED) - A module is a self-contained capability with a reverse-DNS id <sub>[README.md](modules/README.md)</sub>
+- **MOD-3** (SHIPPED) - Within its own process a module has wide latitude: it registers <sub>[README.md](modules/README.md)</sub>
+- **MOD-4** (SHIPPED) - A database is a **declared capability**, not something every module <sub>[README.md](modules/README.md)</sub>
+- **MOD-5** (SHIPPED) - It may not reach into the server's process or another module's <sub>[README.md](modules/README.md)</sub>
+- **MOD-6** (SHIPPED) - It may not replace core. Playback, catalogue, accounts and the <sub>[README.md](modules/README.md)</sub>
+- **MOD-7** (SHIPPED) - It may not claim a first-party module id it does not own. <sub>[README.md](modules/README.md)</sub>
+- **MOD-8** (SHIPPED) - It may not assume it is present. Because any module is uninstallable, <sub>[README.md](modules/README.md)</sub>
+- **MOD-9** (SHIPPED) - A module *may* depend on another module, hard or optional, and that <sub>[README.md](modules/README.md)</sub>
+- **MOD-10** (SHIPPED) - A module ships as a single `.kmod` file: a manifest, the native <sub>[README.md](modules/README.md)</sub>
+- **MOD-11** (SHIPPED) - **Identity and version.** The reverse-DNS id and a hand-set version. <sub>[README.md](modules/README.md)</sub>
+- **MOD-12** (SHIPPED) - The release process refuses to publish changed bytes under an <sub>[README.md](modules/README.md)</sub>
+- **MOD-13** (SHIPPED) - **`minServer`, the compatibility floor.** The minimum server version <sub>[README.md](modules/README.md)</sub>
+- **MOD-14** (SHIPPED) - **Dependencies.** Hard ones that must be installed alongside it, and <sub>[README.md](modules/README.md)</sub>
+- **MOD-15** (SHIPPED) - **Target.** Which platform the backend was built for. A library-only <sub>[README.md](modules/README.md)</sub>
+- **MOD-16** (SHIPPED) - The server checks the bytes it downloads against a published SHA-256 <sub>[README.md](modules/README.md)</sub>
+- **MOD-17** (SHIPPED) - Integrity is not safety: a matching checksum proves the bytes are the <sub>[README.md](modules/README.md)</sub>
+- **MOD-18** (SHIPPED) - **From the Store**, by id. The server resolves hard dependencies <sub>[README.md](modules/README.md)</sub>
+- **MOD-19** (SHIPPED) - **By upload**, handing the server a `.kmod` by hand: same unpack, <sub>[README.md](modules/README.md)</sub>
+- **MOD-20** (SHIPPED) - Both are admin actions on the [`admin/`](../admin/) surface. <sub>[README.md](modules/README.md)</sub>
+- **MOD-21** (SHIPPED) - The Store (Admin → Modules) is the in-app browser over the configured <sub>[README.md](modules/README.md)</sub>
+- **MOD-22** (SHIPPED) - The official registry is pinned first and cannot be removed; operators <sub>[README.md](modules/README.md)</sub>
+- **MOD-23** (SHIPPED) - For each module the Store shows **this server's verdict**, not just the <sub>[README.md](modules/README.md)</sub>
+- **MOD-24** (AGREED) - **First-party is trusted by default.** The official registry is <sub>[README.md](modules/README.md)</sub>
+- **MOD-25** (AGREED) - **A third-party registry is an explicit operator opt-in.** Adding one <sub>[README.md](modules/README.md)</sub>
+- **MOD-26** (AGREED) - The operator is told, in plain terms, that a module is a native binary <sub>[README.md](modules/README.md)</sub>
+- **MOD-27** (AGREED) - **Checksums guarantee integrity, never safety**, and the server says so <sub>[README.md](modules/README.md)</sub>
+- **MOD-28** (SHIPPED) - **Enable.** The server spawns the sidecar and the module's routes, <sub>[README.md](modules/README.md)</sub>
+- **MOD-29** (SHIPPED) - **Disable.** The sidecar is stopped, the module stops running, and <sub>[README.md](modules/README.md)</sub>
+- **MOD-30** (SHIPPED) - **Update.** A newer version replaces the bundle and the sidecar is <sub>[README.md](modules/README.md)</sub>
+- **MOD-31** (SHIPPED) - `minServer` is re-checked on update, so an update that outgrows the <sub>[README.md](modules/README.md)</sub>
+- **MOD-32** (SHIPPED) - **Uninstall.** The module is removed entirely. It is the one <sub>[README.md](modules/README.md)</sub>
+- **MOD-33** (SHIPPED) - The server refuses to uninstall a module another enabled module still <sub>[README.md](modules/README.md)</sub>
+- **MOD-34** (SHIPPED) - Uninstalling a module never touches media on disk. A downloads module <sub>[README.md](modules/README.md)</sub>
+- **MOD-35** (SHIPPED) - **A crashed module cannot take down the server.** The sidecar is a <sub>[README.md](modules/README.md)</sub>
+- **MOD-36** (SHIPPED) - **An incompatible module never runs by accident.** `minServer` is <sub>[README.md](modules/README.md)</sub>
+- **MOD-37** (SHIPPED) - **Failure is visible, not silent.** A module that will not start or <sub>[README.md](modules/README.md)</sub>
+- **MOD-38** (SHIPPED) - The server is forward-compatible with older modules. A module declares <sub>[README.md](modules/README.md)</sub>
+- **MOD-39** (SHIPPED) - A module installed today keeps working as the server is updated, <sub>[README.md](modules/README.md)</sub>
+- **MOD-40** (SHIPPED) - A *newer* module may raise its `minServer`, and the Store says so <sub>[README.md](modules/README.md)</sub>
+- **MOD-41** (SHIPPED) - A module **may** ship UI, and the position is deliberate: a module's <sub>[README.md](modules/README.md)</sub>
+- **MOD-42** (AGREED) - A module renders **its own admin surface**: configuration, status and <sub>[README.md](modules/README.md)</sub>
+- **MOD-43** (SHIPPED) - A module's UI is served through the same reverse proxy as its backend <sub>[README.md](modules/README.md)</sub>
+- **MOD-44** (AGREED) - **The compatibility gate is the early warning.** As the server moves <sub>[README.md](modules/README.md)</sub>
+- **MOD-45** (AGREED) - **Data is retained.** An incompatible or abandoned module is not <sub>[README.md](modules/README.md)</sub>
+- **MOD-46** (AGREED) - **The signal is honest.** The person is told the module has not kept <sub>[README.md](modules/README.md)</sub>
+- **MOD-47** (SHIPPED) - Every capability below could have been core and is a module instead, <sub>[README.md](modules/README.md)</sub>
+- **MOD-48** (AGREED) - The Store names the registry every module came from, on the listing and <sub>[README.md](modules/README.md)</sub>
+- **MOD-49** (AGREED) - Installing from a registry the operator added is gated once, per <sub>[README.md](modules/README.md)</sub>
+- **MOD-50** (AGREED) - A module that has disappeared from every configured registry is flagged <sub>[README.md](modules/README.md)</sub>
+- **MOD-51** (SHIPPED) - It may not read or write the server's own credentials. A settings key <sub>[README.md](modules/README.md)</sub>
+- **MOD-52** (SHIPPED) - The server refuses to **update** a module past the range an enabled <sub>[README.md](modules/README.md)</sub>
+- **MOD-53** (SHIPPED) - A credential whose consumer *is* a module reaches the module that <sub>[README.md](modules/README.md)</sub>
+- **MOD-54** (AGREED) - An admin can change every rule below while the server runs: qualities and <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-55** (AGREED) - A **quality** is a source at a resolution, from a fixed vocabulary: cam, <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-56** (AGREED) - Each quality has a size range in megabytes per minute of runtime, <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-57** (AGREED) - A **custom format** is a named test made of conditions on the release <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-58** (AGREED) - A condition can be negated or required. A format matches when every <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-59** (AGREED) - A **profile** ranks the qualities it allows, several of them sharing a rank <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-60** (AGREED) - One profile is the default. Any title may be judged by another. <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-61** (AGREED) - The rules can be tested against a release name: the editor shows what was <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-62** (AGREED) - One set of rules judges a release and a file on disk. A file's facts come <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-63** (AGREED) - A release name says which French dub it carries (a file says it as <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-64** (AGREED) - Releases are ranked by their quality's rank in the profile, then their <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-65** (AGREED) - With upgrades on, a release **upgrades** a file in three cases, and in no <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-66** (AGREED) - A film or an episode is **cutoff unmet** when the best file holding it is <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-67** (AGREED) - With **add beside** on, a release that wins on formats and loses on <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-68** (AGREED) - Missing units are searched first, each title under its own profile. A unit <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-69** (AGREED) - Titles that are cutoff unmet are searched for a better copy with what the <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-70** (AGREED) - Every indexer's latest releases are read on an interval, fifteen minutes <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-71** (AGREED) - Any title can be searched by hand from its page, monitored or not. Each <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-72** (AGREED) - A download that fails, stalls past a limit, or is removed puts the units <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-73** (AGREED) - A release whose download failed is blocklisted for its title, so the next <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-74** (AGREED) - The library never deletes (LIB-48). Replacing a file is acquisition acting <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-75** (AGREED) - A server that had acquisition settings before rules existed starts with <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-76** (AGREED) - A profile scores each custom format, and sets the minimum format score a <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-77** (AGREED) - A profile names terms a release must contain and terms it must not, and a <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-78** (AGREED) - A release outside the profile's qualities, below its minimum format score, <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-79** (AGREED) - A file an upgrade replaces goes to the recycle bin when one is set, and is <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-80** (AGREED) - A release name says what it covers: one episode, a span of episodes, one <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-81** (AGREED) - A term is found anywhere in the release name, ignoring case. Written <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-82** (AGREED) - A term that is empty, or an expression that does not compile, refuses <sub>[acquisition.md](modules/acquisition.md)</sub>
 
 ## PLAY - [playback](playback/)
 

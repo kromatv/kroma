@@ -75,6 +75,7 @@ mod tests {
                 language: None,
                 title: None,
                 default: true,
+                region: None,
             }),
             audio_tracks: Vec::new(),
             subtitles: Vec::new(),

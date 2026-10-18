@@ -126,6 +126,23 @@ pub(crate) const MIGRATIONS: &[&str] = &[
     // statements run here, after the column they name exists.
     "DROP INDEX IF EXISTS idx_wanted_search",
     "CREATE INDEX IF NOT EXISTS idx_wanted_due ON wanted(status, next_search_at, air_date)",
+    // Every title a request already filled a ledger for is monitored, so its
+    // rows keep being searched and refreshed once requests stop owning them. A
+    // show asked for whole keeps taking new seasons; one asked for by season
+    // keeps those.
+    "INSERT OR IGNORE INTO monitored \
+        (kind, tmdb_id, title, year, poster_url, seasons, monitor_new_seasons, last_season, \
+         added_by, added_at, updated_at) \
+     SELECT r.kind, r.tmdb_id, r.title, r.year, r.poster_url, \
+        COALESCE(r.seasons, CASE WHEN r.episodes IS NULL THEN ( \
+            SELECT json_group_array(DISTINCT w.season) FROM wanted w \
+            WHERE w.request_id = r.id AND w.season IS NOT NULL) END, '[]'), \
+        CASE WHEN r.seasons IS NULL AND r.episodes IS NULL THEN 1 ELSE 0 END, \
+        (SELECT MAX(w.season) FROM wanted w WHERE w.request_id = r.id), \
+        r.requested_by, r.created_at, r.updated_at \
+     FROM requests r \
+     WHERE r.status NOT IN ('pending', 'denied') \
+       AND EXISTS (SELECT 1 FROM wanted w WHERE w.request_id = r.id)",
     "CREATE TABLE IF NOT EXISTS audio_analysis (\
         file_id     TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,\
         track_index INTEGER NOT NULL,\
@@ -285,4 +302,8 @@ pub(crate) const MIGRATIONS: &[&str] = &[
     // The newest release whose notes the account has been shown. NULL on every
     // account that predates the notes, so its first update after them opens them.
     "ALTER TABLE users ADD COLUMN whats_new_seen TEXT",
+    // When a monitored unit was first seen without its file, so the grace
+    // before it counts as missing again runs from the moment it vanished and
+    // not from whatever last wrote the row. NULL is "the file is there".
+    "ALTER TABLE wanted ADD COLUMN vanished_at INTEGER",
 ];

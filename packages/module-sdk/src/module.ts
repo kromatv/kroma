@@ -66,6 +66,31 @@ export interface SlotProps {
   /** Beside one episode row of the request page's catalogue: how far along the
    *  download of that episode is, if anything is downloading it. */
   'requests.episode.progress': { requestId: RequestId; season: number; episode: number };
+  /** The acquisition half of the admin page of one title: which quality profile
+   *  judges it, how its files measure up, and a search for a better copy.
+   *  `monitored` is false for a library title nobody monitors yet. */
+  'monitoring.detail': {
+    kind: 'movie' | 'show';
+    tmdbId: number;
+    title: string;
+    monitored: boolean;
+  };
+  /** The search actions for one title, one season or one episode, wherever a
+   *  core page lists them: an automatic search and a hand-picked one. `season`
+   *  and `episode` narrow the search; both null searches the whole title.
+   *  `compact` asks for icon buttons that fit a table row. */
+  /** The library page's « À améliorer » tab: titles that hold a copy the
+   *  server would still replace. The tab shows only when a module registers
+   *  for it. */
+  'library.upgrades': Record<never, never>;
+  'monitoring.search': {
+    kind: 'movie' | 'show';
+    tmdbId: number;
+    title: string;
+    season: number | null;
+    episode: number | null;
+    compact: boolean;
+  };
 }
 
 export type SlotName = keyof SlotProps;

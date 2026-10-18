@@ -1,6 +1,10 @@
-use kroma_scene::{Profile, Res, Target};
+use kroma_scene::{
+    default_formats, default_sizes, FormatSet, LegacySettings, QualityProfile, Res, Rules, Sizes,
+    Target,
+};
 
 use crate::peers::indexers::{IndexerRef, Query, Release};
+use crate::search::judge::Judge;
 use crate::search::targets::SearchTarget;
 
 pub(crate) fn indexer(priority: i32) -> IndexerRef {
@@ -13,15 +17,44 @@ pub(crate) fn indexer(priority: i32) -> IndexerRef {
     }
 }
 
-pub(crate) fn profile() -> Profile {
-    Profile {
+pub(crate) fn legacy() -> LegacySettings {
+    LegacySettings {
         resolution: Res::R1080,
         prefer_hevc: true,
         min_seeders: 1,
-        max_size_bytes_movie: 20 * 1_073_741_824,
-        max_size_bytes_episode: 5 * 1_073_741_824,
+        max_gb_movie: 20,
+        max_gb_episode: 5,
         required_keywords: Vec::new(),
         forbidden_keywords: Vec::new(),
+    }
+}
+
+/// The rules a fresh server starts with, owned so a test can lend a judge.
+pub(crate) struct TestRules {
+    pub(crate) profile: QualityProfile,
+    pub(crate) formats: FormatSet,
+    pub(crate) sizes: Sizes,
+}
+
+impl TestRules {
+    pub(crate) fn new() -> Self {
+        Self {
+            profile: QualityProfile::from_legacy("standard", "Standard", &legacy()),
+            formats: FormatSet::compile(&default_formats()).unwrap(),
+            sizes: default_sizes(&legacy()),
+        }
+    }
+
+    pub(crate) fn judge(&self) -> Judge<'_> {
+        Judge {
+            rules: Rules {
+                profile: &self.profile,
+                formats: &self.formats,
+                sizes: &self.sizes,
+            },
+            original: None,
+            runtime_minutes: None,
+        }
     }
 }
 

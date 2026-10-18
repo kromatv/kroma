@@ -3,6 +3,8 @@
 //! `services::{jobs::now_ms, scan::{now_iso8601, short_hash}, auth::random_*}`
 //! re-export these for backwards compatibility.
 
+pub mod language;
+
 use sha2::{Digest, Sha256};
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;

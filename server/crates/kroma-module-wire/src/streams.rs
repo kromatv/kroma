@@ -94,6 +94,8 @@ pub struct AudioStream {
     pub title: Option<String>,
     #[serde(default)]
     pub default: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub region: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

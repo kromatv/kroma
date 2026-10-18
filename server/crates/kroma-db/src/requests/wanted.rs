@@ -1,16 +1,20 @@
-//! The wanted ledger: one row per unit a request covers.
+//! The wanted ledger: one row per monitored unit, a movie or an episode.
 
 use anyhow::Result;
 use rusqlite::{params, Connection, Row};
 
+use kroma_domain::RequestKind;
+
+use super::unit_kind;
 use crate::chunked::IN_CHUNK;
 use crate::Pool;
 
-/// One wanted unit: a movie, or one episode of a requested show season.
+/// One wanted unit: a movie, or one episode of a monitored show. `request_id`
+/// is the request it answers to, if any.
 #[derive(Debug, Clone)]
 pub struct WantedRow {
     pub id: String,
-    pub request_id: String,
+    pub request_id: Option<String>,
     pub kind: String,
     // The movie's TMDB id, or the SHOW's TMDB id for episodes.
     pub tmdb_id: u64,
@@ -41,6 +45,11 @@ pub(super) fn row_to_wanted(r: &Row) -> rusqlite::Result<WantedRow> {
         last_search_at: r.get(11)?,
     })
 }
+
+// Whether a unit is available yet, over a `wanted w` with `?1` bound to today.
+// An episode with no air date has not aired; a film with none is searched at
+// once, which is what a minimum availability of "announced" asks for.
+pub(super) const AIRED: &str = "(w.air_date <= ?1 OR (w.air_date IS NULL AND w.kind = 'movie'))";
 
 pub(super) const WANTED_COLS: &str =
     "id, request_id, kind, tmdb_id, imdb_id, title, year, season, episode, air_date, status, last_search_at";
@@ -77,8 +86,21 @@ fn insert_wanted_rows(
     Ok(())
 }
 
-/// Replace a request's wanted rows in one transaction.
-pub fn replace_wanted(
+/// The id of a unit's row: one per movie, and one per episode of a show, so
+/// the same episode asked for twice is the same row.
+pub fn unit_id(kind: &str, tmdb_id: u64, season: Option<u32>, episode: Option<u32>) -> String {
+    let at = |n: Option<u32>| n.map_or_else(|| "-".to_string(), |n| n.to_string());
+    kroma_primitives::short_hash(&format!(
+        "wanted|{kind}|{tmdb_id}|{}|{}",
+        at(season),
+        at(episode)
+    ))
+}
+
+/// Puts a request's rows in the ledger: a unit nobody monitored yet joins it,
+/// and one already there answers to this request from now on, keeping its
+/// state, unless an open request already holds it.
+pub fn claim_wanted(
     pool: &Pool,
     request_id: &str,
     rows: &[WantedRow],
@@ -86,16 +108,30 @@ pub fn replace_wanted(
 ) -> Result<()> {
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
-    tx.execute(
-        "DELETE FROM wanted WHERE request_id = ?1",
-        params![request_id],
-    )?;
     insert_wanted_rows(
         &tx,
-        &format!("INSERT INTO {WANTED_INSERT_TAIL}"),
+        &format!("INSERT OR IGNORE INTO {WANTED_INSERT_TAIL}"),
         rows,
         now_ms,
     )?;
+    let mut adopt = tx.prepare(
+        "UPDATE wanted SET request_id = ?1, updated_at = ?2 \
+         WHERE kind = ?3 AND tmdb_id = ?4 \
+           AND IFNULL(season, -1) = IFNULL(?5, -1) AND IFNULL(episode, -1) = IFNULL(?6, -1) \
+           AND (request_id IS NULL OR request_id = ?1 OR request_id IN ( \
+               SELECT id FROM requests WHERE status IN ('available', 'denied', 'failed')))",
+    )?;
+    for w in rows {
+        adopt.execute(params![
+            request_id,
+            now_ms,
+            w.kind,
+            w.tmdb_id as i64,
+            w.season,
+            w.episode
+        ])?;
+    }
+    drop(adopt);
     tx.commit()?;
     Ok(())
 }
@@ -120,12 +156,9 @@ pub fn insert_wanted(pool: &Pool, rows: &[WantedRow], now_ms: i64) -> Result<()>
 
 /// Drop the request's wanted rows that are no longer wanted, keeping `keep_ids`.
 ///
-/// The other half of a reconcile: [`insert_wanted`] adds what is newly covered
+/// The other half of a reconcile: [`claim_wanted`] adds what is newly covered
 /// without disturbing what was already there, and this removes what stopped
-/// being covered. Together they change a request's SCOPE while every surviving
-/// row keeps the state it had -- which [`replace_wanted`] cannot do, since it
-/// deletes the lot and re-inserts them all as `wanted`, forgetting what was
-/// already downloaded.
+/// being covered, so every surviving row keeps the state it had.
 pub fn prune_wanted(pool: &Pool, request_id: &str, keep_ids: &[String]) -> Result<usize> {
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
@@ -175,12 +208,130 @@ pub fn set_wanted_air_date(pool: &Pool, id: &str, air_date: &str, now_ms: i64) -
     Ok(())
 }
 
+/// Records that these units were seen without their file, keeping the time the
+/// first such pass saw them.
+pub fn mark_wanted_vanished(pool: &Pool, ids: &[String], now_ms: i64) -> Result<()> {
+    stamp_vanished(pool, ids, Some(now_ms))
+}
+
+/// Forgets that these units were ever without their file: their grace starts
+/// over if one vanishes again.
+pub fn clear_wanted_vanished(pool: &Pool, ids: &[String]) -> Result<()> {
+    stamp_vanished(pool, ids, None)
+}
+
+fn stamp_vanished(pool: &Pool, ids: &[String], stamp: Option<i64>) -> Result<()> {
+    let write = match stamp {
+        Some(_) => "UPDATE wanted SET vanished_at = ? WHERE vanished_at IS NULL",
+        None => "UPDATE wanted SET vanished_at = NULL WHERE vanished_at IS NOT NULL",
+    };
+    if ids.is_empty() {
+        return Ok(());
+    }
+    let conn = pool.get()?;
+    for chunk in ids.chunks(IN_CHUNK) {
+        let holes = std::iter::repeat_n("?", chunk.len())
+            .collect::<Vec<_>>()
+            .join(",");
+        let params = stamp.map(rusqlite::types::Value::from).into_iter().chain(
+            chunk
+                .iter()
+                .map(|id| rusqlite::types::Value::from(id.clone())),
+        );
+        conn.execute(
+            &format!("{write} AND id IN ({holes})"),
+            rusqlite::params_from_iter(params),
+        )?;
+    }
+    Ok(())
+}
+
+/// The rows among `ids` whose file has been gone since before `before_ms`.
+pub fn wanted_vanished_before(
+    conn: &Connection,
+    ids: &[String],
+    before_ms: i64,
+) -> rusqlite::Result<Vec<String>> {
+    let mut settled = Vec::new();
+    for chunk in ids.chunks(IN_CHUNK) {
+        let holes = std::iter::repeat_n("?", chunk.len())
+            .collect::<Vec<_>>()
+            .join(",");
+        let mut stmt = conn.prepare(&format!(
+            "SELECT id FROM wanted WHERE vanished_at <= ? AND id IN ({holes})"
+        ))?;
+        let params = std::iter::once(rusqlite::types::Value::from(before_ms)).chain(
+            chunk
+                .iter()
+                .map(|id| rusqlite::types::Value::from(id.clone())),
+        );
+        let rows = stmt.query_map(rusqlite::params_from_iter(params), |r| r.get(0))?;
+        settled.extend(rows.collect::<rusqlite::Result<Vec<String>>>()?);
+    }
+    Ok(settled)
+}
+
+/// Moves a monitored film's search date, which its minimum availability
+/// decides; `None` makes it searchable now.
+pub fn set_movie_air_date(
+    pool: &Pool,
+    tmdb_id: u64,
+    air_date: Option<&str>,
+    now_ms: i64,
+) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "UPDATE wanted SET air_date = ?2, updated_at = ?3 WHERE kind = 'movie' AND tmdb_id = ?1",
+        params![tmdb_id as i64, air_date, now_ms],
+    )?;
+    Ok(())
+}
+
 pub fn wanted_for_request(conn: &Connection, request_id: &str) -> rusqlite::Result<Vec<WantedRow>> {
     let mut stmt = conn.prepare(&format!(
         "SELECT {WANTED_COLS} FROM wanted WHERE request_id = ?1 ORDER BY season, episode"
     ))?;
     let rows = stmt.query_map(params![request_id], row_to_wanted)?;
     rows.collect()
+}
+
+/// Every row in one status, across every title.
+pub fn wanted_in_status(conn: &Connection, status: &str) -> rusqlite::Result<Vec<WantedRow>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {WANTED_COLS} FROM wanted WHERE status = ?1 ORDER BY tmdb_id, season, episode"
+    ))?;
+    let rows = stmt.query_map(params![status], row_to_wanted)?;
+    rows.collect()
+}
+
+/// Every row a title has, whichever request it answers to.
+pub fn wanted_for_title(
+    conn: &Connection,
+    kind: RequestKind,
+    tmdb_id: u64,
+) -> rusqlite::Result<Vec<WantedRow>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {WANTED_COLS} FROM wanted WHERE kind = ?1 AND tmdb_id = ?2 \
+         ORDER BY season, episode"
+    ))?;
+    let rows = stmt.query_map(params![unit_kind(kind), tmdb_id as i64], row_to_wanted)?;
+    rows.collect()
+}
+
+/// Removes rows by id, which unmonitors those units.
+pub fn delete_wanted(pool: &Pool, ids: &[String]) -> Result<usize> {
+    let conn = pool.get()?;
+    let mut removed = 0;
+    for chunk in ids.chunks(IN_CHUNK) {
+        let holes = std::iter::repeat_n("?", chunk.len())
+            .collect::<Vec<_>>()
+            .join(",");
+        removed += conn.execute(
+            &format!("DELETE FROM wanted WHERE id IN ({holes})"),
+            rusqlite::params_from_iter(chunk.iter()),
+        )?;
+    }
+    Ok(removed)
 }
 
 #[cfg(test)]
@@ -194,7 +345,7 @@ mod tests {
     fn pruning_narrows_a_ledger_and_leaves_the_survivors_as_they_were() {
         let p = pool();
         insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
-        replace_wanted(
+        claim_wanted(
             &p,
             "r1",
             &[
@@ -227,7 +378,7 @@ mod tests {
     fn pruning_to_nothing_empties_the_ledger() {
         let p = pool();
         insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
-        replace_wanted(&p, "r1", &[ep_row("w1", 1, 1, "wanted")], 1000).unwrap();
+        claim_wanted(&p, "r1", &[ep_row("w1", 1, 1, "wanted")], 1000).unwrap();
         assert_eq!(prune_wanted(&p, "r1", &[]).unwrap(), 1);
         let conn = p.get().unwrap();
         assert!(wanted_for_request(&conn, "r1").unwrap().is_empty());
@@ -240,7 +391,7 @@ mod tests {
         let rows: Vec<WantedRow> = (0..IN_CHUNK + 50)
             .map(|n| ep_row(&format!("w{n}"), 1, n as u32, "wanted"))
             .collect();
-        replace_wanted(&p, "r1", &rows, 1000).unwrap();
+        claim_wanted(&p, "r1", &rows, 1000).unwrap();
 
         let keep: Vec<String> = rows.iter().skip(1).map(|w| w.id.clone()).collect();
         let removed = prune_wanted(&p, "r1", &keep).unwrap();
@@ -255,10 +406,11 @@ mod tests {
         let p = pool();
         insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
         insert_request(&p, &new_req("r2", RequestKind::Show, 1400, None), 1000).unwrap();
-        replace_wanted(&p, "r1", &[ep_row("w1", 1, 1, "wanted")], 1000).unwrap();
+        claim_wanted(&p, "r1", &[ep_row("w1", 1, 1, "wanted")], 1000).unwrap();
         let mut other = ep_row("w9", 1, 1, "wanted");
-        other.request_id = "r2".into();
-        replace_wanted(&p, "r2", &[other], 1000).unwrap();
+        other.request_id = Some("r2".into());
+        other.tmdb_id = 1400;
+        claim_wanted(&p, "r2", &[other], 1000).unwrap();
 
         prune_wanted(&p, "r1", &[]).unwrap();
         let conn = p.get().unwrap();
@@ -275,7 +427,7 @@ mod tests {
         insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
         let mk = |id: &str, episode: u32, air: Option<&str>, status: &str| WantedRow {
             id: id.into(),
-            request_id: "r1".into(),
+            request_id: Some("r1".into()),
             kind: "episode".into(),
             tmdb_id: 1396,
             imdb_id: None,
@@ -287,7 +439,7 @@ mod tests {
             status: status.into(),
             last_search_at: None,
         };
-        replace_wanted(
+        claim_wanted(
             &p,
             "r1",
             &[
@@ -336,7 +488,7 @@ mod tests {
 
         let rows = vec![wanted_row("w-1", "r-1", Some("2030-01-01"), "wanted")];
         assert!(insert_wanted(&pool, &rows, 1_000).is_err());
-        assert!(replace_wanted(&pool, "r-1", &rows, 1_000).is_err());
+        assert!(claim_wanted(&pool, "r-1", &rows, 1_000).is_err());
         assert!(replace_show_gaps(
             &pool,
             "s1",
@@ -347,5 +499,121 @@ mod tests {
             1_000
         )
         .is_err());
+    }
+
+    fn owner(p: &Pool, id: &str) -> Option<String> {
+        let conn = p.get().unwrap();
+        conn.query_row("SELECT request_id FROM wanted WHERE id = ?1", [id], |r| r.get(0))
+            .unwrap()
+    }
+
+    #[test]
+    fn claiming_a_unit_monitoring_holds_keeps_its_state() {
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        let held = WantedRow {
+            request_id: None,
+            ..ep_row("w-held", 1, 1, "available")
+        };
+        insert_wanted(&p, &[held], 1000).unwrap();
+
+        claim_wanted(&p, "r1", &[ep_row("w-fresh", 1, 1, "wanted")], 2000).unwrap();
+
+        let conn = p.get().unwrap();
+        let rows = wanted_for_request(&conn, "r1").unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!((rows[0].id.as_str(), rows[0].status.as_str()), ("w-held", "available"));
+    }
+
+    #[test]
+    fn claiming_never_takes_a_unit_from_an_open_request() {
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        insert_request(&p, &new_req("r2", RequestKind::Show, 1396, None), 1000).unwrap();
+        claim_wanted(&p, "r1", &[ep_row("w1", 1, 1, "wanted")], 1000).unwrap();
+
+        claim_wanted(&p, "r2", &[ep_row("w2", 1, 1, "wanted")], 2000).unwrap();
+
+        assert_eq!(owner(&p, "w1").as_deref(), Some("r1"));
+    }
+
+    #[test]
+    fn claiming_takes_a_unit_from_a_request_that_is_over() {
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        insert_request(&p, &new_req("r2", RequestKind::Show, 1396, None), 1000).unwrap();
+        claim_wanted(&p, "r1", &[ep_row("w1", 1, 1, "available")], 1000).unwrap();
+        crate::requests::set_request_status(
+            &p,
+            "r1",
+            kroma_domain::RequestStatus::Available,
+            None,
+            None,
+            1500,
+        )
+        .unwrap();
+
+        claim_wanted(&p, "r2", &[ep_row("w2", 1, 1, "wanted")], 2000).unwrap();
+
+        assert_eq!(owner(&p, "w1").as_deref(), Some("r2"));
+    }
+
+    #[test]
+    fn deleting_a_request_leaves_its_units_monitored() {
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        claim_wanted(&p, "r1", &[ep_row("w1", 1, 1, "wanted")], 1000).unwrap();
+
+        crate::requests::delete_request(&p, "r1").unwrap();
+
+        let conn = p.get().unwrap();
+        let rows = wanted_for_title(&conn, RequestKind::Show, 1396).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].request_id, None);
+    }
+
+    #[test]
+    fn deleting_rows_by_id_removes_only_those() {
+        let p = pool();
+        insert_wanted(
+            &p,
+            &[
+                WantedRow {
+                    request_id: None,
+                    ..ep_row("w1", 1, 1, "wanted")
+                },
+                WantedRow {
+                    request_id: None,
+                    ..ep_row("w2", 1, 2, "wanted")
+                },
+            ],
+            1000,
+        )
+        .unwrap();
+
+        let removed = delete_wanted(&p, &["w1".into()]).unwrap();
+
+        let conn = p.get().unwrap();
+        assert_eq!(removed, 1);
+        assert_eq!(wanted_for_title(&conn, RequestKind::Show, 1396).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn rows_are_listed_by_status_across_titles() {
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        claim_wanted(
+            &p,
+            "r1",
+            &[ep_row("w1", 1, 1, "grabbed"), ep_row("w2", 1, 2, "wanted")],
+            1000,
+        )
+        .unwrap();
+        let conn = p.get().unwrap();
+
+        let grabbed = wanted_in_status(&conn, "grabbed").unwrap();
+
+        assert_eq!(grabbed.len(), 1);
+        assert_eq!(grabbed[0].id, "w1");
     }
 }

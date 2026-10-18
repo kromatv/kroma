@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
+use kroma_module_sdk::host::HostCtx;
 use kroma_module_sdk::media::external_subtitles::beside;
 
 use super::place::{place, Placement};
@@ -12,20 +13,27 @@ use super::place::{place, Placement};
 /// the stem the video landed under so the catalogue matches the two again.
 /// Answers where the video landed.
 pub(super) fn place_with_subtitles(
+    host: &dyn HostCtx,
     src: &Path,
     around: &[PathBuf],
     dest: &Path,
     mode: Placement,
 ) -> Result<PathBuf> {
-    let at = place(src, dest, mode)?;
-    let placed = subtitles_beside(src, around, &at, mode);
+    let at = place(host, src, dest, mode)?;
+    let placed = subtitles_beside(host, src, around, &at, mode);
     if placed > 0 {
         tracing::info!(video = %at.display(), placed, "subtitle files imported beside a video");
     }
     Ok(at)
 }
 
-fn subtitles_beside(src: &Path, around: &[PathBuf], at: &Path, mode: Placement) -> usize {
+fn subtitles_beside(
+    host: &dyn HostCtx,
+    src: &Path,
+    around: &[PathBuf],
+    at: &Path,
+    mode: Placement,
+) -> usize {
     let Some(stem) = at.file_stem().and_then(std::ffi::OsStr::to_str) else {
         return 0;
     };
@@ -34,7 +42,7 @@ fn subtitles_beside(src: &Path, around: &[PathBuf], at: &Path, mode: Placement) 
         .iter()
         .filter(|found| {
             let to = folder.join(found.named_after(stem));
-            match place(&found.path, &to, mode) {
+            match place(host, &found.path, &to, mode) {
                 Ok(_) => true,
                 Err(e) => {
                     tracing::warn!(file = %found.path.display(), error = %format!("{e:#}"), "a subtitle file would not import");
@@ -48,6 +56,7 @@ fn subtitles_beside(src: &Path, around: &[PathBuf], at: &Path, mode: Placement) 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kroma_module_sdk::host::testing::StubHost;
 
     fn scratch(name: &str) -> kroma_module_sdk::testing::TempDir {
         kroma_module_sdk::testing::temp_dir(&format!("import-subs-{name}"))
@@ -91,7 +100,7 @@ mod tests {
     fn a_subtitle_file_follows_the_video_under_its_new_name() {
         let r = release("follows", &["Old.Release.1080p.fr.srt"]);
 
-        let at = place_with_subtitles(&r.video, &r.around, &r.dest, Placement::Skip).unwrap();
+        let at = place_with_subtitles(&StubHost::new(), &r.video, &r.around, &r.dest, Placement::Skip).unwrap();
 
         assert_eq!(at, r.dest);
         assert!(
@@ -104,7 +113,7 @@ mod tests {
     fn a_subs_folder_is_flattened_beside_the_video() {
         let r = release("flattened", &["Subs/2_English.srt", "Subs/3_French.srt"]);
 
-        place_with_subtitles(&r.video, &r.around, &r.dest, Placement::Skip).unwrap();
+        place_with_subtitles(&StubHost::new(), &r.video, &r.around, &r.dest, Placement::Skip).unwrap();
 
         let folder = r.dest.parent().unwrap();
         assert!(folder.join("The Matrix (1999).en.srt").exists());
@@ -115,7 +124,7 @@ mod tests {
     fn a_picture_subtitle_is_left_where_it_was() {
         let r = release("picture", &["Old.Release.1080p.fr.sub"]);
 
-        place_with_subtitles(&r.video, &r.around, &r.dest, Placement::Skip).unwrap();
+        place_with_subtitles(&StubHost::new(), &r.video, &r.around, &r.dest, Placement::Skip).unwrap();
 
         let folder = r.dest.parent().unwrap();
         assert_eq!(std::fs::read_dir(folder).unwrap().count(), 1);
@@ -125,7 +134,7 @@ mod tests {
     fn a_release_that_ships_no_subtitle_file_still_imports() {
         let r = release("none", &[]);
 
-        let at = place_with_subtitles(&r.video, &r.around, &r.dest, Placement::Skip).unwrap();
+        let at = place_with_subtitles(&StubHost::new(), &r.video, &r.around, &r.dest, Placement::Skip).unwrap();
 
         assert!(at.exists());
     }

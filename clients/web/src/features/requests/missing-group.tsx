@@ -1,18 +1,18 @@
-// One "Manquants" group card: the title header (poster, name, missing-count
-// badge OR the movie's release line) and, for a series, its missing-episode
-// rows. Long episode lists collapse behind a "show more" toggle so one gappy
-// series can't swallow the page. The whole row is the selection control; the
-// trailing button carries the row's busy and "search started" states. All
-// mutation state lives in `missing.tsx`.
-
 import type { CalendarEntry } from '@kromatv/client/requests';
 import { relativeAirDate, sentenceCase } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
-import { Badge, Box, Button, Checkbox, Divider, Text } from '@kromatv/ui/kit';
+import { Badge, Button, Checkbox, Divider, Row, Text } from '@kromatv/ui/kit';
 import { EpisodeList } from '#web/features/requests/missing-episodes';
-import { epKey, type MissingGroup } from '#web/features/requests/missing-model';
-import { RequestCard } from '#web/features/requests/request-card';
+import { epKey, isFollowed, type MissingGroup } from '#web/features/requests/missing-model';
+import type { GroupAction } from '#web/features/requests/use-missing-actions';
+import { RequestCard } from '#web/shared/ui/request-card';
 import { RouteLink } from '#web/shared/ui/route-link';
+
+const GROUP_ACTION = {
+  search: { icon: 'search', key: 'requests.searchNow', started: 'requests.searchStarted' },
+  follow: { icon: 'radar', key: 'requests.followEpisodes', started: 'monitoring.action' },
+  request: { icon: 'plus', key: 'requests.askEpisodes', started: 'requests.asked' },
+} as const;
 
 function episodesOf(group: MissingGroup): CalendarEntry[] {
   if (group.kind === 'movie') return [];
@@ -21,22 +21,24 @@ function episodesOf(group: MissingGroup): CalendarEntry[] {
 
 export function MissingGroupCard({
   group,
-  canManage,
+  action,
+  canMonitor,
   busyKeys,
-  doneKeys,
+  startedKeys,
   selected,
   onToggleRow,
   onToggleGroup,
-  onSearch,
+  onRun,
 }: Readonly<{
   group: MissingGroup;
-  canManage: boolean;
-  busyKeys: Set<string>;
-  doneKeys: Set<string>;
-  selected: Set<string>;
+  action: GroupAction;
+  canMonitor: boolean;
+  busyKeys: ReadonlySet<string>;
+  startedKeys: ReadonlySet<string>;
+  selected: ReadonlySet<string>;
   onToggleRow: (key: string) => void;
   onToggleGroup: (pick: boolean) => void;
-  onSearch: (items: CalendarEntry[]) => void;
+  onRun: (items: CalendarEntry[]) => void;
 }>) {
   const t = useT();
   const locale = useLocale();
@@ -44,11 +46,9 @@ export function MissingGroupCard({
   const episodes = episodesOf(group);
   const keys = group.items.map(epKey);
   const groupBusy = keys.some((k) => busyKeys.has(k));
-  const groupDone = !groupBusy && keys.every((k) => doneKeys.has(k));
+  const groupStarted = !groupBusy && keys.every((k) => startedKeys.has(k));
   const pickedCount = keys.filter((k) => selected.has(k)).length;
   const allPicked = keys.length > 0 && pickedCount === keys.length;
-  // A gap is actionable by any requester; a request needs manage.
-  const canAct = group.requestId ? canManage : true;
 
   const movie = group.kind === 'movie';
   const rel = movie ? relativeAirDate(group.items[0]?.airDate ?? null, locale) : '';
@@ -63,33 +63,42 @@ export function MissingGroupCard({
       posterUrl={group.posterUrl}
       title={group.title}
       meta={
-        <Text variant="meta" color="textDim" mt={2}>
-          {[group.year ? String(group.year) : '', rel ? sentenceCase(rel, locale) : '']
-            .filter(Boolean)
-            .join(' · ')}
-        </Text>
+        <Row gap={8} align="center" wrap mt={4}>
+          <Text variant="meta" color="textDim">
+            {[group.year ? String(group.year) : '', rel ? sentenceCase(rel, locale) : '']
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+          <Badge tone="warning">{gap}</Badge>
+        </Row>
       }
-      trailing={<Badge tone="warning">{gap}</Badge>}
       leading={
-        canAct ? (
+        action === 'none' ? null : (
           <Checkbox
             checked={allPicked}
             indeterminate={pickedCount > 0 && !allPicked}
             onCheckedChange={onToggleGroup}
-            label={t('requests.select')}
+            label={t('requests.selectUnit', { item: group.title })}
           />
-        ) : (
-          <Box w={20} />
         )
       }
       aside={
-        canAct ? (
-          <GroupSearchButton
+        <Row gap={8} justify="flex-end">
+          <GroupActionButton
+            action={action}
             busy={groupBusy}
-            done={groupDone}
-            onPress={() => onSearch(group.items)}
+            started={groupStarted}
+            onPress={() => onRun(group.items)}
           />
-        ) : null
+          {isFollowed(group) && canMonitor ? (
+            <Button variant="glass" size="sm" icon="radar" label={t('monitoring.manage')} asChild>
+              <RouteLink
+                to="/admin/monitoring/$kind/$tmdbId"
+                params={{ kind: group.kind, tmdbId: String(group.tmdbId) }}
+              />
+            </Button>
+          ) : null}
+        </Row>
       }
       link={
         <RouteLink
@@ -101,36 +110,31 @@ export function MissingGroupCard({
       {episodes.length > 0 ? <Divider color="tint/6" /> : null}
       <EpisodeList
         entries={episodes}
-        canAct={canAct}
+        title={group.title}
+        action={action}
         busyKeys={busyKeys}
-        doneKeys={doneKeys}
+        startedKeys={startedKeys}
         selected={selected}
         onToggleRow={onToggleRow}
-        onSearch={onSearch}
+        onRun={onRun}
       />
     </RequestCard>
   );
 }
 
-function GroupSearchButton({
+function GroupActionButton({
+  action,
   busy,
-  done,
+  started,
   onPress,
-}: Readonly<{ busy: boolean; done: boolean; onPress: () => void }>) {
+}: Readonly<{ action: GroupAction; busy: boolean; started: boolean; onPress: () => void }>) {
   const t = useT();
-  if (done) {
-    return (
-      <Button variant="glass" size="sm" icon="check" label={t('requests.searchStarted')} disabled />
-    );
+  if (action === 'none') return null;
+  const { icon, key, started: startedKey } = GROUP_ACTION[action];
+  if (started) {
+    return <Button variant="glass" size="sm" icon="check" label={t(startedKey)} disabled />;
   }
   return (
-    <Button
-      variant="glass"
-      size="sm"
-      icon="search"
-      label={t('requests.search')}
-      onPress={onPress}
-      loading={busy}
-    />
+    <Button variant="glass" size="sm" icon={icon} label={t(key)} onPress={onPress} loading={busy} />
   );
 }

@@ -38,6 +38,7 @@ impl DownloadManager {
             }
         }
         db::delete_download_row(self.core(), id)?;
+        db::forget_download_contents(self.store(), id)?;
         Ok(())
     }
 

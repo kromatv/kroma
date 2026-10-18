@@ -8,7 +8,7 @@
 //! query it makes is prepared here against a pool scoped by its own
 //! `module.json`, so adding a call site that reaches further fails HERE.
 
-use kroma_module_sdk::db::{self, testing::TempPool, Pool};
+use kroma_module_sdk::db::{self, Pool, testing::TempPool};
 
 // The core database plus the pool this module's process is actually handed:
 // same file, scoped to the grant its own `module.json` ships.
@@ -54,6 +54,13 @@ fn the_grant_covers_every_core_query_this_module_makes() {
     db::show_by_tmdb(&conn, 603).unwrap();
     db::movie_files_by_tmdb(&conn, 603, Some("lib1")).unwrap();
     db::episode_files(&conn, "sh1", 1, 1, Some("lib1")).unwrap();
+
+    // The shared download ledger, as the failure pass reads it (failures.rs).
+    conn.prepare(
+        "SELECT id, kind, tmdb_id, season, episodes, release_title, info_hash, indexer_id, \
+                status, error, progress, grabbed_at FROM downloads",
+    )
+    .unwrap();
     drop(conn);
 
     // ...and the two writes: the search backoff and the import's TMDB hint.
@@ -84,10 +91,12 @@ fn the_grant_stops_at_the_tables_this_module_has_no_business_in() {
     }
 
     // Reading a request is not editing an account.
-    assert!(conn
-        .execute("UPDATE users SET username = 'x' WHERE id = 'u1'", [])
-        .is_err());
-    assert!(conn
-        .execute("DELETE FROM users WHERE id = 'u1'", [])
-        .is_err());
+    assert!(
+        conn.execute("UPDATE users SET username = 'x' WHERE id = 'u1'", [])
+            .is_err()
+    );
+    assert!(
+        conn.execute("DELETE FROM users WHERE id = 'u1'", [])
+            .is_err()
+    );
 }

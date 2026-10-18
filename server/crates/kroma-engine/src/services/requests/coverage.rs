@@ -59,7 +59,7 @@ pub fn set_coverage<S: HostStorage>(
 }
 
 /// Bring the ledger in line with what the request now covers, KEEPING the state
-/// of every row that survives. `insert_wanted` ignores rows already there and
+/// of every row that survives. `claim_wanted` keeps rows already there and
 /// `prune_wanted` drops the ones that fell out of scope; between them nothing
 /// that was grabbed or is on disk is forgotten.
 fn reconcile_wanted<S: HostStorage>(state: &S, id: &str) -> Result<()> {
@@ -67,8 +67,17 @@ fn reconcile_wanted<S: HostStorage>(state: &S, id: &str) -> Result<()> {
     let req = db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request not found"))?;
     drop(conn);
     let rows = build_wanted_rows(state, &req)?;
-    let keep: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
-    db::insert_wanted(state.db(), &rows, now_ms())?;
+    db::claim_wanted(state.db(), id, &rows, now_ms())?;
+    let conn = state.db().get()?;
+    let keep: Vec<String> = db::wanted_for_request(&conn, id)?
+        .into_iter()
+        .filter(|held| {
+            rows.iter()
+                .any(|row| (row.season, row.episode) == (held.season, held.episode))
+        })
+        .map(|held| held.id)
+        .collect();
+    drop(conn);
     db::prune_wanted(state.db(), id, &keep)?;
     Ok(())
 }
@@ -77,6 +86,7 @@ fn reconcile_wanted<S: HostStorage>(state: &S, id: &str) -> Result<()> {
 mod tests {
     use super::*;
     use crate::services::requests::test_support::{host_with_tmdb, insert_req};
+    use crate::test_support::FakeTmdb;
 
     #[test]
     fn coverage_is_not_a_thing_a_movie_request_has() {
@@ -128,7 +138,7 @@ mod tests {
         insert_req(&host, "r1", RequestKind::Show, 42, RequestStatus::Approved);
         let mk = |id: &str, season: u32, episode: u32, status: &str| db::WantedRow {
             id: id.into(),
-            request_id: "r1".into(),
+            request_id: Some("r1".into()),
             kind: "episode".into(),
             tmdb_id: 42,
             imdb_id: None,
@@ -140,7 +150,7 @@ mod tests {
             status: status.into(),
             last_search_at: None,
         };
-        db::replace_wanted(
+        db::claim_wanted(
             host.db(),
             "r1",
             &[mk("keep", 1, 1, "available"), mk("drop", 2, 1, "wanted")],
@@ -164,5 +174,34 @@ mod tests {
             after[0].status, "available",
             "the survivor did not forget its file"
         );
+    }
+
+    #[test]
+    fn narrowing_an_approved_request_rebuilds_its_ledger_from_tmdb() {
+        let host = host_with_tmdb(Some("k"));
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/tv/42" => (
+                200,
+                serde_json::json!({ "name": "T", "seasons": [{ "season_number": 1 }, { "season_number": 2 }] }),
+            ),
+            "/tv/42/season/1" => (
+                200,
+                serde_json::json!({ "episodes": [{ "episode_number": 1, "air_date": "2020-01-01" }] }),
+            ),
+            "/tv/42/season/2" => (
+                200,
+                serde_json::json!({ "episodes": [{ "episode_number": 1, "air_date": "2021-01-01" }] }),
+            ),
+            _ => (404, serde_json::json!({})),
+        });
+        insert_req(&host, "r1", RequestKind::Show, 42, RequestStatus::Approved);
+        set_coverage(&host, "r1", None, None).unwrap();
+
+        set_coverage(&host, "r1", Some(vec![1]), None).unwrap();
+
+        let conn = host.db().get().unwrap();
+        let rows = db::wanted_for_request(&conn, "r1").unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].season, Some(1));
     }
 }

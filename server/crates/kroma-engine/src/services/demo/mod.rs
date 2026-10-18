@@ -383,6 +383,7 @@ fn audio(codec: &str, channels: u32, language: Option<&str>) -> AudioStream {
         language: language.map(Into::into),
         title: None,
         default: false,
+        region: None,
     }
 }
 

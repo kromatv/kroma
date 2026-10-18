@@ -1,75 +1,27 @@
 //! What one sweep found, judged: every target asked of an indexer, duplicates
-//! dropped, and each release scored against the profile or rejected with the
+//! dropped, and each release judged by the title's rules or rejected with the
 //! rule that fired.
 
 use std::collections::HashMap;
 
 use anyhow::Result;
 use kroma_module_sdk::host::HostStorage;
-use kroma_scene::{Candidate, Profile};
+use kroma_scene::Judged;
 
-use crate::dtos::{IndexerReport, ScoreLineView, ScoredReleaseView};
+use crate::dtos::{IndexerReport, ScoredReleaseView};
 use crate::peers::indexers::{IndexerRef, Release};
+use crate::search::judge::Judge;
 use crate::search::sweep::sweep;
 use crate::search::targets::SearchTarget;
 
-/// A scored release and the link a grab of it can use.
+/// A judged release and the link a grab of it can use.
 #[derive(Clone)]
 pub struct CachedRelease {
     pub view: ScoredReleaseView,
+    pub judged: Option<Judged>,
     pub magnet_or_url: String,
+    pub info_hash: Option<String>,
     pub tmdb_id: u64,
-}
-
-pub fn score_release(
-    release: &Release,
-    indexer: &IndexerRef,
-    st: &SearchTarget,
-    profile: &Profile,
-) -> ScoredReleaseView {
-    let parsed = kroma_scene::parse_release_name(&release.title);
-    let candidate = Candidate {
-        size_bytes: release.size_bytes,
-        seeders: release.seeders,
-        indexer_priority: indexer.priority,
-    };
-    let (score, breakdown, rejected) =
-        match kroma_scene::score(&parsed, &candidate, &st.target, profile, &release.title) {
-            Ok(s) => (
-                Some(s.score),
-                s.breakdown
-                    .into_iter()
-                    .map(|l| ScoreLineView {
-                        rule: l.rule,
-                        delta: l.delta,
-                        note: l.note,
-                    })
-                    .collect(),
-                None,
-            ),
-            Err(r) => (None, Vec::new(), Some(format!("{}: {}", r.rule, r.note))),
-        };
-    ScoredReleaseView {
-        title: release.title.clone(),
-        guid: release.guid.clone(),
-        indexer_id: indexer.id.clone(),
-        indexer_name: indexer.name.clone(),
-        size_bytes: release.size_bytes,
-        seeders: release.seeders,
-        leechers: release.leechers,
-        published_at: release.published_at.clone(),
-        target: st.kind.to_string(),
-        season: st.season,
-        episodes: st.episodes.clone(),
-        score,
-        breakdown,
-        rejected,
-        grabbable: release.magnet.is_some()
-            || release.link.is_some()
-            || release.details_url.is_some(),
-        upgrade: false,
-        details_url: release.details_url.clone(),
-    }
 }
 
 struct Hit {
@@ -105,7 +57,7 @@ fn scored_hits(
     hits: Vec<Hit>,
     indexers: &[IndexerRef],
     targets: &[SearchTarget],
-    profile: &Profile,
+    judge: &Judge,
     tmdb_id: u64,
 ) -> Vec<CachedRelease> {
     let by_id: HashMap<&str, &IndexerRef> = indexers.iter().map(|i| (i.id.as_str(), i)).collect();
@@ -115,11 +67,14 @@ fn scored_hits(
         let Some(indexer) = by_id.get(hit.indexer_id.as_str()) else {
             continue;
         };
-        let view = score_release(&hit.release, indexer, &targets[hit.target], profile);
+        let (view, judged) = judge.release(&hit.release, indexer, &targets[hit.target]);
         let key = (hit.indexer_id.clone(), hit.release.guid.clone());
         if let Some(&at) = seen.get(&key) {
-            if cached[at].view.score.is_none() && view.score.is_some() {
+            let kept = &cached[at];
+            let better = judged.is_some() || (misfit(&kept.view) && !misfit(&view));
+            if kept.judged.is_none() && better {
                 cached[at].view = view;
+                cached[at].judged = judged;
             }
             continue;
         }
@@ -132,23 +87,29 @@ fn scored_hits(
             .unwrap_or_default();
         cached.push(CachedRelease {
             view,
+            judged,
             magnet_or_url,
+            info_hash: hit.release.info_hash.clone(),
             tmdb_id,
         });
     }
     cached
 }
 
+fn misfit(view: &ScoredReleaseView) -> bool {
+    view.rejected.as_deref().is_some_and(|why| why.starts_with("wrong-"))
+}
+
 pub(crate) fn collect_search_hits<S: HostStorage>(
     state: &S,
     indexers: &[IndexerRef],
     targets: &[SearchTarget],
-    profile: &Profile,
+    judge: &Judge,
     tmdb_id: u64,
 ) -> (Vec<CachedRelease>, Vec<IndexerReport>) {
     let (hits, reports) = sweep(indexers, |indexer| ask_indexer(state, indexer, targets));
     (
-        scored_hits(hits, indexers, targets, profile, tmdb_id),
+        scored_hits(hits, indexers, targets, judge, tmdb_id),
         reports,
     )
 }
@@ -156,8 +117,32 @@ pub(crate) fn collect_search_hits<S: HostStorage>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::search::test_support::{episode_target, indexer, profile, release};
+    use crate::search::test_support::{episode_target, indexer, release, TestRules};
     use kroma_module_sdk::host::testing::StubHost;
+
+    fn score_release(
+        release: &Release,
+        indexer: &IndexerRef,
+        st: &SearchTarget,
+        rules: &TestRules,
+    ) -> ScoredReleaseView {
+        rules.judge().release(release, indexer, st).0
+    }
+
+    #[test]
+    fn a_judged_release_names_its_quality_and_formats() {
+        let view = score_release(
+            &release("Show.S01E01.1080p.WEB-DL.DV.x265-GRP", Some(20)),
+            &indexer(0),
+            &episode_target(),
+            &TestRules::new(),
+        );
+
+        assert_eq!(view.quality.as_deref(), Some("webdl-1080p"));
+        let names: Vec<&str> = view.formats.iter().map(|f| f.name.as_str()).collect();
+        assert!(names.contains(&"HEVC"));
+        assert!(names.contains(&"Dolby Vision"));
+    }
 
     #[test]
     fn a_scored_release_carries_the_target_it_was_judged_against() {
@@ -165,7 +150,7 @@ mod tests {
             &release("Show.S01E01.1080p.WEB-DL.x265-GRP", Some(20)),
             &indexer(0),
             &episode_target(),
-            &profile(),
+            &TestRules::new(),
         );
         assert_eq!(view.indexer_id, "idx1");
         assert_eq!(view.indexer_name, "Tracker");
@@ -191,7 +176,7 @@ mod tests {
             &release("Show.S01E01.1080p", Some(0)),
             &indexer(0),
             &episode_target(),
-            &profile(),
+            &TestRules::new(),
         );
         assert!(view.score.is_none());
         let reason = view
@@ -210,7 +195,7 @@ mod tests {
         bare.magnet = None;
         bare.link = None;
         bare.details_url = None;
-        assert!(!score_release(&bare, &indexer(0), &episode_target(), &profile()).grabbable);
+        assert!(!score_release(&bare, &indexer(0), &episode_target(), &TestRules::new()).grabbable);
     }
 
     #[test]
@@ -218,7 +203,7 @@ mod tests {
         let mut only_details = release("Show.S01E01.1080p", Some(9));
         only_details.magnet = None;
         only_details.link = None;
-        assert!(score_release(&only_details, &indexer(0), &episode_target(), &profile()).grabbable);
+        assert!(score_release(&only_details, &indexer(0), &episode_target(), &TestRules::new()).grabbable);
     }
 
     #[test]
@@ -230,7 +215,8 @@ mod tests {
         };
         let hits = vec![hit(), hit()];
 
-        let found = scored_hits(hits, &[indexer(0)], &[episode_target()], &profile(), 42);
+        let rules = TestRules::new();
+        let found = scored_hits(hits, &[indexer(0)], &[episode_target()], &rules.judge(), 42);
 
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].tmdb_id, 42);
@@ -248,17 +234,32 @@ mod tests {
             SearchTarget::season(42, "Show".into(), 1, 10, None),
         ];
 
-        let found = scored_hits(
-            vec![pack(0), pack(1)],
-            &[indexer(0)],
-            &targets,
-            &profile(),
-            42,
-        );
+        let rules = TestRules::new();
+        let found = scored_hits(vec![pack(0), pack(1)], &[indexer(0)], &targets, &rules.judge(), 42);
 
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].view.target, "season");
         assert!(found[0].view.score.is_some());
+    }
+
+    #[test]
+    fn a_release_every_target_refuses_keeps_the_reason_of_the_one_it_fits() {
+        let episode = |target| Hit {
+            indexer_id: "idx1".into(),
+            target,
+            release: release("Show.S01E01.1080p.WEB-DL.x265-GRP", Some(0)),
+        };
+        let targets = [
+            SearchTarget::season(42, "Show".into(), 1, 10, None),
+            episode_target(),
+        ];
+        let rules = TestRules::new();
+
+        let found = scored_hits(vec![episode(0), episode(1)], &[indexer(0)], &targets, &rules.judge(), 42);
+
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].view.target, "episode");
+        assert!(found[0].view.rejected.as_deref().is_some_and(|why| why.starts_with("seeders")));
     }
 
     #[test]
@@ -269,7 +270,8 @@ mod tests {
             release: release("Show.S01E01.1080p.WEB-DL.x265-GRP", Some(9)),
         }];
 
-        let found = scored_hits(hits, &[indexer(0)], &[episode_target()], &profile(), 42);
+        let rules = TestRules::new();
+        let found = scored_hits(hits, &[indexer(0)], &[episode_target()], &rules.judge(), 42);
 
         assert!(found.is_empty());
     }
@@ -278,13 +280,9 @@ mod tests {
     fn an_indexer_nothing_answers_for_reports_its_error_and_no_rows() {
         let host = StubHost::new();
 
-        let (found, reports) = collect_search_hits(
-            &host,
-            &[indexer(0)],
-            &[episode_target()],
-            &profile(),
-            42,
-        );
+        let rules = TestRules::new();
+        let (found, reports) =
+            collect_search_hits(&host, &[indexer(0)], &[episode_target()], &rules.judge(), 42);
 
         assert!(found.is_empty());
         assert_eq!(reports.len(), 1);
@@ -297,7 +295,8 @@ mod tests {
     fn a_sweep_with_no_target_to_ask_about_finds_nothing_and_blames_nobody() {
         let host = StubHost::new();
 
-        let (found, reports) = collect_search_hits(&host, &[indexer(0)], &[], &profile(), 42);
+        let rules = TestRules::new();
+        let (found, reports) = collect_search_hits(&host, &[indexer(0)], &[], &rules.judge(), 42);
 
         assert!(found.is_empty());
         assert_eq!(reports.len(), 1);

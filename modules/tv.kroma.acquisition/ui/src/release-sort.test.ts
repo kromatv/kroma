@@ -1,6 +1,6 @@
 import type { ScoredReleaseView } from '@kromatv/client/requests';
 import { describe, expect, it } from 'vitest';
-import { filterReleases, sortReleases, targetLabel } from './release-sort';
+import { releaseSortOf, sortReleases, targetLabel } from './release-sort';
 
 function release(over: Partial<ScoredReleaseView>): ScoredReleaseView {
   return {
@@ -18,26 +18,14 @@ function release(over: Partial<ScoredReleaseView>): ScoredReleaseView {
     score: 0,
     breakdown: [],
     rejected: null,
+    flags: [],
     grabbable: true,
     upgrade: false,
     detailsUrl: null,
+    formats: [],
     ...over,
   };
 }
-
-describe('filterReleases', () => {
-  const list = [release({ guid: 'a' }), release({ guid: 'b', score: null, rejected: 'too-big' })];
-
-  it('splits on whether the engine accepted the release', () => {
-    expect(filterReleases(list, 'accepted').map((r) => r.guid)).toEqual(['a']);
-    expect(filterReleases(list, 'rejected').map((r) => r.guid)).toEqual(['b']);
-    expect(filterReleases(list, 'all')).toHaveLength(2);
-  });
-
-  it('copies rather than reordering the array it was handed', () => {
-    expect(filterReleases(list, 'all')).not.toBe(list);
-  });
-});
 
 describe('sortReleases', () => {
   it('ranks by the chosen column, best first', () => {
@@ -81,5 +69,15 @@ describe('targetLabel', () => {
     expect(targetLabel(release({ target: 'movie' }))).toBeNull();
     expect(targetLabel(release({ target: 'season', season: 3 }))).toBe('S03');
     expect(targetLabel(release({ target: 'episode', season: 3, episodes: [7] }))).toBe('S03E07');
+  });
+});
+
+describe('releaseSortOf', () => {
+  it('reads a column the table can sort by', () => {
+    expect(releaseSortOf('seeders')).toBe('seeders');
+  });
+
+  it('refuses a column it cannot sort by', () => {
+    expect(releaseSortOf('indexer')).toBeNull();
   });
 });
