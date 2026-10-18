@@ -22,8 +22,8 @@ import {
   ARTWORK_SCALE,
   type ArtworkQuality,
   artworkPrefStore,
-  blurPrefStore,
   perfHudPrefStore,
+  useBlurPref,
   useStoredPref,
 } from './store';
 
@@ -129,7 +129,7 @@ export const blurSetting: SettingsItem = toggleItem({
   label: 'settings.blur',
   icon: 'blur',
   useValue: () => {
-    const [on, set] = useStoredPref(blurPrefStore);
+    const [on, set] = useStoredPref(useBlurPref());
     return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
   },
 });

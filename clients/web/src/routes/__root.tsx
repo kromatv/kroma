@@ -11,6 +11,7 @@ import { Intro } from '#web/features/catalog/intro';
 import { NotificationBell } from '#web/features/notifications/panel';
 import { ModuleHostProvider } from '#web/modules/ModuleHostProvider';
 import { AuthProvider } from '#web/shared/lib/auth';
+import { BlurPreferenceProvider } from '#web/shared/lib/blur-pref';
 import { LocaleProvider } from '#web/shared/lib/locale';
 import { MyListProvider } from '#web/shared/lib/mylist';
 import { queryClient } from '#web/shared/lib/query';
@@ -83,29 +84,31 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       </head>
       <body>
         <KitProvider config={BROWSER_KIT}>
-          <QueryClientProvider client={queryClient}>
-            <ConfirmHost>
-              <AuthProvider>
-                <WatchedProvider>
-                  <MyListProvider>
-                    <LocaleProvider>
-                      <NavActionsProvider actions={<NotificationBell />}>
-                        <ModuleHostProvider>{children}</ModuleHostProvider>
-                      </NavActionsProvider>
-                    </LocaleProvider>
-                  </MyListProvider>
-                </WatchedProvider>
-              </AuthProvider>
-              <Intro />
+          <BlurPreferenceProvider>
+            <QueryClientProvider client={queryClient}>
+              <ConfirmHost>
+                <AuthProvider>
+                  <WatchedProvider>
+                    <MyListProvider>
+                      <LocaleProvider>
+                        <NavActionsProvider actions={<NotificationBell />}>
+                          <ModuleHostProvider>{children}</ModuleHostProvider>
+                        </NavActionsProvider>
+                      </LocaleProvider>
+                    </MyListProvider>
+                  </WatchedProvider>
+                </AuthProvider>
+                <Intro />
 
-              <div className={classes(s.toasts)}>
-                <Toaster position="bottom-center" inset={{ x: 16, y: 24 }} />
-              </div>
-              <Suspense fallback={null}>
-                <ReactQueryDevtools buttonPosition="bottom-left" />
-              </Suspense>
-            </ConfirmHost>
-          </QueryClientProvider>
+                <div className={classes(s.toasts)}>
+                  <Toaster position="bottom-center" inset={{ x: 16, y: 24 }} />
+                </div>
+                <Suspense fallback={null}>
+                  <ReactQueryDevtools buttonPosition="bottom-left" />
+                </Suspense>
+              </ConfirmHost>
+            </QueryClientProvider>
+          </BlurPreferenceProvider>
         </KitProvider>
         <Scripts />
       </body>

@@ -5,8 +5,7 @@
 
 import { onDeviceStorageChange } from '@kromatv/client';
 import { setArtworkScale } from '@kromatv/client/media';
-import { setFrostEnabled } from '@kromatv/ui/kit';
-import { useSyncExternalStore } from 'react';
+import { createContext, useContext, useState, useSyncExternalStore } from 'react';
 import { clientHardware } from '#tv/app/clientHardware';
 import { devicePref } from '#tv/app/devicePref';
 
@@ -113,15 +112,15 @@ onDeviceStorageChange(applyArtworkScale);
  * TV box drops to ~52fps with double-digit jank once every frosted control
  * blurs the screen behind it. The plain fill underneath is what the design
  * falls back to anyway, so the switch is there for whoever wants to pay. */
-export const blurPrefStore = reactivePref('kroma:blur', ['on', 'off'] as const, 'off');
-
-// Pushed, not read: the kit holds one flag for the whole app (see
-// atoms/frost), so like the artwork scale it has to go out again when a shell
-// installs its device store late.
-function applyBlur(): void {
-  setFrostEnabled(blurPrefStore.get() === 'on');
+export function createBlurPref(): ReactivePref<'on' | 'off'> {
+  return reactivePref('kroma:blur', ['on', 'off'] as const, 'off');
 }
-
-applyBlur();
-blurPrefStore.subscribe(applyBlur);
-onDeviceStorageChange(applyBlur);
+const BlurContext = createContext<ReactivePref<'on' | 'off'> | null>(null);
+export const BlurPrefProvider = BlurContext.Provider;
+export function useBlurPref(): ReactivePref<'on' | 'off'> {
+  const provided = useContext(BlurContext);
+  const [owned] = useState(() => (provided ? null : createBlurPref()));
+  const pref = provided ?? owned;
+  if (!pref) throw new Error('Blur preference requires its owning root');
+  return pref;
+}

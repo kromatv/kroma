@@ -6,6 +6,7 @@ import type { SurfacePresentation } from './surface-presentation';
 
 interface KitSettings {
   entry: Readonly<{ physicalKeyboard: boolean; size: ControlSize }>;
+  frostEnabled: boolean;
   surfaces: SurfacePresentation;
   image: ImageBackend | null;
   frost: ComponentType<FrostBackdropProps> | null;
@@ -13,6 +14,7 @@ interface KitSettings {
 const DEFAULTS: KitSettings = Object.freeze({
   entry: Object.freeze({ physicalKeyboard: false, size: 'md' }),
   surfaces: 'auto',
+  frostEnabled: true,
   image: null,
   frost: null,
 });

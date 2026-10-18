@@ -38,6 +38,7 @@ const FORM_FACTOR: Readonly<
 
 export interface KitConfig<P extends FrostBackdropProps = FrostBackdropProps> {
   formFactor?: FormFactor;
+  frostEnabled?: boolean;
   entry?: Partial<EntryDefaults>;
   surfaces?: SurfacePresentation;
   ground?: ThemeMode;
@@ -71,6 +72,7 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
     return {
       entry: { ...parent.entry, ...preset?.entry, ...config.entry },
       surfaces: config.surfaces ?? preset?.surfaces ?? parent.surfaces,
+      frostEnabled: config.frostEnabled ?? parent.frostEnabled,
       image: config.image ?? parent.image,
       frost: (config.frost ?? parent.frost) as ComponentType<FrostBackdropProps> | null,
     };
