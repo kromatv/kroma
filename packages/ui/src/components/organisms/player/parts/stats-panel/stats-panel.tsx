@@ -11,6 +11,7 @@ import type {
   PlayerStats,
 } from '#ui/components/organisms/player/types';
 import { styles } from '#ui/core';
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { useT } from '#ui/services/i18n';
 import { StatsChart } from './stats-chart';
@@ -297,26 +298,26 @@ const sx = styles({
   chartCell: { flexBasis: 0, minW: 0 },
   body: { gap: 16 },
   topRule: { borderTopWidth: 1, borderTopColor: 'tint/8', pt: 16 },
-  headline: { font: 'ui', fontSize: 17, fontWeight: '700', color: 'text' },
-  summaryPair: { font: 'ui', fontSize: 12, fontWeight: '500' },
+  headline: { font: 'ui', fontSize: textRoles.cardTitle.size, fontWeight: '700', color: 'text' },
+  summaryPair: { font: 'ui', fontSize: textSizes.caption, fontWeight: '500' },
   blockTitle: {
     font: 'ui',
-    fontSize: 10,
+    fontSize: textSizes.micro,
     fontWeight: '700',
     letterSpacing: 1.4,
     textTransform: 'uppercase',
   },
   panelTitle: {
     font: 'ui',
-    fontSize: 11,
+    fontSize: textRoles.overline.size,
     fontWeight: '700',
     letterSpacing: 1.76,
     textTransform: 'uppercase',
   },
-  statLabel: { font: 'ui', fontSize: 13, fontWeight: '500' },
+  statLabel: { font: 'ui', fontSize: textRoles.meta.size, fontWeight: '500' },
   statValue: {
     font: 'ui',
-    fontSize: 13,
+    fontSize: textRoles.meta.size,
     fontWeight: '500',
     textAlign: 'right',
     fontVariant: ['tabular-nums'],

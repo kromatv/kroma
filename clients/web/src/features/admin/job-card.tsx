@@ -16,6 +16,7 @@ import {
   Switch,
   styles,
   Text,
+  fontSizes as textSizes,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { JobDetailPanel } from '#web/features/admin/jobs-detail';
@@ -28,7 +29,7 @@ import { useAuth } from '#web/shared/lib/auth';
 const s = styles({
   cron: {
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-    fontSize: 11.5,
+    fontSize: textSizes.overlineRaised,
     fontWeight: '600',
   },
 });

@@ -80,7 +80,9 @@ Run `bun run --cwd packages/lint-rules rules no-comment-banners` for repair step
 
 Keep `index.ts` and `index.tsx` as direct re-export barrels. Declarations,
 local imports, local exports, and executable statements belong in named modules.
-Type-only and namespace re-exports are allowed.
+Type-only and namespace re-exports are allowed. TanStack file routes retain their
+local `Route` declaration because the route generator requires it; these framework
+entry points are not barrels.
 
 ### no-nested-templates
 

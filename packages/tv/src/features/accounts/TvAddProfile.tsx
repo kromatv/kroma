@@ -1,6 +1,15 @@
 import { normalizeServerUrl as norm } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
-import { Box, FocusColumn, Hint, Spinner, styles, Text, useFocusNav } from '@kromatv/ui/kit';
+import {
+  Box,
+  FocusColumn,
+  Hint,
+  Spinner,
+  styles,
+  Text,
+  fontSizes as textSizes,
+  useFocusNav,
+} from '@kromatv/ui/kit';
 import { useEffect, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
@@ -129,5 +138,5 @@ export function TvAddProfile() {
 
 const s = styles({
   list: { gap: 12 },
-  section: { fontSize: 12 },
+  section: { fontSize: textSizes.caption },
 });

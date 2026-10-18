@@ -1,3 +1,4 @@
+import { typeSpec as textRoles } from '@kromatv/ui/kit';
 // Series detail: hero, up-next play block, season picker, episode list. Tap an
 // episode to play; long-press for its detail page. Row components live in
 // components/showEpisodes.tsx.
@@ -222,7 +223,7 @@ const s = styles({
     borderBottomColor: 'border',
   },
   tabActive: { pb: 8, borderBottomWidth: 3, borderBottomColor: 'accent' },
-  tabActiveText: { ...type.section, fontSize: 16 },
+  tabActiveText: { ...type.section, fontSize: textRoles.body.size },
   seasonHeader: { row: true, between: true, align: 'center', mt: spacing.md, mb: spacing.sm },
   episodes: { gap: 4 },
   split: { row: true, align: 'flex-start', gap: spacing.lg, pt: spacing.md },

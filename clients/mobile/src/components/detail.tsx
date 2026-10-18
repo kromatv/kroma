@@ -7,7 +7,18 @@ import {
   sizedImageUrl,
   type TitleGenres,
 } from '@kromatv/core';
-import { BackButton, Box, Chip, PersonCard, styles, Text, tintGradient } from '@kromatv/ui/kit';
+import {
+  BackButton,
+  Box,
+  Chip,
+  radius as cornerRadius,
+  PersonCard,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  fontSizes as textSizes,
+  tintGradient,
+} from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
@@ -150,13 +161,13 @@ const s = styles({
   context: { ...type.caption, color: 'accentText', fontWeight: '700' },
   heroTitle: {
     ...type.display,
-    fontSize: 32,
+    fontSize: textRoles.headingTv.size,
     textShadowColor: 'bg/85',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 10,
   },
   metaRow: { row: true, wrap: true, align: 'center', gap: 8 },
-  badge: { px: 8, py: 3, bg: 'surface2/85', radius: 7 },
-  badgeText: { fontSize: 12, fontWeight: '600', color: 'text' },
+  badge: { px: 8, py: 3, bg: 'surface2/85', radius: cornerRadius.badge },
+  badgeText: { fontSize: textSizes.caption, fontWeight: '600', color: 'text' },
   castRail: { gap: 12 },
 });

@@ -1,3 +1,4 @@
+import { fontSizes as textSizes } from '@kromatv/ui/kit';
 // Notification settings: push on THIS device, and the per-category matrix for
 // the account. A push subscription belongs to one device; the categories
 // travel with the account.
@@ -158,7 +159,7 @@ const s = styles({
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    fontSize: 10,
+    fontSize: textSizes.micro,
   },
   row: { row: true, align: 'center', py: 10 },
   rowLabel: { ...type.body, flex: true, color: 'text' },

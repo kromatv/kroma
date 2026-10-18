@@ -1,6 +1,6 @@
 import { dependents, type Graph } from './graph';
 
-// The projects a changed path sits inside — the deepest owning directory wins, so
+// The projects a changed path sits inside: the deepest owning directory wins, so
 // a change under clients/tizen/ is the tizen project, not a parent.
 export function directlyChanged(changedPaths: string[], graph: Graph): Set<string> {
   const hit = new Set<string>();

@@ -1,3 +1,4 @@
+import { radius as cornerRadius } from '@kromatv/ui/kit';
 // Offline downloads screen: active downloads show a progress ring, finished
 // ones are swipe-to-delete rows.
 
@@ -275,7 +276,7 @@ const s = styles({
   rowPressed: { bg: 'surface1' },
   thumb: { w: 130, h: 73 },
   playBadge: { absolute: true, top: 0, right: 0, bottom: 0, left: 0, center: true },
-  playCircle: { center: true, w: 32, h: 32, bg: 'bg/55', radius: 16 },
+  playCircle: { center: true, w: 32, h: 32, bg: 'bg/55', radius: cornerRadius.xl },
   text: { flex: true, gap: 3 },
   rowTitle: { ...type.body, fontWeight: '600' },
   rowSub: { ...type.small },
@@ -285,12 +286,19 @@ const s = styles({
   deleteAction: { center: true, gap: 4, w: 92, ml: 8, bg: 'danger', radius: radius.md },
   deleteLabel: { ...type.small, color: 'text', fontWeight: '700' },
   meter: { gap: 10, px: 8, mt: spacing.lg },
-  meterTrack: { row: true, gap: 2, h: 8, bg: 'surface2', radius: 999, overflow: 'hidden' },
-  meterFill: { bg: 'borderStrong', radius: 999 },
-  meterFillApp: { bg: 'accent', radius: 999 },
+  meterTrack: {
+    row: true,
+    gap: 2,
+    h: 8,
+    bg: 'surface2',
+    radius: cornerRadius.pill,
+    overflow: 'hidden',
+  },
+  meterFill: { bg: 'borderStrong', radius: cornerRadius.pill },
+  meterFillApp: { bg: 'accent', radius: cornerRadius.pill },
   meterLegend: { row: true, wrap: true, justify: 'center', columnGap: spacing.md, rowGap: 6 },
   legendItem: { row: true, align: 'center', gap: 6 },
-  legendDot: { w: 8, h: 8, radius: 4 },
+  legendDot: { w: 8, h: 8, radius: cornerRadius.compact },
   legendDotOutlined: { border: 'borderStrong', borderWidth: 1.5 },
   legendText: { ...type.small, color: 'textMuted' },
 });

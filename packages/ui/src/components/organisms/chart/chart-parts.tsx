@@ -1,3 +1,4 @@
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // The chrome around a plot: the ruled ground, the two scales, the key and the
 // readout. None of it is drawn into the SVG - it is laid out and painted with
 // the theme, so the grid and the labels follow the ground the way every other
@@ -222,8 +223,13 @@ function ChartTooltip() {
 }
 
 const s = styles({
-  tick: { font: 'ui', fontSize: 11, fontWeight: '500' },
-  readout: { font: 'ui', fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  tick: { font: 'ui', fontSize: textRoles.overline.size, fontWeight: '500' },
+  readout: {
+    font: 'ui',
+    fontSize: textSizes.caption,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
 });
 
 export type { ChartAxisProps, ChartEdge, ChartFooterProps, ChartGridProps };

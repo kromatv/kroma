@@ -79,7 +79,7 @@ function ensureShared(loaders: RemoteLoaders): Promise<void> {
   sharedReady ??= loaders
     .provideShared()
     .then((shared) => {
-      (globalThis as Record<string, unknown>)[SHARED_GLOBAL] = shared;
+      Reflect.set(globalThis, SHARED_GLOBAL, shared);
     })
     .catch((e) => {
       sharedReady = null;

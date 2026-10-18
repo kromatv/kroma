@@ -1,3 +1,4 @@
+import { radius as cornerRadius } from '@kromatv/ui/kit';
 // The notification centre on the phone: what happened while you were away,
 // styled after the browser's list. The list is live (server push, see
 // lib/notifications) and swipe-to-delete, matching Downloads. Approve/Deny
@@ -246,7 +247,7 @@ const s = styles({
   // notification turns a backlog into one solid block.
   rowPressed: { bg: 'surface1' },
   gutter: { center: true, w: 6, h: 48, mr: 8 },
-  dot: { w: 6, h: 6, bg: 'accent', radius: 3 },
+  dot: { w: 6, h: 6, bg: 'accent', radius: cornerRadius.indicator },
   tile: { w: 48, h: 48, mr: 12, radius: radius.md },
   tilePlate: { center: true, bg: 'wash' },
   body: { flex: true, minW: 0 },

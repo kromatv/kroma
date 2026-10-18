@@ -1,3 +1,4 @@
+import { fontSizes as textSizes } from '#ui/core/tokens';
 // The A-Z fast-scroll rail beside a long alphabetical list: a vertical capsule
 // of letters whose amber lens covers the stretch currently on screen, with a
 // bubble echoing the letter under a scrubbing finger. The lens moves with the
@@ -26,7 +27,7 @@ type AlphabetRailSize = 'sm' | 'md';
 
 // A thumb's pitch: rows a finger can land on, and the whole alphabet under six
 // hundred points so it clears a phone's tab bar.
-const HAND = { rowH: 21, fontSize: 12 } as const;
+const HAND = { rowH: 21, fontSize: textSizes.caption } as const;
 
 function slotsOf(children: ReactNode): Slot[] {
   const out: Slot[] = [];

@@ -1,3 +1,8 @@
+import {
+  radius as cornerRadius,
+  typeSpec as textRoles,
+  fontSizes as textSizes,
+} from '@kromatv/ui/kit';
 // One episode, as a row: still, title + status pills, ends-at, recap, and the
 // row's three actions as real buttons. Values ported literally from the
 // design source so a diff against it stays legible.
@@ -74,12 +79,12 @@ function episodeStill(at: {
         />
       </Box>
       {at.tag ? (
-        <Box absolute top={10} left={10} px={9} py={4} radius={7} bg={CHIP_BG}>
+        <Box absolute top={10} left={10} px={9} py={4} radius={cornerRadius.badge} bg={CHIP_BG}>
           <Text style={s.tagChip}>{at.tag}</Text>
         </Box>
       ) : null}
       {at.runtime ? (
-        <Box absolute bottom={11} right={11} px={8} py={3} radius={6} bg={CHIP_BG}>
+        <Box absolute bottom={11} right={11} px={8} py={3} radius={cornerRadius.xs} bg={CHIP_BG}>
           <Text style={s.runtimeChip}>{at.runtime}</Text>
         </Box>
       ) : null}
@@ -220,28 +225,28 @@ const SYNOPSIS_LIT = 'text/78';
 const s = styles({
   // <Frost> blurs the artwork behind the card: CSS backdrop-filter on the
   // browser tiers, the shell's registered blur view on Apple TV.
-  row: { p: 18, radius: 20, bg: 'tint/2.5', border: 'tint/5' },
+  row: { p: 18, radius: cornerRadius.row, bg: 'tint/2.5', border: 'tint/5' },
   rowLit: { bg: 'tint/6', borderColor: 'tint/12' },
   rowWatched: { borderColor: 'accentWash/22' },
   dimmed: { opacity: 0.55 },
-  actionBtn: { py: 12, px: 19, radius: 11 },
+  actionBtn: { py: 12, px: 19, radius: cornerRadius.control },
   tagChip: {
-    fontSize: 12,
+    fontSize: textSizes.caption,
     lineHeight: 15,
     fontWeight: '700',
     letterSpacing: 0.72,
     textTransform: 'uppercase',
   },
   runtimeChip: {
-    fontSize: 12,
+    fontSize: textSizes.caption,
     lineHeight: 15,
     fontWeight: '700',
     color: 'text/90',
     fontVariant: ['tabular-nums'],
   },
   title: { shrink: 1 },
-  endsAt: { fontSize: 15, fontWeight: '500' },
+  endsAt: { fontSize: textRoles.label.size, fontWeight: '500' },
   // Measure is the design's, not the card's: on the full-width card an
   // unclamped recap ran as one screen-wide line.
-  synopsis: { fontSize: 16, lineHeight: 23, fontWeight: '400', maxW: 660 },
+  synopsis: { fontSize: textRoles.body.size, lineHeight: 23, fontWeight: '400', maxW: 660 },
 });

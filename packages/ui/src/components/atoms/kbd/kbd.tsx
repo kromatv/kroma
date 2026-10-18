@@ -1,3 +1,4 @@
+import { radius as cornerRadius, fontSizes as textSizes } from '#ui/core/tokens';
 // <Kbd>: one keycap.
 //
 // The mark a shortcut is written with, in prose ("press Esc"), in a menu row,
@@ -26,7 +27,7 @@ interface KbdProps {
  */
 function Kbd({ children, style }: Readonly<KbdProps>) {
   return (
-    <Box px={6} py={2} radius={6} bg="surface3" shrink={0} style={s.cap}>
+    <Box px={6} py={2} radius={cornerRadius.xs} bg="surface3" shrink={0} style={s.cap}>
       <Text variant="meta" color="textMuted" style={[s.ink, style]}>
         {children}
       </Text>
@@ -38,7 +39,7 @@ const s = styles({
   cap: { border: 'border' },
   // The kit's mono is a system stack rather than a served family, so a keycap
   // is the platform's own monospace wherever it is drawn.
-  ink: { font: 'mono', fontSize: 10.5, lineHeight: 14 },
+  ink: { font: 'mono', fontSize: textSizes.microRaised, lineHeight: 14 },
 });
 
 export type { KbdProps };

@@ -83,7 +83,7 @@ export function CanaryRuns({ filter = NO_FILTER }: Readonly<CanaryRunsProps>) {
             {month.items.map(({ build, files }) => (
               <BuildRow
                 key={build.commit.short}
-                version={build.version ?? '—'}
+                version={build.version ?? '-'}
                 at={build.run.finishedAt}
                 note={build.commit.title}
                 tag={

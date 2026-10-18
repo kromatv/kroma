@@ -1,3 +1,4 @@
+import { fontSizes as textSizes } from '#ui/core/tokens';
 // <MediaCard>: the 16:9 landscape rail tile of the 10-foot home. Focusable, so
 // the same source is a D-pad stop on a TV and a click target in a browser.
 
@@ -92,7 +93,7 @@ const s = styles({
   overline: {
     font: 'ui',
     fontWeight: '700',
-    fontSize: 12,
+    fontSize: textSizes.caption,
     lineHeight: 14,
     letterSpacing: 1.2,
     textTransform: 'uppercase',

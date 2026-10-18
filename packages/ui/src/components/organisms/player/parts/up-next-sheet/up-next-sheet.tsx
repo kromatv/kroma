@@ -16,6 +16,7 @@ import {
   type UpNextItem,
 } from '#ui/components/organisms/player/parts/up-next-card';
 import { RING_ROOM, styles } from '#ui/core';
+import { typeSpec as textRoles } from '#ui/core/tokens';
 import { gradient, maskImage } from '#ui/lib/css';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { FocusColumn, FocusRegion, FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
@@ -236,7 +237,7 @@ const s = styles({
     z: 45,
     overflow: 'hidden',
   },
-  sheetTitle: { font: 'display', fontSize: 22, fontWeight: '700' },
+  sheetTitle: { font: 'display', fontSize: textRoles.h2.size, fontWeight: '700' },
   headerRow: { row: true, align: 'flex-start' },
   headerBox: { px: 56, pt: 28, pb: 18, radius: 'xl' },
   fill: { flex: true, minH: 0 },

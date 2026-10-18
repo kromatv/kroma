@@ -1,4 +1,4 @@
-import { Box, Icon, Spinner, styles, Text } from '@kromatv/ui/kit';
+import { Box, radius as cornerRadius, Icon, Spinner, styles, Text } from '@kromatv/ui/kit';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { Pressable } from 'react-native';
@@ -73,7 +73,7 @@ const s = styles({
     w: 30,
     h: 30,
     bg: 'accent',
-    radius: 15,
+    radius: cornerRadius.photo,
     border: 'bg',
     borderWidth: 3,
   },

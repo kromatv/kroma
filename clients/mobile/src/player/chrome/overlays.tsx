@@ -1,3 +1,4 @@
+import { radius as cornerRadius, typeSpec as textRoles } from '@kromatv/ui/kit';
 // Overlays that sit above the video independently of the player controls.
 
 import type { MediaItem } from '@kromatv/client/media';
@@ -32,12 +33,12 @@ const CUE_EDGE: Record<
   { radius: number; offset: { width: number; height: number } }
 > = {
   none: { radius: 0, offset: { width: 0, height: 0 } },
-  shadow: { radius: 4, offset: { width: 0, height: 1 } },
-  uniform: { radius: 1.5, offset: { width: 0, height: 0 } },
+  shadow: { radius: cornerRadius.compact, offset: { width: 0, height: 1 } },
+  uniform: { radius: cornerRadius.outline, offset: { width: 0, height: 0 } },
   // Not 0: Android removes the shadow layer entirely at radius 0, which would
   // make both of these identical to `none`.
-  raised: { radius: 0.01, offset: { width: 1, height: 1 } },
-  depressed: { radius: 0.01, offset: { width: -1, height: -1 } },
+  raised: { radius: cornerRadius.sharp, offset: { width: 1, height: 1 } },
+  depressed: { radius: cornerRadius.sharp, offset: { width: -1, height: -1 } },
 };
 
 function cueStyle(a: SubtitleAppearance): TextStyle {
@@ -108,7 +109,7 @@ export function UpNextCard({
   );
   return (
     <Pressable onPress={onPlayNext} style={[s.upNext, { bottom }]}>
-      <FadeImage uri={thumb} seed={next.id} radius={6} style={s.upNextThumb} />
+      <FadeImage uri={thumb} seed={next.id} radius={cornerRadius.xs} style={s.upNextThumb} />
       <Box style={s.upNextText}>
         <Text style={s.upNextLabel}>{t('player.nextEpisode')}</Text>
         <Text lines={1} style={s.upNextTitle}>
@@ -123,7 +124,14 @@ export function UpNextCard({
 const s = styles({
   centerOverlay: { fill: true, center: true },
   cueBox: { absolute: true, right: 40, left: 40, align: 'center' },
-  cueText: { px: 10, py: 4, radius: 6, overflow: 'hidden', fontWeight: '600', textAlign: 'center' },
+  cueText: {
+    px: 10,
+    py: 4,
+    radius: cornerRadius.xs,
+    overflow: 'hidden',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   skipIntro: { absolute: true, right: 32 },
   upNext: {
     absolute: true,
@@ -140,6 +148,6 @@ const s = styles({
   },
   upNextThumb: { w: 84, h: 47 },
   upNextText: { shrink: 1 },
-  upNextLabel: { color: 'accent', fontSize: 11, fontWeight: '700' },
-  upNextTitle: { mt: 2, color: 'text', fontSize: 13, fontWeight: '600' },
+  upNextLabel: { color: 'accent', fontSize: textRoles.overline.size, fontWeight: '700' },
+  upNextTitle: { mt: 2, color: 'text', fontSize: textRoles.meta.size, fontWeight: '600' },
 });

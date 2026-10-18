@@ -1,7 +1,15 @@
 import type { PersonDetail } from '@kromatv/client/media';
 import { personFacts } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
-import { Avatar, Box, Chip, DataField, styles, Text } from '@kromatv/ui/kit';
+import {
+  Avatar,
+  Box,
+  Chip,
+  DataField,
+  styles,
+  Text,
+  fontSizes as textSizes,
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { TITLE } from '#tv/features/catalog/screenStyle';
 
@@ -92,5 +100,5 @@ export function PersonHeader({
 }
 
 const s = styles({
-  biography: { fontSize: 18, lineHeight: 27 },
+  biography: { fontSize: textSizes.largeLabel, lineHeight: 27 },
 });

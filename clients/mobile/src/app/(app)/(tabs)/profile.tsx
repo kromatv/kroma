@@ -1,3 +1,4 @@
+import { radius as cornerRadius } from '@kromatv/ui/kit';
 // Account tab: identity, one card of destination rows, sign-out. Everything
 // else lives in dedicated pages.
 
@@ -125,7 +126,7 @@ const s = styles({
     w: 28,
     h: 28,
     bg: 'accent',
-    radius: 14,
+    radius: cornerRadius.mobile,
     border: 'bg',
     borderWidth: 3,
   },
@@ -143,7 +144,7 @@ const s = styles({
   },
   rowPressed: { bg: 'surface2' },
   rowIconLabel: { row: true, align: 'center', shrink: 1, gap: 12 },
-  rowIconBox: { center: true, w: 34, h: 34, bg: 'accentSoft', radius: 10 },
+  rowIconBox: { center: true, w: 34, h: 34, bg: 'accentSoft', radius: cornerRadius.md },
   rowLabel: { ...type.body, fontWeight: '500' },
   rowRight: { row: true, align: 'center', shrink: 1, gap: 8 },
   rowValue: { ...type.caption, shrink: 1 },

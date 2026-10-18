@@ -1,4 +1,12 @@
-import { Box, Icon, IconButton, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  Icon,
+  IconButton,
+  styles,
+  Text,
+  fontSizes as textSizes,
+} from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useT } from '#mobile/lib/i18n';
 import { useUnreadCount } from '#mobile/lib/notifications';
@@ -41,7 +49,13 @@ const s = styles({
     minW: 16,
     px: 4,
     bg: 'accent',
-    radius: 8,
+    radius: cornerRadius.sm,
   },
-  count: { ...type.small, fontSize: 10, lineHeight: 14, fontWeight: '800', color: 'accentInk' },
+  count: {
+    ...type.small,
+    fontSize: textSizes.micro,
+    lineHeight: 14,
+    fontWeight: '800',
+    color: 'accentInk',
+  },
 });

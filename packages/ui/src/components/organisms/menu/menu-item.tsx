@@ -1,3 +1,4 @@
+import { typeSpec as textRoles } from '#ui/core/tokens';
 // One action, in both presentations: a row of the D-pad dialog, and a row of
 // the pointer's anchored panel. Which one it renders is the surface's
 // decision, handed down through the row context.
@@ -203,7 +204,7 @@ const s = styles({
   keyed: { ring: 'focusEdge' },
   activeDanger: { bg: 'danger/14' },
   disabled: { opacity: 0.4 },
-  label: { fontSize: 13, fontWeight: '600' },
+  label: { fontSize: textRoles.meta.size, fontWeight: '600' },
 });
 
 export type { MenuItemProps, MenuTone };

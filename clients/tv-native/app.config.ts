@@ -21,8 +21,8 @@
 // listings, not a rename.
 
 import path from 'node:path';
+import { collectBuildInfo, productVersion } from '@kromatv/build-info';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
-import { collectBuildInfo, productVersion } from '../build-info';
 
 const repoRoot = path.join(__dirname, '..', '..');
 

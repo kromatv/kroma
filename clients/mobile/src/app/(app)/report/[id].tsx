@@ -1,3 +1,4 @@
+import { radius as cornerRadius, typeSpec as textRoles } from '@kromatv/ui/kit';
 // Report a problem on a title (film / series / episode): pick a category,
 // optionally describe, send. Mirrors the web client's "Signaler un probleme"
 // flow (POST /api/reports).
@@ -157,8 +158,8 @@ const s = styles({
   cardLabelActive: { color: 'accentText' },
   cardHint: { ...type.small },
   message: { minH: 96, pt: 12, textAlignVertical: 'top' },
-  error: { color: 'danger', fontSize: 13 },
+  error: { color: 'danger', fontSize: textRoles.meta.size },
   done: { flex: true, center: true, gap: spacing.md },
-  doneBadge: { center: true, w: 68, h: 68, bg: 'accent', radius: 34 },
+  doneBadge: { center: true, w: 68, h: 68, bg: 'accent', radius: cornerRadius.success },
   doneText: { ...type.section, textAlign: 'center' },
 });

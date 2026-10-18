@@ -1,3 +1,4 @@
+import { radius as cornerRadius } from '@kromatv/ui/kit';
 // The device list itself: which screen should this play on.
 //
 // Shared between the bottom sheet (<CastSheet>) and the player's own panel
@@ -263,7 +264,14 @@ const s = styles({
   rowDetail: { ...type.caption, color: 'textMuted' },
   empty: { align: 'center', gap: 6, pt: spacing.md, pb: spacing.lg },
   searchingRow: { align: 'center' },
-  emptyDisc: { center: true, w: 84, h: 84, mb: spacing.sm, bg: 'surface3', radius: 42 },
+  emptyDisc: {
+    center: true,
+    w: 84,
+    h: 84,
+    mb: spacing.sm,
+    bg: 'surface3',
+    radius: cornerRadius.emptyState,
+  },
   emptyTitle: { ...type.section, color: 'text', textAlign: 'center' },
   emptyHint: {
     ...type.caption,
@@ -283,6 +291,6 @@ const s = styles({
     bg: 'surface3',
     radius: radius.pill,
   },
-  searchingDot: { w: 7, h: 7, bg: 'accent', radius: 4 },
+  searchingDot: { w: 7, h: 7, bg: 'accent', radius: cornerRadius.compact },
   searchingLabel: { ...type.small, color: 'textMuted' },
 });

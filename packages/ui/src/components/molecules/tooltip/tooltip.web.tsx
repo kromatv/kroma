@@ -1,3 +1,4 @@
+import { fontSizes as textSizes } from '#ui/core/tokens';
 // The pointer half of <Tooltip>: a delayed bubble over the child on hover or
 // focus-within, portalled so no overflow ancestor clips it. The wrapper names
 // the bubble with aria-describedby while it shows.
@@ -31,7 +32,7 @@ const s = styles({
     borderColor: 'borderStrong',
     bg: 'surface2',
     color: 'text',
-    fontSize: 12,
+    fontSize: textSizes.caption,
     fontWeight: '600',
     lineHeight: '1.4',
     pointerEvents: 'none',

@@ -119,7 +119,7 @@ export function PostPlay({
   const tier = stageWidth >= TV_STAGE ? TIERS.tv : TIERS.desk;
   const rise = useRise();
   return (
-    <Box fill z={50} bg="#08080b">
+    <Box fill z={50} bg="playerBlack">
       <Animated.View style={[s.art, rise.veil]}>
         {/* Heroes favour the upper third: a backdrop wider than the stage is
             cropped, and what it is cropped towards should be the faces rather

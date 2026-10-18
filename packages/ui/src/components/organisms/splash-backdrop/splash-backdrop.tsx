@@ -1,3 +1,4 @@
+import { fontSizes as textSizes } from '#ui/core/tokens';
 // <SplashBackdrop>: the sign-in screens' ambient artwork, one implementation
 // for web, phone and TV: one cover at a time, dissolving on a slow drift under
 // a grade dark enough to hold a form, with the KROMA wheel drawn as a 3px rule
@@ -215,8 +216,8 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
 const s = styles({
   ground: { fill: true, pointerEvents: 'none' },
   art: { absolute: true, top: 0, right: 0, bottom: 0, left: 0 },
-  eyebrow: { fontSize: 10, letterSpacing: 2.6, shrink: 0 },
-  caption: { fontSize: 14, fontWeight: '500', shrink: 1 },
+  eyebrow: { fontSize: textSizes.micro, letterSpacing: 2.6, shrink: 0 },
+  caption: { fontSize: textSizes.compactLabel, fontWeight: '500', shrink: 1 },
 });
 
 export type { SplashBackdropProps, SplashCover };

@@ -1,3 +1,4 @@
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // One key of an <OnScreenKeyboard>. A <Focusable>, so the spatial focus nav
 // reaches it and OK activates it.
 
@@ -20,8 +21,8 @@ type KeyboardSize = 'sm' | 'tv';
  * divide collapsed to its glyphs.
  */
 const KEY_SIZES = {
-  sm: { width: 44, height: 48, gap: 8, fontSize: 19, glyph: 22 },
-  tv: { width: 78, height: 74, gap: 12, fontSize: 30, glyph: 34 },
+  sm: { width: 44, height: 48, gap: 8, fontSize: textSizes.controlTitle, glyph: 22 },
+  tv: { width: 78, height: 74, gap: 12, fontSize: textRoles.heading.size, glyph: 34 },
 } as const satisfies Record<KeyboardSize, Readonly<Record<string, number>>>;
 
 function keyMetrics(size: KeyboardSize) {

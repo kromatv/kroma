@@ -1,7 +1,7 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { MediaItem } from '@kromatv/client/media';
 import { useCast } from '@kromatv/ui';
-import { Box, Button, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, Icon, styles, Text, typeSpec as textRoles } from '@kromatv/ui/kit';
 import { useRef } from 'react';
 import { Alert, Pressable } from 'react-native';
 import { CastSheet } from '#mobile/components/cast/CastSheet';
@@ -192,7 +192,7 @@ const s = styles({
     radius: radius.md,
     overflow: 'hidden',
   },
-  downloadBarLabel: { color: 'text', fontSize: 15, fontWeight: '700' },
+  downloadBarLabel: { color: 'text', fontSize: textRoles.label.size, fontWeight: '700' },
   downloadBarLabelDone: { color: 'accentText' },
   downloadBarFill: {
     absolute: true,

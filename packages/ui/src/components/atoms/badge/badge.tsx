@@ -1,3 +1,4 @@
+import { typeSpec as textRoles } from '#ui/core/tokens';
 // <Badge>: the small quality / status pill (4K, HDR, H.265, FR, Disponible).
 // Text only, never emoji.
 
@@ -28,8 +29,14 @@ const badgeVariants = sv({
       neutral: { root: { bg: 'tint/8' }, label: { color: 'text/85' } },
     },
     size: {
-      sm: { root: { py: 4, px: 9 }, label: { fontSize: 11, letterSpacing: 0.44 } },
-      tv: { root: { py: 5, px: 11 }, label: { fontSize: 13, letterSpacing: 0.26 } },
+      sm: {
+        root: { py: 4, px: 9 },
+        label: { fontSize: textRoles.overline.size, letterSpacing: 0.44 },
+      },
+      tv: {
+        root: { py: 5, px: 11 },
+        label: { fontSize: textRoles.meta.size, letterSpacing: 0.26 },
+      },
     },
   },
   defaults: { tone: '4K', size: 'sm' },

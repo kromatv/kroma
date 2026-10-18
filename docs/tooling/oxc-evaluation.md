@@ -24,13 +24,19 @@ and verification commands. Run `bun run --cwd packages/lint-rules rules --json` 
 or `bun run lint --format agent` for actionable diagnostics. See the
 [authoring instructions](../../packages/lint-rules/README.md).
 
-The full scan reports **852 existing findings**, detailed in the table below. The new `lint` and `check` intentionally return a
-failure on this checkout. This is an evaluation branch and is **not ready to
-merge as a green CI rollout** until those findings are repaired or individually
-reviewed as policy exceptions. They are policy findings, not a claim that every
-binding is a demonstrated runtime bug. Existing registries, stores, and caches
-need an ownership review; blindly converting them to const objects would merely
-hide their mutability. No application source was rewritten by this experiment.
+The initial scan reported **852 findings**, inventoried below. The rollout now
+requires repairing that backlog before merging; the draft PR must pass the full
+gate. The current repair batch leaves **155 findings**: 89 module mutable bindings
+and 66 unknown-record assertions. There is no suppression baseline. Registries,
+stores, and caches need an ownership review; converting them to const containers
+would merely hide their mutability.
+
+Application repairs extract implementation from barrel modules, preserve Expo
+route entry points through re-exports, replace literal styles with named tokens,
+and remove unchecked dynamic-global casts. TanStack file routes retain local
+`Route` exports because its generator requires them; the rule recognizes that
+framework contract explicitly. Size-only tokens are separate from complete text
+roles, preserving both existing type ramps and current rendered dimensions.
 
 The native rule set is explicit: no-debugger, no-eval, no-constant-condition,
 no-var, and the existing no-nested-ternary policy. Broad recommended categories
@@ -119,19 +125,18 @@ include existing failures. The benchmark deliberately does not apply fixes.
 
 ## Validation
 
-- 139 focused tests pass (99.73% implementation/tooling line coverage, 94.14% branch
-  coverage under c8/Node), including actual CLI/config loading, AST false-positive
-  cases, structured guidance, and draft overwrite/path-traversal rejection.
-- Frozen-lockfile installation succeeds with lifecycle scripts disabled.
-- The independent Biome check passes with its existing schema-version info.
-- `bun run sonar:lint` and `git diff --check` pass.
-- The combined `bun run check` fails on the 852 existing policy findings listed
-  below. No full application build or application test suite was run because
-  this change modifies lint tooling and documentation only.
+- 140 focused lint-tooling tests pass, including actual CLI/config loading,
+  AST false positives, structured guidance, and scaffolder path safety.
+- Whole-workspace typechecking passes.
+- 159 focused application test files pass (2,104 tests), covering UI core,
+  registry, metadata, discovery, relays, mobile services/player, and Vite adapters.
+- Biome, `bun run sonar:lint`, and `git diff --check` pass.
+- `bun run check` still fails on the 155 remaining policy findings. The PR stays
+  draft until repairs and required CI checks pass.
 
 ## Existing policy findings
 
-This is an inventory, not a suppression baseline. The gate reports every finding.
+This is the initial inventory, not the current remaining count or a suppression baseline. The gate reports every finding.
 The [per-file inventory](oxc-findings.json) is machine-readable for cleanup work.
 
 | Rule | Findings |

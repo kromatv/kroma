@@ -1,3 +1,4 @@
+import { typeSpec as textRoles } from '@kromatv/ui/kit';
 // A my-list id can name a movie OR a show, so the ids are resolved against both
 // catalogues, in the order the server returned them (newest first).
 
@@ -88,6 +89,6 @@ export default function MyList() {
 const s = styles({
   screen: { flex: true, bg: 'bg' },
   titleRow: { row: true, align: 'baseline', gap: 10, mb: spacing.sm },
-  title: { ...type.display, fontSize: 30 },
+  title: { ...type.display, fontSize: textRoles.heading.size },
   count: { ...type.caption },
 });

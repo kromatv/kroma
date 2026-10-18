@@ -21,6 +21,7 @@ import {
   SORT_ICON,
   styles,
   Text,
+  fontSizes as textSizes,
 } from '@kromatv/ui/kit';
 import { memo } from 'react';
 import type { CatalogEntry } from '#tv/features/catalog/home/AmbientBackdrop';
@@ -47,7 +48,12 @@ const s = styles({
   // The design's clamp(30px, 4.8vh, 46px), resolved: on the fixed 1920x1080
   // stage a viewport unit would mean something different on each of the four
   // targets.
-  echoTitle: { fontSize: 46, lineHeight: 48, fontWeight: '700', letterSpacing: -0.92 },
+  echoTitle: {
+    fontSize: textSizes.browseTitle,
+    lineHeight: 48,
+    fontWeight: '700',
+    letterSpacing: -0.92,
+  },
 });
 
 /** Fixed height, so the grid never reflows as the focus echo swaps titles. */

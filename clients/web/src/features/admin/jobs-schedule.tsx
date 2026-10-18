@@ -1,3 +1,4 @@
+import { fontSizes as textSizes } from '@kromatv/ui/kit';
 // The "edit schedule" modal for a background job: cron input with presets, a
 // "manual only" option, and reset-to-default. The server validates the cron.
 
@@ -14,10 +15,10 @@ const s = styles({
   mono: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' },
   cron: {
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-    fontSize: 11.5,
+    fontSize: textSizes.overlineRaised,
     fontWeight: '600',
   },
-  resetLabel: { fontSize: 12, fontWeight: '600' },
+  resetLabel: { fontSize: textSizes.caption, fontWeight: '600' },
 });
 
 const PRESETS: { label: string; expr: string }[] = [

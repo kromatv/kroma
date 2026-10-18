@@ -1,4 +1,4 @@
-import { Box, NavPill, styles } from '@kromatv/ui/kit';
+import { Box, radius as cornerRadius, NavPill, styles } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 // expo-router vendors react-navigation and does not re-export this type from its root.
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
@@ -59,7 +59,7 @@ const s = styles({
   dock: { absolute: true, right: 0, left: 0, px: 12, align: 'center' },
   shadow: {
     self: 'stretch',
-    radius: 999,
+    radius: cornerRadius.pill,
     shadowColor: 'black',
     shadowOpacity: 0.35,
     shadowRadius: 18,

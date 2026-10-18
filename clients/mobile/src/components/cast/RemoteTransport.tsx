@@ -1,5 +1,5 @@
 import { BACK_10_ICON, FWD_10_ICON } from '@kromatv/ui';
-import { Box, Icon, type IconName, styles } from '@kromatv/ui/kit';
+import { Box, radius as cornerRadius, Icon, type IconName, styles } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { spacing } from '#mobile/lib/theme';
@@ -52,6 +52,6 @@ function Round({
 
 const s = styles({
   transport: { row: true, center: true, gap: spacing.lg, py: spacing.sm },
-  round: { center: true, w: 56, h: 56, bg: 'surface2', radius: 28 },
-  roundBig: { w: 76, h: 76, bg: 'surface3', radius: 38 },
+  round: { center: true, w: 56, h: 56, bg: 'surface2', radius: cornerRadius.mobileHero },
+  roundBig: { w: 76, h: 76, bg: 'surface3', radius: cornerRadius.transport },
 });

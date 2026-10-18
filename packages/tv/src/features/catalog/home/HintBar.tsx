@@ -1,3 +1,4 @@
+import { typeSpec as textRoles } from '@kromatv/ui/kit';
 // The bottom hint strip shared by Home and the browse grids: three short remote
 // hints over a gradient that fades into the page. Purely decorative, so it never
 // takes pointer events and never joins the focus set.
@@ -7,8 +8,8 @@ import { useT } from '@kromatv/ui';
 import { Box, gradient, Hint, shade, styles, Text } from '@kromatv/ui/kit';
 
 const s = styles({
-  hint: { fontSize: 13, fontWeight: '600' },
-  hintKey: { fontSize: 13, fontWeight: '700' },
+  hint: { fontSize: textRoles.meta.size, fontWeight: '600' },
+  hintKey: { fontSize: textRoles.meta.size, fontWeight: '700' },
 });
 
 /** `strength` matches the design: Home fades from 0.8, the grids from 0.85

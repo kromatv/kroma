@@ -1,5 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { Box, StatusDot, styles, Text } from '@kromatv/ui/kit';
+import { Box, StatusDot, styles, Text, typeSpec as textRoles } from '@kromatv/ui/kit';
 import type { ServerProbe } from '#tv/app/useServersHealth';
 
 /** The dot plus the round-trip time, rather than a bare "En ligne": on a LAN
@@ -23,5 +23,5 @@ export function ServerStatusPill({ probe }: Readonly<{ probe?: ServerProbe }>) {
 }
 
 const s = styles({
-  label: { fontSize: 13, fontWeight: '600', letterSpacing: 0.26 },
+  label: { fontSize: textRoles.meta.size, fontWeight: '600', letterSpacing: 0.26 },
 });

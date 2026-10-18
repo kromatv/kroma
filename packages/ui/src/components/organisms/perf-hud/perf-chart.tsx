@@ -1,3 +1,4 @@
+import { radius as cornerRadius } from '#ui/core/tokens';
 // The frame-time chart: one bar per recent frame, tallest is slowest.
 //
 // Drawn out of plain views rather than a canvas or an SVG, because it has to
@@ -65,7 +66,7 @@ const s = styles({
   budgetTwice: { bottom: ((BUDGET_MS * 2) / CEILING_MS) * HEIGHT },
   chart: { h: HEIGHT, justify: 'flex-end', mt: 6 },
   bars: { h: HEIGHT, align: 'flex-end', gap: 1 },
-  bar: { w: 3, radius: 1 },
+  bar: { w: 3, radius: cornerRadius.hairline },
   rule: { absolute: true, left: 0, right: 0, h: 1, bg: 'border' },
 });
 

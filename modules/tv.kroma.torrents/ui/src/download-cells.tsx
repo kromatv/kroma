@@ -169,7 +169,7 @@ export function RowSpeedCell({
       </Box>
     ) : (
       <Text variant="meta" color="text/25">
-        —
+        -
       </Text>
     );
   }

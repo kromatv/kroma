@@ -1,3 +1,4 @@
+import { radius as cornerRadius, fontSizes as textSizes } from '@kromatv/ui/kit';
 // Pure presentation over the Engine; all playback logic lives in engine/.
 
 import type { MediaItem } from '@kromatv/client/media';
@@ -278,6 +279,13 @@ export function PlayerChrome({
 }
 
 const s = styles({
-  zoomNote: { absolute: true, self: 'center', px: 14, py: 7, bg: 'bg/80', radius: 999 },
-  zoomNoteText: { color: 'text', fontSize: 12, fontWeight: '600' },
+  zoomNote: {
+    absolute: true,
+    self: 'center',
+    px: 14,
+    py: 7,
+    bg: 'bg/80',
+    radius: cornerRadius.pill,
+  },
+  zoomNoteText: { color: 'text', fontSize: textSizes.caption, fontWeight: '600' },
 });

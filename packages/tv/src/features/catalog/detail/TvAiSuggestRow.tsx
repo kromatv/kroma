@@ -1,7 +1,16 @@
 import type { ItemId, SectionItem } from '@kromatv/client/media';
 import { genreLabels, posterColors } from '@kromatv/core';
 import { useAiSuggest, useT } from '@kromatv/ui';
-import { Box, MediaCard, ProgressRing, RAIL_GAP, Rail, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  MediaCard,
+  ProgressRing,
+  RAIL_GAP,
+  Rail,
+  styles,
+  Text,
+  typeSpec as textRoles,
+} from '@kromatv/ui/kit';
 import { useClient, useNav } from '#tv/app/router';
 
 // The "Suggestions IA" rail on a TV detail screen. `useAiSuggest` polls the
@@ -18,7 +27,7 @@ const TILE_ART_W = 300;
 const s = styles({
   label: {
     fontWeight: '700',
-    fontSize: 15,
+    fontSize: textRoles.label.size,
     lineHeight: 18,
     letterSpacing: 0.6,
     textTransform: 'uppercase',

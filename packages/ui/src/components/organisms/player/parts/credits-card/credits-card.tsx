@@ -6,6 +6,7 @@ import { ProgressRing } from '#ui/components/atoms/progress-ring';
 import { Text } from '#ui/components/atoms/text';
 import { scaler } from '#ui/components/organisms/player/lib/metrics';
 import { scaledRadius, sharedStyle, styles, sv, useTheme } from '#ui/core';
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
 
@@ -82,7 +83,7 @@ export function CreditsCard({
       radius={scaledRadius('2xl', scale)}
       borderWidth={1}
       border="white/12"
-      bg="rgba(16, 16, 20, 0.9)"
+      bg="playerSurface/90"
       p={px(20)}
     >
       <Box h={px(150)} mb={px(16)} radius={scaledRadius('lg', scale)} overflow="hidden">
@@ -98,7 +99,7 @@ export function CreditsCard({
               fill={theme.colors.accent}
             />
           </Box>
-          <Box w={px(42)} h={px(42)} center radius="circle" bg="#101014">
+          <Box w={px(42)} h={px(42)} center radius="circle" bg="playerSurface">
             <Text style={[s.countdown, sizeOf(px(COUNTDOWN_SIZE))]}>{String(secondsLeft)}</Text>
           </Box>
         </Box>
@@ -152,11 +153,17 @@ const s = styles({
   },
   eyebrow: {
     font: 'ui',
-    fontSize: 11,
+    fontSize: textRoles.overline.size,
     fontWeight: '700',
     letterSpacing: 1.76,
     textTransform: 'uppercase',
   },
-  title: { mt: 4, font: 'display', fontSize: 19, lineHeight: 23, fontWeight: '700' },
-  subtitle: { mt: 3, font: 'ui', fontSize: 13, fontWeight: '600' },
+  title: {
+    mt: 4,
+    font: 'display',
+    fontSize: textSizes.controlTitle,
+    lineHeight: 23,
+    fontWeight: '700',
+  },
+  subtitle: { mt: 3, font: 'ui', fontSize: textRoles.meta.size, fontWeight: '600' },
 });

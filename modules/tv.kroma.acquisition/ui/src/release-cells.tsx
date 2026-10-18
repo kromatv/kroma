@@ -43,12 +43,12 @@ export function ReleaseFacts({
       </Table.Cell>
       <Table.Cell>
         <Text variant="meta" color="textDim" style={TABULAR}>
-          {sizeBytes != null ? fmt.bytes(sizeBytes) : '—'}
+          {sizeBytes != null ? fmt.bytes(sizeBytes) : '-'}
         </Text>
       </Table.Cell>
       <Table.Cell>
         <Text variant="meta" color="success" style={TABULAR}>
-          {seeders ?? '—'}
+          {seeders ?? '-'}
         </Text>
       </Table.Cell>
     </>

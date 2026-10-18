@@ -1,4 +1,12 @@
-import { Box, Icon, type IconName, SwitchFace, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  Icon,
+  type IconName,
+  SwitchFace,
+  styles,
+  Text,
+} from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { Pressable } from 'react-native';
 import { colors, spacing, type } from '#mobile/lib/theme';
@@ -94,7 +102,15 @@ export function ChipGroup({ label, children }: Readonly<{ label: string; childre
 }
 
 const s = styles({
-  menuRow: { row: true, align: 'center', gap: 14, minH: 54, px: spacing.md, py: 8, radius: 14 },
+  menuRow: {
+    row: true,
+    align: 'center',
+    gap: 14,
+    minH: 54,
+    px: spacing.md,
+    py: 8,
+    radius: cornerRadius.mobile,
+  },
   menuText: { flex: true, minW: 0 },
   menuLabel: { ...type.body, color: 'text', fontWeight: '700' },
   menuValue: { ...type.small, mt: 1 },
@@ -117,7 +133,7 @@ const s = styles({
     gap: spacing.sm,
     minH: 48,
     px: spacing.md,
-    radius: 14,
+    radius: cornerRadius.mobile,
   },
   rowOn: { bg: 'white/10' },
   rowDisabled: { opacity: 0.45 },

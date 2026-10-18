@@ -1,3 +1,4 @@
+import { typeSpec as textRoles } from '@kromatv/ui/kit';
 // Shared scaffold for the onboarding/login surfaces. The lockup is the one
 // anchor: same size and position on every phase, with content swapping beneath.
 
@@ -131,6 +132,6 @@ const s = styles({
   box: { flex: true, gap: spacing.md },
   boxWide: { gap: spacing.md, minH: 320 },
   titleBlock: { mb: spacing.sm },
-  headline: { ...type.display, fontSize: 28, textAlign: 'center' },
+  headline: { ...type.display, fontSize: textRoles.subheadingTv.size, textAlign: 'center' },
   subtitle: { ...type.caption, mt: 6, textAlign: 'center' },
 });

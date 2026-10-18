@@ -3,6 +3,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
+import { fontSizes as textSizes } from '#ui/core/tokens';
 import { partContext } from '#ui/lib/part-context';
 
 type EmptyStateSize = 'sm' | 'md' | 'tv';
@@ -119,7 +120,7 @@ const s = styles({
   centred: { textAlign: 'center' },
   titleSm: { mt: 2, fontWeight: '700' },
   titleMd: { mt: 6 },
-  hint: { fontSize: 14.5, lineHeight: 22, maxW: 420 },
+  hint: { fontSize: textSizes.compactLabelRaised, lineHeight: 22, maxW: 420 },
   hintTv: { maxW: 720 },
 });
 

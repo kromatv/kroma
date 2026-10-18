@@ -1,3 +1,4 @@
+import { typeSpec as textRoles } from '#ui/core/tokens';
 // The palette's parts: the field, the list, the face when nothing matches, and
 // the row of hints under it.
 
@@ -138,7 +139,7 @@ const s = styles({
   ruleTop: { borderTopWidth: 1, borderTopColor: 'border' },
   list: { maxH: METRICS.maxHeight },
   listBody: { p: METRICS.pad },
-  entry: { fontSize: 15, fontWeight: '500' },
+  entry: { fontSize: textRoles.label.size, fontWeight: '500' },
 });
 
 export type { CommandInputProps };

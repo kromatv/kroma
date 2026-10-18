@@ -7,6 +7,7 @@ import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
 import { FOCUS_SCALE } from '#ui/components/organisms/player/lib/style';
 import { style, styles } from '#ui/core';
+import { typeSpec as textRoles } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { FocusLiftHost, LIFTED } from '#ui/lib/focus-lift';
@@ -170,11 +171,17 @@ const s = styles({
   vignette: { pointerEvents: 'none' },
   category: {
     font: 'ui',
-    fontSize: 11,
+    fontSize: textRoles.overline.size,
     fontWeight: '700',
     letterSpacing: 0.99,
     textTransform: 'uppercase',
   },
-  title: { font: 'ui', fontSize: 17, lineHeight: 21, fontWeight: '700', color: 'white' },
-  subtitle: { font: 'ui', fontSize: 13, fontWeight: '500' },
+  title: {
+    font: 'ui',
+    fontSize: textRoles.cardTitle.size,
+    lineHeight: 21,
+    fontWeight: '700',
+    color: 'white',
+  },
+  subtitle: { font: 'ui', fontSize: textRoles.meta.size, fontWeight: '500' },
 });

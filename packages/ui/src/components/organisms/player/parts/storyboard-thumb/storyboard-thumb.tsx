@@ -25,7 +25,7 @@ export function StoryboardThumb({ tile }: Readonly<{ tile: StoryboardTile }>) {
       overflow="hidden"
       borderWidth={2}
       border="rgba(255, 255, 255, 0.3)"
-      bg="#000000"
+      bg="black"
     >
       <Image
         source={{ uri: tile.sheet }}

@@ -1,3 +1,4 @@
+import { typeSpec as textRoles } from '#ui/core/tokens';
 // One segment: a radio in the group's row, and the shell it is drawn in.
 
 import type { ReactNode } from 'react';
@@ -18,7 +19,7 @@ const segmentGroupVariants = svFor<{ root: StyleDecl; label: StyleDecl; hint: St
   slots: {
     root: { row: true, center: true, gap: 7, _hover: { bg: 'tint/8' }, _press: { bg: 'tint/14' } },
     label: { font: 'ui', fontWeight: '600', color: 'text/75' },
-    hint: { font: 'ui', fontSize: 11, color: 'textDim' },
+    hint: { font: 'ui', fontSize: textRoles.overline.size, color: 'textDim' },
   },
   variants: {
     size: bySize((m) => ({

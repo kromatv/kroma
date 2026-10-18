@@ -12,6 +12,7 @@ import {
   Rail,
   styles,
   Text,
+  typeSpec as textRoles,
 } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { useClient, useNav } from '#tv/app/router';
@@ -153,9 +154,9 @@ export function ThemeButton({
 }
 
 const s = styles({
-  sectionLabelSm: { fontSize: 15, fontWeight: '600' },
+  sectionLabelSm: { fontSize: textRoles.label.size, fontWeight: '600' },
   sectionLabel: {
-    fontSize: 15,
+    fontSize: textRoles.label.size,
     fontWeight: '700',
     letterSpacing: 0.6,
     textTransform: 'uppercase',

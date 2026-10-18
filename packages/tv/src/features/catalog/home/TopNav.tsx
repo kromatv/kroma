@@ -3,6 +3,7 @@ import {
   Avatar,
   BackButton,
   Box,
+  radius as cornerRadius,
   Focusable,
   FocusRegion,
   FocusSlot,
@@ -31,7 +32,7 @@ const SCRIM = `linear-gradient(180deg, ${shade(0.72)}, ${shade(0.25)} 45%, trans
 /** The shared 10-foot top bar. Omitting `active` highlights nothing, which is
  * what deep screens (detail / person) want. */
 
-const AVATAR = style({ radius: 11 });
+const AVATAR = style({ radius: cornerRadius.control });
 export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
   const nav = useNav();
   const t = useT();

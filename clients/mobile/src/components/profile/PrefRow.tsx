@@ -1,4 +1,4 @@
-import { Box, Icon, type IconName, styles, Text } from '@kromatv/ui/kit';
+import { Box, radius as cornerRadius, Icon, type IconName, styles, Text } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
@@ -45,7 +45,7 @@ const s = styles({
   },
   rowPressed: { bg: 'surface2' },
   rowIconLabel: { flex: true, row: true, align: 'center', gap: 12 },
-  rowIconBox: { center: true, w: 34, h: 34, bg: 'accentSoft', radius: 10 },
+  rowIconBox: { center: true, w: 34, h: 34, bg: 'accentSoft', radius: cornerRadius.md },
   rowLabel: { ...type.body, shrink: 1, fontWeight: '500' },
   rowRight: { row: true, align: 'center', shrink: 0, gap: 8 },
   rowValue: { ...type.caption },

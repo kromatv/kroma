@@ -76,8 +76,8 @@ const iconButtonVariants = svFor<{ root: StyleDecl; icon: Pick<IconProps, 'color
         root: {
           bg: 'bg/55',
           border: 'tint/12',
-          _hover: { bg: 'rgba(28, 28, 34, 0.6)' },
-          _press: { bg: 'rgba(40, 40, 48, 0.65)' },
+          _hover: { bg: 'surface3/60' },
+          _press: { bg: 'playerRaised/65' },
         },
       },
     },

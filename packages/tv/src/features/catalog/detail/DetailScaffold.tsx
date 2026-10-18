@@ -10,6 +10,7 @@ import {
   qualityTone,
   styles,
   Text,
+  typeSpec as textRoles,
   tintGradient,
 } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
@@ -101,7 +102,12 @@ export function TvDetailScaffold({
 const s = styles({
   titleGap: { mt: 14, mb: 16 },
   // clamp(46px, 7.6vh, 86px) resolves to 82px on the fixed 1080-tall stage.
-  title: { fontSize: 82, lineHeight: 78, fontWeight: '700', letterSpacing: -1.64 },
+  title: {
+    fontSize: textRoles.heroTv.size,
+    lineHeight: 78,
+    fontWeight: '700',
+    letterSpacing: -1.64,
+  },
   scroll: { fill: true },
   // Padding belongs on the content, not the scroller box: on the box it would
   // pad the viewport and clip the last row instead of the list.

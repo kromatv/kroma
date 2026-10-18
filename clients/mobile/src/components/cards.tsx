@@ -1,3 +1,4 @@
+import { radius as cornerRadius } from '@kromatv/ui/kit';
 // Poster + continue-watching cards and the horizontal media rail. Cards are
 // pure presentation; navigation targets are resolved by the small helpers at
 // the top so every screen routes titles the same way.
@@ -205,6 +206,14 @@ const s = styles({
   labelSub: { ...type.small },
   cardTitle: { ...type.caption, mt: 6, color: 'text' },
   cardSub: { ...type.small, mt: 1 },
-  progressTrack: { absolute: true, right: 6, bottom: 6, left: 6, h: 3, bg: 'text/30', radius: 2 },
-  progressFill: { h: 3, bg: 'accent', radius: 2 },
+  progressTrack: {
+    absolute: true,
+    right: 6,
+    bottom: 6,
+    left: 6,
+    h: 3,
+    bg: 'text/30',
+    radius: cornerRadius.track,
+  },
+  progressFill: { h: 3, bg: 'accent', radius: cornerRadius.track },
 });

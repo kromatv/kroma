@@ -58,9 +58,8 @@ export function breakpointBits(value: unknown): number {
 /** The value at a breakpoint, mobile-first. A value naming no breakpoint at all
  *  passes through, so an Animated node stays itself. */
 export function valueAt(value: object, index: number): unknown {
-  const bag = value as Record<string, unknown>;
   for (let at = Math.min(index, LAST_BREAKPOINT); at >= 0; at--) {
-    const found = bag[BREAKPOINTS[at] as string];
+    const found: unknown = Reflect.get(value, BREAKPOINTS[at] as string);
     if (found !== undefined) return found;
   }
   return breakpointBits(value) === 0 ? value : undefined;

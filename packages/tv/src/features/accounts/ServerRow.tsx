@@ -11,6 +11,7 @@ import {
   Skeleton,
   styles,
   Text,
+  fontSizes as textSizes,
 } from '@kromatv/ui/kit';
 import type { ServerProbe } from '#tv/app/useServersHealth';
 import { ServerStatusPill } from '#tv/features/accounts/ServerStatus';
@@ -127,6 +128,6 @@ function metaOf(probe: ServerProbe | undefined, t: Translate): string | null {
 }
 
 const s = styles({
-  meta: { fontSize: 12.5, fontWeight: '600', letterSpacing: 0.2 },
+  meta: { fontSize: textSizes.captionRaised, fontWeight: '600', letterSpacing: 0.2 },
   ghost: { opacity: 0.55 },
 });

@@ -1,3 +1,4 @@
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // <PosterCard>: the 2:3 portrait tile of the browse grids (Films, Series).
 //
 // The same anatomy as <MediaCard> at a different aspect and type scale. It fills
@@ -92,7 +93,7 @@ const s = styles({
   overline: {
     font: 'ui',
     fontWeight: '700',
-    fontSize: 11,
+    fontSize: textRoles.overline.size,
     lineHeight: 13,
     letterSpacing: 1.1,
     textTransform: 'uppercase',
@@ -101,7 +102,7 @@ const s = styles({
   title: {
     font: 'display',
     fontWeight: '700',
-    fontSize: 18,
+    fontSize: textSizes.largeLabel,
     lineHeight: 19,
     color: 'white',
   },

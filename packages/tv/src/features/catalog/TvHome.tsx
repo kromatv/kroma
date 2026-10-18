@@ -9,6 +9,7 @@ import {
   RAIL_GAP,
   Rail,
   styles,
+  typeSpec as textRoles,
   useFocusNav,
   useGrowingCount,
 } from '@kromatv/ui/kit';
@@ -39,7 +40,12 @@ const s = styles({
   pageScroll: { flex: true, minH: 0 },
   // Padding belongs on the content, not the scroller box.
   pageContent: { pb: 40 },
-  rowTitle: { fontSize: 28, lineHeight: 30, fontWeight: '700', letterSpacing: -0.56 },
+  rowTitle: {
+    fontSize: textRoles.subheadingTv.size,
+    lineHeight: 30,
+    fontWeight: '700',
+    letterSpacing: -0.56,
+  },
 });
 
 interface Row {

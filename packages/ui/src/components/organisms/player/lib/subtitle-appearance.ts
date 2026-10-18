@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { TextStyle, ViewStyle } from 'react-native';
 import type { ColorValue } from '#ui/core';
 import { sharedStyle } from '#ui/core';
+import { radius as cornerRadius } from '#ui/core/tokens';
 import { deviceStore } from '#ui/lib/device-store';
 import { edgeStyle } from './subtitle-edge';
 
@@ -46,7 +47,7 @@ export interface SubtitleAppearance {
  * should open with captions that sit on the picture, not a slab across it. */
 export const DEFAULT_SUB_APPEARANCE: SubtitleAppearance = {
   size: 'md',
-  color: '#FFFFFF',
+  color: 'white',
   edge: 'shadow',
   font: 'default',
   opacity: 100,
@@ -215,7 +216,7 @@ export function subtitleWindowStyle(style: SubtitleAppearance): ViewStyle {
     backgroundColor: withOpacity(style.windowColor, style.windowOpacity),
     paddingVertical: 6,
     paddingHorizontal: 18,
-    borderRadius: 10,
+    borderRadius: cornerRadius.md,
   });
 }
 
@@ -241,7 +242,7 @@ export function subtitleStyle(style: SubtitleAppearance): TextStyle {
     fontFamily: FONT_STACK[style.font],
     ...(style.font === 'smallCaps' ? ({ fontVariant: ['small-caps'] } as TextStyle) : null),
     textAlign: 'center',
-    borderRadius: 10,
+    borderRadius: cornerRadius.md,
     ...(hasBg
       ? {
           backgroundColor: withOpacity(style.bgColor, style.bgOpacity),

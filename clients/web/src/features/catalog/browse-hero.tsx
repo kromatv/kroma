@@ -5,6 +5,7 @@ import {
   sharedStyle,
   styles,
   Text,
+  fontSizes as textSizes,
   useBreakpoint,
 } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
@@ -13,10 +14,10 @@ import { Image } from '#web/shared/ui';
 import { PAGE_GUTTER } from '#web/shared/ui/page';
 
 const TITLE = styles({
-  base: { fontSize: 36 },
-  md: { fontSize: 40 },
-  lg: { fontSize: 48 },
-  tv: { fontSize: 56 },
+  base: { fontSize: textSizes.pageTitle },
+  md: { fontSize: textSizes.pageTitleMedium },
+  lg: { fontSize: textSizes.pageTitleWide },
+  tv: { fontSize: textSizes.pageTitleTv },
 });
 
 export function BrowseTitle({ children }: Readonly<{ children: ReactNode }>) {

@@ -31,7 +31,7 @@ export function ChannelBuilds({ builds, filter = NO_FILTER }: Readonly<ChannelBu
           {month.items.map(({ item: build, downloads }) => (
             <BuildRow
               key={build.version ?? build.builtAt}
-              version={build.version ?? '—'}
+              version={build.version ?? '-'}
               at={build.builtAt}
               files={downloads.map(fromDownload)}
               featured={build.builtAt === newest}

@@ -1,3 +1,4 @@
+import { radius as cornerRadius } from '@kromatv/ui/kit';
 // The listening panel: what the user sees while the app holds the
 // microphone. The platform half (the microphone itself, and how the words
 // arrive) is a backend the shell registers; see `#tv/app/voiceSearch`.
@@ -68,6 +69,6 @@ function Pulse({ children }: Readonly<{ children: React.ReactNode }>) {
 }
 
 const s = styles({
-  well: { w: 56, h: 56, radius: 28, center: true, bg: 'accentSoft' },
+  well: { w: 56, h: 56, radius: cornerRadius.mobileHero, center: true, bg: 'accentSoft' },
   halo: { absolute: true, w: CIRCLE, h: CIRCLE, radius: CIRCLE / 2, bg: 'accentWash' },
 });

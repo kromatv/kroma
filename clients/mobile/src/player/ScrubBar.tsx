@@ -1,3 +1,4 @@
+import { typeSpec as textRoles } from '@kromatv/ui/kit';
 // Touch scrub bar: buffered + played fills, drag preview with a storyboard
 // thumbnail + time bubble, drawn from the kit's seek-bar paints so it matches
 // the TV seek bar.
@@ -155,5 +156,5 @@ const s = styles({
   previewBox: { absolute: true, bottom: 38, align: 'center', gap: 6, w: THUMB_W },
   thumb: { bg: 'black', radius: radius.md, border: 'borderStrong', overflow: 'hidden' },
   bubble: { px: 12, py: 4, bg: 'black/80', radius: radius.md },
-  bubbleText: { color: 'text', fontSize: 11, fontVariant: ['tabular-nums'] },
+  bubbleText: { color: 'text', fontSize: textRoles.overline.size, fontVariant: ['tabular-nums'] },
 });

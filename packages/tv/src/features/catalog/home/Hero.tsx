@@ -20,6 +20,8 @@ import {
   qualityTone,
   styles,
   Text,
+  typeSpec as textRoles,
+  fontSizes as textSizes,
   tintGradient,
 } from '@kromatv/ui/kit';
 import { entryId, entryMetadata } from '#tv/features/catalog/home/sectionEntry';
@@ -40,8 +42,13 @@ const s = styles({
   titleGap: { mt: 16, mb: 14 },
   moreInfo: { px: 34 },
   heroActions: { row: true, gap: 18 },
-  heroTitle: { fontSize: 82, lineHeight: 79, fontWeight: '700', letterSpacing: -1.64 },
-  featuredLabel: { fontSize: 14 },
+  heroTitle: {
+    fontSize: textRoles.heroTv.size,
+    lineHeight: 79,
+    fontWeight: '700',
+    letterSpacing: -1.64,
+  },
+  featuredLabel: { fontSize: textSizes.compactLabel },
 });
 
 export interface HeroInfo {

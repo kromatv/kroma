@@ -1,3 +1,4 @@
+import { fontSizes as textSizes } from '#ui/core/tokens';
 // One row of the palette, and the empty face the list falls back to.
 
 import { Box } from '#ui/components/atoms/box';
@@ -54,7 +55,7 @@ function CommandRow({ item, open, cursor, onHover, onPress }: Readonly<CommandRo
   );
 }
 
-const s = styles({ meta: { fontSize: 11.5 } });
+const s = styles({ meta: { fontSize: textSizes.overlineRaised } });
 
 // The sheet is a lifted surface, where the chrome's plain focus wash reads as
 // nothing; the keyboard cursor wears the same coat as focus, since only one of
@@ -70,7 +71,7 @@ const row = sv({
       radius: 'sm',
       _focus: { bg: 'white/7' },
     },
-    label: { fontSize: 13.5, fontWeight: '600', color: 'textMuted' },
+    label: { fontSize: textSizes.metaRaised, fontWeight: '600', color: 'textMuted' },
   },
   variants: {
     cursor: { true: { root: { bg: 'white/7' }, label: { color: 'text' } } },

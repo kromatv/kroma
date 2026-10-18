@@ -1,3 +1,4 @@
+import { radius as cornerRadius, typeSpec as textRoles } from '@kromatv/ui/kit';
 // Connect a device: two roads to the same place, and the reader picks which.
 //
 // - `network` (<NearbyTvs>): the televisions waiting on this network, one tap
@@ -79,7 +80,7 @@ export default function ConnectDevice() {
 const s = styles({
   body: { flex: true, px: spacing.md, gap: spacing.md },
   done: { flex: true, center: true, gap: spacing.md, px: spacing.lg },
-  doneTitle: { ...type.title, fontSize: 20, textAlign: 'center' },
-  doneBadge: { center: true, w: 72, h: 72, bg: 'accent', radius: 36 },
+  doneTitle: { ...type.title, fontSize: textRoles.title.size, textAlign: 'center' },
+  doneBadge: { center: true, w: 72, h: 72, bg: 'accent', radius: cornerRadius.device },
   modeDesc: { ...type.caption, color: 'textDim', textAlign: 'center', mt: 2, mb: spacing.sm },
 });

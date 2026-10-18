@@ -12,6 +12,7 @@ import {
   Spacer,
   styles,
   Text,
+  typeSpec as textRoles,
   useFocusNav,
 } from '@kromatv/ui/kit';
 import { useMyList } from '#tv/app/providers/mylist';
@@ -219,15 +220,15 @@ export function TvShowDetail() {
 
 const s = styles({
   status: { mt: 24, fontWeight: '400' },
-  seasonLabel: { fontSize: 15, fontWeight: '700', letterSpacing: 0.6 },
+  seasonLabel: { fontSize: textRoles.label.size, fontWeight: '700', letterSpacing: 0.6 },
   seasonChip: { py: 9, px: 20, borderWidth: 0 },
   episodesLabel: {
-    fontSize: 15,
+    fontSize: textRoles.label.size,
     fontWeight: '700',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
-  episodesProgress: { fontSize: 15, fontWeight: '500' },
+  episodesProgress: { fontSize: textRoles.label.size, fontWeight: '500' },
   episodesHint: { fontWeight: '600' },
   actionRow: { row: true, align: 'center', gap: 16 },
 });

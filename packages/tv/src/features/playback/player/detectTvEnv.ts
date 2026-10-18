@@ -7,7 +7,7 @@ export function detectTvEnv(): PlayEnv {
   // Tauri on macOS is WKWebView (Safari engine: native HEVC + AC3/EAC3), so treating
   // it as Safari web matches the in-page <video> and spawns no second mpv window.
   if (getTauri() != null && /Mac|Macintosh/i.test(ua)) return { platform: 'web', safari: true };
-  const webos = /web0?s/i.test(ua) || (globalThis as Record<string, unknown>).webOS !== undefined;
+  const webos = /web0?s/i.test(ua) || Reflect.get(globalThis, 'webOS') !== undefined;
   const chromeMajor = Number(/Chrome\/(\d+)/i.exec(ua)?.[1]);
   return {
     platform: webos ? 'webos' : 'tizen',

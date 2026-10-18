@@ -1,8 +1,8 @@
 import { useT } from '@kromatv/ui';
-import { Button, Icon, Row, Spacer, styles, Text } from '@kromatv/ui/kit';
+import { Button, Icon, Row, Spacer, styles, Text, typeSpec as textRoles } from '@kromatv/ui/kit';
 import type { Busy, Probe } from '#web/features/admin/ai-provider-spec';
 
-const s = styles({ dangerLabel: { fontSize: 13, fontWeight: '600' } });
+const s = styles({ dangerLabel: { fontSize: textRoles.meta.size, fontWeight: '600' } });
 
 export function CardActions({
   busy,

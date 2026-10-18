@@ -256,7 +256,7 @@ export function SeekBar({
             w={px(16)}
             h={px(16)}
             radius="circle"
-            bg="#FFFFFF"
+            bg="white"
             style={[
               s.inert,
               playheadRing(),

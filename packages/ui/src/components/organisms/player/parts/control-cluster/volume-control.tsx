@@ -207,7 +207,7 @@ export function VolumeControl({
               w={thumb}
               h={thumb}
               radius="pill"
-              bg="#FFFFFF"
+              bg="white"
               style={[
                 // Half its own size, so the handle stays centred on the level at
                 // whatever scale the row is drawn.

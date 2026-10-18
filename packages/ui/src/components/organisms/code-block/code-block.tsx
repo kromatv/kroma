@@ -1,3 +1,4 @@
+import { fontSizes as textSizes } from '#ui/core/tokens';
 // <CodeBlock>: a block of TSX, highlighted, numbered and copyable.
 //
 // It paints through <Text> and <Box> rather than through a highlighter, because
@@ -18,7 +19,7 @@ import { lines } from './code-tokens';
 
 // `lineHeight` is shared with the gutter, and neither column adds row spacing of
 // its own, which is what keeps a number level with its line.
-const LINE = { font: 'mono', fontSize: 12.5, lineHeight: 19 } as const;
+const LINE = { font: 'mono', fontSize: textSizes.captionRaised, lineHeight: 19 } as const;
 
 const ink = styles({
   plain: { ...LINE, color: 'text' },
@@ -131,7 +132,12 @@ const s = styles({
   // numbers are parked rather than scrolled off with the code.
   gutterCol: { pr: 12, mr: 12, borderRightWidth: 1, borderRightColor: 'border' },
   line: { ...LINE },
-  gutter: { font: 'mono', fontSize: 11.5, lineHeight: LINE.lineHeight, opacity: 0.6 },
+  gutter: {
+    font: 'mono',
+    fontSize: textSizes.overlineRaised,
+    lineHeight: LINE.lineHeight,
+    opacity: 0.6,
+  },
   copySlot: { top: 6, right: 6, z: 1 },
 });
 

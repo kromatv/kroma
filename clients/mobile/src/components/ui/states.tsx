@@ -1,3 +1,4 @@
+import { radius as cornerRadius } from '@kromatv/ui/kit';
 // Whole-surface states: what a screen shows instead of content while it is
 // loading, empty, or broken, plus the inline error banner forms use.
 
@@ -115,7 +116,14 @@ const s = styles({
     // bias it upward toward the ~45% line.
     pb: 150,
   },
-  emptyDisc: { center: true, w: 84, h: 84, mb: spacing.sm, bg: 'surface2', radius: 42 },
+  emptyDisc: {
+    center: true,
+    w: 84,
+    h: 84,
+    mb: spacing.sm,
+    bg: 'surface2',
+    radius: cornerRadius.emptyState,
+  },
   emptyTitle: { ...type.section, textAlign: 'center' },
   emptyHint: { ...type.caption, maxW: 300, textAlign: 'center', lineHeight: 20 },
   emptyAction: { minW: 180, mt: spacing.md },

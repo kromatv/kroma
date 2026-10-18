@@ -97,7 +97,7 @@ export function StageFlashView({ flash, scale = 1, lift }: Readonly<StageFlashPr
           style={[s.frost, padOf(px(20), px(10))]}
         >
           {glyph}
-          <Text variant="title" color="#FFFFFF" style={sizeOf(px(24))}>
+          <Text variant="title" color="white" style={sizeOf(px(24))}>
             {label}
           </Text>
         </Box>

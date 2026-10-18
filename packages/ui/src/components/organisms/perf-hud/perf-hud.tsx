@@ -1,3 +1,4 @@
+import { typeSpec as textRoles } from '#ui/core/tokens';
 // The performance HUD: frame timings, focus response, heap and surface size,
 // read on the television they are about. Turned on in the device settings.
 
@@ -96,8 +97,8 @@ const s = styles({
     bg: 'bg/86',
     border: 'border',
   },
-  label: { fontSize: 13, fontWeight: '700', letterSpacing: 1 },
-  value: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  label: { fontSize: textRoles.meta.size, fontWeight: '700', letterSpacing: 1 },
+  value: { fontSize: textRoles.label.size, fontWeight: '700', fontVariant: ['tabular-nums'] },
 });
 
 export { PerfHud };

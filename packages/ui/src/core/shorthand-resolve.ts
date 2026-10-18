@@ -13,6 +13,7 @@ import {
   RULE_KEYS,
   RULES,
   type Rule,
+  type TextLayoutProps,
 } from '#ui/core/shorthands';
 import { activeTheme, radiusValue } from '#ui/core/theme';
 import type { FontToken, TypeRole } from '#ui/core/tokens';
@@ -105,11 +106,11 @@ function flatAt(raw: unknown, index: number): unknown {
 
 function applyShorthands(
   out: Record<string, unknown>,
-  p: Readonly<BoxStyleProps>,
+  p: Readonly<BoxStyleProps & TextLayoutProps>,
   index: number,
 ): void {
   for (const key of RULE_KEYS) {
-    const raw = (p as Record<string, unknown>)[key];
+    const raw = p[key];
     if (raw === undefined) continue;
     const value = flatAt(raw, index);
     if (value !== undefined) applyRule(out, RULES[key], value);

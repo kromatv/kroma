@@ -45,7 +45,32 @@ export const space = {
   16: 64,
 } as const;
 
+export const CIRCLE_PERCENT = '50%';
+
 export const radius = {
+  sharp: 0.01,
+  hairline: 1,
+  outline: 1.5,
+  track: 2,
+  indicator: 3,
+  compact: 4,
+  badge: 7,
+  control: 11,
+  panel: 12,
+  mobile: 14,
+  photo: 15,
+  tile: 17,
+  mobileLarge: 18,
+  search: 19,
+  row: 20,
+  dialog: 24,
+  mobileHero: 28,
+  disc: 32,
+  success: 34,
+  device: 36,
+  transport: 38,
+  largeDisc: 40,
+  emptyState: 42,
   xs: 6,
   sm: 8,
   md: 10,

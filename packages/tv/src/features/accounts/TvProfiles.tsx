@@ -5,6 +5,7 @@ import {
   Avatar,
   Box,
   Chip,
+  radius as cornerRadius,
   Focusable,
   FocusRegion,
   Hint,
@@ -34,7 +35,7 @@ interface Tile {
  * instantly.
  */
 
-const TILE = style({ radius: 24 });
+const TILE = style({ radius: cornerRadius.dialog });
 
 const SETTINGS = style({ px: 18, py: 10, borderWidth: 1 });
 export function TvProfiles() {

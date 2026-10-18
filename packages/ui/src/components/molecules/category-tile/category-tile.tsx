@@ -1,4 +1,5 @@
 import type { StyleProp, ViewStyle } from 'react-native';
+import { fontSizes as textSizes } from '#ui/core/tokens';
 // A labelled artwork tile for anything that groups titles. `background` is the
 // instant fill under the art, `wash` the veil over it that keeps the label
 // readable; both are CSS gradient strings.
@@ -34,8 +35,14 @@ const categoryTileVariants = sv({
   },
   variants: {
     size: {
-      md: { label: { fontSize: 18, lineHeight: 20 }, meta: { fontSize: 12 } },
-      tv: { label: { fontSize: 23, lineHeight: 24 }, meta: { fontSize: 14 } },
+      md: {
+        label: { fontSize: textSizes.largeLabel, lineHeight: 20 },
+        meta: { fontSize: textSizes.caption },
+      },
+      tv: {
+        label: { fontSize: textSizes.tileTitle, lineHeight: 24 },
+        meta: { fontSize: textSizes.compactLabel },
+      },
     },
   },
   defaults: { size: 'tv' },

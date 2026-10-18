@@ -1,3 +1,5 @@
+import { color as tokenColor } from '#ui/core/color';
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // One live chart of the stats panel, with every series sharing its axis. Stays
 // SVG rather than canvas/Skia: a native canvas module would cost Tizen and
 // webOS their renderer to reclaim microseconds (see the render call below for
@@ -114,7 +116,7 @@ export function StatsChart({ meters, history, width, slot }: Readonly<StatsChart
             y1={drawn.refY}
             x2={plotW + DOT_ROOM}
             y2={drawn.refY}
-            stroke="rgba(244, 243, 240, 0.18)"
+            stroke={tokenColor('text/18')}
             strokeWidth={1}
           />
         ) : null}
@@ -215,16 +217,16 @@ export type { Extent } from '#ui/components/organisms/player/lib/chart-geometry'
 const sx = styles({
   chartLabel: {
     font: 'ui',
-    fontSize: 10,
+    fontSize: textSizes.micro,
     fontWeight: '700',
     letterSpacing: 1.4,
     textTransform: 'uppercase',
   },
   chartValue: {
     font: 'ui',
-    fontSize: 13,
+    fontSize: textRoles.meta.size,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
-  chartFoot: { font: 'ui', fontSize: 10, fontWeight: '500' },
+  chartFoot: { font: 'ui', fontSize: textSizes.micro, fontWeight: '500' },
 });

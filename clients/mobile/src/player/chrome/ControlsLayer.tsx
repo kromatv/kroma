@@ -1,3 +1,4 @@
+import { typeSpec as textRoles, fontSizes as textSizes } from '@kromatv/ui/kit';
 // The controls themselves: scrims, title bar, transport row and the scrub bar
 // with its actions. Mounted only while controls are up; every press pokes the
 // auto-hide timer, and a finger on the controls or a scrub in flight holds it off.
@@ -282,12 +283,17 @@ const s = styles({
   scrimBottom: { absolute: true, right: 0, bottom: 0, left: 0, h: 160 },
   topBar: { row: true, align: 'center', gap: 12 },
   titleBox: { flex: true, minW: 0 },
-  title: { fontFamily: fonts.display, color: 'white', fontSize: 17, fontWeight: '700' },
-  subtitle: { mt: 1, color: 'text/60', fontSize: 12, fontWeight: '500' },
+  title: {
+    fontFamily: fonts.display,
+    color: 'white',
+    fontSize: textRoles.cardTitle.size,
+    fontWeight: '700',
+  },
+  subtitle: { mt: 1, color: 'text/60', fontSize: textSizes.caption, fontWeight: '500' },
   centerRow: { flex: true, row: true, center: true, gap: 40 },
   bottomBar: { px: spacing.md },
   actionsRow: { row: true, between: true, align: 'center', mt: 10 },
   actionsGroup: { row: true, align: 'center', gap: 12 },
   timeRow: { row: true, between: true, mt: 6 },
-  time: { color: 'text/50', fontSize: 12, fontVariant: ['tabular-nums'] },
+  time: { color: 'text/50', fontSize: textSizes.caption, fontVariant: ['tabular-nums'] },
 });

@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Animated, Platform, Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { sharedStyle, style, styles } from '#ui/core';
+import { radius as cornerRadius } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { WEB } from '#ui/lib/platform';
@@ -48,7 +49,7 @@ const CORNER_MASK = style({
   top: -CARD_RADIUS,
   bottom: -CARD_RADIUS,
   borderWidth: CARD_RADIUS,
-  borderColor: '#000000',
+  borderColor: 'black',
   borderRadius: CARD_RADIUS * 2,
 });
 
@@ -313,7 +314,7 @@ function Stage({
           w={`${card.rect.w * 100}%`}
           h={`${card.rect.h * 100}%`}
           z={3}
-          radius={24}
+          radius={cornerRadius.dialog}
           opacity={planeShrink ? 1 : 0}
           style={s.maskSurround}
         />
