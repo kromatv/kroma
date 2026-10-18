@@ -43,7 +43,7 @@ export function useDialogEntryFocus(panel: RefObject<View | null>): void {
       const entry = firstControl(box);
       if (entry) entry.focus();
       else {
-        box.tabIndex = -1;
+        box.setAttribute('tabindex', '-1');
         box.focus();
       }
     }
