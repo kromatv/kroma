@@ -43,8 +43,11 @@ describe('reaching the React Compiler', () => {
   it('resolves it from a package that depends on it', () => {
     const at = babelAt([join(process.cwd(), 'packages/bundler/package.json')]);
 
-    expect(at.compiler).toContain('babel-plugin-react-compiler');
+    expect(at.compiler).toContain('oxc-transform-react');
     expect(typeof at.core.transformAsync).toBe('function');
+    expect(at.compile('export function A({x}) { return <b>{x}</b> }', '/A.jsx')?.code).toContain(
+      'react/compiler-runtime',
+    );
   });
 
   it('walks the candidates in order and takes the first that resolves', () => {
@@ -53,7 +56,7 @@ describe('reaching the React Compiler', () => {
       join(process.cwd(), 'packages/bundler/package.json'),
     ]);
 
-    expect(at.compiler).toContain('babel-plugin-react-compiler');
+    expect(at.compiler).toContain('oxc-transform-react');
   });
 
   it('says which paths it tried when none of them has the compiler', () => {

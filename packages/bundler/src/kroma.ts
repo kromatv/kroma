@@ -84,7 +84,7 @@ export function kroma(options: KromaOptions = {}): PluginOption[] {
     kromaI18nDevtools(),
     mdx ? kromaMdx() : [],
     start ? [tanstackStart(start), exitAfterBuild()] : [],
-    react(),
     reactCompiler(),
+    react(),
   ];
 }

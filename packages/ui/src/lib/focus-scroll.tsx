@@ -320,13 +320,15 @@ function useRevealOnFocus(self: Anchor): () => void {
  * The anchor of a row whose focus is a prop rather than the navigator's (a
  * player panel's rows): the page reveals it the moment `focused` turns true.
  */
-function useRevealWhenFocused(focused: boolean): Anchor {
+function useRevealWhenFocused(focused: boolean): (view: View | null) => void {
   const self = useRef<View>(null);
   const reveal = useRevealOnFocus(self);
   useEffect(() => {
     if (focused) reveal();
   }, [focused, reveal]);
-  return self;
+  return useCallback((view: View | null) => {
+    self.current = view;
+  }, []);
 }
 
 export type { Anchor, FocusScrollProps, NearestMetrics, PageMetrics, Reveal };

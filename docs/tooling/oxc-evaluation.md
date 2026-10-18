@@ -122,6 +122,12 @@ The [raw benchmark](oxc-results.json) records versions, host, revision, config, 
 corpus hashes, timing samples, diagnostic counts, and exit codes. Measurements
 include existing failures. The benchmark deliberately does not apply fixes.
 
+## React Compiler
+
+The same branch also adopts Oxc's Rust React Compiler for Vite shells and the
+kit audit. See [setup, validation and separate compiler benchmarks](oxc-react-compiler.md).
+Native Expo keeps its supported Babel pipeline.
+
 ## Validation
 
 - 140 focused lint-tooling tests pass, including actual CLI/config loading,

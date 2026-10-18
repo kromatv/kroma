@@ -10,7 +10,7 @@ import { type Babel, babelAt } from '../audit/source-scan';
 
 const ROOT = new URL('../../../', import.meta.url).pathname;
 
-// babel-plugin-react-compiler is declared by @kromatv/bundler alone, so nothing
+// oxc-transform-react is declared by @kromatv/bundler alone, so nothing
 // else in the tree can resolve it. The root is tried first anyway: a repo that
 // hoists its dependencies needs no second entry, and this one stops being true
 // the day the plugin moves.

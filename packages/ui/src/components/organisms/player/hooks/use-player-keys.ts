@@ -62,7 +62,7 @@ function useOnePress(
 ): (key: RemoteKey, from: Transport) => void {
   const owner = useRef<Transport | null>(null);
   return useEffectEvent((key: RemoteKey, from: Transport) => {
-    owner.current ??= from;
+    if (owner.current === null) owner.current = from;
     if (owner.current !== from) return;
     routeRemoteKey(params, key);
   });

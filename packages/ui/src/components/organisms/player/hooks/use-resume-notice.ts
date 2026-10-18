@@ -32,6 +32,7 @@ export function useResumeNotice(opts: {
   const [offered, setOffered] = useState(at);
   const seen = useRef(cur);
   const landed = useRef(false);
+  const landedAt = useRef(at);
   const shown = phase === 'counting' || phase === 'kept';
 
   // Stated during the render that changes it rather than in an effect, which
@@ -39,7 +40,6 @@ export function useResumeNotice(opts: {
   if (offered !== at) {
     setOffered(at);
     setPhase('waiting');
-    landed.current = false;
   }
 
   useEffect(() => {
@@ -62,6 +62,10 @@ export function useResumeNotice(opts: {
   // lands, so the first jump of all is the film arriving where it was left.
   // Nothing counts as a seek until it has got there.
   useEffect(() => {
+    if (landedAt.current !== at) {
+      landedAt.current = at;
+      landed.current = false;
+    }
     const armed = shown && landed.current;
     if (armed && Math.abs(cur - seen.current) > SEEK_JUMP_SEC) setPhase('gone');
     if (at != null && Math.abs(cur - at) <= SEEK_JUMP_SEC) landed.current = true;

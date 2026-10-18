@@ -84,7 +84,9 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   const beat = useRef<{ at: number; positionMs: number } | null>(null);
   const inFlight = useRef<Promise<void> | null>(null);
   const clientRef = useRef(params.client);
-  clientRef.current = params.client;
+  useEffect(() => {
+    clientRef.current = params.client;
+  }, [params.client]);
 
   const fireTerminated = useEffectEvent((message: string) => {
     if (terminated.current) return;
