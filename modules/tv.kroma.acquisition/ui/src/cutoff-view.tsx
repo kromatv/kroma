@@ -1,16 +1,6 @@
 import { TABULAR, Table, type TableColumn, useT } from '@kromatv/module-sdk';
-import {
-  Box,
-  Button,
-  EmptyState,
-  Img,
-  Table as Kit,
-  Row,
-  Surface,
-  TableSkeleton,
-  Text,
-} from '@kromatv/ui/kit';
-import { Link } from '@tanstack/react-router';
+import { Box, Button, EmptyState, Img, Row, Surface, TableSkeleton, Text } from '@kromatv/ui/kit';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useAcquisitionApi } from './api';
 import type { CutoffEntry } from './judgement-schemas';
 import { useQualityLabel } from './use-quality-label';
@@ -76,44 +66,46 @@ export function CutoffView() {
 function CutoffRow({ entry }: Readonly<{ entry: CutoffEntry }>) {
   const t = useT();
   const label = useQualityLabel();
+  const navigate = useNavigate();
+  const to = `/admin/monitoring/${entry.kind}/${entry.tmdbId}`;
   return (
-    <Kit.Row asChild>
-      <Link to={`/admin/monitoring/${entry.kind}/${entry.tmdbId}`}>
-        <Table.Cell>
-          <Row gap={10} align="center">
-            <Box w={POSTER_W} h={POSTER_H} shrink={0} radius={4} overflow="hidden" bg="tint/5">
-              {entry.posterUrl ? <Img src={entry.posterUrl} fill /> : null}
-            </Box>
-            <Box minW={0} flex>
+    <Table.Row onPress={() => navigate({ to })}>
+      <Table.Cell>
+        <Row gap={10} align="center">
+          <Box w={POSTER_W} h={POSTER_H} shrink={0} radius={4} overflow="hidden" bg="tint/5">
+            {entry.posterUrl ? <Img src={entry.posterUrl} fill /> : null}
+          </Box>
+          <Box minW={0} flex>
+            <Link to={to}>
               <Text variant="meta" lines={1}>
                 {entry.title}
               </Text>
-              <Text variant="meta" color="textDim">
-                {t(entry.kind === 'movie' ? 'acq.kindMovie' : 'acq.kindShow')}
-                {entry.year ? ` · ${entry.year}` : ''}
-              </Text>
-            </Box>
-          </Row>
-        </Table.Cell>
-        <Table.Cell>
-          <Text variant="meta" color="textDim" lines={1}>
-            {entry.profileName}
-          </Text>
-        </Table.Cell>
-        <Table.Cell>
-          <Text variant="meta" color="textDim" lines={1}>
-            {entry.bestQuality ? label(entry.bestQuality) : t('common.none')}
-          </Text>
-        </Table.Cell>
-        <Table.Cell>
-          <Text variant="meta" color="accentText" style={TABULAR} lines={2}>
-            {t(entry.kind === 'movie' ? 'acq.belowOfFilms' : 'acq.belowOfEpisodes', {
-              count: entry.below,
-              units: entry.units,
-            })}
-          </Text>
-        </Table.Cell>
-      </Link>
-    </Kit.Row>
+            </Link>
+            <Text variant="meta" color="textDim">
+              {t(entry.kind === 'movie' ? 'acq.kindMovie' : 'acq.kindShow')}
+              {entry.year ? ` · ${entry.year}` : ''}
+            </Text>
+          </Box>
+        </Row>
+      </Table.Cell>
+      <Table.Cell>
+        <Text variant="meta" color="textDim" lines={1}>
+          {entry.profileName}
+        </Text>
+      </Table.Cell>
+      <Table.Cell>
+        <Text variant="meta" color="textDim" lines={1}>
+          {entry.bestQuality ? label(entry.bestQuality) : t('common.none')}
+        </Text>
+      </Table.Cell>
+      <Table.Cell>
+        <Text variant="meta" color="accentText" style={TABULAR} lines={2}>
+          {t(entry.kind === 'movie' ? 'acq.belowOfFilms' : 'acq.belowOfEpisodes', {
+            count: entry.below,
+            units: entry.units,
+          })}
+        </Text>
+      </Table.Cell>
+    </Table.Row>
   );
 }
