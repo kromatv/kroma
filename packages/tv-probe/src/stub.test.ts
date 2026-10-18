@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { answer, catalogue, deviceEntries, SESSION_ENTRIES } from './stub';
+import { answer, catalogue, deviceEntries, isApiCall, SESSION_ENTRIES } from './stub';
 
 const MOVIES = catalogue(2);
 
@@ -44,6 +44,13 @@ describe('the stubbed server', () => {
 
   it('answers an object for a call it was never taught', () => {
     expect(body('/settings/unheard-of')).toEqual({});
+  });
+
+  it('leaves a source module whose path names an api folder to the dev server', () => {
+    expect(isApiCall(new URL('http://probe.local/api/movies'))).toBe(true);
+    expect(
+      isApiCall(new URL('http://probe.local/@fs/repo/packages/client/src/api/media/index.ts')),
+    ).toBe(false);
   });
 });
 
