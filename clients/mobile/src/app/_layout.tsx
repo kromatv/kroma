@@ -34,8 +34,6 @@ import { MOBILE, mobileTheme } from '#mobile/lib/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
-installDeviceStore();
-
 // The kit's defaults, stated once at module scope, before the first render: a
 // swap after one is legal (every recipe re-resolves lazily) but would repaint
 // the whole tree.
@@ -46,10 +44,8 @@ installDeviceStore();
 // a trigger for a popover, so a <Select> and a <Menu> open as sheets over it.
 // The image backend and the blur are inversions - a shell that registers
 // neither gets React Native's own <Image> and a flat wash instead of glass.
-const MOBILE_KIT = configureKit({
-  formFactor: 'phone',
-  ground: readMode(),
-  theme: mobileTheme(),
+const MOBILE_KIT = Object.freeze({
+  formFactor: 'phone' as const,
   image: expoImageBackend,
   frost: BlurView,
 });
@@ -148,10 +144,14 @@ function Shell() {
 }
 
 export default function RootLayout() {
+  const [kitConfig] = useState(() => {
+    const deviceStore = installDeviceStore();
+    return configureKit({ ...MOBILE_KIT, deviceStore, ground: readMode(), theme: mobileTheme() });
+  });
   useSystemGround();
   const paper = onPaper(useTheme());
   return (
-    <KitProvider config={MOBILE_KIT}>
+    <KitProvider config={kitConfig}>
       <GestureHandlerRootView style={s.root}>
         <SessionProvider>
           <StatusBar style={paper ? 'dark' : 'light'} />

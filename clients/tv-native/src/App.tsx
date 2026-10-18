@@ -1,3 +1,4 @@
+import type { DeviceStore } from '@kromatv/ui/device-store';
 // The native TV app: the SAME @kromatv/tv experience the Tizen, webOS, Android TV
 // and desktop shells mount, compiled by React Native instead of rendered in a
 // WebView.
@@ -69,9 +70,15 @@ export function App() {
   // The stored session has to be in memory BEFORE the app renders: it seeds
   // React state during the first render, so a session that arrives later is a
   // profile picker the user has already been shown.
-  const [sessionReady, setSessionReady] = useState(false);
+  const [deviceStore, setDeviceStore] = useState<DeviceStore | null>(null);
   useEffect(() => {
-    void hydrateSessionStorage().finally(() => setSessionReady(true));
+    let alive = true;
+    void hydrateSessionStorage().then((store) => {
+      if (alive) setDeviceStore(store);
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
   // Siri is the Apple TV's voice input (the remote's microphone is the system's
   // and no app may open it): a request spoken to it lands on the search screen.
@@ -83,13 +90,13 @@ export function App() {
   // problem; blocking on it renders nothing at all, and on a television that is
   // indistinguishable from a frozen app, with no way to find out why.
   const [fontsLoaded, fontError] = useFonts(KIT_FONTS);
-  if (!sessionReady) return null;
+  if (!deviceStore) return null;
   if (!fontsLoaded && !fontError) return null;
   // No <StatusBar>: a TV has none. tvOS does not even ship the native module
   // behind it, so asking to hide a status bar throws ("undefined is not a
   // function" out of NativeStatusBarManagerIOS) rather than being a no-op.
   return (
-    <KitProvider config={NATIVE_KIT}>
+    <KitProvider config={{ ...NATIVE_KIT, deviceStore }}>
       <TvStage>
         {/* One binary per platform, so the label is the OS: this app is the
           Android TV client too, and reporting "AppleTV" there was wrong in the

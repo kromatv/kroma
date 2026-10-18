@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { ColorValue } from '#ui/core';
 import { sharedStyle } from '#ui/core';
 import { radius as cornerRadius } from '#ui/core/tokens';
-import { deviceStore } from '#ui/lib/device-store';
+import { type DeviceStore, useDeviceStore } from '#ui/lib/device-store';
 import { edgeStyle } from './subtitle-edge';
 
 /**
@@ -184,18 +184,18 @@ export function migrateAppearance(raw: unknown): SubtitleAppearance {
   };
 }
 
-function readStoredAppearance(): SubtitleAppearance | null {
+function readStoredAppearance(store: DeviceStore | null): SubtitleAppearance | null {
   try {
-    const raw = deviceStore()?.getItem(KEY);
+    const raw = store?.getItem(KEY);
     return raw ? migrateAppearance(JSON.parse(raw)) : null;
   } catch {
     return null;
   }
 }
 
-function persistAppearance(next: SubtitleAppearance): void {
+function persistAppearance(next: SubtitleAppearance, store: DeviceStore | null): void {
   try {
-    deviceStore()?.setItem(KEY, JSON.stringify(next));
+    store?.setItem(KEY, JSON.stringify(next));
   } catch {}
 }
 
@@ -205,20 +205,24 @@ export function useSubtitleAppearance(): [
   SubtitleAppearance,
   (next: Partial<SubtitleAppearance>) => void,
 ] {
+  const store = useDeviceStore();
   const [style, setStyle] = useState<SubtitleAppearance>(DEFAULT_SUB_APPEARANCE);
 
   useEffect(() => {
-    const stored = readStoredAppearance();
+    const stored = readStoredAppearance(store);
     if (stored) setStyle(stored);
-  }, []);
+  }, [store]);
 
-  const update = useCallback((next: Partial<SubtitleAppearance>) => {
-    setStyle((prev) => {
-      const merged = { ...prev, ...next };
-      persistAppearance(merged);
-      return merged;
-    });
-  }, []);
+  const update = useCallback(
+    (next: Partial<SubtitleAppearance>) => {
+      setStyle((prev) => {
+        const merged = { ...prev, ...next };
+        persistAppearance(merged, store);
+        return merged;
+      });
+    },
+    [store],
+  );
 
   return [style, update];
 }

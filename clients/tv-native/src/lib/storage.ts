@@ -12,7 +12,6 @@
 // purgeable caches directory if they did not.
 
 import { type SessionStorage, setSessionStorage } from '@kromatv/client';
-import { setDeviceStore } from '@kromatv/ui/device-store';
 import { Directory, File, Paths } from 'expo-file-system';
 
 const FILE_NAME = 'kroma-session.json';
@@ -85,7 +84,7 @@ class DeviceStore implements SessionStorage {
 /** Await this before rendering the app: `loadSession()` runs during the first
  * render, so a session that arrives later is a profile picker the user has
  * already been shown. */
-export async function hydrateSessionStorage(): Promise<void> {
+export async function hydrateSessionStorage(): Promise<DeviceStore> {
   let target: File | null = null;
   let raw: string | null = null;
   try {
@@ -97,5 +96,5 @@ export async function hydrateSessionStorage(): Promise<void> {
   const store = new DeviceStore(target);
   if (raw !== null) store.load(raw);
   setSessionStorage(store);
-  setDeviceStore(store);
+  return store;
 }

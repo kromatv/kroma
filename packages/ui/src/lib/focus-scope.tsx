@@ -66,7 +66,7 @@ function FocusScope({
   useRemoteBridge(remote);
   // A replacement screen gets a fresh claim before children render.
   // biome-ignore lint/correctness/useExhaustiveDependencies: entryKey explicitly names the lifetime of this screen.
-  const entry = useMemo(createFocusEntry, [entryKey]);
+  const entry = useMemo(() => createFocusEntry(), [entryKey]);
   return (
     // Lets a kit control exist OUTSIDE any scope (a phone screen, a plain web
     // page) without registering with a navigator that was never mounted.

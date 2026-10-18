@@ -1,7 +1,7 @@
 import type { MessageKey, Translate } from '@kromatv/i18n';
 import { type RefObject, useCallback, useEffect, useState } from 'react';
 import type { AudioFilterMode } from '#ui/components/organisms/player/types';
-import { deviceStore } from '#ui/lib/device-store';
+import { type DeviceStore, deviceStore, useDeviceStore } from '#ui/lib/device-store';
 import { webDocument } from '#ui/lib/dom';
 
 // Volume normalizer for the web player: a Web Audio compressor + make-up gain
@@ -27,9 +27,9 @@ export function audioFilterLabels(t: Translate): Record<AudioFilterMode, string>
 
 /** Synchronous, so a native engine can apply the remembered mode at
  * construction, before React state has hydrated. `off` without storage/DOM. */
-export function storedAudioFilter(): AudioFilterMode {
+export function storedAudioFilter(store: DeviceStore | null = deviceStore()): AudioFilterMode {
   try {
-    const raw = deviceStore()?.getItem(KEY) ?? null;
+    const raw = store?.getItem(KEY) ?? null;
     if (raw === 'standard' || raw === 'night' || raw === 'boost') return raw;
   } catch {
     /* ignore */
@@ -195,9 +195,9 @@ export function createAudioFilterOwner() {
   return { wire, retain };
 }
 
-function persistAudioFilter(m: AudioFilterMode): void {
+function persistAudioFilter(m: AudioFilterMode, store: DeviceStore | null): void {
   try {
-    deviceStore()?.setItem(KEY, m);
+    store?.setItem(KEY, m);
   } catch {
     /* ignore */
   }
@@ -211,6 +211,7 @@ export function useAudioFilter(
   remountKey: string,
   boost = 1,
 ): { mode: AudioFilterMode; setMode: (m: AudioFilterMode) => void; supported: boolean } {
+  const store = useDeviceStore();
   const [owner] = useState(createAudioFilterOwner);
   useEffect(() => owner.retain(), [owner]);
   const [modeState, setModeState] = useState<AudioFilterMode>('off');
@@ -219,8 +220,8 @@ export function useAudioFilter(
   useEffect(() => {
     // biome-ignore lint/style/noRestrictedGlobals: audited - this IS the capability probe; false on native, where the engines level audio themselves.
     setSupported(typeof AudioContext !== 'undefined');
-    setModeState(storedAudioFilter());
-  }, []);
+    setModeState(storedAudioFilter(store));
+  }, [store]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: remountKey tracks the element identity.
   useEffect(() => {
@@ -228,10 +229,13 @@ export function useAudioFilter(
     if (v) owner.wire(v, modeState, boost);
   }, [modeState, boost, remountKey, videoRef, owner]);
 
-  const setMode = useCallback((m: AudioFilterMode) => {
-    setModeState(m);
-    persistAudioFilter(m);
-  }, []);
+  const setMode = useCallback(
+    (m: AudioFilterMode) => {
+      setModeState(m);
+      persistAudioFilter(m, store);
+    },
+    [store],
+  );
 
   return { mode: modeState, setMode, supported };
 }

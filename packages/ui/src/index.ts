@@ -2,7 +2,7 @@
 // player. The components are `@kromatv/ui/kit`.
 
 export * from './components/organisms/player';
-export { type DeviceStore, deviceStore, setDeviceStore } from './lib/device-store';
+export { type DeviceStore, deviceStore, useDeviceStore } from './lib/device-store';
 export {
   dispatchRemoteKey,
   type RemoteKey,

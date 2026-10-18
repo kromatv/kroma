@@ -8,6 +8,7 @@ import {
   preferredAudioIndex,
 } from '@kromatv/core';
 import { storedAudioFilter } from '@kromatv/ui';
+import { useDeviceStore } from '@kromatv/ui/device-store';
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { type EnginePref, useEnginePref } from '#tv/app/enginePref';
 import { usePlaybackCapabilities } from '#tv/app/providers/playbackCapabilities';
@@ -64,6 +65,7 @@ export function useEngineLifecycle(
   audioLanguage?: string | null,
 ): EngineLifecycle {
   const { get: getEnginePref, set: persistEnginePref } = useEnginePref();
+  const deviceStore = useDeviceStore();
   const playbackCapabilities = usePlaybackCapabilities();
   const videoRef = useRef<HTMLVideoElement>(null);
   const engineRef = useRef<TvEngine | null>(null);
@@ -201,7 +203,7 @@ export function useEngineLifecycle(
       rendition: renditionFor(item, audioIndexRef.current),
       startSec,
       // Read at build time because AVPlay picks its source from it.
-      audioFilter: storedAudioFilter(),
+      audioFilter: storedAudioFilter(deviceStore),
       dom: { video: videoRef.current, nativeHls: env.nativeHls },
       listeners,
     });
@@ -213,7 +215,16 @@ export function useEngineLifecycle(
       engine.destroy();
     };
     // `rebuildKey` stands in for every backend flag the plan resolved.
-  }, [client, item, rebuildKey, durationSec, startSec, failure.messageKey, playbackCapabilities]);
+  }, [
+    client,
+    item,
+    rebuildKey,
+    durationSec,
+    startSec,
+    failure.messageKey,
+    playbackCapabilities,
+    deviceStore,
+  ]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: audioPickNonce is an intentional dep, not read in the body; it carries the pick that landed on the rendition already playing, which AVPlay's direct source has to re-assert.
   useEffect(() => {

@@ -8,6 +8,7 @@ import {
 } from 'react';
 import type { FrostBackdropProps } from './components/atoms/frost';
 import { applyMode, setTheme, type Theme, type ThemeMode } from './core';
+import type { DeviceStore } from './lib/device-store';
 import type { ControlSize } from './lib/field-shell';
 import type { ImageBackend } from './lib/image-backend';
 import { KitSettingsContext, useKitSettings } from './lib/kit-settings';
@@ -41,6 +42,7 @@ const FORM_FACTOR: Readonly<
 
 export interface KitConfig<P extends FrostBackdropProps = FrostBackdropProps> {
   formFactor?: FormFactor;
+  deviceStore?: DeviceStore | null;
   frostEnabled?: boolean;
   entry?: Partial<EntryDefaults>;
   surfaces?: SurfacePresentation;
@@ -75,6 +77,7 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
   const value = useMemo(() => {
     const preset = config.formFactor && FORM_FACTOR[config.formFactor];
     return {
+      deviceStore: config.deviceStore === undefined ? parent.deviceStore : config.deviceStore,
       menuKeys: parent.menuKeys ?? menuKeys,
       scrollLock: parent.scrollLock ?? scrollLock,
       entry: { ...parent.entry, ...preset?.entry, ...config.entry },

@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
-import { setDeviceStore } from '#ui/lib/device-store';
+import { createElement, type ReactNode } from 'react';
+import { describe, expect, it } from 'vitest';
+import { KitProvider } from '#ui/configure';
+import type { DeviceStore } from '#ui/lib/device-store';
 import {
   DEFAULT_SUB_APPEARANCE,
   migrateAppearance,
@@ -222,51 +224,65 @@ const KEY = 'kroma.subtitleStyle';
 
 function deviceStore(initial: Record<string, string> = {}) {
   const map = new Map(Object.entries(initial));
-  setDeviceStore({
+  const store: DeviceStore = {
     getItem: (k) => map.get(k) ?? null,
     setItem: (k, v) => void map.set(k, v),
     removeItem: (k) => void map.delete(k),
-  });
-  return map;
+  };
+  return { map, store };
 }
-
-afterEach(() => setDeviceStore(null));
 
 describe('useSubtitleAppearance', () => {
   it('starts from the defaults, so a server render and the client agree', () => {
-    const { result } = renderHook(() => useSubtitleAppearance());
+    const store = null;
+    const { result } = renderHook(() => useSubtitleAppearance(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(KitProvider, { config: { deviceStore: store } }, children),
+    });
     expect(result.current[0]).toEqual(DEFAULT_SUB_APPEARANCE);
   });
 
   it('hydrates a stored choice, migrating the names it was written under', () => {
-    deviceStore({ [KEY]: JSON.stringify({ edge: 'outline', font: 'sans' }) });
-    const { result } = renderHook(() => useSubtitleAppearance());
+    const { store } = deviceStore({ [KEY]: JSON.stringify({ edge: 'outline', font: 'sans' }) });
+    const { result } = renderHook(() => useSubtitleAppearance(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(KitProvider, { config: { deviceStore: store } }, children),
+    });
     expect(result.current[0]).toMatchObject({ edge: 'uniform', font: 'propSans' });
   });
 
   it('keeps the defaults when the stored value is not JSON at all', () => {
-    deviceStore({ [KEY]: '{oops' });
-    const { result } = renderHook(() => useSubtitleAppearance());
+    const { store } = deviceStore({ [KEY]: '{oops' });
+    const { result } = renderHook(() => useSubtitleAppearance(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(KitProvider, { config: { deviceStore: store } }, children),
+    });
     expect(result.current[0]).toEqual(DEFAULT_SUB_APPEARANCE);
   });
 
   it('merges a partial change and writes the whole appearance back', () => {
-    const map = deviceStore();
-    const { result } = renderHook(() => useSubtitleAppearance());
+    const { map, store } = deviceStore();
+    const { result } = renderHook(() => useSubtitleAppearance(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(KitProvider, { config: { deviceStore: store } }, children),
+    });
     act(() => result.current[1]({ size: 'xl' }));
     expect(result.current[0]).toEqual({ ...DEFAULT_SUB_APPEARANCE, size: 'xl' });
     expect(JSON.parse(map.get(KEY) ?? '{}')).toEqual({ ...DEFAULT_SUB_APPEARANCE, size: 'xl' });
   });
 
   it('honours the change even when the device store refuses to keep it', () => {
-    setDeviceStore({
+    const store: DeviceStore = {
       getItem: () => null,
       setItem: () => {
         throw new Error('quota');
       },
       removeItem: () => {},
+    };
+    const { result } = renderHook(() => useSubtitleAppearance(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(KitProvider, { config: { deviceStore: store } }, children),
     });
-    const { result } = renderHook(() => useSubtitleAppearance());
     act(() => result.current[1]({ size: 'sm' }));
     expect(result.current[0].size).toBe('sm');
   });
