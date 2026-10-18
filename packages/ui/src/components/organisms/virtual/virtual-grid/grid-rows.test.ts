@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { freeOffset, pageRow, rowMetrics, rowTop, rowWindow, stripOffset } from './grid-rows';
+import {
+  catchUpWindow,
+  freeOffset,
+  pageRow,
+  rowMetrics,
+  rowTop,
+  rowWindow,
+  stripOffset,
+} from './grid-rows';
 
 /** A 350px viewport clips this grid to three rows. */
 const GRID = { rows: 10, pitch: 100, gap: 0, header: true, headerSize: 60, viewport: 350 };
@@ -125,5 +133,23 @@ describe('rowWindow', () => {
 
   it('never ends past the last row', () => {
     expect(rowWindow(10, METRICS, 2)).toEqual({ start: 6, end: 10 });
+  });
+});
+
+describe('catchUpWindow', () => {
+  it('is the settled window once the focus has stopped moving', () => {
+    expect(catchUpWindow(4, 4, METRICS, 2)).toEqual(rowWindow(4, METRICS, 2));
+  });
+
+  it('holds the focused page and the row past it while the window trails', () => {
+    expect(catchUpWindow(7, 1, METRICS, 2)).toEqual({ start: 0, end: 9 });
+  });
+
+  it('holds the row above the focused page while the window trails below it', () => {
+    expect(catchUpWindow(1, 10, METRICS, 2)).toEqual({ start: 0, end: 10 });
+  });
+
+  it('never reaches past either end of the list', () => {
+    expect(catchUpWindow(10, 10, METRICS, 2)).toEqual({ start: 6, end: 10 });
   });
 });

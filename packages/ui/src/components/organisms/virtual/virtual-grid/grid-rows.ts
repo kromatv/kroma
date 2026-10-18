@@ -114,3 +114,21 @@ export function rowWindow(focused: number, metrics: RowMetrics, overscan: number
     end: Math.min(metrics.count - 1, top + metrics.visible - 1 + overscan),
   };
 }
+
+/** The rows to mount while the window trails the focus: the window around
+ *  `settled`, stretched over the page `focused` is on and the row either side
+ *  of it, so the row a press moves to exists before the trailing window has
+ *  caught up. */
+export function catchUpWindow(
+  focused: number,
+  settled: number,
+  metrics: RowMetrics,
+  overscan: number,
+): RowWindow {
+  const trailing = rowWindow(settled, metrics, overscan);
+  const top = pageRow(focused, metrics);
+  return {
+    start: Math.max(0, Math.min(trailing.start, top - 1)),
+    end: Math.min(metrics.count - 1, Math.max(trailing.end, top + metrics.visible)),
+  };
+}

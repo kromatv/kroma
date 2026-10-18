@@ -8,7 +8,15 @@
 // runs the last tiles off the right edge.
 
 import { NavigatorNode, NavigatorView, type NodeHandle } from '@kromatv/spatial-nav/react';
-import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ReactElement,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Dimensions, type LayoutChangeEvent, View, type ViewStyle } from 'react-native';
 import { cellWidth, columnsFor } from '#ui/components/atoms/grid';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
@@ -19,7 +27,14 @@ import { FocusReporter } from '#ui/lib/focus-report';
 import { usePerfSampler } from '#ui/lib/perf-provider';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { GridRow } from './grid-row';
-import { freeOffset, type GridRows, rowMetrics, rowTop, rowWindow, stripOffset } from './grid-rows';
+import {
+  catchUpWindow,
+  freeOffset,
+  type GridRows,
+  rowMetrics,
+  rowTop,
+  stripOffset,
+} from './grid-rows';
 import { useWheelScroll } from './use-wheel-rows';
 
 const boxesDefinition = styles({
@@ -115,6 +130,7 @@ function VirtualGrid<T>({
   const [screen] = useState(() => Dimensions.get('window').height);
   const [box, setBox] = useState({ width: 0, height: 0 });
   const [focusedRow, setFocusedRow] = useState(0);
+  const settledRow = useDeferredValue(focusedRow);
 
   const nodes = useRef(new Map<number, NodeHandle>());
   const wanted = useRef<number | null>(null);
@@ -238,7 +254,7 @@ function VirtualGrid<T>({
   // navigator would focus whatever slides beneath the stationary cursor.
   const fraction = useWheelScroll(viewport, rows, lastRow, metrics.headerRows, geometry.pitch);
 
-  const shown = rowWindow(focusedRow, metrics, OVERSCAN);
+  const shown = catchUpWindow(focusedRow, settledRow, metrics, OVERSCAN);
   const offset =
     fraction === null ? stripOffset(focusedRow, metrics) : freeOffset(fraction, metrics);
   const mounted: ReactElement[] = [];
