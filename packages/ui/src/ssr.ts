@@ -51,7 +51,10 @@ export function withKitStyles(handler: Fetch): Fetch {
     const headers = new Headers(response.headers);
     headers.delete('content-length');
     return new Response(
-      html.replace(/<head[^>]*>/, (head) => `${head}<style id="${sheet.id}">${sheet.textContent}</style>`),
+      html.replace(
+        /<head[^>]*>/,
+        (head) => `${head}<style id="${sheet.id}">${sheet.textContent}</style>`,
+      ),
       { status: response.status, statusText: response.statusText, headers },
     );
   };
