@@ -58,6 +58,16 @@ pub const MIGRATIONS: &str = "
         progress    REAL NOT NULL,
         changed_at  INTEGER NOT NULL
     );
+    -- What a page asked an on-demand search for, until the job that answers
+    -- it runs: a job takes no arguments, so the title rides here.
+    CREATE TABLE IF NOT EXISTS search_queue (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        kind      TEXT NOT NULL,
+        tmdb_id   INTEGER NOT NULL,
+        units     TEXT NOT NULL,
+        queued_at INTEGER NOT NULL,
+        UNIQUE (kind, tmdb_id, units)
+    );
     -- Failed downloads already blocklisted and put back, so a pass handles each once.
     CREATE TABLE IF NOT EXISTS handled_failures (
         download_id TEXT PRIMARY KEY,

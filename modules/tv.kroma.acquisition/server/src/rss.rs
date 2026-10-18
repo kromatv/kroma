@@ -19,7 +19,8 @@ use crate::rules::RuleBook;
 use crate::rules::files::judge_title_files;
 use crate::search::SearchTarget;
 use crate::search::hits::CachedRelease;
-use crate::search::judge::{Judge, units_of, verdict_for};
+use crate::search::judge::Judge;
+use crate::search::verdict::{units_of, verdict_for};
 
 const LAST_RUN: &str = "rss_last_at";
 

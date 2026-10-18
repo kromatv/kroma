@@ -11,6 +11,7 @@ pub mod manual;
 pub mod subject;
 pub mod sweep;
 pub mod targets;
+pub mod verdict;
 #[cfg(test)]
 pub(crate) mod test_support;
 
@@ -88,8 +89,11 @@ mod tests {
                 rule: "res".into(),
                 delta: 10,
                 note: "1080p".into(),
+                code: "res".into(),
+                params: Default::default(),
             }],
             rejected: None,
+            refusal: None,
             grabbable: true,
             upgrade: false,
             details_url: Some("https://t/1".into()),

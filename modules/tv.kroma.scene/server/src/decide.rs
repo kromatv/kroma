@@ -1,11 +1,12 @@
 use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 
 use crate::shape::{check_shape, reject};
 use crate::terms::check_terms;
 use crate::{
-    Candidate, Facts, FormatSet, Language, ParsedRelease, Quality, QualityProfile, Reject,
+    Candidate, Facts, FormatSet, Language, Params, ParsedRelease, Quality, QualityProfile, Reject,
     ScoreLine, Sizes, Target,
 };
 
@@ -102,12 +103,17 @@ pub fn judge(
         return Err(reject(
             "quality",
             format!("{} is not allowed", evaluation.quality.id()),
+            [("quality", json!(evaluation.quality.id()))],
         ));
     }
     if evaluation.format_score < profile.min_format_score {
         return Err(reject(
             "format-score",
             format!("{} < {}", evaluation.format_score, profile.min_format_score),
+            [
+                ("have", json!(evaluation.format_score)),
+                ("need", json!(profile.min_format_score)),
+            ],
         ));
     }
     let seeders = candidate.seeders.unwrap_or(0);
@@ -115,6 +121,10 @@ pub fn judge(
         return Err(reject(
             "seeders",
             format!("{seeders} < {}", profile.min_seeders),
+            [
+                ("have", json!(seeders)),
+                ("need", json!(profile.min_seeders)),
+            ],
         ));
     }
     let episode_count = query.target.episode_count();
@@ -158,48 +168,75 @@ fn check_size(
     };
     let per_minute = size as f64 / MB / minutes;
     if per_minute < limit.min {
+        let floor = (limit.min * minutes * MB) as u64;
         return Err(reject(
             "too-small",
-            format!("{} < {}", gb(size), gb((limit.min * minutes * MB) as u64)),
+            format!("{} < {}", gb(size), gb(floor)),
+            size_params(size, floor),
         ));
     }
     if let Some(max) = limit.max.filter(|max| per_minute > *max) {
+        let ceiling = (max * minutes * MB) as u64;
         return Err(reject(
             "too-big",
-            format!("{} > {}", gb(size), gb((max * minutes * MB) as u64)),
+            format!("{} > {}", gb(size), gb(ceiling)),
+            size_params(size, ceiling),
         ));
     }
     Ok(preferred)
+}
+
+fn size_params(size: u64, limit: u64) -> [(&'static str, Value); 2] {
+    [("sizeBytes", json!(size)), ("limitBytes", json!(limit))]
 }
 
 fn gb(bytes: u64) -> String {
     format!("{:.1} GB", bytes as f64 / 1_073_741_824.0)
 }
 
+fn line(rule: &str, delta: i32, note: String, params: [(&'static str, Value); 1]) -> ScoreLine {
+    ScoreLine {
+        rule: rule.into(),
+        delta,
+        note,
+        params: params
+            .into_iter()
+            .map(|(key, value)| (key.to_string(), value))
+            .collect::<Params>(),
+    }
+}
+
 fn breakdown(evaluation: &Evaluation, episode_count: u32) -> Vec<ScoreLine> {
-    let mut lines = vec![ScoreLine {
-        rule: "quality".into(),
-        delta: evaluation.quality_rank.unwrap_or(0) as i32,
-        note: evaluation.quality.id().into(),
-    }];
-    lines.extend(evaluation.formats.iter().map(|format| ScoreLine {
-        rule: "format".into(),
-        delta: format.score,
-        note: format.name.clone(),
+    let quality = evaluation.quality.id();
+    let mut lines = vec![line(
+        "quality",
+        evaluation.quality_rank.unwrap_or(0) as i32,
+        quality.into(),
+        [("quality", json!(quality))],
+    )];
+    lines.extend(evaluation.formats.iter().map(|format| {
+        line(
+            "format",
+            format.score,
+            format.name.clone(),
+            [("format", json!(format.name))],
+        )
     }));
     if evaluation.revision > 1 {
-        lines.push(ScoreLine {
-            rule: "revision".into(),
-            delta: (evaluation.revision - 1) as i32,
-            note: format!("v{}", evaluation.revision),
-        });
+        lines.push(line(
+            "revision",
+            (evaluation.revision - 1) as i32,
+            format!("v{}", evaluation.revision),
+            [("revision", json!(evaluation.revision))],
+        ));
     }
     if episode_count > 1 {
-        lines.push(ScoreLine {
-            rule: "season-pack".into(),
-            delta: episode_count as i32,
-            note: format!("{episode_count} episodes"),
-        });
+        lines.push(line(
+            "season-pack",
+            episode_count as i32,
+            format!("{episode_count} episodes"),
+            [("episodes", json!(episode_count))],
+        ));
     }
     lines
 }

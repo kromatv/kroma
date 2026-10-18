@@ -10,6 +10,16 @@ pub enum ReleaseFlag {
     DoubleUpload,
 }
 
+impl From<ReleaseFlag> for kroma_scene::IndexerFlag {
+    fn from(flag: ReleaseFlag) -> Self {
+        match flag {
+            ReleaseFlag::Freeleech => Self::Freeleech,
+            ReleaseFlag::Halfleech => Self::Halfleech,
+            ReleaseFlag::DoubleUpload => Self::DoubleUpload,
+        }
+    }
+}
+
 /// Reads Torznab's `downloadvolumefactor` and `uploadvolumefactor`: 1 is the
 /// ordinary ratio, 0 costs no download, and 2 pays double upload. A factor the
 /// tracker did not announce says nothing.
@@ -53,5 +63,23 @@ mod tests {
     fn the_ordinary_ratio_and_a_tracker_that_announced_nothing_carry_no_flag() {
         assert!(flags_of(Some(1.0), Some(1.0)).is_empty());
         assert!(flags_of(None, None).is_empty());
+    }
+
+    #[test]
+    fn every_flag_a_tracker_announces_is_one_the_rules_can_test() {
+        use kroma_scene::IndexerFlag;
+
+        assert_eq!(
+            IndexerFlag::from(ReleaseFlag::Freeleech),
+            IndexerFlag::Freeleech
+        );
+        assert_eq!(
+            IndexerFlag::from(ReleaseFlag::Halfleech),
+            IndexerFlag::Halfleech
+        );
+        assert_eq!(
+            IndexerFlag::from(ReleaseFlag::DoubleUpload),
+            IndexerFlag::DoubleUpload
+        );
     }
 }

@@ -6,6 +6,7 @@ mod judge;
 mod languages;
 mod parse;
 mod rank;
+mod refusals;
 mod tags;
 mod upgrades;
 

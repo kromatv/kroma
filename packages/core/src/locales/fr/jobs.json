@@ -1,8 +1,12 @@
 {
+  "jobs.acquisition.cutoff.desc": "Cherche chaque titre suivi dont le profil pourrait encore améliorer les fichiers, sans attendre leur délai.",
+  "jobs.acquisition.cutoff.name": "Recherche de meilleures versions",
   "jobs.acquisition.import.desc": "Range les téléchargements terminés dans la bibliothèque, abandonne ceux qui stagnent et bloque les releases en échec.",
   "jobs.acquisition.import.name": "Import des téléchargements",
   "jobs.acquisition.match.desc": "Marque les titres suivis et les demandes disponibles quand leurs fichiers apparaissent, et vide la corbeille.",
   "jobs.acquisition.match.name": "Correspondance de la disponibilité",
+  "jobs.acquisition.ondemand.desc": "Cherche les titres demandés depuis une page, sans attendre leur délai, et récupère la meilleure release.",
+  "jobs.acquisition.ondemand.name": "Recherche lancée à la main",
   "jobs.acquisition.refresh.desc": "Relit sur TMDB les titres demandés et suivis pour ajouter les épisodes annoncés depuis.",
   "jobs.acquisition.refresh.name": "Actualisation des titres",
   "jobs.acquisition.rss.desc": "Lit les dernières releases des indexeurs et récupère celles qui manquent à un titre suivi ou l'améliorent.",

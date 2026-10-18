@@ -5,12 +5,16 @@
 use serde::{Deserialize, Serialize};
 
 /// One score-explanation line (mirrors `kroma_scene::ScoreLine` on the wire).
+/// `code` is the stable key a screen translates with `params`; `rule` holds
+/// the same code and `note` the English, for a caller that reads neither.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScoreLineView {
     pub rule: String,
     pub delta: i32,
     pub note: String,
+    pub code: String,
+    pub params: kroma_scene::Params,
 }
 
 impl From<&kroma_scene::ScoreLine> for ScoreLineView {
@@ -19,6 +23,35 @@ impl From<&kroma_scene::ScoreLine> for ScoreLineView {
             rule: line.rule.clone(),
             delta: line.delta,
             note: line.note.clone(),
+            code: line.rule.clone(),
+            params: line.params.clone(),
+        }
+    }
+}
+
+/// Why a profile would not take a release, as a screen can say it in the
+/// reader's own language: a stable `rule` and what the sentence needs.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RefusalView {
+    pub rule: String,
+    pub params: kroma_scene::Params,
+}
+
+impl RefusalView {
+    pub fn of(rule: &str) -> Self {
+        Self {
+            rule: rule.to_string(),
+            params: kroma_scene::Params::new(),
+        }
+    }
+}
+
+impl From<&kroma_scene::Reject> for RefusalView {
+    fn from(reject: &kroma_scene::Reject) -> Self {
+        Self {
+            rule: reject.rule.clone(),
+            params: reject.params.clone(),
         }
     }
 }
@@ -50,6 +83,7 @@ pub struct ScoredReleaseView {
     pub score: Option<i32>,
     pub breakdown: Vec<ScoreLineView>,
     pub rejected: Option<String>,
+    pub refusal: Option<RefusalView>,
     pub grabbable: bool,
     /// Everything this release covers is already on disk, so grabbing it
     /// replaces files instead of filling a hole. Decided server-side, over the

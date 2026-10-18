@@ -1,9 +1,27 @@
-use crate::{ParsedRelease, Reject, Target};
+use serde_json::{Value, json};
 
-pub(crate) fn reject(rule: &str, note: impl Into<String>) -> Reject {
+use crate::{Params, ParsedRelease, Reject, Target};
+
+pub(crate) fn reject(
+    rule: &str,
+    note: impl Into<String>,
+    params: impl IntoIterator<Item = (&'static str, Value)>,
+) -> Reject {
     Reject {
         rule: rule.into(),
         note: note.into(),
+        params: params
+            .into_iter()
+            .map(|(key, value)| (key.to_string(), value))
+            .collect::<Params>(),
+    }
+}
+
+fn shape_of(parsed: &ParsedRelease) -> &'static str {
+    match (parsed.full_season, parsed.season, parsed.episode) {
+        (true, _, _) => "season",
+        (_, Some(_), Some(_)) => "episode",
+        _ => "none",
     }
 }
 
@@ -19,11 +37,22 @@ pub(crate) fn check_shape(parsed: &ParsedRelease, target: &Target) -> Result<(),
 
 fn movie_shape(parsed: &ParsedRelease, year: Option<u32>) -> Result<(), Reject> {
     if parsed.season.is_some() || parsed.episode.is_some() || parsed.full_season {
-        return Err(reject("wrong-shape", "TV markers in a movie search"));
+        return Err(reject(
+            "wrong-shape",
+            "TV markers in a movie search",
+            [
+                ("wanted", json!("movie")),
+                ("found", json!(shape_of(parsed))),
+            ],
+        ));
     }
     if let (Some(want), Some(got)) = (year, parsed.year) {
         if got.abs_diff(want) > 1 {
-            return Err(reject("wrong-year", format!("{got} vs {want}")));
+            return Err(reject(
+                "wrong-year",
+                format!("{got} vs {want}"),
+                [("year", json!(got)), ("wantedYear", json!(want))],
+            ));
         }
     }
     Ok(())
@@ -34,10 +63,15 @@ fn episode_shape(parsed: &ParsedRelease, season: u32, episode: u32) -> Result<()
         return Err(reject(
             "wrong-shape",
             "season pack for a single-episode search",
+            [("wanted", json!("episode")), ("found", json!("season"))],
         ));
     }
     let (Some(s), Some(e)) = (parsed.season, parsed.episode) else {
-        return Err(reject("wrong-shape", "no SxxEyy marker"));
+        return Err(reject(
+            "wrong-shape",
+            "no SxxEyy marker",
+            [("wanted", json!("episode")), ("found", json!("none"))],
+        ));
     };
     let span_ok = e == episode
         || parsed
@@ -47,6 +81,12 @@ fn episode_shape(parsed: &ParsedRelease, season: u32, episode: u32) -> Result<()
         return Err(reject(
             "wrong-episode",
             format!("S{s:02}E{e:02} vs S{season:02}E{episode:02}"),
+            [
+                ("season", json!(s)),
+                ("episode", json!(e)),
+                ("wantedSeason", json!(season)),
+                ("wantedEpisode", json!(episode)),
+            ],
         ));
     }
     Ok(())
@@ -54,12 +94,23 @@ fn episode_shape(parsed: &ParsedRelease, season: u32, episode: u32) -> Result<()
 
 fn season_shape(parsed: &ParsedRelease, season: u32) -> Result<(), Reject> {
     if !parsed.full_season {
-        return Err(reject("wrong-shape", "not a season pack"));
+        return Err(reject(
+            "wrong-shape",
+            "not a season pack",
+            [
+                ("wanted", json!("season")),
+                ("found", json!(shape_of(parsed))),
+            ],
+        ));
     }
     if parsed.season != Some(season) {
         return Err(reject(
             "wrong-season",
             format!("{:?} vs {season}", parsed.season),
+            [
+                ("season", json!(parsed.season)),
+                ("wantedSeason", json!(season)),
+            ],
         ));
     }
     Ok(())

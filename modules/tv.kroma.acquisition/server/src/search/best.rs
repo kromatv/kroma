@@ -9,8 +9,9 @@ use crate::search::hits::CachedRelease;
 use kroma_module_sdk::host::HostStorage;
 use kroma_scene::Verdict;
 
-use crate::search::judge::{Judge, units_of, verdict_for};
+use crate::search::judge::Judge;
 use crate::search::targets::SearchTarget;
+use crate::search::verdict::{units_of, verdict_for};
 
 /// What a target's sweep came to.
 #[derive(Default)]

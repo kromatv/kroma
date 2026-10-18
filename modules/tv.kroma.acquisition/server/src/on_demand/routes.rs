@@ -1,7 +1,4 @@
-//! The two buttons behind an on-demand search, and the one-at-a-time latch
-//! that keeps a second press from running a second pass over the indexers.
-
-use std::sync::atomic::{AtomicBool, Ordering};
+//! The two buttons behind an on-demand search.
 
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -9,15 +6,14 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use axum::{Json, Router};
 use serde::Deserialize;
-use serde_json::json;
 
 use kroma_module_sdk::domain::{Permission, User};
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::host::{AuthUser, HostStorage, json_error};
 
-use super::{Unit, missing_units, search_cutoff_now, search_title_now};
+use super::{Unit, start_cutoff_search, start_title_search};
 
-static RUNNING: AtomicBool = AtomicBool::new(false);
+const MAX_UNITS: usize = 500;
 
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
@@ -38,8 +34,6 @@ fn require<S: HostStorage>(state: &S, user: &User) -> Result<(), Response> {
 fn kind_of(raw: &str) -> Result<RequestKind, Response> {
     RequestKind::parse(raw).ok_or_else(|| json_error(StatusCode::BAD_REQUEST, "unknown kind"))
 }
-
-const MAX_UNITS: usize = 500;
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -64,11 +58,8 @@ async fn title_now<S: HostStorage + Clone + Send + Sync + 'static>(
             "too many units in one search",
         ));
     }
-    let counting = state.clone();
-    let units = body.units.clone();
-    let open = run(move || missing_units(&counting, kind, tmdb_id, &units)).await?;
-    let started = spawn(move |log| search_title_now(&state, kind, tmdb_id, &body.units, log));
-    Ok(Json(json!({ "started": started, "units": open })).into_response())
+    let answer = run(move || start_title_search(&state, kind, tmdb_id, &body.units)).await?;
+    Ok(Json(answer).into_response())
 }
 
 /// `POST /acquisition/cutoff/search-now`: search every monitored title a
@@ -78,8 +69,8 @@ async fn cutoff_now<S: HostStorage + Clone + Send + Sync + 'static>(
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     require(&state, &user)?;
-    let started = spawn(move |log| search_cutoff_now(&state, log));
-    Ok(Json(json!({ "started": started })).into_response())
+    let answer = run(move || start_cutoff_search(&state)).await?;
+    Ok(Json(answer).into_response())
 }
 
 async fn run<T, F>(f: F) -> Result<T, Response>
@@ -94,33 +85,5 @@ where
             StatusCode::INTERNAL_SERVER_ERROR,
             "internal error",
         )),
-    }
-}
-
-// Sweeping every indexer takes minutes, so the pass runs off the request and
-// the answer says only whether it took the latch.
-fn spawn<F>(pass: F) -> bool
-where
-    F: FnOnce(&dyn Fn(String)) -> anyhow::Result<crate::auto::AutoSummary> + Send + 'static,
-{
-    if RUNNING.swap(true, Ordering::SeqCst) {
-        return false;
-    }
-    tokio::task::spawn_blocking(move || {
-        let _held = Latch;
-        if let Err(e) = pass(&|line| tracing::info!(target: "acquisition", "{line}")) {
-            tracing::warn!(target: "acquisition", "search now failed: {e:#}");
-        }
-    });
-    true
-}
-
-// A pass that panics must still free the latch, or every later press answers
-// "already running" until the server restarts.
-struct Latch;
-
-impl Drop for Latch {
-    fn drop(&mut self) {
-        RUNNING.store(false, Ordering::SeqCst);
     }
 }

@@ -127,6 +127,18 @@ impl<S: HostStorage + Clone + Send + Sync + 'static> kroma_module_sdk::host::Ser
                 run: run_rss::<S>,
             },
             ModuleJob {
+                key: on_demand::ON_DEMAND_JOB,
+                category: "acquisition",
+                schedule: None,
+                run: run_on_demand::<S>,
+            },
+            ModuleJob {
+                key: on_demand::CUTOFF_JOB,
+                category: "acquisition",
+                schedule: None,
+                run: run_cutoff::<S>,
+            },
+            ModuleJob {
                 key: "acquisition.match",
                 category: "acquisition",
                 schedule: Some("30 5 * * *"),
@@ -148,6 +160,16 @@ fn run_search<S: HostStorage>(host: &S) -> anyhow::Result<()> {
         &|l| tracing::info!(target: "acquisition", "{l}"),
         &|| false,
     )?;
+    Ok(())
+}
+
+fn run_on_demand<S: HostStorage>(host: &S) -> anyhow::Result<()> {
+    on_demand::drain_queue(host, &|l| tracing::info!(target: "acquisition", "{l}"))?;
+    Ok(())
+}
+
+fn run_cutoff<S: HostStorage>(host: &S) -> anyhow::Result<()> {
+    on_demand::sweep_cutoff(host, &|l| tracing::info!(target: "acquisition", "{l}"))?;
     Ok(())
 }
 

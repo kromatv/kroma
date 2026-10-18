@@ -89,6 +89,10 @@ impl Target {
     }
 }
 
+/// What a `rule` needs to be said in the reader's own language. English prose
+/// stays in `note` for a caller that has nowhere to translate.
+pub type Params = serde_json::Map<String, serde_json::Value>;
+
 /// One line of the explanation, persisted with the grab so "why this release"
 /// stays answerable later.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -96,12 +100,18 @@ pub struct ScoreLine {
     pub rule: String,
     pub delta: i32,
     pub note: String,
+    #[serde(default)]
+    pub params: Params,
 }
 
+/// Why a profile would not take a release. `rule` is the stable code a screen
+/// translates; `note` is the same thing in English.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Reject {
     pub rule: String,
     pub note: String,
+    #[serde(default)]
+    pub params: Params,
 }
 
 #[derive(Debug, Clone, Copy, Default)]

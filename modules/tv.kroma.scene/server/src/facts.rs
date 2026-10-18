@@ -78,6 +78,8 @@ impl Codec {
 #[serde(rename_all = "camelCase")]
 pub enum IndexerFlag {
     Freeleech,
+    Halfleech,
+    DoubleUpload,
     Internal,
     Scene,
 }

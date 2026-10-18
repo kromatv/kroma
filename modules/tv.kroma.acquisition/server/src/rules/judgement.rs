@@ -7,11 +7,12 @@ use serde::{Deserialize, Serialize};
 
 use kroma_module_sdk::host::{AuthUser, HostStorage};
 use kroma_scene::{
-    Candidate, Evaluation, Facts, Language, ParsedRelease, Query, Reject, Target, evaluate, judge,
+    Candidate, Evaluation, Facts, Language, ParsedRelease, Query, Target, evaluate, judge,
 };
 
 use super::routes::{bad, require_reader, run};
 use super::{RuleBook, load};
+use crate::dtos::RefusalView;
 
 pub(super) fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new().route("/acquisition/rules/test", axum::routing::post(test::<S>))
@@ -23,24 +24,6 @@ struct TestBody {
     name: String,
     #[serde(default)]
     original: Option<String>,
-}
-
-/// Why a profile would not grab the release, as MOD-78 asks: the rule that
-/// refused it and what it read.
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct RefusalView {
-    rule: String,
-    note: String,
-}
-
-impl From<Reject> for RefusalView {
-    fn from(reject: Reject) -> Self {
-        Self {
-            rule: reject.rule,
-            note: reject.note,
-        }
-    }
 }
 
 #[derive(Debug, Serialize)]
@@ -102,6 +85,7 @@ fn verdicts(book: &RuleBook, name: &str, original: Option<&Language>) -> TestVie
                 profile_name: profile.name.clone(),
                 evaluation: evaluate(&facts, original, &rules),
                 refusal: judge(&parsed, &facts, &candidate, &query, &rules)
+                    .as_ref()
                     .err()
                     .map(RefusalView::from),
             }
@@ -165,7 +149,7 @@ mod tests {
 
         let refusal = only(&view).refusal.as_ref().expect("a refusal");
         assert_eq!(refusal.rule, "forbidden-keyword");
-        assert_eq!(refusal.note, "CAM");
+        assert_eq!(refusal.params["term"], "CAM");
     }
 
     #[test]

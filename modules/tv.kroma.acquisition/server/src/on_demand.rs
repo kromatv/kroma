@@ -9,18 +9,25 @@ use anyhow::Result;
 use kroma_module_sdk::db::{self, WantedRow};
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::host::HostStorage;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::auto::{AutoSummary, Pass, search_title};
 use crate::peers::indexers::IndexerRef;
 use crate::upgrades::{Sweep, upgrade_pass};
 
+mod queue;
 mod routes;
+mod start;
 
 pub use routes::routes;
+pub use start::{
+    CUTOFF_JOB, NotStarted, ON_DEMAND_JOB, Started, start_cutoff_search, start_title_search,
+};
+
+const MAX_ASKS: usize = 20;
 
 /// One film (`{}`) or one episode (`{"season":1,"episode":3}`) of a title.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Unit {
     #[serde(default)]
@@ -29,22 +36,52 @@ pub struct Unit {
     pub episode: Option<u32>,
 }
 
-/// Searches one title's missing units now, or only the units named.
-pub fn search_title_now<S: HostStorage>(
+/// Searches every title a page queued. The `acquisition.ondemand` job.
+pub fn drain_queue<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<AutoSummary> {
+    let mut summary = AutoSummary::default();
+    let Some(_slot) = start::claim() else {
+        log("another search is already running".into());
+        return Ok(summary);
+    };
+    for _ in 0..MAX_ASKS {
+        let Some(ask) = queue::take(state.store())? else {
+            break;
+        };
+        search_title_now(state, ask.kind, ask.tmdb_id, &ask.units, log, &mut summary)?;
+    }
+    if summary.titles == 0 {
+        log("no title is waiting to be searched".into());
+    }
+    Ok(summary)
+}
+
+/// Searches every monitored title a better copy could still improve. The
+/// `acquisition.cutoff` job.
+pub fn sweep_cutoff<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<AutoSummary> {
+    let mut summary = AutoSummary::default();
+    let Some(_slot) = start::claim() else {
+        log("another search is already running".into());
+        return Ok(summary);
+    };
+    search_cutoff_now(state, log, &mut summary)?;
+    Ok(summary)
+}
+
+fn search_title_now<S: HostStorage>(
     state: &S,
     kind: RequestKind,
     tmdb_id: u64,
     units: &[Unit],
     log: &dyn Fn(String),
-) -> Result<AutoSummary> {
-    let mut summary = AutoSummary::default();
-    let Some(indexers) = indexers(state, log)? else {
-        return Ok(summary);
+    summary: &mut AutoSummary,
+) -> Result<()> {
+    let Some(indexers) = sweepable(state, log)? else {
+        return Ok(());
     };
     let open = open_rows(state, kind, tmdb_id, units)?;
     if open.is_empty() {
-        log("nothing is missing on this title".into());
-        return Ok(summary);
+        log(format!("nothing is missing on title {tmdb_id}"));
+        return Ok(());
     }
     let book = crate::rules::load(state)?;
     let pass = Pass {
@@ -54,25 +91,21 @@ pub fn search_title_now<S: HostStorage>(
         log,
         cancelled: &|| false,
     };
-    search_title(
-        &pass,
-        (kind, tmdb_id),
-        &open,
-        &mut summary,
-        &mut HashSet::new(),
-    )?;
+    search_title(&pass, (kind, tmdb_id), &open, summary, &mut HashSet::new())?;
     log(format!(
         "{} target(s) searched, {} grabbed",
         summary.targets, summary.grabbed
     ));
-    Ok(summary)
+    Ok(())
 }
 
-/// Searches every monitored title a better copy could still improve, now.
-pub fn search_cutoff_now<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<AutoSummary> {
-    let mut summary = AutoSummary::default();
-    let Some(indexers) = indexers(state, log)? else {
-        return Ok(summary);
+fn search_cutoff_now<S: HostStorage>(
+    state: &S,
+    log: &dyn Fn(String),
+    summary: &mut AutoSummary,
+) -> Result<()> {
+    let Some(indexers) = sweepable(state, log)? else {
+        return Ok(());
     };
     let book = crate::rules::load(state)?;
     let pass = Pass {
@@ -82,12 +115,12 @@ pub fn search_cutoff_now<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Res
         log,
         cancelled: &|| false,
     };
-    upgrade_pass(&pass, &mut summary, Sweep::now())?;
+    upgrade_pass(&pass, summary, Sweep::now())?;
     log(format!(
         "{} target(s) searched, {} upgrade(s)",
         summary.targets, summary.upgrades
     ));
-    Ok(summary)
+    Ok(())
 }
 
 pub fn missing_units<S: HostStorage>(
@@ -99,21 +132,18 @@ pub fn missing_units<S: HostStorage>(
     Ok(open_rows(state, kind, tmdb_id, units)?.len())
 }
 
-fn indexers<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<Option<Vec<IndexerRef>>> {
-    if !state.setting_bool("acqEnabled", false) {
-        log("automatic acquisition is disabled (acqEnabled)".into());
-        return Ok(None);
+fn sweepable<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<Option<Vec<IndexerRef>>> {
+    match crate::peers::indexers::enabled(state) {
+        Ok(found) if !found.is_empty() => Ok(Some(found)),
+        Ok(_) => {
+            log("no enabled indexer; configure one under Indexeurs".into());
+            Ok(None)
+        }
+        Err(e) => {
+            log(format!("no indexer answered: {e:#}"));
+            Ok(None)
+        }
     }
-    if !crate::peers::downloads::gate_open(state) {
-        log("VPN kill switch is closed; nothing can be grabbed".into());
-        return Ok(None);
-    }
-    let found = crate::peers::indexers::enabled(state)?;
-    if found.is_empty() {
-        log("no enabled indexer; configure one under Indexeurs".into());
-        return Ok(None);
-    }
-    Ok(Some(found))
 }
 
 fn open_rows<S: HostStorage>(

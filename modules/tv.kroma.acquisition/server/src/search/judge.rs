@@ -1,12 +1,9 @@
 //! A release judged by the title's rules, and what grabbing it would do to
 //! the files the title already holds.
 
-use kroma_scene::{
-    Candidate, Evaluation, Facts, Judged, Language, QualityProfile, Query, Rules, Verdict, judge,
-    upgrade_verdict,
-};
+use kroma_scene::{Candidate, Facts, Judged, Language, QualityProfile, Query, Rules, judge};
 
-use crate::dtos::{FormatScoreView, ScoredReleaseView};
+use crate::dtos::{FormatScoreView, RefusalView, ScoredReleaseView};
 use crate::peers::indexers::{IndexerRef, Release};
 use crate::release_flags::{ReleaseFlag, flags_of};
 use crate::rules::files::{JudgedFile, title_runtime};
@@ -50,8 +47,8 @@ impl<'a> Judge<'a> {
     ) -> (ScoredReleaseView, Option<Judged>) {
         let parsed = kroma_scene::parse_release_name(&release.title);
         let flags = flags_of(release.download_volume_factor, release.upload_volume_factor);
-        let mut facts = Facts::from_release(&release.title, &parsed, release.size_bytes);
-        facts.flags = scene_flags(&flags);
+        let facts = Facts::from_release(&release.title, &parsed, release.size_bytes)
+            .with_flags(flags.iter().copied().map(kroma_scene::IndexerFlag::from));
         let candidate = Candidate {
             size_bytes: release.size_bytes,
             seeders: release.seeders,
@@ -66,16 +63,6 @@ impl<'a> Judge<'a> {
         let view = view_of(release, indexer, st, &facts, flags, &outcome);
         (view, outcome.ok())
     }
-}
-
-// The rules engine knows one of the three, so the other two travel to the
-// screen and no further.
-fn scene_flags(flags: &[ReleaseFlag]) -> Vec<kroma_scene::IndexerFlag> {
-    flags
-        .iter()
-        .filter(|flag| **flag == ReleaseFlag::Freeleech)
-        .map(|_| kroma_scene::IndexerFlag::Freeleech)
-        .collect()
 }
 
 fn view_of(
@@ -108,6 +95,7 @@ fn view_of(
             Vec::new(),
         ),
     };
+    let refusal = outcome.as_ref().err().map(RefusalView::from);
     ScoredReleaseView {
         title: release.title.clone(),
         guid: release.guid.clone(),
@@ -123,6 +111,7 @@ fn view_of(
         score,
         breakdown,
         rejected,
+        refusal,
         grabbable: release.magnet.is_some()
             || release.link.is_some()
             || release.details_url.is_some(),
@@ -133,60 +122,6 @@ fn view_of(
         flags,
         verdict: None,
     }
-}
-
-/// The units a release covers, as `(season, episode)`: `(None, None)` for a
-/// film, one per episode otherwise.
-pub fn units_of(view: &ScoredReleaseView, files: &[JudgedFile]) -> Vec<(Option<u32>, Option<u32>)> {
-    match (view.target.as_str(), view.season) {
-        ("movie", _) => vec![(None, None)],
-        (_, Some(season)) => match &view.episodes {
-            Some(episodes) => episodes.iter().map(|e| (Some(season), Some(*e))).collect(),
-            None => {
-                let mut held: Vec<(Option<u32>, Option<u32>)> = files
-                    .iter()
-                    .filter(|f| f.season == Some(season))
-                    .map(|f| (f.season, f.episode))
-                    .collect();
-                held.dedup();
-                held
-            }
-        },
-        _ => Vec::new(),
-    }
-}
-
-/// What grabbing `candidate` does to the files of every unit it covers: a
-/// fill when any unit is empty, else the first unit it would not improve, else
-/// an upgrade (beside the files when any unit takes it that way).
-pub fn verdict_for(
-    candidate: &Evaluation,
-    units: &[(Option<u32>, Option<u32>)],
-    files: &[JudgedFile],
-    profile: &QualityProfile,
-) -> Verdict {
-    let verdicts: Vec<Verdict> = units
-        .iter()
-        .map(|&(season, episode)| {
-            let held: Vec<Evaluation> = files
-                .iter()
-                .filter(|f| f.holds(season, episode))
-                .map(|f| f.evaluation.clone())
-                .collect();
-            upgrade_verdict(candidate, &held, profile)
-        })
-        .collect();
-    if verdicts.is_empty() || verdicts.contains(&Verdict::Fill) {
-        return Verdict::Fill;
-    }
-    if let Some(refused) = verdicts.iter().find(|v| !v.is_wanted()) {
-        return *refused;
-    }
-    verdicts
-        .iter()
-        .find(|v| matches!(v, Verdict::Beside(_)))
-        .copied()
-        .unwrap_or(verdicts[0])
 }
 
 #[cfg(test)]
@@ -205,7 +140,7 @@ mod tests {
             episode_end: None,
             release: None,
             runtime_minutes: minutes,
-            evaluation: Evaluation {
+            evaluation: kroma_scene::Evaluation {
                 quality: Quality::WebDl1080,
                 quality_rank: Some(1),
                 formats: Vec::new(),
@@ -256,11 +191,54 @@ mod tests {
     }
 
     #[test]
-    fn a_freeleech_release_is_freeleech_to_the_rules_as_well() {
-        assert_eq!(
-            scene_flags(&[ReleaseFlag::Freeleech, ReleaseFlag::DoubleUpload]),
-            [kroma_scene::IndexerFlag::Freeleech]
+    fn every_flag_a_tracker_announces_reaches_the_rules() {
+        let rules = TestRules::new();
+        let bonuses = Release {
+            download_volume_factor: Some(0.5),
+            upload_volume_factor: Some(2.0),
+            ..crate::search::test_support::release("Show.S01E01.1080p.WEB-DL.x265", Some(9))
+        };
+
+        let (view, _) = rules.judge().release(
+            &bonuses,
+            &crate::search::test_support::indexer(0),
+            &crate::search::test_support::episode_target(),
         );
-        assert!(scene_flags(&[ReleaseFlag::Halfleech]).is_empty());
+
+        assert_eq!(
+            view.flags,
+            [ReleaseFlag::Halfleech, ReleaseFlag::DoubleUpload]
+        );
+    }
+
+    #[test]
+    fn a_refused_release_carries_the_rule_and_what_the_sentence_needs() {
+        let rules = TestRules::new();
+        let cam = crate::search::test_support::release("Show.S01E01.CAM.XviD", Some(9));
+
+        let (view, _) = rules.judge().release(
+            &cam,
+            &crate::search::test_support::indexer(0),
+            &crate::search::test_support::episode_target(),
+        );
+
+        let refusal = view.refusal.expect("a refusal");
+        assert_eq!(refusal.rule, "quality");
+        assert_eq!(refusal.params["quality"], "cam");
+    }
+
+    #[test]
+    fn an_accepted_release_carries_no_refusal_and_a_breakdown_that_can_be_translated() {
+        let rules = TestRules::new();
+
+        let (view, _) = rules.judge().release(
+            &crate::search::test_support::release("Show.S01E01.1080p.WEB-DL.x265", Some(9)),
+            &crate::search::test_support::indexer(0),
+            &crate::search::test_support::episode_target(),
+        );
+
+        assert!(view.refusal.is_none());
+        let quality = view.breakdown.iter().find(|l| l.code == "quality").unwrap();
+        assert_eq!(quality.params["quality"], "webdl-1080p");
     }
 }

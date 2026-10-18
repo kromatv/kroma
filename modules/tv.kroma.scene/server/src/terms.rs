@@ -43,7 +43,11 @@ pub(crate) fn check_terms(profile: &QualityProfile, name: &str) -> Result<(), Re
     if let Some((written, _)) =
         readable(&profile.must_not_contain).find(|(_, term)| term.matches(name))
     {
-        return Err(reject("forbidden-keyword", written.clone()));
+        return Err(reject(
+            "forbidden-keyword",
+            written.clone(),
+            [("term", serde_json::json!(written))],
+        ));
     }
     let required: Vec<(&String, Term)> = readable(&profile.must_contain).collect();
     if !required.is_empty() && !required.iter().any(|(_, term)| term.matches(name)) {
@@ -51,7 +55,11 @@ pub(crate) fn check_terms(profile: &QualityProfile, name: &str) -> Result<(), Re
             .iter()
             .map(|(written, _)| written.as_str())
             .collect();
-        return Err(reject("missing-required-keyword", wanted.join(", ")));
+        return Err(reject(
+            "missing-required-keyword",
+            wanted.join(", "),
+            [("terms", serde_json::json!(wanted))],
+        ));
     }
     Ok(())
 }

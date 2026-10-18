@@ -91,6 +91,41 @@ fn an_indexer_flag_is_read_from_the_facts() {
 }
 
 #[test]
+fn a_format_can_test_the_two_bonuses_a_tracker_announces_short_of_freeleech() {
+    let name = "Movie.2020.1080p.WEB";
+    let facts = Facts::from_release(name, &p(name), None)
+        .with_flags([IndexerFlag::Halfleech, IndexerFlag::DoubleUpload]);
+
+    let half = single(Spec::IndexerFlag {
+        value: IndexerFlag::Halfleech,
+    });
+    let double = single(Spec::IndexerFlag {
+        value: IndexerFlag::DoubleUpload,
+    });
+    let free = single(Spec::IndexerFlag {
+        value: IndexerFlag::Freeleech,
+    });
+
+    assert_eq!(half.matching(&facts, None).len(), 1);
+    assert_eq!(double.matching(&facts, None).len(), 1);
+    assert!(free.matching(&facts, None).is_empty());
+}
+
+#[test]
+fn an_indexer_flag_condition_reads_the_spelling_the_editor_writes() {
+    let json = serde_json::json!({ "type": "indexerFlag", "value": "doubleUpload" });
+
+    let spec: Spec = serde_json::from_value(json).unwrap();
+
+    assert_eq!(
+        spec,
+        Spec::IndexerFlag {
+            value: IndexerFlag::DoubleUpload
+        }
+    );
+}
+
+#[test]
 fn the_flags_the_indexer_reported_travel_with_the_release() {
     let set = single(Spec::IndexerFlag {
         value: IndexerFlag::Internal,

@@ -14,7 +14,8 @@ use kroma_module_sdk::host::HostStorage;
 use crate::dtos::{InteractiveSearchView, ScoredReleaseView};
 use crate::rules::files::{judge_title_files, JudgedFile};
 use crate::search::hits::{collect_search_hits, CachedRelease};
-use crate::search::judge::{units_of, verdict_for, Judge};
+use crate::search::judge::Judge;
+use crate::search::verdict::{units_of, verdict_for};
 use crate::search::subject::{resolve, Subject};
 use crate::search::targets::{targets_for_scope, SearchScope};
 
@@ -23,6 +24,8 @@ mod grab;
 pub use grab::{grab_cached, replaces};
 
 static SEARCH_CACHE: Mutex<Option<HashMap<String, Vec<CachedRelease>>>> = Mutex::new(None);
+
+const BLOCKLIST: &str = "blocklist";
 
 pub fn cached_release(
     subject: &Subject,
@@ -100,7 +103,7 @@ pub fn interactive_search<S: HostStorage>(
             .iter()
             .any(|b| b.matches(&c.view.title, c.info_hash.as_deref()))
         {
-            refuse(c, "blocklist: an earlier grab of this release failed");
+            refuse(c, "an earlier grab of this release failed");
             continue;
         }
         settle_verdict(c, &files, judge.profile());
@@ -136,7 +139,8 @@ fn refuse(c: &mut CachedRelease, why: &str) {
     c.judged = None;
     c.view.score = None;
     c.view.breakdown.clear();
-    c.view.rejected = Some(why.to_string());
+    c.view.rejected = Some(format!("{BLOCKLIST}: {why}"));
+    c.view.refusal = Some(crate::dtos::RefusalView::of(BLOCKLIST));
 }
 
 /// Accepted releases first, by the rules' ranking; refused ones after.
@@ -237,10 +241,14 @@ mod tests {
         let rules = TestRules::new();
         let mut c = cached("Show.S01E01.1080p.WEB-DL.x265", 50, &rules);
 
-        refuse(&mut c, "blocklist: x");
+        refuse(&mut c, "an earlier grab failed");
 
         assert!(c.judged.is_none());
         assert_eq!(c.view.score, None);
-        assert_eq!(c.view.rejected.as_deref(), Some("blocklist: x"));
+        assert_eq!(
+            c.view.rejected.as_deref(),
+            Some("blocklist: an earlier grab failed")
+        );
+        assert_eq!(c.view.refusal.unwrap().rule, "blocklist");
     }
 }
