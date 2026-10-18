@@ -1,5 +1,9 @@
 # Oxc house-rule enforcement and evaluation
 
+Biome has since been removed: oxlint carries its browser-global restriction and
+the rules the codebase had audited suppressions for, and oxfmt formats the
+JS, TS, JSON and CSS Biome used to. What follows is the evaluation as it ran.
+
 The useful change is enforceable house rules with repair instructions agents can
 read. The branch adds eleven custom rules, a guidance contract, an inactive rule
 scaffolder, tests, and CI integration. `bun run lint` now runs Oxlint;

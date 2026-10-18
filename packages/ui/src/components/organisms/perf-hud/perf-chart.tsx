@@ -48,7 +48,7 @@ function PerfChart({ frames }: Readonly<{ frames: readonly number[] }>) {
           <Box
             // Frame times repeat and carry no identity, so the slot IS the
             // identity: bar 3 is always bar 3, holding whatever is current.
-            // biome-ignore lint/suspicious/noArrayIndexKey: the position is the identity here
+            // oxlint-disable-next-line react/no-array-index-key -- the position is the identity here
             key={i}
             style={[
               s.bar,

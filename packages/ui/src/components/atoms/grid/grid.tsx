@@ -95,11 +95,11 @@ function lines(children: ReactNode, count: number, cell: ViewStyle, line: ViewSt
     // Each line is also the page's scroll anchor (see <FocusLine>): inside
     // a <FocusSlot> taller than the screen, the page would otherwise pin
     // the slot's top once and never follow the focus down the grid.
-    // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the row's identity.
+    // oxlint-disable-next-line react/no-array-index-key -- the index IS the row's identity.
     <FocusLine key={index}>
       <FocusRegion style={line}>
         {row.map((child, column) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the cell's slot in the row.
+          // oxlint-disable-next-line react/no-array-index-key -- the index IS the cell's slot in the row.
           <FocusLiftView key={column} style={cell}>
             {child}
           </FocusLiftView>

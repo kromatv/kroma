@@ -20,7 +20,7 @@ export function CodeBlock({ code, label = 'bash' }: Readonly<CodeBlockProps>) {
             {lines.map((line, i) => {
               const isComment = line.trimStart().startsWith('#');
               return (
-                // biome-ignore lint/suspicious/noArrayIndexKey: static, order-stable code lines
+                // oxlint-disable-next-line react/no-array-index-key -- static, order-stable code lines
                 <span key={i} className={isComment ? 'text-dim' : 'text-text'}>
                   {line}
                   {i < lines.length - 1 ? '\n' : ''}

@@ -47,7 +47,7 @@ export function remarkReadingTime() {
           ],
         },
       },
-      // biome-ignore lint/suspicious/noExplicitAny: mdast node shape from the plugin API.
+      // oxlint-disable-next-line typescript/no-explicit-any -- mdast node shape from the plugin API.
     } as any);
   };
 }

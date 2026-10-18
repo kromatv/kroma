@@ -53,7 +53,7 @@ export function TvGrid() {
   const [sort, setSort] = useState<SortMode>('added');
   const [genre, setGenre] = useState<string | undefined>(undefined);
   const [focusId, setFocusId] = useState<string | null>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: kind is an intentional re-run key (resets the filter on a section switch), not read inside the effect
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- kind is an intentional re-run key (resets the filter on a section switch), not read inside the effect
   useEffect(() => {
     setGenre(undefined);
     setFocusId(null);

@@ -45,8 +45,10 @@ const radioVariants = sv({
   defaults: { size: 'sm', checked: false },
 });
 
-interface RadioProps
-  extends Omit<FocusableProps, 'children' | 'onPress' | 'role' | 'checked' | 'style'> {
+interface RadioProps extends Omit<
+  FocusableProps,
+  'children' | 'onPress' | 'role' | 'checked' | 'style'
+> {
   checked: boolean;
   /** Fired on a press that PICKS this one. A press on the chosen radio is not
    *  a change, so nothing is reported. */

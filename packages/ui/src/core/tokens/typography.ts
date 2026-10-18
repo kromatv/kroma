@@ -23,7 +23,7 @@ export function fontStack(family: string): string {
 
 /** Families a theme adds. Augment it and the name is legal wherever a family is
  *  written: a `font:` shorthand, a role's `family` (see `ColorRegistry`). */
-// biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
+// oxlint-disable-next-line typescript/no-empty-interface -- an augmentation point is empty by design
 export interface FontRegistry {}
 
 export type FontToken = TokenOf<typeof fonts, FontRegistry>;
@@ -174,7 +174,7 @@ export const TV_RAMP = [
 
 /** Roles a theme adds. Augment it and the name is legal wherever a role is
  *  written: a recipe's `text:` shorthand, <Text variant> (see `ColorRegistry`). */
-// biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
+// oxlint-disable-next-line typescript/no-empty-interface -- an augmentation point is empty by design
 export interface TypeRoleRegistry {}
 
 export type TypeRole = TokenOf<typeof typeSpec, TypeRoleRegistry>;

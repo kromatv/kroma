@@ -50,9 +50,8 @@ vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
   return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
 });
 
-const { useNotificationStream, usePanelState, useReadState, useUnreadCount } = await import(
-  '#web/features/notifications/use-notifications'
-);
+const { useNotificationStream, usePanelState, useReadState, useUnreadCount } =
+  await import('#web/features/notifications/use-notifications');
 const { createQueries } = await import('#web/shared/lib/queries');
 const { createWebTestClient } = await import('#web/shared/lib/web-runtime.fixture');
 const { userQueries } = createQueries(createWebTestClient(client));

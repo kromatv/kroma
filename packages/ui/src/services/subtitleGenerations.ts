@@ -57,7 +57,7 @@ export function useSubtitleGenerations(
   // set must survive a `nudge` or `active` re-run.
   const seenRef = useRef<{ itemId: ItemId; seen: Set<GenerationId> } | null>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `nudge` is a trigger dep, not read in the body; bumping it via refresh() re-arms polling after a new generation is kicked off.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- `nudge` is a trigger dep, not read in the body; bumping it via refresh() re-arms polling after a new generation is kicked off.
   useEffect(() => {
     if (!active) return;
     let stopped = false;

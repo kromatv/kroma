@@ -124,7 +124,7 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
   // Boot: hydrate remembered accounts + silently exchange the active access token
   // for a session. On failure (PIN needed / expired) drop to the picker but keep
   // the account remembered. Runs once per client.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: boot once per client.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- boot once per client.
   useEffect(() => {
     setAccounts(loadAccounts());
     const active = loadSession();

@@ -95,7 +95,7 @@ export function useTvController(client: KromaClient, item: MediaItem): TvControl
   const [rate, setRate] = useState(1);
   // `engineRef` is a ref, so a rebuilt engine (a filter change reopens the stream)
   // is invisible here otherwise, and the new player would start back at 1x.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: audited - the nonce IS the trigger
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- audited - the nonce IS the trigger
   useEffect(() => {
     pb.engineRef.current?.setRate?.(rate);
   }, [pb.engineRef, rate, pb.surfaceNonce]);

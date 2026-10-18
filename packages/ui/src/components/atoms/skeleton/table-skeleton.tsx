@@ -13,7 +13,7 @@ function TableSkeleton({ rows = 8 }: Readonly<TableSkeletonProps>) {
   return (
     <Box gap={8} p={12} radius="xl" border="borderStrong" bg="surface1" aria-hidden>
       {Array.from({ length: rows }, (_, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
+        // oxlint-disable-next-line react/no-array-index-key -- fixed-length placeholder rows
         <Box key={i} row align="center" gap={16} py={8}>
           <Skeleton w={36} h={36} radius="sm" />
           <Skeleton h={16} flex />

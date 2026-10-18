@@ -251,7 +251,7 @@ export function TvHome() {
             (clients/tv-build/perf-bench.ts, TV-throttled CPU): 480 mounted
             controls run at 46fps/73ms frames, 128 runs clean. */}
         {rows.slice(0, rowCount).map((row, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the slot - see <FocusSlot>.
+          // oxlint-disable-next-line react/no-array-index-key -- the index IS the slot - see <FocusSlot>.
           <FocusSlot key={index} onActive={nearLastRow(index) ? growRows : undefined}>
             <Box mb={8} mt={18}>
               <Rail.Root>

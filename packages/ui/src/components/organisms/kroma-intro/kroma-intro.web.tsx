@@ -156,7 +156,7 @@ function VideoIntro({
 
   useIntroKeys({ exit, replay, unblock });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only intro timeline; exit/clearTimers are stable useCallbacks and the rest are effect events, all intentionally omitted so the effect never re-arms (which would restart the film) on unrelated re-renders.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- mount-only intro timeline; exit/clearTimers are stable useCallbacks and the rest are effect events, all intentionally omitted so the effect never re-arms (which would restart the film) on unrelated re-renders.
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -238,7 +238,7 @@ function VideoIntro({
 
   return (
     <IntroShell exiting={exiting}>
-      {/* biome-ignore lint/a11y/useMediaCaption: decorative brand film with a musical sting only, no speech to caption; the shell carries the accessible name. */}
+      {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- decorative brand film with a musical sting only, no speech to caption; the shell carries the accessible name. */}
       <video
         ref={videoRef}
         playsInline

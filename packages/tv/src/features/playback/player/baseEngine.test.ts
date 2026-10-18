@@ -43,7 +43,7 @@ class TestEngine extends BaseTvEngine {
   readonly reanchorCalls: number[] = [];
   readonly seekCalls: number[] = [];
 
-  // biome-ignore lint/complexity/noUselessConstructor: exposes the protected base constructor for the test
+  // oxlint-disable-next-line no-useless-constructor -- exposes the protected base constructor for the test
   constructor(o: EngineOptions) {
     super(o);
   }

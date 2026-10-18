@@ -33,7 +33,7 @@ export function ModuleLoading({ panels = 2 }: Readonly<{ panels?: number }>) {
         <Skeleton h={16} w={360} bg="white/4" />
       </Box>
       {Array.from({ length: panels }, (_, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder panels
+        // oxlint-disable-next-line react/no-array-index-key -- fixed-length placeholder panels
         <CardSkeleton key={i} fields={i === 0 ? 3 : 2} />
       ))}
     </Box>

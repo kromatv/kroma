@@ -45,9 +45,8 @@ run('x', 'tsc', '--project', 'tsconfig.dist.json');
 // The whole stylesheet as a file, because the `@import "@kromatv/ui/css"`
 // directive is expanded by a Vite plugin this package does not ship: a consumer
 // imports the CSS instead. Subset to what the kit's own source names.
-const { fontsCss, tokensCss, themeCss, motionCss, resetCss, pageCss } = await import(
-  '../vite/tokens.ts'
-);
+const { fontsCss, tokensCss, themeCss, motionCss, resetCss, pageCss } =
+  await import('../vite/tokens.ts');
 const kitSrc = join(pkgRoot, 'src');
 const sheet = [
   fontsCss(),

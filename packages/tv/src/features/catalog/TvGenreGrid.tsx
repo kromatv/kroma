@@ -29,7 +29,7 @@ export function TvGenreGrid() {
   useFocusNav({ onBack: titleMenu.onBack, resetKey: slug });
 
   const [focusId, setFocusId] = useState<string | null>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: slug is an intentional re-run key (a genre switch clears the focus echo), not read inside the effect
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- slug is an intentional re-run key (a genre switch clears the focus echo), not read inside the effect
   useEffect(() => setFocusId(null), [slug]);
 
   const entries = useMemo<Entry[]>(() => {

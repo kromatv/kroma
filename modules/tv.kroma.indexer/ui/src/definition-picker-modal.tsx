@@ -27,7 +27,7 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
       })
       .catch((e) => setError(apiErrorText(e, t('indexers.testFailed'))));
   };
-  // biome-ignore lint/correctness/useExhaustiveDependencies: load once on open
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- load once on open
   useEffect(load, []);
 
   const sync = () => {

@@ -216,7 +216,7 @@ export function useKromaEngine(
     };
   }, [player, core, fail, localUri]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: open once per item; startSec/load must not re-trigger a reload mid-playback
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- open once per item; startSec/load must not re-trigger a reload mid-playback
   useEffect(() => {
     void load(startSec);
   }, [item.id]);

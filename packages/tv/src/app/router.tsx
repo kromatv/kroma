@@ -94,7 +94,7 @@ function isTvRoute(entry: unknown, screens: TvScreens): entry is TvRoute {
 function loadDevStack(screens: TvScreens): TvRoute[] | null {
   if (!IS_DEV) return null;
   try {
-    // biome-ignore lint/style/noRestrictedGlobals: audited - dev-only (IS_DEV) and inside try/catch, so React Native simply keeps the default stack.
+    // oxlint-disable-next-line no-restricted-globals -- audited - dev-only (IS_DEV) and inside try/catch, so React Native simply keeps the default stack.
     const saved = sessionStorage.getItem(DEV_NAV_KEY);
     if (!saved) return null;
     const parsed: unknown = JSON.parse(saved);
@@ -153,7 +153,7 @@ export function TvNavProvider({
   useEffect(() => {
     if (!IS_DEV) return;
     try {
-      // biome-ignore lint/style/noRestrictedGlobals: audited - dev-only (IS_DEV) and inside try/catch.
+      // oxlint-disable-next-line no-restricted-globals -- audited - dev-only (IS_DEV) and inside try/catch.
       sessionStorage.setItem(DEV_NAV_KEY, JSON.stringify(stack));
     } catch {
       /* ignore quota/availability */

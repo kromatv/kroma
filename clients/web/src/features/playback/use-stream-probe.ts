@@ -73,7 +73,7 @@ export function useStreamProbe({
     [restartAt, webRuntime.client.refreshSession],
   );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `renewals` is the retry trigger.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- `renewals` is the retry trigger.
   useEffect(() => {
     if (!booted) return;
     setSrcReady(false);

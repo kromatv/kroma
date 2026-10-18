@@ -55,7 +55,7 @@ export function SvgXml({
   return (
     <div
       className={classes(s.box, sizeOf(width, height, scope))}
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: app-generated QR SVG built by qrcode-generator from a trusted server URL + server-issued code, never user input.
+      // oxlint-disable-next-line react/no-danger -- app-generated QR SVG built by qrcode-generator from a trusted server URL + server-issued code, never user input.
       dangerouslySetInnerHTML={{ __html: xml }}
     />
   );

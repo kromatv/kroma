@@ -59,8 +59,10 @@ const navPillItemVariants = svFor<{
   defaults: { size: 'tv', lit: false, active: false },
 });
 
-interface NavPillItemProps
-  extends Omit<FocusableProps, 'children' | 'onPress' | 'label' | 'style'> {
+interface NavPillItemProps extends Omit<
+  FocusableProps,
+  'children' | 'onPress' | 'label' | 'style'
+> {
   icon: NavPillIcon;
   /** The item's accessible name, and the word under its glyph wherever the
    *  Root's label policy shows one. */

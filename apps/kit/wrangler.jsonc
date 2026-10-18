@@ -20,10 +20,10 @@
   // against `/story/` and 404.
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
   },
   // Served at https://ui.kroma.tv/. Requires the kroma.tv zone on this
   // Cloudflare account; wrangler provisions the custom domain + DNS record on
   // deploy.
-  "routes": [{ "pattern": "ui.kroma.tv", "custom_domain": true }]
+  "routes": [{ "pattern": "ui.kroma.tv", "custom_domain": true }],
 }

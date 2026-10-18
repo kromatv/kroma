@@ -21,7 +21,7 @@ type SavedLayouts = Record<string, number[]>;
 
 function browserStorage(): ResizableStorage | null {
   try {
-    // biome-ignore lint/style/noRestrictedGlobals: audited - this IS the capability probe, and it returns null on every native target, where a host passes its own device store instead.
+    // oxlint-disable-next-line no-restricted-globals -- audited - this IS the capability probe, and it returns null on every native target, where a host passes its own device store instead.
     return typeof localStorage === 'undefined' ? null : localStorage;
   } catch {
     // Reading it can throw outright (privacy mode, a sandboxed iframe).

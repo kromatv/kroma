@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc"],
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
   "categories": {
     "correctness": "off"
   },
@@ -24,10 +24,20 @@
     "kroma/owned-task-comments": "error",
     "kroma/no-redundant-jsdoc-tags": "error",
     "kroma/no-unknown-record-assertions": "error",
-    "kroma/no-em-dashes": "error"
+    "kroma/no-em-dashes": "error",
+    "jsx-a11y/aria-role": "error",
+    "jsx-a11y/media-has-caption": "error",
+    "jsx-a11y/no-static-element-interactions": "error",
+    "no-useless-constructor": "error",
+    "react/no-array-index-key": "error",
+    "react/no-danger": "error",
+    "typescript/no-empty-interface": "error",
+    "typescript/no-explicit-any": "error",
+    "unicorn/no-document-cookie": "error"
   },
   "ignorePatterns": [
     ".claude/worktrees",
+    ".claude/skills",
     "**/dist",
     "**/dist-*",
     "**/build",
@@ -87,6 +97,77 @@
       ],
       "rules": {
         "kroma/no-raw-design-values": "error"
+      }
+    },
+    {
+      "files": [
+        "packages/ui/src/**/*.ts",
+        "packages/ui/src/**/*.tsx",
+        "packages/tv/src/**/*.ts",
+        "packages/tv/src/**/*.tsx"
+      ],
+      "excludeFiles": [
+        "packages/**/*.web.ts",
+        "packages/**/*.web.tsx",
+        "packages/**/*.test.ts",
+        "packages/**/*.test.tsx",
+        "packages/ui/src/components/organisms/kroma-intro/**",
+        "packages/tv/src/shared/preview/**",
+        "packages/tv/src/features/playback/player/avplayEngine.ts",
+        "packages/tv/src/features/playback/player/htmlEngine.ts",
+        "packages/tv/src/features/playback/player/useNowPlaying.ts",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/preview/**",
+        "packages/ui/src/lib/dom.ts",
+        "packages/ui/src/services/themeAudio.ts",
+        "packages/tv/src/shared/preview/cards.test.ts",
+        "packages/tv/src/shared/preview/deeplink.test.ts"
+      ],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "Audio",
+            "message": "Browser-only. React Native throws ReferenceError, which the runtime turns into SIGABRT. Add a `.web.ts` half and give the native side its own."
+          },
+          {
+            "name": "AudioContext",
+            "message": "Browser-only. Add a `.web.ts` half."
+          },
+          {
+            "name": "IntersectionObserver",
+            "message": "Browser-only. Grow from a measured scroll position instead (see @kromatv/ui useGrowingCount)."
+          },
+          {
+            "name": "MutationObserver",
+            "message": "Browser-only. Add a `.web.ts` half."
+          },
+          {
+            "name": "document",
+            "message": "Browser-only. React Native has no DOM: add a `.web.ts` half, or guard with `typeof document !== 'undefined'`."
+          },
+          {
+            "name": "getComputedStyle",
+            "message": "Browser-only. Measure with onLayout instead."
+          },
+          {
+            "name": "localStorage",
+            "message": "Browser-only. React Native has none: use the client's device store (see setSessionStorage)."
+          },
+          {
+            "name": "matchMedia",
+            "message": "Browser-only. Use Platform / useWindowDimensions."
+          },
+          {
+            "name": "sessionStorage",
+            "message": "Browser-only. React Native has none."
+          },
+          {
+            "name": "window",
+            "message": "The worst one: React Native DEFINES `window` (it is `global`), so `typeof window !== 'undefined'` passes and `window.addEventListener` is then undefined rather than absent - \"undefined is not a function\", at render, on a TV. Use `webWindow()` from @kromatv/ui/kit, or add a `.web.ts` half."
+          }
+        ]
       }
     }
   ]

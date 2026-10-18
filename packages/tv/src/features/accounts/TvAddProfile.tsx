@@ -50,7 +50,7 @@ export function TvAddProfile() {
   useFocusNav({ onBack: nav.back, resetKey: discovered.length + servers.length });
 
   // Kick off (or refresh) LAN discovery when the wizard opens.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: run once on open.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- run once on open.
   useEffect(() => discover(), []);
 
   const entries = useMemo<Entry[]>(() => {
@@ -103,7 +103,7 @@ export function TvAddProfile() {
               const probe = health[e.url];
               return (
                 <ServerRow
-                  // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the identity here - it is the slot in the list, and the navigator registers by mount order.
+                  // oxlint-disable-next-line react/no-array-index-key -- the index IS the identity here - it is the slot in the list, and the navigator registers by mount order.
                   key={index}
                   address={e.address}
                   fallbackName={e.fallbackName}

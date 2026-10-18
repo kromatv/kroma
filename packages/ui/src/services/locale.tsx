@@ -66,7 +66,7 @@ export function LocaleProvider({
   // below). When the user is signed in but has no account-level language set,
   // sync the detected locale to the server so server-rendered content
   // (notifications, push) matches the UI.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only; account changes are handled separately.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- mount-only; account changes are handled separately.
   useEffect(() => {
     if (accountLocale) return;
     const detected = deviceLocale(storage);
@@ -99,7 +99,7 @@ export function LocaleProvider({
   }, [client]);
 
   useEffect(() => {
-    // biome-ignore lint/style/noRestrictedGlobals: audited - guarded; there is no <html lang> to sync on a native target.
+    // oxlint-disable-next-line no-restricted-globals -- audited - guarded; there is no <html lang> to sync on a native target.
     if (syncHtmlLang && typeof document !== 'undefined') document.documentElement.lang = locale;
   }, [locale, syncHtmlLang]);
 

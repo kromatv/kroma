@@ -60,7 +60,7 @@ export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode 
     queryFn: () => (host ? host.api.listModules() : Promise.resolve([])),
     enabled: host != null,
   });
-  // biome-ignore lint/correctness/useExhaustiveDependencies: revision re-reads the registry ids after an install/uninstall
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- revision re-reads the registry ids after an install/uninstall
   const disabledIds = useMemo(
     () => hiddenModuleIds(manifest, moduleRegistry.ids()),
     [manifest, revision, moduleRegistry],
@@ -68,7 +68,7 @@ export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode 
 
   // The arrays hold stable lazy component refs, so panels don't retry into a
   // Suspense loop under the compiler.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run key; revision re-snapshots contributions after an install/uninstall
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- intentional re-run key; revision re-snapshots contributions after an install/uninstall
   const contrib = useMemo<{
     nav: ModuleNav[];
     routes: ModuleRoute[];

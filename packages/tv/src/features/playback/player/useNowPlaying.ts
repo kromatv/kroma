@@ -136,7 +136,7 @@ export function useNowPlaying({
   }, [active, bridge]);
 
   // On item change ONLY: resolve + rasterize the poster, then push the full info.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: key on item.id (not identity); title/subtitle/duration are read via ref in push.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- key on item.id (not identity); title/subtitle/duration are read via ref in push.
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
@@ -149,7 +149,7 @@ export function useNowPlaying({
   }, [active, client, item.id, push]);
 
   // On play/pause: update the rate + elapsed time (keep the current poster).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: fire on play/pause; the value is read via ref in push.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- fire on play/pause; the value is read via ref in push.
   useEffect(() => {
     if (active) push([]);
   }, [active, playing, push]);

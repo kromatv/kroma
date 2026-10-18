@@ -53,7 +53,7 @@ Everything must build and typecheck cleanly:
 
 ```bash
 bun run --cwd packages/lint-rules test    # custom Oxc rules and agent guidance
-bun run check             # Oxc house rules + Biome checks
+bun run check             # oxlint house rules + oxfmt
 bun run typecheck          # all TS packages
 bun run build              # all frontends
 cd server && cargo build   # server (use `cargo clippy` if you have it)

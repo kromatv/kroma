@@ -173,7 +173,7 @@ function SearchPanel({
     input.current?.focus();
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: q is an intentional re-run key, not something the effect reads
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- q is an intentional re-run key, not something the effect reads
   useEffect(() => setActive(0), [q]);
 
   useEffect(() => {

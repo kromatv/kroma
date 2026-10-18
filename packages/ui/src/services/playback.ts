@@ -131,7 +131,7 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   });
 
   // Heartbeat loop + prompt ping on the element's play/pause + stop on unmount.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: send reads through the effect event; re-run only on client/enabled.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- send reads through the effect event; re-run only on client/enabled.
   useEffect(() => {
     if (!params.enabled) return;
     const ping = () => send();
@@ -153,7 +153,7 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   // the session there would close a viewing nobody left. Held behind the last
   // ping, because a stop that overtakes it ends nothing and leaves the ping
   // behind it registering a session no one will ever close.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: unmount only; the client is read through a ref.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- unmount only; the client is read through a ref.
   useEffect(
     () => () => {
       if (terminated.current || !opened.current) return;
@@ -174,7 +174,7 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   }, [params.pingSignal]);
 
   // Listen for an admin terminating this session (matched by session id).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the socket lives per enabled/baseUrl; the token closure reads its live value at handshake time.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- the socket lives per enabled/baseUrl; the token closure reads its live value at handshake time.
   useEffect(() => {
     if (!params.enabled) return;
     const ev = new KromaEvents(params.eventsBaseUrl, {

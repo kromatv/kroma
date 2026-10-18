@@ -132,7 +132,7 @@ export function mountBeams(canvas: HTMLCanvasElement, opts: BeamOptions = {}): (
   // hook: the rule matches on the `use*` name alone and so reads it as a hook
   // sitting after the early return in the catch above. There is no React in this
   // file at all. The directive has to be the LAST comment line before the call.
-  // biome-ignore lint/correctness/useHookAtTopLevel: WebGL's useProgram, not a hook.
+  // oxlint-disable-next-line react-hooks/rules-of-hooks -- WebGL's useProgram, not a hook.
   gl.useProgram(prog);
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);

@@ -43,7 +43,7 @@ export function BuiltinIndexerForm({
   const [cats, setCats] = useState((indexer?.categories ?? [2000, 5000]).join(', '));
   const [priority, setPriority] = useState(String(indexer?.priority ?? 0));
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: load once per definition id
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- load once per definition id
   useEffect(() => {
     indexerApi
       .definition(definitionId)

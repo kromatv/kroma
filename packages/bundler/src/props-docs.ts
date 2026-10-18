@@ -16,7 +16,7 @@ export { readPropDocs };
 // inherited prop's type (ViewProps and friends), and this is the cheap signal
 // for it.
 async function lockfileOf(root: string): Promise<string> {
-  for (let dir = root; ; ) {
+  for (let dir = root; ;) {
     const candidate = join(dir, 'bun.lock');
     const s = await stat(candidate).catch(() => null);
     if (s) return candidate;

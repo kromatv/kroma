@@ -96,7 +96,7 @@ clients/web/src/  features/{catalog,playback,admin}/  routes/ = thin re-exports
 
 **Dependency rule:** `features/* → shared/* → @kromatv/ui → @kromatv/core`.
 
-- A feature **must not import a sibling feature**. Shared code moves to `shared/` or up into `@kromatv/ui`. (Biome-guarded.)
+- A feature **must not import a sibling feature**. Shared code moves to `shared/` or up into `@kromatv/ui`.
 - Wire types come only from `@kromatv/core` (the generated barrel), never hand-redefined.
 
 ## File-size policy

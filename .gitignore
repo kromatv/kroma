@@ -139,7 +139,7 @@ __pycache__/
 
 # Claude Code's per-machine half (the tool writes it; `settings.json` beside it
 # is the shareable half and stays tracked if we ever add one). Listed here and
-# not only in a personal ~/.config/git/ignore because Biome reads THIS file
+# not only in a personal ~/.config/git/ignore because oxlint reads THIS file
 # (vcs.useIgnoreFile) and knows nothing about global excludes - without the
 # line, `bun run check` fails on a file nobody wrote and nobody can commit.
 .claude/settings.local.json

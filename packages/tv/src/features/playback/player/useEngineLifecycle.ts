@@ -150,7 +150,7 @@ export function useEngineLifecycle(
   const { startSec, resumedAt, setStartSec } = useResolvedStart(client, item);
 
   // Audio switches do NOT re-create the engine; they call setAudioRendition in place.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: env.nativeHls is a session-constant capability; the dep list is intentionally curated to rebuild only on item/engine changes.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- env.nativeHls is a session-constant capability; the dep list is intentionally curated to rebuild only on item/engine changes.
   useEffect(() => {
     setReady(false);
     setDecodedAspect(undefined);
@@ -226,13 +226,13 @@ export function useEngineLifecycle(
     deviceStore,
   ]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: audioPickNonce is an intentional dep, not read in the body; it carries the pick that landed on the rendition already playing, which AVPlay's direct source has to re-assert.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- audioPickNonce is an intentional dep, not read in the body; it carries the pick that landed on the rendition already playing, which AVPlay's direct source has to re-assert.
   useEffect(() => {
     engineRef.current?.setAudioRendition(renditionFor(item, audioIndex));
   }, [item, audioIndex, audioPickNonce]);
 
   // AVPlay is excluded: it reports its own prepare errors.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: loadBeat is an intentional dep, not read in the body; each buffering beat re-arms the grace timer (see note below).
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- loadBeat is an intentional dep, not read in the body; each buffering beat re-arms the grace timer (see note below).
   useEffect(() => {
     if (surface === 'avplay' || ready || error) return;
     // libVLC on 10-bit HEVC at a deep resume point routinely takes 20s+ to reach

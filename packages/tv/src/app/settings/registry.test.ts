@@ -36,9 +36,8 @@ const {
   subtitleLanguageSetting,
 } = await import('./registry');
 const { ARTWORK_SCALE } = await import('./store');
-const { createDevicePreferences, DevicePreferencesProvider } = await import(
-  '../device-preferences'
-);
+const { createDevicePreferences, DevicePreferencesProvider } =
+  await import('../device-preferences');
 const preferences = createDevicePreferences();
 const {
   perfHud: perfHudPrefStore,

@@ -184,7 +184,7 @@ export function useHeartbeat(
   // Ending the session is the TITLE's lifecycle, not the loop's: a client
   // swapped underneath a running player rebinds the loop above, and stopping
   // here would log a second history row for one viewing.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: item.id is the reset key that ends one title's session, not a value this closure reads.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- item.id is the reset key that ends one title's session, not a value this closure reads.
   useEffect(() => {
     return () => {
       const live = session.current;

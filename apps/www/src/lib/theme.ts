@@ -28,7 +28,7 @@ export function readMode(): ThemeMode {
 /** `system` is stored as ABSENCE of the attribute, which is what leaves
  *  `prefers-color-scheme` in charge. */
 export function writeMode(mode: ThemeMode): void {
-  // biome-ignore lint/suspicious/noDocumentCookie: the Cookie Store API is async and Safari has none, and the head bootstrap reads this synchronously
+  // oxlint-disable-next-line unicorn/no-document-cookie -- the Cookie Store API is async and Safari has none, and the head bootstrap reads this synchronously
   document.cookie = `${COOKIE}=${mode};path=/;max-age=31536000;samesite=lax`;
   const root = document.documentElement;
   if (mode === 'system') delete root.dataset.theme;
