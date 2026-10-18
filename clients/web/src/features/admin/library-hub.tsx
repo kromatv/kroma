@@ -1,7 +1,7 @@
 import type { MessageKey } from '@kromatv/i18n';
-import { ModuleSlot, useSlotFilled } from '@kromatv/module-sdk';
+import { ModuleSlot, useSlotEntries } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
-import { Box, SegmentGroup } from '@kromatv/ui/kit';
+import { Box, EmptyState, SegmentGroup } from '@kromatv/ui/kit';
 import type { LibraryState } from '#web/features/admin/monitoring-index-model';
 import { LibraryTitles } from '#web/features/admin/monitoring-list';
 import { RequestsQueue } from '#web/features/admin/requests-queue';
@@ -33,7 +33,7 @@ export function LibraryHubPage({
   const t = useT();
   const library = useCap('library.manage');
   const requests = useCap('requests.manage');
-  const upgrades = useSlotFilled('library.upgrades');
+  const upgrades = useSlotEntries('library.upgrades').length > 0;
   const tabs: LibraryTab[] = [
     ...(library ? (['titles'] as const) : []),
     ...(library && upgrades ? (['upgrades'] as const) : []),
@@ -62,7 +62,16 @@ export function LibraryHubPage({
         </SegmentGroup.Root>
       </Box>
       {shown === 'titles' ? <LibraryTitles view={view} onView={onView} /> : null}
-      {shown === 'upgrades' ? <ModuleSlot name="library.upgrades" /> : null}
+      {shown === 'upgrades' ? (
+        <ModuleSlot
+          name="library.upgrades"
+          fallback={
+            <EmptyState.Root icon="puzzle">
+              <EmptyState.Title>{t('monitoring.upgradesOff')}</EmptyState.Title>
+            </EmptyState.Root>
+          }
+        />
+      ) : null}
       {shown === 'upcoming' ? <UpcomingList /> : null}
       {shown === 'requests' ? <RequestsQueue /> : null}
     </>

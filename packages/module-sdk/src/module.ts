@@ -80,7 +80,8 @@ export interface SlotProps {
    *  and `episode` narrow the search; both null searches the whole title.
    *  `compact` asks for icon buttons that fit a table row. */
   /** The library page's « À améliorer » tab: titles that hold a copy the
-   *  server would still replace. The tab shows only when a module fills it. */
+   *  server would still replace. The tab shows only when a module registers
+   *  for it. */
   'library.upgrades': Record<never, never>;
   'monitoring.search': {
     kind: 'movie' | 'show';

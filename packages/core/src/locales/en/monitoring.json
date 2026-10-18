@@ -184,5 +184,6 @@
   "monitoring.unfollow": "Stop monitoring",
   "monitoring.unfollowConfirm": "Stop monitoring \"{title}\"?",
   "monitoring.unfollowConfirmHint": "What the server wanted of this title goes with it. The files and the requests stay.",
-  "monitoring.unfollowTitle": "Stop following {title}"
+  "monitoring.unfollowTitle": "Stop following {title}",
+  "monitoring.upgradesOff": "The module that judges quality is turned off."
 }

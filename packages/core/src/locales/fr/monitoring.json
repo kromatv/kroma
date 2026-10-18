@@ -185,5 +185,6 @@
   "monitoring.unfollow": "Ne plus suivre",
   "monitoring.unfollowConfirm": "Ne plus suivre « {title} » ?",
   "monitoring.unfollowConfirmHint": "Ce que le serveur voulait de ce titre disparaît. Les fichiers et les demandes restent.",
-  "monitoring.unfollowTitle": "Ne plus suivre {title}"
+  "monitoring.unfollowTitle": "Ne plus suivre {title}",
+  "monitoring.upgradesOff": "Le module qui juge la qualité est désactivé."
 }
