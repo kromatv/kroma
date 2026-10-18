@@ -84,7 +84,7 @@ export function MonitoringPanel({
       ) : null}
 
       {monitored ? null : (
-        <Callout.Root tone="neutral" icon="eye-off">
+        <Callout.Root tone="neutral" icon="radar-off">
           <Callout.Title>{t('acq.notFollowed')}</Callout.Title>
           <Callout.Detail>{t('acq.notFollowedHint')}</Callout.Detail>
         </Callout.Root>

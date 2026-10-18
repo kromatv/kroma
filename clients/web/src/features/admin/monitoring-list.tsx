@@ -205,7 +205,7 @@ function MonitoringList({ view, onView }: Readonly<ViewProps>) {
 
       {loading || shown.length > 0 ? null : (
         <Surface radius="xl" pad="lg" border="border">
-          <EmptyState.Root icon={rows.length === 0 ? 'eye' : 'search'}>
+          <EmptyState.Root icon={rows.length === 0 ? 'radar' : 'search'}>
             <EmptyState.Title>
               {rows.length === 0 ? t('monitoring.empty') : t('monitoring.noMatch')}
             </EmptyState.Title>

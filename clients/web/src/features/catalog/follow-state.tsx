@@ -28,7 +28,7 @@ export function FollowState({
   return (
     <Button
       variant="glass"
-      icon={followed ? 'check' : 'eye'}
+      icon={followed ? 'check' : 'radar'}
       label={followed ? t('monitoring.action') : t('monitoring.follow')}
       asChild
     >

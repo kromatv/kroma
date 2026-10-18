@@ -33,7 +33,7 @@ export function BulkBar({
         <Row gap={8} align="center" wrap>
           <Button
             size="sm"
-            icon="eye"
+            icon="radar"
             label={t('monitoring.bulkFollow')}
             onPress={() => onFollow(preset ?? undefined)}
             loading={busy}
@@ -42,7 +42,7 @@ export function BulkBar({
           <Button
             size="sm"
             variant="dangerGhost"
-            icon="eye-off"
+            icon="radar-off"
             label={t('monitoring.bulkUnfollow')}
             onPress={onUnfollow}
             disabled={busy || count === 0}

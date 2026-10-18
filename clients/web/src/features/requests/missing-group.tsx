@@ -10,7 +10,7 @@ import { RouteLink } from '#web/shared/ui/route-link';
 
 const GROUP_ACTION = {
   search: { icon: 'search', key: 'requests.searchNow', started: 'requests.searchStarted' },
-  follow: { icon: 'eye', key: 'requests.followEpisodes', started: 'monitoring.action' },
+  follow: { icon: 'radar', key: 'requests.followEpisodes', started: 'monitoring.action' },
   request: { icon: 'plus', key: 'requests.askEpisodes', started: 'requests.asked' },
 } as const;
 
@@ -91,7 +91,7 @@ export function MissingGroupCard({
             onPress={() => onRun(group.items)}
           />
           {isFollowed(group) && canMonitor ? (
-            <Button variant="glass" size="sm" icon="eye" label={t('monitoring.manage')} asChild>
+            <Button variant="glass" size="sm" icon="radar" label={t('monitoring.manage')} asChild>
               <RouteLink
                 to="/admin/monitoring/$kind/$tmdbId"
                 params={{ kind: group.kind, tmdbId: String(group.tmdbId) }}

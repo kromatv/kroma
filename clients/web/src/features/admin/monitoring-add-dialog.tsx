@@ -222,7 +222,7 @@ export function MonitorTitlesDialog({
         <Dialog.Actions>
           <Button variant="ghost" label={t('common.close')} onPress={close} />
           <Button
-            icon="eye"
+            icon="radar"
             label={t('monitoring.addConfirm', { count: picked.size })}
             onPress={monitor}
             loading={busy}

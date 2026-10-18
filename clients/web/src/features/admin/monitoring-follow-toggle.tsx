@@ -3,7 +3,7 @@ import { IconButton, Tooltip } from '@kromatv/ui/kit';
 
 export type FollowState = 'on' | 'partly' | 'off';
 
-const GLYPH = { on: 'eye', partly: 'eye-dotted', off: 'eye-off' } as const;
+const GLYPH = { on: 'radar', partly: 'radar-2', off: 'radar-off' } as const;
 
 /** The one control that switches following. Its accessible name is what
  * pressing it DOES, so a reader hears the action and not the state. */

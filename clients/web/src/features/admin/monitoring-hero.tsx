@@ -162,7 +162,7 @@ function HeroActions({
       <Box w={stretch ? '100%' : undefined}>
         <Button
           size="sm"
-          icon={followed ? 'eye' : 'eye-off'}
+          icon={followed ? 'radar' : 'radar-off'}
           variant={followed ? 'glass' : 'primary'}
           active={followed}
           pressed={followed}

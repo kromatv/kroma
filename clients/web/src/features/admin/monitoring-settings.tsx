@@ -31,13 +31,13 @@ export function MonitoringSettings({
   const t = useT();
   if (!monitored) {
     return (
-      <Callout.Root tone="accent" icon="eye-off">
+      <Callout.Root tone="accent" icon="radar-off">
         <Callout.Title>{t('monitoring.notMonitored')}</Callout.Title>
         <Callout.Detail>{t('monitoring.notMonitoredHint')}</Callout.Detail>
         <Callout.Actions>
           <Button
             size="sm"
-            icon="eye"
+            icon="radar"
             label={t('monitoring.follow')}
             onPress={() => onMonitor({})}
             loading={busy}
