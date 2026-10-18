@@ -300,6 +300,7 @@
   "admin.modulesLogsHint": "Recent output from this module's process.",
   "admin.modulesLogsOpenAll": "Open in Logs",
   "admin.modulesMinServer": "Requires server",
+  "admin.modulesNeedsServer": "Needs KROMA {range}",
   "admin.modulesMissingSuffix": "missing",
   "admin.modulesNeededBy": "Needed by",
   "admin.modulesNeeds": "Needs",

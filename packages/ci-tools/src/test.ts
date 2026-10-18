@@ -11,6 +11,7 @@ const LCOV = join(root, 'coverage/lcov.info');
 const vitest = join(root, 'node_modules/.bin/vitest');
 
 const COVERAGE = ['--coverage', '--coverage.reporter=lcov', '--coverage.reporter=text-summary'];
+const SHARD_TIMEOUT = ['--testTimeout=15000', '--hookTimeout=30000'];
 
 // The audit project compiles with the React Compiler, so it instruments the
 // same sources a second time and its branch map carries the compiler's
@@ -27,7 +28,7 @@ async function codegen(): Promise<void> {
 async function shard(spec: string): Promise<void> {
   const { index, total } = parseShard(spec);
   await codegen();
-  await $`${vitest} run --reporter=blob --shard=${index}/${total} ${MEASURED} ${COVERAGE}`.cwd(
+  await $`${vitest} run --reporter=default --reporter=blob --shard=${index}/${total} ${MEASURED} ${COVERAGE} ${SHARD_TIMEOUT}`.cwd(
     root,
   );
 }
@@ -43,8 +44,11 @@ async function merge(total: number | undefined): Promise<void> {
     if (missing.length > 0) throw new Error(`missing shard report(s): ${missing.join(', ')}`);
   }
   await codegen();
-  const out = await $`${vitest} run --merge-reports ${COVERAGE}`.cwd(root).text();
+  const run = await $`${vitest} run --merge-reports ${COVERAGE}`.cwd(root).quiet().nothrow();
+  const out = run.stdout.toString();
   process.stdout.write(out);
+  process.stderr.write(run.stderr);
+  if (run.exitCode !== 0) throw new Error(`vitest --merge-reports exited ${run.exitCode}`);
   if (!existsSync(LCOV)) throw new Error(`merge wrote no ${LCOV}`);
 
   const files = readFileSync(LCOV, 'utf8')

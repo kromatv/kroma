@@ -134,7 +134,7 @@ function StoreCard({
             </Row>
             <Row wrap gap={6} mt={2}>
               <Text variant="meta" color="textDim">
-                v{m.version}
+                v{m.installedVersion ?? m.version}
               </Text>
               {m.size ? (
                 <Text variant="meta" color="textDim">
@@ -149,7 +149,7 @@ function StoreCard({
                   · {t('admin.modulesLibraryChip')}
                 </Text>
               )}
-              {m.installedVersion && m.updateAvailable && (
+              {m.compatible && m.installedVersion && m.updateAvailable && (
                 <Text variant="meta" color="accentText">
                   · {t('admin.modulesUpdateChip', { version: m.version })}
                 </Text>
@@ -162,7 +162,9 @@ function StoreCard({
             )}
             {!m.compatible && m.reason && (
               <Text variant="meta" color="danger" mt={4}>
-                {m.reason}
+                {m.engines.server && m.reason.startsWith('requires server')
+                  ? t('admin.modulesNeedsServer', { range: m.engines.server })
+                  : m.reason}
               </Text>
             )}
           </Box>

@@ -300,6 +300,7 @@
   "admin.modulesLogsHint": "Sortie récente du processus de ce module.",
   "admin.modulesLogsOpenAll": "Ouvrir dans Journaux",
   "admin.modulesMinServer": "Serveur requis",
+  "admin.modulesNeedsServer": "Demande KROMA {range}",
   "admin.modulesMissingSuffix": "manquant",
   "admin.modulesNeededBy": "Nécessaire à",
   "admin.modulesNeeds": "Nécessite",
