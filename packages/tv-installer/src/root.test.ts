@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const bases: string[] = [];
 
@@ -24,6 +24,8 @@ async function rootStartedIn(cwd: string): Promise<string> {
   vi.resetModules();
   return (await import('./root')).root;
 }
+
+beforeAll(() => import('./root'), 30_000);
 
 afterEach(() => vi.restoreAllMocks());
 

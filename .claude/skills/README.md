@@ -39,6 +39,7 @@ For this repository that means [`CLAUDE.md`](../../CLAUDE.md),
 | `typescript-tests` | The name is a sentence, the body is setup, mock, test and verify blocks separated by blank lines, no comments, and the runner's config decides where the file goes. |
 | `rust-tests` | Cargo tests: the same block shape, sentence names, shared setup in a named test-support module, unit tests beside the code. |
 | `sonar-loop` | Drives a PR to the project's quality targets, then watches the checks until every one passes. |
+| `security-audit` | Cloudflare's source-first audit: recon, coverage-led hunting, a verifier per candidate, `findings.json` checked by its own validators. Vendored from [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill). |
 
 ## Agents
 

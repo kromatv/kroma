@@ -83,12 +83,14 @@ describe('withTheme', () => {
 });
 
 describe('withKitStyles', () => {
-  it('inlines the compiled stylesheet before the head closes', async () => {
-    const served = withKitStyles(() => page('<html><head><title>x</title></head><body>y</body>'));
+  it('inlines the compiled stylesheet ahead of the token sheet', async () => {
+    const served = withKitStyles(() =>
+      page('<html><head><link rel="stylesheet" href="/kroma.css"/></head><body>y</body>'),
+    );
     const html = await (await served(get())).text();
 
     expect(html).toContain('<style id="react-native-stylesheet">');
-    expect(html.indexOf('<style')).toBeLessThan(html.indexOf('</head>'));
+    expect(html.indexOf('<style')).toBeLessThan(html.indexOf('<link'));
     expect(html).toContain('<body>y</body>');
   });
 
