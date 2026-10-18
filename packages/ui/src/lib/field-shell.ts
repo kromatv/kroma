@@ -1,3 +1,4 @@
+import { useKitSettings } from './kit-settings';
 // THE control shell: the one well every input wears.
 //
 // A form puts a text entry, a select trigger, a segmented control and a search
@@ -11,7 +12,7 @@
 // Three sizes, because three form factors read at three distances: `sm` is the
 // density a console page wants, `md` a phone held in the hand, `tv` a screen
 // read across a room. A shell that knows which it is states it once with
-// `setEntryDefaults` rather than at every call site.
+// `KitProvider` rather than at every call site.
 
 import type { TextStyle } from 'react-native';
 import {
@@ -204,31 +205,18 @@ export function fieldShell(
  *  under, which on a native light theme is near-white on cream. */
 export const PLACEHOLDER: ColorValue = 'text/30';
 
-// What an app's controls default to. Per-site props still win; this is only so
-// a shell that KNOWS its form factor (the web console is a mouse-and-keyboard
-// page at arm's length) says so once at startup instead of at every call site.
-let entryPhysicalKeyboard = false;
-let entrySize: ControlSize = 'md';
-
-/** Shell-level defaults for the kit's inputs. Call once at startup. */
-export function setEntryDefaults(
-  defaults: Readonly<{ physicalKeyboard?: boolean; size?: ControlSize }>,
-): void {
-  if (defaults.physicalKeyboard !== undefined) entryPhysicalKeyboard = defaults.physicalKeyboard;
-  if (defaults.size !== undefined) entrySize = defaults.size;
+/** Entry defaults owned by the nearest KitProvider. */
+export function useEntryDefaults() {
+  return useKitSettings().entry;
 }
 
-export function entryDefaultPhysicalKeyboard(): boolean {
-  return entryPhysicalKeyboard;
+/** Pure lookup; rendered controls use useControlMetrics for root defaults. */
+export function controlMetrics(size: ControlSize = 'md'): ControlMetrics {
+  return CONTROL[size];
 }
-
-export function entryDefaultSize(): ControlSize {
-  return entrySize;
-}
-
-/** The metrics for a size, defaulting to the shell's. */
-export function controlMetrics(size?: ControlSize): ControlMetrics {
-  return CONTROL[size ?? entrySize];
+export function useControlMetrics(size?: ControlSize): ControlMetrics {
+  const defaults = useEntryDefaults();
+  return CONTROL[size ?? defaults.size];
 }
 
 /** The smallest ink a real text entry may carry. Under it, iOS Safari zooms the

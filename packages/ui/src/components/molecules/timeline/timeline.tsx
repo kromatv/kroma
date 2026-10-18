@@ -13,7 +13,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type ColorValue, sharedStyle, styles, sv, type TypeRole } from '#ui/core';
-import { type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
 
 /** What an entry is: something that happened (`event`), the state the thing is
@@ -58,7 +58,7 @@ const [TimelineContext, useTimeline] = partContext<Context>('Timeline.Root');
 
 interface TimelineRootProps {
   /** How loud the entries read, defaulting to the app's entry size
-   *  (`setEntryDefaults`). */
+   *  (`KitProvider`). */
   size?: ControlSize;
   /** The entries, newest first by convention. Only a DIRECT element is counted,
    *  which is what lets the last one stop the rail. */
@@ -68,7 +68,8 @@ interface TimelineRootProps {
 const bodyOf = (gap: number) =>
   sharedStyle(`timeline:body:${gap}`, { flex: true, minWidth: 0, ml: gap });
 function Root({ size, children }: Readonly<TimelineRootProps>) {
-  const shape = SHAPE[size ?? entryDefaultSize()];
+  const entryDefaults = useEntryDefaults();
+  const shape = SHAPE[size ?? entryDefaults.size];
   const items = useMemo(
     () => Children.toArray(children).filter((child) => isValidElement(child)),
     [children],

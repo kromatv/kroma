@@ -10,7 +10,7 @@
 import { createDeepLinks, createSearchRequests, type DeviceNameSource, TvApp } from '@kromatv/tv';
 import { expoImageBackend } from '@kromatv/ui/expo-image';
 import { KIT_FONTS } from '@kromatv/ui/fonts';
-import { configureKit, TvStage } from '@kromatv/ui/kit';
+import { configureKit, KitProvider, TvStage } from '@kromatv/ui/kit';
 import { BlurView } from 'expo-blur';
 import * as Device from 'expo-device';
 import { useFonts } from 'expo-font';
@@ -57,7 +57,7 @@ const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
 // (the canvas is drawn through a scale the blur cannot see) and outside it,
 // nothing at all, at 21fps. What it draws instead is the tint, which is what
 // the design falls back to anyway.
-configureKit({ image: expoImageBackend, frost: BlurView });
+const NATIVE_KIT = configureKit({ image: expoImageBackend, frost: BlurView });
 
 export function App() {
   const [frameLimits] = useState(decoderFrameLimits);
@@ -89,25 +89,27 @@ export function App() {
   // behind it, so asking to hide a status bar throws ("undefined is not a
   // function" out of NativeStatusBarManagerIOS) rather than being a no-op.
   return (
-    <TvStage>
-      {/* One binary per platform, so the label is the OS: this app is the
+    <KitProvider config={NATIVE_KIT}>
+      <TvStage>
+        {/* One binary per platform, so the label is the OS: this app is the
           Android TV client too, and reporting "AppleTV" there was wrong in the
           admin dashboard and the About screen alike. */}
-      <TvApp
-        decoderFrameLimits={frameLimits ?? undefined}
-        deepLinks={deepLinks}
-        searchRequests={searchRequests}
-        voiceSearch={nativeVoiceSearch}
-        searchShell={nativeSearchShell}
-        launcher={nativeLauncher}
-        serverBrowse={browseForServers}
-        platform={Platform.OS === 'ios' ? 'AppleTV' : 'AndroidTV'}
-        // This television announces itself on its own link, so a phone in the
-        // room can sign it in without the server having to place the two by
-        // their addresses. Null on a shell without the native module.
-        lan={lanBeacon ?? undefined}
-        deviceName={DEVICE_NAME}
-      />
-    </TvStage>
+        <TvApp
+          decoderFrameLimits={frameLimits ?? undefined}
+          deepLinks={deepLinks}
+          searchRequests={searchRequests}
+          voiceSearch={nativeVoiceSearch}
+          searchShell={nativeSearchShell}
+          launcher={nativeLauncher}
+          serverBrowse={browseForServers}
+          platform={Platform.OS === 'ios' ? 'AppleTV' : 'AndroidTV'}
+          // This television announces itself on its own link, so a phone in the
+          // room can sign it in without the server having to place the two by
+          // their addresses. Null on a shell without the native module.
+          lan={lanBeacon ?? undefined}
+          deviceName={DEVICE_NAME}
+        />
+      </TvStage>
+    </KitProvider>
   );
 }

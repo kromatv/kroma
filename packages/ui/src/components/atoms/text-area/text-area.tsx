@@ -16,11 +16,11 @@ import { fieldSizing } from '#ui/lib/css';
 import {
   CONTROL,
   type ControlSize,
-  controlMetrics,
-  entryDefaultPhysicalKeyboard,
   fieldShell,
   NO_OUTLINE,
   PLACEHOLDER,
+  useControlMetrics,
+  useEntryDefaults,
   useEntryFontSize,
 } from '#ui/lib/field-shell';
 import { WEB } from '#ui/lib/platform';
@@ -71,7 +71,7 @@ function TextArea({
   rows = 3,
   maxRows = 10,
   autoSize = true,
-  physicalKeyboard = entryDefaultPhysicalKeyboard(),
+  physicalKeyboard: askedPhysicalKeyboard,
   autoFocus = false,
   invalid = false,
   label,
@@ -80,7 +80,9 @@ function TextArea({
   flat = false,
   ...box
 }: Readonly<TextAreaProps>) {
-  const metrics = controlMetrics(size);
+  const entryDefaults = useEntryDefaults();
+  const physicalKeyboard = askedPhysicalKeyboard ?? entryDefaults.physicalKeyboard;
+  const metrics = useControlMetrics(size);
   const fontSize = useEntryFontSize(metrics.fontSize);
   const theme = useTheme();
   const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);

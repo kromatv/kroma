@@ -6,10 +6,10 @@ import {
   Button,
   CONTROL,
   DataField,
-  entryDefaultSize,
   IconButton,
   styles,
   Text,
+  useEntryDefaults,
 } from '@kromatv/ui/kit';
 import { Link } from '@tanstack/react-router';
 import { useFocusRing } from '#web/shared/lib/use-focus-ring';
@@ -76,11 +76,12 @@ export function ListButton({
   inList,
   onToggle,
 }: Readonly<{ inList?: boolean; onToggle?: () => void }>) {
+  const entryDefaults = useEntryDefaults();
   const t = useT();
   if (!onToggle) return null;
   return (
     <IconButton
-      diameter={CONTROL[entryDefaultSize()].height}
+      diameter={CONTROL[entryDefaults.size].height}
       glyph={20}
       radius="md"
       active={inList ?? false}
@@ -93,11 +94,12 @@ export function ListButton({
 }
 
 export function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) {
+  const entryDefaults = useEntryDefaults();
   const t = useT();
   if (!onReport) return null;
   return (
     <IconButton
-      diameter={CONTROL[entryDefaultSize()].height}
+      diameter={CONTROL[entryDefaults.size].height}
       glyph={19}
       radius="md"
       icon="flag"

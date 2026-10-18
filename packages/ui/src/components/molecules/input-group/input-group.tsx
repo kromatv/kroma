@@ -14,7 +14,7 @@ import {
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { sharedStyle } from '#ui/core';
-import { type ControlSize, controlMetrics, edgeColor, fieldRing } from '#ui/lib/field-shell';
+import { type ControlSize, edgeColor, fieldRing, useControlMetrics } from '#ui/lib/field-shell';
 import { Context, type InputGroupContext } from './input-group-context';
 import {
   Addon,
@@ -78,7 +78,7 @@ function sort(children: ReactNode): Buckets {
 }
 
 function Root({ label, size, invalid = false, style, children }: Readonly<InputGroupRootProps>) {
-  const metrics = controlMetrics(size);
+  const metrics = useControlMetrics(size);
   const [focused, setFocused] = useState(false);
   const control = useRef<() => void>(() => {});
 

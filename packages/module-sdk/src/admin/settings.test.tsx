@@ -6,7 +6,7 @@
 
 import type { SettingGroup } from '@kromatv/client/admin';
 import { I18nProvider } from '@kromatv/ui';
-import { setEntryDefaults } from '@kromatv/ui/kit';
+import { KitProvider } from '@kromatv/ui/kit';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -40,11 +40,13 @@ function mount(
   };
   const client = { admin };
   const wrap = ({ children }: { children: ReactNode }) => (
-    <I18nProvider locale="en">
-      <AdminHostProvider value={{ client, user: { permissions: perms } } as never}>
-        {children}
-      </AdminHostProvider>
-    </I18nProvider>
+    <KitProvider config={{ entry: { physicalKeyboard: true } }}>
+      <I18nProvider locale="en">
+        <AdminHostProvider value={{ client, user: { permissions: perms } } as never}>
+          {children}
+        </AdminHostProvider>
+      </I18nProvider>
+    </KitProvider>
   );
   const view = render(
     <SettingsView
@@ -58,7 +60,6 @@ function mount(
 }
 
 // jsdom types on a real keyboard, so the kit entries render real inputs.
-setEntryDefaults({ physicalKeyboard: true });
 
 // react-native-web's press responder fires on the keyUp that follows a keyDown,
 // so a keyboard press is both halves.
@@ -143,16 +144,20 @@ describe('rendering', () => {
       },
     };
     const { container } = render(
-      <I18nProvider locale="en">
-        <AdminHostProvider value={{ client, user: { permissions: ['settings.manage'] } } as never}>
-          <SettingsView
-            view="vpn"
-            titleKey={'admin.settings' as never}
-            subtitleKey={'admin.settings' as never}
-            embedded
-          />
-        </AdminHostProvider>
-      </I18nProvider>,
+      <KitProvider config={{ entry: { physicalKeyboard: true } }}>
+        <I18nProvider locale="en">
+          <AdminHostProvider
+            value={{ client, user: { permissions: ['settings.manage'] } } as never}
+          >
+            <SettingsView
+              view="vpn"
+              titleKey={'admin.settings' as never}
+              subtitleKey={'admin.settings' as never}
+              embedded
+            />
+          </AdminHostProvider>
+        </I18nProvider>
+      </KitProvider>,
     );
     await waitFor(() => expect(container.textContent).toContain('Row 0'));
     expect(container.textContent).not.toContain('Saved');

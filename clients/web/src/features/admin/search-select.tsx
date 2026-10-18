@@ -13,7 +13,6 @@ import {
   Box,
   classes,
   Divider,
-  entryDefaultSize,
   Focusable,
   Icon,
   PANEL_BACKDROP,
@@ -24,6 +23,7 @@ import {
   styles,
   Text,
   useAnchoredPlacement,
+  useEntryDefaults,
   useStableCallback,
 } from '@kromatv/ui/kit';
 import {
@@ -82,6 +82,7 @@ export function SearchSelect({
   searchPlaceholder?: string;
   style?: StyleProp<ViewStyle>;
 }>) {
+  const entryDefaults = useEntryDefaults();
   const [open, setOpen] = useState(false);
   const trigger = useRef<View>(null);
   const label = value || placeholder || '';
@@ -101,7 +102,7 @@ export function SearchSelect({
         label={label}
         onPress={() => setOpen(true)}
         sv={selectTriggerVariants}
-        vars={{ size: entryDefaultSize(), filled: value !== '' }}
+        vars={{ size: entryDefaults.size, filled: value !== '' }}
         style={style}
       >
         {(state) => (

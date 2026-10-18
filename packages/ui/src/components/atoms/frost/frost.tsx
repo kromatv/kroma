@@ -1,6 +1,5 @@
 import {
   Children,
-  type ComponentType,
   cloneElement,
   type ReactElement,
   type ReactNode,
@@ -9,6 +8,7 @@ import {
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { type CornerValue, onPaper, radiusValue, sharedStyle, styles } from '#ui/core';
 import { backdropBlur } from '#ui/lib/css';
+import { useKitSettings } from '#ui/lib/kit-settings';
 import { WEB } from '#ui/lib/platform';
 import { mergeSlotProps } from '#ui/lib/slot';
 
@@ -23,17 +23,7 @@ interface FrostBackdropProps {
   style?: StyleProp<ViewStyle>;
 }
 
-let PlatformFrost: ComponentType<FrostBackdropProps> | null = null;
-
-/** Hand the kit the platform's blur view (the TV shell's expo-blur), once, at
- * module scope, before the first render. Generic over the component's own
- * props, since `ComponentType` is invariant in `P` and naming the props
- * directly would reject <BlurView> over tints the kit never passes. */
-
 const cornerStyle = (corner: number) => sharedStyle(`frost:corner:${corner}`, { radius: corner });
-function registerFrost<P extends FrostBackdropProps>(component: ComponentType<P>): void {
-  PlatformFrost = component as ComponentType<FrostBackdropProps>;
-}
 
 interface FrostOptions {
   /** False renders the surface untouched, so a caller that is only sometimes
@@ -99,10 +89,15 @@ const webCoats = new Map<number, FrostCoat>();
  */
 function useFrostCoat(surface: StyleProp<ViewStyle>, options: FrostOptions = {}): FrostCoat {
   useSyncExternalStore(onFrostChange, frostEnabled, frostEnabled);
-  return coatOf(surface, options);
+  const { frost } = useKitSettings();
+  return coatOf(surface, options, frost);
 }
 
-function coatOf(surface: StyleProp<ViewStyle>, options: FrostOptions): FrostCoat {
+function coatOf(
+  surface: StyleProp<ViewStyle>,
+  options: FrostOptions,
+  PlatformFrost: ReturnType<typeof useKitSettings>['frost'],
+): FrostCoat {
   const { on = true, amount = 12, tint } = options;
   if (!on || !frostOn) return BARE;
   if (WEB) {
@@ -185,4 +180,4 @@ function Frost({ children, ...options }: Readonly<FrostProps>) {
 }
 
 export type { FrostBackdropProps, FrostCoat, FrostOptions, FrostProps };
-export { Frost, registerFrost, setFrostEnabled, useFrostCoat };
+export { Frost, setFrostEnabled, useFrostCoat };

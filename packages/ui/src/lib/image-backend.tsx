@@ -1,3 +1,4 @@
+import { useKitSettings } from './kit-settings';
 // Which decoder <Img> loads bytes with on the native targets. React Native's own
 // <Image> by default; an app registers another (expo-image, on the Expo targets)
 // at its root, so a target that does not install expo-image never sees it.
@@ -40,16 +41,9 @@ const reactNativeImage: ImageBackend = {
   ),
 };
 
-let current: ImageBackend = reactNativeImage;
-
-/** Call once at the app root: the value is read per render, so a mid-session
- * swap takes effect but restarts every in-flight load. */
-export function setImageBackend(backend: ImageBackend): void {
-  current = backend;
-}
-
-export function imageBackend(): ImageBackend {
-  return current;
+/** The decoder configured by this image's app root. */
+export function useImageBackend(): ImageBackend {
+  return useKitSettings().image ?? reactNativeImage;
 }
 
 export { reactNativeImage };

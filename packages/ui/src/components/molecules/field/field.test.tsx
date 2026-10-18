@@ -6,14 +6,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button } from '#ui/components/atoms/button';
 import { ButtonGroup } from '#ui/components/molecules/button-group';
 import { Select } from '#ui/components/molecules/select';
-import { setEntryDefaults } from '#ui/lib/field-shell';
+import { KitProvider } from '#ui/configure';
 import { declared, onScreen } from '#ui/testing';
 import { Field } from './field';
 
 // The browser half of the kit: a shell with a real keyboard says so once.
-setEntryDefaults({ physicalKeyboard: true });
 
-const render = (ui: ReactElement) => renderRaw(onScreen(ui));
+const render = (ui: ReactElement) =>
+  renderRaw(
+    onScreen(<KitProvider config={{ entry: { physicalKeyboard: true } }}>{ui}</KitProvider>),
+  );
 
 afterEach(cleanup);
 

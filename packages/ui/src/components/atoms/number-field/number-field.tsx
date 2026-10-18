@@ -12,7 +12,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field';
 import { style, styles } from '#ui/core';
-import { bySize, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { bySize, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { useTDefault } from '#ui/services/i18n';
 
@@ -142,13 +142,14 @@ function Step({
   disabled: boolean;
   onPress: () => void;
 }>) {
+  const entryDefaults = useEntryDefaults();
   return (
     <Focusable
       label={label}
       disabled={disabled}
       onPress={onPress}
       ring="focusEdge"
-      style={[s.step, s[size ?? entryDefaultSize()]]}
+      style={[s.step, s[size ?? entryDefaults.size]]}
       states={STEP_STATES}
     >
       <Icon name={icon} size={12} thickness={2.6} color={disabled ? 'text/25' : 'textMuted'} />

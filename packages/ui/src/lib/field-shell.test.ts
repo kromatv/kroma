@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 
 import { renderHook } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { KitProvider } from '#ui/configure';
 import { pinDesignWidth } from '#ui/core';
 import { breakpoint } from '#ui/core/tokens';
 import {
@@ -10,43 +12,29 @@ import {
   controlMetrics,
   controlRadius,
   edgeColor,
-  entryDefaultPhysicalKeyboard,
-  entryDefaultSize,
   fieldShell,
   NO_ZOOM_FONT_SIZE,
-  setEntryDefaults,
+  useControlMetrics,
+  useEntryDefaults,
   useEntryFontSize,
 } from './field-shell';
 
 afterEach(() => {
-  setEntryDefaults({ physicalKeyboard: false, size: 'md' });
   pinDesignWidth();
 });
 
 describe('the shell defaults', () => {
-  it('starts at the size a phone in the hand wants', () => {
-    expect(entryDefaultSize()).toBe('md');
-    expect(entryDefaultPhysicalKeyboard()).toBe(false);
+  it('starts with handset density and the on-screen keyboard', () => {
+    const { result } = renderHook(useEntryDefaults);
+    expect(result.current).toEqual({ size: 'md', physicalKeyboard: false });
   });
-
-  it('takes each default on its own, leaving the one it was not given', () => {
-    setEntryDefaults({ size: 'sm' });
-    expect(entryDefaultSize()).toBe('sm');
-    expect(entryDefaultPhysicalKeyboard()).toBe(false);
-
-    setEntryDefaults({ physicalKeyboard: true });
-    expect(entryDefaultPhysicalKeyboard()).toBe(true);
-    expect(entryDefaultSize()).toBe('sm');
-
-    setEntryDefaults({});
-    expect(entryDefaultSize()).toBe('sm');
-    expect(entryDefaultPhysicalKeyboard()).toBe(true);
-  });
-
-  it('falls back to the shell size, and lets a caller state its own', () => {
-    setEntryDefaults({ size: 'tv' });
-    expect(controlMetrics()).toBe(CONTROL.tv);
-    expect(controlMetrics('sm')).toBe(CONTROL.sm);
+  it('reads control metrics from its root and lets explicit size win', () => {
+    const { result } = renderHook(() => [useControlMetrics(), useControlMetrics('sm')], {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(KitProvider, { config: { formFactor: 'tv' }, children }),
+    });
+    expect(result.current).toEqual([CONTROL.tv, CONTROL.sm]);
+    expect(controlMetrics()).toBe(CONTROL.md);
   });
 });
 

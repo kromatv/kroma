@@ -1,3 +1,4 @@
+import { useImageBackend } from '#ui/lib/image-backend';
 // <Img>: the artwork surface, with a built-in fade-in and cross-fade on `src`
 // change; `background` shows instantly as the fallback so the surface is never
 // blank.
@@ -81,6 +82,7 @@ function Img({
   onLoad,
   onError,
 }: Readonly<ImgProps>) {
+  const backend = useImageBackend();
   const src = safeImageUrl(requested);
   const cross = useCrossFade(src, duration);
   const { loaded, errored, markLoaded, markErrored } = cross;
@@ -164,6 +166,7 @@ function Img({
     <View onLayout={onBoxLayout} style={container}>
       {placeholderLayer}
       {nativeLayers({
+        backend,
         src,
         under,
         alt,

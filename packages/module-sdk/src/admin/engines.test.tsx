@@ -7,7 +7,7 @@
 
 import { type EngineField, ModuleId, type ModuleInfo } from '@kromatv/client/modules';
 import { I18nProvider } from '@kromatv/ui';
-import { clearPressGuard, setEntryDefaults } from '@kromatv/ui/kit';
+import { clearPressGuard, KitProvider } from '@kromatv/ui/kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, renderHook, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -174,7 +174,6 @@ describe('useModuleEnabled', () => {
 });
 
 // jsdom types on a real keyboard, so the kit entries render real inputs.
-setEntryDefaults({ physicalKeyboard: true });
 
 afterEach(() => {
   cleanup();
@@ -196,9 +195,11 @@ const engine = (id: string, fields: EngineField[] = []): EngineChoice => ({
 
 function EngineHost({ children }: { children: ReactNode }) {
   return (
-    <I18nProvider locale="en">
-      <AddEngineHost>{children}</AddEngineHost>
-    </I18nProvider>
+    <KitProvider config={{ entry: { physicalKeyboard: true } }}>
+      <I18nProvider locale="en">
+        <AddEngineHost>{children}</AddEngineHost>
+      </I18nProvider>
+    </KitProvider>
   );
 }
 

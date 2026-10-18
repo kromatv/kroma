@@ -15,7 +15,7 @@ import {
   CONTROL,
   type ControlMetrics,
   type ControlSize,
-  entryDefaultSize,
+  useEntryDefaults,
 } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
 
@@ -87,7 +87,7 @@ interface CalloutRootProps {
   /** What the block is saying, in the palette's own words. Defaults to
    *  `neutral`, so a tone is always a decision. */
   tone?: CalloutTone;
-  /** The control shell's size, defaulting to the app's (`setEntryDefaults`), so
+  /** The control shell's size, defaulting to the app's (`KitProvider`), so
    *  a callout in a form matches the fields around it without saying so. */
   size?: ControlSize;
   /** The mark, as a glyph the kit can size. Media it cannot size goes through
@@ -100,7 +100,8 @@ interface CalloutRootProps {
 }
 
 function Root({ tone = 'neutral', size, icon, children }: Readonly<CalloutRootProps>) {
-  const step = size ?? entryDefaultSize();
+  const entryDefaults = useEntryDefaults();
+  const step = size ?? entryDefaults.size;
   const metrics = CONTROL[step];
   const at = useMemo(() => sort(children), [children]);
   const context = useMemo<Context>(

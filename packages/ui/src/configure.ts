@@ -1,9 +1,16 @@
-import type { ComponentType } from 'react';
-import { type FrostBackdropProps, registerFrost } from './components/atoms/frost';
+import {
+  type ComponentType,
+  createElement,
+  type ReactElement,
+  type ReactNode,
+  useMemo,
+} from 'react';
+import type { FrostBackdropProps } from './components/atoms/frost';
 import { applyMode, setTheme, type Theme, type ThemeMode } from './core';
-import { type ControlSize, setEntryDefaults } from './lib/field-shell';
-import { type ImageBackend, setImageBackend } from './lib/image-backend';
-import { type SurfacePresentation, setSurfacePresentation } from './lib/surface-presentation';
+import type { ControlSize } from './lib/field-shell';
+import type { ImageBackend } from './lib/image-backend';
+import { KitSettingsContext, useKitSettings } from './lib/kit-settings';
+import type { SurfacePresentation } from './lib/surface-presentation';
 
 /**
  * How far the reader sits and what they type with. Every consequence follows
@@ -39,40 +46,34 @@ export interface KitConfig<P extends FrostBackdropProps = FrostBackdropProps> {
   frost?: ComponentType<P>;
 }
 
-/**
- * Everything the kit holds a default for that only the app knows the answer to,
- * stated in one call at module scope, before the first render.
- *
- * ```ts
- * configureKit({
- *   formFactor: 'phone',
- *   ground: readMode(),
- *   theme: mobileTheme(),
- *   image: expoImageBackend,
- *   frost: BlurView,
- * });
- * ```
- *
- * An absent key leaves the kit's own default standing; `entry` and `surfaces`
- * override the form factor for a shell that is not quite one of the three.
- * `image` and `frost` are inversions: a shell that registers neither gets React
- * Native's `<Image>` and a flat wash instead of glass.
- *
- * Every underlying setter is still exported, for the rare change made after the
- * first render rather than before it.
- */
+/** Prepare immutable root configuration and apply the initial theme, if given.
+ * Pass the result to KitProvider; capability defaults belong to that tree. */
 export function configureKit<P extends FrostBackdropProps = FrostBackdropProps>(
   config: Readonly<KitConfig<P>>,
-): void {
-  const preset = config.formFactor && FORM_FACTOR[config.formFactor];
-  if (preset) {
-    setEntryDefaults(preset.entry);
-    setSurfacePresentation(preset.surfaces);
-  }
-  if (config.entry) setEntryDefaults(config.entry);
-  if (config.surfaces) setSurfacePresentation(config.surfaces);
+): Readonly<KitConfig<P>> {
   if (config.ground) applyMode(config.ground);
   if (config.theme) setTheme(config.theme);
-  if (config.image) setImageBackend(config.image);
-  if (config.frost) registerFrost(config.frost);
+  return Object.freeze({ ...config });
+}
+
+const EMPTY = Object.freeze({});
+/** Supplies root defaults; nested providers inherit unspecified capabilities. */
+export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
+  config = EMPTY,
+  children,
+}: {
+  config?: Readonly<KitConfig<P>>;
+  children?: ReactNode;
+}): ReactElement {
+  const parent = useKitSettings();
+  const value = useMemo(() => {
+    const preset = config.formFactor && FORM_FACTOR[config.formFactor];
+    return {
+      entry: { ...parent.entry, ...preset?.entry, ...config.entry },
+      surfaces: config.surfaces ?? preset?.surfaces ?? parent.surfaces,
+      image: config.image ?? parent.image,
+      frost: (config.frost ?? parent.frost) as ComponentType<FrostBackdropProps> | null,
+    };
+  }, [parent, config]);
+  return createElement(KitSettingsContext.Provider, { value }, children);
 }

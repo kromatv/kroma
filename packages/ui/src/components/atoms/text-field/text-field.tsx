@@ -13,12 +13,12 @@ import { color, sharedStyle, styles, useTheme } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
 import {
   type ControlSize,
-  controlMetrics,
   controlRadius,
-  entryDefaultPhysicalKeyboard,
   fieldShell,
   NO_OUTLINE,
   PLACEHOLDER,
+  useControlMetrics,
+  useEntryDefaults,
   useEntryFontSize,
 } from '#ui/lib/field-shell';
 import { useGroupMember } from '#ui/lib/group-shape';
@@ -68,7 +68,7 @@ interface TextFieldProps extends Omit<BoxProps, 'children' | 'ring'> {
    *  one-shot value (a link, a token) wants: focus it and copy it. */
   selectOnFocus?: boolean;
   label?: string;
-  /** The control shell's size. Defaults to the app's (`setEntryDefaults`), so a
+  /** The control shell's size. Defaults to the app's (`KitProvider`), so a
    *  call site states this only when it differs from the rest of the app. */
   size?: ControlSize;
   textStyle?: StyleProp<TextStyle>;
@@ -96,7 +96,7 @@ function TextField({
   placeholder,
   icon,
   trailing,
-  physicalKeyboard = entryDefaultPhysicalKeyboard(),
+  physicalKeyboard: askedPhysicalKeyboard,
   autoFocus = false,
   keyboardType,
   autoComplete,
@@ -109,12 +109,14 @@ function TextField({
   flat = false,
   ...box
 }: Readonly<TextFieldProps>) {
+  const entryDefaults = useEntryDefaults();
+  const physicalKeyboard = askedPhysicalKeyboard ?? entryDefaults.physicalKeyboard;
   const theme = useTheme();
   // A field is a member of a <ButtonGroup> like a button is: it takes the
   // group's size, flattens the corners it shares and lifts itself while it
   // wears the ring, so an entry welds to the control beside it.
   const group = useGroupMember(onFocus, onBlur);
-  const metrics = controlMetrics(size ?? group.size ?? undefined);
+  const metrics = useControlMetrics(size ?? group.size ?? undefined);
   const CONTENT = metrics.line;
   const fontSize = useEntryFontSize(metrics.fontSize);
   const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);

@@ -7,7 +7,7 @@ import { Animated, Easing, type StyleProp, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { sharedStyle, style } from '#ui/core';
 import type { Radius } from '#ui/core/tokens/layout';
-import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import {
@@ -46,7 +46,8 @@ function Root<T extends string>({
   children,
   style,
 }: Readonly<RootProps<T>>) {
-  const shell = size ?? entryDefaultSize();
+  const entryDefaults = useEntryDefaults();
+  const shell = size ?? entryDefaults.size;
   const metrics = CONTROL[shell];
   // JSX order, not measured geometry: geometry arrives a frame later and the
   // arrows have to work on the first render. Read off the direct children the

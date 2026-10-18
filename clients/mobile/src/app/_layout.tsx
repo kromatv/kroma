@@ -5,6 +5,7 @@ import { expoImageBackend } from '@kromatv/ui/expo-image';
 import {
   applyMode,
   configureKit,
+  KitProvider,
   onPaper,
   readMode,
   setTheme,
@@ -45,7 +46,7 @@ installDeviceStore();
 // a trigger for a popover, so a <Select> and a <Menu> open as sheets over it.
 // The image backend and the blur are inversions - a shell that registers
 // neither gets React Native's own <Image> and a flat wash instead of glass.
-configureKit({
+const MOBILE_KIT = configureKit({
   formFactor: 'phone',
   ground: readMode(),
   theme: mobileTheme(),
@@ -150,12 +151,14 @@ export default function RootLayout() {
   useSystemGround();
   const paper = onPaper(useTheme());
   return (
-    <GestureHandlerRootView style={s.root}>
-      <SessionProvider>
-        <StatusBar style={paper ? 'dark' : 'light'} />
-        <Shell />
-      </SessionProvider>
-    </GestureHandlerRootView>
+    <KitProvider config={MOBILE_KIT}>
+      <GestureHandlerRootView style={s.root}>
+        <SessionProvider>
+          <StatusBar style={paper ? 'dark' : 'light'} />
+          <Shell />
+        </SessionProvider>
+      </GestureHandlerRootView>
+    </KitProvider>
   );
 }
 

@@ -81,7 +81,7 @@ writeFileSync(
 import { IconHeart } from '@tabler/icons-react';
 import { createRoot } from 'react-dom/client';
 import {useState} from 'react';
-import { createIconLibrary, IconLibraryProvider, Button, Icon, Text } from '@kromatv/ui';
+import { createIconLibrary, IconLibraryProvider, KitProvider, Button, Icon, Text } from '@kromatv/ui';
 import { createI18n, I18nProvider } from '@kromatv/ui/i18n';
 
 const i18n = createI18n({ catalogs: { en: { 'player.play': 'Play' } }, defaultLocale: 'en' });
@@ -89,13 +89,13 @@ const i18n = createI18n({ catalogs: { en: { 'player.play': 'Play' } }, defaultLo
 function App() {
   const [library] = useState(() => createIconLibrary({glyphs: {IconHeart}}));
   return (
-    <IconLibraryProvider library={library}>
+    <KitProvider config={{formFactor: 'browser'}}><IconLibraryProvider library={library}>
     <I18nProvider i18n={i18n} locale="en">
       <Text variant="body">hello</Text>
       <Button variant="primary" icon="player-play-filled" label="Play" onPress={() => {}} />
       <Icon name="heart" size={24} color="danger" />
     </I18nProvider>
-    </IconLibraryProvider>
+    </IconLibraryProvider></KitProvider>
   );
 }
 

@@ -1,17 +1,17 @@
 // @vitest-environment jsdom
+
 import { renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { createElement, type ReactNode } from 'react';
+import { describe, expect, it } from 'vitest';
+import { KitProvider } from '#ui/configure';
 import { FocusScope } from '#ui/lib/focus-scope';
-import {
-  type SurfacePresentation,
-  setSurfacePresentation,
-  useSurfacePresentation,
-} from './surface-presentation';
+import { type SurfacePresentation, useSurfacePresentation } from './surface-presentation';
 
-afterEach(() => setSurfacePresentation('auto'));
-
-function unscoped(presentation?: SurfacePresentation) {
-  return renderHook(() => useSurfacePresentation(presentation)).result.current;
+function unscoped(presentation?: SurfacePresentation, surfaces: SurfacePresentation = 'auto') {
+  return renderHook(() => useSurfacePresentation(presentation), {
+    wrapper: ({ children }: { children: ReactNode }) =>
+      createElement(KitProvider, { config: { surfaces }, children }),
+  }).result.current;
 }
 
 function insideAScope(presentation?: SurfacePresentation) {
@@ -29,20 +29,14 @@ describe('where an anchored surface goes', () => {
   });
 
   it('takes the shell over the platform', () => {
-    setSurfacePresentation('dialog');
-
-    expect(unscoped()).toBe('dialog');
+    expect(unscoped(undefined, 'dialog')).toBe('dialog');
   });
 
   it('takes the surface over the shell', () => {
-    setSurfacePresentation('dialog');
-
-    expect(unscoped('panel')).toBe('panel');
+    expect(unscoped('panel', 'dialog')).toBe('panel');
   });
 
   it('hands the question back to the platform when both said `auto`', () => {
-    setSurfacePresentation('auto');
-
     expect(insideAScope('auto')).toBe('dialog');
   });
 });

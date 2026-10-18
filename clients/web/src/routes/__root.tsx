@@ -1,5 +1,5 @@
 import appCss from '@kromatv/ui/css?url';
-import { ConfirmHost, classes, styles, Toaster } from '@kromatv/ui/kit';
+import { ConfirmHost, classes, KitProvider, styles, Toaster } from '@kromatv/ui/kit';
 import bricolageLatin from '@kromatv/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
 import hankenLatin from '@kromatv/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
 import type { QueryClient } from '@tanstack/react-query';
@@ -23,6 +23,8 @@ const ReactQueryDevtools = import.meta.env.DEV
       import('@tanstack/react-query-devtools').then((m) => ({ default: m.ReactQueryDevtools })),
     )
   : () => null;
+
+const BROWSER_KIT = { formFactor: 'browser' } as const;
 
 const s = styles({
   toasts: { position: 'fixed', inset: 0, zIndex: 90, pointerEvents: 'none' },
@@ -80,29 +82,31 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
         <HeadContent />
       </head>
       <body>
-        <QueryClientProvider client={queryClient}>
-          <ConfirmHost>
-            <AuthProvider>
-              <WatchedProvider>
-                <MyListProvider>
-                  <LocaleProvider>
-                    <NavActionsProvider actions={<NotificationBell />}>
-                      <ModuleHostProvider>{children}</ModuleHostProvider>
-                    </NavActionsProvider>
-                  </LocaleProvider>
-                </MyListProvider>
-              </WatchedProvider>
-            </AuthProvider>
-            <Intro />
+        <KitProvider config={BROWSER_KIT}>
+          <QueryClientProvider client={queryClient}>
+            <ConfirmHost>
+              <AuthProvider>
+                <WatchedProvider>
+                  <MyListProvider>
+                    <LocaleProvider>
+                      <NavActionsProvider actions={<NotificationBell />}>
+                        <ModuleHostProvider>{children}</ModuleHostProvider>
+                      </NavActionsProvider>
+                    </LocaleProvider>
+                  </MyListProvider>
+                </WatchedProvider>
+              </AuthProvider>
+              <Intro />
 
-            <div className={classes(s.toasts)}>
-              <Toaster position="bottom-center" inset={{ x: 16, y: 24 }} />
-            </div>
-            <Suspense fallback={null}>
-              <ReactQueryDevtools buttonPosition="bottom-left" />
-            </Suspense>
-          </ConfirmHost>
-        </QueryClientProvider>
+              <div className={classes(s.toasts)}>
+                <Toaster position="bottom-center" inset={{ x: 16, y: 24 }} />
+              </div>
+              <Suspense fallback={null}>
+                <ReactQueryDevtools buttonPosition="bottom-left" />
+              </Suspense>
+            </ConfirmHost>
+          </QueryClientProvider>
+        </KitProvider>
         <Scripts />
       </body>
     </html>

@@ -8,7 +8,7 @@ export * from './components/molecules';
 export * from './components/organisms';
 export * from './components/templates';
 export type { FormFactor, KitConfig } from './configure';
-export { configureKit } from './configure';
+export { configureKit, KitProvider } from './configure';
 export type {
   AnySv,
   BoxStyleProps,
@@ -81,9 +81,9 @@ export type { ControlMetrics, ControlSize } from './lib/field-shell';
 export {
   CONTROL,
   controlMetrics,
-  entryDefaultSize,
   NO_OUTLINE,
-  setEntryDefaults,
+  useControlMetrics,
+  useEntryDefaults,
 } from './lib/field-shell';
 export { useFocusNav } from './lib/focus-nav';
 export type { FocusDirection, FocusOwner } from './lib/focus-platform';
@@ -122,7 +122,7 @@ export {
   useIconLibrary,
 } from './lib/icons/library';
 export type { ImageBackend, ImageBackendProps } from './lib/image-backend';
-export { imageBackend, reactNativeImage, setImageBackend } from './lib/image-backend';
+export { reactNativeImage, useImageBackend } from './lib/image-backend';
 export { clearInputHolds, holdInput, inputHeld } from './lib/input-gate';
 export { PageMain } from './lib/landmark';
 export type { LoopKind } from './lib/loop';
@@ -150,7 +150,6 @@ export { Slot } from './lib/slot';
 export { SORT_ICON } from './lib/sort-icon';
 export { useStableCallback } from './lib/stable-callback';
 export type { SurfacePresentation } from './lib/surface-presentation';
-export { setSurfacePresentation } from './lib/surface-presentation';
 export type { SurfaceWidth } from './lib/surface-shell';
 export { DIALOG_PAD, SURFACE_WIDTH } from './lib/surface-shell';
 export { SvgXml } from './lib/svg';

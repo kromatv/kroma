@@ -127,3 +127,20 @@ sites across web, tv and mobile.
 - **`<KromaIntro>` is drawn from CSS.** Its 4K master and sting are stripped, so
   the component falls back to the scene it already falls back to on a decoder
   that cannot play HEVC.
+
+## Root defaults
+
+Wrap the app in `KitProvider` with a stable config, rather than calling global
+capability setters. For example:
+
+```tsx
+import { configureKit, KitProvider } from '@kromatv/ui';
+const config = configureKit({ formFactor: 'browser', surfaces: 'auto' });
+
+function Root() {
+  return <KitProvider config={config}><App /></KitProvider>;
+}
+```
+
+Native hosts pass `image` and `frost` components through the same config. Nested
+providers can state a TV form factor while inheriting the host's native backends.

@@ -15,7 +15,7 @@ import {
   type Variant,
 } from '#ui/core';
 import type { Radius } from '#ui/core/tokens/layout';
-import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { useGroupMember } from '#ui/lib/group-shape';
 
 /** How the button is filled. */
@@ -165,10 +165,11 @@ function IconButton({
   onBlur,
   ...focusProps
 }: Readonly<IconButtonProps>) {
+  const entryDefaults = useEntryDefaults();
   const delegate = delegateOf(asChild, children);
   const group = useGroupMember(onFocus, onBlur);
   const row = control ?? group.size;
-  const shell = CONTROL[row ?? entryDefaultSize()];
+  const shell = CONTROL[row ?? entryDefaults.size];
   const box$ = diameter ?? shell.height;
   const asked = cornerRadius ?? (row ? shell.radius : undefined);
   const corner = asked === undefined ? undefined : radiusValue(asked);

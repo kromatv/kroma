@@ -11,7 +11,7 @@ import { delegateOf, Focusable, type FocusableProps } from '#ui/components/atoms
 import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { IconWell, type IconWellSize } from '#ui/components/atoms/icon-well';
-import { CONTROL, type ControlSize, controlRadius, entryDefaultSize } from '#ui/lib/field-shell';
+import { CONTROL, type ControlSize, controlRadius, useEntryDefaults } from '#ui/lib/field-shell';
 import { nameOf } from '#ui/lib/name-of';
 import { ListGroup, useListGroup } from './list-group';
 import { ListRowContext } from './list-row-context';
@@ -68,7 +68,7 @@ interface ListRowRootProps extends Omit<FocusableProps, 'children' | 'style' | '
    *  and so has none for the row to read. */
   label?: string;
   /** The control shell's size, defaulting to the group's, then to the app's
-   *  (`setEntryDefaults`). */
+   *  (`KitProvider`). */
   size?: ControlSize;
   /** What the row is drawn on: `artwork` (a browse screen, a sign-in splash),
    *  where it blurs and lifts off the picture behind it, or `surface` (a
@@ -105,11 +105,12 @@ function Root({
   style,
   ...focusProps
 }: Readonly<ListRowRootProps>) {
+  const entryDefaults = useEntryDefaults();
   const delegate = delegateOf(asChild, children);
   const group = useListGroup();
   const standalone = group === null;
   const ground = standalone ? asked : 'surface';
-  const shell = size ?? group?.size ?? entryDefaultSize();
+  const shell = size ?? group?.size ?? entryDefaults.size;
   const metrics = CONTROL[shell];
   const frost = useFrostCoat(
     { borderRadius: controlRadius(metrics) },

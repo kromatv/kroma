@@ -16,7 +16,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { type CornerValue, radiusValue, styles } from '#ui/core';
 import { HAND } from '#ui/lib/cursor';
-import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { bySize, CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import {
   type GroupOrientation,
   type GroupPosition,
@@ -52,12 +52,13 @@ function Root({
   style,
   children,
 }: Readonly<ButtonGroupRootProps>) {
+  const entryDefaults = useEntryDefaults();
   // The slot a surrounding group handed this one supplies the size and the
   // corner, and nothing else: a nested group SWALLOWS the position it was given
   // and hands its own children fresh ones, which is what keeps a cluster's own
   // ends rounded.
   const outer = useGroupSlot();
-  const shell = size ?? outer?.size ?? entryDefaultSize();
+  const shell = size ?? outer?.size ?? entryDefaults.size;
   const corner = radiusValue(radius ?? outer?.radius ?? CONTROL[shell].radius);
   const items = Children.toArray(children);
   // A group inside a group is a cluster of its own: the outer group stops
@@ -100,8 +101,9 @@ interface ButtonGroupAddonProps {
 /** A chip nothing can press, shaped like the members around it: a protocol, a
  *  domain suffix, the unit a neighbouring value is counted in. */
 function Addon({ children, style }: Readonly<ButtonGroupAddonProps>) {
+  const entryDefaults = useEntryDefaults();
   const shape = useGroupShape();
-  const size = useGroupSlot()?.size ?? entryDefaultSize();
+  const size = useGroupSlot()?.size ?? entryDefaults.size;
   const metrics = CONTROL[size];
   return (
     <Box

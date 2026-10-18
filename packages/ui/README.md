@@ -679,3 +679,11 @@ with `useState` and wrap that root in `IconLibraryProvider`. Pass `glyphs` for
 extra components or `loadCatalog` for a workbench's lazy metadata. These replace
 `addGlyphs`, `setIconCatalog`, and `setIconCatalogLoader`; products use immutable
 build-subset lookups. See the [icon guide](src/lib/icons/README.md).
+
+App defaults are scoped through `KitProvider`. Prepare an immutable config with
+`configureKit({ formFactor: 'browser' })` and pass it as `<KitProvider config={config}>`.
+The provider owns entry density and keyboard behavior, anchored-surface defaults,
+image decoding and the native frost view. Nested providers inherit unspecified
+capabilities. `setEntryDefaults`, `setSurfacePresentation`, `setImageBackend`, and
+`registerFrost` are removed; rendered controls use `useEntryDefaults`,
+`useControlMetrics`, and `useImageBackend`.

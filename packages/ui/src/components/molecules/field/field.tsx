@@ -38,7 +38,7 @@ interface FieldRootProps extends Omit<BoxProps, 'children'> {
   error?: string;
   /** Defaults to whether there is an `error`. */
   invalid?: boolean;
-  /** The shell size every part takes, defaulting to the app's (`setEntryDefaults`). */
+  /** The shell size every part takes, defaulting to the app's (`KitProvider`). */
   size?: ControlSize;
   /** What the field's entry binds to. A part with its own `value`,
    *  `defaultValue` or `onValueChange` holds its state instead. */

@@ -2,9 +2,9 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { KitProvider } from '#ui/configure';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { clearPressGuard } from '#ui/lib/press-guard';
-import { setSurfacePresentation } from '#ui/lib/surface-presentation';
 import { onScreen } from '#ui/testing';
 import { Select } from './select';
 
@@ -13,7 +13,6 @@ beforeAll(() => configureRemote());
 afterEach(() => {
   cleanup();
   clearPressGuard();
-  setSurfacePresentation('auto');
 });
 
 function Source({ presentation }: Readonly<{ presentation?: 'auto' | 'panel' | 'dialog' }>) {
@@ -35,9 +34,11 @@ describe('<Select> under Metro resolution', () => {
   });
 
   it('takes the dialog from the shell without a prop at the call site', () => {
-    setSurfacePresentation('dialog');
-
-    render(<Source />);
+    render(
+      <KitProvider config={{ surfaces: 'dialog' }}>
+        <Source />
+      </KitProvider>,
+    );
 
     expect(screen.getByRole('dialog')).toBeTruthy();
   });
