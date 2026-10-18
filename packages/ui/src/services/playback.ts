@@ -12,7 +12,7 @@ import { KromaApiError, type KromaClient } from '@kromatv/client';
 import { KromaEvents } from '@kromatv/client/events';
 import type { ItemId } from '@kromatv/client/media';
 import { PlaybackSessionId } from '@kromatv/client/playback';
-import { type RefObject, useEffect, useEffectEvent, useRef, useState } from 'react';
+import { type RefObject, useEffect, useEffectEvent, useId, useRef, useState } from 'react';
 
 export interface PlaybackHeartbeatParams {
   client: KromaClient;
@@ -58,12 +58,9 @@ export interface PlaybackHeartbeatParams {
 // rather than refreshing the first.
 const SERVER_TTL_MS = 30_000;
 
-let sessionSeq = 0;
-
-function newSessionId(prefix: string): PlaybackSessionId {
-  sessionSeq += 1;
+function newSessionId(prefix: string, owner: string): PlaybackSessionId {
   return PlaybackSessionId.parse(
-    `${prefix}-${Date.now().toString(36)}-${(sessionSeq - 1).toString(36)}`,
+    `${prefix}-${Date.now().toString(36)}-${owner.replace(/[^a-z0-9]/gi, '')}`,
   );
 }
 
@@ -71,11 +68,12 @@ function newSessionId(prefix: string): PlaybackSessionId {
  * A session id keys ONE row in the server's live "now playing" registry. It is
  * never an auth token: `/playback/stop` only ends a session the requesting
  * account owns, so the id needs uniqueness, not unpredictability. Clock plus a
- * per-process counter gives that on every target, the same shape as the phone
- * client's `newSessionId`.
+ * React-owned mount identity gives that on every target without sharing a
+ * counter between roots.
  */
 export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
-  const [sessionId] = useState(() => newSessionId(params.idPrefix));
+  const owner = useId();
+  const [sessionId] = useState(() => newSessionId(params.idPrefix, owner));
   // Once terminated we stop pinging and don't send a redundant stop on unmount.
   const terminated = useRef(false);
   // A session exists on the server only once a beat has landed, so a surface
@@ -86,7 +84,9 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   const beat = useRef<{ at: number; positionMs: number } | null>(null);
   const inFlight = useRef<Promise<void> | null>(null);
   const clientRef = useRef(params.client);
-  clientRef.current = params.client;
+  useEffect(() => {
+    clientRef.current = params.client;
+  }, [params.client]);
 
   const fireTerminated = useEffectEvent((message: string) => {
     if (terminated.current) return;
@@ -178,7 +178,8 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   useEffect(() => {
     if (!params.enabled) return;
     const ev = new KromaEvents(params.eventsBaseUrl, {
-      token: params.eventsToken,
+      token: params.eventsToken ?? (() => params.client.sessionToken),
+      refresh: () => params.client.refreshSession(),
       onEvent: (e) => {
         if (e.type === 'playback.terminate' && e.sessionId === sessionId) {
           fireTerminated(e.message);

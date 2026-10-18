@@ -1,7 +1,7 @@
 // The row of views across the top of the canvas: the preview, the variant
 // matrix, each hand-written scene and each worked example.
 
-import { Box, Focusable, Icon, type IconName, styles, sv, Text } from '@kromatv/ui/kit';
+import { Box, Focusable, Icon, type IconName, styles, sv, Text, useStyles } from '@kromatv/ui/kit';
 import type { ColorToken } from '@kromatv/ui/tokens';
 import { ScrollView } from 'react-native';
 import { RULE, TAB } from './chrome';
@@ -52,6 +52,8 @@ function CanvasTabs({
   onView: (next: View) => void;
   layout: WorkbenchLayout;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <ScrollView
       horizontal
@@ -96,7 +98,7 @@ function tabInk(active: boolean, focused: boolean, selected: ColorToken): ColorT
   return focused ? 'textMuted' : 'textDim';
 }
 
-const s = styles({
+const sDefinition = styles({
   tabRow: { grow: 0, shrink: 0 },
   // `flexGrow` keeps the rule under the tabs running the full width of the
   // canvas when the tabs themselves do not fill it.

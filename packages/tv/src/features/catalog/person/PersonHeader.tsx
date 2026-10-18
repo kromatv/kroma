@@ -1,7 +1,16 @@
 import type { PersonDetail } from '@kromatv/client/media';
 import { personFacts } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
-import { Avatar, Box, Chip, DataField, styles, Text } from '@kromatv/ui/kit';
+import {
+  Avatar,
+  Box,
+  Chip,
+  DataField,
+  styles,
+  Text,
+  fontSizes as textSizes,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { TITLE } from '#tv/features/catalog/screenStyle';
 
@@ -30,6 +39,8 @@ export function PersonHeader({
   titleCount: number;
   detail: PersonDetail | null;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const locale = useLocale();
   const [expanded, setExpanded] = useState(false);
@@ -91,6 +102,6 @@ export function PersonHeader({
   );
 }
 
-const s = styles({
-  biography: { fontSize: 18, lineHeight: 27 },
+const sDefinition = styles({
+  biography: { fontSize: textSizes.largeLabel, lineHeight: 27 },
 });

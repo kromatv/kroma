@@ -1,13 +1,18 @@
 import { hasPermission } from '@kromatv/client/accounts';
 import type { TVars } from '@kromatv/i18n';
-import type { KromaHost, ModuleNav, ModulePanel, ModuleRoute } from '@kromatv/module-sdk';
+import type {
+  KromaHost,
+  ModuleNav,
+  ModulePanel,
+  ModuleRegistry,
+  ModuleRoute,
+} from '@kromatv/module-sdk';
 import { useScopedT, useT } from '@kromatv/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import { useModuleHost } from '#web/modules/host';
 import { hiddenModuleIds } from '#web/modules/module-gating';
-import { moduleRegistry } from '#web/modules/registry';
-import { forgetRemote, isLoadedRemote, loadRuntimeRemotes } from '#web/modules/remotes';
+import { createModuleRuntime } from '#web/modules/registry';
 import { useAuth } from '#web/shared/lib/auth';
 
 /** A translator bound to one module's own catalogs, falling back to the core
@@ -18,6 +23,7 @@ export function useModuleT(moduleId: string): (key: string, vars?: TVars) => str
 }
 
 interface ModuleHostValue {
+  registry: ModuleRegistry | null;
   host: KromaHost | null;
   nav: ModuleNav[];
   routes: ModuleRoute[];
@@ -27,6 +33,7 @@ interface ModuleHostValue {
 }
 
 const EMPTY: ModuleHostValue = {
+  registry: null,
   host: null,
   nav: [],
   routes: [],
@@ -38,9 +45,12 @@ const EMPTY: ModuleHostValue = {
 const ModuleHostContext = createContext<ModuleHostValue>(EMPTY);
 
 export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const { client } = useAuth();
+  const [runtime] = useState(() => createModuleRuntime(client));
+  const { registry: moduleRegistry, remotes } = runtime;
   const queryClient = useQueryClient();
   const [revision, setRevision] = useState(0);
-  const host = useModuleHost(revision);
+  const host = useModuleHost(revision, runtime);
 
   // A module is visible only when the backend lists it AND it is enabled: a
   // compile-time-bundled UI may have no installed backend at all. Keyed
@@ -53,7 +63,7 @@ export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode 
   // biome-ignore lint/correctness/useExhaustiveDependencies: revision re-reads the registry ids after an install/uninstall
   const disabledIds = useMemo(
     () => hiddenModuleIds(manifest, moduleRegistry.ids()),
-    [manifest, revision],
+    [manifest, revision, moduleRegistry],
   );
 
   // The arrays hold stable lazy component refs, so panels don't retry into a
@@ -76,17 +86,17 @@ export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode 
       // rather than crash the whole app.
       return { nav: [], routes: [], panels: [] };
     }
-  }, [host, revision]);
+  }, [host, revision, moduleRegistry]);
 
   const refresh = useCallback(async () => {
-    await loadRuntimeRemotes(moduleRegistry);
+    await remotes.loadRuntimeRemotes(moduleRegistry);
     try {
       const listed = host ? await host.api.listModules() : [];
       const present = new Set(listed.map((m) => m.id));
       for (const id of moduleRegistry.ids()) {
-        if (!present.has(id) && isLoadedRemote(id)) {
+        if (!present.has(id) && remotes.isLoadedRemote(id)) {
           moduleRegistry.unregister(id);
-          forgetRemote(id);
+          remotes.forgetRemote(id);
         }
       }
     } catch (e) {
@@ -95,10 +105,11 @@ export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode 
     await queryClient.invalidateQueries({ queryKey: ['modules'] });
     await queryClient.invalidateQueries({ queryKey: ['admin', 'modules'] });
     setRevision((r) => r + 1);
-  }, [host, queryClient]);
+  }, [host, queryClient, moduleRegistry, remotes]);
 
   const value = useMemo<ModuleHostValue>(
     () => ({
+      registry: moduleRegistry,
       host,
       nav: contrib.nav,
       routes: contrib.routes,
@@ -106,7 +117,7 @@ export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode 
       disabledIds,
       refresh,
     }),
-    [host, contrib, disabledIds, refresh],
+    [host, contrib, disabledIds, refresh, moduleRegistry],
   );
   return <ModuleHostContext.Provider value={value}>{children}</ModuleHostContext.Provider>;
 }
@@ -171,4 +182,9 @@ export function useModuleSettingsPanels(moduleId: string): {
     [panels, moduleId],
   );
   return { host, panels: forModule };
+}
+
+/** Registry owned by this host; absent in a shell that mounts no module host. */
+export function useModuleRegistry(): ModuleRegistry | null {
+  return useContext(ModuleHostContext).registry;
 }

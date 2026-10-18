@@ -11,6 +11,7 @@ import {
   Select,
   styles,
   useBreakpoint,
+  useStyles,
 } from '@kromatv/ui/kit';
 import {
   SAVED_SORTS,
@@ -38,7 +39,7 @@ const SORT_ICON: Record<SavedSort, IconName> = {
   rating: 'star',
 };
 
-const s = styles({ sortTrigger: { flexShrink: 0, minWidth: 196 } });
+const sDefinition = styles({ sortTrigger: { flexShrink: 0, minWidth: 196 } });
 
 export interface SavedTitlesBarProps {
   tab: SavedTab;
@@ -59,6 +60,8 @@ export function SavedTitlesBar({
   sort,
   onSort,
 }: Readonly<SavedTitlesBarProps>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const step = useBreakpoint();
   const wide = step === 'lg' || step === 'tv';

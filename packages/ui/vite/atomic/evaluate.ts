@@ -128,7 +128,7 @@ function member(node: Node, frame: Frame): unknown {
     : nameOf(node.property as Node);
   if (typeof target !== 'object' || target === null)
     throw new Unstatic(`a member of ${typeof target}`);
-  return (target as Record<string, unknown>)[key];
+  return Reflect.get(target, key);
 }
 
 function call(node: Node, frame: Frame): unknown {

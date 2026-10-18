@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { ViewStyle } from 'react-native';
-import { sharedStyle, style } from '#ui/core';
+import { type StyleScope, sharedStyle, style } from '#ui/core';
 import { BREAKPOINTS, type BreakpointName } from '#ui/core/tokens';
 
 interface TableColumn {
@@ -37,20 +37,28 @@ const NO_COLUMNS: readonly TableColumn[] = [];
 
 const FILL = style({ flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 });
 
-function columnBox(column: TableColumn): ViewStyle {
+function columnBox(column: TableColumn, scope: StyleScope): ViewStyle {
   if (column.width !== undefined) {
-    return sharedStyle(`table:column:${column.width}`, {
-      width: column.width,
-      flexGrow: 0,
-      flexShrink: 0,
-    });
+    return sharedStyle(
+      `table:column:${column.width}`,
+      {
+        width: column.width,
+        flexGrow: 0,
+        flexShrink: 0,
+      },
+      scope,
+    );
   }
-  return sharedStyle(`table:column:${column.flex ?? 1}:${column.min ?? 0}`, {
-    flexGrow: column.flex ?? 1,
-    flexShrink: 1,
-    flexBasis: 0,
-    minWidth: column.min ?? 0,
-  });
+  return sharedStyle(
+    `table:column:${column.flex ?? 1}:${column.min ?? 0}`,
+    {
+      flexGrow: column.flex ?? 1,
+      flexShrink: 1,
+      flexBasis: 0,
+      minWidth: column.min ?? 0,
+    },
+    scope,
+  );
 }
 
 function stepOf(name: BreakpointName): number {

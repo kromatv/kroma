@@ -3,6 +3,8 @@
 import { I18nProvider } from '@kromatv/ui';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
+import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
+import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
 import { MissingEpisodeRow } from './episode-row';
 
 vi.hoisted(() => {
@@ -17,16 +19,18 @@ afterEach(cleanup);
 
 function row(listed: Parameters<typeof MissingEpisodeRow>[0]['listed'], pending = false) {
   return render(
-    <I18nProvider locale="en">
-      <MissingEpisodeRow
-        season={1}
-        episode={9}
-        listed={listed}
-        pending={pending}
-        selected={false}
-        onToggle={() => {}}
-      />
-    </I18nProvider>,
+    <WebRuntimeProvider value={createWebTestRuntime({})}>
+      <I18nProvider locale="en">
+        <MissingEpisodeRow
+          season={1}
+          episode={9}
+          listed={listed}
+          pending={pending}
+          selected={false}
+          onToggle={() => {}}
+        />
+      </I18nProvider>
+    </WebRuntimeProvider>,
   );
 }
 

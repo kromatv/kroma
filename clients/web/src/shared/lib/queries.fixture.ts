@@ -1,3 +1,4 @@
+import { createQueryClient } from '@kromatv/client/query';
 import { beforeEach, vi } from 'vitest';
 
 const endpoint = () => vi.fn();
@@ -54,7 +55,12 @@ function queriesOf(node: Namespace, path: readonly string[]): QueryNamespace {
   return tree;
 }
 
-export const c = { ...domains, query: queriesOf(domains, []) };
+const actualClient = createQueryClient({ baseUrl: BASE_URL });
+const stubs = { ...domains, query: queriesOf(domains, []) };
+export const c = Object.defineProperties({} as typeof actualClient & typeof stubs, {
+  ...Object.getOwnPropertyDescriptors(actualClient),
+  ...Object.getOwnPropertyDescriptors(stubs),
+});
 
 // biome-ignore lint/suspicious/noExplicitAny: the options are heterogeneous by design
 export async function run(opts: any) {

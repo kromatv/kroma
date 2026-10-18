@@ -18,8 +18,8 @@ export { Denied } from './admin/denied';
 export type { AddEngineOptions, EngineChoice } from './admin/engines';
 export {
   AddEngineHost,
-  addEngine,
   FieldForm,
+  useAddEngine,
   useEnabledEngines,
   useModuleEnabled,
   useModuleEnabledCheck,

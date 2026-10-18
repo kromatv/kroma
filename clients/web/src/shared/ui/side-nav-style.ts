@@ -54,8 +54,8 @@ export const sideNavRow = svFor<{
   defaults: { current: false },
 });
 
-const s = styles({ frame: { flex: true, minHeight: 0 }, safeBottom: safeAreaBottom(28) });
+const sDefinition = styles({ frame: { flex: true, minHeight: 0 }, safeBottom: safeAreaBottom(28) });
 
-export const SIDE_NAV_FRAME = s.frame;
+export const SIDE_NAV_FRAME = sDefinition.frame;
 
-export const SIDE_NAV_SAFE_BOTTOM = s.safeBottom;
+export const SIDE_NAV_SAFE_BOTTOM = sDefinition.safeBottom;

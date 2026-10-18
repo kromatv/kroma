@@ -1,4 +1,13 @@
-import { Avatar, classes, sharedStyle, styles } from '@kromatv/ui/kit';
+import {
+  Avatar,
+  classes,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 import { imageUrl } from '#web/shared/lib/api';
 
 // The deterministic gradient + initials are the design system's own, so an
@@ -11,7 +20,7 @@ export { gradientFor as avatarGradient, initialsOf as initials } from '@kromatv/
  * Avatar handles the swap, so SSR shows initials and the photo fades in).
  */
 
-const s = styles({ block: { display: 'block' } });
+const sDefinition = styles({ block: { display: 'block' } });
 
 /** The corner every account avatar takes at a given size: the KROMA rounded
  *  square is a proportion of the box, so a small one is as square as a large. */
@@ -19,8 +28,12 @@ export function avatarCorner(size: number): number {
   return Math.round(size * 0.13);
 }
 
-const boxOf = (size: number, corner: number) =>
-  sharedStyle(`avatar:${size}:${corner}`, { width: size, height: size, borderRadius: corner });
+const boxOf = (size: number, corner: number, scope: StyleScope) =>
+  sharedStyle(
+    `avatar:${size}:${corner}`,
+    { width: size, height: size, borderRadius: corner },
+    scope,
+  );
 export function UserAvatar({
   name,
   avatarUrl,
@@ -36,6 +49,11 @@ export function UserAvatar({
   radius?: number;
   className?: string;
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const corner = radius ?? avatarCorner(size);
   return (
     // Block, sized and rounded to exactly the avatar's box: callers put their
@@ -43,7 +61,11 @@ export function UserAvatar({
     // the element itself has - while `inline` would add the line box's
     // descender under the disc and shift anything absolutely positioned
     // against the tile (the padlock overlay).
-    <span className={[className, classes(s.block, boxOf(size, corner))].filter(Boolean).join(' ')}>
+    <span
+      className={[className, classes(s.block, boxOf(size, corner, scope))]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <Avatar
         name={name}
         seed={seed}

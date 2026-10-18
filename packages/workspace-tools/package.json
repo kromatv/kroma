@@ -26,6 +26,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@kromatv/registry": "workspace:*"
+    "@kromatv/registry": "workspace:*",
+    "zod": "^4.5.4"
   }
 }

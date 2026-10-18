@@ -2,8 +2,7 @@
 // preference @kromatv/client persists is a silent no-op. Credentials stay in
 // SecureStore, see storage.ts.
 
-import { type SessionStorage, setSessionStorage } from '@kromatv/client';
-import { setDeviceStore } from '@kromatv/ui/device-store';
+import type { SessionStorage } from '@kromatv/client';
 import { Directory, File, Paths } from 'expo-file-system';
 import { z } from 'zod';
 
@@ -60,10 +59,8 @@ function read(file: File | null): Record<string, string> {
   }
 }
 
-/** Installs the store, synchronously. Call it before the first read: the theme
- *  mode is applied at module scope, ahead of the first render. */
-export function installDeviceStore(): void {
+/** Create the root-owned backend before rendering session and preference consumers. */
+export function createDeviceStore(): DeviceStore {
   const store = new DeviceStore();
-  setSessionStorage(store);
-  setDeviceStore(store);
+  return store;
 }

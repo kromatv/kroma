@@ -2,7 +2,7 @@ import { hasPermission } from '@kromatv/client/accounts';
 import { type DiscoverDetail, TmdbKind } from '@kromatv/client/discovery';
 import { formatRuntime, sizedImageUrl } from '@kromatv/core';
 import { useAskForTitle } from '@kromatv/core/react';
-import { Box, Button, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
@@ -52,6 +52,8 @@ export default function DiscoverRoute() {
 }
 
 function DiscoverScreen({ kind, tmdbId }: Readonly<{ kind: TmdbKind; tmdbId: number }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { user } = useSession();
@@ -123,6 +125,8 @@ function DiscoverScreen({ kind, tmdbId }: Readonly<{ kind: TmdbKind; tmdbId: num
 }
 
 function DiscoverMeta({ detail, span }: Readonly<{ detail: DiscoverDetail; span: string }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <>
       {detail.year ? <Text style={s.metaText}>{detail.year}</Text> : null}
@@ -133,7 +137,7 @@ function DiscoverMeta({ detail, span }: Readonly<{ detail: DiscoverDetail; span:
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   body: { gap: spacing.md, pt: spacing.md },
   metaText: { ...type.caption, color: 'text', fontWeight: '600' },

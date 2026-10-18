@@ -1,8 +1,8 @@
-import { Box, classes, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, classes, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { type MouseEvent, memo } from 'react';
 
 // A <button> left without a background paints the UA's `buttonface`.
-const s = styles({
+const sDefinition = styles({
   option: {
     position: 'relative',
     display: 'flex',
@@ -51,6 +51,8 @@ const SearchOption = memo(function SearchOption({
   onHover,
   onPick,
 }: Readonly<SearchOptionProps>) {
+  const s = useStyles(sDefinition);
+
   return (
     // A real button, not a div: the row is a pointer target, and the keyboard
     // reaches it through the combobox input above rather than by focus, so

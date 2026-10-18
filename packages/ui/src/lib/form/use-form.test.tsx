@@ -275,9 +275,7 @@ describe('overlapping validations', () => {
       },
     } as never;
 
-    const { result } = renderHook(() =>
-      useForm({ schema, defaultValues: { code: '' } as Record<string, unknown> }),
-    );
+    const { result } = renderHook(() => useForm({ schema, defaultValues: { code: '' } }));
 
     await act(async () => {
       void result.current.submit();

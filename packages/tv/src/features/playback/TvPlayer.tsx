@@ -9,7 +9,7 @@ import {
   useSubtitleAppearance,
   useT,
 } from '@kromatv/ui';
-import { Box, Button, Icon, style, Text } from '@kromatv/ui/kit';
+import { Box, Button, radius as cornerRadius, Icon, style, Text } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -23,7 +23,7 @@ import { useTvUpNext } from '#tv/features/playback/use-tv-upnext';
 
 const PREVIEW_W = 256;
 
-const BACK = style({ radius: 999, mt: 8 });
+const BACK = style({ radius: cornerRadius.pill, mt: 8 });
 
 /**
  * The TV player: a thin wrapper adapting the native-plane engine to the

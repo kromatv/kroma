@@ -14,7 +14,7 @@
 // focus and every query that follows are still the shared app's.
 
 import type { SearchShell, SearchShellProps } from '@kromatv/tv';
-import { type FocusDirection, postRemoteDirection, usePlatformFocus } from '@kromatv/ui/kit';
+import { type FocusDirection, useFocusServices, usePlatformFocus } from '@kromatv/ui/kit';
 import { useCallback, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { type NativeSearchFocus, NativeSearchView } from '../../modules/native-search';
@@ -27,6 +27,7 @@ interface Area {
 }
 
 function PlatformSearch({ value, onChange, placeholder, children }: Readonly<SearchShellProps>) {
+  const { remote } = useFocusServices();
   const [area, setArea] = useState<Area>({ width: 0, height: 0 });
   // The screen opens on the keyboard, which is what the viewer came for.
   const [owner, setOwner] = useState<NativeSearchFocus>('platform');
@@ -54,10 +55,10 @@ function PlatformSearch({ value, onChange, placeholder, children }: Readonly<Sea
     ({ nativeEvent }: { nativeEvent: { owner: NativeSearchFocus; heading: string } }) => {
       setOwner(nativeEvent.owner);
       if (nativeEvent.owner === 'app' && isDirection(nativeEvent.heading)) {
-        postRemoteDirection(nativeEvent.heading);
+        remote.postRemoteDirection(nativeEvent.heading);
       }
     },
-    [],
+    [remote],
   );
 
   // The way back is ours to ask for: the navigator answers a press with no move

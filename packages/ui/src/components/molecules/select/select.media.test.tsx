@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, within } from '@testing-library/react';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { cleanup, screen, within } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
 import { Avatar } from '#ui/components/atoms/avatar';
-import { configureRemote } from '#ui/lib/focus-remote';
-import { clearPressGuard } from '#ui/lib/press-guard';
+
+import { createInputTestHost } from '#ui/testing-input';
+
 import { Select, type SelectPresentation } from './select';
 
-beforeAll(() => configureRemote());
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(() => {
   cleanup();

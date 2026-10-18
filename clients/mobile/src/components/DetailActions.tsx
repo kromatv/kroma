@@ -1,7 +1,7 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { MediaItem } from '@kromatv/client/media';
 import { useCast } from '@kromatv/ui';
-import { Box, Button, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, Icon, styles, Text, typeSpec as textRoles, useStyles } from '@kromatv/ui/kit';
 import { useRef } from 'react';
 import { Alert, Pressable } from 'react-native';
 import { CastSheet } from '#mobile/components/cast/CastSheet';
@@ -68,6 +68,8 @@ export function DetailActions({
   onReport?(): void;
   item: MediaItem;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const downloads = useDownloads();
   const state = downloads.stateFor(item.id);
@@ -181,7 +183,7 @@ export function DetailActions({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   actions: { gap: spacing.sm },
   downloadBar: {
     row: true,
@@ -192,7 +194,7 @@ const s = styles({
     radius: radius.md,
     overflow: 'hidden',
   },
-  downloadBarLabel: { color: 'text', fontSize: 15, fontWeight: '700' },
+  downloadBarLabel: { color: 'text', fontSize: textRoles.label.size, fontWeight: '700' },
   downloadBarLabelDone: { color: 'accentText' },
   downloadBarFill: {
     absolute: true,

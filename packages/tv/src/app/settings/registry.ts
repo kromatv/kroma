@@ -1,3 +1,4 @@
+import { useDevicePreferences } from '../device-preferences';
 // Every shared user-facing setting, declared once: identity, level, binding and
 // presentation. Screens compose menus from these lists (plus screen-local
 // actionItems built inline, e.g. the PIN row which needs auth + nav context).
@@ -7,23 +8,16 @@ import type { Locale, MessageKey, Translate } from '@kromatv/i18n';
 import { useLocale, useSetLocale } from '@kromatv/ui';
 import { useEffect, useState } from 'react';
 import { canQuitApp, quitApp } from '#tv/app/appQuit';
-import { crashReportingPrefStore } from '#tv/app/crashReportingPref';
 import { getGpuRendering, gpuToggleAvailable, setGpuRendering } from '#tv/app/desktopGpu';
-import { availableEngines, ENGINE_LABEL_KEY, enginePrefStore } from '#tv/app/enginePref';
-import {
-  ALL_KEYBOARD_LAYOUTS,
-  KEYBOARD_LAYOUT_LABEL_KEY,
-  keyboardLayoutStore,
-} from '#tv/app/keyboardLayoutPref';
+import { availableEngines, ENGINE_LABEL_KEY, useEnginePref } from '#tv/app/enginePref';
+import { ALL_KEYBOARD_LAYOUTS, KEYBOARD_LAYOUT_LABEL_KEY } from '#tv/app/keyboardLayoutPref';
 import { prefValue, useLangPrefs } from '#tv/app/langPref';
-import { castReceiverPrefStore } from '#tv/features/cast/castPref';
 import { actionItem, choiceItem, type RowIcon, type SettingsItem, toggleItem } from './items';
 import {
   ARTWORK_SCALE,
   type ArtworkQuality,
-  artworkPrefStore,
-  blurPrefStore,
-  perfHudPrefStore,
+  useArtworkPref,
+  useBlurPref,
   useStoredPref,
 } from './store';
 
@@ -81,7 +75,7 @@ export const keyboardLayoutSetting: SettingsItem = choiceItem({
   icon: 'keyboard',
   options: () => ALL_KEYBOARD_LAYOUTS,
   valueLabel: (v) => KEYBOARD_LAYOUT_LABEL_KEY[v],
-  useValue: () => useStoredPref(keyboardLayoutStore),
+  useValue: () => useStoredPref(useDevicePreferences().keyboard),
 });
 
 export const engineSetting: SettingsItem = choiceItem({
@@ -91,7 +85,7 @@ export const engineSetting: SettingsItem = choiceItem({
   icon: 'movie',
   options: availableEngines,
   valueLabel: (v) => ENGINE_LABEL_KEY[v],
-  useValue: () => useStoredPref(enginePrefStore),
+  useValue: () => useStoredPref(useEnginePref()),
 });
 
 export const gpuRenderingSetting: SettingsItem = toggleItem({
@@ -120,7 +114,7 @@ export const artworkSetting: SettingsItem = choiceItem({
   icon: 'photo',
   options: () => Object.keys(ARTWORK_SCALE) as ArtworkQuality[],
   valueLabel: (v) => `artworkQuality.${v}` as MessageKey,
-  useValue: () => useStoredPref(artworkPrefStore),
+  useValue: () => useStoredPref(useArtworkPref()),
 });
 
 export const blurSetting: SettingsItem = toggleItem({
@@ -129,7 +123,7 @@ export const blurSetting: SettingsItem = toggleItem({
   label: 'settings.blur',
   icon: 'blur',
   useValue: () => {
-    const [on, set] = useStoredPref(blurPrefStore);
+    const [on, set] = useStoredPref(useBlurPref());
     return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
   },
 });
@@ -140,7 +134,7 @@ export const perfHudSetting: SettingsItem = toggleItem({
   label: 'profileMenu.perfHud',
   icon: 'gauge',
   useValue: () => {
-    const [on, set] = useStoredPref(perfHudPrefStore);
+    const [on, set] = useStoredPref(useDevicePreferences().perfHud);
     return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
   },
 });
@@ -151,7 +145,7 @@ export const castReceiverSetting: SettingsItem = toggleItem({
   label: 'settings.castReceiver',
   icon: 'cast',
   useValue: () => {
-    const [on, set] = useStoredPref(castReceiverPrefStore);
+    const [on, set] = useStoredPref(useDevicePreferences().castReceiver);
     return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
   },
 });
@@ -162,7 +156,7 @@ export const crashReportingSetting: SettingsItem = toggleItem({
   label: 'settings.crashReporting',
   icon: 'bug',
   useValue: () => {
-    const [on, set] = useStoredPref(crashReportingPrefStore);
+    const [on, set] = useStoredPref(useDevicePreferences().crashReporting);
     return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
   },
 });

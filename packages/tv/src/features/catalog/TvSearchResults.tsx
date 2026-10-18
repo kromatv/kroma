@@ -1,5 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { Box, FocusScroll, Grid, Hint, PosterCard, styles, Text } from '@kromatv/ui/kit';
+import { Box, FocusScroll, Grid, Hint, PosterCard, styles, Text, useStyles } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { weight } from '#tv/shared/ui/weight';
 
@@ -32,6 +32,8 @@ export function TvSearchResults({
   width,
   header,
 }: Readonly<TvSearchResultsProps>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   // Read out here, not in the branch below: inside it `query` joins the grid's
   // own cache guard, and then every keystroke rebuilds every poster.
@@ -84,6 +86,6 @@ export function TvSearchResults({
 const GAP = 24;
 const MIN_POSTER_W = 250;
 
-const s = styles({
+const sDefinition = styles({
   scroll: { flex: true, minH: 0 },
 });

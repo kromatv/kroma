@@ -5,7 +5,7 @@
 // both `variant` and `color` rather than leaving them unset, so a nested mark has
 // to be TOLD what it sits in. That is what `Prose` publishes and `Mark` reads.
 
-import { Box, CheckboxFace, Img, styles, Text, type TextProps } from '@kromatv/ui/kit';
+import { Box, CheckboxFace, Img, styles, Text, type TextProps, useStyles } from '@kromatv/ui/kit';
 import { space } from '@kromatv/ui/tokens';
 import {
   Children,
@@ -63,22 +63,32 @@ function Mark({ style, color, onPress, children }: Readonly<MarkProps>) {
 }
 
 function Strong({ children }: Readonly<{ children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return <Mark style={s.bold}>{children}</Mark>;
 }
 
 function Emphasis({ children }: Readonly<{ children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return <Mark style={s.em}>{children}</Mark>;
 }
 
 function Strike({ children }: Readonly<{ children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return <Mark style={s.del}>{children}</Mark>;
 }
 
 function Superscript({ children }: Readonly<{ children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return <Mark style={s.sup}>{children}</Mark>;
 }
 
 function InlineCode({ children }: Readonly<{ children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Mark style={s.code} color="accent">
       {children}
@@ -87,6 +97,8 @@ function InlineCode({ children }: Readonly<{ children?: ReactNode }>) {
 }
 
 function Anchor({ href, children }: Readonly<{ href?: string; children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Mark style={s.link} color="accent" onPress={href ? () => openWebLink(href) : undefined}>
       {children}
@@ -102,6 +114,8 @@ function LineBreak() {
 // control. A rendering of a document is not a form, so the box has to look like
 // a checkbox and have nothing about it anyone can tick.
 function TaskBox({ checked }: Readonly<{ checked?: boolean }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.task}>
       <CheckboxFace checked={Boolean(checked)} />
@@ -110,6 +124,8 @@ function TaskBox({ checked }: Readonly<{ checked?: boolean }>) {
 }
 
 function Picture({ src, alt }: Readonly<{ src?: string; alt?: string }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.image}>
       <Img src={src ?? null} alt={alt} fit="contain" radius="sm" />
@@ -164,7 +180,7 @@ const CODE_SIZE = 14;
 
 const TASK_DROP = 5;
 
-const s = styles({
+const sDefinition = styles({
   bold: { fontWeight: '700' },
   em: { fontStyle: 'italic' },
   del: { textDecorationLine: 'line-through' },

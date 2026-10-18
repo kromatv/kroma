@@ -7,14 +7,15 @@ import { BrowseScreen } from '#web/features/catalog/browse-screen';
 import { validateBrowseSearch } from '#web/features/catalog/browse-search';
 import { MovieGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
-import { catalogQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/movies/')({
   validateSearch: validateBrowseSearch,
-  loader: async ({ context: { queryClient } }) => {
+  loader: async ({ context: { runtime: webRuntime, queryClient } }) => {
     if (!isAuthed()) return;
-    await queryClient.ensureQueryData(catalogQueries.moviesView());
+    await queryClient.ensureQueryData(webRuntime.queries.catalogQueries.moviesView());
   },
   pendingComponent: MoviesPending,
   component: MoviesPage,
@@ -33,10 +34,12 @@ function MoviesPending() {
 }
 
 function MoviesPage() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const { sort = 'added', genre } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const { data: movies } = useSuspenseQuery(catalogQueries.moviesView());
+  const { data: movies } = useSuspenseQuery(webRuntime.queries.catalogQueries.moviesView());
 
   return (
     <BrowseScreen

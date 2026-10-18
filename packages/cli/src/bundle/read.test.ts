@@ -159,7 +159,7 @@ describe('toEntries', () => {
   const bundle = (id: string, target: string | null, icon?: string): Bundle => ({
     manifest: { ...MANIFEST, id },
     target,
-    file: `${id}${target ? `-${target}` : ''}.kmod`,
+    file: `${[id, ...(target ? [target] : [])].join('-')}.kmod`,
     path: `/dist/${id}.kmod`,
     size: 10,
     sha256: `sha-${id}-${target}`,

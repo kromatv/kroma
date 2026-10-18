@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { sharedStyle, styles } from '#ui/core';
+import { resolveStyles, type StyleScope, sharedStyle, styles } from '#ui/core';
 import type { Radius } from '#ui/core/tokens/layout';
 import { classes } from '#ui/lib/classed';
 
@@ -22,27 +22,33 @@ interface WebLayersArgs {
 
 // Chrome doesn't reliably clip a border-radius on a composited descendant, and
 // an <img> is exactly that, so the image rounds itself too.
-const s = styles({
+const sDefinition = styles({
   layer: { fill: true, width: '100%', height: '100%' },
   cover: { objectFit: 'cover' },
   contain: { objectFit: 'contain' },
   still: { animationKeyframes: 'none' },
 });
 
-const fadeIn = (duration: number) =>
-  sharedStyle(`img:fade:${duration}`, {
-    animationKeyframes: 'kroma-img-in',
-    animationDuration: `${duration}ms`,
-    animationTimingFunction: 'ease',
-    animationFillMode: 'both',
-  });
+const fadeIn = (duration: number, scope: StyleScope) =>
+  sharedStyle(
+    `img:fade:${duration}`,
+    {
+      animationKeyframes: 'kroma-img-in',
+      animationDuration: `${duration}ms`,
+      animationTimingFunction: 'ease',
+      animationFillMode: 'both',
+    },
+    scope,
+  );
 
-function webLayers(at: Readonly<WebLayersArgs>): ReactNode {
+function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
   const layer = [
-    s.layer,
-    s[at.fit],
-    sharedStyle(`img:position:${at.position}`, { objectPosition: at.position }),
-    at.radius === undefined ? null : sharedStyle(`img:radius:${at.radius}`, { radius: at.radius }),
+    resolveStyles(sDefinition, scope).layer,
+    resolveStyles(sDefinition, scope)[at.fit],
+    sharedStyle(`img:position:${at.position}`, { objectPosition: at.position }, scope),
+    at.radius === undefined
+      ? null
+      : sharedStyle(`img:radius:${at.radius}`, { radius: at.radius }, scope),
   ];
   return (
     <>
@@ -80,7 +86,10 @@ function webLayers(at: Readonly<WebLayersArgs>): ReactNode {
           // The fade is an ANIMATION the browser owns (`kroma-img-in`, in
           // styles.css), never an opacity React drives: the resting state is
           // VISIBLE, so a missed load event cannot leave decoded art invisible.
-          className={classes(...layer, at.decoded ? s.still : fadeIn(at.duration))}
+          className={classes(
+            ...layer,
+            at.decoded ? resolveStyles(sDefinition, scope).still : fadeIn(at.duration, scope),
+          )}
         />
       ) : null}
     </>

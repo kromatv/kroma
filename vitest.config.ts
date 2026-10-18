@@ -150,7 +150,7 @@ export default defineConfig({
         },
       },
       {
-        plugins: [...plugins(), react(), reactCompiler()],
+        plugins: [...plugins(), reactCompiler(), react()],
         resolve: { alias, extensions: WEB_EXTENSIONS, dedupe },
         test: {
           name: 'audit',

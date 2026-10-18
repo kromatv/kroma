@@ -1,3 +1,21 @@
+import {
+  activeTheme,
+  Box,
+  backdropBlur,
+  CheckboxFace,
+  color,
+  Focusable,
+  IconButton,
+  styles,
+  sv,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+  WatchedBadge,
+} from '@kromatv/ui/kit';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+
 // One line of a season: an owned, playable episode, or a gap the viewer can
 // request. The whole row is the control, so the trailing report / watched
 // buttons are actions inside it rather than a second stop beside it.
@@ -11,21 +29,10 @@ import {
   sentenceCase,
 } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
-import {
-  Box,
-  backdropBlur,
-  CheckboxFace,
-  color,
-  Focusable,
-  IconButton,
-  styles,
-  sv,
-  Text,
-  WatchedBadge,
-} from '@kromatv/ui/kit';
+
 import { IconPlayerPlayFilled } from '@tabler/icons-react';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
-import { kromaClient } from '#web/shared/lib/api';
+
 import { wash } from '#web/shared/lib/art-styles';
 import type { SeasonGap } from '#web/shared/lib/titleView';
 import { Image } from '#web/shared/ui';
@@ -33,7 +40,7 @@ import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 const ROW_GAP = { base: 12, md: 20 } as const;
 const STILL_W = { base: 128, md: 200 } as const;
-const s = styles({
+const sDefinition = styles({
   bold: { fontWeight: '700' },
   dimmed: { opacity: 0.6 },
   frost: backdropBlur(2),
@@ -73,11 +80,18 @@ export function EpisodeRow({
   onPlay: () => void;
   onToggleWatched: () => void;
 }>) {
+  const webRuntime = useWebRuntime();
+
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [g1, g2] = posterColors(episode.id);
   const runtime = formatRuntime(episode.durationMs);
   const synopsis = episode.metadata?.overview;
-  const still = kromaClient().media.artwork.backdropFor(episode);
+  const still = webRuntime.client.media.artwork.backdropFor(episode);
   const num =
     episode.season != null && episode.episode != null
       ? `S${String(episode.season).padStart(2, '0')}E${String(episode.episode).padStart(2, '0')} · `
@@ -99,13 +113,13 @@ export function EpisodeRow({
             center
             overflow="hidden"
             radius="md"
-            style={wash(g1, g2, 135)}
+            style={wash(g1, g2, 135, scope)}
           >
             <Image src={still} fit="cover" fill style={watched ? s.dimmed : undefined} />
             <Box fill style={s.scrim} />
             {watched ? <WatchedBadge size={28} /> : null}
             <Box w={44} h={44} center radius="circle" bg="bg/50" style={hovered ? s.lift : s.frost}>
-              <IconPlayerPlayFilled size={18} color={color('white')} />
+              <IconPlayerPlayFilled size={18} color={color('white', activeTheme(scope.theme))} />
             </Box>
             {progress != null && !watched ? (
               <Box absolute left={0} right={0} bottom={0} h={4} bg="white/25">
@@ -231,6 +245,8 @@ function MissingText({
   listed,
   color,
 }: Readonly<{ label: string; listed: SeasonGap | null; color: 'text' | 'white/70' }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const locale = useLocale();
   const airDate = listed?.airDate ?? null;
@@ -267,7 +283,11 @@ function MissingText({
 }
 
 function MissingStill({ episode, still }: Readonly<{ episode: number; still: string | null }>) {
-  const src = kromaClient().media.artwork.resolve(still);
+  const webRuntime = useWebRuntime();
+
+  const s = useStyles(sDefinition);
+
+  const src = webRuntime.client.media.artwork.resolve(still);
   return (
     <Box w={STILL_W} aspect={16 / 9} shrink={0} center overflow="hidden" radius="md" bg="white/4">
       {src ? (

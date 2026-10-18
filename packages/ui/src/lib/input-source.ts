@@ -8,32 +8,60 @@
 // under the pointer, which focuses and scrolls in turn. So the wheel counts as
 // the pointer too, and any key press re-arms the reveal.
 //
-// Module-level listeners, web only: on a television there is no pointer and
+// Host-owned listeners, web only: on a television there is no pointer and
 // this stays permanently false, which is the D-pad behaviour unchanged.
 
+import { createContext, useContext, useEffect, useState } from 'react';
 import { webWindow } from './dom';
 
-let pointerDrove = false;
-
-const win = webWindow();
-if (win) {
-  const pointer = () => {
-    pointerDrove = true;
-  };
-  win.addEventListener('mousemove', pointer, { capture: true, passive: true });
-  win.addEventListener('wheel', pointer, { capture: true, passive: true });
-  win.addEventListener('pointerdown', pointer, { capture: true, passive: true });
-  win.addEventListener(
-    'keydown',
-    () => {
-      pointerDrove = false;
+/** Pointer modality and its listeners have the same lifetime as their host. */
+export function createInputSource() {
+  let pointerDrove = false;
+  let holds = 0;
+  let stop = () => {};
+  return {
+    pointerDriving: () => pointerDrove,
+    retain() {
+      holds += 1;
+      if (holds === 1) {
+        const win = webWindow();
+        const pointer = () => {
+          pointerDrove = true;
+        };
+        const keys = () => {
+          pointerDrove = false;
+        };
+        const pointerOptions = { capture: true, passive: true };
+        for (const kind of ['mousemove', 'wheel', 'pointerdown'])
+          win?.addEventListener(kind, pointer, pointerOptions);
+        win?.addEventListener('keydown', keys, true);
+        stop = () => {
+          for (const kind of ['mousemove', 'wheel', 'pointerdown'])
+            win?.removeEventListener(kind, pointer, true);
+          win?.removeEventListener('keydown', keys, true);
+        };
+      }
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        holds -= 1;
+        if (holds === 0) {
+          stop();
+          pointerDrove = false;
+        }
+      };
     },
-    { capture: true },
-  );
+  };
 }
-
-/** True when the last input was the pointer (mouse move, wheel or press), false
- * the moment a key is pressed. Always false off the web. */
-export function pointerDriving(): boolean {
-  return pointerDrove;
+const Context = createContext<ReturnType<typeof createInputSource> | null>(null);
+export const InputSourceProvider = Context.Provider;
+export const useInputSourceParent = () => useContext(Context);
+export function usePointerDriving(): () => boolean {
+  const parent = useContext(Context);
+  const [owned] = useState(() => (parent ? null : createInputSource()));
+  const source = parent ?? owned;
+  if (!source) throw new Error('Input source requires its owning root');
+  useEffect(() => (parent ? undefined : source.retain()), [parent, source]);
+  return source.pointerDriving;
 }

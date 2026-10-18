@@ -18,10 +18,10 @@ import { useSubAppearance } from './useSubAppearance';
 
 const KEY = 'subtitleStyle';
 
-function written() {
+function written(): unknown {
   const call = savePref.mock.calls.at(-1);
   if (!call) throw new Error('nothing was persisted');
-  return JSON.parse(call[1]) as Record<string, unknown>;
+  return JSON.parse(call[1]);
 }
 
 beforeEach(() => {

@@ -16,6 +16,28 @@ desktop shell and the web client.
 That is the whole point. The components and the tokens exist once. A rail tile
 looks the same on a Samsung panel and on an Apple TV because it *is* the same tile.
 
+## Confirmation ownership
+
+Wrap the app or persistent screen scope with `<ConfirmHost>{children}</ConfirmHost>`.
+A component or hook obtains its confirmation function with `const confirm = useConfirm()`
+from `@kromatv/ui/kit`, then awaits `confirm({ title, confirmLabel, cancelLabel })`.
+Each host owns its queue. Dismissal, missing hosts, and host teardown resolve to
+`false`; unmounting one root does not affect another root's questions. The former
+module-level `confirm` export is replaced by `useConfirm`.
+
+Custom catalog instances are passed to `<I18nProvider i18n={instance} locale={locale}>`.
+The kit's fallback translation hooks use that provider's instance; there is no
+module-level `setKitI18n` installer. See [publishing](../../docs/kit-publishing.md)
+for an external-host example.
+
+## Performance recording
+
+Wrap an instrumented app with `<PerfProvider>` and read its recorder through
+`usePerfSampler()`. `TvApp` supplies this provider and enables its benchmark API:
+`globalThis.KROMA_PERF` exists while that app root is mounted. Unmount stops its
+animation loop. Standalone measurement tools can own a `createPerfSampler()`
+instance directly; the former module-level recorder functions are removed.
+
 ```
 src/
   core/                     the styling engine: the vocabulary, `sv`, themes (see "Styling")
@@ -240,13 +262,19 @@ so a one-off tweak at a call site never has to fight the component.
 ### `styles()`: the rest
 
 For shapes that are not a variant of anything, `styles()` is `StyleSheet.create` in
-the kit's vocabulary: named, registered, theme-aware, one lowercase binding.
+the kit's vocabulary. Bind the declaration inside a component with `useStyles` so
+it resolves against that root's theme and relevant breakpoint steps.
 
 ```tsx
-const s = styles({
+const rowStyles = styles({
   row: { row: true, align: 'center', gap: 6, px: 8, radius: 'sm' },
   label: { text: 'meta', color: 'textMuted' },
 });
+
+function LabelRow() {
+  const s = useStyles(rowStyles);
+  return <Box style={s.row}><Text style={s.label}>Label</Text></Box>;
+}
 ```
 
 ### Compiled ahead of time
@@ -265,13 +293,13 @@ nothing and lands on the element inline. See
 
 ### Themes
 
-Every token group (colours, radius, shadows, fonts, type roles, motion) lives in one
-live store. `KROMA` is the default. A theme is created by restating any slice of it,
+Each `KitProvider` root owns its theme and design-width stores. Nested providers
+inherit them unless they explicitly configure a theme, ground or design width. `KROMA` is the default. A theme is created by restating any slice of it,
 and everything derived, meaning type roles from specs plus families and the focus
 ring from the accent, re-derives:
 
 ```tsx
-import { createTheme, setTheme, ThemeProvider, useTheme } from '@kromatv/ui/kit';
+import { createTheme, KitProvider, ThemeProvider, useThemeControls } from '@kromatv/ui/kit';
 
 const ocean = createTheme({
   colors: { accent: '#3FB6F2', accentHover: '#66C6F5' },
@@ -279,13 +307,29 @@ const ocean = createTheme({
   radius: { lg: 18 },
 });
 
-setTheme(ocean);                      // boot-time, before mount
-<ThemeProvider theme={ocean}>…        // or runtime: remounts the subtree
+<KitProvider config={{ theme: ocean, designWidth: 1920 }}>…</KitProvider>
+<ThemeProvider theme={ocean}>…</ThemeProvider>
+
+function ThemePicker() {
+  const { applyTheme } = useThemeControls();
+  return <Button onPress={() => applyTheme(ocean)}>Ocean</Button>;
+}
 ```
 
 Nothing re-resolves eagerly. Recipes, `styles()` and `<Box>` all key their caches on
 the theme version and rebuild lazily on next use, so a swap costs one rebuild per
-recipe actually rendered.
+recipe actually rendered. Browser sheets and responsive custom properties are
+scoped to their root and removed on unmount. A width-only nested provider keeps
+its parent's palette. Native targets use the same context without another view.
+
+Use `useSv(recipe)` when invoking a recipe directly in a component. Passing the
+declaration to `<Focusable sv={recipe}>` binds it there. Pure helpers accept an
+explicit `StyleScope`; `useStyleScope()` supplies the current root snapshot.
+`createStyleRuntime()` creates an explicit owner for tools and non-React hosts.
+The former process-wide `setTheme`, `applyTheme` and `pinDesignWidth` exports are
+replaced by root configuration and `useThemeControls()` / `useStyleRuntime()`.
+Tests can use `createStyleTestHost()` from `@kromatv/ui/testing` to bind renderers,
+setters and declaration resolvers to one isolated root.
 
 **New token names stay typed everywhere.** Token unions are `keyof` the base table
 plus an augmentable registry, so a name added once is immediately legal, and
@@ -651,3 +695,32 @@ Two things worth knowing when writing them:
 - [`@kromatv/core`](../core/README.md) the types and logic these components render
 - [`@kromatv/tv`](../tv/README.md) the 10-foot experience composed from these
 - [`src/components/DESIGN.md`](src/components/DESIGN.md) how a component's API is shaped
+
+Optional icon libraries belong to an app root: create `createIconLibrary(...)`
+with `useState` and wrap that root in `IconLibraryProvider`. Pass `glyphs` for
+extra components or `loadCatalog` for a workbench's lazy metadata. These replace
+`addGlyphs`, `setIconCatalog`, and `setIconCatalogLoader`; products use immutable
+build-subset lookups. See the [icon guide](src/lib/icons/README.md).
+
+App defaults are scoped through `KitProvider`. Prepare an immutable config with
+`configureKit({ formFactor: 'browser' })` and pass it as `<KitProvider config={config}>`.
+The provider owns entry density and keyboard behavior, anchored-surface defaults,
+image decoding and the native frost view. Nested providers inherit unspecified
+capabilities. `setEntryDefaults`, `setSurfacePresentation`, `setImageBackend`, and
+`registerFrost` are removed; rendered controls use `useEntryDefaults`,
+`useControlMetrics`, and `useImageBackend`.
+
+### Input ownership in tests
+
+`KitProvider` owns overlay input holds and the 300 ms press guard across screen
+transitions. Tests can import `createInputTestHost` from `@kromatv/ui/testing`
+to get `render`, `renderHook`, `clearPressGuard` and the other controls bound to
+the same real gate as their rendered tree. The test entry requires the optional
+`@testing-library/react` peer; applications do not need that package.
+
+`KitProvider` also owns focus geometry, mirrored DOM focus, and remote transport
+subscriptions. TV shells set `config={{ remote: true }}`. Nested focus scopes
+share that host, while standalone scopes own a transport for their lifetime.
+The spatial navigator receives it through `RemoteProvider`; importing a shell
+no longer configures another app’s navigator. Native platform chrome can hand a
+direction back through `useFocusServices().remote.postRemoteDirection(direction)`.

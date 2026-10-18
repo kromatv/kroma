@@ -3,13 +3,13 @@ import { lanBeacon } from '@kromatv/lan-beacon';
 import { CastProvider, I18nProvider as KitI18nProvider } from '@kromatv/ui';
 import { expoImageBackend } from '@kromatv/ui/expo-image';
 import {
-  applyMode,
   configureKit,
+  KitProvider,
   onPaper,
   readMode,
-  setTheme,
   styles,
   ThemeProvider,
+  useStyles,
   useSystemGround,
   useTheme,
 } from '@kromatv/ui/kit';
@@ -22,7 +22,7 @@ import { StatusBar } from 'expo-status-bar';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { installDeviceStore } from '#mobile/lib/deviceStore';
+import { createDeviceStore } from '#mobile/lib/deviceStore';
 import { DownloadsProvider } from '#mobile/lib/downloads';
 import { I18nProvider, useI18n } from '#mobile/lib/i18n';
 import { useNotificationStream } from '#mobile/lib/notifications';
@@ -32,8 +32,6 @@ import { SessionProvider, useSession } from '#mobile/lib/session';
 import { MOBILE, mobileTheme } from '#mobile/lib/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
-
-installDeviceStore();
 
 // The kit's defaults, stated once at module scope, before the first render: a
 // swap after one is legal (every recipe re-resolves lazily) but would repaint
@@ -45,10 +43,8 @@ installDeviceStore();
 // a trigger for a popover, so a <Select> and a <Menu> open as sheets over it.
 // The image backend and the blur are inversions - a shell that registers
 // neither gets React Native's own <Image> and a flat wash instead of glass.
-configureKit({
-  formFactor: 'phone',
-  ground: readMode(),
-  theme: mobileTheme(),
+const MOBILE_KIT = Object.freeze({
+  formFactor: 'phone' as const,
   image: expoImageBackend,
   frost: BlurView,
 });
@@ -89,12 +85,6 @@ function Shell() {
   const overArtwork = status !== 'signedIn' || segments.includes('player');
   const ground = useTheme();
   const theme = overArtwork ? MOBILE : mobileTheme(ground);
-  // The store moved to get here, so the stored mode is re-derived on the way out.
-  useEffect(() => {
-    if (overArtwork) return;
-    applyMode(readMode());
-    setTheme(mobileTheme());
-  }, [overArtwork]);
   // One cache per signed-in account: switching users drops everything.
   const [clients] = useState(() => new Map<string, QueryClient>());
   const cacheKey = user?.id ?? 'anon';
@@ -147,6 +137,19 @@ function Shell() {
 }
 
 export default function RootLayout() {
+  const [kitConfig] = useState(() => {
+    const deviceStore = createDeviceStore();
+    return configureKit({ ...MOBILE_KIT, deviceStore, ground: readMode(undefined, deviceStore) });
+  });
+  return (
+    <KitProvider config={kitConfig}>
+      <RootShell />
+    </KitProvider>
+  );
+}
+
+function RootShell() {
+  const s = useStyles(sDefinition);
   useSystemGround();
   const paper = onPaper(useTheme());
   return (
@@ -159,4 +162,4 @@ export default function RootLayout() {
   );
 }
 
-const s = styles({ root: { flex: true, bg: 'bg' } });
+const sDefinition = styles({ root: { flex: true, bg: 'bg' } });

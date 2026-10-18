@@ -4,11 +4,20 @@
 
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Box, gradient, Hint, shade, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  gradient,
+  Hint,
+  shade,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  useStyles,
+} from '@kromatv/ui/kit';
 
-const s = styles({
-  hint: { fontSize: 13, fontWeight: '600' },
-  hintKey: { fontSize: 13, fontWeight: '700' },
+const sDefinition = styles({
+  hint: { fontSize: textRoles.meta.size, fontWeight: '600' },
+  hintKey: { fontSize: textRoles.meta.size, fontWeight: '700' },
 });
 
 /** `strength` matches the design: Home fades from 0.8, the grids from 0.85
@@ -17,6 +26,8 @@ export function HintBar({
   browseKey,
   strength = 0.8,
 }: Readonly<{ browseKey: MessageKey; strength?: number }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <Box
@@ -40,6 +51,8 @@ export function HintBar({
 }
 
 function KeyHint({ button, action }: Readonly<{ button: string; action: string }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Text style={s.hint} color="textDim">
       <Text style={s.hintKey} color="accentText">

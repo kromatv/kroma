@@ -2,7 +2,7 @@
 // from the trigger's position, with a press-through backdrop. Pure RN Animated,
 // reusable for any small option list (seasons, sort, ...).
 
-import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useEffect, useRef } from 'react';
 import { Animated, Modal, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { radius, spacing, type } from '#mobile/lib/theme';
@@ -35,6 +35,8 @@ export function PopoverMenu({
   items: PopoverItem[];
   onClose(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const { width: screenW, height: screenH } = useWindowDimensions();
   const scale = useRef(new Animated.Value(0.85)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -102,7 +104,7 @@ export function PopoverMenu({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   backdrop: { flex: true, bg: 'black/25' },
   menu: {
     absolute: true,

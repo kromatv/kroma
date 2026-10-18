@@ -210,14 +210,16 @@ describe('KromaEvents bearer refresh', () => {
   });
 });
 
-describe('a socket given no refresh of its own', () => {
+describe('a socket bound to its client refresh', () => {
   it('mints a bearer through the handler the client registered', async () => {
     const client = createKromaClient({ baseUrl: 'http://host:4040' });
     const refresh = vi.fn(async () => 'fresh');
     client.setRefreshHandler(refresh);
+    client.setAuthToken('expired');
     const events = new KromaEvents('http://host:4040', {
+      token: () => client.sessionToken,
+      refresh: () => client.refreshSession(),
       WebSocketImpl: WSImpl,
-      token: () => 'expired',
     });
 
     events.connect();

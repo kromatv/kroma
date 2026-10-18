@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { deviceStorage, loadLocalePref, saveLocalePref, setSessionStorage } from '.';
-import { onDeviceStorageChange, readStored, readStoredList, writeStored } from './storage';
+import { deviceStorage, loadLocalePref, saveLocalePref } from '.';
+import { readStored, readStoredList, writeStored } from './storage';
 import { MemStorage } from './storage.fixture';
 
 beforeEach(() => {
@@ -12,14 +12,11 @@ afterEach(() => {
 });
 
 describe('deviceStorage', () => {
-  afterEach(() => setSessionStorage(null));
-
   it('hands out the installed store, the browser one, or null where there is neither', () => {
     expect(deviceStorage()).toBe((globalThis as { localStorage: Storage }).localStorage);
     const custom = { getItem: () => null, setItem() {}, removeItem() {} };
-    setSessionStorage(custom);
-    expect(deviceStorage()).toBe(custom);
-    setSessionStorage(null);
+    expect(deviceStorage(custom)).toBe(custom);
+    expect(deviceStorage(null)).toBeNull();
     delete (globalThis as { localStorage?: Storage }).localStorage;
     expect(deviceStorage()).toBeNull();
   });
@@ -35,25 +32,20 @@ describe('locale preference', () => {
   });
 });
 
-describe('watching for the device store', () => {
-  afterEach(() => setSessionStorage(null));
-
-  it('tells a watcher the store was swapped, so it can derive its value again', () => {
-    const watcher = vi.fn();
-
-    onDeviceStorageChange(watcher);
-    setSessionStorage({ getItem: () => null, setItem() {}, removeItem() {} });
-
-    expect(watcher).toHaveBeenCalledTimes(1);
+describe('explicit storage roots', () => {
+  it('keeps two backends and the browser store independent', () => {
+    const a = new MemStorage();
+    const b = new MemStorage();
+    saveLocalePref('en', a);
+    saveLocalePref('fr', b);
+    expect(loadLocalePref(a)).toBe('en');
+    expect(loadLocalePref(b)).toBe('fr');
+    expect(loadLocalePref()).toBeNull();
   });
-
-  it('hears nothing more once it has unsubscribed', () => {
-    const watcher = vi.fn();
-
-    onDeviceStorageChange(watcher)();
-    setSessionStorage(null);
-
-    expect(watcher).not.toHaveBeenCalled();
+  it('treats an explicitly unavailable backend as unavailable', () => {
+    saveLocalePref('en');
+    expect(loadLocalePref(null)).toBeNull();
+    expect(deviceStorage(null)).toBeNull();
   });
 });
 

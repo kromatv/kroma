@@ -21,7 +21,7 @@ import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { sv } from '#ui/core';
-import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { bySize, CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { useControllable } from '#ui/lib/use-controllable';
 import {
   SelectContext,
@@ -205,8 +205,9 @@ function Trigger({
   children,
   ...focusProps
 }: Readonly<SelectTriggerProps>) {
+  const entryDefaults = useEntryDefaults();
   const { label, placeholder, picked, open, disabled, anchor, setOpen } = useSelect('Trigger');
-  const shell = size ?? entryDefaultSize();
+  const shell = size ?? entryDefaults.size;
   return (
     <Focusable
       {...focusProps}

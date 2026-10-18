@@ -6,8 +6,11 @@
 // vocabulary, the key-up filter and the Menu claim.
 
 import { act, renderHook } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
 import type { HWEvent } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { KitSettingsContext, useKitSettings } from '#ui/lib/kit-settings';
+import { createMenuKeys } from '#ui/lib/menu-keys';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 
 const rn = vi.hoisted(() => ({
@@ -209,8 +212,17 @@ describe('the Menu claim', () => {
   });
 
   it('shares the counter with the screen underneath', () => {
-    const screen = renderHook(() => usePlayerKeys(params('screen')));
-    const player = renderHook(() => usePlayerKeys(params('player')));
+    const menuKeys = createMenuKeys();
+    function Wrapper({ children }: { children: ReactNode }) {
+      const settings = useKitSettings();
+      return createElement(
+        KitSettingsContext.Provider,
+        { value: { ...settings, menuKeys } },
+        children,
+      );
+    }
+    const screen = renderHook(() => usePlayerKeys(params('screen')), { wrapper: Wrapper });
+    const player = renderHook(() => usePlayerKeys(params('player')), { wrapper: Wrapper });
     // One switch, two claimants.
     expect(rn.enableTVMenuKey).toHaveBeenCalledOnce();
 

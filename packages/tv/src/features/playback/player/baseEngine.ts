@@ -9,6 +9,7 @@ import {
   decodableAudioCodecs,
   decodableVideoCodecs,
   decoderMaxFrame,
+  type PlaybackCapabilities,
   STALL_NUDGE_SEC,
 } from '@kromatv/core';
 import type { AudioFilterMode } from '@kromatv/ui';
@@ -16,6 +17,7 @@ import type { EngineListeners, TvEngine } from '#tv/features/playback/player/eng
 
 export interface EngineOptions {
   client: KromaClient;
+  capabilities?: PlaybackCapabilities;
   item: MediaItem;
   durationSec: number;
   initialRendition: number;
@@ -41,6 +43,7 @@ export function serverAudioFilter(mode: AudioFilterMode): 'standard' | 'night' |
 export abstract class BaseTvEngine implements TvEngine {
   abstract readonly kind: TvEngine['kind'];
   protected readonly client: KromaClient;
+  protected readonly capabilities: PlaybackCapabilities | undefined;
   protected readonly item: MediaItem;
   protected readonly listeners: EngineListeners;
   protected mode: 'direct' | 'master';
@@ -58,6 +61,7 @@ export abstract class BaseTvEngine implements TvEngine {
 
   protected constructor(opts: EngineOptions) {
     this.client = opts.client;
+    this.capabilities = opts.capabilities;
     this.item = opts.item;
     this.listeners = opts.listeners;
     this.durSec = opts.durationSec;
@@ -80,16 +84,16 @@ export abstract class BaseTvEngine implements TvEngine {
           // nothing is served a codec it may only be able to play as silence.
           copyCodecs: this.declaredAudioCodecs(),
           videoCodecs: this.declaredVideoCodecs(),
-          maxFrame: decoderMaxFrame(this.item),
+          maxFrame: decoderMaxFrame(this.item, this.capabilities),
         });
   }
 
   protected declaredVideoCodecs(): string[] {
-    return decodableVideoCodecs();
+    return decodableVideoCodecs(this.capabilities);
   }
 
   protected declaredAudioCodecs(): string[] {
-    return decodableAudioCodecs();
+    return decodableAudioCodecs(this.capabilities);
   }
 
   // `audioUnsupported`: the device can't decode the source audio track, so

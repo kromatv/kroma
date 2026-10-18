@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+import { saveLocalePref as persistLocale, type SessionStorage } from '@kromatv/client';
+import { createStyleTestHost } from '#ui/testing-style';
+
 //
 // Which language the app comes up in.
 //
@@ -8,8 +11,6 @@
 // keeps the previous person's language, which is the kind of bug nobody reports
 // and everybody notices.
 
-import { saveLocalePref, setSessionStorage } from '@kromatv/client';
-import { render } from '@testing-library/react';
 import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useLocale } from './i18n';
@@ -28,13 +29,21 @@ function fakeClient() {
   return client as unknown as Parameters<typeof LocaleProvider>[0]['client'] & typeof client;
 }
 
+const map = new Map<string, string>();
+const deviceStore: SessionStorage = {
+  getItem: (key) => map.get(key) ?? null,
+  setItem: (key, value) => {
+    map.set(key, value);
+  },
+  removeItem: (key) => {
+    map.delete(key);
+  },
+};
+const testHost = createStyleTestHost({ deviceStore });
+const { render } = testHost;
+const saveLocalePref = (locale: string | null) => persistLocale(locale, deviceStore);
 function memoryStore() {
-  const map = new Map<string, string>();
-  setSessionStorage({
-    getItem: (k) => map.get(k) ?? null,
-    setItem: (k, v) => void map.set(k, v),
-    removeItem: (k) => void map.delete(k),
-  });
+  map.clear();
   return map;
 }
 
@@ -43,7 +52,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  setSessionStorage(null);
   vi.restoreAllMocks();
 });
 

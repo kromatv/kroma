@@ -1,3 +1,13 @@
+import {
+  activeTheme,
+  type CornerValue,
+  radiusValue,
+  type StyleDecl,
+  svFor,
+  useStyleScope,
+  useTheme,
+  type Variant,
+} from '#ui/core';
 // <IconButton>: a round, icon-only control (the theme-song mute, a close button,
 // a player transport key). Same focus behaviour as <Button>, no label.
 
@@ -6,16 +16,9 @@ import { StyleSheet, type ViewStyle } from 'react-native';
 import { delegateOf, Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
-import {
-  type CornerValue,
-  radiusValue,
-  type StyleDecl,
-  svFor,
-  useTheme,
-  type Variant,
-} from '#ui/core';
+
 import type { Radius } from '#ui/core/tokens/layout';
-import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { useGroupMember } from '#ui/lib/group-shape';
 
 /** How the button is filled. */
@@ -76,8 +79,8 @@ const iconButtonVariants = svFor<{ root: StyleDecl; icon: Pick<IconProps, 'color
         root: {
           bg: 'bg/55',
           border: 'tint/12',
-          _hover: { bg: 'rgba(28, 28, 34, 0.6)' },
-          _press: { bg: 'rgba(40, 40, 48, 0.65)' },
+          _hover: { bg: 'surface3/60' },
+          _press: { bg: 'playerRaised/65' },
         },
       },
     },
@@ -165,13 +168,17 @@ function IconButton({
   onBlur,
   ...focusProps
 }: Readonly<IconButtonProps>) {
+  const scope = useStyleScope();
+
+  const entryDefaults = useEntryDefaults();
   const delegate = delegateOf(asChild, children);
   const group = useGroupMember(onFocus, onBlur);
   const row = control ?? group.size;
-  const shell = CONTROL[row ?? entryDefaultSize()];
+  const shell = CONTROL[row ?? entryDefaults.size];
   const box$ = diameter ?? shell.height;
   const asked = cornerRadius ?? (row ? shell.radius : undefined);
-  const corner = asked === undefined ? undefined : radiusValue(asked);
+  const corner =
+    asked === undefined ? undefined : radiusValue(asked, undefined, activeTheme(scope.theme));
   const glyphSize = glyph ?? Math.round(box$ * 0.4);
   const theme = useTheme();
   const frost = useFrostCoat(metrics(box$, corner ?? theme.radius.pill), {

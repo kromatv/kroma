@@ -1,10 +1,21 @@
-import { Box, Icon, IconButton, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  Icon,
+  IconButton,
+  styles,
+  Text,
+  fontSizes as textSizes,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useT } from '#mobile/lib/i18n';
 import { useUnreadCount } from '#mobile/lib/notifications';
 import { type } from '#mobile/lib/theme';
 
 export function NotificationBell() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const router = useRouter();
   const unread = useUnreadCount();
@@ -31,7 +42,7 @@ export function NotificationBell() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   badge: {
     absolute: true,
     top: -5,
@@ -41,7 +52,13 @@ const s = styles({
     minW: 16,
     px: 4,
     bg: 'accent',
-    radius: 8,
+    radius: cornerRadius.sm,
   },
-  count: { ...type.small, fontSize: 10, lineHeight: 14, fontWeight: '800', color: 'accentInk' },
+  count: {
+    ...type.small,
+    fontSize: textSizes.micro,
+    lineHeight: 14,
+    fontWeight: '800',
+    color: 'accentInk',
+  },
 });

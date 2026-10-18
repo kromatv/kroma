@@ -49,6 +49,8 @@ export function useCatalogueSync(
       }
     };
     const events = new KromaEvents(client.baseUrl, {
+      token: () => client.sessionToken,
+      refresh: () => client.refreshSession(),
       // The stream open/close is the fastest signal that the server just came
       // back or dropped; nudge the heartbeat to confirm reachability at once
       // rather than waiting for its next tick.

@@ -1,7 +1,7 @@
 import { commitLabel, formatBuildDate, repoLabel } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { useLocale, useT } from '@kromatv/ui';
-import { Box, Hint, ListRow, styles, Text, useFocusNav } from '@kromatv/ui/kit';
+import { Box, Hint, ListRow, styles, Text, useFocusNav, useStyles } from '@kromatv/ui/kit';
 import { Platform } from 'react-native';
 import { buildInfo } from '#tv/app/clientBuild';
 import { type ClientHardware, clientHardware } from '#tv/app/clientHardware';
@@ -117,6 +117,8 @@ function Fact({
   value,
   mono,
 }: Readonly<{ label: string; value: string | null; mono?: boolean }>) {
+  const s = useStyles(sDefinition);
+
   if (!value) return null;
   return (
     <ListRow.Root disabled>
@@ -130,7 +132,7 @@ function Fact({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   // Native takes one font family name (a CSS-style list resolves to nothing
   // and silently falls back); the browser shells take the list.
   mono: {

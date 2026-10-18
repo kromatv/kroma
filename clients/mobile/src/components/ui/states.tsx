@@ -1,7 +1,16 @@
 // Whole-surface states: what a screen shows instead of content while it is
 // loading, empty, or broken, plus the inline error banner forms use.
 
-import { Box, Button, Icon, Spinner, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  radius as cornerRadius,
+  Icon,
+  Spinner,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import { radius, spacing, type } from '#mobile/lib/theme';
@@ -9,6 +18,8 @@ import { radius, spacing, type } from '#mobile/lib/theme';
 /** Tinted banner with a shake on message change; renders nothing while
  * `message` is null. */
 export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
+  const s = useStyles(sDefinition);
+
   const shake = useRef(new Animated.Value(0)).current;
   const fade = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -34,6 +45,8 @@ export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
 }
 
 export function Loading({ label }: Readonly<{ label?: string }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.center}>
       <Spinner size={36} color="textMuted" />
@@ -51,6 +64,8 @@ export function ErrorView({
   retryLabel?: string;
   onRetry?: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.center}>
       <Text style={s.centerText}>{message}</Text>
@@ -76,6 +91,8 @@ export function EmptyState({
   actionLabel?: string;
   onAction?: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.emptyBox}>
       <Box style={s.emptyDisc}>{icon}</Box>
@@ -90,7 +107,7 @@ export function EmptyState({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   box: {
     row: true,
     align: 'center',
@@ -115,7 +132,14 @@ const s = styles({
     // bias it upward toward the ~45% line.
     pb: 150,
   },
-  emptyDisc: { center: true, w: 84, h: 84, mb: spacing.sm, bg: 'surface2', radius: 42 },
+  emptyDisc: {
+    center: true,
+    w: 84,
+    h: 84,
+    mb: spacing.sm,
+    bg: 'surface2',
+    radius: cornerRadius.emptyState,
+  },
   emptyTitle: { ...type.section, textAlign: 'center' },
   emptyHint: { ...type.caption, maxW: 300, textAlign: 'center', lineHeight: 20 },
   emptyAction: { minW: 180, mt: spacing.md },

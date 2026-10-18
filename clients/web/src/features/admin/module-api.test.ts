@@ -1,4 +1,3 @@
-import { sessionToken, setSessionToken } from '@kromatv/client';
 import { describe, expect, it } from 'vitest';
 import {
   calls,
@@ -7,7 +6,10 @@ import {
   stubFetch,
   unreadable,
 } from '#web/features/admin/module-api.fixture';
-import { adminApi, matchesQuery, message } from './module-api';
+import { matchesQuery, message } from './module-api';
+import { moduleApi, sessionToken, setSessionToken } from './module-api.fixture';
+
+const { adminApi } = moduleApi;
 
 installHarness();
 

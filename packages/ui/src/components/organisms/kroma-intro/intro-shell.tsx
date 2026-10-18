@@ -19,7 +19,7 @@ export function IntroShell({ exiting, children }: Readonly<IntroShellProps>) {
         inset: 0,
         zIndex: 9999,
         overflow: 'hidden',
-        background: '#0A0A0C',
+        background: 'bg',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -36,7 +36,7 @@ export function IntroShell({ exiting, children }: Readonly<IntroShellProps>) {
         style={{
           position: 'absolute',
           inset: 0,
-          background: '#0A0A0C',
+          background: 'bg',
           opacity: exiting ? 1 : 0,
           transition: 'opacity .8s ease',
           pointerEvents: 'none',

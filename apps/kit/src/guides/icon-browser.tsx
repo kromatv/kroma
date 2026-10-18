@@ -1,3 +1,4 @@
+import { useStyles } from '@kromatv/ui/kit';
 import { type ReactNode, type Ref, useMemo, useRef, useState } from 'react';
 import { Platform, ScrollView, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -11,10 +12,9 @@ import { Select } from '#ui/components/molecules/select';
 import { SearchKeyboard } from '#ui/components/organisms/keyboard';
 import { styles } from '#ui/core';
 import { space } from '#ui/core/tokens';
-import { type IconName, iconNames } from '#ui/lib/glyph';
-import { iconCategories } from '#ui/lib/icon-catalog';
+import type { IconName } from '#ui/lib/glyph';
 import { type IconHit, searchIcons } from '#ui/lib/icon-search';
-import { useIconLibrary } from '#ui/lib/icons/library';
+import { useIconAssets, useIconLibrary } from '#ui/lib/icons/library';
 
 // Rendering thousands of glyphs at once locks the workbench up for seconds,
 // and far longer on a television.
@@ -51,6 +51,8 @@ function IconBrowser() {
 }
 
 function Arriving() {
+  const s = useStyles(sDefinition);
+
   return (
     <Box radius="lg" bg="surface1" style={s.frame} py={space[10]} gap={space[3]} center>
       <Spinner label="Loading the icon library" />
@@ -62,18 +64,22 @@ function Arriving() {
 }
 
 function Browser() {
+  const s = useStyles(sDefinition);
+
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState(EVERY_CATEGORY);
   const [size, setSize] = useState('26');
   const [page, setPage] = useState(1);
-  const all = iconNames();
-  const categories = iconCategories();
+  const { glyphs, catalog } = useIconAssets();
+  const all = glyphs.iconNames();
+  const categories = catalog.iconCategories();
   const hits = useMemo(
     () =>
       searchIcons(all, query, {
+        catalog,
         category: category === EVERY_CATEGORY ? undefined : category,
       }),
-    [all, query, category],
+    [all, query, category, catalog],
   );
   const tagged = useMemo(() => hits.filter((hit) => hit.tags.length > 0).length, [hits]);
   const shown = paginate(hits, page, PAGE);
@@ -208,6 +214,8 @@ function Grid({ children, ref }: Readonly<{ children: ReactNode; ref: Ref<Scroll
 }
 
 function Glyph({ hit, size }: Readonly<{ hit: IconHit<IconName>; size: number }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box w={104} align="center" gap={space[2]}>
       <Box h={52} center>
@@ -239,7 +247,7 @@ function summarize({ matched, total, tagged, first, last }: Readonly<Summary>): 
   return tagged > 0 ? `${head}${range} · ${tagged} matched by tag` : `${head}${range}`;
 }
 
-const s = styles({
+const sDefinition = styles({
   frame: { borderWidth: 1, borderColor: 'border', overflow: 'hidden' },
   bar: { borderBottomWidth: 1, borderBottomColor: 'border' },
   pager: { borderTopWidth: 1, borderTopColor: 'border' },

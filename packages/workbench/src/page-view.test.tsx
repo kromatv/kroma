@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
 
-import { onScreen } from '@kromatv/ui/testing';
-import { cleanup, render, screen } from '@testing-library/react';
+import { createStyleTestHost, onScreen } from '@kromatv/ui/testing';
+import { cleanup, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import * as themePage from './fixtures/02-making-a-theme.page.mdx';
 import { layoutFor } from './layout';
 import { pageAt } from './page';
 import { PageView } from './page-view';
+
+const styleHost = createStyleTestHost();
+const { render } = styleHost;
 
 afterEach(cleanup);
 

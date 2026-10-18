@@ -18,6 +18,7 @@ import {
   Text,
   tintGradient,
   useFocusNav,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useCallback, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
@@ -28,6 +29,8 @@ import { TITLE } from '#tv/features/catalog/screenStyle';
  * drills into {@link TvGenreGrid}. Derives the list from the already-loaded
  * catalogue: no extra request, like {@link TvPerson}. */
 export function TvGenres() {
+  const s = useStyles(sDefinition);
+
   const { movies, shows } = useConnection();
   const client = useClient();
   const t = useT();
@@ -114,7 +117,7 @@ const CARD_MIN = 320;
 // are the same seam.
 const GAP = 12;
 
-const s = styles({
+const sDefinition = styles({
   scroll: { flex: true, minH: 0 },
   // Padding belongs on the content, not the scroller box: on the box it would
   // pad the viewport and clip the last row instead of the list.

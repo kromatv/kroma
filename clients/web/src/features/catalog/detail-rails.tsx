@@ -1,8 +1,3 @@
-// The two horizontal rails under a detail hero: the cast, and similar titles.
-
-import type { CastMember } from '@kromatv/client/media';
-import { personSegment, posterColors, sizedImageUrl } from '@kromatv/core';
-import { useT } from '@kromatv/ui';
 import {
   Box,
   classes,
@@ -12,7 +7,16 @@ import {
   styles,
   sv,
   Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// The two horizontal rails under a detail hero: the cast, and similar titles.
+
+import type { CastMember } from '@kromatv/client/media';
+import { personSegment, posterColors, sizedImageUrl } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+
 import { imageUrl } from '#web/shared/lib/api';
 import { wash } from '#web/shared/lib/art-styles';
 import { Image, Poster, PosterRail } from '#web/shared/ui';
@@ -22,7 +26,7 @@ import { RouteLink } from '#web/shared/ui/route-link';
 // axis, so both scrollers stay plain elements around kit content.
 const GUTTER = { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' } as const;
 
-const s = styles({
+const sDefinition = styles({
   gutter: GUTTER,
   castSection: { mt: 40 },
   similarSection: { mt: 44 },
@@ -66,6 +70,8 @@ export function initials(name: string): string {
 /** "Distribution" horizontal rail of initials avatars (matches the design;
  * the reference uses gradient initials, not photos). */
 export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   if (cast.length === 0) return null;
   return (
@@ -86,6 +92,8 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
 }
 
 function CastTile({ person }: Readonly<{ person: CastMember }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [g1, g2] = posterColors(person.name);
   const photo = sizedImageUrl(imageUrl(person.profileUrl), CAST_TILE_W);
@@ -138,6 +146,8 @@ export interface SimilarItem {
 
 /** Horizontal "Titres similaires" rail of poster tiles. */
 export function SimilarRail({ title, items }: Readonly<{ title: string; items: SimilarItem[] }>) {
+  const s = useStyles(sDefinition);
+
   if (items.length === 0) return null;
   return (
     <section className={classes(s.similarSection)}>
@@ -167,8 +177,13 @@ export function SimilarRail({ title, items }: Readonly<{ title: string; items: S
 }
 
 function CastInitials({ name, g1, g2 }: Readonly<{ name: string; g1: string; g2: string }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   return (
-    <Box fill center style={wash(g1, g2)}>
+    <Box fill center style={wash(g1, g2, undefined, scope)}>
       <Box fill style={s.sheen} />
       <Text variant="h1" color="white/90">
         {initials(name)}

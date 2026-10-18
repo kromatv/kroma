@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { sv } from './recipe';
-import {
-  createTheme,
+import { createStyleTestHost } from '#ui/testing-style';
+
+import { createTheme, KROMA, KROMA_LIGHT } from './theme';
+
+const styleHost = createStyleTestHost();
+const {
+  sv,
   groundShade,
-  KROMA,
-  KROMA_LIGHT,
   onPaper,
   onThemeChange,
   radiusValue,
@@ -13,7 +15,7 @@ import {
   themed,
   themedCache,
   themeVersion,
-} from './theme';
+} = styleHost;
 
 afterEach(() => setTheme(KROMA));
 

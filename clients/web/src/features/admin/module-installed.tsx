@@ -7,7 +7,18 @@ import type { StoreCatalog } from '@kromatv/client/modules';
 import type { MessageKey } from '@kromatv/i18n';
 import { moduleIconUrl, Table } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
-import { Badge, Box, EmptyState, Icon, Row, Switch, styles, Text, Tooltip } from '@kromatv/ui/kit';
+import {
+  Badge,
+  Box,
+  EmptyState,
+  Icon,
+  Row,
+  Switch,
+  styles,
+  Text,
+  Tooltip,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { type AdminModule, type ModuleOrigin, matchesQuery } from '#web/features/admin/module-api';
 import { useModuleToggle } from '#web/features/admin/module-data';
 import { Pill } from '#web/features/admin/pill';
@@ -35,7 +46,7 @@ function sourceKey(origin: ModuleOrigin | undefined): MessageKey {
 // The label takes the cell's free space and right-aligns inside it: a longer
 // word ("Desactive") then grows leftwards instead of pushing the switch, so both
 // columns line up down the list whatever each row says.
-const s = styles({ stateLabel: { flex: true, textAlign: 'right' } });
+const sDefinition = styles({ stateLabel: { flex: true, textAlign: 'right' } });
 
 function InstalledRow({
   m,
@@ -48,6 +59,8 @@ function InstalledRow({
   onOpen: () => void;
   onChanged: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { busy, error, toggle } = useModuleToggle(m.id, onChanged);
   const answers = m.contributes ?? [];

@@ -4,21 +4,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const pushKey = vi.fn();
 const subscribePush = vi.fn();
 const unsubscribePush = vi.fn();
-vi.mock('#web/shared/lib/api', () => ({
-  kromaClient: () => ({
-    notifications: {
-      push: { key: pushKey, subscribe: subscribePush, unsubscribe: unsubscribePush },
-    },
-  }),
-}));
 
 const { disablePush: disable, enablePush: enable } = await import('@kromatv/client/notifications');
 const { pushBlocker, webPush } = await import('./push');
 const { bytesToBase64Url } = await import('./base64url');
-const { kromaClient } = await import('#web/shared/lib/api');
+const { createWebTestClient } = await import('./web-runtime.fixture');
+const pushClient = createWebTestClient({
+  notifications: { push: { key: pushKey, subscribe: subscribePush, unsubscribe: unsubscribePush } },
+});
 
-const enablePush = () => enable(webPush, kromaClient());
-const disablePush = () => disable(webPush, kromaClient());
+const enablePush = () => enable(webPush, pushClient);
+const disablePush = () => disable(webPush, pushClient);
 const currentEndpoint = () => webPush.endpoint();
 
 const MAC_CHROME =

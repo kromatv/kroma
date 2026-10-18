@@ -1,3 +1,18 @@
+import {
+  Box,
+  type BoxProps,
+  CodeBlock,
+  Divider,
+  List,
+  resolveStyles,
+  type StyleScope,
+  styles,
+  Table,
+  type TextProps,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 // The block half of the element map: the paragraphs, headings, lists, tables
 // and rules a document is built out of, and the rhythm between them. The blocks
 // themselves are the kit's - <List>, <Table>, <CodeBlock> - and what lives here
@@ -6,16 +21,6 @@
 // decides what a line is - lives in `mdx-marks.tsx`, and `mdx.tsx` is the map
 // that names both.
 
-import {
-  Box,
-  type BoxProps,
-  CodeBlock,
-  Divider,
-  List,
-  styles,
-  Table,
-  type TextProps,
-} from '@kromatv/ui/kit';
 import { space } from '@kromatv/ui/tokens';
 import { Children, createContext, isValidElement, type ReactNode, useContext } from 'react';
 import { BODY, Prose, runs, TaskBox } from './mdx-marks';
@@ -41,7 +46,7 @@ const FIGURE_ABOVE = { base: space[1], md: space[2] };
 const FIGURE_BELOW = { base: space[4], md: space[6] };
 const SECTION_ABOVE = { base: space[6], md: space[10] };
 
-const s = styles({
+const sDefinition = styles({
   block: { maxW: MEASURE.prose, mb: BLOCK },
   // A section opens on a rule the width of the column it heads, with the
   // heading hung under it.
@@ -99,6 +104,8 @@ function DocFigure({
   children,
   onLayout,
 }: Readonly<{ children?: ReactNode; onLayout?: BoxProps['onLayout'] }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.figure} onLayout={onLayout}>
       {children}
@@ -107,6 +114,8 @@ function DocFigure({
 }
 
 function Paragraph({ children }: Readonly<{ children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Prose variant={BODY.variant} color={BODY.color} style={s.block}>
       {children}
@@ -118,19 +127,29 @@ function Paragraph({ children }: Readonly<{ children?: ReactNode }>) {
 // heading is set in and it is bold at every step, so a second bold step would
 // have said nothing. Read at render, not captured here, so a theme swap reaches
 // them.
-function frameFor(level: number) {
-  if (level <= 1) return s.h1;
-  if (level === 2) return s.h2;
-  return level === 3 ? s.h3 : s.h4;
+function frameFor(level: number, scope: StyleScope) {
+  if (level <= 1) return resolveStyles(sDefinition, scope).h1;
+  if (level === 2) return resolveStyles(sDefinition, scope).h2;
+  return level === 3 ? resolveStyles(sDefinition, scope).h3 : resolveStyles(sDefinition, scope).h4;
 }
 
 // A heading reports itself to the article's outline as it lays out, which is
 // what the table of contents beside a guide page is built from.
 function heading(level: number, variant: TextProps['variant'], color: TextProps['color']) {
   return function Heading({ children }: Readonly<{ children?: ReactNode }>) {
+    const scope = useStyleScope();
+    useThemeVersion();
+
     const { id, onLayout } = useSection(level, children);
     return (
-      <Box row wrap align="center" gapX={space[2]} style={frameFor(level)} onLayout={onLayout}>
+      <Box
+        row
+        wrap
+        align="center"
+        gapX={space[2]}
+        style={frameFor(level, scope)}
+        onLayout={onLayout}
+      >
         <Box shrink={1}>
           <Prose variant={variant} color={color}>
             {children}
@@ -143,6 +162,8 @@ function heading(level: number, variant: TextProps['variant'], color: TextProps[
 }
 
 function BulletList({ children }: Readonly<{ children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   // Inside a guidance card the items draw their own markers and the card owns
   // the rhythm, so the list is a plain column: <List.Root>'s bullets and its
   // block margin would both be a second opinion.
@@ -156,6 +177,8 @@ function BulletList({ children }: Readonly<{ children?: ReactNode }>) {
 }
 
 function OrderedList({ children }: Readonly<{ children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.list}>
       <List.Root ordered>{children}</List.Root>
@@ -201,6 +224,8 @@ function ListItem({ children }: Readonly<{ children?: ReactNode }>) {
 }
 
 function Quote({ children }: Readonly<{ children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box row style={s.quote}>
       <Box bg="accent" style={s.quoteRule} />
@@ -210,6 +235,8 @@ function Quote({ children }: Readonly<{ children?: ReactNode }>) {
 }
 
 function Rule() {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.rule}>
       <Divider />
@@ -262,6 +289,8 @@ function HeadCell({ children }: Readonly<{ children?: ReactNode }>) {
 
 // GFM puts the footnote list in a <section>.
 function Aside({ children }: Readonly<{ children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return <Box style={s.footnotes}>{children}</Box>;
 }
 

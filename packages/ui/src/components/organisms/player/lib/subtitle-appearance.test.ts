@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
-import { setDeviceStore } from '#ui/lib/device-store';
+import { createElement, type ReactNode } from 'react';
+import { describe, expect, it } from 'vitest';
+import { KitProvider } from '#ui/configure';
+import type { DeviceStore } from '#ui/lib/device-store';
 import {
   DEFAULT_SUB_APPEARANCE,
   migrateAppearance,
@@ -87,10 +89,7 @@ describe('subtitleStyle', () => {
   });
 
   it('never dims the background along with the text', () => {
-    const css = subtitleStyle(base({ opacity: 20, bgColor: '#000000', bgOpacity: 100 })) as Record<
-      string,
-      unknown
-    >;
+    const css = subtitleStyle(base({ opacity: 20, bgColor: '#000000', bgOpacity: 100 }));
     expect(css.backgroundColor).toBe('rgba(0, 0, 0, 1)');
     expect(css.opacity).toBeUndefined();
   });
@@ -99,47 +98,41 @@ describe('subtitleStyle', () => {
   // the web four). These assertions run against the web implementation, which is
   // what the runner resolves (see vitest's resolve.extensions).
   it('shadow edge sets a text shadow and no padding or background', () => {
-    const css = subtitleStyle(base({ edge: 'shadow' })) as Record<string, unknown>;
-    expect(String(css.textShadow)).toContain('rgba(0,0,0,.92)');
+    const css = subtitleStyle(base({ edge: 'shadow' }));
+    expect(String(Reflect.get(css, 'textShadow'))).toContain('rgba(0,0,0,.92)');
     expect(css.paddingHorizontal).toBeUndefined();
     expect(css.backgroundColor).toBeUndefined();
   });
 
   it('uniform edge renders a four-corner stroke', () => {
-    const css = subtitleStyle(base({ edge: 'uniform' })) as Record<string, unknown>;
-    expect(String(css.textShadow)).toContain('-1.5px -1.5px 0 #000');
+    const css = subtitleStyle(base({ edge: 'uniform' }));
+    expect(String(Reflect.get(css, 'textShadow'))).toContain('-1.5px -1.5px 0 #000');
   });
 
   it('raised and depressed offset in opposite directions', () => {
-    const raised = String(
-      (subtitleStyle(base({ edge: 'raised' })) as Record<string, unknown>).textShadow,
-    );
-    const depressed = String(
-      (subtitleStyle(base({ edge: 'depressed' })) as Record<string, unknown>).textShadow,
-    );
+    const raised = String(Reflect.get(subtitleStyle(base({ edge: 'raised' })), 'textShadow'));
+    const depressed = String(Reflect.get(subtitleStyle(base({ edge: 'depressed' })), 'textShadow'));
     expect(raised).toContain('1px 1px 0 #000');
     expect(depressed).toContain('-1px -1px 0 #000');
     expect(raised).not.toBe(depressed);
   });
 
   it('none edge has neither shadow nor background', () => {
-    const css = subtitleStyle(base({ edge: 'none' })) as Record<string, unknown>;
-    expect(css.textShadow).toBeUndefined();
+    const css = subtitleStyle(base({ edge: 'none' }));
+    expect(Reflect.get(css, 'textShadow')).toBeUndefined();
     expect(css.backgroundColor).toBeUndefined();
   });
 
   it('draws the background from its own colour and opacity, independent of the edge', () => {
-    const css = subtitleStyle(
-      base({ edge: 'shadow', bgColor: '#FF0000', bgOpacity: 50 }),
-    ) as Record<string, unknown>;
+    const css = subtitleStyle(base({ edge: 'shadow', bgColor: '#FF0000', bgOpacity: 50 }));
     expect(css.backgroundColor).toBe('rgba(255, 0, 0, 0.5)');
     expect(css.paddingVertical).toBe(4);
     expect(css.paddingHorizontal).toBe(16);
-    expect(String(css.textShadow)).toContain('rgba(0,0,0,.92)');
+    expect(String(Reflect.get(css, 'textShadow'))).toContain('rgba(0,0,0,.92)');
   });
 
   it('omits the background entirely at zero opacity', () => {
-    const css = subtitleStyle(base({ bgOpacity: 0 })) as Record<string, unknown>;
+    const css = subtitleStyle(base({ bgOpacity: 0 }));
     expect(css.backgroundColor).toBeUndefined();
     expect(css.paddingHorizontal).toBeUndefined();
   });
@@ -231,52 +224,98 @@ const KEY = 'kroma.subtitleStyle';
 
 function deviceStore(initial: Record<string, string> = {}) {
   const map = new Map(Object.entries(initial));
-  setDeviceStore({
+  const store: DeviceStore = {
     getItem: (k) => map.get(k) ?? null,
     setItem: (k, v) => void map.set(k, v),
     removeItem: (k) => void map.delete(k),
-  });
-  return map;
+  };
+  return { map, store };
 }
-
-afterEach(() => setDeviceStore(null));
 
 describe('useSubtitleAppearance', () => {
   it('starts from the defaults, so a server render and the client agree', () => {
-    const { result } = renderHook(() => useSubtitleAppearance());
+    const store = null;
+    const { result } = renderHook(() => useSubtitleAppearance(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(KitProvider, { config: { deviceStore: store } }, children),
+    });
     expect(result.current[0]).toEqual(DEFAULT_SUB_APPEARANCE);
   });
 
   it('hydrates a stored choice, migrating the names it was written under', () => {
-    deviceStore({ [KEY]: JSON.stringify({ edge: 'outline', font: 'sans' }) });
-    const { result } = renderHook(() => useSubtitleAppearance());
+    const { store } = deviceStore({ [KEY]: JSON.stringify({ edge: 'outline', font: 'sans' }) });
+    const { result } = renderHook(() => useSubtitleAppearance(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(KitProvider, { config: { deviceStore: store } }, children),
+    });
     expect(result.current[0]).toMatchObject({ edge: 'uniform', font: 'propSans' });
   });
 
   it('keeps the defaults when the stored value is not JSON at all', () => {
-    deviceStore({ [KEY]: '{oops' });
-    const { result } = renderHook(() => useSubtitleAppearance());
+    const { store } = deviceStore({ [KEY]: '{oops' });
+    const { result } = renderHook(() => useSubtitleAppearance(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(KitProvider, { config: { deviceStore: store } }, children),
+    });
     expect(result.current[0]).toEqual(DEFAULT_SUB_APPEARANCE);
   });
 
   it('merges a partial change and writes the whole appearance back', () => {
-    const map = deviceStore();
-    const { result } = renderHook(() => useSubtitleAppearance());
+    const { map, store } = deviceStore();
+    const { result } = renderHook(() => useSubtitleAppearance(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(KitProvider, { config: { deviceStore: store } }, children),
+    });
     act(() => result.current[1]({ size: 'xl' }));
     expect(result.current[0]).toEqual({ ...DEFAULT_SUB_APPEARANCE, size: 'xl' });
     expect(JSON.parse(map.get(KEY) ?? '{}')).toEqual({ ...DEFAULT_SUB_APPEARANCE, size: 'xl' });
   });
 
   it('honours the change even when the device store refuses to keep it', () => {
-    setDeviceStore({
+    const store: DeviceStore = {
       getItem: () => null,
       setItem: () => {
         throw new Error('quota');
       },
       removeItem: () => {},
+    };
+    const { result } = renderHook(() => useSubtitleAppearance(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(KitProvider, { config: { deviceStore: store } }, children),
     });
-    const { result } = renderHook(() => useSubtitleAppearance());
     act(() => result.current[1]({ size: 'sm' }));
     expect(result.current[0].size).toBe('sm');
+  });
+});
+
+describe('damaged subtitle preferences', () => {
+  it('keeps valid choices while rejecting invalid fields and unrelated keys', () => {
+    expect(
+      migrateAppearance({
+        size: 'lg',
+        edge: 'outline',
+        opacity: NaN,
+        font: 'x'.repeat(33),
+        injected: true,
+      }),
+    ).toEqual({
+      ...DEFAULT_SUB_APPEARANCE,
+      size: 'lg',
+      edge: 'uniform',
+    });
+  });
+
+  it.each([[], 42, 'not a preference'])('defaults a non-object preference: %j', (value) => {
+    expect(migrateAppearance(value)).toEqual(DEFAULT_SUB_APPEARANCE);
+  });
+
+  it('clamps valid numeric opacities and refuses non-finite ones', () => {
+    expect(migrateAppearance({ opacity: -10, windowOpacity: 1000 })).toMatchObject({
+      opacity: 20,
+      windowOpacity: 100,
+    });
+    expect(
+      migrateAppearance({ bgColor: '#FF0000', bgOpacity: Infinity, windowOpacity: NaN }),
+    ).toMatchObject({ bgOpacity: 0, windowOpacity: 0 });
   });
 });

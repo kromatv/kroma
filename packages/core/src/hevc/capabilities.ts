@@ -80,20 +80,6 @@ export interface PlaybackCapabilities {
   source: 'mediaSource' | 'videoElement' | 'platform-tv' | 'unknown';
 }
 
-let injectedLimits: DecoderFrameLimits | undefined;
-
-/**
- * How large a picture this device's decoders will actually accept, which no Web
- * API reports and every platform table above guesses at: a shell that can ask
- * the platform hands the answer over at the app root, before the first render.
- * Null clears it. Drops the cached capabilities, so it may be called either side
- * of the first {@link capabilities} read.
- */
-export function setDecoderFrameLimits(limits: DecoderFrameLimits | null): void {
-  injectedLimits = limits ?? undefined;
-  cached = null;
-}
-
 function supportsType(type: string): boolean {
   const MS = (globalThis as { MediaSource?: { isTypeSupported(t: string): boolean } }).MediaSource;
   if (MS && typeof MS.isTypeSupported === 'function' && MS.isTypeSupported(type)) return true;
@@ -140,7 +126,7 @@ function isReactNative(): boolean {
   );
 }
 
-export function detectCapabilities(): PlaybackCapabilities {
+export function detectCapabilities(frameLimits?: DecoderFrameLimits): PlaybackCapabilities {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   const isTizen = isTizenRuntime(ua);
   const isWebOS = isWebOsRuntime(ua);
@@ -173,7 +159,7 @@ export function detectCapabilities(): PlaybackCapabilities {
       // refusing a title a set would have played. Which set actually does what is
       // the device matrix's job, not this table's.
       hdr: { hdr10: true, hdr10Plus: true, dolbyVision: true, hlg: true },
-      frameLimits: injectedLimits,
+      frameLimits,
       audio: tvAudio,
       source: 'platform-tv',
     };
@@ -200,17 +186,22 @@ export function detectCapabilities(): PlaybackCapabilities {
     av1: supportsType(PROBE.av1Main),
     vp9: supportsType(PROBE.vp9),
     hdr: detectHdrFormats(),
-    frameLimits: injectedLimits,
+    frameLimits,
     audio,
     source: usingMse ? 'mediaSource' : 'videoElement',
   };
 }
 
-let cached: PlaybackCapabilities | null = null;
-/** Cached: capabilities cannot change within a session. */
+// Runtime support is a static platform capability, rather than a mutable
+// session registry. Each JavaScript realm probes once at module initialization.
+const DETECTED = detectCapabilities();
+const SNAPSHOT: PlaybackCapabilities = Object.freeze({
+  ...DETECTED,
+  audio: Object.freeze(DETECTED.audio),
+  hdr: Object.freeze(DETECTED.hdr),
+});
 export function capabilities(): PlaybackCapabilities {
-  cached ??= detectCapabilities();
-  return cached;
+  return SNAPSHOT;
 }
 
 /**

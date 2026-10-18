@@ -1,4 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+import { createStyleTestHost } from '#ui/testing-style';
+
+const styleHost = createStyleTestHost({ ground: 'dark' });
+const { color, groundShade, setTheme, onPaper } = styleHost;
 
 // The native vitest project mirrors Metro's RESOLUTION, not its runtime: it still
 // aliases `react-native` to react-native-web, so `Platform.OS` answers `web`.
@@ -17,7 +21,6 @@ describe('the palette on a native target', () => {
   });
 
   it('mixes an alpha step down to rgba', async () => {
-    const { color } = await import('./color');
     expect(color('text/85')).toBe('rgba(244, 243, 240, 0.85)');
   });
 
@@ -31,7 +34,7 @@ describe('the palette on a native target', () => {
   });
 
   it('fades the ground to a literal, for the gradients artwork falls into', async () => {
-    const { groundShade, KROMA, KROMA_LIGHT, setTheme } = await import('./theme');
+    const { KROMA, KROMA_LIGHT } = await import('./theme');
     expect(groundShade(0.5)).toBe('rgba(10, 10, 12, 0.5)');
     setTheme(KROMA_LIGHT);
     expect(groundShade(0.5)).toBe('rgba(247, 245, 241, 0.5)');
@@ -41,7 +44,7 @@ describe('the palette on a native target', () => {
 
 describe('the ground a native blur view has to tint itself against', () => {
   it('answers for the theme it is handed, and for the active one by default', async () => {
-    const { KROMA, KROMA_LIGHT, onPaper, setTheme } = await import('./theme');
+    const { KROMA, KROMA_LIGHT } = await import('./theme');
     expect(onPaper(KROMA_LIGHT)).toBe(true);
     expect(onPaper(KROMA)).toBe(false);
 

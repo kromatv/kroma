@@ -1,33 +1,43 @@
 // @vitest-environment jsdom
 
-import { act, render } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { render } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 import { Box } from '#ui/components/atoms/box';
-import { declared } from '#ui/testing';
-import { Frost, setFrostEnabled } from './frost';
+import { KitProvider } from '#ui/configure';
+import { contentRoot, declared } from '#ui/testing';
+import { Frost } from './frost';
 
-afterEach(() => setFrostEnabled(true));
-
-function frosted() {
-  const { container } = render(
-    <Frost amount={12}>
-      <Box radius="lg" />
-    </Frost>,
+function Surface({ enabled }: { enabled: boolean }) {
+  return (
+    <KitProvider config={{ frostEnabled: enabled }}>
+      <Frost amount={12}>
+        <Box radius="lg" />
+      </Frost>
+    </KitProvider>
   );
-  return container.firstElementChild as HTMLElement;
 }
-
-describe('the app-wide frost switch', () => {
-  it('reaches a surface that is already on screen', () => {
-    const node = frosted();
+describe('root frost preferences', () => {
+  it('reaches a surface already on screen through provider updates', () => {
+    const root = render(<Surface enabled />);
+    const node = contentRoot(root.container);
+    if (!node) throw new Error('expected a surface');
     expect(declared(node, 'backdropFilter')).toContain('blur');
-
-    // The switch is thrown from a settings row while the surface it affects is
-    // drawn behind it: a module flag alone would only take on the next render.
-    act(() => setFrostEnabled(false));
+    root.rerender(<Surface enabled={false} />);
     expect(declared(node, 'backdropFilter')).toBeNull();
-
-    act(() => setFrostEnabled(true));
+    root.rerender(<Surface enabled />);
     expect(declared(node, 'backdropFilter')).toContain('blur');
+    root.unmount();
+  });
+  it('keeps different mounted roots independent', () => {
+    const a = render(<Surface enabled={false} />);
+    const b = render(<Surface enabled />);
+    const first = contentRoot(a.container);
+    const second = contentRoot(b.container);
+    if (!(first && second)) throw new Error('expected both surfaces');
+    expect(declared(first, 'backdropFilter')).toBeNull();
+    expect(declared(second, 'backdropFilter')).toContain('blur');
+    a.unmount();
+    expect(declared(second, 'backdropFilter')).toContain('blur');
+    b.unmount();
   });
 });

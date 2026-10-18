@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   ChoiceList,
-  confirm,
   Divider,
   EmptyState,
   Field,
@@ -18,6 +17,7 @@ import {
   SegmentGroup,
   Surface,
   Text,
+  useConfirm,
 } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
@@ -215,6 +215,7 @@ function CreatedLink({ link, expiresAt }: Readonly<{ link: string; expiresAt: nu
 }
 
 function PendingInviteRow({ inv, onChange }: Readonly<{ inv: Invite; onChange: () => void }>) {
+  const confirm = useConfirm();
   const t = useT();
   const locale = useLocale();
   const { client } = useAuth();

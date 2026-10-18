@@ -7,7 +7,7 @@
 // is `pointerEvents: 'none'`, sized at 10-foot metrics, and leaves on a timer.
 // Deliberately not a dialog: nothing here is a question.
 
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import type { IconName } from '#ui/components/atoms/icon';
@@ -78,18 +78,16 @@ interface Placed extends Entry {
   at: ToastPosition;
 }
 
-type Listener = (entry: Entry) => void;
+type Listener = (options: ToastOptions) => void;
 
 const listeners = new Set<Listener>();
-let nextId = 1;
 
 /**
  * Say something. No-op when no <Toaster/> is mounted, so a shell that has not
  * opted in simply stays quiet instead of throwing at the call site.
  */
 export function toast(options: ToastOptions): void {
-  const entry: Entry = { id: nextId++, ...options };
-  for (const listener of listeners) listener(entry);
+  for (const listener of listeners) listener(options);
 }
 
 export interface ToasterProps {
@@ -121,6 +119,7 @@ export function Toaster({
   inset = DEFAULT_INSET,
 }: Readonly<ToasterProps>) {
   const gutters = resolveInset(inset);
+  const nextId = useRef(1);
   const [entries, setEntries] = useState<Placed[]>([]);
 
   const dismiss = useCallback((id: number) => {
@@ -131,7 +130,8 @@ export function Toaster({
   // once into each entry: it is what a notice is BORN with, not something it
   // keeps reading.
   useEffect(() => {
-    const listener: Listener = (entry) => {
+    const listener: Listener = (options) => {
+      const entry: Entry = { id: nextId.current++, ...options };
       const at = entry.position ?? position;
       setEntries((list) => capped([...list, { ...entry, at }], at));
     };

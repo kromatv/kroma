@@ -1,3 +1,5 @@
+import type { WebRuntime } from '#web/shared/lib/api';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // Registry management drawer: the pinned official catalog plus operator-added
 // registries, each row carrying its live fetch status (rows live in
 // module-registry-rows.tsx). Installing from a registry runs native code, so
@@ -11,7 +13,7 @@ import { Box, Button, Drawer, Row, Text } from '@kromatv/ui/kit';
 import { useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction, usePoll } from '#web/features/admin/hooks';
-import { adminApi, fetchStoreCatalog, message } from '#web/features/admin/module-api';
+import { message } from '#web/features/admin/module-api';
 import {
   AddRegistry,
   type ExtraRegistry,
@@ -25,18 +27,20 @@ interface DraftRegistry extends ExtraRegistry {
   key: string;
 }
 
-function saveRegistries(extras: ExtraRegistry[]): Promise<unknown> {
-  return adminApi('/settings', {
+function saveRegistries(extras: ExtraRegistry[], webRuntime: WebRuntime): Promise<unknown> {
+  return webRuntime.moduleApi.adminApi('/settings', {
     method: 'PUT',
     body: JSON.stringify({ moduleRegistries: extras }),
   });
 }
 
 export const RegistriesDrawer = createCallable<Record<string, never>, boolean>(({ call }) => {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const { data: catalog, reload } = usePoll(
     ['admin', 'store', 'catalog'],
-    fetchStoreCatalog,
+    webRuntime.moduleApi.fetchStoreCatalog,
     300000,
   );
   const registries = catalog?.registries ?? [];
@@ -62,7 +66,12 @@ export const RegistriesDrawer = createCallable<Record<string, never>, boolean>((
   const commit = (next: DraftRegistry[]) => {
     setDraft(next);
     void run(async () => {
-      await saveRegistries(next.map(({ name, url, enabled }) => ({ name, url, enabled })));
+      const webRuntime = useWebRuntime();
+
+      await saveRegistries(
+        next.map(({ name, url, enabled }) => ({ name, url, enabled })),
+        webRuntime,
+      );
       changed.current = true;
       await reload();
       setDraft(null);

@@ -3,9 +3,7 @@ import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { fonts, space } from '#ui/core/tokens';
 import { webDocument, webWindow } from '#ui/lib/dom';
-import { iconNames } from '#ui/lib/glyph';
-import { iconCategories } from '#ui/lib/icon-catalog';
-import { iconLibraryReady } from '#ui/lib/icons/library';
+import { useIconAssets } from '#ui/lib/icons/library';
 
 interface Check {
   label: string;
@@ -56,8 +54,7 @@ function typefaces(): Check {
   };
 }
 
-function glyphs(): Check {
-  const count = iconNames().length;
+function glyphs(count: number): Check {
   return {
     label: 'Glyphs',
     found: count > 0,
@@ -65,10 +62,9 @@ function glyphs(): Check {
   };
 }
 
-function catalogue(): Check {
-  const count = iconCategories().length;
+function catalogue(count: number, ready: boolean): Check {
   if (count > 0) return { label: 'Icon catalogue', found: true, evidence: `${count} categories` };
-  const deferred = !iconLibraryReady();
+  const deferred = !ready;
   return {
     label: 'Icon catalogue',
     found: deferred,
@@ -81,9 +77,15 @@ function catalogue(): Check {
 /** What the running bundle can say about its own wiring: the stylesheet, the two
  * faces, the glyph set and the Tabler catalogue. */
 function WiringCheck() {
+  const assets = useIconAssets();
   return (
     <Box gap={space[3]}>
-      {[tokenSheet(), typefaces(), glyphs(), catalogue()].map((check) => (
+      {[
+        tokenSheet(),
+        typefaces(),
+        glyphs(assets.glyphs.iconNames().length),
+        catalogue(assets.catalog.iconCategories().length, assets.ready),
+      ].map((check) => (
         <Box key={check.label} row gap={space[3]} align="center">
           <Icon
             name={check.found ? 'circle-check-filled' : 'circle-minus'}

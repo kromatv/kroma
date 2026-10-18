@@ -2,7 +2,7 @@
 // The surrounding <Screen> already pads the top safe area (Dynamic Island /
 // status bar), so the header adds only its own breathing room.
 
-import { BackButton, Box, styles, Text } from '@kromatv/ui/kit';
+import { BackButton, Box, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useT } from '#mobile/lib/i18n';
@@ -10,6 +10,8 @@ import { goBack } from '#mobile/lib/nav';
 import { spacing, type } from '#mobile/lib/theme';
 
 export function PageHeader({ title, right }: Readonly<{ title: string; right?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const router = useRouter();
   return (
@@ -29,7 +31,7 @@ export function PageHeader({ title, right }: Readonly<{ title: string; right?: R
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   header: {
     row: true,
     between: true,

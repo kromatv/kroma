@@ -1,0 +1,167 @@
+{
+  "createdAt": "2026-10-18T14:14:29.197Z",
+  "revision": "0226548e14f309e36d285f066fb18bed4f6f1a48",
+  "host": {
+    "platform": "darwin",
+    "release": "27.2.0",
+    "cpu": "Apple M2 Max",
+    "cores": 12
+  },
+  "runtime": {
+    "bun": "1.3.14",
+    "node": "v26.5.0"
+  },
+  "versions": {
+    "@biomejs/biome": "2.5.8",
+    "oxlint": "1.88.0",
+    "oxfmt": "0.73.0"
+  },
+  "method": "Tracked files only, excluding generated evaluation snapshots and current Biome exclusions, identical file lists per operation; JS/TS lint; JS/TS/JSON/JSONC/CSS format. One warmup per tool, interleaved sequential rounds, wall time including CLI startup and reporting. Different rule sets, not parity. Existing failures retained. No fixes applied.",
+  "configHashes": {
+    "biome.json": "e32e09a2626f9f9128ba57d18fdf09eee76e76b7e2c1dfc0317b17547e765088",
+    ".oxlintrc.json": "52d8e0bf62ee31c8f9b84361ee6c03f2a184d7b9389edc7fc761c9745d6e96d5",
+    ".oxfmtrc.json": "b0cf76bc1840c29de5092aa229db7911db47e007be0aa2f1cb09183a4cac1926"
+  },
+  "pluginHashes": {
+    "packages/lint-rules/src/define-rule.mjs": "754b5de8879ce6ea3f7f0240a189222b0202143aea308a20bc5e1be83ec4075d",
+    "packages/lint-rules/src/index.mjs": "918253bf37fadc96d3784cadbd40e37a07333c37624bfc9bd0f06d6aa5bf5979",
+    "packages/lint-rules/src/rules/index-reexports-only.mjs": "3235617608722cc60e4c8504c1c7d0e8f9ad0b6098b5dc580f9261ba0bfed422",
+    "packages/lint-rules/src/rules/no-comment-banners.mjs": "81c10fee2171c6325f2b2747a974d4e04bb1d01b6c569e000f89cd5e0cbe66c0",
+    "packages/lint-rules/src/rules/no-em-dashes.mjs": "b742fc69ec333c21e47be3ee1baa0ef41ede5775288a3f01f43f721736dbf855",
+    "packages/lint-rules/src/rules/no-module-mutable-bindings.mjs": "af3ce56aa603d23dba0096007f95f6e9bcbd8fad500e804d72d94a067e7e4c0b",
+    "packages/lint-rules/src/rules/no-nested-templates.mjs": "e892718e0492ba97e289414fb43cc61af8792f9df8691416d550f42e6457260c",
+    "packages/lint-rules/src/rules/no-raw-design-values.mjs": "638c9ecf527ddf146be97059e18291b07b7181b0f7026cf4cc73b9eaa22c1f0d",
+    "packages/lint-rules/src/rules/no-react-forward-ref.mjs": "519fe266753eb153add328585d8df437972067317fb0b4582837d96d232af162",
+    "packages/lint-rules/src/rules/no-redundant-jsdoc-tags.mjs": "f3fce2ec3cb5f2af23af2322424b0e676d632d0877f24e29b72f9346618921da",
+    "packages/lint-rules/src/rules/no-relative-workspace-imports.mjs": "bb2654e6f9d3ed9163cc9b6ea37aae9f8a6f5d996e530d46949f1e9a16f8d0bb",
+    "packages/lint-rules/src/rules/no-unknown-record-assertions.mjs": "cad78b1772629aad6626b75d911a8467f614e412281b0acc64341e456efe7652",
+    "packages/lint-rules/src/rules/owned-task-comments.mjs": "c66128be9953fc444105bae9e7c406d1b207e0f98fcfaaa43054f1cce063fef1"
+  },
+  "corpus": {
+    "lint": {
+      "count": 3405,
+      "sha256": "b91544a0865158efd4daa225fb7a5528823f8078fc94c7f5b4ed9220a28b00dd"
+    },
+    "format": {
+      "count": 3688,
+      "sha256": "7990a57821d65bda891b6520cae34b709034880619e1810ba876e778390c5173"
+    }
+  },
+  "results": [
+    {
+      "name": "biome-lint",
+      "medianMs": 1311.1944170000024,
+      "samplesMs": [
+        1335.8521660000001, 1309.0865000000013, 1292.5245840000007, 1311.1944170000024,
+        1314.5587909999995
+      ],
+      "exitCode": 0,
+      "diagnostics": {
+        "total": 0,
+        "summary": {
+          "changed": 0,
+          "unchanged": 3405,
+          "matches": 0,
+          "duration": 1045639542,
+          "errors": 0,
+          "warnings": 0,
+          "infos": 0,
+          "skipped": 0,
+          "suggestedFixesSkipped": 0,
+          "diagnosticsNotPrinted": 0,
+          "scannerDuration": 58660375
+        },
+        "byRule": {}
+      }
+    },
+    {
+      "name": "oxlint-native",
+      "medianMs": 132.29208300000028,
+      "samplesMs": [
+        130.44112500000028, 136.0209589999995, 132.29208300000028, 129.15800000000309,
+        133.48749999999927
+      ],
+      "exitCode": 0,
+      "diagnostics": {
+        "total": 0,
+        "files": 3396,
+        "rules": 5,
+        "byRule": {}
+      }
+    },
+    {
+      "name": "oxlint-custom",
+      "medianMs": 1087.7970419999983,
+      "samplesMs": [
+        1072.1392919999998, 1096.7958329999992, 1106.7639579999995, 1086.3862090000002,
+        1087.7970419999983
+      ],
+      "exitCode": 1,
+      "diagnostics": {
+        "total": 852,
+        "files": 3396,
+        "rules": 16,
+        "byRule": {
+          "kroma(index-reexports-only)": 442,
+          "kroma(no-raw-design-values)": 213,
+          "kroma(no-module-mutable-bindings)": 89,
+          "kroma(no-unknown-record-assertions)": 83,
+          "kroma(no-em-dashes)": 20,
+          "kroma(no-nested-templates)": 2,
+          "kroma(no-relative-workspace-imports)": 2,
+          "kroma(no-redundant-jsdoc-tags)": 1
+        }
+      }
+    },
+    {
+      "name": "biome-format",
+      "medianMs": 966.1767500000005,
+      "samplesMs": [
+        967.7338749999999, 947.5233749999989, 939.3101659999993, 966.1767500000005,
+        972.8614159999997
+      ],
+      "exitCode": 0,
+      "diagnostics": {
+        "total": 0,
+        "summary": {
+          "changed": 0,
+          "unchanged": 3688,
+          "matches": 0,
+          "duration": 710812875,
+          "errors": 0,
+          "warnings": 0,
+          "infos": 0,
+          "skipped": 0,
+          "suggestedFixesSkipped": 0,
+          "diagnosticsNotPrinted": 0,
+          "scannerDuration": 61819875
+        },
+        "byRule": {}
+      }
+    },
+    {
+      "name": "oxfmt-format",
+      "medianMs": 141.56383300000016,
+      "samplesMs": [
+        141.40370900000016, 141.3257080000003, 143.3577089999999, 141.96729199999936,
+        141.56383300000016
+      ],
+      "exitCode": 1,
+      "diagnostics": {
+        "filesNeedingFormat": 38,
+        "examples": [
+          "apps/kit/wrangler.jsonc",
+          "apps/modules/wrangler.jsonc",
+          "apps/packages/wrangler.jsonc",
+          "apps/www/wrangler.jsonc",
+          "apps/www/wrangler.preview.jsonc",
+          "clients/desktop/vite.config.ts",
+          "clients/mobile/src/components/LangPickerSheet.tsx",
+          "clients/mobile/src/components/ui/index.tsx",
+          "clients/mobile/src/lib/notifications/push.test.ts",
+          "clients/tizen/scripts/simulator.ts"
+        ]
+      }
+    }
+  ]
+}

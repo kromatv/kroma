@@ -1,9 +1,14 @@
 // @vitest-environment jsdom
-import { act, renderHook } from '@testing-library/react';
+
+import { act } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { breakpointBits, pinDesignWidth } from '#ui/core/breakpoint';
+import { breakpointBits } from '#ui/core/breakpoint';
 import { BREAKPOINTS, breakpoint } from '#ui/core/tokens';
+import { createStyleTestHost } from '#ui/testing-style';
 import { useBreakpoint, useBreakpointStep } from './use-breakpoint';
+
+const styleHost = createStyleTestHost();
+const { renderHook, pinDesignWidth } = styleHost;
 
 afterEach(() => pinDesignWidth());
 

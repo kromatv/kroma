@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { onScreen } from '@kromatv/ui/testing';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ServerProbe } from '#tv/app/useServersHealth';
 import { ActionRow, ServerRow, ServerRowSkeleton } from '#tv/features/accounts/ServerRow';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 const show = (ui: ReactElement) => render(onScreen(ui));
 

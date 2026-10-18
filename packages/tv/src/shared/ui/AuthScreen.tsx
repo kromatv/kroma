@@ -13,12 +13,14 @@ import {
   space,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { memo, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { AUTH_SCREENS } from '#tv/app/navPolicy';
 import { useConnectionMaybe } from '#tv/app/providers/connection';
 import { useHandoffBeacon } from '#tv/app/providers/handoffBeacon';
 import { type TvChrome, useNav } from '#tv/app/router';
+import { ARTWORK_SCALE, useArtworkPref, useStoredPref } from '#tv/app/settings/store';
 
 // Wide enough to stay sharp on a 1080p panel under the veil, and the widest
 // rendition the server makes. The kit's own home backdrop asks for the same.
@@ -34,6 +36,8 @@ export const RADIAL_GROUND = gradient(
  * radial. */
 function useSplashCovers(): SplashCover[] {
   const t = useT();
+  const [artworkQuality] = useStoredPref(useArtworkPref());
+  const scale = ARTWORK_SCALE[artworkQuality];
   const connection = useConnectionMaybe();
   // `/api/splash` is public and these screens run BEFORE a server is active,
   // so the art comes from whichever server this device knows: the active one
@@ -65,7 +69,7 @@ function useSplashCovers(): SplashCover[] {
               // for: unsized, a television decodes the full-width master for a
               // backdrop it then hides under a veil, and pays for that texture
               // again on every frame of the drift.
-              url: sizedImageUrl(e.backdropUrl, SPLASH_W) ?? e.backdropUrl,
+              url: sizedImageUrl(e.backdropUrl, SPLASH_W, scale) ?? e.backdropUrl,
               caption: [e.title, e.year].filter(Boolean).join(' · '),
               eyebrow: t(e.kind === 'show' ? 'content.series' : 'content.film'),
             })),
@@ -79,7 +83,7 @@ function useSplashCovers(): SplashCover[] {
     return () => {
       cancelled = true;
     };
-  }, [urls, t]);
+  }, [urls, t, scale]);
   return covers;
 }
 
@@ -119,6 +123,8 @@ export const AUTH_BACKDROP: TvChrome = {
  * and the beacon this TV is waiting under, on whichever gate screen it is
  * showing. */
 export function AuthScreen({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const nav = useNav();
   const t = useT();
   return (
@@ -147,6 +153,8 @@ export function AuthScreen({ children }: Readonly<{ children: ReactNode }>) {
 // televisions, or a device that named itself after theirs, can tell which row in
 // the phone's list is this screen.
 function BeaconMark() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const beacon = useHandoffBeacon();
   if (!beacon) return null;
@@ -162,7 +170,7 @@ function BeaconMark() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   scroll: { flex: true },
   // Growth and centring sit on the content, not the box, so it centres when it
   // fits and scrolls from the top when it does not.

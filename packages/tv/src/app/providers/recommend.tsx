@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { launcherBackend } from '#tv/app/launcher';
+import { useLauncherBackend } from '#tv/app/launcher';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { buildHomeChannels } from '#tv/shared/launcher/cards';
@@ -23,6 +23,7 @@ const Ctx = createContext<Recommend | null>(null);
 /** Bearer-scoped, so it must be mounted inside auth + connection; stays empty
  * until there is a session and a reachable server. */
 export function RecommendProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const launcher = useLauncherBackend();
   const { user, ready } = useAuth();
   const { client } = useConnection();
   const [sections, setSections] = useState<Section[]>([]);
@@ -54,17 +55,16 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
 
   // Mirror the rows into the Android TV / Google TV launcher home, guarded on the
   // serialized payload so render churn does not re-push. No-op without a backend.
-  const lastPushed = useRef<string>('');
+  const lastPushed = useRef<{ backend: typeof launcher; json: string } | null>(null);
   useEffect(() => {
-    const launcher = launcherBackend();
     if (!launcher || !client) return;
     const json = JSON.stringify(buildHomeChannels(sections, client));
-    if (json === lastPushed.current) return;
+    if (lastPushed.current?.backend === launcher && json === lastPushed.current.json) return;
     // An empty push is only meaningful as a clear after something was published.
-    if (json === '[]' && lastPushed.current === '') return;
-    lastPushed.current = json;
+    if (json === '[]' && lastPushed.current === null) return;
+    lastPushed.current = { backend: launcher, json };
     launcher.setHomeChannel(json);
-  }, [sections, client]);
+  }, [sections, client, launcher]);
 
   const value = useMemo<Recommend>(() => ({ sections, featured }), [sections, featured]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

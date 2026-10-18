@@ -1,5 +1,5 @@
 import { commitLabel } from '@kromatv/core';
-import { Box, Text } from '@kromatv/ui/kit';
+import { Box, Text, typeSpec as textRoles } from '@kromatv/ui/kit';
 import { BUILD } from './buildInfo';
 
 export function BuildStamp() {
@@ -18,7 +18,7 @@ export function BuildStamp() {
   );
 }
 
-const LINE = { fontSize: 11, fontWeight: '500' as const };
+const LINE = { fontSize: textRoles.overline.size, fontWeight: '500' as const };
 
 function formatBuildDate(iso: string | null): string | null {
   if (!iso) return null;

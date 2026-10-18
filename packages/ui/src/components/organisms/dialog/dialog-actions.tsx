@@ -6,9 +6,10 @@ import { Children, type ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { FocusRegion } from '#ui/lib/focus-scope';
 
-const s = styles({
+const sDefinition = styles({
   row: { row: true, align: 'center', justify: 'flex-end', gap: 12, mt: 8 },
   split: { row: true, align: 'center', justify: 'space-between', gap: 12, mt: 8 },
   end: { row: true, align: 'center', gap: 10 },
@@ -50,6 +51,8 @@ function Actions({
   disabled = false,
   children,
 }: Readonly<DialogActionsProps>) {
+  const s = useStyles(sDefinition);
+
   const cancel =
     onCancel && cancelLabel !== undefined ? (
       <Button variant="ghost" size="sm" label={cancelLabel} onPress={onCancel} disabled={busy} />

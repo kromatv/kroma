@@ -1,31 +1,54 @@
-// The React face of the theme store. Separate from theme.ts so the store stays
-// importable from non-React code (the resolver, tests, scripts).
-
-import { createElement, Fragment, type ReactNode, useEffect, useSyncExternalStore } from 'react';
+import {
+  createElement,
+  Fragment,
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { Appearance, AppState } from 'react-native';
-import { activeTheme, onThemeChange, setTheme, type Theme, themeVersion } from './theme';
-import { applyMode, readMode } from './theme-mode';
+import { useDeviceStore } from '#ui/lib/device-store';
+import { StyleRuntimeContext, useStyleRuntime, useStyleRuntimeParent } from './style-context';
+import { createStyleRuntime, type StyleRuntime } from './style-runtime';
+import { KROMA, type Theme } from './theme';
+import { ThemeHost } from './theme-host';
+import { readMode } from './theme-mode';
 
-/** The active theme, live: re-renders the caller when it swaps. For reading a
- *  token a STYLE cannot carry (an ActivityIndicator's colour prop, a chart's
- *  series paint). Declarations don't need it, they re-resolve by themselves. */
+const EMPTY_SUBSCRIBE = () => () => {};
+const DEFAULT_THEME = () => KROMA;
+const ZERO = () => 0;
+
+/** The theme snapshot of this styling root. */
 export function useTheme(): Theme {
-  return useSyncExternalStore(onThemeChange, activeTheme, activeTheme);
+  const theme = useStyleRuntimeParent()?.theme;
+  return useSyncExternalStore(
+    theme?.onThemeChange ?? EMPTY_SUBSCRIBE,
+    theme?.activeTheme ?? DEFAULT_THEME,
+    theme?.activeTheme ?? DEFAULT_THEME,
+  );
+}
+export function useThemeVersion(): number {
+  const theme = useStyleRuntimeParent()?.theme;
+  return useSyncExternalStore(
+    theme?.onThemeChange ?? EMPTY_SUBSCRIBE,
+    theme?.themeVersion ?? ZERO,
+    theme?.themeVersion ?? ZERO,
+  );
+}
+export function useThemeControls() {
+  return useStyleRuntime().theme;
 }
 
-/**
- * Follows the operating system's ground for as long as the stored choice is
- * `system`. Mount once, at the app root; a browser needs nothing here, since
- * `prefers-color-scheme` answers it live in the token sheet.
- */
+/** Follow native appearance for this root while its stored choice is system. */
 export function useSystemGround(): void {
+  const runtime = useStyleRuntime();
+  const storage = useDeviceStore();
   useEffect(() => {
     const follow = () => {
-      if (readMode() === 'system') applyMode('system');
+      if (readMode(undefined, storage) === 'system') runtime.setMode('system');
     };
     const watch = Appearance.addChangeListener(follow);
-    // The ground is usually changed from the system's own settings, so the app
-    // is in the background when it moves and only hears about it on the way in.
     const wake = AppState.addEventListener('change', (state) => {
       if (state === 'active') follow();
     });
@@ -33,30 +56,48 @@ export function useSystemGround(): void {
       watch.remove();
       wake.remove();
     };
-  }, []);
+  }, [runtime, storage]);
 }
 
-interface ThemeProviderProps {
-  theme?: Theme;
-  children?: ReactNode;
+/** An explicit theme owns a nested scope; inherited scopes remount on its version. */
+export function ThemeProvider({
+  theme,
+  children,
+}: Readonly<{ theme?: Theme; children?: ReactNode }>): ReactElement {
+  const parent = useStyleRuntimeParent();
+  return theme !== undefined || !parent
+    ? createElement(OwnedThemeProvider, { theme, parent: parent ?? undefined }, children)
+    : createElement(InheritedThemeProvider, { runtime: parent }, children);
 }
-
-/**
- * Applies `theme` and re-renders the subtree whenever the active theme changes.
- *
- * The re-render is a REMOUNT (the version is the key): resolved styles are read
- * during render, so every themed node must render again, and a keyed fragment is
- * the one mechanism that reaches children this component did not create. Theme
- * swaps are rare and deliberate; place the provider under whatever state must
- * survive one.
- *
- * There is exactly one active theme per app: this is a switch, not a scope, so
- * providers do not nest.
- */
-export function ThemeProvider({ theme, children }: Readonly<ThemeProviderProps>) {
-  const version = useSyncExternalStore(onThemeChange, themeVersion, themeVersion);
-  useEffect(() => {
-    if (theme) setTheme(theme);
-  }, [theme]);
+function InheritedThemeProvider({
+  runtime,
+  children,
+}: Readonly<{ runtime: StyleRuntime; children?: ReactNode }>): ReactElement {
+  const version = useSyncExternalStore(
+    runtime.theme.onThemeChange,
+    runtime.theme.themeVersion,
+    runtime.theme.themeVersion,
+  );
   return createElement(Fragment, { key: version }, children);
+}
+function OwnedThemeProvider({
+  theme,
+  parent,
+  children,
+}: Readonly<{ theme?: Theme; parent?: StyleRuntime; children?: ReactNode }>): ReactElement {
+  const [runtime] = useState(() => createStyleRuntime({ theme }, parent));
+  const version = useSyncExternalStore(
+    runtime.theme.onThemeChange,
+    runtime.theme.themeVersion,
+    runtime.theme.themeVersion,
+  );
+  useEffect(() => {
+    if (theme) runtime.theme.setTheme(theme);
+  }, [runtime, theme]);
+  useEffect(() => runtime.breakpoints.retain(), [runtime]);
+  return createElement(
+    StyleRuntimeContext.Provider,
+    { value: runtime },
+    createElement(ThemeHost, { runtime }, createElement(Fragment, { key: version }, children)),
+  );
 }

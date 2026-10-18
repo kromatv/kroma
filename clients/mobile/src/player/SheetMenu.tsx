@@ -1,4 +1,4 @@
-import { Box, styles } from '@kromatv/ui/kit';
+import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import type { useT } from '#mobile/lib/i18n';
 import { MenuRow } from '#mobile/player/TrackSheetRows';
 
@@ -27,6 +27,8 @@ export function SheetMenu(
     onReport(): void;
   }>,
 ) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.menuList}>
       <MenuRow
@@ -81,6 +83,6 @@ export function SheetMenu(
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   menuList: { gap: 2 },
 });

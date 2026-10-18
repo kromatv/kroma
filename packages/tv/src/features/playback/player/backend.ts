@@ -6,7 +6,12 @@
 
 import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
-import { beyondDecoder, nativeDirectPlayable, type PlayEnv } from '@kromatv/core';
+import {
+  beyondDecoder,
+  nativeDirectPlayable,
+  type PlaybackCapabilities,
+  type PlayEnv,
+} from '@kromatv/core';
 import type { AudioFilterMode } from '@kromatv/ui';
 import { Platform } from 'react-native';
 import type { EnginePref } from '#tv/app/enginePref';
@@ -45,14 +50,19 @@ export interface EnginePlan {
  * server path even for a file the device could open directly. The
  * browser-only prefs (avplay / mpv / webview) fall through to automatic.
  */
-export function planEngine(item: MediaItem, _env: PlayEnv, pref: EnginePref): EnginePlan {
+export function planEngine(
+  item: MediaItem,
+  _env: PlayEnv,
+  pref: EnginePref,
+  playbackCapabilities?: PlaybackCapabilities,
+): EnginePlan {
   const os = Platform.OS === 'ios' ? 'ios' : 'android';
   // A picture over this device's decoder ceiling can only arrive smaller than it
   // left, so it takes the server path whatever else was asked for. This outranks
   // the engine preference, VLC included: carrying your own decoders answers a
   // codec the platform lacks, never a frame its hardware refuses, and libVLC's
   // software fallback on a set that HAS a ceiling drops every frame it decodes.
-  const oversized = beyondDecoder(item) != null;
+  const oversized = beyondDecoder(item, playbackCapabilities) != null;
   // VLC is asked for by name only. It carries its own decoders, so it otherwise
   // takes the original file: routing it through the remux would spend the
   // server's CPU working around a limit this engine does not have.
@@ -86,6 +96,7 @@ export function planEngine(item: MediaItem, _env: PlayEnv, pref: EnginePref): En
  * which is also why `dom` is ignored here. */
 export function createTvEngine(args: {
   plan: EnginePlan;
+  capabilities?: PlaybackCapabilities;
   client: KromaClient;
   item: MediaItem;
   durationSec: number;
@@ -97,6 +108,7 @@ export function createTvEngine(args: {
 }): TvEngine | null {
   if (args.plan.eng === 'vlc') {
     return new VlcEngine({
+      capabilities: args.capabilities,
       client: args.client,
       item: args.item,
       durationSec: args.durationSec,
@@ -108,6 +120,7 @@ export function createTvEngine(args: {
     });
   }
   return new ExpoVideoEngine({
+    capabilities: args.capabilities,
     client: args.client,
     item: args.item,
     durationSec: args.durationSec,

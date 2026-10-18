@@ -1,4 +1,4 @@
-import { createTheme, KROMA, setTheme, type Theme } from '../../src/core/theme.ts';
+import { createTheme, KROMA, type Theme } from '../../src/core/theme.ts';
 import { colors } from '../../src/core/tokens/colors.ts';
 import { customProperties, typeCascade } from '../../src/core/tokens/css-palette.ts';
 import { cssVar } from '../../src/core/tokens/css-var.ts';
@@ -23,9 +23,4 @@ export function webTheme(): Theme {
     KROMA,
   );
   return Object.freeze({ ...theme, type: typeCascade(typeSpec) });
-}
-
-/** Points the engine's store at {@link webTheme}, once per build process. */
-export function resolveAsBrowser(): void {
-  setTheme(webTheme());
 }

@@ -20,6 +20,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { z } from 'zod';
 import { productVersion } from '../build-info/index.js';
 
 /** Store manifests take a strict numeric triple: Tizen `[0-255].[0-255].[0-65535]`,
@@ -37,8 +38,14 @@ export function packageVersion(version: string): string | null {
 
 /** Set `"version"` in a webOS appinfo.json. Parsed and re-serialised rather than
  * regex-replaced: `version` is not the only key that could match one. */
+const appinfoSchema = z
+  .object({ version: z.string().max(128).optional() })
+  .catchall(z.json())
+  .refine((value) => Object.keys(value).length <= 256);
+
 export function stampAppinfo(source: string, version: string): string {
-  const info = JSON.parse(source) as Record<string, unknown>;
+  if (source.length > 1_000_000) throw new Error('appinfo.json exceeds 1 MB');
+  const info = appinfoSchema.parse(JSON.parse(source));
   info.version = version;
   return `${JSON.stringify(info, null, 2)}\n`;
 }

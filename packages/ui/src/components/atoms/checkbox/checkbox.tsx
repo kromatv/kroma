@@ -1,3 +1,4 @@
+import { sv, useSv } from '#ui/core';
 // <Checkbox>: the many-of-N control. A <Switch> says "this is on"; a checkbox
 // says "this one is included", which is why a list of them is a selection and
 // a list of switches is a settings page.
@@ -8,7 +9,7 @@
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
-import { sv } from '#ui/core';
+
 import { useControllable } from '#ui/lib/use-controllable';
 
 type CheckboxSize = 'sm' | 'tv';
@@ -99,8 +100,10 @@ function CheckboxFace({
   indeterminate = false,
   size = 'sm',
 }: Readonly<CheckboxFaceProps>) {
+  const checkboxVariantsScoped = useSv(checkboxVariants);
+
   return (
-    <Box style={checkboxVariants({ size, checked: checked || indeterminate }).root}>
+    <Box style={checkboxVariantsScoped({ size, checked: checked || indeterminate }).root}>
       <CheckboxMark checked={checked} indeterminate={indeterminate} size={size} />
     </Box>
   );

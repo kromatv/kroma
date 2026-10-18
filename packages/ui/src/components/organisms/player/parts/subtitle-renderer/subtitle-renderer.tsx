@@ -8,7 +8,7 @@ import {
   subtitleWindowStyle,
 } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
-import { style } from '#ui/core';
+import { style, useStyleScope } from '#ui/core';
 
 const MAX_VTT_BYTES = 8 * 1024 * 1024;
 
@@ -51,6 +51,8 @@ export function SubtitleRenderer({
   raised,
   onTrackFailed,
 }: Readonly<SubtitleRendererProps>) {
+  const scope = useStyleScope();
+
   const [text, setText] = useState('');
   const [cues, setCues] = useState<Cue[]>([]);
   const cache = useRef<Map<string, Cue[]>>(new Map());
@@ -160,11 +162,11 @@ export function SubtitleRenderer({
           visible: an always-present wrapper would be a node + style array per
           cue for nothing. */}
       {appearance.windowOpacity > 0 ? (
-        <Box style={subtitleWindowStyle(appearance)}>
-          <Text style={subtitleStyle(appearance)}>{text}</Text>
+        <Box style={subtitleWindowStyle(appearance, scope)}>
+          <Text style={subtitleStyle(appearance, scope)}>{text}</Text>
         </Box>
       ) : (
-        <Text style={subtitleStyle(appearance)}>{text}</Text>
+        <Text style={subtitleStyle(appearance, scope)}>{text}</Text>
       )}
     </Box>
   );

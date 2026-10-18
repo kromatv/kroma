@@ -1,10 +1,13 @@
+import { RING_ROOM, type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
+
 // The panel's three bands, and what the surface tells them: only the middle one
 // scrolls, the other two stay put.
 
 import { createContext, type ReactNode, useContext } from 'react';
 import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { RING_ROOM, sharedStyle, styles } from '#ui/core';
+
+import { useStyles } from '#ui/core/styles';
 import { DIALOG_PAD } from '#ui/lib/surface-shell';
 
 interface Shell {
@@ -29,13 +32,17 @@ const band = (pad: number) => (pad > 0 ? GAP - RING_ROOM : 0);
 
 /** The pinned top of the panel: it stays put while the content scrolls under it. */
 
-const bandOf = (pad: number, top: number, bottom: number, gap: number) =>
-  sharedStyle(`dialog:band:${pad}:${top}:${bottom}:${gap}`, {
-    paddingHorizontal: pad,
-    paddingTop: top,
-    paddingBottom: bottom,
-    gap,
-  });
+const bandOf = (pad: number, top: number, bottom: number, gap: number, scope: StyleScope) =>
+  sharedStyle(
+    `dialog:band:${pad}:${top}:${bottom}:${gap}`,
+    {
+      paddingHorizontal: pad,
+      paddingTop: top,
+      paddingBottom: bottom,
+      gap,
+    },
+    scope,
+  );
 function Header({ children }: Readonly<{ children: ReactNode }>) {
   const { pad } = useShell();
   return (
@@ -47,6 +54,10 @@ function Header({ children }: Readonly<{ children: ReactNode }>) {
 
 /** The scrolling middle, and the only part of the panel that scrolls. */
 function Panel({ children }: Readonly<{ children: ReactNode }>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const { pad, hasHeader, hasFooter } = useShell();
   const gap = pad > 0 ? GAP : 0;
   // Against a pinned neighbour the panel spends only the room a focus ring
@@ -56,7 +67,13 @@ function Panel({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <ScrollView
       style={s.panel}
-      contentContainerStyle={bandOf(pad, hasHeader ? room : pad, hasFooter ? room : pad, gap)}
+      contentContainerStyle={bandOf(
+        pad,
+        hasHeader ? room : pad,
+        hasFooter ? room : pad,
+        gap,
+        scope,
+      )}
     >
       {children}
     </ScrollView>
@@ -73,7 +90,7 @@ function Footer({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   panel: { shrink: 1 },
 });
 

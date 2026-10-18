@@ -8,24 +8,21 @@
 // every screen mounts: long enough to swallow the stray repeat, short enough
 // that a deliberate second press still lands.
 //
-// Module scope so it survives the transition's unmount/mount.
-
-let guardedUntil = 0;
+// Hoisted to the app root so it survives a screen transition.
 
 /** Default window, in milliseconds. */
 export const PRESS_GUARD_MS = 300;
 
-/** Arm the guard. Called by every screen's `useFocusNav` on mount. */
-export function armPressGuard(ms: number = PRESS_GUARD_MS): void {
-  guardedUntil = Date.now() + ms;
-}
-
-/** True while a press should be swallowed as the tail of the previous screen's. */
-export function pressGuardActive(): boolean {
-  return Date.now() < guardedUntil;
-}
-
-/** Test seam: drop the guard so a press lands immediately. */
-export function clearPressGuard(): void {
-  guardedUntil = 0;
+/** The guard survives screen transitions within its owning app root. */
+export function createPressGuard() {
+  let guardedUntil = 0;
+  return {
+    armPressGuard(ms = PRESS_GUARD_MS) {
+      guardedUntil = Date.now() + ms;
+    },
+    pressGuardActive: () => Date.now() < guardedUntil,
+    clearPressGuard() {
+      guardedUntil = 0;
+    },
+  };
 }

@@ -52,7 +52,7 @@ export function ChannelNav({ cards }: Readonly<ChannelNavProps>) {
             />
           </div>
           <p className="break-words font-mono text-sm font-medium text-accent-text">
-            {card.version ?? '—'}
+            {card.version ?? '-'}
           </p>
           <p className="mt-auto text-xs leading-relaxed text-dim">
             {card.at && <time dateTime={card.at}>{formatMoment(card.at, lang)}</time>}

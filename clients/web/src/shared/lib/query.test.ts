@@ -1,29 +1,10 @@
 // The SPA's single TanStack Query client.
 
-import { QueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
-import { makeQueryClient, queryClient } from './query';
+import { makeQueryClient } from './query';
 
 const defaults = (client: QueryClient) => client.getDefaultOptions().queries;
-
-describe('the shared instance', () => {
-  it('is a real query client', () => {
-    expect(queryClient).toBeInstanceOf(QueryClient);
-  });
-
-  it('is the SAME one on every import', async () => {
-    const again = await import('./query');
-    expect(again.queryClient).toBe(queryClient);
-  });
-
-  it('is not what the factory returns', () => {
-    expect(makeQueryClient()).not.toBe(queryClient);
-  });
-
-  it('carries the app’s defaults, not the library’s', () => {
-    expect(defaults(queryClient)).toEqual(defaults(makeQueryClient()));
-  });
-});
 
 describe('the defaults', () => {
   it('serves cache instantly on back-navigation', () => {

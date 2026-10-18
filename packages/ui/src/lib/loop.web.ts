@@ -1,3 +1,4 @@
+import { sharedStyle, useStyleScope } from '#ui/core';
 // Looping animations, web (Tizen / webOS / desktop / browser).
 //
 // react-native-web silently drops `useNativeDriver` (its TurboModuleRegistry
@@ -6,7 +7,6 @@
 // the compositor instead, including on the legacy Chromium 53 tier.
 
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
-import { sharedStyle } from '#ui/core';
 
 export type LoopKind = 'spin' | 'sweep' | 'pulse' | 'blink' | 'halo';
 
@@ -88,6 +88,8 @@ const loops = StyleSheet.create(KEYFRAMES);
 /** A style that loops for as long as it is mounted, or `null` when `active` is
  * false. Plain styles, so it rides on the `Animated.View` the native half needs. */
 export function useLoop(kind: LoopKind, ms: number, active = true): StyleProp<ViewStyle> {
+  const scope = useStyleScope();
+
   if (!active) return null;
-  return [loops[kind], sharedStyle(`loop:${ms}`, { animationDuration: `${ms}ms` })];
+  return [loops[kind], sharedStyle(`loop:${ms}`, { animationDuration: `${ms}ms` }, scope)];
 }

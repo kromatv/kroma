@@ -1,6 +1,7 @@
 import { type ReactElement, useEffect, useState } from 'react';
 import { Animated, View, type ViewStyle } from 'react-native';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { WEB } from '#ui/lib/platform';
 import { EASE_CSS, EASE_NATIVE, SETTLE_MS } from './strip-motion';
 
@@ -22,6 +23,8 @@ interface MovingStripProps {
 // driver and an Animated value there is a rAF loop competing with React for the
 // main thread. Native: `Animated`, where the driver is real.
 function MovingStrip({ offset, axis, still = false, style, children }: Readonly<MovingStripProps>) {
+  const s = useStyles(sDefinition);
+
   if (WEB) {
     return (
       <View
@@ -55,6 +58,8 @@ function MovingStripNative({
   style,
   children,
 }: Readonly<MovingStripProps>) {
+  const s = useStyles(sDefinition);
+
   const [slide] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
@@ -85,7 +90,7 @@ function MovingStripNative({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   row: { row: true, align: 'center' },
 });
 

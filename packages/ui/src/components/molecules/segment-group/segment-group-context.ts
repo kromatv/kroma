@@ -1,3 +1,4 @@
+import type { StyleScope } from '#ui/core';
 // What the group tells its segments, and the geometry both sides measure against.
 
 import { nestedRadius } from '#ui/core/tokens';
@@ -24,8 +25,8 @@ interface SegmentGroupContext {
 
 const [Context, useSegmentGroup] = partContext<SegmentGroupContext>('SegmentGroup.Root');
 
-function segmentRadius(size: ControlSize): Radius {
-  return nestedRadius(controlRadius(CONTROL[size]), GROUP_PAD);
+function segmentRadius(size: ControlSize, scope: StyleScope): Radius {
+  return nestedRadius(controlRadius(CONTROL[size], scope), GROUP_PAD);
 }
 
 export type { Box2D, SegmentGroupContext };

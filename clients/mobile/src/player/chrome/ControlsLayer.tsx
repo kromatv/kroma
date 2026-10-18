@@ -22,6 +22,9 @@ import {
   shade,
   styles,
   Text,
+  typeSpec as textRoles,
+  fontSizes as textSizes,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, View } from 'react-native';
@@ -61,6 +64,8 @@ export function ControlsLayer({
   onPip?(): void;
   onCast?(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const title = item.showTitle ?? item.metadata?.title ?? item.title;
   // For an episode the big line is the SHOW, so the subtitle carries both the
@@ -251,6 +256,8 @@ function ScrubRow({
   tileFor?: (abs: number) => StoryboardTile | null;
   item: MediaItem;
 }>) {
+  const s = useStyles(sDefinition);
+
   const markers = (item.markers ?? []).map((m) => m.startMs / 1000);
   const scrub = useControlsHold(hold);
   return (
@@ -276,18 +283,23 @@ function ScrubRow({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   scrim: { fill: true, bg: 'bg/22' },
   scrimTop: { absolute: true, top: 0, right: 0, left: 0, h: 120 },
   scrimBottom: { absolute: true, right: 0, bottom: 0, left: 0, h: 160 },
   topBar: { row: true, align: 'center', gap: 12 },
   titleBox: { flex: true, minW: 0 },
-  title: { fontFamily: fonts.display, color: 'white', fontSize: 17, fontWeight: '700' },
-  subtitle: { mt: 1, color: 'text/60', fontSize: 12, fontWeight: '500' },
+  title: {
+    fontFamily: fonts.display,
+    color: 'white',
+    fontSize: textRoles.cardTitle.size,
+    fontWeight: '700',
+  },
+  subtitle: { mt: 1, color: 'text/60', fontSize: textSizes.caption, fontWeight: '500' },
   centerRow: { flex: true, row: true, center: true, gap: 40 },
   bottomBar: { px: spacing.md },
   actionsRow: { row: true, between: true, align: 'center', mt: 10 },
   actionsGroup: { row: true, align: 'center', gap: 12 },
   timeRow: { row: true, between: true, mt: 6 },
-  time: { color: 'text/50', fontSize: 12, fontVariant: ['tabular-nums'] },
+  time: { color: 'text/50', fontSize: textSizes.caption, fontVariant: ['tabular-nums'] },
 });

@@ -1,15 +1,7 @@
-import { createKromaClient, sessionToken, setSessionToken } from '@kromatv/client';
-import { deviceLocale, setActiveLocale } from '@kromatv/core';
+import { createKromaClient } from '@kromatv/client';
+import { createQueryClient } from '@kromatv/client/query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  apiBase,
-  ensureSession,
-  imageUrl,
-  isAuthed,
-  kromaClient,
-  toMovieView,
-  toShowView,
-} from './api';
+import { apiBase, createWebRuntime, imageUrl, isAuthed, toMovieView, toShowView } from './api';
 
 const H = vi.hoisted(() => ({
   session: null as { accessToken: string } | null,
@@ -51,19 +43,18 @@ afterEach(() => {
   vi.restoreAllMocks();
   H.session = null;
   H.exchange.mockReset();
-  setSessionToken(undefined);
-  setActiveLocale(deviceLocale());
+  owned.runtime = undefined;
 });
 
 describe('kromaClient', () => {
   it('asks for the language the app is showing', async () => {
-    setActiveLocale('en');
     const fetchSpy = vi.fn<typeof fetch>(
       async () =>
         new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } }),
     );
     vi.stubGlobal('fetch', fetchSpy);
 
+    kromaClient().setLocale('en');
     await kromaClient().media.splash();
 
     const headers = new Headers(fetchSpy.mock.calls[0]?.[1]?.headers);
@@ -237,3 +228,28 @@ describe('toMovieView / toShowView', () => {
     expect(sv.backdrop).toBe('http://kroma.test/api/sb.webp');
   });
 });
+
+const owned: { runtime?: ReturnType<typeof createWebRuntime> } = {};
+function root() {
+  if (!owned.runtime) {
+    const client = createQueryClient({
+      baseUrl: apiBase(),
+      fetch: (...args) => globalThis.fetch(...args),
+    });
+    owned.runtime = createWebRuntime({ client });
+    client.session.sharedTokenExchange = H.exchange;
+  }
+  return owned.runtime;
+}
+function kromaClient() {
+  return root().client;
+}
+function ensureSession() {
+  return root().ensureSession();
+}
+function sessionToken() {
+  return root().client.sessionToken;
+}
+function setSessionToken(token?: string) {
+  root().client.setAuthToken(token);
+}

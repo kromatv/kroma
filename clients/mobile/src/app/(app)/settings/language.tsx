@@ -2,7 +2,7 @@
 // clients so the choice follows the user everywhere.
 
 import type { Locale } from '@kromatv/i18n';
-import { Box, styles, Text } from '@kromatv/ui/kit';
+import { Box, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { LocalePicker } from '#mobile/components/LocalePicker';
 import { PageHeader } from '#mobile/components/PageHeader';
@@ -13,6 +13,8 @@ import { useClient, useSession } from '#mobile/lib/session';
 import { spacing, type } from '#mobile/lib/theme';
 
 export default function LanguageSettings() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { setUser } = useSession();
@@ -44,7 +46,7 @@ export default function LanguageSettings() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   body: { gap: spacing.sm, p: spacing.md, ...boxed(contentWidth.reading) },
   hint: { ...type.caption, px: 4, mb: spacing.xs },
 });

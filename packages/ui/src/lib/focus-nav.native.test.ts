@@ -18,9 +18,13 @@
 //
 // The web half has its own engine and its own test: focus-nav.test.ts.
 
-import { act, cleanup, renderHook } from '@testing-library/react';
+import { act, cleanup } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
 import type { HWEvent } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { KitSettingsContext, useKitSettings } from '#ui/lib/kit-settings';
+import { createMenuKeys } from '#ui/lib/menu-keys';
+import { createInputTestHost } from '#ui/testing-input';
 
 const rn = vi.hoisted(() => ({
   remote: null as ((event: HWEvent) => void) | null,
@@ -59,10 +63,11 @@ vi.mock('react-native', () => ({
   },
 }));
 
-import { focusSettled, markFocusSettled } from './focus-entry';
+import { createFocusEntry, FocusEntryProvider } from './focus-entry';
 import { useFocusNav } from './focus-nav';
-import { clearInputHolds, holdInput } from './input-gate';
-import { clearPressGuard, pressGuardActive } from './press-guard';
+
+const { clearInputHolds, clearPressGuard, holdInput, pressGuardActive, renderHook } =
+  createInputTestHost();
 
 function pressBack(): boolean {
   let consumed = false;
@@ -114,8 +119,17 @@ describe('the Menu key claim', () => {
   });
 
   it('COUNTS claimants, so the inner one cannot hand back the outer one’s key', () => {
-    const screen = renderHook(() => useFocusNav({ onBack: vi.fn() }));
-    const player = renderHook(() => useFocusNav({ onBack: vi.fn() }));
+    const menuKeys = createMenuKeys();
+    function Wrapper({ children }: { children: ReactNode }) {
+      const settings = useKitSettings();
+      return createElement(
+        KitSettingsContext.Provider,
+        { value: { ...settings, menuKeys } },
+        children,
+      );
+    }
+    const screen = renderHook(() => useFocusNav({ onBack: vi.fn() }), { wrapper: Wrapper });
+    const player = renderHook(() => useFocusNav({ onBack: vi.fn() }), { wrapper: Wrapper });
     // One switch, two claimants: the second must not re-enable it either.
     expect(rn.enableTVMenuKey).toHaveBeenCalledOnce();
 
@@ -269,31 +283,40 @@ describe('the key-up filter, which is not the same on the two platforms', () => 
 });
 
 describe('what a new screen resets', () => {
+  let entry: ReturnType<typeof createFocusEntry>;
+  beforeEach(() => {
+    entry = createFocusEntry();
+  });
+  function Wrapper({ children }: { children: ReactNode }) {
+    return createElement(FocusEntryProvider, { value: entry }, children);
+  }
+
   it('arms the press guard on mount', () => {
-    renderHook(() => useFocusNav({}));
+    renderHook(() => useFocusNav({}), { wrapper: Wrapper });
     // The Select that opened this screen must not also fire whatever the OS
     // auto-focuses here.
     expect(pressGuardActive()).toBe(true);
   });
 
   it('lets a new screen decide where focus opens again', () => {
-    markFocusSettled();
-    renderHook(() => useFocusNav({}));
-    expect(focusSettled()).toBe(false);
+    entry.markFocusSettled();
+    renderHook(() => useFocusNav({}), { wrapper: Wrapper });
+    expect(entry.focusSettled()).toBe(false);
   });
 
   it('re-runs both on a view switch, without remounting', () => {
     const { rerender } = renderHook(({ resetKey }) => useFocusNav({ resetKey }), {
       initialProps: { resetKey: 'home' },
+      wrapper: Wrapper,
     });
     clearPressGuard();
-    markFocusSettled();
+    entry.markFocusSettled();
 
     rerender({ resetKey: 'search' });
     // A view switch is a new screen as far as focus is concerned, even though
     // the hook never unmounted.
     expect(pressGuardActive()).toBe(true);
-    expect(focusSettled()).toBe(false);
+    expect(entry.focusSettled()).toBe(false);
   });
 
   it('does not re-run when the handlers merely change identity', () => {

@@ -1,10 +1,7 @@
 import { StyleSheet } from 'react-native';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { type CompiledLeaf, compileDeclaration } from './declaration.ts';
 import { Unstatic } from './module-scope.ts';
-import { resolveAsBrowser } from './web-theme.ts';
-
-beforeAll(() => resolveAsBrowser());
 
 const css = (leaf: CompiledLeaf) => leaf.rules.map((rule) => rule.css);
 
@@ -97,16 +94,16 @@ describe('compileDeclaration', () => {
 
     expect(leaf.values.gap).toBe(`var(${gap.variable},4px)`);
     expect(leaf.values.paddingLeft).toBe(`var(${padding.variable},8px)`);
-    expect(css(leaf)).toContain(`:root[data-kroma-bp~="lg"] ${gap.selector}{${gap.variable}:8px;}`);
-    expect(css(leaf)).toContain(
-      `:root[data-kroma-bp~="md"] ${padding.selector}{${padding.variable}:12px;}`,
-    );
+    expect(css(leaf)).toContain(`[data-kroma-bp~="lg"]{${gap.variable}:8px;}`);
+    expect(css(leaf)).toContain(`[data-kroma-bp~="md"]{${padding.variable}:12px;}`);
   });
 
   it('restates a wider step after a narrower one, which is all that separates them', () => {
     const leaf = compileDeclaration({ px: { base: 8, md: 12, lg: 16 } });
 
-    const steps = leaf.rules.filter((rule) => rule.css.startsWith(':root'));
+    const steps = leaf.rules.filter(
+      (rule) => rule.css.startsWith('[data-kroma-bp') && !rule.css.includes('~="base"'),
+    );
 
     expect(steps[0]?.css).toContain('~="md"');
     expect(steps[1]?.css).toContain('~="lg"');
@@ -125,7 +122,7 @@ describe('compileDeclaration', () => {
     const leaf = compileDeclaration({ bg: 'accent', _hover: { px: { base: 2, md: 4 } } });
 
     expect(leaf.states?.hover?.paddingLeft).toMatch(/^var\(--k[\w-]{6},2px\)$/);
-    expect(leaf.rules.filter((rule) => rule.css.startsWith(':root'))).toHaveLength(2);
+    expect(leaf.rules.filter((rule) => rule.css.startsWith('[data-kroma-bp'))).toHaveLength(4);
   });
 
   it('leaves the runtime a longhand one step states and another does not', () => {

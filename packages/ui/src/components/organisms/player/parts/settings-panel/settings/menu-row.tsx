@@ -6,6 +6,7 @@ import { SwitchFace } from '#ui/components/atoms/switch';
 import { Text } from '#ui/components/atoms/text';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { style, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { a11yState } from '#ui/lib/a11y';
 import { useFocusedRow } from '#ui/lib/use-focused-row';
 import { panel, rowStyle } from './panel-style';
@@ -46,6 +47,10 @@ export function MenuRow({
   onActivate: () => void;
   onFocus: () => void;
 }>) {
+  const panelScoped = useStyles(panel);
+
+  const s = useStyles(sDefinition);
+
   const anchor = useFocusedRow(focused);
   return (
     <Pressable
@@ -56,12 +61,12 @@ export function MenuRow({
       accessibilityRole={toggle ? 'switch' : 'button'}
       accessibilityLabel={label}
       {...(toggle ? a11yState({ checked: Boolean(on) }) : null)}
-      style={[...rowStyle(panel.menuRow, panel.rowOn, focused), style]}
+      style={[...rowStyle(panelScoped.menuRow, panelScoped.rowOn, focused), style]}
     >
       {icon}
       <Box flex style={MIN_W}>
-        <Text style={panel.menuLabel}>{label}</Text>
-        {!toggle && value != null ? <Text style={panel.menuValue}>{value}</Text> : null}
+        <Text style={panelScoped.menuLabel}>{label}</Text>
+        {!toggle && value != null ? <Text style={panelScoped.menuValue}>{value}</Text> : null}
       </Box>
       {/* The KIT's switch face, not a lookalike: the row is the control (see the
           header), so it renders the atom's visuals without its `Focusable`.
@@ -75,6 +80,6 @@ export function MenuRow({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   noShrink: { shrink: 0 },
 });

@@ -1,3 +1,5 @@
+import { activeTheme, type CornerValue, radiusValue, styles, useStyleScope } from '#ui/core';
+
 // <ButtonGroup>: a row (or a column) of related controls rendered as ONE
 // control. Adjacent members share a single border line and their inner corners
 // are flattened, so three buttons read as one segmented object: a split button,
@@ -14,9 +16,10 @@ import { Children, isValidElement, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { type CornerValue, radiusValue, styles } from '#ui/core';
+
+import { useStyles } from '#ui/core/styles';
 import { HAND } from '#ui/lib/cursor';
-import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { bySize, CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import {
   type GroupOrientation,
   type GroupPosition,
@@ -52,13 +55,20 @@ function Root({
   style,
   children,
 }: Readonly<ButtonGroupRootProps>) {
+  const scope = useStyleScope();
+
+  const entryDefaults = useEntryDefaults();
   // The slot a surrounding group handed this one supplies the size and the
   // corner, and nothing else: a nested group SWALLOWS the position it was given
   // and hands its own children fresh ones, which is what keeps a cluster's own
   // ends rounded.
   const outer = useGroupSlot();
-  const shell = size ?? outer?.size ?? entryDefaultSize();
-  const corner = radiusValue(radius ?? outer?.radius ?? CONTROL[shell].radius);
+  const shell = size ?? outer?.size ?? entryDefaults.size;
+  const corner = radiusValue(
+    radius ?? outer?.radius ?? CONTROL[shell].radius,
+    undefined,
+    activeTheme(scope.theme),
+  );
   const items = Children.toArray(children);
   // A group inside a group is a cluster of its own: the outer group stops
   // collapsing borders and spaces the clusters instead, which is how a toolbar
@@ -100,8 +110,11 @@ interface ButtonGroupAddonProps {
 /** A chip nothing can press, shaped like the members around it: a protocol, a
  *  domain suffix, the unit a neighbouring value is counted in. */
 function Addon({ children, style }: Readonly<ButtonGroupAddonProps>) {
+  const chip = useStyles(chipDefinition);
+
+  const entryDefaults = useEntryDefaults();
   const shape = useGroupShape();
-  const size = useGroupSlot()?.size ?? entryDefaultSize();
+  const size = useGroupSlot()?.size ?? entryDefaults.size;
   const metrics = CONTROL[size];
   return (
     <Box
@@ -125,18 +138,22 @@ function Addon({ children, style }: Readonly<ButtonGroupAddonProps>) {
  *  their own. It occupies a child slot, so the member after it is still shaped
  *  as the member after it. */
 function Separator() {
+  const s = useStyles(sDefinition);
+
   const vertical = useGroupSlot()?.orientation === 'vertical';
   return <Box bg="borderStrong" style={vertical ? s.horizontalLine : s.verticalLine} />;
 }
 
 // One px, not a hairline: the separator has to read as the same line that two
 // bordered members collapse into.
-const s = styles({
+const sDefinition = styles({
   verticalLine: { w: 1, self: 'stretch' },
   horizontalLine: { h: 1, self: 'stretch' },
 });
 
-const chip = styles(bySize((m) => ({ fontSize: m.fontSize, fontWeight: '600' as const })));
+const chipDefinition = styles(
+  bySize((m) => ({ fontSize: m.fontSize, fontWeight: '600' as const })),
+);
 
 function positionAt(index: number, count: number): GroupPosition {
   if (count === 1) return 'only';

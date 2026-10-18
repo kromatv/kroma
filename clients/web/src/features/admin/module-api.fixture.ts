@@ -1,4 +1,13 @@
-import { setSessionToken } from '@kromatv/client';
+import { createKromaClient } from '@kromatv/client';
+import { createAdminApi } from './module-api';
+export const client = createKromaClient({
+  baseUrl: 'http://kroma.test',
+  fetch: (...args) => globalThis.fetch(...args),
+});
+export const moduleApi = createAdminApi(client);
+export const setSessionToken = client.setAuthToken;
+export const sessionToken = () => client.sessionToken;
+
 import { afterEach, beforeEach, vi } from 'vitest';
 
 export const calls: Array<{ url: string; init: RequestInit }> = [];

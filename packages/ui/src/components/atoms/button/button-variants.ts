@@ -1,3 +1,4 @@
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // The whole button design, declared once: fills, paddings and label metrics as
 // `sv` slots rather than conditionals and parallel lookup maps at the call site.
 
@@ -89,17 +90,17 @@ const buttonVariants = svFor<{
     size: {
       sm: {
         root: { py: CONTROL.sm.py, px: 16, minH: CONTROL.sm.height, radius: CONTROL.sm.radius },
-        label: { fontSize: 13, fontWeight: '600', lineHeight: CONTROL.sm.line },
+        label: { fontSize: textRoles.meta.size, fontWeight: '600', lineHeight: CONTROL.sm.line },
         icon: { size: 16 },
       },
       md: {
         root: { py: CONTROL.md.py, px: 28, minH: CONTROL.md.height, radius: CONTROL.md.radius },
-        label: { fontSize: 16, fontWeight: '700', lineHeight: CONTROL.md.line },
+        label: { fontSize: textRoles.body.size, fontWeight: '700', lineHeight: CONTROL.md.line },
         icon: { size: 20 },
       },
       lg: {
         root: { py: 17, px: 38 },
-        label: { fontSize: 19, fontWeight: '700' },
+        label: { fontSize: textSizes.controlTitle, fontWeight: '700' },
         icon: { size: 22 },
       },
       /** The 10-foot primary action (the home hero, a detail screen's Lecture).

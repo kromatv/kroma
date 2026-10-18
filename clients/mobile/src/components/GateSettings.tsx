@@ -1,3 +1,4 @@
+import { IconButton, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // The sign-in gate's corner gear, the phone's answer to the TV's "Paramètres"
 // chip and the web gate's corner panel: the few things that have to be
 // reachable BEFORE anyone can sign in.
@@ -7,13 +8,16 @@
 // and a viewer who cannot read the sign-in screen cannot get to one.
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { IconButton } from '@kromatv/ui/kit';
+
 import { useRef } from 'react';
 import { useI18n, useT } from '#mobile/lib/i18n';
 import { LocalePicker } from './LocalePicker';
 import { SheetBody, SheetTitle, sheetChrome } from './ui/sheet';
 
 export function GateSettings() {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   const t = useT();
   const { locale, setOverride } = useI18n();
   const sheet = useRef<BottomSheetModal>(null);
@@ -32,7 +36,7 @@ export function GateSettings() {
         label={t('nav.settings')}
         onPress={() => sheet.current?.present()}
       />
-      <BottomSheetModal ref={sheet} {...sheetChrome()}>
+      <BottomSheetModal ref={sheet} {...sheetChrome(scope)}>
         <SheetBody>
           <SheetTitle>{t('account.uiLanguage')}</SheetTitle>
           <LocalePicker

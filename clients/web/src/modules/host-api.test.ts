@@ -26,8 +26,14 @@ vi.mock('@kromatv/ui', () => ({
   useLocale: () => locale.value,
 }));
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => navigate }));
-vi.mock('#web/modules/registry', () => ({ moduleRegistry: registry }));
-vi.mock('#web/modules/remotes', () => ({ loadRuntimeRemotes }));
+vi.mock('#web/modules/registry', () => ({
+  createModuleRuntime: () => ({
+    registry,
+    bus: createEventBus(),
+    remotes: { loadRuntimeRemotes },
+    retain: () => () => {},
+  }),
+}));
 vi.mock('#web/shared/lib/api', () => ({ apiBase: () => 'https://kroma.test' }));
 vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => auth }));
 

@@ -1,3 +1,4 @@
+import { useStyles } from '@kromatv/ui/kit';
 import { DocFigure } from '@kromatv/workbench';
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
@@ -15,6 +16,8 @@ interface FigureProps {
  * own figure block, so it keeps the measure and the rhythm a table or a fenced
  * sample has. */
 function Figure({ caption, row = false, children }: Readonly<FigureProps>) {
+  const s = useStyles(sDefinition);
+
   return (
     <DocFigure>
       <Box
@@ -39,7 +42,7 @@ function Figure({ caption, row = false, children }: Readonly<FigureProps>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   frame: { borderWidth: 1, borderColor: 'border' },
   caption: { marginTop: space[2] },
 });

@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
+
 import { fakeClient } from '@kromatv/client/test';
 import { I18nProvider } from '@kromatv/ui';
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { createInputTestHost } from '@kromatv/ui/testing';
+
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resolveRedirect } from '#tv/app/guard';
@@ -11,6 +13,8 @@ import { EnvProvider } from '#tv/app/providers/env';
 import { TvClientProvider, type TvNav, TvNavProvider, TvOutlet, useNav } from '#tv/app/router';
 import { stubScreens } from '#tv/app/router.fixtures';
 import { TvReport } from '#tv/features/reports/TvReport';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(() => {
   cleanup();

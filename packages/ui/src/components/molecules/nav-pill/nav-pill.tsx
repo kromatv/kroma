@@ -46,7 +46,7 @@ const SLIDE_SLOP = 8;
 const PILL_FILL = 'surface1/78';
 const BACKDROP_FILL = 'surface1/55';
 
-/** The blur or wash the capsule floats on: whatever `registerFrost` gave this
+/** The blur or wash the capsule floats on: whatever `KitProvider` gave this
  *  shell. Present, the capsule thins its own fill so the backdrop reads through
  *  it; absent, the capsule keeps its solid one. */
 function Backdrop({ amount = 16 }: Readonly<{ amount?: number }>) {

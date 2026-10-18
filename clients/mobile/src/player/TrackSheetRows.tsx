@@ -1,4 +1,13 @@
-import { Box, Icon, type IconName, SwitchFace, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  Icon,
+  type IconName,
+  SwitchFace,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { Pressable } from 'react-native';
 import { colors, spacing, type } from '#mobile/lib/theme';
@@ -16,6 +25,8 @@ export function Row({
   note?: string;
   onPress(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       onPress={onPress}
@@ -49,6 +60,8 @@ export function MenuRow({
   on?: boolean;
   onPress(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       onPress={onPress}
@@ -76,6 +89,8 @@ export function MenuRow({
 }
 
 export function SubHeader({ title, onBack }: Readonly<{ title: string; onBack(): void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable onPress={onBack} style={({ pressed }) => [s.subHeader, pressed && { opacity: 0.7 }]}>
       <Icon name="chevron-left" size={20} thickness={2.4} color={colors.text} />
@@ -85,6 +100,8 @@ export function SubHeader({ title, onBack }: Readonly<{ title: string; onBack():
 }
 
 export function ChipGroup({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.chipGroup}>
       <Text style={s.group}>{label}</Text>
@@ -93,8 +110,16 @@ export function ChipGroup({ label, children }: Readonly<{ label: string; childre
   );
 }
 
-const s = styles({
-  menuRow: { row: true, align: 'center', gap: 14, minH: 54, px: spacing.md, py: 8, radius: 14 },
+const sDefinition = styles({
+  menuRow: {
+    row: true,
+    align: 'center',
+    gap: 14,
+    minH: 54,
+    px: spacing.md,
+    py: 8,
+    radius: cornerRadius.mobile,
+  },
   menuText: { flex: true, minW: 0 },
   menuLabel: { ...type.body, color: 'text', fontWeight: '700' },
   menuValue: { ...type.small, mt: 1 },
@@ -117,7 +142,7 @@ const s = styles({
     gap: spacing.sm,
     minH: 48,
     px: spacing.md,
-    radius: 14,
+    radius: cornerRadius.mobile,
   },
   rowOn: { bg: 'white/10' },
   rowDisabled: { opacity: 0.45 },

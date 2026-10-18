@@ -1,4 +1,13 @@
 // @vitest-environment jsdom
+import { KromaApiError, type KromaClient, type SessionStorage } from '@kromatv/client';
+import {
+  createAccountStorage,
+  type StoredSession,
+  type User,
+  UserId,
+} from '@kromatv/client/accounts';
+import { createStyleTestHost } from '#ui/testing-style';
+
 //
 // The session state machine every client's <AuthProvider> is.
 //
@@ -8,16 +17,8 @@
 // them wrong strands somebody at a login screen with a token that is fine, or
 // - worse - leaves a "signed in" state whose every request 401s.
 
-import { KromaApiError, type KromaClient, setSessionStorage } from '@kromatv/client';
-import {
-  clearSession,
-  type StoredSession,
-  saveSession,
-  type User,
-  UserId,
-} from '@kromatv/client/accounts';
 import { fakeClient } from '@kromatv/client/test';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAuthSession } from './auth';
 
@@ -53,13 +54,21 @@ function sessionClient(accounts: Partial<KromaClient['accounts']> = {}) {
 const apiError = (status: number, body?: unknown) => new KromaApiError(status, 'nope', body);
 
 /** In-memory device store: this runner has no localStorage. */
+const map = new Map<string, string>();
+const deviceStore: SessionStorage = {
+  getItem: (key) => map.get(key) ?? null,
+  setItem: (key, value) => {
+    map.set(key, value);
+  },
+  removeItem: (key) => {
+    map.delete(key);
+  },
+};
+const testHost = createStyleTestHost({ deviceStore });
+const { renderHook } = testHost;
+const { clearSession, saveSession } = createAccountStorage(deviceStore);
 function memoryStore() {
-  const map = new Map<string, string>();
-  setSessionStorage({
-    getItem: (k) => map.get(k) ?? null,
-    setItem: (k, v) => void map.set(k, v),
-    removeItem: (k) => void map.delete(k),
-  });
+  map.clear();
   return map;
 }
 
@@ -69,7 +78,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  setSessionStorage(null);
   vi.restoreAllMocks();
 });
 

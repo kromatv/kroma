@@ -15,16 +15,18 @@ import { useAdminHost } from './admin/context';
 export function useServerEvents<M extends { type: string } = never>(
   onEvent: (e: ServerEvent | M) => void,
 ): void {
-  const { apiBase } = useAdminHost();
+  const { apiBase, client } = useAdminHost();
   const handler = useRef(onEvent);
   useEffect(() => {
     handler.current = onEvent;
   });
   useEffect(() => {
     const ev = new KromaEvents<ServerEvent | M>(apiBase, {
+      token: () => client.sessionToken,
+      refresh: () => client.refreshSession(),
       onEvent: (e) => handler.current(e),
     });
     ev.connect();
     return () => ev.close();
-  }, [apiBase]);
+  }, [apiBase, client]);
 }

@@ -23,14 +23,14 @@ const OVERLAY = (WEB ? 'fixed' : 'absolute') as 'absolute';
 
 /** The click-away layer. Above the app's sticky chrome (headers ride z-40),
  *  or a tap meant to dismiss lands on the header instead. */
-const s = styles({
+const sDefinition = styles({
   backdrop: { position: OVERLAY, top: 0, right: 0, bottom: 0, left: 0, zIndex: 99 },
   shell: { position: OVERLAY, zIndex: 100 },
 });
 
-export const PANEL_BACKDROP = s.backdrop;
+export const PANEL_BACKDROP = sDefinition.backdrop;
 
-export const PANEL_SHELL = s.shell;
+export const PANEL_SHELL = sDefinition.shell;
 
 interface AnchorHandle {
   focus?: () => void;

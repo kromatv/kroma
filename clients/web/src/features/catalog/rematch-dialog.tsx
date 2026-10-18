@@ -1,3 +1,17 @@
+import {
+  Box,
+  Button,
+  Callout,
+  classes,
+  Field,
+  IconButton,
+  resolveStyles,
+  Spinner,
+  styles,
+  Text,
+  useStyleScope,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 // "Fix the TMDB match" modal: the ranked TMDB candidates for one catalog
 // element, as a scannable poster grid with the matcher's confidence for each.
 // Applying a choice re-runs the metadata stage in the background, so the modal
@@ -7,17 +21,7 @@
 import { apiErrorText } from '@kromatv/client';
 import { ItemId, ShowId } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
-import {
-  Box,
-  Button,
-  Callout,
-  classes,
-  Field,
-  IconButton,
-  Spinner,
-  styles,
-  Text,
-} from '@kromatv/ui/kit';
+
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
@@ -34,8 +38,7 @@ import { MODAL_SCRIM } from '#web/shared/ui';
 
 type Kind = 'movie' | 'show';
 
-const PANEL = modalPanel(1024);
-const s = styles({
+const sDefinition = styles({
   form: { display: 'flex', flexShrink: 0, gap: 8 },
   box: { width: 220, maxWidth: '42vw' },
 });
@@ -44,6 +47,9 @@ const s = styles({
 // once a correction is queued, `false` on dismiss. Mounted by `CatalogModalHosts`.
 export const RematchDialog = createCallable<{ kind: Kind; id: string; title: string }, boolean>(
   ({ call, kind, id, title }) => {
+    const scope = useStyleScope();
+    useThemeVersion();
+    const PANEL = modalPanel(1024, scope);
     const t = useT();
     const { client } = useAuth();
     const subjectId = kind === 'show' ? ShowId.parse(id) : ItemId.parse(id);
@@ -109,13 +115,13 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
                 ) : null}
               </Box>
               <form
-                className={classes(s.form)}
+                className={classes(resolveStyles(sDefinition, scope).form)}
                 onSubmit={(e) => {
                   e.preventDefault();
                   setSubmitted(query.trim() || undefined);
                 }}
               >
-                <div className={classes(s.box)}>
+                <div className={classes(resolveStyles(sDefinition, scope).box)}>
                   <Field.Root label={t('rematch.searchPlaceholder')} hideLabel>
                     <Field.Input
                       type="search"

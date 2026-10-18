@@ -1,21 +1,21 @@
-// The API client, and the identity it presents. Native shells send a
-// User-Agent that names nothing (`KROMA/1 CFNetwork/…`, `okhttp/4.12.0`), so a
-// television would otherwise list itself as an unknown desktop.
-
 import {
   clientUserAgent,
   createKromaClient,
   type DeviceIdentity,
   type KromaClient,
+  type SessionStorage,
 } from '@kromatv/client';
-import { activeLocale } from '@kromatv/core';
+// The API client, and the identity it presents. Native shells send a
+// User-Agent that names nothing (`KROMA/1 CFNetwork/…`, `okhttp/4.12.0`), so a
+// television would otherwise list itself as an unknown desktop.
+
+import { deviceLocale } from '@kromatv/core';
 import { Platform } from 'react-native';
 import { buildInfo } from '#tv/app/clientBuild';
 
 /** This television, as `clientUserAgent` wants it. `null` in a browser shell,
  * where the browser's own User-Agent is both better and unchangeable. */
-export function tvIdentity(): DeviceIdentity | null {
-  const version = buildInfo().version;
+export function tvIdentity(version = buildInfo().version): DeviceIdentity | null {
   if (Platform.OS === 'ios') {
     // tvOS exposes no model API without a native module.
     const { systemName, osVersion } = Platform.constants;
@@ -32,11 +32,17 @@ export function tvIdentity(): DeviceIdentity | null {
   return null;
 }
 
-export function makeClient(baseUrl: string): KromaClient {
-  const identity = tvIdentity();
+export function makeClient(
+  baseUrl: string,
+  version = buildInfo().version,
+  artworkScale?: () => number,
+  storage?: SessionStorage | null,
+): KromaClient {
+  const identity = tvIdentity(version);
   return createKromaClient({
     baseUrl,
-    locale: activeLocale(),
+    artworkScale,
+    locale: deviceLocale(storage),
     ...(identity ? { userAgent: clientUserAgent(identity) } : {}),
   });
 }

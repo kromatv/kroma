@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
+
 import { act, renderHook } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { H, installHarness, item, makePb } from '#web/features/playback/use-web-controller.fixture';
+import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
+import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
 
 vi.mock('#web/features/playback/use-video-playback', () => ({
   useVideoPlayback: () => H.pb,
@@ -35,7 +39,11 @@ const { useWebController } = await import('#web/features/playback/use-web-contro
 installHarness();
 
 function render() {
-  return renderHook(() => useWebController(item));
+  const runtime = createWebTestRuntime({});
+  return renderHook(() => useWebController(item), {
+    wrapper: ({ children }: { children: ReactNode }) =>
+      createElement(WebRuntimeProvider, { value: runtime }, children),
+  });
 }
 
 describe('useWebController picture-in-picture', () => {

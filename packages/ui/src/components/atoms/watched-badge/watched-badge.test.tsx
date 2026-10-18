@@ -1,9 +1,14 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+
+import { cleanup, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { KROMA, KROMA_LIGHT, setTheme } from '#ui/core/theme';
+import { KROMA, KROMA_LIGHT } from '#ui/core/theme';
 import { onScreen } from '#ui/testing';
+import { createStyleTestHost } from '#ui/testing-style';
 import { WatchedBadge } from './watched-badge';
+
+const styleHost = createStyleTestHost();
+const { render, setTheme } = styleHost;
 
 afterEach(() => {
   cleanup();

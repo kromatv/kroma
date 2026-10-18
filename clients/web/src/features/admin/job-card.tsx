@@ -16,6 +16,8 @@ import {
   Switch,
   styles,
   Text,
+  fontSizes as textSizes,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { JobDetailPanel } from '#web/features/admin/jobs-detail';
@@ -25,10 +27,10 @@ import { useAsyncAction, useCap } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
 // Cron strings read best in a monospace, which the kit chip's label is not.
-const s = styles({
+const sDefinition = styles({
   cron: {
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-    fontSize: 11.5,
+    fontSize: textSizes.overlineRaised,
     fontWeight: '600',
   },
 });
@@ -212,6 +214,8 @@ function StatusPill({ job }: Readonly<{ job: JobInfo }>) {
 }
 
 function ScheduleChip({ job, onEdit }: Readonly<{ job: JobInfo; onEdit?: () => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const label = job.schedule ?? t('jobs.manual');
   return (

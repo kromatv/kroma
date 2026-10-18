@@ -1,31 +1,30 @@
 import type { ComponentType } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
-import {
-  getVlcPlane,
-  registerVlcPlane,
-  type VlcPlaneProps,
-  vlcAvailable,
-} from '#tv/features/playback/player/vlcPlane';
+import { describe, expect, it, vi } from 'vitest';
+import { type VlcPlaneProps, vlcBackendFor } from './vlcBackend';
+import { getVlcPlane, vlcAvailable } from './vlcPlane';
 
-const Plane = (() => null) as unknown as ComponentType<VlcPlaneProps>;
+const Plane: ComponentType<VlcPlaneProps> = () => null;
 
-afterEach(() => registerVlcPlane(null));
-
-describe('the libVLC plane registry', () => {
-  // Registration, not a platform check, is what answers this: a shell that ships
-  // no native module registers nothing and the engine stays out of its picker.
-  it('reports the engine unavailable until a shell hands one over', () => {
+describe('immutable VLC platform adapters', () => {
+  it('keeps VLC unavailable in browser shells', () => {
     expect(getVlcPlane()).toBeNull();
     expect(vlcAvailable()).toBe(false);
-    registerVlcPlane(Plane);
-    expect(getVlcPlane()).toBe(Plane);
-    expect(vlcAvailable()).toBe(true);
   });
-
-  it('lets a shell take it back', () => {
-    registerVlcPlane(Plane);
-    registerVlcPlane(null);
-    expect(getVlcPlane()).toBeNull();
-    expect(vlcAvailable()).toBe(false);
+  it('offers the view that the native platform actually ships', () => {
+    const native = vlcBackendFor(Plane);
+    expect(native.getVlcPlane()).toBe(Plane);
+    expect(native.vlcAvailable()).toBe(true);
+    expect(Object.isFrozen(native)).toBe(true);
+  });
+  it('keeps views and release callbacks independent between shell adapters', () => {
+    const releaseA = vi.fn();
+    const releaseB = vi.fn();
+    const a = vlcBackendFor(Plane, releaseA);
+    const b = vlcBackendFor(null, releaseB);
+    b.releaseVlcPlanes();
+    expect(releaseB).toHaveBeenCalledOnce();
+    expect(releaseA).not.toHaveBeenCalled();
+    expect(a.getVlcPlane()).toBe(Plane);
+    expect(b.vlcAvailable()).toBe(false);
   });
 });

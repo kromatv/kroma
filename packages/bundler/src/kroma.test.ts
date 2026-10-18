@@ -3,15 +3,9 @@ import type { Plugin, UserConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
 import { kroma } from './kroma';
 
-// The compiler pass is an async plugin, so the array also holds a promise:
-// Vite awaits it, and a name-based assertion has to step over it.
 const flat = (plugins: unknown[]): Plugin[] =>
   (plugins.flat(Number.POSITIVE_INFINITY) as Plugin[]).filter((plugin) => plugin?.name);
 const names = (plugins: unknown[]): string[] => flat(plugins).map((plugin) => plugin.name);
-const pending = (plugins: unknown[]): unknown[] =>
-  (plugins.flat(Number.POSITIVE_INFINITY) as Plugin[]).filter(
-    (plugin) => plugin instanceof Promise,
-  );
 
 function shellConfig(plugins: unknown[], user: UserConfig = {}): UserConfig {
   const shell = flat(plugins).find((plugin) => plugin.name === 'kroma:shell');
@@ -37,9 +31,11 @@ describe('kroma', () => {
   });
 
   it('compiles every component with the React compiler, with no way to opt out', async () => {
-    const [compiler] = pending(kroma());
-
-    expect(await compiler).toMatchObject({ name: expect.stringContaining('babel') });
+    const listed = names(kroma());
+    expect(listed).toContain('kroma:oxc-react-compiler');
+    expect(listed.indexOf('kroma:oxc-react-compiler')).toBeLessThan(
+      listed.findIndex((name) => name.startsWith('vite:react')),
+    );
   });
 
   it('compiles MDX only when asked, and places TanStack Start before React when given', () => {

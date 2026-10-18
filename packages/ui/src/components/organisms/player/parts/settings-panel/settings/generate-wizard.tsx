@@ -10,7 +10,15 @@ import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import type { PlayerSubCapabilities } from '#ui/components/organisms/player/media-types';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
-import { type ColorValue, sharedStyle, styles } from '#ui/core';
+import {
+  type ColorValue,
+  resolveStyles,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  useStyleScope,
+} from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { a11yState } from '#ui/lib/a11y';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
@@ -50,6 +58,12 @@ export function GenerateWizard({
   onClose,
   ref,
 }: Readonly<GenerateWizardProps>) {
+  const panelScoped = useStyles(panel);
+
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [mode, setMode] = useState<Mode>(caps?.transcribe ? 'transcribe' : 'translate');
   const [langIndex, setLangIndex] = useState(0);
@@ -148,7 +162,9 @@ export function GenerateWizard({
         radius="xl"
         onPointerEnter={focus.hover(0)}
         style={
-          focus.index === 0 ? sharedStyle('generate-wizard:tabs-ring', { ring: 'focusLift' }) : null
+          focus.index === 0
+            ? sharedStyle('generate-wizard:tabs-ring', { ring: 'focusLift' }, scope)
+            : null
         }
       >
         <ModeTab
@@ -179,7 +195,7 @@ export function GenerateWizard({
           />
         ) : null}
         {mode === 'translate' && curSource == null ? (
-          <Text style={panel.panelEmpty}>{t('player.subNoSource')}</Text>
+          <Text style={panelScoped.panelEmpty}>{t('player.subNoSource')}</Text>
         ) : null}
         {mode === 'transcribe' ? (
           <>
@@ -225,7 +241,7 @@ export function GenerateWizard({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   startButton: { mt: 4 },
   backgroundHint: { mx: 2, mt: 12, mb: 4, text: 'captionTv' },
   modeTab: { flex: 1, radius: 'xl', px: 18, py: 14 },
@@ -242,7 +258,11 @@ function ModeTab({
   hint,
   onPress,
 }: Readonly<{ on: boolean; enabled: boolean; label: string; hint: string; onPress: () => void }>) {
-  const tone = modeTone(enabled, on);
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
+  const tone = modeTone(enabled, on, scope);
   return (
     <Pressable
       {...VIRTUAL_FOCUS}
@@ -263,8 +283,12 @@ function ModeTab({
   );
 }
 
-function modeTone(enabled: boolean, on: boolean): { box: ViewStyle; ink: ColorValue } {
-  if (!enabled) return { box: s.modeDisabled, ink: 'text/40' };
-  if (on) return { box: s.modeOn, ink: 'accentInk' };
-  return { box: s.modeOff, ink: 'text/75' };
+function modeTone(
+  enabled: boolean,
+  on: boolean,
+  scope: StyleScope,
+): { box: ViewStyle; ink: ColorValue } {
+  if (!enabled) return { box: resolveStyles(sDefinition, scope).modeDisabled, ink: 'text/40' };
+  if (on) return { box: resolveStyles(sDefinition, scope).modeOn, ink: 'accentInk' };
+  return { box: resolveStyles(sDefinition, scope).modeOff, ink: 'text/75' };
 }

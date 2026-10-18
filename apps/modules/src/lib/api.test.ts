@@ -336,8 +336,10 @@ describe('the RFC-110 documents', () => {
     const calls = upstreamServing(CATALOG);
     for (const name of ['manifest', 'registry', 'index', 'module']) {
       const res = await machine(`/schemas/${name}.json`);
-      const schema = (await res.json()) as Record<string, unknown>;
-      expect(schema.$schema, name).toBe('https://json-schema.org/draft/2020-12/schema');
+      const schema: unknown = await res.json();
+      expect(schema, name).toMatchObject({
+        $schema: 'https://json-schema.org/draft/2020-12/schema',
+      });
       // Open-world: a registry may carry fields a later apiVersion defines.
       expect(JSON.stringify(schema), name).not.toContain('"additionalProperties":false');
     }

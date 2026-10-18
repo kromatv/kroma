@@ -3,7 +3,8 @@
 import type { PlayEntry } from '@kromatv/client/admin';
 import { ItemId, ShowId } from '@kromatv/client/media';
 import { I18nProvider } from '@kromatv/ui';
-import { pinDesignWidth } from '@kromatv/ui/kit';
+import { createStyleTestHost } from '@kromatv/ui/testing';
+
 import {
   createMemoryHistory,
   createRootRoute,
@@ -11,11 +12,14 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HISTORY_COLUMNS } from '#web/features/admin/history-columns';
 import { historySort } from '#web/features/admin/history-query';
 import { HistoryTable } from '#web/features/admin/history-table';
+
+const styleHost = createStyleTestHost();
+const { pinDesignWidth, render } = styleHost;
 
 const play = (fields: Partial<PlayEntry>): PlayEntry => ({
   id: 'p1',

@@ -14,6 +14,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { partContext } from '#ui/lib/part-context';
 import { useControllable } from '#ui/lib/use-controllable';
 
@@ -94,6 +95,8 @@ interface DisclosureTriggerProps {
 /** What opens the section, and the rule above it. The whole row is the control:
  *  one D-pad stop, and the chevron is a face rather than a second target. */
 function Trigger({ children, label }: Readonly<DisclosureTriggerProps>) {
+  const s = useStyles(sDefinition);
+
   const { open, toggle } = useDisclosure('Trigger');
   const name = label ?? (typeof children === 'string' ? children : undefined);
   return (
@@ -126,7 +129,7 @@ function Panel({ children }: Readonly<{ children: ReactNode }>) {
 
 const TRIGGER_STATES = { hover: { opacity: 0.85 } } as const;
 
-const s = styles({
+const sDefinition = styles({
   trigger: {
     row: true,
     align: 'center',

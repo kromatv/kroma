@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it } from 'vitest';
-import { type DeviceStore, deviceStore, setDeviceStore } from './device-store';
+import { describe, expect, it } from 'vitest';
+import { type DeviceStore, deviceStore } from './device-store';
 
 function fake(): DeviceStore & { entries: Map<string, string> } {
   const entries = new Map<string, string>();
@@ -17,20 +17,22 @@ function fake(): DeviceStore & { entries: Map<string, string> } {
   };
 }
 
-afterEach(() => setDeviceStore(null));
-
 describe('deviceStore', () => {
+  it('keeps simultaneous root stores independent', () => {
+    const first = fake();
+    const second = fake();
+    deviceStore(first)?.setItem('quality', 'high');
+    expect(deviceStore(first)?.getItem('quality')).toBe('high');
+    expect(deviceStore(second)?.getItem('quality')).toBeNull();
+  });
+
   it('answers with the installed store, whatever the platform has', () => {
     const store = fake();
 
-    setDeviceStore(store);
-
-    expect(deviceStore()).toBe(store);
+    expect(deviceStore(store)).toBe(store);
   });
 
   it('falls back to the platform store when nothing is installed', () => {
-    setDeviceStore(null);
-
     expect(deviceStore()).toBe(globalThis.localStorage);
   });
 

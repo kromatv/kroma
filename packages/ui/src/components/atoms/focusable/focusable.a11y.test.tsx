@@ -6,19 +6,20 @@
 // until <Focusable> emitted the shape the platform actually reads, and nothing
 // but a DOM assertion catches that - the props all look right in the tree.
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import { act } from 'react';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Checkbox } from '#ui/components/atoms/checkbox';
 import { Radio } from '#ui/components/atoms/radio';
 import { Switch } from '#ui/components/atoms/switch';
 import { ControlledFocusMirror } from '#ui/lib/controlled-focus-mirror';
-import { configureRemote } from '#ui/lib/focus-remote';
+
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
-import { clearPressGuard } from '#ui/lib/press-guard';
+import { createInputTestHost } from '#ui/testing-input';
+
 import { Focusable } from './focusable';
 
-beforeAll(() => configureRemote());
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(() => {
   cleanup();

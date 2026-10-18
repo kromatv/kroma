@@ -13,7 +13,7 @@ import {
 } from '#ui/components/organisms/player/lib/player-keys';
 import type { PlayerController, PlayerFlags } from '#ui/components/organisms/player/types';
 import { holdsCaret } from '#ui/lib/dom';
-import { redeliverKey } from '#ui/lib/focus-mirror';
+import { useFocusServices } from '#ui/lib/focus-services-context';
 import { resolveRemoteKey } from '#ui/lib/remote-keys';
 import type { PlayerNav } from './use-player-nav';
 
@@ -125,6 +125,9 @@ function postPlayKey(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolean {
  * the player never act on the same press. A field holding the caret keeps its
  * keys, and a chord with Meta, Control or Alt stays the browser's. */
 export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
+  const {
+    mirror: { redeliverKey },
+  } = useFocusServices();
   const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
     if (belongsElsewhere(e)) return;
     if (params.locked) {
@@ -163,7 +166,7 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
       window.removeEventListener('keydown', redeliverKey, true);
       window.removeEventListener('keydown', onKeyDown, true);
     };
-  }, []);
+  }, [redeliverKey]);
 }
 
 export type { PlayerKeysParams };

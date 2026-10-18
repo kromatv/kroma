@@ -5,7 +5,12 @@
 
 import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
-import { avplayDirectPlayable, type PlayEnv, selectEngine } from '@kromatv/core';
+import {
+  avplayDirectPlayable,
+  type PlaybackCapabilities,
+  type PlayEnv,
+  selectEngine,
+} from '@kromatv/core';
 import type { AudioFilterMode } from '@kromatv/ui';
 import type { EnginePref } from '#tv/app/enginePref';
 import { AvplayEngine } from '#tv/features/playback/player/avplayEngine';
@@ -64,7 +69,12 @@ export interface EnginePlan {
 }
 
 /** Resolve the concrete backend decision for an item + environment + user pref. */
-export function planEngine(item: MediaItem, env: PlayEnv, pref: EnginePref): EnginePlan {
+export function planEngine(
+  item: MediaItem,
+  env: PlayEnv,
+  pref: EnginePref,
+  _capabilities?: PlaybackCapabilities,
+): EnginePlan {
   const decision = selectEngine(item, env);
   const autoDirect = decision.kind === 'direct' || tvDirectPlay(item);
   // The user can override the automatic engine (profile menu -> Playback engine);
@@ -110,6 +120,7 @@ export function planEngine(item: MediaItem, env: PlayEnv, pref: EnginePref): Eng
  * native-plane engines are always constructed. */
 export function createTvEngine(args: {
   plan: EnginePlan;
+  capabilities?: PlaybackCapabilities;
   client: KromaClient;
   item: MediaItem;
   durationSec: number;
@@ -134,6 +145,7 @@ export function createTvEngine(args: {
     // Native mpv opens the original file directly (VA-API decode); an internal
     // direct->master fallback covers the rare file it cannot demux.
     const engine = new MpvEngine({
+      capabilities: args.capabilities,
       client,
       item,
       durationSec,
@@ -148,6 +160,7 @@ export function createTvEngine(args: {
   }
   if (eng === 'avplay') {
     return new AvplayEngine({
+      capabilities: args.capabilities,
       client,
       item,
       durationSec,

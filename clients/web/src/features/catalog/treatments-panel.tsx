@@ -1,3 +1,18 @@
+import {
+  activeTheme,
+  Box,
+  Button,
+  classes,
+  color,
+  Spinner,
+  styles,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+
 // Per-element "Traitements" panel (admin-only): the status of every processing
 // treatment applied to this film/episode/show (probe, TMDB, storyboard previews,
 // markers, embedding), plus a one-click reprocess and a "fix the TMDB match"
@@ -9,7 +24,7 @@ import { ItemId, ShowId } from '@kromatv/client/media';
 import type { Treatment } from '@kromatv/client/pipeline';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Box, Button, classes, color, Spinner, styles, Text } from '@kromatv/ui/kit';
+
 import {
   IconAlertTriangleFilled,
   IconCircle,
@@ -20,7 +35,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { RematchDialog } from '#web/features/catalog/rematch-dialog';
-import { kromaClient } from '#web/shared/lib/api';
+
 import { useAuth } from '#web/shared/lib/auth';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal';
 
@@ -37,13 +52,20 @@ const STATUS = {
 const PANEL_PAD = { base: 24, md: 64 } as const;
 
 // A <span> so the native tooltip survives: react-native-web drops a `title`.
-const s = styles({ treatment: { display: 'inline-flex', alignItems: 'center', gap: 6 } });
+const sDefinition = styles({ treatment: { display: 'inline-flex', alignItems: 'center', gap: 6 } });
 
 export function TreatmentsPanel({
   kind,
   id,
   title,
 }: Readonly<{ kind: Kind; id: string; title: string }>) {
+  const webRuntime = useWebRuntime();
+
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { user, client } = useAuth();
   const queryClient = useQueryClient();
@@ -56,7 +78,7 @@ export function TreatmentsPanel({
   const { data: treatments = null } = useQuery({
     queryKey,
     queryFn: async (): Promise<Treatment[]> => {
-      const c = kromaClient();
+      const c = webRuntime.client;
       const r = await (kind === 'show' ? c.pipeline.show(subjectId) : c.pipeline.item(subjectId));
       return r.treatments;
     },
@@ -125,7 +147,7 @@ export function TreatmentsPanel({
               {spin ? (
                 <Spinner size={16} color={meta.ink} />
               ) : (
-                <Icon size={16} color={color(meta.ink)} />
+                <Icon size={16} color={color(meta.ink, activeTheme(scope.theme))} />
               )}
               <Text variant="meta" color="white/80">
                 {t(`pipeline.t.${tr.key}` as MessageKey)}

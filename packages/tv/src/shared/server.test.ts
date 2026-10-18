@@ -25,7 +25,9 @@ const saveServer = vi.hoisted(() =>
     return saved.list;
   }),
 );
-vi.mock('@kromatv/client/accounts', () => ({ migrateStorage, loadServers, saveServer }));
+vi.mock('@kromatv/client/accounts', () => ({
+  createAccountStorage: () => ({ migrateStorage, loadServers, saveServer }),
+}));
 
 type Mod = typeof import('./server');
 

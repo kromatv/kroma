@@ -288,7 +288,7 @@ function EpisodeRow({
             ·
           </Text>
           <Text variant="meta" color="textDim" style={TABULAR}>
-            {ep.airDate ? datedDayLabel(ep.airDate, locale) : '—'}
+            {ep.airDate ? datedDayLabel(ep.airDate, locale) : '-'}
           </Text>
           {quality ? (
             <>

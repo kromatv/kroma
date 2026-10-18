@@ -2,7 +2,7 @@
 // player. The components are `@kromatv/ui/kit`.
 
 export * from './components/organisms/player';
-export { type DeviceStore, deviceStore, setDeviceStore } from './lib/device-store';
+export { type DeviceStore, deviceStore, useDeviceStore } from './lib/device-store';
 export {
   dispatchRemoteKey,
   type RemoteKey,
@@ -12,6 +12,7 @@ export {
   resolveRemoteKey,
 } from './lib/remote-keys';
 export { useForeground } from './lib/use-foreground';
+export { useAccountStorage } from './services/account-storage';
 export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/aiSuggest';
 export { useAiSuggest } from './services/aiSuggest';
 export type { ActivateResult, AuthSession } from './services/auth';

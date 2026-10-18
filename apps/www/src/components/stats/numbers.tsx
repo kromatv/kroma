@@ -5,7 +5,7 @@ import { getLocale } from '#site/lib/i18n';
 import type { Stats } from '#site/lib/stats';
 import { m } from '#site/paraglide/messages';
 
-const HIDDEN = '—';
+const HIDDEN = '-';
 
 interface FigureProps {
   label: string;

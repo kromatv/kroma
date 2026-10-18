@@ -23,19 +23,26 @@ describe('tokensCss', () => {
     }
   });
 
+  it('resets every theme token group at an explicit nested theme boundary', () => {
+    const defaults = tokensCss().split(':root,\n[data-kroma-theme] {')[1]?.split('}')[0] ?? '';
+    expect(defaults).toContain('--radius-lg:');
+    expect(defaults).toContain('--font-ui:');
+    expect(defaults).toContain('--type-body-size:');
+  });
+
   it('answers an unstamped root with prefers-color-scheme, and nothing else', () => {
     const css = tokensCss();
     expect(css).toContain('[data-theme="light"]');
 
     const media = css.split('@media (prefers-color-scheme: light) {')[1] ?? '';
-    expect(media).toContain(':root:not([data-theme]) {');
+    expect(media).toContain(':root:not([data-theme]),\n  [data-kroma-theme]:not([data-theme]) {');
     expect(media).toContain(`--kroma-bg: ${lightColors.bg.toLowerCase()};`);
     expect(media).not.toContain('[data-theme="dark"]');
   });
 
   it('leaves the dark palette as the bare-root default', () => {
     const css = tokensCss();
-    expect(css).toContain(':root,\n[data-theme="dark"] {');
+    expect(css).toContain(':root,\n[data-kroma-theme],\n[data-theme="dark"] {');
     // Dark once, then light twice: the attribute and the unstamped query.
     expect(css.match(/--kroma-bg: /g)).toHaveLength(3);
   });

@@ -10,24 +10,21 @@
 // - rather than by poking React state, so what is tested is the whole path a
 // press actually takes.
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { act } from 'react';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { activeTheme } from '#ui/core';
-import { configureRemote } from '#ui/lib/focus-remote';
+
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
-import { armPressGuard, clearPressGuard } from '#ui/lib/press-guard';
 import { declared, wearsRing } from '#ui/testing';
+import { createInputTestHost } from '#ui/testing-input';
 import { Focusable } from './focusable';
 
-beforeAll(() => configureRemote());
+const { armPressGuard, clearPressGuard, render } = createInputTestHost();
 
 afterEach(() => {
   cleanup();
   clearPressGuard();
-  // input-source is module state: a test that swept the pointer would otherwise
-  // leave the next one thinking a cursor is driving.
-  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 });
 
 const host = (label: string) => screen.getByLabelText(label);
@@ -265,23 +262,25 @@ describe('focus visibility', () => {
     // blurs on leave because its model keeps exactly one owner. Without
     // :focus-visible semantics the amber ring stays on whatever the cursor
     // passed last, which reads as a selection nobody made.
+    const view = screenWith(<Focusable focused={false} label="Swept" />);
     fireEvent.mouseMove(window);
-    screenWith(
-      <FocusRegion>
-        <Focusable autoFocus label="Swept" />
-      </FocusRegion>,
+    view.rerender(
+      <FocusScope>
+        <Focusable focused label="Swept" />
+      </FocusScope>,
     );
     expect(ringed('Swept')).toBe(false);
   });
 
-  it('restores the ring as soon as a key is pressed', () => {
-    fireEvent.mouseMove(window);
+  it('restores the ring as soon as a key moves focus', () => {
     screenWith(
       <FocusRegion>
-        <Focusable autoFocus label="Un" />
-        <Focusable label="Deux" />
+        <Focusable label="Un" />
+        <Focusable autoFocus label="Deux" />
       </FocusRegion>,
     );
+    fireEvent.mouseMove(window);
+    fireEvent.mouseEnter(host('Un'));
     expect(ringed('Un')).toBe(false);
     press('ArrowRight');
     expect(ringed('Deux')).toBe(true);

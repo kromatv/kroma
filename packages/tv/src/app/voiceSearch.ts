@@ -4,7 +4,7 @@
 // all (the Siri Remote's mic only feeds dictation into a system text field),
 // so Apple TV registers none here and dictates through `app/searchShell` instead.
 
-import type { ComponentType } from 'react';
+import { type ComponentType, createContext, useContext } from 'react';
 
 export interface VoiceSessionProps {
   onText: (text: string) => void;
@@ -17,16 +17,19 @@ export interface VoiceSearchBackend {
   Session: ComponentType<VoiceSessionProps>;
 }
 
-let current: VoiceSearchBackend | null = null;
+const Context = createContext<VoiceSearchBackend | null>(null);
+export const VoiceSearchProvider = Context.Provider;
 
-/** Call once at the app root, before the first render; null removes it. */
-export function setVoiceSearchBackend(backend: VoiceSearchBackend | null): void {
-  current = backend;
+/** Read the capability injected by this app root. */
+export function useVoiceSearchBackend(): VoiceSearchBackend | null {
+  return voiceSearchBackend(useContext(Context));
 }
 
 /** Null when unregistered or its probe reports unavailable; a throwing probe
  * also counts as unavailable rather than taking the search screen down. */
-export function voiceSearchBackend(): VoiceSearchBackend | null {
+export function voiceSearchBackend(
+  current: VoiceSearchBackend | null = null,
+): VoiceSearchBackend | null {
   if (!current) return null;
   try {
     return current.available() ? current : null;

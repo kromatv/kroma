@@ -16,6 +16,8 @@ import {
   Skeleton,
   Spinner,
   Text,
+  useStyleScope,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 import { posterScrim } from '#web/shared/lib/art-styles';
@@ -218,6 +220,9 @@ function ResultRow({
   busy: boolean;
   onPick: () => void;
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   const t = useT();
   const kind = t(entry.kind === 'show' ? 'pipeline.type.show' : 'pipeline.type.movie');
   const facts = [entry.year ? String(entry.year) : null, kind].filter(Boolean).join(' · ');
@@ -226,7 +231,7 @@ function ResultRow({
     <ListRow.Root chevron={false} label={entry.title}>
       <ListRow.Leading>
         <Box w={52} h={76} shrink={0} radius="sm" overflow="hidden">
-          <div style={posterScrim(entry.title)} />
+          <div style={posterScrim(entry.title, scope)} />
           <Image src={entry.posterUrl} fit="cover" fill />
         </Box>
       </ListRow.Leading>

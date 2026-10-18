@@ -7,14 +7,13 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { View } from 'react-native';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { FocusLiftHost, FocusLiftView, LIFTED } from '#ui/lib/focus-lift';
-import { configureRemote } from '#ui/lib/focus-remote';
+
 import { FocusScope } from '#ui/lib/focus-scope';
 import { declared } from '#ui/testing';
 
-beforeAll(() => configureRemote());
 afterEach(cleanup);
 
 const lifted = () => declared(screen.getByTestId('host'), 'zIndex') === '1';

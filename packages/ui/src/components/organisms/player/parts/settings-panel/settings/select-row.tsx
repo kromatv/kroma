@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { IconOk } from '#ui/components/organisms/player/parts/icons';
-import { style } from '#ui/core';
+import { style, useStyles } from '#ui/core';
 import { a11yState } from '#ui/lib/a11y';
 import { useFocusedRow } from '#ui/lib/use-focused-row';
 import { panel, rowStyle } from './panel-style';
@@ -46,6 +46,8 @@ export function SelectRow({
   leading?: ReactNode;
   trailing?: ReactNode;
 }>) {
+  const panelScoped = useStyles(panel);
+
   const anchor = useFocusedRow(focused);
   return (
     <Pressable
@@ -58,12 +60,12 @@ export function SelectRow({
       // nothing is one of a list of identical rows.
       accessibilityLabel={typeof label === 'string' ? label : undefined}
       {...a11yState({ selected: Boolean(selected) })}
-      style={rowStyle(panel.selectRow, panel.rowOn, focused)}
+      style={rowStyle(panelScoped.selectRow, panelScoped.rowOn, focused)}
     >
       {leading}
       <Box flex style={MIN_W}>
-        <Line node={label} style={panel.selectLabel} />
-        <Line node={sub} style={panel.selectSub} />
+        <Line node={label} style={panelScoped.selectLabel} />
+        <Line node={sub} style={panelScoped.selectSub} />
       </Box>
       {trailing}
       {selected ? <IconOk size={24} color="accentText" /> : null}

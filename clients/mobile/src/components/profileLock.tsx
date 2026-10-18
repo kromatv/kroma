@@ -2,7 +2,17 @@
 // biometric switch row and the step-at-a-time masked PIN wizard. All state
 // and auth calls stay in the route (app/(app)/profile-pin.tsx).
 
-import { Box, Button, Keypad, OtpField, Spinner, Switch, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  Keypad,
+  OtpField,
+  Spinner,
+  Switch,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { radius, spacing, type } from '#mobile/lib/theme';
 import { ErrorBanner } from './ui';
@@ -16,6 +26,8 @@ export function LockCard({
   sub: string;
   children: React.ReactNode;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.section}>
       <Text style={s.sectionTitle}>{title}</Text>
@@ -38,6 +50,8 @@ export function BioSwitchRow({
   disabled: boolean;
   onChange(next: boolean): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.bioRow}>
       <Text style={s.bioLabel}>{label}</Text>
@@ -62,6 +76,8 @@ export function PinWizard({
   onChange(next: string): void;
   onCancel(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <Box style={s.wizard}>
@@ -96,7 +112,7 @@ export function PinWizard({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   section: { gap: spacing.xs },
   sectionTitle: { ...type.small, mb: 2, textTransform: 'uppercase', letterSpacing: 1 },
   card: { gap: spacing.md, p: spacing.md, bg: 'surface1', radius: radius.md, border: 'border' },

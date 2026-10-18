@@ -10,6 +10,7 @@ import { Box } from '#ui/components/atoms/box';
 import { CheckboxFace } from '#ui/components/atoms/checkbox';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { space } from '#ui/core/tokens';
 import { partContext } from '#ui/lib/part-context';
 
@@ -31,6 +32,8 @@ interface ListRootProps {
 }
 
 function Root({ ordered = false, label, children }: Readonly<ListRootProps>) {
+  const s = useStyles(sDefinition);
+
   const items = useMemo(
     () => Children.toArray(children).filter((child) => isValidElement(child)),
     [children],
@@ -80,6 +83,8 @@ function Item({ checked, children }: Readonly<ListItemProps>) {
 }
 
 function Marker({ marker, checked }: Readonly<{ marker: number | null; checked?: boolean }>) {
+  const s = useStyles(sDefinition);
+
   if (checked !== undefined) {
     return (
       <Box shrink={0} style={s.task}>
@@ -100,7 +105,7 @@ function Marker({ marker, checked }: Readonly<{ marker: number | null; checked?:
 // its top edge.
 const TASK_LIFT = 2;
 
-const s = styles({
+const sDefinition = styles({
   list: { gap: space[2] },
   bullet: { w: 3, h: 3, mt: 10 },
   // Wide enough for a two-digit number, so the text column does not step

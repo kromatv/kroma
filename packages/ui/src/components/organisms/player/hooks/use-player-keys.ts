@@ -11,7 +11,8 @@ import {
 } from '#ui/components/organisms/player/lib/player-keys';
 import { useRemoteKeys } from '#ui/lib/focus-remote';
 import type { RemoteKey } from '#ui/lib/remote-keys';
-import { holdMenuKey, isRemoteKeyUp, releaseMenuKey } from '#ui/lib/tv-remote';
+import { isRemoteKeyUp } from '#ui/lib/tv-remote';
+import { useMenuKeys } from '#ui/lib/use-menu-keys';
 
 // Both the clickpad (up/down/left/right) and the touch-surface swipes
 // (swipeUp/...) map here: different gesture recognizers that never both fire.
@@ -62,7 +63,7 @@ function useOnePress(
 ): (key: RemoteKey, from: Transport) => void {
   const owner = useRef<Transport | null>(null);
   return useEffectEvent((key: RemoteKey, from: Transport) => {
-    owner.current ??= from;
+    if (owner.current === null) owner.current = from;
     if (owner.current !== from) return;
     routeRemoteKey(params, key);
   });
@@ -74,13 +75,11 @@ function useOnePress(
  * No `preventDefault`: a claimed TV event has no default to suppress.
  */
 export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
+  const menuKeys = useMenuKeys();
   // Claim Menu while mounted: unclaimed, tvOS treats it as "leave the app"
   // instead of closing the player. A shared counter, since the screen
   // underneath also claims it.
-  useEffect(() => {
-    holdMenuKey();
-    return releaseMenuKey;
-  }, []);
+  useEffect(() => menuKeys.hold(), [menuKeys]);
 
   const route = useOnePress(params);
 

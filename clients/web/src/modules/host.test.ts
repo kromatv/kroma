@@ -25,8 +25,14 @@ vi.mock('@kromatv/ui', () => ({
   useLocale: () => locale.value,
 }));
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => navigate }));
-vi.mock('#web/modules/registry', () => ({ moduleRegistry: registry }));
-vi.mock('#web/modules/remotes', () => ({ loadRuntimeRemotes }));
+vi.mock('#web/modules/registry', () => ({
+  createModuleRuntime: () => ({
+    registry,
+    bus: createEventBus(),
+    remotes: { loadRuntimeRemotes },
+    retain: () => () => {},
+  }),
+}));
 vi.mock('#web/shared/lib/api', () => ({ apiBase: () => 'https://kroma.test' }));
 vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => auth }));
 
@@ -154,15 +160,16 @@ describe('starting the modules', () => {
 });
 
 describe('the event bus', () => {
-  it('is ONE bus for the whole app', async () => {
-    const { unmount } = renderHook(() => useModuleHost());
+  it('keeps one bus within a root and gives the next root a new one', async () => {
+    const first = renderHook(() => useModuleHost());
     await waitFor(() => expect(registry.start).toHaveBeenCalled());
-    const first = base().bus;
-
-    unmount();
+    const firstBus = base().bus;
+    first.rerender();
+    expect(base().bus).toBe(firstBus);
+    first.unmount();
     renderHook(() => useModuleHost());
     await waitFor(() => expect(registry.start).toHaveBeenCalledTimes(2));
-    expect(base().bus).toBe(first);
-    expect(createEventBus).not.toHaveBeenCalled();
+    expect(base().bus).not.toBe(firstBus);
+    expect(createEventBus).toHaveBeenCalledTimes(2);
   });
 });

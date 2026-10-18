@@ -1,7 +1,7 @@
 // Native (Apple TV / Android TV) brand intro, played via expo-video. No CSS
 // fallback: unlike the browser shells, a native TV always has an HEVC decoder.
 
-import { holdInput, styles } from '@kromatv/ui/kit';
+import { styles, useInputGate, useStyles } from '@kromatv/ui/kit';
 import { EXIT_MS, SAFETY_SLACK_MS } from '@kromatv/ui/kit/organisms/kroma-intro';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -25,10 +25,6 @@ const AUDIO_FADE_STEPS = 8;
 // finding the remote, not a request to navigate a screen it can't see.
 const SKIP_EVENTS = new Set(['select', 'longSelect', 'playPause', 'play', 'pause', 'menu', 'back']);
 
-// Module scope so the intro plays once per launch, not once per mount (a fast
-// refresh must not replay it), and outlives every remount.
-let introSeen = false;
-
 // `useTVEventHandler` exists only on the tvOS RN fork; bound once at module
 // scope so the hook count never changes between builds.
 const HAS_TV_EVENTS = typeof useTVEventHandler === 'function';
@@ -36,10 +32,11 @@ const useRemoteEvents: (handler: (event: HWEvent) => void) => void = HAS_TV_EVEN
   ? useTVEventHandler
   : () => {};
 
+// Mounted above the router by TvApp, so screen changes retain its state and
+// independent app mounts each own their launch animation.
 export function BrandIntro({ videoSrc }: Readonly<BrandIntroProps>) {
-  const [done, setDone] = useState(introSeen);
+  const [done, setDone] = useState(false);
   const finish = useCallback(() => {
-    introSeen = true;
     setDone(true);
   }, []);
   if (done) return null;
@@ -49,6 +46,9 @@ export function BrandIntro({ videoSrc }: Readonly<BrandIntroProps>) {
 // Mounted only while it plays: unmounting is what releases the player, so the
 // app behind it never shares a decoder with an intro that ended.
 function IntroFilm({ source, onDone }: Readonly<{ source: string | number; onDone: () => void }>) {
+  const s = useStyles(sDefinition);
+
+  const { holdInput } = useInputGate();
   const player = useVideoPlayer(source, (p) => {
     p.loop = false;
     p.muted = false;
@@ -130,7 +130,7 @@ function IntroFilm({ source, onDone }: Readonly<{ source: string | number; onDon
       clearTimeout(handoff.current);
       clearInterval(audioFade.current);
     };
-  }, [armSafety]);
+  }, [armSafety, holdInput]);
 
   useRemoteEvents((event: HWEvent) => {
     // No key-up filter: Android reports a press twice and `exit` is single-shot,
@@ -156,7 +156,7 @@ function IntroFilm({ source, onDone }: Readonly<{ source: string | number; onDon
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   stage: { fill: true, z: 9999, bg: 'bg' },
   veil: { fill: true, bg: 'bg', pointerEvents: 'none' },
 });

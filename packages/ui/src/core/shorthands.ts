@@ -23,7 +23,7 @@
 import type { DimensionValue, TextStyle, ViewStyle } from 'react-native';
 import type { Responsive } from '#ui/core/breakpoint';
 import { type ColorValue, color } from '#ui/core/color';
-import { activeTheme, type RingToken, radiusValue } from '#ui/core/theme';
+import { type RingToken, radiusValue, type Theme } from '#ui/core/theme';
 import type { ShadowToken } from '#ui/core/tokens/effects';
 import { absoluteFill, type CornerValue } from '#ui/core/tokens/layout';
 
@@ -156,7 +156,7 @@ export type Rule =
   | string
   | readonly string[]
   | Readonly<Record<string, unknown>>
-  | ((value: unknown) => Readonly<Record<string, unknown>>);
+  | ((value: unknown, theme: Theme) => Readonly<Record<string, unknown>>);
 
 /**
  * The `satisfies` below is what makes the interfaces and the table one source of
@@ -218,15 +218,15 @@ export const RULES = {
   mb: 'marginBottom',
   ml: 'marginLeft',
 
-  bg: (v) => ({ backgroundColor: color(v as string) }),
-  radius: (v) => ({ borderRadius: radiusValue(v as CornerValue) }),
+  bg: (v, theme) => ({ backgroundColor: color(v as string, theme) }),
+  radius: (v, theme) => ({ borderRadius: radiusValue(v as CornerValue, undefined, theme) }),
   // Before `borderWidth`, so an explicit width always beats the hairline.
-  border: (v) => ({ borderColor: color(v as string), borderWidth: 1 }),
+  border: (v, theme) => ({ borderColor: color(v as string, theme), borderWidth: 1 }),
   borderWidth: 'borderWidth',
-  shadow: (v) => ({ boxShadow: activeTheme().shadow[v as ShadowToken] }),
+  shadow: (v, theme) => ({ boxShadow: theme.shadow[v as ShadowToken] }),
   // Guarded: <Focusable> has its own boolean `ring` prop, and a spread bag must
   // not smuggle it in as a paint.
-  ring: (v) => (typeof v === 'string' ? { ...activeTheme().ring[v as RingToken] } : {}),
+  ring: (v, theme) => (typeof v === 'string' ? { ...theme.ring[v as RingToken] } : {}),
   opacity: 'opacity',
   overflow: 'overflow',
   isolate: { isolation: 'isolate' },

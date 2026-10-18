@@ -4,7 +4,8 @@
 // under the new architecture the Android root is ReactSurfaceView, which routes
 // them to per-view `onKeyDown` instead. Both streams are covered here.
 
-import { act, renderHook } from '@testing-library/react';
+import { act, type RenderHookOptions, renderHook as renderReactHook } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
 import type { HWEvent, NativeSyntheticEvent, TVKeyEvent } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -35,14 +36,27 @@ interface RemoteConfig {
 
 const nav = vi.hoisted(() => ({ config: null as RemoteConfig | null }));
 
-vi.mock('@kromatv/spatial-nav/react', () => ({
-  configureRemote: (config: RemoteConfig) => {
-    nav.config = config;
-  },
-}));
-
 type Remote = typeof import('./focus-remote');
-type InputGate = typeof import('./input-gate');
+type GateModule = typeof import('./input-gate');
+type InputGate = ReturnType<GateModule['createInputGate']>;
+let gateModule: GateModule;
+let gateState: InputGate;
+let focusContext: typeof import('./focus-services-context');
+let focusState: import('./focus-services').FocusServices;
+function renderHook<Result, Props>(
+  callback: (props: Props) => Result,
+  options?: RenderHookOptions<Props>,
+) {
+  return renderReactHook(callback, {
+    ...options,
+    wrapper: ({ children }: { children: ReactNode }) =>
+      createElement(
+        focusContext.FocusServicesProvider,
+        { value: focusState },
+        createElement(gateModule.InputGateProvider, { value: gateState }, children),
+      ),
+  });
+}
 
 // Fresh module per platform: `IS_ANDROID`, the TV-hook presence and the
 // subscription sets all live at module scope.
@@ -57,8 +71,13 @@ async function load(
   vi.resetModules();
 
   const remote: Remote = await import('./focus-remote');
-  const gate: InputGate = await import('./input-gate');
-  remote.configureRemote();
+  gateModule = await import('./input-gate');
+  const gate = gateModule.createInputGate();
+  gateState = gate;
+  focusContext = await import('./focus-services-context');
+  const { createFocusServices } = await import('./focus-services');
+  focusState = createFocusServices(true, gate);
+  nav.config = focusState.remote;
   return { remote, gate };
 }
 

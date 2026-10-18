@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { userQueries } from '#web/shared/lib/queries';
+import { createQueries } from '#web/shared/lib/queries';
+import { createWebTestClient } from '#web/shared/lib/web-runtime.fixture';
 
 const api = vi.hoisted(() => ({ markSeen: vi.fn(), list: { queryKey: ['releases'] } }));
 
@@ -15,8 +16,27 @@ vi.mock('#web/shared/lib/api', () => ({
     query: { releases: { list: () => api.list } },
   }),
 }));
+vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
+  const original = await importOriginal<typeof import('#web/shared/lib/web-runtime')>();
+  const { createWebTestRuntime } = await import('#web/shared/lib/web-runtime.fixture');
+  const { QueryClient } =
+    await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+  const queryCache = new QueryClient();
+  const runtime = createWebTestRuntime(
+    {
+      releases: { markSeen: api.markSeen },
+      query: { releases: { list: () => api.list } },
+    },
+    () => queryCache,
+  );
+  return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
+});
 
 import { useMarkReleaseSeen } from './use-mark-release-seen';
+
+const { userQueries } = createQueries(
+  createWebTestClient({ query: { releases: { list: () => api.list } } }),
+);
 
 const RELEASES = userQueries.releases().queryKey;
 

@@ -13,6 +13,7 @@ import {
   Row,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -25,7 +26,7 @@ import { useAuth } from '#web/shared/lib/auth';
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
 import { TileGrid } from '#web/shared/ui/tile-grid';
 
-const s = styles({
+const sDefinition = styles({
   count: { fontVariant: ['tabular-nums'] },
   backLink: {
     display: 'inline-flex',
@@ -38,6 +39,8 @@ const s = styles({
 });
 
 export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { user } = useAuth();
   const canDiscover = !!user && hasPermission(user, 'requests.create');
@@ -114,6 +117,8 @@ function Pager({
   totalPages,
   onGo,
 }: Readonly<{ page: number; totalPages: number; onGo: (n: number) => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   if (totalPages <= 1) return null;
   return (

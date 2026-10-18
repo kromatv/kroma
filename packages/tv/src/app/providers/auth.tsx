@@ -1,16 +1,12 @@
+import { useAccountStorage } from '@kromatv/ui';
 // Multi-server per-user session for the TV: unlike the web (single origin), the
 // TV remembers profiles from several KROMA servers at once.
 
-import { type KromaClient, sharedTokenExchange } from '@kromatv/client';
+import type { KromaClient } from '@kromatv/client';
 import {
   type AuthResult,
-  clearSession,
-  forgetAccount as forgetAccountStore,
-  loadAccounts,
-  loadSession,
   normalizeServerUrl as norm,
   type StoredSession,
-  saveSession,
   User,
   type UserId,
 } from '@kromatv/client/accounts';
@@ -76,6 +72,13 @@ export function AuthProvider({
   onSignedInChange: (signedIn: boolean) => void;
   children: ReactNode;
 }>) {
+  const {
+    loadSession,
+    saveSession,
+    loadAccounts,
+    clearSession,
+    forgetAccount: forgetAccountStore,
+  } = useAccountStorage();
   const [session, setSession] = useState<StoredSession | null>(() => loadSession());
   const [accounts, setAccounts] = useState<StoredSession[]>(() => loadAccounts());
   // The access token whose bearer is live, so `ready` can be read during render:
@@ -86,14 +89,17 @@ export function AuthProvider({
 
   const ready = !client || !session || resumed === session.accessToken;
 
-  const drop = useCallback((c: KromaClient | null) => {
-    c?.setAuthToken();
-    c?.setRefreshHandler();
-    unlocked.current.clear();
-    clearSession();
-    setResumed(null);
-    setSession(null);
-  }, []);
+  const drop = useCallback(
+    (c: KromaClient | null) => {
+      c?.setAuthToken();
+      c?.setRefreshHandler();
+      unlocked.current.clear();
+      clearSession();
+      setResumed(null);
+      setSession(null);
+    },
+    [clearSession],
+  );
 
   // The bearer is only applied when the session belongs to the server the client
   // points at: a token for server A must never ride a request to server B.
@@ -115,7 +121,8 @@ export function AuthProvider({
     // coalesces them, so a poster grid full of 401s cannot trip the
     // brute-force guard with N of them.
     const resume = (stored: StoredSession): Promise<string | undefined> =>
-      sharedTokenExchange(() => client.accounts.exchangeToken(stored.accessToken))
+      client.session
+        .sharedTokenExchange(() => client.accounts.exchangeToken(stored.accessToken))
         .then((res) => {
           if (cancelled) return undefined;
           client.setAuthToken(res.token);
@@ -138,7 +145,7 @@ export function AuthProvider({
       cancelled = true;
       client.setRefreshHandler();
     };
-  }, [client, session, activeServerUrl, resumed, drop]);
+  }, [client, session, activeServerUrl, resumed, drop, saveSession]);
 
   useEffect(() => {
     onSignedInChange(ready && Boolean(session));
@@ -152,14 +159,20 @@ export function AuthProvider({
       setSession(s);
       setAccounts(loadAccounts());
     },
-    [setActiveServer],
+    [setActiveServer, loadAccounts, saveSession],
   );
 
   const login = useCallback(
     (res: AuthResult, serverUrl: string) => {
       // Its bearer is already live, so the effect must not exchange it again.
-      client?.setAuthToken(res.token);
-      setResumed(res.accessToken);
+      if (client && norm(client.baseUrl) === norm(serverUrl)) {
+        client.setAuthToken(res.token);
+        client.session.setSessionMediaTicket(res.mediaTicket);
+        setResumed(res.accessToken);
+      } else {
+        // A new server gets its own client and boot exchange before requests resume.
+        setResumed(null);
+      }
       enter({ serverUrl: norm(serverUrl), accessToken: res.accessToken, user: res.user });
     },
     [enter, client],
@@ -186,7 +199,7 @@ export function AuthProvider({
         return s;
       });
     },
-    [client],
+    [client, loadAccounts, forgetAccountStore],
   );
 
   const logout = useCallback(async () => {
@@ -199,7 +212,7 @@ export function AuthProvider({
     if (active?.serverUrl) forgetAccountStore(active.user.id, active.serverUrl);
     drop(client);
     setAccounts(loadAccounts());
-  }, [client, session, drop]);
+  }, [client, session, drop, loadAccounts, forgetAccountStore]);
 
   const updateUser = useCallback(
     (patch: Partial<User>) => {
@@ -211,7 +224,12 @@ export function AuthProvider({
       setSession(next);
       setAccounts(loadAccounts());
     },
-    [session],
+    [
+      session, // `saveSession` rewrites the remembered-accounts entry too, so `accounts`
+      // must be re-read or the picker keeps showing a lock for a disabled PIN.
+      saveSession,
+      loadAccounts,
+    ],
   );
 
   const isUnlocked = useCallback(

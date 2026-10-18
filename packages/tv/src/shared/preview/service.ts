@@ -73,29 +73,32 @@ function nudgeService(t: Tizen): void {
   }
 }
 
-let lastNudge = 0;
+/** The mounted catalogue owns the refresh budget, including server switches. */
+export function createPreviewPublisher() {
+  let lastNudge = 0;
 
-/** Persist the carousel and (throttled) ask the service to publish it. No-op
- *  off Tizen. */
-export async function publishPreview(client: KromaClient, movies: MediaItem[]): Promise<void> {
-  const t = tizen();
-  if (!t) return;
-  let continueItems: ContinueItem[] = [];
-  try {
-    continueItems = await client.playback.continueWatching();
-  } catch {
-    /* not logged in / no progress yet */
-  }
-  const data = buildPreviewData(client, movies, continueItems);
-  if (!data) return;
-  try {
-    await writePrivateFile(t, PREVIEW_FILE, data);
-    const now = Date.now();
-    if (now - lastNudge >= REPUBLISH_MS) {
-      lastNudge = now;
-      nudgeService(t);
+  /** Persist the carousel and (throttled) ask the service to publish it. No-op
+   *  off Tizen. */
+  return async function publishPreview(client: KromaClient, movies: MediaItem[]): Promise<void> {
+    const t = tizen();
+    if (!t) return;
+    let continueItems: ContinueItem[] = [];
+    try {
+      continueItems = await client.playback.continueWatching();
+    } catch {
+      /* not logged in / no progress yet */
     }
-  } catch {
-    /* best-effort: the carousel keeps its previous contents */
-  }
+    const data = buildPreviewData(client, movies, continueItems);
+    if (!data) return;
+    try {
+      await writePrivateFile(t, PREVIEW_FILE, data);
+      const now = Date.now();
+      if (now - lastNudge >= REPUBLISH_MS) {
+        lastNudge = now;
+        nudgeService(t);
+      }
+    } catch {
+      /* best-effort: the carousel keeps its previous contents */
+    }
+  };
 }

@@ -21,6 +21,7 @@ import {
   styles,
   Text,
   useStableCallback,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { memo, useEffect, useState } from 'react';
 import { useAdminHost } from './context';
@@ -39,7 +40,7 @@ interface SettingsViewProps {
 // value itself: the server never sends one back, and keeping it in state would
 // put a signing key in the React tree for the rest of the session.
 
-const s = styles({ minW: { minWidth: 0 }, desc: { mt: 3 }, saved: { mt: 4 } });
+const sDefinition = styles({ minW: { minWidth: 0 }, desc: { mt: 3 }, saved: { mt: 4 } });
 function applySetting(groups: SettingGroup[], key: string, value: unknown): SettingGroup[] {
   const applied = (r: SettingRow): SettingRow =>
     r.kind === 'secret' || r.kind === 'password'
@@ -149,6 +150,8 @@ const Row = memo(function Row({
   row,
   onChange,
 }: Readonly<{ row: SettingRow; onChange: (key: string, v: unknown) => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const change = (v: unknown) => onChange(row.key, v);
   return (

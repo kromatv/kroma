@@ -1,6 +1,14 @@
 import type { MediaItem, ProgressEntry } from '@kromatv/client/media';
 import { formatRuntime, sizedImageUrl } from '@kromatv/core';
-import { Box, Button, Icon, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  radius as cornerRadius,
+  Icon,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { Pressable } from 'react-native';
 import { useDownloads } from '#mobile/lib/downloads';
@@ -15,6 +23,8 @@ import { ProgressRing } from './ProgressRing';
 /** Enqueues every not-yet-downloaded episode; while transferring it shows x/y
  * and a tap cancels the remainder. */
 export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const downloads = useDownloads();
   const states = episodes.map((ep) => downloads.stateFor(ep.id));
@@ -63,6 +73,8 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
 }
 
 export function UpNextCard({ next, frac }: Readonly<{ next: MediaItem; frac: number }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { play } = usePlay();
@@ -105,6 +117,8 @@ export function EpisodeRow({
   progress: ProgressEntry | undefined;
   watched: boolean;
 }>) {
+  const s = useStyles(sDefinition);
+
   const client = useClient();
   const router = useRouter();
   const { play } = usePlay();
@@ -156,7 +170,7 @@ export function EpisodeRow({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   seasonDl: { row: true, align: 'center', gap: 8 },
   seasonDlLabel: { ...type.caption, color: 'accentText', fontWeight: '600' },
   upNextCard: {
@@ -169,8 +183,16 @@ const s = styles({
     radius: radius.md,
   },
   upNextThumb: { w: 120, h: 68 },
-  upNextTrack: { absolute: true, right: 5, bottom: 5, left: 5, h: 3, bg: 'text/30', radius: 2 },
-  upNextFill: { h: 3, bg: 'accent', radius: 2 },
+  upNextTrack: {
+    absolute: true,
+    right: 5,
+    bottom: 5,
+    left: 5,
+    h: 3,
+    bg: 'text/30',
+    radius: cornerRadius.track,
+  },
+  upNextFill: { h: 3, bg: 'accent', radius: cornerRadius.track },
   upNextText: { flex: true, gap: 2 },
   upNextLabel: { ...type.small, color: 'accentText', fontWeight: '700' },
   upNextTitle: { ...type.body, fontWeight: '600' },
@@ -178,9 +200,17 @@ const s = styles({
   episodePressed: { bg: 'surface1' },
   epThumb: { w: 140, h: 79 },
   epPlayBadge: { fill: true, center: true },
-  epPlayCircle: { center: true, w: 34, h: 34, bg: 'bg/55', radius: 17 },
-  epProgressTrack: { absolute: true, right: 5, bottom: 5, left: 5, h: 3, bg: 'text/30', radius: 2 },
-  epProgressFill: { h: 3, bg: 'accent', radius: 2 },
+  epPlayCircle: { center: true, w: 34, h: 34, bg: 'bg/55', radius: cornerRadius.tile },
+  epProgressTrack: {
+    absolute: true,
+    right: 5,
+    bottom: 5,
+    left: 5,
+    h: 3,
+    bg: 'text/30',
+    radius: cornerRadius.track,
+  },
+  epProgressFill: { h: 3, bg: 'accent', radius: cornerRadius.track },
   epText: { flex: true, gap: 3 },
   epOverview: { ...type.small, color: 'textMuted', lineHeight: 17, fontWeight: '400' },
   epTitleRow: { row: true, align: 'center', gap: 6 },

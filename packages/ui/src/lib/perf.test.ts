@@ -7,8 +7,9 @@
 // which an average hides), the jank count, and press-to-focus.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  CHART_FRAMES,
+import { CHART_FRAMES, createPerfSampler } from './perf';
+
+const {
   markFocus,
   markGridFocus,
   markPress,
@@ -17,7 +18,7 @@ import {
   resetPerf,
   startPerf,
   stopPerf,
-} from './perf';
+} = createPerfSampler();
 
 /** Drives rAF by hand so a "frame" is whatever timestamp the test says. */
 function frameClock() {

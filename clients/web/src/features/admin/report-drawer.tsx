@@ -1,9 +1,3 @@
-// Slide-in report drawer: subject identity (category + status + kind), the
-// reporter + date, the free-text message, a deep-link to the title's fiche, and
-// the triage actions (resolve / dismiss / reopen / delete).
-
-import type { Report, ReportStatus } from '@kromatv/client/reports';
-import { useT } from '@kromatv/ui';
 import {
   Avatar,
   Box,
@@ -12,9 +6,19 @@ import {
   type HostElement,
   IconButton,
   Row,
+  resolveStyles,
   styles,
   Text,
+  useStyleScope,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// Slide-in report drawer: subject identity (category + status + kind), the
+// reporter + date, the free-text message, a deep-link to the title's fiche, and
+// the triage actions (resolve / dismiss / reopen / delete).
+
+import type { Report, ReportStatus } from '@kromatv/client/reports';
+import { useT } from '@kromatv/ui';
+
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { Pill } from '#web/features/admin/pill';
@@ -75,6 +79,8 @@ export const ReportDrawer = createCallable<
   },
   void
 >(({ call, report: initial, canManage, onResolve, onDismiss, onReopen, onDelete }) => {
+  const scope = useStyleScope();
+  useThemeVersion();
   const t = useT();
   const [report, setReport] = useState(initial);
   const [busy, setBusy] = useState(false);
@@ -100,7 +106,7 @@ export const ReportDrawer = createCallable<
       open={!call.ended}
       onClose={close}
       title={report.subjectTitle}
-      panelStyle={s.drawerFill}
+      panelStyle={resolveStyles(sDefinition, scope).drawerFill}
     >
       <Drawer.Header>
         <Identity report={report} />
@@ -165,7 +171,7 @@ export const ReportDrawer = createCallable<
                   label={t('reports.actionResolve')}
                   onPress={() => run(onResolve, 'resolved')}
                   loading={busy}
-                  style={s.flex1}
+                  style={resolveStyles(sDefinition, scope).flex1}
                 />
                 <Button
                   variant="glass"
@@ -173,7 +179,7 @@ export const ReportDrawer = createCallable<
                   label={t('reports.actionDismiss')}
                   onPress={() => run(onDismiss, 'dismissed')}
                   disabled={busy}
-                  style={s.flex1}
+                  style={resolveStyles(sDefinition, scope).flex1}
                 />
               </>
             ) : (
@@ -183,7 +189,7 @@ export const ReportDrawer = createCallable<
                 label={t('reports.actionReopen')}
                 onPress={() => run(onReopen, 'open')}
                 disabled={busy}
-                style={s.flex1}
+                style={resolveStyles(sDefinition, scope).flex1}
               />
             )}
             <IconButton
@@ -200,4 +206,4 @@ export const ReportDrawer = createCallable<
   );
 }, 400);
 
-const s = styles({ drawerFill: { bg: 'bg' }, flex1: { flex: true } });
+const sDefinition = styles({ drawerFill: { bg: 'bg' }, flex1: { flex: true } });

@@ -1,6 +1,6 @@
 import { InviteToken } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
-import { Box, Button, classes, Logo, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, classes, Logo, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
@@ -20,6 +20,8 @@ export const Route = createFileRoute('/join')({
 });
 
 function JoinPage() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { invite } = Route.useSearch();
   const { client, register } = useAuth();
@@ -126,7 +128,7 @@ function JoinPage() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: {
     position: 'fixed',
     inset: 0,

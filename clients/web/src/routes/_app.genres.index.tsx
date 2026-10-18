@@ -1,14 +1,14 @@
 import { collectGenres, genreShowcases } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Box, EmptyState, Grid, PageHeader } from '@kromatv/ui/kit';
-
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { GenreTile } from '#web/features/catalog/genre-tile';
 import { isAuthed } from '#web/shared/lib/api';
-import { catalogQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
 
 const CELL_SHARE = 0.22;
@@ -17,11 +17,11 @@ const CELL_MAX = 304;
 const CELL_GAP = 16;
 
 export const Route = createFileRoute('/_app/genres/')({
-  loader: async ({ context: { queryClient } }) => {
+  loader: async ({ context: { runtime: webRuntime, queryClient } }) => {
     if (!isAuthed()) return;
     await Promise.all([
-      queryClient.ensureQueryData(catalogQueries.moviesView()),
-      queryClient.ensureQueryData(catalogQueries.showsView()),
+      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.moviesView()),
+      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.showsView()),
     ]);
   },
   pendingComponent: GenresPending,
@@ -43,10 +43,12 @@ function GenresPending() {
 }
 
 function GenresPage() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const { width } = useWindowDimensions();
-  const { data: movies } = useSuspenseQuery(catalogQueries.moviesView());
-  const { data: shows } = useSuspenseQuery(catalogQueries.showsView());
+  const { data: movies } = useSuspenseQuery(webRuntime.queries.catalogQueries.moviesView());
+  const { data: shows } = useSuspenseQuery(webRuntime.queries.catalogQueries.showsView());
 
   const catalogue = useMemo(() => [...movies, ...shows], [movies, shows]);
   const genres = useMemo(() => collectGenres(catalogue), [catalogue]);

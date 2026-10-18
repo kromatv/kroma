@@ -6,22 +6,25 @@ import {
   Button,
   CONTROL,
   DataField,
-  entryDefaultSize,
   IconButton,
   styles,
   Text,
+  useEntryDefaults,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { Link } from '@tanstack/react-router';
 import { useFocusRing } from '#web/shared/lib/use-focus-ring';
 
 const FIELD_GAP_X = { base: 24, md: 44 } as const;
-const s = styles({
+const sDefinition = styles({
   rule: { borderTopWidth: 1, borderTopColor: 'white/8' },
   link: { color: 'inherit', textDecorationLine: 'underline', textUnderlineOffset: 2, radius: 'xs' },
   bold: { fontWeight: '600' },
 });
 
 function DirectorLink({ person, label }: Readonly<{ person: CrewMember; label: string }>) {
+  const s = useStyles(sDefinition);
+
   const focus = useFocusRing(s.link);
   return (
     <Link
@@ -37,6 +40,8 @@ function DirectorLink({ person, label }: Readonly<{ person: CrewMember; label: s
 }
 
 export function DirectorsLine({ directors }: Readonly<{ directors?: CrewMember[] }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   if (!directors || directors.length === 0) return null;
   return (
@@ -76,11 +81,12 @@ export function ListButton({
   inList,
   onToggle,
 }: Readonly<{ inList?: boolean; onToggle?: () => void }>) {
+  const entryDefaults = useEntryDefaults();
   const t = useT();
   if (!onToggle) return null;
   return (
     <IconButton
-      diameter={CONTROL[entryDefaultSize()].height}
+      diameter={CONTROL[entryDefaults.size].height}
       glyph={20}
       radius="md"
       active={inList ?? false}
@@ -93,11 +99,12 @@ export function ListButton({
 }
 
 export function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) {
+  const entryDefaults = useEntryDefaults();
   const t = useT();
   if (!onReport) return null;
   return (
     <IconButton
-      diameter={CONTROL[entryDefaultSize()].height}
+      diameter={CONTROL[entryDefaults.size].height}
       glyph={19}
       radius="md"
       icon="flag"
@@ -108,6 +115,8 @@ export function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) 
 }
 
 export function HeroFields({ audio, subtitles }: Readonly<{ audio?: string; subtitles?: string }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   if (audio == null && subtitles == null) return null;
   return (

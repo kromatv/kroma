@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { launcherBackend } from '#tv/app/launcher';
+import { useLauncherBackend } from '#tv/app/launcher';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { buildWatchNext } from '#tv/shared/launcher/cards';
@@ -22,6 +22,7 @@ interface Continue {
 const ContinueCtx = createContext<Continue | null>(null);
 
 export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const launcher = useLauncherBackend();
   const { user, ready } = useAuth();
   const { client } = useConnection();
   const [items, setItems] = useState<ContinueItem[]>([]);
@@ -43,15 +44,14 @@ export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>
 
   // Pushing the same list twice races the native launcher sync into duplicate
   // rows, so guard on the serialized payload.
-  const lastPushed = useRef<string>('');
+  const lastPushed = useRef<{ backend: typeof launcher; json: string } | null>(null);
   useEffect(() => {
-    const launcher = launcherBackend();
     if (!launcher || !client) return;
     const json = JSON.stringify(buildWatchNext(items, client));
-    if (json === lastPushed.current) return;
-    lastPushed.current = json;
+    if (lastPushed.current?.backend === launcher && json === lastPushed.current.json) return;
+    lastPushed.current = { backend: launcher, json };
     launcher.setContinueWatching(json);
-  }, [items, client]);
+  }, [items, client, launcher]);
 
   const value = useMemo<Continue>(() => ({ items, refresh }), [items, refresh]);
   return <ContinueCtx.Provider value={value}>{children}</ContinueCtx.Provider>;

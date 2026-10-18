@@ -8,6 +8,7 @@ import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 
 interface PageHeaderRootProps extends Omit<BoxProps, 'children'> {
   /** A `<PageHeader.Actions>` must be a DIRECT child to be pinned to the far
@@ -52,6 +53,8 @@ function sort(children: ReactNode): Buckets {
 }
 
 function Root({ children, ...box }: Readonly<PageHeaderRootProps>) {
+  const s = useStyles(sDefinition);
+
   const at = useMemo(() => sort(children), [children]);
   return (
     <Box row align="center" justify="space-between" gap={24} wrap {...box}>
@@ -77,6 +80,8 @@ interface PageHeaderTitleProps {
 /** The page's heading. It carries the header role, so a screen reader lands
  *  on it and the glyph beside it is not announced. */
 function Title({ suffix, icon, children }: Readonly<PageHeaderTitleProps>) {
+  const s = useStyles(sDefinition);
+
   const heading = (
     <Text variant="h1" accessibilityRole="header">
       {children}
@@ -101,6 +106,8 @@ function Title({ suffix, icon, children }: Readonly<PageHeaderTitleProps>) {
 
 /** The line under the title: what the page holds, in one sentence. */
 function Subtitle({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Text variant="body" color="textDim" style={s.subtitle}>
       {children}
@@ -132,6 +139,8 @@ function Back({ label, onPress, asChild, children }: Readonly<PageHeaderBackProp
 
 /** The page-level controls, pinned to the far end of the header. */
 function Actions({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box row wrap align="center" gap={12} style={s.push}>
       {children}
@@ -139,7 +148,7 @@ function Actions({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   minW: { minWidth: 0 },
   quiet: { fontWeight: '400' },
   subtitle: { mt: 6 },

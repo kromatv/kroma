@@ -37,11 +37,11 @@ interface BabelCore {
   transformAsync(src: string, options: object): Promise<{ code?: string } | null>;
 }
 
-/** A babel that can run the React Compiler, and the preset that lets it read
- *  TypeScript. Hand this to a scanner rather than letting it find its own. */
+/** Oxc for shipped compiler output, plus Babel for the audit's AST visitors. */
 interface Babel {
   core: BabelCore;
   compiler: string;
+  compile(source: string, filename: string): { code: string };
   presetTs: string;
   /** Babel options for reading TS and TSX with no project config in the way. */
   parse(filename: string, plugins: unknown[]): object;
@@ -50,35 +50,46 @@ interface Babel {
 class NoCompiler extends Error {
   constructor(tried: readonly string[]) {
     super(
-      `babel-plugin-react-compiler is not resolvable from any of: ${tried.join(', ')}. ` +
+      `oxc-transform-react is not resolvable from any of: ${tried.join(', ')}. ` +
         'Pass `resolveFrom` a path inside the package that depends on it.',
     );
     this.name = 'NoCompiler';
   }
 }
 
-/**
- * Reach the React Compiler, and `@babel/core` through the compiler's own tree so
- * the two can never disagree on a version.
- *
- * `resolveFrom` is tried in order: each is any path inside a package that
- * depends on `babel-plugin-react-compiler`. A repo that hoists it can pass its
- * own root; one that declares it in a single workspace names that workspace.
- */
+/** Resolve Oxc and the Babel AST reader from the caller's tooling package. */
 function babelAt(resolveFrom: readonly string[]): Babel {
   for (const from of resolveFrom) {
     let compiler: string;
     try {
-      compiler = createRequire(from).resolve('babel-plugin-react-compiler');
+      compiler = createRequire(from).resolve('oxc-transform-react');
     } catch {
       continue;
     }
-    const own = createRequire(compiler);
+    const own = createRequire(from);
     const presetTs = own.resolve('@babel/preset-typescript');
     const core = own('@babel/core') as BabelCore;
+    const { transformSync } = own(compiler) as {
+      transformSync(
+        filename: string,
+        source: string,
+        options: object,
+      ): { fatal: boolean; code: string; errors: { message: string }[] };
+    };
     return {
       core,
       compiler,
+      compile(source, filename) {
+        const result = transformSync(filename, source, {
+          jsx: 'preserve',
+          reactCompiler: { target: '19' },
+        });
+        if (result.fatal)
+          throw new SyntaxError(
+            `${filename}: ${result.errors.map((error) => error.message).join('\n')}`,
+          );
+        return result;
+      },
       presetTs,
       parse: (filename, plugins) => ({
         presets: [[presetTs, { isTSX: true, allExtensions: true }]],

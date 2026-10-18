@@ -6,8 +6,10 @@ import {
   stubFetch,
   unreadable,
 } from '#web/features/admin/module-api.fixture';
-import {
-  type AdminModule,
+import { type AdminModule, UninstallConflictError } from './module-api';
+import { moduleApi } from './module-api.fixture';
+
+const {
   fetchAdminModules,
   fetchInstallPlan,
   fetchStoreCatalog,
@@ -15,10 +17,9 @@ import {
   installById,
   previewRegistry,
   setModuleEnabled,
-  UninstallConflictError,
   uninstallModule,
   updateModules,
-} from './module-api';
+} = moduleApi;
 
 installHarness();
 

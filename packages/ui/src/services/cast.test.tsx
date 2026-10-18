@@ -26,7 +26,7 @@ const events = vi.hoisted(() => ({
 }));
 
 vi.mock('@kromatv/client/events', async (real) => {
-  const actual = (await real()) as Record<string, unknown>;
+  const actual = await real<typeof import('@kromatv/client/events')>();
   return {
     ...actual,
     KromaEvents: class {

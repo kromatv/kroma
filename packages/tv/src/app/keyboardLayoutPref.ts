@@ -1,3 +1,4 @@
+import type { SessionStorage } from '@kromatv/client';
 // User-selectable on-screen keyboard layout, persisted per device (like the
 // playback-engine override in enginePref.ts). Surfaced as a cycle-row in the
 // profile menu and honored by the two remote keyboards' letter grids.
@@ -18,15 +19,8 @@ export type KeyboardLayoutPref = KeyboardLayout;
 
 export const ALL_KEYBOARD_LAYOUTS: readonly KeyboardLayoutPref[] = KEYBOARD_LAYOUTS;
 
-export const keyboardLayoutStore = reactivePref('kroma:kbd-layout', ALL_KEYBOARD_LAYOUTS, 'abc');
-
-/** The saved keyboard layout for this device, or `abc`. */
-export function getKeyboardLayoutPref(): KeyboardLayoutPref {
-  return keyboardLayoutStore.get();
-}
-
-export function setKeyboardLayoutPref(p: KeyboardLayoutPref): void {
-  keyboardLayoutStore.set(p);
+export function createKeyboardLayoutPref(storage?: SessionStorage | null) {
+  return reactivePref('kroma:kbd-layout', ALL_KEYBOARD_LAYOUTS, 'abc', storage);
 }
 
 export const KEYBOARD_LAYOUT_LABEL_KEY: Record<KeyboardLayoutPref, MessageKey> = {

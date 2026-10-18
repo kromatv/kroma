@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // The module admin surface's shared data hooks: the two polls every module
 // view reads (installed modules + store catalog) with the one refresh that
 // covers them, and the enable-toggle flow the list row and the detail page
@@ -5,20 +6,21 @@
 
 import { useState } from 'react';
 import { usePoll } from '#web/features/admin/hooks';
-import {
-  fetchAdminModules,
-  fetchStoreCatalog,
-  message,
-  setModuleEnabled,
-} from '#web/features/admin/module-api';
+import { message } from '#web/features/admin/module-api';
 import { useRefreshModules } from '#web/modules/ModuleHostProvider';
 
 export function useModuleData() {
+  const webRuntime = useWebRuntime();
+
   const refreshModules = useRefreshModules();
-  const { data: modules, reload } = usePoll(['admin', 'modules'], fetchAdminModules, 30000);
+  const { data: modules, reload } = usePoll(
+    ['admin', 'modules'],
+    webRuntime.moduleApi.fetchAdminModules,
+    30000,
+  );
   const { data: catalog, reload: reloadCatalog } = usePoll(
     ['admin', 'store', 'catalog'],
-    fetchStoreCatalog,
+    webRuntime.moduleApi.fetchStoreCatalog,
     300000,
   );
   // Re-snapshots the module host too, so the sidebar nav and module routes
@@ -39,13 +41,15 @@ export interface ModuleToggle {
 /** Toggle a module and surface the server's start warning (or the request
  * error) as `error`; `onDone` fires after every attempt. */
 export function useModuleToggle(id: string, onDone?: () => void): ModuleToggle {
+  const webRuntime = useWebRuntime();
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const toggle = async (enabled: boolean) => {
     setBusy(true);
     setError(null);
     try {
-      const res = await setModuleEnabled(id, enabled);
+      const res = await webRuntime.moduleApi.setModuleEnabled(id, enabled);
       setError(res.warning ?? null);
     } catch (e) {
       setError(message(e));

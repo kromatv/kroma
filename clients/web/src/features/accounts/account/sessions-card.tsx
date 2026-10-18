@@ -3,9 +3,8 @@ import { useFormat, useT } from '@kromatv/ui';
 import { Badge, Box, Button, Icon, type IconName, ListRow, Row, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { kromaClient } from '#web/shared/lib/api';
 import { type DeviceKind, deviceInfo } from '#web/shared/lib/device';
-import { userQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 const DEVICE_ICON: Record<DeviceKind, IconName> = {
   tv: 'device-tv',
@@ -14,6 +13,8 @@ const DEVICE_ICON: Record<DeviceKind, IconName> = {
 };
 
 function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const fmt = useFormat();
   const qc = useQueryClient();
@@ -23,8 +24,8 @@ function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
   const revoke = async () => {
     setRevoking(true);
     try {
-      await kromaClient().accounts.revokeSession(session.id);
-      await qc.invalidateQueries({ queryKey: userQueries.sessions().queryKey });
+      await webRuntime.client.accounts.revokeSession(session.id);
+      await qc.invalidateQueries({ queryKey: webRuntime.queries.userQueries.sessions().queryKey });
     } finally {
       setRevoking(false);
     }
@@ -62,8 +63,10 @@ function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
 }
 
 export function SessionsCard() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
-  const { data: sessions, isPending } = useQuery(userQueries.sessions());
+  const { data: sessions, isPending } = useQuery(webRuntime.queries.userQueries.sessions());
   const note = isPending ? t('common.loading') : sessionsNote(sessions, t);
 
   return (

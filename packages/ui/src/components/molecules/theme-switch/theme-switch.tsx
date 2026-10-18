@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Appearance, type StyleProp, type ViewStyle } from 'react-native';
 import { SegmentGroup } from '#ui/components/molecules/segment-group';
+import { useStyleRuntime } from '#ui/core/style-context';
 import { applyMode, readMode, type ThemeMode, writeMode } from '#ui/core/theme-mode';
+import { useDeviceStore } from '#ui/lib/device-store';
 import type { ControlSize } from '#ui/lib/field-shell';
 
 export interface ThemeSwitchProps {
@@ -32,19 +34,21 @@ export function ThemeSwitch({
   labels = FR,
   style,
 }: Readonly<ThemeSwitchProps>) {
+  const runtime = useStyleRuntime();
+  const store = useDeviceStore();
   const [mode, setMode] = useState<ThemeMode>('system');
 
   useEffect(() => {
-    const stored = readMode();
+    const stored = readMode(undefined, store);
     setMode(stored);
-    applyMode(stored);
-  }, []);
+    applyMode(stored, runtime);
+  }, [runtime, store]);
 
   useEffect(() => {
     if (mode !== 'system') return;
-    const watch = Appearance.addChangeListener(() => applyMode('system'));
+    const watch = Appearance.addChangeListener(() => applyMode('system', runtime));
     return () => watch.remove();
-  }, [mode]);
+  }, [mode, runtime]);
 
   return (
     <SegmentGroup.Root
@@ -53,7 +57,7 @@ export function ThemeSwitch({
       value={mode}
       onValueChange={(next) => {
         setMode(next);
-        writeMode(next);
+        writeMode(next, runtime, store);
       }}
       style={style}
     >

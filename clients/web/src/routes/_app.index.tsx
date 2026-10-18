@@ -1,25 +1,25 @@
 import { useT } from '@kromatv/ui';
 import { EmptyState } from '@kromatv/ui/kit';
-
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Hero, ShowRail } from '#web/features/catalog/cards';
 import { ContinueRow } from '#web/features/catalog/continue-row';
 import { HomeSections } from '#web/features/catalog/home-sections';
 import { isAuthed } from '#web/shared/lib/api';
-import { catalogQueries, type HeroEntry } from '#web/shared/lib/queries';
+import type { HeroEntry } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { PageFrame, PageSkeleton } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/')({
-  loader: async ({ context: { queryClient } }) => {
+  loader: async ({ context: { runtime: webRuntime, queryClient } }) => {
     // The catalogue is auth-gated: skip until signed in (the gate covers the UI;
     // the root invalidates queries on login so these prefetch then). Prefetch
     // into the shared cache so the component's useSuspenseQuery reads it warm.
     if (!isAuthed()) return;
     await Promise.all([
-      queryClient.ensureQueryData(catalogQueries.moviesView()),
-      queryClient.ensureQueryData(catalogQueries.showsView()),
-      queryClient.ensureQueryData(catalogQueries.featured()),
+      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.moviesView()),
+      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.showsView()),
+      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.featured()),
     ]);
   },
   pendingComponent: () => <PageSkeleton rails={3} />,
@@ -27,10 +27,12 @@ export const Route = createFileRoute('/_app/')({
 });
 
 function HomePage() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
-  const { data: movies } = useSuspenseQuery(catalogQueries.moviesView());
-  const { data: shows } = useSuspenseQuery(catalogQueries.showsView());
-  const { data: featured } = useSuspenseQuery(catalogQueries.featured());
+  const { data: movies } = useSuspenseQuery(webRuntime.queries.catalogQueries.moviesView());
+  const { data: shows } = useSuspenseQuery(webRuntime.queries.catalogQueries.showsView());
+  const { data: featured } = useSuspenseQuery(webRuntime.queries.catalogQueries.featured());
   // The server's daily multi-signal pick; first movie as the last-resort
   // fallback (empty pick only happens on an empty catalogue / old server).
   const hero: HeroEntry | null =

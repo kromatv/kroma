@@ -199,7 +199,7 @@ function ReleaseRow({
             </Row>
           ) : (
             <Text variant="meta" color="textDim">
-              —
+              -
             </Text>
           )}
         </Table.Cell>

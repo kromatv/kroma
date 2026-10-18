@@ -6,50 +6,27 @@
 // goes, and ignored once focus has an owner - the screen boundary being the
 // reset that `useFocusNav` calls once per screen.
 
-import { useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 
-let settled = false;
-
-/** Something has the focus now. Called by every `<Focusable>` on focus. */
-function markFocusSettled(): void {
-  settled = true;
+/** A focus claim belongs to one screen, including virtualized controls. */
+export function createFocusEntry() {
+  let settled = false;
+  return {
+    focusSettled: () => settled,
+    markFocusSettled() {
+      settled = true;
+    },
+    resetFocusEntry() {
+      settled = false;
+    },
+  };
 }
-
-/** True once this screen has a focus owner, so a late arrival must not steal it. */
-function focusSettled(): boolean {
-  return settled;
+const Context = createContext<ReturnType<typeof createFocusEntry> | null>(null);
+export const FocusEntryProvider = Context.Provider;
+export function useFocusEntry() {
+  const provided = useContext(Context);
+  const [owned] = useState(() => (provided ? null : createFocusEntry()));
+  const entry = provided ?? owned;
+  if (!entry) throw new Error('Focus entry requires its owning screen');
+  return entry;
 }
-
-/** A new screen is deciding where to open. Called by `useFocusNav`. */
-function resetFocusEntry(): void {
-  settled = false;
-}
-
-const FRESH = Symbol('fresh');
-
-type EntryKey = string | number | symbol | undefined;
-
-/**
- * A fresh navigator scope has nothing focused yet, so its entry point wins.
- * `<FocusScope>` calls this; every app root and every test render mounts one.
- *
- * Resets while the scope RENDERS, not in an effect: a child's mount effect is
- * where an entry point asks for focus, and children's effects run before their
- * parent's, so an effect here would arrive too late.
- *
- * `entryKey` is for a scope that OUTLIVES its screen - persistent chrome
- * wrapping a swapping section, say - which must still re-decide focus on every
- * arrival despite never remounting. Omit it and the scope behaves as before.
- */
-function useFocusEntryScope(entryKey?: string | number): void {
-  // Render-phase state, not a ref: the reset must land while the scope renders
-  // (see above), and render-time state adjustment is the one spelling of that
-  // the React Compiler accepts.
-  const [seen, setSeen] = useState<EntryKey>(FRESH);
-  if (seen !== entryKey) {
-    setSeen(entryKey);
-    resetFocusEntry();
-  }
-}
-
-export { focusSettled, markFocusSettled, resetFocusEntry, useFocusEntryScope };

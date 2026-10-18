@@ -6,7 +6,7 @@
 
 import { LOCALES } from '@kromatv/core';
 import type { Locale } from '@kromatv/i18n';
-import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { radius, spacing, type } from '#mobile/lib/theme';
@@ -15,6 +15,8 @@ export function LocalePicker({
   locale,
   onPick,
 }: Readonly<{ locale: string; onPick: (next: Locale) => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <Box style={s.card}>
@@ -36,7 +38,7 @@ export function LocalePicker({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   card: { px: 6, py: 4, bg: 'surface1', radius: radius.lg },
   row: { row: true, between: true, align: 'center', minH: 52, px: spacing.sm, radius: radius.md },
   rowPressed: { bg: 'surface2' },

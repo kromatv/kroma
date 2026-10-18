@@ -90,6 +90,8 @@ export default defineConfig({
         'react-dom',
         'react/jsx-runtime',
         'react-dom/client',
+        /^zod(?:\/|$)/,
+        '@testing-library/react',
         ...(NATIVE ? NATIVE_EXTERNAL : ['react-native-web', /^@tabler\/icons-react(?:\/|$)/]),
       ],
       output: {

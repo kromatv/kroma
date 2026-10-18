@@ -2,9 +2,8 @@
 // reports each module's enabled flag and the points it answers; a contribution
 // carries an add-form schema (`fields`) or a custom `flow` (e.g. the Cardigann
 // definition picker). A host page lists one add-flow per enabled contributor to
-// its point and awaits `addEngine(...)`, so adding an engine needs no frontend
-// change. One <AddEngineHost/> is mounted by the shell, the same shape as the
-// kit's `toast()`/`confirm()`.
+// its point and obtains the add function through useAddEngine(). Each admin
+// root owns the queue drawn by its AddEngineHost.
 
 import { apiErrorText } from '@kromatv/client';
 import type { EngineContribution, EngineField, ModuleInfo } from '@kromatv/client/modules';
@@ -12,7 +11,16 @@ import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Dialog, Field, SegmentGroup, Select, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useAdminHost } from './context';
 import { useAsyncAction } from './hooks';
 
@@ -155,34 +163,48 @@ interface Ask extends AddEngineOptions {
   resolve: (added: boolean) => void;
 }
 
-let accept: ((ask: Ask) => void) | null = null;
-let nextId = 1;
+type AddEngine = (options: Readonly<AddEngineOptions>) => Promise<boolean>;
+const AddEngineContext = createContext<AddEngine>(() => Promise.resolve(false));
 
-/** Open the generic "add an engine" dialog: pick an engine, name it, fill its
- * declared fields, submit. Resolves `true` on submit, `false` on dismiss - and
- * immediately `false` when no <AddEngineHost/> is mounted. */
-export function addEngine(options: Readonly<AddEngineOptions>): Promise<boolean> {
-  const take = accept;
-  if (!take) return Promise.resolve(false);
-  return new Promise((resolve) => take({ id: nextId++, ...options, resolve }));
+/** Request a form from this admin root; fail closed without a host. */
+export function useAddEngine(): AddEngine {
+  return useContext(AddEngineContext);
 }
 
-/** Mount once, near the admin root. Draws whatever `addEngine()` asks. */
-export function AddEngineHost() {
+/** Wrap the admin root whose engine-add requests this host draws. */
+export function AddEngineHost({ children }: Readonly<{ children?: ReactNode }>) {
   const [queue, setQueue] = useState<Ask[]>([]);
+  const nextId = useRef(1);
+  const pending = useRef(new Set<(answer: boolean) => void>());
+  const addEngine = useCallback<AddEngine>(
+    (options) =>
+      new Promise((resolve) => {
+        pending.current.add(resolve);
+        const ask = { id: nextId.current++, ...options, resolve };
+        setQueue((queue) => [...queue, ask]);
+      }),
+    [],
+  );
   useEffect(() => {
-    accept = (ask) => setQueue((pending) => [...pending, ask]);
+    const requests = pending.current;
     return () => {
-      accept = null;
+      for (const resolve of requests) resolve(false);
+      requests.clear();
     };
   }, []);
   const current = queue[0];
-  if (!current) return null;
   const settle = (added: boolean) => {
+    if (!current) return;
+    pending.current.delete(current.resolve);
     current.resolve(added);
-    setQueue((pending) => pending.slice(1));
+    setQueue((queue) => queue.slice(1));
   };
-  return <AddEngineDialog key={current.id} ask={current} onSettle={settle} />;
+  return (
+    <AddEngineContext.Provider value={addEngine}>
+      {children}
+      {current ? <AddEngineDialog key={current.id} ask={current} onSettle={settle} /> : null}
+    </AddEngineContext.Provider>
+  );
 }
 
 function AddEngineDialog({

@@ -3,7 +3,7 @@
 // through the same components map as the element map, so a story file imports
 // nothing to use them.
 
-import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { space } from '@kromatv/ui/tokens';
 import { createContext, type ReactNode, useContext } from 'react';
 import type { Args } from './derive';
@@ -44,6 +44,8 @@ interface SceneProps {
  * explanation lives. The compiler lifts the same take into the story's scene
  * tabs, so it is written once. */
 function Scene({ name, args, render, example, children }: Readonly<SceneProps>) {
+  const s = useStyles(sDefinition);
+
   const scope = useContext(StoryDocContext);
   const draw = render ?? scope?.render;
   const body = example ? example() : draw?.({ ...scope?.args, ...args });
@@ -80,6 +82,8 @@ const PairedContext = createContext(false);
  * `basis` is the width below which two columns stop being two columns: the
  * pair wraps rather than squeezing a sentence into a gutter. */
 function Guidance({ children }: Readonly<{ children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const section = useSection(SECTION_LEVEL, 'Guidelines');
   return (
     <PairedContext.Provider value={true}>
@@ -103,6 +107,8 @@ interface CardProps {
 // framed. The LABEL carries the verdict, which is why the lines inside do not
 // repeat it: under a card that says Don't, "Don't stack two" says it twice.
 function Card({ tone, children }: Readonly<CardProps>) {
+  const s = useStyles(sDefinition);
+
   const good = tone === 'do';
   const ink = good ? 'success' : 'danger';
   const paired = useContext(PairedContext);
@@ -153,7 +159,7 @@ const AROUND = { base: space[5], md: space[8] } as const;
 // read prose over: the ink and the mark carry the verdict, the wash only groups.
 const CARD = { radius: 'lg' } as const;
 
-const s = styles({
+const sDefinition = styles({
   guidance: { maxW: MEASURE.figure, mt: AROUND, mb: AROUND },
   cardDo: { ...CARD, border: 'success/20', bg: 'success/5' },
   cardDont: { ...CARD, border: 'danger/20', bg: 'danger/5' },

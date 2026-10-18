@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { TextStyle, ViewStyle } from 'react-native';
-import type { ColorValue } from '#ui/core';
-import { sharedStyle } from '#ui/core';
-import { deviceStore } from '#ui/lib/device-store';
+import { z } from 'zod';
+import { type ColorValue, type StyleScope, sharedStyle } from '#ui/core';
+
+import { DEFAULT_STYLE_SCOPE } from '#ui/core/style-scope';
+import { radius as cornerRadius } from '#ui/core/tokens';
+import { type DeviceStore, useDeviceStore } from '#ui/lib/device-store';
 import { edgeStyle } from './subtitle-edge';
 
 /**
@@ -42,20 +45,6 @@ export interface SubtitleAppearance {
   windowOpacity: number;
 }
 
-/** Deliberately not CEA-708's defaults (white on an opaque black box): a film
- * should open with captions that sit on the picture, not a slab across it. */
-export const DEFAULT_SUB_APPEARANCE: SubtitleAppearance = {
-  size: 'md',
-  color: '#FFFFFF',
-  edge: 'shadow',
-  font: 'default',
-  opacity: 100,
-  bgColor: '#000000',
-  bgOpacity: 0,
-  windowColor: '#000000',
-  windowOpacity: 0,
-};
-
 export const SUB_COLORS = [
   '#FFFFFF',
   '#000000',
@@ -66,6 +55,20 @@ export const SUB_COLORS = [
   '#FF00FF',
   '#00FFFF',
 ] as const satisfies readonly ColorValue[];
+
+/** Deliberately not CEA-708's defaults (white on an opaque black box): a film
+ * should open with captions that sit on the picture, not a slab across it. */
+export const DEFAULT_SUB_APPEARANCE: SubtitleAppearance = {
+  size: 'md',
+  color: SUB_COLORS[0],
+  edge: 'shadow',
+  font: 'default',
+  opacity: 100,
+  bgColor: '#000000',
+  bgOpacity: 0,
+  windowColor: '#000000',
+  windowOpacity: 0,
+};
 
 /** CEA-708 order, also the order ◀▶ steps through them. The single source of
  * truth: a treatment missing here would compile but be unreachable. */
@@ -128,11 +131,31 @@ function colour(v: unknown, fallback: string): string {
   return (SUB_COLORS as readonly string[]).includes(mapped) ? mapped : fallback;
 }
 
+// Each field falls back independently so one damaged preference does not erase
+// the viewer's other choices. Unknown keys never enter the current model.
+const storedAppearance = z
+  .object({
+    size: z.enum(['sm', 'md', 'lg', 'xl']).optional().catch(undefined),
+    edge: z.string().max(32).optional().catch(undefined),
+    font: z.string().max(32).optional().catch(undefined),
+    color: z.string().max(32).optional().catch(undefined),
+    bgColor: z.string().max(32).optional().catch(undefined),
+    windowColor: z.string().max(32).optional().catch(undefined),
+    opacity: z
+      .number()
+      .transform((value) => Math.max(20, clampPct(value)))
+      .optional()
+      .catch(undefined),
+    bgOpacity: z.number().optional().catch(undefined),
+    windowOpacity: z.number().transform(clampPct).optional().catch(undefined),
+  })
+  .catch({});
+
 /** Bring a stored choice onto the current model, mapping retired option names
  * (`outline` → `uniform`, `box` → `none` edge + background) so a viewer's old
  * choice isn't silently lost. */
 export function migrateAppearance(raw: unknown): SubtitleAppearance {
-  const v = (raw ?? {}) as Record<string, unknown>;
+  const v = storedAppearance.parse(raw);
   const boxed = v.edge === 'box';
   const edge = typeof v.edge === 'string' ? (LEGACY_EDGE[v.edge] ?? v.edge) : undefined;
   const font = typeof v.font === 'string' ? (LEGACY_FONT[v.font] ?? v.font) : undefined;
@@ -148,7 +171,9 @@ export function migrateAppearance(raw: unknown): SubtitleAppearance {
 
   return {
     ...DEFAULT_SUB_APPEARANCE,
-    ...v,
+    size: v.size ?? DEFAULT_SUB_APPEARANCE.size,
+    opacity: v.opacity ?? DEFAULT_SUB_APPEARANCE.opacity,
+    windowOpacity: v.windowOpacity ?? DEFAULT_SUB_APPEARANCE.windowOpacity,
     edge: isEdge(edge) ? edge : DEFAULT_SUB_APPEARANCE.edge,
     font: isFont(font) ? font : DEFAULT_SUB_APPEARANCE.font,
     // Every colour goes through the same gate: anything the panel cannot select
@@ -160,18 +185,18 @@ export function migrateAppearance(raw: unknown): SubtitleAppearance {
   };
 }
 
-function readStoredAppearance(): SubtitleAppearance | null {
+function readStoredAppearance(store: DeviceStore | null): SubtitleAppearance | null {
   try {
-    const raw = deviceStore()?.getItem(KEY);
+    const raw = store?.getItem(KEY);
     return raw ? migrateAppearance(JSON.parse(raw)) : null;
   } catch {
     return null;
   }
 }
 
-function persistAppearance(next: SubtitleAppearance): void {
+function persistAppearance(next: SubtitleAppearance, store: DeviceStore | null): void {
   try {
-    deviceStore()?.setItem(KEY, JSON.stringify(next));
+    store?.setItem(KEY, JSON.stringify(next));
   } catch {}
 }
 
@@ -181,20 +206,24 @@ export function useSubtitleAppearance(): [
   SubtitleAppearance,
   (next: Partial<SubtitleAppearance>) => void,
 ] {
+  const store = useDeviceStore();
   const [style, setStyle] = useState<SubtitleAppearance>(DEFAULT_SUB_APPEARANCE);
 
   useEffect(() => {
-    const stored = readStoredAppearance();
+    const stored = readStoredAppearance(store);
     if (stored) setStyle(stored);
-  }, []);
+  }, [store]);
 
-  const update = useCallback((next: Partial<SubtitleAppearance>) => {
-    setStyle((prev) => {
-      const merged = { ...prev, ...next };
-      persistAppearance(merged);
-      return merged;
-    });
-  }, []);
+  const update = useCallback(
+    (next: Partial<SubtitleAppearance>) => {
+      setStyle((prev) => {
+        const merged = { ...prev, ...next };
+        persistAppearance(merged, store);
+        return merged;
+      });
+    },
+    [store],
+  );
 
   return [style, update];
 }
@@ -209,14 +238,21 @@ export function withOpacity(hex: string, pct: number): string {
 
 /** The caption window's style: the band the cue block sits in. A ViewStyle,
  * not a TextStyle: RN's stricter native typings require it for a container. */
-export function subtitleWindowStyle(style: SubtitleAppearance): ViewStyle {
+export function subtitleWindowStyle(
+  style: SubtitleAppearance,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
+): ViewStyle {
   if (style.windowOpacity <= 0) return NO_WINDOW;
-  return sharedStyle(`subtitle:window:${style.windowColor}:${style.windowOpacity}`, {
-    backgroundColor: withOpacity(style.windowColor, style.windowOpacity),
-    paddingVertical: 6,
-    paddingHorizontal: 18,
-    borderRadius: 10,
-  });
+  return sharedStyle(
+    `subtitle:window:${style.windowColor}:${style.windowOpacity}`,
+    {
+      backgroundColor: withOpacity(style.windowColor, style.windowOpacity),
+      paddingVertical: 6,
+      paddingHorizontal: 18,
+      borderRadius: cornerRadius.md,
+    },
+    scope,
+  );
 }
 
 // Interned: the default appearance has no window, and the cue re-renders at
@@ -226,29 +262,36 @@ const NO_WINDOW: ViewStyle = Object.freeze({});
 /** The text style for a subtitle line, from the viewer's appearance choice.
  * The edge treatment is the one piece that differs per platform (see
  * subtitle-edge.ts); everything else is one set of numbers. */
-export function subtitleStyle(style: SubtitleAppearance): TextStyle {
+export function subtitleStyle(
+  style: SubtitleAppearance,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
+): TextStyle {
   const size = SIZE_PX[style.size];
   const hasBg = clampPct(style.bgOpacity) > 0;
-  return sharedStyle(`subtitle:text:${JSON.stringify(style)}`, {
-    // Folded into the colour, not node opacity: the node also carries the
-    // background box, so `opacity` would dim it too, and the window (a
-    // separate View) wouldn't dim at all. CEA-708 gives each layer its own opacity.
-    color: withOpacity(style.color, Math.max(20, style.opacity)),
-    fontSize: size,
-    fontWeight: '600',
-    // React Native needs an absolute line height, not the design's 1.3 ratio.
-    lineHeight: Math.round(size * 1.3),
-    fontFamily: FONT_STACK[style.font],
-    ...(style.font === 'smallCaps' ? ({ fontVariant: ['small-caps'] } as TextStyle) : null),
-    textAlign: 'center',
-    borderRadius: 10,
-    ...(hasBg
-      ? {
-          backgroundColor: withOpacity(style.bgColor, style.bgOpacity),
-          paddingVertical: 4,
-          paddingHorizontal: 16,
-        }
-      : null),
-    ...edgeStyle(style.edge),
-  });
+  return sharedStyle(
+    `subtitle:text:${JSON.stringify(style)}`,
+    {
+      // Folded into the colour, not node opacity: the node also carries the
+      // background box, so `opacity` would dim it too, and the window (a
+      // separate View) wouldn't dim at all. CEA-708 gives each layer its own opacity.
+      color: withOpacity(style.color, Math.max(20, style.opacity)),
+      fontSize: size,
+      fontWeight: '600',
+      // React Native needs an absolute line height, not the design's 1.3 ratio.
+      lineHeight: Math.round(size * 1.3),
+      fontFamily: FONT_STACK[style.font],
+      ...(style.font === 'smallCaps' ? ({ fontVariant: ['small-caps'] } as TextStyle) : null),
+      textAlign: 'center',
+      borderRadius: cornerRadius.md,
+      ...(hasBg
+        ? {
+            backgroundColor: withOpacity(style.bgColor, style.bgOpacity),
+            paddingVertical: 4,
+            paddingHorizontal: 16,
+          }
+        : null),
+      ...edgeStyle(style.edge),
+    },
+    scope,
+  );
 }

@@ -1,6 +1,6 @@
 import { type Direction, SpatialNavigator } from '@kromatv/spatial-nav';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { subscribeRemote } from './configure-remote';
+import { useRemoteConfig } from './configure-remote';
 import { focusQueue } from './focus-queue';
 import { HostContext, type NavigatorHost, ParentIdContext } from './navigator-context';
 import { LockContext } from './use-lock-navigator';
@@ -23,6 +23,7 @@ interface NavigatorRootProps {
  * takes the remote from the screen it opened over.
  */
 function NavigatorRoot({ children, active = true, onEdge }: Readonly<NavigatorRootProps>) {
+  const remote = useRemoteConfig();
   const [navigator] = useState(() => new SpatialNavigator());
   const [queue] = useState(() => focusQueue(navigator));
 
@@ -50,7 +51,10 @@ function NavigatorRoot({ children, active = true, onEdge }: Readonly<NavigatorRo
     };
   }, [navigator]);
 
-  useEffect(() => subscribeRemote((direction) => navigator.handle(direction)), [navigator]);
+  useEffect(
+    () => remote?.subscribe((direction) => navigator.handle(direction)),
+    [navigator, remote],
+  );
 
   useEffect(() => {
     if (active) return;

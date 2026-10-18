@@ -1,9 +1,11 @@
-import { Box, styles, Text } from '@kromatv/ui/kit';
+import { Box, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { KromaMark, useClock } from '#tv/shared/ui';
 
-const s = styles({ clock: { fontVariant: ['tabular-nums'] } });
+const sDefinition = styles({ clock: { fontVariant: ['tabular-nums'] } });
 
 export function BrandBar() {
+  const s = useStyles(sDefinition);
+
   const clock = useClock();
   return (
     <Box

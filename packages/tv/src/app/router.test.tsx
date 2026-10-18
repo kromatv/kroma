@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { MediaItem } from '@kromatv/client/media';
-import { focusSettled, markFocusSettled } from '@kromatv/ui/testing';
+import { useFocusEntry } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { useEffect, useRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -12,7 +12,9 @@ afterEach(() => {
   sessionStorage.clear();
 });
 
+let entry: ReturnType<typeof useFocusEntry>;
 function Bar() {
+  entry = useFocusEntry();
   const mounts = useRef(0);
   useEffect(() => {
     mounts.current += 1;
@@ -22,6 +24,7 @@ function Bar() {
 }
 
 function Movie() {
+  entry = useFocusEntry();
   useEffect(() => {
     MOUNTS.movie += 1;
   }, []);
@@ -73,13 +76,13 @@ describe('browse chrome', () => {
   it('lets each arriving screen decide where focus opens', () => {
     mount();
     act(() => nav.reset('home'));
-    act(() => markFocusSettled());
-    expect(focusSettled()).toBe(true);
+    act(() => entry.markFocusSettled());
+    expect(entry.focusSettled()).toBe(true);
 
     // The shared scope does not remount, so clearing this can only come from
     // `entryKey`; otherwise the new screen's `autoFocus` is ignored.
     act(() => nav.reset('grid', { kind: 'films' }));
-    expect(focusSettled()).toBe(false);
+    expect(entry.focusSettled()).toBe(false);
   });
 });
 
@@ -125,11 +128,11 @@ describe('a route that replaces its own subject', () => {
     act(() => nav.go('movie', { item: film('a') }));
     expect(MOUNTS.movie).toBe(1);
 
-    act(() => markFocusSettled());
+    act(() => entry.markFocusSettled());
     act(() => nav.go('movie', { item: film('b') }));
 
     expect(MOUNTS.movie).toBe(2);
-    expect(focusSettled()).toBe(false);
+    expect(entry.focusSettled()).toBe(false);
   });
 });
 

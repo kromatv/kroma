@@ -1,5 +1,5 @@
 import { fuzzyQuery, fuzzyScore, fuzzySearch } from './fuzzy-search';
-import { iconEntry } from './icon-catalog';
+import { EMPTY_ICON_CATALOG, type IconCatalogIndex } from './icon-catalog';
 
 /** A glyph the query reached, and the tags that carried it there - empty when
  * the name itself matched. */
@@ -11,6 +11,7 @@ interface IconHit<T extends string> {
 interface IconSearchOptions {
   /** One of `iconCategories()`; absent searches every category. */
   category?: string;
+  catalog?: IconCatalogIndex;
 }
 
 // A tag hit is handicapped rather than banished to its own bucket: a name of
@@ -22,9 +23,13 @@ interface Scored<T extends string> extends IconHit<T> {
   score: number;
 }
 
-function taggedHit<T extends string>(name: T, query: string): Scored<T> | null {
+function taggedHit<T extends string>(
+  name: T,
+  query: string,
+  catalog: IconCatalogIndex,
+): Scored<T> | null {
   const matched: { tag: string; score: number }[] = [];
-  for (const tag of iconEntry(name)?.tags ?? []) {
+  for (const tag of catalog.iconEntry(name)?.tags ?? []) {
     const score = fuzzyScore(tag, query);
     if (score !== null) matched.push({ tag, score });
   }
@@ -37,14 +42,16 @@ function taggedHit<T extends string>(name: T, query: string): Scored<T> | null {
 /**
  * The glyphs a query reaches, best first: the ones whose NAME it matches, and
  * the ones only a TAG matched, merged by how well each matched. Tags need the
- * catalogue (`setIconCatalog`); without it this is the name search alone.
+ * catalogue (passed as `catalog`); without it this is the name search alone.
  */
 function searchIcons<T extends string>(
   names: readonly T[],
   query: string,
-  { category }: IconSearchOptions = {},
+  { category, catalog = EMPTY_ICON_CATALOG }: IconSearchOptions = {},
 ): IconHit<T>[] {
-  const pool = category ? names.filter((name) => iconEntry(name)?.category === category) : names;
+  const pool = category
+    ? names.filter((name) => catalog.iconEntry(name)?.category === category)
+    : names;
   if (!fuzzyQuery(query)) return pool.map((name) => ({ name, tags: [] }));
 
   const hits: Scored<T>[] = fuzzySearch(pool, query).map((hit) => ({
@@ -55,7 +62,7 @@ function searchIcons<T extends string>(
   const named = new Set(hits.map((hit) => hit.name));
   for (const name of pool) {
     if (named.has(name)) continue;
-    const hit = taggedHit(name, query);
+    const hit = taggedHit(name, query, catalog);
     if (hit) hits.push(hit);
   }
   hits.sort((a, b) => b.score - a.score || a.name.length - b.name.length);

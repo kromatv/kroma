@@ -8,6 +8,8 @@ const H = vi.hoisted(() => ({
   modules: null as unknown,
   catalog: null as unknown,
   setModuleEnabled: vi.fn(),
+  fetchAdminModules: vi.fn(),
+  fetchStoreCatalog: vi.fn(),
 }));
 
 vi.mock('#web/features/admin/hooks', () => ({
@@ -27,12 +29,16 @@ vi.mock('#web/modules/ModuleHostProvider', () => ({
   },
 }));
 
-vi.mock('#web/features/admin/module-api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#web/features/admin/module-api')>()),
-  setModuleEnabled: H.setModuleEnabled,
-}));
-
-const { fetchAdminModules, fetchStoreCatalog } = await import('#web/features/admin/module-api');
+vi.mock('#web/shared/lib/web-runtime', () => {
+  const moduleApi = {
+    fetchAdminModules: H.fetchAdminModules,
+    fetchStoreCatalog: H.fetchStoreCatalog,
+    setModuleEnabled: H.setModuleEnabled,
+  };
+  const runtime = { moduleApi };
+  return { useWebRuntime: () => runtime };
+});
+const { fetchAdminModules, fetchStoreCatalog } = H;
 const { useModuleData, useModuleToggle } = await import('#web/features/admin/module-data');
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));

@@ -11,11 +11,12 @@ import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type ColorValue, styles, type TypeRole } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import {
   CONTROL,
   type ControlMetrics,
   type ControlSize,
-  entryDefaultSize,
+  useEntryDefaults,
 } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
 
@@ -87,7 +88,7 @@ interface CalloutRootProps {
   /** What the block is saying, in the palette's own words. Defaults to
    *  `neutral`, so a tone is always a decision. */
   tone?: CalloutTone;
-  /** The control shell's size, defaulting to the app's (`setEntryDefaults`), so
+  /** The control shell's size, defaulting to the app's (`KitProvider`), so
    *  a callout in a form matches the fields around it without saying so. */
   size?: ControlSize;
   /** The mark, as a glyph the kit can size. Media it cannot size goes through
@@ -100,7 +101,8 @@ interface CalloutRootProps {
 }
 
 function Root({ tone = 'neutral', size, icon, children }: Readonly<CalloutRootProps>) {
-  const step = size ?? entryDefaultSize();
+  const entryDefaults = useEntryDefaults();
+  const step = size ?? entryDefaults.size;
   const metrics = CONTROL[step];
   const at = useMemo(() => sort(children), [children]);
   const context = useMemo<Context>(
@@ -145,6 +147,8 @@ function Media({ name, children }: Readonly<{ name?: IconName; children?: ReactN
 
 /** The one sentence the block exists to say, in the tone's ink. */
 function Title({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const { shape, paint } = useCallout('Title');
   return (
     <Text variant={shape.title} color={paint.ink} style={s.title}>
@@ -174,7 +178,7 @@ function Actions({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-const s = styles({ title: { fontWeight: '600' } });
+const sDefinition = styles({ title: { fontWeight: '600' } });
 
 /**
  * A toned block carrying one message, and sometimes the action that answers it.

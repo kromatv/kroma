@@ -1,6 +1,16 @@
 import type { SectionItem } from '@kromatv/client/media';
 import { sizedImageUrl } from '@kromatv/core';
-import { ArtScrim, Box, Button, Icon, Progress, styles, Text } from '@kromatv/ui/kit';
+import {
+  ArtScrim,
+  Box,
+  Button,
+  Icon,
+  Progress,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
@@ -20,6 +30,8 @@ export function HeroBillboard({
   entry,
   progress,
 }: Readonly<{ entry: SectionItem; progress?: number | null }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -115,7 +127,7 @@ export function HeroBillboard({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   wrap: { self: 'center', mt: spacing.sm },
   content: {
     absolute: true,
@@ -127,7 +139,7 @@ const s = styles({
   },
   title: {
     ...type.display,
-    fontSize: 28,
+    fontSize: textRoles.subheadingTv.size,
     textAlign: 'center',
     textShadowColor: 'bg/85',
     textShadowOffset: { width: 0, height: 1 },

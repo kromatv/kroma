@@ -1,9 +1,14 @@
 // @vitest-environment jsdom
+
 import { decodableVideoCodecs, type EngineDecision } from '@kromatv/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeVideo } from '#web/features/playback/fake-video.fixture';
 import type { MovieView } from '#web/shared/lib/api';
-import { type AttachSourceOptions, attachMediaSource } from './video-engine';
+import { createWebTestClient } from '#web/shared/lib/web-runtime.fixture';
+import {
+  type AttachSourceOptions,
+  attachMediaSource as attachOwnedMediaSource,
+} from './video-engine';
 
 const H = vi.hoisted(() => {
   const hlsMasterUrl = vi.fn(
@@ -317,4 +322,10 @@ describe('attachMediaSource HLS master via Shaka', () => {
 
     expect(opts.onGiveUp).not.toHaveBeenCalled();
   });
+});
+
+const attachMediaSource = (opts: AttachSourceOptions) =>
+  attachOwnedMediaSource(opts, { client: testClient });
+const testClient = createWebTestClient({
+  media: { hlsMasterUrl: H.hlsMasterUrl, streamUrl: (id: string) => `stream://${id}` },
 });

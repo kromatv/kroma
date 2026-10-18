@@ -10,15 +10,14 @@ import {
 } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Box, EmptyState, genreIcon, PageHeader } from '@kromatv/ui/kit';
-
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { BrowseBar } from '#web/features/catalog/browse-bar';
 import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
-import { catalogQueries } from '#web/shared/lib/queries';
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
 
@@ -39,11 +38,11 @@ export const Route = createFileRoute('/_app/genres/$id')({
       throw redirect({ to: '/genres/$id', params: { id: canonical }, search, replace: true });
     }
   },
-  loader: async ({ context: { queryClient } }) => {
+  loader: async ({ context: { runtime: webRuntime, queryClient } }) => {
     if (!isAuthed()) return;
     await Promise.all([
-      queryClient.ensureQueryData(catalogQueries.moviesView()),
-      queryClient.ensureQueryData(catalogQueries.showsView()),
+      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.moviesView()),
+      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.showsView()),
     ]);
   },
   pendingComponent: GenrePending,
@@ -75,12 +74,14 @@ function GenrePending() {
 }
 
 function GenrePage() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const genre = genreOfSegment(Route.useParams().id);
   const { sort = 'added' } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const { data: movies } = useSuspenseQuery(catalogQueries.moviesView());
-  const { data: shows } = useSuspenseQuery(catalogQueries.showsView());
+  const { data: movies } = useSuspenseQuery(webRuntime.queries.catalogQueries.moviesView());
+  const { data: shows } = useSuspenseQuery(webRuntime.queries.catalogQueries.showsView());
 
   // Every movie + show carrying this genre, mixed and ordered by the chosen sort.
   const entries = useMemo<CatalogEntry[]>(() => {

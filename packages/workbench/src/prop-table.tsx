@@ -3,7 +3,7 @@
 // is written here is what a PROP is - its name, whether it is required, its type
 // as written, and the line of prose under it.
 
-import { Box, styles, Table, Text } from '@kromatv/ui/kit';
+import { Box, styles, Table, Text, useStyles } from '@kromatv/ui/kit';
 import { RichText } from './docs';
 import type { PropDoc, PropSection } from './props';
 
@@ -13,6 +13,8 @@ interface PropTableProps {
 }
 
 function PropRows({ props }: Readonly<{ props: readonly PropDoc[] }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Table.Root variant="plain">
       <Table.Body>
@@ -44,6 +46,8 @@ function PropRows({ props }: Readonly<{ props: readonly PropDoc[] }>) {
 }
 
 function PropTable({ name, sections }: Readonly<PropTableProps>) {
+  const s = useStyles(sDefinition);
+
   const single = sections.length === 1 ? sections[0] : undefined;
   if (single && !single.part) return <PropRows props={single.props} />;
   return (
@@ -65,7 +69,7 @@ function PropTable({ name, sections }: Readonly<PropTableProps>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   propName: { font: 'mono', fontSize: 12.5, fontWeight: '700' },
   propType: { font: 'mono', fontSize: 11.5, shrink: 1 },
   propRequired: { fontSize: 10, letterSpacing: 0.3, textTransform: 'uppercase' },

@@ -1,23 +1,17 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, render } from '@testing-library/react';
-import { Platform, StyleSheet } from 'react-native';
+import { act, cleanup } from '@testing-library/react';
+import { Platform, type StyleProp, StyleSheet, type TextStyle, type ViewStyle } from 'react-native';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import {
-  boxStyle,
-  createTheme,
-  currentBreakpoint,
-  declaredBreakpoints,
-  KROMA,
-  pinDesignWidth,
-  setTheme,
-  splitShorthand,
-  styles,
-  sv,
-} from '#ui/core';
+import { createTheme, declaredBreakpoints, KROMA, splitShorthand } from '#ui/core';
 import { breakpoint, CANVAS } from '#ui/core/tokens';
+import { createStyleTestHost } from '#ui/testing-style';
+import { stepsReached } from './breakpoint-cascade';
+
+const styleHost = createStyleTestHost();
+const { render, boxStyle, currentBreakpoint, pinDesignWidth, setTheme, styles, sv } = styleHost;
 
 afterEach(() => {
   cleanup();
@@ -30,7 +24,7 @@ const at = (width: number) => {
   return width;
 };
 
-const flat = (s: unknown) => StyleSheet.flatten(s as never) as Record<string, unknown>;
+const flat = (s: StyleProp<ViewStyle & TextStyle>) => StyleSheet.flatten(s);
 
 const css = (el: Element) => getComputedStyle(el);
 
@@ -64,7 +58,7 @@ describe('the breakpoint a width lands on', () => {
 });
 
 describe('the step a browser reads off the root', () => {
-  const stamped = () => document.documentElement.getAttribute('data-kroma-bp');
+  const stamped = () => stepsReached(styleHost.runtime.breakpoints.index());
 
   it('carries every step reached, so `~=` matches the cascade from a step upwards', () => {
     at(0);

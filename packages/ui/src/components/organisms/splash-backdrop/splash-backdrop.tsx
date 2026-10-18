@@ -1,3 +1,5 @@
+import { useStyles } from '#ui/core/styles';
+import { fontSizes as textSizes } from '#ui/core/tokens';
 // <SplashBackdrop>: the sign-in screens' ambient artwork, one implementation
 // for web, phone and TV: one cover at a time, dissolving on a slow drift under
 // a grade dark enough to hold a form, with the KROMA wheel drawn as a 3px rule
@@ -37,7 +39,7 @@ const FADE_MS = 2800;
 // sinks the middle, where the form is. Two layers rather than one
 // comma-separated background, which React Native's gradients cannot express;
 // each is promoted so a full-screen gradient is rasterised once.
-const layers = styles({
+const layersDefinition = styles({
   veil: {
     ...gradient(
       'linear-gradient(180deg, rgba(8, 8, 10, 0.86) 0%, rgba(8, 8, 10, 0.5) 20%, rgba(8, 8, 10, 0.3) 38%, rgba(8, 8, 10, 0.72) 62%, rgba(8, 8, 10, 0.97) 88%)',
@@ -104,6 +106,9 @@ function legMs(width: number, height: number): number {
  * next cover, the grade that keeps a form readable, the wheel rule and the
  * caption; the host owns everything interactive above it. */
 function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBackdropProps>) {
+  const layers = useStyles(layersDefinition);
+  const s = useStyles(sDefinition);
+
   const [slide, setSlide] = useState(0);
   useEffect(() => {
     if (covers.length < 2) return;
@@ -212,11 +217,11 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   ground: { fill: true, pointerEvents: 'none' },
   art: { absolute: true, top: 0, right: 0, bottom: 0, left: 0 },
-  eyebrow: { fontSize: 10, letterSpacing: 2.6, shrink: 0 },
-  caption: { fontSize: 14, fontWeight: '500', shrink: 1 },
+  eyebrow: { fontSize: textSizes.micro, letterSpacing: 2.6, shrink: 0 },
+  caption: { fontSize: textSizes.compactLabel, fontWeight: '500', shrink: 1 },
 });
 
 export type { SplashBackdropProps, SplashCover };

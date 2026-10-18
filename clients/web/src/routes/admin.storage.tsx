@@ -3,7 +3,6 @@ import { useFormat, useT } from '@kromatv/ui';
 import {
   Box,
   Button,
-  confirm,
   EmptyState,
   Grid,
   Icon,
@@ -15,6 +14,8 @@ import {
   Surface,
   styles,
   Text,
+  useConfirm,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -26,6 +27,7 @@ export const Route = createFileRoute('/admin/storage')({
 });
 
 function StoragePage() {
+  const confirm = useConfirm();
   const t = useT();
   const fmt = useFormat();
   const { client } = useAuth();
@@ -241,6 +243,8 @@ function LimitSelect({
 }
 
 function VolumeCard({ v }: Readonly<{ v: Volume }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const fmt = useFormat();
   const pct = v.totalBytes ? Math.round((v.usedBytes / v.totalBytes) * 100) : 0;
@@ -276,7 +280,10 @@ function VolumeCard({ v }: Readonly<{ v: Volume }>) {
   );
 }
 
-const s = styles({ figures: { fontVariant: ['tabular-nums'] }, quiet: { fontWeight: '500' } });
+const sDefinition = styles({
+  figures: { fontVariant: ['tabular-nums'] },
+  quiet: { fontWeight: '500' },
+});
 
 function MaintRow({
   title,

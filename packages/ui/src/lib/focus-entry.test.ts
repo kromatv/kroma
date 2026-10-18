@@ -2,31 +2,42 @@
 // standing claim on the focus.
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { focusSettled, markFocusSettled, resetFocusEntry } from './focus-entry';
+import { createFocusEntry } from './focus-entry';
 
 /** What <Focusable> computes once, at mount. */
-const wouldTakeFocus = (autoFocus: boolean) => autoFocus && !focusSettled();
+let entry: ReturnType<typeof createFocusEntry>;
+const wouldTakeFocus = (autoFocus: boolean) => autoFocus && !entry.focusSettled();
 
-beforeEach(resetFocusEntry);
+beforeEach(() => {
+  entry = createFocusEntry();
+});
 
 describe('focus entry', () => {
+  it('keeps simultaneous screens and remounts independent', () => {
+    const second = createFocusEntry();
+    entry.markFocusSettled();
+    expect(entry.focusSettled()).toBe(true);
+    expect(second.focusSettled()).toBe(false);
+    expect(createFocusEntry().focusSettled()).toBe(false);
+  });
+
   it('lets the first auto-focused control of a screen open it', () => {
     expect(wouldTakeFocus(true)).toBe(true);
   });
 
   it('refuses a control that mounts after focus has an owner', () => {
     expect(wouldTakeFocus(true)).toBe(true);
-    markFocusSettled();
+    entry.markFocusSettled();
     // The same tile scrolling back into a virtualised row's window: it must not
     // pull the focus off whatever the user actually walked to.
     expect(wouldTakeFocus(true)).toBe(false);
   });
 
   it('lets the next screen decide again', () => {
-    markFocusSettled();
+    entry.markFocusSettled();
     expect(wouldTakeFocus(true)).toBe(false);
     // `useFocusNav` mounts once per screen and resets this.
-    resetFocusEntry();
+    entry.resetFocusEntry();
     expect(wouldTakeFocus(true)).toBe(true);
   });
 
