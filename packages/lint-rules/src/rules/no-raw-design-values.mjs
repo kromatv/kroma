@@ -1,5 +1,12 @@
 import { defineRule } from '../define-rule.mjs';
 
+function isColour(value) {
+  if (value.startsWith('#')) {
+    return [4, 5, 7, 9].includes(value.length) && /^#[0-9a-f]+$/i.test(value);
+  }
+  return /^(?:rgba?|hsla?)\(/i.test(value) && value.endsWith(')');
+}
+
 export default defineRule(
   'no-raw-design-values',
   {
@@ -48,12 +55,6 @@ export default defineRule(
         'borderBottomLeftRadius',
         'borderBottomRightRadius',
       ]);
-      function isColour(value) {
-        if (value.startsWith('#')) {
-          return [4, 5, 7, 9].includes(value.length) && /^#[0-9a-f]+$/i.test(value);
-        }
-        return /^(?:rgba?|hsla?)\(/i.test(value) && value.endsWith(')');
-      }
       function check(node, name, value) {
         if (value?.type === 'JSXExpressionContainer') value = value.expression;
         let literal = value?.type === 'Literal' ? value.value : undefined;

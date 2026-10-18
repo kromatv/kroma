@@ -3,7 +3,7 @@ import { RuleTester } from 'oxlint/plugins-dev';
 import plugin from '../index.mjs';
 
 RuleTester.describe = describe;
-RuleTester.it = it;
+RuleTester.it = (name, fn) => it(name, fn);
 const tester = new RuleTester({ languageOptions: { parserOptions: { lang: 'tsx' } } });
 function run(name, valid, invalid, messageId) {
   tester.run(name, plugin.rules[name], {

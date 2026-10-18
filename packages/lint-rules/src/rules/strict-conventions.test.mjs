@@ -3,7 +3,7 @@ import { RuleTester } from 'oxlint/plugins-dev';
 import plugin from '../index.mjs';
 
 RuleTester.describe = describe;
-RuleTester.it = it;
+RuleTester.it = (name, fn) => it(name, fn);
 const tester = new RuleTester({ languageOptions: { parserOptions: { lang: 'tsx' } } });
 function run(name, valid, invalid) {
   tester.run(name, plugin.rules[name], {
@@ -27,6 +27,10 @@ run(
     { filename: '/app/index.ts', code: '// A public entry point.\n;' },
     { filename: '/app/thing.ts', code: 'export const value = 1;' },
     { filename: '/app/index.test.ts', code: 'const value = 1;' },
+    {
+      filename: '/app/routes/index.tsx',
+      code: "import { createFileRoute } from '@tanstack/react-router'; export const Route = createFileRoute('/')({});",
+    },
   ],
   [
     { filename: '/app/index.ts', code: 'export const value = 1;' },

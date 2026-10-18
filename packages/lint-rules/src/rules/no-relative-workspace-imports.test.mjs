@@ -4,7 +4,7 @@ import { RuleTester } from 'oxlint/plugins-dev';
 import rule from './no-relative-workspace-imports.mjs';
 
 RuleTester.describe = describe;
-RuleTester.it = it;
+RuleTester.it = (name, fn) => it(name, fn);
 const filename = fileURLToPath(new URL('../../../../clients/web/fixture.ts', import.meta.url));
 const tester = new RuleTester({ languageOptions: { parserOptions: { lang: 'ts' } } });
 const source = '../../packages/bundler/src/shell';
