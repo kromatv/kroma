@@ -505,3 +505,102 @@ fn a_preview_aims_at_a_title_without_monitoring_it() {
     assert!(monitored(&host, RequestKind::Show, SHOW).is_none());
     assert!(units(&host, RequestKind::Show, SHOW).is_empty());
 }
+
+#[test]
+fn switching_a_season_on_monitors_its_episodes() {
+    let host = host();
+    let _tmdb = tmdb();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
+    exec(&host, "DELETE FROM wanted WHERE season = 2");
+    let body = EpisodeMonitoringBody {
+        seasons: vec![SeasonSwitch {
+            season: 2,
+            monitored: true,
+        }],
+        ..EpisodeMonitoringBody::default()
+    };
+
+    let title = set_episodes(&host, SHOW, &body).unwrap();
+
+    assert!(title.seasons.contains(&2));
+    assert!(held(&host).contains(&(Some(2), Some(1))));
+}
+
+#[test]
+fn a_bulk_change_can_start_the_search_for_each_title() {
+    let host = host();
+    let _tmdb = tmdb();
+    let body = BulkMonitorBody {
+        titles: vec![TitleRef {
+            kind: RequestKind::Show,
+            tmdb_id: SHOW,
+        }],
+        settings: MonitorBody {
+            search_now: true,
+            ..MonitorBody::default()
+        },
+    };
+
+    let summary = monitor_many(&host, &body, None);
+
+    assert_eq!(summary.monitored, 1);
+    assert!(summary.failed.is_empty());
+}
+
+#[test]
+fn a_preview_without_a_season_covers_every_season() {
+    let host = host();
+    let _tmdb = tmdb();
+
+    let rows = preview_rows(&host, RequestKind::Show, SHOW, None).unwrap();
+
+    assert_eq!(rows.len(), 4);
+}
+
+#[test]
+fn two_rows_of_one_open_request_are_both_held() {
+    let host = host();
+    let _tmdb = tmdb();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &with_preset(MonitorPreset::None),
+        None,
+    )
+    .unwrap();
+    asked_for(&host, 1, 1);
+    let second = db::WantedRow {
+        id: db::unit_id("episode", SHOW, Some(1), Some(2)),
+        request_id: Some("r1".into()),
+        kind: "episode".into(),
+        tmdb_id: SHOW,
+        imdb_id: None,
+        title: "Show".into(),
+        year: None,
+        season: Some(1),
+        episode: Some(2),
+        air_date: None,
+        status: "wanted".into(),
+        last_search_at: None,
+    };
+    db::claim_wanted(host.db(), "r1", &[second], 1).unwrap();
+
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &with_preset(MonitorPreset::None),
+        None,
+    )
+    .unwrap();
+
+    assert_eq!(held(&host), [(Some(1), Some(1)), (Some(1), Some(2))]);
+}

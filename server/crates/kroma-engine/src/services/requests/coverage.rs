@@ -86,6 +86,7 @@ fn reconcile_wanted<S: HostStorage>(state: &S, id: &str) -> Result<()> {
 mod tests {
     use super::*;
     use crate::services::requests::test_support::{host_with_tmdb, insert_req};
+    use crate::test_support::FakeTmdb;
 
     #[test]
     fn coverage_is_not_a_thing_a_movie_request_has() {
@@ -173,5 +174,34 @@ mod tests {
             after[0].status, "available",
             "the survivor did not forget its file"
         );
+    }
+
+    #[test]
+    fn narrowing_an_approved_request_rebuilds_its_ledger_from_tmdb() {
+        let host = host_with_tmdb(Some("k"));
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/tv/42" => (
+                200,
+                serde_json::json!({ "name": "T", "seasons": [{ "season_number": 1 }, { "season_number": 2 }] }),
+            ),
+            "/tv/42/season/1" => (
+                200,
+                serde_json::json!({ "episodes": [{ "episode_number": 1, "air_date": "2020-01-01" }] }),
+            ),
+            "/tv/42/season/2" => (
+                200,
+                serde_json::json!({ "episodes": [{ "episode_number": 1, "air_date": "2021-01-01" }] }),
+            ),
+            _ => (404, serde_json::json!({})),
+        });
+        insert_req(&host, "r1", RequestKind::Show, 42, RequestStatus::Approved);
+        set_coverage(&host, "r1", None, None).unwrap();
+
+        set_coverage(&host, "r1", Some(vec![1]), None).unwrap();
+
+        let conn = host.db().get().unwrap();
+        let rows = db::wanted_for_request(&conn, "r1").unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].season, Some(1));
     }
 }

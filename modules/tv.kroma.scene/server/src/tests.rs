@@ -5,8 +5,12 @@ mod formats;
 mod judge;
 mod languages;
 mod parse;
+mod probes;
+mod profiles;
+mod qualities;
 mod rank;
 mod refusals;
+mod shapes;
 mod tags;
 mod upgrades;
 

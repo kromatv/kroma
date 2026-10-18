@@ -198,3 +198,55 @@ fn an_ended_show_is_not_read_again() {
 
     assert_eq!(refresh_pass(&host).unwrap(), 0);
 }
+
+#[test]
+fn a_title_tmdb_cannot_read_is_skipped() {
+    let host = host();
+    {
+        let _tmdb = tmdb();
+        monitor(
+            &host,
+            RequestKind::Show,
+            SHOW,
+            &MonitorBody::default(),
+            None,
+        )
+        .unwrap();
+    }
+    age(&host);
+    let _gone = FakeTmdb::start(|_| (404, json!({})));
+
+    let refreshed = refresh_pass(&host).unwrap();
+
+    assert_eq!(refreshed, 0);
+}
+
+#[test]
+fn an_undated_episode_gets_its_date_and_wakes_the_search() {
+    let host = host();
+    {
+        let _tmdb = tmdb();
+        monitor(
+            &host,
+            RequestKind::Show,
+            SHOW,
+            &MonitorBody::default(),
+            None,
+        )
+        .unwrap();
+    }
+    exec(&host, "UPDATE wanted SET air_date = NULL");
+    age(&host);
+    let _later = later_tmdb(&[1, 2]);
+
+    refresh_pass(&host).unwrap();
+
+    let conn = host.db().get().unwrap();
+    let rows = db::wanted_for_title(&conn, RequestKind::Show, SHOW).unwrap();
+    assert!(rows.iter().all(|r| r.air_date.is_some()));
+    assert!(
+        host.jobs()
+            .iter()
+            .any(|(key, _)| *key == "acquisition.search")
+    );
+}

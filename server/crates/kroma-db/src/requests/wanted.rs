@@ -597,4 +597,23 @@ mod tests {
         assert_eq!(removed, 1);
         assert_eq!(wanted_for_title(&conn, RequestKind::Show, 1396).unwrap().len(), 1);
     }
+
+    #[test]
+    fn rows_are_listed_by_status_across_titles() {
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        claim_wanted(
+            &p,
+            "r1",
+            &[ep_row("w1", 1, 1, "grabbed"), ep_row("w2", 1, 2, "wanted")],
+            1000,
+        )
+        .unwrap();
+        let conn = p.get().unwrap();
+
+        let grabbed = wanted_in_status(&conn, "grabbed").unwrap();
+
+        assert_eq!(grabbed.len(), 1);
+        assert_eq!(grabbed[0].id, "w1");
+    }
 }

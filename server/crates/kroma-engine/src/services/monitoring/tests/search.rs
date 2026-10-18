@@ -86,3 +86,32 @@ async fn a_module_that_refuses_hands_its_reason_to_the_caller() {
     assert!(!answer.started);
     assert_eq!(answer.reason.as_deref(), Some("noIndexer"));
 }
+
+#[test]
+fn a_module_that_cannot_be_reached_is_reported_as_failed() {
+    let host = host().with_point("acquisition", None, "http://127.0.0.1:1", "t");
+    wants_an_episode(&host);
+
+    let answer = search_now(&host, RequestKind::Show, SHOW, &[]).unwrap();
+
+    assert!(!answer.started);
+    assert_eq!(answer.reason.as_deref(), Some("failed"));
+}
+
+#[test]
+fn naming_units_leaves_a_film_row_out_of_the_search() {
+    let _tmdb = tmdb();
+    let host = host();
+    monitor(&host, RequestKind::Movie, MOVIE, &MonitorBody::default(), None).unwrap();
+    exec(&host, "UPDATE wanted SET last_search_at = 99");
+    let units = [EpisodeRef {
+        season: 1,
+        episode: 1,
+    }];
+
+    search_now(&host, RequestKind::Movie, MOVIE, &units).unwrap();
+
+    let conn = host.db().get().unwrap();
+    let rows = db::wanted_for_title(&conn, RequestKind::Movie, MOVIE).unwrap();
+    assert_eq!(rows[0].last_search_at, Some(99));
+}

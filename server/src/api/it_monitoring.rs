@@ -251,3 +251,112 @@ async fn the_library_index_lists_a_title_nothing_monitors() {
     assert_eq!(dune["kind"], json!("movie"));
 }
 
+
+#[tokio::test]
+async fn monitoring_a_title_without_a_tmdb_key_is_refused() {
+    let t = test_app();
+    let token = admin(&t);
+
+    let (status, _) = send(
+        &t.app,
+        "PUT",
+        "/api/monitoring/show/95396",
+        Some(&token),
+        Some(json!({ "searchNow": true })),
+    )
+    .await;
+
+    assert_ne!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn a_search_without_an_acquisition_module_says_so() {
+    let t = test_app();
+    let token = admin(&t);
+    seed_monitored(&t, 95396);
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/monitoring/show/95396/search",
+        Some(&token),
+        None,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.to_string().contains("noModule"), "{body}");
+}
+
+#[tokio::test]
+async fn a_search_narrowed_to_units_still_asks() {
+    let t = test_app();
+    let token = admin(&t);
+    seed_monitored(&t, 95396);
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/monitoring/show/95396/search",
+        Some(&token),
+        Some(json!({ "units": [{ "season": 1, "episode": 1 }] })),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.to_string().contains("noModule"), "{body}");
+}
+
+#[tokio::test]
+async fn a_search_for_an_unknown_kind_is_refused() {
+    let t = test_app();
+    let token = admin(&t);
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/monitoring/album/1/search",
+        Some(&token),
+        None,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn a_ledger_without_a_tmdb_key_is_refused() {
+    let t = test_app();
+    let token = admin(&t);
+    seed_monitored(&t, 95396);
+
+    let (status, _) = get(&t.app, "/api/monitoring/show/95396/ledger", Some(&token)).await;
+
+    assert_ne!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn a_season_ledger_without_a_tmdb_key_is_refused() {
+    let t = test_app();
+    let token = admin(&t);
+    seed_monitored(&t, 95396);
+
+    let (status, _) = get(
+        &t.app,
+        "/api/monitoring/show/95396/ledger/1",
+        Some(&token),
+    )
+    .await;
+
+    assert_ne!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn a_season_ledger_for_an_unknown_kind_is_refused() {
+    let t = test_app();
+    let token = admin(&t);
+
+    let (status, _) = get(&t.app, "/api/monitoring/album/1/ledger/1", Some(&token)).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
