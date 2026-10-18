@@ -30,7 +30,7 @@ edition = "2021"
 # Raised from 1.86 to accommodate webauthn-rs (passkeys), whose dep graph
 # (uuid >= 1.19) needs a newer Rust. Local + Docker builds run 1.96.
 rust-version = "1.88"
-license = "MIT"
+license = "AGPL-3.0-or-later"
 
 # Single source of truth for versions shared across workspace members. The root
 # package keeps its own [dependencies] table as-is; members opt in via

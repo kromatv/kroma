@@ -9,7 +9,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
 description = "KROMA qBittorrent download engine: a sidecar answering the download-client point over the qBittorrent WebUI."
-license = "MIT"
+license = "AGPL-3.0-or-later"
 
 [[bin]]
 # This module's `.kmod` entrypoint: a point-provider-only sidecar serving the

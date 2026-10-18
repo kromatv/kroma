@@ -99,7 +99,7 @@ what the 3.2 MB `.aar` actually carries.
 
 All of the decoders above are FFmpeg's own, so the build stays LGPL, with no
 `--enable-gpl`, nothing that would put a stricter licence on the artifact than the
-GPL-2.0-or-later this repository already carries.
+AGPL-3.0-or-later this repository already carries.
 
 ## Verifying it on a device
 

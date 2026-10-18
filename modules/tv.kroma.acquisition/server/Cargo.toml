@@ -9,7 +9,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
 description = "The acquisition vertical: interactive/manual search, release scoring, grab + import, and the automatic wanted-list pass. Rides on the Downloads module's engine."
-license = "MIT"
+license = "AGPL-3.0-or-later"
 
 [[bin]]
 # The module's `.kmod` entrypoint: an out-of-process sidecar running the search /

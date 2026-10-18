@@ -121,7 +121,7 @@ uncompressed tar — not something an installer verifies.
   "name": "Notes",
   "version": "0.2.0",
   "description": "…",
-  "author": "…", "homepage": "…", "license": "GPL-2.0-or-later",
+  "author": "…", "homepage": "…", "license": "AGPL-3.0-or-later",
   "keywords": ["notes"], "tags": ["download-client"],
   "engines": { "server": ">=0.1.4" },
   "library": false,

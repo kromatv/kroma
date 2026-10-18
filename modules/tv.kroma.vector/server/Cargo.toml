@@ -9,7 +9,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
 description = "Content embeddings (lexical default + optional MiniLM/candle semantic backend)"
-license = "MIT"
+license = "AGPL-3.0-or-later"
 
 [[bin]]
 # The module's `.kmod` entrypoint: a port-provider-only sidecar serving the

@@ -9,7 +9,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
 description = "Native Cardigann indexer engine: runs Jackett/Prowlarr YAML definitions directly (no external Torznab aggregator)"
-license = "MIT"
+license = "AGPL-3.0-or-later"
 
 [[bin]]
 name = "kroma-module-indexer"

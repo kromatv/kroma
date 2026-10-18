@@ -5,7 +5,7 @@
   "type": "module",
   "description": "KROMA package source (packages.kroma.tv): a TanStack Start app rendered on the edge, serving DSM's Package Center a live catalog assembled from the GitHub Releases API and everyone else a browsable list of every release.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
-  "license": "GPL-2.0-or-later",
+  "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kromatv/kroma.git",

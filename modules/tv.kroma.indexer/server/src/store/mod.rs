@@ -1,6 +1,6 @@
 //! Fetches the community-maintained Cardigann definition set at runtime and
-//! caches it under the data directory. Not vendored: the definitions are GPL
-//! and KROMA is MIT, so the server downloads them on demand instead.
+//! caches it under the data directory. The definitions are GPL and
+//! not vendored: the server downloads them on demand.
 
 use std::path::{Path, PathBuf};
 

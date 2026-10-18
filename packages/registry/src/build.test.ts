@@ -56,13 +56,13 @@ describe('buildModuleRecord', () => {
 
   it('carries the store metadata and one version with SRI artifacts', () => {
     const record = buildModuleRecord(
-      entry({ author: 'Max', license: 'GPL-2.0-or-later', keywords: ['torrent'] }),
+      entry({ author: 'Max', license: 'AGPL-3.0-or-later', keywords: ['torrent'] }),
     );
     expect(record).toMatchObject({
       apiVersion: 1,
       id: 'tv.kroma.torrents',
       author: 'Max',
-      license: 'GPL-2.0-or-later',
+      license: 'AGPL-3.0-or-later',
       keywords: ['torrent'],
       latest: '0.1.7',
     });

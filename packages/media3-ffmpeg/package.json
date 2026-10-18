@@ -4,7 +4,7 @@
   "private": true,
   "description": "Media3's FFmpeg audio decoders, prebuilt for Android: the software fallback that lets a television direct-play DTS, TrueHD and unlicensed E-AC3 instead of asking the server to transcode them.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
-  "license": "GPL-2.0-or-later",
+  "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kromatv/kroma.git",
