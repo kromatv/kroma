@@ -13,6 +13,8 @@ import { posterScrim } from '#web/shared/lib/art-styles';
 import { Image } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
 
+export const POSTER_W = 44;
+
 export const COLUMN = {
   status: 128,
   held: 150,
@@ -30,7 +32,7 @@ export interface RowColumns {
 }
 
 const s = styles({
-  row: { row: true, align: 'center', gap: 12, flex: true, minW: 0, px: 12 },
+  row: { row: true, align: 'center', gap: 16, flex: true, minW: 0, px: 16, py: 12 },
 });
 
 export function LibraryRow({
@@ -52,7 +54,7 @@ export function LibraryRow({
 }>) {
   const t = useT();
   return (
-    <Row align="center" gap={12} minW={0} flex self="stretch">
+    <Row align="center" gap={16} minW={0} flex self="stretch">
       {selecting ? (
         <Focusable
           role="checkbox"
@@ -67,7 +69,7 @@ export function LibraryRow({
           <Facts row={row} columns={columns} />
         </Focusable>
       ) : (
-        <Box flex minW={0} px={12}>
+        <Box flex minW={0} px={16} py={12}>
           <Facts row={row} columns={columns} />
         </Box>
       )}
@@ -100,7 +102,7 @@ export function LibraryRow({
 
 function Facts({ row, columns }: Readonly<{ row: LibraryTitle; columns: RowColumns }>) {
   return (
-    <Row align="center" gap={12} minW={0} flex>
+    <Row align="center" gap={16} minW={0} flex>
       <Poster row={row} />
       <TitleCell row={row} columns={columns} />
       {columns.counts ? <StatusCell row={row} /> : null}
@@ -114,7 +116,7 @@ function Facts({ row, columns }: Readonly<{ row: LibraryTitle; columns: RowColum
 
 function Poster({ row }: Readonly<{ row: LibraryTitle }>) {
   return (
-    <Box w={32} h={46} shrink={0} radius="xs" overflow="hidden">
+    <Box w={POSTER_W} h={66} shrink={0} radius="sm" overflow="hidden">
       <Box fill style={posterScrim(row.title)} />
       <Image src={row.posterUrl} fit="cover" fill />
     </Box>
@@ -130,7 +132,7 @@ function TitleCell({ row, columns }: Readonly<{ row: LibraryTitle; columns: RowC
     </Text>
   );
   return (
-    <Box flex minW={0} gap={3}>
+    <Box flex minW={0} gap={4}>
       <Row gap={10} align="center" minW={0}>
         {row.tmdbId === null ? (
           name

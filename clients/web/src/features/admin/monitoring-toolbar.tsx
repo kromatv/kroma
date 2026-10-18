@@ -17,7 +17,7 @@ import type {
   LibrarySort,
   LibraryState,
 } from '#web/features/admin/monitoring-index-model';
-import { COLUMN, type RowColumns } from '#web/features/admin/monitoring-title-row';
+import { COLUMN, POSTER_W, type RowColumns } from '#web/features/admin/monitoring-title-row';
 
 const s = styles({
   head: { row: true, align: 'center', gap: 8 },
@@ -106,9 +106,9 @@ export function LibraryHead({
   const sortBy = (sort: LibrarySort) =>
     onChange({ ...filter, sort, descending: filter.sort === sort ? !filter.descending : false });
   return (
-    <Row align="center" gap={12} px={12} py={8} minW={0}>
+    <Row align="center" gap={16} px={16} py={10} minW={0}>
       {selecting ? <Box w={20} shrink={0} /> : null}
-      <Box w={32} shrink={0} />
+      <Box w={POSTER_W} shrink={0} />
       <Box flex minW={0}>
         <SortName filter={filter} sort="title" label={t('monitoring.colTitle')} onPress={sortBy} />
       </Box>
