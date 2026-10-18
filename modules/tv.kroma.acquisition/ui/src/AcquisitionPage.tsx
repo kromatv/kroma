@@ -37,7 +37,6 @@ export default function AcquisitionPage() {
     <Box gap={24}>
       <PageHeader.Root>
         <PageHeader.Title>{t('admin.pageAcquisition')}</PageHeader.Title>
-        <PageHeader.Subtitle>{t('admin.pageAcquisitionSub')}</PageHeader.Subtitle>
       </PageHeader.Root>
 
       <TabPicker tab={tab} onPick={setTab} />

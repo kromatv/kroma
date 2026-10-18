@@ -46,7 +46,6 @@ export function LibraryHubPage({
     <>
       <PageHeader.Root>
         <PageHeader.Title>{t('monitoring.title')}</PageHeader.Title>
-        <PageHeader.Subtitle>{t('monitoring.subtitle')}</PageHeader.Subtitle>
       </PageHeader.Root>
       <Box mt={20} mb={20} align="flex-start">
         <SegmentGroup.Root

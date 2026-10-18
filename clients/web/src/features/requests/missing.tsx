@@ -1,6 +1,6 @@
 import { hasPermission } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
-import { Box, Button, EmptyState, IconButton, Row, Section, Text } from '@kromatv/ui/kit';
+import { Box, Button, EmptyState, IconButton, Row, Section } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { MissingGroupCard } from '#web/features/requests/missing-group';
@@ -53,7 +53,6 @@ export function MissingList() {
       {entries?.length === 0 ? (
         <EmptyState.Root icon="circle-check">
           <EmptyState.Title>{t('requests.missingEmpty')}</EmptyState.Title>
-          <EmptyState.Hint>{t('requests.missingEmptyHint')}</EmptyState.Hint>
           <EmptyState.Actions>
             <Button
               variant="glass"
@@ -87,9 +86,6 @@ export function MissingList() {
           <Section.Header>
             <Section.Title>{t('requests.missingUnfollowed')}</Section.Title>
           </Section.Header>
-          <Text variant="meta" color="textDim">
-            {t('requests.missingUnfollowedHint')}
-          </Text>
           <GroupList groups={unfollowed} actions={actions} />
         </Section.Root>
       ) : null}

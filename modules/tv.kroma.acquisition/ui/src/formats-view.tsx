@@ -8,7 +8,6 @@ import {
   EmptyState,
   Menu,
   Row,
-  Section,
   Surface,
   Text,
 } from '@kromatv/ui/kit';
@@ -68,22 +67,15 @@ export function FormatsView({
   };
 
   return (
-    <Section.Root>
-      <Section.Header>
-        <Section.Title>{t('acq.tabFormats')}</Section.Title>
-        <Section.Actions>
-          <Button
-            size="sm"
-            icon="plus"
-            label={t('acq.formatNew')}
-            onPress={() => setEditing(blank())}
-          />
-        </Section.Actions>
-      </Section.Header>
-
-      <Text variant="meta" color="textDim">
-        {t('acq.formatsHint')}
-      </Text>
+    <Box gap={16}>
+      <Row justify="flex-end">
+        <Button
+          size="sm"
+          icon="plus"
+          label={t('acq.formatNew')}
+          onPress={() => setEditing(blank())}
+        />
+      </Row>
 
       {action.error ? (
         <Callout.Root tone="danger">
@@ -125,7 +117,7 @@ export function FormatsView({
           onSaved={onSaved}
         />
       ) : null}
-    </Section.Root>
+    </Box>
   );
 }
 

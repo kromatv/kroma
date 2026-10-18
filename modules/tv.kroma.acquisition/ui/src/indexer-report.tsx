@@ -1,5 +1,5 @@
 import { useT } from '@kromatv/module-sdk';
-import { Box, Row, Text } from '@kromatv/ui/kit';
+import { Box, Row, Text, Tooltip } from '@kromatv/ui/kit';
 
 /** Structural rather than the branded `IndexerReport`, because the free-text
  *  sweep is a module's own wire type carrying the same five fields. */
@@ -39,18 +39,19 @@ function IndexerPill({ report }: Readonly<{ report: IndexerAnswer }>) {
   const t = useT();
   const tone = pillTone(report);
   return (
-    <Row align="center" gap={7} radius="pill" px={10} py={4} bg={`${tone}/14`}>
-      <Box w={6} h={6} shrink={0} radius="circle" bg={tone} />
-      <Text variant="meta" color="textDim" lines={1}>
-        {report.name}
-      </Text>
-      <Text variant="meta" color={tone}>
-        {report.error ? t('requests.indexerDown') : t('acq.indexerFound', { count: report.found })}
-      </Text>
-      <Text variant="meta" color="textDim">
-        {formatElapsed(report.elapsedMs)}
-      </Text>
-    </Row>
+    <Tooltip label={formatElapsed(report.elapsedMs)}>
+      <Row align="center" gap={7} radius="pill" px={10} py={4} bg={`${tone}/14`}>
+        <Box w={6} h={6} shrink={0} radius="circle" bg={tone} />
+        <Text variant="meta" color="textDim" lines={1}>
+          {report.name}
+        </Text>
+        <Text variant="meta" color={tone}>
+          {report.error
+            ? t('requests.indexerDown')
+            : t('acq.indexerFound', { count: report.found })}
+        </Text>
+      </Row>
+    </Tooltip>
   );
 }
 

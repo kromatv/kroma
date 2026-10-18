@@ -1,16 +1,6 @@
 import { apiErrorText } from '@kromatv/client';
 import { useAsyncAction, useT } from '@kromatv/module-sdk';
-import {
-  Box,
-  Button,
-  Callout,
-  Field,
-  Row,
-  Section,
-  SegmentGroup,
-  Text,
-  toast,
-} from '@kromatv/ui/kit';
+import { Box, Button, Callout, Field, Row, SegmentGroup, Text, toast } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAcquisitionApi } from './api';
 import type { RulesView } from './rules-schemas';
@@ -29,11 +19,6 @@ const TABLES: readonly SizeTable[] = ['movie', 'episode'];
 const TABLE_LABEL: Record<SizeTable, string> = {
   movie: 'acq.sizesMovies',
   episode: 'acq.sizesEpisodes',
-};
-
-const RUNTIME_LABEL: Record<SizeTable, string> = {
-  movie: 'acq.movieRuntime',
-  episode: 'acq.episodeRuntime',
 };
 
 const RUNTIME_W = 180;
@@ -61,25 +46,7 @@ export function SizesView({
     );
 
   return (
-    <Section.Root gap={14}>
-      <Section.Header>
-        <Section.Title>{t('acq.tabSizes')}</Section.Title>
-        <Section.Actions>
-          <Button
-            size="sm"
-            icon="check"
-            label={t('common.save')}
-            loading={action.busy}
-            disabled={bad !== null}
-            onPress={save}
-          />
-        </Section.Actions>
-      </Section.Header>
-
-      <Text variant="meta" color="textDim">
-        {t('acq.sizesHint')}
-      </Text>
-
+    <Box gap={14}>
       {action.error ? (
         <Callout.Root tone="danger">
           <Callout.Title>{action.error}</Callout.Title>
@@ -99,22 +66,34 @@ export function SizesView({
             </SegmentGroup.Item>
           ))}
         </SegmentGroup.Root>
-        <Box w={RUNTIME_W}>
-          <Field.Root
-            label={t(RUNTIME_LABEL[table])}
+        <Row gap={10} align="flex-end">
+          <Box w={RUNTIME_W}>
+            <Field.Root
+              label={t('acq.defaultRuntime')}
+              size="sm"
+              invalid={bad === runtimeKey}
+              value={draft[runtimeKey]}
+              onValueChange={(next) => setDraft((d) => ({ ...d, [runtimeKey]: next }))}
+            >
+              <Field.Input type="number" />
+            </Field.Root>
+          </Box>
+          <Button
             size="sm"
-            invalid={bad === runtimeKey}
-            value={draft[runtimeKey]}
-            onValueChange={(next) => setDraft((d) => ({ ...d, [runtimeKey]: next }))}
-          >
-            <Field.Input type="number" />
-          </Field.Root>
-        </Box>
+            icon="check"
+            label={t('common.save')}
+            loading={action.busy}
+            disabled={bad !== null}
+            onPress={save}
+          />
+        </Row>
       </Row>
 
-      <Text variant="meta" color={bad ? 'dangerHover' : 'textDim'}>
-        {bad ? t('acq.sizesBad') : t('acq.sizesRuntimeHint')}
-      </Text>
+      {bad ? (
+        <Text variant="meta" color="dangerHover">
+          {t('acq.sizesBad')}
+        </Text>
+      ) : null}
 
       <SizeTableView
         table={table}
@@ -123,6 +102,6 @@ export function SizesView({
         bad={bad}
         onCell={(key, value) => setDraft((d) => setCell(d, key, value))}
       />
-    </Section.Root>
+    </Box>
   );
 }

@@ -1,6 +1,6 @@
 import { apiErrorText } from '@kromatv/client';
 import { Table, type TableColumn, useAsyncAction, useT } from '@kromatv/module-sdk';
-import { Badge, Box, Button, Callout, confirm, Menu, Row, Section, Text } from '@kromatv/ui/kit';
+import { Badge, Box, Button, Callout, confirm, Menu, Row, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAcquisitionApi } from './api';
 import { allowedQualities, copyOfProfile } from './profile-draft';
@@ -59,44 +59,35 @@ export function ProfilesView({
 
   return (
     <Box gap={16}>
-      <Section.Root>
-        <Section.Header>
-          <Section.Title>{t('acq.tabProfiles')}</Section.Title>
-          <Section.Actions>
-            <Button size="sm" icon="plus" label={t('acq.profileNewTitle')} onPress={create} />
-          </Section.Actions>
-        </Section.Header>
+      <Row justify="flex-end">
+        <Button size="sm" icon="plus" label={t('acq.profileNewTitle')} onPress={create} />
+      </Row>
 
-        <Text variant="meta" color="textDim">
-          {t('acq.profilesHint')}
-        </Text>
+      {action.error ? (
+        <Callout.Root tone="danger">
+          <Callout.Title>{action.error}</Callout.Title>
+        </Callout.Root>
+      ) : null}
 
-        {action.error ? (
-          <Callout.Root tone="danger">
-            <Callout.Title>{action.error}</Callout.Title>
-          </Callout.Root>
-        ) : null}
-
-        <Table.Root columns={COLUMNS} label={t('acq.tabProfiles')}>
-          <Table.Header>
-            <Table.Column>{t('acq.colProfile')}</Table.Column>
-            <Table.Column>{t('acq.cutoff')}</Table.Column>
-            <Table.Cell />
-          </Table.Header>
-          {rules.profiles.map((profile) => (
-            <ProfileRow
-              key={profile.id}
-              profile={profile}
-              isDefault={profile.id === rules.defaultProfile}
-              busy={action.busy}
-              onEdit={() => setEditing({ profile, isNew: false })}
-              onDuplicate={() => copyOf(profile, t('acq.profileCopyName', { name: profile.name }))}
-              onMakeDefault={() => makeDefault(profile)}
-              onRemove={() => void remove(profile)}
-            />
-          ))}
-        </Table.Root>
-      </Section.Root>
+      <Table.Root columns={COLUMNS} label={t('acq.tabProfiles')}>
+        <Table.Header>
+          <Table.Column>{t('acq.colProfile')}</Table.Column>
+          <Table.Column>{t('acq.cutoff')}</Table.Column>
+          <Table.Cell />
+        </Table.Header>
+        {rules.profiles.map((profile) => (
+          <ProfileRow
+            key={profile.id}
+            profile={profile}
+            isDefault={profile.id === rules.defaultProfile}
+            busy={action.busy}
+            onEdit={() => setEditing({ profile, isNew: false })}
+            onDuplicate={() => copyOf(profile, t('acq.profileCopyName', { name: profile.name }))}
+            onMakeDefault={() => makeDefault(profile)}
+            onRemove={() => void remove(profile)}
+          />
+        ))}
+      </Table.Root>
 
       {editing ? (
         <ProfileEditor

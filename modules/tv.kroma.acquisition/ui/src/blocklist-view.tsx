@@ -34,10 +34,6 @@ export function BlocklistView() {
 
   return (
     <Box gap={14}>
-      <Text variant="meta" color="textDim">
-        {t('acq.blocklistHint')}
-      </Text>
-
       {action.error ? (
         <Callout.Root tone="danger">
           <Callout.Title>{action.error}</Callout.Title>

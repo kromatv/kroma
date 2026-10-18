@@ -179,9 +179,6 @@ export function LibraryTitles({ view, onView }: Readonly<ViewProps>) {
               {rows.length === 0 ? t('monitoring.empty') : t('monitoring.noMatch')}
             </EmptyState.Title>
             {rows.length === 0 ? (
-              <EmptyState.Hint>{t('monitoring.emptyHint')}</EmptyState.Hint>
-            ) : null}
-            {rows.length === 0 ? (
               <EmptyState.Actions>
                 <Button
                   icon="plus"

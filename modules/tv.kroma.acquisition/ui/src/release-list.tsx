@@ -37,7 +37,7 @@ export function ReleaseList({
       <Box gap={16}>
         {counts.accepted === 0 ? (
           <Text variant="meta" color="textMuted">
-            {t('acq.nothingPassed')}
+            {t('acq.noneAccepted')}
           </Text>
         ) : null}
         <ReleaseGroup effect={null} rows={rows} picked={null} {...actions} />

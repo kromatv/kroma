@@ -13,7 +13,6 @@ export function MonitoringPanel({
   kind,
   tmdbId,
   title: name,
-  monitored,
 }: Readonly<SlotProps['monitoring.detail']>) {
   const t = useT();
   const title = useTitleRules(kind, tmdbId);
@@ -80,13 +79,6 @@ export function MonitoringPanel({
       ) : null}
 
       {title.loading || rules.loading ? <CardSkeleton fields={3} /> : null}
-
-      {monitored ? null : (
-        <Callout.Root tone="neutral" icon="radar-off">
-          <Callout.Title>{t('acq.notFollowed')}</Callout.Title>
-          <Callout.Detail>{t('acq.notFollowedHint')}</Callout.Detail>
-        </Callout.Root>
-      )}
 
       {title.data ? <TitleFilesTable kind={kind} files={files} goal={goal} /> : null}
     </Section.Root>

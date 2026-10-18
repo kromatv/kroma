@@ -36,7 +36,6 @@ export function TitleFilesTable({
     return (
       <EmptyState.Root icon="file-off">
         <EmptyState.Title>{t('acq.titleNoFiles')}</EmptyState.Title>
-        <EmptyState.Hint>{t('acq.titleNoFilesHint')}</EmptyState.Hint>
       </EmptyState.Root>
     );
   }

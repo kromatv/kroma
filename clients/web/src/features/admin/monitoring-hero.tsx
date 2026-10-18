@@ -117,9 +117,6 @@ function MetaLine({
     ledger.kind === 'show' ? t('content.seasonCount', { count: totals.seasons }) : null,
     ledger.kind === 'show' ? t('content.episodeCount', { count: totals.episodes }) : null,
     status ? t(status) : monitored?.airStatus,
-    ledger.kind === 'movie' && monitored
-      ? t(`monitoring.avail.${monitored.minAvailability}` as MessageKey)
-      : null,
   ].filter(Boolean);
   return (
     <Text variant="meta" color="textDim">

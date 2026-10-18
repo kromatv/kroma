@@ -37,11 +37,6 @@ export function SearchResultsDialog({
           </Text>
           <IconButton control="sm" icon="x" label={t('common.close')} onPress={onClose} />
         </Row>
-        {state.busy ? (
-          <Text variant="meta" color="textDim">
-            {t('requests.searchRunning')}
-          </Text>
-        ) : null}
         {state.view && !state.busy ? (
           <Row wrap between gapX={16} gapY={10} align="center" mt={4}>
             <ReleaseTabs view={view} />

@@ -33,7 +33,6 @@ export function MonitoringSettings({
     return (
       <Callout.Root tone="accent" icon="radar-off">
         <Callout.Title>{t('monitoring.notMonitored')}</Callout.Title>
-        <Callout.Detail>{t('monitoring.notMonitoredHint')}</Callout.Detail>
         <Callout.Actions>
           <Button
             size="sm"
@@ -84,7 +83,7 @@ function ShowSettings({
 
   return (
     <>
-      <SettingRow label={t('monitoring.presetApply')} hint={t('monitoring.presetHint')} block>
+      <SettingRow label={t('monitoring.presetApply')} block>
         <Row gap={8} align="center" justify="flex-end" wrap>
           <Box flex minW={160} maxW={230}>
             <PresetSelect value={preset} onChange={setPreset} disabled={busy} />
@@ -100,9 +99,14 @@ function ShowSettings({
         </Row>
       </SettingRow>
       <Divider spacing={0} />
-      <SpecialsSwitch checked={specials} onChange={setSpecials} disabled={busy} />
+      <SpecialsSwitch
+        checked={specials}
+        onChange={setSpecials}
+        hint={t('monitoring.specialsHint')}
+        disabled={busy}
+      />
       <Divider spacing={0} />
-      <SettingRow label={t('monitoring.newSeasons')} hint={t('monitoring.newSeasonsHint')}>
+      <SettingRow label={t('monitoring.newSeasons')}>
         <Switch
           checked={monitored.monitorNewSeasons}
           onCheckedChange={(next) => onMonitor({ monitorNewSeasons: next })}
@@ -126,11 +130,7 @@ function MovieSettings({
   const t = useT();
   const pick = (minAvailability: MinAvailability) => onMonitor({ minAvailability });
   return (
-    <SettingRow
-      label={t('monitoring.minAvailability')}
-      hint={t('monitoring.minAvailabilityHint')}
-      block
-    >
+    <SettingRow label={t('monitoring.minAvailability')} block>
       <AvailabilitySelect value={monitored.minAvailability} onChange={pick} disabled={busy} />
     </SettingRow>
   );

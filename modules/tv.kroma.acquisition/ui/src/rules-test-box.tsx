@@ -1,6 +1,6 @@
 import { apiErrorText } from '@kromatv/client';
 import { useT } from '@kromatv/module-sdk';
-import { Box, Button, Callout, Divider, Field, Row, Section, Surface, Text } from '@kromatv/ui/kit';
+import { Box, Button, Callout, Divider, Field, Row, Surface, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAcquisitionApi } from './api';
 import { FormatPills, QualityPill, ScorePill } from './judgement-pills';
@@ -32,15 +32,7 @@ export function RulesTestBox() {
   };
 
   return (
-    <Section.Root>
-      <Section.Header>
-        <Section.Title>{t('acq.testTitle')}</Section.Title>
-      </Section.Header>
-
-      <Text variant="meta" color="textDim">
-        {t('acq.testHint')}
-      </Text>
-
+    <Box gap={16}>
       <Row wrap gap={10} align="flex-end">
         <Box flex minW={240}>
           <Field.Root label={t('acq.testName')} size="sm" value={name} onValueChange={setName}>
@@ -90,7 +82,7 @@ export function RulesTestBox() {
           </Box>
         </Surface>
       ) : null}
-    </Section.Root>
+    </Box>
   );
 }
 

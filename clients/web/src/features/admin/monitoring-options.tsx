@@ -103,11 +103,17 @@ export function AvailabilitySelect({
 export function SpecialsSwitch({
   checked,
   onChange,
+  hint,
   disabled,
-}: Readonly<{ checked: boolean; onChange: (next: boolean) => void; disabled?: boolean }>) {
+}: Readonly<{
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  hint?: string;
+  disabled?: boolean;
+}>) {
   const t = useT();
   return (
-    <SettingRow label={t('monitoring.specials')} hint={t('monitoring.specialsHint')}>
+    <SettingRow label={t('monitoring.specials')} hint={hint}>
       <Switch
         checked={checked}
         onCheckedChange={onChange}

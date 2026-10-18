@@ -27,7 +27,6 @@ export function RequestsHubPage({
     <PageFrame>
       <PageHeader.Root>
         <PageHeader.Title>{t('requests.myTitle')}</PageHeader.Title>
-        <PageHeader.Subtitle>{t('requests.mySubtitle')}</PageHeader.Subtitle>
       </PageHeader.Root>
       <Box mt={20} mb={20} align="flex-start">
         <SegmentGroup.Root

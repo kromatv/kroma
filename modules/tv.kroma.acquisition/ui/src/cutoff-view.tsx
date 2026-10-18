@@ -6,7 +6,6 @@ import {
   Img,
   Table as Kit,
   Row,
-  Section,
   Surface,
   TableSkeleton,
   Text,
@@ -38,35 +37,27 @@ export function CutoffView() {
   if (cutoff.loading) return <TableSkeleton rows={5} />;
 
   return (
-    <Section.Root gap={14}>
-      <Section.Header>
-        <Section.Title>{t('acq.tabCutoff')}</Section.Title>
-        {entries.length === 0 ? null : (
-          <Section.Actions>
-            <Button
-              size="sm"
-              icon="sparkles"
-              label={t('acq.improveAll')}
-              loading={searchNow.busy}
-              onPress={() => searchNow.start(() => acquisition.searchCutoffNow())}
-            />
-          </Section.Actions>
-        )}
-      </Section.Header>
-
-      <Text variant="meta" color="textDim">
-        {t('acq.cutoffHint')}
-      </Text>
+    <Box gap={14}>
+      {entries.length === 0 ? null : (
+        <Row justify="flex-end">
+          <Button
+            size="sm"
+            icon="sparkles"
+            label={t('acq.improveAll')}
+            loading={searchNow.busy}
+            onPress={() => searchNow.start(() => acquisition.searchCutoffNow())}
+          />
+        </Row>
+      )}
 
       {entries.length === 0 ? (
         <Surface radius="xl" pad="lg">
           <EmptyState.Root icon="target">
             <EmptyState.Title>{t('acq.cutoffEmpty')}</EmptyState.Title>
-            <EmptyState.Hint>{t('acq.cutoffEmptyHint')}</EmptyState.Hint>
           </EmptyState.Root>
         </Surface>
       ) : (
-        <Table.Root columns={COLUMNS} label={t('acq.tabCutoff')}>
+        <Table.Root columns={COLUMNS} label={t('monitoring.tab.upgrades')}>
           <Table.Header>
             <Table.Column>{t('requests.colTitle')}</Table.Column>
             <Table.Column>{t('acq.colProfile')}</Table.Column>
@@ -78,7 +69,7 @@ export function CutoffView() {
           ))}
         </Table.Root>
       )}
-    </Section.Root>
+    </Box>
   );
 }
 
@@ -117,7 +108,7 @@ function CutoffRow({ entry }: Readonly<{ entry: CutoffEntry }>) {
         <Table.Cell>
           <Text variant="meta" color="accentText" style={TABULAR} lines={2}>
             {t(entry.kind === 'movie' ? 'acq.belowOfFilms' : 'acq.belowOfEpisodes', {
-              below: entry.below,
+              count: entry.below,
               units: entry.units,
             })}
           </Text>

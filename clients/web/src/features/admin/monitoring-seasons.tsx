@@ -69,7 +69,6 @@ export function SeasonList({
       <Surface radius="xl" pad="lg" border="border">
         <EmptyState.Root icon="list">
           <EmptyState.Title>{t('monitoring.noSeasons')}</EmptyState.Title>
-          <EmptyState.Hint>{t('monitoring.noSeasonsHint')}</EmptyState.Hint>
         </EmptyState.Root>
       </Surface>
     );
@@ -237,7 +236,6 @@ function NotListedYet() {
     <Box px={ROW_PX} py={18}>
       <EmptyState.Root size="sm" icon="calendar-time">
         <EmptyState.Title>{t('monitoring.seasonNotListed')}</EmptyState.Title>
-        <EmptyState.Hint>{t('monitoring.seasonNotListedHint')}</EmptyState.Hint>
       </EmptyState.Root>
     </Box>
   );
@@ -246,6 +244,7 @@ function NotListedYet() {
 function SeasonMeta({ season }: Readonly<{ season: LedgerSeason }>) {
   const t = useT();
   const locale = useLocale();
+  const narrow = useBreakpoint() === 'base';
   if (season.episodeCount === 0) {
     const premiere = season.airDate
       ? t('monitoring.seasonPremiere', { date: datedDayLabel(season.airDate, locale) })
@@ -259,10 +258,12 @@ function SeasonMeta({ season }: Readonly<{ season: LedgerSeason }>) {
   const parts = [
     season.airDate ? season.airDate.slice(0, 4) : null,
     t('content.episodeCount', { count: season.episodeCount }),
-    season.requested > 0
-      ? t('monitoring.seasonFollowed', { count: season.requested })
-      : t('monitoring.seasonNone'),
-    t('monitoring.seasonOnDisk', { count: season.onDisk }),
+    narrow && season.requested > 0
+      ? t('monitoring.seasonHeld', {
+          onDisk: Math.min(season.onDisk, season.requested),
+          monitored: season.requested,
+        })
+      : null,
   ].filter(Boolean);
   return (
     <Text variant="meta" color="textDim" mt={2}>

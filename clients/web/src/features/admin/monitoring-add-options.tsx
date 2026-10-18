@@ -34,7 +34,7 @@ export function AddOptions({
         <Surface pad="none" radius="xl" border="border" overflow="hidden">
           {shows ? (
             <>
-              <SettingRow label={t('monitoring.preset')} hint={t('monitoring.presetHint')} block>
+              <SettingRow label={t('monitoring.preset')} block>
                 <PresetSelect
                   value={settings.preset}
                   onChange={(preset) => onChange({ ...settings, preset })}
@@ -50,11 +50,7 @@ export function AddOptions({
           ) : null}
           {films ? (
             <>
-              <SettingRow
-                label={t('monitoring.minAvailability')}
-                hint={t('monitoring.minAvailabilityHint')}
-                block
-              >
+              <SettingRow label={t('monitoring.minAvailability')} block>
                 <AvailabilitySelect
                   value={settings.minAvailability}
                   onChange={(minAvailability) => onChange({ ...settings, minAvailability })}
@@ -63,7 +59,7 @@ export function AddOptions({
               <Divider spacing={0} />
             </>
           ) : null}
-          <SettingRow label={t('monitoring.searchNow')} hint={t('monitoring.searchNowHint')}>
+          <SettingRow label={t('monitoring.searchNow')}>
             <Switch
               checked={settings.searchNow}
               onCheckedChange={(searchNow) => onChange({ ...settings, searchNow })}

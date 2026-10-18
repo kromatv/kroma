@@ -16,7 +16,6 @@ import { useCap, usePoll } from '#web/features/admin/shell';
 import {
   Chip,
   ConsoleSearch,
-  ConsoleSummary,
   ConsoleToast,
   useConsoleToast,
   useThrottledReload,
@@ -112,13 +111,6 @@ export function RequestsQueue() {
           />
         ) : null}
       </Row>
-      <ConsoleSummary
-        total={c?.total ?? 0}
-        totalLabel={t('requests.totalLabel')}
-        accent={c?.pending ?? 0}
-        accentLabel={t('requests.pendingLabel')}
-      />
-
       <Row wrap gap={10} mb={16}>
         <Chip
           label={t('requests.filter.pending')}

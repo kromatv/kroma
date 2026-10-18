@@ -47,20 +47,14 @@ export function UpcomingList() {
       {entries?.length === 0 ? (
         <EmptyState.Root icon="calendar-clock">
           <EmptyState.Title>{t('requests.calendarEmpty')}</EmptyState.Title>
-          <EmptyState.Hint>{t('requests.calendarEmptyHint')}</EmptyState.Hint>
         </EmptyState.Root>
       ) : null}
       {groups.map((g) => (
         <section key={g.key}>
           <h2 className={classes(s.heading)}>
-            <Row align="baseline" gap={8} mt={28} mb={10}>
-              <Text variant="overline" color="textDim">
-                {g.label}
-              </Text>
-              <Text variant="meta" color="white/35">
-                {t('requests.releaseCount', { count: g.items.length })}
-              </Text>
-            </Row>
+            <Text variant="overline" color="textDim" mt={28} mb={10}>
+              {g.label}
+            </Text>
           </h2>
           <Box gap={10}>
             {g.items.map((e) => (

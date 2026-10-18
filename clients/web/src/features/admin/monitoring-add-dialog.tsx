@@ -138,9 +138,6 @@ export function MonitorTitlesDialog({
         <Text variant="title" accessibilityRole="header">
           {t('monitoring.addTitle')}
         </Text>
-        <Text variant="meta" color="textDim" mt={6}>
-          {source === 'library' ? t('monitoring.addHint') : t('monitoring.addExternalHint')}
-        </Text>
       </Dialog.Header>
 
       <Dialog.Panel>
@@ -160,6 +157,7 @@ export function MonitorTitlesDialog({
 
           <Field.Root
             label={source === 'library' ? t('monitoring.addSearch') : t('monitoring.addExternal')}
+            hideLabel
             value={needle}
             onValueChange={setNeedle}
           >
@@ -268,7 +266,6 @@ function NothingShown({
     return (
       <EmptyState.Root icon="circle-check">
         <EmptyState.Title>{t('monitoring.addEmpty')}</EmptyState.Title>
-        <EmptyState.Hint>{t('monitoring.addEmptyHint')}</EmptyState.Hint>
       </EmptyState.Root>
     );
   }
