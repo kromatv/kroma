@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { QualityId, Sizes } from './rules-schemas';
-import { badCell, cellKey, draftOfSizes, setCell, toSizes } from './sizes-draft';
+import { badCell, cellKey, draftOfSizes, limitBytes, setCell, toSizes } from './sizes-draft';
 
 const QUALITIES: QualityId[] = ['webdl-1080p', 'remux-2160p'];
 
@@ -90,5 +90,25 @@ describe('toSizes', () => {
     const row = toSizes(edited, QUALITIES).episode.find((one) => one.quality === 'remux-2160p');
 
     expect(row).toEqual({ quality: 'remux-2160p', min: 1, preferred: null, max: 120 });
+  });
+});
+
+describe('limitBytes', () => {
+  it('reads a ceiling per minute as the file a full runtime allows', () => {
+    const draft = draftOfSizes(sizes(), QUALITIES);
+
+    expect(limitBytes(draft, 'movie', 'webdl-1080p')).toBe(40 * 110 * 1_048_576);
+  });
+
+  it('has nothing to say about a quality with no ceiling', () => {
+    const draft = draftOfSizes(sizes(), QUALITIES);
+
+    expect(limitBytes(draft, 'episode', 'remux-2160p')).toBeNull();
+  });
+
+  it('has nothing to say while the runtime cannot be read', () => {
+    const draft = { ...draftOfSizes(sizes(), QUALITIES), movieRuntime: 'deux heures' };
+
+    expect(limitBytes(draft, 'movie', 'webdl-1080p')).toBeNull();
   });
 });

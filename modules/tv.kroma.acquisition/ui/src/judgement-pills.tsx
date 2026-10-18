@@ -1,7 +1,9 @@
 import type { ReleaseVerdict } from '@kromatv/client/requests';
 import { TABULAR, useT } from '@kromatv/module-sdk';
 import { Box, Row, Text } from '@kromatv/ui/kit';
+import { scoredFirst } from './matched-formats';
 import { verdictLabelKey, verdictReasonKey, verdictTone } from './release-verdict';
+import { useQualityLabel } from './use-quality-label';
 
 export function QualityPill({
   quality,
@@ -10,6 +12,7 @@ export function QualityPill({
   quality: string;
   allowed?: boolean;
 }>) {
+  const label = useQualityLabel();
   return (
     <Row
       self="flex-start"
@@ -20,7 +23,7 @@ export function QualityPill({
       shrink={0}
     >
       <Text variant="meta" color={allowed ? 'text' : 'dangerHover'} lines={1}>
-        {quality}
+        {label(quality)}
       </Text>
     </Row>
   );
@@ -32,16 +35,24 @@ export function FormatPills({
   if (formats.length === 0) return null;
   return (
     <Row wrap gapX={6} gapY={4}>
-      {formats.map((format) => (
-        <Row key={format.name} radius="pill" bg="tint/6" px={7} py={1} gap={4}>
-          <Text variant="meta" color="textDim">
-            {format.name}
-          </Text>
-          <Text variant="meta" color={scoreColor(format.score)} style={TABULAR}>
-            {signed(format.score)}
-          </Text>
-        </Row>
-      ))}
+      {scoredFirst(formats).map((format) =>
+        format.score === 0 ? (
+          <Box key={format.name} radius="pill" px={7} py={1}>
+            <Text variant="meta" color="textDim">
+              {format.name}
+            </Text>
+          </Box>
+        ) : (
+          <Row key={format.name} radius="pill" bg="tint/8" px={7} py={1} gap={4}>
+            <Text variant="meta" color="text">
+              {format.name}
+            </Text>
+            <Text variant="meta" color={scoreColor(format.score)} style={TABULAR}>
+              {signed(format.score)}
+            </Text>
+          </Row>
+        ),
+      )}
     </Row>
   );
 }

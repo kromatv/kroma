@@ -81,6 +81,18 @@ function number(value: string | undefined): number | null {
   return parsed === 'bad' ? null : parsed;
 }
 
+const MEGABYTE = 1_048_576;
+
+/** What the ceiling comes to at the runtime beside it, in bytes, so a limit per
+ *  minute can be read as the file it allows. Null while either box is empty or
+ *  unreadable. The megabyte is the server's, which counts it as 1024 KiB. */
+export function limitBytes(draft: SizesDraft, table: SizeTable, quality: QualityId): number | null {
+  const minutes = number(draft[table === 'movie' ? 'movieRuntime' : 'episodeRuntime']);
+  const max = number(draft.cells[cellKey(table, quality, 'max')]);
+  if (minutes === null || max === null || minutes < 1 || max <= 0) return null;
+  return max * minutes * MEGABYTE;
+}
+
 /** The payload for `PUT /acquisition/sizes`. Call it on a draft `badCell`
  *  cleared, which is where unreadable text is caught. */
 export function toSizes(draft: SizesDraft, qualities: readonly QualityId[]): Sizes {

@@ -71,33 +71,17 @@ export function FormatEditor({
             </Callout.Root>
           ) : null}
 
-          <Box w={320}>
-            <Field.Root label={t('acq.formatName')} value={name} onValueChange={setName}>
-              <Field.Input placeholder="VO + VFF" />
-            </Field.Root>
-          </Box>
-
-          <Divider color="tint/5" />
-
-          {rows.length === 0 ? (
-            <Text variant="meta" color="textDim">
-              {t('acq.formatNoConditions')}
-            </Text>
-          ) : (
-            <Box gap={12}>
-              {rows.map((row, index) => (
-                <ConditionRow
-                  key={row.id}
-                  condition={row.condition}
-                  labelled={index === 0}
-                  onChange={(next) => setRows((was) => withCondition(was, row.id, next))}
-                  onRemove={() => setRows((was) => withoutCondition(was, row.id))}
-                />
-              ))}
+          <Row wrap between gap={16} align="flex-end">
+            <Box w={300}>
+              <Field.Root
+                label={t('acq.formatName')}
+                size="sm"
+                value={name}
+                onValueChange={setName}
+              >
+                <Field.Input placeholder="VO + VFF" />
+              </Field.Root>
             </Box>
-          )}
-
-          <Row wrap gap={10}>
             <Button
               variant="ghost"
               size="sm"
@@ -106,6 +90,25 @@ export function FormatEditor({
               onPress={add}
             />
           </Row>
+
+          <Divider color="tint/5" />
+
+          {rows.length === 0 ? (
+            <Text variant="meta" color="textDim">
+              {t('acq.formatNoConditions')}
+            </Text>
+          ) : (
+            <Box gap={10}>
+              {rows.map((row) => (
+                <ConditionRow
+                  key={row.id}
+                  condition={row.condition}
+                  onChange={(next) => setRows((was) => withCondition(was, row.id, next))}
+                  onRemove={() => setRows((was) => withoutCondition(was, row.id))}
+                />
+              ))}
+            </Box>
+          )}
         </Box>
       </Dialog.Panel>
       <Dialog.Footer>

@@ -2,13 +2,14 @@ import { TABULAR, Table, type TableColumn, useT } from '@kromatv/module-sdk';
 import { Box, EmptyState, Img, Row, Surface, TableSkeleton, Text } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import type { CutoffEntry } from './rules-schemas';
+import { useQualityLabel } from './use-quality-label';
 import { useCutoffTitles } from './use-rules';
 
 const COLUMNS: TableColumn[] = [
   {},
   { width: 150, from: 'md' },
-  { width: 130, from: 'md' },
-  { width: 96 },
+  { width: 160, from: 'md' },
+  { width: 120 },
 ];
 
 const POSTER_W = 32;
@@ -53,6 +54,7 @@ export function CutoffView() {
 
 function CutoffRow({ entry }: Readonly<{ entry: CutoffEntry }>) {
   const t = useT();
+  const label = useQualityLabel();
   const navigate = useNavigate();
   return (
     <Table.Row onPress={() => navigate({ to: `/admin/monitoring/${entry.kind}/${entry.tmdbId}` })}>
@@ -79,7 +81,7 @@ function CutoffRow({ entry }: Readonly<{ entry: CutoffEntry }>) {
       </Table.Cell>
       <Table.Cell>
         <Text variant="meta" color="textDim" lines={1}>
-          {entry.bestQuality ?? t('common.none')}
+          {entry.bestQuality ? label(entry.bestQuality) : t('common.none')}
         </Text>
       </Table.Cell>
       <Table.Cell>

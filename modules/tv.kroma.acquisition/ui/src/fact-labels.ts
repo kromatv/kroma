@@ -23,7 +23,47 @@ const LABEL: Record<Resolution | Source | VideoCodec | HdrFormat, string> = {
   hlg: 'HLG',
 };
 
-/** How a resolution, source, codec or HDR format is written for a person. */
+const QUALITY_SOURCE: Record<string, string> = {
+  remux: 'Remux',
+  bluray: 'Blu-ray',
+  webdl: 'WEB-DL',
+  webrip: 'WEBRip',
+  hdtv: 'HDTV',
+  sdtv: 'SDTV',
+  dvd: 'DVD',
+  cam: 'CAM',
+};
+
+const QUALITY_RESOLUTION: Record<string, string> = {
+  sd: 'SD',
+  '720p': '720p',
+  '1080p': '1080p',
+  '2160p': '2160p',
+};
+
+const SD_ONLY_SOURCES: readonly string[] = ['cam', 'sdtv', 'dvd'];
+
 export function factLabel(value: string): string {
   return LABEL[value as keyof typeof LABEL] ?? value;
+}
+
+/** How a quality id is written for a person: `webdl-1080p` as `WEB-DL 1080p`,
+ *  and `unknown-720p` as the resolution alone. A quality naming neither a
+ *  source nor a resolution has nothing to write, so it comes back null and the
+ *  caller names it in the reader's language. */
+export function qualityLabel(quality: string): string | null {
+  const [head, tail] = quality.split('-');
+  const resolution = QUALITY_RESOLUTION[tail ?? head ?? ''] ?? null;
+  const source = QUALITY_SOURCE[head ?? ''] ?? null;
+  if (source === null) return resolution;
+  return resolution === null || tail === undefined ? source : `${source} ${resolution}`;
+}
+
+/** The resolution a quality sits at, including the sources that only ever
+ *  existed in standard definition. Null when the id names none. */
+export function qualityResolution(quality: string): string | null {
+  const [head, tail] = quality.split('-');
+  if (tail !== undefined) return QUALITY_RESOLUTION[tail] ?? null;
+  if (SD_ONLY_SOURCES.includes(head ?? '')) return QUALITY_RESOLUTION.sd ?? null;
+  return QUALITY_RESOLUTION[head ?? ''] ?? null;
 }

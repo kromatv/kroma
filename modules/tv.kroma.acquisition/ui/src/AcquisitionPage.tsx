@@ -6,7 +6,7 @@ import {
   useCap,
   useT,
 } from '@kromatv/module-sdk';
-import { Box, PageHeader, SegmentGroup } from '@kromatv/ui/kit';
+import { Box, PageHeader, SegmentGroup, Select, useBreakpoint } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { BlocklistView } from './blocklist-view';
 import { CutoffView } from './cutoff-view';
@@ -40,16 +40,37 @@ export default function AcquisitionPage() {
         <PageHeader.Subtitle>{t('admin.pageAcquisitionSub')}</PageHeader.Subtitle>
       </PageHeader.Root>
 
-      <SegmentGroup.Root value={tab} onValueChange={setTab} label={t('acq.tabs')}>
-        {TABS.map((one) => (
-          <SegmentGroup.Item key={one} value={one}>
-            <SegmentGroup.Label>{t(TAB_LABEL[one])}</SegmentGroup.Label>
-          </SegmentGroup.Item>
-        ))}
-      </SegmentGroup.Root>
+      <TabPicker tab={tab} onPick={setTab} />
 
       <TabPanel tab={tab} />
     </Box>
+  );
+}
+
+function TabPicker({ tab, onPick }: Readonly<{ tab: Tab; onPick: (next: Tab) => void }>) {
+  const t = useT();
+  if (useBreakpoint() === 'base') {
+    return (
+      <Select.Root
+        label={t('acq.tabs')}
+        value={tab}
+        onValueChange={(next) => onPick(TABS.find((one) => one === next) ?? 'settings')}
+      >
+        <Select.Trigger block />
+        {TABS.map((one) => (
+          <Select.Item key={one} value={one} label={t(TAB_LABEL[one])} />
+        ))}
+      </Select.Root>
+    );
+  }
+  return (
+    <SegmentGroup.Root value={tab} onValueChange={onPick} label={t('acq.tabs')}>
+      {TABS.map((one) => (
+        <SegmentGroup.Item key={one} value={one}>
+          <SegmentGroup.Label>{t(TAB_LABEL[one])}</SegmentGroup.Label>
+        </SegmentGroup.Item>
+      ))}
+    </SegmentGroup.Root>
   );
 }
 

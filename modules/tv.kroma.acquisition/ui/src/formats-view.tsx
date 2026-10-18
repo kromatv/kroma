@@ -15,10 +15,14 @@ import { useState } from 'react';
 import { useAcquisitionApi } from './api';
 import { blankCondition } from './condition-draft';
 import { FormatEditor } from './format-editor';
-import type { CustomFormat, RulesView } from './rules-schemas';
+import type { ConditionType, CustomFormat, RulesView } from './rules-schemas';
 import { RulesTestBox } from './rules-test-box';
 
 const COLUMNS: TableColumn[] = [{}, { width: 44 }, { width: 44 }];
+
+function testedTypes(format: CustomFormat): ConditionType[] {
+  return [...new Set(format.conditions.map((condition) => condition.type))];
+}
 
 export function FormatsView({
   rules,
@@ -101,7 +105,9 @@ export function FormatsView({
                         {t('acq.conditionCount', { count: format.conditions.length })}
                       </Text>
                       <Text variant="meta" color="textDim" lines={1}>
-                        {format.id}
+                        {testedTypes(format)
+                          .map((type) => t(`acq.condition.${type}`))
+                          .join(' · ')}
                       </Text>
                     </Row>
                   </Box>

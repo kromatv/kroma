@@ -1,10 +1,10 @@
 import { Table, type TableColumn, useT } from '@kromatv/module-sdk';
-import { Box, EmptyState, Row, Text } from '@kromatv/ui/kit';
+import { Box, EmptyState, Row, Text, useBreakpoint } from '@kromatv/ui/kit';
 import { FormatPills, QualityPill, ScorePill } from './judgement-pills';
 import { reasonKey } from './release-verdict';
 import type { JudgedFile } from './rules-schemas';
 
-const COLUMNS: TableColumn[] = [{}, { width: 96 }, { width: 136 }, { width: 74 }];
+const COLUMNS: TableColumn[] = [{}, { width: 96, from: 'md' }, { width: 124 }, { width: 70 }];
 
 export function TitleFilesTable({ files }: Readonly<{ files: readonly JudgedFile[] }>) {
   const t = useT();
@@ -33,7 +33,9 @@ export function TitleFilesTable({ files }: Readonly<{ files: readonly JudgedFile
 
 function FileRow({ file }: Readonly<{ file: JudgedFile }>) {
   const t = useT();
+  const unit = unitLabel(file);
   const allowed = file.evaluation.qualityRank != null;
+  const narrow = useBreakpoint() === 'base';
   return (
     <Table.Row>
       <Table.Cell>
@@ -42,6 +44,11 @@ function FileRow({ file }: Readonly<{ file: JudgedFile }>) {
             {file.relPath ?? file.fileId}
           </Text>
           <Row wrap gapX={10} align="center">
+            {narrow && unit ? (
+              <Text variant="meta" color="info">
+                {unit}
+              </Text>
+            ) : null}
             {file.belowTarget ? (
               <Text variant="meta" color="accentText">
                 {t('acq.belowTarget')}
@@ -63,7 +70,7 @@ function FileRow({ file }: Readonly<{ file: JudgedFile }>) {
       </Table.Cell>
       <Table.Cell>
         <Text variant="meta" color="textDim">
-          {unitLabel(file)}
+          {unit}
         </Text>
       </Table.Cell>
       <Table.Cell>

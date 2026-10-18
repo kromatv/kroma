@@ -1,58 +1,50 @@
-import { useT } from '@kromatv/module-sdk';
-import {
-  Box,
-  Icon,
-  IconButton,
-  Row,
-  Section,
-  Select,
-  Surface,
-  Switch,
-  Text,
-} from '@kromatv/ui/kit';
+import { Table, type TableColumn, useT } from '@kromatv/module-sdk';
+import { Badge, Box, Checkbox, Row, Select, Text } from '@kromatv/ui/kit';
 import { allowedQualities, moveTier, setTierAllowed } from './profile-draft';
 import type { QualityId, QualityProfile, QualityTier } from './rules-schemas';
+import { useQualityLabel } from './use-quality-label';
+
+const COLUMNS: TableColumn[] = [{ width: 52 }, {}, { width: 44 }, { width: 44 }];
 
 export function ProfileTiers({
   profile,
   onChange,
 }: Readonly<{ profile: QualityProfile; onChange: (next: QualityProfile) => void }>) {
   const t = useT();
+  const label = useQualityLabel();
   const allowed = allowedQualities(profile);
   return (
-    <Section.Root gap={12}>
-      <Section.Header>
-        <Section.Title>{t('acq.ladder')}</Section.Title>
-        <Section.Actions>
-          <Box w={210}>
-            <Row gap={8} align="center">
-              <Text variant="meta" color="textMuted">
-                {t('acq.cutoff')}
-              </Text>
-              <Box flex>
-                <Select.Root
-                  label={t('acq.cutoff')}
-                  value={profile.cutoff}
-                  onValueChange={(next) =>
-                    onChange({ ...profile, cutoff: cutoffOf(allowed, next) })
-                  }
-                >
-                  <Select.Trigger size="sm" block />
-                  {allowed.map((quality) => (
-                    <Select.Item key={quality} value={quality} label={quality} />
-                  ))}
-                </Select.Root>
-              </Box>
-            </Row>
+    <Box gap={12}>
+      <Row wrap between gap={12} align="flex-end">
+        <Text variant="meta" color="textDim" flex minW={240}>
+          {t('acq.ladderHint')}
+        </Text>
+        <Row gap={8} align="center" shrink={0}>
+          <Text variant="meta" color="textMuted">
+            {t('acq.cutoff')}
+          </Text>
+          <Box w={190}>
+            <Select.Root
+              label={t('acq.cutoff')}
+              value={profile.cutoff}
+              onValueChange={(next) => onChange({ ...profile, cutoff: cutoffOf(allowed, next) })}
+            >
+              <Select.Trigger size="sm" block />
+              {allowed.map((quality) => (
+                <Select.Item key={quality} value={quality} label={label(quality)} />
+              ))}
+            </Select.Root>
           </Box>
-        </Section.Actions>
-      </Section.Header>
+        </Row>
+      </Row>
 
-      <Text variant="meta" color="textDim">
-        {t('acq.ladderHint')}
-      </Text>
-
-      <Box gap={8}>
+      <Table.Root columns={COLUMNS} label={t('acq.ladder')}>
+        <Table.Header>
+          <Table.Cell />
+          <Table.Column>{t('acq.colQuality')}</Table.Column>
+          <Table.Cell />
+          <Table.Cell />
+        </Table.Header>
         {profile.tiers.map((tier, index) => (
           <TierRow
             key={tier.qualities.join('+') || `tier-${index}`}
@@ -64,8 +56,8 @@ export function ProfileTiers({
             onAllowed={(next) => onChange(setTierAllowed(profile, index, next))}
           />
         ))}
-      </Box>
-    </Section.Root>
+      </Table.Root>
+    </Box>
   );
 }
 
@@ -89,58 +81,48 @@ function TierRow({
   onAllowed: (next: boolean) => void;
 }>) {
   const t = useT();
-  const holdsCutoff = tier.qualities.includes(cutoff);
+  const label = useQualityLabel();
+  const names = tier.qualities.map(label).join(' · ');
   return (
-    <Surface radius="lg" pad="sm" tone={tier.allowed ? 'raised' : 'outline'}>
-      <Row wrap gap={12} align="center">
-        <Switch label={t('acq.tierAllowed')} checked={tier.allowed} onCheckedChange={onAllowed} />
-        <Box flex minW={160}>
+    <Table.Row>
+      <Table.Cell>
+        <Checkbox checked={tier.allowed} onCheckedChange={onAllowed} label={t('acq.tierAllowed')} />
+      </Table.Cell>
+      <Table.Cell>
+        <Box minW={0} gap={2}>
           <Row wrap gapX={8} gapY={4} align="center">
-            {tier.qualities.map((quality) => (
-              <Text
-                key={quality}
-                variant="meta"
-                color={tier.allowed ? 'text' : 'textDim'}
-                lines={1}
-              >
-                {quality}
-              </Text>
-            ))}
+            <Text variant="meta" color={tier.allowed ? 'text' : 'textDim'} lines={1} minW={0}>
+              {names}
+            </Text>
+            {tier.qualities.includes(cutoff) ? (
+              <Badge tone="warning">{t('acq.cutoffHere')}</Badge>
+            ) : null}
           </Row>
           {tier.name ? (
-            <Text variant="meta" color="textDim">
+            <Text variant="meta" color="textDim" lines={1}>
               {tier.name}
             </Text>
           ) : null}
         </Box>
-        {holdsCutoff ? (
-          <Text variant="meta" color="accentText">
-            {t('acq.cutoffHere')}
-          </Text>
-        ) : null}
-        <Row gap={4} shrink={0}>
-          <IconButton
-            control="sm"
-            radius="sm"
-            variant="ghost"
-            label={t('acq.tierUp')}
-            disabled={index === 0}
-            onPress={() => onMove(-1)}
-          >
-            <Icon name="arrow-up" size={16} color="textDim" thickness={2.2} />
-          </IconButton>
-          <IconButton
-            control="sm"
-            radius="sm"
-            variant="ghost"
-            label={t('acq.tierDown')}
-            disabled={last}
-            onPress={() => onMove(1)}
-          >
-            <Icon name="arrow-down" size={16} color="textDim" thickness={2.2} />
-          </IconButton>
-        </Row>
-      </Row>
-    </Surface>
+      </Table.Cell>
+      <Table.Cell>
+        <Table.Action
+          tone="textDim"
+          icon="arrow-up"
+          label={t('acq.tierUp')}
+          disabled={index === 0}
+          onPress={() => onMove(-1)}
+        />
+      </Table.Cell>
+      <Table.Cell>
+        <Table.Action
+          tone="textDim"
+          icon="arrow-down"
+          label={t('acq.tierDown')}
+          disabled={last}
+          onPress={() => onMove(1)}
+        />
+      </Table.Cell>
+    </Table.Row>
   );
 }

@@ -1,11 +1,21 @@
 import { apiErrorText } from '@kromatv/client';
 import { useAsyncAction, useT } from '@kromatv/module-sdk';
-import { Box, Button, Callout, Dialog, Field, Text } from '@kromatv/ui/kit';
+import { Box, Button, Callout, Dialog, Field, Row, SegmentGroup, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAcquisitionApi } from './api';
-import { ProfileOptions } from './profile-options';
+import { ProfileFormats } from './profile-formats';
+import { ProfileRules } from './profile-rules';
 import { ProfileTiers } from './profile-tiers';
 import type { CustomFormat, QualityProfile } from './rules-schemas';
+
+const TABS = ['qualities', 'formats', 'rules'] as const;
+type ProfileTab = (typeof TABS)[number];
+
+const TAB_LABEL: Record<ProfileTab, string> = {
+  qualities: 'acq.profileQualities',
+  formats: 'acq.tabFormats',
+  rules: 'acq.profileRules',
+};
 
 export function ProfileEditor({
   profile,
@@ -21,6 +31,7 @@ export function ProfileEditor({
   const t = useT();
   const acquisition = useAcquisitionApi();
   const [draft, setDraft] = useState(profile);
+  const [tab, setTab] = useState<ProfileTab>('qualities');
   const action = useAsyncAction();
 
   const save = () =>
@@ -40,29 +51,43 @@ export function ProfileEditor({
           {t('acq.profileEdit')}
         </Text>
         <Text variant="meta" color="textDim">
-          {draft.id}
+          {t('acq.profileEditHint')}
         </Text>
       </Dialog.Header>
       <Dialog.Panel>
-        <Box gap={24}>
+        <Box gap={20}>
           {action.error ? (
             <Callout.Root tone="danger">
               <Callout.Title>{action.error}</Callout.Title>
             </Callout.Root>
           ) : null}
 
-          <Box w={320}>
-            <Field.Root
-              label={t('acq.profileName')}
-              value={draft.name}
-              onValueChange={(name) => setDraft((d) => ({ ...d, name }))}
+          <Row wrap between gap={16} align="flex-end">
+            <Box w={280}>
+              <Field.Root
+                label={t('acq.profileName')}
+                size="sm"
+                value={draft.name}
+                onValueChange={(name) => setDraft((d) => ({ ...d, name }))}
+              >
+                <Field.Input />
+              </Field.Root>
+            </Box>
+            <SegmentGroup.Root
+              value={tab}
+              onValueChange={setTab}
+              label={t('acq.profileSections')}
+              size="sm"
             >
-              <Field.Input />
-            </Field.Root>
-          </Box>
+              {TABS.map((one) => (
+                <SegmentGroup.Item key={one} value={one}>
+                  <SegmentGroup.Label>{t(TAB_LABEL[one])}</SegmentGroup.Label>
+                </SegmentGroup.Item>
+              ))}
+            </SegmentGroup.Root>
+          </Row>
 
-          <ProfileTiers profile={draft} onChange={setDraft} />
-          <ProfileOptions profile={draft} formats={formats} onChange={setDraft} />
+          <TabPanel tab={tab} draft={draft} formats={formats} onChange={setDraft} />
         </Box>
       </Dialog.Panel>
       <Dialog.Footer>
@@ -79,4 +104,25 @@ export function ProfileEditor({
       </Dialog.Footer>
     </Dialog.Root>
   );
+}
+
+function TabPanel({
+  tab,
+  draft,
+  formats,
+  onChange,
+}: Readonly<{
+  tab: ProfileTab;
+  draft: QualityProfile;
+  formats: readonly CustomFormat[];
+  onChange: (next: QualityProfile) => void;
+}>) {
+  switch (tab) {
+    case 'qualities':
+      return <ProfileTiers profile={draft} onChange={onChange} />;
+    case 'formats':
+      return <ProfileFormats profile={draft} formats={formats} onChange={onChange} />;
+    case 'rules':
+      return <ProfileRules profile={draft} onChange={onChange} />;
+  }
 }

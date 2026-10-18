@@ -6,8 +6,9 @@ import { useAcquisitionApi } from './api';
 import { allowedQualities, copyOfProfile } from './profile-draft';
 import { ProfileEditor } from './profile-editor';
 import type { QualityProfile, RulesView } from './rules-schemas';
+import { useQualityLabel } from './use-quality-label';
 
-const COLUMNS: TableColumn[] = [{}, { width: 120, from: 'md' }, { width: 44 }, { width: 44 }];
+const COLUMNS: TableColumn[] = [{}, { width: 150, from: 'md' }, { width: 44 }, { width: 44 }];
 
 export function ProfilesView({
   rules,
@@ -60,7 +61,7 @@ export function ProfilesView({
         <Section.Header>
           <Section.Title>{t('acq.tabProfiles')}</Section.Title>
           <Section.Actions>
-            <Box w={200}>
+            <Box w={{ base: 150, md: 200 }}>
               <Field.Root
                 label={t('acq.profileNewName')}
                 hideLabel
@@ -140,6 +141,7 @@ function ProfileRow({
   onRemove: () => void;
 }>) {
   const t = useT();
+  const label = useQualityLabel();
   const allowed = allowedQualities(profile);
   return (
     <Table.Row onPress={onEdit}>
@@ -163,7 +165,7 @@ function ProfileRow({
       </Table.Cell>
       <Table.Cell>
         <Text variant="meta" color="textDim" lines={1}>
-          {profile.cutoff}
+          {label(profile.cutoff)}
         </Text>
       </Table.Cell>
       <Table.Cell>
