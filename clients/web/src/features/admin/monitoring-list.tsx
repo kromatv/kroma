@@ -1,6 +1,6 @@
 import { Table } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
-import { Button, EmptyState, Row, SegmentGroup } from '@kromatv/ui/kit';
+import { Box, Button, EmptyState, Grid, Row, SegmentGroup, StatCard } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { MonitorTitlesDialog } from '#web/features/admin/monitoring-add-dialog';
@@ -10,7 +10,6 @@ import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 import {
   Chip,
   ConsoleSearch,
-  ConsoleSummary,
   ConsoleToast,
   useConsoleToast,
 } from '#web/features/admin/table-console';
@@ -47,6 +46,7 @@ function MonitoringList() {
     [titles, kind, onlyMissing, needle],
   );
   const withGaps = titles.filter((title) => title.missing > 0).length;
+  const missing = titles.reduce((total, title) => total + title.missing, 0);
 
   return (
     <>
@@ -67,12 +67,31 @@ function MonitoringList() {
           />
         </PageHeader.Actions>
       </PageHeader.Root>
-      <ConsoleSummary
-        total={titles.length}
-        totalLabel={t('monitoring.totalLabel')}
-        accent={withGaps}
-        accentLabel={t('monitoring.gapsLabel')}
-      />
+      <Box mt={24} mb={24}>
+        <Grid min={220} gap={16}>
+          <StatCard.Root>
+            <StatCard.Label>{t('monitoring.totalLabel')}</StatCard.Label>
+            <StatCard.Value unit={t('monitoring.statTitles', { count: titles.length })}>
+              {titles.length}
+            </StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('monitoring.gapsLabel')}</StatCard.Label>
+            <StatCard.Value
+              unit={t('monitoring.statTitles', { count: withGaps })}
+              color={withGaps > 0 ? 'accentText' : 'success'}
+            >
+              {withGaps}
+            </StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('monitoring.colMissing')}</StatCard.Label>
+            <StatCard.Value color={missing > 0 ? 'accentText' : 'success'}>
+              {missing}
+            </StatCard.Value>
+          </StatCard.Root>
+        </Grid>
+      </Box>
 
       <Row wrap gap={10} mb={16}>
         <SegmentGroup.Root value={kind} onValueChange={setKind} label={t('monitoring.colTitle')}>

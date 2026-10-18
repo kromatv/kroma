@@ -1,10 +1,18 @@
 import type { EpisodeMonitoringBody } from '@kromatv/client/monitoring';
 import type { LedgerEpisode } from '@kromatv/client/requests';
-import { episodeTag } from '@kromatv/core';
-import { useT } from '@kromatv/ui';
-import { Badge, Box, Divider, Row, Switch, Text } from '@kromatv/ui/kit';
-import { type EpisodeState, episodeState } from '#web/features/admin/monitoring-model';
-import { qualityBadges } from '#web/shared/lib/quality-badges';
+import { datedDayLabel, episodeTag } from '@kromatv/core';
+import { useLocale, useT } from '@kromatv/ui';
+import { Badge, Box, Checkbox, styles, Table, Text } from '@kromatv/ui/kit';
+import { type EpisodeState, episodeState, fileLabel } from '#web/features/admin/monitoring-model';
+
+const COLUMNS = [
+  { width: 30 },
+  { width: 64 },
+  { flex: 1, min: 90 },
+  { width: 118, from: 'md' },
+  { width: 126, from: 'lg' },
+  { width: 110, align: 'end' },
+] as const;
 
 const STATE_TONES = {
   available: 'success',
@@ -14,7 +22,12 @@ const STATE_TONES = {
   upcoming: 'neutral',
 } as const satisfies Record<EpisodeState, string>;
 
-export function EpisodeRows({
+const s = styles({
+  tag: { fontVariant: ['tabular-nums'] },
+  unnamed: { fontStyle: 'italic' },
+});
+
+export function EpisodeTable({
   episodes,
   today,
   busy,
@@ -25,23 +38,26 @@ export function EpisodeRows({
   busy: boolean;
   onEpisodes: (body: EpisodeMonitoringBody) => void;
 }>) {
+  const t = useT();
   return (
-    <Box>
-      {episodes.map((episode, index) => (
-        <Box key={`${episode.season}-${episode.episode}`}>
-          {index > 0 ? <Divider color="tint/4" /> : null}
-          <EpisodeRow
-            episode={episode}
-            today={today}
-            busy={busy}
-            onToggle={(monitored) =>
-              onEpisodes({
-                episodes: [{ season: episode.season, episode: episode.episode, monitored }],
-              })
-            }
-          />
-        </Box>
-      ))}
+    <Box px={14} pb={6}>
+      <Table.Root variant="plain" label={t('monitoring.episodes')} columns={COLUMNS}>
+        <Table.Body>
+          {episodes.map((episode) => (
+            <EpisodeRow
+              key={`${episode.season}-${episode.episode}`}
+              episode={episode}
+              today={today}
+              busy={busy}
+              onToggle={(monitored) =>
+                onEpisodes({
+                  episodes: [{ season: episode.season, episode: episode.episode, monitored }],
+                })
+              }
+            />
+          ))}
+        </Table.Body>
+      </Table.Root>
     </Box>
   );
 }
@@ -58,32 +74,49 @@ function EpisodeRow({
   onToggle: (monitored: boolean) => void;
 }>) {
   const t = useT();
+  const locale = useLocale();
   const tag = episodeTag(episode);
   const state = episodeState(episode, today);
+  const file = fileLabel(episode.video);
   return (
-    <Row gap={14} align="center" px={14} py={10} minW={0}>
-      <Switch
-        checked={episode.wantedId !== null}
-        onCheckedChange={onToggle}
-        label={t('monitoring.episodeSwitch', { tag })}
-        disabled={busy}
-      />
-      <Text variant="meta" font="mono" color="accent" w={62} shrink={0}>
-        {tag}
-      </Text>
-      <Box flex minW={0}>
-        <Text variant="meta" color="text" lines={1}>
-          {episode.name ?? t('monitoring.episodeUnnamed')}
+    <Table.Row>
+      <Table.Cell>
+        <Checkbox
+          checked={episode.wantedId !== null}
+          onCheckedChange={onToggle}
+          label={t('monitoring.episodeSwitch', { tag })}
+          disabled={busy}
+        />
+      </Table.Cell>
+      <Table.Cell>
+        <Text variant="meta" font="mono" color="accent" style={s.tag}>
+          {tag}
         </Text>
-      </Box>
-      <Row gap={6} align="center" shrink={0} wrap justify="flex-end">
-        {qualityBadges(episode.video).map((badge) => (
-          <Badge key={badge} tone={badge}>
-            {badge}
-          </Badge>
-        ))}
+      </Table.Cell>
+      <Table.Cell>
+        {episode.name ? (
+          <Text variant="meta" color="text" lines={1}>
+            {episode.name}
+          </Text>
+        ) : (
+          <Text variant="meta" color="textMuted" lines={1} style={s.unnamed}>
+            {t('monitoring.episodeUnnamed')}
+          </Text>
+        )}
+      </Table.Cell>
+      <Table.Cell>
+        <Text variant="meta" color="textDim" lines={1}>
+          {episode.airDate ? datedDayLabel(episode.airDate, locale) : ''}
+        </Text>
+      </Table.Cell>
+      <Table.Cell>
+        <Text variant="meta" color="textMuted" lines={1}>
+          {file ?? ''}
+        </Text>
+      </Table.Cell>
+      <Table.Cell>
         <Badge tone={STATE_TONES[state]}>{t(`monitoring.st.${state}`)}</Badge>
-      </Row>
-    </Row>
+      </Table.Cell>
+    </Table.Row>
   );
 }

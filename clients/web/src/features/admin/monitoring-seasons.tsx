@@ -3,23 +3,25 @@ import type { LedgerSeason } from '@kromatv/client/requests';
 import { useT } from '@kromatv/ui';
 import {
   Box,
+  Checkbox,
   Divider,
   EmptyState,
   Focusable,
   Icon,
+  Progress,
   Row,
   Spinner,
   Surface,
-  Switch,
   styles,
   Text,
+  useBreakpoint,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { EpisodeRows } from '#web/features/admin/monitoring-episodes';
+import { EpisodeTable } from '#web/features/admin/monitoring-episodes';
 import { useSeasonLedger } from '#web/features/admin/use-monitoring';
 
 const s = styles({
-  header: { row: true, align: 'center', gap: 14, flex: true, minW: 0, p: 14 },
+  header: { row: true, align: 'center', gap: 12, flex: true, minW: 0, pr: 14, py: 12 },
 });
 
 export function SeasonList({
@@ -38,7 +40,7 @@ export function SeasonList({
   const t = useT();
   if (seasons.length === 0) {
     return (
-      <Surface elevated radius="xl" pad="lg">
+      <Surface radius="xl" pad="lg" border="border">
         <EmptyState.Root icon="list">
           <EmptyState.Title>{t('monitoring.noSeasons')}</EmptyState.Title>
           <EmptyState.Hint>{t('monitoring.noSeasonsHint')}</EmptyState.Hint>
@@ -48,16 +50,14 @@ export function SeasonList({
   }
   return (
     <Box gap={10}>
-      <Text variant="overline" color="textDim">
-        {t('monitoring.seasons')}
-      </Text>
-      {seasons.map((season) => (
+      {seasons.map((season, index) => (
         <SeasonCard
           key={season.season}
           tmdbId={tmdbId}
           season={season}
           today={today}
           busy={busy}
+          defaultOpen={index === 0 && seasons.length === 1}
           onEpisodes={onEpisodes}
         />
       ))}
@@ -70,25 +70,39 @@ function SeasonCard({
   season,
   today,
   busy,
+  defaultOpen,
   onEpisodes,
 }: Readonly<{
   tmdbId: number;
   season: LedgerSeason;
   today: string;
   busy: boolean;
+  defaultOpen: boolean;
   onEpisodes: (body: EpisodeMonitoringBody) => void;
 }>) {
   const t = useT();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const { data, isPending, isError } = useSeasonLedger(tmdbId, season.season, open);
   const name =
     season.season === 0
       ? t('monitoring.specials')
       : t('monitoring.seasonLabel', { number: season.season });
+  const partly = season.requested > 0 && season.requested < season.episodeCount;
 
   return (
     <Surface pad="none" radius="xl" border="border" overflow="hidden">
-      <Row minW={0}>
+      <Row minW={0} align="center">
+        <Box pl={14} justify="center">
+          <Checkbox
+            checked={season.requested > 0}
+            indeterminate={partly}
+            onCheckedChange={(monitored) =>
+              onEpisodes({ seasons: [{ season: season.season, monitored }] })
+            }
+            label={t('monitoring.seasonSwitch', { number: season.season })}
+            disabled={busy}
+          />
+        </Box>
         <Focusable
           expanded={open}
           onPress={() => setOpen((on) => !on)}
@@ -96,7 +110,6 @@ function SeasonCard({
           ring="focusInset"
           style={s.header}
         >
-          <Icon name={open ? 'chevron-up' : 'chevron-down'} size={18} color="textMuted" />
           <Box flex minW={0}>
             <Text variant="label" lines={1}>
               {name}
@@ -108,20 +121,12 @@ function SeasonCard({
               })}
             </Text>
           </Box>
+          <SeasonProgress season={season} />
+          <Icon name={open ? 'chevron-up' : 'chevron-down'} size={18} color="textMuted" />
         </Focusable>
-        <Box px={14} justify="center">
-          <Switch
-            checked={season.requested > 0}
-            onCheckedChange={(monitored) =>
-              onEpisodes({ seasons: [{ season: season.season, monitored }] })
-            }
-            label={t('monitoring.seasonSwitch', { number: season.season })}
-            disabled={busy}
-          />
-        </Box>
       </Row>
 
-      {open ? <Divider color="tint/6" /> : null}
+      {open ? <Divider spacing={0} /> : null}
       {open && isPending ? (
         <Row center py={18}>
           <Spinner size={18} />
@@ -133,8 +138,27 @@ function SeasonCard({
         </Text>
       ) : null}
       {open && data ? (
-        <EpisodeRows episodes={data.episodes} today={today} busy={busy} onEpisodes={onEpisodes} />
+        <EpisodeTable episodes={data.episodes} today={today} busy={busy} onEpisodes={onEpisodes} />
       ) : null}
     </Surface>
+  );
+}
+
+function SeasonProgress({ season }: Readonly<{ season: LedgerSeason }>) {
+  const t = useT();
+  const narrow = useBreakpoint() === 'base';
+  if (season.requested === 0 || narrow) return null;
+  const held = Math.min(season.onDisk, season.requested);
+  return (
+    <Box w={132} gap={6} shrink={0}>
+      <Text variant="meta" color="textDim" textAlign="right">
+        {t('monitoring.seasonHeld', { onDisk: held, monitored: season.requested })}
+      </Text>
+      <Progress
+        value={held / season.requested}
+        thickness={4}
+        color={held === season.requested ? 'success' : 'accent'}
+      />
+    </Box>
   );
 }

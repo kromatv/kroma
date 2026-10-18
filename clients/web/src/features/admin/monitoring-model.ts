@@ -1,5 +1,7 @@
+import type { VideoTrack } from '@kromatv/client/media';
 import type { MonitoredSummary, TitleRef } from '@kromatv/client/monitoring';
-import type { LedgerEpisode, RequestKind } from '@kromatv/client/requests';
+import type { LedgerEpisode, LedgerSeason, RequestKind } from '@kromatv/client/requests';
+import { codecLabel } from '@kromatv/core';
 import type { MessageKey } from '@kromatv/i18n';
 
 export type MonitoringKind = RequestKind | 'all';
@@ -115,4 +117,30 @@ export function searchCandidates(
  * word for. */
 export function airStatusKey(status: string | null): MessageKey | null {
   return status === null ? null : (AIR_STATUS_KEYS[status] ?? null);
+}
+
+/** What a show runs to, specials left out: TMDB files them as season 0. */
+export function showTotals(seasons: readonly Pick<LedgerSeason, 'season' | 'episodeCount'>[]): {
+  seasons: number;
+  episodes: number;
+} {
+  const runs = seasons.filter((season) => season.season > 0);
+  return {
+    seasons: runs.length,
+    episodes: runs.reduce((total, season) => total + season.episodeCount, 0),
+  };
+}
+
+const RUNGS = [2160, 1440, 1080, 720, 576, 480];
+
+/** What the library holds for one episode, as `1080p · H.264`. Null when
+ * nothing was probed. The height is snapped to the rung below it, so a 1088-line
+ * file still reads as 1080p. */
+export function fileLabel(video: VideoTrack | null): string | null {
+  if (!video) return null;
+  const height = video.height ?? 0;
+  const rung = RUNGS.find((step) => height >= step);
+  const parts = [rung ? `${rung}p` : null, video.codec ? codecLabel(video.codec) : null];
+  const label = parts.filter(Boolean).join(' · ');
+  return label || null;
 }

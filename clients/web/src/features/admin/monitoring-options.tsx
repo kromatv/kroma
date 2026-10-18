@@ -9,22 +9,24 @@ export function usePresetLabel(): (preset: MonitorPreset) => string {
   return (preset) => t(`monitoring.preset.${preset}` as MessageKey);
 }
 
-export function OptionRow({
+export function SettingRow({
   label,
   hint,
   children,
 }: Readonly<{ label: string; hint?: string; children: ReactNode }>) {
   return (
-    <Row between gap={20} align="center" wrap>
-      <Box shrink={1} minW={160}>
+    <Row between gap={20} align="center" wrap px={{ base: 16, md: 22 }} py={16}>
+      <Box shrink={1} minW={160} gap={2}>
         <Text variant="label">{label}</Text>
         {hint ? (
-          <Text variant="meta" color="textDim" mt={2}>
+          <Text variant="meta" color="textDim">
             {hint}
           </Text>
         ) : null}
       </Box>
-      <Box minW={200}>{children}</Box>
+      <Box minW={{ base: '100%', md: 220 }} align="flex-end">
+        {children}
+      </Box>
     </Row>
   );
 }

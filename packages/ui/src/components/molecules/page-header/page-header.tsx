@@ -133,7 +133,7 @@ function Back({ label, onPress, asChild, children }: Readonly<PageHeaderBackProp
 /** The page-level controls, pinned to the far end of the header. */
 function Actions({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <Box row wrap align="center" gap={12} style={s.push}>
+    <Box row wrap shrink={1} align="center" gap={12} style={[s.minW, s.push]}>
       {children}
     </Box>
   );

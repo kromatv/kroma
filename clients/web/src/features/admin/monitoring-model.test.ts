@@ -1,11 +1,14 @@
+import type { VideoTrack } from '@kromatv/client/media';
 import { WantedId } from '@kromatv/client/requests';
 import { describe, expect, it } from 'vitest';
 import {
   airStatusKey,
   episodeState,
+  fileLabel,
   filterMonitored,
   type MonitoredRow,
   monitorCandidates,
+  showTotals,
 } from './monitoring-model';
 
 const EVERY = { kind: 'all', onlyMissing: false, needle: '' } as const;
@@ -22,6 +25,10 @@ function episode(over: Partial<Parameters<typeof episodeState>[0]> = {}) {
     airDate: null,
     ...over,
   };
+}
+
+function video(over: Partial<VideoTrack> = {}): VideoTrack {
+  return { codec: 'h264', width: null, height: 1080, hdr: false, bitDepth: null, ...over };
 }
 
 function catalogTitle(tmdbId: number | null, title: string, year: number | null = 2011) {
@@ -162,6 +169,40 @@ describe('monitorCandidates', () => {
     );
 
     expect(candidates.map((c) => c.title)).toEqual(['Alpha', 'Zoulou']);
+  });
+});
+
+describe('showTotals', () => {
+  it('counts the runs and their episodes, leaving the specials out of both', () => {
+    const seasons = [
+      { season: 0, episodeCount: 4 },
+      { season: 1, episodeCount: 9 },
+      { season: 2, episodeCount: 10 },
+    ];
+
+    expect(showTotals(seasons)).toEqual({ seasons: 2, episodes: 19 });
+  });
+
+  it('answers a show TMDB lists no season for with nothing', () => {
+    expect(showTotals([])).toEqual({ seasons: 0, episodes: 0 });
+  });
+});
+
+describe('fileLabel', () => {
+  it('snaps a height to the rung below it, so a 1088-line file reads as 1080p', () => {
+    expect(fileLabel(video({ height: 1088 }))).toBe('1080p · H.264');
+  });
+
+  it('names a 4K HEVC file by its rung and its codec', () => {
+    expect(fileLabel(video({ height: 2160, codec: 'hevc' }))).toBe('2160p · H.265');
+  });
+
+  it('keeps the codec for a file shorter than any rung', () => {
+    expect(fileLabel(video({ height: 240 }))).toBe('H.264');
+  });
+
+  it('has nothing to say about an episode with no file', () => {
+    expect(fileLabel(null)).toBeNull();
   });
 });
 

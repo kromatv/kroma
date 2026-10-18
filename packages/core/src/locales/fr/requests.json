@@ -76,7 +76,7 @@
   "requests.missingEmpty": "Rien ne manque",
   "requests.missingEmptyHint": "Tout ce qui est sorti de vos demandes est là ou en cours.",
   "requests.missingMovie": "Film manquant",
-  "requests.missingSubtitle": "Les épisodes et films sortis de vos demandes qui ne sont pas encore sur le disque.",
+  "requests.missingSubtitle": "Les épisodes et films sortis qui ne sont pas encore sur le disque.",
   "requests.missingTitle": "Manquants",
   "requests.modeCatalog": "Catalogue",
   "requests.modeFree": "Recherche libre",

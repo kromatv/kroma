@@ -8,7 +8,9 @@ use axum::Json;
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
+use crate::i18n::AskedLocale;
 use crate::model::Permission;
+use crate::services::settings;
 use crate::state::SharedState;
 
 use super::{require, service};
@@ -64,11 +66,14 @@ pub async fn coverage(
 /// request's own rows.
 pub async fn ledger(
     State(state): State<SharedState>,
+    AskedLocale(reader): AskedLocale,
     AuthUser(user): AuthUser,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
     require(&user, Permission::RequestsManage)?;
-    let view = service(move || crate::services::request_ledger::ledger(&state, &id)).await?;
+    let language = settings::metadata_language_for(&state.settings, &state.config, reader);
+    let view =
+        service(move || crate::services::request_ledger::ledger(&state, &id, &language)).await?;
     Ok(Json(view).into_response())
 }
 
@@ -77,11 +82,15 @@ pub async fn ledger(
 /// season at a time so opening the page is one TMDB call, not twenty.
 pub async fn season_ledger(
     State(state): State<SharedState>,
+    AskedLocale(reader): AskedLocale,
     AuthUser(user): AuthUser,
     Path((id, season)): Path<(String, u32)>,
 ) -> Result<Response, Response> {
     require(&user, Permission::RequestsManage)?;
-    let view = service(move || crate::services::request_ledger::season_ledger(&state, &id, season))
-        .await?;
+    let language = settings::metadata_language_for(&state.settings, &state.config, reader);
+    let view = service(move || {
+        crate::services::request_ledger::season_ledger(&state, &id, season, &language)
+    })
+    .await?;
     Ok(Json(view).into_response())
 }

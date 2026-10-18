@@ -3,7 +3,7 @@
 // one gappy series can't swallow the page.
 
 import type { CalendarEntry } from '@kromatv/client/requests';
-import { episodeTag, relativeAirDate, sentenceCase } from '@kromatv/core';
+import { datedDayLabel, episodeTag, relativeAirDate, sentenceCase } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
 import {
   Box,
@@ -124,7 +124,7 @@ function EpisodeRow({
     return (
       <li className={classes(s.listItem)}>
         {rule}
-        <Row gap={16} py={10} pl={50} pr={14}>
+        <Row gap={16} py={10} px={14}>
           {cells}
         </Row>
       </li>
@@ -161,15 +161,20 @@ function EpisodeCells({ entry }: Readonly<{ entry: CalendarEntry }>) {
       <Text variant="meta" font="mono" color="accent" style={s.tag}>
         {episodeTag(entry)}
       </Text>
-      {rel ? (
-        <Text variant="meta" color="textDim" lines={1} flex minW={0}>
-          {sentenceCase(rel, locale)}
+      {entry.airDate ? (
+        <Text variant="meta" color="textDim" lines={1} shrink={0}>
+          {datedDayLabel(entry.airDate, locale)}
         </Text>
       ) : (
-        <Text variant="meta" color="white/35" lines={1} flex minW={0} style={s.italic}>
+        <Text variant="meta" color="white/35" lines={1} shrink={0} style={s.italic}>
           {t('requests.noDate')}
         </Text>
       )}
+      {rel ? (
+        <Text variant="meta" color="textMuted" lines={1} flex minW={0}>
+          {sentenceCase(rel, locale)}
+        </Text>
+      ) : null}
     </>
   );
 }

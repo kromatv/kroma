@@ -2,7 +2,7 @@ import type { MonitoredSummary } from '@kromatv/client/monitoring';
 import type { MessageKey } from '@kromatv/i18n';
 import { Table } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
-import { Badge, Box, Icon, Row, Text } from '@kromatv/ui/kit';
+import { Badge, Box, Icon, Progress, Row, Text } from '@kromatv/ui/kit';
 import { airStatusKey } from '#web/features/admin/monitoring-model';
 import { Pill } from '#web/features/admin/pill';
 import { kindMeta } from '#web/features/admin/pipeline-meta';
@@ -42,13 +42,20 @@ export function MonitoredRowView({
         </Box>
       </Table.Cell>
 
-      <Table.Cell>
+      <Table.Cell gap={6}>
         <Text variant="meta" color="textDim">
           {t('monitoring.monitoredOf', {
             available: title.available,
             monitored: title.monitored,
           })}
         </Text>
+        {title.monitored > 0 ? (
+          <Progress
+            value={Math.min(title.available, title.monitored) / title.monitored}
+            thickness={3}
+            color={title.missing === 0 ? 'success' : 'accent'}
+          />
+        ) : null}
       </Table.Cell>
 
       <Table.Cell row wrap gap={6}>

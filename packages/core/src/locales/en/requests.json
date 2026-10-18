@@ -75,7 +75,7 @@
   "requests.missingEmpty": "Nothing missing",
   "requests.missingEmptyHint": "Everything released from your requests is here or on the way.",
   "requests.missingMovie": "Movie missing",
-  "requests.missingSubtitle": "Released episodes and movies from your requests that are not on disk yet.",
+  "requests.missingSubtitle": "Released episodes and movies that are not on disk yet.",
   "requests.missingTitle": "Missing",
   "requests.modeCatalog": "Catalogue",
   "requests.modeFree": "Free search",

@@ -13,10 +13,11 @@ use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
 use crate::i18n;
+use crate::i18n::AskedLocale;
 use crate::model::{
     BulkMonitorBody, EpisodeMonitoringBody, MonitorBody, Permission, RequestKind, User,
 };
-use crate::services::monitoring;
+use crate::services::{monitoring, settings};
 use crate::state::SharedState;
 
 pub fn routes() -> Router<SharedState> {
@@ -172,27 +173,32 @@ pub async fn bulk(
 /// against its rows and the library.
 pub async fn ledger(
     State(state): State<SharedState>,
+    AskedLocale(reader): AskedLocale,
     AuthUser(user): AuthUser,
     Path((kind, tmdb_id)): Path<(String, u64)>,
 ) -> Result<Response, Response> {
     require(&user)?;
     let kind = kind_of(&kind)?;
-    let view =
-        service(move || crate::services::request_ledger::title_ledger(&state, kind, tmdb_id))
-            .await?;
+    let language = settings::metadata_language_for(&state.settings, &state.config, reader);
+    let view = service(move || {
+        crate::services::request_ledger::title_ledger(&state, kind, tmdb_id, &language)
+    })
+    .await?;
     Ok(Json(view).into_response())
 }
 
 /// `GET /api/monitoring/show/:tmdbId/ledger/:season`: one season's episodes.
 pub async fn season_ledger(
     State(state): State<SharedState>,
+    AskedLocale(reader): AskedLocale,
     AuthUser(user): AuthUser,
     Path((kind, tmdb_id, season)): Path<(String, u64, u32)>,
 ) -> Result<Response, Response> {
     require(&user)?;
     kind_of(&kind)?;
+    let language = settings::metadata_language_for(&state.settings, &state.config, reader);
     let view = service(move || {
-        crate::services::request_ledger::title_season_ledger(&state, tmdb_id, season)
+        crate::services::request_ledger::title_season_ledger(&state, tmdb_id, season, &language)
     })
     .await?;
     Ok(Json(view).into_response())

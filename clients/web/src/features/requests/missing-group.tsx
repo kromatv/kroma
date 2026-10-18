@@ -8,7 +8,7 @@
 import type { CalendarEntry } from '@kromatv/client/requests';
 import { relativeAirDate, sentenceCase } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
-import { Badge, Box, Button, Checkbox, Divider, Text } from '@kromatv/ui/kit';
+import { Badge, Button, Checkbox, Divider, Row, Text } from '@kromatv/ui/kit';
 import { EpisodeList } from '#web/features/requests/missing-episodes';
 import { epKey, type MissingGroup } from '#web/features/requests/missing-model';
 import { RequestCard } from '#web/features/requests/request-card';
@@ -66,13 +66,15 @@ export function MissingGroupCard({
       posterUrl={group.posterUrl}
       title={group.title}
       meta={
-        <Text variant="meta" color="textDim" mt={2}>
-          {[group.year ? String(group.year) : '', rel ? sentenceCase(rel, locale) : '']
-            .filter(Boolean)
-            .join(' · ')}
-        </Text>
+        <Row gap={8} align="center" wrap mt={4}>
+          <Text variant="meta" color="textDim">
+            {[group.year ? String(group.year) : '', rel ? sentenceCase(rel, locale) : '']
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+          <Badge tone="warning">{gap}</Badge>
+        </Row>
       }
-      trailing={<Badge tone="warning">{gap}</Badge>}
       leading={
         canAct ? (
           <Checkbox
@@ -81,9 +83,7 @@ export function MissingGroupCard({
             onCheckedChange={onToggleGroup}
             label={t('requests.select')}
           />
-        ) : (
-          <Box w={20} />
-        )
+        ) : null
       }
       aside={
         <GroupAside
@@ -141,7 +141,7 @@ function GroupAside({
   if (monitored) {
     if (!canMonitor) return null;
     return (
-      <Button variant="glass" size="sm" icon="eye" label={t('monitoring.action')} asChild>
+      <Button variant="glass" size="sm" icon="eye" label={t('monitoring.manage')} asChild>
         <RouteLink to="/admin/monitoring/$kind/$tmdbId" params={{ kind, tmdbId: String(tmdbId) }} />
       </Button>
     );

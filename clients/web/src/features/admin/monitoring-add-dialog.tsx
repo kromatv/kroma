@@ -6,9 +6,11 @@ import {
   Button,
   Callout,
   Dialog,
+  Divider,
   EmptyState,
   Field,
   ListRow,
+  Surface,
   Switch,
   Text,
 } from '@kromatv/ui/kit';
@@ -22,8 +24,8 @@ import {
 } from '#web/features/admin/monitoring-model';
 import {
   AvailabilitySelect,
-  OptionRow,
   PresetSelect,
+  SettingRow,
 } from '#web/features/admin/monitoring-options';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -126,22 +128,26 @@ export function MonitorTitlesDialog({
 
       <Dialog.Panel>
         <Box gap={14}>
-          <OptionRow label={t('monitoring.preset')} hint={t('monitoring.presetHint')}>
-            <PresetSelect value={preset} onChange={setPreset} />
-          </OptionRow>
-          <OptionRow
-            label={t('monitoring.minAvailability')}
-            hint={t('monitoring.minAvailabilityHint')}
-          >
-            <AvailabilitySelect value={availability} onChange={setAvailability} />
-          </OptionRow>
-          <OptionRow label={t('monitoring.searchNow')} hint={t('monitoring.searchNowHint')}>
-            <Switch
-              checked={searchNow}
-              onCheckedChange={setSearchNow}
-              label={t('monitoring.searchNow')}
-            />
-          </OptionRow>
+          <Surface pad="none" radius="xl" border="border" overflow="hidden">
+            <SettingRow label={t('monitoring.preset')} hint={t('monitoring.presetHint')}>
+              <PresetSelect value={preset} onChange={setPreset} />
+            </SettingRow>
+            <Divider spacing={0} />
+            <SettingRow
+              label={t('monitoring.minAvailability')}
+              hint={t('monitoring.minAvailabilityHint')}
+            >
+              <AvailabilitySelect value={availability} onChange={setAvailability} />
+            </SettingRow>
+            <Divider spacing={0} />
+            <SettingRow label={t('monitoring.searchNow')} hint={t('monitoring.searchNowHint')}>
+              <Switch
+                checked={searchNow}
+                onCheckedChange={setSearchNow}
+                label={t('monitoring.searchNow')}
+              />
+            </SettingRow>
+          </Surface>
 
           <Field.Root label={t('monitoring.addSearch')} value={needle} onValueChange={setNeedle}>
             <Field.Input icon="search" placeholder={t('monitoring.addSearchPlaceholder')} />

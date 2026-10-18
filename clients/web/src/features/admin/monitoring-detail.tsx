@@ -2,10 +2,11 @@ import type { EpisodeMonitoringBody, MonitorBody } from '@kromatv/client/monitor
 import type { RequestKind } from '@kromatv/client/requests';
 import { ModuleSlot } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout, EmptyState, Surface } from '@kromatv/ui/kit';
-import { MonitoringCard } from '#web/features/admin/monitoring-card';
-import { TitleIdentityCard } from '#web/features/admin/monitoring-identity';
+import { Box, Button, Callout, EmptyState, Section, Surface } from '@kromatv/ui/kit';
+import { MonitoringHero } from '#web/features/admin/monitoring-hero';
 import { SeasonList } from '#web/features/admin/monitoring-seasons';
+import { MonitoringSettings } from '#web/features/admin/monitoring-settings';
+import { MonitoringStats } from '#web/features/admin/monitoring-stats';
 import { DetailSkeleton } from '#web/features/admin/request-cards';
 import { Denied, PageHeader, useAsyncAction, useCap } from '#web/features/admin/shell';
 import { ConsoleToast, useConsoleToast } from '#web/features/admin/table-console';
@@ -16,6 +17,8 @@ import {
 } from '#web/features/admin/use-monitoring';
 import { useAuth } from '#web/shared/lib/auth';
 import { RouteLink } from '#web/shared/ui/route-link';
+
+const SECTION_GAP = 28;
 
 export function MonitoringDetailPage({
   kind,
@@ -71,7 +74,6 @@ function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId
           <RouteLink to="/admin/monitoring" />
         </PageHeader.Back>
         <PageHeader.Title>{title}</PageHeader.Title>
-        <PageHeader.Subtitle>{t('monitoring.subtitle')}</PageHeader.Subtitle>
       </PageHeader.Root>
 
       {ledger.isError ? (
@@ -82,21 +84,32 @@ function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId
         </Box>
       ) : null}
 
-      <Box row={{ base: false, lg: true }} gap={16} align="flex-start">
-        <Box w={{ base: '100%', lg: 320 }} shrink={0} gap={16}>
-          {ledger.data ? <TitleIdentityCard ledger={ledger.data} /> : null}
-        </Box>
-        <Box flex minW={0} w={{ base: '100%', lg: 'auto' }} gap={16}>
-          <MonitoringCard
-            kind={kind}
-            title={title}
+      <Box gap={SECTION_GAP} mt={24}>
+        {ledger.data ? (
+          <MonitoringHero
+            ledger={ledger.data}
             monitored={monitored}
             busy={busy}
-            onMonitor={monitor}
-            onUnmonitor={unmonitor}
+            onFollow={() => monitor({})}
+            onSearch={() => monitor({ searchNow: true })}
+            onUnfollow={unmonitor}
           />
+        ) : null}
 
-          {kind === 'show' && ledger.data ? (
+        {monitored ? <MonitoringStats kind={kind} monitored={monitored} /> : null}
+
+        <Section.Root>
+          <Section.Header>
+            <Section.Title>{t('monitoring.action')}</Section.Title>
+          </Section.Header>
+          <MonitoringSettings kind={kind} monitored={monitored} busy={busy} onMonitor={monitor} />
+        </Section.Root>
+
+        {kind === 'show' && ledger.data ? (
+          <Section.Root>
+            <Section.Header>
+              <Section.Title>{t('monitoring.seasons')}</Section.Title>
+            </Section.Header>
             <SeasonList
               tmdbId={tmdbId}
               seasons={ledger.data.seasons}
@@ -104,17 +117,17 @@ function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId
               busy={busy}
               onEpisodes={setEpisodes}
             />
-          ) : null}
+          </Section.Root>
+        ) : null}
 
-          <ModuleSlot
-            name="monitoring.detail"
-            kind={kind}
-            tmdbId={tmdbId}
-            title={title}
-            monitored={monitored !== null}
-            fallback={<NoAcquisition />}
-          />
-        </Box>
+        <ModuleSlot
+          name="monitoring.detail"
+          kind={kind}
+          tmdbId={tmdbId}
+          title={title}
+          monitored={monitored !== null}
+          fallback={<NoAcquisition />}
+        />
       </Box>
 
       <ConsoleToast toast={toast} />
@@ -125,7 +138,7 @@ function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId
 function NoAcquisition() {
   const t = useT();
   return (
-    <Surface elevated radius="xl" pad="none" px={28}>
+    <Surface radius="xl" pad="none" px={28}>
       <EmptyState.Root layout="fill" icon="adjustments">
         <EmptyState.Title>{t('monitoring.acquisitionUnavailable')}</EmptyState.Title>
         <EmptyState.Hint>{t('monitoring.acquisitionUnavailableHint')}</EmptyState.Hint>

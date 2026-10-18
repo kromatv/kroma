@@ -38,9 +38,15 @@ struct Subject {
 /// The request's seasons, tallied against the ledger and the library. Costs one
 /// TMDB detail call; the per-episode rows are fetched a season at a time by
 /// [`season_ledger`].
-pub fn ledger<S: HostStorage>(state: &S, request_id: &str) -> Result<RequestLedgerView> {
+///
+/// `language` is the TMDB tag the titles and overviews come back in.
+pub fn ledger<S: HostStorage>(
+    state: &S,
+    request_id: &str,
+    language: &str,
+) -> Result<RequestLedgerView> {
     let subject = request_subject(state, request_id)?;
-    build_ledger(state, subject)
+    build_ledger(state, subject, language)
 }
 
 /// One season's episodes, from TMDB, flagged with what the request covers and
@@ -49,9 +55,10 @@ pub fn season_ledger<S: HostStorage>(
     state: &S,
     request_id: &str,
     season: u32,
+    language: &str,
 ) -> Result<SeasonLedgerView> {
     let subject = request_subject(state, request_id)?;
-    build_season(state, &subject, season)
+    build_season(state, &subject, season, language)
 }
 
 /// [`ledger`] for a title by its TMDB identity: every row it has, monitored or
@@ -60,9 +67,10 @@ pub fn title_ledger<S: HostStorage>(
     state: &S,
     kind: RequestKind,
     tmdb_id: u64,
+    language: &str,
 ) -> Result<RequestLedgerView> {
     let subject = title_subject(state, kind, tmdb_id)?;
-    build_ledger(state, subject)
+    build_ledger(state, subject, language)
 }
 
 /// [`season_ledger`] for a show by its TMDB id.
@@ -70,9 +78,10 @@ pub fn title_season_ledger<S: HostStorage>(
     state: &S,
     tmdb_id: u64,
     season: u32,
+    language: &str,
 ) -> Result<SeasonLedgerView> {
     let subject = title_subject(state, RequestKind::Show, tmdb_id)?;
-    build_season(state, &subject, season)
+    build_season(state, &subject, season, language)
 }
 
 fn request_subject<S: HostStorage>(state: &S, request_id: &str) -> Result<Subject> {
@@ -109,8 +118,12 @@ fn title_subject<S: HostStorage>(state: &S, kind: RequestKind, tmdb_id: u64) -> 
     })
 }
 
-fn build_ledger<S: HostStorage>(state: &S, subject: Subject) -> Result<RequestLedgerView> {
-    let detail = fetch_detail(state, subject.kind, subject.tmdb_id)?;
+fn build_ledger<S: HostStorage>(
+    state: &S,
+    subject: Subject,
+    language: &str,
+) -> Result<RequestLedgerView> {
+    let detail = fetch_detail(state, subject.kind, subject.tmdb_id, language)?;
     let conn = state.db().get()?;
     let present = on_disk(&conn, subject.kind, subject.tmdb_id)?;
     let local_id = match subject.kind {
@@ -160,6 +173,7 @@ fn build_season<S: HostStorage>(
     state: &S,
     subject: &Subject,
     season: u32,
+    language: &str,
 ) -> Result<SeasonLedgerView> {
     if subject.kind != RequestKind::Show {
         return Ok(SeasonLedgerView {
@@ -171,7 +185,7 @@ fn build_season<S: HostStorage>(
     let present = on_disk(&conn, subject.kind, subject.tmdb_id)?;
     drop(conn);
 
-    let episodes = season_episodes(state, subject.tmdb_id, season)?
+    let episodes = season_episodes(state, subject.tmdb_id, season, language)?
         .into_iter()
         .map(|ep| {
             let row = subject
@@ -210,8 +224,9 @@ pub fn preview_season_rows<S: HostStorage>(
     if req.kind != RequestKind::Show {
         return Ok(Vec::new());
     }
-    let detail = fetch_detail(state, req.kind, req.tmdb_id)?;
-    Ok(season_episodes(state, req.tmdb_id, season)?
+    let language = state.metadata_language();
+    let detail = fetch_detail(state, req.kind, req.tmdb_id, &language)?;
+    Ok(season_episodes(state, req.tmdb_id, season, &language)?
         .into_iter()
         .map(|ep| db::WantedRow {
             id: format!("preview|{}|s{season:02}e{:03}", req.id, ep.episode),
@@ -247,9 +262,10 @@ fn fetch_detail<S: HostStorage>(
     state: &S,
     kind: RequestKind,
     tmdb_id: u64,
+    language: &str,
 ) -> Result<discover::DiscoverRawDetail> {
     let key = tmdb_key(state)?;
-    discover::detail(&key, &state.metadata_language(), kind, tmdb_id)
+    discover::detail(&key, language, kind, tmdb_id)
         .map_err(|()| anyhow!("TMDB lookup failed"))?
         .ok_or_else(|| anyhow!("title not found on TMDB"))
 }
@@ -258,9 +274,10 @@ fn season_episodes<S: HostStorage>(
     state: &S,
     tmdb_id: u64,
     season: u32,
+    language: &str,
 ) -> Result<Vec<metadata::EpisodeArt>> {
     let key = tmdb_key(state)?;
-    Ok(metadata::season_episodes(&key, &state.metadata_language(), tmdb_id, season).episodes)
+    Ok(metadata::season_episodes(&key, language, tmdb_id, season).episodes)
 }
 
 fn tmdb_key<S: HostStorage>(state: &S) -> Result<String> {

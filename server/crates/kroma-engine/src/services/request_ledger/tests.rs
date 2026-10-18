@@ -3,6 +3,8 @@ use crate::model::RequestStatus;
 use crate::test_support::FakeTmdb;
 use kroma_module_host::testing::StubHost;
 
+const LANG: &str = "en-US";
+
 fn host(key: Option<&str>) -> StubHost {
     let host = StubHost::with_core(crate::db::testing::temp_pool("ledger"))
         .with_metadata_language("en-US");
@@ -126,7 +128,7 @@ fn episodes_json(eps: &[u32]) -> serde_json::Value {
 fn a_ledger_needs_tmdb_to_describe_anything() {
     let host = host(None);
     seed_request(&host, "r1", RequestKind::Show, 42, None);
-    let err = ledger(&host, "r1").unwrap_err();
+    let err = ledger(&host, "r1", LANG).unwrap_err();
     assert!(err.to_string().contains("TMDB is not configured"), "{err}");
 }
 
@@ -134,7 +136,7 @@ fn a_ledger_needs_tmdb_to_describe_anything() {
 fn an_unknown_request_is_an_error_not_an_empty_ledger() {
     let host = host(Some("k"));
     assert!(
-        ledger(&host, "nope")
+        ledger(&host, "nope", LANG)
             .unwrap_err()
             .to_string()
             .contains("request not found")
@@ -156,7 +158,7 @@ fn a_season_is_tallied_against_the_request_and_the_library() {
         _ => (404, serde_json::json!({})),
     });
 
-    let view = ledger(&host, "r1").unwrap();
+    let view = ledger(&host, "r1", LANG).unwrap();
     let s1 = view
         .seasons
         .iter()
@@ -217,7 +219,7 @@ fn a_movie_ledger_has_no_seasons_and_says_whether_the_film_is_held() {
         _ => (404, serde_json::json!({})),
     });
 
-    let view = ledger(&host, "r1").unwrap();
+    let view = ledger(&host, "r1", LANG).unwrap();
     assert!(view.seasons.is_empty());
     assert!(view.on_disk, "the library holds the film");
     assert_eq!(view.local_id.as_deref(), Some("m1"));
@@ -235,7 +237,7 @@ fn a_season_row_carries_what_the_request_and_the_library_know() {
         _ => (404, serde_json::json!({})),
     });
 
-    let view = season_ledger(&host, "r1", 1).unwrap();
+    let view = season_ledger(&host, "r1", 1, LANG).unwrap();
     assert_eq!(view.episodes.len(), 3);
 
     let e1 = &view.episodes[0];
@@ -270,7 +272,7 @@ fn a_season_row_carries_what_the_request_and_the_library_know() {
 fn a_movie_has_no_season_to_open() {
     let host = host(Some("k"));
     seed_request(&host, "r1", RequestKind::Movie, 7, None);
-    assert!(season_ledger(&host, "r1", 1).unwrap().episodes.is_empty());
+    assert!(season_ledger(&host, "r1", 1, LANG).unwrap().episodes.is_empty());
 }
 
 #[test]
@@ -308,6 +310,26 @@ fn a_movie_request_previews_no_season_rows() {
 }
 
 #[test]
+fn a_title_ledger_asks_tmdb_in_the_language_it_was_handed() {
+    let host = host(Some("k"));
+    seed_show(&host, "show1", 42, &[]);
+    let tmdb = FakeTmdb::start(|path| match path {
+        "/tv/42" => (200, show_json(&[(1, 3)])),
+        "/tv/42/season/1" => (200, episodes_json(&[1])),
+        _ => (404, serde_json::json!({})),
+    });
+
+    title_ledger(&host, RequestKind::Show, 42, "fr-FR").unwrap();
+    title_season_ledger(&host, 42, 1, "fr-FR").unwrap();
+
+    assert!(
+        tmdb.requests().iter().all(|r| r.contains("language=fr-FR")),
+        "the reader's language, not the household's: {:?}",
+        tmdb.requests()
+    );
+}
+
+#[test]
 fn a_title_ledger_counts_every_row_whatever_it_answers_to() {
     let host = host(Some("k"));
     seed_show(&host, "show1", 42, &[(1, 1)]);
@@ -332,8 +354,8 @@ fn a_title_ledger_counts_every_row_whatever_it_answers_to() {
         _ => (404, serde_json::json!({})),
     });
 
-    let view = title_ledger(&host, RequestKind::Show, 42).unwrap();
-    let season = title_season_ledger(&host, 42, 1).unwrap();
+    let view = title_ledger(&host, RequestKind::Show, 42, LANG).unwrap();
+    let season = title_season_ledger(&host, 42, 1, LANG).unwrap();
 
     assert_eq!(view.title, "Show");
     assert_eq!(view.seasons[0].requested, 2);
