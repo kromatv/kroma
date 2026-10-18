@@ -74,6 +74,7 @@
   "monitoring.preset.missing": "Les manquants et les à venir",
   "monitoring.preset.none": "Aucun",
   "monitoring.preset.pilot": "Le pilote",
+  "monitoring.preset.recent": "Les trois derniers mois et les à venir",
   "monitoring.presetHint": "Ce que le serveur veut garder de cette série.",
   "monitoring.searchMissing": "Chercher les manquants",
   "monitoring.searchNow": "Chercher maintenant",

@@ -27,31 +27,51 @@ be monitored before a single file of it exists.
 
 **LIB-52** (AGREED) - Inside a monitored show, each episode is monitored or not, on its own.
 
-**LIB-53** (AGREED) - A show is monitored with one of these presets: every episode; the episodes
-still to come; the episodes not on disk, aired or still to come; the episodes on disk; the first
-season; the latest season; the pilot; none.
+**LIB-53** (AGREED) - A show is monitored with one of these presets, each of which leaves the
+specials out (LIB-71): every episode; the episodes still to come; the episodes not on disk,
+aired or still to come; the episodes on disk; the first season; the latest season; the pilot;
+none.
+
+**LIB-70** (AGREED) - A show can also be monitored with the recent preset: the episodes that
+aired in the three months before the preset is applied, and the ones still to come. The window
+is read once, so an episode it chose stays monitored as it ages.
+
+**LIB-71** (AGREED) - The specials, the episodes of season 0, are left out: no preset monitors
+one, and a show that takes new seasons does not take season 0 either.
+
+**LIB-74** (AGREED) - A person asks for the specials when they choose the preset, for one title
+or for many at once, and they are monitored alongside what the preset chose.
 
 **LIB-69** (AGREED) - A preset is applied once. Afterwards each season and each episode is
-switched on its own, and applying a preset again chooses the episodes again.
+switched on its own, and applying a preset again chooses the episodes again, LIB-54 aside.
 
-**LIB-54** (AGREED) - A preset never takes an episode away from a request that is still open:
-what someone asked for stays monitored until their request is settled.
+**LIB-54** (AGREED) - Nothing a person switches takes an episode away from a request that is
+still open: not a preset, not a season, not the episode itself. What someone asked for stays
+monitored until their request is settled, and the switch leaves it on.
 
 **LIB-55** (AGREED) - A season is monitored when its episodes are: switching a season on
 monitors every episode in it and the ones announced in it later, and switching it off
-unmonitors them all.
+unmonitors them all, LIB-54 aside.
 
 **LIB-56** (AGREED) - An episode announced in a monitored season joins monitored. An episode a
 person switched off stays off when the show is next read from its provider.
 
 **LIB-57** (AGREED) - A monitored show may **take new seasons**: a season its provider announces
 after the show was monitored joins, every episode of it monitored. The presets that look ahead
-(every episode, those still to come, those not on disk) turn this on; the others leave it off; a
-person can set it either way.
+(every episode, those still to come, those not on disk, the recent ones) turn this on; the
+others leave it off; a person can set it either way.
 
 **LIB-58** (AGREED) - A monitored film becomes searchable at its **minimum availability**: when
 it is announced, when it is in cinemas, or when it is released for viewing at home. Released is
 the default, and each film has its own.
+
+**LIB-72** (AGREED) - A film in cinemas is not released at home yet. A film whose minimum
+availability is released, and whose home date nobody knows, counts as released three months
+after it reached cinemas.
+
+**LIB-73** (AGREED) - A film whose home release is unknown, or still ahead, is read again from
+its provider on a cadence. A home date that appears, or that moves, takes the film's
+availability with it.
 
 **LIB-59** (AGREED) - Approving a request monitors its title with what the request asked for,
 added to whatever was monitored already. A request for a whole show also takes new seasons.
@@ -62,15 +82,17 @@ asked for it are separate facts, and only an admin unmonitors.
 **LIB-61** (AGREED) - Many titles of the library can be monitored at once, with one preset and
 one minimum availability.
 
-**LIB-62** (AGREED) - Unmonitoring a title forgets which of its units were wanted. Its files and
-any request about it are left alone.
+**LIB-62** (AGREED) - Unmonitoring a title forgets which units it wanted. Its files are left
+alone, and so is any request about it: what an open request asked for keeps being searched for
+until that request is settled.
 
 ## Missing
 
 Status: **AGREED**
 
 **LIB-63** (AGREED) - A monitored episode or film that is available (aired, or past its minimum
-availability) and has no file is **missing**.
+availability) and has no file is **missing**. An episode whose provider gives no date has not
+aired.
 
 **LIB-64** (AGREED) - The missing list shows monitored units, and beside them, kept apart, the
 aired episodes of shows nobody monitors, which a person can still turn into a request.

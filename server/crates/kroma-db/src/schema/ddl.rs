@@ -456,6 +456,7 @@ pub(crate) const SCHEMA: &str = "
         last_search_at INTEGER,
         search_attempts INTEGER NOT NULL DEFAULT 0,
         next_search_at INTEGER,
+        vanished_at    INTEGER,
         updated_at     INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_wanted_request ON wanted(request_id);

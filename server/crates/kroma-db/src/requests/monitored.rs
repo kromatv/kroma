@@ -4,6 +4,7 @@ use rusqlite::{Connection, OptionalExtension, Row, params};
 
 use kroma_domain::{MinAvailability, MonitoredSummary, MonitoredTitle, RequestKind};
 
+use super::wanted::AIRED;
 use crate::{Pool, Result};
 
 const MONITORED_COLS: &str = "m.kind, m.tmdb_id, m.title, m.year, m.poster_url, m.seasons, \
@@ -104,7 +105,7 @@ pub fn monitored_summaries(
         "SELECT {MONITORED_COLS}, \
              COUNT(w.id), \
              COALESCE(SUM(w.status = 'available'), 0), \
-             COALESCE(SUM(w.status = 'wanted' AND (w.air_date IS NULL OR w.air_date <= ?1)), 0), \
+             COALESCE(SUM(w.status = 'wanted' AND {AIRED}), 0), \
              COALESCE(SUM(w.status = 'grabbed'), 0) \
          FROM monitored m \
          LEFT JOIN wanted w ON w.tmdb_id = m.tmdb_id \
@@ -124,12 +125,15 @@ pub fn monitored_summaries(
     rows.collect()
 }
 
-/// Stops monitoring a title: its row and every wanted row it had go together.
+/// Stops monitoring a title: its row and the wanted rows monitoring held go
+/// together. What an open request asked for stays, so it keeps being searched.
 pub fn delete_monitored(pool: &Pool, kind: RequestKind, tmdb_id: u64) -> Result<bool> {
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
     tx.execute(
-        "DELETE FROM wanted WHERE kind = ?1 AND tmdb_id = ?2",
+        "DELETE FROM wanted WHERE kind = ?1 AND tmdb_id = ?2 \
+           AND (request_id IS NULL OR request_id IN ( \
+               SELECT id FROM requests WHERE status IN ('available', 'denied', 'failed')))",
         params![unit_kind(kind), tmdb_id as i64],
     )?;
     let removed = tx.execute(
@@ -152,7 +156,11 @@ pub fn unit_kind(kind: RequestKind) -> &'static str {
 mod tests {
     use super::*;
     use crate::requests::tests::*;
-    use crate::requests::{WantedRow, insert_wanted, wanted_for_title};
+    use crate::requests::{
+        WantedRow, claim_wanted, insert_request, insert_wanted, set_request_status,
+        wanted_for_title,
+    };
+    use kroma_domain::RequestStatus;
 
     fn show(tmdb_id: u64, seasons: Vec<u32>) -> MonitoredTitle {
         MonitoredTitle {
@@ -222,12 +230,16 @@ mod tests {
             &p,
             &[
                 unowned("w1", 1, "available"),
-                unowned("w2", 2, "wanted"),
+                WantedRow {
+                    air_date: Some("2020-01-01".into()),
+                    ..unowned("w2", 2, "wanted")
+                },
                 unowned("w3", 3, "grabbed"),
                 WantedRow {
                     air_date: Some("2999-01-01".into()),
                     ..unowned("w4", 4, "wanted")
                 },
+                unowned("w5", 5, "wanted"),
             ],
             1,
         )
@@ -239,7 +251,8 @@ mod tests {
         let s = &summaries[0];
         assert_eq!(
             (s.monitored, s.available, s.missing, s.grabbed),
-            (4, 1, 1, 1)
+            (5, 1, 1, 1),
+            "the undated episode has not aired"
         );
     }
 
@@ -280,6 +293,40 @@ mod tests {
                 .unwrap()
                 .len(),
             1
+        );
+    }
+
+    #[test]
+    fn unmonitoring_leaves_the_rows_an_open_request_asked_for() {
+        let p = pool();
+        upsert_monitored(&p, &show(1396, vec![1])).unwrap();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        insert_wanted(&p, &[unowned("w1", 1, "wanted")], 1).unwrap();
+        claim_wanted(&p, "r1", &[ep_row("w2", 1, 2, "wanted")], 1000).unwrap();
+
+        delete_monitored(&p, RequestKind::Show, 1396).unwrap();
+
+        let conn = p.get().unwrap();
+        let left = wanted_for_title(&conn, RequestKind::Show, 1396).unwrap();
+        assert_eq!(left.len(), 1);
+        assert_eq!(left[0].id, "w2");
+    }
+
+    #[test]
+    fn unmonitoring_drops_the_rows_of_a_request_that_is_over() {
+        let p = pool();
+        upsert_monitored(&p, &show(1396, vec![1])).unwrap();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        claim_wanted(&p, "r1", &[ep_row("w1", 1, 1, "available")], 1000).unwrap();
+        set_request_status(&p, "r1", RequestStatus::Available, None, None, 1500).unwrap();
+
+        delete_monitored(&p, RequestKind::Show, 1396).unwrap();
+
+        let conn = p.get().unwrap();
+        assert!(
+            wanted_for_title(&conn, RequestKind::Show, 1396)
+                .unwrap()
+                .is_empty()
         );
     }
 }

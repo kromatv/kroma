@@ -3,7 +3,7 @@
 
 # Requirement index
 
-460 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+468 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -231,8 +231,8 @@
 - **LIB-50** (SHIPPED) - Refreshing metadata and re-running identification are two actions, and <sub>[README.md](library/README.md)</sub>
 - **LIB-51** (AGREED) - A movie or a show can be **monitored**: the server wants to hold it. <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-52** (AGREED) - Inside a monitored show, each episode is monitored or not, on its own. <sub>[monitoring.md](library/monitoring.md)</sub>
-- **LIB-53** (AGREED) - A show is monitored with one of these presets: every episode; the episodes <sub>[monitoring.md](library/monitoring.md)</sub>
-- **LIB-54** (AGREED) - A preset never takes an episode away from a request that is still open: <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-53** (AGREED) - A show is monitored with one of these presets, each of which leaves the <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-54** (AGREED) - Nothing a person switches takes an episode away from a request that is <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-55** (AGREED) - A season is monitored when its episodes are: switching a season on <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-56** (AGREED) - An episode announced in a monitored season joins monitored. An episode a <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-57** (AGREED) - A monitored show may **take new seasons**: a season its provider announces <sub>[monitoring.md](library/monitoring.md)</sub>
@@ -240,7 +240,7 @@
 - **LIB-59** (AGREED) - Approving a request monitors its title with what the request asked for, <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-60** (AGREED) - Deleting a request leaves its title monitored. Wanting a title and having <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-61** (AGREED) - Many titles of the library can be monitored at once, with one preset and <sub>[monitoring.md](library/monitoring.md)</sub>
-- **LIB-62** (AGREED) - Unmonitoring a title forgets which of its units were wanted. Its files and <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-62** (AGREED) - Unmonitoring a title forgets which units it wanted. Its files are left <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-63** (AGREED) - A monitored episode or film that is available (aired, or past its minimum <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-64** (AGREED) - The missing list shows monitored units, and beside them, kept apart, the <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-65** (AGREED) - What is missing stays true in both directions: a file that lands makes <sub>[monitoring.md](library/monitoring.md)</sub>
@@ -248,6 +248,11 @@
 - **LIB-67** (AGREED) - When more monitored units lose their file in one pass than 20, or than a <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-68** (AGREED) - A file holding several episodes answers for every episode in it, in the <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-69** (AGREED) - A preset is applied once. Afterwards each season and each episode is <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-70** (AGREED) - A show can also be monitored with the recent preset: the episodes that <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-71** (AGREED) - The specials, the episodes of season 0, are left out: no preset monitors <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-72** (AGREED) - A film in cinemas is not released at home yet. A film whose minimum <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-73** (AGREED) - A film whose home release is unknown, or still ahead, is read again from <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-74** (AGREED) - A person asks for the specials when they choose the preset, for one title <sub>[monitoring.md](library/monitoring.md)</sub>
 
 ## MEDIA - [media](media/)
 
@@ -380,6 +385,9 @@
 - **MOD-77** (AGREED) - A profile names terms a release must contain and terms it must not, and a <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-78** (AGREED) - A release outside the profile's qualities, below its minimum format score, <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-79** (AGREED) - A file an upgrade replaces goes to the recycle bin when one is set, and is <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-80** (AGREED) - A release name says what it covers: one episode, a span of episodes, one <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-81** (AGREED) - A term is found anywhere in the release name, ignoring case. Written <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-82** (AGREED) - A term that is empty, or an expression that does not compile, refuses <sub>[acquisition.md](modules/acquisition.md)</sub>
 
 ## PLAY - [playback](playback/)
 

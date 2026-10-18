@@ -4,6 +4,8 @@ use rusqlite::{params, Connection, Row};
 
 use kroma_domain::{CalendarEntry, RequestKind};
 
+use super::wanted::AIRED;
+
 // Callers append their own `WHERE`/`ORDER BY`/`LIMIT` and map rows with `row_to_calendar_entry`.
 const CALENDAR_SELECT: &str =
     "SELECT w.request_id, w.tmdb_id, w.kind, w.title, w.year, \
@@ -70,7 +72,7 @@ pub fn missing_items(
 ) -> rusqlite::Result<Vec<CalendarEntry>> {
     let mut stmt = conn.prepare(&format!(
         "{CALENDAR_SELECT} \
-         WHERE w.status = 'wanted' AND (w.air_date IS NULL OR w.air_date <= ?1) AND {LIVE} \
+         WHERE w.status = 'wanted' AND {AIRED} AND {LIVE} \
          ORDER BY w.title ASC, w.season ASC, w.episode ASC LIMIT ?3"
     ))?;
     let rows = stmt.query_map(
@@ -90,7 +92,7 @@ pub fn monitored_missing(
 ) -> rusqlite::Result<Vec<CalendarEntry>> {
     let mut stmt = conn.prepare(&format!(
         "{CALENDAR_SELECT} \
-         WHERE w.status = 'wanted' AND (w.air_date IS NULL OR w.air_date <= ?1) \
+         WHERE w.status = 'wanted' AND {AIRED} \
            AND w.request_id IS NULL \
          ORDER BY w.title ASC, w.season ASC, w.episode ASC LIMIT ?2"
     ))?;
@@ -141,7 +143,7 @@ mod tests {
         let missing = missing_items(&conn, "2026-07-05", None, 50).unwrap();
         let mut eps: Vec<u32> = missing.iter().filter_map(|e| e.episode).collect();
         eps.sort_unstable();
-        assert_eq!(eps, vec![1, 5]);
+        assert_eq!(eps, vec![1], "an undated episode has not aired");
         assert!(missing_items(&conn, "2026-07-05", Some("someone-else"), 50)
             .unwrap()
             .is_empty());

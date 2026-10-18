@@ -77,15 +77,34 @@ fn movie_available_date_prefers_digital_then_theatrical() {
     let dates = movie_dates(d.release_dates, Some("2024-03-01"));
     // US digital (type 4) wins over US/FR theatrical, truncated to a date.
     assert_eq!(dates.available.as_deref(), Some("2024-04-16"));
+    assert_eq!(dates.home.as_deref(), Some("2024-04-16"));
     assert_eq!(dates.cinema.as_deref(), Some("2024-03-01"));
     // No typed windows: fall back to the basic release_date.
     assert_eq!(
         movie_dates(None, Some("2025-01-09")),
         MovieDates {
             available: Some("2025-01-09".into()),
+            home: None,
             cinema: Some("2025-01-09".into()),
         }
     );
+}
+
+#[test]
+fn a_film_only_in_cinemas_has_no_home_date() {
+    let raw = r#"{
+        "release_dates": { "results": [
+            { "iso_3166_1": "US", "release_dates": [
+                { "type": 3, "release_date": "2026-03-01T00:00:00.000Z" }
+            ]}
+        ]}
+    }"#;
+
+    let d: DetailResp = serde_json::from_str(raw).unwrap();
+    let dates = movie_dates(d.release_dates, Some("2026-03-01"));
+
+    assert_eq!(dates.home, None);
+    assert_eq!(dates.cinema.as_deref(), Some("2026-03-01"));
 }
 
 #[test]

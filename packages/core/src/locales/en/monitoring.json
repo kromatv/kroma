@@ -73,6 +73,7 @@
   "monitoring.preset.missing": "The gaps and what is still to air",
   "monitoring.preset.none": "None",
   "monitoring.preset.pilot": "The pilot",
+  "monitoring.preset.recent": "The last three months and what is to air",
   "monitoring.presetHint": "What the server wants to hold of this show.",
   "monitoring.searchMissing": "Search for the gaps",
   "monitoring.searchNow": "Search now",

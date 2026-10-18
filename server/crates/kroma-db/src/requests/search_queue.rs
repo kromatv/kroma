@@ -3,14 +3,14 @@
 use anyhow::Result;
 use rusqlite::{params, Connection};
 
-use super::wanted::{row_to_wanted, WantedRow, WANTED_COLS};
+use super::wanted::{row_to_wanted, WantedRow, AIRED, WANTED_COLS};
 use crate::chunked::IN_CHUNK;
 use crate::Pool;
 
-/// Rows ready for an automatic search pass: still wanted, aired or undated, and
-/// past their backoff. Ordered freshest air date first, so an episode that aired
-/// this morning is searched before a gap from years ago that no pass will ever
-/// close; `next_search_at` breaks ties in favour of the longest-waiting row.
+/// Rows ready for an automatic search pass: still wanted, their date passed,
+/// and past their backoff. Ordered freshest air date first, so an episode that
+/// aired this morning is searched before a gap from years ago that no pass will
+/// ever close; `next_search_at` breaks ties in favour of the longest-waiting row.
 pub fn wanted_searchable(
     conn: &Connection,
     today: &str,
@@ -18,11 +18,11 @@ pub fn wanted_searchable(
     limit: usize,
 ) -> rusqlite::Result<Vec<WantedRow>> {
     let mut stmt = conn.prepare(&format!(
-        "SELECT {WANTED_COLS} FROM wanted \
-         WHERE status = 'wanted' AND (air_date IS NULL OR air_date <= ?1) \
-           AND (next_search_at IS NULL OR next_search_at <= ?2) \
-         ORDER BY air_date IS NULL, air_date DESC, \
-                  next_search_at IS NOT NULL, next_search_at, season, episode LIMIT ?3"
+        "SELECT {WANTED_COLS} FROM wanted w \
+         WHERE w.status = 'wanted' AND {AIRED} \
+           AND (w.next_search_at IS NULL OR w.next_search_at <= ?2) \
+         ORDER BY w.air_date IS NULL, w.air_date DESC, \
+                  w.next_search_at IS NOT NULL, w.next_search_at, w.season, w.episode LIMIT ?3"
     ))?;
     let rows = stmt.query_map(params![today, now_ms, limit as i64], row_to_wanted)?;
     rows.collect()
@@ -52,11 +52,13 @@ fn update_wanted_chunked(
     Ok(())
 }
 
+/// Moves rows to `status`, and forgets that their file was gone: whatever the
+/// new status is, the clock a vanished file started no longer runs.
 pub fn set_wanted_status(pool: &Pool, ids: &[String], status: &str, now_ms: i64) -> Result<()> {
     update_wanted_chunked(
         pool,
         ids,
-        "status = ?1, updated_at = ?2",
+        "status = ?1, vanished_at = NULL, updated_at = ?2",
         &[&status, &now_ms],
     )
 }
@@ -143,20 +145,28 @@ mod tests {
         let conn = p.get().unwrap();
         let due = wanted_searchable(&conn, "2026-07-05", 4000, 10).unwrap();
         let ids: Vec<&str> = due.iter().map(|w| w.id.as_str()).collect();
-        assert_eq!(
-            ids,
-            vec!["w-aired", "w-undated"],
-            "dated rows lead, undated trail"
-        );
+        assert_eq!(ids, vec!["w-aired"]);
         drop(conn);
 
         set_wanted_status(&p, &["w-aired".to_string()], "available", 2000).unwrap();
-        schedule_next_search(&p, &["w-undated".to_string()], 3000, 1000).unwrap();
         let conn = p.get().unwrap();
-        let due = wanted_searchable(&conn, "2026-07-05", 4000, 10).unwrap();
-        assert_eq!(due.len(), 1);
-        assert_eq!(due[0].id, "w-undated");
-        assert_eq!(due[0].last_search_at, Some(3000));
+        assert!(
+            wanted_searchable(&conn, "2026-07-05", 4000, 10)
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn an_episode_with_no_air_date_has_not_aired_yet() {
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        claim_wanted(&p, "r1", &[ep_row("w-undated", 1, 1, "wanted")], 1000).unwrap();
+
+        let conn = p.get().unwrap();
+        let due = wanted_searchable(&conn, "2026-07-05", 2000, 10).unwrap();
+
+        assert!(due.is_empty());
     }
 
     #[test]

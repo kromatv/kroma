@@ -15,8 +15,9 @@ const REFRESH_MIN_INTERVAL_MS: i64 = 6 * 60 * 60 * 1000;
 
 /// Re-reads every monitored title from TMDB: a show's monitored seasons take
 /// the episodes announced since, a season announced above the last one joins
-/// when the show takes new seasons, and undated rows get their date. Rows
-/// that became searchable are put first in line and the search is woken.
+/// when the show takes new seasons, an undated episode gets its date, and a
+/// film takes whatever its availability now works out to. Rows that became
+/// searchable are put first in line and the search is woken.
 pub fn refresh_pass<S: HostStorage>(state: &S) -> Result<usize> {
     let conn = state.db().get()?;
     let titles = db::list_monitored(&conn)?;
@@ -67,12 +68,10 @@ fn refresh_one<S: HostStorage>(
     let mut aired = Vec::new();
     if title.kind == RequestKind::Movie {
         let date = movie_air_date(title.min_availability, &detail);
-        for row in rows.iter().filter(|r| r.air_date.is_none()) {
-            if let Some(date) = date.as_deref() {
-                db::set_wanted_air_date(state.db(), &row.id, date, now_ms())?;
-                if date <= today && row.status == "wanted" {
-                    aired.push(row.id.clone());
-                }
+        if let Some(row) = rows.first().filter(|r| r.air_date != date) {
+            db::set_movie_air_date(state.db(), title.tmdb_id, date.as_deref(), now_ms())?;
+            if row.status == "wanted" && date.as_deref().is_none_or(|d| d <= today) {
+                aired.push(row.id.clone());
             }
         }
     } else {

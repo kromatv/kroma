@@ -57,7 +57,11 @@ pub fn monitor<S: HostStorage>(
         RequestKind::Show => {
             let preset = body.preset.or(first_time.then_some(MonitorPreset::All));
             if let Some(preset) = preset {
-                apply_preset(state, &mut title, &detail, preset)?;
+                let choice = preset::Choice {
+                    preset,
+                    specials: body.monitor_specials,
+                };
+                apply_preset(state, &mut title, &detail, choice)?;
             }
         }
     }
@@ -96,7 +100,8 @@ pub fn monitor_many<S: HostStorage>(
     summary
 }
 
-/// Stops monitoring a title. Its rows go with it; requests are left as they are.
+/// Stops monitoring a title. The rows monitoring held go with it; what an open
+/// request asked for stays, and requests themselves are left as they are.
 pub fn unmonitor<S: HostStorage>(state: &S, kind: RequestKind, tmdb_id: u64) -> Result<bool> {
     db::delete_monitored(state.db(), kind, tmdb_id)
 }
@@ -112,6 +117,7 @@ pub fn set_episodes<S: HostStorage>(
         bail!("the show is not monitored");
     };
     let rows = db::wanted_for_title(&conn, RequestKind::Show, tmdb_id)?;
+    let held_open = rows_of_open_requests(&conn, &rows)?;
     drop(conn);
 
     let mut seasons: BTreeSet<u32> = title.seasons.iter().copied().collect();
@@ -151,6 +157,7 @@ pub fn set_episodes<S: HostStorage>(
         .collect();
     let doomed: Vec<String> = rows
         .iter()
+        .filter(|r| !held_open.contains(&r.id))
         .filter(|r| match (r.season, r.episode) {
             (Some(s), Some(e)) => whole_off.contains(&s) || off.contains(&(s, e)),
             _ => false,
@@ -234,7 +241,7 @@ fn apply_preset<S: HostStorage>(
     state: &S,
     title: &mut MonitoredTitle,
     detail: &DiscoverRawDetail,
-    preset: MonitorPreset,
+    choice: preset::Choice,
 ) -> Result<()> {
     let conn = state.db().get()?;
     let on_disk: HashSet<(u32, u32)> = match db::show_by_tmdb(&conn, title.tmdb_id)? {
@@ -245,13 +252,18 @@ fn apply_preset<S: HostStorage>(
     let held_open = rows_of_open_requests(&conn, &rows)?;
     drop(conn);
 
-    let seasons: Vec<u32> = detail.seasons.iter().map(|s| s.season).collect();
+    let seasons: Vec<u32> = choice
+        .specials
+        .then_some(0)
+        .into_iter()
+        .chain(detail.seasons.iter().map(|s| s.season))
+        .collect();
     let listed: Vec<RosterEpisode> = roster(
         state,
         title.tmdb_id,
-        &preset::seasons_to_read(preset, &seasons, &on_disk),
+        &preset::seasons_to_read(choice, &seasons, &on_disk),
     )?;
-    let selection = preset::select(preset, &listed, &on_disk, &today_ymd());
+    let selection = preset::select(choice, &listed, &on_disk, &today_ymd());
     let chosen: HashSet<(u32, u32)> = selection.episodes.iter().copied().collect();
     let added: Vec<db::WantedRow> = listed
         .iter()
@@ -274,8 +286,8 @@ fn apply_preset<S: HostStorage>(
     Ok(())
 }
 
-// A row an open request answers to is the requester's, so a preset the admin
-// applies to the title never takes it away from them.
+// A row an open request answers to is the requester's: no preset and no switch
+// the admin applies to the title takes it away from them.
 fn rows_of_open_requests(conn: &db::PooledConn, rows: &[db::WantedRow]) -> Result<HashSet<String>> {
     let mut open: std::collections::HashMap<&str, bool> = std::collections::HashMap::new();
     let mut held = HashSet::new();

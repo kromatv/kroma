@@ -6,17 +6,15 @@ const REL_THEATRICAL: u32 = 3;
 const REL_DIGITAL: u32 = 4;
 const REL_PHYSICAL: u32 = 5;
 
-/// A movie's two dates that matter to a search: when it reaches homes, and when
-/// it reaches cinemas.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub(super) struct MovieDates {
     pub(super) available: Option<String>,
+    pub(super) home: Option<String>,
     pub(super) cinema: Option<String>,
 }
 
-// Availability prefers the digital release, then theatrical, then physical,
-// then the basic release_date. Reads the US window (most complete for digital)
-// and falls back to any country. All dates normalized to `YYYY-MM-DD`.
+// Reads the US window (most complete for digital) and falls back to any
+// country. All dates normalized to `YYYY-MM-DD`.
 pub(super) fn movie_dates(rd: Option<ReleaseDatesResp>, basic: Option<&str>) -> MovieDates {
     let results = rd.map(|r| r.results).unwrap_or_default();
     let block = results
@@ -25,13 +23,15 @@ pub(super) fn movie_dates(rd: Option<ReleaseDatesResp>, basic: Option<&str>) -> 
         .or_else(|| results.first());
     let basic = basic.and_then(ymd);
     let theatrical = block.and_then(|b| typed_release(b, REL_THEATRICAL));
-    let available = block
+    let home = block
         .and_then(|b| typed_release(b, REL_DIGITAL))
-        .or_else(|| theatrical.clone())
-        .or_else(|| block.and_then(|b| typed_release(b, REL_PHYSICAL)))
-        .or_else(|| basic.clone());
+        .or_else(|| block.and_then(|b| typed_release(b, REL_PHYSICAL)));
     MovieDates {
-        available,
+        available: home
+            .clone()
+            .or_else(|| theatrical.clone())
+            .or_else(|| basic.clone()),
+        home,
         cinema: theatrical.or(basic),
     }
 }

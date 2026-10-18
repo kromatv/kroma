@@ -6,11 +6,13 @@ export const MinAvailability = z.enum(['announced', 'inCinemas', 'released']);
 export type MinAvailability = z.infer<typeof MinAvailability>;
 
 /** Which episodes of a show start out monitored. Applied once; each episode can
- * be switched on its own afterwards. */
+ * be switched on its own afterwards. `recent` is the last three months and
+ * everything still to come. */
 export const MonitorPreset = z.enum([
   'all',
   'future',
   'missing',
+  'recent',
   'existing',
   'firstSeason',
   'latestSeason',
@@ -51,9 +53,12 @@ export const MonitoredSummary = MonitoredTitle.extend({
 export type MonitoredSummary = z.infer<typeof MonitoredSummary>;
 
 /** `PUT /api/monitoring/:kind/:tmdbId` body. Absent fields keep what the title
- * has; a show monitored for the first time with no preset takes `all`. */
+ * has; a show monitored for the first time with no preset takes `all`.
+ * `monitorSpecials` widens the preset to season 0, which it otherwise leaves
+ * alone. */
 export const MonitorBody = z.object({
   preset: MonitorPreset.optional(),
+  monitorSpecials: z.boolean().optional(),
   monitorNewSeasons: z.boolean().optional(),
   minAvailability: MinAvailability.optional(),
   searchNow: z.boolean().optional(),

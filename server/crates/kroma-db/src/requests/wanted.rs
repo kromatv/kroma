@@ -46,6 +46,11 @@ pub(super) fn row_to_wanted(r: &Row) -> rusqlite::Result<WantedRow> {
     })
 }
 
+// Whether a unit is available yet, over a `wanted w` with `?1` bound to today.
+// An episode with no air date has not aired; a film with none is searched at
+// once, which is what a minimum availability of "announced" asks for.
+pub(super) const AIRED: &str = "(w.air_date <= ?1 OR (w.air_date IS NULL AND w.kind = 'movie'))";
+
 pub(super) const WANTED_COLS: &str =
     "id, request_id, kind, tmdb_id, imdb_id, title, year, season, episode, air_date, status, last_search_at";
 
@@ -203,8 +208,46 @@ pub fn set_wanted_air_date(pool: &Pool, id: &str, air_date: &str, now_ms: i64) -
     Ok(())
 }
 
-/// The rows among `ids` that have not changed since `before_ms`.
-pub fn wanted_unchanged_since(
+/// Records that these units were seen without their file, keeping the time the
+/// first such pass saw them.
+pub fn mark_wanted_vanished(pool: &Pool, ids: &[String], now_ms: i64) -> Result<()> {
+    stamp_vanished(pool, ids, Some(now_ms))
+}
+
+/// Forgets that these units were ever without their file: their grace starts
+/// over if one vanishes again.
+pub fn clear_wanted_vanished(pool: &Pool, ids: &[String]) -> Result<()> {
+    stamp_vanished(pool, ids, None)
+}
+
+fn stamp_vanished(pool: &Pool, ids: &[String], stamp: Option<i64>) -> Result<()> {
+    let write = match stamp {
+        Some(_) => "UPDATE wanted SET vanished_at = ? WHERE vanished_at IS NULL",
+        None => "UPDATE wanted SET vanished_at = NULL WHERE vanished_at IS NOT NULL",
+    };
+    if ids.is_empty() {
+        return Ok(());
+    }
+    let conn = pool.get()?;
+    for chunk in ids.chunks(IN_CHUNK) {
+        let holes = std::iter::repeat_n("?", chunk.len())
+            .collect::<Vec<_>>()
+            .join(",");
+        let params = stamp.map(rusqlite::types::Value::from).into_iter().chain(
+            chunk
+                .iter()
+                .map(|id| rusqlite::types::Value::from(id.clone())),
+        );
+        conn.execute(
+            &format!("{write} AND id IN ({holes})"),
+            rusqlite::params_from_iter(params),
+        )?;
+    }
+    Ok(())
+}
+
+/// The rows among `ids` whose file has been gone since before `before_ms`.
+pub fn wanted_vanished_before(
     conn: &Connection,
     ids: &[String],
     before_ms: i64,
@@ -215,7 +258,7 @@ pub fn wanted_unchanged_since(
             .collect::<Vec<_>>()
             .join(",");
         let mut stmt = conn.prepare(&format!(
-            "SELECT id FROM wanted WHERE updated_at <= ? AND id IN ({holes})"
+            "SELECT id FROM wanted WHERE vanished_at <= ? AND id IN ({holes})"
         ))?;
         let params = std::iter::once(rusqlite::types::Value::from(before_ms)).chain(
             chunk

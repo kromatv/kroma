@@ -32,6 +32,21 @@ fn a_show_monitored_for_the_first_time_takes_every_episode() {
 }
 
 #[test]
+fn a_show_takes_its_specials_only_when_they_are_asked_for() {
+    let host = host();
+    let _tmdb = tmdb();
+    let body = MonitorBody {
+        monitor_specials: true,
+        ..MonitorBody::default()
+    };
+
+    let title = monitor(&host, RequestKind::Show, SHOW, &body, None).unwrap();
+
+    assert_eq!(title.seasons, [0, 1, 2]);
+    assert!(held(&host).contains(&(Some(0), Some(1))));
+}
+
+#[test]
 fn an_episode_already_on_disk_is_monitored_as_available() {
     let host = host();
     let _tmdb = tmdb();
@@ -68,12 +83,8 @@ fn the_missing_preset_leaves_out_what_is_on_disk() {
     )
     .unwrap();
 
-    let held: Vec<(Option<u32>, Option<u32>)> = units(&host, RequestKind::Show, SHOW)
-        .into_iter()
-        .map(|(s, e, _)| (s, e))
-        .collect();
     assert_eq!(
-        held,
+        held(&host),
         [(Some(1), Some(2)), (Some(2), Some(1)), (Some(2), Some(2))]
     );
 }
@@ -120,38 +131,7 @@ fn a_preset_never_takes_an_episode_from_an_open_request() {
         None,
     )
     .unwrap();
-    db::insert_request(
-        host.db(),
-        &db::NewRequest {
-            id: "r1".into(),
-            kind: RequestKind::Show,
-            tmdb_id: SHOW,
-            title: "Show".into(),
-            year: None,
-            poster_url: None,
-            seasons: Some(vec![2]),
-            episodes: None,
-            status: RequestStatus::Approved,
-            requested_by: None,
-        },
-        1,
-    )
-    .unwrap();
-    let asked = db::WantedRow {
-        id: db::unit_id("episode", SHOW, Some(2), Some(1)),
-        request_id: Some("r1".into()),
-        kind: "episode".into(),
-        tmdb_id: SHOW,
-        imdb_id: None,
-        title: "Show".into(),
-        year: None,
-        season: Some(2),
-        episode: Some(1),
-        air_date: None,
-        status: "wanted".into(),
-        last_search_at: None,
-    };
-    db::claim_wanted(host.db(), "r1", &[asked], 1).unwrap();
+    asked_for(&host, 2, 1);
 
     monitor(
         &host,
@@ -162,11 +142,63 @@ fn a_preset_never_takes_an_episode_from_an_open_request() {
     )
     .unwrap();
 
-    let held: Vec<(Option<u32>, Option<u32>)> = units(&host, RequestKind::Show, SHOW)
-        .into_iter()
-        .map(|(s, e, _)| (s, e))
-        .collect();
-    assert_eq!(held, [(Some(1), Some(1)), (Some(2), Some(1))]);
+    assert_eq!(held(&host), [(Some(1), Some(1)), (Some(2), Some(1))]);
+}
+
+#[test]
+fn switching_a_season_off_keeps_what_an_open_request_asked_for() {
+    let host = host();
+    let _tmdb = tmdb();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
+    asked_for(&host, 2, 1);
+    let body = EpisodeMonitoringBody {
+        seasons: vec![SeasonSwitch {
+            season: 2,
+            monitored: false,
+        }],
+        ..EpisodeMonitoringBody::default()
+    };
+
+    set_episodes(&host, SHOW, &body).unwrap();
+
+    assert!(held(&host).contains(&(Some(2), Some(1))));
+    assert!(!held(&host).contains(&(Some(2), Some(2))));
+}
+
+#[test]
+fn switching_one_episode_off_keeps_it_when_an_open_request_asked_for_it() {
+    let host = host();
+    let _tmdb = tmdb();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
+    asked_for(&host, 2, 1);
+    let body = EpisodeMonitoringBody {
+        episodes: vec![EpisodeSwitch {
+            episode: EpisodeRef {
+                season: 2,
+                episode: 1,
+            },
+            monitored: false,
+        }],
+        ..EpisodeMonitoringBody::default()
+    };
+
+    set_episodes(&host, SHOW, &body).unwrap();
+
+    assert!(held(&host).contains(&(Some(2), Some(1))));
 }
 
 #[test]
@@ -215,12 +247,6 @@ fn a_movie_is_searched_from_its_minimum_availability() {
         min_availability: Some(MinAvailability::Announced),
         ..MonitorBody::default()
     };
-    let date = |host: &StubHost| {
-        let conn = host.db().get().unwrap();
-        db::wanted_for_title(&conn, RequestKind::Movie, MOVIE).unwrap()[0]
-            .air_date
-            .clone()
-    };
 
     monitor(
         &host,
@@ -230,16 +256,37 @@ fn a_movie_is_searched_from_its_minimum_availability() {
         None,
     )
     .unwrap();
-    let released = date(&host);
+    let released = air_date(&host, MOVIE);
     monitor(&host, RequestKind::Movie, MOVIE, &in_cinemas, None).unwrap();
-    let cinema = date(&host);
+    let cinema = air_date(&host, MOVIE);
     monitor(&host, RequestKind::Movie, MOVIE, &announced, None).unwrap();
-    let now = date(&host);
+    let now = air_date(&host, MOVIE);
 
     assert_eq!(released.as_deref(), Some("1999-09-21"));
     assert_eq!(cinema.as_deref(), Some("1999-03-31"));
     assert_eq!(now, None);
     assert_eq!(units(&host, RequestKind::Movie, MOVIE).len(), 1);
+}
+
+#[test]
+fn a_film_still_in_cinemas_is_not_released_at_its_cinema_date() {
+    let host = host();
+    let _tmdb = tmdb();
+
+    monitor(
+        &host,
+        RequestKind::Movie,
+        CINEMA_MOVIE,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
+
+    assert_eq!(
+        air_date(&host, CINEMA_MOVIE).as_deref(),
+        Some("2026-05-30"),
+        "three months after it reached cinemas"
+    );
 }
 
 #[test]
@@ -329,6 +376,25 @@ fn unmonitoring_forgets_the_title_and_its_rows() {
     assert!(removed);
     assert!(monitored(&host, RequestKind::Show, SHOW).is_none());
     assert!(units(&host, RequestKind::Show, SHOW).is_empty());
+}
+
+#[test]
+fn unmonitoring_keeps_what_an_open_request_asked_for() {
+    let host = host();
+    let _tmdb = tmdb();
+    monitor(
+        &host,
+        RequestKind::Show,
+        SHOW,
+        &MonitorBody::default(),
+        None,
+    )
+    .unwrap();
+    asked_for(&host, 2, 1);
+
+    unmonitor(&host, RequestKind::Show, SHOW).unwrap();
+
+    assert_eq!(held(&host), [(Some(2), Some(1))]);
 }
 
 #[test]

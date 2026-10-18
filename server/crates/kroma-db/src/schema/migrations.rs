@@ -302,4 +302,8 @@ pub(crate) const MIGRATIONS: &[&str] = &[
     // The newest release whose notes the account has been shown. NULL on every
     // account that predates the notes, so its first update after them opens them.
     "ALTER TABLE users ADD COLUMN whats_new_seen TEXT",
+    // When a monitored unit was first seen without its file, so the grace
+    // before it counts as missing again runs from the moment it vanished and
+    // not from whatever last wrote the row. NULL is "the file is there".
+    "ALTER TABLE wanted ADD COLUMN vanished_at INTEGER",
 ];

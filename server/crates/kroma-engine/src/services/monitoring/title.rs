@@ -5,6 +5,7 @@ use kroma_module_host::HostStorage;
 use crate::db;
 use crate::infra::metadata::{self, discover::DiscoverRawDetail};
 use crate::model::{MinAvailability, MonitoredTitle, RequestKind};
+use crate::services::requests::shift_ymd;
 
 use super::preset::RosterEpisode;
 
@@ -109,6 +110,8 @@ pub(crate) fn apply_detail(title: &mut MonitoredTitle, detail: &DiscoverRawDetai
     title.updated_at = now;
 }
 
+const CINEMA_TO_HOME_DAYS: i64 = 90;
+
 /// When a film is searched from, by how early its title asks for it.
 pub(crate) fn movie_air_date(min: MinAvailability, detail: &DiscoverRawDetail) -> Option<String> {
     match min {
@@ -117,7 +120,10 @@ pub(crate) fn movie_air_date(min: MinAvailability, detail: &DiscoverRawDetail) -
             .cinema_date
             .clone()
             .or_else(|| detail.available_date.clone()),
-        MinAvailability::Released => detail.available_date.clone(),
+        MinAvailability::Released => detail
+            .home_date
+            .clone()
+            .or_else(|| shift_ymd(detail.cinema_date.as_deref()?, CINEMA_TO_HOME_DAYS)),
     }
 }
 

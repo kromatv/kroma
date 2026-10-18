@@ -2155,7 +2155,7 @@
     "space": "library",
     "number": 53,
     "status": "AGREED",
-    "text": "A show is monitored with one of these presets: every episode; the episodes",
+    "text": "A show is monitored with one of these presets, each of which leaves the",
     "file": "docs/spec/library/monitoring.md",
     "line": 30
   },
@@ -2165,9 +2165,9 @@
     "space": "library",
     "number": 54,
     "status": "AGREED",
-    "text": "A preset never takes an episode away from a request that is still open:",
+    "text": "Nothing a person switches takes an episode away from a request that is",
     "file": "docs/spec/library/monitoring.md",
-    "line": 37
+    "line": 48
   },
   {
     "id": "LIB-55",
@@ -2177,7 +2177,7 @@
     "status": "AGREED",
     "text": "A season is monitored when its episodes are: switching a season on",
     "file": "docs/spec/library/monitoring.md",
-    "line": 40
+    "line": 52
   },
   {
     "id": "LIB-56",
@@ -2187,7 +2187,7 @@
     "status": "AGREED",
     "text": "An episode announced in a monitored season joins monitored. An episode a",
     "file": "docs/spec/library/monitoring.md",
-    "line": 44
+    "line": 56
   },
   {
     "id": "LIB-57",
@@ -2197,7 +2197,7 @@
     "status": "AGREED",
     "text": "A monitored show may **take new seasons**: a season its provider announces",
     "file": "docs/spec/library/monitoring.md",
-    "line": 47
+    "line": 59
   },
   {
     "id": "LIB-58",
@@ -2207,7 +2207,7 @@
     "status": "AGREED",
     "text": "A monitored film becomes searchable at its **minimum availability**: when",
     "file": "docs/spec/library/monitoring.md",
-    "line": 52
+    "line": 64
   },
   {
     "id": "LIB-59",
@@ -2217,7 +2217,7 @@
     "status": "AGREED",
     "text": "Approving a request monitors its title with what the request asked for,",
     "file": "docs/spec/library/monitoring.md",
-    "line": 56
+    "line": 76
   },
   {
     "id": "LIB-60",
@@ -2227,7 +2227,7 @@
     "status": "AGREED",
     "text": "Deleting a request leaves its title monitored. Wanting a title and having",
     "file": "docs/spec/library/monitoring.md",
-    "line": 59
+    "line": 79
   },
   {
     "id": "LIB-61",
@@ -2237,7 +2237,7 @@
     "status": "AGREED",
     "text": "Many titles of the library can be monitored at once, with one preset and",
     "file": "docs/spec/library/monitoring.md",
-    "line": 62
+    "line": 82
   },
   {
     "id": "LIB-62",
@@ -2245,9 +2245,9 @@
     "space": "library",
     "number": 62,
     "status": "AGREED",
-    "text": "Unmonitoring a title forgets which of its units were wanted. Its files and",
+    "text": "Unmonitoring a title forgets which units it wanted. Its files are left",
     "file": "docs/spec/library/monitoring.md",
-    "line": 65
+    "line": 85
   },
   {
     "id": "LIB-63",
@@ -2257,7 +2257,7 @@
     "status": "AGREED",
     "text": "A monitored episode or film that is available (aired, or past its minimum",
     "file": "docs/spec/library/monitoring.md",
-    "line": 72
+    "line": 93
   },
   {
     "id": "LIB-64",
@@ -2267,7 +2267,7 @@
     "status": "AGREED",
     "text": "The missing list shows monitored units, and beside them, kept apart, the",
     "file": "docs/spec/library/monitoring.md",
-    "line": 75
+    "line": 97
   },
   {
     "id": "LIB-65",
@@ -2277,7 +2277,7 @@
     "status": "AGREED",
     "text": "What is missing stays true in both directions: a file that lands makes",
     "file": "docs/spec/library/monitoring.md",
-    "line": 78
+    "line": 100
   },
   {
     "id": "LIB-66",
@@ -2287,7 +2287,7 @@
     "status": "AGREED",
     "text": "A unit goes back to missing only after it has been without its file for",
     "file": "docs/spec/library/monitoring.md",
-    "line": 83
+    "line": 105
   },
   {
     "id": "LIB-67",
@@ -2297,7 +2297,7 @@
     "status": "AGREED",
     "text": "When more monitored units lose their file in one pass than 20, or than a",
     "file": "docs/spec/library/monitoring.md",
-    "line": 87
+    "line": 109
   },
   {
     "id": "LIB-68",
@@ -2307,7 +2307,7 @@
     "status": "AGREED",
     "text": "A file holding several episodes answers for every episode in it, in the",
     "file": "docs/spec/library/monitoring.md",
-    "line": 92
+    "line": 114
   },
   {
     "id": "LIB-69",
@@ -2317,7 +2317,57 @@
     "status": "AGREED",
     "text": "A preset is applied once. Afterwards each season and each episode is",
     "file": "docs/spec/library/monitoring.md",
-    "line": 34
+    "line": 45
+  },
+  {
+    "id": "LIB-70",
+    "domain": "LIB",
+    "space": "library",
+    "number": 70,
+    "status": "AGREED",
+    "text": "A show can also be monitored with the recent preset: the episodes that",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 35
+  },
+  {
+    "id": "LIB-71",
+    "domain": "LIB",
+    "space": "library",
+    "number": 71,
+    "status": "AGREED",
+    "text": "The specials, the episodes of season 0, are left out: no preset monitors",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 39
+  },
+  {
+    "id": "LIB-72",
+    "domain": "LIB",
+    "space": "library",
+    "number": 72,
+    "status": "AGREED",
+    "text": "A film in cinemas is not released at home yet. A film whose minimum",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 68
+  },
+  {
+    "id": "LIB-73",
+    "domain": "LIB",
+    "space": "library",
+    "number": 73,
+    "status": "AGREED",
+    "text": "A film whose home release is unknown, or still ahead, is read again from",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 72
+  },
+  {
+    "id": "LIB-74",
+    "domain": "LIB",
+    "space": "library",
+    "number": 74,
+    "status": "AGREED",
+    "text": "A person asks for the specials when they choose the preset, for one title",
+    "file": "docs/spec/library/monitoring.md",
+    "line": 42
   },
   {
     "id": "MEDIA-1",
@@ -3367,7 +3417,7 @@
     "status": "AGREED",
     "text": "A condition can be negated or required. A format matches when every",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 35
+    "line": 36
   },
   {
     "id": "MOD-59",
@@ -3377,7 +3427,7 @@
     "status": "AGREED",
     "text": "A **profile** ranks the qualities it allows, several of them sharing a rank",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 39
+    "line": 40
   },
   {
     "id": "MOD-60",
@@ -3387,7 +3437,7 @@
     "status": "AGREED",
     "text": "One profile is the default. Any title may be judged by another.",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 50
+    "line": 58
   },
   {
     "id": "MOD-61",
@@ -3397,7 +3447,7 @@
     "status": "AGREED",
     "text": "The rules can be tested against a release name: the editor shows what was",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 52
+    "line": 60
   },
   {
     "id": "MOD-62",
@@ -3407,7 +3457,7 @@
     "status": "AGREED",
     "text": "One set of rules judges a release and a file on disk. A file's facts come",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 59
+    "line": 67
   },
   {
     "id": "MOD-63",
@@ -3417,7 +3467,7 @@
     "status": "AGREED",
     "text": "A release name says which French dub it carries (a file says it as",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 64
+    "line": 72
   },
   {
     "id": "MOD-64",
@@ -3427,7 +3477,7 @@
     "status": "AGREED",
     "text": "Releases are ranked by their quality's rank in the profile, then their",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 70
+    "line": 85
   },
   {
     "id": "MOD-65",
@@ -3437,7 +3487,7 @@
     "status": "AGREED",
     "text": "With upgrades on, a release **upgrades** a file in three cases, and in no",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 78
+    "line": 93
   },
   {
     "id": "MOD-66",
@@ -3447,7 +3497,7 @@
     "status": "AGREED",
     "text": "A film or an episode is **cutoff unmet** when the best file holding it is",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 86
+    "line": 104
   },
   {
     "id": "MOD-67",
@@ -3457,7 +3507,7 @@
     "status": "AGREED",
     "text": "With **add beside** on, a release that wins on formats and loses on",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 90
+    "line": 108
   },
   {
     "id": "MOD-68",
@@ -3467,7 +3517,7 @@
     "status": "AGREED",
     "text": "Missing units are searched first, each title under its own profile. A unit",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 100
+    "line": 118
   },
   {
     "id": "MOD-69",
@@ -3477,7 +3527,7 @@
     "status": "AGREED",
     "text": "Titles that are cutoff unmet are searched for a better copy with what the",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 105
+    "line": 123
   },
   {
     "id": "MOD-70",
@@ -3487,7 +3537,7 @@
     "status": "AGREED",
     "text": "Every indexer's latest releases are read on an interval, fifteen minutes",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 109
+    "line": 127
   },
   {
     "id": "MOD-71",
@@ -3497,7 +3547,7 @@
     "status": "AGREED",
     "text": "Any title can be searched by hand from its page, monitored or not. Each",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 114
+    "line": 132
   },
   {
     "id": "MOD-72",
@@ -3507,7 +3557,7 @@
     "status": "AGREED",
     "text": "A download that fails, stalls past a limit, or is removed puts the units",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 122
+    "line": 140
   },
   {
     "id": "MOD-73",
@@ -3517,7 +3567,7 @@
     "status": "AGREED",
     "text": "A release whose download failed is blocklisted for its title, so the next",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 125
+    "line": 143
   },
   {
     "id": "MOD-74",
@@ -3527,7 +3577,7 @@
     "status": "AGREED",
     "text": "The library never deletes (LIB-48). Replacing a file is acquisition acting",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 128
+    "line": 146
   },
   {
     "id": "MOD-75",
@@ -3547,7 +3597,7 @@
     "status": "AGREED",
     "text": "A profile scores each custom format, and sets the minimum format score a",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 43
+    "line": 44
   },
   {
     "id": "MOD-77",
@@ -3557,7 +3607,7 @@
     "status": "AGREED",
     "text": "A profile names terms a release must contain and terms it must not, and a",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 47
+    "line": 48
   },
   {
     "id": "MOD-78",
@@ -3567,7 +3617,7 @@
     "status": "AGREED",
     "text": "A release outside the profile's qualities, below its minimum format score,",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 74
+    "line": 89
   },
   {
     "id": "MOD-79",
@@ -3577,7 +3627,37 @@
     "status": "AGREED",
     "text": "A file an upgrade replaces goes to the recycle bin when one is set, and is",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 132
+    "line": 150
+  },
+  {
+    "id": "MOD-80",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 80,
+    "status": "AGREED",
+    "text": "A release name says what it covers: one episode, a span of episodes, one",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 79
+  },
+  {
+    "id": "MOD-81",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 81,
+    "status": "AGREED",
+    "text": "A term is found anywhere in the release name, ignoring case. Written",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 52
+  },
+  {
+    "id": "MOD-82",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 82,
+    "status": "AGREED",
+    "text": "A term that is empty, or an expression that does not compile, refuses",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 55
   },
   {
     "id": "PLAY-1",

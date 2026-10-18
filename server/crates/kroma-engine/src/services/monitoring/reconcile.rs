@@ -29,6 +29,7 @@ pub struct ReconcileSummary {
 #[derive(Debug, Default)]
 struct Plan {
     available: Vec<String>,
+    present: Vec<String>,
     missing: Vec<String>,
     held: usize,
 }
@@ -45,21 +46,11 @@ pub fn reconcile_pass<S: HostStorage>(state: &S) -> Result<ReconcileSummary> {
     for title in &titles {
         plan_title(state, title.kind, title.tmdb_id, &mut plan)?;
     }
-    let limit = REVERT_FLOOR.max(plan.held / 10);
     let mut summary = ReconcileSummary {
         titles: titles.len(),
         ..ReconcileSummary::default()
     };
-    if plan.missing.len() > limit {
-        tracing::warn!(
-            target: "monitoring",
-            vanished = plan.missing.len(),
-            "more monitored files vanished at once than an admin deletes; leaving them available"
-        );
-        summary.held_back = plan.missing.len();
-        plan.missing.clear();
-    }
-    apply(state, &plan, &mut summary)?;
+    apply(state, &mut plan, &mut summary)?;
     Ok(summary)
 }
 
@@ -71,14 +62,30 @@ pub(crate) fn reconcile_title<S: HostStorage>(
 ) -> Result<()> {
     let mut plan = Plan::default();
     plan_title(state, kind, tmdb_id, &mut plan)?;
-    apply(state, &plan, &mut ReconcileSummary::default())
+    apply(state, &mut plan, &mut ReconcileSummary::default())
 }
 
-fn apply<S: HostStorage>(state: &S, plan: &Plan, summary: &mut ReconcileSummary) -> Result<()> {
+fn hold_back_a_mass_vanish(plan: &mut Plan, summary: &mut ReconcileSummary) {
+    if plan.missing.len() <= REVERT_FLOOR.max(plan.held / 10) {
+        return;
+    }
+    tracing::warn!(
+        target: "monitoring",
+        vanished = plan.missing.len(),
+        "more monitored files vanished at once than an admin deletes; leaving them available"
+    );
+    summary.held_back = plan.missing.len();
+    plan.missing.clear();
+}
+
+fn apply<S: HostStorage>(state: &S, plan: &mut Plan, summary: &mut ReconcileSummary) -> Result<()> {
+    hold_back_a_mass_vanish(plan, summary);
     let now = now_ms();
     db::set_wanted_status(state.db(), &plan.available, "available", now)?;
+    db::clear_wanted_vanished(state.db(), &plan.present)?;
+    db::mark_wanted_vanished(state.db(), &plan.missing, now)?;
     let conn = state.db().get()?;
-    let settled = db::wanted_unchanged_since(&conn, &plan.missing, now - REVERT_GRACE_MS)?;
+    let settled = db::wanted_vanished_before(&conn, &plan.missing, now - REVERT_GRACE_MS)?;
     drop(conn);
     db::set_wanted_status(state.db(), &settled, "wanted", now)?;
     db::reset_wanted_search(state.db(), &settled, now)?;
@@ -109,7 +116,10 @@ fn plan_title<S: HostStorage>(
         let unit = (row.season.unwrap_or(0), row.episode.unwrap_or(0));
         let held = on_disk.as_ref().is_some_and(|disk| disk.contains(&unit));
         match (held, row.status.as_str()) {
-            (true, "available") => plan.held += 1,
+            (true, "available") => {
+                plan.held += 1;
+                plan.present.push(row.id);
+            }
             (true, _) => plan.available.push(row.id),
             (false, "available") if gone(kind, on_disk.as_ref()) => plan.missing.push(row.id),
             (false, "available") => plan.held += 1,

@@ -27,13 +27,6 @@ fn age(host: &StubHost) {
     exec(host, "UPDATE monitored SET refreshed_at = 0");
 }
 
-fn held(host: &StubHost) -> Vec<(Option<u32>, Option<u32>)> {
-    units(host, RequestKind::Show, SHOW)
-        .into_iter()
-        .map(|(s, e, _)| (s, e))
-        .collect()
-}
-
 #[test]
 fn an_episode_announced_since_joins_and_wakes_the_search() {
     let host = host();
@@ -141,6 +134,31 @@ fn a_new_season_stays_out_of_a_show_that_does_not() {
     refresh_pass(&host).unwrap();
 
     assert!(held(&host).iter().all(|(s, _)| *s == Some(1)));
+}
+
+#[test]
+fn a_film_whose_home_release_appears_is_searched_from_it() {
+    let host = host();
+    {
+        let _tmdb = tmdb();
+        monitor(
+            &host,
+            RequestKind::Movie,
+            CINEMA_MOVIE,
+            &MonitorBody::default(),
+            None,
+        )
+        .unwrap();
+    }
+    age(&host);
+    let _later = FakeTmdb::start(|path| match path {
+        "/movie/604" => (200, in_cinemas(Some("2026-04-10"))),
+        _ => (404, json!({})),
+    });
+
+    refresh_pass(&host).unwrap();
+
+    assert_eq!(air_date(&host, CINEMA_MOVIE).as_deref(), Some("2026-04-10"));
 }
 
 #[test]

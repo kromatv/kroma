@@ -76,9 +76,12 @@ pub struct DiscoverRawDetail {
     // Show only: `(air_date YYYY-MM-DD, season, episode)`; `None` for movies /
     // shows with nothing upcoming.
     pub next_air: Option<(String, u32, u32)>,
-    // Movie only: soonest home-availability date (digital > theatrical >
-    // physical > basic release_date), `YYYY-MM-DD`; `None` for shows.
+    // Movie only: soonest date the film can be seen (home, else theatrical,
+    // else the basic release_date), `YYYY-MM-DD`; `None` for shows.
     pub available_date: Option<String>,
+    // Movie only: the digital or physical release, with no fallback: a film
+    // still only in cinemas has none.
+    pub home_date: Option<String>,
     // Movie only: the theatrical release, else the basic release_date.
     pub cinema_date: Option<String>,
     // ISO 639-1, and the first ISO 3166-1 country of origin.
@@ -208,6 +211,7 @@ pub fn detail(
         status,
         next_air,
         available_date: dates.available,
+        home_date: dates.home,
         cinema_date: dates.cinema,
         original_language: d.original_language.filter(|l| !l.is_empty()),
         original_title,

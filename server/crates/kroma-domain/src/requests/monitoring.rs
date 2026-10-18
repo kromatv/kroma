@@ -35,13 +35,15 @@ impl MinAvailability {
 }
 
 /// Which episodes of a show start out monitored. Applied once; each episode can
-/// be switched on its own afterwards.
+/// be switched on its own afterwards. `Recent` is the last three months and
+/// everything still to come.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum MonitorPreset {
     All,
     Future,
     Missing,
+    Recent,
     Existing,
     FirstSeason,
     LatestSeason,
@@ -94,12 +96,15 @@ pub struct MonitoredSummary {
 
 /// `PUT /api/monitoring/:kind/:tmdbId` body. Monitors the title when it is not
 /// yet; `preset` is applied to a show's episodes, and absent fields keep what
-/// the title has.
+/// the title has. `monitor_specials` widens the preset to season 0, which it
+/// otherwise leaves alone.
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MonitorBody {
     #[serde(default)]
     pub preset: Option<MonitorPreset>,
+    #[serde(default)]
+    pub monitor_specials: bool,
     #[serde(default)]
     pub monitor_new_seasons: Option<bool>,
     #[serde(default)]

@@ -7,8 +7,8 @@ fn monitored_show(host: &StubHost, on_disk: &[(u32, u32)]) -> FakeTmdb {
     tmdb
 }
 
-fn settle(host: &StubHost) {
-    exec(host, "UPDATE wanted SET updated_at = 0");
+fn grace_over(host: &StubHost) {
+    exec(host, "UPDATE wanted SET vanished_at = 0");
 }
 
 fn status_of(host: &StubHost, season: u32, episode: u32) -> String {
@@ -32,11 +32,12 @@ fn an_episode_that_lands_on_disk_becomes_available() {
 }
 
 #[test]
-fn an_episode_whose_file_is_gone_is_missing_again_once_settled() {
+fn an_episode_whose_file_is_gone_is_missing_again_once_the_grace_is_over() {
     let host = host();
     let _tmdb = monitored_show(&host, &[(1, 1), (1, 2)]);
     exec(&host, "DELETE FROM items WHERE id = 'e12'");
-    settle(&host);
+    reconcile_pass(&host).unwrap();
+    grace_over(&host);
 
     let summary = reconcile_pass(&host).unwrap();
 
@@ -57,12 +58,40 @@ fn a_file_gone_moments_after_it_landed_is_left_alone() {
 }
 
 #[test]
+fn the_grace_runs_from_when_the_file_vanished_and_not_from_the_last_write() {
+    let host = host();
+    let _tmdb = monitored_show(&host, &[(1, 1)]);
+    exec(&host, "UPDATE wanted SET updated_at = 0");
+    exec(&host, "DELETE FROM items WHERE id = 'e11'");
+
+    reconcile_pass(&host).unwrap();
+
+    assert_eq!(status_of(&host, 1, 1), "available");
+}
+
+#[test]
+fn a_file_that_comes_back_starts_the_grace_over() {
+    let host = host();
+    let _tmdb = monitored_show(&host, &[(1, 1)]);
+    exec(&host, "DELETE FROM items WHERE id = 'e11'");
+    reconcile_pass(&host).unwrap();
+    grace_over(&host);
+    seed_show_on_disk(&host, &[(1, 1)]);
+    reconcile_pass(&host).unwrap();
+    exec(&host, "DELETE FROM items WHERE id = 'e11'");
+
+    reconcile_pass(&host).unwrap();
+
+    assert_eq!(status_of(&host, 1, 1), "available");
+}
+
+#[test]
 fn a_show_the_catalogue_lost_entirely_keeps_its_episodes() {
     let host = host();
     let _tmdb = monitored_show(&host, &[(1, 1)]);
     exec(&host, "DELETE FROM items");
     exec(&host, "DELETE FROM shows");
-    settle(&host);
+    grace_over(&host);
 
     reconcile_pass(&host).unwrap();
 
@@ -107,6 +136,40 @@ fn many_files_vanishing_at_once_are_held_back() {
 
     assert_eq!(summary.held_back, 30);
     assert_eq!(summary.missing_again, 0);
+}
+
+#[test]
+fn one_title_losing_every_file_at_once_is_held_back_too() {
+    let host = host();
+    let _tmdb = tmdb();
+    seed_show_on_disk(&host, &[]);
+    let rows: Vec<db::WantedRow> = (1..=25)
+        .map(|episode| db::WantedRow {
+            id: db::unit_id("episode", SHOW, Some(1), Some(episode)),
+            request_id: None,
+            kind: "episode".into(),
+            tmdb_id: SHOW,
+            imdb_id: None,
+            title: "Show".into(),
+            year: None,
+            season: Some(1),
+            episode: Some(episode),
+            air_date: Some("2020-01-01".into()),
+            status: "available".into(),
+            last_search_at: None,
+        })
+        .collect();
+    db::insert_wanted(host.db(), &rows, 0).unwrap();
+    grace_over(&host);
+
+    crate::services::monitoring::reconcile::reconcile_title(&host, RequestKind::Show, SHOW)
+        .unwrap();
+
+    assert!(
+        units(&host, RequestKind::Show, SHOW)
+            .iter()
+            .all(|(_, _, status)| status == "available")
+    );
 }
 
 #[test]
