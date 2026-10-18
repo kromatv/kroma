@@ -12,7 +12,7 @@ export function useFocusedRow(focused: boolean): (view: View | null) => void {
   return useCallback(
     (view: View | null) => {
       mirror(view);
-      anchor.current = view;
+      anchor(view);
     },
     [mirror, anchor],
   );

@@ -10,6 +10,7 @@ import { subtitleName } from '#ui/components/organisms/player/lib/subtitle-name'
 import { IconAi } from '#ui/components/organisms/player/parts/icons';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
 import { style, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import { useT } from '#ui/services/i18n';
 import type { PlayerSubtitleGeneration } from '../../../media-types';
@@ -41,6 +42,8 @@ export function SubtitlesPanel({
   onBack,
   ref,
 }: Readonly<SubtitlesPanelProps>) {
+  const panelScoped = useStyles(panel);
+
   const t = useT();
   const [wizardOpen, setWizardOpen] = useState(false);
   const wizardRef = useRef<PanelHandle>(null);
@@ -78,7 +81,7 @@ export function SubtitlesPanel({
 
   return (
     <Box>
-      <Box style={panel.panelList}>
+      <Box style={panelScoped.panelList}>
         <SelectRow
           index={0}
           label={t('player.subtitlesOff')}
@@ -157,18 +160,11 @@ export function SubtitlesPanel({
 
 const MIN_W = style({ minWidth: 0 });
 function AiBadge() {
+  const s = useStyles(sDefinition);
+
   return (
-    <Box
-      row
-      align="center"
-      gap={4}
-      shrink={0}
-      radius="xs"
-      px={6}
-      py={2}
-      bg="rgba(124, 92, 255, 0.18)"
-    >
-      <IconAi size={11} color="#B7A6FF" />
+    <Box row align="center" gap={4} shrink={0} radius="xs" px={6} py={2} bg="ai/18">
+      <IconAi size={11} color="aiLabel" />
       <Text style={s.aiBadgeLabel}>IA</Text>
     </Box>
   );
@@ -195,18 +191,14 @@ function GenRow({
   gen,
   onCancel,
 }: Readonly<{ gen: PlayerSubtitleGeneration; onCancel: (id: string) => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const pct = Math.round(gen.progress * 100);
   const err = gen.status === 'error';
   const engine = gen.mode === 'translate' ? t('player.subAiBadge') : 'Whisper';
   return (
-    <Box
-      radius="xl"
-      borderWidth={1}
-      border="rgba(124, 92, 255, 0.4)"
-      bg="rgba(124, 92, 255, 0.06)"
-      p={16}
-    >
+    <Box radius="xl" borderWidth={1} border="rgba(124, 92, 255, 0.4)" bg="ai/6" p={16}>
       <Box row align="center" gap={14}>
         <Text style={s.genLang}>{gen.lang ?? ''}</Text>
         <AiBadge />
@@ -214,21 +206,21 @@ function GenRow({
       </Box>
       <Box row align="center" between mt={8}>
         <Box row align="center" gap={8}>
-          {!err ? <Box w={6} h={6} radius="circle" bg="#8B7FF0" /> : null}
+          {!err ? <Box w={6} h={6} radius="circle" bg="aiIndicator" /> : null}
           <Text style={s.genStage} color={err ? '#E8536A' : '#9A8FF0'}>
             {err
               ? (gen.error ?? t(subtitleStageKey(gen.stage)))
               : `${engine} · ${t(subtitleStageKey(gen.stage))}`}
           </Text>
         </Box>
-        <Text style={s.pct} color="#B3A9F5">
+        <Text style={s.pct} color="aiText">
           {err ? '' : `${pct} %`}
         </Text>
       </Box>
       {!err ? (
         <>
           <Box mt={6}>
-            <Progress value={gen.progress} color="#7C6FF5" trackColor="white/10" rounded />
+            <Progress value={gen.progress} color="aiProgress" trackColor="white/10" rounded />
           </Box>
           {gen.etaSec != null ? (
             <Text style={s.eta} color="white/40">
@@ -241,10 +233,10 @@ function GenRow({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   pct: { text: 'footnoteTv', fontVariant: ['tabular-nums'] },
   eta: { text: 'footnoteTv', mt: 6 },
-  aiBadgeLabel: { text: 'overline', color: '#B7A6FF' },
+  aiBadgeLabel: { text: 'overline', color: 'aiLabel' },
   genLang: { flex: 1, text: 'labelTv' },
   genStage: { text: 'footnoteTv' },
 });

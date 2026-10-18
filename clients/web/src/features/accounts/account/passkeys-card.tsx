@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // Passkeys section ("Clés d'accès"): register WebAuthn credentials for
 // passwordless sign-in, list them, and remove them. WebAuthn only works in a
 // secure context (HTTPS or localhost), so on plain-HTTP LAN access the card
@@ -9,9 +10,9 @@ import { useFormat, useT } from '@kromatv/ui';
 import { Box, Button, Icon, IconWell, ListRow, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { kromaClient } from '#web/shared/lib/api';
+
 import { deviceInfo } from '#web/shared/lib/device';
-import { userQueries } from '#web/shared/lib/queries';
+
 import { createPasskey, passkeysSupported } from '#web/shared/lib/webauthn';
 
 function isCancel(e: unknown): boolean {
@@ -29,6 +30,8 @@ function PasskeyRow({
   passkey,
   onRemoved,
 }: Readonly<{ passkey: PasskeyInfo; onRemoved: () => void }>) {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const fmt = useFormat();
   const [removing, setRemoving] = useState(false);
@@ -36,7 +39,7 @@ function PasskeyRow({
   const remove = async () => {
     setRemoving(true);
     try {
-      await kromaClient().accounts.passkeys.delete(passkey.id);
+      await webRuntime.client.accounts.passkeys.delete(passkey.id);
       onRemoved();
     } finally {
       setRemoving(false);
@@ -66,20 +69,26 @@ function PasskeyRow({
 }
 
 export function PasskeysCard() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const qc = useQueryClient();
   const supported = passkeysSupported();
-  const { data: keys } = useQuery({ ...userQueries.passkeys(), enabled: supported });
+  const { data: keys } = useQuery({
+    ...webRuntime.queries.userQueries.passkeys(),
+    enabled: supported,
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: userQueries.passkeys().queryKey });
+  const invalidate = () =>
+    qc.invalidateQueries({ queryKey: webRuntime.queries.userQueries.passkeys().queryKey });
 
   const add = async () => {
     setBusy(true);
     setError(null);
     try {
-      const client = kromaClient();
+      const client = webRuntime.client;
       const { ceremonyId, options } = await client.accounts.passkeys.registerStart();
       const credential = await createPasskey(options);
       const name = deviceInfo(navigator.userAgent, t('account.unknownDevice')).label;

@@ -1,7 +1,7 @@
 // The strip above the tab bar while this phone is driving a TV.
 
 import { useCast } from '@kromatv/ui';
-import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';
@@ -10,6 +10,8 @@ import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 export function CastMiniBar() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const router = useRouter();
   const client = useClient();
@@ -70,7 +72,7 @@ export function CastMiniBar() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   bar: {
     row: true,
     align: 'center',

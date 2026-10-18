@@ -1,3 +1,4 @@
+import { type CornerValue, type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
 // <Avatar>: the profile / cast disc. A photo when there is one, otherwise a
 // deterministic gradient with the person's initials, so a profile is never a
 // blank circle and always keeps the same colour everywhere it appears.
@@ -7,7 +8,6 @@ import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
-import { type CornerValue, sharedStyle } from '#ui/core';
 
 const AVATAR_GRADIENTS = [
   'linear-gradient(135deg, #F4B642, #E8743B)',
@@ -22,14 +22,18 @@ const AVATAR_GRADIENT = AVATAR_GRADIENTS[0];
 /** Stable gradient for a seed (a user id, a person's name), so a profile keeps
  * its colour on every screen and on every device. */
 
-const initialsType = (size: number) =>
-  sharedStyle(`avatar:initials:${size}`, {
-    font: 'display',
-    fontWeight: '700',
-    fontSize: Math.round(size * 0.38),
-    lineHeight: Math.round(size * 0.46),
-    color: 'white/95',
-  });
+const initialsType = (size: number, scope: StyleScope) =>
+  sharedStyle(
+    `avatar:initials:${size}`,
+    {
+      font: 'display',
+      fontWeight: '700',
+      fontSize: Math.round(size * 0.38),
+      lineHeight: Math.round(size * 0.46),
+      color: 'white/95',
+    },
+    scope,
+  );
 function gradientFor(seed: string): string {
   return AVATAR_GRADIENTS[hashString(seed) % AVATAR_GRADIENTS.length] as string;
 }
@@ -108,6 +112,8 @@ function Avatar({
   circle = false,
   locked = false,
 }: Readonly<AvatarProps>) {
+  const scope = useStyleScope();
+
   // Clamped, and a non-finite value falls back on the design's default: a corner
   // of NaN renders a square on the web and throws on Android.
   const asked = Number.isFinite(roundness) ? roundness : ROUNDNESS;
@@ -125,7 +131,7 @@ function Avatar({
   // still loading, or a stored URL that 404s - a profile is never a blank disc.
   const initials = (
     <Box fill center>
-      <Text style={initialsType(size)}>{initialsOf(name)}</Text>
+      <Text style={initialsType(size, scope)}>{initialsOf(name)}</Text>
     </Box>
   );
   return (

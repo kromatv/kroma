@@ -46,21 +46,21 @@ async function modules(env: Env, waitUntil: WaitUntil): Promise<DescribedModule[
 const unavailable = () =>
   jsonResponse(JSON.stringify({ error: 'catalog unavailable' }), MISS_TTL, 503);
 
-/** `GET /registry.json` — who this registry is and which ids it serves. */
+/** `GET /registry.json`: who this registry is and which ids it serves. */
 export async function descriptorResponse(env: Env, waitUntil: WaitUntil, origin: string) {
   const found = await modules(env, waitUntil);
   if (!found) return unavailable();
   return jsonResponse(JSON.stringify(buildDescriptor(REGISTRY_NAME, origin, found)), DOCUMENT_TTL);
 }
 
-/** `GET /index.json` — one record per module, the version a bare install gets. */
+/** `GET /index.json`: one record per module, the version a bare install gets. */
 export async function indexResponse(env: Env, waitUntil: WaitUntil) {
   const found = await modules(env, waitUntil);
   if (!found) return unavailable();
   return jsonResponse(JSON.stringify(buildIndex(found)), DOCUMENT_TTL);
 }
 
-/** `GET /m/{id}.json` — one module, every version. */
+/** `GET /m/{id}.json`: one module, every version. */
 export async function moduleResponse(id: string, env: Env, waitUntil: WaitUntil) {
   const found = await modules(env, waitUntil);
   if (!found) return unavailable();
@@ -72,7 +72,7 @@ export async function moduleResponse(id: string, env: Env, waitUntil: WaitUntil)
   return jsonResponse(JSON.stringify(buildModuleRecord(entry, known)), DOCUMENT_TTL);
 }
 
-/** `GET /schemas/{version}/{name}.json` — the spec, derived from the schemas this
+/** `GET /schemas/{version}/{name}.json`: the spec, derived from the schemas this
  *  registry emits with, so it is served without reading the catalog at all.
  *  `null` when nothing publishes that name at that version. */
 export function schemaResponse(name: string, version: number | undefined, origin: string) {

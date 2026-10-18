@@ -2,9 +2,10 @@
 
 import type { MediaItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
-import { setDecoderFrameLimits } from '@kromatv/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { PlaybackCapabilitiesProvider } from '#tv/app/providers/playbackCapabilities';
 import type { EngineListeners } from '#tv/features/playback/player/engine';
 
 const H = vi.hoisted(() => ({
@@ -115,23 +116,33 @@ describe('useEngineLifecycle decoder ceiling', () => {
   beforeEach(() => {
     H.listeners = null;
     H.vlc = true;
-    setDecoderFrameLimits({ hevc: { width: 1920, height: 1920 } });
   });
 
   afterEach(() => {
     H.vlc = false;
-    setDecoderFrameLimits(null);
   });
 
   it('still builds an engine for a picture over the ceiling, because the server scales it', async () => {
-    const { result } = renderHook(() => useEngineLifecycle(CLIENT, UHD));
+    const { result } = renderHook(() => useEngineLifecycle(CLIENT, UHD), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(PlaybackCapabilitiesProvider, {
+          limits: { hevc: { width: 1920, height: 1920 } },
+          children,
+        }),
+    });
 
     await waitFor(() => expect(H.listeners).not.toBeNull());
     expect(result.current.error).toBeNull();
   });
 
   it('does not fall back to VLC when the frame is what the platform player refused', async () => {
-    const { result } = renderHook(() => useEngineLifecycle(CLIENT, UHD));
+    const { result } = renderHook(() => useEngineLifecycle(CLIENT, UHD), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(PlaybackCapabilitiesProvider, {
+          limits: { hevc: { width: 1920, height: 1920 } },
+          children,
+        }),
+    });
     if (!H.listeners) throw new Error('expected the lifecycle to have built an engine');
 
     act(() => H.listeners?.onError());

@@ -46,14 +46,7 @@ vi.mock('expo-file-system', () => ({
   Paths: { document: '/documents' },
 }));
 
-const stored = vi.hoisted(() => ({ current: null as unknown }));
-vi.mock('@kromatv/client', () => ({
-  setSessionStorage: (s: unknown) => {
-    stored.current = s;
-  },
-}));
-
-const { installDeviceStore } = await import('./deviceStore');
+const { createDeviceStore } = await import('./deviceStore');
 
 type Store = {
   getItem(key: string): string | null;
@@ -61,10 +54,7 @@ type Store = {
   removeItem(key: string): void;
 };
 
-const install = (): Store => {
-  installDeviceStore();
-  return stored.current as Store;
-};
+const install = (): Store => createDeviceStore();
 
 beforeEach(() => {
   state.dirExists = true;
@@ -75,10 +65,9 @@ beforeEach(() => {
   state.throwOnOpen = false;
   state.throwOnWrite = false;
   state.throwOnRead = false;
-  stored.current = null;
 });
 
-describe('installDeviceStore', () => {
+describe('createDeviceStore', () => {
   it('hands @kromatv/core a store that reads what it wrote', () => {
     const store = install();
     expect(store.getItem('kroma:theme')).toBeNull();

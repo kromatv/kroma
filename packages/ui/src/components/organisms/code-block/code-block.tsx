@@ -1,3 +1,5 @@
+import { useStyles } from '#ui/core/styles';
+import { fontSizes as textSizes } from '#ui/core/tokens';
 // <CodeBlock>: a block of TSX, highlighted, numbered and copyable.
 //
 // It paints through <Text> and <Box> rather than through a highlighter, because
@@ -18,9 +20,9 @@ import { lines } from './code-tokens';
 
 // `lineHeight` is shared with the gutter, and neither column adds row spacing of
 // its own, which is what keeps a number level with its line.
-const LINE = { font: 'mono', fontSize: 12.5, lineHeight: 19 } as const;
+const LINE = { font: 'mono', fontSize: textSizes.captionRaised, lineHeight: 19 } as const;
 
-const ink = styles({
+const inkDefinition = styles({
   plain: { ...LINE, color: 'text' },
   tag: { ...LINE, color: 'accent' },
   attr: { ...LINE, color: 'info' },
@@ -53,6 +55,9 @@ interface CodeBlockProps {
  * ```
  */
 function CodeBlock({ code, numbers, maxHeight = 320 }: Readonly<CodeBlockProps>) {
+  const ink = useStyles(inkDefinition);
+  const s = useStyles(sDefinition);
+
   const trimmed = code.trim();
   const rows = useMemo(() => lines(trimmed), [trimmed]);
   const showNumbers = numbers ?? rows.length > 1;
@@ -108,7 +113,7 @@ function CodeBlock({ code, numbers, maxHeight = 320 }: Readonly<CodeBlockProps>)
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   frame: { border: 'border', overflow: 'hidden' },
   // Hug the content: the cap lives on the frame's maxHeight, and a ScrollView
   // that grows would stretch a two-line snippet to fill it.
@@ -131,7 +136,12 @@ const s = styles({
   // numbers are parked rather than scrolled off with the code.
   gutterCol: { pr: 12, mr: 12, borderRightWidth: 1, borderRightColor: 'border' },
   line: { ...LINE },
-  gutter: { font: 'mono', fontSize: 11.5, lineHeight: LINE.lineHeight, opacity: 0.6 },
+  gutter: {
+    font: 'mono',
+    fontSize: textSizes.overlineRaised,
+    lineHeight: LINE.lineHeight,
+    opacity: 0.6,
+  },
   copySlot: { top: 6, right: 6, z: 1 },
 });
 

@@ -25,7 +25,7 @@
 
 import { useHandoffPicker, useNearbyTvs } from '@kromatv/core/react';
 import { lanBeacon } from '@kromatv/lan-beacon';
-import { Box, EmptyState, NearbyTvList, Spinner, styles, Text } from '@kromatv/ui/kit';
+import { Box, EmptyState, NearbyTvList, Spinner, styles, Text, useStyles } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { CheckPrompt } from '#mobile/components/connect/CheckPrompt';
@@ -39,6 +39,8 @@ import { spacing, type } from '#mobile/lib/theme';
 const SETTLE_MS = 4000;
 
 export function NearbyTvs() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { devices, connecting, connect } = useNearbyTvs({
@@ -118,7 +120,7 @@ export function NearbyTvs() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   section: { flex: true, w: '100%', gap: spacing.sm },
   searching: { row: true, center: true, gap: spacing.sm, py: spacing.md },
   searchingLabel: { ...type.caption, color: 'textDim' },

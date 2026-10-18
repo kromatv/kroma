@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
+
 import { renderHook } from '@testing-library/react';
+import { createElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { KitProvider } from '#ui/configure';
 import { webDocument } from '#ui/lib/dom';
 import { declared } from '#ui/testing';
+import { KitSettingsContext, useKitSettings } from './kit-settings';
 import { useScrollLock } from './scroll-lock';
 
 vi.mock('#ui/lib/dom', async (original) => {
@@ -75,8 +79,11 @@ describe('useScrollLock', () => {
   });
 
   it('holds the lock until the LAST of two nested overlays closes', () => {
-    const outer = renderHook(() => useScrollLock(true));
-    const inner = renderHook(() => useScrollLock(true));
+    const host = renderHook(useKitSettings, { wrapper: KitProvider });
+    const wrapper: typeof KitProvider = ({ children }) =>
+      createElement(KitSettingsContext.Provider, { value: host.result.current }, children);
+    const outer = renderHook(() => useScrollLock(true), { wrapper });
+    const inner = renderHook(() => useScrollLock(true), { wrapper });
     expect(overflow().root).toBe('hidden');
 
     inner.unmount();

@@ -1,3 +1,5 @@
+import { useStyles } from '#ui/core/styles';
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // The chrome around a plot: the ruled ground, the two scales, the key and the
 // readout. None of it is drawn into the SVG - it is laid out and painted with
 // the theme, so the grid and the labels follow the ground the way every other
@@ -82,6 +84,8 @@ interface ChartAxisProps {
 
 /** One edge's scale: its levels and their labels. */
 function ChartAxis({ edge, ticks = TICKS, room, every, format }: Readonly<ChartAxisProps>) {
+  const s = useStyles(sDefinition);
+
   const state = useChart('Axis');
   const band = room ?? AXIS_ROOM[edge];
   if (edge === 'left') {
@@ -163,6 +167,8 @@ function ChartFooter({ children }: Readonly<ChartFooterProps>) {
 /** The readout for the sample under the pointer, and the rule marking it.
  *  Writing one is also what makes the plot track a pointer at all. */
 function ChartTooltip() {
+  const s = useStyles(sDefinition);
+
   const state = useChart('Tooltip');
   const at = state.active;
   if (at === null || at < 0 || at >= state.count) return null;
@@ -221,9 +227,14 @@ function ChartTooltip() {
   );
 }
 
-const s = styles({
-  tick: { font: 'ui', fontSize: 11, fontWeight: '500' },
-  readout: { font: 'ui', fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
+const sDefinition = styles({
+  tick: { font: 'ui', fontSize: textRoles.overline.size, fontWeight: '500' },
+  readout: {
+    font: 'ui',
+    fontSize: textSizes.caption,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
 });
 
 export type { ChartAxisProps, ChartEdge, ChartFooterProps, ChartGridProps };

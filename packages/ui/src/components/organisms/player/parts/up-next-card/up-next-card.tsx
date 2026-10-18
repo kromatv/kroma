@@ -7,6 +7,8 @@ import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
 import { FOCUS_SCALE } from '#ui/components/organisms/player/lib/style';
 import { style, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
+import { typeSpec as textRoles } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { FocusLiftHost, LIFTED } from '#ui/lib/focus-lift';
@@ -64,6 +66,8 @@ const VIGNETTE = style(
  * so the ring boxed the picture and left the words out of it, and the focus
  * scale slid them into the row beneath. */
 function Face({ item }: Readonly<{ item: UpNextItem }>) {
+  const s = useStyles(sDefinition);
+
   const placeholder = useMemo(() => placeholderGradient(item.id), [item.id]);
   return (
     <>
@@ -106,6 +110,8 @@ export function UpNextCard({
   interactive = true,
   width = '100%',
 }: Readonly<UpNextCardProps>) {
+  const s = useStyles(sDefinition);
+
   return (
     <FocusLiftHost>
       {(held) => (
@@ -144,6 +150,8 @@ function CardBox({
   width,
   children,
 }: Readonly<{ held: boolean; width: DimensionValue; children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const grow = useFocusScale(held, FOCUS_SCALE);
   // <Animated.View>, not <Box>: on native `grow` carries an Animated.Value, and a
   // plain view rejects it ("Transform with key of scale must be a number").
@@ -154,7 +162,7 @@ function CardBox({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   card: { aspect: 16 / 9, radius: 'xl' },
   face: {
     absolute: true,
@@ -170,11 +178,17 @@ const s = styles({
   vignette: { pointerEvents: 'none' },
   category: {
     font: 'ui',
-    fontSize: 11,
+    fontSize: textRoles.overline.size,
     fontWeight: '700',
     letterSpacing: 0.99,
     textTransform: 'uppercase',
   },
-  title: { font: 'ui', fontSize: 17, lineHeight: 21, fontWeight: '700', color: 'white' },
-  subtitle: { font: 'ui', fontSize: 13, fontWeight: '500' },
+  title: {
+    font: 'ui',
+    fontSize: textRoles.cardTitle.size,
+    lineHeight: 21,
+    fontWeight: '700',
+    color: 'white',
+  },
+  subtitle: { font: 'ui', fontSize: textRoles.meta.size, fontWeight: '500' },
 });

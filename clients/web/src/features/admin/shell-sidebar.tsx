@@ -1,7 +1,21 @@
 import { hasPermission } from '@kromatv/client/accounts';
 import type { ModuleNav } from '@kromatv/module-sdk';
 import { useFormat, useT } from '@kromatv/ui';
-import { Box, color, Drawer, Focusable, Logo, Row, styles, sv, Text } from '@kromatv/ui/kit';
+import {
+  activeTheme,
+  Box,
+  color,
+  Drawer,
+  Focusable,
+  Logo,
+  Row,
+  styles,
+  sv,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 import { IconChevronRight } from '@tabler/icons-react';
 import { useRouterState } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
@@ -20,7 +34,7 @@ import { RouteLink } from '#web/shared/ui/route-link';
 import { SideNav } from '#web/shared/ui/side-nav';
 import { SIDE_NAV_FRAME, SIDE_NAV_GUTTER } from '#web/shared/ui/side-nav-style';
 
-const s = styles({
+const sDefinition = styles({
   navFill: { bg: 'bg' },
   railEdge: { borderRightWidth: 1, borderRightColor: 'border' },
   drawerHead: { pl: 24, pr: 16, pb: 16, ...safeAreaTop(24) },
@@ -56,6 +70,9 @@ function AdminBrand() {
 }
 
 function AdminServerLink() {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   const { serverInfo } = useAdmin();
   return (
     <Box shrink={0} px={SIDE_NAV_GUTTER} pb={8}>
@@ -67,7 +84,11 @@ function AdminServerLink() {
               {serverInfo?.name ?? 'KROMA'}
             </Text>
           </Row>
-          <IconChevronRight size={17} stroke={1.8} color={color('success')} />
+          <IconChevronRight
+            size={17}
+            stroke={1.8}
+            color={color('success', activeTheme(scope.theme))}
+          />
         </RouteLink>
       </Focusable>
     </Box>
@@ -141,6 +162,8 @@ function ServerStatusCard() {
 
 /** The permanent left navigation, rendered only from `lg` up. */
 export function AdminSidebar() {
+  const s = useStyles(sDefinition);
+
   return (
     <Box role="complementary" w={ADMIN_RAIL_WIDTH} shrink={0} h="100%" bg="bg" style={s.railEdge}>
       <SideNav.Header>
@@ -157,6 +180,8 @@ export function AdminSidebar() {
 /** The phone's pinned bar, and the sheet its menu opens. Rendered only below
  *  `lg`. */
 export function AdminMobileTopbar() {
+  const s = useStyles(sDefinition);
+
   const actions = useNavActions();
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });

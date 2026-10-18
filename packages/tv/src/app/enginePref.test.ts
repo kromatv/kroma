@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const platform = vi.hoisted(() => ({ current: { OS: 'web' } as Record<string, unknown> }));
+const platform = vi.hoisted<{
+  current: { OS: string; isTV?: boolean; constants?: Record<string, string> };
+}>(() => ({ current: { OS: 'web' } }));
 vi.mock('react-native', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
@@ -38,7 +40,9 @@ describe('getEnginePref / setEnginePref', () => {
   async function fresh(storage: unknown) {
     vi.resetModules();
     vi.stubGlobal('localStorage', storage);
-    return import('./enginePref');
+    const { createEnginePref } = await import('./enginePref');
+    const store = createEnginePref();
+    return { getEnginePref: store.get, setEnginePref: store.set };
   }
 
   it('defaults to auto when nothing is stored', async () => {
@@ -163,4 +167,22 @@ describe('ENGINE_LABEL_KEY', () => {
       expect(ENGINE_LABEL_KEY[e]).toBe(`playbackEngine.${e}`);
     }
   });
+});
+
+it('keeps blocked-storage selections within their owning television', async () => {
+  vi.stubGlobal('localStorage', {
+    getItem: () => null,
+    setItem: () => {
+      throw new Error('blocked');
+    },
+  });
+  const { createEnginePref } = await import('./enginePref');
+  const a = createEnginePref();
+  const b = createEnginePref();
+  a.set('remux');
+  expect(a.get()).toBe('remux');
+  expect(b.get()).toBe('auto');
+  b.set('vlc');
+  expect(a.get()).toBe('remux');
+  expect(b.get()).toBe('vlc');
 });

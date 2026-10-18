@@ -2,7 +2,7 @@ import type { ItemId } from '@kromatv/client/media';
 import { decodableVideoCodecs, type EngineDecision, streamRefusal } from '@kromatv/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { StreamFailure } from '#web/features/playback/stream-failure';
-import { kromaClient } from '#web/shared/lib/api';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 interface ProbeInput {
   itemId: ItemId;
@@ -43,6 +43,8 @@ export function useStreamProbe({
   booted,
   restartAt,
 }: ProbeInput): StreamProbe {
+  const webRuntime = useWebRuntime();
+
   const [baseSec, setBaseSec] = useState(0);
   const [srcReady, setSrcReady] = useState(false);
   const [serverDurSec, setServerDurSec] = useState(0);
@@ -56,21 +58,19 @@ export function useStreamProbe({
       if (!refusal) return;
       if (refusal === 'denied' && !renewed.current) {
         renewed.current = true;
-        void kromaClient()
-          .refreshSession()
-          .then((token) => {
-            if (!token) {
-              setFailure('denied');
-              return;
-            }
-            if (resumeAt !== undefined) restartAt(resumeAt);
-            setRenewals((n) => n + 1);
-          });
+        void webRuntime.client.refreshSession().then((token) => {
+          if (!token) {
+            setFailure('denied');
+            return;
+          }
+          if (resumeAt !== undefined) restartAt(resumeAt);
+          setRenewals((n) => n + 1);
+        });
         return;
       }
       setFailure(refusal);
     },
-    [restartAt],
+    [restartAt, webRuntime.client.refreshSession],
   );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `renewals` is the retry trigger.
@@ -84,9 +84,15 @@ export function useStreamProbe({
       return;
     }
     let cancelled = false;
-    const url = kromaClient().media.hlsMasterUrl(itemId, decision.aacMaster, anchor, audioIndex, {
-      videoCodecs: decodableVideoCodecs(),
-    });
+    const url = webRuntime.client.media.hlsMasterUrl(
+      itemId,
+      decision.aacMaster,
+      anchor,
+      audioIndex,
+      {
+        videoCodecs: decodableVideoCodecs(),
+      },
+    );
     fetch(url)
       .then((r) => {
         if (cancelled) return;

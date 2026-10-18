@@ -10,7 +10,7 @@ import {
   type UrlKeyboardProps,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { getKeyboardLayoutPref } from '#tv/app/keyboardLayoutPref';
+import { useDevicePreferences } from '#tv/app/device-preferences';
 import { useEnv } from '#tv/app/providers/env';
 
 type TvKeyboardProps<P> = Omit<P, 'letters' | 'physicalKeyboard' | 'size'>;
@@ -21,7 +21,8 @@ type TvKeyboardProps<P> = Omit<P, 'letters' | 'physicalKeyboard' | 'size'>;
 // still lands on the keyboard's next mount.
 function useTvKeyboard() {
   const { physicalKeyboard } = useEnv();
-  const [letters] = useState(getKeyboardLayoutPref);
+  const { keyboard } = useDevicePreferences();
+  const [letters] = useState(() => keyboard.get());
   // `tv`: these keys are read and aimed at from across a room.
   return { letters, physicalKeyboard, size: 'tv' } as const;
 }

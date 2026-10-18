@@ -22,8 +22,9 @@ import { useVideoPlayback } from '#web/features/playback/use-video-playback';
 import { useVolumeBoost, VOLUME_BOOST_MAX } from '#web/features/playback/use-volume-boost';
 import { useWebSubtitles } from '#web/features/playback/use-web-subtitles';
 import { buildWebStats } from '#web/features/playback/web-stats';
-import { kromaClient, type MovieView } from '#web/shared/lib/api';
+import type { MovieView } from '#web/shared/lib/api';
 import { useLangPrefs } from '#web/shared/lib/lang-pref';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 function failureCopy(t: Translate, failure: StreamFailure): { error: string; hint: string } {
   if (failure === 'denied') {
@@ -52,6 +53,8 @@ export interface WebController {
  * one-shot bitrate probe) is hidden behind the contract.
  */
 export function useWebController(item: MovieView): WebController {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const locale = useLocale();
   const pb = useVideoPlayback(item);
@@ -148,7 +151,7 @@ export function useWebController(item: MovieView): WebController {
   const [bytes, setBytes] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    fetch(kromaClient().media.streamUrl(item.id), { headers: { Range: 'bytes=0-1' } })
+    fetch(webRuntime.client.media.streamUrl(item.id), { headers: { Range: 'bytes=0-1' } })
       .then((r) => {
         const cr = r.headers.get('Content-Range');
         const total = cr ? Number(cr.split('/')[1]) : Number(r.headers.get('Content-Length') ?? 0);
@@ -158,7 +161,7 @@ export function useWebController(item: MovieView): WebController {
     return () => {
       cancelled = true;
     };
-  }, [item.id]);
+  }, [item.id, webRuntime.client.media.streamUrl]);
 
   const fpsSamplerRef = useRef(makeFpsSampler());
   const statsRef = useRef<() => PlayerStats>(() => ({}));

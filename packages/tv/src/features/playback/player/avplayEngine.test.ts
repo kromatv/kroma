@@ -128,7 +128,8 @@ const client = fakeClient({
       decl: HlsMasterDeclaration = {},
     ) => {
       declared.push(decl);
-      return `master:${id}:${aac}:${startSec}:${audio}${decl.filter ? `:${decl.filter}` : ''}`;
+      const filterSuffix = decl.filter ? `:${decl.filter}` : '';
+      return `master:${id}:${aac}:${startSec}:${audio}${filterSuffix}`;
     },
   },
 });

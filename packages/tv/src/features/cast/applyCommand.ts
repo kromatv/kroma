@@ -5,7 +5,7 @@
 import type { KromaClient } from '@kromatv/client';
 import type { CastCommand } from '@kromatv/client/cast';
 import type { MediaItem } from '@kromatv/client/media';
-import { castTarget, requestCastSeek } from '#tv/features/cast/castBridge';
+import type { CastBridge } from '#tv/features/cast/castBridge';
 
 export interface CastRouter {
   reset: (name: 'player', params: { item: MediaItem }) => void;
@@ -16,12 +16,13 @@ export interface CastRouter {
 export interface CastDeps {
   client: Pick<KromaClient, 'media' | 'playback'>;
   nav: CastRouter;
+  bridge: CastBridge;
 }
 
 async function play(
   command: Extract<CastCommand, { type: 'play' }>,
   deps: CastDeps,
-  target: ReturnType<typeof castTarget>,
+  target: ReturnType<CastBridge['castTarget']>,
 ): Promise<void> {
   const controller = target?.controller;
   // Already on this title: seek rather than remount the engine, which would
@@ -33,14 +34,14 @@ async function play(
   }
   const item = await deps.client.media.item(command.itemId).catch(() => null);
   if (!item) return;
-  requestCastSeek(item.id, command.positionMs ?? 0);
+  deps.bridge.requestCastSeek(item.id, command.positionMs ?? 0);
   // reset, not push: a cast launch has no detail screen behind it.
   deps.nav.reset('player', { item });
 }
 
 async function skipNext(
   deps: CastDeps,
-  target: NonNullable<ReturnType<typeof castTarget>>,
+  target: NonNullable<ReturnType<CastBridge['castTarget']>>,
 ): Promise<void> {
   const next = await deps.client.playback.nextEpisode(target.item.id).catch(() => null);
   // swap, not push: what is behind the player stays behind it.
@@ -49,7 +50,7 @@ async function skipNext(
 
 /** Execute one order against the running player (or the router, for `play`). */
 export async function applyCastCommand(command: CastCommand, deps: CastDeps): Promise<void> {
-  const target = castTarget();
+  const target = deps.bridge.castTarget();
   const controller = target?.controller;
 
   switch (command.type) {

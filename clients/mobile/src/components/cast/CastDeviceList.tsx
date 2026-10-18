@@ -14,9 +14,9 @@ import {
   grantRefusal,
 } from '@kromatv/core';
 import { useCast } from '@kromatv/ui';
-import { Badge, Box, Icon, styles, Text } from '@kromatv/ui/kit';
-import type { ReactNode } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Badge, Box, radius as cornerRadius, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+
 import { Animated, Pressable } from 'react-native';
 import { CheckPrompt } from '#mobile/components/connect/CheckPrompt';
 import { SheetTitle } from '#mobile/components/ui';
@@ -39,6 +39,8 @@ interface Attempt {
 }
 
 export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDeviceListProps>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { receivers, active, pairable } = useCast();
@@ -168,6 +170,8 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
 // Not a dead end: the roster stays live, so a device that wakes up appears
 // here without reopening the picker.
 function NoDevices() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
 
   return (
@@ -183,6 +187,8 @@ function NoDevices() {
 }
 
 function Searching() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const pulse = useRef(new Animated.Value(0.35)).current;
   useEffect(() => {
@@ -233,6 +239,8 @@ function DeviceRow({
   trailing?: ReactNode;
   onPress?: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       onPress={onPress}
@@ -255,7 +263,7 @@ function DeviceRow({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   row: { row: true, align: 'center', gap: spacing.sm, minH: 56, px: spacing.sm, radius: radius.md },
   rowText: { flex: true },
   rowName: { ...type.body, color: 'text', fontWeight: '600' },
@@ -263,7 +271,14 @@ const s = styles({
   rowDetail: { ...type.caption, color: 'textMuted' },
   empty: { align: 'center', gap: 6, pt: spacing.md, pb: spacing.lg },
   searchingRow: { align: 'center' },
-  emptyDisc: { center: true, w: 84, h: 84, mb: spacing.sm, bg: 'surface3', radius: 42 },
+  emptyDisc: {
+    center: true,
+    w: 84,
+    h: 84,
+    mb: spacing.sm,
+    bg: 'surface3',
+    radius: cornerRadius.emptyState,
+  },
   emptyTitle: { ...type.section, color: 'text', textAlign: 'center' },
   emptyHint: {
     ...type.caption,
@@ -283,6 +298,6 @@ const s = styles({
     bg: 'surface3',
     radius: radius.pill,
   },
-  searchingDot: { w: 7, h: 7, bg: 'accent', radius: 4 },
+  searchingDot: { w: 7, h: 7, bg: 'accent', radius: cornerRadius.compact },
   searchingLabel: { ...type.small, color: 'textMuted' },
 });

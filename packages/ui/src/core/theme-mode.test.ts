@@ -1,15 +1,13 @@
 // @vitest-environment jsdom
+
 import { Appearance } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { themeVersion } from './theme';
-import {
-  applyMode,
-  isThemeMode,
-  readMode,
-  resolveMode,
-  THEME_COOKIE,
-  writeMode,
-} from './theme-mode';
+import { createStyleTestHost } from '#ui/testing-style';
+
+import { isThemeMode, readMode, resolveMode, THEME_COOKIE } from './theme-mode';
+
+const styleHost = createStyleTestHost();
+const { themeVersion, applyMode, writeMode } = styleHost;
 
 afterEach(() => {
   writeMode('system');
@@ -48,7 +46,9 @@ describe('writeMode', () => {
     writeMode('dark');
     expect(document.cookie).toContain(`${THEME_COOKIE}=dark`);
     expect(readMode()).toBe('dark');
-    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(styleHost.runtime.mode() === 'system' ? undefined : styleHost.runtime.mode()).toBe(
+      'dark',
+    );
   });
 
   it('stores system too, so a browser default is never mistaken for a choice', () => {
@@ -62,16 +62,22 @@ describe('writeMode', () => {
 describe('applyMode', () => {
   it('stamps the ground the cascade repaints from', () => {
     applyMode('light');
-    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(styleHost.runtime.mode() === 'system' ? undefined : styleHost.runtime.mode()).toBe(
+      'light',
+    );
     applyMode('dark');
-    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(styleHost.runtime.mode() === 'system' ? undefined : styleHost.runtime.mode()).toBe(
+      'dark',
+    );
   });
 
   it('stamps system as the ABSENCE of the attribute, for the media query to answer', () => {
     applyMode('dark');
     applyMode('system');
-    expect(document.documentElement.dataset.theme).toBeUndefined();
-    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+    expect(
+      styleHost.runtime.mode() === 'system' ? undefined : styleHost.runtime.mode(),
+    ).toBeUndefined();
+    expect(styleHost.runtime.mode()).toBe('system');
   });
 
   it('never moves the theme store on a browser, so nothing re-resolves', () => {

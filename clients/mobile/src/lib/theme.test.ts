@@ -9,8 +9,8 @@ import {
   mobileRadius,
   mobileType,
   mobileTypeSpec,
-  setTheme,
 } from '@kromatv/ui/kit';
+import { createStyleTestHost } from '@kromatv/ui/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   colors,
@@ -22,6 +22,9 @@ import {
   TAB_BAR_CLEARANCE,
   type,
 } from './theme';
+
+const styleHost = createStyleTestHost();
+const { setTheme } = styleHost;
 
 vi.mock('react-native', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -142,9 +145,9 @@ describe('posterWidth', () => {
 
 describe('mobileTheme', () => {
   it('answers with the twin that matches the ground the app is on', () => {
-    expect(mobileTheme()).toBe(MOBILE);
+    expect(mobileTheme(styleHost.activeTheme())).toBe(MOBILE);
     setTheme(KROMA_LIGHT);
-    expect(mobileTheme()).toBe(MOBILE_LIGHT);
+    expect(mobileTheme(styleHost.activeTheme())).toBe(MOBILE_LIGHT);
   });
 
   it('takes the ground it is handed over the one that is lit', () => {
@@ -172,23 +175,23 @@ describe('mobileTheme', () => {
 
 describe('shades', () => {
   it('fades from nothing to the ground, at the ground that is lit', () => {
-    const dark = shades();
+    const dark = shades(styleHost.runtime);
     expect(dark.transparent).toMatch(/, 0\)$/);
     expect(dark.mid).toMatch(/, 0\.55\)$/);
     expect(dark.full).toMatch(/, 1\)$/);
 
     setTheme(KROMA_LIGHT);
-    const paper = shades();
+    const paper = shades(styleHost.runtime);
     expect(paper.full).not.toBe(dark.full);
     expect(paper.transparent).toMatch(/, 0\)$/);
   });
 
   it('is read at call time, so a swap after import still lands', () => {
-    const first = shades().full;
+    const first = shades(styleHost.runtime).full;
     setTheme(KROMA_LIGHT);
-    expect(shades().full).not.toBe(first);
+    expect(shades(styleHost.runtime).full).not.toBe(first);
     setTheme(KROMA);
-    expect(shades().full).toBe(first);
+    expect(shades(styleHost.runtime).full).toBe(first);
   });
 });
 

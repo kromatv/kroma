@@ -1,3 +1,4 @@
+import type { MovieView, WebRuntime } from '#web/shared/lib/api';
 // The source decision (direct-play vs the HLS remux master); `useVideoPlayback`
 // owns the React state/effects that drive these helpers.
 //
@@ -18,7 +19,6 @@ import {
 } from '@kromatv/core';
 import type { WebEnginePref } from '#web/features/playback/engine-pref';
 import { type StreamFailure, shakaHttpStatus } from '#web/features/playback/stream-failure';
-import { kromaClient, type MovieView } from '#web/shared/lib/api';
 
 export type HlsInstance = import('hls.js').default;
 
@@ -137,7 +137,10 @@ function seekToAnchor(v: HTMLVideoElement, startSec: number): void {
  * chosen audio (`audioRel`) muxed in. A resume / seek / language change re-attaches
  * (the parent remounts the element); there is no in-place audio switch.
  */
-export function attachMediaSource(opts: AttachSourceOptions): () => void {
+export function attachMediaSource(
+  opts: AttachSourceOptions,
+  webRuntime: Pick<WebRuntime, 'client'>,
+): () => void {
   const {
     v,
     item,
@@ -157,7 +160,7 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
 
   if (decision.kind === 'direct') {
     setUseHls(false);
-    v.src = kromaClient().media.streamUrl(item.id);
+    v.src = webRuntime.client.media.streamUrl(item.id);
     v.preload = 'auto';
     seekToAnchor(v, startSec);
     return () => {
@@ -172,9 +175,15 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
   const plan = itemBufferPlan(item);
   // Remuxed from `startSec`; hls.js plays it from relative 0 and the hook adds
   // the server's reported start back to report the absolute position.
-  const url = kromaClient().media.hlsMasterUrl(item.id, decision.aacMaster, startSec, audioRel, {
-    videoCodecs: decodableVideoCodecs(),
-  });
+  const url = webRuntime.client.media.hlsMasterUrl(
+    item.id,
+    decision.aacMaster,
+    startSec,
+    audioRel,
+    {
+      videoCodecs: decodableVideoCodecs(),
+    },
+  );
   let destroyed = false;
 
   // Checked before `useNativeHls`: an explicit Shaka override wins, so the choice

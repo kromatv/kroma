@@ -16,7 +16,8 @@ import {
   useState,
 } from 'react';
 import type { SettingsGroupId } from '#tv/app/settings/registry';
-import { perfHudPrefStore, useStoredPref } from '#tv/app/settings/store';
+import { ARTWORK_SCALE, useArtworkPref, useStoredPref } from '#tv/app/settings/store';
+import { useDevicePreferences } from './device-preferences';
 
 // The screen registry of the in-memory router: a TV has no address bar, so
 // history is a stack. Adding a key here type-checks `go` / `reset` / `<TvOutlet>`.
@@ -271,22 +272,26 @@ export function TvOutlet() {
       ))}
       <Suspense fallback={<Box fill bg="bg" />}>
         <FocusScope key={scopeKey} entryKey={key}>
-          {inScope.map((layer) => (
-            <layer.render key={layer.routes[0]} />
-          ))}
-          <Screen key={key} />
-          {/* Inside the scope, because that is what a dialog needs to take the
+          <ConfirmHost>
+            {inScope.map((layer) => (
+              <layer.render key={layer.routes[0]} />
+            ))}
+            <Screen key={key} />
+            {/* Inside the scope, because that is what a dialog needs to take the
               remote: outside one, `useLockFocusBehind` is a documented no-op and
               the panel's own buttons never register with a navigator. */}
-          <ConfirmHost />
+          </ConfirmHost>
         </FocusScope>
       </Suspense>
       {/* Outside the scope on purpose: the remote must not be able to land on it. */}
-      <PerfHud enabled={usePerfHud()} />
+      <PerfHud
+        enabled={usePerfHud()}
+        artworkScale={ARTWORK_SCALE[useStoredPref(useArtworkPref())[0]]}
+      />
     </PageMain>
   );
 }
 
 function usePerfHud(): boolean {
-  return useStoredPref(perfHudPrefStore)[0] === 'on';
+  return useStoredPref(useDevicePreferences().perfHud)[0] === 'on';
 }

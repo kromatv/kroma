@@ -12,7 +12,7 @@ import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Spinner } from '#ui/components/atoms/spinner';
 import { Text } from '#ui/components/atoms/text';
-import { entryDefaultSize } from '#ui/lib/field-shell';
+import { useEntryDefaults } from '#ui/lib/field-shell';
 import { useGroupMember } from '#ui/lib/group-shape';
 import {
   type ButtonSize,
@@ -73,9 +73,10 @@ function Button({
   onBlur,
   ...focusProps
 }: Readonly<ButtonProps>) {
+  const entryDefaults = useEntryDefaults();
   const delegate = delegateOf(asChild, children);
   const group = useGroupMember(onFocus, onBlur);
-  const shell = size ?? group.size ?? entryDefaultSize();
+  const shell = size ?? group.size ?? entryDefaults.size;
   const s = buttonVariants({ variant, size: shell, block, active }, { disabled });
   const frost = useFrostCoat([s.root, style], {
     on: FROSTED.has(variant) || (disabled && !UNFILLED.has(variant)),

@@ -35,7 +35,7 @@ function cmdVerify(): number {
   const graph = loadGraph({ root: process.cwd() });
   const violations = verify(graph);
   if (violations.length === 0) {
-    console.log(`Dependencies OK — ${graph.projects.length} projects, every edge resolves.`);
+    console.log(`Dependencies OK: ${graph.projects.length} projects, every edge resolves.`);
     return 0;
   }
   console.error(`${violations.length} dependency problem(s):`);

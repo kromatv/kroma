@@ -1,18 +1,19 @@
 // @vitest-environment jsdom
 
 import { I18nProvider } from '@kromatv/ui';
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { onScreen } from '@kromatv/ui/testing';
-import { act, cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  setVoiceSearchBackend,
   type VoiceSearchBackend,
   type VoiceSessionProps,
   voiceSearchBackend,
 } from '#tv/app/voiceSearch';
+
 import { TvVoiceSearch } from '#tv/features/catalog/TvVoiceSearch';
+
+const { clearPressGuard, render: renderRaw } = createInputTestHost();
 
 // Kit controls are spatial-navigator nodes, and a node needs a navigator scope.
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
@@ -20,7 +21,6 @@ const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 afterEach(() => {
   cleanup();
   clearPressGuard();
-  setVoiceSearchBackend(null);
 });
 
 function fakeBackend(session: (props: VoiceSessionProps) => void = () => {}): VoiceSearchBackend {
@@ -41,24 +41,22 @@ describe('voiceSearchBackend', () => {
   });
 
   it('hides a backend that reports itself unavailable', () => {
-    setVoiceSearchBackend({ ...fakeBackend(), available: () => false });
-    expect(voiceSearchBackend()).toBeNull();
+    expect(voiceSearchBackend({ ...fakeBackend(), available: () => false })).toBeNull();
   });
 
   it('treats a throwing probe as no capability at all', () => {
-    setVoiceSearchBackend({
+    const backend = {
       ...fakeBackend(),
       available: () => {
         throw new Error('native module blew up');
       },
-    });
-    expect(voiceSearchBackend()).toBeNull();
+    };
+    expect(voiceSearchBackend(backend)).toBeNull();
   });
 
   it('returns the backend once it is available', () => {
     const backend = fakeBackend();
-    setVoiceSearchBackend(backend);
-    expect(voiceSearchBackend()).toBe(backend);
+    expect(voiceSearchBackend(backend)).toBe(backend);
   });
 });
 

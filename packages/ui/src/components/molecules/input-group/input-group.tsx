@@ -1,3 +1,4 @@
+import { type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
 // <InputGroup>: an entry with things welded into its shell. Yoga has no
 // `order` and there are no `:has()` selectors, so the Root sorts its children
 // into buckets once and publishes what it learned through context.
@@ -13,8 +14,8 @@ import {
 } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { sharedStyle } from '#ui/core';
-import { type ControlSize, controlMetrics, edgeColor, fieldRing } from '#ui/lib/field-shell';
+
+import { type ControlSize, edgeColor, fieldRing, useControlMetrics } from '#ui/lib/field-shell';
 import { Context, type InputGroupContext } from './input-group-context';
 import {
   Addon,
@@ -54,9 +55,9 @@ const BUCKET: Record<string, keyof Buckets> = {
   'inline-end': 'inlineEnd',
 };
 
-const edgeOf = (focused: boolean, invalid: boolean) => {
-  const borderColor = edgeColor(focused, invalid);
-  return sharedStyle(`input-group:edge:${borderColor}`, { borderColor });
+const edgeOf = (focused: boolean, invalid: boolean, scope: StyleScope) => {
+  const borderColor = edgeColor(focused, invalid, scope);
+  return sharedStyle(`input-group:edge:${borderColor}`, { borderColor }, scope);
 };
 function sort(children: ReactNode): Buckets {
   const at: Buckets = {
@@ -78,7 +79,9 @@ function sort(children: ReactNode): Buckets {
 }
 
 function Root({ label, size, invalid = false, style, children }: Readonly<InputGroupRootProps>) {
-  const metrics = controlMetrics(size);
+  const scope = useStyleScope();
+
+  const metrics = useControlMetrics(size);
   const [focused, setFocused] = useState(false);
   const control = useRef<() => void>(() => {});
 
@@ -130,7 +133,7 @@ function Root({ label, size, invalid = false, style, children }: Readonly<InputG
         borderWidth={1}
         minW={0}
         {...(stacked ? null : run)}
-        style={[edgeOf(focused, invalid), focused ? fieldRing() : null, style]}
+        style={[edgeOf(focused, invalid, scope), focused ? fieldRing(scope) : null, style]}
       >
         {stacked ? (
           <>

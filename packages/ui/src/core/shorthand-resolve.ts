@@ -13,8 +13,9 @@ import {
   RULE_KEYS,
   RULES,
   type Rule,
+  type TextLayoutProps,
 } from '#ui/core/shorthands';
-import { activeTheme, radiusValue } from '#ui/core/theme';
+import { KROMA, radiusValue, type Theme } from '#ui/core/theme';
 import type { FontToken, TypeRole } from '#ui/core/tokens';
 
 /**
@@ -29,7 +30,7 @@ import type { FontToken, TypeRole } from '#ui/core/tokens';
  * needs resolving.
  */
 export function splitShorthand(
-  props: Readonly<Record<string, unknown>>,
+  props: object,
   names: ReadonlySet<string> = BOX_STYLE_PROPS,
 ): {
   shorthand: Record<string, unknown>;
@@ -46,8 +47,7 @@ export function splitShorthand(
   const parts: string[] = [];
   let any = false;
   let breakpoints = 0;
-  for (const name of Object.keys(props)) {
-    const value = props[name];
+  for (const [name, value] of Object.entries(props)) {
     if (!names.has(name)) {
       rest[name] = value;
       continue;
@@ -73,21 +73,21 @@ export function splitShorthand(
  * belongs on the breakpoint axis at all.
  */
 export function declaredBreakpoints(
-  decl: Readonly<Record<string, unknown>>,
+  decl: object,
   names: ReadonlySet<string> = BOX_STYLE_PROPS,
 ): number {
   let breakpoints = 0;
-  for (const name of Object.keys(decl)) {
-    if (names.has(name)) breakpoints |= breakpointBits(decl[name]);
+  for (const [name, value] of Object.entries(decl)) {
+    if (names.has(name)) breakpoints |= breakpointBits(value);
   }
   return breakpoints;
 }
 
-function applyRule(out: Record<string, unknown>, rule: Rule, value: unknown): void {
+function applyRule(out: Record<string, unknown>, rule: Rule, value: unknown, theme: Theme): void {
   if (typeof rule === 'string') {
     out[rule] = value;
   } else if (typeof rule === 'function') {
-    Object.assign(out, rule(value));
+    Object.assign(out, rule(value, theme));
   } else if (Array.isArray(rule)) {
     for (const longhand of rule) out[longhand] = value;
   } else if (value) {
@@ -105,14 +105,15 @@ function flatAt(raw: unknown, index: number): unknown {
 
 function applyShorthands(
   out: Record<string, unknown>,
-  p: Readonly<BoxStyleProps>,
+  p: Readonly<BoxStyleProps & TextLayoutProps>,
   index: number,
+  theme: Theme,
 ): void {
   for (const key of RULE_KEYS) {
-    const raw = (p as Record<string, unknown>)[key];
+    const raw = p[key];
     if (raw === undefined) continue;
     const value = flatAt(raw, index);
-    if (value !== undefined) applyRule(out, RULES[key], value);
+    if (value !== undefined) applyRule(out, RULES[key], value, theme);
   }
 }
 
@@ -132,9 +133,13 @@ function applyCircleRadius(
  * Resolves a prop bag into React Native longhands at a breakpoint. A bag
  * stating nothing per breakpoint resolves the same at every index.
  */
-export function boxStyle(p: Readonly<BoxStyleProps>, index: number): ViewStyle {
+export function boxStyle(
+  p: Readonly<BoxStyleProps>,
+  index: number,
+  theme: Theme = KROMA,
+): ViewStyle {
   const out: Record<string, unknown> = {};
-  applyShorthands(out, p, index);
+  applyShorthands(out, p, index, theme);
   if (p.radius !== undefined) applyCircleRadius(out, p, index);
   return out as ViewStyle;
 }
@@ -158,8 +163,10 @@ export interface TextStyleProps {
  * that feeds a component's PROPS may carry a `text` of its own, and that one
  * must pass through untouched.
  */
-export function textStyle(decl: Record<string, unknown>): Record<string, unknown> | undefined {
-  const theme = activeTheme();
+export function textStyle(
+  decl: Record<string, unknown>,
+  theme: Theme = KROMA,
+): Record<string, unknown> | undefined {
   const role = decl.text;
   const family = decl.font;
   const hasRole = typeof role === 'string' && role in theme.type;

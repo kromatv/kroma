@@ -11,7 +11,8 @@ import {
   IconVolHigh,
   IconVolLow,
 } from '#ui/components/organisms/player/parts/icons';
-import { sharedStyle, styles } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { backdropBlur } from '#ui/lib/css';
 import { formatTimecode } from '#ui/lib/intl';
 import { useT } from '#ui/services/i18n';
@@ -62,9 +63,10 @@ function volumeGlyph(level: number, size: number) {
   return <IconVolHigh size={size} />;
 }
 
-const padOf = (x: number, y: number) =>
-  sharedStyle(`flash:pad:${x}:${y}`, { paddingHorizontal: x, paddingVertical: y });
-const sizeOf = (fontSize: number) => sharedStyle(`flash:size:${fontSize}`, { fontSize });
+const padOf = (x: number, y: number, scope: StyleScope) =>
+  sharedStyle(`flash:pad:${x}:${y}`, { paddingHorizontal: x, paddingVertical: y }, scope);
+const sizeOf = (fontSize: number, scope: StyleScope) =>
+  sharedStyle(`flash:size:${fontSize}`, { fontSize }, scope);
 
 /**
  * A transient pill low on the picture, just above the seek bar it describes:
@@ -73,6 +75,10 @@ const sizeOf = (fontSize: number) => sharedStyle(`flash:size:${fontSize}`, { fon
  * run of taps reads as one label counting up.
  */
 export function StageFlashView({ flash, scale = 1, lift }: Readonly<StageFlashProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const held = useLinger(flash);
   const fade = useFadeRise(flash != null);
@@ -94,10 +100,10 @@ export function StageFlashView({ flash, scale = 1, lift }: Readonly<StageFlashPr
           gap={px(10)}
           radius="pill"
           bg="black/55"
-          style={[s.frost, padOf(px(20), px(10))]}
+          style={[s.frost, padOf(px(20), px(10), scope)]}
         >
           {glyph}
-          <Text variant="title" color="#FFFFFF" style={sizeOf(px(24))}>
+          <Text variant="title" color="white" style={sizeOf(px(24), scope)}>
             {label}
           </Text>
         </Box>
@@ -106,7 +112,7 @@ export function StageFlashView({ flash, scale = 1, lift }: Readonly<StageFlashPr
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   inert: { pointerEvents: 'none' },
   frost: backdropBlur(10),
 });

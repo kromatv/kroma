@@ -50,7 +50,7 @@ export class ModuleRegistry {
   private readonly setupDone = new Set<string>();
   private readonly disposers = new Map<string, () => void>();
 
-  /** @param catalogs where a registering module's messages are published. The
+  /** The catalog sink is where a registering module's messages are published. The
    *  default drops them, so a registry is inert until a host wires one in and
    *  two registries in one process cannot tread on each other. */
   constructor(private readonly catalogs: CatalogSink = KEEP_TO_ITSELF) {}

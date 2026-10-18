@@ -13,6 +13,7 @@ import {
   Row,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useCallback, useRef, useState } from 'react';
 
@@ -90,7 +91,7 @@ export function ConsoleSummary({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   blueActive: { bg: 'info' },
   toast: {
     position: 'fixed',
@@ -122,6 +123,8 @@ export function Chip({
   tone?: 'accent' | 'blue';
   onClick: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <KitChip
       active={on}
@@ -136,6 +139,8 @@ export function Chip({
 
 /** The floating bottom-center toast, driven by `useConsoleToast`. */
 export function ConsoleToast({ toast }: Readonly<{ toast: { text: string; on: boolean } }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <div className={classes(s.toast, toast.on ? s.toastOn : s.toastOff)}>
       <Row gap={10} px={18} py={10} radius="pill" bg="surface2" border="borderStrong">

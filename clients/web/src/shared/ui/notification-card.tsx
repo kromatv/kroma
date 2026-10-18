@@ -12,10 +12,11 @@ import {
   Row,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 
-const s = styles({
+const sDefinition = styles({
   row: { display: 'flex', flex: true, alignItems: 'flex-start' },
   tile: { width: 48, height: 48, flexShrink: 0, mr: 12, radius: 'sm', objectFit: 'cover' },
 });
@@ -54,6 +55,8 @@ export function NotificationCard({
   meta?: ReactNode;
   time: ReactNode;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <div className={classes(s.row, style)}>
       {/* The gutter is reserved on every row, empty or not, so nothing shifts. */}
@@ -87,6 +90,8 @@ export function NotificationTile({
   event,
   src,
 }: Readonly<{ event: NotificationEvent; src?: string | null }>) {
+  const s = useStyles(sDefinition);
+
   if (src) {
     return <img src={src} alt="" loading="lazy" className={classes(s.tile)} />;
   }

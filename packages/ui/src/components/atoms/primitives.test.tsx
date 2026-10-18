@@ -1,5 +1,9 @@
-import type { ReactElement } from 'react';
 // @vitest-environment jsdom
+
+import type { ReactElement } from 'react';
+import { contentRoot, onScreen } from '#ui/testing';
+import { createInputTestHost } from '#ui/testing-input';
+
 //
 // Renders the universal primitives through react-native-web and asserts the DOM
 // they produce. The same components compile to native views on Apple TV and
@@ -7,14 +11,13 @@ import type { ReactElement } from 'react';
 // claim; the native half is covered by the pure logic tests (focal, sv, boxStyle)
 // plus the platform files' shared contracts.
 
-import { act, cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Field } from '#ui/components/molecules/field';
 import { Dialog } from '#ui/components/organisms/dialog';
 import { typeSpec } from '#ui/core/tokens';
 import { CONTROL } from '#ui/lib/field-shell';
-import { clearPressGuard } from '#ui/lib/press-guard';
-import { onScreen } from '#ui/testing';
+
 import { AVATAR_GRADIENTS, Avatar, gradientFor, initialsOf } from './avatar';
 import { Badge } from './badge';
 import { Button, buttonVariants } from './button';
@@ -26,6 +29,8 @@ import { Skeleton } from './skeleton';
 import { Text } from './text';
 import { TextArea } from './text-area';
 import { TextField } from './text-field';
+
+const { clearPressGuard, render: renderRaw } = createInputTestHost();
 
 // Every kit control is a node of the spatial navigator; a test renders inside
 // the same scope the router gives every real screen.
@@ -42,7 +47,7 @@ const css = (el: Element) => getComputedStyle(el);
 
 // The navigator scope `render` adds contributes no DOM of its own, so the
 // disc is the first child.
-const disc = (container: HTMLElement) => container.firstElementChild as HTMLElement;
+const disc = (container: HTMLElement) => contentRoot(container) as HTMLElement;
 
 const padlock = (container: HTMLElement) =>
   (container.querySelector('svg') as SVGElement).parentElement as HTMLElement;
@@ -148,7 +153,7 @@ describe('Button', () => {
 
   it('deepens under the finger, a step PAST hover rather than a repeat of it', () => {
     const at = (state: Record<string, boolean>) =>
-      buttonVariants({ variant: 'primary' }, state).root as Record<string, unknown>;
+      buttonVariants({ variant: 'primary' }, state).root;
     expect(at({ hover: true }).backgroundColor).toBe('var(--kroma-accent-hover)');
     expect(at({ hover: true, press: true }).backgroundColor).toBe('var(--kroma-accent-press)');
   });

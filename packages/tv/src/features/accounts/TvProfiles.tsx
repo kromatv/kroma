@@ -5,6 +5,7 @@ import {
   Avatar,
   Box,
   Chip,
+  radius as cornerRadius,
   Focusable,
   FocusRegion,
   Hint,
@@ -13,6 +14,7 @@ import {
   styles,
   Text,
   useFocusNav,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
@@ -34,10 +36,12 @@ interface Tile {
  * instantly.
  */
 
-const TILE = style({ radius: 24 });
+const TILE = style({ radius: cornerRadius.dialog });
 
 const SETTINGS = style({ px: 18, py: 10, borderWidth: 1 });
 export function TvProfiles() {
+  const s = useStyles(sDefinition);
+
   const nav = useNav();
   const t = useT();
   const { servers, activeServerName } = useConnection();
@@ -162,7 +166,7 @@ export function TvProfiles() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   // Type only. Anything that lays the ROW out (the margin above it) goes on the
   // <Hint> itself: `textStyle` reaches the words alone, so a margin here drops
   // the words below the chevrons instead of moving the whole line.

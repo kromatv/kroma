@@ -141,6 +141,16 @@ repository is shaped: a layered Rust server, out-of-process modules, one
 component library and thin shells. Each package and client carries its own
 README.
 
+House conventions are enforced by the [Oxc lint plugin](packages/lint-rules/README.md)
+alongside Biome. Run `bun run check` and
+`bun run --cwd packages/lint-rules test` before a PR. Agents can read repair guides
+with `bun run --cwd packages/lint-rules rules --json`; new rules start with `bun run --cwd packages/lint-rules new <name>`. The current
+[evaluation and rollout backlog](docs/tooling/oxc-evaluation.md) records the
+existing findings that must be repaired before merging. Web shells and the kit
+audit also use Oxc's React Compiler; see the [compiler setup and measurements](docs/tooling/oxc-react-compiler.md).
+The kit now owns theme and breakpoint state per root; see the [styling API guide](packages/ui/README.md#themes) for `useStyles`, `useSv`, and root configuration.
+API credentials and native storage also have explicit owners; see the [client guide](packages/client/README.md).
+
 ## Contributing
 
 Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md)

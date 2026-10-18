@@ -5,7 +5,7 @@
 // Each catalog names its own language under `lang.<code>`, so the set of
 // locales is read from the catalogs rather than written down twice.
 
-import { loadLocalePref } from '@kromatv/client';
+import { loadLocalePref, type SessionStorage } from '@kromatv/client';
 import { defineI18n, type Locale } from '@kromatv/i18n';
 import { catalogs, lazy } from './locales/catalogs';
 import { DEFAULT_LOCALE_CODE } from './locales/default-locale';
@@ -25,19 +25,7 @@ export const {
 
 /** The locale a device starts in, before any account preference is known: the
  *  override last picked here, else the browser's, else {@link DEFAULT_LOCALE}. */
-export function deviceLocale(): Locale {
-  const stored = loadLocalePref();
+export function deviceLocale(storage?: SessionStorage | null): Locale {
+  const stored = loadLocalePref(storage);
   return isLocale(stored) ? stored : detectLocale();
-}
-
-let active: Locale | null = null;
-
-/** The locale a request should ask for: whatever `<LocaleProvider>` last
- *  resolved, else the device's. */
-export function activeLocale(): Locale {
-  return active ?? deviceLocale();
-}
-
-export function setActiveLocale(locale: Locale): void {
-  active = locale;
 }

@@ -4,13 +4,14 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Icon } from '#ui/components/atoms/icon';
 import {
-  addGlyphs,
+  createGlyphSet,
   exportName,
   FALLBACK,
   glyphFor,
   hasGlyph,
   type IconName,
   iconNames,
+  RAW,
   slugOf,
 } from './glyphs';
 
@@ -91,10 +92,11 @@ describe('the icon set', () => {
     // widened set has to displace.
     expect(glyphFor(named)).toBe(FALLBACK);
 
-    addGlyphs({ IconLanternOfTheWorkbench: () => null });
+    const expanded = createGlyphSet({ ...RAW, IconLanternOfTheWorkbench: () => null });
 
-    expect(hasGlyph(named)).toBe(true);
-    expect(glyphFor(named)).not.toBe(FALLBACK);
-    expect(iconNames()).toHaveLength(before + 1);
+    expect(expanded.hasGlyph(named)).toBe(true);
+    expect(hasGlyph(named)).toBe(false);
+    expect(expanded.glyphFor(named)).not.toBe(FALLBACK);
+    expect(expanded.iconNames()).toHaveLength(before + 1);
   });
 });

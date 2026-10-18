@@ -1,17 +1,18 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { act } from 'react';
 import { View } from 'react-native';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { activeTheme } from '#ui/core';
-import { configureRemote } from '#ui/lib/focus-remote';
+
 import { FocusScope } from '#ui/lib/focus-scope';
-import { clearPressGuard } from '#ui/lib/press-guard';
+import { createInputTestHost } from '#ui/testing-input';
+
 import { Menu } from './menu';
 
-beforeAll(() => configureRemote());
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(() => {
   cleanup();

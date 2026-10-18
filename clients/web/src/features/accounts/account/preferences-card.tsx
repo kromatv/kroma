@@ -5,9 +5,9 @@
 import { LANG_NO_PREF, LOCALES, langName, langOptions } from '@kromatv/core';
 import { useLocale, useSetLocale, useT } from '@kromatv/ui';
 import { ListRow, Select, Switch } from '@kromatv/ui/kit';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { PrefRow } from '#web/features/accounts/account/ui';
-import { getBlurPref, setBlurPref } from '#web/shared/lib/blur-pref';
+import { useBlurPreference } from '#web/shared/lib/blur-pref';
 
 // '' means "nothing picked" to <Select>, so "no preference" uses this sentinel
 // and is mapped back to `null` on the way to the server.
@@ -27,7 +27,7 @@ export function PreferencesCard({
   const t = useT();
   const locale = useLocale();
   const setLocale = useSetLocale();
-  const [blur, setBlur] = useState(getBlurPref);
+  const [blur, setBlur] = useBlurPreference();
 
   // Sorting ~190 names on every keystroke in the profile form above this card.
   const langs = useMemo(
@@ -65,16 +65,7 @@ export function PreferencesCard({
         icon="blur"
         label={t('settings.blur')}
         desc={t('settings.blurDesc')}
-        control={
-          <Switch
-            label={t('settings.blur')}
-            checked={blur}
-            onCheckedChange={(on) => {
-              setBlur(on);
-              setBlurPref(on);
-            }}
-          />
-        }
+        control={<Switch label={t('settings.blur')} checked={blur} onCheckedChange={setBlur} />}
       />
       <PrefRow
         icon="volume"

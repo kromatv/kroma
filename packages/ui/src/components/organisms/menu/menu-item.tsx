@@ -1,3 +1,6 @@
+import { styles, sv, useSv } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
+import { typeSpec as textRoles } from '#ui/core/tokens';
 // One action, in both presentations: a row of the D-pad dialog, and a row of
 // the pointer's anchored panel. Which one it renders is the surface's
 // decision, handed down through the row context.
@@ -9,7 +12,7 @@ import { Divider } from '#ui/components/atoms/divider';
 import { type Delegate, delegateOf, Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { styles, sv } from '#ui/core';
+
 import { CONTROL } from '#ui/lib/field-shell';
 import { cloneHost } from '#ui/lib/slot';
 import { type MenuRowState, useMenuRow } from './menu-context';
@@ -98,7 +101,11 @@ interface RowProps {
 }
 
 function PanelRow({ row, label, icon, disabled, danger, composed, delegate }: Readonly<RowProps>) {
-  const slots = menuItemVariants({ danger });
+  const menuItemVariantsScoped = useSv(menuItemVariants);
+
+  const s = useStyles(sDefinition);
+
+  const slots = menuItemVariantsScoped({ danger });
   const wash = danger ? s.activeDanger : s.active;
   const face = composed ? (
     delegate.content
@@ -196,14 +203,14 @@ function Separator() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   row: { radius: CONTROL.sm.radius },
   active: { bg: 'tint/7' },
   // On the edge: the rows abut, so a gap either way lands on something.
   keyed: { ring: 'focusEdge' },
   activeDanger: { bg: 'danger/14' },
   disabled: { opacity: 0.4 },
-  label: { fontSize: 13, fontWeight: '600' },
+  label: { fontSize: textRoles.meta.size, fontWeight: '600' },
 });
 
 export type { MenuItemProps, MenuTone };

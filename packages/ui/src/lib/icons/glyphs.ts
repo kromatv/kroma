@@ -49,8 +49,6 @@ type Glyph = ComponentType<{ size?: number; color?: string; style?: object; clas
  * package, or any part of one. */
 type GlyphExports = Readonly<Record<string, unknown>>;
 
-let glyphs = RAW as unknown as Record<string, Glyph | undefined>;
-
 /** Every glyph name the kit can draw, in the design's own spelling. Strict:
  * a typo fails to compile; a name from data crosses in through `hasGlyph`. */
 type IconName = IconExport extends `Icon${infer Rest}` ? Kebab<Rest> : never;
@@ -63,25 +61,6 @@ function exportName(slug: string): string {
   return out;
 }
 
-// Icons re-render on every focus move in a 10-foot grid, so resolution is
-// memoized; bounded by the distinct names an app uses.
-const RESOLVED = new Map<string, Glyph>();
-
-/** Takes a plain `string`: an unknown name gets the fallback rather than an exception. */
-function glyphFor(name: string): Glyph {
-  const hit = RESOLVED.get(name);
-  if (hit) return hit;
-  const found = glyphs[exportName(name)];
-  const glyph =
-    typeof found === 'function' || (found != null && typeof found === 'object') ? found : FALLBACK;
-  RESOLVED.set(name, glyph);
-  return glyph;
-}
-
-function hasGlyph(name: string): name is IconName {
-  return Boolean(glyphs[exportName(name)]);
-}
-
 /** Two boundaries: lower-to-upper, and letter-to-digit (`IconVolume2` -> `volume-2`).
  * A digit followed by a letter stays joined (`IconBadge4k`). */
 function slugOf(name: string): string {
@@ -92,26 +71,48 @@ function slugOf(name: string): string {
     .toLowerCase();
 }
 
-/** Every name the package can draw, kebab-cased, sorted. Thousands of entries,
- * so it's computed once, lazily. */
-let names: IconName[] | undefined;
-function iconNames(): IconName[] {
-  // `slugOf` and the `Kebab` type are asserted against each other in glyphs.test.tsx.
-  names ??= Object.keys(glyphs)
-    .filter((key) => key.startsWith('Icon') && key !== 'IconProps')
-    .map(slugOf)
-    .sort((a, b) => a.localeCompare(b)) as IconName[];
-  return names;
+/** Build a lookup once; resolution never mutates a module or another root. */
+function createGlyphSet(exports: GlyphExports) {
+  const glyphs = exports as Readonly<Record<string, Glyph | undefined>>;
+  const names = Object.freeze(
+    Object.keys(glyphs)
+      .filter((key) => key.startsWith('Icon') && key !== 'IconProps')
+      .map(slugOf)
+      .sort((a, b) => a.localeCompare(b)) as IconName[],
+  );
+  // Resolve by export name as before, while keeping lookups constant-time.
+  const byName = Object.freeze(
+    Object.fromEntries(
+      names.map((name) => {
+        const found = glyphs[exportName(name)];
+        return [
+          name,
+          typeof found === 'function' || (found != null && typeof found === 'object')
+            ? found
+            : FALLBACK,
+        ];
+      }),
+    ),
+  );
+  return Object.freeze({
+    glyphFor: (name: string): Glyph =>
+      (Object.hasOwn(byName, name) ? byName[name] : undefined) ?? FALLBACK,
+    hasGlyph: (name: string): name is IconName => Boolean(glyphs[exportName(name)]),
+    iconNames: (): readonly IconName[] => names,
+  });
 }
-
-/** Widens the set every lookup here answers from, past the glyphs the build
- * kept. Only a workbench browsing all of Tabler fetches them: see
- * `lib/icons/library`. */
-function addGlyphs(more: GlyphExports): void {
-  glyphs = { ...glyphs, ...(more as Record<string, Glyph | undefined>) };
-  RESOLVED.clear();
-  names = undefined;
-}
+const BUILTIN_GLYPHS = createGlyphSet(RAW);
+const { glyphFor, hasGlyph, iconNames } = BUILTIN_GLYPHS;
 
 export type { Glyph, GlyphExports, IconName };
-export { addGlyphs, exportName, FALLBACK, glyphFor, hasGlyph, iconNames, slugOf };
+export {
+  BUILTIN_GLYPHS,
+  createGlyphSet,
+  exportName,
+  FALLBACK,
+  glyphFor,
+  hasGlyph,
+  iconNames,
+  RAW,
+  slugOf,
+};

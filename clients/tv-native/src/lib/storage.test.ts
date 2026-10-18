@@ -86,17 +86,15 @@ vi.mock('expo-file-system', () => {
   return { Directory, File, Paths: { document: '/documents', cache: '/caches' } };
 });
 
-const setSessionStorage = vi.hoisted(() => vi.fn());
-vi.mock('@kromatv/client', () => ({ setSessionStorage }));
+const ownedStores: Array<Awaited<ReturnType<typeof import('./storage').hydrateSessionStorage>>> =
+  [];
 
-// The store is a module-scope singleton - one per process, as one launch has -
-// so each case re-imports the module. Without that, a key written by an earlier
-// test is still in memory for the next, and "starts empty" passes or fails on
-// whatever ran before it.
+// A new launch boots its own store; module reload also resets the mocked
+// platform installation used by these filesystem scenarios.
 async function launch(): Promise<void> {
   vi.resetModules();
   const { hydrateSessionStorage } = await import('./storage');
-  await hydrateSessionStorage();
+  ownedStores.push(await hydrateSessionStorage());
 }
 
 const DOC = '/documents/kroma';
@@ -104,7 +102,7 @@ const CACHE = '/caches/kroma';
 const FILE = 'kroma-session.json';
 
 function store() {
-  const installed = setSessionStorage.mock.calls.at(-1)?.[0];
+  const installed = ownedStores.at(-1);
   if (!installed) throw new Error('no session store was installed');
   return installed as {
     getItem(key: string): string | null;
@@ -119,6 +117,7 @@ const onDisk = (dir: string) => {
 };
 
 beforeEach(() => {
+  ownedStores.length = 0;
   fs.lying.clear();
   fs.refusing.clear();
   fs.failing.clear();
@@ -193,7 +192,7 @@ describe('a device that accepts nothing', () => {
     await launch();
     // The old behaviour: in memory only. Signing in every launch beats not
     // starting.
-    expect(setSessionStorage).toHaveBeenCalledOnce();
+    expect(ownedStores).toHaveLength(1);
     expect(() => store().setItem('session', 'abc')).not.toThrow();
     expect(store().getItem('session')).toBe('abc');
   });
@@ -236,7 +235,7 @@ describe('reading what was there', () => {
     // The worst case is signing in again; refusing to start is not a worse
     // case, it is a different product.
     expect(store().getItem('session')).toBeNull();
-    expect(setSessionStorage).toHaveBeenCalledOnce();
+    expect(ownedStores).toHaveLength(1);
   });
 
   it('ignores a file holding something that is not an object', async () => {
@@ -265,7 +264,7 @@ describe('reading what was there', () => {
       '[kroma] session store unreadable, starting empty:',
       expect.any(Error),
     );
-    expect(setSessionStorage).toHaveBeenCalledOnce();
+    expect(ownedStores).toHaveLength(1);
   });
 
   it('reports nothing for a key it does not hold', async () => {
@@ -301,5 +300,23 @@ describe('writing', () => {
       '[kroma] session store write failed:',
       expect.any(Error),
     );
+  });
+});
+
+describe('bootstrap ownership', () => {
+  it('keeps each bootstrap’s memory and file target attached to its own store', async () => {
+    const { hydrateSessionStorage } = await import('./storage');
+    ownedStores.push(await hydrateSessionStorage());
+    const first = store();
+    first.setItem('first', 'document');
+    fs.refusing.add('/documents');
+    ownedStores.push(await hydrateSessionStorage());
+    const second = store();
+    expect(second).not.toBe(first);
+    expect(second.getItem('first')).toBeNull();
+    second.setItem('second', 'cache');
+    first.setItem('first', 'still-document');
+    expect(onDisk(DOC)).toEqual({ first: 'still-document' });
+    expect(onDisk(CACHE)).toEqual({ second: 'cache' });
   });
 });

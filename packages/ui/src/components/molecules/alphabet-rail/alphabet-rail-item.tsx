@@ -1,7 +1,14 @@
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
-import { type StyleDecl, sharedStyle, svFor } from '#ui/core';
+import {
+  type StyleDecl,
+  type StyleScope,
+  sharedStyle,
+  svFor,
+  useStyleScope,
+  useSv,
+} from '#ui/core';
 import { ROW_W, useAlphabetRail } from './alphabet-rail-context';
 
 // The lens is the solid accent fill, so a dimmed letter under it keeps its
@@ -26,7 +33,8 @@ const letterVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
 
 type Tone = 'idle' | 'dim' | 'lit' | 'litDim';
 
-const sizeOf = (fontSize: number) => sharedStyle(`letter:size:${fontSize}`, { fontSize });
+const sizeOf = (fontSize: number, scope: StyleScope) =>
+  sharedStyle(`letter:size:${fontSize}`, { fontSize }, scope);
 function toneOf(index: number, present: boolean, lit: [number, number] | null): Tone {
   const inLens = lit !== null && index >= lit[0] && index <= lit[1];
   if (present) return inLens ? 'lit' : 'idle';
@@ -45,9 +53,13 @@ interface AlphabetItemProps {
 
 /** One letter of the rail. */
 function Item({ value, disabled = false, label }: Readonly<AlphabetItemProps>) {
+  const letterVariantsScoped = useSv(letterVariants);
+
+  const scope = useStyleScope();
+
   const { indexOf, lit, rowH, fontSize, jump } = useAlphabetRail('Item');
   const tone = toneOf(indexOf(value), !disabled, lit);
-  const box = sharedStyle(`letter:box:${rowH}`, { width: ROW_W, height: rowH });
+  const box = sharedStyle(`letter:box:${rowH}`, { width: ROW_W, height: rowH }, scope);
 
   if (disabled) {
     return (
@@ -55,7 +67,7 @@ function Item({ value, disabled = false, label }: Readonly<AlphabetItemProps>) {
         <Text
           aria-hidden
           selectable={false}
-          style={[letterVariants({ tone }).label, sizeOf(fontSize)]}
+          style={[letterVariantsScoped({ tone }).label, sizeOf(fontSize, scope)]}
         >
           {value}
         </Text>
@@ -72,7 +84,7 @@ function Item({ value, disabled = false, label }: Readonly<AlphabetItemProps>) {
       style={box}
     >
       {(state) => (
-        <Text selectable={false} style={[state.slots.label, sizeOf(fontSize)]}>
+        <Text selectable={false} style={[state.slots.label, sizeOf(fontSize, scope)]}>
           {value}
         </Text>
       )}

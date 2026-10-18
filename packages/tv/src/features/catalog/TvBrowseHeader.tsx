@@ -21,6 +21,8 @@ import {
   SORT_ICON,
   styles,
   Text,
+  fontSizes as textSizes,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { memo } from 'react';
 import type { CatalogEntry } from '#tv/features/catalog/home/AmbientBackdrop';
@@ -42,12 +44,17 @@ function entryBadge(e: CatalogEntry): string | null {
   return e.kind === 'movie' ? qualityBadge(e.item) : qualityBadgeForVideo(e.item.video);
 }
 
-const s = styles({
+const sDefinition = styles({
   echoWidth: { maxW: 960 },
   // The design's clamp(30px, 4.8vh, 46px), resolved: on the fixed 1920x1080
   // stage a viewport unit would mean something different on each of the four
   // targets.
-  echoTitle: { fontSize: 46, lineHeight: 48, fontWeight: '700', letterSpacing: -0.92 },
+  echoTitle: {
+    fontSize: textSizes.browseTitle,
+    lineHeight: 48,
+    fontWeight: '700',
+    letterSpacing: -0.92,
+  },
 });
 
 /** Fixed height, so the grid never reflows as the focus echo swaps titles. */
@@ -77,6 +84,8 @@ export function BrowseHeader({
 }
 
 function FocusEcho({ entry }: Readonly<{ entry: CatalogEntry }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const rating = entry.item.metadata?.rating;
   const badge = entryBadge(entry);

@@ -1,7 +1,7 @@
 // The kit's colour vocabulary: what a colour may be written as, and how it
 // resolves to something React Native can paint.
 
-import { activeTheme } from '#ui/core/theme';
+import { KROMA, type Theme } from '#ui/core/theme';
 import type { ColorToken } from '#ui/core/tokens';
 import { withAlpha } from '#ui/core/tokens/colors';
 
@@ -30,23 +30,23 @@ export type ColorValue =
 
 /** Resolves a token name through the palette and anything else verbatim. A
  *  trailing `/NN` is Tailwind's alpha syntax and means NN percent opacity. */
-export function color(value: string): string {
+export function color(value: string, theme: Theme = KROMA): string {
   const slash = value.lastIndexOf('/');
-  if (slash === -1) return named(value);
+  if (slash === -1) return named(value, theme);
   const suffix = value.slice(slash + 1);
   const alpha = Number(suffix);
   const base = value.slice(0, slash);
   // An empty suffix is not an alpha: `Number('')` is 0, which would silently
   // make `white/` fully transparent. `rgb(255 0 0 / 50%)` is likewise a colour
   // that contains a slash rather than one carrying an alpha suffix.
-  if (suffix === '' || !Number.isFinite(alpha) || /[\s(),]/.test(base)) return named(value);
-  return withAlpha(named(base), alpha / 100);
+  if (suffix === '' || !Number.isFinite(alpha) || /[\s(),]/.test(base)) return named(value, theme);
+  return withAlpha(named(base, theme), alpha / 100);
 }
 
-function named(value: string): string {
+function named(value: string, theme: Theme): string {
   return (
     (BARE as Record<string, string>)[value] ??
-    (activeTheme().colors as Record<string, string>)[value] ??
+    (theme.colors as Record<string, string>)[value] ??
     value
   );
 }

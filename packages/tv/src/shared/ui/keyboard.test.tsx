@@ -4,7 +4,11 @@ import { declared, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { setKeyboardLayoutPref } from '#tv/app/keyboardLayoutPref';
+import { createDevicePreferences, DevicePreferencesProvider } from '#tv/app/device-preferences';
+
+const preferences = createDevicePreferences();
+const setKeyboardLayoutPref = preferences.keyboard.set;
+
 import { EnvProvider } from '#tv/app/providers/env';
 import { SearchKeyboard, UrlKeyboard } from '#tv/shared/ui/keyboard';
 
@@ -16,9 +20,11 @@ afterEach(() => {
 const show = (ui: ReactElement, physicalKeyboard = false) =>
   render(
     onScreen(
-      <EnvProvider platform="TV" overrides={{ physicalKeyboard }}>
-        {ui}
-      </EnvProvider>,
+      <DevicePreferencesProvider value={preferences}>
+        <EnvProvider platform="TV" overrides={{ physicalKeyboard }}>
+          {ui}
+        </EnvProvider>
+      </DevicePreferencesProvider>,
     ),
   );
 

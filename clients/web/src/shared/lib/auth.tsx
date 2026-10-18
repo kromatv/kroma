@@ -1,25 +1,22 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // Client-side authentication context: one authed KromaClient plus the
 // web-specific login, passkey and registration flows over `useAuthSession`.
 
 import type { InviteToken, StoredSession } from '@kromatv/client/accounts';
-import { createQueryClient } from '@kromatv/client/query';
-import { activeLocale } from '@kromatv/core';
 import { type ActivateResult, useAuthSession } from '@kromatv/ui';
 import { useRouter } from '@tanstack/react-router';
 import { type ReactNode, useCallback, useMemo } from 'react';
-import { apiBase } from '#web/shared/lib/api';
 import { AuthContext, type AuthValue } from '#web/shared/lib/auth-context';
-import { queryClient } from '#web/shared/lib/query';
+
 import { getPasskey } from '#web/shared/lib/webauthn';
 
 export type { AuthValue } from '#web/shared/lib/auth-context';
 export { useAuth } from '#web/shared/lib/auth-context';
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const client = useMemo(
-    () => createQueryClient({ baseUrl: apiBase(), locale: activeLocale() }),
-    [],
-  );
+  const webRuntime = useWebRuntime();
+
+  const client = webRuntime.client;
   const auth = useAuthSession(client);
   const router = useRouter();
 
@@ -27,9 +24,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     async (email: string, password: string) => {
       auth.apply(await client.accounts.login(email, password));
       void router.invalidate();
-      void queryClient.invalidateQueries();
+      void webRuntime.queryClient.invalidateQueries();
     },
-    [client, auth, router],
+    [client, auth, router, webRuntime.queryClient.invalidateQueries],
   );
 
   const loginPasskey = useCallback(async () => {
@@ -37,8 +34,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     const credential = await getPasskey(options);
     auth.apply(await client.accounts.passkeys.authFinish({ ceremonyId, credential }));
     void router.invalidate();
-    void queryClient.invalidateQueries();
-  }, [client, auth, router]);
+    void webRuntime.queryClient.invalidateQueries();
+  }, [client, auth, router, webRuntime.queryClient.invalidateQueries]);
 
   const register = useCallback(
     async (
@@ -59,9 +56,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         }
       }
       void router.invalidate();
-      void queryClient.invalidateQueries();
+      void webRuntime.queryClient.invalidateQueries();
     },
-    [client, auth, router],
+    [client, auth, router, webRuntime.queryClient.invalidateQueries],
   );
 
   const activate = useCallback(
@@ -69,23 +66,26 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       const res = await auth.activate(s, pin);
       if (res.ok) {
         void router.invalidate();
-        void queryClient.invalidateQueries();
+        void webRuntime.queryClient.invalidateQueries();
       }
       return res;
     },
-    [auth, router],
+    [auth, router, webRuntime.queryClient.invalidateQueries],
   );
 
   const logout = useCallback(async () => {
     await auth.logout();
     // Every cached per-user entry must go, or it leaks into the next session.
-    queryClient.clear();
-  }, [auth]);
+    webRuntime.queryClient.clear();
+  }, [
+    auth, // Every cached per-user entry must go, or it leaks into the next session.
+    webRuntime.queryClient.clear,
+  ]);
 
   const switchProfile = useCallback(() => {
     auth.switchProfile();
-    queryClient.clear();
-  }, [auth]);
+    webRuntime.queryClient.clear();
+  }, [auth, webRuntime.queryClient.clear]);
 
   const value = useMemo<AuthValue>(
     () => ({

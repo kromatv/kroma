@@ -1,3 +1,17 @@
+import {
+  Box,
+  type ColorValue,
+  classes,
+  Row,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
+
 // The log viewport shared by the "Journaux" console and the module page's
 // recent-output panel: the scrolling pane, the day marks that break it up and
 // the per-line grid. The filters and the follow toggle stay with the console.
@@ -5,12 +19,12 @@
 import type { LogEntry } from '@kromatv/client/admin';
 import { TABULAR } from '@kromatv/module-sdk';
 import { useLocaleDefault } from '@kromatv/ui';
-import { Box, type ColorValue, classes, Row, sharedStyle, styles, Text } from '@kromatv/ui/kit';
+
 import { Fragment, useEffect, useRef } from 'react';
 
 // A capped height, a single-axis scroll and a CSS grid have no React Native
 // spelling, so the viewport and its rows stay real elements.
-const s = styles({
+const sDefinition = styles({
   lines: {
     display: 'grid',
     gridTemplateColumns: 'max-content max-content minmax(0, 1fr)',
@@ -24,7 +38,8 @@ const s = styles({
   scroller: { overflowY: 'auto' },
 });
 
-const heightOf = (maxHeight: number | string) => sharedStyle(`log:max:${maxHeight}`, { maxHeight });
+const heightOf = (maxHeight: number | string, scope: StyleScope) =>
+  sharedStyle(`log:max:${maxHeight}`, { maxHeight }, scope);
 
 /** Draws `entries` newest-last in a pane that scrolls past `maxHeight` (any CSS
  * length). With `follow`, every change re-pins the pane to the newest line. */
@@ -33,6 +48,11 @@ export function LogLines({
   maxHeight,
   follow = false,
 }: Readonly<{ entries: readonly LogEntry[]; maxHeight: number | string; follow?: boolean }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const scroller = useRef<HTMLDivElement>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on new lines
   useEffect(() => {
@@ -42,7 +62,7 @@ export function LogLines({
   }, [entries, follow]);
 
   return (
-    <div ref={scroller} className={classes(s.scroller, heightOf(maxHeight))}>
+    <div ref={scroller} className={classes(s.scroller, heightOf(maxHeight, scope))}>
       <div className={classes(s.lines)}>
         {entries.map((e, i) => (
           <Fragment key={e.seq}>

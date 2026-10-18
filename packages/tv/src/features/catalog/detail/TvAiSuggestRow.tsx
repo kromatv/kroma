@@ -1,7 +1,17 @@
 import type { ItemId, SectionItem } from '@kromatv/client/media';
 import { genreLabels, posterColors } from '@kromatv/core';
 import { useAiSuggest, useT } from '@kromatv/ui';
-import { Box, MediaCard, ProgressRing, RAIL_GAP, Rail, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  MediaCard,
+  ProgressRing,
+  RAIL_GAP,
+  Rail,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useClient, useNav } from '#tv/app/router';
 
 // The "Suggestions IA" rail on a TV detail screen. `useAiSuggest` polls the
@@ -15,10 +25,10 @@ const ROW_TILE = { pitch: 300 + RAIL_GAP, height: Math.round((300 * 9) / 16) };
 // the pitch would over-fetch every tile in the row.
 const TILE_ART_W = 300;
 
-const s = styles({
+const sDefinition = styles({
   label: {
     fontWeight: '700',
-    fontSize: 15,
+    fontSize: textRoles.label.size,
     lineHeight: 18,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
@@ -27,6 +37,8 @@ const s = styles({
 });
 
 export function TvAiSuggestRow({ id }: Readonly<{ id: ItemId }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { go } = useNav();

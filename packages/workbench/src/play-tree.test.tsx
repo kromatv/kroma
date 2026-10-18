@@ -36,9 +36,10 @@ describe('the fiber behind a stage', () => {
   });
 
   it('is found whatever else the host node carries', () => {
-    const node = mount(<Text>Pilot</Text>).current as Record<string, unknown>;
+    const node = mount(<Text>Pilot</Text>).current;
+    if (!node) throw new Error('stage was not mounted');
     const key = Object.keys(node).find((at) => at.startsWith('__reactFiber$')) as string;
-    expect(fiberFor({ id: 'stage', [key]: node[key] })).toBe(fiberFor(node));
+    expect(fiberFor({ id: 'stage', [key]: Reflect.get(node, key) })).toBe(fiberFor(node));
   });
 
   it('is taken as handed where its root names no committed tree', () => {
@@ -118,10 +119,11 @@ describe('a stage React Native shaped', () => {
         <Chip label="Rename" onPress={() => {}} />
       </Box>,
     );
-    const node = stage.current as Record<string, unknown>;
+    const node = stage.current;
+    if (!node) throw new Error('stage was not mounted');
     const key = Object.keys(node).find((at) => at.startsWith('__reactFiber$')) as string;
     const result = await runPlay({
-      stage: { _internalInstanceHandle: node[key] },
+      stage: { _internalInstanceHandle: Reflect.get(node, key) },
       timeout: 120,
       play: async ({ press, expect: want }) => {
         await press('Options');

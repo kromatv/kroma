@@ -1,3 +1,17 @@
+import {
+  activeTheme,
+  type ColorValue,
+  type RadiusToken,
+  radiusValue,
+  resolveStyles,
+  type StyleDecl,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  useBreakpoint,
+} from '#ui/core';
+import { DEFAULT_STYLE_SCOPE } from '#ui/core/style-scope';
+import { useKitSettings } from './kit-settings';
 // THE control shell: the one well every input wears.
 //
 // A form puts a text entry, a select trigger, a segmented control and a search
@@ -11,19 +25,10 @@
 // Three sizes, because three form factors read at three distances: `sm` is the
 // density a console page wants, `md` a phone held in the hand, `tv` a screen
 // read across a room. A shell that knows which it is states it once with
-// `setEntryDefaults` rather than at every call site.
+// `KitProvider` rather than at every call site.
 
 import type { TextStyle } from 'react-native';
-import {
-  activeTheme,
-  type ColorValue,
-  type RadiusToken,
-  radiusValue,
-  type StyleDecl,
-  sharedStyle,
-  styles,
-  useBreakpoint,
-} from '#ui/core';
+
 import type { Radius } from '#ui/core/tokens/layout';
 
 type ControlSize = 'sm' | 'md' | 'tv';
@@ -100,8 +105,11 @@ export const CONTROL: Record<ControlSize, ControlMetrics> = {
 
 /** A control's corner, against the ACTIVE theme. Read it at render time: a
  *  value copied out at module load keeps the theme it was read under. */
-export function controlRadius(metrics: ControlMetrics): Radius {
-  return radiusValue(metrics.radius);
+export function controlRadius(
+  metrics: ControlMetrics,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
+): Radius {
+  return radiusValue(metrics.radius, undefined, activeTheme(scope.theme));
 }
 
 /**
@@ -157,18 +165,22 @@ export const keyFace = {
  * says where the focus is, and an amber edge under an amber ring reads as two
  * rings around one control. Invalid still speaks, since it says something the
  * ring does not. */
-export function edgeColor(_focused: boolean, invalid: boolean): string {
-  const { colors } = activeTheme();
+export function edgeColor(
+  _focused: boolean,
+  invalid: boolean,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
+): string {
+  const { colors } = activeTheme(scope.theme);
   return invalid ? colors.danger : colors.borderStrong;
 }
 
 /** A focused field wears the same amber ring as every other control, rather
  *  than a 1px edge recolour: a field is a focus target like any other and has
  *  to read as one from three metres. */
-const shell = styles({ ring: { ring: 'focusLift' } });
+const shellDefinition = styles({ ring: { ring: 'focusLift' } });
 
-export function fieldRing(): TextStyle {
-  return shell.ring;
+export function fieldRing(scope: StyleScope = DEFAULT_STYLE_SCOPE): TextStyle {
+  return resolveStyles(shellDefinition, scope).ring;
 }
 
 /**
@@ -184,6 +196,7 @@ export function fieldRing(): TextStyle {
 export function fieldShell(
   metrics: ControlMetrics,
   at: Readonly<{ flat: boolean; focused: boolean; invalid: boolean }>,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
 ): { box: Record<string, unknown>; edge: TextStyle | null } {
   if (at.flat) return { box: { radius: 0, bg: 'transparent', borderWidth: 0 }, edge: null };
   return {
@@ -192,10 +205,14 @@ export function fieldShell(
       bg: metrics.bg,
       borderWidth: 1,
     },
-    edge: sharedStyle(`field:edge:${at.focused}:${at.invalid}`, {
-      borderColor: edgeColor(at.focused, at.invalid),
-      ...(at.focused ? fieldRing() : null),
-    }) as TextStyle,
+    edge: sharedStyle(
+      `field:edge:${at.focused}:${at.invalid}`,
+      {
+        borderColor: edgeColor(at.focused, at.invalid, scope),
+        ...(at.focused ? fieldRing(scope) : null),
+      },
+      scope,
+    ) as TextStyle,
   };
 }
 
@@ -204,31 +221,18 @@ export function fieldShell(
  *  under, which on a native light theme is near-white on cream. */
 export const PLACEHOLDER: ColorValue = 'text/30';
 
-// What an app's controls default to. Per-site props still win; this is only so
-// a shell that KNOWS its form factor (the web console is a mouse-and-keyboard
-// page at arm's length) says so once at startup instead of at every call site.
-let entryPhysicalKeyboard = false;
-let entrySize: ControlSize = 'md';
-
-/** Shell-level defaults for the kit's inputs. Call once at startup. */
-export function setEntryDefaults(
-  defaults: Readonly<{ physicalKeyboard?: boolean; size?: ControlSize }>,
-): void {
-  if (defaults.physicalKeyboard !== undefined) entryPhysicalKeyboard = defaults.physicalKeyboard;
-  if (defaults.size !== undefined) entrySize = defaults.size;
+/** Entry defaults owned by the nearest KitProvider. */
+export function useEntryDefaults() {
+  return useKitSettings().entry;
 }
 
-export function entryDefaultPhysicalKeyboard(): boolean {
-  return entryPhysicalKeyboard;
+/** Pure lookup; rendered controls use useControlMetrics for root defaults. */
+export function controlMetrics(size: ControlSize = 'md'): ControlMetrics {
+  return CONTROL[size];
 }
-
-export function entryDefaultSize(): ControlSize {
-  return entrySize;
-}
-
-/** The metrics for a size, defaulting to the shell's. */
-export function controlMetrics(size?: ControlSize): ControlMetrics {
-  return CONTROL[size ?? entrySize];
+export function useControlMetrics(size?: ControlSize): ControlMetrics {
+  const defaults = useEntryDefaults();
+  return CONTROL[size ?? defaults.size];
 }
 
 /** The smallest ink a real text entry may carry. Under it, iOS Safari zooms the

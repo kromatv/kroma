@@ -8,7 +8,7 @@ export * from './components/molecules';
 export * from './components/organisms';
 export * from './components/templates';
 export type { FormFactor, KitConfig } from './configure';
-export { configureKit } from './configure';
+export { configureKit, KitProvider } from './configure';
 export type {
   AnySv,
   BoxStyleProps,
@@ -31,7 +31,6 @@ export type {
 export {
   activeTheme,
   applyMode,
-  applyTheme,
   boxStyle,
   color,
   createTheme,
@@ -40,11 +39,8 @@ export {
   KROMA,
   KROMA_LIGHT,
   onPaper,
-  onThemeChange,
-  pinDesignWidth,
   readMode,
   registered,
-  setTheme,
   sharedStyle,
   style,
   styles,
@@ -58,7 +54,16 @@ export {
   useTheme,
   writeMode,
 } from './core';
+export { createBreakpointRuntime } from './core/breakpoint';
+export { useSv } from './core/recipe';
+export { useStyleRuntime, useStyleScope } from './core/style-context';
+export { createStyleRuntime } from './core/style-runtime';
+export type { StyleScope } from './core/style-scope';
+export { DEFAULT_STYLE_SCOPE } from './core/style-scope';
+export { resolveStyles, useStyles } from './core/styles';
+export { createThemeRuntime } from './core/theme';
 export * from './core/tokens';
+export { useThemeControls, useThemeVersion } from './core/use-theme';
 export type { AnchorPlacement, AnchorRect, AnchorViewport } from './lib/anchor';
 export { placeUnder } from './lib/anchor';
 export type { ListKeysAt, PanelKeyEvent, PanelScroll } from './lib/anchored-keys';
@@ -81,18 +86,19 @@ export type { ControlMetrics, ControlSize } from './lib/field-shell';
 export {
   CONTROL,
   controlMetrics,
-  entryDefaultSize,
   NO_OUTLINE,
-  setEntryDefaults,
+  useControlMetrics,
+  useEntryDefaults,
 } from './lib/field-shell';
 export { useFocusNav } from './lib/focus-nav';
 export type { FocusDirection, FocusOwner } from './lib/focus-platform';
 export { usePlatformFocus } from './lib/focus-platform';
-export { configureRemote, postRemoteDirection, useHardwareKeys } from './lib/focus-remote';
+export { useHardwareKeys } from './lib/focus-remote';
 export type { FocusScopeProps, ScreenScopeProps } from './lib/focus-scope';
 export { FocusColumn, FocusRegion, FocusScope } from './lib/focus-scope';
 export type { FocusScrollProps } from './lib/focus-scroll';
 export { FocusLine, FocusRail, FocusScroll, FocusSlot } from './lib/focus-scroll';
+export { useFocusServices } from './lib/focus-services-context';
 export type { FocusNavHandlers } from './lib/focus-types';
 export { useFocusVisible } from './lib/focus-visible';
 export type {
@@ -107,32 +113,32 @@ export { msg, useForm } from './lib/form';
 export { genreIcon } from './lib/genre-icon';
 export type { GlyphExports } from './lib/glyph';
 export {
-  addGlyphs,
   DEFAULT_ICON_SIZE,
   DEFAULT_ICON_THICKNESS,
   hasGlyph,
   iconNames,
 } from './lib/glyph';
-export type { IconCatalog, IconEntry } from './lib/icon-catalog';
-export { iconCategories, iconEntry, setIconCatalog } from './lib/icon-catalog';
-export type { IconCatalogLoader } from './lib/icons/library';
-export { setIconCatalogLoader } from './lib/icons/library';
+export type { IconCatalog, IconCatalogIndex, IconEntry } from './lib/icon-catalog';
+export { createIconCatalog } from './lib/icon-catalog';
+export type { IconCatalogLoader, IconLibrary, IconLibraryOptions } from './lib/icons/library';
+export {
+  createIconLibrary,
+  IconLibraryProvider,
+  useIconAssets,
+  useIconLibrary,
+} from './lib/icons/library';
 export type { ImageBackend, ImageBackendProps } from './lib/image-backend';
-export { imageBackend, reactNativeImage, setImageBackend } from './lib/image-backend';
-export { clearInputHolds, holdInput, inputHeld } from './lib/input-gate';
+export { reactNativeImage, useImageBackend } from './lib/image-backend';
+export { createInputGate, InputGateProvider, useInputGate } from './lib/input-gate';
 export { PageMain } from './lib/landmark';
 export type { LoopKind } from './lib/loop';
 export { useLoop } from './lib/loop';
 export { OverlayHost } from './lib/overlay-host';
 export type { PerfReport } from './lib/perf';
-export { perfReport, perfRunning, resetPerf, startPerf, stopPerf } from './lib/perf';
+export { createPerfSampler } from './lib/perf';
+export { PerfProvider, usePerfSampler } from './lib/perf-provider';
 export { Portal, PortalHost } from './lib/portal';
-export {
-  armPressGuard,
-  clearPressGuard,
-  PRESS_GUARD_MS,
-  pressGuardActive,
-} from './lib/press-guard';
+export { createPressGuard, PRESS_GUARD_MS } from './lib/press-guard';
 export type { ReportCategoryMeta } from './lib/report-categories';
 export { REPORT_CATEGORIES } from './lib/report-categories';
 export type { RingGeometry, RingProps } from './lib/ring';
@@ -145,7 +151,6 @@ export { Slot } from './lib/slot';
 export { SORT_ICON } from './lib/sort-icon';
 export { useStableCallback } from './lib/stable-callback';
 export type { SurfacePresentation } from './lib/surface-presentation';
-export { setSurfacePresentation } from './lib/surface-presentation';
 export type { SurfaceWidth } from './lib/surface-shell';
 export { DIALOG_PAD, SURFACE_WIDTH } from './lib/surface-shell';
 export { SvgXml } from './lib/svg';
@@ -162,4 +167,3 @@ export {
   WHEEL_VIEWBOX,
 } from './lib/wheel-paths';
 export type { KitI18n } from './services/i18n-instance';
-export { setKitI18n } from './services/i18n-instance';

@@ -4,7 +4,7 @@
 // lives on a phone.
 
 import { TITLE_LETTERS } from '@kromatv/core';
-import { Box, type LetterRange, AlphabetRail as Rail, styles } from '@kromatv/ui/kit';
+import { Box, type LetterRange, AlphabetRail as Rail, styles, useStyles } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
@@ -21,6 +21,8 @@ export function AlphabetRail({
   range?: LetterRange;
   onJump: (letter: string) => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const insets = useSafeAreaInsets();
   // Every letter the finger crosses is felt, as every tab the pill slides over is.
@@ -47,6 +49,6 @@ export function AlphabetRail({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   dock: { absolute: true, right: 6, justify: 'center', align: 'flex-end' },
 });

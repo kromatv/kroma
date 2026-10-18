@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // Debounced dual search: the local catalog (always) + TMDB discovery (gated
 // on requests.create). Backed by TanStack Query (dedup + cache); latest-wins is
 // handled by the query key changing per (query, type).
@@ -7,9 +8,8 @@ import type { DiscoverEntry, DiscoverType } from '@kromatv/client/discovery';
 import type { SearchHit } from '@kromatv/client/media';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { kromaClient } from '#web/shared/lib/api';
+
 import { useAuth } from '#web/shared/lib/auth';
-import { discoverQueries } from '#web/shared/lib/queries';
 
 function useDebouncedValue<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -28,6 +28,8 @@ export interface DiscoverSearchState {
 }
 
 export function useDiscoverSearch(query: string, type: DiscoverType): DiscoverSearchState {
+  const webRuntime = useWebRuntime();
+
   const { user } = useAuth();
   const canDiscover = !!user && hasPermission(user, 'requests.create');
   const q = useDebouncedValue(query.trim(), 250);
@@ -35,7 +37,7 @@ export function useDiscoverSearch(query: string, type: DiscoverType): DiscoverSe
   const { data, isFetching } = useQuery({
     queryKey: ['discoverSearch', q, type, canDiscover],
     queryFn: async () => {
-      const c = kromaClient();
+      const c = webRuntime.client;
       const [local, discover] = await Promise.all([
         c.media
           .search(q, { limit: 24 })
@@ -76,9 +78,11 @@ export interface TrendingState {
 /** This week's trending movies + shows, for the browse-first empty state.
  * Fetched once when `enabled` (the user can discover). */
 export function useTrending(enabled: boolean): TrendingState {
+  const webRuntime = useWebRuntime();
+
   const { data, isFetching } = useQuery({
     queryKey: ['discover', 'trending', 'all'],
-    queryFn: () => kromaClient().discovery.trending(),
+    queryFn: () => webRuntime.client.discovery.trending(),
     enabled,
     select: (r) => r.results,
   });
@@ -98,8 +102,10 @@ export function useTrendingPage(
   page: number,
   enabled: boolean,
 ): TrendingPageState {
+  const webRuntime = useWebRuntime();
+
   const { data, isFetching } = useQuery({
-    ...discoverQueries.trending(type, page),
+    ...webRuntime.queries.discoverQueries.trending(type, page),
     enabled,
     placeholderData: keepPreviousData,
   });

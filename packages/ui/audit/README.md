@@ -23,7 +23,7 @@ kit still carries real faults in them, and a gate born red is not a gate.
 ## Why it runs the React Compiler
 
 The audit is its own vitest project (`--project audit`) and it is the only one
-that runs `babel-plugin-react-compiler`. Without it every interaction would look
+that runs the same Oxc React Compiler pass as the web shells. Without it every interaction would look
 catastrophic and the numbers would blame the code for work the shells already
 remove. Measuring uncompiled React tells you nothing about what ships.
 

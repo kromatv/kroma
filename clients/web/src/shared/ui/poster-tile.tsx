@@ -4,9 +4,13 @@ import {
   delegateOf,
   Focusable,
   motion,
+  type StyleScope,
   sharedStyle,
   styles,
   useFocusVisible,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
   WatchedBadge,
 } from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';
@@ -23,17 +27,18 @@ const transition = (property: string) => ({
   transitionTimingFunction: EASE,
 });
 
-const move = styles({
+const moveDefinition = styles({
   artFade: transition('opacity'),
   lift: transition('transform'),
   art: transition('box-shadow, outline-color'),
 });
 
-export const ART_FADE = move.artFade;
+export const ART_FADE = moveDefinition.artFade;
 
-const washOf = (image: string) => sharedStyle(`poster:wash:${image}`, { backgroundImage: image });
+const washOf = (image: string, scope: StyleScope) =>
+  sharedStyle(`poster:wash:${image}`, { backgroundImage: image }, scope);
 
-const s = styles({
+const sDefinition = styles({
   hit: { w: '100%', radius: 'xl' },
   lift: { transform: [{ translateY: motion.focusLift }] },
   art: {
@@ -70,6 +75,12 @@ export function PosterTile({
   children,
   footer,
 }: Readonly<PosterTileProps>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const move = useStyles(moveDefinition);
+  const s = useStyles(sDefinition);
+
   const delegate = delegateOf(asChild, children);
   const [hovered, setHovered] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
@@ -102,7 +113,7 @@ export function PosterTile({
       <Box style={hovered ? [move.lift, s.lift] : move.lift}>
         <Focusable label={label} asChild={asChild} style={s.hit}>
           {delegate.wrap(
-            <Box style={[s.art, washOf(background), move.art, hovered ? s.artLit : null]}>
+            <Box style={[s.art, washOf(background, scope), move.art, hovered ? s.artLit : null]}>
               {art(engaged)}
               {watched ? (
                 <Box fill pointerEvents="none" opacity={fold ? 1 : 0}>

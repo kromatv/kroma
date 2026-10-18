@@ -7,7 +7,21 @@ import {
   sizedImageUrl,
   type TitleGenres,
 } from '@kromatv/core';
-import { BackButton, Box, Chip, PersonCard, styles, Text, tintGradient } from '@kromatv/ui/kit';
+import {
+  BackButton,
+  Box,
+  Chip,
+  radius as cornerRadius,
+  PersonCard,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  fontSizes as textSizes,
+  tintGradient,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
@@ -24,6 +38,8 @@ import { FadeImage } from './FadeImage';
 export { DetailActions } from './DetailActions';
 
 export function MetaBadge({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.badge}>
       <Text style={s.badgeText}>{children}</Text>
@@ -34,6 +50,8 @@ export function MetaBadge({ children }: Readonly<{ children: ReactNode }>) {
 const MAX_GENRE_CHIPS = 4;
 
 export function GenreChips({ meta }: Readonly<{ meta: TitleGenres | null | undefined }>) {
+  const s = useStyles(sDefinition);
+
   const router = useRouter();
   const t = useT();
   const slugs = genreSlugs(meta).slice(0, MAX_GENRE_CHIPS);
@@ -69,6 +87,11 @@ export function DetailHero({
   meta?: ReactNode;
   scrollY?: SharedValue<number>;
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -85,7 +108,7 @@ export function DetailHero({
       transform: [{ translateY: y / 2 }, { scale: 1 - y / height }],
     };
   });
-  const ground = shades();
+  const ground = shades(scope);
 
   return (
     <Box style={{ height }}>
@@ -118,6 +141,8 @@ export function DetailHero({
 
 /** Circular cast photos; tapping a member opens their credits page. */
 export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
+  const s = useStyles(sDefinition);
+
   const client = useClient();
   const router = useRouter();
   const gutters = useGutters();
@@ -143,20 +168,20 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   genreRow: { row: true, wrap: true, gap: 8 },
   back: { absolute: true, z: 2 },
   heroText: { absolute: true, bottom: spacing.sm, gap: 6 },
   context: { ...type.caption, color: 'accentText', fontWeight: '700' },
   heroTitle: {
     ...type.display,
-    fontSize: 32,
+    fontSize: textRoles.headingTv.size,
     textShadowColor: 'bg/85',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 10,
   },
   metaRow: { row: true, wrap: true, align: 'center', gap: 8 },
-  badge: { px: 8, py: 3, bg: 'surface2/85', radius: 7 },
-  badgeText: { fontSize: 12, fontWeight: '600', color: 'text' },
+  badge: { px: 8, py: 3, bg: 'surface2/85', radius: cornerRadius.badge },
+  badgeText: { fontSize: textSizes.caption, fontWeight: '600', color: 'text' },
   castRail: { gap: 12 },
 });

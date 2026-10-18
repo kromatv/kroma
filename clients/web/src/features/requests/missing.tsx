@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // "Manquants": episode-level rows grouped under their series (or a single movie
 // row), with the search actions that turn a library gap into a request.
 
@@ -21,7 +22,7 @@ import { useMemo, useState } from 'react';
 import { MissingGroupCard } from '#web/features/requests/missing-group';
 import { epKey, groupByTitle, type MissingGroup } from '#web/features/requests/missing-model';
 import { useAuth } from '#web/shared/lib/auth';
-import { userQueries } from '#web/shared/lib/queries';
+
 import { PageFrame, Skeleton } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
 
@@ -49,10 +50,12 @@ type SearchAllState = 'idle' | 'busy' | 'done';
 const DONE_DECAY_MS = 30_000;
 
 export function MissingPage() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const { user, client } = useAuth();
   const queryClient = useQueryClient();
-  const query = userQueries.missing();
+  const query = webRuntime.queries.userQueries.missing();
   const { data: entries, isPending } = useQuery({ ...query, refetchInterval: 30_000 });
   const canManage = !!user && hasPermission(user, 'requests.manage');
 

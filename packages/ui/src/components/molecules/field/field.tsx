@@ -38,7 +38,7 @@ interface FieldRootProps extends Omit<BoxProps, 'children'> {
   error?: string;
   /** Defaults to whether there is an `error`. */
   invalid?: boolean;
-  /** The shell size every part takes, defaulting to the app's (`setEntryDefaults`). */
+  /** The shell size every part takes, defaulting to the app's (`KitProvider`). */
   size?: ControlSize;
   /** What the field's entry binds to. A part with its own `value`,
    *  `defaultValue` or `onValueChange` holds its state instead. */
@@ -110,14 +110,15 @@ interface EntryValue {
 function useEntry(part: string, own: Readonly<EntryValue>, focus?: FocusHandlers) {
   const field = useField(part);
   const { setFocused } = field;
+  const { onFocus: ownFocus, onBlur: ownBlur } = focus ?? {};
   const onFocus = useCallback(() => {
     setFocused(true);
-    focus?.onFocus?.();
-  }, [setFocused, focus?.onFocus]);
+    ownFocus?.();
+  }, [setFocused, ownFocus]);
   const onBlur = useCallback(() => {
     setFocused(false);
-    focus?.onBlur?.();
-  }, [setFocused, focus?.onBlur]);
+    ownBlur?.();
+  }, [setFocused, ownBlur]);
   const owned =
     own.value !== undefined || own.defaultValue !== undefined || own.onValueChange !== undefined;
   return {

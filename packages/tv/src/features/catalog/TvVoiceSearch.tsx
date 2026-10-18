@@ -3,7 +3,17 @@
 // arrive) is a backend the shell registers; see `#tv/app/voiceSearch`.
 
 import { useLocale, useT } from '@kromatv/ui';
-import { Box, Button, Dialog, Icon, styles, Text, useLoop } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  radius as cornerRadius,
+  Dialog,
+  Icon,
+  styles,
+  Text,
+  useLoop,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { Animated } from 'react-native';
 import type { VoiceSearchBackend } from '#tv/app/voiceSearch';
@@ -57,6 +67,8 @@ const PULSE_MS = 1800;
 const CIRCLE = 76;
 
 function Pulse({ children }: Readonly<{ children: React.ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const halo = useLoop('halo', PULSE_MS);
 
   return (
@@ -67,7 +79,7 @@ function Pulse({ children }: Readonly<{ children: React.ReactNode }>) {
   );
 }
 
-const s = styles({
-  well: { w: 56, h: 56, radius: 28, center: true, bg: 'accentSoft' },
+const sDefinition = styles({
+  well: { w: 56, h: 56, radius: cornerRadius.mobileHero, center: true, bg: 'accentSoft' },
   halo: { absolute: true, w: CIRCLE, h: CIRCLE, radius: CIRCLE / 2, bg: 'accentWash' },
 });

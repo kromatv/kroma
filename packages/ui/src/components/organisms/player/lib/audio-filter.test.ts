@@ -5,18 +5,18 @@
 // or the quietest mode ends up louder than the others.
 
 import { act, renderHook } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AUDIO_FILTER_KEY,
   audioFilterLabels,
+  createAudioFilterOwner,
   storedAudioFilter,
   useAudioFilter,
 } from './audio-filter';
 
-// One graph for the whole file, not one per test: the module's AudioContext is
-// a module-level singleton, so a fresh stub per test would be ignored after the
-// first one that builds a graph. Each test uses a NEW <video> instead, which is
-// what the per-element WeakMap keys on.
+// Stable fake nodes let each tuning assertion inspect the graph built by its
+// player owner. Each owner still constructs its own browser context.
 const param = () => ({ value: 0 });
 const comp = {
   threshold: param(),
@@ -45,6 +45,7 @@ const ctx = {
   state: 'running',
   destination: {},
   resume: vi.fn(),
+  close: vi.fn(async () => undefined),
   createMediaElementSource: vi.fn(() => source),
   createDynamicsCompressor: vi.fn(() => (comps++ % 2 === 0 ? comp : limiter)),
   createGain: vi.fn(() => (gains++ % 2 === 0 ? gain : boost)),
@@ -76,6 +77,8 @@ beforeEach(() => {
   comps = 0;
   gains = 0;
   for (const fn of [
+    ctx.close,
+    ctx.resume,
     ctx.createMediaElementSource,
     ctx.createDynamicsCompressor,
     ctx.createGain,
@@ -290,5 +293,55 @@ describe('useAudioFilter', () => {
     // A fresh <video> (anchor change / audio switch) needs its own graph.
     rerender({ ref: videoRef(), key: 'k2' });
     expect(ctx.createMediaElementSource).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('player-owned Web Audio lifetime', () => {
+  it('closes its context and removes gesture listeners after its player leaves', async () => {
+    stubAudio();
+    const owner = createAudioFilterOwner();
+    const release = owner.retain();
+    owner.wire(document.createElement('video'), 'night', 1);
+    const removed = vi.spyOn(document, 'removeEventListener');
+    release();
+    await Promise.resolve();
+    expect(ctx.close).toHaveBeenCalledOnce();
+    expect(removed).toHaveBeenCalledWith('pointerdown', expect.any(Function), true);
+    expect(removed).toHaveBeenCalledWith('keydown', expect.any(Function), true);
+    removed.mockRestore();
+  });
+  it('keeps one source for the same video during StrictMode effect replay', async () => {
+    stubAudio();
+    const ref = videoRef();
+    const root = renderHook(() => useAudioFilter(ref, 'strict', 1.5), { wrapper: StrictMode });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(ctx.close).not.toHaveBeenCalled();
+    expect(ctx.createMediaElementSource).toHaveBeenCalledOnce();
+    root.unmount();
+    await Promise.resolve();
+    expect(ctx.close).toHaveBeenCalledOnce();
+  });
+  it('does not close another player context', async () => {
+    const a = { ...ctx, close: vi.fn(async () => undefined) };
+    const b = { ...ctx, close: vi.fn(async () => undefined) };
+    const instances = [a, b];
+    vi.stubGlobal('AudioContext', function AudioContextStub() {
+      return instances.shift();
+    });
+    const first = createAudioFilterOwner();
+    const second = createAudioFilterOwner();
+    const releaseFirst = first.retain();
+    const releaseSecond = second.retain();
+    first.wire(document.createElement('video'), 'night', 1);
+    second.wire(document.createElement('video'), 'night', 1);
+    releaseFirst();
+    await Promise.resolve();
+    expect(a.close).toHaveBeenCalledOnce();
+    expect(b.close).not.toHaveBeenCalled();
+    releaseSecond();
+    await Promise.resolve();
+    expect(b.close).toHaveBeenCalledOnce();
   });
 });

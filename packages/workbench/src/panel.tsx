@@ -11,6 +11,7 @@ import {
   sv,
   Text,
   useResizablePanel,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { ScrollView } from 'react-native';
@@ -97,6 +98,8 @@ function Panel({
   run,
   layout,
 }: Readonly<PanelProps>) {
+  const s = useStyles(sDefinition);
+
   const docked = layout.panel === 'below';
   const tabs = tabsFor(story, showControls, run);
   // A preference, not the truth: the tab persists across stories, and a story
@@ -157,6 +160,8 @@ function TabButton({
   active,
   onPress,
 }: Readonly<{ tab: Tab; active: boolean; onPress: () => void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Focusable label={tab.name} ring={false} onPress={onPress} sv={tabButton} vars={{ active }}>
       {({ slots }) => (
@@ -179,6 +184,8 @@ function TabButton({
 }
 
 function Handle({ open, onPress }: Readonly<{ open: boolean; onPress: () => void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <IconButton
       variant="ghost"
@@ -195,7 +202,7 @@ function Handle({ open, onPress }: Readonly<{ open: boolean; onPress: () => void
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   scroll: { flex: true },
   side: { borderLeftWidth: 1, borderLeftColor: 'border' },
   sideBody: { p: 16, pb: 56 },

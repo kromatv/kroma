@@ -1,65 +1,58 @@
 // @vitest-environment jsdom
 import { ItemId } from '@kromatv/client/media';
 import { renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createElement, type ReactNode } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { WebRuntimeProvider } from './web-runtime';
+import { createWebTestRuntime } from './web-runtime.fixture';
 
-const loadSession = vi.fn<() => { accessToken: string } | null>();
-const kromaClient = vi.fn(() => ({ id: Symbol('client') }));
 const shared = vi.fn((client: unknown, itemId: string, opts?: unknown) => ({
   client,
   itemId,
   opts,
 }));
-
-vi.mock('@kromatv/client/accounts', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@kromatv/client/accounts')>()),
-  loadSession: () => loadSession(),
-}));
 vi.mock('@kromatv/ui', () => ({ useStoryboard: shared }));
-vi.mock('#web/shared/lib/api', () => ({ kromaClient: () => kromaClient() }));
-
 const { useStoryboard } = await import('./use-storyboard');
 
-afterEach(() => {
-  vi.clearAllMocks();
-  loadSession.mockReset();
-});
-
+function root() {
+  const runtime = createWebTestRuntime({});
+  const wrapper = ({ children }: Readonly<{ children: ReactNode }>) =>
+    createElement(WebRuntimeProvider, { value: runtime }, children);
+  return { runtime, wrapper };
+}
 describe('useStoryboard', () => {
-  it('keeps one client while the token holds, so the polling effect is not torn down every render', () => {
-    loadSession.mockReturnValue({ accessToken: 'a' });
-    const { rerender } = renderHook(() => useStoryboard(ItemId.parse('item-1')));
+  it('keeps the router client stable while a bearer changes', () => {
+    const owner = root();
+    const { rerender } = renderHook(() => useStoryboard(ItemId.parse('item-1')), {
+      wrapper: owner.wrapper,
+    });
+    expect(shared.mock.calls.at(-1)?.[0]).toBe(owner.runtime.client);
+    owner.runtime.client.setAuthToken('fresh');
     rerender();
-    rerender();
-
-    expect(kromaClient).toHaveBeenCalledTimes(1);
-    const seen = shared.mock.calls.map(([client]) => client);
-    expect(new Set(seen).size).toBe(1);
+    expect(shared.mock.calls.at(-1)?.[0]).toBe(owner.runtime.client);
   });
-
-  it('mints a fresh client when the token changes, so a new session is not served by the old one', () => {
-    loadSession.mockReturnValue({ accessToken: 'a' });
-    const { rerender } = renderHook(() => useStoryboard(ItemId.parse('item-1')));
-    loadSession.mockReturnValue({ accessToken: 'b' });
-    rerender();
-
-    expect(kromaClient).toHaveBeenCalledTimes(2);
-    const [first, second] = shared.mock.calls.map(([client]) => client);
-    expect(first).not.toBe(second);
+  it('keeps independent roots on their own clients', () => {
+    const a = root();
+    const b = root();
+    renderHook(() => useStoryboard(ItemId.parse('item-1')), { wrapper: a.wrapper });
+    renderHook(() => useStoryboard(ItemId.parse('item-1')), { wrapper: b.wrapper });
+    expect(a.runtime.client).not.toBe(b.runtime.client);
   });
-
-  it('reads a signed-out session without minting a client per render', () => {
-    loadSession.mockReturnValue(null);
-    const { rerender } = renderHook(() => useStoryboard(ItemId.parse('item-1')));
+  it('keeps the same client after sign-out', () => {
+    const owner = root();
+    owner.runtime.client.setAuthToken('before');
+    const { rerender } = renderHook(() => useStoryboard(ItemId.parse('item-1')), {
+      wrapper: owner.wrapper,
+    });
+    owner.runtime.client.setAuthToken(undefined);
     rerender();
-
-    expect(kromaClient).toHaveBeenCalledTimes(1);
+    expect(shared.mock.calls.at(-1)?.[0]).toBe(owner.runtime.client);
   });
-
-  it('hands the item and the options straight through', () => {
-    loadSession.mockReturnValue({ accessToken: 'a' });
-    renderHook(() => useStoryboard(ItemId.parse('item-9'), { generate: true }));
-
-    expect(shared).toHaveBeenCalledWith(expect.anything(), 'item-9', { generate: true });
+  it('passes the requested item and options through', () => {
+    const owner = root();
+    renderHook(() => useStoryboard(ItemId.parse('item-9'), { generate: true }), {
+      wrapper: owner.wrapper,
+    });
+    expect(shared).toHaveBeenLastCalledWith(owner.runtime.client, 'item-9', { generate: true });
   });
 });

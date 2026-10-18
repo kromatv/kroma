@@ -15,10 +15,14 @@ import {
   Img,
   motion,
   type StyleDecl,
+  type StyleScope,
   sharedStyle,
   styles,
   svFor,
   Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
 import { View, type ViewStyle } from 'react-native';
 
@@ -49,9 +53,10 @@ const ZOOM_TRANSITION = {
   transitionTimingFunction: `cubic-bezier(${motion.bezier.out.join(', ')})`,
 } as const;
 
-const tint = (slug: string) => sharedStyle(`tint:${slug}`, { backgroundImage: genreTint(slug) });
+const tint = (slug: string, scope: StyleScope) =>
+  sharedStyle(`tint:${slug}`, { backgroundImage: genreTint(slug) }, scope);
 
-const art = styles({
+const artDefinition = styles({
   still: { ...ZOOM_TRANSITION, transform: [{ scale: 1 }] },
   zoomed: { ...ZOOM_TRANSITION, transform: [{ scale: ZOOM }] },
 });
@@ -63,16 +68,19 @@ export interface GenreTileProps {
 }
 
 export function GenreTile({ genre, count, backdrop }: Readonly<GenreTileProps>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   const t = useT();
   const [from, to] = genreColors(genre.slug);
   const icon = genreIcon(genre.slug);
   const label = genreLabel(t, genre.name);
   return (
-    <Focusable sv={genreTile} label={label} style={wash(from, to, 150)} asChild>
+    <Focusable sv={genreTile} label={label} style={wash(from, to, 150, scope)} asChild>
       {({ hovered, slots }) => (
         <RouteLink to="/genres/$id" params={{ id: genreSegment(genre.slug) }}>
           <Art src={backdrop} hovered={hovered} style={slots.art} />
-          <Box fill pointerEvents="none" style={tint(genre.slug)} />
+          <Box fill pointerEvents="none" style={tint(genre.slug, scope)} />
           <Box
             absolute
             left={{ base: 16, md: 20 }}
@@ -100,6 +108,8 @@ function Art({
   hovered,
   style,
 }: Readonly<{ src: string | null; hovered: boolean; style: ViewStyle }>) {
+  const art = useStyles(artDefinition);
+
   return (
     <View style={[style, hovered ? art.zoomed : art.still]}>
       <Img src={src ? sizedImageUrl(src, 420) : null} fit="cover" position="50% 25%" fill />

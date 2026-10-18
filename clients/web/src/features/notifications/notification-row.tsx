@@ -15,7 +15,17 @@ import type { Notification, NotificationId } from '@kromatv/client/notifications
 import { type NotificationRun, sizedImageUrl } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Badge, Box, classes, Icon, IconButton, ListRow, styles, Text } from '@kromatv/ui/kit';
+import {
+  Badge,
+  Box,
+  classes,
+  Icon,
+  IconButton,
+  ListRow,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { notificationLink } from '#web/features/notifications/notification-link';
@@ -49,6 +59,8 @@ export function NotificationEntry({
   run,
   onNavigate,
 }: Readonly<{ run: NotificationRun; onNavigate: () => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const navigate = useNavigate();
   const relative = useRelativeTime();
@@ -152,7 +164,7 @@ function ReadToggle({
 
 // Room at the right for the toggle laid over the row, so a long title ellipses
 // before it reaches the button rather than running under it.
-const s = styles({
+const sDefinition = styles({
   rowPad: { pl: 8, pr: 46 },
   tabular: { fontVariantNumeric: 'tabular-nums' },
   occurrencePad: { pl: 30, pt: 4, pb: 4 },
@@ -162,6 +174,8 @@ function Occurrences({
   items,
   onOpen,
 }: Readonly<{ items: Notification[]; onOpen: (one: Notification) => void }>) {
+  const s = useStyles(sDefinition);
+
   const exact = useExactTime();
   return (
     <Box pb={4}>

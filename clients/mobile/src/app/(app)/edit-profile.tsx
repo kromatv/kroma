@@ -1,5 +1,5 @@
 import { LANG_OFF, langName } from '@kromatv/core';
-import { Box, styles } from '@kromatv/ui/kit';
+import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { type LangPickerRef, LangPickerSheet } from '#mobile/components/LangPickerSheet';
@@ -17,6 +17,8 @@ import { useSession } from '#mobile/lib/session';
 import { radius, spacing } from '#mobile/lib/theme';
 
 export default function EditProfile() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { user } = useSession();
   const { setAudio: setAudioPref, setSubtitle: setSubtitlePref } = useLangPrefs();
@@ -92,7 +94,7 @@ export default function EditProfile() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   body: { gap: spacing.lg, p: spacing.md, pb: spacing.xl * 2, ...boxed(contentWidth.form) },
   rowCard: { px: 6, py: 4, bg: 'surface1', radius: radius.lg, border: 'border' },
 });

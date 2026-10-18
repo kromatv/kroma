@@ -1,9 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { Unstatic } from './module-scope.ts';
 import { compileSteps } from './steps.ts';
-import { resolveAsBrowser } from './web-theme.ts';
-
-beforeAll(() => resolveAsBrowser());
 
 describe('compileSteps', () => {
   it('passes a layer that names no breakpoint through untouched', () => {
@@ -18,10 +15,8 @@ describe('compileSteps', () => {
       { lineHeight: 24 },
     ]);
     expect(values.lineHeight).toMatch(/^var\(--k[\w-]+,20px\)$/);
-    expect(rules).toHaveLength(1);
-    expect(rules[0]?.css).toMatch(
-      /^:root\[data-kroma-bp~="lg"\] \.[a-d][\w-]{5}\{--k[\w-]+:24px;\}$/,
-    );
+    expect(rules).toHaveLength(2);
+    expect(rules[1]?.css).toMatch(/^\[data-kroma-bp~="lg"\]\{--k[\w-]+:24px;\}$/);
   });
 
   it('refuses a step whose value is not a string or a number', () => {

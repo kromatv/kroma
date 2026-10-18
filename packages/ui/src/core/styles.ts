@@ -1,3 +1,7 @@
+import { useStyleScope } from './style-context';
+import { DEFAULT_STYLE_SCOPE, type StyleScope } from './style-scope';
+import { useBreakpointStep } from './use-breakpoint';
+import { useThemeVersion } from './use-theme';
 // Reusable styles that are not a variant of anything.
 //
 // `sv` covers a component's design: what changes with a prop or a state.
@@ -9,7 +13,7 @@ import { breakpointIndex, breakpointStep } from '#ui/core/breakpoint';
 import { normalize } from '#ui/core/normalize';
 import { declaredBreakpoints } from '#ui/core/shorthand-resolve';
 import { stabilise } from '#ui/core/stabilise';
-import { themedCache, themeVersion } from '#ui/core/theme';
+import { activeTheme, themedCache, themeVersion } from '#ui/core/theme';
 import type { AnyStyle, StyleDecl } from '#ui/core/types';
 
 export type Styles<S> = { readonly [K in keyof S]: AnyStyle };
@@ -35,47 +39,70 @@ export type Styles<S> = { readonly [K in keyof S]: AnyStyle };
  * to atomic CSS classes shared with every other style that declares the same
  * thing, rather than re-serialising it onto each element.
  *
- * The binding is a live view: reading `s.row` resolves against the ACTIVE
- * theme and breakpoint, and either swap hands back fresh objects (a new
- * identity is what makes react-native-web recompile them). Read properties off
- * it at render time; a value copied out and held keeps the theme it was read
- * under. Nothing here re-renders a component - a set that changes with the
- * breakpoint is read by one that follows it (`useBreakpoint`, or <Box>).
+ * Bind the definition with `const s = useStyles(definition)` inside a component.
+ * The hook resolves against that styling root and subscribes to its theme and
+ * only the breakpoint steps the declaration names. A swap returns fresh style
+ * objects so the compiler and react-native-web can observe the change.
+ * Outside React, pass an explicit StyleScope or use resolveStyles; an unbound
+ * definition resolves against immutable KROMA defaults.
  */
-export function styles<const S extends Record<string, StyleDecl>>(decls: S): Styles<S> {
-  let builtAt = -1;
-  let builtStep = 0;
-  let breakpoints = 0;
-  let built: Record<string, AnyStyle> = {};
-  const resolve = (): Record<string, AnyStyle> => {
-    const at = themeVersion();
-    if (builtAt !== at || breakpointStep(breakpoints) !== builtStep) {
-      const resolved: Record<string, AnyStyle> = {};
-      const index = breakpointIndex();
-      breakpoints = 0;
-      for (const name of Object.keys(decls)) {
-        const decl = decls[name] as Record<string, unknown>;
-        breakpoints |= declaredBreakpoints(decl);
-        resolved[name] = stabilise(normalize(decl, index)) as AnyStyle;
-      }
-      built = resolved;
-      builtAt = at;
-      builtStep = breakpointStep(breakpoints);
-    }
+const RESOLVE = Symbol('scoped-styles');
+const MASK = Symbol('style-breakpoints');
+type StyleBinding<S> = Styles<S> & {
+  [RESOLVE]: (scope: StyleScope, version?: number, index?: number) => Styles<S>;
+  [MASK]: number;
+};
+
+export function styles<const S extends Record<string, StyleDecl>>(
+  decls: S,
+  owner: StyleScope = DEFAULT_STYLE_SCOPE,
+): Styles<S> {
+  const owners = new WeakMap<StyleScope, { at: number; step: number; built: Styles<S> }>();
+  const mask = Object.values(decls).reduce((bits, decl) => bits | declaredBreakpoints(decl), 0);
+  const resolve = (
+    scope: StyleScope,
+    at = themeVersion(scope.theme),
+    index = breakpointIndex(scope.breakpoints),
+  ): Styles<S> => {
+    const step = breakpointStep(mask, index);
+    const cached = owners.get(scope);
+    if (cached?.at === at && cached.step === step) return cached.built;
+    const resolved: Record<string, AnyStyle> = {};
+    for (const [name, decl] of Object.entries(decls))
+      resolved[name] = stabilise(normalize(decl, index, activeTheme(scope.theme))) as AnyStyle;
+    const built = resolved as Styles<S>;
+    owners.set(scope, { at, step, built });
     return built;
   };
   return new Proxy({} as Styles<S>, {
-    get: (_, key) => resolve()[key as string],
-    has: (_, key) => (key as string) in resolve(),
-    ownKeys: () => Reflect.ownKeys(resolve()),
+    get: (_, key) => {
+      if (key === RESOLVE) return resolve;
+      if (key === MASK) return mask;
+      return Reflect.get(resolve(owner), key);
+    },
+    has: (_, key) => key in resolve(owner),
+    ownKeys: () => Reflect.ownKeys(resolve(owner)),
     getOwnPropertyDescriptor: (_, key) => {
-      const desc = Object.getOwnPropertyDescriptor(resolve(), key);
+      const desc = Object.getOwnPropertyDescriptor(resolve(owner), key);
       return desc ? { ...desc, configurable: true } : undefined;
     },
     set: () => false,
     defineProperty: () => false,
     deleteProperty: () => false,
   });
+}
+
+export function resolveStyles<S>(definition: Styles<S>, scope: StyleScope): Styles<S> {
+  return (definition as StyleBinding<S>)[RESOLVE](scope);
+}
+
+/** Bind a declaration to this root and subscribe only to relevant breakpoint steps. */
+export function useStyles<S>(definition: Styles<S>): Styles<S> {
+  const scope = useStyleScope();
+  const binding = definition as StyleBinding<S>;
+  const version = useThemeVersion();
+  const step = useBreakpointStep(binding[MASK]);
+  return binding[RESOLVE](scope, version, step);
 }
 
 /** One style, for the handful of places a set of one would be noise. Resolved
@@ -85,7 +112,10 @@ export function style<const T extends StyleDecl>(decl: T): AnyStyle {
   return styles({ only: decl }).only;
 }
 
-const shared = themedCache<AnyStyle>(4096);
+const shared = new WeakMap<
+  StyleScope,
+  ReturnType<typeof themedCache<AnyStyle & Record<string, unknown>>>
+>();
 
 const rebuilt = themedCache<AnyStyle>(4096);
 
@@ -97,7 +127,7 @@ const rebuilt = themedCache<AnyStyle>(4096);
  * every link carrying the same paint shares one entry and one set of classes.
  */
 export function registered(style: StyleProp<AnyStyle>): AnyStyle {
-  const flat = (StyleSheet.flatten(style) ?? {}) as Record<string, unknown>;
+  const flat = StyleSheet.flatten(style) ?? {};
   return rebuilt(JSON.stringify(flat), () => stabilise(flat) as AnyStyle);
 }
 
@@ -113,9 +143,17 @@ export function registered(style: StyleProp<AnyStyle>): AnyStyle {
  * carries the step it was resolved at (see <Text>); the breakpoint is not part
  * of the key by itself, which is what keeps a flat declaration at one entry.
  */
-export function sharedStyle(key: string, decl: StyleDecl): AnyStyle {
-  return shared(
-    key,
-    () => stabilise(normalize(decl as Record<string, unknown>, breakpointIndex())) as AnyStyle,
+export function sharedStyle(
+  key: string,
+  decl: StyleDecl,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
+): AnyStyle & Record<string, unknown> {
+  let cache = shared.get(scope);
+  if (!cache) {
+    cache = themedCache<AnyStyle & Record<string, unknown>>(4096, scope.theme);
+    shared.set(scope, cache);
+  }
+  return cache(key, () =>
+    stabilise(normalize(decl, breakpointIndex(scope.breakpoints), activeTheme(scope.theme))),
   );
 }

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { color } from './color';
-import { createTheme, KROMA, themeVersion } from './theme';
-import { applyMode } from './theme-mode';
+import { createStyleTestHost } from '#ui/testing-style';
+
+import { createTheme, KROMA } from './theme';
+
+const styleHost = createStyleTestHost();
+const { color, themeVersion, applyMode } = styleHost;
 
 describe('the palette on a browser target', () => {
   it('resolves a token to its custom property', () => {

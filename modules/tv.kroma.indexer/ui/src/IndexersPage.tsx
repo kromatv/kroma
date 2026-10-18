@@ -3,13 +3,13 @@
 // TMDB id support) and an add/edit modal. Structure mirrors the libraries page.
 
 import {
-  addEngine,
   apiErrorText,
   Denied,
   type EngineChoice,
   type MessageKey,
   ModuleFailed,
   ModuleLoading,
+  useAddEngine,
   useCap,
   useEnabledEngines,
   usePoll,
@@ -42,6 +42,7 @@ import type { IndexerTestResult, IndexerView } from './schemas';
 type TestState = { busy?: boolean; result?: IndexerTestResult; error?: string };
 
 export default function IndexersPage() {
+  const addEngine = useAddEngine();
   const t = useT();
   const indexerApi = useIndexerApi();
   const canManage = useCap('settings.manage');

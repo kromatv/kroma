@@ -4,6 +4,17 @@
 
 import type { TokenOf } from './registry';
 export const colors = {
+  ai: '#7C5CFF',
+  aiLabel: '#B7A6FF',
+  aiIndicator: '#8B7FF0',
+  aiText: '#B3A9F5',
+  aiProgress: '#7C6FF5',
+  accentPale: '#FFE7A8',
+  chromeMuted: '#BDBCC4',
+  playerBlack: '#08080b',
+  playerSurface: '#101014',
+  playerRaised: '#282830',
+
   bg: '#0A0A0C',
   surface1: '#121216',
   surface2: '#1C1C22',
@@ -62,6 +73,17 @@ export const colors = {
 } as const;
 
 export const lightColors: Record<keyof typeof colors, string> = {
+  ai: '#7C5CFF',
+  aiLabel: '#B7A6FF',
+  aiIndicator: '#8B7FF0',
+  aiText: '#B3A9F5',
+  aiProgress: '#7C6FF5',
+  accentPale: '#FFE7A8',
+  chromeMuted: '#BDBCC4',
+  playerBlack: '#08080b',
+  playerSurface: '#101014',
+  playerRaised: '#282830',
+
   bg: '#F7F5F1',
   surface1: '#FFFEFB',
   surface2: '#F0EDE6',

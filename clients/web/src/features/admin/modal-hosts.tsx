@@ -1,6 +1,5 @@
 // Mount points for the admin console's imperative modals: each callable needs
 // exactly one host rendered while it can be called.
-import { AddEngineHost } from '@kromatv/module-sdk';
 import { ExportModal, ImportModal } from '#web/features/admin/backup-modals';
 import { StopStreamModal } from '#web/features/admin/dashboard-now-playing';
 import { ScheduleModal } from '#web/features/admin/jobs-schedule';
@@ -29,8 +28,6 @@ export function AdminModalHosts() {
       <RegistriesDrawer />
       {/* Lent to modules through `openMediaInfo` on the admin host. */}
       <MediaInfoModal />
-      {/* One host covers every module page (indexers, download clients). */}
-      <AddEngineHost />
     </>
   );
 }

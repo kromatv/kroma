@@ -2,7 +2,7 @@ import { Activity, type ReactNode, useLayoutEffect, useMemo, useState } from 're
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
-import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import {
   Context,
@@ -99,7 +99,8 @@ function Root({
   children,
   style,
 }: Readonly<StepperRootProps>) {
-  const shell = size ?? entryDefaultSize();
+  const entryDefaults = useEntryDefaults();
+  const shell = size ?? entryDefaults.size;
   const { members, join, mark } = useStepRegistry();
   const order = useMemo(() => members.map((member) => member.value), [members]);
   const off = useMemo(

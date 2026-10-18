@@ -1,8 +1,10 @@
+import { styles, useStyleScope, useStyles, useThemeVersion } from '@kromatv/ui/kit';
+
 // The device picker, as the app's chrome shows it: a bottom sheet, sized to
 // its content: a household has a handful of TVs, not a hundred languages.
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { styles } from '@kromatv/ui/kit';
+
 import type { Ref } from 'react';
 import { CastDeviceList, type CastDeviceListProps } from '#mobile/components/cast/CastDeviceList';
 import { SheetBody, sheetChrome } from '#mobile/components/ui';
@@ -11,10 +13,15 @@ export function CastSheet({
   ref,
   ...props
 }: Readonly<CastDeviceListProps & { ref?: Ref<BottomSheetModal> }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   return (
     <BottomSheetModal
       ref={ref}
-      {...sheetChrome()}
+      {...sheetChrome(scope)}
       // The list can become a code prompt, and this sheet sits exactly where
       // the keyboard comes up. `interactive`, not `extend`: the field is at
       // the bottom of the content, so the sheet has to RIDE above the
@@ -33,6 +40,6 @@ export function CastSheet({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   body: { gap: 2 },
 });

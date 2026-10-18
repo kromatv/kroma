@@ -35,6 +35,11 @@ interface StreamHooks {
 }
 
 vi.mock('@kromatv/client/accounts', () => ({
+  createAccountStorage: () => ({
+    loadSession: H.loadSession,
+    forgetServer: H.forgetServer,
+    saveServer: H.saveServer,
+  }),
   loadSession: H.loadSession,
   forgetServer: H.forgetServer,
   saveServer: H.saveServer,
@@ -66,7 +71,7 @@ vi.mock('@kromatv/client', () => ({
 }));
 
 vi.mock('@kromatv/core', () => ({
-  activeLocale: () => 'fr',
+  deviceLocale: () => 'fr',
   discoverServer: H.discoverServer,
   checkServerCompat: H.checkServerCompat,
 }));
@@ -83,9 +88,8 @@ vi.mock('#tv/app/useServerHealth', async (importOriginal) => {
 
 vi.mock('#tv/shared/server', () => ({ initialServers: H.initialServers }));
 vi.mock('#tv/shared/preview', () => ({
-  readDeepLink: H.readDeepLink,
-  onDeepLink: H.onDeepLink,
-  publishPreview: H.publishPreview,
+  createDeepLinks: () => ({ readDeepLink: H.readDeepLink, onDeepLink: H.onDeepLink }),
+  createPreviewPublisher: () => H.publishPreview,
 }));
 
 // Imported after the mocks are registered (vi.mock is hoisted above this line).
@@ -541,5 +545,17 @@ describe('useCatalogue live event stream', () => {
 
     await tick(1500);
     expect(H.publishPreview).toHaveBeenCalledWith(H.instances[0], [{ id: 'm1' }]);
+  });
+});
+
+describe('app-owned server discovery', () => {
+  it('passes each root’s native browser to discovery without registration', async () => {
+    const first = vi.fn(async () => []);
+    const second = vi.fn(async () => []);
+    renderHook(() => useCatalogue('TV', first));
+    renderHook(() => useCatalogue('TV', second));
+    await settle();
+    expect(H.discoverServer).toHaveBeenCalledWith({ browse: first });
+    expect(H.discoverServer).toHaveBeenCalledWith({ browse: second });
   });
 });

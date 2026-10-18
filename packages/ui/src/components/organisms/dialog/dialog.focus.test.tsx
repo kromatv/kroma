@@ -1,17 +1,17 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import { act } from 'react';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { configureRemote } from '#ui/lib/focus-remote';
+
 import { FocusScope } from '#ui/lib/focus-scope';
 import { OverlayHost } from '#ui/lib/overlay-host';
-import { clearPressGuard } from '#ui/lib/press-guard';
 import { wearsRing } from '#ui/testing';
+import { createInputTestHost } from '#ui/testing-input';
 import { Dialog } from './dialog';
 
-beforeAll(() => configureRemote());
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(() => {
   cleanup();

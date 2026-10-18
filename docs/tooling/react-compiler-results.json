@@ -1,0 +1,33 @@
+{
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M2 Max"
+  },
+  "corpusHash": "e198930ebc89e6c34e378d72330f7e6e9c772f5774a3c7a44237c390de8682d2",
+  "compilerHash": "e29f6b25bf8d33b6eb9404dce792d327c445439b77656ef5b3e6acd2313d30ac",
+  "date": "2026-10-18T16:39:36.401Z",
+  "node": "v26.5.0",
+  "files": 674,
+  "memoizedFiles": {
+    "babel": 331,
+    "oxc": 331
+  },
+  "scope": "packages/ui/src TypeScript and TSX, same input, React 19, JSX preserved, source maps enabled, one full warmup per compiler; five alternating rounds",
+  "versions": {
+    "babel": "1.0.0",
+    "oxc": "0.154.0"
+  },
+  "seconds": {
+    "babel": [4.647236333, 4.513180417000002, 4.4802965409999995, 4.44818275, 4.421090499999998],
+    "oxc": [
+      0.2588457090000011, 0.25974479099999914, 0.2593486249999987, 0.25925516699999934,
+      0.2603552919999966
+    ]
+  },
+  "medianSeconds": {
+    "babel": 4.4802965409999995,
+    "oxc": 0.2593486249999987
+  },
+  "speedup": 17.27518910501269
+}

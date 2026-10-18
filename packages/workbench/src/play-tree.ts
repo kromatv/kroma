@@ -25,11 +25,11 @@ const EMPTY: Record<string, unknown> = Object.freeze({});
 // React Native hands the host instance itself, in one of two spellings
 // depending on which renderer built it.
 function seedOf(node: object): Fiber | null {
-  const bag = node as Record<string, unknown>;
-  const handle = bag._internalInstanceHandle ?? bag.__internalInstanceHandle;
+  const handle: unknown =
+    Reflect.get(node, '_internalInstanceHandle') ?? Reflect.get(node, '__internalInstanceHandle');
   if (handle) return handle as Fiber;
-  for (const key of Object.keys(bag)) {
-    if (key.startsWith('__reactFiber$')) return bag[key] as Fiber;
+  for (const key of Object.keys(node)) {
+    if (key.startsWith('__reactFiber$')) return Reflect.get(node, key) as Fiber;
   }
   return null;
 }
@@ -60,7 +60,7 @@ function fiberFor(node: object | null | undefined): Fiber | null {
 
 function propsOf(fiber: Fiber): Record<string, unknown> {
   const props = fiber.memoizedProps;
-  return props && typeof props === 'object' ? (props as Record<string, unknown>) : EMPTY;
+  return props && typeof props === 'object' ? props : EMPTY;
 }
 
 function scan(fiber: Fiber | null, visit: Visit): void {

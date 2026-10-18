@@ -3,7 +3,16 @@
 
 import type { MediaItem } from '@kromatv/client/media';
 import { sizedImageUrl } from '@kromatv/core';
-import { Box, Field, Icon, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  Field,
+  Icon,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -30,6 +39,8 @@ function useDebounced(value: string, ms: number): string {
 }
 
 function SuggestedRow({ item }: Readonly<{ item: MediaItem }>) {
+  const s = useStyles(sDefinition);
+
   const client = useClient();
   const router = useRouter();
   const { play } = usePlay();
@@ -63,6 +74,8 @@ function SuggestedRow({ item }: Readonly<{ item: MediaItem }>) {
 }
 
 export default function Search() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { width } = useWindowDimensions();
@@ -158,16 +171,23 @@ export default function Search() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   inputBox: { gap: spacing.sm, pb: spacing.md },
-  pageTitle: { ...type.display, fontSize: 30 },
+  pageTitle: { ...type.display, fontSize: textRoles.heading.size },
   suggestHeader: { ...type.section, mb: spacing.sm },
   suggestRow: { row: true, align: 'center', gap: 12, py: 6 },
   suggestRowPressed: { bg: 'surface1' },
   suggestThumb: { w: 130, h: 73 },
   suggestTitle: { ...type.body, flex: true, fontWeight: '600' },
-  suggestPlay: { center: true, w: 38, h: 38, radius: 19, border: 'textMuted', borderWidth: 1.5 },
+  suggestPlay: {
+    center: true,
+    w: 38,
+    h: 38,
+    radius: cornerRadius.search,
+    border: 'textMuted',
+    borderWidth: 1.5,
+  },
   suggestPlayPressed: { border: 'text', bg: 'surface2' },
   beyondRow: { row: true, wrap: true, gap: 12 },
 });

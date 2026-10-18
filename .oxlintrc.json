@@ -1,0 +1,93 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "off"
+  },
+  "jsPlugins": [
+    {
+      "name": "kroma",
+      "specifier": "./packages/lint-rules/src/index.mjs"
+    }
+  ],
+  "rules": {
+    "no-nested-ternary": "error",
+    "kroma/no-relative-workspace-imports": "error",
+    "no-debugger": "error",
+    "no-eval": "error",
+    "no-constant-condition": "error",
+    "no-var": "error",
+    "kroma/no-react-forward-ref": "error",
+    "kroma/no-comment-banners": "error",
+    "kroma/index-reexports-only": "error",
+    "kroma/no-nested-templates": "error",
+    "kroma/owned-task-comments": "error",
+    "kroma/no-redundant-jsdoc-tags": "error",
+    "kroma/no-unknown-record-assertions": "error",
+    "kroma/no-em-dashes": "error"
+  },
+  "ignorePatterns": [
+    ".claude/worktrees",
+    "**/dist",
+    "**/dist-*",
+    "**/build",
+    "clients/webos/service",
+    "**/.tanstack",
+    "**/*.gen.ts",
+    "**/routeTree.gen.ts",
+    "packages/core/src/locales/messages.d.ts",
+    "apps/www/src/paraglide",
+    "**/*.template.html",
+    "clients/synology",
+    "server",
+    "apps/www/src/styles.css",
+    "clients/mobile/google-services.json"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "packages/core/src/**/*.ts",
+        "packages/client/src/**/*.ts",
+        "packages/ui/src/**/*.ts",
+        "packages/tv/src/**/*.ts",
+        "packages/spatial-nav/src/**/*.ts",
+        "packages/module-sdk/src/**/*.ts",
+        "packages/core/src/**/*.tsx",
+        "packages/client/src/**/*.tsx",
+        "packages/ui/src/**/*.tsx",
+        "packages/tv/src/**/*.tsx",
+        "packages/spatial-nav/src/**/*.tsx",
+        "packages/module-sdk/src/**/*.tsx",
+        "clients/*/src/**/*.ts",
+        "clients/*/src/**/*.tsx"
+      ],
+      "excludeFiles": ["**/*.test.*", "**/*.spec.*", "**/*.d.ts"],
+      "rules": {
+        "kroma/no-module-mutable-bindings": "error"
+      }
+    },
+    {
+      "files": [
+        "packages/ui/src/components/**/*.ts",
+        "packages/ui/src/components/**/*.tsx",
+        "packages/tv/src/**/*.ts",
+        "packages/tv/src/**/*.tsx",
+        "clients/*/src/**/*.ts",
+        "clients/*/src/**/*.tsx",
+        "apps/kit/src/**/*.ts",
+        "apps/kit/src/**/*.tsx"
+      ],
+      "excludeFiles": [
+        "**/*.test.*",
+        "**/*.spec.*",
+        "**/*.fixture.*",
+        "**/*.fixtures.*",
+        "**/*.d.ts",
+        "packages/ui/src/lib/icons/**"
+      ],
+      "rules": {
+        "kroma/no-raw-design-values": "error"
+      }
+    }
+  ]
+}

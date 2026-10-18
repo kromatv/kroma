@@ -2,9 +2,8 @@
 
 import type { MediaItem } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { layout, onScreen } from '@kromatv/ui/testing';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { createInputTestHost, layout, onScreen } from '@kromatv/ui/testing';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type Connection, ConnectionProvider } from '#tv/app/providers/connection';
 import {
@@ -15,6 +14,8 @@ import {
   useNav,
 } from '#tv/app/router';
 import { TvGenres } from '#tv/features/catalog/TvGenres';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 const movie = (id: string, title: string, genre: string): MediaItem =>
   ({

@@ -3,12 +3,14 @@
 import { act, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import { Animated } from 'react-native';
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
-import { configureRemote } from '#ui/lib/focus-remote';
-import { declared, onScreen, wearsRing } from '#ui/testing';
+
+import { onScreen as baseOnScreen, declared, wearsRing } from '#ui/testing';
 import { UpNextSheet } from './up-next-sheet';
 import { DATA } from './up-next-sheet.fixtures';
+
+const onScreen = (ui: Parameters<typeof baseOnScreen>[0]) => baseOnScreen(ui, { remote: true });
 
 // Two react-native-web facts this file is built on: it picks a mock Animated
 // that never touches the driver when NODE_ENV is `test`, and it warns about the
@@ -18,8 +20,6 @@ import { DATA } from './up-next-sheet.fixtures';
 vi.hoisted(() => {
   vi.stubEnv('NODE_ENV', 'development');
 });
-
-beforeAll(() => configureRemote());
 
 afterAll(() => {
   vi.unstubAllEnvs();

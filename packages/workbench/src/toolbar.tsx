@@ -12,6 +12,7 @@ import {
   type IconName,
   styles,
   useCopy,
+  useStyles,
   webWindow,
 } from '@kromatv/ui/kit';
 import { type ColorToken, colors } from '@kromatv/ui/tokens';
@@ -91,6 +92,8 @@ function Toolbar({
   onMenu,
   layout,
 }: Readonly<ToolbarProps>) {
+  const s = useStyles(sDefinition);
+
   // Single id, not a per-lens flag: opening one lens closes any other.
   const [open, setOpen] = useState<string | null>(null);
   const close = useCallback(() => setOpen(null), []);
@@ -240,7 +243,7 @@ const LINK_FACE: Record<CopyState, { label: string; glyph: IconName; ink: ColorT
   failed: { label: 'Could not copy the link', glyph: 'alert-triangle', ink: 'danger' },
 };
 
-const s = styles({
+const sDefinition = styles({
   // `right: 0` keeps the scrim inside the canvas column, which must never scroll
   // sideways.
   scrim: { absolute: true, top: 0, right: 0, left: 0, z: 1 },

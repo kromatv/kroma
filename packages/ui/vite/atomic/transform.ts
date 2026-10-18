@@ -110,7 +110,7 @@ class Rewrite {
       if (typeof value !== 'object' || value === null || Array.isArray(value)) {
         throw new Unstatic('a declaration that is not an object');
       }
-      return compileDeclaration(value as Record<string, unknown>);
+      return compileDeclaration(value);
     } catch (error) {
       if (!(error instanceof Unstatic)) throw error;
       this.skip(node, error.reason);

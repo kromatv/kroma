@@ -2,7 +2,7 @@
 // in-app override, then the OS locale (which reflects the per-app language in
 // iOS Settings, thanks to CFBundleLocalizations), then the account preference.
 
-import { createTranslator, DEFAULT_LOCALE, normalizeLocale, setActiveLocale } from '@kromatv/core';
+import { createTranslator, DEFAULT_LOCALE, normalizeLocale } from '@kromatv/core';
 import type { Locale, Translate } from '@kromatv/i18n';
 import { getLocales } from 'expo-localization';
 import {
@@ -47,7 +47,7 @@ function osLocale(): Locale | null {
 }
 
 export function I18nProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const { user, client } = useSession();
+  const { user, client, setRequestLocale } = useSession();
   const [override, setOverride] = useState<Locale | null>(null);
 
   useEffect(() => {
@@ -56,12 +56,11 @@ export function I18nProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const locale = override ?? osLocale() ?? normalizeLocale(user?.language) ?? DEFAULT_LOCALE;
 
-  // The session's client, and every client built outside this tree: the sign-in
-  // flow and the server probes each make their own, and they read activeLocale().
-  setActiveLocale(locale);
+  // Publish request language to the session root and its current client.
   useEffect(() => {
+    setRequestLocale(locale);
     client?.setLocale(locale);
-  }, [client, locale]);
+  }, [client, locale, setRequestLocale]);
 
   const applyOverride = useCallback((next: Locale | null) => {
     setOverride(next);

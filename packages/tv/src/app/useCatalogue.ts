@@ -1,20 +1,21 @@
 import type { KromaClient } from '@kromatv/client';
-import {
-  forgetServer as forgetServerStore,
-  loadSession,
-  normalizeServerUrl as norm,
-  type SavedServer,
-  saveServer as saveServerStore,
-} from '@kromatv/client/accounts';
+import { normalizeServerUrl as norm, type SavedServer } from '@kromatv/client/accounts';
 import type { MediaItem, Show } from '@kromatv/client/media';
 import { discoverServer } from '@kromatv/core';
+import { useAccountStorage } from '@kromatv/ui';
+import { useDeviceStore } from '@kromatv/ui/device-store';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { makeClient } from '#tv/app/apiClient';
 import type { Connection } from '#tv/app/providers/connection';
-import { serverBrowse } from '#tv/app/serverBrowse';
+import type { ServerBrowse } from '#tv/app/serverBrowse';
 import { useCatalogueSync } from '#tv/app/useCatalogueSync';
 import { useServerHealth } from '#tv/app/useServerHealth';
-import { type DeepLink, onDeepLink, publishPreview, readDeepLink } from '#tv/shared/preview';
+import {
+  createDeepLinks,
+  createPreviewPublisher,
+  type DeepLink,
+  type DeepLinks,
+} from '#tv/shared/preview';
 import { initialServers } from '#tv/shared/server';
 
 type Status = 'discovering' | 'connecting' | 'ready' | 'error';
@@ -43,11 +44,25 @@ export interface Catalogue {
 /** Owns the TV's multi-server connection + catalogue state: discovery, the
  * active client, the movies/shows catalogue, the live event stream, Smart-Hub
  * preview publishing and deep links. */
-export function useCatalogue(platform: string): Catalogue {
+export function useCatalogue(
+  platform: string,
+  browse?: ServerBrowse,
+  suppliedDeepLinks?: DeepLinks,
+  artworkScale?: () => number,
+): Catalogue {
+  const storage = useDeviceStore();
+  const {
+    loadSession,
+    saveServer: saveServerStore,
+    forgetServer: forgetServerStore,
+  } = useAccountStorage();
+  const [ownedDeepLinks] = useState(createDeepLinks);
+  const { readDeepLink, onDeepLink } = suppliedDeepLinks ?? ownedDeepLinks;
+  const [publishPreview] = useState(createPreviewPublisher);
   // Read once, so the first client starts pointed at the right server with its
   // token applied and "Reprendre" does not flicker.
-  const bootSession = useMemo(() => loadSession(), []);
-  const [servers, setServers] = useState<SavedServer[]>(() => initialServers());
+  const bootSession = useMemo(() => loadSession(), [loadSession]);
+  const [servers, setServers] = useState<SavedServer[]>(() => initialServers(storage));
   const [activeServerUrl, setActiveServerUrl] = useState<string | null>(
     () => bootSession?.serverUrl ?? servers[0]?.url ?? null,
   );
@@ -57,8 +72,8 @@ export function useCatalogue(platform: string): Catalogue {
     // No initial bearer: the auth provider exchanges the active account's access
     // token for a session token and calls `setAuthToken` (+ installs the refresh
     // handler) once the session belongs to this server.
-    return makeClient(activeServerUrl);
-  }, [activeServerUrl]);
+    return makeClient(activeServerUrl, undefined, artworkScale, storage);
+  }, [activeServerUrl, artworkScale, storage]);
   const liveClient = useRef(client);
   liveClient.current = client;
 
@@ -76,11 +91,14 @@ export function useCatalogue(platform: string): Catalogue {
 
   const setActiveServer = useCallback((url: string) => setActiveServerUrl(norm(url)), []);
 
-  const addServer = useCallback((url: string, name?: string | null) => {
-    const next = saveServerStore({ url, name });
-    setServers(next);
-    setActiveServerUrl(norm(url));
-  }, []);
+  const addServer = useCallback(
+    (url: string, name?: string | null) => {
+      const next = saveServerStore({ url, name });
+      setServers(next);
+      setActiveServerUrl(norm(url));
+    },
+    [saveServerStore],
+  );
 
   const forgetServer = useCallback(
     (url: string) => {
@@ -91,16 +109,18 @@ export function useCatalogue(platform: string): Catalogue {
       setServers(next);
       if (activeServerUrl && norm(activeServerUrl) === u) setActiveServerUrl(next[0]?.url ?? null);
     },
-    [servers, activeServerUrl],
+    [
+      servers,
+      activeServerUrl, // Drop it from core storage (also clears its accounts + active session).
+      forgetServerStore,
+    ],
   );
 
   const discover = useCallback(() => {
     setDiscovering(true);
     let cancelled = false;
-    // The browse is read at call time, not at mount: the shell registers it at
-    // the app root, and a discovery that ran first would otherwise be stuck on
-    // the sweep for the life of the process.
-    void discoverServer({ browse: serverBrowse() ?? undefined })
+    // Discovery uses the backend supplied by this app root.
+    void discoverServer({ browse })
       .catch(() => null)
       .then((found) => {
         if (cancelled) return;
@@ -115,7 +135,7 @@ export function useCatalogue(platform: string): Catalogue {
       cancelled = true;
       setDiscovering(false);
     };
-  }, [servers.length, addServer]);
+  }, [servers.length, addServer, browse]);
 
   // No saved servers → auto-discover on the LAN (first run).
   useEffect(() => {
@@ -162,9 +182,9 @@ export function useCatalogue(platform: string): Catalogue {
     if (status !== 'ready' || !client) return;
     const id = setTimeout(() => void publishPreview(client, movies), 1500);
     return () => clearTimeout(id);
-  }, [status, client, movies]);
+  }, [status, client, movies, publishPreview]);
 
-  useEffect(() => onDeepLink(setDeepLink), []);
+  useEffect(() => onDeepLink(setDeepLink), [onDeepLink]);
 
   const connection = useMemo<Connection>(
     () => ({

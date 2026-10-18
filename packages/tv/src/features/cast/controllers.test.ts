@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import { type CastController, ControllerId } from '@kromatv/client/cast';
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createElement, type ReactNode } from 'react';
+import { describe, expect, it, vi } from 'vitest';
 import {
-  kickCastController,
-  setCastControllers,
-  setCastUplink,
+  CastControllerStoreProvider,
+  createCastControllerStore,
   useCastControllers,
 } from '#tv/features/cast/controllers';
 
@@ -15,53 +15,72 @@ const remote = (id: string, name = id): CastController => ({
   username: 'max',
 });
 
-beforeEach(() => {
-  // Also clears the roster, which is the point: module state outlives a test.
-  setCastUplink(null);
-});
-
 describe('the remotes driving this TV', () => {
   it('reports only the ones that just arrived', () => {
-    expect(setCastControllers([remote('a')])).toEqual([remote('a')]);
+    const store = createCastControllerStore();
+    expect(store.setCastControllers([remote('a')])).toEqual([remote('a')]);
     // The row came again because something else about the set changed.
-    expect(setCastControllers([remote('a'), remote('b')])).toEqual([remote('b')]);
-    expect(setCastControllers([remote('a'), remote('b')])).toEqual([]);
+    expect(store.setCastControllers([remote('a'), remote('b')])).toEqual([remote('b')]);
+    expect(store.setCastControllers([remote('a'), remote('b')])).toEqual([]);
     // One left; the other is not news.
-    expect(setCastControllers([remote('b')])).toEqual([]);
+    expect(store.setCastControllers([remote('b')])).toEqual([]);
   });
 
   it('shows the top bar the current list', () => {
-    const { result } = renderHook(() => useCastControllers());
+    const store = createCastControllerStore();
+    const { result } = renderHook(() => useCastControllers(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(CastControllerStoreProvider, { value: store }, children),
+    });
     expect(result.current).toEqual([]);
 
     act(() => {
-      setCastControllers([remote('a', 'iPhone')]);
+      store.setCastControllers([remote('a', 'iPhone')]);
     });
     expect(result.current).toEqual([remote('a', 'iPhone')]);
 
     act(() => {
-      setCastControllers([]);
+      store.setCastControllers([]);
     });
     expect(result.current).toEqual([]);
   });
 
   it('hangs up through the receiver socket', () => {
+    const store = createCastControllerStore();
     const send = vi.fn();
-    setCastUplink(send);
-    kickCastController(ControllerId.parse('a'));
+    store.setCastUplink(send);
+    store.kickCastController(ControllerId.parse('a'));
     expect(send).toHaveBeenCalledWith({ type: 'cast.kick', controllerId: 'a' });
   });
 
   it('says nothing when the socket is gone, and forgets who was driving', () => {
+    const store = createCastControllerStore();
     const send = vi.fn();
-    setCastUplink(send);
-    setCastControllers([remote('a')]);
+    store.setCastUplink(send);
+    store.setCastControllers([remote('a')]);
 
-    setCastUplink(null);
-    kickCastController(ControllerId.parse('a'));
+    store.setCastUplink(null);
+    store.kickCastController(ControllerId.parse('a'));
     expect(send).not.toHaveBeenCalled();
     // The server dropped this receiver with its socket, so the same remote
     // coming back is a fresh arrival - and worth announcing again.
-    expect(setCastControllers([remote('a')])).toEqual([remote('a')]);
+    expect(store.setCastControllers([remote('a')])).toEqual([remote('a')]);
   });
+});
+
+it('keeps rosters and sockets isolated between mounted roots', () => {
+  const a = createCastControllerStore();
+  const b = createCastControllerStore();
+  const sendA = vi.fn();
+  const sendB = vi.fn();
+  a.setCastUplink(sendA);
+  b.setCastUplink(sendB);
+  a.setCastControllers([remote('a')]);
+  b.setCastControllers([remote('b')]);
+  a.setCastUplink(null);
+  expect(a.read()).toEqual([]);
+  expect(b.read()).toEqual([remote('b')]);
+  b.kickCastController(ControllerId.parse('b'));
+  expect(sendA).not.toHaveBeenCalled();
+  expect(sendB).toHaveBeenCalledWith({ type: 'cast.kick', controllerId: 'b' });
 });

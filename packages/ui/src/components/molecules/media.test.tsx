@@ -1,13 +1,16 @@
 import type { ReactElement } from 'react';
+import { createInputTestHost } from '#ui/testing-input';
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cellWidth } from '#ui/components/atoms/grid';
-import { clearPressGuard } from '#ui/lib/press-guard';
+
 import { declared, onScreen } from '#ui/testing';
 import { MediaCard, tintGradient } from './media-card';
 import { PosterCard } from './poster-card';
+
+const { clearPressGuard, render: renderRaw } = createInputTestHost();
 
 // Every kit control is a node of the spatial navigator, and a node needs one.
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));

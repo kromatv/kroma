@@ -1,18 +1,29 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // Admin "Modules" page: an app-store view over /api/admin/modules and
 // /api/admin/store. Discover / Installed / Updates tabs with live per-module
 // install progress off the `module.op.*` stream, a detail page per module,
 // and registry management in its own drawer.
 
 import { useT } from '@kromatv/ui';
-import { Box, Button, classes, Field, Row, SegmentGroup, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  classes,
+  Field,
+  Row,
+  SegmentGroup,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useMemo, useRef, useState } from 'react';
 
 // The file input is a handle for the upload button, never a control a reader
 // sees; `display: none` has no React Native spelling.
-const s = styles({ hidden: { display: 'none' } });
+const sDefinition = styles({ hidden: { display: 'none' } });
 
-import { installBundle, message, updateModules } from '#web/features/admin/module-api';
+import { message } from '#web/features/admin/module-api';
 import { useModuleData } from '#web/features/admin/module-data';
 import { InstallModal } from '#web/features/admin/module-install';
 import { InstalledList } from '#web/features/admin/module-installed';
@@ -31,6 +42,10 @@ export function ModulesAdminPage() {
 }
 
 function ModulesInner() {
+  const webRuntime = useWebRuntime();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const navigate = useNavigate();
   const { modules, catalog, refreshAll } = useModuleData();
@@ -55,7 +70,7 @@ function ModulesInner() {
 
   const runUpdate = (ids?: string[]) =>
     void updating.run(async () => {
-      const result = await updateModules(ids);
+      const result = await webRuntime.moduleApi.updateModules(ids);
       await refreshAll();
       if (result.failed.length > 0) {
         throw new Error(result.failed.map((f) => `${f.id}: ${f.error}`).join(' · '));
@@ -65,7 +80,7 @@ function ModulesInner() {
   const onPick = (file: File | undefined) => {
     if (!file) return;
     void upload.run(async () => {
-      await installBundle(file);
+      await webRuntime.moduleApi.installBundle(file);
       await refreshAll();
     }, message);
   };

@@ -9,10 +9,11 @@ import {
   type UpNextItem,
 } from '@kromatv/ui';
 import { useEffect, useMemo, useState } from 'react';
-import { kromaClient } from '#web/shared/lib/api';
+import type { WebRuntime } from '#web/shared/lib/api';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
-function toCard(t: Translate, item: MediaItem): UpNextItem {
-  const c = kromaClient();
+function toCard(t: Translate, item: MediaItem, webRuntime: WebRuntime): UpNextItem {
+  const c = webRuntime.client;
   const isEp = item.season != null && item.episode != null;
   return {
     id: item.id,
@@ -27,8 +28,8 @@ function toCard(t: Translate, item: MediaItem): UpNextItem {
   };
 }
 
-function toOffer(item: MediaItem): PostPlayItem {
-  const c = kromaClient();
+function toOffer(item: MediaItem, webRuntime: WebRuntime): PostPlayItem {
+  const c = webRuntime.client;
   return {
     id: item.id,
     title: item.title,
@@ -60,20 +61,22 @@ export function useWebUpNext(
   item: MediaItem,
   following: MediaItem[] = NO_EPISODES,
 ): WebUpNext {
+  const webRuntime = useWebRuntime();
+
   const [similar, setSimilar] = useState<MediaItem[]>([]);
   // Recommend against the SHOW when watching an episode: episodes carry no
   // embedding of their own, so similar(episodeId) would be empty.
   const recoId = item.showId ?? item.id;
   useEffect(() => {
     let cancelled = false;
-    kromaClient()
-      .media.similar(ItemId.parse(recoId))
+    webRuntime.client.media
+      .similar(ItemId.parse(recoId))
       .then((list) => !cancelled && setSimilar(list))
       .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [recoId]);
+  }, [recoId, webRuntime.client.media.similar]);
 
   return useMemo(() => {
     // A library that holds the same film twice answers itself as its own
@@ -82,10 +85,10 @@ export function useWebUpNext(
     const offer = similar.find((s) => s.id !== item.id) ?? null;
     return {
       data: {
-        nextEpisodes: following.map((e) => toCard(t, e)),
-        recommendations: similar.slice(0, 18).map((s) => toCard(t, s)),
+        nextEpisodes: following.map((e) => toCard(t, e, webRuntime)),
+        recommendations: similar.slice(0, 18).map((s) => toCard(t, s, webRuntime)),
       },
-      postPlay: offer ? toOffer(offer) : null,
+      postPlay: offer ? toOffer(offer, webRuntime) : null,
     };
-  }, [t, item.id, following, similar]);
+  }, [t, item.id, following, similar, webRuntime]);
 }

@@ -2,7 +2,17 @@ import type { KromaClient } from '@kromatv/client';
 import type { AuthResult, QuickConnectInit } from '@kromatv/client/accounts';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Box, Spinner, SvgXml, styles, Text, useFocusNav } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  Spinner,
+  SvgXml,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  useFocusNav,
+  useStyles,
+} from '@kromatv/ui/kit';
 // Static import on purpose: Metro has no code splitting, and a dynamic `import()`
 // throws "Expected HMRClient.setup() call at startup" without the dev server.
 import qrcode from 'qrcode-generator';
@@ -19,6 +29,8 @@ const EXPIRY_MARGIN_SEC = 5;
  * approves from the web/mobile app, pairing the profile on the next poll.
  */
 export function TvQuickConnect() {
+  const s = useStyles(sDefinition);
+
   const nav = useNav();
   const t = useT();
   const { client, activeServerUrl, activeServerName } = useConnection();
@@ -135,7 +147,7 @@ export function TvQuickConnect() {
       {!error && info ? (
         <>
           {qr ? (
-            <Box w={280} h={280} center radius={28} bg="white" p={20}>
+            <Box w={280} h={280} center radius={cornerRadius.mobileHero} bg="white" p={20}>
               <SvgXml xml={qr} width="100%" height="100%" />
             </Box>
           ) : null}
@@ -189,9 +201,9 @@ function connectUrl(client: KromaClient, code: string, serverUrl?: string | null
   }
 }
 
-const s = styles({
+const sDefinition = styles({
   code: {
-    fontSize: 96,
+    fontSize: textRoles.codeTv.size,
     lineHeight: 96,
     fontWeight: '700',
     letterSpacing: 8,

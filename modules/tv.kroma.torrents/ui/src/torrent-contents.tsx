@@ -1,7 +1,18 @@
 import type { TorrentAnalysis, TorrentFileView } from '@kromatv/module-acquisition/schemas';
 import { useFormat, useT } from '@kromatv/module-sdk';
-import type { IconName } from '@kromatv/ui/kit';
-import { Badge, Box, Checkbox, Icon, Img, Row, styles, Text } from '@kromatv/ui/kit';
+import {
+  Badge,
+  Box,
+  Checkbox,
+  Icon,
+  type IconName,
+  Img,
+  Row,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
+
 import { useMemo } from 'react';
 import {
   bytesOf,
@@ -17,7 +28,7 @@ import type { EpisodeInfo } from './schemas';
 const STILL_WIDTH = 64;
 const STILL_HEIGHT = 36;
 
-const s = styles({
+const sDefinition = styles({
   tabular: { fontVariant: ['tabular-nums'] },
 });
 
@@ -63,6 +74,8 @@ function TotalRow({
   analysis,
   selection,
 }: Readonly<{ analysis: TorrentAnalysis; selection?: ContentsSelection }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const fmt = useFormat();
   const videos = analysis.files.filter((file) => file.isVideo);
@@ -128,6 +141,8 @@ function GroupBlock({
   showHeading: boolean;
   showStills: boolean;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const fmt = useFormat();
   const selectable = selection && group.kind !== 'extras' ? selection : undefined;
@@ -191,6 +206,8 @@ function FileRow({
   showStill: boolean;
   selection?: ContentsSelection;
 }>) {
+  const s = useStyles(sDefinition);
+
   const fmt = useFormat();
   const tag = file.episode === null ? null : `E${String(file.episode).padStart(2, '0')}`;
   const named = episode?.name ?? null;

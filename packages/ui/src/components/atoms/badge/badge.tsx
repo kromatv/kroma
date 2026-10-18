@@ -1,10 +1,11 @@
+import { sv, useSv, type Variant } from '#ui/core';
+import { typeSpec as textRoles } from '#ui/core/tokens';
 // <Badge>: the small quality / status pill (4K, HDR, H.265, FR, Disponible).
 // Text only, never emoji.
 
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { sv, type Variant } from '#ui/core';
 
 type BadgeTone = Variant<typeof badgeVariants, 'tone'>;
 
@@ -28,8 +29,14 @@ const badgeVariants = sv({
       neutral: { root: { bg: 'tint/8' }, label: { color: 'text/85' } },
     },
     size: {
-      sm: { root: { py: 4, px: 9 }, label: { fontSize: 11, letterSpacing: 0.44 } },
-      tv: { root: { py: 5, px: 11 }, label: { fontSize: 13, letterSpacing: 0.26 } },
+      sm: {
+        root: { py: 4, px: 9 },
+        label: { fontSize: textRoles.overline.size, letterSpacing: 0.44 },
+      },
+      tv: {
+        root: { py: 5, px: 11 },
+        label: { fontSize: textRoles.meta.size, letterSpacing: 0.26 },
+      },
     },
   },
   defaults: { tone: '4K', size: 'sm' },
@@ -50,10 +57,12 @@ interface BadgeProps {
 }
 
 function Badge({ tone = '4K', size = 'sm', children }: Readonly<BadgeProps>) {
+  const badgeVariantsScoped = useSv(badgeVariants);
+
   // The catalogue can hand over a quality string the design never named;
   // anything unrecognised gets the neutral treatment.
   const known = badgeVariants.options.tone.includes(tone) ? tone : 'neutral';
-  const s = badgeVariants({ tone: known, size });
+  const s = badgeVariantsScoped({ tone: known, size });
   return (
     <Box style={s.root}>
       <Text lines={1} style={s.label}>

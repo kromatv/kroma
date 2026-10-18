@@ -127,10 +127,11 @@ function isPlain(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function merge<T>(base: T, over: DeepPartial<T> | undefined): T {
+function merge<T extends object>(base: T, over: DeepPartial<T> | undefined): T {
   if (over === undefined) return base;
-  const out: Record<string, unknown> = { ...(base as Record<string, unknown>) };
-  for (const [key, value] of Object.entries(over as Record<string, unknown>)) {
+  const out: Record<string, unknown> = {};
+  Object.assign(out, base);
+  for (const [key, value] of Object.entries(over)) {
     if (value === undefined) continue;
     const under = out[key];
     out[key] = isPlain(value) && isPlain(under) ? merge(under, value) : value;

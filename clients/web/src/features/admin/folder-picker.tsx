@@ -1,6 +1,8 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // A server-side folder browser: `value` is the committed path and `onChange`
 // fires on "use this folder"; browsing state is internal, seeded from `value`.
 // `onCancel` adds a cancel button for callers that show the browser on demand.
+
 import type { AdminFsList } from '@kromatv/client/admin';
 import { useT } from '@kromatv/ui';
 import {
@@ -13,10 +15,10 @@ import {
   Spinner,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
-import { kromaClient } from '#web/shared/lib/api';
 
 /** The browser itself, as the caller's own band: a crumb, the folders under it
  * and the two actions, sharing one card. */
@@ -25,6 +27,10 @@ export function FolderPicker({
   onChange,
   onCancel,
 }: Readonly<{ value: string; onChange: (path: string) => void; onCancel?: () => void }>) {
+  const webRuntime = useWebRuntime();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [path, setPath] = useState(value || '');
   const [list, setList] = useState<AdminFsList | null>(null);
@@ -33,8 +39,8 @@ export function FolderPicker({
   useEffect(() => {
     let active = true;
     setLoading(true);
-    kromaClient()
-      .library.browse(path)
+    webRuntime.client.library
+      .browse(path)
       .then((res) => {
         if (active) setList(res);
       })
@@ -47,7 +53,7 @@ export function FolderPicker({
     return () => {
       active = false;
     };
-  }, [path]);
+  }, [path, webRuntime.client.library.browse]);
 
   const atRoot = path === '';
   const entries = list?.entries ?? [];
@@ -117,4 +123,4 @@ export function FolderPicker({
   );
 }
 
-const s = styles({ pane: { maxH: 232 } });
+const sDefinition = styles({ pane: { maxH: 232 } });

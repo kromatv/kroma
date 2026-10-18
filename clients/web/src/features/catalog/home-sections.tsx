@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // Server-generated home: an ordered list of localized sections (For You,
 // "Because you watched …", themed rows, trending, recently added) - this is a
 // thin renderer. Per-user, so it loads client-side once a session is hydrated.
@@ -6,7 +7,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { SectionHeading, SectionPoster } from '#web/features/catalog/cards';
 import { useAuth } from '#web/shared/lib/auth';
-import { userQueries } from '#web/shared/lib/queries';
+
 import { PosterRail, RailSkeleton } from '#web/shared/ui';
 
 export function HomeSections({ excludeId }: Readonly<{ excludeId?: string | null }>) {
@@ -27,7 +28,9 @@ export function HomeSections({ excludeId }: Readonly<{ excludeId?: string | null
 }
 
 function Sections({ excludeId }: Readonly<{ excludeId?: string | null }>) {
-  const { data: sections } = useSuspenseQuery(userQueries.home());
+  const webRuntime = useWebRuntime();
+
+  const { data: sections } = useSuspenseQuery(webRuntime.queries.userQueries.home());
 
   if (sections.length === 0) return null;
 

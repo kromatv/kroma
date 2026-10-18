@@ -1,14 +1,18 @@
-import {
-  Children,
-  type ComponentType,
-  cloneElement,
-  type ReactElement,
-  type ReactNode,
-  useSyncExternalStore,
-} from 'react';
+import { Children, cloneElement, type ReactElement, type ReactNode } from 'react';
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
-import { type CornerValue, onPaper, radiusValue, sharedStyle, styles } from '#ui/core';
+import {
+  activeTheme,
+  type CornerValue,
+  onPaper,
+  radiusValue,
+  resolveStyles,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  useStyleScope,
+} from '#ui/core';
 import { backdropBlur } from '#ui/lib/css';
+import { useKitSettings } from '#ui/lib/kit-settings';
 import { WEB } from '#ui/lib/platform';
 import { mergeSlotProps } from '#ui/lib/slot';
 
@@ -23,17 +27,8 @@ interface FrostBackdropProps {
   style?: StyleProp<ViewStyle>;
 }
 
-let PlatformFrost: ComponentType<FrostBackdropProps> | null = null;
-
-/** Hand the kit the platform's blur view (the TV shell's expo-blur), once, at
- * module scope, before the first render. Generic over the component's own
- * props, since `ComponentType` is invariant in `P` and naming the props
- * directly would reject <BlurView> over tints the kit never passes. */
-
-const cornerStyle = (corner: number) => sharedStyle(`frost:corner:${corner}`, { radius: corner });
-function registerFrost<P extends FrostBackdropProps>(component: ComponentType<P>): void {
-  PlatformFrost = component as ComponentType<FrostBackdropProps>;
-}
+const cornerStyle = (corner: number, scope: StyleScope) =>
+  sharedStyle(`frost:corner:${corner}`, { radius: corner }, scope);
 
 interface FrostOptions {
   /** False renders the surface untouched, so a caller that is only sometimes
@@ -57,31 +52,6 @@ interface FrostCoat {
 
 const BARE: FrostCoat = { style: null, layer: null };
 
-// A rendering mode rather than a per-surface prop, and one every mounted
-// surface has to hear: the coat is computed during render, so a bare module flag
-// would only take effect on whatever happened to render next. The listener set
-// is what makes it a switch instead of a startup constant.
-let frostOn = true;
-const listeners = new Set<() => void>();
-const frostEnabled = (): boolean => frostOn;
-const onFrostChange = (listener: () => void): (() => void) => {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-};
-
-/**
- * Turn every frost in the app off, or back on, wherever it is already on
- * screen: a television whose GPU composites the blur on the CPU pays for every
- * frosted control at once, and the plain fill underneath is what the design
- * falls back to anyway.
- */
-function setFrostEnabled(on: boolean): void {
-  if (on === frostOn) return;
-  frostOn = on;
-  for (const listener of listeners) listener();
-}
 const EMPTY: ViewStyle = {};
 
 // One coat per strength, shared by identity: <Focusable> keys its style memo on
@@ -94,22 +64,29 @@ const webCoats = new Map<number, FrostCoat>();
  * `surface` is the surface's own resolved style: the native layer takes its
  * corner from that rather than being told one twice.
  *
- * A hook, because {@link setFrostEnabled} has to reach a surface that is already
+ * A hook, so root configuration reaches a surface that is already
  * drawn: call it at the top of the control, like any other.
  */
 function useFrostCoat(surface: StyleProp<ViewStyle>, options: FrostOptions = {}): FrostCoat {
-  useSyncExternalStore(onFrostChange, frostEnabled, frostEnabled);
-  return coatOf(surface, options);
+  const scope = useStyleScope();
+
+  const { frost, frostEnabled } = useKitSettings();
+  return frostEnabled ? coatOf(surface, options, frost, scope) : BARE;
 }
 
-function coatOf(surface: StyleProp<ViewStyle>, options: FrostOptions): FrostCoat {
+function coatOf(
+  surface: StyleProp<ViewStyle>,
+  options: FrostOptions,
+  PlatformFrost: ReturnType<typeof useKitSettings>['frost'],
+  scope: StyleScope,
+): FrostCoat {
   const { on = true, amount = 12, tint } = options;
-  if (!on || !frostOn) return BARE;
+  if (!on) return BARE;
   if (WEB) {
     const cached = webCoats.get(amount);
     if (cached) return cached;
     const coat: FrostCoat = {
-      style: sharedStyle(`frost:${amount}`, backdropBlur(amount) as never) as ViewStyle,
+      style: sharedStyle(`frost:${amount}`, backdropBlur(amount) as never, scope) as ViewStyle,
       layer: null,
     };
     webCoats.set(amount, coat);
@@ -123,14 +100,18 @@ function coatOf(surface: StyleProp<ViewStyle>, options: FrostOptions): FrostCoat
       <PlatformFrost
         // expo-blur's 0-100 scale: about four steps to the CSS pixel.
         intensity={Math.min(100, amount * 4)}
-        tint={tint ?? (onPaper() ? 'light' : 'dark')}
-        style={[s.fill, s.clip, typeof corner === 'number' ? cornerStyle(corner) : null]}
+        tint={tint ?? (onPaper(activeTheme(scope.theme)) ? 'light' : 'dark')}
+        style={[
+          resolveStyles(sDefinition, scope).fill,
+          resolveStyles(sDefinition, scope).clip,
+          typeof corner === 'number' ? cornerStyle(corner, scope) : null,
+        ]}
       />
     ),
   };
 }
 
-const s = styles({
+const sDefinition = styles({
   fill: {
     fill: true,
     // Never a touch target: the surface underneath owns the press.
@@ -144,11 +125,13 @@ const s = styles({
 
 // The child declares its corner as a style or as <Box>'s `radius` shorthand,
 // and the native layer clips itself to whichever it used.
-function cornerOf(props: Record<string, unknown>): ViewStyle {
+function cornerOf(props: Record<string, unknown>, scope: StyleScope): ViewStyle {
   const flat = StyleSheet.flatten(props.style as StyleProp<ViewStyle>);
   if (typeof flat?.borderRadius === 'number') return flat;
   if (props.radius == null) return EMPTY;
-  return { borderRadius: radiusValue(props.radius as CornerValue) };
+  return {
+    borderRadius: radiusValue(props.radius as CornerValue, undefined, activeTheme(scope.theme)),
+  };
 }
 
 interface FrostProps extends FrostOptions {
@@ -165,8 +148,10 @@ interface FrostProps extends FrostOptions {
  * those call `useFrostCoat` and place `layer` themselves.
  */
 function Frost({ children, ...options }: Readonly<FrostProps>) {
+  const scope = useStyleScope();
+
   const el = Children.only(children) as ReactElement<Record<string, unknown>>;
-  const coat = useFrostCoat(cornerOf(el.props), options);
+  const coat = useFrostCoat(cornerOf(el.props, scope), options);
   if (!coat.style && !coat.layer) return el;
   const merged = mergeSlotProps(coat.style ? { style: coat.style } : {}, el.props);
   if (coat.layer) {
@@ -185,4 +170,4 @@ function Frost({ children, ...options }: Readonly<FrostProps>) {
 }
 
 export type { FrostBackdropProps, FrostCoat, FrostOptions, FrostProps };
-export { Frost, registerFrost, setFrostEnabled, useFrostCoat };
+export { Frost, useFrostCoat };

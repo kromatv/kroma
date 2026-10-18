@@ -2,14 +2,12 @@
 
 import { cleanup, render, screen } from '@testing-library/react';
 import { act } from 'react';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { activeTheme } from '#ui/core';
-import { configureRemote } from '#ui/lib/focus-remote';
+
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
 import { declared, wearsRing } from '#ui/testing';
 import { NumberField } from './number-field';
-
-beforeAll(() => configureRemote());
 
 afterEach(cleanup);
 

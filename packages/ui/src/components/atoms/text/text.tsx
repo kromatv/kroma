@@ -1,3 +1,5 @@
+import { useStyleScope } from '#ui/core/style-context';
+import { DEFAULT_STYLE_SCOPE, type StyleScope } from '#ui/core/style-scope';
 // Typed text. In CSS, `body { color; font-family }` cascades into every
 // descendant; in React Native it does NOT, so a bare <Text> would render as
 // black 14px system font. Every string in the app goes through this component,
@@ -57,20 +59,28 @@ interface TextProps extends Omit<RNTextProps, 'style' | 'role'>, TextLayoutProps
 // that overflows it, unlike the web) and `letterSpacing` breaks quietly,
 // drifting from the role's authored tracking. Both are re-derived from what
 // the role authors (a ratio and an em), only when the caller hasn't stated them.
-function sizeFix(variant: TypeRole, style: StyleProp<TextStyle>): TextStyle | null {
+function sizeFix(
+  variant: TypeRole,
+  style: StyleProp<TextStyle>,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
+): TextStyle | null {
   if (!style) return null;
   const flat = StyleSheet.flatten(style);
   const size = flat?.fontSize;
-  const spec = activeTheme().typeSpec[variant];
+  const spec = activeTheme(scope.theme).typeSpec[variant];
   if (typeof size !== 'number' || size === spec.size) return null;
   const em = 'em' in spec ? spec.em : undefined;
   const fixLine = flat.lineHeight === undefined;
   const fixTracking = flat.letterSpacing === undefined && em !== undefined;
   if (!fixLine && !fixTracking) return null;
-  return sharedStyle(`txt:fix:${variant}:${size}:${fixLine ? 'l' : ''}${fixTracking ? 's' : ''}`, {
-    ...(fixLine ? { lineHeight: Math.round(size * spec.ratio) } : null),
-    ...(fixTracking ? { letterSpacing: Math.round(size * (em as number) * 100) / 100 } : null),
-  });
+  return sharedStyle(
+    `txt:fix:${variant}:${size}:${fixLine ? 'l' : ''}${fixTracking ? 's' : ''}`,
+    {
+      ...(fixLine ? { lineHeight: Math.round(size * spec.ratio) } : null),
+      ...(fixTracking ? { letterSpacing: Math.round(size * (em as number) * 100) / 100 } : null),
+    },
+    scope,
+  );
 }
 
 function Text({
@@ -91,11 +101,16 @@ function Text({
   };
   // Only a string stating a value per breakpoint follows the design width, and
   // only it pays for a subscription; see <Box>.
-  return paint.split.breakpoints === 0 ? painted(paint, 0) : <FluidText {...paint} />;
+  return paint.split.breakpoints === 0 ? (
+    <PaintedText {...paint} step={0} />
+  ) : (
+    <FluidText {...paint} />
+  );
 }
 
 function FluidText(paint: Readonly<FluidTextProps>) {
-  return painted(paint, useBreakpointStep(paint.split.breakpoints));
+  const step = useBreakpointStep(paint.split.breakpoints);
+  return <PaintedText {...paint} step={step} />;
 }
 
 interface FluidTextProps {
@@ -111,24 +126,32 @@ interface FluidTextProps {
 // be a styleq miss for every string on the screen. The layout half is shared
 // the same way, keyed on the split's canonical key, which the step joins only
 // when the string actually states one.
-function painted(
-  { variant, color, font, style, lines, split }: Readonly<FluidTextProps>,
-  step: number,
-) {
-  const ink = sharedStyle(`txt:${color}`, { color });
+function PaintedText({
+  variant,
+  color,
+  font,
+  style,
+  lines,
+  split,
+  step,
+}: Readonly<FluidTextProps & { step: number }>) {
+  const scope = useStyleScope();
+  const ink = sharedStyle(`txt:${color}`, { color }, scope);
   const key = split.breakpoints === 0 ? split.key : `${step}|${split.key}`;
-  const layout = split.key ? sharedStyle(`txt:layout:${key}`, split.shorthand as StyleDecl) : null;
+  const layout = split.key
+    ? sharedStyle(`txt:layout:${key}`, split.shorthand as StyleDecl, scope)
+    : null;
   return (
     <RNText
       {...split.rest}
       numberOfLines={lines}
       style={[
-        typeStyles()[variant],
-        font ? familyStyles()[font] : null,
+        typeStyles(scope.theme)[variant],
+        font ? familyStyles(scope.theme)[font] : null,
         ink,
         layout,
         style,
-        sizeFix(variant, style),
+        sizeFix(variant, style, scope),
       ]}
     />
   );

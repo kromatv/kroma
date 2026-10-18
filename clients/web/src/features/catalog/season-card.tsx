@@ -1,15 +1,29 @@
+import {
+  activeTheme,
+  Box,
+  classes,
+  color,
+  Focusable,
+  styles,
+  sv,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
+
 // The card that stands in for a season the library does not fully hold: press it
 // to request the gap. The whole card is the control, so its trailing badge is a
 // face rather than a second stop.
 
 import { useT } from '@kromatv/ui';
-import { Box, classes, color, Focusable, styles, sv, Text } from '@kromatv/ui/kit';
+
 import { IconPlus } from '@tabler/icons-react';
 import type { TitleSeason } from '#web/shared/lib/titleView';
 import { page } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
-const s = styles({ bold: { fontWeight: '700' } });
+const sDefinition = styles({ bold: { fontWeight: '700' } });
 
 // The page gutter is a fluid CSS custom property, which no style number can
 // carry, so anything indented by it stays a plain element.
@@ -59,6 +73,10 @@ export function SeasonRequestCard({
   canRequest,
   onPick,
 }: Readonly<SeasonRequestCardProps>) {
+  const pageScoped = useStyles(page);
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const partial = !season.available && season.episodesAvailable > 0;
   const locked = season.available || season.requested || !canRequest;
@@ -76,7 +94,7 @@ export function SeasonRequestCard({
   const name = season.name ?? t('discover.seasonN', { n: String(season.number) });
 
   return (
-    <div className={classes(page.gutter)}>
+    <div className={classes(pageScoped.gutter)}>
       <Focusable sv={seasonCard} vars={{ tone }} disabled={locked} label={name} onPress={onPick}>
         {({ hovered }) => (
           <>
@@ -107,6 +125,9 @@ function SeasonTrailing({
   partial,
   hovered,
 }: Readonly<{ season: TitleSeason; canRequest: boolean; partial: boolean; hovered: boolean }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   if (season.available || season.requested) {
     return <RequestStatusChip status={season.available ? 'available' : 'pending'} size="card" />;
   }
@@ -115,7 +136,11 @@ function SeasonTrailing({
   const ink = partial ? 'black' : 'accentInk';
   return (
     <Box w={28} h={28} shrink={0} center radius="circle" bg={hovered ? 'accent' : idle}>
-      <IconPlus size={16} stroke={2.6} color={color(hovered ? ink : 'accent')} />
+      <IconPlus
+        size={16}
+        stroke={2.6}
+        color={color(hovered ? ink : 'accent', activeTheme(scope.theme))}
+      />
     </Box>
   );
 }

@@ -7,28 +7,23 @@
 
 import { type EngineField, ModuleId, type ModuleInfo } from '@kromatv/client/modules';
 import { I18nProvider } from '@kromatv/ui';
-import { clearPressGuard, setEntryDefaults } from '@kromatv/ui/kit';
+import { KitProvider } from '@kromatv/ui/kit';
+import { createInputTestHost } from '@kromatv/ui/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  renderHook,
-  screen,
-  waitFor,
-} from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AdminHostProvider } from './context';
 import {
   AddEngineHost,
   type AddEngineOptions,
-  addEngine,
   type EngineChoice,
+  useAddEngine,
   useEnabledEngines,
   useModuleEnabled,
 } from './engines';
+
+const { clearPressGuard, renderHook } = createInputTestHost();
 
 // A provider whose `client.modules.list()` answers `modules`; retries off so a
 // rejected fetch settles once instead of backing off through the test.
@@ -182,7 +177,6 @@ describe('useModuleEnabled', () => {
 });
 
 // jsdom types on a real keyboard, so the kit entries render real inputs.
-setEntryDefaults({ physicalKeyboard: true });
 
 afterEach(() => {
   cleanup();
@@ -202,18 +196,28 @@ const engine = (id: string, fields: EngineField[] = []): EngineChoice => ({
   fields,
 });
 
-function open(options: AddEngineOptions): Promise<boolean> {
-  render(
-    <I18nProvider locale="en">
-      <AddEngineHost />
-    </I18nProvider>,
+function EngineHost({ children }: { children: ReactNode }) {
+  return (
+    <KitProvider config={{ entry: { physicalKeyboard: true } }}>
+      <I18nProvider locale="en">
+        <AddEngineHost>{children}</AddEngineHost>
+      </I18nProvider>
+    </KitProvider>
   );
+}
+
+function open(
+  options: AddEngineOptions,
+  ready?: (ask: ReturnType<typeof useAddEngine>) => void,
+): Promise<boolean> {
+  const root = renderHook(useAddEngine, {
+    wrapper: EngineHost,
+  });
+  ready?.(root.result.current);
   let answer!: Promise<boolean>;
   act(() => {
-    answer = addEngine(options);
+    answer = root.result.current(options);
   });
-  // The panel arms the press guard as it mounts, and would otherwise swallow
-  // the test's first press.
   clearPressGuard();
   return answer;
 }
@@ -233,7 +237,11 @@ const save = () => click(screen.getByLabelText('Save'));
 describe('addEngine', () => {
   it('answers no when there is no host mounted to draw it', async () => {
     await expect(
-      addEngine({ engines: [engine('transmission')], title: 'Add', onSubmit: vi.fn() }),
+      renderHook(useAddEngine).result.current({
+        engines: [engine('transmission')],
+        title: 'Add',
+        onSubmit: vi.fn(),
+      }),
     ).resolves.toBe(false);
   });
 
@@ -378,11 +386,17 @@ describe('addEngine', () => {
   });
 
   it('draws one ask at a time, in the order they arrived', async () => {
-    const first = open({
-      title: 'Add a download client',
-      engines: [engine('transmission')],
-      onSubmit: vi.fn(),
-    });
+    let addEngine!: ReturnType<typeof useAddEngine>;
+    const first = open(
+      {
+        title: 'Add a download client',
+        engines: [engine('transmission')],
+        onSubmit: vi.fn(),
+      },
+      (ask) => {
+        addEngine = ask;
+      },
+    );
     let second!: Promise<boolean>;
     act(() => {
       second = addEngine({
@@ -399,5 +413,38 @@ describe('addEngine', () => {
 
     click(screen.getByLabelText('Cancel'));
     await expect(second).resolves.toBe(false);
+  });
+});
+
+describe('admin-owned engine queues', () => {
+  it('keeps a live host usable after another root unmounts', async () => {
+    const a = renderHook(useAddEngine, { wrapper: EngineHost });
+    const b = renderHook(useAddEngine, { wrapper: EngineHost });
+    a.unmount();
+    let answer!: Promise<boolean>;
+    act(() => {
+      answer = b.result.current({
+        title: 'Second root',
+        engines: [engine('transmission')],
+        onSubmit: vi.fn(),
+      });
+    });
+    expect(screen.getByText('Second root')).toBeTruthy();
+    click(screen.getByLabelText('Cancel'));
+    await expect(answer).resolves.toBe(false);
+  });
+
+  it('cancels a pending request when its owning host unmounts', async () => {
+    const root = renderHook(useAddEngine, { wrapper: EngineHost });
+    let answer!: Promise<boolean>;
+    act(() => {
+      answer = root.result.current({
+        title: 'Leaving',
+        engines: [engine('transmission')],
+        onSubmit: vi.fn(),
+      });
+    });
+    root.unmount();
+    await expect(answer).resolves.toBe(false);
   });
 });

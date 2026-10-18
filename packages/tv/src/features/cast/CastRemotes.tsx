@@ -10,15 +10,19 @@ import {
   styles,
   sv,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
-import { kickCastController, useCastControllers } from '#tv/features/cast/controllers';
+import { useCastControllerStore, useCastControllers } from '#tv/features/cast/controllers';
 
 export function CastRemotes() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { client } = useConnection();
   const controllers = useCastControllers();
+  const { kickCastController } = useCastControllerStore();
   const [open, setOpen] = useState(false);
   const count = controllers.length;
 
@@ -104,7 +108,7 @@ const chip = sv({
   },
 });
 
-const s = styles({
+const sDefinition = styles({
   count: { fontVariant: ['tabular-nums'] },
   list: { gap: 8 },
 });

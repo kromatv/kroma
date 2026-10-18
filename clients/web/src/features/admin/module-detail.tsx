@@ -3,8 +3,8 @@ import { useT } from '@kromatv/ui';
 import { Box, Button, EmptyState, Skeleton, Surface } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import type { AdminModule } from '#web/features/admin/module-api';
-import { message, UninstallConflictError, uninstallModule } from '#web/features/admin/module-api';
+import { type AdminModule, message, UninstallConflictError } from '#web/features/admin/module-api';
+
 import { useModuleData, useModuleToggle } from '#web/features/admin/module-data';
 import { ModuleActions, UninstallConfirm } from '#web/features/admin/module-detail-actions';
 import {
@@ -25,6 +25,7 @@ import { InstallModal } from '#web/features/admin/module-install';
 import { ModuleLogs } from '#web/features/admin/module-logs';
 import { useModuleRestart, useStoreOps } from '#web/features/admin/module-ops';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 export function ModuleDetailPage({ id }: Readonly<{ id: string }>) {
@@ -158,6 +159,8 @@ function InstalledSections({
 }
 
 function useUninstall(id: string) {
+  const webRuntime = useWebRuntime();
+
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -172,7 +175,7 @@ function useUninstall(id: string) {
     setBusy(true);
     setError(null);
     try {
-      await uninstallModule(id, force);
+      await webRuntime.moduleApi.uninstallModule(id, force);
       await refreshAll();
       done();
     } catch (e) {

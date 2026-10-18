@@ -1,5 +1,5 @@
 import { posterColors, sizedImageUrl } from '@kromatv/core';
-import { Box, Focusable, Img, Row, Surface, styles, Text } from '@kromatv/ui/kit';
+import { Box, Focusable, Img, Row, Surface, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { cloneElement, type ReactElement, type ReactNode } from 'react';
 import { Skeleton } from '#web/shared/ui';
 
@@ -56,6 +56,8 @@ export function RequestCard({
   link: ReactElement<{ children?: ReactNode }>;
   children?: ReactNode;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Surface pad="none" radius="xl" border="border" overflow="hidden">
       <Row align="center" gap={16} p={14}>
@@ -94,6 +96,6 @@ export function RequestCardSkeleton({ rows }: Readonly<{ rows: number }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   head: { row: true, align: 'center', gap: 16, flex: true, minW: 0 },
 });

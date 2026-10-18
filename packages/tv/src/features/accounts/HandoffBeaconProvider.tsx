@@ -20,19 +20,23 @@ import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
 import { HandoffBeaconContext } from '#tv/app/providers/handoffBeacon';
-import { deviceId } from '#tv/shared/device';
+import { createDeviceIdentity, type DeviceIdentity } from '#tv/shared/device';
 
 export function HandoffBeaconProvider({
   client,
   lan,
   name,
   children,
+  identity: suppliedIdentity,
 }: Readonly<{
   client: KromaClient | null;
   lan?: LanDiscoveryBridge;
   name: string;
   children: ReactNode;
+  identity?: DeviceIdentity;
 }>) {
+  const [ownedIdentity] = useState(createDeviceIdentity);
+  const deviceId = suppliedIdentity ?? ownedIdentity;
   const [beacon, setBeacon] = useState<HandoffBeaconView | null>(null);
   const { user, ready, login } = useAuth();
   const { activeServerUrl } = useConnection();
@@ -70,7 +74,7 @@ export function HandoffBeaconProvider({
       running.current = null;
       handoff.stop();
     };
-  }, [ready, client, activeServerUrl, signedIn, platform, login, lan]);
+  }, [ready, client, activeServerUrl, signedIn, platform, login, lan, deviceId]);
 
   useEffect(() => {
     running.current?.rename(name);

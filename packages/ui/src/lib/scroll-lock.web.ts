@@ -10,10 +10,11 @@
 // because the walk up from the touch stops at the first element that can move
 // the way the finger asked.
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { style } from '#ui/core';
 import { classes } from '#ui/lib/classed';
 import { webDocument, webWindow } from '#ui/lib/dom';
+import { useKitSettings } from './kit-settings';
 
 const NOOP = () => {};
 
@@ -24,26 +25,33 @@ const ELEMENT_NODE = 1;
 const PASSIVE = { passive: true } as const;
 const ACTIVE = { passive: false } as const;
 
-let holds = 0;
-let release = NOOP;
+/** One document host shares this lease across all overlays in its tree. */
+export function createScrollLock() {
+  let holds = 0;
+  let release = NOOP;
+  return {
+    hold() {
+      if (holds === 0) release = lockPage();
+      holds += 1;
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        holds -= 1;
+        if (holds > 0) return;
+        release();
+        release = NOOP;
+      };
+    },
+  };
+}
 
-/**
- * Freeze the page behind an overlay while `locked`, and give it back when the
- * overlay closes or unmounts. Reference-counted: the inner of two open
- * overlays releases nothing while the outer still holds the page.
- */
+/** Freeze the host page until the last overlay releases its lease. */
 export function useScrollLock(locked: boolean): void {
-  useEffect(() => {
-    if (!locked) return;
-    if (holds === 0) release = lockPage();
-    holds += 1;
-    return () => {
-      holds -= 1;
-      if (holds > 0) return;
-      release();
-      release = NOOP;
-    };
-  }, [locked]);
+  const { scrollLock: provided } = useKitSettings();
+  const [owned] = useState(createScrollLock);
+  const lock = provided ?? owned;
+  useEffect(() => (locked ? lock.hold() : undefined), [locked, lock]);
 }
 
 function lockPage(): () => void {

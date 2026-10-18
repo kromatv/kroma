@@ -3,7 +3,7 @@ import { fakeClient } from '@kromatv/client/test';
 import { describe, expect, it, vi } from 'vitest';
 import type { EngineListeners } from '#tv/features/playback/player/engine';
 import { VlcEngine } from '#tv/features/playback/player/vlcEngine';
-import { registerVlcPlane } from '#tv/features/playback/player/vlcPlane';
+import * as vlcPlane from '#tv/features/playback/player/vlcPlane';
 
 const listeners = (): EngineListeners => ({
   onTime: vi.fn(),
@@ -222,12 +222,12 @@ describe('VlcEngine state', () => {
 
   it('releases the native player as soon as the engine is torn down', () => {
     const releaseNow = vi.fn();
-    registerVlcPlane(null, releaseNow);
+    const release = vi.spyOn(vlcPlane, 'releaseVlcPlanes').mockImplementation(releaseNow);
     const { e } = engine();
 
     e.destroy();
 
     expect(releaseNow).toHaveBeenCalled();
-    registerVlcPlane(null);
+    release.mockRestore();
   });
 });

@@ -30,13 +30,13 @@ vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
 const notifications = vi.hoisted(() => ({
   setNotificationHandler: vi.fn(),
   getLastNotificationResponse: vi.fn(() => null as unknown),
+  clearLastNotificationResponse: vi.fn(),
   addNotificationResponseReceivedListener: vi.fn(() => ({ remove: vi.fn() })),
 }));
 const native = vi.hoisted(() => ({ module: null as unknown }));
 vi.mock('./native', () => ({ push: () => native.module }));
 
 const labels = vi.hoisted(() => ({
-  setPushTranslator: vi.fn(),
   registerCategories: vi.fn(async () => undefined),
   registerAndroidChannels: vi.fn(async () => undefined),
 }));
@@ -52,18 +52,20 @@ const { usePushGrantRefresh, usePushLabels, usePushTaps } = await import('./useP
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
-// A fresh module instance, i.e. a fresh launch: the cold-start latch lives for
-// the life of the JS context, so tests about it must not share one.
+// A fresh hook module stands in for a cold launch. The native response is
+// consumed by the notification API, independently of the hook lifetime.
 async function freshLaunch(): Promise<typeof usePushTaps> {
   vi.resetModules();
   return (await import('./usePush')).usePushTaps;
 }
 
 beforeEach(() => {
+  notifications.clearLastNotificationResponse.mockImplementation(() => {
+    notifications.getLastNotificationResponse.mockReturnValue(null);
+  });
   session.status = 'signedIn';
   native.module = notifications;
   translator.current = (key: string) => key;
-  labels.setPushTranslator.mockClear();
   labels.registerCategories.mockClear();
   labels.registerAndroidChannels.mockClear();
   notifications.setNotificationHandler.mockClear();
@@ -79,7 +81,8 @@ beforeEach(() => {
 describe('keeping the OS labels in the app language', () => {
   it('hands the translator over and registers the categories and channels', () => {
     renderHook(() => usePushLabels());
-    expect(labels.setPushTranslator).toHaveBeenCalledWith(expect.any(Function));
+    expect(labels.registerCategories).toHaveBeenCalledWith(translator.current);
+    expect(labels.registerAndroidChannels).toHaveBeenCalledWith(translator.current);
     expect(labels.registerCategories).toHaveBeenCalledTimes(1);
     expect(labels.registerAndroidChannels).toHaveBeenCalledTimes(1);
   });

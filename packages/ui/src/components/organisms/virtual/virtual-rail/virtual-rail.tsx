@@ -1,3 +1,5 @@
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
+
 // Under a pointer or a finger the row is a REAL horizontal scroller and the
 // platform owns every gesture: a vertical wheel chains to the page with its
 // momentum intact, a sideways swipe or shift+wheel pans the row. Only under a
@@ -22,7 +24,8 @@ import {
 } from 'react-native';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
 import { MovingStrip } from '#ui/components/organisms/virtual/moving-strip';
-import { sharedStyle, styles } from '#ui/core';
+
+import { useStyles } from '#ui/core/styles';
 import { FocusLiftView } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusReporter } from '#ui/lib/focus-report';
@@ -49,7 +52,8 @@ interface VirtualRailProps<T> {
   arrows?: boolean;
 }
 
-const rangeOf = (minWidth: number) => sharedStyle(`virtual-rail:range:${minWidth}`, { minWidth });
+const rangeOf = (minWidth: number, scope: StyleScope) =>
+  sharedStyle(`virtual-rail:range:${minWidth}`, { minWidth }, scope);
 function VirtualRail<T>({
   data,
   itemWidth,
@@ -61,6 +65,12 @@ function VirtualRail<T>({
   edgeMargin = 1,
   arrows = true,
 }: Readonly<VirtualRailProps<T>>) {
+  const clipStylesScoped = useStyles(clipStyles);
+
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const scoped = useInsideFocusScope();
   const scroller = useRef<ScrollView | null>(null);
   const [offset, setOffset] = useState(0);
@@ -169,10 +179,14 @@ function VirtualRail<T>({
   const mounted = Math.min(count, reach + 1);
   // Every cell is the same box, so it is the same OBJECT: the tiles rebuild on
   // every pan, and a fresh style per tile is a styleq cache miss on each of them.
-  const cell = sharedStyle(`virtual-rail:cell:${pitch}:${gap}`, {
-    width: pitch,
-    paddingHorizontal: gap / 2,
-  });
+  const cell = sharedStyle(
+    `virtual-rail:cell:${pitch}:${gap}`,
+    {
+      width: pitch,
+      paddingHorizontal: gap / 2,
+    },
+    scope,
+  );
   const tiles: ReactElement[] = [];
   for (let next = 0; next < mounted; next += 1) {
     const index = next;
@@ -208,7 +222,7 @@ function VirtualRail<T>({
       onPointerLeave={() => setHovered(false)}
     >
       {scoped ? (
-        <View style={clipStyles.clip}>
+        <View style={clipStylesScoped.clip}>
           <MovingStrip axis="x" offset={offset} style={contentStyle}>
             {row}
           </MovingStrip>
@@ -222,7 +236,7 @@ function VirtualRail<T>({
           scrollEventThrottle={16}
           // The full row's width from the first frame: the scroll RANGE must not
           // grow with the mounted window, or a hard fling bounces off its end.
-          contentContainerStyle={[s.row, contentStyle, rangeOf(count * pitch)]}
+          contentContainerStyle={[s.row, contentStyle, rangeOf(count * pitch, scope)]}
         >
           {row}
         </ScrollView>
@@ -250,7 +264,7 @@ function VirtualRail<T>({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   row: { row: true, align: 'center' },
 });
 

@@ -1,7 +1,5 @@
-// Shared scaffold for the onboarding/login surfaces. The lockup is the one
-// anchor: same size and position on every phase, with content swapping beneath.
-
 import {
+  activeTheme,
   BackButton,
   Box,
   color,
@@ -9,7 +7,14 @@ import {
   type SplashCover,
   styles,
   Text,
+  typeSpec as textRoles,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// Shared scaffold for the onboarding/login surfaces. The lockup is the one
+// anchor: same size and position on every phase, with content swapping beneath.
+
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, type KeyboardAvoidingViewProps, Platform } from 'react-native';
@@ -45,6 +50,11 @@ export function OnboardingScreen({
   covers?: readonly SplashCover[];
   children: ReactNode;
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const insets = useSafeAreaInsets();
   const wide = useIsWide();
@@ -52,7 +62,10 @@ export function OnboardingScreen({
     <Box style={s.screen}>
       {covers && covers.length > 0 ? <SplashBackdrop covers={covers} /> : null}
       <LinearGradient
-        colors={[color('accentSoft'), groundShade(0)]}
+        colors={[
+          color('accentSoft', activeTheme(scope.theme)),
+          groundShade(0, activeTheme(scope.theme)),
+        ]}
         style={s.wash}
         pointerEvents="none"
       />
@@ -101,6 +114,8 @@ export function OnboardingScreen({
  * centred with a fixed minHeight when wide, so the headline lands at the same y
  * on every phase either way. */
 export function OnboardingBox({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const wide = useIsWide();
   return <Box style={wide ? s.boxWide : s.box}>{children}</Box>;
 }
@@ -109,6 +124,8 @@ export function OnboardingTitle({
   title,
   subtitle,
 }: Readonly<{ title: string; subtitle?: string | null }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.titleBlock}>
       <Text style={s.headline}>{title}</Text>
@@ -117,7 +134,7 @@ export function OnboardingTitle({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   wash: { absolute: true, top: 0, right: 0, left: 0, h: '40%' },
   // Above the wash and outside the keyboard-avoiding column, so it neither
@@ -131,6 +148,6 @@ const s = styles({
   box: { flex: true, gap: spacing.md },
   boxWide: { gap: spacing.md, minH: 320 },
   titleBlock: { mb: spacing.sm },
-  headline: { ...type.display, fontSize: 28, textAlign: 'center' },
+  headline: { ...type.display, fontSize: textRoles.subheadingTv.size, textAlign: 'center' },
   subtitle: { ...type.caption, mt: 6, textAlign: 'center' },
 });

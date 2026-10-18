@@ -1,3 +1,5 @@
+import { apiBase, type WebRuntime } from '#web/shared/lib/api';
+import { useKromaClient, useWebRuntime } from '#web/shared/lib/web-runtime';
 // Keep an open catalog fiche fresh without a manual reload. The server enriches
 // metadata in the background (a scan, a nightly pass, or an operator correcting
 // the TMDB match), then broadcasts `item.updated` / `show.updated` over the event
@@ -11,25 +13,34 @@ import { KromaEvents } from '@kromatv/client/events';
 import { ItemId, ShowId } from '@kromatv/client/media';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { apiBase } from '#web/shared/lib/api';
-import { catalogQueries } from '#web/shared/lib/queries';
 
-const subjectKey = (kind: 'item' | 'show', id: string): readonly unknown[] =>
+const subjectKey = (
+  kind: 'item' | 'show',
+  id: string,
+  webRuntime: WebRuntime,
+): readonly unknown[] =>
   kind === 'show'
-    ? catalogQueries.show(ShowId.parse(id)).queryKey
-    : catalogQueries.item(ItemId.parse(id)).queryKey;
+    ? webRuntime.queries.catalogQueries.show(ShowId.parse(id)).queryKey
+    : webRuntime.queries.catalogQueries.item(ItemId.parse(id)).queryKey;
 
 export function useCatalogLiveRefresh(kind: 'item' | 'show', id: string): void {
+  const eventClient = useKromaClient();
+
+  const webRuntime = useWebRuntime();
+
   const queryClient = useQueryClient();
   useEffect(() => {
     const want = kind === 'show' ? 'show.updated' : 'item.updated';
     let pending: ReturnType<typeof setTimeout> | null = null;
     const ev = new KromaEvents(apiBase(), {
+      token: () => eventClient.sessionToken,
+      refresh: () => eventClient.refreshSession(),
+
       onEvent: (e) => {
         if (e.type !== want || e.id !== id || pending) return;
         pending = setTimeout(() => {
           pending = null;
-          void queryClient.invalidateQueries({ queryKey: subjectKey(kind, id) });
+          void queryClient.invalidateQueries({ queryKey: subjectKey(kind, id, webRuntime) });
         }, 600);
       },
     });
@@ -38,5 +49,5 @@ export function useCatalogLiveRefresh(kind: 'item' | 'show', id: string): void {
       if (pending) clearTimeout(pending);
       ev.close();
     };
-  }, [kind, id, queryClient]);
+  }, [kind, id, queryClient, webRuntime, eventClient.sessionToken, eventClient.refreshSession]);
 }

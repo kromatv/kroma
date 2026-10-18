@@ -16,6 +16,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable } from 'react-native';
 import { Text, type TextProps } from '#ui/components/atoms/text';
 import { style, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { motion } from '#ui/core/tokens';
 import { a11yState } from '#ui/lib/a11y';
 import { ease } from '#ui/lib/ease';
@@ -49,6 +50,8 @@ function ExpandableText({
   style,
   animate = true,
 }: Readonly<ExpandableTextProps>) {
+  const s = useStyles(sDefinition);
+
   const [expanded, setExpanded] = useState(false);
   // Overflow = the ghost is taller than the clamped copy, with a pixel of
   // slack for sub-pixel line metrics.
@@ -134,6 +137,8 @@ function ExpandableText({
  *  `Animated` value elsewhere. `undefined` means "size to the content", which
  *  is how the first measurement happens. */
 function Grow({ height, children }: Readonly<{ height?: number; children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const [value] = useState(() => new Animated.Value(height ?? 0));
   const settled = useRef(height);
   useEffect(() => {
@@ -167,7 +172,7 @@ const TRANSITION = style({
   transitionTimingFunction: ease.out.css,
 });
 
-const s = styles({
+const sDefinition = styles({
   ghost: { absolute: true, left: 0, right: 0, top: 0, opacity: 0, pointerEvents: 'none' },
   more: { fontWeight: '700', mt: 2 },
   clip: { overflow: 'hidden' },

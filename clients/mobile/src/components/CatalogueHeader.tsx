@@ -1,9 +1,23 @@
+import {
+  Box,
+  Chip,
+  genreIcon,
+  Icon,
+  SORT_ICON,
+  styles,
+  Text,
+  fontSizes as textSizes,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
+
 // The catalogue's masthead: the current view's best-rated backdrop fading into
 // the ground, the heading over it, and one strip of filters under it.
 
 import { type GenreCount, genreLabel, SORT_MODES, type SortMode } from '@kromatv/core';
 import type { MessageKey } from '@kromatv/i18n';
-import { Box, Chip, genreIcon, Icon, SORT_ICON, styles, Text } from '@kromatv/ui/kit';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, type View } from 'react-native';
@@ -48,10 +62,15 @@ export function CatalogueHeader({
   /** Room kept clear on the right, where the letter rail sits. */
   insetRight?: number;
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const insets = useSafeAreaInsets();
   const gutters = useGutters();
-  const ground = shades();
+  const ground = shades(scope);
   const sortButton = useRef<View>(null);
   const [sortAnchor, setSortAnchor] = useState<PopoverAnchor | null>(null);
   const openSort = () =>
@@ -135,11 +154,11 @@ export function CatalogueHeader({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   heading: { gap: 6, pb: spacing.md },
   eyebrow: { ...type.small, color: 'accent', textTransform: 'uppercase', letterSpacing: 1.2 },
   titleRow: { row: true, wrap: true, align: 'baseline', gap: 12 },
-  title: { ...type.display, fontSize: 36 },
+  title: { ...type.display, fontSize: textSizes.pageTitle },
   countPill: { radius: 'pill', border: 'border', bg: 'tint/8', px: 12, py: 4 },
   count: { ...type.small, fontVariant: ['tabular-nums'] },
   chipRow: { row: true, align: 'center', gap: 8, pb: spacing.md },

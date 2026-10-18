@@ -1,3 +1,4 @@
+import { useDeviceStore } from '#ui/lib/device-store';
 // Resolves and persists the active UI locale, then feeds it to <I18nProvider>.
 // Shared by the web and TV apps. Precedence:
 //   1. the signed-in account's preference (synced across devices), adopted on
@@ -10,7 +11,7 @@
 // reached), so even pre-auth copy is translated.
 
 import { type KromaClient, saveLocalePref } from '@kromatv/client';
-import { deviceLocale, normalizeLocale, setActiveLocale } from '@kromatv/core';
+import { deviceLocale, normalizeLocale } from '@kromatv/core';
 import type { Locale } from '@kromatv/i18n';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { I18nProvider } from './i18n';
@@ -37,6 +38,7 @@ export function LocaleProvider({
   syncHtmlLang,
   children,
 }: Readonly<LocaleProviderProps>) {
+  const storage = useDeviceStore();
   const accountLocale = normalizeLocale(accountLanguage);
 
   // The right locale from the first render: a catalog is fetched per locale
@@ -44,7 +46,7 @@ export function LocaleProvider({
   // download two languages. On the server there is no navigator or storage, so
   // this resolves to the default there, and the prerendered shell carries no
   // translated markup for the two to disagree on.
-  const [override, setOverride] = useState<Locale>(() => accountLocale ?? deviceLocale());
+  const [override, setOverride] = useState<Locale>(() => accountLocale ?? deviceLocale(storage));
 
   // The client's Accept-Language moves in the same step as the state, never in a
   // later effect: a consumer's own effect runs before this component's, and would
@@ -54,7 +56,6 @@ export function LocaleProvider({
     (next: Locale) => {
       applied.current = next;
       setOverride(next);
-      setActiveLocale(next);
       client?.setLocale(next);
     },
     [client],
@@ -68,7 +69,7 @@ export function LocaleProvider({
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only; account changes are handled separately.
   useEffect(() => {
     if (accountLocale) return;
-    const detected = deviceLocale();
+    const detected = deviceLocale(storage);
     apply(detected);
     if (onAccountChange) {
       onAccountChange(detected);
@@ -84,9 +85,9 @@ export function LocaleProvider({
   useEffect(() => {
     if (accountLocale) {
       apply(accountLocale);
-      saveLocalePref(accountLocale);
+      saveLocalePref(accountLocale, storage);
     }
-  }, [accountLocale, apply]);
+  }, [accountLocale, apply, storage]);
 
   const locale = override;
 
@@ -105,14 +106,14 @@ export function LocaleProvider({
   const handleChange = useCallback(
     (next: Locale) => {
       apply(next);
-      saveLocalePref(next);
+      saveLocalePref(next, storage);
       // Best-effort account sync so the choice follows the profile everywhere.
       if (onAccountChange) {
         onAccountChange(next);
         client?.accounts.updateLanguage(next).catch(() => {});
       }
     },
-    [apply, client, onAccountChange],
+    [apply, client, onAccountChange, storage],
   );
 
   return (

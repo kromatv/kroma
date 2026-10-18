@@ -1,5 +1,5 @@
 import type { useCast } from '@kromatv/ui';
-import { Box, Icon, type IconName, styles, Text } from '@kromatv/ui/kit';
+import { Box, Icon, type IconName, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { radius, spacing, type } from '#mobile/lib/theme';
@@ -25,6 +25,8 @@ export function RemoteActions({
   onContinueHere: () => void;
   onStop: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <Box style={s.actions}>
@@ -68,6 +70,8 @@ function Wide({
   value,
   onPress,
 }: Readonly<{ icon: IconName; label: string; value?: string; onPress(): void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       onPress={onPress}
@@ -87,7 +91,7 @@ function Wide({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   actions: { gap: spacing.xs },
   wide: {
     row: true,

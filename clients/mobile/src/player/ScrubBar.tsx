@@ -1,10 +1,20 @@
+import {
+  Box,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
+
 // Touch scrub bar: buffered + played fills, drag preview with a storyboard
 // thumbnail + time bubble, drawn from the kit's seek-bar paints so it matches
 // the TV seek bar.
 
 import { seekBar } from '@kromatv/ui';
 import { formatTimecode } from '@kromatv/ui/intl';
-import { Box, styles, Text } from '@kromatv/ui/kit';
+
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
@@ -36,6 +46,11 @@ export function ScrubBar({
   tileFor?: (abs: number) => StoryboardTile | null;
   markers?: number[];
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const [preview, setPreview] = useState<number | null>(null);
   const [width, setWidth] = useState(1);
   const widthRef = useRef(1);
@@ -69,7 +84,7 @@ export function ScrubBar({
     });
   const gesture = Gesture.Race(pan, tap);
 
-  const paint = seekBar();
+  const paint = seekBar(scope.theme);
   const shown = preview ?? cur;
   const playedFrac = dur > 0 ? Math.min(1, shown / dur) : 0;
   const bufFrac = dur > 0 ? Math.min(1, buffered / dur) : 0;
@@ -144,7 +159,7 @@ export function ScrubBar({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   touch: { justify: 'center', h: 40 },
   track: { h: BAR_H, radius: BAR_H / 2, overflow: 'hidden' },
   buffered: { absolute: true, top: 0, bottom: 0, left: 0, radius: BAR_H / 2 },
@@ -155,5 +170,5 @@ const s = styles({
   previewBox: { absolute: true, bottom: 38, align: 'center', gap: 6, w: THUMB_W },
   thumb: { bg: 'black', radius: radius.md, border: 'borderStrong', overflow: 'hidden' },
   bubble: { px: 12, py: 4, bg: 'black/80', radius: radius.md },
-  bubbleText: { color: 'text', fontSize: 11, fontVariant: ['tabular-nums'] },
+  bubbleText: { color: 'text', fontSize: textRoles.overline.size, fontVariant: ['tabular-nums'] },
 });

@@ -3,7 +3,16 @@ import type { DiscoverEntry } from '@kromatv/client/discovery';
 import { formatRuntime } from '@kromatv/core';
 import { useAskForTitle } from '@kromatv/core/react';
 import { useT } from '@kromatv/ui';
-import { Button, FocusRegion, FocusSlot, styles, Text, toast, useFocusNav } from '@kromatv/ui/kit';
+import {
+  Button,
+  FocusRegion,
+  FocusSlot,
+  styles,
+  Text,
+  toast,
+  useFocusNav,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useEffect } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -37,6 +46,8 @@ function AskButton({ entry }: Readonly<{ entry: DiscoverEntry }>) {
 }
 
 export function TvDiscoverDetail() {
+  const s = useStyles(sDefinition);
+
   const { entry } = useParams('discover');
   const t = useT();
   const nav = useNav();
@@ -82,6 +93,6 @@ export function TvDiscoverDetail() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   actionRow: { row: true, align: 'center', gap: 16 },
 });

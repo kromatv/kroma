@@ -3,8 +3,7 @@
 import { MDX_COMPONENTS } from '@kromatv/workbench';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { setIconCatalog } from '#ui/lib/icon-catalog';
-import { setIconCatalogLoader } from '#ui/lib/icons/library';
+import { createIconLibrary, type IconLibrary, IconLibraryProvider } from '#ui/lib/icons/library';
 import IconsPage, { summary, title } from './06-icons.page.mdx';
 
 // The runner already resolves every Tabler name, so the glyph half of the
@@ -13,11 +12,14 @@ vi.mock('#ui/lib/icons/every-glyph', () => ({ everyGlyph: null }));
 
 afterEach(() => {
   cleanup();
-  setIconCatalog({});
 });
 
-function page() {
-  render(<IconsPage components={MDX_COMPONENTS} />);
+function page(library: IconLibrary = createIconLibrary()) {
+  render(
+    <IconLibraryProvider library={library}>
+      <IconsPage components={MDX_COMPONENTS} />
+    </IconLibraryProvider>,
+  );
   return screen.getByPlaceholderText('chevrn, playpause, delete…');
 }
 
@@ -41,15 +43,22 @@ describe('the icons page', () => {
   });
 
   it('reaches a glyph by a tag once a catalogue is loaded', () => {
-    setIconCatalog({ trash: { category: 'System', tags: ['delete'] } });
-    const box = page();
+    const box = page(
+      createIconLibrary({ catalog: { trash: { category: 'System', tags: ['delete'] } } }),
+    );
     fireEvent.change(box, { target: { value: 'delete' } });
     expect(screen.getByText(/matched by tag/)).toBeTruthy();
   });
 
   it('waits for the library the workbench fetches, then draws the grid', async () => {
-    setIconCatalogLoader(async () => ({ trash: { category: 'System', tags: ['delete'] } }));
-    render(<IconsPage components={MDX_COMPONENTS} />);
+    const library = createIconLibrary({
+      loadCatalog: async () => ({ trash: { category: 'System', tags: ['delete'] } }),
+    });
+    render(
+      <IconLibraryProvider library={library}>
+        <IconsPage components={MDX_COMPONENTS} />
+      </IconLibraryProvider>,
+    );
 
     expect(screen.getByText(/on their way/)).toBeTruthy();
 

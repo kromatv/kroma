@@ -10,6 +10,7 @@ import type { Role } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { useTable } from './table-context';
 import { Placed, parts } from './table-place';
 
@@ -33,6 +34,8 @@ function hostOf(children: ReactNode): RowHost {
 }
 
 function Row({ asChild = false, children }: Readonly<TableRowProps>) {
+  const s = useStyles(sDefinition);
+
   const { variant, head, ruled } = useTable('Row');
   const host = asChild ? hostOf(children) : null;
   const cells = useMemo(() => parts(host ? host.props.children : children), [host, children]);
@@ -57,7 +60,7 @@ function Row({ asChild = false, children }: Readonly<TableRowProps>) {
 
 const ROW_STATES = { hover: { bg: 'tint/7' }, press: { bg: 'tint/12' } } as const;
 
-const s = styles({
+const sDefinition = styles({
   row: { row: true },
   rule: { borderTopWidth: 1, borderTopColor: 'border' },
 });

@@ -3,13 +3,13 @@ import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
-  confirm,
   Dialog,
   Field,
   Row,
   SegmentGroup,
   Switch,
   Text,
+  useConfirm,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
@@ -110,6 +110,7 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
 
 export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>(
   ({ call, lib }) => {
+    const confirm = useConfirm();
     const t = useT();
     const { client } = useAuth();
     const [name, setName] = useState(lib.name);

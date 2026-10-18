@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { onDeepLink, readDeepLink, requestDeepLink } from './deeplink';
+import { createDeepLinks } from './deeplink';
 
 type Opts = {
   payload?: string; // the PAYLOAD value[0], if present
@@ -33,134 +33,155 @@ afterEach(() => {
 
 describe('readDeepLink', () => {
   it('returns null when there is no tizen platform', () => {
-    expect(readDeepLink()).toBeNull();
+    const links = createDeepLinks();
+    expect(links.readDeepLink()).toBeNull();
   });
 
   it('reads a link a shell pushed before the app was listening', () => {
+    const links = createDeepLinks();
     // A launcher tile cold-starts the app, so the link exists while there is
     // still no tree to put it in (see requestDeepLink).
-    requestDeepLink({ type: 'movie', id: 'itm42' });
-    expect(readDeepLink()).toEqual({ type: 'movie', id: 'itm42' });
+    links.requestDeepLink({ type: 'movie', id: 'itm42' });
+    expect(links.readDeepLink()).toEqual({ type: 'movie', id: 'itm42' });
   });
 
   it('hands a pushed link over only once', () => {
+    const links = createDeepLinks();
     // Otherwise a later remount replays a tile the user opened minutes ago.
-    requestDeepLink({ type: 'show', id: 'sh7' });
-    expect(readDeepLink()).toEqual({ type: 'show', id: 'sh7' });
-    expect(readDeepLink()).toBeNull();
+    links.requestDeepLink({ type: 'show', id: 'sh7' });
+    expect(links.readDeepLink()).toEqual({ type: 'show', id: 'sh7' });
+    expect(links.readDeepLink()).toBeNull();
   });
 
   it('decodes a direct JSON payload', () => {
+    const links = createDeepLinks();
     stubTizen({ payload: JSON.stringify({ type: 'movie', id: 'abc' }) });
-    expect(readDeepLink()).toEqual({ type: 'movie', id: 'abc' });
+    expect(links.readDeepLink()).toEqual({ type: 'movie', id: 'abc' });
   });
 
   it('decodes a Samsung { values } wrapped, uri-encoded payload', () => {
+    const links = createDeepLinks();
     const inner = encodeURIComponent(JSON.stringify({ type: 'show', id: 's1' }));
     stubTizen({ payload: JSON.stringify({ values: inner }) });
-    expect(readDeepLink()).toEqual({ type: 'show', id: 's1' });
+    expect(links.readDeepLink()).toEqual({ type: 'show', id: 's1' });
   });
 
   it('returns null for malformed JSON', () => {
+    const links = createDeepLinks();
     stubTizen({ payload: '{not json' });
-    expect(readDeepLink()).toBeNull();
+    expect(links.readDeepLink()).toBeNull();
   });
 
   it('returns null for a well-formed but wrong-shaped payload', () => {
+    const links = createDeepLinks();
     stubTizen({ payload: JSON.stringify({ type: 'other', id: 5 }) });
-    expect(readDeepLink()).toBeNull();
+    expect(links.readDeepLink()).toBeNull();
   });
 
   it('returns null for an id longer than the server ever mints', () => {
+    const links = createDeepLinks();
     stubTizen({ payload: JSON.stringify({ type: 'movie', id: 'x'.repeat(129) }) });
-    expect(readDeepLink()).toBeNull();
+    expect(links.readDeepLink()).toBeNull();
   });
 
   it('returns null for an empty id', () => {
+    const links = createDeepLinks();
     stubTizen({ payload: JSON.stringify({ type: 'movie', id: '' }) });
-    expect(readDeepLink()).toBeNull();
+    expect(links.readDeepLink()).toBeNull();
   });
 
   it('returns null for a payload larger than a tile selection can be', () => {
+    const links = createDeepLinks();
     stubTizen({ payload: `${JSON.stringify({ type: 'movie', id: 'ok' })}${' '.repeat(9000)}` });
-    expect(readDeepLink()).toBeNull();
+    expect(links.readDeepLink()).toBeNull();
   });
 
   it('returns null when the id is not a string', () => {
+    const links = createDeepLinks();
     stubTizen({ payload: JSON.stringify({ type: 'movie', id: 42 }) });
-    expect(readDeepLink()).toBeNull();
+    expect(links.readDeepLink()).toBeNull();
   });
 
   it('returns null for a payload that is not an object at all', () => {
+    const links = createDeepLinks();
     stubTizen({ payload: 'null' });
-    expect(readDeepLink()).toBeNull();
+    expect(links.readDeepLink()).toBeNull();
   });
 
   it('returns null when there is no PAYLOAD entry', () => {
+    const links = createDeepLinks();
     stubTizen({ noPayloadKey: true });
-    expect(readDeepLink()).toBeNull();
+    expect(links.readDeepLink()).toBeNull();
   });
 
   it('returns null when getRequestedAppControl yields null', () => {
+    const links = createDeepLinks();
     stubTizen({ nullControl: true });
-    expect(readDeepLink()).toBeNull();
+    expect(links.readDeepLink()).toBeNull();
   });
 
   it('returns null (not throw) when the platform call throws', () => {
+    const links = createDeepLinks();
     stubTizen({ throwControl: true });
-    expect(readDeepLink()).toBeNull();
+    expect(links.readDeepLink()).toBeNull();
   });
 });
 
 describe('onDeepLink', () => {
   it('returns a no-op cleanup when there is no tizen platform', () => {
-    const cleanup = onDeepLink(() => undefined);
+    const links = createDeepLinks();
+    const cleanup = links.onDeepLink(() => undefined);
     expect(cleanup()).toBeUndefined();
   });
 
   it('delivers a shell push straight to a live listener', () => {
+    const links = createDeepLinks();
     const seen: unknown[] = [];
-    const cleanup = onDeepLink((link) => seen.push(link));
-    requestDeepLink({ type: 'movie', id: 'warm' });
+    const cleanup = links.onDeepLink((link) => seen.push(link));
+    links.requestDeepLink({ type: 'movie', id: 'warm' });
     expect(seen).toEqual([{ type: 'movie', id: 'warm' }]);
     // Delivered, so nothing is kept: a remount must not replay it.
     cleanup();
-    expect(readDeepLink()).toBeNull();
+    expect(links.readDeepLink()).toBeNull();
   });
 
   it('replays a link that arrived before the listener existed', () => {
-    requestDeepLink({ type: 'show', id: 'cold' });
+    const links = createDeepLinks();
+    links.requestDeepLink({ type: 'show', id: 'cold' });
     const seen: unknown[] = [];
-    const cleanup = onDeepLink((link) => seen.push(link));
+    const cleanup = links.onDeepLink((link) => seen.push(link));
     expect(seen).toEqual([{ type: 'show', id: 'cold' }]);
     cleanup();
   });
 
   it('stops delivering after cleanup, and keeps the link for the next listener', () => {
+    const links = createDeepLinks();
     const seen: unknown[] = [];
-    onDeepLink((link) => seen.push(link))();
-    requestDeepLink({ type: 'movie', id: 'gone' });
+    links.onDeepLink((link) => seen.push(link))();
+    links.requestDeepLink({ type: 'movie', id: 'gone' });
     expect(seen).toEqual([]);
     // With nobody listening it is kept, exactly like a cold start - which also
     // drains it, so the module is left clean for the next test.
-    expect(readDeepLink()).toEqual({ type: 'movie', id: 'gone' });
+    expect(links.readDeepLink()).toEqual({ type: 'movie', id: 'gone' });
   });
 
   it('subscribes to nothing on a browser shell with no tizen platform', () => {
+    const links = createDeepLinks();
     const listeners = new Map<string, () => void>();
     vi.stubGlobal('window', {
       addEventListener: (type: string, h: () => void) => listeners.set(type, h),
       removeEventListener: (type: string) => listeners.delete(type),
     });
     const cb = vi.fn();
-    const cleanup = onDeepLink(cb);
+    const cleanup = links.onDeepLink(cb);
     expect(listeners.has('appcontrol')).toBe(false);
-    requestDeepLink({ type: 'movie', id: 'web1' });
+    links.requestDeepLink({ type: 'movie', id: 'web1' });
     expect(cb).toHaveBeenCalledWith({ type: 'movie', id: 'web1' });
     cleanup();
   });
 
   it('subscribes to appcontrol and fires cb with the decoded link', () => {
+    const links = createDeepLinks();
     const listeners = new Map<string, () => void>();
     vi.stubGlobal('window', {
       addEventListener: (type: string, h: () => void) => listeners.set(type, h),
@@ -169,7 +190,7 @@ describe('onDeepLink', () => {
     stubTizen({ payload: JSON.stringify({ type: 'movie', id: 'm9' }) });
 
     const cb = vi.fn();
-    const cleanup = onDeepLink(cb);
+    const cleanup = links.onDeepLink(cb);
     // Simulate the platform re-targeting the running app.
     listeners.get('appcontrol')?.();
     expect(cb).toHaveBeenCalledWith({ type: 'movie', id: 'm9' });
@@ -179,6 +200,7 @@ describe('onDeepLink', () => {
   });
 
   it('does not fire cb when the re-target carries no valid link', () => {
+    const links = createDeepLinks();
     const listeners = new Map<string, () => void>();
     vi.stubGlobal('window', {
       addEventListener: (type: string, h: () => void) => listeners.set(type, h),
@@ -186,8 +208,20 @@ describe('onDeepLink', () => {
     });
     stubTizen({ payload: '{bad' });
     const cb = vi.fn();
-    onDeepLink(cb);
+    links.onDeepLink(cb);
     listeners.get('appcontrol')?.();
     expect(cb).not.toHaveBeenCalled();
   });
+});
+
+it('keeps pending links and live listeners in their owning catalogue', () => {
+  const a = createDeepLinks();
+  const b = createDeepLinks();
+  const seen = vi.fn();
+  const stop = b.onDeepLink(seen);
+  a.requestDeepLink({ type: 'movie', id: 'a' });
+  expect(seen).not.toHaveBeenCalled();
+  expect(b.readDeepLink()).toBeNull();
+  expect(a.readDeepLink()).toEqual({ type: 'movie', id: 'a' });
+  stop();
 });

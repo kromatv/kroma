@@ -8,6 +8,7 @@ import {
   type TitleGenres,
 } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
+import { useDeviceStore } from '@kromatv/ui/device-store';
 import {
   BackButton,
   Box,
@@ -20,18 +21,23 @@ import {
   styles,
   Text,
   useFocusNav,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav } from '#tv/app/router';
-import { onSearchRequest, takePendingSearch } from '#tv/app/searchRequest';
-import { searchShell } from '#tv/app/searchShell';
-import { voiceSearchBackend } from '#tv/app/voiceSearch';
+import { useSearchRequests } from '#tv/app/searchRequest';
+import { useSearchShell } from '#tv/app/searchShell';
+import { useVoiceSearchBackend } from '#tv/app/voiceSearch';
 import { addRecentSearch, getRecentSearches } from '#tv/features/catalog/searchHistory';
 import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
-import type { SearchResult, SearchSection } from '#tv/features/catalog/TvSearchResults';
-import { TvSearchResults } from '#tv/features/catalog/TvSearchResults';
+import {
+  type SearchResult,
+  type SearchSection,
+  TvSearchResults,
+} from '#tv/features/catalog/TvSearchResults';
+
 import { TvVoiceSearch } from '#tv/features/catalog/TvVoiceSearch';
 import { useSearchAnswers } from '#tv/features/catalog/useSearchAnswers';
 import { SCREEN_PAD, STAGE_W } from '#tv/shared/stage';
@@ -43,6 +49,10 @@ import { KromaMark, SearchKeyboard } from '#tv/shared/ui';
  * `app/searchShell`). Falls back to the in-memory catalogue when the server's
  * `/api/search` request fails. */
 export function TvSearch() {
+  const storage = useDeviceStore();
+  const s = useStyles(sDefinition);
+
+  const { onSearchRequest, takePendingSearch } = useSearchRequests();
   const { movies, shows } = useConnection();
   const client = useClient();
   const t = useT();
@@ -50,28 +60,28 @@ export function TvSearch() {
   // A query spoken to Siri (or handed over by any other shell) is waiting here
   // when the screen was opened BY that request; typing starts empty as usual.
   const [query, setQuery] = useState(() => takePendingSearch() ?? '');
-  const [recent, setRecent] = useState<string[]>(getRecentSearches);
+  const [recent, setRecent] = useState<string[]>(() => getRecentSearches(storage));
   const { physicalKeyboard } = useEnv();
   const titleMenu = useTitleMenu(nav.back);
   useFocusNav({ onBack: titleMenu.onBack });
   const hold = titleMenu.open;
   // Null on every shell that cannot hear (the browser TVs today, an Android TV
   // whose recogniser is missing): then no mic is shown at all.
-  const voice = voiceSearchBackend();
+  const voice = useVoiceSearchBackend();
   const [speaking, setSpeaking] = useState(false);
   const stopSpeaking = useCallback(() => setSpeaking(false), []);
   // Null on every shell that types on our keyboard, which is all but Apple TV.
-  const shell = searchShell();
+  const shell = useSearchShell();
 
   // Asking Siri again while the screen is already open re-targets it rather than
   // reopening it, so the second request is not silently dropped.
-  useEffect(() => onSearchRequest(setQuery), []);
+  useEffect(() => onSearchRequest(setQuery), [onSearchRequest]);
 
   // A search "counts" once the user opens one of its results, and `found` is the
   // query that produced that result, not the prefix left in the box by then.
   const toHit = useCallback(
     (hit: SearchHit, found: string): SearchResult => {
-      const remember = () => setRecent(addRecentSearch(found));
+      const remember = () => setRecent(addRecentSearch(found, storage));
       if (hit.type === 'show') {
         const show = hit.show;
         return {
@@ -102,7 +112,7 @@ export function TvSearch() {
           hold(m.kind === 'episode' ? { kind: 'episode', item: m } : { kind: 'movie', item: m }),
       };
     },
-    [client, nav, hold],
+    [client, nav, hold, storage],
   );
 
   const toEntry = useCallback(
@@ -113,11 +123,11 @@ export function TvSearch() {
       poster: client.media.artwork.resolve(entry.posterUrl, RESULT_W),
       colors: posterColors(String(entry.tmdbId)),
       onOpen: () => {
-        setRecent(addRecentSearch(found));
+        setRecent(addRecentSearch(found, storage));
         nav.go('discover', { entry });
       },
     }),
-    [client, nav],
+    [client, nav, storage],
   );
 
   // Offline fallback: filter the already-loaded catalogue by title / genre.
@@ -275,7 +285,7 @@ const RESULTS_PADDING = 40;
 // What the pane is on the design's stage - the fallback the results grid divides
 // until it has measured the box it really got, not a width it is held to.
 const RESULTS_WIDTH = STAGE_W - SCREEN_PAD * 2 - KEYBOARD_W - COLUMN_GAP - RESULTS_PADDING;
-const s = styles({
+const sDefinition = styles({
   columns: { row: true, flex: true, gap: COLUMN_GAP, minH: 0 },
   keyboardColumn: { w: KEYBOARD_W, shrink: 0 },
   recentRow: { row: true, wrap: true, gap: 10 },

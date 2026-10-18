@@ -29,10 +29,10 @@ const createQueryClient = vi.hoisted(() =>
 );
 
 vi.mock('@kromatv/client/query', () => ({ createQueryClient }));
-vi.mock('@kromatv/core', () => ({ activeLocale: () => 'fr', clientUserAgent: () => 'Kroma/test' }));
+vi.mock('@kromatv/core', () => ({ deviceLocale: () => 'fr', clientUserAgent: () => 'Kroma/test' }));
 
 const renameServer = vi.hoisted(() => vi.fn());
-vi.mock('./session', () => ({ useSession: () => ({ renameServer }) }));
+vi.mock('./session', () => ({ useSession: () => ({ renameServer, requestLocale }) }));
 
 import { useServerProbes } from './useServerProbes';
 
@@ -220,3 +220,7 @@ describe('when the screen goes away', () => {
     expect(health.calls).toHaveLength(1);
   });
 });
+
+function requestLocale() {
+  return 'fr';
+}

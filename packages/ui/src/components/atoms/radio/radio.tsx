@@ -1,3 +1,4 @@
+import { sv, useSv } from '#ui/core';
 // <Radio>: the one-of-N control. Unlike a checkbox it cannot be un-picked by
 // pressing it again - the only way out of a choice is another choice - so a
 // press always reports `true` and the group owns which one is on.
@@ -7,7 +8,6 @@
 
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
-import { sv } from '#ui/core';
 
 type RadioSize = 'sm' | 'tv';
 
@@ -85,7 +85,9 @@ interface RadioFaceProps {
 
 /** The radio's visuals alone, for a row that is itself the control. */
 function RadioFace({ checked, size = 'sm' }: Readonly<RadioFaceProps>) {
-  const s = radioVariants({ size, checked });
+  const radioVariantsScoped = useSv(radioVariants);
+
+  const s = radioVariantsScoped({ size, checked });
   return <Box style={s.root}>{checked ? <Box style={s.dot} /> : null}</Box>;
 }
 

@@ -1,7 +1,7 @@
 import type { Section } from '@kromatv/client/media';
 import { genreLabels, metaLine, posterColors } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Badge, Box, Button, classes, Row, styles, Text } from '@kromatv/ui/kit';
+import { Badge, Box, Button, classes, Row, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { memo } from 'react';
 import { VirtualTileGrid } from '#web/features/catalog/virtual-tile-grid';
 import type { MovieView, ShowView } from '#web/shared/lib/api';
@@ -38,7 +38,7 @@ export function SectionHeading({ children }: Readonly<{ children: string }>) {
 // Bled to the content edges (cancels the page gutter) and faded into the rails
 // below. The gutter is a fluid CSS custom property, which no style number can
 // carry, so the frame stays a plain element.
-const s = styles({
+const sDefinition = styles({
   hero: {
     position: 'relative',
     display: 'flex',
@@ -77,6 +77,8 @@ const s = styles({
 /** Full-bleed featured banner TMDB backdrop as cinematic art, bled to the
  * content edges (cancels the page gutter) and faded into the rails below. */
 export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const media = entry.type === 'movie' ? entry.movie : entry.show;
   const colors = posterColors(media.id);

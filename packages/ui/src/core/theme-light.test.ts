@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { color } from './color';
-import { KROMA, KROMA_LIGHT, setTheme } from './theme';
+import { createStyleTestHost } from '#ui/testing-style';
+
+import { KROMA, KROMA_LIGHT } from './theme';
 import { colors, lightColors } from './tokens/colors';
+
+const styleHost = createStyleTestHost();
+const { color, setTheme } = styleHost;
 
 const luminance = (hex: string): number => {
   const m = /^#([0-9a-f]{6})$/i.exec(hex)?.[1];

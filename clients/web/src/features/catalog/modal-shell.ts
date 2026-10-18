@@ -1,7 +1,13 @@
-import { sharedStyle, styles } from '@kromatv/ui/kit';
+import {
+  DEFAULT_STYLE_SCOPE,
+  resolveStyles,
+  type StyleScope,
+  sharedStyle,
+  styles,
+} from '@kromatv/ui/kit';
 import { SCRIM_Z } from '#web/shared/ui/page';
 
-const s = styles({
+const sDefinition = styles({
   layer: {
     pointerEvents: 'none',
     position: 'fixed',
@@ -39,15 +45,18 @@ const s = styles({
   footerRule: { borderTopWidth: 1, borderTopColor: 'white/7' },
 });
 
-export const MODAL_LAYER = s.layer;
+export const MODAL_LAYER = sDefinition.layer;
 
-export const MODAL_BODY = s.body;
+export const MODAL_BODY = sDefinition.body;
 
-export const HEADER_RULE = s.headerRule;
+export const HEADER_RULE = sDefinition.headerRule;
 
-export const FOOTER_RULE = s.footerRule;
+export const FOOTER_RULE = sDefinition.footerRule;
 
 /** The panel's styles at a width, for `classes(...modalPanel(w))`. */
-export function modalPanel(maxWidth: number): object[] {
-  return [s.panel, sharedStyle(`modal:width:${maxWidth}`, { maxWidth })];
+export function modalPanel(maxWidth: number, scope: StyleScope = DEFAULT_STYLE_SCOPE): object[] {
+  return [
+    resolveStyles(sDefinition, scope).panel,
+    sharedStyle(`modal:width:${maxWidth}`, { maxWidth }, scope),
+  ];
 }

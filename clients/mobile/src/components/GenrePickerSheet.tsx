@@ -1,7 +1,17 @@
 import { BottomSheetFlatList, BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { MediaItem, Show } from '@kromatv/client/media';
 import { collectGenres, type GenreCount, genreLabel } from '@kromatv/core';
-import { Box, genreIcon, Icon, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  genreIcon,
+  Icon,
+  styles,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { type Ref, useMemo, useState } from 'react';
 import { Pressable } from 'react-native';
@@ -18,6 +28,11 @@ export function GenrePickerSheet({
   onPick,
   ref,
 }: Readonly<{ onPick: (slug: string) => void; ref?: Ref<BottomSheetModal> }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const insets = useSafeAreaInsets();
@@ -37,7 +52,7 @@ export function GenrePickerSheet({
   return (
     <BottomSheetModal
       ref={ref}
-      {...sheetChrome()}
+      {...sheetChrome(scope)}
       snapPoints={SNAP_POINTS}
       enableDynamicSizing={false}
       onChange={(index) => {
@@ -84,7 +99,7 @@ export function GenrePickerSheet({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   header: { px: spacing.md, pt: spacing.sm },
   list: { px: spacing.md, gap: 10 },
   row: { gap: 10 },
@@ -99,7 +114,7 @@ const s = styles({
     radius: radius.md,
   },
   tilePressed: { bg: 'surface1' },
-  well: { center: true, w: 34, h: 34, bg: 'accentSoft', radius: 10 },
+  well: { center: true, w: 34, h: 34, bg: 'accentSoft', radius: cornerRadius.md },
   names: { shrink: 1 },
   label: { ...type.body, fontWeight: '600' },
   count: { ...type.small },

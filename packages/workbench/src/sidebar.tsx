@@ -4,7 +4,7 @@
 // people editing the kit, and a tree that nested them scattered every kind of
 // input across three branches. The rows themselves are in `sidebar-rows.tsx`.
 
-import { Box, styles } from '@kromatv/ui/kit';
+import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { RULE_TOP } from './chrome';
@@ -82,6 +82,8 @@ function Sidebar({
   layout,
   onClose,
 }: Readonly<SidebarProps>) {
+  const s = useStyles(sDefinition);
+
   const groups = useMemo(() => tree(stories), [stories]);
   // Folded state is per branch and lives here rather than in the shell: it is how
   // the list is being read, not part of what the workbench is showing, and it
@@ -202,7 +204,7 @@ function Section({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   scroll: { flex: true },
   list: { pb: 32, pr: 10 },
   // A drawer floats over the canvas and carries the elevation that says so; a

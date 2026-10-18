@@ -23,7 +23,7 @@ const SlotRegistryContext = createContext<ModuleRegistry | null>(null);
 export function ModuleSlotProvider({
   registry,
   children,
-}: Readonly<{ registry: ModuleRegistry; children: ReactNode }>) {
+}: Readonly<{ registry: ModuleRegistry | null; children: ReactNode }>) {
   return <SlotRegistryContext.Provider value={registry}>{children}</SlotRegistryContext.Provider>;
 }
 

@@ -19,6 +19,7 @@ import {
   Spinner,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { epKey } from '#web/features/requests/missing-model';
@@ -28,7 +29,7 @@ const COLLAPSE_OVER = 12;
 // How many rows a collapsed list keeps visible.
 const COLLAPSED_ROWS = 10;
 
-const s = styles({
+const sDefinition = styles({
   list: { m: 0, p: 0, listStyleType: 'none' },
   listItem: { display: 'block' },
   italic: { fontStyle: 'italic' },
@@ -53,6 +54,8 @@ export function EpisodeList({
   onToggleRow: (key: string) => void;
   onSearch: (items: CalendarEntry[]) => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [expanded, setExpanded] = useState(false);
   if (entries.length === 0) return null;
@@ -117,6 +120,8 @@ function EpisodeRow({
   onToggle: () => void;
   onSearch: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const cells = <EpisodeCells entry={entry} />;
   const rule = ruled ? <Divider color="tint/4" /> : null;
 
@@ -153,6 +158,8 @@ function EpisodeRow({
 }
 
 function EpisodeCells({ entry }: Readonly<{ entry: CalendarEntry }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const locale = useLocale();
   const rel = relativeAirDate(entry.airDate, locale);

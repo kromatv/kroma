@@ -104,7 +104,8 @@ const movies = [{ id: 'itm_1' }] as MediaItem[];
 // nudge in one test would otherwise suppress the next test's.
 async function load() {
   vi.resetModules();
-  return await import('./service');
+  const { createPreviewPublisher } = await import('./service');
+  return { publishPreview: createPreviewPublisher() };
 }
 
 beforeEach(() => {
@@ -262,4 +263,15 @@ describe('nudging the background service', () => {
     // carousel.
     expect(tv.launched).toEqual([]);
   });
+});
+
+it('gives each catalogue its own refresh budget', async () => {
+  const platform = runtime();
+  const { createPreviewPublisher } = await import('./service');
+  const a = createPreviewPublisher();
+  const b = createPreviewPublisher();
+  await a(client, movies);
+  await a(client, movies);
+  await b(client, movies);
+  expect(platform.launched).toHaveLength(2);
 });

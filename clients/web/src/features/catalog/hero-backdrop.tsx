@@ -1,5 +1,5 @@
 import { sizedImageUrl } from '@kromatv/core';
-import { Box, styles } from '@kromatv/ui/kit';
+import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { Image } from '#web/shared/ui';
 
 // Reading frost light + wide so the backdrop still reads through. The mask
@@ -8,7 +8,7 @@ import { Image } from '#web/shared/ui';
 const FROST_MASK =
   'linear-gradient(90deg, #000 0%, #000 min(35%, 22rem), transparent min(100%, 68rem))';
 
-const s = styles({
+const sDefinition = styles({
   vignette: {
     backgroundImage: 'radial-gradient(125% 125% at 80% 22%, transparent 38%, var(--kroma-bg) 94%)',
   },
@@ -45,6 +45,8 @@ export function HeroBackdrop({
   backdrop,
   gradient: art,
 }: Readonly<{ backdrop: string | null; gradient: string }>) {
+  const s = useStyles(sDefinition);
+
   const sized = sizedImageUrl(backdrop, typeof window !== 'undefined' ? window.innerWidth : 960);
   return (
     <>

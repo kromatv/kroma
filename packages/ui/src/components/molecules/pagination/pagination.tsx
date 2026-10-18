@@ -6,7 +6,7 @@ import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
 import { HAND } from '#ui/lib/cursor';
-import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { bySize, CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
 import { partContext } from '#ui/lib/part-context';
 import { useStableCallback } from '#ui/lib/stable-callback';
@@ -94,7 +94,8 @@ function Root({
   children,
   style,
 }: Readonly<PaginationRootProps>) {
-  const shell = size ?? entryDefaultSize();
+  const entryDefaults = useEntryDefaults();
+  const shell = size ?? entryDefaults.size;
   const gap = Math.round(CONTROL[shell].gap / 2);
   const total = Math.max(1, Math.trunc(pageCount) || 1);
   const at = clamp(page, total);

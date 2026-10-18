@@ -1,10 +1,11 @@
 import type { NodeHandle } from '@kromatv/spatial-nav/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { focusSettled } from '#ui/lib/focus-entry';
+import { useFocusEntry } from '#ui/lib/focus-entry';
 
 /** The screen-entry half of a focusable: whether this control is the one the
  *  screen opens on, and the press that moves the ring before it acts. */
 function useEntryFocus(autoFocus: boolean | undefined, press: () => void) {
+  const { focusSettled } = useFocusEntry();
   // Decided once, at mount: `autoFocus` asks for the focus a screen opens with,
   // and a control that mounts while focus already has an owner is not that.
   // Otherwise a virtualised rail's first tile snatches focus every time the row

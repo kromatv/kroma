@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { type IconCatalog, iconCategories, iconEntry, setIconCatalog } from './icon-catalog';
+import { describe, expect, it } from 'vitest';
+import { createIconCatalog, type IconCatalog } from './icon-catalog';
 import { searchIcons } from './icon-search';
 
 const CATALOG: IconCatalog = {
@@ -22,57 +22,67 @@ const NAMES = [
   'wave-sine',
 ] as const;
 
-afterEach(() => setIconCatalog({}));
-
 describe('iconEntry', () => {
   it('answers null while no catalogue is loaded', () => {
-    expect(iconEntry('trash')).toBeNull();
-    expect(iconCategories()).toEqual([]);
+    const catalog = createIconCatalog({});
+    expect(catalog.iconEntry('trash')).toBeNull();
+    expect(catalog.iconCategories()).toEqual([]);
   });
 
   it('gives a filled variant its base glyph entry', () => {
-    setIconCatalog(CATALOG);
-    expect(iconEntry('trash-filled')?.tags).toEqual(['delete', 'remove', 'bin']);
+    const catalog = createIconCatalog(CATALOG);
+    expect(catalog.iconEntry('trash-filled')?.tags).toEqual(['delete', 'remove', 'bin']);
   });
 
   it('finds a glyph whose kit slug drops a separator the catalogue keeps', () => {
-    setIconCatalog(CATALOG);
-    expect(iconEntry('ab')?.category).toBe('Development');
-    expect(iconEntry('circle-letter-afilled')?.category).toBe('Letters');
+    const catalog = createIconCatalog(CATALOG);
+    expect(catalog.iconEntry('ab')?.category).toBe('Development');
+    expect(catalog.iconEntry('circle-letter-afilled')?.category).toBe('Letters');
   });
 
   it('answers null for a name the catalogue has never heard of', () => {
-    setIconCatalog(CATALOG);
-    expect(iconEntry('wave-sine')).toBeNull();
+    const catalog = createIconCatalog(CATALOG);
+    expect(catalog.iconEntry('wave-sine')).toBeNull();
   });
 
   it('lists its categories sorted', () => {
-    setIconCatalog(CATALOG);
-    expect(iconCategories()).toEqual(['Arrows', 'Development', 'Letters', 'System', 'Text']);
+    const catalog = createIconCatalog(CATALOG);
+    expect(catalog.iconCategories()).toEqual([
+      'Arrows',
+      'Development',
+      'Letters',
+      'System',
+      'Text',
+    ]);
   });
 });
 
+function searching(catalog: IconCatalog): typeof searchIcons {
+  const index = createIconCatalog(catalog);
+  return (names, query, options) => searchIcons(names, query, { ...options, catalog: index });
+}
+
 describe('searchIcons', () => {
   it('reaches a glyph through a tag its name never mentions', () => {
-    setIconCatalog(CATALOG);
-    expect(searchIcons(NAMES, 'delete')).toEqual([
+    const search = searching(CATALOG);
+    expect(search(NAMES, 'delete')).toEqual([
       { name: 'trash', tags: ['delete'] },
       { name: 'trash-filled', tags: ['delete'] },
     ]);
   });
 
   it('ranks a name above a tag that matched as well', () => {
-    setIconCatalog(CATALOG);
-    const hits = searchIcons(NAMES, 'align');
+    const search = searching(CATALOG);
+    const hits = search(NAMES, 'align');
     expect(hits.map((hit) => hit.name)).toEqual(['align-right', 'text-caption']);
     expect(hits[0]?.tags).toEqual([]);
     expect(hits[1]?.tags).toEqual(['align']);
   });
 
   it('ranks a tag it matched cleanly above a name it only scatters through', () => {
-    setIconCatalog({ trash: { category: 'System', tags: ['delete'] } });
+    const search = searching({ trash: { category: 'System', tags: ['delete'] } });
     const scattered = ['device-tablet-exclamation', 'trash'] as const;
-    expect(searchIcons(scattered, 'delete')).toEqual([
+    expect(search(scattered, 'delete')).toEqual([
       { name: 'trash', tags: ['delete'] },
       { name: 'device-tablet-exclamation', tags: [] },
     ]);
@@ -84,23 +94,23 @@ describe('searchIcons', () => {
   });
 
   it('narrows to one category, in the given order, for an empty query', () => {
-    setIconCatalog(CATALOG);
-    expect(searchIcons(NAMES, '', { category: 'System' })).toEqual([
+    const search = searching(CATALOG);
+    expect(search(NAMES, '', { category: 'System' })).toEqual([
       { name: 'trash', tags: [] },
       { name: 'trash-filled', tags: [] },
     ]);
   });
 
   it('searches inside the category it was given', () => {
-    setIconCatalog(CATALOG);
-    expect(searchIcons(NAMES, 'typography', { category: 'Text' }).map((hit) => hit.name)).toEqual([
+    const search = searching(CATALOG);
+    expect(search(NAMES, 'typography', { category: 'Text' }).map((hit) => hit.name)).toEqual([
       'align-right',
     ]);
-    expect(searchIcons(NAMES, 'typography', { category: 'Arrows' })).toEqual([]);
+    expect(search(NAMES, 'typography', { category: 'Arrows' })).toEqual([]);
   });
 
   it('returns the whole set for an empty query', () => {
-    setIconCatalog(CATALOG);
-    expect(searchIcons(NAMES, '').map((hit) => hit.name)).toEqual([...NAMES]);
+    const search = searching(CATALOG);
+    expect(search(NAMES, '').map((hit) => hit.name)).toEqual([...NAMES]);
   });
 });

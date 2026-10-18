@@ -9,11 +9,11 @@ import {
   useRef,
 } from 'react';
 import type { LayoutChangeEvent, View } from 'react-native';
-
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
+import { fontSizes as textSizes } from '#ui/core/tokens';
 import { type LensRect, useNavPill } from './nav-pill-context';
 
 /** A kit glyph by name, or a host's own component handed the item's current ink. */
@@ -35,12 +35,12 @@ const navPillItemVariants = svFor<{
     size: {
       tv: {
         root: { row: true, gap: 9, px: 18, py: 11 },
-        label: { fontSize: 18 },
+        label: { fontSize: textSizes.largeLabel },
         icon: { size: 26 },
       },
       sm: {
         root: { center: true, flex: true, gap: 3, px: 10, py: 10, minW: 44, minH: 44 },
-        label: { fontSize: 12, shrink: 0 },
+        label: { fontSize: textSizes.caption, shrink: 0 },
         icon: { size: 24, color: 'textDim' },
       },
     },

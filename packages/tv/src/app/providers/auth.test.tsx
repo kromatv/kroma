@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 
-import { setSessionToken } from '@kromatv/client';
 import { UserId } from '@kromatv/client/accounts';
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -161,7 +160,6 @@ beforeEach(() => {
   bearerAcceptedFrom = 1;
   bearer = '';
   auth = null;
-  setSessionToken(undefined);
   vi.stubGlobal('fetch', vi.fn(serve));
   vi.stubGlobal('WebSocket', SilentSocket);
   rememberSession();

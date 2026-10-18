@@ -1,3 +1,4 @@
+import { useDeviceStore } from '#ui/lib/device-store';
 // Detail-page theme playback on native. expo-video rather than expo-audio: its
 // pod is already linked in, so a theme needs no extra native module.
 
@@ -71,7 +72,8 @@ function fadeOutAlone(player: VideoPlayer, level: RefObject<number>): void {
 
 /** Loops `themeUrl` quietly, fading in once it can play and out on the way out. */
 export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
-  const [muted, setMuted] = useState(readThemeMuted);
+  const storage = useDeviceStore();
+  const [muted, setMuted] = useState(() => readThemeMuted(storage));
   const fade = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   // Nothing here may READ from the player (see the helpers above).
   const level = useRef(0);
@@ -100,7 +102,7 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the theme and its player only. Re-running when `fadeTo` changes identity would restart the film's theme from the top on an unrelated render.
   useEffect(() => {
-    if (!themeUrl || readThemeMuted()) return;
+    if (!themeUrl || readThemeMuted(storage)) return;
     setLevel(player, level, 0);
     if (!playQuietly(player)) return;
     fadeTo(TARGET_VOLUME, FADE_IN_MS);
@@ -111,8 +113,8 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
   }, [themeUrl, player]);
 
   const toggle = useCallback(() => {
-    const next = !readThemeMuted();
-    writeThemeMuted(next);
+    const next = !readThemeMuted(storage);
+    writeThemeMuted(next, storage);
     setMuted(next);
     if (next) {
       fadeTo(0, 250, true);
@@ -120,7 +122,7 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
     }
     if (!playQuietly(player)) return;
     fadeTo(TARGET_VOLUME, 400);
-  }, [fadeTo, player]);
+  }, [fadeTo, player, storage]);
 
   return { active: Boolean(themeUrl), muted, toggle };
 }

@@ -6,6 +6,7 @@ import { type DragEvent, type KeyboardEvent, useCallback, useRef, useState } fro
 import { Box } from '#ui/components/atoms/box';
 import { Spinner } from '#ui/components/atoms/spinner';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { classes } from '#ui/lib/classed';
 import {
   DropzoneDescription,
@@ -16,7 +17,7 @@ import {
 } from './dropzone-parts';
 import { sift } from './dropzone-sift';
 
-const s = styles({
+const sDefinition = styles({
   surface: {
     display: 'flex',
     width: '100%',
@@ -50,6 +51,8 @@ function Root({
   onReject,
   children,
 }: Readonly<DropzoneRootProps>) {
+  const s = useStyles(sDefinition);
+
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   const inert = disabled || loading;

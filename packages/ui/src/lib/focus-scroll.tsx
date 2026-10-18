@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import { RING_ROOM } from '#ui/core/tokens';
 import { FocusLiftView } from '#ui/lib/focus-lift';
-import { pointerDriving } from '#ui/lib/input-source';
+import { usePointerDriving } from '#ui/lib/input-source';
 import { WEB } from '#ui/lib/platform';
 import { useReducedMotion } from '#ui/lib/reduced-motion';
 
@@ -157,6 +157,7 @@ function AxisScroll({
     context: Context<((anchor: Anchor) => void) | null>;
   }
 >) {
+  const pointerDriving = usePointerDriving();
   const scroller = useRef<ScrollView>(null);
   // Must be the view itself: on the new architecture `getInnerViewNode()` answers
   // with a legacy numeric tag that `measureLayout` accepts and silently ignores.
@@ -304,6 +305,7 @@ function FocusLine({
  * reveals its row (or the control when it is in none), the rail the control.
  */
 function useRevealOnFocus(self: Anchor): () => void {
+  const pointerDriving = usePointerDriving();
   const page = useContext(PageScrollContext);
   const rail = useContext(RailScrollContext);
   const row = useContext(RowContext);
@@ -313,20 +315,22 @@ function useRevealOnFocus(self: Anchor): () => void {
     if (pointerDriving()) return;
     rail?.(self);
     page?.(row ?? self);
-  }, [page, rail, row, self]);
+  }, [page, rail, row, self, pointerDriving]);
 }
 
 /**
  * The anchor of a row whose focus is a prop rather than the navigator's (a
  * player panel's rows): the page reveals it the moment `focused` turns true.
  */
-function useRevealWhenFocused(focused: boolean): Anchor {
+function useRevealWhenFocused(focused: boolean): (view: View | null) => void {
   const self = useRef<View>(null);
   const reveal = useRevealOnFocus(self);
   useEffect(() => {
     if (focused) reveal();
   }, [focused, reveal]);
-  return self;
+  return useCallback((view: View | null) => {
+    self.current = view;
+  }, []);
 }
 
 export type { Anchor, FocusScrollProps, NearestMetrics, PageMetrics, Reveal };

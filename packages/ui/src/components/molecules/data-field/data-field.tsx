@@ -9,7 +9,7 @@ import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import type { TypeRole } from '#ui/core';
-import { type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
 
 interface Shape {
@@ -31,14 +31,15 @@ const [DataFieldContext, useShape] = partContext<Shape>('DataField.Root');
 
 interface DataFieldRootProps {
   /** How loud the pair reads, defaulting to the app's entry size
-   *  (`setEntryDefaults`) so a readout matches the rows beside it. */
+   *  (`KitProvider`) so a readout matches the rows beside it. */
   size?: ControlSize;
   /** The pair: a `<DataField.Label>`, and the `<DataField.Value>` under it. */
   children?: ReactNode;
 }
 
 function Root({ size, children }: Readonly<DataFieldRootProps>) {
-  const shape = SHAPE[size ?? entryDefaultSize()];
+  const entryDefaults = useEntryDefaults();
+  const shape = SHAPE[size ?? entryDefaults.size];
   return (
     <DataFieldContext.Provider value={shape}>
       {/* minW 0 so a long value truncates inside its column instead of widening

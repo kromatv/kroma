@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { StyleSheet } from 'react-native';
+import { type StyleProp, StyleSheet, type TextStyle, type ViewStyle } from 'react-native';
 import { describe, expect, it } from 'vitest';
 import { registered, sharedStyle, style, styles } from './styles';
 
-const flat = (s: unknown) => StyleSheet.flatten(s as never) as Record<string, unknown>;
+const flat = (s: StyleProp<ViewStyle & TextStyle>) => StyleSheet.flatten(s);
 
 describe('styles', () => {
   const s = styles({
@@ -35,7 +35,7 @@ describe('styles', () => {
 
   it('rejects writes, so a caller cannot mutate a shared style', () => {
     expect(() => {
-      (s as Record<string, unknown>).row = {};
+      Object.assign(s, { row: {} });
     }).toThrow();
     expect(Object.isFrozen(s.row)).toBe(true);
   });
@@ -49,9 +49,7 @@ describe('styles', () => {
 
   it('rejects redefining or deleting an entry as firmly as writing one', () => {
     expect(() => Object.defineProperty(s, 'row', { value: {} })).toThrow();
-    expect(() => {
-      delete (s as Record<string, unknown>).row;
-    }).toThrow();
+    expect(Reflect.deleteProperty(s, 'row')).toBe(false);
     expect(Object.keys(s)).toEqual(['row', 'label', 'wash']);
   });
 

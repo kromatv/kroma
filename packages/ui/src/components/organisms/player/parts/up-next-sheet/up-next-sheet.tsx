@@ -16,11 +16,13 @@ import {
   type UpNextItem,
 } from '#ui/components/organisms/player/parts/up-next-card';
 import { RING_ROOM, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
+import { typeSpec as textRoles } from '#ui/core/tokens';
 import { gradient, maskImage } from '#ui/lib/css';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { FocusColumn, FocusRegion, FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { FocusScroll } from '#ui/lib/focus-scroll';
-import { pointerDriving } from '#ui/lib/input-source';
+import { usePointerDriving } from '#ui/lib/input-source';
 import { useT } from '#ui/services/i18n';
 import { SheetKeys } from './sheet-keys';
 import { useSheetSlide } from './slide';
@@ -57,7 +59,7 @@ function parkOffset(sheetHeight: number): number {
 // it goes: a hard cut reads as a row sliced in half.
 const TOP_FADE = maskImage('linear-gradient(180deg, transparent 0, #000 40px)');
 
-const fills = styles({
+const fillsDefinition = styles({
   scrim: gradient('linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.55) 45%)'),
   sheet: gradient(
     'linear-gradient(180deg, transparent, rgba(10,10,12,0.55) 12%, rgba(10,10,12,0.97) 30%)',
@@ -113,6 +115,11 @@ function UpNextSheetBase({
   onPlay,
   ref,
 }: Readonly<UpNextSheetProps>) {
+  const playerStyleScoped = useStyles(playerStyle);
+
+  const fills = useStyles(fillsDefinition);
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const items = useMemo(() => [...data.nextEpisodes, ...data.recommendations], [data]);
   const sections = useMemo(() => buildSections(data, t), [data, t]);
@@ -191,7 +198,7 @@ function UpNextSheetBase({
                   gap={14}
                   onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}
                 >
-                  {grouped ? <Text style={playerStyle.eyebrow}>{sec.title}</Text> : null}
+                  {grouped ? <Text style={playerStyleScoped.eyebrow}>{sec.title}</Text> : null}
                   {rowsOf(sec.items).map((row, r) => (
                     <FocusRegion
                       // The line's position IS its identity: the items in it move
@@ -225,7 +232,7 @@ function UpNextSheetBase({
 // Memoized so the parked sheet skips the chrome's ~4 Hz playback re-renders.
 export const UpNextSheet = memo(UpNextSheetBase);
 
-const s = styles({
+const sDefinition = styles({
   scrimBox: { fill: true, z: 43 },
   sheetBox: {
     absolute: true,
@@ -236,7 +243,7 @@ const s = styles({
     z: 45,
     overflow: 'hidden',
   },
-  sheetTitle: { font: 'display', fontSize: 22, fontWeight: '700' },
+  sheetTitle: { font: 'display', fontSize: textRoles.h2.size, fontWeight: '700' },
   headerRow: { row: true, align: 'flex-start' },
   headerBox: { px: 56, pt: 28, pb: 18, radius: 'xl' },
   fill: { flex: true, minH: 0 },
@@ -255,6 +262,8 @@ const s = styles({
  * all (see <UpNextCard interactive>), so this navigator has nothing to focus and
  * the chrome keeps the remote. */
 function SheetScope({ open, children }: Readonly<{ open: boolean; children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <FocusScope bridge={false} active={open} entryKey={open ? 'open' : 'parked'}>
       {/* Fills the sheet, or the scroll view inside it takes the height of its
@@ -280,10 +289,14 @@ function SheetHeader({
   title,
   onToggle,
 }: Readonly<{ open: boolean; title: string; onToggle: () => void }>) {
+  const fills = useStyles(fillsDefinition);
+  const s = useStyles(sDefinition);
+
   // Arriving here on the remote closes the sheet, so ▲ off the top row is one
   // press and not two - the header is the way out, not a stop on the way. Only
   // on the remote: a cursor sweeping over it must not close anything, and the
   // navigator focuses on mouse-enter (see lib/input-source).
+  const pointerDriving = usePointerDriving();
   const leave = () => {
     if (!pointerDriving()) onToggle();
   };

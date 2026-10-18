@@ -1,6 +1,6 @@
 import { formatRuntime, genreLabels, qualityBadge } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Button, FocusRegion, styles, useFocusNav } from '@kromatv/ui/kit';
+import { Button, FocusRegion, styles, useFocusNav, useStyles } from '@kromatv/ui/kit';
 import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -22,6 +22,8 @@ import { TvAiSuggestRow } from '#tv/features/catalog/detail/TvAiSuggestRow';
 const STAGE_W = 1920;
 
 export function TvMovieDetail() {
+  const s = useStyles(sDefinition);
+
   const nav = useNav();
   const { item } = useParams('movie');
   const client = useClient();
@@ -80,6 +82,6 @@ export function TvMovieDetail() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   actionRow: { row: true, align: 'center', gap: 16 },
 });

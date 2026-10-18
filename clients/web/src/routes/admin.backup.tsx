@@ -1,16 +1,28 @@
 import { useT } from '@kromatv/ui';
-import { Box, Button, classes, Icon, Section, Surface, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  classes,
+  Icon,
+  Section,
+  Surface,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { ExportModal, ImportModal, isEncryptedFile } from '#web/features/admin/backup-modals';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 
-const s = styles({ hidden: { display: 'none' } });
+const sDefinition = styles({ hidden: { display: 'none' } });
 export const Route = createFileRoute('/admin/backup')({
   component: BackupPage,
 });
 
 function BackupPage() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const canManage = useCap('settings.manage');
   const fileRef = useRef<HTMLInputElement>(null);

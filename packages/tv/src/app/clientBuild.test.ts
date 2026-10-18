@@ -66,18 +66,18 @@ describe('a build the bundler stamped', () => {
   });
 });
 
-describe('setBuildInfo', () => {
-  it('wins over the bundler stamp, for the shell that has no define', async () => {
-    vi.stubGlobal('__KROMA_BUILD__', STAMPED);
-    const { buildInfo, setBuildInfo, CLIENT_BUILD } = await launch();
-    setBuildInfo({ version: '3.1.4', commit: 'deadbee' });
-    expect(buildInfo()).toEqual({ ...UNSTAMPED, version: '3.1.4', commit: 'deadbee' });
-    expect(CLIENT_BUILD.version).toBe('3.1.4');
+describe('immutable build metadata', () => {
+  it('fills missing fields for an unstamped native build', async () => {
+    const { resolveBuildInfo } = await import('./buildMetadata');
+    expect(resolveBuildInfo()).toEqual(UNSTAMPED);
   });
-
-  it('fills the fields the native shell did not pass', async () => {
-    const { buildInfo, setBuildInfo } = await launch();
-    setBuildInfo({});
-    expect(buildInfo()).toEqual(UNSTAMPED);
+  it('keeps different shell stamps independent and frozen', async () => {
+    const { resolveBuildInfo, clientBuildFor } = await import('./buildMetadata');
+    const a = resolveBuildInfo({ version: '3.1.4', commit: 'deadbee' });
+    const b = resolveBuildInfo({ version: '2.0.0' });
+    expect(a).toEqual({ ...UNSTAMPED, version: '3.1.4', commit: 'deadbee' });
+    expect(b).toEqual({ ...UNSTAMPED, version: '2.0.0' });
+    expect(Object.isFrozen(a)).toBe(true);
+    expect(clientBuildFor(a).version).toBe('3.1.4');
   });
 });

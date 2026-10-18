@@ -1,3 +1,4 @@
+import { useKromaClient, useWebRuntime } from '#web/shared/lib/web-runtime';
 // The server addresses `notification.created` / `notification.read` to the
 // recipient: a socket only ever receives its own account's, so nothing that
 // arrives here needs filtering.
@@ -6,36 +7,52 @@ import { KromaEvents } from '@kromatv/client/events';
 import type { NotificationId, NotificationsView } from '@kromatv/client/notifications';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
-import { apiBase, kromaClient } from '#web/shared/lib/api';
-import { userQueries } from '#web/shared/lib/queries';
+import { apiBase } from '#web/shared/lib/api';
 
 /** Subscribe to notification pushes and keep the cached inbox + badge in sync. */
 export function useNotificationStream(): void {
+  const eventClient = useKromaClient();
+
+  const webRuntime = useWebRuntime();
+
   const queryClient = useQueryClient();
   useEffect(() => {
     const ev = new KromaEvents(apiBase(), {
+      token: () => eventClient.sessionToken,
+      refresh: () => eventClient.refreshSession(),
+
       onEvent: (e) => {
         if (e.type !== 'notification.created' && e.type !== 'notification.read') return;
         // Patch the badge from the event's own count, so it is right even when
         // the panel is closed and the list is never refetched.
         queryClient.setQueryData(
-          userQueries.notifications().queryKey,
+          webRuntime.queries.userQueries.notifications().queryKey,
           (prev: NotificationsView | undefined) => (prev ? { ...prev, unread: e.unread } : prev),
         );
         void queryClient.invalidateQueries({
-          queryKey: userQueries.notifications().queryKey,
+          queryKey: webRuntime.queries.userQueries.notifications().queryKey,
           refetchType: 'active',
         });
       },
     });
     ev.connect();
     return () => ev.close();
-  }, [queryClient]);
+  }, [
+    queryClient,
+    eventClient.sessionToken,
+    eventClient.refreshSession,
+    webRuntime.queries.userQueries.notifications,
+  ]);
 }
 
 /** Kept live by {@link useNotificationStream}. */
 export function useUnreadCount(): number {
-  const { data } = useQuery({ ...userQueries.notifications(), select: (v) => v.unread });
+  const webRuntime = useWebRuntime();
+
+  const { data } = useQuery({
+    ...webRuntime.queries.userQueries.notifications(),
+    select: (v) => v.unread,
+  });
   return data ?? 0;
 }
 
@@ -97,9 +114,11 @@ export function useReadState(): {
   markRead: (ids: NotificationId[]) => void;
   markUnread: (ids: NotificationId[]) => void;
 } {
+  const webRuntime = useWebRuntime();
+
   const queryClient = useQueryClient();
   return useMemo(() => {
-    const key = userQueries.notifications().queryKey;
+    const key = webRuntime.queries.userQueries.notifications().queryKey;
     const patch = (ids: NotificationId[], read: boolean) => {
       queryClient.setQueryData(key, (prev: NotificationsView | undefined) =>
         prev ? applyRead(prev, ids, read) : prev,
@@ -111,7 +130,7 @@ export function useReadState(): {
     const write = (ids: NotificationId[], read: boolean) => {
       if (ids.length === 0) return;
       patch(ids, read);
-      const client = kromaClient();
+      const client = webRuntime.client;
       const sent = read ? client.notifications.markRead(ids) : client.notifications.markUnread(ids);
       sent.then(settle, () => {
         patch(ids, !read);
@@ -122,7 +141,7 @@ export function useReadState(): {
       markRead: (ids: NotificationId[]) => write(ids, true),
       markUnread: (ids: NotificationId[]) => write(ids, false),
     };
-  }, [queryClient]);
+  }, [queryClient, webRuntime.queries.userQueries.notifications, webRuntime.client]);
 }
 
 /** `everOpened` latches, so the inbox is not fetched on every page load merely

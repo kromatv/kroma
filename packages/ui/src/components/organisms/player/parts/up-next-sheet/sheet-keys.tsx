@@ -2,8 +2,7 @@ import { type Direction, Directions } from '@kromatv/spatial-nav';
 import { useNavigator } from '@kromatv/spatial-nav/react';
 import { type Ref, useImperativeHandle } from 'react';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
-import { focusBox, focusSeq } from '#ui/lib/focus-here';
-import { remoteConfigured } from '#ui/lib/focus-remote';
+import { useFocusServices } from '#ui/lib/focus-services-context';
 import { walkTab } from '#ui/lib/focus-tab';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 
@@ -15,8 +14,6 @@ const MOVES: Partial<Record<RemoteKey, Direction>> = {
   Enter: Directions.ENTER,
 };
 
-const PROBE = { seq: focusSeq, box: focusBox };
-
 export interface SheetKeysProps {
   handle: Ref<PanelHandle> | undefined;
   open: boolean;
@@ -24,6 +21,7 @@ export interface SheetKeysProps {
 }
 
 export function SheetKeys({ handle, open, onClose }: Readonly<SheetKeysProps>) {
+  const { enabled, probe } = useFocusServices();
   const navigator = useNavigator();
   useImperativeHandle(handle, () => {
     const send = (direction: Direction) => void navigator.handle(direction);
@@ -35,16 +33,16 @@ export function SheetKeys({ handle, open, onClose }: Readonly<SheetKeysProps>) {
           return true;
         }
         const move = MOVES[key];
-        if (move && !remoteConfigured()) send(move);
+        if (move && !enabled) send(move);
         return true;
       },
       onTab: (backwards: boolean) => {
-        if (remoteConfigured()) return true;
-        const was = focusSeq();
-        walkTab(send, PROBE, backwards);
-        return !backwards || focusSeq() !== was;
+        if (enabled) return true;
+        const was = probe.seq();
+        walkTab(send, probe, backwards);
+        return !backwards || probe.seq() !== was;
       },
     };
-  }, [open, onClose, navigator]);
+  }, [open, onClose, navigator, enabled, probe]);
   return null;
 }

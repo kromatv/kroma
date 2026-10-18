@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { themeVersion } from './theme';
-import { readMode, writeMode } from './theme-mode';
+import { createStyleTestHost } from '#ui/testing-style';
+
+import { readMode } from './theme-mode';
+
+const styleHost = createStyleTestHost();
+const { themeVersion, writeMode } = styleHost;
 
 describe('the ground where the web platform has no document', () => {
   it('reads system when there is no jar to read and none was handed over', () => {

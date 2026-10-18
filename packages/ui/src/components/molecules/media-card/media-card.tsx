@@ -1,3 +1,6 @@
+import { type StyleScope, sharedStyle, styles, useStyleScope, useTheme } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
+import { fontSizes as textSizes } from '#ui/core/tokens';
 // <MediaCard>: the 16:9 landscape rail tile of the 10-foot home. Focusable, so
 // the same source is a D-pad stop on a TV and a click target in a browser.
 
@@ -5,15 +8,14 @@ import { ArtScrim } from '#ui/components/atoms/art-scrim';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
-import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
-import { sharedStyle, styles, useTheme } from '#ui/core';
+import { CardProgress } from '#ui/lib/card-progress';
 
 /** The fill behind artwork, so a tile is never blank while the art loads. */
 
-const frameOf = (width: number | string) =>
-  sharedStyle(`media-card:${width}`, { width, flexShrink: 0, radius: 'xl' });
+const frameOf = (width: number | string, scope: StyleScope) =>
+  sharedStyle(`media-card:${width}`, { width, flexShrink: 0, radius: 'xl' }, scope);
 function tintGradient(tint: readonly [string, string]): string {
   // `to bottom`, not a tilt: a tilted gradient's iso-lines run diagonally, so it
   // reads as a wedge across the card's width rather than as a fade.
@@ -54,6 +56,10 @@ function MediaCard({
   onFocus,
   autoFocus,
 }: Readonly<MediaCardProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const { radius } = useTheme();
   return (
     <Focusable
@@ -63,7 +69,7 @@ function MediaCard({
       autoFocus={autoFocus}
       label={title}
       focusScale={1.06}
-      style={frameOf(width)}
+      style={frameOf(width, scope)}
     >
       <Box w={width} aspect={16 / 9} radius="xl" overflow="hidden" bg="surface1">
         {/* Every layer rounds itself as well as being clipped by the parent:
@@ -78,21 +84,17 @@ function MediaCard({
             {title}
           </Text>
         </Box>
-        {progress == null ? null : (
-          <Box absolute left={0} right={0} bottom={0}>
-            <Progress value={progress} rounded={false} />
-          </Box>
-        )}
+        <CardProgress value={progress} />
       </Box>
     </Focusable>
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   overline: {
     font: 'ui',
     fontWeight: '700',
-    fontSize: 12,
+    fontSize: textSizes.caption,
     lineHeight: 14,
     letterSpacing: 1.2,
     textTransform: 'uppercase',

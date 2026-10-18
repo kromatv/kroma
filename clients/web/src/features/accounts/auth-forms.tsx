@@ -4,12 +4,12 @@
 
 import { isEmail, isPassword, isUsername, type PublicUser } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout, classes, Field, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, Callout, classes, Field, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
 import { UserAvatar } from '#web/shared/ui/user-avatar';
 
-const s = styles({ form: { width: '100%' }, nudge: { mt: 4 } });
+const sDefinition = styles({ form: { width: '100%' }, nudge: { mt: 4 } });
 
 const COLUMN = 380;
 
@@ -36,6 +36,8 @@ export function LoginForm({
   onPasskey?: () => void;
   onForgot?: (identifier: string) => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [identifier, setIdentifier] = useState(profile?.username ?? '');
   const [password, setPassword] = useState('');
@@ -174,6 +176,8 @@ export function ForgotForm({
   onBack: () => void;
   onSubmit: (identifier: string) => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [identifier, setIdentifier] = useState(initialIdentifier);
 
@@ -250,6 +254,8 @@ export function RegisterForm({
   onBack: () => void;
   onSubmit: (email: string, username: string, password: string, avatar: File | null) => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [values, setValues] = useState<RegisterValues>({ email: '', username: '', password: '' });
   const [avatar, setAvatar] = useState<File | null>(null);

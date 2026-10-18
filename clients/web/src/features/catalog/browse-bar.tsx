@@ -18,9 +18,13 @@ import {
   ringRoomInline,
   Select,
   SORT_ICON,
+  type StyleScope,
   sharedStyle,
   styles,
   useBreakpoint,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 
@@ -39,7 +43,7 @@ const DOCK_TOP = 'calc(max(0.625rem, env(safe-area-inset-top)) + 2.75rem)';
 
 // `position: sticky` and `env()` have no React Native spelling, so the bar's own
 // box stays CSS; everything it contains is the kit's.
-const barStyle = styles({
+const barStyleDefinition = styles({
   root: {
     position: 'sticky',
     zIndex: 30,
@@ -60,18 +64,22 @@ const barStyle = styles({
   },
 });
 
-const barGeometry = (gutter: number, top: number | string) =>
-  sharedStyle(`bar:${gutter}:${top}`, {
-    marginLeft: -gutter,
-    marginRight: -gutter,
-    paddingLeft: gutter,
-    paddingRight: gutter,
-    top,
-  });
+const barGeometry = (gutter: number, top: number | string, scope: StyleScope) =>
+  sharedStyle(
+    `bar:${gutter}:${top}`,
+    {
+      marginLeft: -gutter,
+      marginRight: -gutter,
+      paddingLeft: gutter,
+      paddingRight: gutter,
+      top,
+    },
+    scope,
+  );
 
 // `scrollbar-width` only; the legacy `::-webkit-scrollbar` rule it used to pair
 // with needs a stylesheet, which an inline style has no way to reach.
-const stripStyle = styles({
+const stripStyleDefinition = styles({
   root: {
     display: 'flex',
     minWidth: 0,
@@ -86,15 +94,15 @@ const stripStyle = styles({
   },
 });
 
-const fadeOf = (mask: string | undefined) =>
-  mask ? sharedStyle(`strip:${mask}`, { maskImage: mask, WebkitMaskImage: mask }) : null;
+const fadeOf = (mask: string | undefined, scope: StyleScope) =>
+  mask ? sharedStyle(`strip:${mask}`, { maskImage: mask, WebkitMaskImage: mask }, scope) : null;
 
 // The "no genre picked" sentinel: Select treats '' as nothing-picked.
 const ALL_GENRES = '*';
 
 // Roomier than the kit's sm chip: these are the page's primary filter, not a
 // tag row.
-const s = styles({
+const sDefinition = styles({
   chip: { py: 8, px: 18 },
   genre: { shrink: 0, minW: 150 },
   sort: { shrink: 0, minW: 196 },
@@ -181,6 +189,13 @@ export function BrowseBar({
   onGenre,
   innerRef,
 }: Readonly<BrowseBarProps>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const barStyle = useStyles(barStyleDefinition);
+  const stripStyle = useStyles(stripStyleDefinition);
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const fallbackRef = useRef<HTMLDivElement>(null);
   const bar = innerRef ?? fallbackRef;
@@ -219,12 +234,16 @@ export function BrowseBar({
       className={classes(
         barStyle.root,
         stuck ? barStyle.stuck : null,
-        barGeometry(gutter, wide ? 0 : DOCK_TOP),
+        barGeometry(gutter, wide ? 0 : DOCK_TOP, scope),
       )}
     >
       <Row gap={12}>
         {genres.length > 0 ? (
-          <div ref={strip} onScroll={update} className={classes(stripStyle.root, fadeOf(mask))}>
+          <div
+            ref={strip}
+            onScroll={update}
+            className={classes(stripStyle.root, fadeOf(mask, scope))}
+          >
             <Chip
               active={!genre}
               variant="subtle"

@@ -19,7 +19,16 @@
 // The same televisions also appear in the cast picker (<CastDeviceList>), which
 // is where somebody already choosing a screen will look for them.
 
-import { Box, Icon, SegmentGroup, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  Icon,
+  SegmentGroup,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { NearbyTvs } from '#mobile/components/connect/NearbyTvs';
 import { ScanCode } from '#mobile/components/connect/ScanCode';
@@ -33,6 +42,8 @@ const MODES = ['network', 'scan'] as const;
 type ConnectMode = (typeof MODES)[number];
 
 export default function ConnectDevice() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [mode, setMode] = useState<ConnectMode>(MODES[0]);
   const [done, setDone] = useState(false);
@@ -76,10 +87,10 @@ export default function ConnectDevice() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   body: { flex: true, px: spacing.md, gap: spacing.md },
   done: { flex: true, center: true, gap: spacing.md, px: spacing.lg },
-  doneTitle: { ...type.title, fontSize: 20, textAlign: 'center' },
-  doneBadge: { center: true, w: 72, h: 72, bg: 'accent', radius: 36 },
+  doneTitle: { ...type.title, fontSize: textRoles.title.size, textAlign: 'center' },
+  doneBadge: { center: true, w: 72, h: 72, bg: 'accent', radius: cornerRadius.device },
   modeDesc: { ...type.caption, color: 'textDim', textAlign: 'center', mt: 2, mb: spacing.sm },
 });

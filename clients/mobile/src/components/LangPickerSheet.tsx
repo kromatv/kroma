@@ -1,3 +1,15 @@
+import {
+  activeTheme,
+  Box,
+  color,
+  Icon,
+  styles,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
+
 // Playback-language picker sheet: searches across ~200 languages in a
 // virtualized list. Sized to a fixed screen share, not to content:
 // @gorhom/bottom-sheet's dynamic sizing measures only the header, so the list
@@ -10,7 +22,7 @@ import {
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 import { LANG_OFF, langOptions, offeredLang } from '@kromatv/core';
-import { Box, color, Icon, styles, Text } from '@kromatv/ui/kit';
+
 import { type Ref, useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,6 +61,11 @@ export function LangPickerSheet({
   onPick,
   ref,
 }: Readonly<LangPickerSheetProps>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { locale } = useI18n();
   const insets = useSafeAreaInsets();
@@ -105,7 +122,7 @@ export function LangPickerSheet({
   return (
     <BottomSheetModal
       ref={ref}
-      {...sheetChrome()}
+      {...sheetChrome(scope)}
       snapPoints={SNAP_POINTS}
       enableDynamicSizing={false}
       onChange={onChange}
@@ -129,7 +146,7 @@ export function LangPickerSheet({
               list.current?.scrollToOffset({ offset: 0, animated: false });
             }}
             placeholder={t('account.langSearch')}
-            placeholderTextColor={color('textDim')}
+            placeholderTextColor={color('textDim', activeTheme(scope.theme))}
             autoCorrect={false}
             autoCapitalize="none"
             returnKeyType="search"
@@ -186,6 +203,8 @@ function LangRow({
   ruled,
   onPress,
 }: Readonly<{ row: Row; active: boolean; ruled: boolean; onPress(): void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       onPress={onPress}
@@ -208,7 +227,7 @@ function fold(text: string): string {
   return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-const s = styles({
+const sDefinition = styles({
   header: { px: spacing.md, pt: spacing.sm, pb: spacing.sm },
   searchBox: {
     row: true,

@@ -1,3 +1,16 @@
+import {
+  activeTheme,
+  Box,
+  color,
+  Switch,
+  styles,
+  Text,
+  fontSizes as textSizes,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
+
 // Notification settings: push on THIS device, and the per-category matrix for
 // the account. A push subscription belongs to one device; the categories
 // travel with the account.
@@ -10,20 +23,26 @@ import {
   type PushBlocker,
 } from '@kromatv/client/notifications';
 import { blockerOf, NOTIFICATION_CATEGORY_LABEL, PUSH_BLOCKER_LABEL } from '@kromatv/core';
-import { Box, color, Switch, styles, Text } from '@kromatv/ui/kit';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
-import { nativePush } from '#mobile/lib/notifications/push';
+import { createNativePush } from '#mobile/lib/notifications/push';
 import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 export default function NotificationSettings() {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
+  const nativePush = useMemo(() => createNativePush(t), [t]);
   const client = useClient();
   const qc = useQueryClient();
   const [blocker, setBlocker] = useState<PushBlocker | null>(null);
@@ -32,7 +51,7 @@ export default function NotificationSettings() {
   // Reads native state, so it can only run on the device.
   useEffect(() => {
     void nativePush.blocker().then(setBlocker);
-  }, []);
+  }, [nativePush]);
 
   const pushKeyQuery = client.query.notifications.push.key();
   const prefsQuery = client.query.notifications.prefs();
@@ -87,7 +106,7 @@ export default function NotificationSettings() {
                 style={({ pressed }) => [s.action, pressed && s.actionPressed]}
               >
                 {toggle.isPending ? (
-                  <ActivityIndicator color={color('text')} size="small" />
+                  <ActivityIndicator color={color('text', activeTheme(scope.theme))} size="small" />
                 ) : (
                   <Text style={s.actionLabel}>
                     {subscribed ? t('push.disable') : t('push.enable')}
@@ -130,7 +149,7 @@ export default function NotificationSettings() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   body: { gap: spacing.sm, p: spacing.md, ...boxed(contentWidth.reading) },
   group: {
     ...type.small,
@@ -158,7 +177,7 @@ const s = styles({
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    fontSize: 10,
+    fontSize: textSizes.micro,
   },
   row: { row: true, align: 'center', py: 10 },
   rowLabel: { ...type.body, flex: true, color: 'text' },
