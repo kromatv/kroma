@@ -180,7 +180,10 @@ The same instinct applies to the code:
   closure it had at mount. A memoised component that needs one stable, fresh
   callback uses `useStableCallback` (`#ui/lib/stable-callback`).
 - **No dead code, no unused exports.** `bun run deadcode` catches them.
-- Follow `biome.json` for formatting and lint. Run `bun run check` before a PR.
+- Follow `.oxlintrc.json` for additional house-rule enforcement and `biome.json`
+  for formatting, import organization, and existing lint coverage. Run
+  `bun run check` before a PR. Read `bun run lint:rules <rule-name>` for a
+  custom rule's rationale and repair steps.
 - For Rust, rustfmt is canonical: run `cargo fmt` before a PR. The root
   `rustfmt.toml` is the law, applied across every cargo workspace, and CI
   enforces `cargo fmt --check`. Do not hand-format or keep a custom import

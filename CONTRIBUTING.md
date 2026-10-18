@@ -20,6 +20,7 @@ own README for details.
 
 ## Prerequisites
 
+- **Node.js** ≥ 22.12, required by Oxlint JavaScript plugins and their tests.
 - **Bun** ≥ 1.4, the package manager and runner (the repo is a Bun workspace)
 - **Rust** ≥ 1.88 + **ffmpeg/ffprobe** for the server (`rust-toolchain.toml` pins the exact stable, and rustup installs it)
 - Optional, only to package TV apps: **Tizen Studio** (Samsung) · **webOS TV CLI** (LG)
@@ -51,6 +52,8 @@ that breaks this.
 Everything must build and typecheck cleanly:
 
 ```bash
+bun run lint:rules:test    # custom Oxc rules and agent guidance
+bun run check             # Oxc house rules + Biome checks
 bun run typecheck          # all TS packages
 bun run build              # all frontends
 cd server && cargo build   # server (use `cargo clippy` if you have it)
@@ -69,6 +72,11 @@ cargo fmt                   # rustfmt is canonical; run before every PR
 - Keep the server's dependency graph **lean and Rust 1.81-friendly** (see the
   notes in [`server/Cargo.toml`](server/Cargo.toml)).
 - Write clear commit messages and describe the *why* in your PR.
+
+Custom lint rules live in [`packages/lint-rules`](packages/lint-rules/README.md).
+Use `bun run lint:rules --json` for agent-readable guidance, or
+`bun run lint:rule:new <name>` to scaffold a rule. The rollout findings and
+benchmark methodology are in [`docs/tooling/oxc-evaluation.md`](docs/tooling/oxc-evaluation.md).
 
 ## Reporting bugs
 

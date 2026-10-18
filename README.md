@@ -141,6 +141,13 @@ repository is shaped: a layered Rust server, out-of-process modules, one
 component library and thin shells. Each package and client carries its own
 README.
 
+House conventions are enforced by the [Oxc lint plugin](packages/lint-rules/README.md)
+alongside Biome. Run `bun run check` and `bun run lint:rules:test` before a PR.
+Agents can read repair guides with `bun run lint:rules --json`; new rules start
+with `bun run lint:rule:new <name>`. The current
+[evaluation and rollout backlog](docs/tooling/oxc-evaluation.md) records the
+existing findings that must be reviewed before enabling a green gate.
+
 ## Contributing
 
 Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md)

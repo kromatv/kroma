@@ -90,7 +90,11 @@ jobs:
         with:
           bun-version-file: .bun-version
           no-cache: true
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: '22'
       - run: bun install --frozen-lockfile
+      - run: bun run lint:rules:test
       - run: bun run typecheck
       - run: bun run check
       - run: bun run ci embeds

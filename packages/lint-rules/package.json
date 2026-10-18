@@ -1,0 +1,14 @@
+{
+  "name": "@kromatv/lint-rules",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "description": "KROMA architecture rules with actionable diagnostics and agent-readable repair guides.",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test src/*.test.mjs src/rules/*.test.mjs"
+  }
+}
