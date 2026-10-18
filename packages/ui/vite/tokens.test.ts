@@ -33,6 +33,16 @@ describe('tokensCss', () => {
     expect(media).not.toContain('[data-theme="dark"]');
   });
 
+  it('stops the transitions a reader asked not to see, without changing the paint', () => {
+    const css = tokensCss();
+
+    const media = css.split('@media (prefers-reduced-motion: reduce) {')[1] ?? '';
+
+    expect(media).toContain('--dur-base: 0s;');
+    expect(media).toContain('--dur-fast: 0s;');
+    expect(media).not.toContain('--kroma-');
+  });
+
   it('leaves the dark palette as the bare-root default', () => {
     const css = tokensCss();
     expect(css).toContain(':root,\n[data-theme="dark"] {');

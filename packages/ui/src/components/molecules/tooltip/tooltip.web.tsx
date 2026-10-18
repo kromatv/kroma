@@ -5,6 +5,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { styles } from '#ui/core';
 import { classes } from '#ui/lib/classed';
+import { OVERLAY_Z } from '#ui/lib/overlay-z';
 import { Portal } from '#ui/lib/portal';
 import type { TooltipProps } from './tooltip';
 
@@ -21,7 +22,7 @@ const s = styles({
   tip: {
     position: 'fixed',
     transform: [{ translateX: '-50%' }, { translateY: '-100%' }],
-    zIndex: 120,
+    zIndex: OVERLAY_Z.tooltip,
     maxWidth: 280,
     py: 6,
     px: 10,

@@ -87,3 +87,21 @@ describe('Section.Actions', () => {
     expect(getComputedStyle(actions).marginLeft).toBe('auto');
   });
 });
+
+describe('Section.Title', () => {
+  it('is the band heading, under whatever titles the screen it sits on', () => {
+    render(
+      <Section.Root>
+        <Section.Header>
+          <Section.Title>Playback</Section.Title>
+        </Section.Header>
+        <Text>First line</Text>
+      </Section.Root>,
+    );
+
+    const heading = screen.getByRole('heading', { name: 'Playback' });
+
+    expect(heading.tagName).toBe('H2');
+    expect(heading.getAttribute('aria-level')).toBe('2');
+  });
+});

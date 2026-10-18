@@ -3,7 +3,7 @@
 // the arrow keys move the selection the way a native radio group does.
 
 import { Children, isValidElement, useEffect, useEffectEvent, useRef, useState } from 'react';
-import { Animated, Easing, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated, Easing, type StyleProp, type View, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { sharedStyle, style } from '#ui/core';
 import type { Radius } from '#ui/core/tokens/layout';
@@ -18,6 +18,10 @@ import {
   segmentRadius,
 } from './segment-group-context';
 import { Hint, Item, Label } from './segment-group-item';
+
+// react-native-web's host for a segment is the element itself, which focuses;
+// React Native's own View type stops short of saying so.
+type SegmentHost = View & { focus?: () => void };
 
 interface RootProps<T extends string> {
   value: T;
@@ -62,6 +66,7 @@ function Root<T extends string>({
     if (item.disabled) off.add(item.value);
   }
   const boxes = useRef(new Map<string, Box2D>());
+  const views = useRef(new Map<string, SegmentHost | null>());
   const [thumb, setThumb] = useState<Box2D | null>(null);
 
   // Stable, not an effect event: it goes into the context, and React hands back
@@ -72,6 +77,10 @@ function Root<T extends string>({
     if (option === value) setThumb(box);
   });
 
+  const mount = useStableCallback((option: string, view: View | null) => {
+    views.current.set(option, view);
+  });
+
   const select = (next: string) => onValueChange(next as T);
 
   useEffect(() => {
@@ -79,6 +88,8 @@ function Root<T extends string>({
     if (at) setThumb(at);
   }, [value]);
 
+  // WAI-ARIA's radio group: the arrows move the selection AND the focus, so the
+  // reader is never left on the segment they just moved off.
   const move = useEffectEvent((delta: -1 | 1) => {
     const at = order.indexOf(value);
     if (at === -1) return;
@@ -87,9 +98,12 @@ function Root<T extends string>({
       if (key === undefined || key === value) return;
       if (off.has(key)) continue;
       onValueChange(key as T);
+      views.current.get(key)?.focus?.();
       return;
     }
   });
+
+  const tabStop = order.includes(value) ? value : order.find((key) => !off.has(key));
 
   // Left to the React Compiler, which memoises this on the inputs it actually
   // reads.
@@ -99,6 +113,8 @@ function Root<T extends string>({
     size: shell,
     stretch,
     report,
+    tabStop,
+    mount,
   };
 
   return (

@@ -201,8 +201,9 @@ export function fieldShell(
 
 /** The ink of a field that has not been filled in, as a token rather than a
  *  resolved colour: a value taken at module load keeps the ground it was read
- *  under, which on a native light theme is near-white on cream. */
-export const PLACEHOLDER: ColorValue = 'text/30';
+ *  under, which on a native light theme is near-white on cream. Muted rather
+ *  than faint, because a placeholder is text and 30% ink reads at 2.4:1. */
+export const PLACEHOLDER: ColorValue = 'textMuted';
 
 // What an app's controls default to. Per-site props still win; this is only so
 // a shell that KNOWS its form factor (the web console is a mouse-and-keyboard

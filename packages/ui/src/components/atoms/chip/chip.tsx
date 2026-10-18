@@ -111,8 +111,9 @@ const chipVariants = svFor<{
 });
 
 interface ChipProps extends Omit<FocusableProps, 'children' | 'style' | 'label'> {
-  /** The accent fill. It is paint and nothing else: a chip that turns a filter
-   *  on and off says so with `pressed`, which is what assistive tech hears. */
+  /** The accent fill, and the on state assistive tech hears with it: a chip
+   *  that can be pressed claims `pressed` unless the call site states `pressed`
+   *  or `selected` itself. A chip that only reports claims nothing. */
   active?: boolean;
   size?: 'sm' | 'tv';
   variant?: 'solid' | 'subtle' | 'surface' | 'outline';
@@ -138,13 +139,21 @@ function Chip({
   label,
   children,
   style,
+  pressed,
+  selected,
+  onPress,
   ...focusProps
 }: Readonly<ChipProps>) {
   const locale = useLocaleDefault();
+  const toggles = onPress !== undefined && selected === undefined;
+  const pressedClaim = pressed ?? (toggles ? active : undefined);
   return (
     <Focusable
       {...focusProps}
+      onPress={onPress}
       label={label}
+      pressed={pressedClaim}
+      selected={selected}
       sv={chipVariants}
       vars={{ active, size, variant }}
       style={style}

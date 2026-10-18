@@ -77,6 +77,28 @@ describe('ListRow', () => {
     expect(container.textContent).toBe('headlabelhinttail');
   });
 
+  it('lets a long hint wrap, since a row in a narrow panel has the most to say', () => {
+    render(
+      <ListRow.Root>
+        <ListRow.Label>Sources minimum</ListRow.Label>
+        <ListRow.Hint>Une version avec moins de sources est refusee.</ListRow.Hint>
+      </ListRow.Root>,
+    );
+
+    expect(declared(screen.getByText(/moins de sources/), 'textOverflow')).toBeNull();
+  });
+
+  it('clamps a hint the call site asked to keep to one line', () => {
+    render(
+      <ListRow.Root>
+        <ListRow.Label>Sources minimum</ListRow.Label>
+        <ListRow.Hint lines={1}>Une version avec moins de sources est refusee.</ListRow.Hint>
+      </ListRow.Root>,
+    );
+
+    expect(declared(screen.getByText(/moins de sources/), 'textOverflow')).toBe('ellipsis');
+  });
+
   it('draws a chevron only where the row leads somewhere', () => {
     const { container: still } = render(
       <ListRow.Root>

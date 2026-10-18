@@ -182,6 +182,18 @@ function ownedByActiveDescendant(el: Element): boolean {
   return false;
 }
 
+// The roving-tabindex pattern: the group is ONE Tab stop and its arrows move
+// the focus inside it, so `tabindex="-1"` on a member is the correct spelling
+// of that. The group has to hold the stop, or nothing reaches the set at all.
+const ROVING: Record<string, string> = { radio: 'radiogroup', tab: 'tablist' };
+
+function inRovingSet(el: Element, role: string): boolean {
+  const owner = ROVING[role];
+  if (!owner || el.getAttribute('tabindex') !== '-1') return false;
+  const group = el.closest(`[role="${owner}"]`);
+  return group !== null && group.querySelector(`[role="${role}"][tabindex="0"]`) !== null;
+}
+
 /** One line per element a screen reader stops on: its role, its name, its state
  * and whether the keyboard can reach it. */
 function accessibleLine(el: Element): string | undefined {
@@ -281,6 +293,7 @@ function issuesOf(el: Element): readonly A11yIssue[] {
 function unreachable(el: Element, role: string): boolean {
   if (!CONTROLS.has(role) || UNPRESSED.has(role) || focusable(el)) return false;
   if (unavailable(el) || hiddenFromReaders(el) || ownedByActiveDescendant(el)) return false;
+  if (inRovingSet(el, role)) return false;
   const style = styleOf(el);
   return style.display !== 'none' && style.pointerEvents !== 'none';
 }

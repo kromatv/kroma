@@ -13,6 +13,7 @@ import {
 } from '#ui/lib/anchor';
 import type { PanelKeyEvent } from '#ui/lib/anchored-keys';
 import { webWindow } from '#ui/lib/dom';
+import { OVERLAY_Z } from '#ui/lib/overlay-z';
 import { WEB } from '#ui/lib/platform';
 
 // React Native has no `position: fixed` and its absolute is the closest it has;
@@ -21,11 +22,16 @@ import { WEB } from '#ui/lib/platform';
 // stop at `absolute`.
 const OVERLAY = (WEB ? 'fixed' : 'absolute') as 'absolute';
 
-/** The click-away layer. Above the app's sticky chrome (headers ride z-40),
- *  or a tap meant to dismiss lands on the header instead. */
 const s = styles({
-  backdrop: { position: OVERLAY, top: 0, right: 0, bottom: 0, left: 0, zIndex: 99 },
-  shell: { position: OVERLAY, zIndex: 100 },
+  backdrop: {
+    position: OVERLAY,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: OVERLAY_Z.backdrop,
+  },
+  shell: { position: OVERLAY, zIndex: OVERLAY_Z.panel },
 });
 
 export const PANEL_BACKDROP = s.backdrop;

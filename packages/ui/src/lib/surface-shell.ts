@@ -24,14 +24,23 @@ export const SURFACE_WIDTH: Record<SurfaceWidth, number> = {
   xl: 960,
 };
 
-/** The gutter a `<Dialog>`'s three bands share, and what its `pad` defaults to. */
+/** The gutter a `<Dialog>`'s three bands share on a window wide enough for it. */
 export const DIALOG_PAD = 40;
+
+const NARROW = 600;
+
+/** The gutter a `<Dialog>`'s three bands share. 40 frames a panel on a desk;
+ *  on a 390pt phone it would leave a 278pt column, so a narrow window keeps
+ *  20. */
+export function dialogPad(windowWidth: number): number {
+  return windowWidth < NARROW ? 20 : DIALOG_PAD;
+}
 
 /** The frame a floating surface keeps from the screen's edges. 64 frames a
  *  television; on a phone it would cost a third of the width the panel has to
  *  say anything in, so a narrow window keeps 16. */
 export function surfaceGutter(windowWidth: number): number {
-  return windowWidth < 600 ? 16 : 64;
+  return windowWidth < NARROW ? 16 : 64;
 }
 
 export type { SurfaceWidth };

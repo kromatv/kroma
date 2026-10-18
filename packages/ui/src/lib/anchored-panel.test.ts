@@ -2,11 +2,24 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  PANEL_BACKDROP,
+  PANEL_SHELL,
   useActiveDescendant,
   useAnchoredPlacement,
   useTriggerFocus,
   useTriggerKeys,
 } from './anchored-panel';
+
+// react-native-web pins a <Modal>'s layer here, and a panel is its SIBLING in
+// the document rather than its child.
+const MODAL_LAYER = 9999;
+
+describe('the layer an anchored panel is drawn on', () => {
+  it('clears the modal layer, so a select inside a dialog is not under the scrim', () => {
+    expect(PANEL_BACKDROP.zIndex).toBeGreaterThan(MODAL_LAYER);
+    expect(PANEL_SHELL.zIndex).toBeGreaterThan(PANEL_BACKDROP.zIndex ?? 0);
+  });
+});
 
 describe('useTriggerFocus', () => {
   it('focuses the trigger while the panel lives and hands focus back on close', () => {

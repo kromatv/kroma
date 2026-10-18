@@ -36,6 +36,13 @@ const TONE: Record<CalloutTone, Paint> = {
   danger: { bg: 'danger/10', border: 'danger/25', ink: 'dangerHover' },
 };
 
+const LIVE_ROLE: Record<CalloutTone, 'alert' | 'status' | undefined> = {
+  neutral: undefined,
+  accent: undefined,
+  success: 'status',
+  danger: 'alert',
+};
+
 interface Shape {
   title: TypeRole;
   detail: TypeRole;
@@ -84,8 +91,10 @@ function slot(written: readonly ReactNode[], sugar: ReactNode): ReactNode {
 }
 
 interface CalloutRootProps {
-  /** What the block is saying, in the palette's own words. Defaults to
-   *  `neutral`, so a tone is always a decision. */
+  /** What the block is saying, in the palette's own words, and what a reader
+   *  hears when it appears: `danger` interrupts, `success` waits for a pause,
+   *  the other two announce nothing. Defaults to `neutral`, so a tone is
+   *  always a decision. */
   tone?: CalloutTone;
   /** The control shell's size, defaulting to the app's (`setEntryDefaults`), so
    *  a callout in a form matches the fields around it without saying so. */
@@ -115,6 +124,7 @@ function Root({ tone = 'neutral', size, icon, children }: Readonly<CalloutRootPr
       <Box
         row
         align="center"
+        role={LIVE_ROLE[tone]}
         gap={metrics.gap}
         px={metrics.px}
         py={metrics.py}

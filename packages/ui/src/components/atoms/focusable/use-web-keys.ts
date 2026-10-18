@@ -10,11 +10,12 @@ function useWebKeys(
   active: boolean,
   role: FocusRole,
   press: RefObject<() => void>,
+  tabbable = true,
 ): { pressable: WebKeys; view: WebKeys } | null {
   return useMemo(() => {
     if (!WEB || !active) return null;
     const answering = (owns: (key: string) => boolean): WebKeys => ({
-      tabIndex: 0,
+      tabIndex: tabbable ? 0 : -1,
       onKeyDown: (event) => {
         if (!owns(event.nativeEvent.key)) return;
         event.preventDefault();
@@ -25,7 +26,7 @@ function useWebKeys(
       pressable: answering((key) => key === ' ' && role !== 'button'),
       view: answering((key) => (key === 'Enter' || key === ' ') && !navigatorHolds()),
     };
-  }, [active, role, press]);
+  }, [active, role, press, tabbable]);
 }
 
 export { useWebKeys };

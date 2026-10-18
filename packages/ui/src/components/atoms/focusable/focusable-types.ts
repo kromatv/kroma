@@ -86,6 +86,10 @@ interface FocusableProps<R extends AnySv = AnySv> {
    *  is busy rather than unavailable. A spinner already says what is happening,
    *  and a hover highlight would promise a press that is not being taken. */
   inert?: boolean;
+  /** Whether Tab stops here, defaulting to true. False for one of a roving set
+   *  whose group is a single Tab stop and whose arrows move the focus inside it
+   *  (a radio group). */
+  tabbable?: boolean;
   focusScale?: number;
   /** Which focus ring, or none. `true` and the default take the ring an
    *  enclosing `RingScope` names, falling back to `focusLift`; a token names one
