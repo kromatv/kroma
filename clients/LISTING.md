@@ -138,7 +138,7 @@ First release.
 | Website | https://kroma.tv |
 | Support / contact | support@kroma.tv |
 | Privacy policy | Samsung takes the URL `https://kroma.tv/privacy`, so it must be PUBLISHED there before that submission. **LG takes the TEXT, not a link** ("The privacy policy will be provided as text only, not as a link"), so paste [PRIVACY.md](../PRIVACY.md)'s body into Service Country Info. instead |
-| Licence | GPL-2.0-or-later (client and server are open source) |
+| Licence | AGPL-3.0-or-later (client and server are open source) |
 
 > **Two mailboxes have to exist before submitting**: the support address and
 > `privacy@kroma.tv` named in the policy. A reviewer bouncing an e-mail is a

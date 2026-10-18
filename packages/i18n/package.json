@@ -5,7 +5,7 @@
   "type": "module",
   "description": "A small, fully-typed message engine: catalog interpolation, build-time key references, CLDR pluralisation, runtime catalog injection and locale detection. Framework-free, with optional React bindings.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
-  "license": "GPL-2.0-or-later",
+  "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kromatv/kroma.git",

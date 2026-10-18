@@ -82,4 +82,4 @@ Open an issue with:
 ## License
 
 By contributing, you agree your contributions are licensed under the project's
-[GPL-2.0 License](LICENSE).
+[AGPL-3.0-or-later](LICENSE).

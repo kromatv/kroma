@@ -15,7 +15,7 @@ export const site = {
   modulesUrl: 'https://modules.kroma.tv',
   packagesUrl: 'https://packages.kroma.tv',
   statsUrl: 'https://stats.kroma.tv',
-  license: 'GPL-2.0',
+  license: 'AGPL-3.0',
   email: {
     support: 'support@kroma.tv',
     privacy: 'privacy@kroma.tv',

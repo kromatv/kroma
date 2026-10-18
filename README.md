@@ -14,7 +14,7 @@ Everything past playback and catalog is a module you install from inside the app
 </p>
 
 [![CI](https://github.com/kromatv/kroma/actions/workflows/ci.yml/badge.svg)](https://github.com/kromatv/kroma/actions/workflows/ci.yml) [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=kromatv_kroma&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=kromatv_kroma) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=kromatv_kroma&metric=coverage)](https://sonarcloud.io/component_measures?id=kromatv_kroma&metric=coverage) [![Release](https://img.shields.io/github/v/release/kromatv/kroma?style=flat-square&color=F4B642&labelColor=0A0A0C)](https://github.com/kromatv/kroma/releases)<br/>
-[![Rust](https://img.shields.io/badge/Rust-1.88-0A0A0C.svg?style=flat-square&logo=rust&logoColor=F4B642)](rust-toolchain.toml) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-0A0A0C.svg?style=flat-square&logo=typescript&logoColor=3178C6)](tsconfig.base.json) [![Bun](https://img.shields.io/badge/Bun-1.4-0A0A0C.svg?style=flat-square&logo=bun&logoColor=F4B642)](https://bun.sh) [![License: GPL-2.0](https://img.shields.io/badge/License-GPL--2.0-F4B642.svg?style=flat-square)](LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.88-0A0A0C.svg?style=flat-square&logo=rust&logoColor=F4B642)](rust-toolchain.toml) [![TypeScript](https://img.shields.io/badge/TypeScript-strict-0A0A0C.svg?style=flat-square&logo=typescript&logoColor=3178C6)](tsconfig.base.json) [![Bun](https://img.shields.io/badge/Bun-1.4-0A0A0C.svg?style=flat-square&logo=bun&logoColor=F4B642)](https://bun.sh) [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-F4B642.svg?style=flat-square)](LICENSE)
 
 <p>
 <a href="https://kroma.tv">Website</a> ·
@@ -151,6 +151,11 @@ and [CODE_STYLE.md](CODE_STYLE.md) first. Security reports go through
 
 <div align="center">
 
-[GPL-2.0](LICENSE) © 2026 [Maxime Scharwath](https://github.com/maxscharwath)
+[AGPL-3.0-or-later](LICENSE) © 2026 [Maxime Scharwath](https://github.com/maxscharwath)
 
 </div>
+
+Run it, change it and share it freely. Whoever distributes KROMA, or lets people
+use a modified version of it over a network, has to offer them its source under
+the same license.
+

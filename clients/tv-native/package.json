@@ -4,7 +4,7 @@
   "private": true,
   "description": "KROMA native TV client (Apple TV + Android TV): the shared @kromatv/tv experience compiled by React Native instead of rendered in a WebView.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
-  "license": "GPL-2.0-or-later",
+  "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kromatv/kroma.git",

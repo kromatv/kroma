@@ -9,7 +9,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
 description = "DownloadClient trait + torrent engines (embedded librqbit, Transmission, qBittorrent)"
-license = "MIT"
+license = "AGPL-3.0-or-later"
 
 [[bin]]
 # The module's `.kmod` entrypoint: an out-of-process sidecar that hosts the
