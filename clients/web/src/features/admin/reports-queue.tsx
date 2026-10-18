@@ -1,15 +1,14 @@
-import { useKromaClient } from '#web/shared/lib/web-runtime';
+import { useServerUpdate } from '#web/shared/lib/use-server-update';
 // Admin "Signalements" queue: every user-submitted problem report as a
 // searchable / filterable table (mirroring the Demandes queue), with a triage
 // drawer. Backed by GET /api/admin/reports + the report.updated WS event.
 
-import { KromaEvents } from '@kromatv/client/events';
 import type { Report, ReportCategory, ReportStatus } from '@kromatv/client/reports';
 import { TABULAR, Table } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 import { Avatar, EmptyState, Row, Text } from '@kromatv/ui/kit';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pill, PillDot } from '#web/features/admin/pill';
 import { ReportDrawer } from '#web/features/admin/report-drawer';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
@@ -22,7 +21,6 @@ import {
   useConsoleToast,
   useThrottledReload,
 } from '#web/features/admin/table-console';
-import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
@@ -76,8 +74,6 @@ function ReportRow({ report, onOpen }: Readonly<{ report: Report; onOpen: () => 
 }
 
 export function ReportsQueuePage() {
-  const eventClient = useKromaClient();
-
   const t = useT();
   const { client } = useAuth();
   const canManage = useCap('reports.manage');
@@ -90,18 +86,7 @@ export function ReportsQueuePage() {
   const { data, reload } = usePoll(['admin', 'reports'], () => client.reports.list(), 30000);
 
   const throttledReload = useThrottledReload(reload);
-  useEffect(() => {
-    const ev = new KromaEvents(apiBase(), {
-      token: () => eventClient.sessionToken,
-      refresh: () => eventClient.refreshSession(),
-
-      onEvent: (e) => {
-        if (e.type === 'report.updated') throttledReload();
-      },
-    });
-    ev.connect();
-    return () => ev.close();
-  }, [throttledReload, eventClient.sessionToken, eventClient.refreshSession]);
+  useServerUpdate('report.updated', throttledReload);
 
   // Refreshes the list + toasts on success; rejects on failure so the drawer
   // (which awaits this) can leave the report untouched.

@@ -37,7 +37,7 @@ The initial Oxc scan found seven diagnostics in five files. Repairs preserve
 callback dependencies explicitly, replace one unsupported logical assignment,
 reset resume refs inside an effect, return a focus attachment callback instead
 of mutating another hook's ref, and update the playback client ref after commit.
-After the ownership migration, the current scan covers **690 files**, with **345 files receiving memo caches**
+After the ownership migration, the current scan covers **691 files**, with **346 files receiving memo caches**
 and **zero diagnostics**. This is a file count, not a count of React components.
 
 ## Performance

@@ -10,10 +10,10 @@ import { ArtScrim } from '#ui/components/atoms/art-scrim';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
-import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { tintGradient } from '#ui/components/molecules/media-card';
+import { CardProgress } from '#ui/lib/card-progress';
 
 interface PosterCardProps {
   title: string;
@@ -84,11 +84,7 @@ function PosterCard({
             {title}
           </Text>
         </Box>
-        {progress == null ? null : (
-          <Box absolute left={0} right={0} bottom={0}>
-            <Progress value={progress} rounded={false} />
-          </Box>
-        )}
+        <CardProgress value={progress} />
       </Box>
     </Focusable>
   );

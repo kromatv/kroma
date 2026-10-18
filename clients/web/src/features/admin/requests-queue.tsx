@@ -1,16 +1,15 @@
-import { useKromaClient } from '#web/shared/lib/web-runtime';
+import { useServerUpdate } from '#web/shared/lib/use-server-update';
 // Admin "Demandes" queue: every media request as a searchable / filterable
 // table (mirroring the pipeline console's shape), with quick approve/deny and
 // a detail drawer. Backed by GET /api/requests + the request.updated WS event.
 
-import { KromaEvents } from '@kromatv/client/events';
 import type { MediaRequest, RequestStatus } from '@kromatv/client/requests';
 import { Table } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 import { Button, EmptyState, Row } from '@kromatv/ui/kit';
 
 import { useNavigate } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { NewRequestDialog } from '#web/features/admin/request-new-dialog';
 import { RequestRowView } from '#web/features/admin/request-row';
 import { PageHeader, useCap, usePoll } from '#web/features/admin/shell';
@@ -22,7 +21,6 @@ import {
   useConsoleToast,
   useThrottledReload,
 } from '#web/features/admin/table-console';
-import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
@@ -40,8 +38,6 @@ const BUCKETS: Record<string, (s: RequestStatus) => boolean> = {
 };
 
 export function RequestsQueuePage() {
-  const eventClient = useKromaClient();
-
   const t = useT();
   const navigate = useNavigate();
   const { client } = useAuth();
@@ -61,18 +57,7 @@ export function RequestsQueuePage() {
   // Event-driven refresh, coalesced (request.updated is low-frequency, but an
   // approval fans out into several transitions in a row).
   const throttledReload = useThrottledReload(reload);
-  useEffect(() => {
-    const ev = new KromaEvents(apiBase(), {
-      token: () => eventClient.sessionToken,
-      refresh: () => eventClient.refreshSession(),
-
-      onEvent: (e) => {
-        if (e.type === 'request.updated') throttledReload();
-      },
-    });
-    ev.connect();
-    return () => ev.close();
-  }, [throttledReload, eventClient.sessionToken, eventClient.refreshSession]);
+  useServerUpdate('request.updated', throttledReload);
 
   // The detail page subscribes to this same query (shared cache), so it stays
   // fresh here without an explicit push.

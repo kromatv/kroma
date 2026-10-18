@@ -71,9 +71,8 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
     let ws: WebSocket;
     // A browser can't set headers on a WS handshake, so the bearer rides as a
     // subprotocol the server validates and echoes back (see server ws.rs), read
-    // fresh on each (re)connect. A multi-server client (the TV) must supply
-    // `token`: the fallback reads the default store, which would authenticate it
-    // against the wrong server.
+    // fresh from the owning client on each (re)connect. Every authenticated
+    // consumer supplies `token`; no process-wide credential fallback exists.
     const token = this.refreshedToken ?? this.opts.token?.();
     if (!token) {
       this.waitForToken();
