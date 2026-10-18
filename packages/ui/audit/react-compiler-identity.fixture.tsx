@@ -4,8 +4,8 @@ export function CompiledParent({
   value,
   Child,
 }: {
-  value: number;
-  Child: ComponentType<{ payload: { value: number } }>;
+  readonly value: number;
+  readonly Child: ComponentType<{ payload: { value: number } }>;
 }) {
   return <Child payload={{ value }} />;
 }

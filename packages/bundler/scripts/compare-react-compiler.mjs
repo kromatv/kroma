@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { arch, cpus, platform } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -74,6 +74,5 @@ const result = {
   medianSeconds: { babel: median(times.babel), oxc: median(times.oxc) },
   speedup: median(times.babel) / median(times.oxc),
 };
-const output = process.argv[2];
-if (output) writeFileSync(resolve(output), `${JSON.stringify(result, null, 2)}\n`);
-console.log(JSON.stringify(result));
+// Emit data only. The shell owns any explicit redirection to a report file.
+console.log(JSON.stringify(result, null, 2));

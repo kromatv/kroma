@@ -7,8 +7,8 @@ export function PlaybackCapabilitiesProvider({
   limits,
   children,
 }: {
-  limits?: DecoderFrameLimits;
-  children: ReactNode;
+  readonly limits?: DecoderFrameLimits;
+  readonly children: ReactNode;
 }) {
   const value = useMemo(
     () => (limits ? { ...capabilities(), frameLimits: limits } : capabilities()),

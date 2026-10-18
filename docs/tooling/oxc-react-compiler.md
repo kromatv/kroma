@@ -53,7 +53,7 @@ The [raw samples](react-compiler-results.json) include versions, host details an
 source hashes. Reproduce from the repository root with Node:
 
 ```sh
-node packages/bundler/scripts/compare-react-compiler.mjs /tmp/react-compiler-results.json
+node packages/bundler/scripts/compare-react-compiler.mjs > /tmp/react-compiler-results.json
 ```
 
 The Babel reference is resolved from the native Expo preset, which still declares

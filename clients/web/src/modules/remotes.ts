@@ -72,6 +72,10 @@ const DEFAULT_LOADERS: RemoteLoaders = {
   importRemote: (entry) => import(/* @vite-ignore */ entry),
 };
 
+function unmet(registry: ModuleRegistry, m: KromaModule): string | null {
+  return depEntries(m.dependencies).find(({ id }) => !registry.has(id))?.id ?? null;
+}
+
 /** Remote loading state belongs to one mounted module host. */
 export function createRuntimeRemotes() {
   const loadedRemotes = new Set<string>();
@@ -105,10 +109,6 @@ export function createRuntimeRemotes() {
     }
     loadedRemotes.delete(spec.id);
     return null;
-  }
-
-  function unmet(registry: ModuleRegistry, m: KromaModule): string | null {
-    return depEntries(m.dependencies).find(({ id }) => !registry.has(id))?.id ?? null;
   }
 
   /** Registers what loaded, then drops whatever cannot resolve: a module whose
