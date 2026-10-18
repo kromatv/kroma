@@ -5,7 +5,8 @@ use rusqlite::{Connection, params};
 
 use super::monitored_summaries;
 
-const MOVIES: &str = "SELECT i.id, i.title, i.year, \
+const MOVIES: &str = "SELECT i.id, i.title, \
+        COALESCE(i.year, CAST(substr(c.release_date, 1, 4) AS INTEGER)), \
         COALESCE(c.tmdb_id, json_extract(i.metadata, '$.tmdbId')), \
         COALESCE(c.poster_url, json_extract(i.metadata, '$.posterUrl')), i.added_at, \
         (SELECT COALESCE(SUM(f.size), 0) FROM files f WHERE f.item_id = i.id) \
@@ -13,7 +14,8 @@ const MOVIES: &str = "SELECT i.id, i.title, i.year, \
      LEFT JOIN metadata_core c ON c.subject_kind = 'item' AND c.subject_id = i.id \
      WHERE i.kind IN ('movie', 'video')";
 
-const SHOWS: &str = "SELECT s.id, s.title, s.year, \
+const SHOWS: &str = "SELECT s.id, s.title, \
+        COALESCE(s.year, CAST(substr(c.release_date, 1, 4) AS INTEGER)), \
         COALESCE(c.tmdb_id, json_extract(s.metadata, '$.tmdbId')), \
         COALESCE(c.poster_url, json_extract(s.metadata, '$.posterUrl')), s.added_at, \
         (SELECT COALESCE(SUM(f.size), 0) FROM files f \
@@ -226,6 +228,23 @@ mod tests {
             (3, 1),
             "a file spanning two episodes holds both"
         );
+    }
+
+    #[test]
+    fn a_title_whose_folder_names_no_year_takes_the_year_it_first_aired() {
+        let p = pool();
+        let conn = p.get().unwrap();
+        seed(&conn);
+        conn.execute_batch(
+            "UPDATE shows SET year = NULL WHERE id = 's1';
+             UPDATE metadata_core SET release_date = '2022-02-17' WHERE subject_id = 's1';",
+        )
+        .unwrap();
+
+        let rows = library_index(&conn, "2026-01-10").unwrap();
+
+        let show = rows.iter().find(|r| r.title == "Severance").unwrap();
+        assert_eq!(show.year, Some(2022));
     }
 
     #[test]
