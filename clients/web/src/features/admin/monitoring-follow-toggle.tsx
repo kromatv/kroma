@@ -1,5 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { IconButton, Tooltip } from '@kromatv/ui/kit';
+import { Icon, IconButton, Tooltip } from '@kromatv/ui/kit';
 
 export type FollowState = 'on' | 'partly' | 'off';
 
@@ -30,16 +30,16 @@ export function FollowToggle({
     <Tooltip label={label}>
       <IconButton
         control="sm"
-        variant={state === 'off' ? 'ghost' : 'glass'}
-        icon={GLYPH[state]}
-        active={state !== 'off'}
+        variant="ghost"
         pressed={state === 'on'}
         busy={busy}
         inert={busy}
         disabled={disabled}
         label={label}
         onPress={() => onToggle(state !== 'on')}
-      />
+      >
+        <Icon name={GLYPH[state]} size={18} color={state === 'off' ? 'textDim' : 'accentText'} />
+      </IconButton>
     </Tooltip>
   );
 }

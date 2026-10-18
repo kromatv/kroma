@@ -162,7 +162,7 @@ function SeasonCard({
           ring="focusInset"
           style={s.header}
         >
-          <Box w={THUMB_COLUMN} shrink={0} align="flex-start">
+          <Box w={THUMB_COLUMN} shrink={0} align="center">
             <Box w={POSTER_W} h={POSTER_H} radius="xs" overflow="hidden" bg="tint/6">
               <Image src={sizedImageUrl(season.posterUrl ?? poster, 185)} fit="cover" fill />
             </Box>

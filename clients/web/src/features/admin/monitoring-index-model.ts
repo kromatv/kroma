@@ -20,12 +20,6 @@ export interface LibraryFilter {
   descending: boolean;
 }
 
-export interface LibraryTotals {
-  titles: number;
-  monitored: number;
-  missing: number;
-}
-
 const CONTINUING = new Set(['Returning Series', 'In Production', 'Planned']);
 
 function matchesState(row: LibraryTitle, state: LibraryState): boolean {
@@ -59,14 +53,6 @@ export function filterLibrary(
   );
   const turn = filter.descending ? -1 : 1;
   return kept.sort((a, b) => compare(a, b, filter.sort) * turn || a.title.localeCompare(b.title));
-}
-
-export function libraryTotals(rows: readonly LibraryTitle[]): LibraryTotals {
-  return {
-    titles: rows.length,
-    monitored: rows.filter((row) => row.monitored).length,
-    missing: rows.reduce((total, row) => total + row.missing, 0),
-  };
 }
 
 /** How much of what is monitored is on disk, as 0..1. Null when nothing is

@@ -4,7 +4,18 @@ import { sizedImageUrl } from '@kromatv/core';
 import type { MessageKey } from '@kromatv/i18n';
 import { ModuleSlot } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
-import { Box, Button, confirm, Row, Surface, styles, Text, useBreakpoint } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  confirm,
+  IconButton,
+  Row,
+  Surface,
+  styles,
+  Text,
+  Tooltip,
+  useBreakpoint,
+} from '@kromatv/ui/kit';
 import { airStatusKey, showTotals } from '#web/features/admin/monitoring-model';
 import { Pill } from '#web/features/admin/pill';
 import { kindMeta } from '#web/features/admin/pipeline-meta';
@@ -194,12 +205,11 @@ function HeroActions({
         compact={false}
       />
       {ledger.localId ? (
-        <Box flex={stretch}>
-          <Button
+        <Tooltip label={t('monitoring.openInLibrary')}>
+          <IconButton
+            control="sm"
             variant="glass"
-            size="sm"
             icon="external-link"
-            block={stretch}
             label={t('monitoring.openInLibrary')}
             asChild
           >
@@ -208,8 +218,8 @@ function HeroActions({
             ) : (
               <RouteLink to="/movies/$id" params={{ id: ledger.localId }} />
             )}
-          </Button>
-        </Box>
+          </IconButton>
+        </Tooltip>
       ) : null}
     </Row>
   );

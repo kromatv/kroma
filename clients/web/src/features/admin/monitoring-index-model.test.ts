@@ -1,11 +1,6 @@
 import type { LibraryTitle } from '@kromatv/client/monitoring';
 import { describe, expect, it } from 'vitest';
-import {
-  filterLibrary,
-  heldRatio,
-  type LibraryFilter,
-  libraryTotals,
-} from './monitoring-index-model';
+import { filterLibrary, heldRatio, type LibraryFilter } from './monitoring-index-model';
 
 const EVERY: LibraryFilter = {
   kind: 'all',
@@ -73,14 +68,6 @@ describe('the library index filter', () => {
     const kept = filterLibrary(rows, { ...EVERY, needle: 'SEVER' });
 
     expect(kept.map((row) => row.title)).toEqual(['Severance']);
-  });
-});
-
-describe('the library index totals', () => {
-  it('counts the titles, the followed ones and every missing unit', () => {
-    const rows = [title(), title({ title: 'Dune', monitored: false, missing: 0 })];
-
-    expect(libraryTotals(rows)).toEqual({ titles: 2, monitored: 1, missing: 4 });
   });
 });
 

@@ -18,11 +18,9 @@ import {
   filterLibrary,
   type LibraryFilter,
   type LibraryState,
-  libraryTotals,
   titleKey,
 } from '#web/features/admin/monitoring-index-model';
 import { MonitoringNotice, useMonitoringNotice } from '#web/features/admin/monitoring-notice';
-import { Stat, StatGrid } from '#web/features/admin/monitoring-stats';
 import { LibraryRow, type RowColumns } from '#web/features/admin/monitoring-title-row';
 import { LibraryFilters, LibraryHead } from '#web/features/admin/monitoring-toolbar';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
@@ -83,10 +81,11 @@ function MonitoringList({ view, onView }: Readonly<ViewProps>) {
   const loading = data === null;
   const rows = useMemo(() => data ?? [], [data]);
   const shown = useMemo(() => filterLibrary(rows, filter), [rows, filter]);
-  const totals = useMemo(() => libraryTotals(rows), [rows]);
   const columns: RowColumns = {
     counts: breakpoint !== 'base',
     extras: breakpoint === 'lg' || breakpoint === 'tv',
+    airing:
+      (breakpoint === 'lg' || breakpoint === 'tv') && rows.some((row) => row.nextAirDate !== null),
   };
   const chosen = [...picked.values()];
   const pageCount = Math.max(1, Math.ceil(shown.length / PER_PAGE));
@@ -164,30 +163,7 @@ function MonitoringList({ view, onView }: Readonly<ViewProps>) {
         </PageHeader.Actions>
       </PageHeader.Root>
 
-      <Box mt={24} mb={20}>
-        <StatGrid>
-          <Stat
-            label={t('monitoring.statLibrary')}
-            value={totals.titles}
-            unit={t('monitoring.statTitles', { count: totals.titles })}
-            loading={loading}
-          />
-          <Stat
-            label={t('monitoring.colTracked')}
-            value={totals.monitored}
-            unit={t('monitoring.statTitles', { count: totals.monitored })}
-            loading={loading}
-          />
-          <Stat
-            label={t('monitoring.colMissing')}
-            value={totals.missing}
-            color={totals.missing > 0 ? 'accentText' : 'success'}
-            loading={loading}
-          />
-        </StatGrid>
-      </Box>
-
-      <Box gap={12} mb={16}>
+      <Box gap={12} mt={24} mb={16}>
         <LibraryFilters filter={filter} onChange={setFilter} />
         {selecting ? (
           <BulkBar

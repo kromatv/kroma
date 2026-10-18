@@ -1,17 +1,15 @@
 import type { MonitorBody, SearchNow } from '@kromatv/client/monitoring';
-import type { RequestKind, RequestLedgerView } from '@kromatv/client/requests';
+import type { RequestKind } from '@kromatv/client/requests';
 import { episodeTag } from '@kromatv/core';
 import type { MessageKey, Translate } from '@kromatv/i18n';
 import { ModuleSlot } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout, EmptyState, Section, Surface } from '@kromatv/ui/kit';
+import { Box, Button, Callout, Disclosure, EmptyState, Section, Surface } from '@kromatv/ui/kit';
 import { MonitoringDetailSkeleton } from '#web/features/admin/monitoring-detail-skeleton';
 import { MonitoringHero } from '#web/features/admin/monitoring-hero';
-import { filesOnDisk } from '#web/features/admin/monitoring-model';
 import { MonitoringNotice, useMonitoringNotice } from '#web/features/admin/monitoring-notice';
 import { SeasonList, useSeasonName } from '#web/features/admin/monitoring-seasons';
 import { MonitoringSettings } from '#web/features/admin/monitoring-settings';
-import { MonitoringStats } from '#web/features/admin/monitoring-stats';
 import { Denied, PageHeader, useAsyncAction, useCap } from '#web/features/admin/shell';
 import {
   type EpisodeUnit,
@@ -37,11 +35,6 @@ function searchSaid(t: Translate, search: SearchNow | null): string {
   if (!search.started) return t(REFUSED[search.reason ?? ''] ?? 'monitoring.searchRefused');
   if (search.units > 0) return t('monitoring.searchStartedCount', { count: search.units });
   return t('monitoring.searchStarted');
-}
-
-function onDiskOf(kind: RequestKind, ledger: RequestLedgerView | undefined): number {
-  if (!ledger) return 0;
-  return kind === 'show' ? filesOnDisk(ledger.seasons) : Number(ledger.onDisk);
 }
 
 export function MonitoringDetailPage({
@@ -141,16 +134,12 @@ function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId
           />
         ) : null}
 
-        {monitored ? (
-          <MonitoringStats kind={kind} monitored={monitored} onDisk={onDiskOf(kind, ledger.data)} />
-        ) : null}
-
-        <Section.Root>
-          <Section.Header>
-            <Section.Title>{t('monitoring.action')}</Section.Title>
-          </Section.Header>
-          <MonitoringSettings kind={kind} monitored={monitored} busy={busy} onMonitor={monitor} />
-        </Section.Root>
+        <Disclosure.Root>
+          <Disclosure.Trigger>{t('monitoring.settingsTitle')}</Disclosure.Trigger>
+          <Disclosure.Panel>
+            <MonitoringSettings kind={kind} monitored={monitored} busy={busy} onMonitor={monitor} />
+          </Disclosure.Panel>
+        </Disclosure.Root>
 
         {kind === 'show' && ledger.data ? (
           <Section.Root>

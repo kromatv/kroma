@@ -36,7 +36,7 @@ export function LibraryFilters({
         label={t('monitoring.colTitle')}
       >
         <SegmentGroup.Item value="all">
-          <SegmentGroup.Label>{t('monitoring.filter.all')}</SegmentGroup.Label>
+          <SegmentGroup.Label>{t('monitoring.filter.allKinds')}</SegmentGroup.Label>
         </SegmentGroup.Item>
         <SegmentGroup.Item value="movie">
           <SegmentGroup.Label>{t('monitoring.filter.movies')}</SegmentGroup.Label>
@@ -141,7 +141,7 @@ export function LibraryHead({
           <SortName filter={filter} sort="size" label={t('monitoring.colSize')} onPress={sortBy} />
         </Box>
       ) : null}
-      {columns.extras ? (
+      {columns.airing ? (
         <Box w={COLUMN.airing} shrink={0} align="flex-end">
           <Text variant="overline" color="textMuted" lines={1}>
             {t('monitoring.colNextAiring')}

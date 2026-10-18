@@ -19,13 +19,14 @@ export const COLUMN = {
   missing: 104,
   size: 84,
   airing: 110,
-  search: 84,
+  search: 92,
   follow: 60,
 } as const;
 
 export interface RowColumns {
   counts: boolean;
   extras: boolean;
+  airing: boolean;
 }
 
 const s = styles({
@@ -106,7 +107,7 @@ function Facts({ row, columns }: Readonly<{ row: LibraryTitle; columns: RowColum
       {columns.counts ? <HeldCell row={row} /> : null}
       {columns.counts ? <MissingCell row={row} /> : null}
       {columns.extras ? <SizeCell row={row} /> : null}
-      {columns.extras ? <AiringCell row={row} /> : null}
+      {columns.airing ? <AiringCell row={row} /> : null}
     </Row>
   );
 }

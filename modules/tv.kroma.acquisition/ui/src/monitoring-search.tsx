@@ -43,7 +43,7 @@ export function MonitoringSearch({
   };
 
   return (
-    <Row wrap gap={6} align="center">
+    <Row wrap={!compact} gap={6} align="center">
       {compact ? (
         <>
           <IconButton
@@ -69,6 +69,7 @@ export function MonitoringSearch({
         <>
           <Button
             size="sm"
+            variant="glass"
             icon="sparkles"
             label={t('acq.improveNow')}
             loading={searchNow.busy}

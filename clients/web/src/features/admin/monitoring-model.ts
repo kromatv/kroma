@@ -93,10 +93,6 @@ export function airStatusKey(status: string | null): MessageKey | null {
 
 type SeasonTally = Pick<LedgerSeason, 'season' | 'episodeCount' | 'requested' | 'onDisk'>;
 
-export function filesOnDisk(seasons: readonly Pick<LedgerSeason, 'onDisk'>[]): number {
-  return seasons.reduce((total, season) => total + season.onDisk, 0);
-}
-
 /** The season a reader wants open: the first with a gap, or the only one. */
 export function seasonToOpen(seasons: readonly SeasonTally[]): number | null {
   const gap = seasons.find((season) => season.requested > season.onDisk);
