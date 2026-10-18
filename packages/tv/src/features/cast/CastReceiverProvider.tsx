@@ -8,7 +8,7 @@ import { KromaEvents } from '@kromatv/client/events';
 import { beaconTxt, type LanDiscoveryBridge } from '@kromatv/core';
 import { useForeground, useT } from '@kromatv/ui';
 import { Avatar, toast } from '@kromatv/ui/kit';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useEnv } from '#tv/app/providers/env';
 import { useNav } from '#tv/app/router';
@@ -17,7 +17,7 @@ import { applyCastCommand } from '#tv/features/cast/applyCommand';
 import { CastPlaybackProvider, useCastBridge } from '#tv/features/cast/castBridge';
 import { castReceiverPrefStore } from '#tv/features/cast/castPref';
 import { CastControllersProvider, useCastControllerStore } from '#tv/features/cast/controllers';
-import { deviceId } from '#tv/shared/device';
+import { createDeviceIdentity, type DeviceIdentity } from '#tv/shared/device';
 
 const DRIFT_MS = 20_000;
 const FALLBACK_BEAT_MS = 10_000;
@@ -30,16 +30,20 @@ export function CastReceiverProvider({
   lan,
   name,
   children,
+  identity: suppliedIdentity,
 }: Readonly<{
   client: KromaClient | null;
   lan?: LanDiscoveryBridge;
   name: string;
   children: ReactNode;
+  identity?: DeviceIdentity;
 }>) {
+  const [ownedIdentity] = useState(createDeviceIdentity);
+  const identity = suppliedIdentity ?? ownedIdentity;
   return (
     <CastControllersProvider>
       <CastPlaybackProvider>
-        {client ? <CastReceiver client={client} lan={lan} name={name} /> : null}
+        {client ? <CastReceiver client={client} lan={lan} name={name} identity={identity} /> : null}
         {children}
       </CastPlaybackProvider>
     </CastControllersProvider>
@@ -50,7 +54,13 @@ function CastReceiver({
   client,
   lan,
   name,
-}: Readonly<{ client: KromaClient; lan?: LanDiscoveryBridge; name: string }>) {
+  identity: deviceId,
+}: Readonly<{
+  identity: DeviceIdentity;
+  client: KromaClient;
+  lan?: LanDiscoveryBridge;
+  name: string;
+}>) {
   const { setCastControllers, setCastUplink } = useCastControllerStore();
   const bridge = useCastBridge();
   const { castReport, onCastReportChange } = bridge;
@@ -93,7 +103,7 @@ function CastReceiver({
       // A platform that refuses to publish still casts through the server.
       return;
     }
-  }, [signedIn, castable, platform, lan, name]);
+  }, [signedIn, castable, platform, lan, name, deviceId]);
 
   useEffect(() => {
     if (!signedIn || castable === 'off' || !inFront) return;
@@ -225,6 +235,7 @@ function CastReceiver({
     setCastUplink,
     castReport,
     onCastReportChange,
+    deviceId,
   ]);
 
   return null;

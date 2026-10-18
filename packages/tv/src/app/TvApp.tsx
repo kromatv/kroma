@@ -55,6 +55,7 @@ import { TvShowDetail } from '#tv/features/catalog/TvShowDetail';
 import { TvPlayer } from '#tv/features/playback/playerChunk';
 import { TvReleases } from '#tv/features/releases/TvReleases';
 import { TvReport } from '#tv/features/reports/TvReport';
+import { createDeviceIdentity } from '#tv/shared/device';
 import type { DeepLinks } from '#tv/shared/preview';
 import { AUTH_BACKDROP } from '#tv/shared/ui';
 
@@ -122,6 +123,7 @@ export function TvApp({
     serverBrowse ?? undefined,
     deepLinks,
   );
+  const [identity] = useState(createDeviceIdentity);
   const [ownedSearchRequests] = useState(createSearchRequests);
   const searchRequests = suppliedSearchRequests ?? ownedSearchRequests;
   const name = useDeviceName(deviceName, platform);
@@ -159,10 +161,20 @@ export function TvApp({
                                   <WatchedProvider>
                                     {/* Above the router: a TV must be castable from its home
                             screen, not only from the player. */}
-                                    <CastReceiverProvider client={client} lan={lan} name={name}>
+                                    <CastReceiverProvider
+                                      client={client}
+                                      lan={lan}
+                                      name={name}
+                                      identity={identity}
+                                    >
                                       {/* Also above the router: the beacon has to be up on
                               whichever gate screen the TV is showing. */}
-                                      <HandoffBeaconProvider client={client} lan={lan} name={name}>
+                                      <HandoffBeaconProvider
+                                        client={client}
+                                        lan={lan}
+                                        name={name}
+                                        identity={identity}
+                                      >
                                         {/* A television cannot use React Native's <Modal>: its
                               view controller never receives a press from a remote
                               (see @kromatv/ui lib/overlay-host). */}

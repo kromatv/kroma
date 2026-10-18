@@ -7,7 +7,7 @@ const readDeviceValue = vi.hoisted(() => vi.fn((_key: string) => null as string 
 const writeDeviceValue = vi.hoisted(() => vi.fn((_key: string, _value: string) => {}));
 vi.mock('#tv/app/devicePref', () => ({ readDeviceValue, writeDeviceValue }));
 
-import { deviceId, resetDeviceIdCache } from './device';
+import { createDeviceIdentity } from './device';
 
 const KEY = 'kroma:cast-receiver-id';
 
@@ -23,7 +23,6 @@ beforeEach(() => {
   store.clear();
   vi.clearAllMocks();
   readDeviceValue.mockReturnValue(null);
-  resetDeviceIdCache();
 });
 
 afterEach(() => {
@@ -32,6 +31,7 @@ afterEach(() => {
 
 describe('the first launch', () => {
   it('mints an id and persists it', () => {
+    const deviceId = createDeviceIdentity();
     persisted();
     const id = deviceId();
     expect(id).toMatch(ACCEPTABLE);
@@ -39,6 +39,7 @@ describe('the first launch', () => {
   });
 
   it('mints something the server will accept', () => {
+    const deviceId = createDeviceIdentity();
     persisted();
     expect(deviceId()).toMatch(ACCEPTABLE);
   });
@@ -46,12 +47,14 @@ describe('the first launch', () => {
 
 describe('every launch after the first', () => {
   it('re-announces the SAME receiver', () => {
+    const deviceId = createDeviceIdentity();
     persisted();
     store.set(KEY, 'tv-abcdef-0-1234');
     expect(deviceId()).toBe('tv-abcdef-0-1234');
   });
 
   it('does not rewrite a value it did not change', () => {
+    const deviceId = createDeviceIdentity();
     persisted();
     store.set(KEY, 'tv-abcdef-0-1234');
     deviceId();
@@ -59,6 +62,7 @@ describe('every launch after the first', () => {
   });
 
   it('reads the device once and remembers', () => {
+    const deviceId = createDeviceIdentity();
     persisted();
     const first = deviceId();
     const second = deviceId();
@@ -80,6 +84,7 @@ describe('a stored value the server would reject', () => {
 
   for (const [why, value] of bad) {
     it(`re-mints rather than wedging on ${why}`, () => {
+      const deviceId = createDeviceIdentity();
       persisted();
       store.set(KEY, value);
       const id = deviceId();
@@ -90,41 +95,58 @@ describe('a stored value the server would reject', () => {
   }
 
   it('accepts the full range of characters the rule allows', () => {
+    const deviceId = createDeviceIdentity();
     persisted();
     store.set(KEY, 'A.z_0-9.receiver');
     expect(deviceId()).toBe('A.z_0-9.receiver');
   });
 
   it('accepts a value at each end of the length rule', () => {
+    const deviceId = createDeviceIdentity();
     persisted();
     store.set(KEY, 'abcdefgh');
     expect(deviceId()).toBe('abcdefgh');
 
-    resetDeviceIdCache();
     store.set(KEY, 'y'.repeat(64));
-    expect(deviceId()).toBe('y'.repeat(64));
+    expect(createDeviceIdentity()()).toBe('y'.repeat(64));
   });
 });
 
 describe('a device that cannot remember', () => {
   it('still answers with a usable id', () => {
+    const deviceId = createDeviceIdentity();
     expect(deviceId()).toMatch(ACCEPTABLE);
   });
 });
 
 describe('minting twice in the same millisecond', () => {
   it('still differs, because the clock alone is not enough', () => {
-    // Pin both sources of entropy the id does not control, leaving only the
-    // in-process counter to tell two ids apart.
     vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
-    vi.spyOn(Math, 'random').mockReturnValue(0.5);
 
     const ids = new Set<string>();
     for (let i = 0; i < 5; i++) {
-      resetDeviceIdCache();
-      ids.add(deviceId());
+      ids.add(createDeviceIdentity()());
     }
     expect(ids.size).toBe(5);
     for (const id of ids) expect(id).toMatch(ACCEPTABLE);
   });
+});
+
+it('keeps each root identity stable when a different device store is read', () => {
+  persisted();
+  const a = createDeviceIdentity();
+  const b = createDeviceIdentity();
+  store.set(KEY, 'device-A');
+  expect(a()).toBe('device-A');
+  store.set(KEY, 'device-B');
+  expect(b()).toBe('device-B');
+  expect(a()).toBe('device-A');
+});
+it('mints accepted identifiers where the platform has no crypto API', () => {
+  vi.stubGlobal('crypto', undefined);
+  try {
+    expect(createDeviceIdentity()()).toMatch(ACCEPTABLE);
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
