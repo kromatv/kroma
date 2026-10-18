@@ -1,24 +1,18 @@
 import { apiErrorText } from '@kromatv/client';
 import { type SlotProps, useAsyncAction, useT } from '@kromatv/module-sdk';
-import {
-  Button,
-  Callout,
-  CardSkeleton,
-  Section,
-  Text,
-  toast,
-  useBreakpoint,
-} from '@kromatv/ui/kit';
+import { Button, Callout, CardSkeleton, Section, toast } from '@kromatv/ui/kit';
 import { useAcquisitionApi } from './api';
-import { targetOf } from './quality-target';
+import { QualityGoalCard } from './quality-goal-card';
+import { goalOf } from './quality-target';
 import { TitleFilesTable } from './title-files-table';
 import { TitleProfilePicker } from './title-profile-picker';
-import { useQualityLabel } from './use-quality-label';
+import { UpgradeSearchButton } from './upgrade-search-button';
 import { useRules, useTitleRules } from './use-rules';
 
 export function MonitoringPanel({
   kind,
   tmdbId,
+  title: name,
   monitored,
 }: Readonly<SlotProps['monitoring.detail']>) {
   const t = useT();
@@ -26,10 +20,10 @@ export function MonitoringPanel({
   const rules = useRules();
   const acquisition = useAcquisitionApi();
   const profileAction = useAsyncAction();
-  const narrow = useBreakpoint() === 'base';
 
   const profile = rules.data?.profiles.find((one) => one.id === title.data?.profileId);
-  const below = (title.data?.files ?? []).filter((file) => file.belowTarget).length;
+  const goal = goalOf(profile, rules.data?.formats ?? []);
+  const files = title.data?.files ?? [];
 
   const pick = (profileId: string | null) =>
     profileAction.run(
@@ -41,25 +35,11 @@ export function MonitoringPanel({
       (e) => apiErrorText(e, t('requests.actionFailed')),
     );
 
-  const picker = title.data ? (
-    <TitleProfilePicker
-      view={title.data}
-      rules={rules.data}
-      busy={profileAction.busy}
-      onPick={pick}
-    />
-  ) : null;
-
   return (
     <Section.Root gap={14}>
       <Section.Header>
         <Section.Title>{t('acq.titleQuality')}</Section.Title>
-        {narrow ? null : <Section.Actions>{picker}</Section.Actions>}
       </Section.Header>
-
-      {narrow ? picker : null}
-
-      <TargetLine profile={profile} />
 
       {title.failed ? (
         <Callout.Root tone="danger">
@@ -83,6 +63,24 @@ export function MonitoringPanel({
         </Callout.Root>
       ) : null}
 
+      {title.data && goal ? (
+        <QualityGoalCard
+          goal={goal}
+          files={files}
+          picker={
+            <TitleProfilePicker
+              view={title.data}
+              rules={rules.data}
+              busy={profileAction.busy}
+              onPick={pick}
+            />
+          }
+          action={<UpgradeSearchButton kind={kind} tmdbId={tmdbId} title={name} files={files} />}
+        />
+      ) : null}
+
+      {title.loading || rules.loading ? <CardSkeleton fields={3} /> : null}
+
       {monitored ? null : (
         <Callout.Root tone="neutral" icon="radar-off">
           <Callout.Title>{t('acq.notFollowed')}</Callout.Title>
@@ -90,38 +88,7 @@ export function MonitoringPanel({
         </Callout.Root>
       )}
 
-      <BelowTargetNotice below={below} />
-
-      {title.loading ? <CardSkeleton fields={3} /> : null}
-
-      {title.data ? (
-        <TitleFilesTable kind={kind} files={title.data.files} profile={profile} />
-      ) : null}
+      {title.data ? <TitleFilesTable kind={kind} files={files} goal={goal} /> : null}
     </Section.Root>
-  );
-}
-
-function TargetLine({ profile }: Readonly<{ profile: Parameters<typeof targetOf>[0] }>) {
-  const t = useT();
-  const label = useQualityLabel();
-  const target = targetOf(profile);
-  if (!target) return null;
-  return (
-    <Text variant="meta" color="textDim">
-      {target.upgradeUntilScore === 0
-        ? t('acq.targetQuality', { cutoff: label(target.cutoff) })
-        : t('acq.targetLine', { cutoff: label(target.cutoff), score: target.upgradeUntilScore })}
-    </Text>
-  );
-}
-
-function BelowTargetNotice({ below }: Readonly<{ below: number }>) {
-  const t = useT();
-  if (below === 0) return null;
-  return (
-    <Callout.Root tone="accent" icon="alert-triangle">
-      <Callout.Title>{t('acq.belowTargetCount', { count: below })}</Callout.Title>
-      <Callout.Detail>{t('acq.belowTargetHint')}</Callout.Detail>
-    </Callout.Root>
   );
 }

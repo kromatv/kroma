@@ -139,7 +139,7 @@ function subject(
   if (season === null) return title;
   const unit =
     episode === null
-      ? t('requests.seasonNumber', { season })
+      ? t('acq.seasonNumber', { season })
       : `S${String(season).padStart(2, '0')}E${String(episode).padStart(2, '0')}`;
   return `${title} ${unit}`;
 }

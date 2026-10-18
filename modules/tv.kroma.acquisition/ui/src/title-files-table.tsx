@@ -1,28 +1,35 @@
 import type { RequestKind } from '@kromatv/client/requests';
 import { Table, type TableColumn, useT } from '@kromatv/module-sdk';
-import { Box, EmptyState, Row, Text, useBreakpoint } from '@kromatv/ui/kit';
-import { FormatPills, QualityPill, ScorePill } from './judgement-pills';
-import type { JudgedFile } from './judgement-schemas';
-import { belowReason, useBelowReasonText } from './quality-target';
-import { reasonKey } from './release-verdict';
-import type { QualityProfile } from './rules-schemas';
+import { Badge, type BadgeTone, Box, EmptyState, Row, Text, useBreakpoint } from '@kromatv/ui/kit';
+import { QualityPill } from './judgement-pills';
+import type { Evaluation, JudgedFile } from './judgement-schemas';
+import { type QualityGoal, shortfallsOf } from './quality-target';
+import { useShortfallText } from './use-goal-text';
 
 const SHOW_COLUMNS: TableColumn[] = [
-  { min: 200 },
-  { width: 110, from: 'md' },
-  { width: 124 },
-  { width: 70 },
+  { min: 160 },
+  { width: 100, from: 'md' },
+  { width: 210, from: 'md' },
+  { min: 150 },
 ];
-const MOVIE_COLUMNS: TableColumn[] = [{ min: 200 }, { width: 124 }, { width: 70 }];
+const MOVIE_COLUMNS: TableColumn[] = [{ min: 160 }, { width: 210, from: 'md' }, { min: 150 }];
+
+type FileVerdict = 'reached' | 'below' | 'kept';
+
+const VERDICT_TONE: Record<FileVerdict, BadgeTone> = {
+  reached: 'success',
+  below: 'warning',
+  kept: 'neutral',
+};
 
 export function TitleFilesTable({
   kind,
   files,
-  profile,
+  goal,
 }: Readonly<{
   kind: RequestKind;
   files: readonly JudgedFile[];
-  profile: QualityProfile | undefined;
+  goal: QualityGoal | null;
 }>) {
   const t = useT();
   if (files.length === 0) {
@@ -39,11 +46,11 @@ export function TitleFilesTable({
       <Table.Header>
         <Table.Column>{t('acq.colFile')}</Table.Column>
         {show ? <Table.Column>{t('requests.colEpisode')}</Table.Column> : null}
-        <Table.Column>{t('acq.colQuality')}</Table.Column>
-        <Table.Column>{t('requests.colScore')}</Table.Column>
+        <Table.Column>{t('acq.colHas')}</Table.Column>
+        <Table.Column>{t('requests.colState')}</Table.Column>
       </Table.Header>
       {files.map((file) => (
-        <FileRow key={file.fileId} file={file} show={show} profile={profile} />
+        <FileRow key={file.fileId} file={file} show={show} goal={goal} />
       ))}
     </Table.Root>
   );
@@ -52,44 +59,32 @@ export function TitleFilesTable({
 function FileRow({
   file,
   show,
-  profile,
-}: Readonly<{ file: JudgedFile; show: boolean; profile: QualityProfile | undefined }>) {
-  const t = useT();
-  const reasonText = useBelowReasonText();
+  goal,
+}: Readonly<{ file: JudgedFile; show: boolean; goal: QualityGoal | null }>) {
   const unit = unitLabel(file);
-  const allowed = file.evaluation.qualityRank != null;
   const narrow = useBreakpoint() === 'base';
-  const why = file.belowTarget ? reasonText(belowReason(profile, file.evaluation)) : null;
   return (
     <Table.Row>
       <Table.Cell>
-        <Box minW={0} gap={2}>
+        <Box minW={0} gap={4}>
           <Text variant="meta" lines={1}>
             {fileName(file)}
           </Text>
-          <Row wrap gapX={10} align="center">
-            {narrow && unit ? (
-              <Text variant="meta" color="info">
-                {unit}
-              </Text>
-            ) : null}
-            {why ? (
-              <Text variant="meta" color="accentText">
-                {why}
-              </Text>
-            ) : null}
-            {allowed ? null : (
-              <Text variant="meta" color="dangerHover">
-                {t(reasonKey('notAllowed'))}
-              </Text>
-            )}
-            {file.release ? (
-              <Text variant="meta" color="textDim" lines={1}>
-                {file.release}
-              </Text>
-            ) : null}
-          </Row>
-          <FormatPills formats={file.evaluation.formats} />
+          {file.release ? (
+            <Text variant="meta" color="textDim" lines={1}>
+              {file.release}
+            </Text>
+          ) : null}
+          {narrow ? (
+            <Row wrap gap={6} align="center">
+              {unit ? (
+                <Text variant="meta" color="info">
+                  {unit}
+                </Text>
+              ) : null}
+              <Holding evaluation={file.evaluation} />
+            </Row>
+          ) : null}
         </Box>
       </Table.Cell>
       {show ? (
@@ -100,13 +95,64 @@ function FileRow({
         </Table.Cell>
       ) : null}
       <Table.Cell>
-        <QualityPill quality={file.evaluation.quality} allowed={allowed} />
+        <Holding evaluation={file.evaluation} />
       </Table.Cell>
       <Table.Cell>
-        <ScorePill score={file.evaluation.formatScore} />
+        <Verdict file={file} goal={goal} />
       </Table.Cell>
     </Table.Row>
   );
+}
+
+function Holding({ evaluation }: Readonly<{ evaluation: Evaluation }>) {
+  const formats = evaluation.formats.filter((format) => format.score !== 0);
+  return (
+    <Row wrap gap={6} align="center">
+      <QualityPill quality={evaluation.quality} allowed={evaluation.qualityRank != null} />
+      {formats.map((format) => (
+        <Row
+          key={format.id}
+          radius="pill"
+          bg={format.score > 0 ? 'tint/8' : 'danger/10'}
+          px={8}
+          py={2}
+        >
+          <Text variant="meta" color={format.score > 0 ? 'text' : 'dangerHover'} lines={1}>
+            {format.name}
+          </Text>
+        </Row>
+      ))}
+    </Row>
+  );
+}
+
+function Verdict({ file, goal }: Readonly<{ file: JudgedFile; goal: QualityGoal | null }>) {
+  const t = useT();
+  const shortfallText = useShortfallText();
+  const narrow = useBreakpoint() === 'base';
+  const verdict = verdictOf(file, goal);
+  const reasons =
+    verdict === 'below' && goal?.kind === 'target'
+      ? shortfallsOf(goal, file.evaluation).map((reason) => shortfallText(reason, goal))
+      : [];
+  const lines = narrow ? reasons : [reasons.join(' · ')];
+  return (
+    <Row wrap gapX={10} gapY={4} align="center" minW={0}>
+      <Badge tone={VERDICT_TONE[verdict]}>{t(`acq.verdict.${verdict}`)}</Badge>
+      {reasons.length > 0
+        ? lines.map((line) => (
+            <Text key={line} variant="meta" color="textMuted">
+              {line}
+            </Text>
+          ))
+        : null}
+    </Row>
+  );
+}
+
+function verdictOf(file: JudgedFile, goal: QualityGoal | null): FileVerdict {
+  if (goal?.kind === 'keep') return 'kept';
+  return file.belowTarget ? 'below' : 'reached';
 }
 
 function fileName(file: JudgedFile): string {

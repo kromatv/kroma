@@ -17,11 +17,11 @@ export function TitleProfilePicker({
 }>) {
   const t = useT();
   return (
-    <Row gap={10} align="center">
+    <Row gap={10} align="center" w={{ base: '100%', md: 'auto' }}>
       <Text variant="meta" color="textMuted" shrink={0}>
         {t('acq.colProfile')}
       </Text>
-      <Box w={{ base: '100%', md: 240 }}>
+      <Box grow={{ base: 1, md: 0 }} w={{ base: 'auto', md: 240 }}>
         <Select.Root
           label={t('acq.colProfile')}
           value={view.customProfile ? view.profileId : NOT_LISTED}
