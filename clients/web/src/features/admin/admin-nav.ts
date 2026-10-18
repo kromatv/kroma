@@ -2,7 +2,6 @@ import type { Permission } from '@kromatv/client/accounts';
 import type { MessageKey } from '@kromatv/i18n';
 import type { ModuleNav } from '@kromatv/module-sdk';
 import {
-  IconAlertTriangle,
   IconApps,
   IconArchive,
   IconBell,
@@ -100,12 +99,6 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         labelKey: 'admin.navMonitoring',
         cap: 'library.manage',
         icon: IconEye,
-      },
-      {
-        to: '/missing',
-        labelKey: 'requests.missingTitle',
-        cap: 'library.manage',
-        icon: IconAlertTriangle,
       },
       {
         to: '/admin/requests',

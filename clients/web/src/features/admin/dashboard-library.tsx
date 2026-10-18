@@ -18,7 +18,7 @@ export function MissingCallout() {
       <Callout.Detail>{t('monitoring.acrossTitles', { count: titleCount })}</Callout.Detail>
       <Callout.Actions>
         <Button variant="glass" size="sm" label={t('requests.missingSee')} asChild>
-          <RouteLink to="/missing" />
+          <RouteLink to="/admin/monitoring" search={{ view: 'missing' }} />
         </Button>
       </Callout.Actions>
     </Callout.Root>

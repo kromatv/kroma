@@ -164,7 +164,7 @@
   "monitoring.statTitles": "titles",
   "monitoring.statTitles_one": "title",
   "monitoring.subtitle": "Every movie and show, and what the server keeps complete.",
-  "monitoring.title": "Monitored titles",
+  "monitoring.title": "Library",
   "monitoring.toastEpisodeOff": "{tag} is no longer followed",
   "monitoring.toastEpisodeOn": "{tag} is followed",
   "monitoring.toastFollowed": "is monitored",

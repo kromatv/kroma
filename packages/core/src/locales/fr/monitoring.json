@@ -165,7 +165,7 @@
   "monitoring.statTitles": "titres",
   "monitoring.statTitles_one": "titre",
   "monitoring.subtitle": "Tous les films et séries, et ce que le serveur garde complet.",
-  "monitoring.title": "Titres suivis",
+  "monitoring.title": "Bibliothèque",
   "monitoring.toastEpisodeOff": "{tag} n'est plus suivi",
   "monitoring.toastEpisodeOn": "{tag} est suivi",
   "monitoring.toastFollowed": "est suivi",

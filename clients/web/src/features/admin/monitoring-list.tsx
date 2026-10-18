@@ -17,6 +17,7 @@ import { BulkBar } from '#web/features/admin/monitoring-bulk';
 import {
   filterLibrary,
   type LibraryFilter,
+  type LibraryState,
   libraryTotals,
   titleKey,
 } from '#web/features/admin/monitoring-index-model';
@@ -32,27 +33,36 @@ import { TableSkeleton } from '#web/shared/ui';
 
 const PER_PAGE = 50;
 
-const FRESH: LibraryFilter = {
+const FRESH: Omit<LibraryFilter, 'state'> = {
   kind: 'all',
-  state: 'all',
   needle: '',
   sort: 'title',
   descending: false,
 };
 
-export function MonitoringListPage() {
-  if (!useCap('library.manage')) return <Denied />;
-  return <MonitoringList />;
+interface ViewProps {
+  view: LibraryState;
+  onView: (view: LibraryState) => void;
 }
 
-function MonitoringList() {
+export function MonitoringListPage(props: Readonly<ViewProps>) {
+  if (!useCap('library.manage')) return <Denied />;
+  return <MonitoringList {...props} />;
+}
+
+function MonitoringList({ view, onView }: Readonly<ViewProps>) {
   const t = useT();
   const { client } = useAuth();
   const { notice, on, say } = useMonitoringNotice();
   const { data, reload } = useLibraryIndex();
   const breakpoint = useBreakpoint();
 
-  const [filter, setFilter] = useState<LibraryFilter>(FRESH);
+  const [rest, setRest] = useState(FRESH);
+  const filter = useMemo<LibraryFilter>(() => ({ ...rest, state: view }), [rest, view]);
+  const setFilter = ({ state, ...next }: LibraryFilter) => {
+    if (state !== view) onView(state);
+    setRest(next);
+  };
   const [adding, setAdding] = useState(false);
   const [picked, setPicked] = useState<ReadonlyMap<string, LibraryTitle>>(() => new Map());
   const [selecting, setSelecting] = useState(false);

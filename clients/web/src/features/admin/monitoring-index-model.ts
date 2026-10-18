@@ -1,8 +1,15 @@
 import type { LibraryTitle } from '@kromatv/client/monitoring';
 import type { RequestKind } from '@kromatv/client/requests';
+import { z } from 'zod';
 
 export type LibraryKind = RequestKind | 'all';
-export type LibraryState = 'all' | 'monitored' | 'unmonitored' | 'missing' | 'continuing';
+
+/** The view the index opens on, read from the page's `view` search param:
+ *  anything unknown falls back to every title. */
+export const LibraryState = z
+  .enum(['all', 'monitored', 'unmonitored', 'missing', 'continuing'])
+  .catch('all');
+export type LibraryState = z.infer<typeof LibraryState>;
 export type LibrarySort = 'title' | 'year' | 'missing' | 'size' | 'added';
 
 export interface LibraryFilter {

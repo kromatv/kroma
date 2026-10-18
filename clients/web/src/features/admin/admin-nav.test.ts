@@ -72,14 +72,10 @@ describe('the console pages', () => {
     expect(new Set(sections).size).toBe(sections.length);
   });
 
-  it('gathers what the library follows, what it misses and what was asked for', () => {
+  it('gathers the library and what was asked for', () => {
     const group = NAV_GROUPS.find((g) => g.labelKey === 'admin.groupLibrary');
 
-    expect(group?.items.map((item) => item.to)).toEqual([
-      '/admin/monitoring',
-      '/missing',
-      '/admin/requests',
-    ]);
+    expect(group?.items.map((item) => item.to)).toEqual(['/admin/monitoring', '/admin/requests']);
   });
 
   it('keeps the watch history beside the dashboard, behind the users permission', () => {
