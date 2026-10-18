@@ -1,10 +1,3 @@
-import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
-// The request page's side panel and moderation chrome: who asked, what for, the
-// approve/deny/delete controls and the deny note. Pure presentation, so the page
-// itself stays data + layout.
-
-import type { MediaRequest } from '@kromatv/client/requests';
-import { useT } from '@kromatv/ui';
 import {
   Avatar,
   Box,
@@ -17,7 +10,16 @@ import {
   Skeleton,
   Surface,
   Text,
+  useStyleScope,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// The request page's side panel and moderation chrome: who asked, what for, the
+// approve/deny/delete controls and the deny note. Pure presentation, so the page
+// itself stays data + layout.
+
+import type { MediaRequest } from '@kromatv/client/requests';
+import { useT } from '@kromatv/ui';
+
 import { Pill } from '#web/features/admin/pill';
 import { kindMeta } from '#web/features/admin/pipeline-meta';
 import { posterScrim } from '#web/shared/lib/art-styles';

@@ -1,4 +1,4 @@
-import { useSv } from '#ui/core';
+import { sv, useSv, type Variant } from '#ui/core';
 import { typeSpec as textRoles } from '#ui/core/tokens';
 // <Badge>: the small quality / status pill (4K, HDR, H.265, FR, Disponible).
 // Text only, never emoji.
@@ -6,7 +6,6 @@ import { typeSpec as textRoles } from '#ui/core/tokens';
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { sv, type Variant } from '#ui/core';
 
 type BadgeTone = Variant<typeof badgeVariants, 'tone'>;
 

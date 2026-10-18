@@ -164,6 +164,8 @@ export function useHeartbeat(
     // THIS session's id, so the phone halts within a beat rather than at the
     // next ping.
     const events = new KromaEvents(client.baseUrl, {
+      token: () => client.sessionToken,
+      refresh: () => client.refreshSession(),
       onEvent: (e) => {
         if (e.type === 'playback.terminate' && e.sessionId === live.id) {
           fireTerminated(e.message);

@@ -1,4 +1,20 @@
-import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import {
+  activeTheme,
+  Box,
+  backdropBlur,
+  CheckboxFace,
+  color,
+  Focusable,
+  IconButton,
+  styles,
+  sv,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+  WatchedBadge,
+} from '@kromatv/ui/kit';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 // One line of a season: an owned, playable episode, or a gap the viewer can
 // request. The whole row is the control, so the trailing report / watched
@@ -13,22 +29,10 @@ import {
   sentenceCase,
 } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
-import {
-  Box,
-  backdropBlur,
-  CheckboxFace,
-  color,
-  Focusable,
-  IconButton,
-  styles,
-  sv,
-  Text,
-  useStyles,
-  WatchedBadge,
-} from '@kromatv/ui/kit';
+
 import { IconPlayerPlayFilled } from '@tabler/icons-react';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
-import { kromaClient } from '#web/shared/lib/api';
+
 import { wash } from '#web/shared/lib/art-styles';
 import type { SeasonGap } from '#web/shared/lib/titleView';
 import { Image } from '#web/shared/ui';
@@ -76,6 +80,8 @@ export function EpisodeRow({
   onPlay: () => void;
   onToggleWatched: () => void;
 }>) {
+  const webRuntime = useWebRuntime();
+
   const scope = useStyleScope();
   useThemeVersion();
 
@@ -85,7 +91,7 @@ export function EpisodeRow({
   const [g1, g2] = posterColors(episode.id);
   const runtime = formatRuntime(episode.durationMs);
   const synopsis = episode.metadata?.overview;
-  const still = kromaClient().media.artwork.backdropFor(episode);
+  const still = webRuntime.client.media.artwork.backdropFor(episode);
   const num =
     episode.season != null && episode.episode != null
       ? `S${String(episode.season).padStart(2, '0')}E${String(episode.episode).padStart(2, '0')} · `
@@ -277,9 +283,11 @@ function MissingText({
 }
 
 function MissingStill({ episode, still }: Readonly<{ episode: number; still: string | null }>) {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
-  const src = kromaClient().media.artwork.resolve(still);
+  const src = webRuntime.client.media.artwork.resolve(still);
   return (
     <Box w={STILL_W} aspect={16 / 9} shrink={0} center overflow="hidden" radius="md" bg="white/4">
       {src ? (

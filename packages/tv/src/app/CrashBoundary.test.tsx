@@ -6,7 +6,10 @@ import { cleanup, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CrashBoundary } from '#tv/app/CrashBoundary';
-import { crashReportingPrefStore } from '#tv/app/crashReportingPref';
+import { createDevicePreferences, DevicePreferencesProvider } from '#tv/app/device-preferences';
+
+const preferences = createDevicePreferences();
+const crashReportingPrefStore = preferences.crashReporting;
 
 function Boom(): ReactNode {
   throw new Error('kaboom');
@@ -19,17 +22,19 @@ function crashClient() {
 
 function mount(client: KromaClient | null) {
   return render(
-    <CrashBoundary
-      client={client}
-      platform="Android TV"
-      fallback={(retry) => (
-        <button type="button" onClick={retry}>
-          fallback shown
-        </button>
-      )}
-    >
-      <Boom />
-    </CrashBoundary>,
+    <DevicePreferencesProvider value={preferences}>
+      <CrashBoundary
+        client={client}
+        platform="Android TV"
+        fallback={(retry) => (
+          <button type="button" onClick={retry}>
+            fallback shown
+          </button>
+        )}
+      >
+        <Boom />
+      </CrashBoundary>
+    </DevicePreferencesProvider>,
   );
 }
 

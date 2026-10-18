@@ -1,4 +1,17 @@
-import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import {
+  activeTheme,
+  Box,
+  Button,
+  classes,
+  color,
+  Spinner,
+  styles,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 // Per-element "Traitements" panel (admin-only): the status of every processing
 // treatment applied to this film/episode/show (probe, TMDB, storyboard previews,
@@ -11,7 +24,7 @@ import { ItemId, ShowId } from '@kromatv/client/media';
 import type { Treatment } from '@kromatv/client/pipeline';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Box, Button, classes, color, Spinner, styles, Text, useStyles } from '@kromatv/ui/kit';
+
 import {
   IconAlertTriangleFilled,
   IconCircle,
@@ -22,7 +35,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { RematchDialog } from '#web/features/catalog/rematch-dialog';
-import { kromaClient } from '#web/shared/lib/api';
+
 import { useAuth } from '#web/shared/lib/auth';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal';
 
@@ -46,6 +59,8 @@ export function TreatmentsPanel({
   id,
   title,
 }: Readonly<{ kind: Kind; id: string; title: string }>) {
+  const webRuntime = useWebRuntime();
+
   const scope = useStyleScope();
   useThemeVersion();
 
@@ -63,7 +78,7 @@ export function TreatmentsPanel({
   const { data: treatments = null } = useQuery({
     queryKey,
     queryFn: async (): Promise<Treatment[]> => {
-      const c = kromaClient();
+      const c = webRuntime.client;
       const r = await (kind === 'show' ? c.pipeline.show(subjectId) : c.pipeline.item(subjectId));
       return r.treatments;
     },

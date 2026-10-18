@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
 // The ends of the rail: the fade signalling more content, plus the pointer's
 // paging control. A CSS mask over the row would fade to whatever is behind it,
@@ -10,7 +10,7 @@ import { Animated, Pressable, type ViewStyle } from 'react-native';
 import { Icon } from '#ui/components/atoms/icon';
 import { FOCUS_BLEED } from '#ui/components/organisms/virtual/clip';
 import { EASE_NATIVE, FADE, SETTLE_MS } from '#ui/components/organisms/virtual/strip-motion';
-import { sharedStyle, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { SHADE, shade } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';

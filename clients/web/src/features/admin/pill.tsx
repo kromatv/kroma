@@ -1,19 +1,22 @@
-import { activeTheme, type StyleScope, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
-// The small toned pill an admin row wears: a kind, a status, a role. Not the
-// kit's <Badge>, whose tones are the palette's own semantic steps; these carry a
-// hue the page already holds (a pipeline stage, a report category).
-
 import {
+  activeTheme,
   Box,
   type ColorValue,
   color,
   Row,
+  type StyleScope,
   sharedStyle,
   styles,
   Text,
   type TypeRole,
+  useStyleScope,
   useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// The small toned pill an admin row wears: a kind, a status, a role. Not the
+// kit's <Badge>, whose tones are the palette's own semantic steps; these carry a
+// hue the page already holds (a pipeline stage, a report category).
+
 import type { ReactNode } from 'react';
 
 const PAD: Partial<Record<TypeRole, { px: number; py: number }>> = {

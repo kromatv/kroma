@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // "Reprendre la lecture" rail. Unlike the catalogue rails (SSR-loaded, public),
 // this is per-user so it loads client-side once a session is hydrated, then
 // renders resumable items with a progress bar straight to the player.
@@ -8,7 +9,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { SectionHeading } from '#web/features/catalog/cards';
 import { useAuth } from '#web/shared/lib/auth';
-import { userQueries } from '#web/shared/lib/queries';
+
 import { Poster, PosterRail, RailSkeleton } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
 
@@ -25,9 +26,11 @@ export function ContinueRow() {
 }
 
 function ContinueRail() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const { client } = useAuth();
-  const { data: items } = useSuspenseQuery(userQueries.continueWatching());
+  const { data: items } = useSuspenseQuery(webRuntime.queries.userQueries.continueWatching());
 
   if (items.length === 0) return null;
 

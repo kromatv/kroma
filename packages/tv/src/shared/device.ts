@@ -6,7 +6,7 @@
 // announced it, and a handoff beacon only ever reveals it on its own subnet.
 // Must be unique; `DeviceId` carries the shape rule the server enforces.
 
-import { DeviceId } from '@kromatv/client';
+import { DeviceId, type SessionStorage } from '@kromatv/client';
 import { readDeviceValue, writeDeviceValue } from '#tv/app/devicePref';
 
 // Named for the cast roster, which is where a device id was first needed. Kept
@@ -27,14 +27,14 @@ function mint(): DeviceId {
 }
 
 /** One root's stable identity, read lazily after its device storage is ready. */
-export function createDeviceIdentity() {
+export function createDeviceIdentity(storage?: SessionStorage | null) {
   let cached: DeviceId | null = null;
   return function deviceId(): DeviceId {
     if (cached) return cached;
-    const stored = readDeviceValue(KEY);
+    const stored = readDeviceValue(KEY, storage);
     const kept = DeviceId.safeParse(stored);
     const id = kept.success ? kept.data : mint();
-    if (id !== stored) writeDeviceValue(KEY, id);
+    if (id !== stored) writeDeviceValue(KEY, id, storage);
     cached = id;
     return id;
   };

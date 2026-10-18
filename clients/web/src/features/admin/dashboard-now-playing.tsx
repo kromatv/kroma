@@ -23,10 +23,11 @@ import {
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { PillDot } from '#web/features/admin/pill';
-import { apiBase, kromaClient } from '#web/shared/lib/api';
+import { apiBase } from '#web/shared/lib/api';
 import { posterScrim } from '#web/shared/lib/art-styles';
 import { useAuth } from '#web/shared/lib/auth';
 import { useStoryboard } from '#web/shared/lib/use-storyboard';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { Image } from '#web/shared/ui';
 
 const THUMB_W = 132;
@@ -34,6 +35,8 @@ const THUMB_W = 132;
 // The current storyboard frame when the sheet is ready, else the item poster,
 // else a title-seeded gradient.
 function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
+  const webRuntime = useWebRuntime();
+
   const scope = useStyleScope();
   useThemeVersion();
 
@@ -42,7 +45,7 @@ function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
   const story = useStoryboard(s.itemId, { generate: false });
   const [posterFailed, setPosterFailed] = useState(false);
   const frame = story.tile(s.positionMs / 1000, THUMB_W);
-  const poster = kromaClient().media.artwork.posterUrl(s.itemId);
+  const poster = webRuntime.client.media.artwork.posterUrl(s.itemId);
 
   return (
     <Box w={THUMB_W} aspect={16 / 9} shrink={0} self="flex-start" radius="xs" overflow="hidden">

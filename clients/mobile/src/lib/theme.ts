@@ -1,12 +1,3 @@
-import type { StyleScope } from '@kromatv/ui/kit';
-// The mobile app's design vocabulary, sourced entirely from @kromatv/ui: this
-// file only maps the design system's tokens onto the names the mobile screens
-// already use, so a colour never drifts between phone, TV and web.
-//
-// One rename to know: this app's `textDim`/`textFaint` are the design
-// system's `textMuted`/`textDim` swapped; the mapping below keeps the app's
-// names but takes the system's values.
-
 import {
   activeTheme,
   createTheme,
@@ -17,9 +8,18 @@ import {
   mobileType,
   mobileTypeSpec,
   onPaper,
+  type StyleScope,
   type Theme,
   type ThemeOverrides,
 } from '@kromatv/ui/kit';
+
+// The mobile app's design vocabulary, sourced entirely from @kromatv/ui: this
+// file only maps the design system's tokens onto the names the mobile screens
+// already use, so a colour never drifts between phone, TV and web.
+//
+// One rename to know: this app's `textDim`/`textFaint` are the design
+// system's `textMuted`/`textDim` swapped; the mapping below keeps the app's
+// names but takes the system's values.
 
 const FORM_FACTOR: ThemeOverrides = {
   typeSpec: { body: mobileTypeSpec.body, title: mobileTypeSpec.title },

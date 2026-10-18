@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { TextStyle, ViewStyle } from 'react-native';
 import { z } from 'zod';
-import type { ColorValue } from '#ui/core';
-import { type StyleScope, sharedStyle } from '#ui/core';
+import { type ColorValue, type StyleScope, sharedStyle } from '#ui/core';
+
 import { DEFAULT_STYLE_SCOPE } from '#ui/core/style-scope';
 import { radius as cornerRadius } from '#ui/core/tokens';
 import { type DeviceStore, useDeviceStore } from '#ui/lib/device-store';

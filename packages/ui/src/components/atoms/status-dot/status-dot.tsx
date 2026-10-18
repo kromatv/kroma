@@ -1,9 +1,15 @@
-import { useStyleScope } from '#ui/core';
+import {
+  activeTheme,
+  type ColorValue,
+  color,
+  type StyleScope,
+  sharedStyle,
+  useStyleScope,
+} from '#ui/core';
 // Reachability dot: green up, red down, grey while the first probe is in flight.
 // The third state matters: "not known yet" must not look like "down".
 
 import { Box } from '#ui/components/atoms/box';
-import { activeTheme, type ColorValue, color, type StyleScope, sharedStyle } from '#ui/core';
 
 /** What one status reads as: the dot's fill and its optional halo. */
 interface Look {

@@ -23,17 +23,19 @@ import {
   type NotificationFilter,
   unreadView,
 } from '#web/features/notifications/use-notifications';
-import { userQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 /** The drawer's scrolling half: day headings, and the rows folded under them. */
 export function PanelBody({
   filter,
   onNavigate,
 }: Readonly<{ filter: NotificationFilter; onNavigate: () => void }>) {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const { data, isPending } = useQuery(userQueries.notifications());
+  const { data, isPending } = useQuery(webRuntime.queries.userQueries.notifications());
   // Held across renders on purpose: the set is what keeps a row the reader just
   // marked read from vanishing before they can undo it, and an effect would
   // only decide that a frame after it had already gone.

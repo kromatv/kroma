@@ -16,8 +16,7 @@
  * dependency, and it is not on npm at all.
  */
 
-import type { Beacon } from '@kromatv/mdns-beacon';
-import { publish } from '@kromatv/mdns-beacon';
+import { type Beacon, publish } from '@kromatv/mdns-beacon';
 
 import Service from 'webos-service';
 import { z } from 'zod';

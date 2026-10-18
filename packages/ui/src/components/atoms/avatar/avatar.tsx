@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type CornerValue, type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
 // <Avatar>: the profile / cast disc. A photo when there is one, otherwise a
 // deterministic gradient with the person's initials, so a profile is never a
 // blank circle and always keeps the same colour everywhere it appears.
@@ -8,7 +8,6 @@ import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
-import { type CornerValue, sharedStyle } from '#ui/core';
 
 const AVATAR_GRADIENTS = [
   'linear-gradient(135deg, #F4B642, #E8743B)',

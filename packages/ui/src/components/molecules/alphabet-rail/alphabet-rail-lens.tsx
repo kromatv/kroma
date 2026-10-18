@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
 // The amber lens covering the stretch of letters on screen, and the bubble a
 // scrubbing finger drags with it. Both belong to the Root: the lens is one box
@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { sharedStyle, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { ease } from '#ui/lib/ease';
 import { WEB } from '#ui/lib/platform';

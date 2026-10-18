@@ -1,4 +1,4 @@
-import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import { IconButton, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // The sign-in gate's corner gear, the phone's answer to the TV's "Paramètres"
 // chip and the web gate's corner panel: the few things that have to be
 // reachable BEFORE anyone can sign in.
@@ -8,7 +8,7 @@ import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // and a viewer who cannot read the sign-in screen cannot get to one.
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { IconButton } from '@kromatv/ui/kit';
+
 import { useRef } from 'react';
 import { useI18n, useT } from '#mobile/lib/i18n';
 import { LocalePicker } from './LocalePicker';

@@ -1,11 +1,23 @@
-import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import {
+  activeTheme,
+  Box,
+  classes,
+  color,
+  Focusable,
+  styles,
+  sv,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 
 // The card that stands in for a season the library does not fully hold: press it
 // to request the gap. The whole card is the control, so its trailing badge is a
 // face rather than a second stop.
 
 import { useT } from '@kromatv/ui';
-import { Box, classes, color, Focusable, styles, sv, Text, useStyles } from '@kromatv/ui/kit';
+
 import { IconPlus } from '@tabler/icons-react';
 import type { TitleSeason } from '#web/shared/lib/titleView';
 import { page } from '#web/shared/ui';

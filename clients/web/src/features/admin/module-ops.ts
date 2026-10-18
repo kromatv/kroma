@@ -1,3 +1,5 @@
+import type { KromaClient } from '@kromatv/client';
+import { useKromaClient, useWebRuntime } from '#web/shared/lib/web-runtime';
 // Live `module.op.*` state: the store's install / update / uninstall progress
 // frames folded into a map the UI renders as per-module progress bars. The
 // fold is a pure reducer so it is testable without a socket. One admin root
@@ -18,8 +20,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { message, restartModule } from '#web/features/admin/module-api';
-import { apiBase } from '#web/shared/lib/api';
+import { message } from '#web/features/admin/module-api';
 
 export type OpPhase = 'wait' | 'download' | 'install' | 'done';
 
@@ -137,7 +138,7 @@ const emptySnapshot = () => EMPTY_OPS;
 const noSubscription = () => () => {};
 
 /** One admin root owns its operation history and lazy socket connection. */
-export function createStoreOps(baseUrl: string) {
+export function createStoreOps(baseUrl: string, client?: KromaClient) {
   let ops: Record<string, StoreOp> = EMPTY_OPS;
   const listeners = new Set<() => void>();
   let socket: KromaEvents<ServerEvent | StoreOpEvent> | null = null;
@@ -146,6 +147,8 @@ export function createStoreOps(baseUrl: string) {
     listeners.add(listener);
     if (!socket) {
       socket = new KromaEvents<ServerEvent | StoreOpEvent>(baseUrl, {
+        token: () => client?.sessionToken,
+        refresh: () => client?.refreshSession() ?? Promise.resolve(undefined),
         onEvent: (e) => {
           if (!e.type.startsWith('module.op.')) return;
           ops = foldOpEvent(ops, e as StoreOpEvent);
@@ -177,7 +180,8 @@ export function createStoreOps(baseUrl: string) {
 const Context = createContext<ReturnType<typeof createStoreOps> | null>(null);
 
 export function StoreOpsProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const [store] = useState(() => createStoreOps(apiBase()));
+  const client = useKromaClient();
+  const [store] = useState(() => createStoreOps(client.baseUrl, client));
   useEffect(() => () => store.dispose(), [store]);
   return createElement(Context.Provider, { value: store }, children);
 }
@@ -219,6 +223,8 @@ export interface ModuleRestart {
  * answered; `onDone` fires after every attempt, so the caller can re-read the
  * module's running state either way. */
 export function useModuleRestart(id: string, onDone?: () => void): ModuleRestart {
+  const webRuntime = useWebRuntime();
+
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -227,7 +233,7 @@ export function useModuleRestart(id: string, onDone?: () => void): ModuleRestart
     setDone(false);
     setError(null);
     try {
-      const res = await restartModule(id);
+      const res = await webRuntime.moduleApi.restartModule(id);
       setDone(res.running);
     } catch (e) {
       setError(message(e));

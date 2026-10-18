@@ -1,8 +1,7 @@
-import { createInputTestHost } from '@kromatv/ui/testing';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import type { ReactElement } from 'react';
 // @vitest-environment jsdom
 
-import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid';

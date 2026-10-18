@@ -1,4 +1,4 @@
-import { useStyleScope } from '#ui/core';
+import { sharedStyle, style, useStyleScope } from '#ui/core';
 // <SegmentGroup>: one selected option among a few. A radiogroup to assistive
 // tech: each segment is a radio carrying `checked`, and on a physical keyboard
 // the arrow keys move the selection the way a native radio group does.
@@ -6,7 +6,7 @@ import { useStyleScope } from '#ui/core';
 import { Children, isValidElement, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { Animated, Easing, type StyleProp, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { sharedStyle, style } from '#ui/core';
+
 import type { Radius } from '#ui/core/tokens/layout';
 import { CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';

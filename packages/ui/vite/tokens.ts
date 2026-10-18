@@ -145,7 +145,7 @@ export function tokensCss(roots: readonly string[] = SOURCE_ROOTS): string {
   const light = ground(lightColors, lightShadow);
 
   return [
-    rule(':root', [...ALIASES, ...typography(), ...spacing(), ...effects()]),
+    rule(':root,\n[data-kroma-theme]', [...ALIASES, ...typography(), ...spacing(), ...effects()]),
     // Unrooted attribute selectors, so any subtree can pin its own ground; light
     // comes last so it wins at equal specificity.
     rule(':root,\n[data-kroma-theme],\n[data-theme="dark"]', ground(colors, shadow)),

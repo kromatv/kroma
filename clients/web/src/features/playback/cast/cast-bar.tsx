@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // The docked remote, pinned to the bottom of the app shell while this browser
 // drives a TV. It shows what the TV last reported, not what was last asked of
 // it, with the position interpolated between the receiver's heartbeats.
@@ -23,7 +24,7 @@ import {
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { kromaClient } from '#web/shared/lib/api';
+
 import { castPicker } from '#web/shared/ui/cast-picker';
 
 const SKIP_MS = 10_000;
@@ -74,10 +75,12 @@ function NowPlaying({
   playingOn,
   onSelect,
 }: Readonly<{ item?: MediaItem; playingOn: string; onSelect: Cast['select'] }>) {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const poster = item ? kromaClient().media.artwork.posterFor(item, 96) : null;
+  const poster = item ? webRuntime.client.media.artwork.posterFor(item, 96) : null;
   return (
     <>
       {poster ? (

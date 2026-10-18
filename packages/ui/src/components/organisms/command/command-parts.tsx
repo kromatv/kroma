@@ -10,8 +10,8 @@ import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { styles } from '#ui/core';
 import { useCommand } from './command-context';
-import type { CommandItem, CommandSection } from './command-list';
-import { METRICS } from './command-list';
+import { type CommandItem, type CommandSection, METRICS } from './command-list';
+
 import { CommandRow } from './command-row';
 
 interface CommandInputProps {

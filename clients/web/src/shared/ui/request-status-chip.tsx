@@ -1,21 +1,24 @@
-import { type StyleScope, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import {
+  Box,
+  backdropBlur,
+  classes,
+  Row,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  Text,
+  useLoop,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 
 // The request status chip, one component for every surface: poster-card
 // overlay, table rows and the discover-detail hero.
 
 import type { RequestStatus } from '@kromatv/client/requests';
 import { useT } from '@kromatv/ui';
-import {
-  Box,
-  backdropBlur,
-  classes,
-  Row,
-  sharedStyle,
-  styles,
-  Text,
-  useLoop,
-  useStyles,
-} from '@kromatv/ui/kit';
+
 import { requestStatusMeta } from '#web/shared/lib/request-status';
 
 const PULSE_MS = 2000;

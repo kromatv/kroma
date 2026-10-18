@@ -12,7 +12,16 @@ export const registry = {
   ),
 };
 export const loadRuntimeRemotes = vi.fn(() => Promise.resolve(undefined));
-export const auth = { user: null as { id: string } | null };
+export const auth = {
+  user: null as { id: string } | null,
+  client: {
+    baseUrl: 'https://kroma.test',
+    authHeaders() {
+      const token = sessionToken();
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    },
+  },
+};
 
 export function base() {
   const call = registry.start.mock.calls.at(-1);

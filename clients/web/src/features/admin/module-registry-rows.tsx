@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // The registry drawer's rows: the pinned official slot, one editable row per
 // operator-added registry, and the add flow with its verify-before-save step.
 // The drawer container and its draft state live in module-registries.tsx.
@@ -17,7 +18,7 @@ import {
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAsyncAction } from '#web/features/admin/hooks';
-import { adminApi, message, previewRegistry } from '#web/features/admin/module-api';
+import { message } from '#web/features/admin/module-api';
 import { Pill } from '#web/features/admin/pill';
 
 /** One operator-added registry, as stored in the `moduleRegistries` setting. */
@@ -61,13 +62,15 @@ export function OfficialRow({
   status,
   onSaved,
 }: Readonly<{ status: StoreRegistry; onSaved: () => void }>) {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const [value, setValue] = useState(status.url);
   const { busy, error, run } = useAsyncAction();
   const dirty = value.trim() !== status.url;
   const save = () =>
     void run(async () => {
-      await adminApi('/settings', {
+      await webRuntime.moduleApi.adminApi('/settings', {
         method: 'PUT',
         body: JSON.stringify({ moduleRegistryUrl: value.trim() }),
       });
@@ -199,6 +202,8 @@ export function AddRegistry({
   onAdd,
   busy,
 }: Readonly<{ onAdd: (r: ExtraRegistry) => void; busy: boolean }>) {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
@@ -211,7 +216,7 @@ export function AddRegistry({
   const runCheck = () =>
     void check.run(async () => {
       const target = url.trim();
-      const result = await previewRegistry(target);
+      const result = await webRuntime.moduleApi.previewRegistry(target);
       setPreview({ url: target, result });
     }, message);
   const add = () => {

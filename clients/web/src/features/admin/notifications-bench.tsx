@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // Sending a notification from the console. There is no test/dry-run mode: send
 // goes through the same pipeline as a producer's notification (category
 // preferences, per-recipient rendering, the stored row, the live bell, the push
@@ -24,7 +25,7 @@ import {
 import { useState } from 'react';
 import { useAsyncAction } from '#web/features/admin/hooks';
 import { NotificationImageField } from '#web/features/admin/notification-image-field';
-import { kromaClient } from '#web/shared/lib/api';
+
 import { NotificationCard } from '#web/shared/ui/notification-card';
 
 type Target = 'me' | 'admins' | 'everyone';
@@ -48,6 +49,8 @@ interface Draft {
 const EMPTY: Draft = { title: '', body: '', category: 'system', link: '', imageUrl: '' };
 
 export function NotificationBench() {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
@@ -67,7 +70,7 @@ export function NotificationBench() {
     run(
       async () => {
         setSent(null);
-        const { delivered } = await kromaClient().admin.notifications.send({
+        const { delivered } = await webRuntime.client.admin.notifications.send({
           title: draft.title,
           body: draft.body,
           category: draft.category,
@@ -209,10 +212,12 @@ const sDefinition = styles({
 // The same tile, gutter and metrics the drawer uses, so the preview matches
 // what recipients actually see; `custom` is the event type this bench always sends.
 function PreviewRow({ draft, empty }: Readonly<{ draft: Draft; empty: string }>) {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const art = draft.imageUrl ? kromaClient().media.artwork.resolve(draft.imageUrl) : null;
+  const art = draft.imageUrl ? webRuntime.client.media.artwork.resolve(draft.imageUrl) : null;
   return (
     <NotificationCard
       style={s.previewCard}

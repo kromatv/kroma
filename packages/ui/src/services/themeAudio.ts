@@ -1,3 +1,4 @@
+import { useDeviceStore } from '#ui/lib/device-store';
 // Detail-page theme playback, web (Tizen / webOS / desktop / browser).
 //
 // Built on `new Audio()`, which is the whole reason this file exists separately:
@@ -58,12 +59,13 @@ export interface ThemeAudio {
  * by starting unmuted and syncing on mount).
  */
 export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
+  const storage = useDeviceStore();
   const [muted, setMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fadeRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   // Reflect the stored preference once mounted (no storage read during SSR).
-  useEffect(() => setMuted(readThemeMuted()), []);
+  useEffect(() => setMuted(readThemeMuted(storage)), [storage]);
 
   // Ramp the element volume toward `target` over `ms`, then optionally pause.
   const fadeTo = useCallback((target: number, ms: number, thenPause = false) => {
@@ -93,7 +95,7 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
     audioRef.current = a;
 
     const start = () => {
-      if (readThemeMuted()) return;
+      if (readThemeMuted(storage)) return;
       const p = a.play();
       if (p != null && typeof p.then === 'function')
         p.then(() => fadeTo(TARGET_VOLUME, FADE_IN_MS)).catch(() => undefined);
@@ -119,11 +121,11 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
       audioRef.current = null;
       fadeOutAndStop(a, FADE_OUT_MS);
     };
-  }, [themeUrl, fadeTo]);
+  }, [themeUrl, fadeTo, storage]);
 
   const toggle = useCallback(() => {
-    const next = !readThemeMuted();
-    writeThemeMuted(next);
+    const next = !readThemeMuted(storage);
+    writeThemeMuted(next, storage);
     setMuted(next);
     const a = audioRef.current;
     if (!a) return;
@@ -134,7 +136,7 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
     const p = a.play();
     if (p != null && typeof p.then === 'function') p.catch(() => undefined);
     fadeTo(TARGET_VOLUME, 400);
-  }, [fadeTo]);
+  }, [fadeTo, storage]);
 
   return { active: Boolean(themeUrl), muted, toggle };
 }

@@ -8,6 +8,7 @@ import {
   type TitleGenres,
 } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
+import { useDeviceStore } from '@kromatv/ui/device-store';
 import {
   BackButton,
   Box,
@@ -31,8 +32,12 @@ import { useSearchShell } from '#tv/app/searchShell';
 import { useVoiceSearchBackend } from '#tv/app/voiceSearch';
 import { addRecentSearch, getRecentSearches } from '#tv/features/catalog/searchHistory';
 import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
-import type { SearchResult, SearchSection } from '#tv/features/catalog/TvSearchResults';
-import { TvSearchResults } from '#tv/features/catalog/TvSearchResults';
+import {
+  type SearchResult,
+  type SearchSection,
+  TvSearchResults,
+} from '#tv/features/catalog/TvSearchResults';
+
 import { TvVoiceSearch } from '#tv/features/catalog/TvVoiceSearch';
 import { useSearchAnswers } from '#tv/features/catalog/useSearchAnswers';
 import { SCREEN_PAD, STAGE_W } from '#tv/shared/stage';
@@ -44,6 +49,7 @@ import { KromaMark, SearchKeyboard } from '#tv/shared/ui';
  * `app/searchShell`). Falls back to the in-memory catalogue when the server's
  * `/api/search` request fails. */
 export function TvSearch() {
+  const storage = useDeviceStore();
   const s = useStyles(sDefinition);
 
   const { onSearchRequest, takePendingSearch } = useSearchRequests();
@@ -54,7 +60,7 @@ export function TvSearch() {
   // A query spoken to Siri (or handed over by any other shell) is waiting here
   // when the screen was opened BY that request; typing starts empty as usual.
   const [query, setQuery] = useState(() => takePendingSearch() ?? '');
-  const [recent, setRecent] = useState<string[]>(getRecentSearches);
+  const [recent, setRecent] = useState<string[]>(() => getRecentSearches(storage));
   const { physicalKeyboard } = useEnv();
   const titleMenu = useTitleMenu(nav.back);
   useFocusNav({ onBack: titleMenu.onBack });
@@ -75,7 +81,7 @@ export function TvSearch() {
   // query that produced that result, not the prefix left in the box by then.
   const toHit = useCallback(
     (hit: SearchHit, found: string): SearchResult => {
-      const remember = () => setRecent(addRecentSearch(found));
+      const remember = () => setRecent(addRecentSearch(found, storage));
       if (hit.type === 'show') {
         const show = hit.show;
         return {
@@ -106,7 +112,7 @@ export function TvSearch() {
           hold(m.kind === 'episode' ? { kind: 'episode', item: m } : { kind: 'movie', item: m }),
       };
     },
-    [client, nav, hold],
+    [client, nav, hold, storage],
   );
 
   const toEntry = useCallback(
@@ -117,11 +123,11 @@ export function TvSearch() {
       poster: client.media.artwork.resolve(entry.posterUrl, RESULT_W),
       colors: posterColors(String(entry.tmdbId)),
       onOpen: () => {
-        setRecent(addRecentSearch(found));
+        setRecent(addRecentSearch(found, storage));
         nav.go('discover', { entry });
       },
     }),
-    [client, nav],
+    [client, nav, storage],
   );
 
   // Offline fallback: filter the already-loaded catalogue by title / genre.

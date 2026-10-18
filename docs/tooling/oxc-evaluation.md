@@ -26,7 +26,7 @@ or `bun run lint --format agent` for actionable diagnostics. See the
 
 The initial scan reported **852 findings**, inventoried below. The rollout now
 requires repairing that backlog before merging; the draft PR must pass the full
-gate. The current repair batch leaves **6 findings**, all module mutable bindings. There is no suppression baseline. Registries,
+gate. All **852 initial findings** are repaired; the current Oxlint gate reports **zero findings**. There is no suppression baseline. Registries,
 stores, and caches need an ownership review; converting them to const containers
 would merely hide their mutability.
 
@@ -130,22 +130,27 @@ include existing failures. The benchmark deliberately does not apply fixes.
 
 The same branch also adopts Oxc's Rust React Compiler for Vite shells and the
 kit audit. See [setup, validation and separate compiler benchmarks](oxc-react-compiler.md).
-Native Expo keeps its supported Babel pipeline.
+Native Expo keeps its supported Babel pipeline. Session credentials, locale,
+client refresh callbacks, and native storage now belong to their root; see the
+[client ownership guide](../../packages/client/README.md).
 
 ## Validation
 
 - 140 focused lint-tooling tests pass, including actual CLI/config loading,
   AST false positives, structured guidance, and scaffolder path safety.
-- Whole-workspace typechecking passes.
+- Whole-workspace typechecking passes. The final web suite passes 10,283 tests
+  across 967 files; native and compiler-enabled audit projects pass 415 tests
+  with two optional reports skipped.
 - The record-assertion repair batch passes 1,882 focused tests across 181 files,
   including malformed stored preferences, manifest stamping, and bounded TXT data.
 - 159 focused application test files pass (2,104 tests), covering UI core,
   registry, metadata, discovery, relays, mobile services/player, and Vite adapters.
 - The staged kit passes its external TypeScript/Vite consumer smoke test; Zod
   is an explicit runtime dependency of the published artifact.
+- Production web, mobile iOS/Android, and TV iOS/Android bundles build.
 - Biome, `bun run sonar:lint`, and `git diff --check` pass.
-- `bun run check` still fails on the 6 remaining policy findings. The PR stays
-  draft until repairs and required CI checks pass.
+- `bun run lint` reports zero findings with every house rule enabled. The PR stays
+  draft until final validation and all required CI checks pass.
 
 ## Existing policy findings
 
@@ -163,7 +168,7 @@ The [per-file inventory](oxc-findings.json) is machine-readable for cleanup work
 | `kroma(no-relative-workspace-imports)` | 2 |
 | `kroma(no-redundant-jsdoc-tags)` | 1 |
 
-The latest input/focus repair batch passes all 10,278 web tests (965 files),
+The earlier input/focus repair batch passed all 10,278 web tests (965 files),
 316 native tests (42 files), 98 compiler-enabled audit tests, workspace
 typechecking, and the staged external-package consumer. Input holds, press
 guards, pointer listeners, focus geometry, DOM mirroring, and remote transport

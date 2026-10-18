@@ -5,8 +5,8 @@
 import { Box, styles, Text, useStyles, useTheme } from '@kromatv/ui/kit';
 import { type ColorToken, colors, nestedRadius } from '@kromatv/ui/tokens';
 import { useCallback, useState } from 'react';
-import type { LayoutChangeEvent } from 'react-native';
-import { ScrollView } from 'react-native';
+import { type LayoutChangeEvent, ScrollView } from 'react-native';
+
 import type { MatrixRow } from './derive';
 import type { StoryWidth } from './story';
 import {

@@ -1,10 +1,10 @@
-import { useStyleScope } from '#ui/core';
+import { sharedStyle, useStyleScope } from '#ui/core';
 // The blinking insertion point, shared by every field that draws its own:
 // react-native-web has no real caret to show while the remote walks an on-screen
 // keyboard, and the OTP field has no single text box to put one in.
 
 import { Animated } from 'react-native';
-import { sharedStyle } from '#ui/core';
+
 import { useLoop } from '#ui/lib/loop';
 
 export const BLINK_MS = 1100;

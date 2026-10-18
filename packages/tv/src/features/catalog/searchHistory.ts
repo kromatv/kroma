@@ -1,3 +1,4 @@
+import type { SessionStorage } from '@kromatv/client';
 // Recent search queries, persisted per device (localStorage, like the other
 // kroma:* device prefs, through the same never-throwing accessors). Most-recent-
 // first, deduped case-insensitively, capped.
@@ -8,8 +9,8 @@ const KEY = 'kroma:recent-searches';
 const MAX = 8;
 
 /** The saved recent searches, most recent first (empty when none / unavailable). */
-export function getRecentSearches(): string[] {
-  const raw = readDeviceValue(KEY);
+export function getRecentSearches(storage?: SessionStorage | null): string[] {
+  const raw = readDeviceValue(KEY, storage);
   if (!raw) return [];
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -24,11 +25,11 @@ export function getRecentSearches(): string[] {
 
 /** Record a query at the head of the list (deduped case-insensitively, capped)
  * and return the updated list. Blank queries leave the list untouched. */
-export function addRecentSearch(query: string): string[] {
+export function addRecentSearch(query: string, storage?: SessionStorage | null): string[] {
   const q = query.trim();
-  const list = getRecentSearches();
+  const list = getRecentSearches(storage);
   if (!q) return list;
   const next = [q, ...list.filter((old) => old.toLowerCase() !== q.toLowerCase())].slice(0, MAX);
-  writeDeviceValue(KEY, JSON.stringify(next));
+  writeDeviceValue(KEY, JSON.stringify(next), storage);
   return next;
 }

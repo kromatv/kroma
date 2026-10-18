@@ -1,4 +1,4 @@
-import { resolveStyles, type StyleScope } from '#ui/core';
+import { resolveStyles, type StyleScope, styles } from '#ui/core';
 import { DEFAULT_STYLE_SCOPE } from '#ui/core/style-scope';
 // Splits one control's authored style between the two views a native
 // <Focusable> renders: the navigator's own outer view, and the painted face
@@ -9,7 +9,6 @@ import { DEFAULT_STYLE_SCOPE } from '#ui/core/style-scope';
 // the FACE: background, radius, padding, and the control's own children.
 
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
-import { styles } from '#ui/core';
 
 /** The box props that can leave the box LARGER than the face inside it, and so
  * the only ones the face has to grow to fill. The rest place the box in its

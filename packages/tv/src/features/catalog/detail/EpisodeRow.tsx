@@ -1,4 +1,27 @@
-import { resolveStyles, type StyleScope, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import {
+  Badge,
+  Box,
+  Button,
+  CARD_SCRIM,
+  radius as cornerRadius,
+  Frost,
+  gradient,
+  Icon,
+  Img,
+  Progress,
+  Row,
+  resolveStyles,
+  type StyleScope,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  fontSizes as textSizes,
+  tintGradient,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+  WatchedBadge,
+} from '@kromatv/ui/kit';
 
 // One episode, as a row: still, title + status pills, ends-at, recap, and the
 // row's three actions as real buttons. Values ported literally from the
@@ -12,26 +35,7 @@ import { resolveStyles, type StyleScope, useStyleScope, useThemeVersion } from '
 import type { MediaItem } from '@kromatv/client/media';
 import { episodeTag, formatRuntime, posterColors } from '@kromatv/core';
 import { endsAtClock, useLocale, useT } from '@kromatv/ui';
-import {
-  Badge,
-  Box,
-  Button,
-  CARD_SCRIM,
-  radius as cornerRadius,
-  Frost,
-  gradient,
-  Icon,
-  Img,
-  Progress,
-  Row,
-  styles,
-  Text,
-  typeSpec as textRoles,
-  fontSizes as textSizes,
-  tintGradient,
-  useStyles,
-  WatchedBadge,
-} from '@kromatv/ui/kit';
+
 import { type ReactNode, useState } from 'react';
 
 export const EPISODE_W = 480;

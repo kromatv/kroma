@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type ColorValue, type StyleScope, sharedStyle, style, useStyleScope } from '#ui/core';
 // <Progress>: the determinate bar (resume position on a tile, download, import).
 // The fill eases to a new value; `indeterminate` sweeps a segment across the
 // track instead and ignores `value`.
@@ -6,7 +6,7 @@ import { type StyleScope, useStyleScope } from '#ui/core';
 
 import { Animated } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { type ColorValue, sharedStyle, style } from '#ui/core';
+
 import { motion } from '#ui/core/tokens';
 import { a11yState, a11yValue } from '#ui/lib/a11y';
 import { useLoop } from '#ui/lib/loop';
@@ -67,7 +67,7 @@ function Progress({
   const breath = useLoop('pulse', BREATH_MS, breathing);
   const corner = rounded ? 'pill' : 0;
   const position = clamp01(value);
-  const bar = layerStyle(color, corner, undefined, scope);
+  const bar = layerStyle(color, corner, scope);
 
   return (
     <Box
@@ -84,7 +84,7 @@ function Progress({
       {buffered === undefined ? null : (
         <ProgressFill
           value={Math.max(clamp01(buffered), position)}
-          style={layerStyle(color, corner, BUFFERED_OPACITY, scope)}
+          style={layerStyle(color, corner, scope, BUFFERED_OPACITY)}
         />
       )}
       {breathing ? (
@@ -107,7 +107,7 @@ export { clamp01, Progress };
 // Shared by identity across every bar asking for the same paint: styleq keys its
 // compiled-style cache on the leaf object, so resolving one per render is a
 // guaranteed miss for every bar on a browse grid.
-function layerStyle(color: ColorValue, corner: 'pill' | 0, opacity = 1, scope: StyleScope) {
+function layerStyle(color: ColorValue, corner: 'pill' | 0, scope: StyleScope, opacity = 1) {
   return sharedStyle(
     `bar:${color}:${corner}:${opacity}`,
     {

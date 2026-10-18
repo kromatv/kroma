@@ -1,9 +1,8 @@
-import { activeTheme, useStyleScope } from '#ui/core';
+import { activeTheme, type ColorValue, color, useStyleScope } from '#ui/core';
 // The marks: one series each, drawn inside the Root's plot. Everything they
 // need beyond their own paint comes off the context, because the scale belongs
 // to the chart and not to any one series on it.
 
-import { type ColorValue, color } from '#ui/core';
 import { Path } from '#ui/lib/svg';
 import { type ChartSeries, type ChartState, useChart } from './chart-context';
 import { areaPath, type ChartCurve, linePath } from './chart-path';

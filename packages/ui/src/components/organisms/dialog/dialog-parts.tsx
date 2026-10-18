@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { RING_ROOM, type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
 // The panel's three bands, and what the surface tells them: only the middle one
 // scrolls, the other two stay put.
@@ -6,7 +6,7 @@ import { type StyleScope, useStyleScope } from '#ui/core';
 import { createContext, type ReactNode, useContext } from 'react';
 import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { RING_ROOM, sharedStyle, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { DIALOG_PAD } from '#ui/lib/surface-shell';
 

@@ -7,14 +7,15 @@ import { BrowseScreen } from '#web/features/catalog/browse-screen';
 import { validateBrowseSearch } from '#web/features/catalog/browse-search';
 import { ShowGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
-import { catalogQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/shows/')({
   validateSearch: validateBrowseSearch,
-  loader: async ({ context: { queryClient } }) => {
+  loader: async ({ context: { runtime: webRuntime, queryClient } }) => {
     if (!isAuthed()) return;
-    await queryClient.ensureQueryData(catalogQueries.showsView());
+    await queryClient.ensureQueryData(webRuntime.queries.catalogQueries.showsView());
   },
   pendingComponent: ShowsPending,
   component: ShowsPage,
@@ -33,10 +34,12 @@ function ShowsPending() {
 }
 
 function ShowsPage() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const { sort = 'added', genre } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const { data: shows } = useSuspenseQuery(catalogQueries.showsView());
+  const { data: shows } = useSuspenseQuery(webRuntime.queries.catalogQueries.showsView());
 
   return (
     <BrowseScreen

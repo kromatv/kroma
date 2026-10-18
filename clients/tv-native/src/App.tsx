@@ -58,7 +58,7 @@ const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
 // (the canvas is drawn through a scale the blur cannot see) and outside it,
 // nothing at all, at 21fps. What it draws instead is the tint, which is what
 // the design falls back to anyway.
-const NATIVE_KIT = configureKit({ image: expoImageBackend, frost: BlurView });
+const NATIVE_KIT = configureKit({ image: expoImageBackend, frost: BlurView, ground: 'dark' });
 
 export function App() {
   const [frameLimits] = useState(decoderFrameLimits);

@@ -13,8 +13,7 @@ import { Hono } from 'hono';
 import * as apns from './apns';
 import * as fcm from './fcm';
 import { deviceKey, GRANT_TTL_SECS, open, seal } from './grant';
-import type { Delivery } from './schemas';
-import { firstIssue, GrantRequest, PushRequest } from './schemas';
+import { type Delivery, firstIssue, GrantRequest, PushRequest } from './schemas';
 
 /** The rate-limit binding's shape. Declared locally rather than pulled from
  * `@cloudflare/workers-types`, which this repo does not install; same approach

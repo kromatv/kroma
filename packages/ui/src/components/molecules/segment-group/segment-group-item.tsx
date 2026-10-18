@@ -1,4 +1,4 @@
-import { useStyleScope, useSv } from '#ui/core';
+import { type StyleDecl, sharedStyle, style, svFor, useStyleScope, useSv } from '#ui/core';
 import { typeSpec as textRoles } from '#ui/core/tokens';
 // One segment: a radio in the group's row, and the shell it is drawn in.
 
@@ -7,7 +7,7 @@ import type { LayoutChangeEvent } from 'react-native';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type StyleDecl, sharedStyle, style, svFor } from '#ui/core';
+
 import { bySize, CONTROL } from '#ui/lib/field-shell';
 import { nameOf } from '#ui/lib/name-of';
 import { partContext } from '#ui/lib/part-context';

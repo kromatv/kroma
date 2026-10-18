@@ -1,4 +1,4 @@
-// The theme: every token group behind one live store, and KROMA as the default.
+// Each styling root owns its token store; KROMA is the immutable fallback.
 //
 // `setTheme` swaps the active theme and bumps a version; recipes, `styles()` and
 // <Box> all check that version and re-resolve lazily on their next use, so a
@@ -57,27 +57,6 @@ export function createThemeRuntime(initial: Theme = KROMA) {
   // asks it rather than guessing.
   let derivedProps: Map<string, readonly string[]> | null = null;
 
-  const DERIVED_PROP = /--kroma-([a-z0-9-]+?)-(\d+(?:_\d+)?|opaque|alpha)\s*:/g;
-
-  // A cross-origin sheet answers `cssRules` with a SecurityError; it holds none of
-  // ours, so it is skipped rather than read.
-  function rulesOf(sheet: CSSStyleSheet): readonly CSSRule[] {
-    try {
-      return [...sheet.cssRules];
-    } catch {
-      return [];
-    }
-  }
-
-  function collectSteps(css: string, found: Map<string, string[]>): void {
-    for (const [, name, step] of css.matchAll(DERIVED_PROP)) {
-      if (!name || !step) continue;
-      const steps = found.get(name) ?? [];
-      if (!steps.includes(step)) steps.push(step);
-      found.set(name, steps);
-    }
-  }
-
   function stepsOf(doc: Document): Map<string, readonly string[]> {
     // Cached once found, never cached empty: the token sheet may still be on its
     // way in (a code-split chunk, a dev server's first paint), and an empty scan
@@ -89,16 +68,6 @@ export function createThemeRuntime(initial: Theme = KROMA) {
     }
     if (found.size > 0) derivedProps = found;
     return found;
-  }
-
-  function derived(token: string, value: string, steps: readonly string[]) {
-    const faded = splitAlpha(value);
-    return steps.map((step) => {
-      if (step === 'opaque') return [`${cssVar(token)}-opaque`, faded.color] as const;
-      if (step === 'alpha') return [`${cssVar(token)}-alpha`, String(faded.opacity)] as const;
-      const alpha = Number(step.replace('_', '.'));
-      return [cssVar(token, step), withAlpha(value, alpha / 100)] as const;
-    });
   }
 
   // What a theme RESTATES: `paint` leaves an untouched token as its own property,
@@ -124,22 +93,6 @@ export function createThemeRuntime(initial: Theme = KROMA) {
       .filter(([, style]) => typeof style.fontSize === 'number')
       .flatMap(([role, style]) => roleProperties(role, style));
     return [...colors, ...shadows, ...radii, ...fonts, ...roles];
-  }
-
-  // A restated role, derived to px by the theme, under the properties every
-  // untouched role already reads.
-  function roleProperties(role: string, style: RoleStyle): (readonly [string, string])[] {
-    const family = style.fontFamily ?? '';
-    const out: (readonly [string, string])[] = [
-      [typeProperty(role, 'family'), family.startsWith('var(') ? family : fontStack(family)],
-      [typeProperty(role, 'weight'), String(style.fontWeight)],
-      [typeProperty(role, 'size'), `${style.fontSize}px`],
-      [typeProperty(role, 'line'), `${style.lineHeight}px`],
-    ];
-    if (style.letterSpacing !== undefined) {
-      out.push([typeProperty(role, 'spacing'), `${style.letterSpacing}px`]);
-    }
-    return out;
   }
 
   const block = (selector: string, theme: Theme | undefined, doc: Document): string => {
@@ -292,11 +245,11 @@ export function createThemeRuntime(initial: Theme = KROMA) {
     attach(host: HTMLElement, id: string) {
       scope = host;
       scopeId = id.replace(/[^a-zA-Z0-9_-]/g, '');
-      host.setAttribute('data-kroma-theme', scopeId);
+      host.dataset.kromaTheme = scopeId;
       publish(applied, paper);
       return () => {
         host.ownerDocument.getElementById(sheetId())?.remove();
-        host.removeAttribute('data-kroma-theme');
+        delete host.dataset.kromaTheme;
         scope = null;
       };
     },
@@ -360,4 +313,64 @@ export function themed<T>(
     values.set(key, { version, value });
     return value;
   };
+}
+
+// Consume each complete identifier once. Matching the prefix and suffix together
+// retries long hyphenated names at every nested `--kroma-` prefix.
+function collectSteps(css: string, found: Map<string, string[]>): void {
+  for (const match of css.matchAll(/--[a-z0-9_-]+/g)) {
+    const property = match[0];
+    if (!property.startsWith('--kroma-')) continue;
+    if (
+      !css
+        .slice(match.index + property.length)
+        .trimStart()
+        .startsWith(':')
+    )
+      continue;
+    const separator = property.lastIndexOf('-');
+    const name = property.slice('--kroma-'.length, separator);
+    const step = property.slice(separator + 1);
+    if (!name || !/^[a-z0-9-]+$/.test(name)) continue;
+    if (step !== 'opaque' && step !== 'alpha' && !/^\d+(?:_\d+)?$/.test(step)) continue;
+    const steps = found.get(name) ?? [];
+    if (!steps.includes(step)) steps.push(step);
+    found.set(name, steps);
+  }
+}
+
+// A cross-origin sheet answers `cssRules` with a SecurityError; it holds none of
+// ours, so it is skipped rather than read.
+function rulesOf(sheet: CSSStyleSheet): readonly CSSRule[] {
+  try {
+    return [...sheet.cssRules];
+  } catch {
+    return [];
+  }
+}
+
+function derived(token: string, value: string, steps: readonly string[]) {
+  const faded = splitAlpha(value);
+  return steps.map((step) => {
+    if (step === 'opaque') return [`${cssVar(token)}-opaque`, faded.color] as const;
+    if (step === 'alpha') return [`${cssVar(token)}-alpha`, String(faded.opacity)] as const;
+    const alpha = Number(step.replace('_', '.'));
+    return [cssVar(token, step), withAlpha(value, alpha / 100)] as const;
+  });
+}
+
+// A restated role, derived to px by the theme, under the properties every
+// untouched role already reads.
+function roleProperties(role: string, style: RoleStyle): (readonly [string, string])[] {
+  const family = style.fontFamily ?? '';
+  const out: (readonly [string, string])[] = [
+    [typeProperty(role, 'family'), family.startsWith('var(') ? family : fontStack(family)],
+    [typeProperty(role, 'weight'), String(style.fontWeight)],
+    [typeProperty(role, 'size'), `${style.fontSize}px`],
+    [typeProperty(role, 'line'), `${style.lineHeight}px`],
+  ];
+  if (style.letterSpacing !== undefined) {
+    out.push([typeProperty(role, 'spacing'), `${style.letterSpacing}px`]);
+  }
+  return out;
 }

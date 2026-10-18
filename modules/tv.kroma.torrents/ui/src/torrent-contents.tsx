@@ -1,7 +1,18 @@
 import type { TorrentAnalysis, TorrentFileView } from '@kromatv/module-acquisition/schemas';
 import { useFormat, useT } from '@kromatv/module-sdk';
-import type { IconName } from '@kromatv/ui/kit';
-import { Badge, Box, Checkbox, Icon, Img, Row, styles, Text, useStyles } from '@kromatv/ui/kit';
+import {
+  Badge,
+  Box,
+  Checkbox,
+  Icon,
+  type IconName,
+  Img,
+  Row,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
+
 import { useMemo } from 'react';
 import {
   bytesOf,

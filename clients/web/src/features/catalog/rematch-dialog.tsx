@@ -1,4 +1,17 @@
-import { resolveStyles, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  Callout,
+  classes,
+  Field,
+  IconButton,
+  resolveStyles,
+  Spinner,
+  styles,
+  Text,
+  useStyleScope,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 // "Fix the TMDB match" modal: the ranked TMDB candidates for one catalog
 // element, as a scannable poster grid with the matcher's confidence for each.
 // Applying a choice re-runs the metadata stage in the background, so the modal
@@ -8,17 +21,7 @@ import { resolveStyles, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 import { apiErrorText } from '@kromatv/client';
 import { ItemId, ShowId } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
-import {
-  Box,
-  Button,
-  Callout,
-  classes,
-  Field,
-  IconButton,
-  Spinner,
-  styles,
-  Text,
-} from '@kromatv/ui/kit';
+
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { createCallable } from 'react-call';

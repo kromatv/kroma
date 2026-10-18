@@ -15,8 +15,8 @@ import {
 } from '@kromatv/core';
 import { useCast } from '@kromatv/ui';
 import { Badge, Box, radius as cornerRadius, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
-import type { ReactNode } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+
 import { Animated, Pressable } from 'react-native';
 import { CheckPrompt } from '#mobile/components/connect/CheckPrompt';
 import { SheetTitle } from '#mobile/components/ui';

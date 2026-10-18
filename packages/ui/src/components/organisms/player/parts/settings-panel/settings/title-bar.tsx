@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
 // The panel's top line: where it is, the way back, and the way out.
 //
@@ -11,7 +11,7 @@ import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Text } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
-import { sharedStyle, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { useRevealWhenFocused } from '#ui/lib/focus-scroll';
 import { useT } from '#ui/services/i18n';

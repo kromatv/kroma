@@ -1,10 +1,10 @@
-import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import { styles, useStyleScope, useStyles, useThemeVersion } from '@kromatv/ui/kit';
 
 // The device picker, as the app's chrome shows it: a bottom sheet, sized to
 // its content: a household has a handful of TVs, not a hundred languages.
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { styles, useStyles } from '@kromatv/ui/kit';
+
 import type { Ref } from 'react';
 import { CastDeviceList, type CastDeviceListProps } from '#mobile/components/cast/CastDeviceList';
 import { SheetBody, sheetChrome } from '#mobile/components/ui';

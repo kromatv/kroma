@@ -1,14 +1,15 @@
-// The API client, and the identity it presents. Native shells send a
-// User-Agent that names nothing (`KROMA/1 CFNetwork/…`, `okhttp/4.12.0`), so a
-// television would otherwise list itself as an unknown desktop.
-
 import {
   clientUserAgent,
   createKromaClient,
   type DeviceIdentity,
   type KromaClient,
+  type SessionStorage,
 } from '@kromatv/client';
-import { activeLocale } from '@kromatv/core';
+// The API client, and the identity it presents. Native shells send a
+// User-Agent that names nothing (`KROMA/1 CFNetwork/…`, `okhttp/4.12.0`), so a
+// television would otherwise list itself as an unknown desktop.
+
+import { deviceLocale } from '@kromatv/core';
 import { Platform } from 'react-native';
 import { buildInfo } from '#tv/app/clientBuild';
 
@@ -35,12 +36,13 @@ export function makeClient(
   baseUrl: string,
   version = buildInfo().version,
   artworkScale?: () => number,
+  storage?: SessionStorage | null,
 ): KromaClient {
   const identity = tvIdentity(version);
   return createKromaClient({
     baseUrl,
     artworkScale,
-    locale: activeLocale(),
+    locale: deviceLocale(storage),
     ...(identity ? { userAgent: clientUserAgent(identity) } : {}),
   });
 }

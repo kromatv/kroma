@@ -1,4 +1,12 @@
-import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import {
+  Box,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 
 // Touch scrub bar: buffered + played fills, drag preview with a storyboard
 // thumbnail + time bubble, drawn from the kit's seek-bar paints so it matches
@@ -6,7 +14,7 @@ import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 
 import { seekBar } from '@kromatv/ui';
 import { formatTimecode } from '@kromatv/ui/intl';
-import { Box, styles, Text, typeSpec as textRoles, useStyles } from '@kromatv/ui/kit';
+
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';

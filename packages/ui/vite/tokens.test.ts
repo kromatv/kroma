@@ -23,6 +23,13 @@ describe('tokensCss', () => {
     }
   });
 
+  it('resets every theme token group at an explicit nested theme boundary', () => {
+    const defaults = tokensCss().split(':root,\n[data-kroma-theme] {')[1]?.split('}')[0] ?? '';
+    expect(defaults).toContain('--radius-lg:');
+    expect(defaults).toContain('--font-ui:');
+    expect(defaults).toContain('--type-body-size:');
+  });
+
   it('answers an unstamped root with prefers-color-scheme, and nothing else', () => {
     const css = tokensCss();
     expect(css).toContain('[data-theme="light"]');

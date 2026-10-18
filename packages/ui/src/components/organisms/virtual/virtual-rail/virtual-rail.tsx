@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
 // Under a pointer or a finger the row is a REAL horizontal scroller and the
 // platform owns every gesture: a vertical wheel chains to the page with its
@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
 import { MovingStrip } from '#ui/components/organisms/virtual/moving-strip';
-import { sharedStyle, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { FocusLiftView } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';

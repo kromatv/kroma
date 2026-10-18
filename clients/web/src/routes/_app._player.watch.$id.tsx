@@ -4,15 +4,17 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { Player } from '#web/features/playback/player';
 import { isAuthed } from '#web/shared/lib/api';
-import { catalogQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 const sDefinition = styles({ black: { position: 'fixed', inset: 0, bg: 'black' } });
 export const Route = createFileRoute('/_app/_player/watch/$id')({
-  loader: async ({ params, context: { queryClient } }) => {
+  loader: async ({ params, context: { runtime: webRuntime, queryClient } }) => {
     if (!isAuthed()) throw redirect({ to: '/' });
     // The next episode (for the Netflix-style "up next" autoplay) is sequence-based
     // and public, so it loads alongside the item.
-    await queryClient.ensureQueryData(catalogQueries.watch(ItemId.parse(params.id)));
+    await queryClient.ensureQueryData(
+      webRuntime.queries.catalogQueries.watch(ItemId.parse(params.id)),
+    );
   },
   // Player is fullscreen with its own buffering spinner; a black hold beats a
   // structural skeleton here.
@@ -21,10 +23,12 @@ export const Route = createFileRoute('/_app/_player/watch/$id')({
 });
 
 function WatchPage() {
+  const webRuntime = useWebRuntime();
+
   const id = ItemId.parse(Route.useParams().id);
   const {
     data: { item, next, following },
-  } = useSuspenseQuery(catalogQueries.watch(id));
+  } = useSuspenseQuery(webRuntime.queries.catalogQueries.watch(id));
   const navigate = useNavigate();
   return (
     <Player

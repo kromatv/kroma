@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope, useTheme } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { fontSizes as textSizes } from '#ui/core/tokens';
 // <MediaCard>: the 16:9 landscape rail tile of the 10-foot home. Focusable, so
@@ -11,7 +11,6 @@ import { Img } from '#ui/components/atoms/img';
 import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
-import { sharedStyle, styles, useTheme } from '#ui/core';
 
 /** The fill behind artwork, so a tile is never blank while the art loads. */
 

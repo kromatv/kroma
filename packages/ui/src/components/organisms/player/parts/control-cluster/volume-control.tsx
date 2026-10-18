@@ -1,10 +1,10 @@
-import { type StyleScope, useStyleScope, useSv } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, sv, useStyleScope, useSv } from '#ui/core';
 
 // The volume pill: a mute key and a drag rail in one control, which the row
 // collapses to the bare key when there is no width for the rail.
 
-import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
+
 import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
@@ -13,7 +13,7 @@ import { useDragTrack } from '#ui/components/organisms/player/hooks/use-drag-tra
 import { clamp01, sliderToVolume, volumeToSlider } from '#ui/components/organisms/player/lib/fmt';
 import { CONTROL_SIZE, type Px, VOLUME_RAIL } from '#ui/components/organisms/player/lib/metrics';
 import { IconMute, IconVolHigh, IconVolLow } from '#ui/components/organisms/player/parts/icons';
-import { sharedStyle, styles, sv } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { a11yValue } from '#ui/lib/a11y';
 import { suppressSelection } from '#ui/lib/drag-select';

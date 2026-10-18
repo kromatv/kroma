@@ -7,8 +7,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { styles, sv } from '#ui/core';
-import type { CommandItem } from './command-list';
-import { METRICS } from './command-list';
+import { type CommandItem, METRICS } from './command-list';
 
 interface CommandRowProps {
   item: CommandItem;

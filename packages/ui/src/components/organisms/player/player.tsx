@@ -1,7 +1,7 @@
 import { useHeldSeek } from '@kromatv/core/react';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
-import type { LayoutChangeEvent, View } from 'react-native';
-import { Dimensions } from 'react-native';
+import { Dimensions, type LayoutChangeEvent, type View } from 'react-native';
+
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
 import { styles } from '#ui/core';

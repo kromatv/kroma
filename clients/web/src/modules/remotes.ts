@@ -1,4 +1,4 @@
-import { domainModules, sessionToken } from '@kromatv/client';
+import { domainModules, type KromaClient } from '@kromatv/client';
 import {
   depEntries,
   type KromaModule,
@@ -49,10 +49,9 @@ async function provideShared(): Promise<Record<string, unknown>> {
   return shared;
 }
 
-async function discoverRemotes(): Promise<RemoteSpec[]> {
-  const token = sessionToken();
+async function discoverRemotes(client?: KromaClient): Promise<RemoteSpec[]> {
   const res = await fetch(`${apiBase()}/api/modules`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: client?.authHeaders() ?? {},
   });
   if (!res.ok) return [];
   const mods = (await res.json()) as ModuleManifest[];
@@ -77,7 +76,7 @@ function unmet(registry: ModuleRegistry, m: KromaModule): string | null {
 }
 
 /** Remote loading state belongs to one mounted module host. */
-export function createRuntimeRemotes() {
+export function createRuntimeRemotes(client?: KromaClient) {
   const loadedRemotes = new Set<string>();
   let sharedReady: Promise<void> | null = null;
 
@@ -154,7 +153,7 @@ export function createRuntimeRemotes() {
     if (disposed || typeof window === 'undefined') return [];
     let specs: RemoteSpec[];
     try {
-      specs = await discoverRemotes();
+      specs = await discoverRemotes(client);
     } catch (e) {
       console.warn('[modules] remote discovery failed', e);
       return [];

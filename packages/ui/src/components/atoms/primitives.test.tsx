@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import type { ReactElement } from 'react';
-import { contentRoot } from '#ui/testing';
+import { contentRoot, onScreen } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
 
 //
@@ -18,7 +18,6 @@ import { Dialog } from '#ui/components/organisms/dialog';
 import { typeSpec } from '#ui/core/tokens';
 import { CONTROL } from '#ui/lib/field-shell';
 
-import { onScreen } from '#ui/testing';
 import { AVATAR_GRADIENTS, Avatar, gradientFor, initialsOf } from './avatar';
 import { Badge } from './badge';
 import { Button, buttonVariants } from './button';

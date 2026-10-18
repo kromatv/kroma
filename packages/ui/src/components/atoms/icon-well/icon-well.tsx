@@ -1,10 +1,9 @@
-import { useSv } from '#ui/core';
+import { sv, useSv, type Variant } from '#ui/core';
 // <IconWell>: a glyph sunk into a rounded, tinted square. The leading mark of a
 // settings row, a server in a list, a menu entry.
 
 import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
-import { sv, type Variant } from '#ui/core';
 
 type IconWellSize = Variant<typeof iconWellVariants, 'size'>;
 type IconWellTone = Variant<typeof iconWellVariants, 'tone'>;

@@ -1,6 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ItemId } from './api/media';
-import { sessionToken, setSessionMediaTicket } from './core/session';
 import { createKromaClient } from './kroma-client';
 import { fakeClient, recordingClient } from './kroma-client.fixture';
 
@@ -15,8 +14,6 @@ describe('the media ticket', () => {
   };
   const item = ItemId.parse('i1');
 
-  afterEach(() => setSessionMediaTicket(undefined));
-
   async function signInElsewhere() {
     const { client } = recordingClient(() => ({
       json: { token: 'tok', mediaTicket: 'dev.999.sig', user },
@@ -25,15 +22,18 @@ describe('the media ticket', () => {
     return client;
   }
 
-  it('stamps the URLs of a client built after another one signed in', async () => {
-    await signInElsewhere();
+  it('keeps media tickets on the client that signed in', async () => {
+    const signedIn = await signInElsewhere();
 
     const later = createKromaClient({ baseUrl: 'http://kroma.test' });
 
-    expect(later.media.streamUrl(item)).toBe('http://kroma.test/api/items/i1/stream?t=dev.999.sig');
+    expect(signedIn.media.streamUrl(item)).toBe(
+      'http://kroma.test/api/items/i1/stream?t=dev.999.sig',
+    );
+    expect(later.media.streamUrl(item)).toBe('http://kroma.test/api/items/i1/stream');
   });
 
-  it('leaves every client once one of them clears the session', async () => {
+  it('clears only its own media ticket when signing out', async () => {
     const signedIn = await signInElsewhere();
     const other = createKromaClient({ baseUrl: 'http://kroma.test' });
 
@@ -61,14 +61,14 @@ describe('the bearer', () => {
     expect(client.hasAuth).toBe(false);
   });
 
-  it('publishes itself to the shared session, so the event socket needs no second call', () => {
+  it('exposes its own bearer for an explicitly bound event socket', () => {
     const client = createKromaClient({ baseUrl: 'http://x' });
 
     client.setAuthToken('tok');
 
-    expect(sessionToken()).toBe('tok');
+    expect(client.sessionToken).toBe('tok');
     client.setAuthToken(undefined);
-    expect(sessionToken()).toBeUndefined();
+    expect(client.sessionToken).toBeUndefined();
   });
 
   it('rides on a request, with the locale, and changes when it is set again', async () => {
@@ -137,7 +137,7 @@ describe('refreshing a dead session', () => {
 
     expect(token).toBe('fresh');
     expect(client.sessionToken).toBe('fresh');
-    expect(sessionToken()).toBe('fresh');
+    expect(client.sessionToken).toBe('fresh');
   });
 
   it('resolves undefined when nothing can mint one', async () => {
@@ -191,4 +191,30 @@ describe('fakeClient', () => {
     );
     expect(() => client.playback.progress()).toThrow('playback.progress');
   });
+});
+
+it('keeps bearer, media ticket, locale and refresh state on their own client', async () => {
+  const a = recordingClient(() => ({ json: [] }), {
+    baseUrl: 'http://a.test',
+    authToken: 'a',
+    locale: 'fr',
+  });
+  const b = recordingClient(() => ({ json: [] }), {
+    baseUrl: 'http://b.test',
+    authToken: 'b',
+    locale: 'en',
+  });
+  a.client.session.setSessionMediaTicket('ticket-a');
+  b.client.session.setSessionMediaTicket('ticket-b');
+  a.client.setRefreshHandler(async () => 'renewed-a');
+  await a.client.refreshSession();
+  await Promise.all([a.client.accounts.sessions(), b.client.accounts.sessions()]);
+  expect(a.calls[0]?.headers.get('Authorization')).toBe('Bearer renewed-a');
+  expect(b.calls[0]?.headers.get('Authorization')).toBe('Bearer b');
+  expect(a.calls[0]?.headers.get('Accept-Language')).toBe('fr');
+  expect(b.calls[0]?.headers.get('Accept-Language')).toBe('en');
+  a.client.setAuthToken(undefined);
+  expect(a.client.session.sessionMediaTicket()).toBeUndefined();
+  expect(b.client.session.sessionMediaTicket()).toBe('ticket-b');
+  expect(b.client.sessionToken).toBe('b');
 });

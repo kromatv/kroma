@@ -13,7 +13,13 @@ interface BootDeps {
   accounts: AccountStore;
   servers: ServerStore;
   makeClient(serverUrl: string): KromaClient;
-  enterSession(url: string, accessToken: string, token: string, user: MobileAccount['user']): void;
+  enterSession(
+    url: string,
+    accessToken: string,
+    token: string,
+    user: MobileAccount['user'],
+    mediaTicket?: string,
+  ): void;
   setServerUrl(url: string | null): void;
   setSignedOut(): void;
 }
@@ -44,7 +50,7 @@ async function devAutoLogin(deps: BootDeps, cancelled: Cancelled): Promise<boole
     const [identifier, password] = devLogin.split(':');
     const result = await deps.makeClient(url).accounts.login(identifier ?? '', password ?? '');
     if (cancelled()) return true;
-    deps.enterSession(url, result.accessToken, result.token, result.user);
+    deps.enterSession(url, result.accessToken, result.token, result.user, result.mediaTicket);
     return true;
   } catch {
     return false;
@@ -77,9 +83,13 @@ async function resumeAccount(
 ): Promise<void> {
   try {
     const probe = deps.makeClient(account.serverUrl);
-    const { token, user: fresh } = await probe.accounts.exchangeToken(account.accessToken);
+    const {
+      token,
+      user: fresh,
+      mediaTicket,
+    } = await probe.accounts.exchangeToken(account.accessToken);
     if (cancelled()) return;
-    deps.enterSession(account.serverUrl, account.accessToken, token, fresh);
+    deps.enterSession(account.serverUrl, account.accessToken, token, fresh, mediaTicket);
   } catch (err) {
     if (cancelled()) return;
     deps.setServerUrl(fallbackUrl);

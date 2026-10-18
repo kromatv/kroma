@@ -35,7 +35,7 @@ describe('the first launch', () => {
     persisted();
     const id = deviceId();
     expect(id).toMatch(ACCEPTABLE);
-    expect(writeDeviceValue).toHaveBeenCalledWith(KEY, id);
+    expect(writeDeviceValue).toHaveBeenCalledWith(KEY, id, undefined);
   });
 
   it('mints something the server will accept', () => {
@@ -90,7 +90,7 @@ describe('a stored value the server would reject', () => {
       const id = deviceId();
       expect(id).not.toBe(value);
       expect(id).toMatch(ACCEPTABLE);
-      expect(writeDeviceValue).toHaveBeenCalledWith(KEY, id);
+      expect(writeDeviceValue).toHaveBeenCalledWith(KEY, id, undefined);
     });
   }
 

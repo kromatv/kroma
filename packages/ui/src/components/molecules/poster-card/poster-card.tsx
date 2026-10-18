@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope, useTheme } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // <PosterCard>: the 2:3 portrait tile of the browse grids (Films, Series).
@@ -14,7 +14,6 @@ import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { tintGradient } from '#ui/components/molecules/media-card';
-import { sharedStyle, styles, useTheme } from '#ui/core';
 
 interface PosterCardProps {
   title: string;

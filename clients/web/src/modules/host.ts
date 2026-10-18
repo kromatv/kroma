@@ -1,7 +1,7 @@
 // Adapts the web app's providers (auth, i18n, router, session) into the neutral
 // KromaHost the module SDK defines, then resolves + starts the registry.
 
-import { sessionToken } from '@kromatv/client';
+import type { KromaClient } from '@kromatv/client';
 import { hasPermission } from '@kromatv/client/accounts';
 import type { MessageKey, TVars } from '@kromatv/i18n';
 import type { HostBase, KromaHost, ModuleManifest } from '@kromatv/module-sdk';
@@ -9,13 +9,11 @@ import { useLocale, useT } from '@kromatv/ui';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { createModuleRuntime, type ModuleRuntime } from '#web/modules/registry';
-import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 
-async function apiGet<T>(path: string): Promise<T> {
-  const token = sessionToken();
-  const res = await fetch(`${apiBase()}/api${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+async function apiGet<T>(client: KromaClient, path: string): Promise<T> {
+  const res = await fetch(`${client.baseUrl}/api${path}`, {
+    headers: client.authHeaders(),
   });
   if (!res.ok) throw new Error(`GET /api${path} failed (${res.status})`);
   return (await res.json()) as T;
@@ -27,7 +25,8 @@ async function apiGet<T>(path: string): Promise<T> {
  *  each render would re-run the effect, call setHost, and loop (React error
  *  #185). */
 export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost | null {
-  const [owned] = useState(() => (provided ? null : createModuleRuntime()));
+  const auth = useAuth();
+  const [owned] = useState(() => (provided ? null : createModuleRuntime(auth.client)));
   const runtime = provided ?? owned;
   if (!runtime) throw new Error('Module host requires its runtime');
   const { registry: moduleRegistry, bus: appBus, remotes } = runtime;
@@ -35,7 +34,6 @@ export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost
   const navigate = useNavigate();
   const t = useT();
   const locale = useLocale();
-  const auth = useAuth();
 
   // Updated outside render (the React Compiler turns in-render mutation into an
   // update loop); the host is built once and reads the latest values through it.
@@ -52,8 +50,8 @@ export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost
     let alive = true;
     const base: HostBase = {
       api: {
-        get: apiGet,
-        listModules: () => apiGet<ModuleManifest[]>('/modules'),
+        get: <T>(path: string) => apiGet<T>(latest.current.auth.client, path),
+        listModules: () => apiGet<ModuleManifest[]>(latest.current.auth.client, '/modules'),
       },
       auth: {
         get userId() {
@@ -81,7 +79,7 @@ export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost
         if (!alive) return;
         let skip: Set<string> | undefined;
         try {
-          const listed = await apiGet<ModuleManifest[]>('/modules');
+          const listed = await apiGet<ModuleManifest[]>(latest.current.auth.client, '/modules');
           skip = new Set(listed.filter((m) => m.enabled === false).map((m) => m.id));
         } catch {
           skip = undefined; // enabled-state unavailable; set up everything

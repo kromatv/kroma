@@ -1,10 +1,10 @@
-import { activeTheme, useStyleScope } from '#ui/core';
+import { activeTheme, color, styles, useStyleScope } from '#ui/core';
 
 // <WatchedBadge>: the one mark that says a title has been watched.
 
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
-import { color, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { Polygon, Svg } from '#ui/lib/svg';
 import { useTDefault } from '#ui/services/i18n';

@@ -22,7 +22,7 @@ import { StatusBar } from 'expo-status-bar';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { installDeviceStore } from '#mobile/lib/deviceStore';
+import { createDeviceStore } from '#mobile/lib/deviceStore';
 import { DownloadsProvider } from '#mobile/lib/downloads';
 import { I18nProvider, useI18n } from '#mobile/lib/i18n';
 import { useNotificationStream } from '#mobile/lib/notifications';
@@ -138,7 +138,7 @@ function Shell() {
 
 export default function RootLayout() {
   const [kitConfig] = useState(() => {
-    const deviceStore = installDeviceStore();
+    const deviceStore = createDeviceStore();
     return configureKit({ ...MOBILE_KIT, deviceStore, ground: readMode(undefined, deviceStore) });
   });
   return (

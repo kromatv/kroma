@@ -1,27 +1,19 @@
+import type {
+  AccountStorage,
+  AuthResult,
+  StoredSession,
+  User,
+  UserId,
+} from '@kromatv/client/accounts';
+import { useAccountStorage } from './account-storage';
 // The shared per-user session state machine behind each client's <AuthProvider>.
 //
 // Token model: localStorage holds only a long-lived ACCESS token per remembered
 // account (never a bearer). On boot we silently exchange the active account's
 // access token for a short-lived SESSION token, kept in memory.
 
-import {
-  apiErrorBody,
-  apiErrorText,
-  KromaApiError,
-  type KromaClient,
-  sharedTokenExchange,
-} from '@kromatv/client';
-import {
-  type AuthResult,
-  clearSession,
-  forgetAccount,
-  loadAccounts,
-  loadSession,
-  type StoredSession,
-  saveSession,
-  type User,
-  type UserId,
-} from '@kromatv/client/accounts';
+import { apiErrorBody, apiErrorText, KromaApiError, type KromaClient } from '@kromatv/client';
+
 import {
   type Dispatch,
   type SetStateAction,
@@ -76,10 +68,13 @@ export interface AuthSession {
 function refreshExchange(
   client: KromaClient,
   setSession: Dispatch<SetStateAction<StoredSession | null>>,
+  persistence: AccountStorage,
 ): Promise<string | undefined> {
+  const { loadSession, saveSession, clearSession } = persistence;
   const active = loadSession();
   if (!active) return Promise.resolve(undefined);
-  return sharedTokenExchange(() => client.accounts.exchangeToken(active.accessToken))
+  return client.session
+    .sharedTokenExchange(() => client.accounts.exchangeToken(active.accessToken))
     .then((res) => {
       client.setAuthToken(res.token);
       setSession((cur) => (cur ? { ...cur, user: res.user } : cur));
@@ -99,19 +94,22 @@ function refreshExchange(
 }
 
 export function useAuthSession(client: KromaClient | null): AuthSession {
+  const persistence = useAccountStorage();
+  const { loadSession, saveSession, loadAccounts, clearSession, forgetAccount } = persistence;
   const [session, setSession] = useState<StoredSession | null>(null);
   const [accounts, setAccounts] = useState<StoredSession[]>([]);
   const [ready, setReady] = useState(false);
 
   const adopt = useCallback(
-    (stored: StoredSession, token: string, user: User) => {
+    (stored: StoredSession, token: string, user: User, mediaTicket?: string) => {
       client?.setAuthToken(token);
+      client?.session.setSessionMediaTicket(mediaTicket);
       const next: StoredSession = { ...stored, user };
       saveSession(next);
       setSession(next);
       setAccounts(loadAccounts());
     },
-    [client],
+    [client, saveSession, loadAccounts],
   );
 
   // Silent-refresh handler: on a 401, re-exchange the active access token (no
@@ -119,9 +117,9 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
   // concurrent 401s (and the boot exchange / data layer) share one exchange.
   useEffect(() => {
     if (!client) return;
-    client.setRefreshHandler(() => refreshExchange(client, setSession));
+    client.setRefreshHandler(() => refreshExchange(client, setSession, persistence));
     return () => client.setRefreshHandler();
-  }, [client]);
+  }, [client, persistence]);
 
   // Boot: hydrate remembered accounts + silently exchange the active access token
   // for a session. On failure (PIN needed / expired) drop to the picker but keep
@@ -135,10 +133,11 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
       return;
     }
     let cancelled = false;
-    sharedTokenExchange(() => client.accounts.exchangeToken(active.accessToken))
+    client.session
+      .sharedTokenExchange(() => client.accounts.exchangeToken(active.accessToken))
       .then((res) => {
         if (cancelled) return;
-        adopt(active, res.token, res.user);
+        adopt(active, res.token, res.user, res.mediaTicket);
       })
       .catch(() => {
         if (cancelled) return;
@@ -157,7 +156,7 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
 
   const apply = useCallback(
     (res: AuthResult) => {
-      adopt({ accessToken: res.accessToken, user: res.user }, res.token, res.user);
+      adopt({ accessToken: res.accessToken, user: res.user }, res.token, res.user, res.mediaTicket);
     },
     [adopt],
   );
@@ -167,7 +166,7 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
       if (!client) return { ok: false, needsPin: false, unreachable: true };
       try {
         const res = await client.accounts.exchangeToken(s.accessToken, pin);
-        adopt(s, res.token, res.user);
+        adopt(s, res.token, res.user, res.mediaTicket);
         return { ok: true };
       } catch (e) {
         // Nothing came back from the server (offline, DNS, TLS): the token is
@@ -203,7 +202,7 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
     client?.setAuthToken();
     clearSession();
     setSession(null);
-  }, [client]);
+  }, [client, loadSession, clearSession]);
 
   const forget = useCallback(
     (userId: UserId) => {
@@ -222,7 +221,7 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
         return s;
       });
     },
-    [client],
+    [client, loadSession, loadAccounts, forgetAccount],
   );
 
   const logout = useCallback(async () => {
@@ -242,16 +241,19 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
     else clearSession();
     setAccounts(loadAccounts());
     setSession(null);
-  }, [client]);
+  }, [client, forgetAccount, loadSession, loadAccounts, clearSession]);
 
-  const updateUser = useCallback((patch: Partial<User>) => {
-    setSession((s) => {
-      if (!s) return s;
-      const next: StoredSession = { ...s, user: { ...s.user, ...patch } };
-      saveSession(next);
-      return next;
-    });
-  }, []);
+  const updateUser = useCallback(
+    (patch: Partial<User>) => {
+      setSession((s) => {
+        if (!s) return s;
+        const next: StoredSession = { ...s, user: { ...s.user, ...patch } };
+        saveSession(next);
+        return next;
+      });
+    },
+    [saveSession],
+  );
 
   return useMemo<AuthSession>(
     () => ({

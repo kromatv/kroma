@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // "Bientôt disponible": the coming-soon calendar of upcoming, not-yet-available
 // releases (a movie's availability date + a show episode's air date), grouped by
 // month and ascending by date. Read-only view over GET /api/requests/calendar.
@@ -29,7 +30,7 @@ import {
 } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { RequestCard, RequestCardSkeleton } from '#web/features/requests/request-card';
-import { userQueries } from '#web/shared/lib/queries';
+
 import { PageFrame } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
 
@@ -37,12 +38,14 @@ import { RouteLink } from '#web/shared/ui/route-link';
 const IMMINENT_DAYS = 7;
 
 export function ComingSoonPage() {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
   const locale = useLocale();
   const { data: entries, isPending } = useQuery({
-    ...userQueries.calendar(),
+    ...webRuntime.queries.userQueries.calendar(),
     refetchInterval: 60_000,
   });
 

@@ -1,13 +1,5 @@
-import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
-// "Signaler un probleme" dialog: any logged-in user flags an issue on a movie /
-// show / episode (wrong metadata, audio, video, subtitles, other) with an
-// optional note. Posts to /api/reports; the server resolves the title itself.
-
-import { apiErrorText } from '@kromatv/client';
-import type { ReportCategory, ReportSubjectKind } from '@kromatv/client/reports';
-import type { MessageKey } from '@kromatv/i18n';
-import { useT } from '@kromatv/ui';
 import {
+  activeTheme,
   Box,
   Callout,
   color,
@@ -18,7 +10,18 @@ import {
   Row,
   sv,
   Text,
+  useStyleScope,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// "Signaler un probleme" dialog: any logged-in user flags an issue on a movie /
+// show / episode (wrong metadata, audio, video, subtitles, other) with an
+// optional note. Posts to /api/reports; the server resolves the title itself.
+
+import { apiErrorText } from '@kromatv/client';
+import type { ReportCategory, ReportSubjectKind } from '@kromatv/client/reports';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
+
 import {
   IconCheck,
   IconDotsCircleHorizontal,

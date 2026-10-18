@@ -40,6 +40,7 @@ import {
   writeMode as writeGround,
 } from './core/theme-mode';
 import type { StyleDecl } from './core/types';
+import { KitSettingsContext, useKitSettings } from './lib/kit-settings';
 
 export interface StyleTestHost {
   runtime: StyleRuntime;
@@ -78,7 +79,16 @@ export interface StyleTestHost {
 export function createStyleTestHost(options: StyleRuntimeOptions = {}): StyleTestHost {
   const runtime = createStyleRuntime({ ground: 'system', ...options });
   function Host({ children }: Readonly<{ children?: ReactNode }>) {
-    return createElement(StyleRuntimeContext.Provider, { value: runtime }, children);
+    const parent = useKitSettings();
+    const settings = {
+      ...parent,
+      deviceStore: options.deviceStore === undefined ? parent.deviceStore : options.deviceStore,
+    };
+    return createElement(
+      KitSettingsContext.Provider,
+      { value: settings },
+      createElement(StyleRuntimeContext.Provider, { value: runtime }, children),
+    );
   }
   function wrapper(Outer: RenderOptions['wrapper']) {
     return function Wrapper({ children }: Readonly<{ children: ReactNode }>) {

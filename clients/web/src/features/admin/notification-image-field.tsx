@@ -20,6 +20,7 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import { useEffect, useRef, useState } from 'react';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 const sDefinition = styles({
   tile: { minW: 0 },
@@ -29,12 +30,13 @@ const sDefinition = styles({
 });
 
 import { useAsyncAction } from '#web/features/admin/hooks';
-import { kromaClient } from '#web/shared/lib/api';
 
 export function NotificationImageField({
   value,
   onChange,
 }: Readonly<{ value: string; onChange: (url: string) => void }>) {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
@@ -50,7 +52,7 @@ export function NotificationImageField({
       <InputGroup.Root label={t('admin.notifFieldImage')}>
         <InputGroup.Addon onPress={() => setOpen(true)}>
           <Img
-            src={value ? kromaClient().media.artwork.resolve(value, 160) : null}
+            src={value ? webRuntime.client.media.artwork.resolve(value, 160) : null}
             alt=""
             radius="xs"
             style={s.thumb}
@@ -90,6 +92,8 @@ function ImagePickerDialog({
   onClose,
   onPick,
 }: Readonly<{ open: boolean; onClose: () => void; onPick: (url: string) => void }>) {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
@@ -99,7 +103,7 @@ function ImagePickerDialog({
   const upload = (file: File) =>
     run(
       async () => {
-        const { imageUrl } = await kromaClient().admin.notifications.uploadImage(file);
+        const { imageUrl } = await webRuntime.client.admin.notifications.uploadImage(file);
         onPick(imageUrl);
       },
       (e) => (e instanceof Error ? e.message : t('error.serverBody')),
@@ -146,6 +150,8 @@ function ImagePickerDialog({
 }
 
 function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>) {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
@@ -154,8 +160,8 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
 
   useEffect(() => {
     let active = true;
-    kromaClient()
-      .admin.notifications.images()
+    webRuntime.client.admin.notifications
+      .images()
       .then((listing) => {
         if (active) setImages(listing.images);
       })
@@ -165,7 +171,7 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
     return () => {
       active = false;
     };
-  }, []);
+  }, [webRuntime.client.admin.notifications.images]);
 
   if (failed) {
     return (
@@ -194,7 +200,7 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
       {images.map((img) => (
         <Focusable key={img.name} style={s.tile} label={img.name} onPress={() => onPick(img.url)}>
           <Img
-            src={kromaClient().media.artwork.resolve(img.url, 320)}
+            src={webRuntime.client.media.artwork.resolve(img.url, 320)}
             alt={img.name}
             radius="sm"
             style={s.art}

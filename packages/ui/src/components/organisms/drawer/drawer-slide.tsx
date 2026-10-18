@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
 // The sheet's entrance and exit: a CSS transition on the browser, an animated
 // transform on native, and the mounted/shown pair that keeps the panel in the
@@ -7,7 +7,7 @@ import { type StyleScope, useStyleScope } from '#ui/core';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Animated, type StyleProp, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { sharedStyle, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';

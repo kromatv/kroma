@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
 // What a <ButtonGroup> publishes to each of its children, and the style a member
 // builds from it.
 //
@@ -10,7 +10,7 @@ import { type StyleScope, useStyleScope } from '#ui/core';
 
 import { createContext, useCallback, useContext, useState } from 'react';
 import type { ViewStyle } from 'react-native';
-import { sharedStyle } from '#ui/core';
+
 import type { Radius } from '#ui/core/tokens/layout';
 import type { ControlSize } from '#ui/lib/field-shell';
 

@@ -1,11 +1,16 @@
 // @vitest-environment jsdom
 
+import { createQueryClient } from '@kromatv/client/query';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-const auth = { user: { language: 'fr' }, client: null, updateUser: vi.fn() };
+const auth = {
+  user: { language: 'fr' },
+  client: createQueryClient({ baseUrl: 'http://kroma.test' }),
+  updateUser: vi.fn(),
+};
 vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => auth }));
 
 const { LocaleProvider } = await import('#web/shared/lib/locale');

@@ -1,4 +1,4 @@
-import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import { Avatar, Box, Row, Text, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // One request row in the admin queue: poster, title + type pill + seasons,
 // requester, date, status chip, and quick approve/deny on pending rows.
 
@@ -6,7 +6,7 @@ import type { MediaRequest } from '@kromatv/client/requests';
 import type { MessageKey } from '@kromatv/i18n';
 import { TABULAR, Table } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
-import { Avatar, Box, Row, Text } from '@kromatv/ui/kit';
+
 import { Pill } from '#web/features/admin/pill';
 import { kindMeta } from '#web/features/admin/pipeline-meta';
 import { posterScrim } from '#web/shared/lib/art-styles';

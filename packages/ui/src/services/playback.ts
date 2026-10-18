@@ -178,7 +178,8 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   useEffect(() => {
     if (!params.enabled) return;
     const ev = new KromaEvents(params.eventsBaseUrl, {
-      token: params.eventsToken,
+      token: params.eventsToken ?? (() => params.client.sessionToken),
+      refresh: () => params.client.refreshSession(),
       onEvent: (e) => {
         if (e.type === 'playback.terminate' && e.sessionId === sessionId) {
           fireTerminated(e.message);

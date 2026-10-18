@@ -154,6 +154,12 @@ and they are already written. Bind declarations with `useStyles` or `useSv`;
 nearest `KitProvider` / explicit `ThemeProvider`, including nested scopes. Use
 `useThemeControls()` for changes and `config.designWidth` for a fixed canvas.
 
+Each API client owns its bearer, media ticket and exchange coalescing. Bind event
+sockets to that client explicitly. Native roots create their storage backend
+before mounting and pass it through `KitProvider`; session persistence uses
+`createAccountStorage(backend)`. Browser convenience readers are stateless and
+resolve the platform store on each call.
+
 ## A package is reached by name, never by path
 
 `import { tvShellConfig } from '../../packages/bundler/src/shell'` is forbidden,

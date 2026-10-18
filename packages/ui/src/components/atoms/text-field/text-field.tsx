@@ -1,4 +1,12 @@
-import { activeTheme, type StyleScope, useStyleScope } from '#ui/core';
+import {
+  activeTheme,
+  color,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  useStyleScope,
+  useTheme,
+} from '#ui/core';
 
 // On a TV, typing goes through the on-screen keyboard, so the field renders as a
 // non-focusable value plus caret - nothing may invite a click that summons the
@@ -11,7 +19,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { color, sharedStyle, styles, useTheme } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { Caret } from '#ui/lib/caret';
 import {

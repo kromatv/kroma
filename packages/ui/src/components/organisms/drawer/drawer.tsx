@@ -1,4 +1,4 @@
-import { resolveStyles, type StyleScope, useStyleScope } from '#ui/core';
+import { resolveStyles, type StyleScope, styles, useStyleScope } from '#ui/core';
 
 // <Drawer>: the edge-anchored slide-in sheet (a detail inspector, an edit form,
 // the phone nav), on all four targets. The same overlay contract as <Dialog> -
@@ -11,7 +11,7 @@ import { type ReactNode, useMemo } from 'react';
 import { Modal, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
 import { Box, Row } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { DismissBackdrop } from '#ui/lib/dismiss-backdrop';
 import { useFocusNav } from '#ui/lib/focus-nav';

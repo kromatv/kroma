@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
 // Focus transition, web (Tizen / webOS / desktop / browser).
 //
 // A CSS transition rather than Animated: on a TV's weak CPU a JS interpolation
@@ -8,7 +8,7 @@ import { type StyleScope, useStyleScope } from '#ui/core';
 // cost a third of the frame rate on a Samsung LS03D, so the ring does not fade.
 
 import { useCallback, useState } from 'react';
-import { sharedStyle } from '#ui/core';
+
 import { motion } from '#ui/core/tokens';
 import { type PressScale, pressScaleFor, useLongestSide } from '#ui/lib/press-dip';
 import { ease } from './ease';

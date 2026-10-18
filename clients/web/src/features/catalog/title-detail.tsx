@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // The single detail page for a title, owned or not. Fed a normalized `TitleView`
 
 import { tmdbKindOf } from '@kromatv/client/discovery';
@@ -14,7 +15,7 @@ import { TreatmentsPanel } from '#web/features/catalog/treatments-panel';
 import { useTitleRequest } from '#web/features/catalog/use-title-request';
 import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
-import { userQueries } from '#web/shared/lib/queries';
+
 import type { SimilarTarget, TitleView } from '#web/shared/lib/titleView';
 import { useWatched } from '#web/shared/lib/watched';
 import { page } from '#web/shared/ui';
@@ -153,6 +154,8 @@ function TitleBody({
 }
 
 export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
@@ -180,7 +183,7 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
   if (owned) backTo = view.kind === 'show' ? '/shows' : '/';
 
   const { data: epProgress = {} } = useQuery({
-    ...userQueries.progress(),
+    ...webRuntime.queries.userQueries.progress(),
     enabled: !!user && !!localId && view.kind === 'show',
     select: (entries) => progressMap(entries),
   });

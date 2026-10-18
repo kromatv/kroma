@@ -1,9 +1,3 @@
-import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
-// Export / import dialogs for the admin "Sauvegarde" panel. Export asks whether
-// to encrypt (+ password); import detects an encrypted file from its magic bytes
-// and only then asks for a password, always confirming before it overwrites.
-
-import { useT } from '@kromatv/ui';
 import {
   Box,
   controlMetrics,
@@ -13,7 +7,15 @@ import {
   SwitchFace,
   sharedStyle,
   Text,
+  useStyleScope,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// Export / import dialogs for the admin "Sauvegarde" panel. Export asks whether
+// to encrypt (+ password); import detects an encrypted file from its magic bytes
+// and only then asks for a password, always confirming before it overwrites.
+
+import { useT } from '@kromatv/ui';
+
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAuth } from '#web/shared/lib/auth';

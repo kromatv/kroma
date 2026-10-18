@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // The unified season section: one switcher over ALL seasons; the selected
 // season renders its owned, playable episodes (with watched/progress) and its
 // gaps as tickable rows, so a partially-owned show plays what it has and asks
@@ -14,7 +15,7 @@ import { EpisodeRow, MissingEpisodeRow } from '#web/features/catalog/episode-row
 import { epKey } from '#web/features/catalog/episode-selection';
 import { RequestBar, SeasonAsk } from '#web/features/catalog/request-bar';
 import { SeasonRequestCard } from '#web/features/catalog/season-card';
-import { discoverQueries } from '#web/shared/lib/queries';
+
 import type { TitleSeason } from '#web/shared/lib/titleView';
 
 // The page gutter is a fluid CSS custom property and `overflow-x` names one
@@ -94,12 +95,14 @@ export function SeasonSection({
   pendingEpisodes: Set<string>;
   requestBusy: boolean;
 }>) {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
   const [season, setSeason] = useState(seasons[0]?.number ?? 1);
   const { data: listing } = useQuery({
-    ...discoverQueries.season(discoverTmdbId ?? 0, season),
+    ...webRuntime.queries.discoverQueries.season(discoverTmdbId ?? 0, season),
     enabled: discoverTmdbId != null,
   });
   const picked = seasons.find((s) => s.number === season) ?? seasons[0];

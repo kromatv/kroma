@@ -1,4 +1,16 @@
-import { type StyleScope, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import {
+  Box,
+  type ColorValue,
+  classes,
+  Row,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 
 // The log viewport shared by the "Journaux" console and the module page's
 // recent-output panel: the scrolling pane, the day marks that break it up and
@@ -7,16 +19,7 @@ import { type StyleScope, useStyleScope, useThemeVersion } from '@kromatv/ui/kit
 import type { LogEntry } from '@kromatv/client/admin';
 import { TABULAR } from '@kromatv/module-sdk';
 import { useLocaleDefault } from '@kromatv/ui';
-import {
-  Box,
-  type ColorValue,
-  classes,
-  Row,
-  sharedStyle,
-  styles,
-  Text,
-  useStyles,
-} from '@kromatv/ui/kit';
+
 import { Fragment, useEffect, useRef } from 'react';
 
 // A capped height, a single-axis scroll and a CSS grid have no React Native

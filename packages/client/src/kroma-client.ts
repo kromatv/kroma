@@ -7,20 +7,16 @@ import {
   type TransportConfig,
   withUserAgent,
 } from './core/http';
-import {
-  sessionMediaTicket,
-  setSessionMediaTicket,
-  setSessionRefresh,
-  setSessionToken,
-} from './core/session';
+import { createSessionScope, type SessionScope } from './core/session';
 
 /** What the client carries beyond its domains: the bearer, the locale, and the
  * few things a platform needs to reach the server without the transport. */
 export interface ClientControls {
   readonly baseUrl: string;
-  /** Adopt a session bearer, or clear it with `undefined`. Also publishes it to
-   * the shared session module, so the event socket (which cannot send a header
-   * and reads the bearer from there) follows without a second call. */
+  readonly session: SessionScope;
+  readonly locale: string | undefined;
+  /** Adopt a session bearer for this client, or clear it with `undefined`.
+   * Bind event sockets explicitly to this client’s `sessionToken` getter. */
   setAuthToken(token?: string): void;
   /** When set, a 401 on a `bearer` endpoint triggers one refresh + retry before
    * the error surfaces. */
@@ -61,12 +57,13 @@ export function kromaClientParts(options: KromaClientOptions): {
 } {
   const baseUrl = options.baseUrl.replace(/(^|[^/])\/+$/, '$1');
   const base = options.fetch ?? globalThis.fetch.bind(globalThis);
-  let authToken = options.authToken;
+  const session = createSessionScope();
+  session.setSessionToken(options.authToken);
+  const { sessionMediaTicket, setSessionMediaTicket, setSessionToken } = session;
   let locale = options.locale;
   let refreshHandler: (() => Promise<string | undefined>) | undefined;
 
   const setAuthToken = (token?: string): void => {
-    authToken = token;
     if (!token) setSessionMediaTicket(undefined);
     setSessionToken(token);
   };
@@ -80,7 +77,7 @@ export function kromaClientParts(options: KromaClientOptions): {
   const config: TransportConfig = {
     baseUrl,
     fetchFn: options.userAgent ? withUserAgent(base, options.userAgent) : base,
-    token: () => authToken,
+    token: session.sessionToken,
     locale: () => locale,
     artworkScale: options.artworkScale,
     refresh: refreshSession,
@@ -91,23 +88,27 @@ export function kromaClientParts(options: KromaClientOptions): {
 
   const controls: ClientControls = {
     baseUrl,
+    session,
+    get locale() {
+      return locale;
+    },
     setAuthToken,
     refreshSession,
     setRefreshHandler(fn) {
       refreshHandler = fn;
-      setSessionRefresh(fn && refreshSession);
     },
     setLocale(next) {
       locale = next;
     },
     get hasAuth() {
-      return Boolean(authToken);
+      return Boolean(session.sessionToken());
     },
     get sessionToken() {
-      return authToken;
+      return session.sessionToken();
     },
     authHeaders(): Record<string, string> {
-      return authToken ? { Authorization: `Bearer ${authToken}` } : {};
+      const token = session.sessionToken();
+      return token ? { Authorization: `Bearer ${token}` } : {};
     },
   };
 

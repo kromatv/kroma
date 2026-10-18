@@ -45,7 +45,8 @@ const EMPTY: ModuleHostValue = {
 const ModuleHostContext = createContext<ModuleHostValue>(EMPTY);
 
 export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const [runtime] = useState(createModuleRuntime);
+  const { client } = useAuth();
+  const [runtime] = useState(() => createModuleRuntime(client));
   const { registry: moduleRegistry, remotes } = runtime;
   const queryClient = useQueryClient();
   const [revision, setRevision] = useState(0);

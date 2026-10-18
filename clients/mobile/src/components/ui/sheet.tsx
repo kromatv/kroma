@@ -1,4 +1,4 @@
-import { resolveStyles, type StyleScope } from '@kromatv/ui/kit';
+import { resolveStyles, type StyleScope, styles, Text, useStyles } from '@kromatv/ui/kit';
 
 // The chrome every drawer in the app is drawn in.
 
@@ -7,7 +7,7 @@ import {
   type BottomSheetBackdropProps,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { styles, Text, useStyles } from '@kromatv/ui/kit';
+
 import { type ReactNode, useMemo } from 'react';
 import { type StyleProp, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

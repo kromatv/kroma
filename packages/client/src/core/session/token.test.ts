@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemStorage } from './storage.fixture';
-import { sessionToken, setSessionToken, sharedTokenExchange } from './token';
+import { createSessionScope } from './token';
+
+const { sessionToken, setSessionToken, sharedTokenExchange } = createSessionScope();
 
 beforeEach(() => {
   (globalThis as { localStorage?: Storage }).localStorage = new MemStorage() as unknown as Storage;
@@ -60,4 +62,25 @@ describe('sharedTokenExchange', () => {
     sharedTokenExchange(exchange);
     expect(exchange).toHaveBeenCalledTimes(2);
   });
+});
+
+it('coalesces within one owner and never shares an exchange across owners', async () => {
+  const a = createSessionScope();
+  const b = createSessionScope();
+  const resolvers: Array<(value: { token: string; user: string }) => void> = [];
+  const exchange = vi.fn(
+    () =>
+      new Promise<{ token: string; user: string }>((resolve) => {
+        resolvers.push(resolve);
+      }),
+  );
+  const first = a.sharedTokenExchange(exchange);
+  expect(a.sharedTokenExchange(exchange)).toBe(first);
+  const second = b.sharedTokenExchange(exchange);
+  expect(second).not.toBe(first);
+  expect(exchange).toHaveBeenCalledTimes(2);
+  resolvers[0]?.({ token: 'a', user: 'alice' });
+  resolvers[1]?.({ token: 'b', user: 'bob' });
+  await expect(first).resolves.toEqual({ token: 'a', user: 'alice' });
+  await expect(second).resolves.toEqual({ token: 'b', user: 'bob' });
 });

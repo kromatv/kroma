@@ -1,4 +1,4 @@
-import { activeTheme, useStyleScope } from '#ui/core';
+import { activeTheme, radiusValue, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { useImageBackend } from '#ui/lib/image-backend';
 // <Img>: the artwork surface, with a built-in fade-in and cross-fade on `src`
@@ -13,7 +13,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import { radiusValue, sharedStyle, styles } from '#ui/core';
+
 import type { CornerValue } from '#ui/core/tokens';
 import { coverRect, parsePosition } from '#ui/lib/cover-rect';
 import { gradient } from '#ui/lib/css';

@@ -1,4 +1,12 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import {
+  type ColorValue,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  sv,
+  type TypeRole,
+  useStyleScope,
+} from '#ui/core';
 
 // <Timeline>: a sequence of events down a rail - a history, an activity feed,
 // the steps a job went through.
@@ -14,7 +22,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type ColorValue, sharedStyle, styles, sv, type TypeRole } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';

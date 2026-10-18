@@ -6,7 +6,7 @@
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createStyleTestHost } from '#ui/testing-style';
-import { createTheme, KROMA, KROMA_LIGHT } from './theme';
+import { createTheme, createThemeRuntime, KROMA, KROMA_LIGHT } from './theme';
 
 const styleHost = createStyleTestHost();
 const { applyTheme, setTheme, themeVersion, applyMode } = styleHost;
@@ -108,6 +108,26 @@ describe('publishing a theme', () => {
 
     expect(sheet()).toContain('--kroma-text:#050807');
     expect(sheet()).toContain('--kroma-text-75:rgba(5, 8, 7, 0.75)');
+  });
+
+  it('scans long hyphenated names once and preserves derived steps', () => {
+    const tokens = document.createElement('style');
+    tokens.textContent = `:root{--kroma-${'--kroma--'.repeat(20_000)}invalid:0;--kroma-text-12_5:rgba(255,255,255,0.125)}`;
+    document.head.append(tokens);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const runtime = createThemeRuntime();
+    const detach = runtime.attach(host, 'long-name');
+    try {
+      runtime.setTheme(createTheme({ colors: { text: '#050807' } }));
+      expect(document.getElementById('kroma-theme-long-name')?.textContent).toContain(
+        '--kroma-text-12_5:rgba(5, 8, 7, 0.125)',
+      );
+    } finally {
+      detach();
+      host.remove();
+      tokens.remove();
+    }
   });
 
   // The whole point of applying through the cascade: a theme that restates

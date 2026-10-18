@@ -39,12 +39,12 @@ export type Styles<S> = { readonly [K in keyof S]: AnyStyle };
  * to atomic CSS classes shared with every other style that declares the same
  * thing, rather than re-serialising it onto each element.
  *
- * The binding is a live view: reading `s.row` resolves against the ACTIVE
- * theme and breakpoint, and either swap hands back fresh objects (a new
- * identity is what makes react-native-web recompile them). Read properties off
- * it at render time; a value copied out and held keeps the theme it was read
- * under. Nothing here re-renders a component - a set that changes with the
- * breakpoint is read by one that follows it (`useBreakpoint`, or <Box>).
+ * Bind the definition with `const s = useStyles(definition)` inside a component.
+ * The hook resolves against that styling root and subscribes to its theme and
+ * only the breakpoint steps the declaration names. A swap returns fresh style
+ * objects so the compiler and react-native-web can observe the change.
+ * Outside React, pass an explicit StyleScope or use resolveStyles; an unbound
+ * definition resolves against immutable KROMA defaults.
  */
 const RESOLVE = Symbol('scoped-styles');
 const MASK = Symbol('style-breakpoints');

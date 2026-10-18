@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
 // <Rail>: a titled horizontal row of tiles, the backbone of the 10-foot home.
 // A rail IS a row: the spatial navigator moves between rows vertically and
 // inside one horizontally, so nothing needs measuring for that to hold.
@@ -11,7 +11,7 @@ import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import type { StyleProp, TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { sharedStyle } from '#ui/core';
+
 import { gutter, type TypeRole } from '#ui/core/tokens';
 import { RailContext, useRail } from './rail-context';
 import { GrowingRow, List } from './rail-row';

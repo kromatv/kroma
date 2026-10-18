@@ -16,12 +16,8 @@ import {
   useState,
 } from 'react';
 import type { SettingsGroupId } from '#tv/app/settings/registry';
-import {
-  ARTWORK_SCALE,
-  perfHudPrefStore,
-  useArtworkPref,
-  useStoredPref,
-} from '#tv/app/settings/store';
+import { ARTWORK_SCALE, useArtworkPref, useStoredPref } from '#tv/app/settings/store';
+import { useDevicePreferences } from './device-preferences';
 
 // The screen registry of the in-memory router: a TV has no address bar, so
 // history is a stack. Adding a key here type-checks `go` / `reset` / `<TvOutlet>`.
@@ -297,5 +293,5 @@ export function TvOutlet() {
 }
 
 function usePerfHud(): boolean {
-  return useStoredPref(perfHudPrefStore)[0] === 'on';
+  return useStoredPref(useDevicePreferences().perfHud)[0] === 'on';
 }

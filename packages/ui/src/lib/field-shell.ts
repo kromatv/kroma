@@ -1,4 +1,15 @@
-import { resolveStyles, type StyleScope } from '#ui/core';
+import {
+  activeTheme,
+  type ColorValue,
+  type RadiusToken,
+  radiusValue,
+  resolveStyles,
+  type StyleDecl,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  useBreakpoint,
+} from '#ui/core';
 import { DEFAULT_STYLE_SCOPE } from '#ui/core/style-scope';
 import { useKitSettings } from './kit-settings';
 // THE control shell: the one well every input wears.
@@ -17,16 +28,7 @@ import { useKitSettings } from './kit-settings';
 // `KitProvider` rather than at every call site.
 
 import type { TextStyle } from 'react-native';
-import {
-  activeTheme,
-  type ColorValue,
-  type RadiusToken,
-  radiusValue,
-  type StyleDecl,
-  sharedStyle,
-  styles,
-  useBreakpoint,
-} from '#ui/core';
+
 import type { Radius } from '#ui/core/tokens/layout';
 
 type ControlSize = 'sm' | 'md' | 'tv';

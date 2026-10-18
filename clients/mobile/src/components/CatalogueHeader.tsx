@@ -1,10 +1,3 @@
-import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
-
-// The catalogue's masthead: the current view's best-rated backdrop fading into
-// the ground, the heading over it, and one strip of filters under it.
-
-import { type GenreCount, genreLabel, SORT_MODES, type SortMode } from '@kromatv/core';
-import type { MessageKey } from '@kromatv/i18n';
 import {
   Box,
   Chip,
@@ -14,8 +7,17 @@ import {
   styles,
   Text,
   fontSizes as textSizes,
+  useStyleScope,
   useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+
+// The catalogue's masthead: the current view's best-rated backdrop fading into
+// the ground, the heading over it, and one strip of filters under it.
+
+import { type GenreCount, genreLabel, SORT_MODES, type SortMode } from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, type View } from 'react-native';

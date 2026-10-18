@@ -14,6 +14,18 @@ const api = vi.hoisted(() => ({
 vi.mock('#web/shared/lib/api', () => ({
   kromaClient: () => ({ discovery: { detail: api.discoverDetail } }),
 }));
+vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
+  const original = await importOriginal<typeof import('#web/shared/lib/web-runtime')>();
+  const { createWebTestRuntime } = await import('#web/shared/lib/web-runtime.fixture');
+  const { QueryClient } =
+    await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+  const queryCache = new QueryClient();
+  const runtime = createWebTestRuntime(
+    { discovery: { detail: api.discoverDetail } },
+    () => queryCache,
+  );
+  return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
+});
 
 import { useSavedTitles } from './use-saved-titles';
 

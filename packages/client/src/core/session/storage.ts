@@ -11,31 +11,11 @@ export interface SessionStorage {
   removeItem(key: string): void;
 }
 
-let installed: SessionStorage | null = null;
-const watchers = new Set<() => void>();
-
-/** Install the device store for a platform with no `localStorage` (React
- * Native has none; without this every save here is a silent no-op). Call it
- * once, before the app reads a session. */
-export function setSessionStorage(storage: SessionStorage | null): void {
-  installed = storage;
-  for (const watcher of watchers) watcher();
-}
-
-/** Notified whenever the device store is swapped, so anything a module derived
- * from a stored value at evaluation time can derive it again: a native shell
- * installs its store only once the session file has been read, which is after
- * every module has been evaluated. Returns an unsubscribe. */
-export function onDeviceStorageChange(listener: () => void): () => void {
-  watchers.add(listener);
-  return () => watchers.delete(listener);
-}
-
 /** The device store this platform is using, or null where there is none.
  * Exported so other per-device state (language, keyboard layout, recent
  * searches) can share it instead of hard-coding `localStorage`. */
-export function deviceStorage(): SessionStorage | null {
-  if (installed) return installed;
+export function deviceStorage(provided?: SessionStorage | null): SessionStorage | null {
+  if (provided !== undefined) return provided;
   try {
     return typeof localStorage !== 'undefined' ? localStorage : null;
   } catch {
@@ -43,23 +23,23 @@ export function deviceStorage(): SessionStorage | null {
   }
 }
 
-export function readRaw(key: string): string | null {
+export function readRaw(key: string, storage?: SessionStorage | null): string | null {
   try {
-    return deviceStorage()?.getItem(key) ?? null;
+    return deviceStorage(storage)?.getItem(key) ?? null;
   } catch {
     return null;
   }
 }
 
-export function writeRaw(key: string, value: string | null): void {
+export function writeRaw(key: string, value: string | null, storage?: SessionStorage | null): void {
   try {
-    if (value === null) deviceStorage()?.removeItem(key);
-    else deviceStorage()?.setItem(key, value);
+    if (value === null) deviceStorage(storage)?.removeItem(key);
+    else deviceStorage(storage)?.setItem(key, value);
   } catch {}
 }
 
-function parseJson(key: string): unknown {
-  const raw = readRaw(key);
+function parseJson(key: string, storage?: SessionStorage | null): unknown {
+  const raw = readRaw(key, storage);
   if (!raw) return undefined;
   try {
     return JSON.parse(raw);
@@ -70,14 +50,22 @@ function parseJson(key: string): unknown {
 
 /** The stored value at `key`, or null when it is missing or no longer matches
  * `schema` (a blob written by an older build is dropped, never trusted). */
-export function readStored<S extends z.ZodType>(key: string, schema: S): z.output<S> | null {
-  const parsed = z.safeParse(schema, parseJson(key));
+export function readStored<S extends z.ZodType>(
+  key: string,
+  schema: S,
+  storage?: SessionStorage | null,
+): z.output<S> | null {
+  const parsed = z.safeParse(schema, parseJson(key, storage));
   return parsed.success ? parsed.data : null;
 }
 
 /** The stored array at `key`, keeping only the entries that still parse. */
-export function readStoredList<S extends z.ZodType>(key: string, schema: S): z.output<S>[] {
-  const value = parseJson(key);
+export function readStoredList<S extends z.ZodType>(
+  key: string,
+  schema: S,
+  storage?: SessionStorage | null,
+): z.output<S>[] {
+  const value = parseJson(key, storage);
   if (!Array.isArray(value)) return [];
   return value.flatMap((entry) => {
     const parsed = z.safeParse(schema, entry);
@@ -85,6 +73,6 @@ export function readStoredList<S extends z.ZodType>(key: string, schema: S): z.o
   });
 }
 
-export function writeStored(key: string, value: unknown): void {
-  writeRaw(key, JSON.stringify(value));
+export function writeStored(key: string, value: unknown, storage?: SessionStorage | null): void {
+  writeRaw(key, JSON.stringify(value), storage);
 }

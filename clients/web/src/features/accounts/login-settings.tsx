@@ -16,7 +16,8 @@ import {
 } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
-import { serverQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+
 import { MODAL_SCRIM } from '#web/shared/ui';
 import { CapabilityChip } from '#web/shared/ui/capability-chip';
 
@@ -72,13 +73,18 @@ function InfoRow({ label, value }: Readonly<{ label: string; value: ReactNode }>
  * and this device's playback capabilities, for checking a deployment before
  * anyone can sign in. */
 export function LoginSettings() {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
   const [open, setOpen] = useState(false);
   const locale = useLocale();
   const setLocale = useSetLocale();
-  const { data: health } = useQuery({ ...serverQueries.health(), enabled: open });
+  const { data: health } = useQuery({
+    ...webRuntime.queries.serverQueries.health(),
+    enabled: open,
+  });
 
   const builtMs = Date.parse(buildInfo.buildDate);
   const builtAt = Number.isNaN(builtMs)

@@ -1,4 +1,13 @@
-import { activeTheme, type StyleScope, useStyleScope } from '#ui/core';
+import {
+  activeTheme,
+  color,
+  type StyleScope,
+  sharedStyle,
+  style,
+  styles,
+  useStyleScope,
+  useTheme,
+} from '#ui/core';
 
 // <TextArea>: the multi-line entry. A real TextInput where there is a physical
 // keyboard, a non-focusable display plus caret on a television.
@@ -12,7 +21,7 @@ import {
 } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { color, sharedStyle, style, styles, useTheme } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { Caret } from '#ui/lib/caret';
 import { fieldSizing } from '#ui/lib/css';

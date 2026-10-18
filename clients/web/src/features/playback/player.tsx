@@ -23,8 +23,9 @@ import { usePlaybackSession } from '#web/features/playback/use-playback-session'
 import { useResumeProgress } from '#web/features/playback/use-resume-progress';
 import { useWebController } from '#web/features/playback/use-web-controller';
 import { useWebUpNext } from '#web/features/playback/use-web-upnext';
-import { kromaClient, type MovieView } from '#web/shared/lib/api';
+import type { MovieView } from '#web/shared/lib/api';
 import { useStoryboard } from '#web/shared/lib/use-storyboard';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { castPicker } from '#web/shared/ui/cast-picker';
 
 const PREVIEW_W = 176;
@@ -50,6 +51,8 @@ export function Player({
   onGoHome?: () => void;
   onClose: () => void;
 }>) {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
@@ -104,8 +107,8 @@ export function Player({
             ? `S${next.season} E${next.episode}`
             : undefined,
         posterUrl:
-          kromaClient().media.artwork.backdropFor(next) ??
-          kromaClient().media.artwork.posterFor(next),
+          webRuntime.client.media.artwork.backdropFor(next) ??
+          webRuntime.client.media.artwork.posterFor(next),
       }
     : null;
 

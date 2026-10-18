@@ -1,10 +1,15 @@
-import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import {
+  activeTheme,
+  color,
+  ProgressRing as Ring,
+  Spinner,
+  useStyleScope,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 // Circular progress ring (downloads), from the design system. Wraps
 // @kromatv/ui's <ProgressRing> with this app's own contract: a negative value
 // means "indeterminate", shown as the platform spinner instead of a ring
 // stuck at zero.
-
-import { color, ProgressRing as Ring, Spinner } from '@kromatv/ui/kit';
 
 export function ProgressRing({
   progress,

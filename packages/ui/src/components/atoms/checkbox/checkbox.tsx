@@ -1,4 +1,4 @@
-import { useSv } from '#ui/core';
+import { sv, useSv } from '#ui/core';
 // <Checkbox>: the many-of-N control. A <Switch> says "this is on"; a checkbox
 // says "this one is included", which is why a list of them is a selection and
 // a list of switches is a settings page.
@@ -9,7 +9,7 @@ import { useSv } from '#ui/core';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
-import { sv } from '#ui/core';
+
 import { useControllable } from '#ui/lib/use-controllable';
 
 type CheckboxSize = 'sm' | 'tv';

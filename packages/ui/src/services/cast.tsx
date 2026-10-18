@@ -113,6 +113,8 @@ export function CastProvider({
     }
     refresh();
     const events = new KromaEvents(client.baseUrl, {
+      token: () => client.sessionToken,
+      refresh: () => client.refreshSession(),
       // Only on (re)connect: a gap in the stream may have swallowed a change, and
       // the roster is the one thing worth resyncing wholesale.
       onOpen: () => {

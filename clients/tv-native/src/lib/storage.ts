@@ -11,7 +11,7 @@
 // store probes by writing and checking the bytes landed, falling back to the
 // purgeable caches directory if they did not.
 
-import { type SessionStorage, setSessionStorage } from '@kromatv/client';
+import type { SessionStorage } from '@kromatv/client';
 import { Directory, File, Paths } from 'expo-file-system';
 
 const FILE_NAME = 'kroma-session.json';
@@ -95,6 +95,5 @@ export async function hydrateSessionStorage(): Promise<DeviceStore> {
   }
   const store = new DeviceStore(target);
   if (raw !== null) store.load(raw);
-  setSessionStorage(store);
   return store;
 }

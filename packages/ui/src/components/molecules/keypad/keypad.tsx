@@ -1,5 +1,12 @@
-import type { StyleScope } from '#ui/core';
-import { useStyleScope, useSv } from '#ui/core';
+import {
+  type StyleDecl,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  svFor,
+  useStyleScope,
+  useSv,
+} from '#ui/core';
 
 // <Keypad>: the remote's half of <PinField>. Nine digits, a zero and a
 // delete, laid out as the phone dial everybody knows so the D-pad walks it
@@ -21,7 +28,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type StyleDecl, sharedStyle, styles, svFor } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { HAND } from '#ui/lib/cursor';
 import { keyFace } from '#ui/lib/field-shell';

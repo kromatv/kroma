@@ -1,4 +1,4 @@
-import { useSv } from '#ui/core';
+import { sv, useSv } from '#ui/core';
 // <Radio>: the one-of-N control. Unlike a checkbox it cannot be un-picked by
 // pressing it again - the only way out of a choice is another choice - so a
 // press always reports `true` and the group owns which one is on.
@@ -8,7 +8,6 @@ import { useSv } from '#ui/core';
 
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
-import { sv } from '#ui/core';
 
 type RadioSize = 'sm' | 'tv';
 

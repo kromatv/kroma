@@ -1,10 +1,20 @@
-import { activeTheme, type StyleScope, useStyleScope } from '#ui/core';
+import {
+  activeTheme,
+  type BoxStyleProps,
+  radiusValue,
+  type StyleScope,
+  sharedStyle,
+  style,
+  styles,
+  useStyleScope,
+  useTheme,
+} from '#ui/core';
 
 // The pulse comes from `useLoop`: a native-driven opacity on a television, a CSS
 // keyframe in a browser, never a per-frame JS callback per skeleton.
 
 import { Animated, type StyleProp, View, type ViewStyle } from 'react-native';
-import { type BoxStyleProps, radiusValue, sharedStyle, style, styles, useTheme } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { motion, type TypeRole, type TypeSpec } from '#ui/core/tokens';
 import { useLoop } from '#ui/lib/loop';

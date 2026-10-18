@@ -1,3 +1,4 @@
+import { useKromaClient } from '#web/shared/lib/web-runtime';
 // Admin "Demandes" queue: every media request as a searchable / filterable
 // table (mirroring the pipeline console's shape), with quick approve/deny and
 // a detail drawer. Backed by GET /api/requests + the request.updated WS event.
@@ -39,6 +40,8 @@ const BUCKETS: Record<string, (s: RequestStatus) => boolean> = {
 };
 
 export function RequestsQueuePage() {
+  const eventClient = useKromaClient();
+
   const t = useT();
   const navigate = useNavigate();
   const { client } = useAuth();
@@ -60,13 +63,16 @@ export function RequestsQueuePage() {
   const throttledReload = useThrottledReload(reload);
   useEffect(() => {
     const ev = new KromaEvents(apiBase(), {
+      token: () => eventClient.sessionToken,
+      refresh: () => eventClient.refreshSession(),
+
       onEvent: (e) => {
         if (e.type === 'request.updated') throttledReload();
       },
     });
     ev.connect();
     return () => ev.close();
-  }, [throttledReload]);
+  }, [throttledReload, eventClient.sessionToken, eventClient.refreshSession]);
 
   // The detail page subscribes to this same query (shared cache), so it stays
   // fresh here without an explicit push.

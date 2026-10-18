@@ -8,7 +8,7 @@ import {
   ARTWORK_SCALE,
   ArtworkPrefProvider,
   createArtworkPref,
-  perfHudPrefStore,
+  createPerfHudPref,
   reactivePref,
   useStoredPref,
 } from './store';
@@ -184,28 +184,26 @@ describe('the artwork default', () => {
 
 describe('a preference stored by an earlier run', () => {
   it('is what the next module evaluation reads, not the fallback', async () => {
-    perfHudPrefStore.set('on');
+    createPerfHudPref().set('on');
 
     vi.resetModules();
     const next = await import('./store');
 
-    expect(next.perfHudPrefStore.get()).toBe('on');
+    expect(next.createPerfHudPref().get()).toBe('on');
   });
 
-  it('reads the artwork quality when the device store arrives late', async () => {
+  it('reads the hydrated artwork backend when the root is created', async () => {
     vi.resetModules();
-    const { setSessionStorage } = await import('@kromatv/client');
     const store = await import('./store');
     const late = new Map([['kroma:artwork', 'medium']]);
     expect(ARTWORK_SCALE[store.createArtworkPref().get()]).toBe(1);
 
-    setSessionStorage({
+    const backend = {
       getItem: (k: string) => late.get(k) ?? null,
       setItem: (k: string, v: string) => void late.set(k, v),
       removeItem: (k: string) => void late.delete(k),
-    });
+    };
 
-    expect(ARTWORK_SCALE[store.createArtworkPref().get()]).toBe(0.5);
-    setSessionStorage(null);
+    expect(ARTWORK_SCALE[store.createArtworkPref(backend).get()]).toBe(0.5);
   });
 });

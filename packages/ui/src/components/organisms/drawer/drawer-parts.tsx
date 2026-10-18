@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
 // The sheet's three bands, and what the surface tells them: only the middle one
 // scrolls, the other two stay put behind a hairline.
@@ -8,7 +8,7 @@ import { ScrollView, type StyleProp, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
 import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
-import { sharedStyle, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { useTDefault } from '#ui/services/i18n';
 

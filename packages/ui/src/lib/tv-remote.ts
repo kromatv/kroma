@@ -2,8 +2,7 @@
 // Reading react-native-tvos remote events the same way in both places that read
 // them: focus-nav's Back/PlayPause bridge and the player's key router.
 
-import type { HWEvent } from 'react-native';
-import { Platform } from 'react-native';
+import { type HWEvent, Platform } from 'react-native';
 
 /**
  * Whether this event is the trailing half of a press and should be ignored.

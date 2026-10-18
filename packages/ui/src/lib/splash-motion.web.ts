@@ -1,4 +1,4 @@
-import { useStyleScope } from '#ui/core';
+import { sharedStyle, useStyleScope } from '#ui/core';
 // The splash backdrop's slow drift, web (Tizen / webOS / desktop / browser).
 //
 // react-native-web silently drops `useNativeDriver` (its TurboModuleRegistry
@@ -10,7 +10,7 @@ import { useStyleScope } from '#ui/core';
 
 import { useMemo } from 'react';
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
-import { sharedStyle } from '#ui/core';
+
 import type { DriftSpec } from './splash-motion';
 
 /** react-native-web's keyframe extension, absent from React Native's style types. */

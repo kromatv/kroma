@@ -1,7 +1,13 @@
 import { TITLE_LETTERS } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import type { LetterRange } from '@kromatv/ui/kit';
-import { classes, AlphabetRail as Rail, styles, useBreakpoint, useStyles } from '@kromatv/ui/kit';
+import {
+  classes,
+  type LetterRange,
+  AlphabetRail as Rail,
+  styles,
+  useBreakpoint,
+  useStyles,
+} from '@kromatv/ui/kit';
 
 export type { LetterRange };
 

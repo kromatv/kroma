@@ -1,4 +1,4 @@
-import { useSv } from '#ui/core';
+import { type StyleDecl, svFor, useSv } from '#ui/core';
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // One key of an <OnScreenKeyboard>. A <Focusable>, so the spatial focus nav
 // reaches it and OK activates it.
@@ -8,7 +8,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type StyleDecl, svFor } from '#ui/core';
+
 import { CONTROL, keyFace } from '#ui/lib/field-shell';
 
 /** A keyboard's scale: `sm` is arm's length, `tv` is across a room. */

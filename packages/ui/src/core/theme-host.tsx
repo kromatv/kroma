@@ -1,13 +1,7 @@
-import { Fragment, type ReactNode } from 'react';
-import type { StyleRuntime } from './style-runtime';
+import { Fragment } from 'react';
+import type { ThemeHostProps } from './theme-host.types';
 
-/** Native styles resolve against context; there is no CSS host to publish to. */
-export function ThemeHost({
-  children,
-}: {
-  runtime: StyleRuntime;
-  themeScope?: boolean;
-  children?: ReactNode;
-}) {
+/** Native roots use context and need no extra layout view. */
+export function ThemeHost({ children }: Readonly<ThemeHostProps>) {
   return <Fragment>{children}</Fragment>;
 }

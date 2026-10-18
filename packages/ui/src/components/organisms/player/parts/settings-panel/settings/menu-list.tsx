@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope, useStyles } from '#ui/core';
+import { type StyleScope, sharedStyle, useStyleScope, useStyles } from '#ui/core';
 // The settings menu, rendered.
 //
 // `moved` is how many of the entries are controls the transport row could not
@@ -9,7 +9,7 @@ import { Fragment } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { playerStyle } from '#ui/components/organisms/player/lib/style';
-import { sharedStyle } from '#ui/core';
+
 import { useT } from '#ui/services/i18n';
 import type { Entry } from './entries';
 import { MenuRow } from './menu-row';

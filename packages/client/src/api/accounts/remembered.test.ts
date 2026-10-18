@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { loadLocalePref, saveLocalePref, setSessionStorage } from '../../core/session';
+import { loadLocalePref, saveLocalePref } from '../../core/session';
 import { MemStorage } from '../../core/session/storage.fixture';
 import { UserId } from './ids';
 import {
   clearSession,
+  createAccountStorage,
   forgetAccount,
   forgetServer,
   loadAccounts,
@@ -213,8 +214,6 @@ describe('malformed storage', () => {
 });
 
 describe('a store that refuses to answer', () => {
-  afterEach(() => setSessionStorage(null));
-
   it('degrades to signed-out when reading localStorage itself throws', () => {
     Object.defineProperty(globalThis, 'localStorage', {
       configurable: true,
@@ -232,7 +231,7 @@ describe('a store that refuses to answer', () => {
   });
 
   it('degrades when the installed device store throws on every read', () => {
-    setSessionStorage({
+    const backend = {
       getItem() {
         throw new Error('device store unavailable');
       },
@@ -242,9 +241,23 @@ describe('a store that refuses to answer', () => {
       removeItem() {
         throw new Error('device store unavailable');
       },
-    });
-    expect(loadLocalePref()).toBeNull();
-    expect(() => migrateStorage()).not.toThrow();
-    expect(() => saveLocalePref('fr')).not.toThrow();
+    };
+    expect(loadLocalePref(backend)).toBeNull();
+    expect(() => createAccountStorage(backend).migrateStorage()).not.toThrow();
+    expect(() => saveLocalePref('fr', backend)).not.toThrow();
   });
+});
+
+it('keeps active sessions and remembered accounts on their explicit storage root', () => {
+  const a = createAccountStorage(new MemStorage());
+  const b = createAccountStorage(new MemStorage());
+  a.saveSession(session('alice'));
+  b.saveSession(session('bob'));
+  expect(a.loadSession()?.user.id).toBe('alice');
+  expect(b.loadSession()?.user.id).toBe('bob');
+  expect(loadSession()).toBeNull();
+  a.clearSession();
+  expect(a.loadSession()).toBeNull();
+  expect(b.loadSession()?.user.id).toBe('bob');
+  expect(a.loadAccounts().map((value) => value.user.id)).toEqual(['alice']);
 });

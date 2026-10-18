@@ -1,10 +1,3 @@
-import { resolveStyles, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
-// Slide-in report drawer: subject identity (category + status + kind), the
-// reporter + date, the free-text message, a deep-link to the title's fiche, and
-// the triage actions (resolve / dismiss / reopen / delete).
-
-import type { Report, ReportStatus } from '@kromatv/client/reports';
-import { useT } from '@kromatv/ui';
 import {
   Avatar,
   Box,
@@ -13,9 +6,19 @@ import {
   type HostElement,
   IconButton,
   Row,
+  resolveStyles,
   styles,
   Text,
+  useStyleScope,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// Slide-in report drawer: subject identity (category + status + kind), the
+// reporter + date, the free-text message, a deep-link to the title's fiche, and
+// the triage actions (resolve / dismiss / reopen / delete).
+
+import type { Report, ReportStatus } from '@kromatv/client/reports';
+import { useT } from '@kromatv/ui';
+
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { Pill } from '#web/features/admin/pill';

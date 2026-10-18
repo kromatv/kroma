@@ -1,4 +1,4 @@
-import { useStyleScope } from '#ui/core';
+import { sharedStyle, useStyleScope } from '#ui/core';
 // <Grid>: the tile grid of the browse screens.
 //
 // React Native has no CSS grid (and neither does the legacy webOS tier this app
@@ -17,7 +17,7 @@ import { useStyleScope } from '#ui/core';
 import { Children, type ReactNode, useCallback, useState } from 'react';
 import type { LayoutChangeEvent, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { sharedStyle } from '#ui/core';
+
 import { FocusLiftView } from '#ui/lib/focus-lift';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
 import { FocusLine } from '#ui/lib/focus-scroll';

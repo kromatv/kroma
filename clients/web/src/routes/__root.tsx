@@ -2,20 +2,21 @@ import appCss from '@kromatv/ui/css?url';
 import { ConfirmHost, classes, KitProvider, styles, Toaster, useStyles } from '@kromatv/ui/kit';
 import bricolageLatin from '@kromatv/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
 import hankenLatin from '@kromatv/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
-import type { QueryClient } from '@tanstack/react-query';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import { createRootRouteWithContext, HeadContent, Scripts } from '@tanstack/react-router';
 import { lazy, type ReactNode, Suspense } from 'react';
 import { preload } from 'react-dom';
 import { Intro } from '#web/features/catalog/intro';
 import { NotificationBell } from '#web/features/notifications/panel';
 import { ModuleHostProvider } from '#web/modules/ModuleHostProvider';
+import type { WebRuntime } from '#web/shared/lib/api';
 import { AuthProvider } from '#web/shared/lib/auth';
 import { BlurPreferenceProvider } from '#web/shared/lib/blur-pref';
 import { LocaleProvider } from '#web/shared/lib/locale';
 import { MyListProvider } from '#web/shared/lib/mylist';
-import { queryClient } from '#web/shared/lib/query';
 import { WatchedProvider } from '#web/shared/lib/watched';
+import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { NavActionsProvider } from '#web/shared/ui/nav-actions';
 
 // Dev-only: lazy so the devtools bundle never ships in the packaged SPA.
@@ -33,6 +34,7 @@ const sDefinition = styles({
 
 export interface RouterContext {
   queryClient: QueryClient;
+  runtime: WebRuntime;
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({
@@ -63,6 +65,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
+  const { runtime, queryClient } = Route.useRouteContext();
   const s = useStyles(sDefinition);
 
   // React hoists a `data-precedence` stylesheet to the top of the head, and a
@@ -89,17 +92,19 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
           <BlurPreferenceProvider>
             <QueryClientProvider client={queryClient}>
               <ConfirmHost>
-                <AuthProvider>
-                  <WatchedProvider>
-                    <MyListProvider>
-                      <LocaleProvider>
-                        <NavActionsProvider actions={<NotificationBell />}>
-                          <ModuleHostProvider>{children}</ModuleHostProvider>
-                        </NavActionsProvider>
-                      </LocaleProvider>
-                    </MyListProvider>
-                  </WatchedProvider>
-                </AuthProvider>
+                <WebRuntimeProvider value={runtime}>
+                  <AuthProvider>
+                    <WatchedProvider>
+                      <MyListProvider>
+                        <LocaleProvider>
+                          <NavActionsProvider actions={<NotificationBell />}>
+                            <ModuleHostProvider>{children}</ModuleHostProvider>
+                          </NavActionsProvider>
+                        </LocaleProvider>
+                      </MyListProvider>
+                    </WatchedProvider>
+                  </AuthProvider>
+                </WebRuntimeProvider>
                 <Intro />
 
                 <div className={classes(s.toasts)}>

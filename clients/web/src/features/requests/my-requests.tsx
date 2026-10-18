@@ -9,17 +9,21 @@ import type { ViewProps } from 'react-native';
 import { RequestCard, RequestCardSkeleton } from '#web/features/requests/request-card';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { userQueries } from '#web/shared/lib/queries';
 import { requestStatusMeta, seasonsSummary } from '#web/shared/lib/request-status';
+import { useKromaClient, useWebRuntime } from '#web/shared/lib/web-runtime';
 import { PageFrame } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 export function MyRequestsPage() {
+  const eventClient = useKromaClient();
+
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const { client } = useAuth();
   const queryClient = useQueryClient();
-  const requestsQuery = userQueries.myRequests();
+  const requestsQuery = webRuntime.queries.userQueries.myRequests();
   const { data: requests, isPending } = useQuery({
     ...requestsQuery,
     refetchInterval: 15000,
@@ -31,6 +35,9 @@ export function MyRequestsPage() {
   const lastReloadRef = useRef(0);
   useEffect(() => {
     const ev = new KromaEvents<ServerEvent | DownloadProgressEvent>(apiBase(), {
+      token: () => eventClient.sessionToken,
+      refresh: () => eventClient.refreshSession(),
+
       onEvent: (e) => {
         if (e.type === 'request.updated') {
           const now = Date.now();
@@ -45,7 +52,7 @@ export function MyRequestsPage() {
     });
     ev.connect();
     return () => ev.close();
-  }, [queryClient, requestsQuery.queryKey]);
+  }, [queryClient, requestsQuery.queryKey, eventClient.sessionToken, eventClient.refreshSession]);
 
   const cancel = (req: MediaRequest) => {
     setBusyId(req.id);

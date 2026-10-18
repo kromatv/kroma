@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
 // The amber lens that travels to the item under it. Owned by the Root: it is
 // one box crossing the whole capsule, so no item can draw it.
@@ -6,7 +6,7 @@ import { type StyleScope, useStyleScope } from '#ui/core';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { sharedStyle, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { ease } from '#ui/lib/ease';
 import { WEB } from '#ui/lib/platform';

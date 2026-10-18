@@ -23,6 +23,8 @@ export function useNotificationStream(): void {
     if (!signedIn || !client) return;
     const { queryKey } = client.query.notifications.list();
     const events = new KromaEvents(client.baseUrl, {
+      token: () => client.sessionToken,
+      refresh: () => client.refreshSession(),
       onEvent: (e) => {
         if (e.type !== 'notification.created' && e.type !== 'notification.read') return;
         queryClient.setQueryData(queryKey, (prev: NotificationsView | undefined) =>

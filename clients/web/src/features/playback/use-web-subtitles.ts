@@ -14,9 +14,10 @@ import {
   useSubtitleGenerations,
 } from '@kromatv/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { kromaClient, type MovieView, type SubtitleView } from '#web/shared/lib/api';
+import type { MovieView, SubtitleView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { useLangPrefs } from '#web/shared/lib/lang-pref';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 export interface WebSubtitles {
   subtitles: PlayerSub[];
@@ -35,6 +36,8 @@ export interface WebSubtitles {
  * collide with embedded ones.
  */
 export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
+  const webRuntime = useWebRuntime();
+
   const { user } = useAuth();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [downloaded, setDownloaded] = useState<DownloadedSub[]>([]);
@@ -55,23 +58,23 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
 
   useEffect(() => {
     let cancelled = false;
-    kromaClient()
-      .subtitles.downloaded(item.id)
+    webRuntime.client.subtitles
+      .downloaded(item.id)
       .then((d) => !cancelled && setDownloaded(d))
       .catch(() => undefined);
-    kromaClient()
-      .subtitles.capabilities(item.id)
+    webRuntime.client.subtitles
+      .capabilities(item.id)
       .then((c) => !cancelled && setCaps(c))
       .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [item.id]);
+  }, [item.id, webRuntime.client.subtitles.downloaded, webRuntime.client.subtitles.capabilities]);
 
   const onComplete = useCallback(
     (subId: string) => {
-      kromaClient()
-        .subtitles.downloaded(item.id)
+      webRuntime.client.subtitles
+        .downloaded(item.id)
         .then((list) => {
           setDownloaded(list);
           const i = list.findIndex((d) => d.id === subId);
@@ -79,9 +82,9 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
         })
         .catch(() => undefined);
     },
-    [item.id],
+    [item.id, webRuntime.client.subtitles.downloaded],
   );
-  const { generations, cancel, refresh } = useSubtitleGenerations(kromaClient(), item.id, {
+  const { generations, cancel, refresh } = useSubtitleGenerations(webRuntime.client, item.id, {
     active: true,
     onComplete,
   });
@@ -91,14 +94,14 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
       index: 1000 + i,
       language: d.language,
       codec: 'SRT',
-      url: kromaClient().media.artwork.resolve(d.url) ?? d.url,
+      url: webRuntime.client.media.artwork.resolve(d.url) ?? d.url,
       downloaded: true,
       label: d.label,
       subId: d.id,
       provider: d.provider,
     }));
     return [...item.subs, ...dl];
-  }, [item.subs, downloaded]);
+  }, [item.subs, downloaded, webRuntime.client.media.artwork.resolve]);
 
   const subtitles = useMemo<PlayerSub[]>(
     () =>
@@ -130,11 +133,11 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
           return cur;
         });
       }
-      void kromaClient()
-        .subtitles.delete(item.id, SubtitleId.parse(subId))
+      void webRuntime.client.subtitles
+        .delete(item.id, SubtitleId.parse(subId))
         .catch(() => undefined);
     },
-    [item.id, downloaded],
+    [item.id, downloaded, webRuntime.client.subtitles.delete],
   );
 
   const onStart = useCallback(
@@ -142,15 +145,15 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
       const target = GEN_LANGS.find((l) => l.code === req.lang) ?? GEN_LANGS[0];
       if (!target) return;
       const done = () => {
-        kromaClient()
-          .subtitles.downloaded(item.id)
+        webRuntime.client.subtitles
+          .downloaded(item.id)
           .then(setDownloaded)
           .catch(() => undefined);
         refresh();
       };
       if (req.mode === 'transcribe') {
-        void kromaClient()
-          .subtitles.generate(item.id, {
+        void webRuntime.client.subtitles
+          .generate(item.id, {
             mode: 'transcribe',
             lang: target.label,
             spokenLang: target.code,
@@ -161,8 +164,8 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
       } else {
         const src = allSubs.find((s) => s.index === req.sourceIndex && s.url);
         if (!src) return;
-        void kromaClient()
-          .subtitles.generate(item.id, {
+        void webRuntime.client.subtitles
+          .generate(item.id, {
             mode: 'translate',
             lang: target.label,
             ...(src.subId ? { sourceSubId: src.subId } : { sourceTrack: src.index }),
@@ -171,7 +174,13 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
           .catch(() => undefined);
       }
     },
-    [item.id, allSubs, refresh],
+    [
+      item.id,
+      allSubs,
+      refresh,
+      webRuntime.client.subtitles.generate,
+      webRuntime.client.subtitles.downloaded,
+    ],
   );
 
   const subtitleGen: SubtitleGenBundle = {

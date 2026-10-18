@@ -1,4 +1,4 @@
-import { useStyleScope } from '#ui/core';
+import { sharedStyle, useStyleScope } from '#ui/core';
 // Looping animations, web (Tizen / webOS / desktop / browser).
 //
 // react-native-web silently drops `useNativeDriver` (its TurboModuleRegistry
@@ -7,7 +7,6 @@ import { useStyleScope } from '#ui/core';
 // the compositor instead, including on the legacy Chromium 53 tier.
 
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
-import { sharedStyle } from '#ui/core';
 
 export type LoopKind = 'spin' | 'sweep' | 'pulse' | 'blink' | 'halo';
 

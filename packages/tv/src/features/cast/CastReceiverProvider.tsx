@@ -9,13 +9,13 @@ import { beaconTxt, type LanDiscoveryBridge } from '@kromatv/core';
 import { useForeground, useT } from '@kromatv/ui';
 import { Avatar, toast } from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { useDevicePreferences } from '#tv/app/device-preferences';
 import { useAuth } from '#tv/app/providers/auth';
 import { useEnv } from '#tv/app/providers/env';
 import { useNav } from '#tv/app/router';
 import { useStoredPref } from '#tv/app/settings/store';
 import { applyCastCommand } from '#tv/features/cast/applyCommand';
 import { CastPlaybackProvider, useCastBridge } from '#tv/features/cast/castBridge';
-import { castReceiverPrefStore } from '#tv/features/cast/castPref';
 import { CastControllersProvider, useCastControllerStore } from '#tv/features/cast/controllers';
 import { createDeviceIdentity, type DeviceIdentity } from '#tv/shared/device';
 
@@ -68,7 +68,7 @@ function CastReceiver({
   const t = useT();
   const { user, ready } = useAuth();
   const { platform } = useEnv();
-  const [castable] = useStoredPref(castReceiverPrefStore);
+  const [castable] = useStoredPref(useDevicePreferences().castReceiver);
 
   // Read through a ref so the effect below doesn't reconnect on every render.
   const deps = useRef({ client, nav, t, platform, name, bridge });

@@ -1,5 +1,13 @@
 import type { StyleProp, ViewStyle } from 'react-native';
-import { type StyleScope, useStyleScope, useSv } from '#ui/core';
+import {
+  type ColorValue,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  sv,
+  useStyleScope,
+  useSv,
+} from '#ui/core';
 import { fontSizes as textSizes } from '#ui/core/tokens';
 // A labelled artwork tile for anything that groups titles. `background` is the
 // instant fill under the art, `wash` the veil over it that keeps the label
@@ -11,8 +19,7 @@ import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
-import type { ColorValue } from '#ui/core';
-import { sharedStyle, styles, sv } from '#ui/core';
+
 import { gradient } from '#ui/lib/css';
 
 const NO_POINTER: ViewStyle = styles({ none: { pointerEvents: 'none' } }).none;

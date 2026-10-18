@@ -1,3 +1,5 @@
+import type { SessionStorage } from '@kromatv/client';
+import { useDeviceStore } from '@kromatv/ui/device-store';
 import { createContext, useContext, useState } from 'react';
 // User-selectable playback engine: a manual override of the automatic
 // `selectEngine` decision, persisted per device.
@@ -15,8 +17,8 @@ export type EnginePref = 'auto' | 'avplay' | 'webview' | 'shaka' | 'remux' | 'mp
 const ALL: readonly EnginePref[] = ['auto', 'avplay', 'webview', 'shaka', 'remux', 'mpv', 'vlc'];
 
 /** The preference and failed-write fallback belong to one television root. */
-export function createEnginePref(): ReactivePref<EnginePref> {
-  const stored = devicePref('kroma:engine', ALL, 'auto');
+export function createEnginePref(storage?: SessionStorage | null): ReactivePref<EnginePref> {
+  const stored = devicePref('kroma:engine', ALL, 'auto', storage);
   const listeners = new Set<() => void>();
   let chosen: EnginePref | null = null;
 
@@ -44,8 +46,9 @@ export function createEnginePref(): ReactivePref<EnginePref> {
 const Context = createContext<ReactivePref<EnginePref> | null>(null);
 export const EnginePrefProvider = Context.Provider;
 export function useEnginePref(): ReactivePref<EnginePref> {
+  const storage = useDeviceStore();
   const provided = useContext(Context);
-  const [owned] = useState(() => (provided ? null : createEnginePref()));
+  const [owned] = useState(() => (provided ? null : createEnginePref(storage)));
   const store = provided ?? owned;
   if (!store) throw new Error('Engine preference requires its owning root');
   return store;

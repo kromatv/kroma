@@ -5,14 +5,17 @@ import { useState } from 'react';
 import { ReleaseArticle } from '#web/features/releases/release-article';
 import { useMarkReleaseSeen } from '#web/features/releases/use-mark-release-seen';
 import { VersionList } from '#web/features/releases/version-list';
-import { userQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+
 import { PageFrame } from '#web/shared/ui';
 
 export function WhatsNewPage() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const step = useBreakpoint();
   const wide = step === 'lg' || step === 'tv';
-  const { data, isPending } = useQuery(userQueries.releases());
+  const { data, isPending } = useQuery(webRuntime.queries.userQueries.releases());
   useMarkReleaseSeen(data?.unseen ?? null);
   const [picked, setPicked] = useState<string | null>(null);
   const releases = data?.releases ?? [];

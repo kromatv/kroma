@@ -1,4 +1,17 @@
-import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import {
+  activeTheme,
+  Box,
+  classes,
+  color,
+  DataField,
+  Grid,
+  Row,
+  styles,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 
 // One physical file's technical card, as rendered inside the "Media details"
 // modal: name / path header, container-size-duration fields, then the video,
@@ -8,17 +21,7 @@ import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 import type { AudioTrack, MediaFile, SubtitleTrack, VideoTrack } from '@kromatv/client/media';
 import { channelLabel, codecLabel, langName } from '@kromatv/core';
 import { useFormat, useT } from '@kromatv/ui';
-import {
-  Box,
-  classes,
-  color,
-  DataField,
-  Grid,
-  Row,
-  styles,
-  Text,
-  useStyles,
-} from '@kromatv/ui/kit';
+
 import { IconFileInfo } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 

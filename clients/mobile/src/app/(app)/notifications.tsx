@@ -1,4 +1,17 @@
-import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import {
+  activeTheme,
+  Box,
+  color,
+  radius as cornerRadius,
+  Icon,
+  IconButton,
+  type IconName,
+  styles,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 
 // The notification centre on the phone: what happened while you were away,
 // styled after the browser's list. The list is live (server push, see
@@ -8,17 +21,7 @@ import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 
 import type { Notification, NotificationEvent } from '@kromatv/client/notifications';
 import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kromatv/core';
-import {
-  Box,
-  color,
-  radius as cornerRadius,
-  Icon,
-  IconButton,
-  type IconName,
-  styles,
-  Text,
-  useStyles,
-} from '@kromatv/ui/kit';
+
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, SectionList } from 'react-native';

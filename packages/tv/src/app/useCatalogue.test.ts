@@ -35,6 +35,11 @@ interface StreamHooks {
 }
 
 vi.mock('@kromatv/client/accounts', () => ({
+  createAccountStorage: () => ({
+    loadSession: H.loadSession,
+    forgetServer: H.forgetServer,
+    saveServer: H.saveServer,
+  }),
   loadSession: H.loadSession,
   forgetServer: H.forgetServer,
   saveServer: H.saveServer,
@@ -66,7 +71,7 @@ vi.mock('@kromatv/client', () => ({
 }));
 
 vi.mock('@kromatv/core', () => ({
-  activeLocale: () => 'fr',
+  deviceLocale: () => 'fr',
   discoverServer: H.discoverServer,
   checkServerCompat: H.checkServerCompat,
 }));

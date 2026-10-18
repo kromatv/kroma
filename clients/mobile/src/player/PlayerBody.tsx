@@ -5,8 +5,8 @@ import { useCast } from '@kromatv/ui';
 import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigation, useRouter } from 'expo-router';
-import type { VideoView as VideoViewRef } from 'expo-video';
-import { VideoView } from 'expo-video';
+import { VideoView, type VideoView as VideoViewRef } from 'expo-video';
+
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { CastPanel } from '#mobile/components/cast/CastPanel';

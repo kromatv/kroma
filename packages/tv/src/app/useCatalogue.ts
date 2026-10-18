@@ -1,13 +1,9 @@
 import type { KromaClient } from '@kromatv/client';
-import {
-  forgetServer as forgetServerStore,
-  loadSession,
-  normalizeServerUrl as norm,
-  type SavedServer,
-  saveServer as saveServerStore,
-} from '@kromatv/client/accounts';
+import { normalizeServerUrl as norm, type SavedServer } from '@kromatv/client/accounts';
 import type { MediaItem, Show } from '@kromatv/client/media';
 import { discoverServer } from '@kromatv/core';
+import { useAccountStorage } from '@kromatv/ui';
+import { useDeviceStore } from '@kromatv/ui/device-store';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { makeClient } from '#tv/app/apiClient';
 import type { Connection } from '#tv/app/providers/connection';
@@ -54,13 +50,19 @@ export function useCatalogue(
   suppliedDeepLinks?: DeepLinks,
   artworkScale?: () => number,
 ): Catalogue {
+  const storage = useDeviceStore();
+  const {
+    loadSession,
+    saveServer: saveServerStore,
+    forgetServer: forgetServerStore,
+  } = useAccountStorage();
   const [ownedDeepLinks] = useState(createDeepLinks);
   const { readDeepLink, onDeepLink } = suppliedDeepLinks ?? ownedDeepLinks;
   const [publishPreview] = useState(createPreviewPublisher);
   // Read once, so the first client starts pointed at the right server with its
   // token applied and "Reprendre" does not flicker.
-  const bootSession = useMemo(() => loadSession(), []);
-  const [servers, setServers] = useState<SavedServer[]>(() => initialServers());
+  const bootSession = useMemo(() => loadSession(), [loadSession]);
+  const [servers, setServers] = useState<SavedServer[]>(() => initialServers(storage));
   const [activeServerUrl, setActiveServerUrl] = useState<string | null>(
     () => bootSession?.serverUrl ?? servers[0]?.url ?? null,
   );
@@ -70,8 +72,8 @@ export function useCatalogue(
     // No initial bearer: the auth provider exchanges the active account's access
     // token for a session token and calls `setAuthToken` (+ installs the refresh
     // handler) once the session belongs to this server.
-    return makeClient(activeServerUrl, undefined, artworkScale);
-  }, [activeServerUrl, artworkScale]);
+    return makeClient(activeServerUrl, undefined, artworkScale, storage);
+  }, [activeServerUrl, artworkScale, storage]);
   const liveClient = useRef(client);
   liveClient.current = client;
 
@@ -89,11 +91,14 @@ export function useCatalogue(
 
   const setActiveServer = useCallback((url: string) => setActiveServerUrl(norm(url)), []);
 
-  const addServer = useCallback((url: string, name?: string | null) => {
-    const next = saveServerStore({ url, name });
-    setServers(next);
-    setActiveServerUrl(norm(url));
-  }, []);
+  const addServer = useCallback(
+    (url: string, name?: string | null) => {
+      const next = saveServerStore({ url, name });
+      setServers(next);
+      setActiveServerUrl(norm(url));
+    },
+    [saveServerStore],
+  );
 
   const forgetServer = useCallback(
     (url: string) => {
@@ -104,7 +109,11 @@ export function useCatalogue(
       setServers(next);
       if (activeServerUrl && norm(activeServerUrl) === u) setActiveServerUrl(next[0]?.url ?? null);
     },
-    [servers, activeServerUrl],
+    [
+      servers,
+      activeServerUrl, // Drop it from core storage (also clears its accounts + active session).
+      forgetServerStore,
+    ],
   );
 
   const discover = useCallback(() => {

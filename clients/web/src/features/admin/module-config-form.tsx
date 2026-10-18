@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // Typed settings form for a module's declared `config` fields. Renders the right
 // control per field kind (text / number / checkbox / select) and PUTs properly
 // typed JSON values to /api/admin/modules/:id/config (bool and number, not the
@@ -19,7 +20,6 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';
-import { adminApi } from '#web/features/admin/module-api';
 
 type ConfigValue = string | number | boolean;
 
@@ -54,6 +54,8 @@ export function ModuleConfigForm({
   values: Record<string, unknown>;
   onSaved: () => void;
 }>) {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const [draft, setDraft] = useState<Record<string, ConfigValue>>(() =>
     Object.fromEntries(fields.map((f) => [f.key, initial(f, values[f.key])])),
@@ -64,7 +66,7 @@ export function ModuleConfigForm({
   const save = async () => {
     setSaving(true);
     try {
-      await adminApi(`/modules/${encodeURIComponent(moduleId)}/config`, {
+      await webRuntime.moduleApi.adminApi(`/modules/${encodeURIComponent(moduleId)}/config`, {
         method: 'PUT',
         body: JSON.stringify(draft),
       });

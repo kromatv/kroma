@@ -1,5 +1,5 @@
 import { KitProvider } from '#ui/configure';
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
 // The 10-foot stage: every TV screen is authored against a fixed 1920x1080 canvas
 // and scaled here to what the platform reports. Android TV reports 960x540 dp at
@@ -7,7 +7,7 @@ import { type StyleScope, useStyleScope } from '#ui/core';
 
 import type { ReactNode } from 'react';
 import { useWindowDimensions, View } from 'react-native';
-import { sharedStyle, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { CANVAS } from '#ui/core/tokens';
 

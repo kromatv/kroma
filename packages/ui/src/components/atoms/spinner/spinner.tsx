@@ -1,11 +1,11 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
 // The indeterminate busy ring: a rotating arc drawn with borders instead of SVG,
 // so it costs one view and no per-frame path work. `useLoop` keeps the rotation
 // off the JS thread on every platform.
 
 import { Animated } from 'react-native';
-import { sharedStyle, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { a11yState } from '#ui/lib/a11y';
 import { useLoop } from '#ui/lib/loop';

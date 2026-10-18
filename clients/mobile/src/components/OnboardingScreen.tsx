@@ -1,8 +1,5 @@
-import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
-// Shared scaffold for the onboarding/login surfaces. The lockup is the one
-// anchor: same size and position on every phase, with content swapping beneath.
-
 import {
+  activeTheme,
   BackButton,
   Box,
   color,
@@ -11,8 +8,13 @@ import {
   styles,
   Text,
   typeSpec as textRoles,
+  useStyleScope,
   useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// Shared scaffold for the onboarding/login surfaces. The lockup is the one
+// anchor: same size and position on every phase, with content swapping beneath.
+
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, type KeyboardAvoidingViewProps, Platform } from 'react-native';

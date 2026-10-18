@@ -1,20 +1,23 @@
-import { type StyleScope, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
-// Shared building blocks for the account-creation forms. Both the in-app
-// registration screen (`auth-forms.tsx`) and the public `/join` invite page
-// render the exact same avatar tile + email/username/password inputs, so that
-// block lives here once and is driven by controlled props.
-
-import { useT } from '@kromatv/ui';
 import {
   Box,
   Field,
   Focusable,
   Icon,
   type StyleDecl,
+  type StyleScope,
   sharedStyle,
   svFor,
   Text,
+  useStyleScope,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// Shared building blocks for the account-creation forms. Both the in-app
+// registration screen (`auth-forms.tsx`) and the public `/join` invite page
+// render the exact same avatar tile + email/username/password inputs, so that
+// block lives here once and is driven by controlled props.
+
+import { useT } from '@kromatv/ui';
+
 import { useEffect, useRef, useState } from 'react';
 import { Image } from '#web/shared/ui';
 import { avatarGradient, initials } from '#web/shared/ui/user-avatar';

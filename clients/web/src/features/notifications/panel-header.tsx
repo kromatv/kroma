@@ -20,8 +20,7 @@ import {
   type NotificationFilter,
   useUnreadCount,
 } from '#web/features/notifications/use-notifications';
-import { kromaClient } from '#web/shared/lib/api';
-import { userQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 /** The drawer's fixed half: what the panel is, what it is showing, and the two
  * things that act on the whole of it. */
@@ -29,6 +28,8 @@ export function PanelHeader({
   filter,
   onFilterChange,
 }: Readonly<{ filter: NotificationFilter; onFilterChange: (next: NotificationFilter) => void }>) {
+  const webRuntime = useWebRuntime();
+
   const s = useStyles(sDefinition);
 
   const t = useT();
@@ -39,8 +40,10 @@ export function PanelHeader({
   async function markAll() {
     setBusy(true);
     try {
-      await kromaClient().notifications.markAllRead();
-      await queryClient.invalidateQueries({ queryKey: userQueries.notifications().queryKey });
+      await webRuntime.client.notifications.markAllRead();
+      await queryClient.invalidateQueries({
+        queryKey: webRuntime.queries.userQueries.notifications().queryKey,
+      });
     } finally {
       setBusy(false);
     }

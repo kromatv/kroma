@@ -149,6 +149,7 @@ with `bun run --cwd packages/lint-rules rules --json`; new rules start with `bun
 existing findings that must be repaired before merging. Web shells and the kit
 audit also use Oxc's React Compiler; see the [compiler setup and measurements](docs/tooling/oxc-react-compiler.md).
 The kit now owns theme and breakpoint state per root; see the [styling API guide](packages/ui/README.md#themes) for `useStyles`, `useSv`, and root configuration.
+API credentials and native storage also have explicit owners; see the [client guide](packages/client/README.md).
 
 ## Contributing
 

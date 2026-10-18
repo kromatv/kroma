@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
 // The SVG element set, web (Tizen / webOS / desktop / browser): plain DOM svg.
 //
@@ -9,7 +9,7 @@ import { type StyleScope, useStyleScope } from '#ui/core';
 // wrappers are pass-throughs rather than translations.
 
 import type { SVGProps } from 'react';
-import { sharedStyle, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { classes } from '#ui/lib/classed';
 

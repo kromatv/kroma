@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, style, styles, useStyleScope } from '#ui/core';
 
 // The right-side settings panel (§5).
 //
@@ -33,7 +33,7 @@ import { playerStyle } from '#ui/components/organisms/player/lib/style';
 import type { SubtitleAppearance } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import type { PlayerController } from '#ui/components/organisms/player/types';
-import { sharedStyle, style, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { ease } from '#ui/lib/ease';
 import { FocusScroll } from '#ui/lib/focus-scroll';

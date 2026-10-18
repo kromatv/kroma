@@ -1,5 +1,6 @@
 import { domains } from './api/discover';
 import type { Domains } from './core/client';
+import { createSessionScope } from './core/session';
 import { type ClientControls, createKromaClient, type KromaClient } from './kroma-client';
 
 interface RecordedCall {
@@ -33,6 +34,7 @@ function requestUrl(input: RequestInfo | URL): string {
 export function recordingClient(
   reply?: (url: string, init?: RequestInit) => Reply,
   options?: {
+    baseUrl?: string;
     authToken?: string;
     locale?: string;
     userAgent?: string;
@@ -40,12 +42,13 @@ export function recordingClient(
   },
 ) {
   const calls: RecordedCall[] = [];
+  const baseUrl = options?.baseUrl ?? BASE;
   const fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const url = requestUrl(input);
     calls.push({
       method: init?.method ?? 'GET',
       url,
-      path: url.startsWith(`${BASE}/api`) ? url.slice(`${BASE}/api`.length) : url,
+      path: url.startsWith(`${baseUrl}/api`) ? url.slice(`${baseUrl}/api`.length) : url,
       headers: new Headers(init?.headers),
       body: typeof init?.body === 'string' ? JSON.parse(init.body) : init?.body,
     });
@@ -112,6 +115,8 @@ export function fakeClient(parts: PartialClient = {}): KromaClient {
   );
   const controls: ClientControls = {
     baseUrl: BASE,
+    session: createSessionScope(),
+    locale: undefined,
     setAuthToken: () => undefined,
     setRefreshHandler: () => undefined,
     refreshSession: () => Promise.resolve(undefined),

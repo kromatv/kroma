@@ -1,4 +1,4 @@
-import { useSv } from '#ui/core';
+import { styles, sv, useSv } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles } from '#ui/core/tokens';
 // One action, in both presentations: a row of the D-pad dialog, and a row of
@@ -12,7 +12,7 @@ import { Divider } from '#ui/components/atoms/divider';
 import { type Delegate, delegateOf, Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { styles, sv } from '#ui/core';
+
 import { CONTROL } from '#ui/lib/field-shell';
 import { cloneHost } from '#ui/lib/slot';
 import { type MenuRowState, useMenuRow } from './menu-context';

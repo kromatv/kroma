@@ -12,6 +12,7 @@ export {
   resolveRemoteKey,
 } from './lib/remote-keys';
 export { useForeground } from './lib/use-foreground';
+export { useAccountStorage } from './services/account-storage';
 export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/aiSuggest';
 export { useAiSuggest } from './services/aiSuggest';
 export type { ActivateResult, AuthSession } from './services/auth';

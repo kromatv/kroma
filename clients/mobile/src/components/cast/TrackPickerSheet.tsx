@@ -1,4 +1,4 @@
-import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+import { Icon, styles, Text, useStyleScope, useStyles, useThemeVersion } from '@kromatv/ui/kit';
 
 // Audio / subtitle picker for the remote.
 //
@@ -7,7 +7,7 @@ import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { CastTrack } from '@kromatv/client/cast';
-import { Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
+
 import type { Ref } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import { SheetBody, SheetTitle, sheetChrome } from '#mobile/components/ui';

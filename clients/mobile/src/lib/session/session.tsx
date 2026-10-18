@@ -1,12 +1,21 @@
+import { deviceLocale } from '@kromatv/core';
+import { useDeviceStore } from '@kromatv/ui/device-store';
 // Auth + server session: multiple saved servers, multiple remembered accounts
 // (device credentials in SecureStore), one active session. The long-lived
 // accessToken is stored and exchanged on demand for a short-lived bearer kept
 // in memory; a 401 mid-flight silently re-exchanges.
 
-import { setSessionToken } from '@kromatv/client';
 import { normalizeServerUrl, type User } from '@kromatv/client/accounts';
 import type { QueryClient } from '@kromatv/client/query';
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { makeClient } from '#mobile/lib/device';
 import {
   deletePinBehindBiometrics,
@@ -39,6 +48,8 @@ export interface AuthSession {
   forgetAccount(account: MobileAccount): void;
   forgetServer(url: string): void;
   setUser(user: User): void;
+  setRequestLocale(locale: string): void;
+  requestLocale(): string;
 }
 
 const Ctx = createContext<AuthSession | null>(null);
@@ -57,6 +68,13 @@ export function useClient(): QueryClient {
 }
 
 export function SessionProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const storage = useDeviceStore();
+  const locale = useRef<string>(deviceLocale(storage));
+  const requestLocale = useCallback(() => locale.current, []);
+  const setRequestLocale = useCallback((next: string) => {
+    locale.current = next;
+  }, []);
+  const requestClient = useCallback((url: string) => makeClient(url, locale.current), []);
   const [status, setStatus] = useState<AuthSession['status']>('booting');
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -65,9 +83,10 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
   const servers = useServerStore();
 
   const enterSession = useCallback(
-    (url: string, accessToken: string, token: string, freshUser: User) => {
-      const next = makeClient(url);
+    (url: string, accessToken: string, token: string, freshUser: User, mediaTicket?: string) => {
+      const next = requestClient(url);
       next.setAuthToken(token);
+      next.session.setSessionMediaTicket(mediaTicket);
       next.setRefreshHandler(async () => {
         try {
           const { token: newToken, user: refreshed } =
@@ -91,11 +110,18 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       void saveActive({ serverUrl: url, userId: freshUser.id });
       servers.touch(url);
     },
-    [accounts, servers],
+    [accounts, servers, requestClient],
   );
 
   const setSignedOut = useCallback(() => setStatus('signedOut'), []);
-  useBootRestore({ accounts, servers, makeClient, enterSession, setServerUrl, setSignedOut });
+  useBootRestore({
+    accounts,
+    servers,
+    makeClient: requestClient,
+    enterSession,
+    setServerUrl,
+    setSignedOut,
+  });
 
   const connect = useCallback(
     async (url: string) => {
@@ -110,7 +136,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
         const abort = new AbortController();
         const timer = setTimeout(() => abort.abort(), 5000);
         try {
-          const health = await makeClient(normalized).media.health({ signal: abort.signal });
+          const health = await requestClient(normalized).media.health({ signal: abort.signal });
           setServerUrl(normalized);
           // `name` is LAN-only: a server reached over the internet answers
           // without one, and `touch` then keeps whatever label we already had.
@@ -124,7 +150,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       }
       throw lastError ?? new Error('unreachable');
     },
-    [servers],
+    [servers, requestClient],
   );
 
   const selectServer = useCallback((url: string) => setServerUrl(url), []);
@@ -132,24 +158,31 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
   const login = useCallback(
     async (identifier: string, password: string) => {
       if (!serverUrl) throw new Error('no server');
-      const result = await makeClient(serverUrl).accounts.login(identifier, password);
-      enterSession(serverUrl, result.accessToken, result.token, result.user);
+      const result = await requestClient(serverUrl).accounts.login(identifier, password);
+      enterSession(serverUrl, result.accessToken, result.token, result.user, result.mediaTicket);
     },
-    [serverUrl, enterSession],
+    [serverUrl, enterSession, requestClient],
   );
 
   const switchAccount = useCallback(
     async (account: MobileAccount, pin?: string) => {
-      const probe = makeClient(account.serverUrl);
-      const { token, user: fresh } = await probe.accounts.exchangeToken(account.accessToken, pin);
-      enterSession(account.serverUrl, account.accessToken, token, fresh);
+      const probe = requestClient(account.serverUrl);
+      const {
+        token,
+        user: fresh,
+        mediaTicket,
+      } = await probe.accounts.exchangeToken(account.accessToken, pin);
+      enterSession(account.serverUrl, account.accessToken, token, fresh, mediaTicket);
     },
-    [enterSession],
+    [enterSession, requestClient],
   );
 
-  const relockAccount = useCallback(async (account: MobileAccount) => {
-    await makeClient(account.serverUrl).accounts.relock(account.accessToken);
-  }, []);
+  const relockAccount = useCallback(
+    async (account: MobileAccount) => {
+      await requestClient(account.serverUrl).accounts.relock(account.accessToken);
+    },
+    [requestClient],
+  );
 
   const forgetSecrets = useCallback((url: string, userId: string) => {
     void deletePinBehindBiometrics(url, userId);
@@ -168,7 +201,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       setUser(null);
       setStatus('signedOut');
       // The events socket must not keep authenticating as the account we left.
-      setSessionToken(undefined);
+      current?.setAuthToken(undefined);
       void saveActive(null);
       if (forgetActive && activeUser && serverUrl) {
         accounts.forget(serverUrl, activeUser.id);
@@ -217,6 +250,8 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
   const renameServer = servers.rename;
   const value = useMemo<AuthSession>(
     () => ({
+      setRequestLocale,
+      requestLocale,
       status,
       serverUrl,
       client,
@@ -253,6 +288,8 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       forgetAccount,
       forgetServer,
       updateUser,
+      setRequestLocale,
+      requestLocale,
     ],
   );
 

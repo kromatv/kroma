@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope, useSv } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, sv, useStyleScope, useSv } from '#ui/core';
 
 // <Switch>: the on/off primitive. A television has no gestures, so this is
 // not a draggable thumb: it is a Focusable that toggles on Select, and the
@@ -14,7 +14,7 @@ import { type StyleScope, useStyleScope, useSv } from '#ui/core';
 import { useEffect, useState } from 'react';
 import { Animated, type StyleProp, View, type ViewStyle } from 'react-native';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
-import { sharedStyle, styles, sv } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';

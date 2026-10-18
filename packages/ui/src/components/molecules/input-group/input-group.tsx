@@ -1,4 +1,4 @@
-import { type StyleScope, useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
 // <InputGroup>: an entry with things welded into its shell. Yoga has no
 // `order` and there are no `:has()` selectors, so the Root sorts its children
 // into buckets once and publishes what it learned through context.
@@ -14,7 +14,7 @@ import {
 } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { sharedStyle } from '#ui/core';
+
 import { type ControlSize, edgeColor, fieldRing, useControlMetrics } from '#ui/lib/field-shell';
 import { Context, type InputGroupContext } from './input-group-context';
 import {

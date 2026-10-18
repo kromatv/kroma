@@ -1,17 +1,21 @@
 // @vitest-environment jsdom
+
 import { ModuleId } from '@kromatv/client/modules';
 import { act, cleanup, renderHook } from '@testing-library/react';
+import { createElement, type ReactNode, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createStoreOps,
   foldOpEvent,
   type OpModule,
   opPct,
+  StoreOpsProvider as RootStoreOpsProvider,
   runningPct,
   type StoreOp,
-  StoreOpsProvider,
   useStoreOps,
 } from '#web/features/admin/module-ops';
+import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
+import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
 
 type SocketEvent = { type: string } & Record<string, unknown>;
 
@@ -253,3 +257,12 @@ describe('app-owned module operations', () => {
     expect(b?.close).not.toHaveBeenCalled();
   });
 });
+
+function StoreOpsProvider({ children }: Readonly<{ children?: ReactNode }>) {
+  const [runtime] = useState(() => createWebTestRuntime({}));
+  return createElement(
+    WebRuntimeProvider,
+    { value: runtime },
+    createElement(RootStoreOpsProvider, null, children),
+  );
+}

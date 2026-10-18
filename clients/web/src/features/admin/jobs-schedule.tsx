@@ -1,10 +1,3 @@
-import { resolveStyles, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
-// The "edit schedule" modal for a background job: cron input with presets, a
-// "manual only" option, and reset-to-default. The server validates the cron.
-
-import { KromaApiError } from '@kromatv/client';
-import type { JobInfo } from '@kromatv/client/jobs';
-import { useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -13,10 +6,20 @@ import {
   Dialog,
   Field,
   Row,
+  resolveStyles,
   styles,
   Text,
   fontSizes as textSizes,
+  useStyleScope,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// The "edit schedule" modal for a background job: cron input with presets, a
+// "manual only" option, and reset-to-default. The server validates the cron.
+
+import { KromaApiError } from '@kromatv/client';
+import type { JobInfo } from '@kromatv/client/jobs';
+import { useT } from '@kromatv/ui';
+
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';

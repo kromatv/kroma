@@ -1,4 +1,4 @@
-import { activeTheme, useStyleScope } from '#ui/core';
+import { activeTheme, type CornerValue, radiusValue, styles, useStyleScope } from '#ui/core';
 
 // <ButtonGroup>: a row (or a column) of related controls rendered as ONE
 // control. Adjacent members share a single border line and their inner corners
@@ -16,7 +16,7 @@ import { Children, isValidElement, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { type CornerValue, radiusValue, styles } from '#ui/core';
+
 import { useStyles } from '#ui/core/styles';
 import { HAND } from '#ui/lib/cursor';
 import { bySize, CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';

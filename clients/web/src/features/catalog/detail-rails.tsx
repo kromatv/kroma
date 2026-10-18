@@ -1,9 +1,3 @@
-import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
-// The two horizontal rails under a detail hero: the cast, and similar titles.
-
-import type { CastMember } from '@kromatv/client/media';
-import { personSegment, posterColors, sizedImageUrl } from '@kromatv/core';
-import { useT } from '@kromatv/ui';
 import {
   Box,
   classes,
@@ -13,8 +7,16 @@ import {
   styles,
   sv,
   Text,
+  useStyleScope,
   useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// The two horizontal rails under a detail hero: the cast, and similar titles.
+
+import type { CastMember } from '@kromatv/client/media';
+import { personSegment, posterColors, sizedImageUrl } from '@kromatv/core';
+import { useT } from '@kromatv/ui';
+
 import { imageUrl } from '#web/shared/lib/api';
 import { wash } from '#web/shared/lib/art-styles';
 import { Image, Poster, PosterRail } from '#web/shared/ui';

@@ -1,5 +1,5 @@
-import type { SubtitleAppearance } from '@kromatv/ui';
-import { SUB_COLORS } from '@kromatv/ui';
+import { SUB_COLORS, type SubtitleAppearance } from '@kromatv/ui';
+
 import { Box, Chip, radius as cornerRadius, styles, useStyles } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import type { useT } from '#mobile/lib/i18n';
