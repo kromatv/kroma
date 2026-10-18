@@ -1,15 +1,6 @@
 import { hasPermission } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
-import {
-  Box,
-  Button,
-  EmptyState,
-  IconButton,
-  PageHeader,
-  Row,
-  Section,
-  Text,
-} from '@kromatv/ui/kit';
+import { Box, Button, EmptyState, IconButton, Row, Section, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { MissingGroupCard } from '#web/features/requests/missing-group';
@@ -23,12 +14,12 @@ import { MissingSkeleton } from '#web/features/requests/missing-skeleton';
 import { type MissingActions, useMissingActions } from '#web/features/requests/use-missing-actions';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
-import { PageFrame } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 type SearchAllState = 'idle' | 'busy' | 'started';
 
-export function MissingPage() {
+/** What is aired and not on disk, as the Missing tab of the requests page. */
+export function MissingList() {
   const t = useT();
   const { user, client } = useAuth();
   const query = userQueries.missing();
@@ -50,18 +41,12 @@ export function MissingPage() {
   };
 
   return (
-    <PageFrame>
-      <PageHeader.Root>
-        <PageHeader.Title suffix={followedCount > 0 ? String(followedCount) : undefined}>
-          {t('requests.missingTitle')}
-        </PageHeader.Title>
-        <PageHeader.Subtitle>{t('requests.missingSubtitle')}</PageHeader.Subtitle>
-        {actions.selectedCount > 0 ? (
-          <PageHeader.Actions>
-            <SelectionActions actions={actions} />
-          </PageHeader.Actions>
-        ) : null}
-      </PageHeader.Root>
+    <>
+      {actions.selectedCount > 0 ? (
+        <Row justify="flex-end" mb={16}>
+          <SelectionActions actions={actions} />
+        </Row>
+      ) : null}
 
       {isPending ? <MissingSkeleton /> : null}
 
@@ -108,7 +93,7 @@ export function MissingPage() {
           <GroupList groups={unfollowed} actions={actions} />
         </Section.Root>
       ) : null}
-    </PageFrame>
+    </>
   );
 }
 

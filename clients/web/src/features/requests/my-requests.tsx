@@ -2,7 +2,7 @@ import { tmdbKindOf } from '@kromatv/client/discovery';
 import { KromaEvents, type ServerEvent } from '@kromatv/client/events';
 import type { DownloadProgressEvent, MediaRequest } from '@kromatv/client/requests';
 import { useLocale, useT } from '@kromatv/ui';
-import { Box, Button, EmptyState, Icon, IconButton, PageHeader, Row, Text } from '@kromatv/ui/kit';
+import { Box, Button, EmptyState, Icon, IconButton, Row, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ViewProps } from 'react-native';
@@ -10,12 +10,12 @@ import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
 import { requestStatusMeta, seasonsSummary } from '#web/shared/lib/request-status';
-import { PageFrame } from '#web/shared/ui';
 import { RequestCard, RequestCardSkeleton } from '#web/shared/ui/request-card';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 import { RouteLink } from '#web/shared/ui/route-link';
 
-export function MyRequestsPage() {
+/** The reader's own requests, as the first tab of the requests page. */
+export function MyRequestsList() {
   const t = useT();
   const { client } = useAuth();
   const queryClient = useQueryClient();
@@ -57,12 +57,7 @@ export function MyRequestsPage() {
   };
 
   return (
-    <PageFrame>
-      <PageHeader.Root>
-        <PageHeader.Title>{t('requests.myTitle')}</PageHeader.Title>
-        <PageHeader.Subtitle>{t('requests.mySubtitle')}</PageHeader.Subtitle>
-      </PageHeader.Root>
-
+    <>
       {isPending ? <RequestCardSkeleton rows={4} /> : null}
 
       {requests?.length === 0 ? (
@@ -76,7 +71,7 @@ export function MyRequestsPage() {
         </EmptyState.Root>
       ) : null}
 
-      <Box mt={24} gap={10}>
+      <Box gap={10}>
         {(requests ?? []).map((req) => (
           <RequestRow
             key={req.id}
@@ -87,7 +82,7 @@ export function MyRequestsPage() {
           />
         ))}
       </Box>
-    </PageFrame>
+    </>
   );
 }
 
