@@ -142,9 +142,9 @@ function ignoredPerFile(
   for (const id of list(props.get('sonar.issue.ignore.multicriteria'))) {
     const ruleKey = props.get(`sonar.issue.ignore.multicriteria.${id}.ruleKey`) ?? '';
     const file = props.get(`sonar.issue.ignore.multicriteria.${id}.resourceKey`);
-    const [language, key = ''] = ruleKey.split(':');
-    const rule = mirrored.get(key);
-    if (!file || !rule || !['typescript', 'javascript'].includes(language ?? '')) continue;
+    const key = /^(?:type|java)script:(S\d+)$/.exec(ruleKey)?.[1];
+    const rule = key ? mirrored.get(key) : undefined;
+    if (!file || !rule) continue;
     byFile.set(file, { ...byFile.get(file), [rule]: 'off' });
   }
   return [...byFile]
