@@ -50,6 +50,14 @@ describe('tokensCss', () => {
     expect(media).not.toContain('--kroma-');
   });
 
+  it('stops them inside every styling root, which restates the durations it inherits', () => {
+    const css = tokensCss();
+
+    const media = css.split('@media (prefers-reduced-motion: reduce) {')[1] ?? '';
+
+    expect(media).toContain('[data-kroma-theme]');
+  });
+
   it('leaves the dark palette as the bare-root default', () => {
     const css = tokensCss();
     expect(css).toContain(':root,\n[data-kroma-theme],\n[data-theme="dark"] {');

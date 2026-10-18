@@ -15,6 +15,7 @@ import { FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { useModalPortalRepair } from '#ui/lib/modal-portal';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
 import { WEB } from '#ui/lib/platform';
+import { ScopeCarrier } from '#ui/lib/scope-carrier';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { surfaceBands } from '#ui/lib/surface-bands';
 import { dialogPad, SURFACE_WIDTH, type SurfaceWidth, surfaceGutter } from '#ui/lib/surface-shell';
@@ -90,7 +91,7 @@ function Root({
   if (!open || hosted) return null;
   return (
     <Modal transparent visible animationType="fade" onRequestClose={onClose}>
-      {surface}
+      <ScopeCarrier>{surface}</ScopeCarrier>
     </Modal>
   );
 }

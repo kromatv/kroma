@@ -4,6 +4,7 @@
 
 import { createContext, type ReactNode, useContext } from 'react';
 import { createPortal } from 'react-dom';
+import { ScopeCarrier } from './scope-carrier';
 
 const Container = createContext<Element | null>(null);
 
@@ -11,7 +12,7 @@ function Portal({ children }: Readonly<{ children: ReactNode }>) {
   const container = useContext(Container);
   // No mount-effect SSR guard: the one-frame delay would show on an intro film.
   if (typeof document === 'undefined') return <>{children}</>;
-  return createPortal(children, container ?? document.body);
+  return createPortal(<ScopeCarrier>{children}</ScopeCarrier>, container ?? document.body);
 }
 
 /**

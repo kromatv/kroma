@@ -157,7 +157,7 @@ export function tokensCss(roots: readonly string[] = SOURCE_ROOTS): string {
       '(prefers-color-scheme: light)',
       rule(':root:not([data-theme]),\n[data-kroma-theme]:not([data-theme])', light),
     ),
-    media('(prefers-reduced-motion: reduce)', rule(':root', stillDurations())),
+    media('(prefers-reduced-motion: reduce)', rule(':root,\n[data-kroma-theme]', stillDurations())),
   ].join('\n\n');
 }
 

@@ -2,6 +2,7 @@ import { useId, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { StyleSheet } from 'react-native';
 import { classes } from '#ui/lib/classed';
 import { stepsReached } from './breakpoint-cascade';
+import { type ScopeMarks, ScopeMarksContext, useScopeMarks } from './scope-marks';
 import type { ThemeHostProps } from './theme-host.types';
 
 // Flex is the fallback for the old browser tier, which ignores display:contents.
@@ -11,12 +12,18 @@ const HOST = StyleSheet.create({
 export function ThemeHost({ runtime, themeScope = true, children }: Readonly<ThemeHostProps>) {
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const host = useRef<HTMLDivElement>(null);
-  const mode = useSyncExternalStore(runtime.onModeChange, runtime.mode, runtime.mode);
+  const parent = useScopeMarks();
+  const mode = useSyncExternalStore(runtime.onModeChange, runtime.mode, runtime.serverMode);
   const step = useSyncExternalStore(
     runtime.breakpoints.subscribe,
     runtime.breakpoints.index,
-    runtime.breakpoints.index,
+    runtime.breakpoints.serverIndex,
   );
+  const ground = !themeScope || mode === 'system' ? undefined : mode;
+  const steps = stepsReached(step);
+  const marks: ScopeMarks = themeScope
+    ? { 'data-kroma-theme': id, 'data-theme': ground, 'data-kroma-bp': steps }
+    : { ...parent, 'data-kroma-bp': steps };
   useLayoutEffect(() => {
     if (host.current && themeScope) return runtime.theme.attach(host.current, id);
   }, [runtime, id, themeScope]);
@@ -26,10 +33,10 @@ export function ThemeHost({ runtime, themeScope = true, children }: Readonly<The
       className={classes(HOST)}
       style={{ display: 'contents' }}
       data-kroma-theme={themeScope ? id : undefined}
-      data-theme={!themeScope || mode === 'system' ? undefined : mode}
-      data-kroma-bp={stepsReached(step)}
+      data-theme={ground}
+      data-kroma-bp={steps}
     >
-      {children}
+      <ScopeMarksContext.Provider value={marks}>{children}</ScopeMarksContext.Provider>
     </div>
   );
 }

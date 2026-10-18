@@ -34,6 +34,9 @@ export function createBreakpointRuntime(width?: number) {
   };
   return {
     index: () => current,
+    /** The step a server renders at: it has no window, so only a pinned width
+     *  reaches it. What hydration must match before the real step lands. */
+    serverIndex: () => breakpointAt(pinned ?? (Platform.isTV ? CANVAS.width : 0)),
     pinDesignWidth(next?: number) {
       pinned = next;
       settle();

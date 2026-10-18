@@ -83,7 +83,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
     // The app is dark-only for now: an unstamped root is the `system` choice and
     // would follow prefers-color-scheme into a light palette nothing here has
     // been designed against.
-    <html lang="fr" data-theme="dark">
+    <html lang="fr" data-theme={BROWSER_KIT.ground}>
       <head>
         <HeadContent />
       </head>
