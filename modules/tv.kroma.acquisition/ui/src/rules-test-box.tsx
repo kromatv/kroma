@@ -4,8 +4,9 @@ import { Box, Button, Callout, Divider, Field, Row, Section, Surface, Text } fro
 import { useState } from 'react';
 import { useAcquisitionApi } from './api';
 import { FormatPills, QualityPill, ScorePill } from './judgement-pills';
+import type { ProfileVerdict, RulesTestView } from './judgement-schemas';
+import { useRefusalText } from './refusal-text';
 import { RulesFacts } from './rules-facts';
-import type { ProfileVerdict, RulesTestView } from './rules-schemas';
 
 export function RulesTestBox() {
   const t = useT();
@@ -42,7 +43,7 @@ export function RulesTestBox() {
 
       <Row wrap gap={10} align="flex-end">
         <Box flex minW={240}>
-          <Field.Root label={t('acq.testName')} value={name} onValueChange={setName}>
+          <Field.Root label={t('acq.testName')} size="sm" value={name} onValueChange={setName}>
             <Field.Input
               icon="flask"
               placeholder="Show.S01E02.MULTi.VFF.2160p.WEB-DL.DV.HEVC-GRP"
@@ -51,7 +52,12 @@ export function RulesTestBox() {
           </Field.Root>
         </Box>
         <Box w={160}>
-          <Field.Root label={t('acq.testOriginal')} value={original} onValueChange={setOriginal}>
+          <Field.Root
+            label={t('acq.testOriginal')}
+            size="sm"
+            value={original}
+            onValueChange={setOriginal}
+          >
             <Field.Input placeholder="en" onSubmit={run} />
           </Field.Root>
         </Box>
@@ -90,16 +96,17 @@ export function RulesTestBox() {
 
 function ProfileResult({ verdict }: Readonly<{ verdict: ProfileVerdict }>) {
   const t = useT();
+  const refusalText = useRefusalText();
   const { evaluation } = verdict;
-  const allowed = evaluation.qualityRank != null;
+  const refusal = refusalText(verdict.refusal);
   return (
     <Box gap={8}>
       <Row wrap between gap={12} align="center">
-        <Row wrap gap={10} align="center">
+        <Row wrap gapX={10} gapY={4} align="center">
           <Text variant="label">{verdict.profileName}</Text>
-          <QualityPill quality={evaluation.quality} allowed={allowed} />
-          <Text variant="meta" color={allowed ? 'textDim' : 'dangerHover'}>
-            {allowed ? t('acq.testAllowed') : t('acq.testRefused')}
+          <QualityPill quality={evaluation.quality} allowed={evaluation.qualityRank != null} />
+          <Text variant="meta" color={refusal ? 'dangerHover' : 'success'}>
+            {refusal ? t('acq.testRefusedBy', { reason: refusal }) : t('acq.testWouldTake')}
           </Text>
         </Row>
         <ScorePill score={evaluation.formatScore} />

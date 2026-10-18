@@ -13,6 +13,13 @@ const BLANK: { [Type in ConditionType]: () => Extract<Condition, { type: Type }>
   audio: () => ({ negate: false, required: false, type: 'audio', codec: null, minChannels: null }),
   size: () => ({ negate: false, required: false, type: 'size', minGb: null, maxGb: null }),
   indexerFlag: () => ({ negate: false, required: false, type: 'indexerFlag', value: 'freeleech' }),
+  releaseType: () => ({
+    negate: false,
+    required: false,
+    type: 'releaseType',
+    value: 'seasonPack',
+  }),
+  year: () => ({ negate: false, required: false, type: 'year', min: null, max: null }),
 };
 
 export function blankCondition(type: ConditionType): Condition {

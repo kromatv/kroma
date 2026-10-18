@@ -1,6 +1,6 @@
 import { apiErrorText } from '@kromatv/client';
 import { useAsyncAction, useT } from '@kromatv/module-sdk';
-import { Box, Button, Callout, Dialog, Field, Row, SegmentGroup, Text } from '@kromatv/ui/kit';
+import { Box, Button, Callout, Dialog, Field, SegmentGroup, Text, toast } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAcquisitionApi } from './api';
 import { ProfileFormats } from './profile-formats';
@@ -20,11 +20,14 @@ const TAB_LABEL: Record<ProfileTab, string> = {
 export function ProfileEditor({
   profile,
   formats,
+  isNew = false,
   onClose,
   onSaved,
 }: Readonly<{
   profile: QualityProfile;
   formats: readonly CustomFormat[];
+  /** No profile holds this id yet, so the dialog says so in its title. */
+  isNew?: boolean;
   onClose: () => void;
   onSaved: () => Promise<void>;
 }>) {
@@ -33,26 +36,41 @@ export function ProfileEditor({
   const [draft, setDraft] = useState(profile);
   const [tab, setTab] = useState<ProfileTab>('qualities');
   const action = useAsyncAction();
+  const heading = t(isNew ? 'acq.profileNewTitle' : 'acq.profileEdit');
 
   const save = () =>
     action.run(
       async () => {
         await acquisition.saveProfile({ ...draft, name: draft.name.trim() });
         await onSaved();
+        toast({ message: t('acq.profileSaved', { name: draft.name.trim() }), tone: 'success' });
         onClose();
       },
       (e) => apiErrorText(e, t('requests.actionFailed')),
     );
 
   return (
-    <Dialog.Root open onClose={onClose} width="xl" title={t('acq.profileEdit')}>
+    <Dialog.Root open onClose={onClose} width="lg" title={heading}>
       <Dialog.Header>
         <Text variant="title" accessibilityRole="header">
-          {t('acq.profileEdit')}
+          {heading}
         </Text>
         <Text variant="meta" color="textDim">
           {t('acq.profileEditHint')}
         </Text>
+        <SegmentGroup.Root
+          value={tab}
+          onValueChange={setTab}
+          label={t('acq.profileSections')}
+          size="sm"
+          stretch
+        >
+          {TABS.map((one) => (
+            <SegmentGroup.Item key={one} value={one}>
+              <SegmentGroup.Label>{t(TAB_LABEL[one])}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+          ))}
+        </SegmentGroup.Root>
       </Dialog.Header>
       <Dialog.Panel>
         <Box gap={20}>
@@ -62,30 +80,15 @@ export function ProfileEditor({
             </Callout.Root>
           ) : null}
 
-          <Row wrap between gap={16} align="flex-end">
-            <Box w={280}>
-              <Field.Root
-                label={t('acq.profileName')}
-                size="sm"
-                value={draft.name}
-                onValueChange={(name) => setDraft((d) => ({ ...d, name }))}
-              >
-                <Field.Input />
-              </Field.Root>
-            </Box>
-            <SegmentGroup.Root
-              value={tab}
-              onValueChange={setTab}
-              label={t('acq.profileSections')}
-              size="sm"
-            >
-              {TABS.map((one) => (
-                <SegmentGroup.Item key={one} value={one}>
-                  <SegmentGroup.Label>{t(TAB_LABEL[one])}</SegmentGroup.Label>
-                </SegmentGroup.Item>
-              ))}
-            </SegmentGroup.Root>
-          </Row>
+          <Field.Root
+            label={t('acq.profileName')}
+            size="sm"
+            value={draft.name}
+            invalid={draft.name.trim() === ''}
+            onValueChange={(name) => setDraft((d) => ({ ...d, name }))}
+          >
+            <Field.Input />
+          </Field.Root>
 
           <TabPanel tab={tab} draft={draft} formats={formats} onChange={setDraft} />
         </Box>

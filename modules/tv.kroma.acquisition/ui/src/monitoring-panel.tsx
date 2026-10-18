@@ -1,13 +1,20 @@
 import { apiErrorText } from '@kromatv/client';
-import { type SlotProps, useAsyncAction, useCap, useT } from '@kromatv/module-sdk';
-import { Badge, Box, Button, Callout, CardSkeleton, Section, useBreakpoint } from '@kromatv/ui/kit';
+import { type SlotProps, useAsyncAction, useT } from '@kromatv/module-sdk';
+import {
+  Button,
+  Callout,
+  CardSkeleton,
+  Section,
+  Text,
+  toast,
+  useBreakpoint,
+} from '@kromatv/ui/kit';
 import { useAcquisitionApi } from './api';
-import { SearchResultsDialog } from './search-results-dialog';
+import { targetOf } from './quality-target';
 import { TitleFilesTable } from './title-files-table';
 import { TitleProfilePicker } from './title-profile-picker';
-import { TitleSearchBar } from './title-search-bar';
+import { useQualityLabel } from './use-quality-label';
 import { useRules, useTitleRules } from './use-rules';
-import { useTitleSearch } from './use-title-search';
 
 export function MonitoringPanel({
   kind,
@@ -17,47 +24,42 @@ export function MonitoringPanel({
   const t = useT();
   const title = useTitleRules(kind, tmdbId);
   const rules = useRules();
-  const search = useTitleSearch(kind, tmdbId);
   const acquisition = useAcquisitionApi();
-  const profile = useAsyncAction();
+  const profileAction = useAsyncAction();
   const narrow = useBreakpoint() === 'base';
-  const library = useCap('library.manage');
-  const requests = useCap('requests.manage');
-  const settings = useCap('settings.manage');
-  const canGrab = library || requests || settings;
+
+  const profile = rules.data?.profiles.find((one) => one.id === title.data?.profileId);
+  const below = (title.data?.files ?? []).filter((file) => file.belowTarget).length;
 
   const pick = (profileId: string | null) =>
-    profile.run(
+    profileAction.run(
       async () => {
         await acquisition.setTitleProfile(kind, tmdbId, profileId);
         await title.reload();
+        toast({ message: t('acq.profileChanged'), tone: 'success', icon: 'check' });
       },
       (e) => apiErrorText(e, t('requests.actionFailed')),
     );
 
-  const controls = (
-    <>
-      {title.data ? (
-        <TitleProfilePicker
-          view={title.data}
-          rules={rules.data}
-          busy={profile.busy}
-          onPick={pick}
-        />
-      ) : null}
-      <TitleSearchBar kind={kind} busy={search.state.busy} onSearch={search.run} />
-    </>
-  );
+  const picker = title.data ? (
+    <TitleProfilePicker
+      view={title.data}
+      rules={rules.data}
+      busy={profileAction.busy}
+      onPick={pick}
+    />
+  ) : null;
 
   return (
     <Section.Root gap={14}>
       <Section.Header>
         <Section.Title>{t('acq.titleQuality')}</Section.Title>
-        {title.data?.cutoffUnmet ? <Badge tone="warning">{t('acq.belowTarget')}</Badge> : null}
-        {narrow ? null : <Section.Actions>{controls}</Section.Actions>}
+        {narrow ? null : <Section.Actions>{picker}</Section.Actions>}
       </Section.Header>
 
-      {narrow ? <Box gap={10}>{controls}</Box> : null}
+      {narrow ? picker : null}
+
+      <TargetLine profile={profile} />
 
       {title.failed ? (
         <Callout.Root tone="danger">
@@ -75,29 +77,51 @@ export function MonitoringPanel({
         </Callout.Root>
       ) : null}
 
-      {profile.error ? (
+      {profileAction.error ? (
         <Callout.Root tone="danger">
-          <Callout.Title>{profile.error}</Callout.Title>
+          <Callout.Title>{profileAction.error}</Callout.Title>
         </Callout.Root>
       ) : null}
 
       {monitored ? null : (
         <Callout.Root tone="neutral" icon="eye-off">
-          <Callout.Title>{t('acq.notMonitored')}</Callout.Title>
-          <Callout.Detail>{t('acq.notMonitoredHint')}</Callout.Detail>
+          <Callout.Title>{t('acq.notFollowed')}</Callout.Title>
+          <Callout.Detail>{t('acq.notFollowedHint')}</Callout.Detail>
         </Callout.Root>
       )}
 
+      <BelowTargetNotice below={below} />
+
       {title.loading ? <CardSkeleton fields={3} /> : null}
 
-      {title.data ? <TitleFilesTable files={title.data.files} /> : null}
-
-      <SearchResultsDialog
-        state={search.state}
-        canGrab={canGrab}
-        onGrab={search.grab}
-        onClose={search.reset}
-      />
+      {title.data ? (
+        <TitleFilesTable kind={kind} files={title.data.files} profile={profile} />
+      ) : null}
     </Section.Root>
+  );
+}
+
+function TargetLine({ profile }: Readonly<{ profile: Parameters<typeof targetOf>[0] }>) {
+  const t = useT();
+  const label = useQualityLabel();
+  const target = targetOf(profile);
+  if (!target) return null;
+  return (
+    <Text variant="meta" color="textDim">
+      {target.upgradeUntilScore === 0
+        ? t('acq.targetQuality', { cutoff: label(target.cutoff) })
+        : t('acq.targetLine', { cutoff: label(target.cutoff), score: target.upgradeUntilScore })}
+    </Text>
+  );
+}
+
+function BelowTargetNotice({ below }: Readonly<{ below: number }>) {
+  const t = useT();
+  if (below === 0) return null;
+  return (
+    <Callout.Root tone="accent" icon="alert-triangle">
+      <Callout.Title>{t('acq.belowTargetCount', { count: below })}</Callout.Title>
+      <Callout.Detail>{t('acq.belowTargetHint')}</Callout.Detail>
+    </Callout.Root>
   );
 }

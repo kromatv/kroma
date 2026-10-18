@@ -25,27 +25,6 @@ export function ProfileRules({
           </ListRow.Trailing>
         </ListRow.Root>
         <Threshold
-          label={t('acq.upgradeUntilScore')}
-          hint={t('acq.upgradeUntilScoreHint')}
-          step={50}
-          value={profile.upgradeUntilScore}
-          onPick={(upgradeUntilScore) => onChange({ ...profile, upgradeUntilScore })}
-        />
-        <Threshold
-          label={t('acq.minFormatScore')}
-          hint={t('acq.minFormatScoreHint')}
-          step={50}
-          value={profile.minFormatScore}
-          onPick={(minFormatScore) => onChange({ ...profile, minFormatScore })}
-        />
-        <Threshold
-          label={t('acq.minUpgradeIncrement')}
-          hint={t('acq.minUpgradeIncrementHint')}
-          min={1}
-          value={profile.minUpgradeIncrement}
-          onPick={(minUpgradeIncrement) => onChange({ ...profile, minUpgradeIncrement })}
-        />
-        <Threshold
           label={t('acq.minSeeders')}
           hint={t('acq.minSeedersHint')}
           min={0}
@@ -77,7 +56,7 @@ export function ProfileRules({
               value={termsText(profile.mustContain)}
               onValueChange={(text) => onChange({ ...profile, mustContain: termsOf(text) })}
             >
-              <Field.Textarea rows={3} placeholder="MULTi" />
+              <Field.Textarea rows={3} placeholder={t('acq.termExample', { term: 'MULTi' })} />
             </Field.Root>
           </Box>
           <Box flex minW={220}>
@@ -87,7 +66,7 @@ export function ProfileRules({
               value={termsText(profile.mustNotContain)}
               onValueChange={(text) => onChange({ ...profile, mustNotContain: termsOf(text) })}
             >
-              <Field.Textarea rows={3} placeholder="CAM" />
+              <Field.Textarea rows={3} placeholder={t('acq.termExample', { term: 'CAM' })} />
             </Field.Root>
           </Box>
         </Row>

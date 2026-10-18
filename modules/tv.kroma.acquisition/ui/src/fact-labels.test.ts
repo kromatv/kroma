@@ -8,8 +8,12 @@ describe('factLabel', () => {
     expect(factLabel('dolbyVision')).toBe('Dolby Vision');
   });
 
+  it('writes an audio codec the way a tracker spells it', () => {
+    expect(factLabel('dtsHdMa')).toBe('DTS-HD MA');
+  });
+
   it('leaves a name it does not know as it came', () => {
-    expect(factLabel('eac3')).toBe('eac3');
+    expect(factLabel('theora')).toBe('theora');
   });
 });
 

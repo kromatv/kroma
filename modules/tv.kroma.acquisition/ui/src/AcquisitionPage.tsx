@@ -13,10 +13,11 @@ import { CutoffView } from './cutoff-view';
 import { FormatsView } from './formats-view';
 import { ProfilesView } from './profiles-view';
 import type { RulesView } from './rules-schemas';
+import { RulesTestBox } from './rules-test-box';
 import { SizesView } from './sizes-view';
 import { useRules } from './use-rules';
 
-const TABS = ['settings', 'profiles', 'formats', 'sizes', 'cutoff', 'blocklist'] as const;
+const TABS = ['settings', 'profiles', 'formats', 'sizes', 'trial', 'cutoff', 'blocklist'] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_LABEL: Record<Tab, string> = {
@@ -24,6 +25,7 @@ const TAB_LABEL: Record<Tab, string> = {
   profiles: 'acq.tabProfiles',
   formats: 'acq.tabFormats',
   sizes: 'acq.tabSizes',
+  trial: 'acq.tabTrial',
   cutoff: 'acq.tabCutoff',
   blocklist: 'acq.tabBlocklist',
 };
@@ -85,6 +87,8 @@ function TabPanel({ tab }: Readonly<{ tab: Tab }>) {
           embedded
         />
       );
+    case 'trial':
+      return <RulesTestBox />;
     case 'cutoff':
       return <CutoffView />;
     case 'blocklist':

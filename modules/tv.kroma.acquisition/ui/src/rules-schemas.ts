@@ -1,4 +1,3 @@
-import { RequestKind } from '@kromatv/client/requests';
 import { z } from 'zod';
 
 export const QualityId = z.enum([
@@ -58,8 +57,11 @@ export const AudioCodec = z.enum([
 ]);
 export type AudioCodec = z.infer<typeof AudioCodec>;
 
-export const IndexerFlag = z.enum(['freeleech', 'internal', 'scene']);
+export const IndexerFlag = z.enum(['freeleech', 'halfleech', 'doubleUpload', 'internal', 'scene']);
 export type IndexerFlag = z.infer<typeof IndexerFlag>;
+
+export const ReleaseType = z.enum(['singleEpisode', 'multiEpisode', 'seasonPack']);
+export type ReleaseType = z.infer<typeof ReleaseType>;
 
 function conditionOf<Type extends string, S extends z.ZodRawShape>(type: Type, shape: S) {
   return z.object({
@@ -85,6 +87,8 @@ export const Condition = z.discriminatedUnion('type', [
   conditionOf('audio', { codec: AudioCodec.nullable(), minChannels: z.number().nullable() }),
   conditionOf('size', { minGb: z.number().nullable(), maxGb: z.number().nullable() }),
   conditionOf('indexerFlag', { value: IndexerFlag }),
+  conditionOf('releaseType', { value: ReleaseType }),
+  conditionOf('year', { min: z.number().nullable(), max: z.number().nullable() }),
 ]);
 export type Condition = z.infer<typeof Condition>;
 
@@ -101,6 +105,8 @@ export const CONDITION_TYPES = [
   'audio',
   'size',
   'indexerFlag',
+  'releaseType',
+  'year',
 ] as const;
 export type ConditionType = (typeof CONDITION_TYPES)[number];
 
@@ -154,49 +160,6 @@ export const Sizes = z.object({
 });
 export type Sizes = z.infer<typeof Sizes>;
 
-export const MatchedFormat = z.object({ id: z.string(), name: z.string(), score: z.number() });
-export type MatchedFormat = z.infer<typeof MatchedFormat>;
-
-/** `qualityRank` is null when the profile does not allow that quality. */
-export const Evaluation = z.object({
-  quality: QualityId,
-  qualityRank: z.number().nullable(),
-  formats: z.array(MatchedFormat),
-  formatScore: z.number(),
-  revision: z.number(),
-});
-export type Evaluation = z.infer<typeof Evaluation>;
-
-export const LanguageSet = z.object({
-  original: z.boolean(),
-  explicit: z.array(z.string()),
-});
-export type LanguageSet = z.infer<typeof LanguageSet>;
-
-export const AudioFact = z.object({
-  language: z.string().nullish(),
-  codec: AudioCodec.nullish(),
-  channels: z.number().nullish(),
-});
-export type AudioFact = z.infer<typeof AudioFact>;
-
-export const Facts = z.object({
-  name: z.string(),
-  group: z.string().nullish(),
-  edition: z.string().nullish(),
-  resolution: Resolution.nullish(),
-  source: Source.nullish(),
-  codec: VideoCodec.nullish(),
-  hdr: z.array(HdrFormat).default([]),
-  languages: LanguageSet,
-  subtitles: z.array(z.string()).default([]),
-  audio: z.array(AudioFact).default([]),
-  sizeBytes: z.number().nullish(),
-  revision: z.number(),
-  flags: z.array(IndexerFlag).default([]),
-});
-export type Facts = z.infer<typeof Facts>;
-
 export const RulesView = z.object({
   profiles: z.array(QualityProfile),
   defaultProfile: z.string(),
@@ -205,82 +168,3 @@ export const RulesView = z.object({
   qualities: z.array(QualityId),
 });
 export type RulesView = z.infer<typeof RulesView>;
-
-export const ProfileVerdict = z.object({
-  profileId: z.string(),
-  profileName: z.string(),
-  evaluation: Evaluation,
-});
-export type ProfileVerdict = z.infer<typeof ProfileVerdict>;
-
-export const RulesTestView = z.object({
-  facts: Facts,
-  profiles: z.array(ProfileVerdict),
-});
-export type RulesTestView = z.infer<typeof RulesTestView>;
-
-export const JudgedFile = z.object({
-  fileId: z.string(),
-  relPath: z.string().nullish(),
-  season: z.number().nullish(),
-  episode: z.number().nullish(),
-  episodeEnd: z.number().nullish(),
-  release: z.string().nullish(),
-  evaluation: Evaluation,
-  belowTarget: z.boolean(),
-});
-export type JudgedFile = z.infer<typeof JudgedFile>;
-
-/** `customProfile` is true when the title names a profile of its own rather
- *  than following the default. */
-export const TitleRulesView = z.object({
-  profileId: z.string(),
-  profileName: z.string(),
-  customProfile: z.boolean(),
-  cutoffUnmet: z.boolean(),
-  files: z.array(JudgedFile),
-});
-export type TitleRulesView = z.infer<typeof TitleRulesView>;
-
-/** One monitored title whose profile would still upgrade a file: `below` of its
- *  `units` (episodes, or the one film) are under the target. */
-export const CutoffEntry = z.object({
-  kind: RequestKind,
-  tmdbId: z.number(),
-  title: z.string(),
-  year: z.number().nullish(),
-  posterUrl: z.string().nullish(),
-  profileName: z.string(),
-  units: z.number(),
-  below: z.number(),
-  bestQuality: QualityId.nullish(),
-});
-export type CutoffEntry = z.infer<typeof CutoffEntry>;
-
-export const BlockedRelease = z.object({
-  id: z.string(),
-  kind: RequestKind,
-  tmdbId: z.number(),
-  releaseTitle: z.string(),
-  infoHash: z.string().nullish(),
-  indexerId: z.string().nullish(),
-  reason: z.string(),
-  addedAt: z.number(),
-});
-export type BlockedRelease = z.infer<typeof BlockedRelease>;
-
-/** The tag is `kind`, not the core client's `scope`: this is the module's own
- *  route. */
-export const TitleScope = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('all') }),
-  z.object({ kind: z.literal('movie') }),
-  z.object({ kind: z.literal('season'), season: z.number() }),
-  z.object({ kind: z.literal('episode'), season: z.number(), episode: z.number() }),
-]);
-export type TitleScope = z.infer<typeof TitleScope>;
-
-export const Acknowledged = z.object({ ok: z.boolean() });
-export type Acknowledged = z.infer<typeof Acknowledged>;
-
-export const GrabAccepted = z.object({ id: z.string() });
-export type GrabAccepted = z.infer<typeof GrabAccepted>;

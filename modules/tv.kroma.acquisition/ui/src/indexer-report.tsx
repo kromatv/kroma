@@ -1,14 +1,8 @@
-// What every indexer made of the last sweep. An error banner alone could not
-// say whether the other trackers were asked, answered, or were never reached:
-// one row per indexer, so "nothing found" and "the tracker is down" stop looking
-// like the same result.
-
 import { useT } from '@kromatv/module-sdk';
 import { Box, Row, Text } from '@kromatv/ui/kit';
 
-/** What the strip needs of an indexer's answer. Structural rather than the
- *  branded `IndexerReport`, because the free-text sweep is a module's own wire
- *  type carrying the same five fields. */
+/** Structural rather than the branded `IndexerReport`, because the free-text
+ *  sweep is a module's own wire type carrying the same five fields. */
 export interface IndexerAnswer {
   id: string;
   name: string;
@@ -51,9 +45,9 @@ function IndexerPill({ report }: Readonly<{ report: IndexerAnswer }>) {
         {report.name}
       </Text>
       <Text variant="meta" color={tone}>
-        {report.error ? t('requests.indexerDown') : String(report.found)}
+        {report.error ? t('requests.indexerDown') : t('acq.indexerFound', { count: report.found })}
       </Text>
-      <Text variant="meta" color="text/30">
+      <Text variant="meta" color="textDim">
         {formatElapsed(report.elapsedMs)}
       </Text>
     </Row>
@@ -66,5 +60,5 @@ function pillTone(report: IndexerAnswer): 'danger' | 'success' | 'textDim' {
 }
 
 function formatElapsed(ms: number): string {
-  return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
+  return ms >= 1000 ? `${(ms / 1000).toFixed(1)} s` : `${ms} ms`;
 }

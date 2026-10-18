@@ -1,30 +1,33 @@
 import { useFormat, useT } from '@kromatv/module-sdk';
-import { Box, DataField, Row, Text } from '@kromatv/ui/kit';
+import { Box, DataField, Row } from '@kromatv/ui/kit';
 import { factLabel } from './fact-labels';
-import type { Facts } from './rules-schemas';
+import type { Facts } from './judgement-schemas';
 
 const FACT_W = 150;
 
 export function RulesFacts({ facts }: Readonly<{ facts: Facts }>) {
   const t = useT();
   const fmt = useFormat();
+  const read: [string, string | null | undefined][] = [
+    [t('acq.factResolution'), label(facts.resolution)],
+    [t('acq.factSource'), label(facts.source)],
+    [t('acq.factCodec'), label(facts.codec)],
+    [t('acq.factHdr'), facts.hdr.map(factLabel).join(', ')],
+    [t('acq.factGroup'), facts.group],
+    [t('acq.factEdition'), facts.edition],
+    [t('acq.factLanguages'), languages(facts, t('acq.factOriginal'))],
+    [t('acq.factSubtitles'), facts.subtitles.join(', ')],
+    [t('acq.factAudio'), audio(facts)],
+    [t('acq.factFlags'), facts.flags.map((flag) => t(`acq.flag.${flag}`)).join(', ')],
+    [t('requests.colSize'), facts.sizeBytes ? fmt.bytes(facts.sizeBytes) : null],
+    [t('acq.factRevision'), facts.revision > 1 ? `v${facts.revision}` : null],
+  ];
+  const found = read.filter(([, value]) => Boolean(value));
   return (
     <Row wrap gap={16}>
-      <Fact label={t('acq.factResolution')} value={label(facts.resolution)} />
-      <Fact label={t('acq.factSource')} value={label(facts.source)} />
-      <Fact label={t('acq.factCodec')} value={label(facts.codec)} />
-      <Fact label={t('acq.factHdr')} value={facts.hdr.map(factLabel).join(', ')} />
-      <Fact label={t('acq.factGroup')} value={facts.group} />
-      <Fact label={t('acq.factEdition')} value={facts.edition} />
-      <Fact label={t('acq.factLanguages')} value={languages(facts, t('acq.factOriginal'))} />
-      <Fact label={t('acq.factSubtitles')} value={facts.subtitles.join(', ')} />
-      <Fact label={t('acq.factAudio')} value={audio(facts)} />
-      <Fact label={t('acq.factFlags')} value={facts.flags.join(', ')} />
-      <Fact
-        label={t('requests.colSize')}
-        value={facts.sizeBytes ? fmt.bytes(facts.sizeBytes) : null}
-      />
-      <Fact label={t('acq.factRevision')} value={`v${facts.revision}`} />
+      {found.map(([name, value]) => (
+        <Fact key={name} label={name} value={value as string} />
+      ))}
     </Row>
   );
 }
@@ -46,19 +49,12 @@ function audio(facts: Facts): string {
     .join(' · ');
 }
 
-function Fact({ label, value }: Readonly<{ label: string; value: string | null | undefined }>) {
-  const t = useT();
+function Fact({ label: name, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <Box w={FACT_W}>
+    <Box w={{ base: '45%', md: FACT_W }}>
       <DataField.Root size="sm">
-        <DataField.Label>{label}</DataField.Label>
-        <DataField.Value lines={1}>
-          {value || (
-            <Text variant="meta" color="textDim">
-              {t('common.none')}
-            </Text>
-          )}
-        </DataField.Value>
+        <DataField.Label>{name}</DataField.Label>
+        <DataField.Value lines={1}>{value}</DataField.Value>
       </DataField.Root>
     </Box>
   );

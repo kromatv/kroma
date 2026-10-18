@@ -9,7 +9,7 @@ import {
 } from '@kromatv/module-sdk';
 import { Box, Callout, EmptyState, Row, Surface, TableSkeleton, Text } from '@kromatv/ui/kit';
 import { useAcquisitionApi } from './api';
-import type { BlockedRelease } from './rules-schemas';
+import type { BlockedRelease } from './judgement-schemas';
 import { useBlocklist } from './use-rules';
 
 const COLUMNS: TableColumn[] = [{}, { width: 150, from: 'md' }, { width: 120 }, { width: 44 }];

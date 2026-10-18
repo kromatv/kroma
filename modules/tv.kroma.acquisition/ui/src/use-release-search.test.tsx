@@ -38,6 +38,7 @@ function release(): ScoredReleaseView {
     score: 10,
     breakdown: [],
     rejected: null,
+    flags: [],
     grabbable: true,
     upgrade: false,
     detailsUrl: null,

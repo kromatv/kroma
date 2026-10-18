@@ -1,6 +1,6 @@
-import type { HdrFormat, Resolution, Source, VideoCodec } from './rules-schemas';
+import type { AudioCodec, HdrFormat, Resolution, Source, VideoCodec } from './rules-schemas';
 
-const LABEL: Record<Resolution | Source | VideoCodec | HdrFormat, string> = {
+const LABEL: Record<Resolution | Source | VideoCodec | HdrFormat | AudioCodec, string> = {
   Sd: 'SD',
   R720: '720p',
   R1080: '1080p',
@@ -21,6 +21,18 @@ const LABEL: Record<Resolution | Source | VideoCodec | HdrFormat, string> = {
   hdr10Plus: 'HDR10+',
   dolbyVision: 'Dolby Vision',
   hlg: 'HLG',
+  trueHd: 'TrueHD',
+  dtsX: 'DTS:X',
+  dtsHdMa: 'DTS-HD MA',
+  dtsHd: 'DTS-HD',
+  dts: 'DTS',
+  eac3: 'E-AC3',
+  ac3: 'AC3',
+  aac: 'AAC',
+  flac: 'FLAC',
+  opus: 'Opus',
+  pcm: 'PCM',
+  mp3: 'MP3',
 };
 
 const QUALITY_SOURCE: Record<string, string> = {

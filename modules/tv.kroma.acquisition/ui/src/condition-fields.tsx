@@ -56,12 +56,14 @@ export function Choice<Option extends string>({
   anyLabel,
   options,
   value,
+  labelOf = factLabel,
   onPick,
 }: Readonly<{
   label: string;
   anyLabel?: string;
   options: readonly Option[];
   value: Option | null;
+  labelOf?: (option: Option) => string;
   onPick: (next: Option | null) => void;
 }>) {
   return (
@@ -74,7 +76,7 @@ export function Choice<Option extends string>({
         <Select.Trigger size="sm" block />
         {anyLabel ? <Select.Item value={NOT_LISTED} label={anyLabel} /> : null}
         {options.map((option) => (
-          <Select.Item key={option} value={option} label={factLabel(option)} />
+          <Select.Item key={option} value={option} label={labelOf(option)} />
         ))}
       </Select.Root>
     </Labelled>

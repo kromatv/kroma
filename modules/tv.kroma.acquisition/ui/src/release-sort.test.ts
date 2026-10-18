@@ -18,6 +18,7 @@ function release(over: Partial<ScoredReleaseView>): ScoredReleaseView {
     score: 0,
     breakdown: [],
     rejected: null,
+    flags: [],
     grabbable: true,
     upgrade: false,
     detailsUrl: null,

@@ -1,93 +1,41 @@
 import type { IndexerReport, ScoredReleaseView } from '@kromatv/client/requests';
 import { Table, type TableColumn, useT } from '@kromatv/module-sdk';
-import { Box, Chip, EmptyState, Row, SegmentGroup } from '@kromatv/ui/kit';
-import { useMemo, useState } from 'react';
+import { Box, EmptyState } from '@kromatv/ui/kit';
 import { IndexerReportStrip, nothingAnswered } from './indexer-report';
 import { ReleaseRow } from './release-row';
-import { filterReleases, type ReleaseFilter, type ReleaseSort, sortReleases } from './release-sort';
+import { releaseSortOf } from './release-sort';
+import type { ReleaseView } from './use-release-view';
 
 const COLUMNS: TableColumn[] = [
-  {},
-  { width: 136 },
+  { min: 220 },
+  { width: 136, from: 'md' },
   { width: 150, from: 'md' },
-  { width: 92, from: 'md' },
-  { width: 84, from: 'md' },
-  { width: 74 },
-  { width: 44 },
+  { width: 104, from: 'md', column: 'size' },
+  { width: 116, from: 'md', column: 'seeders' },
+  { width: 104, from: 'md', column: 'score' },
+  { width: 44, from: 'md' },
 ];
 
-const SORTS: ReleaseSort[] = ['score', 'size', 'seeders', 'date'];
-
-const SORT_LABEL: Record<ReleaseSort, string> = {
-  score: 'requests.colScore',
-  size: 'requests.colSize',
-  seeders: 'requests.colSeeders',
-  date: 'requests.colPublished',
-};
-
 export function ReleaseTable({
-  releases,
+  view,
   indexers = [],
   canGrab,
   busy,
   onGrab,
 }: Readonly<{
-  releases: ScoredReleaseView[];
-  /** Every indexer the sweep asked, answered or not. */
+  view: ReleaseView;
   indexers?: IndexerReport[];
   canGrab: boolean;
   busy: boolean;
   onGrab: (release: ScoredReleaseView) => void;
 }>) {
   const t = useT();
-  const [sort, setSort] = useState<ReleaseSort>('score');
-  const [filter, setFilter] = useState<ReleaseFilter>('accepted');
+  const unsearched = view.rows.length === 0 && nothingAnswered(indexers);
 
-  const acceptedCount = releases.filter((r) => r.score != null).length;
-  const rejectedCount = releases.length - acceptedCount;
-  const unsearched = releases.length === 0 && nothingAnswered(indexers);
-  const rows = useMemo(
-    () => sortReleases(filterReleases(releases, filter), sort),
-    [releases, filter, sort],
-  );
-
-  return (
-    <Box gap={12}>
-      <IndexerReportStrip indexers={indexers} />
-
-      <Row wrap between gap={10}>
-        <Row wrap gap={8}>
-          <Chip
-            label={t('requests.filter.accepted')}
-            count={acceptedCount}
-            dot="success"
-            active={filter === 'accepted'}
-            onPress={() => setFilter('accepted')}
-          />
-          <Chip
-            label={t('requests.filter.rejected')}
-            count={rejectedCount}
-            dot="danger"
-            active={filter === 'rejected'}
-            onPress={() => setFilter('rejected')}
-          />
-          <Chip
-            label={t('requests.filter.all')}
-            count={releases.length}
-            active={filter === 'all'}
-            onPress={() => setFilter('all')}
-          />
-        </Row>
-        <SegmentGroup.Root value={sort} onValueChange={setSort} label={t('requests.sortBy')}>
-          {SORTS.map((one) => (
-            <SegmentGroup.Item key={one} value={one}>
-              <SegmentGroup.Label>{t(SORT_LABEL[one])}</SegmentGroup.Label>
-            </SegmentGroup.Item>
-          ))}
-        </SegmentGroup.Root>
-      </Row>
-
-      {rows.length === 0 ? (
+  if (view.rows.length === 0) {
+    return (
+      <Box gap={12}>
+        <IndexerReportStrip indexers={indexers} />
         <Box py={20}>
           <EmptyState.Root icon={unsearched ? 'alert-triangle' : 'search'}>
             <EmptyState.Title>
@@ -95,28 +43,41 @@ export function ReleaseTable({
             </EmptyState.Title>
           </EmptyState.Root>
         </Box>
-      ) : (
-        <Table.Root columns={COLUMNS}>
-          <Table.Header>
-            <Table.Column>{t('requests.colRelease')}</Table.Column>
-            <Table.Column>{t('acq.colQuality')}</Table.Column>
-            <Table.Column>{t('requests.colIndexer')}</Table.Column>
-            <Table.Column>{t('requests.colSize')}</Table.Column>
-            <Table.Column>{t('requests.colSeeders')}</Table.Column>
-            <Table.Column>{t('requests.colScore')}</Table.Column>
-            <Table.Cell />
-          </Table.Header>
-          {rows.map((release) => (
-            <ReleaseRow
-              key={`${release.indexerId}-${release.guid}`}
-              release={release}
-              canGrab={canGrab}
-              busy={busy}
-              onGrab={onGrab}
-            />
-          ))}
-        </Table.Root>
-      )}
+      </Box>
+    );
+  }
+
+  return (
+    <Box gap={12}>
+      <IndexerReportStrip indexers={indexers} />
+      <Table.Root
+        columns={COLUMNS}
+        label={t('acq.releaseTable')}
+        sort={view.columns}
+        onSortChange={(_, details) => {
+          const picked = releaseSortOf(details.column);
+          if (picked) view.setSort(picked);
+        }}
+      >
+        <Table.Header>
+          <Table.Column>{t('acq.colRelease')}</Table.Column>
+          <Table.Column>{t('acq.colQuality')}</Table.Column>
+          <Table.Column>{t('requests.colIndexer')}</Table.Column>
+          <Table.Column>{t('requests.colSize')}</Table.Column>
+          <Table.Column>{t('acq.colSeeders')}</Table.Column>
+          <Table.Column>{t('requests.colScore')}</Table.Column>
+          <Table.Cell />
+        </Table.Header>
+        {view.rows.map((release) => (
+          <ReleaseRow
+            key={`${release.indexerId}-${release.guid}`}
+            release={release}
+            canGrab={canGrab}
+            busy={busy}
+            onGrab={onGrab}
+          />
+        ))}
+      </Table.Root>
     </Box>
   );
 }

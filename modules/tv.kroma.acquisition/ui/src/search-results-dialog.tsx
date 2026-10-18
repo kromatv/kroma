@@ -1,7 +1,9 @@
 import type { ScoredReleaseView } from '@kromatv/client/requests';
 import { useT } from '@kromatv/module-sdk';
 import { Box, Button, Callout, Dialog, TableSkeleton, Text } from '@kromatv/ui/kit';
+import { NO_RELEASES, ReleaseFilters } from './release-filters';
 import { ReleaseTable } from './release-table';
+import { useReleaseView } from './use-release-view';
 import type { SearchState } from './use-search-runner';
 
 export function SearchResultsDialog({
@@ -16,6 +18,7 @@ export function SearchResultsDialog({
   onClose: () => void;
 }>) {
   const t = useT();
+  const view = useReleaseView(state.view?.releases ?? NO_RELEASES);
   const open = state.busy || state.view != null || state.error != null;
   return (
     <Dialog.Root open={open} onClose={onClose} width="xl" title={t('requests.interactiveSearch')}>
@@ -26,6 +29,7 @@ export function SearchResultsDialog({
         <Text variant="meta" color="textDim">
           {t(state.busy ? 'requests.searchRunning' : 'requests.searchAnswered')}
         </Text>
+        {state.view ? <ReleaseFilters view={view} /> : null}
       </Dialog.Header>
       <Dialog.Panel>
         <Box gap={12}>
@@ -46,7 +50,7 @@ export function SearchResultsDialog({
           {state.busy ? <TableSkeleton rows={6} /> : null}
           {!state.busy && state.view ? (
             <ReleaseTable
-              releases={state.view.releases}
+              view={view}
               indexers={state.view.indexers}
               canGrab={canGrab}
               busy={state.grabbing}

@@ -15,8 +15,10 @@ export function cellKey(table: SizeTable, quality: QualityId, field: SizeField):
   return `${table}.${quality}.${field}`;
 }
 
+const PLACES = 10;
+
 function text(value: number | null | undefined): string {
-  return value == null ? '' : String(value);
+  return value == null ? '' : String(Math.round(value * PLACES) / PLACES);
 }
 
 export function draftOfSizes(sizes: Sizes, qualities: readonly QualityId[]): SizesDraft {

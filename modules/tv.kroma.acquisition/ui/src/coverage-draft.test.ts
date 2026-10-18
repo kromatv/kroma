@@ -32,6 +32,7 @@ function episode(s: number, e: number): LedgerEpisode {
     itemId: null,
     video: null,
     durationMs: null,
+    heldByRequest: false,
   };
 }
 

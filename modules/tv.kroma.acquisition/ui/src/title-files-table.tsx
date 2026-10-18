@@ -1,12 +1,29 @@
+import type { RequestKind } from '@kromatv/client/requests';
 import { Table, type TableColumn, useT } from '@kromatv/module-sdk';
 import { Box, EmptyState, Row, Text, useBreakpoint } from '@kromatv/ui/kit';
 import { FormatPills, QualityPill, ScorePill } from './judgement-pills';
+import type { JudgedFile } from './judgement-schemas';
+import { belowReason, useBelowReasonText } from './quality-target';
 import { reasonKey } from './release-verdict';
-import type { JudgedFile } from './rules-schemas';
+import type { QualityProfile } from './rules-schemas';
 
-const COLUMNS: TableColumn[] = [{}, { width: 96, from: 'md' }, { width: 124 }, { width: 70 }];
+const SHOW_COLUMNS: TableColumn[] = [
+  { min: 200 },
+  { width: 110, from: 'md' },
+  { width: 124 },
+  { width: 70 },
+];
+const MOVIE_COLUMNS: TableColumn[] = [{ min: 200 }, { width: 124 }, { width: 70 }];
 
-export function TitleFilesTable({ files }: Readonly<{ files: readonly JudgedFile[] }>) {
+export function TitleFilesTable({
+  kind,
+  files,
+  profile,
+}: Readonly<{
+  kind: RequestKind;
+  files: readonly JudgedFile[];
+  profile: QualityProfile | undefined;
+}>) {
   const t = useT();
   if (files.length === 0) {
     return (
@@ -16,32 +33,39 @@ export function TitleFilesTable({ files }: Readonly<{ files: readonly JudgedFile
       </EmptyState.Root>
     );
   }
+  const show = kind === 'show';
   return (
-    <Table.Root columns={COLUMNS} label={t('acq.titleFiles')}>
+    <Table.Root columns={show ? SHOW_COLUMNS : MOVIE_COLUMNS} label={t('acq.titleFiles')}>
       <Table.Header>
         <Table.Column>{t('acq.colFile')}</Table.Column>
-        <Table.Column>{t('requests.colEpisode')}</Table.Column>
+        {show ? <Table.Column>{t('requests.colEpisode')}</Table.Column> : null}
         <Table.Column>{t('acq.colQuality')}</Table.Column>
         <Table.Column>{t('requests.colScore')}</Table.Column>
       </Table.Header>
       {files.map((file) => (
-        <FileRow key={file.fileId} file={file} />
+        <FileRow key={file.fileId} file={file} show={show} profile={profile} />
       ))}
     </Table.Root>
   );
 }
 
-function FileRow({ file }: Readonly<{ file: JudgedFile }>) {
+function FileRow({
+  file,
+  show,
+  profile,
+}: Readonly<{ file: JudgedFile; show: boolean; profile: QualityProfile | undefined }>) {
   const t = useT();
+  const reasonText = useBelowReasonText();
   const unit = unitLabel(file);
   const allowed = file.evaluation.qualityRank != null;
   const narrow = useBreakpoint() === 'base';
+  const why = file.belowTarget ? reasonText(belowReason(profile, file.evaluation)) : null;
   return (
     <Table.Row>
       <Table.Cell>
         <Box minW={0} gap={2}>
           <Text variant="meta" lines={1}>
-            {file.relPath ?? file.fileId}
+            {fileName(file)}
           </Text>
           <Row wrap gapX={10} align="center">
             {narrow && unit ? (
@@ -49,9 +73,9 @@ function FileRow({ file }: Readonly<{ file: JudgedFile }>) {
                 {unit}
               </Text>
             ) : null}
-            {file.belowTarget ? (
+            {why ? (
               <Text variant="meta" color="accentText">
-                {t('acq.belowTarget')}
+                {why}
               </Text>
             ) : null}
             {allowed ? null : (
@@ -68,11 +92,13 @@ function FileRow({ file }: Readonly<{ file: JudgedFile }>) {
           <FormatPills formats={file.evaluation.formats} />
         </Box>
       </Table.Cell>
-      <Table.Cell>
-        <Text variant="meta" color="textDim">
-          {unit}
-        </Text>
-      </Table.Cell>
+      {show ? (
+        <Table.Cell>
+          <Text variant="meta" color="textDim">
+            {unit}
+          </Text>
+        </Table.Cell>
+      ) : null}
       <Table.Cell>
         <QualityPill quality={file.evaluation.quality} allowed={allowed} />
       </Table.Cell>
@@ -81,6 +107,11 @@ function FileRow({ file }: Readonly<{ file: JudgedFile }>) {
       </Table.Cell>
     </Table.Row>
   );
+}
+
+function fileName(file: JudgedFile): string {
+  const path = file.relPath ?? file.fileId;
+  return path.split('/').pop() || path;
 }
 
 function unitLabel(file: JudgedFile): string {

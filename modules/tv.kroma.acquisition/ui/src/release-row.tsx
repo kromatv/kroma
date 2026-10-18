@@ -1,8 +1,11 @@
 import type { ScoredReleaseView } from '@kromatv/client/requests';
-import { TABULAR, Table, useT } from '@kromatv/module-sdk';
-import { Box, Divider, Icon, Row, Text } from '@kromatv/ui/kit';
+import { TABULAR, Table, useFormat, useT } from '@kromatv/module-sdk';
+import { Box, confirm, Icon, Table as Kit, Row, Text, useBreakpoint } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { FormatPills, QualityPill, ScorePill, VerdictLine } from './judgement-pills';
+import { Pressable } from 'react-native';
+import { FlagBadges, FormatPills, QualityPill, ScorePill, VerdictLine } from './judgement-pills';
+import { useRefusalText } from './refusal-text';
+import { ScoreBreakdown } from './release-breakdown';
 import { BLANK, IndexerCell, SeedersCell, SizeCell } from './release-cells';
 import { targetLabel } from './release-sort';
 
@@ -17,114 +20,186 @@ export function ReleaseRow({
   busy: boolean;
   onGrab: (release: ScoredReleaseView) => void;
 }>) {
-  const t = useT();
   const [open, setOpen] = useState(false);
-  const rejected = release.score == null;
-  const target = targetLabel(release);
-
+  const narrow = useBreakpoint() === 'base';
   return (
     <>
-      <Table.Row onPress={() => setOpen((was) => !was)}>
-        <Table.Cell>
-          <Row gap={8}>
-            <Icon
-              name={open ? 'chevron-down' : 'chevron-right'}
-              size={13}
-              thickness={2.4}
-              color="textDim"
-            />
-            <Box minW={0} flex gap={2}>
-              <Text variant="meta" lines={1} color={rejected ? 'textDim' : 'text'}>
-                {release.title}
-              </Text>
-              <Row wrap gapX={10} align="center">
-                {target ? (
-                  <Text variant="meta" color="info">
-                    {target}
-                  </Text>
-                ) : null}
-                {release.verdict ? <VerdictLine verdict={release.verdict} /> : null}
-                {release.rejected ? (
-                  <Text variant="meta" color="dangerHover" lines={1}>
-                    {release.rejected}
-                  </Text>
-                ) : null}
-              </Row>
-              <FormatPills formats={release.formats} />
-            </Box>
-          </Row>
-        </Table.Cell>
-        <Table.Cell>
-          {release.quality ? (
-            <QualityPill quality={release.quality} allowed={!rejected} />
-          ) : (
-            <Text variant="meta" color="textDim">
-              {BLANK}
-            </Text>
-          )}
-        </Table.Cell>
-        <IndexerCell indexerName={release.indexerName} detailsUrl={release.detailsUrl} />
-        <SizeCell sizeBytes={release.sizeBytes} />
-        <SeedersCell seeders={release.seeders} />
-        <Table.Cell>
-          {release.score == null ? (
-            <Text variant="meta" color="textDim" style={TABULAR}>
-              {BLANK}
-            </Text>
-          ) : (
-            <ScorePill score={release.score} />
-          )}
-        </Table.Cell>
-        <Table.Cell>
-          {canGrab && release.grabbable ? (
-            <Table.Action
-              tone={release.upgrade ? 'hdr' : 'accent'}
-              icon={release.upgrade ? 'refresh' : 'download'}
-              label={t(grabLabelKey(release.upgrade, rejected))}
-              disabled={busy}
-              onPress={() => onGrab(release)}
-            />
-          ) : null}
-        </Table.Cell>
-      </Table.Row>
+      <Kit.Row asChild>
+        <Pressable accessibilityState={{ expanded: open }} onPress={() => setOpen((was) => !was)}>
+          <Table.Cell>
+            <ReleaseHeading release={release} open={open} />
+            {narrow ? (
+              <StackedFacts release={release} canGrab={canGrab} busy={busy} onGrab={onGrab} />
+            ) : null}
+          </Table.Cell>
+          <Table.Cell>
+            <Quality release={release} />
+          </Table.Cell>
+          <IndexerCell indexerName={release.indexerName} detailsUrl={release.detailsUrl} />
+          <SizeCell sizeBytes={release.sizeBytes} />
+          <SeedersCell seeders={release.seeders} />
+          <Table.Cell>
+            <Score release={release} />
+          </Table.Cell>
+          <Table.Cell>
+            <GrabAction release={release} canGrab={canGrab} busy={busy} onGrab={onGrab} />
+          </Table.Cell>
+        </Pressable>
+      </Kit.Row>
       {open ? <ScoreBreakdown release={release} /> : null}
     </>
   );
 }
 
+function ReleaseHeading({
+  release,
+  open,
+}: Readonly<{ release: ScoredReleaseView; open: boolean }>) {
+  const t = useT();
+  const refusalText = useRefusalText();
+  const rejected = release.score == null;
+  const target = targetLabel(release);
+  const refusal = refusalText(release.refusal, release.rejected);
+  return (
+    <Row gap={8} align="flex-start">
+      <Box pt={3}>
+        <Icon
+          name={open ? 'chevron-down' : 'chevron-right'}
+          size={13}
+          thickness={2.4}
+          color="textDim"
+        />
+      </Box>
+      <Box minW={0} flex gap={3}>
+        <Text variant="meta" lines={2} color={rejected ? 'textDim' : 'text'}>
+          {release.title}
+        </Text>
+        <Row wrap gapX={10} gapY={2} align="center">
+          {target ? (
+            <Text variant="meta" color="info">
+              {target}
+            </Text>
+          ) : null}
+          <Text variant="meta" color="textDim" lines={1}>
+            {release.indexerName}
+          </Text>
+          {release.publishedAt ? <Published at={release.publishedAt} /> : null}
+          {release.verdict ? <VerdictLine verdict={release.verdict} /> : null}
+          <FlagBadges flags={release.flags} />
+        </Row>
+        {refusal ? (
+          <Text variant="meta" color="dangerHover" lines={2}>
+            {t('acq.refusedBy', { reason: refusal })}
+          </Text>
+        ) : null}
+        <FormatPills formats={release.formats} />
+      </Box>
+    </Row>
+  );
+}
+
+function Published({ at }: Readonly<{ at: string }>) {
+  const fmt = useFormat();
+  return (
+    <Text variant="meta" color="textDim">
+      {fmt.elapsed(at)}
+    </Text>
+  );
+}
+
+function StackedFacts({
+  release,
+  canGrab,
+  busy,
+  onGrab,
+}: Readonly<{
+  release: ScoredReleaseView;
+  canGrab: boolean;
+  busy: boolean;
+  onGrab: (release: ScoredReleaseView) => void;
+}>) {
+  const fmt = useFormat();
+  return (
+    <Row wrap between gap={10} align="center" pt={8}>
+      <Row wrap gapX={12} gapY={6} align="center" flex minW={0}>
+        <Quality release={release} />
+        <Text variant="meta" color="textDim" style={TABULAR}>
+          {release.sizeBytes == null ? BLANK : fmt.bytes(release.sizeBytes)}
+        </Text>
+        <Text variant="meta" color="success" style={TABULAR}>
+          {release.seeders ?? BLANK}
+        </Text>
+        <Score release={release} />
+      </Row>
+      <GrabAction release={release} canGrab={canGrab} busy={busy} onGrab={onGrab} />
+    </Row>
+  );
+}
+
+function Quality({ release }: Readonly<{ release: ScoredReleaseView }>) {
+  if (!release.quality) {
+    return (
+      <Text variant="meta" color="textDim">
+        {BLANK}
+      </Text>
+    );
+  }
+  return <QualityPill quality={release.quality} allowed={release.score != null} />;
+}
+
+function Score({ release }: Readonly<{ release: ScoredReleaseView }>) {
+  if (release.score == null) {
+    return (
+      <Text variant="meta" color="textDim" style={TABULAR}>
+        {BLANK}
+      </Text>
+    );
+  }
+  return <ScorePill score={release.score} />;
+}
+
+function GrabAction({
+  release,
+  canGrab,
+  busy,
+  onGrab,
+}: Readonly<{
+  release: ScoredReleaseView;
+  canGrab: boolean;
+  busy: boolean;
+  onGrab: (release: ScoredReleaseView) => void;
+}>) {
+  const t = useT();
+  if (!canGrab || !release.grabbable) return null;
+  const rejected = release.score == null;
+  const take = async () => {
+    const yes =
+      !rejected ||
+      (await confirm({
+        title: t('acq.grabAnywayTitle'),
+        message: t('acq.grabAnywayHint', { name: release.title }),
+        confirmLabel: t('requests.grabAnyway'),
+        cancelLabel: t('common.cancel'),
+      }));
+    if (yes) onGrab(release);
+  };
+  return (
+    <Table.Action
+      tone={grabTone(release.upgrade, rejected)}
+      icon={release.upgrade ? 'refresh' : 'download'}
+      label={`${t(grabLabelKey(release.upgrade, rejected))} ${release.title}`}
+      disabled={busy}
+      onPress={() => void take()}
+    />
+  );
+}
+
+function grabTone(upgrade: boolean, rejected: boolean): 'textMuted' | 'hdr' | 'accent' {
+  if (rejected) return 'textMuted';
+  return upgrade ? 'hdr' : 'accent';
+}
+
 function grabLabelKey(upgrade: boolean, rejected: boolean): string {
   if (rejected) return 'requests.grabAnyway';
   return upgrade ? 'requests.grabUpgrade' : 'requests.grab';
-}
-
-function ScoreBreakdown({ release }: Readonly<{ release: ScoredReleaseView }>) {
-  const t = useT();
-  return (
-    <Box px={16} pb={14} bg="surface1">
-      <Divider color="tint/5" />
-      {release.breakdown.length === 0 ? (
-        <Text variant="meta" color="textDim" pt={10}>
-          {release.rejected ?? t('requests.noBreakdown')}
-        </Text>
-      ) : (
-        <Box gap={4} pt={10}>
-          {release.breakdown.map((line) => (
-            <Row key={`${line.rule}-${line.note}`} between gap={12}>
-              <Text variant="meta" color="textDim" lines={1} minW={0}>
-                {line.rule} · {line.note}
-              </Text>
-              <Text
-                variant="meta"
-                color={line.delta >= 0 ? 'success' : 'dangerHover'}
-                shrink={0}
-                style={TABULAR}
-              >
-                {line.delta >= 0 ? `+${line.delta}` : line.delta}
-              </Text>
-            </Row>
-          ))}
-        </Box>
-      )}
-    </Box>
-  );
 }

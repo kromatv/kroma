@@ -1,27 +1,18 @@
-// This module's admin API.
-//
-// Unlike a module that only ever calls itself, this one is also driven by the
-// torrents module's manual-grab flow, so the hook binds an explicit id rather
-// than the rendering page's. This is the one place the id is written down, and
-// it is the right one: a module publishing the address others reach it at.
-// Import from `@kromatv/module-acquisition/api`.
-
 import type { RequestKind } from '@kromatv/client/requests';
 import { InteractiveSearchView } from '@kromatv/client/requests';
 import { moduleApiHook } from '@kromatv/module-sdk';
 import {
   Acknowledged,
   BlockedRelease,
-  type CustomFormat,
   CutoffEntry,
   GrabAccepted,
-  type QualityProfile,
   RulesTestView,
-  RulesView,
-  type Sizes,
+  SearchStarted,
+  type SearchUnit,
   TitleRulesView,
   type TitleScope,
-} from './rules-schemas';
+} from './judgement-schemas';
+import { type CustomFormat, type QualityProfile, RulesView, type Sizes } from './rules-schemas';
 import {
   type ManualAddBody,
   ManualAddResult,
@@ -33,15 +24,12 @@ import {
 const at = (kind: RequestKind, tmdbId: number) => `/acquisition/titles/${kind}/${tmdbId}`;
 
 export const useAcquisitionApi = moduleApiHook('tv.kroma.acquisition', (api) => ({
-  /** Free-text sweep of every indexer. Pass a `season` (and optionally an
-   *  `episode`) to search the tracker's TV categories instead of its movie ones. */
+  /** Pass a `season` (and optionally an `episode`) to search the tracker's TV
+   *  categories instead of its movie ones. */
   search: (body: ManualSearchBody) => api.post('/acquisition/search', body, ManualSearchView),
-  /** Fetch a torrent's file list (metadata only, no download) + what it
-   *  holds, so the admin can pick episodes / confirm the entity first. */
+  /** Fetch a torrent's file list and what it holds: metadata only, no download. */
   analyze: (magnetOrUrl: string) =>
     api.post('/acquisition/analyze', { magnetOrUrl }, TorrentAnalysis),
-  /** Grab a pasted magnet / .torrent URL (or a manual-search result) and
-   *  import it as `kind` into the right library. */
   add: (body: ManualAddBody) => api.post('/acquisition/add', body, ManualAddResult),
 
   rules: () => api.get('/acquisition/rules', RulesView),
@@ -71,6 +59,12 @@ export const useAcquisitionApi = moduleApiHook('tv.kroma.acquisition', (api) => 
     tmdbId: number,
     body: { scope: TitleScope; guid: string; indexerId: string },
   ) => api.post(`${at(kind, tmdbId)}/grab`, body, GrabAccepted),
+
+  /** Searches the title's missing units now, without reading the backoff.
+   *  An empty `units` takes everything the title is missing. */
+  searchNow: (kind: RequestKind, tmdbId: number, units: readonly SearchUnit[] = []) =>
+    api.post(`${at(kind, tmdbId)}/search-now`, { units }, SearchStarted),
+  searchCutoffNow: () => api.post('/acquisition/cutoff/search-now', {}, SearchStarted),
 
   cutoff: () => api.get('/acquisition/cutoff', CutoffEntry.array()),
   blocklist: () => api.get('/acquisition/blocklist', BlockedRelease.array()),

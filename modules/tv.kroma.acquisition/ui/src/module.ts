@@ -27,6 +27,12 @@ const acquisitionModule = defineModule({
         import('./monitoring-panel').then((m) => ({ default: m.MonitoringPanel })),
       ),
     },
+    {
+      slot: 'monitoring.search',
+      component: lazy(() =>
+        import('./monitoring-search').then((m) => ({ default: m.MonitoringSearch })),
+      ),
+    },
   ],
 });
 

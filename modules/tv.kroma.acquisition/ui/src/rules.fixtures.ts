@@ -1,4 +1,5 @@
-import type { Evaluation, QualityId, QualityProfile } from './rules-schemas';
+import type { Evaluation } from './judgement-schemas';
+import type { QualityId, QualityProfile } from './rules-schemas';
 
 export function profile(over: Partial<QualityProfile> = {}): QualityProfile {
   return {

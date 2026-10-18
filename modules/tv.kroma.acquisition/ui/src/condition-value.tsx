@@ -7,6 +7,7 @@ import {
   type Condition,
   HdrFormat,
   IndexerFlag,
+  ReleaseType,
   Resolution,
   Source,
   VideoCodec,
@@ -92,10 +93,25 @@ export function ConditionValue({
             label={label}
             options={IndexerFlag.options}
             value={condition.value}
+            labelOf={(flag) => t(`acq.flag.${flag}`)}
             onPick={(value) => value && onChange({ ...condition, value })}
           />
         </Box>
       );
+    case 'releaseType':
+      return (
+        <Box w={VALUE_W}>
+          <Choice
+            label={label}
+            options={ReleaseType.options}
+            value={condition.value}
+            labelOf={(kind) => t(`acq.releaseType.${kind}`)}
+            onPick={(value) => value && onChange({ ...condition, value })}
+          />
+        </Box>
+      );
+    case 'year':
+      return <YearValue condition={condition} onChange={onChange} />;
     case 'hdr':
       return (
         <Box w={VALUE_W}>
@@ -136,6 +152,36 @@ function AudioValue({
           placeholder="6"
           value={condition.minChannels}
           onPick={(minChannels) => onChange({ ...condition, minChannels })}
+        />
+      </Box>
+    </Row>
+  );
+}
+
+function YearValue({
+  condition,
+  onChange,
+}: Readonly<{
+  condition: Of<'year'>;
+  onChange: (next: Condition) => void;
+}>) {
+  const t = useT();
+  return (
+    <Row wrap gap={10} align="flex-end">
+      <Box w={120}>
+        <Count
+          label={t('acq.conditionMinYear')}
+          placeholder="2010"
+          value={condition.min}
+          onPick={(min) => onChange({ ...condition, min })}
+        />
+      </Box>
+      <Box w={120}>
+        <Count
+          label={t('acq.conditionMaxYear')}
+          placeholder="2026"
+          value={condition.max}
+          onPick={(max) => onChange({ ...condition, max })}
         />
       </Box>
     </Row>
