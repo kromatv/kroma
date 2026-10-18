@@ -4,17 +4,11 @@
 import { sessionToken } from '@kromatv/client';
 import { hasPermission } from '@kromatv/client/accounts';
 import type { MessageKey, TVars } from '@kromatv/i18n';
-import {
-  createEventBus,
-  type HostBase,
-  type KromaHost,
-  type ModuleManifest,
-} from '@kromatv/module-sdk';
+import type { HostBase, KromaHost, ModuleManifest } from '@kromatv/module-sdk';
 import { useLocale, useT } from '@kromatv/ui';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
-import { moduleRegistry } from '#web/modules/registry';
-import { loadRuntimeRemotes } from '#web/modules/remotes';
+import { createModuleRuntime, type ModuleRuntime } from '#web/modules/registry';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -27,16 +21,17 @@ async function apiGet<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-// One event bus for the whole app: a module's setup() subscriptions (see the
-// registry's setupDone guard) run once and must stay valid across page visits.
-const appBus = createEventBus();
-
 /** Resolves + starts the module registry against a host adapted from the app's
  *  providers, returning the wired host once ready. The host is built ONCE and
  *  reads the latest auth / i18n / router values through a ref: re-creating it
  *  each render would re-run the effect, call setHost, and loop (React error
  *  #185). */
-export function useModuleHost(revision = 0): KromaHost | null {
+export function useModuleHost(revision = 0, provided?: ModuleRuntime): KromaHost | null {
+  const [owned] = useState(() => (provided ? null : createModuleRuntime()));
+  const runtime = provided ?? owned;
+  if (!runtime) throw new Error('Module host requires its runtime');
+  const { registry: moduleRegistry, bus: appBus, remotes } = runtime;
+  useEffect(() => runtime.retain(), [runtime]);
   const navigate = useNavigate();
   const t = useT();
   const locale = useLocale();
@@ -82,7 +77,8 @@ export function useModuleHost(revision = 0): KromaHost | null {
     };
     void (async () => {
       try {
-        await loadRuntimeRemotes(moduleRegistry);
+        await remotes.loadRuntimeRemotes(moduleRegistry);
+        if (!alive) return;
         let skip: Set<string> | undefined;
         try {
           const listed = await apiGet<ModuleManifest[]>('/modules');
@@ -90,6 +86,7 @@ export function useModuleHost(revision = 0): KromaHost | null {
         } catch {
           skip = undefined; // enabled-state unavailable; set up everything
         }
+        if (!alive) return;
         const wired = await moduleRegistry.start(base, skip);
         if (alive) setHost(wired);
       } catch (e) {
@@ -100,6 +97,6 @@ export function useModuleHost(revision = 0): KromaHost | null {
     return () => {
       alive = false;
     };
-  }, [authed, revision]);
+  }, [authed, revision, moduleRegistry, appBus, remotes]);
   return host;
 }

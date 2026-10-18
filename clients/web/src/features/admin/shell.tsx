@@ -10,7 +10,7 @@ import { StoreOpsProvider } from '#web/features/admin/module-ops';
 import { AdminContext } from '#web/features/admin/shell-context';
 import { AdminMobileTopbar, AdminSidebar } from '#web/features/admin/shell-sidebar';
 import { ADMIN_SCROLLER, ADMIN_SCROLLER_CONTENT } from '#web/features/admin/web-style';
-import { moduleRegistry } from '#web/modules/registry';
+import { useModuleRegistry } from '#web/modules/ModuleHostProvider';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { PageFrame } from '#web/shared/ui';
@@ -21,6 +21,7 @@ export { Denied, isAnyAdmin, useAsyncAction, useCap, usePoll } from '#web/featur
 export { useAdmin } from '#web/features/admin/shell-context';
 
 export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const moduleRegistry = useModuleRegistry();
   const { client, user } = useAuth();
   const queryClient = useQueryClient();
   const kit = useMemo(
