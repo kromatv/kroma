@@ -1,8 +1,17 @@
 // @vitest-environment jsdom
+
 import { act, renderHook } from '@testing-library/react';
+import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { artworkSetting } from './registry';
-import { artworkPrefStore, perfHudPrefStore, reactivePref, useStoredPref } from './store';
+import {
+  ARTWORK_SCALE,
+  ArtworkPrefProvider,
+  createArtworkPref,
+  perfHudPrefStore,
+  reactivePref,
+  useStoredPref,
+} from './store';
 
 // jsdom ships no Storage implementation, so this test provides one rather than
 // skipping the assertion that the store actually persists to it.
@@ -101,7 +110,11 @@ describe('the artwork quality row', () => {
     const use = (
       artworkSetting as unknown as { useValue: () => readonly [string, (v: string) => void] }
     ).useValue;
-    const { result } = renderHook(() => use());
+    const artworkPrefStore = createArtworkPref();
+    const { result } = renderHook(() => use(), {
+      wrapper: ({ children }) =>
+        createElement(ArtworkPrefProvider, { value: artworkPrefStore }, children),
+    });
     expect(result.current[0]).toBe(artworkPrefStore.get());
 
     act(() => result.current[1]('medium'));
@@ -122,34 +135,33 @@ describe('the artwork default', () => {
 
   const boot = async (gb: number | null) => {
     vi.resetModules();
-    const media = await import('@kromatv/client/media');
     const hardware = await import('#tv/app/clientHardware');
     const { readClientHardware } = await import('#tv/app/hardwareReadings');
     vi.spyOn(hardware, 'clientHardware').mockImplementation(() =>
       readClientHardware(reporting(gb)),
     );
     const store = await import('./store');
-    return { hardware, media, store };
+    return { hardware, store };
   };
 
   it('stays full on a set that reports enough memory', async () => {
-    const { media, store } = await boot(4);
+    const { store } = await boot(4);
 
-    expect(store.artworkPrefStore.get()).toBe('full');
-    expect(media.artworkScaleValue()).toBe(1);
+    expect(store.createArtworkPref().get()).toBe('full');
+    expect(ARTWORK_SCALE[store.createArtworkPref().get()]).toBe(1);
   });
 
   it('steps down to high on a set that reports the low-memory ceiling or less', async () => {
-    const { media, store } = await boot(2);
+    const { store } = await boot(2);
 
-    expect(store.artworkPrefStore.get()).toBe('high');
-    expect(media.artworkScaleValue()).toBe(0.75);
+    expect(store.createArtworkPref().get()).toBe('high');
+    expect(ARTWORK_SCALE[store.createArtworkPref().get()]).toBe(0.75);
   });
 
   it('stays full where the set will not report its memory at all', async () => {
     const { store } = await boot(null);
 
-    expect(store.artworkPrefStore.get()).toBe('full');
+    expect(store.createArtworkPref().get()).toBe('full');
   });
 
   it('is beaten by the quality the viewer chose', async () => {
@@ -157,15 +169,15 @@ describe('the artwork default', () => {
 
     const { store } = await boot(2);
 
-    expect(store.artworkPrefStore.get()).toBe('full');
+    expect(store.createArtworkPref().get()).toBe('full');
     window.localStorage.removeItem('kroma:artwork');
   });
 
   it('probes the immutable hardware adapter once for the default', async () => {
     const { store, hardware } = await boot(2);
     const before = vi.mocked(hardware.clientHardware).mock.calls.length;
-    expect(store.artworkPrefStore.get()).toBe('high');
-    expect(store.artworkPrefStore.get()).toBe('high');
+    expect(store.createArtworkPref().get()).toBe('high');
+    expect(store.createArtworkPref().get()).toBe('high');
     expect(vi.mocked(hardware.clientHardware).mock.calls).toHaveLength(before);
   });
 });
@@ -180,13 +192,12 @@ describe('a preference stored by an earlier run', () => {
     expect(next.perfHudPrefStore.get()).toBe('on');
   });
 
-  it('re-applies the artwork scale when the device store arrives late', async () => {
+  it('reads the artwork quality when the device store arrives late', async () => {
     vi.resetModules();
-    const media = await import('@kromatv/client/media');
     const { setSessionStorage } = await import('@kromatv/client');
-    await import('./store');
+    const store = await import('./store');
     const late = new Map([['kroma:artwork', 'medium']]);
-    expect(media.artworkScaleValue()).toBe(1);
+    expect(ARTWORK_SCALE[store.createArtworkPref().get()]).toBe(1);
 
     setSessionStorage({
       getItem: (k: string) => late.get(k) ?? null,
@@ -194,7 +205,7 @@ describe('a preference stored by an earlier run', () => {
       removeItem: (k: string) => void late.delete(k),
     });
 
-    expect(media.artworkScaleValue()).toBe(0.5);
+    expect(ARTWORK_SCALE[store.createArtworkPref().get()]).toBe(0.5);
     setSessionStorage(null);
   });
 });

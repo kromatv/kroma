@@ -3,3 +3,8 @@ export function useScrollLock(_locked: boolean): void {
   // simply covers, so there is nothing to lock. The web half, which does have
   // a document to freeze, is in ./scroll-lock.web.
 }
+
+/** Native has no document to lock. */
+export function createScrollLock() {
+  return { hold: () => () => {} };
+}

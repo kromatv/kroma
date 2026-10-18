@@ -52,6 +52,7 @@ export function useCatalogue(
   platform: string,
   browse?: ServerBrowse,
   suppliedDeepLinks?: DeepLinks,
+  artworkScale?: () => number,
 ): Catalogue {
   const [ownedDeepLinks] = useState(createDeepLinks);
   const { readDeepLink, onDeepLink } = suppliedDeepLinks ?? ownedDeepLinks;
@@ -69,8 +70,8 @@ export function useCatalogue(
     // No initial bearer: the auth provider exchanges the active account's access
     // token for a session token and calls `setAuthToken` (+ installs the refresh
     // handler) once the session belongs to this server.
-    return makeClient(activeServerUrl);
-  }, [activeServerUrl]);
+    return makeClient(activeServerUrl, undefined, artworkScale);
+  }, [activeServerUrl, artworkScale]);
   const liveClient = useRef(client);
   liveClient.current = client;
 

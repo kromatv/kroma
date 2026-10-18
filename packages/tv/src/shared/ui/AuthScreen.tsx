@@ -19,6 +19,7 @@ import { AUTH_SCREENS } from '#tv/app/navPolicy';
 import { useConnectionMaybe } from '#tv/app/providers/connection';
 import { useHandoffBeacon } from '#tv/app/providers/handoffBeacon';
 import { type TvChrome, useNav } from '#tv/app/router';
+import { ARTWORK_SCALE, useArtworkPref, useStoredPref } from '#tv/app/settings/store';
 
 // Wide enough to stay sharp on a 1080p panel under the veil, and the widest
 // rendition the server makes. The kit's own home backdrop asks for the same.
@@ -34,6 +35,8 @@ export const RADIAL_GROUND = gradient(
  * radial. */
 function useSplashCovers(): SplashCover[] {
   const t = useT();
+  const [artworkQuality] = useStoredPref(useArtworkPref());
+  const scale = ARTWORK_SCALE[artworkQuality];
   const connection = useConnectionMaybe();
   // `/api/splash` is public and these screens run BEFORE a server is active,
   // so the art comes from whichever server this device knows: the active one
@@ -65,7 +68,7 @@ function useSplashCovers(): SplashCover[] {
               // for: unsized, a television decodes the full-width master for a
               // backdrop it then hides under a veil, and pays for that texture
               // again on every frame of the drift.
-              url: sizedImageUrl(e.backdropUrl, SPLASH_W) ?? e.backdropUrl,
+              url: sizedImageUrl(e.backdropUrl, SPLASH_W, scale) ?? e.backdropUrl,
               caption: [e.title, e.year].filter(Boolean).join(' · '),
               eyebrow: t(e.kind === 'show' ? 'content.series' : 'content.film'),
             })),
@@ -79,7 +82,7 @@ function useSplashCovers(): SplashCover[] {
     return () => {
       cancelled = true;
     };
-  }, [urls, t]);
+  }, [urls, t, scale]);
   return covers;
 }
 

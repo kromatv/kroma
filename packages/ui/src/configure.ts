@@ -4,12 +4,15 @@ import {
   type ReactElement,
   type ReactNode,
   useMemo,
+  useState,
 } from 'react';
 import type { FrostBackdropProps } from './components/atoms/frost';
 import { applyMode, setTheme, type Theme, type ThemeMode } from './core';
 import type { ControlSize } from './lib/field-shell';
 import type { ImageBackend } from './lib/image-backend';
 import { KitSettingsContext, useKitSettings } from './lib/kit-settings';
+import { createMenuKeys } from './lib/menu-keys';
+import { createScrollLock } from './lib/scroll-lock';
 import type { SurfacePresentation } from './lib/surface-presentation';
 
 /**
@@ -67,15 +70,19 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
   children?: ReactNode;
 }): ReactElement {
   const parent = useKitSettings();
+  const [menuKeys] = useState(createMenuKeys);
+  const [scrollLock] = useState(createScrollLock);
   const value = useMemo(() => {
     const preset = config.formFactor && FORM_FACTOR[config.formFactor];
     return {
+      menuKeys: parent.menuKeys ?? menuKeys,
+      scrollLock: parent.scrollLock ?? scrollLock,
       entry: { ...parent.entry, ...preset?.entry, ...config.entry },
       surfaces: config.surfaces ?? preset?.surfaces ?? parent.surfaces,
       frostEnabled: config.frostEnabled ?? parent.frostEnabled,
       image: config.image ?? parent.image,
       frost: (config.frost ?? parent.frost) as ComponentType<FrostBackdropProps> | null,
     };
-  }, [parent, config]);
+  }, [parent, config, scrollLock, menuKeys]);
   return createElement(KitSettingsContext.Provider, { value }, children);
 }

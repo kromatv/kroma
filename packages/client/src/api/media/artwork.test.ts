@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { setSessionMediaTicket } from '../../core/session';
 import { recordingClient } from '../../kroma-client.fixture';
-import { artworkScaleValue, artworkWidth, setArtworkScale } from './artwork-scale';
+import { artworkWidth } from './artwork-scale';
 import { ItemId, ShowId } from './ids';
 
 const { client } = recordingClient();
@@ -10,33 +10,42 @@ const item = ItemId.parse('a b');
 const show = ShowId.parse('s 1');
 
 afterEach(() => {
-  setArtworkScale(1);
   setSessionMediaTicket(undefined);
 });
 
 describe('artwork resolution setting', () => {
+  it('reads changing quality from its own client without affecting another root', () => {
+    let scale = 0.5;
+    const first = recordingClient(undefined, { artworkScale: () => scale }).client.media.artwork;
+    const second = recordingClient().client.media.artwork;
+    expect(first.resolve('/api/images/p.webp', 960)).toContain('w=480');
+    expect(second.resolve('/api/images/p.webp', 960)).toContain('w=960');
+    scale = 0.75;
+    expect(first.resolve('/api/images/p.webp', 960)).toContain('w=780');
+    expect(second.resolve('/api/images/p.webp', 960)).toContain('w=960');
+  });
+
   it('scales every width a caller asks for', () => {
-    setArtworkScale(0.5);
+    const { client: scaled } = recordingClient(undefined, { artworkScale: () => 0.5 });
+    const artwork = scaled.media.artwork;
     expect(artwork.resolve('/api/images/p.webp', 480)).toBe(
       'http://kroma.test/api/images/p.webp?w=240',
     );
   });
 
   it('leaves an unsized URL unsized: there is no width to scale', () => {
-    setArtworkScale(0.5);
+    const { client: scaled } = recordingClient(undefined, { artworkScale: () => 0.5 });
+    const artwork = scaled.media.artwork;
     expect(artwork.resolve('/api/images/p.webp')).toBe('http://kroma.test/api/images/p.webp');
   });
 
   it('asks for the smallest rendition that exists, however small the art', () => {
-    setArtworkScale(0.25);
-    expect(artworkWidth(160)).toBe(160);
+    expect(artworkWidth(160, 0.25)).toBe(160);
   });
 
   it('clamps out of range: past 1 gains nothing at 1x, and a quarter is the floor', () => {
-    setArtworkScale(4);
-    expect(artworkScaleValue()).toBe(1);
-    setArtworkScale(0.01);
-    expect(artworkScaleValue()).toBe(0.25);
+    expect(artworkWidth(960, 4)).toBe(960);
+    expect(artworkWidth(960, 0.01)).toBe(240);
   });
 });
 
@@ -97,13 +106,11 @@ describe('artworkWidth', () => {
   });
 
   it('caps before scaling, so a lower step always asks for less', () => {
-    setArtworkScale(0.5);
-    expect(artworkWidth(4000)).toBe(780);
+    expect(artworkWidth(4000, 0.5)).toBe(780);
   });
 
   it('never asks below the smallest rendition the server keeps', () => {
-    setArtworkScale(0.25);
-    expect(artworkWidth(1)).toBe(160);
+    expect(artworkWidth(1, 0.25)).toBe(160);
   });
 });
 

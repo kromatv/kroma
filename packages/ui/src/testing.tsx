@@ -23,7 +23,7 @@ import { I18nProvider } from './services/i18n';
  * arrived. An app can only assert "the new screen gets to choose again" through
  * these: `autoFocus` is honoured or ignored on the strength of that one flag
  * (see lib/focus-entry), and no rendered output shows it. */
-export { focusSettled, markFocusSettled } from './lib/focus-entry';
+export { useFocusEntry } from './lib/focus-entry';
 
 const kebab = (property: string) => property.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 

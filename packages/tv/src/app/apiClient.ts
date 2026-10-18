@@ -31,10 +31,15 @@ export function tvIdentity(version = buildInfo().version): DeviceIdentity | null
   return null;
 }
 
-export function makeClient(baseUrl: string, version = buildInfo().version): KromaClient {
+export function makeClient(
+  baseUrl: string,
+  version = buildInfo().version,
+  artworkScale?: () => number,
+): KromaClient {
   const identity = tvIdentity(version);
   return createKromaClient({
     baseUrl,
+    artworkScale,
     locale: activeLocale(),
     ...(identity ? { userAgent: clientUserAgent(identity) } : {}),
   });

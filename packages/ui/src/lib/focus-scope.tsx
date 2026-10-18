@@ -4,9 +4,9 @@
 // root is forked, into focus-root.tsx / focus-root.web.tsx).
 
 import { NavigatorView, useLockNavigator } from '@kromatv/spatial-nav/react';
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, useMemo } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
-import { useFocusEntryScope } from './focus-entry';
+import { createFocusEntry, FocusEntryProvider } from './focus-entry';
 import { FocusLiftHost, GROUNDED, LIFTED } from './focus-lift';
 import { PlatformFocusProvider, usePlatformFocusHost } from './focus-platform';
 import { FocusPresenceProvider, useInsideFocusScope } from './focus-presence';
@@ -46,7 +46,7 @@ interface FocusColumnProps extends FocusScopeProps {
  * Also what a DIALOG mounts, over the screen that opened it, paired with
  * {@link useLockFocusBehind} on the screen: that locks the screen's navigator
  * out of the remote, leaving this root the only one listening. Its
- * `useFocusEntryScope` runs during render (not an effect) so the dialog's
+ * `FocusEntryProvider` runs during render (not an effect) so the dialog's
  * `autoFocus` claims the ring before the screen underneath decides; on the
  * browser targets it also resets device-type to remote-keys mode regardless
  * of where the pointer was left.
@@ -64,23 +64,27 @@ function FocusScope({
   // this bridge too, and posting those presses would walk the ring behind it.
   const remote = bridge && platform.owner !== 'platform';
   useRemoteBridge(remote);
-  useFocusEntryScope(entryKey);
+  // A replacement screen gets a fresh claim before children render.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: entryKey explicitly names the lifetime of this screen.
+  const entry = useMemo(createFocusEntry, [entryKey]);
   return (
     // Lets a kit control exist OUTSIDE any scope (a phone screen, a plain web
     // page) without registering with a navigator that was never mounted.
-    <FocusPresenceProvider value={true}>
-      <PlatformFocusProvider value={platform.host}>
-        <FocusRoot
-          style={style}
-          active={active}
-          bridge={remote}
-          keyHost={platform.owner === null}
-          onEdge={platform.onEdge}
-        >
-          {children}
-        </FocusRoot>
-      </PlatformFocusProvider>
-    </FocusPresenceProvider>
+    <FocusEntryProvider value={entry}>
+      <FocusPresenceProvider value={true}>
+        <PlatformFocusProvider value={platform.host}>
+          <FocusRoot
+            style={style}
+            active={active}
+            bridge={remote}
+            keyHost={platform.owner === null}
+            onEdge={platform.onEdge}
+          >
+            {children}
+          </FocusRoot>
+        </PlatformFocusProvider>
+      </FocusPresenceProvider>
+    </FocusEntryProvider>
   );
 }
 

@@ -7,7 +7,7 @@ import {
   PerfProvider,
   Toaster,
 } from '@kromatv/ui/kit';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { canExitOnBack, exitOnBack } from '#tv/app/appQuit';
 import { BrandIntro } from '#tv/app/BrandIntro';
 import { CompatBanner } from '#tv/app/CompatBanner';
@@ -36,7 +36,14 @@ import {
 } from '#tv/app/searchRequest';
 import { type SearchShell, SearchShellProvider } from '#tv/app/searchShell';
 import type { ServerBrowse } from '#tv/app/serverBrowse';
-import { BlurPrefProvider, createBlurPref, useStoredPref } from '#tv/app/settings/store';
+import {
+  ARTWORK_SCALE,
+  ArtworkPrefProvider,
+  BlurPrefProvider,
+  createArtworkPref,
+  createBlurPref,
+  useStoredPref,
+} from '#tv/app/settings/store';
 import { useCatalogue } from '#tv/app/useCatalogue';
 import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voiceSearch';
 import { HandoffBeaconProvider } from '#tv/features/accounts/HandoffBeaconProvider';
@@ -130,10 +137,13 @@ export function TvApp({
   lan,
   deviceName,
 }: Readonly<TvAppProps>) {
+  const [artworkPref] = useState(createArtworkPref);
+  const artworkScale = useCallback(() => ARTWORK_SCALE[artworkPref.get()], [artworkPref]);
   const { connection, client, activeServerUrl, setActiveServer, setSignedIn } = useCatalogue(
     platform,
     serverBrowse ?? undefined,
     deepLinks,
+    artworkScale,
   );
   const [blurPref] = useState(createBlurPref);
   const [blur] = useStoredPref(blurPref);
@@ -145,91 +155,93 @@ export function TvApp({
   const name = useDeviceName(deviceName, platform);
 
   return (
-    <BlurPrefProvider value={blurPref}>
-      <EnginePrefProvider value={enginePref}>
-        <KitProvider config={kitConfig}>
-          <PlaybackCapabilitiesProvider limits={decoderFrameLimits}>
-            <SearchRequestsProvider value={searchRequests}>
-              <PerfProvider debug>
-                <LauncherProvider value={launcher}>
-                  <VoiceSearchProvider value={voiceSearch}>
-                    <SearchShellProvider value={searchShell}>
-                      <EnvProvider platform={platform} overrides={capabilities}>
-                        <TvNavProvider
-                          screens={SCREENS}
-                          chrome={LAYERS}
-                          onExit={canExitOnBack() ? exitOnBack : undefined}
-                        >
-                          <ConnectionProvider value={connection}>
-                            <TvClientProvider client={client}>
-                              <AuthProvider
-                                client={client}
-                                activeServerUrl={activeServerUrl}
-                                setActiveServer={setActiveServer}
-                                onSignedInChange={setSignedIn}
-                              >
-                                <LocaleProvider client={client}>
-                                  <CrashBoundary
-                                    client={client}
-                                    platform={platform}
-                                    fallback={crashFallback}
-                                  >
-                                    <CompatBanner />
-                                    <ContinueProvider>
-                                      <RecommendProvider>
-                                        <MyListProvider>
-                                          <WatchedProvider>
-                                            {/* Above the router: a TV must be castable from its home
+    <ArtworkPrefProvider value={artworkPref}>
+      <BlurPrefProvider value={blurPref}>
+        <EnginePrefProvider value={enginePref}>
+          <KitProvider config={kitConfig}>
+            <PlaybackCapabilitiesProvider limits={decoderFrameLimits}>
+              <SearchRequestsProvider value={searchRequests}>
+                <PerfProvider debug>
+                  <LauncherProvider value={launcher}>
+                    <VoiceSearchProvider value={voiceSearch}>
+                      <SearchShellProvider value={searchShell}>
+                        <EnvProvider platform={platform} overrides={capabilities}>
+                          <TvNavProvider
+                            screens={SCREENS}
+                            chrome={LAYERS}
+                            onExit={canExitOnBack() ? exitOnBack : undefined}
+                          >
+                            <ConnectionProvider value={connection}>
+                              <TvClientProvider client={client}>
+                                <AuthProvider
+                                  client={client}
+                                  activeServerUrl={activeServerUrl}
+                                  setActiveServer={setActiveServer}
+                                  onSignedInChange={setSignedIn}
+                                >
+                                  <LocaleProvider client={client}>
+                                    <CrashBoundary
+                                      client={client}
+                                      platform={platform}
+                                      fallback={crashFallback}
+                                    >
+                                      <CompatBanner />
+                                      <ContinueProvider>
+                                        <RecommendProvider>
+                                          <MyListProvider>
+                                            <WatchedProvider>
+                                              {/* Above the router: a TV must be castable from its home
                             screen, not only from the player. */}
-                                            <CastReceiverProvider
-                                              client={client}
-                                              lan={lan}
-                                              name={name}
-                                              identity={identity}
-                                            >
-                                              {/* Also above the router: the beacon has to be up on
-                              whichever gate screen the TV is showing. */}
-                                              <HandoffBeaconProvider
+                                              <CastReceiverProvider
                                                 client={client}
                                                 lan={lan}
                                                 name={name}
                                                 identity={identity}
                                               >
-                                                {/* A television cannot use React Native's <Modal>: its
+                                                {/* Also above the router: the beacon has to be up on
+                              whichever gate screen the TV is showing. */}
+                                                <HandoffBeaconProvider
+                                                  client={client}
+                                                  lan={lan}
+                                                  name={name}
+                                                  identity={identity}
+                                                >
+                                                  {/* A television cannot use React Native's <Modal>: its
                               view controller never receives a press from a remote
                               (see @kromatv/ui lib/overlay-host). */}
-                                                <OverlayHost>
-                                                  <TvRouterGuard />
-                                                  {/* Above the router so notices survive a screen
+                                                  <OverlayHost>
+                                                    <TvRouterGuard />
+                                                    {/* Above the router so notices survive a screen
                                 change; they never take focus. */}
-                                                  <Toaster
-                                                    position="top-right"
-                                                    inset={TOAST_INSET}
-                                                  />
-                                                </OverlayHost>
-                                              </HandoffBeaconProvider>
-                                            </CastReceiverProvider>
-                                          </WatchedProvider>
-                                        </MyListProvider>
-                                      </RecommendProvider>
-                                    </ContinueProvider>
-                                  </CrashBoundary>
-                                </LocaleProvider>
-                              </AuthProvider>
-                            </TvClientProvider>
-                          </ConnectionProvider>
-                        </TvNavProvider>
-                        <BrandIntro videoSrc={introVideoSrc} />
-                      </EnvProvider>
-                    </SearchShellProvider>
-                  </VoiceSearchProvider>
-                </LauncherProvider>
-              </PerfProvider>
-            </SearchRequestsProvider>
-          </PlaybackCapabilitiesProvider>
-        </KitProvider>
-      </EnginePrefProvider>
-    </BlurPrefProvider>
+                                                    <Toaster
+                                                      position="top-right"
+                                                      inset={TOAST_INSET}
+                                                    />
+                                                  </OverlayHost>
+                                                </HandoffBeaconProvider>
+                                              </CastReceiverProvider>
+                                            </WatchedProvider>
+                                          </MyListProvider>
+                                        </RecommendProvider>
+                                      </ContinueProvider>
+                                    </CrashBoundary>
+                                  </LocaleProvider>
+                                </AuthProvider>
+                              </TvClientProvider>
+                            </ConnectionProvider>
+                          </TvNavProvider>
+                          <BrandIntro videoSrc={introVideoSrc} />
+                        </EnvProvider>
+                      </SearchShellProvider>
+                    </VoiceSearchProvider>
+                  </LauncherProvider>
+                </PerfProvider>
+              </SearchRequestsProvider>
+            </PlaybackCapabilitiesProvider>
+          </KitProvider>
+        </EnginePrefProvider>
+      </BlurPrefProvider>
+    </ArtworkPrefProvider>
   );
 }
 

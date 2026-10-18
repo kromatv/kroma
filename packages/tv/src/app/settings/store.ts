@@ -3,8 +3,6 @@
 // the player) sees a change the moment any of them writes it. localStorage has
 // no same-tab change events, so writes notify the in-process listeners here.
 
-import { onDeviceStorageChange } from '@kromatv/client';
-import { setArtworkScale } from '@kromatv/client/media';
 import { createContext, useContext, useState, useSyncExternalStore } from 'react';
 import { clientHardware } from '#tv/app/clientHardware';
 import { devicePref } from '#tv/app/devicePref';
@@ -86,24 +84,23 @@ function defaultArtworkQuality(): ArtworkQuality {
   return MEMORY_GB !== null && MEMORY_GB <= LOW_MEMORY_GB ? 'high' : 'full';
 }
 
-export const artworkPrefStore = reactivePref(
-  'kroma:artwork',
-  Object.keys(ARTWORK_SCALE) as readonly ArtworkQuality[],
-  defaultArtworkQuality,
-);
-
-// Applied on import rather than from an effect, and this module is loaded by the
-// router at boot: the scale is read when a URL is MINTED, so a screen that
-// rendered before it was applied would go on asking for full-size art until
-// something re-rendered it. The store reads through, but this is a PUSH, so it
-// goes out again when a shell installs its device store late.
-function applyArtworkScale(): void {
-  setArtworkScale(ARTWORK_SCALE[artworkPrefStore.get()]);
+/** One root owns the reactive quality choice and the client's URL getter. */
+export function createArtworkPref(): ReactivePref<ArtworkQuality> {
+  return reactivePref(
+    'kroma:artwork',
+    Object.keys(ARTWORK_SCALE) as readonly ArtworkQuality[],
+    defaultArtworkQuality,
+  );
 }
-
-applyArtworkScale();
-artworkPrefStore.subscribe(applyArtworkScale);
-onDeviceStorageChange(applyArtworkScale);
+const ArtworkContext = createContext<ReactivePref<ArtworkQuality> | null>(null);
+export const ArtworkPrefProvider = ArtworkContext.Provider;
+export function useArtworkPref(): ReactivePref<ArtworkQuality> {
+  const provided = useContext(ArtworkContext);
+  const [owned] = useState(() => (provided ? null : createArtworkPref()));
+  const pref = provided ?? owned;
+  if (!pref) throw new Error('Artwork preference requires its owning root');
+  return pref;
+}
 
 /** Whether glass surfaces blur what is behind them.
  *

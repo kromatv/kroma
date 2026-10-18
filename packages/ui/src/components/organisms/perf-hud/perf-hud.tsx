@@ -2,7 +2,6 @@ import { typeSpec as textRoles } from '#ui/core/tokens';
 // The performance HUD: frame timings, focus response, heap and surface size,
 // read on the television they are about. Turned on in the device settings.
 
-import { artworkScaleValue } from '@kromatv/client/media';
 import { useEffect, useState } from 'react';
 import { Dimensions, PixelRatio } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -15,7 +14,10 @@ import { PerfChart } from './perf-chart';
 // Slow enough to read, fast enough to blame the thing you just did.
 const REFRESH_MS = 500;
 
-function PerfHud({ enabled }: Readonly<{ enabled: boolean }>) {
+function PerfHud({
+  enabled,
+  artworkScale = 1,
+}: Readonly<{ enabled: boolean; artworkScale?: number }>) {
   const perf = usePerfSampler();
   const [report, setReport] = useState<PerfReport | null>(null);
 
@@ -44,7 +46,7 @@ function PerfHud({ enabled }: Readonly<{ enabled: boolean }>) {
       <Row label="HEAP" value={heapText(report)} bad={isHeapTight(report)} />
       <Row label="FOCUS" value={report.gridCell} bad={false} />
       <Row label="SCREEN" value={screenText()} bad={false} />
-      <Row label="ART" value={`${Math.round(artworkScaleValue() * 100)}%`} bad={false} />
+      <Row label="ART" value={`${Math.round(artworkScale * 100)}%`} bad={false} />
     </Box>
   );
 }

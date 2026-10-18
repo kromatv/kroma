@@ -22,7 +22,7 @@ export function artworkApi(ctx: RequestContext) {
   const resolve = (url?: string | null, width?: number): string | null => {
     if (!url) return null;
     if (/^https?:\/\//.test(url)) return url;
-    let path = width ? withParam(url, 'w', String(artworkWidth(width))) : url;
+    let path = width ? withParam(url, 'w', String(artworkWidth(width, ctx.artworkScale?.()))) : url;
     const held = ctx.mediaTicket();
     if (held && isItemBytes(url)) path = withParam(path, 't', held);
     return `${ctx.baseUrl}${path}`;

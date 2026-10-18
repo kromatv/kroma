@@ -21,8 +21,8 @@ import { actionItem, choiceItem, type RowIcon, type SettingsItem, toggleItem } f
 import {
   ARTWORK_SCALE,
   type ArtworkQuality,
-  artworkPrefStore,
   perfHudPrefStore,
+  useArtworkPref,
   useBlurPref,
   useStoredPref,
 } from './store';
@@ -120,7 +120,7 @@ export const artworkSetting: SettingsItem = choiceItem({
   icon: 'photo',
   options: () => Object.keys(ARTWORK_SCALE) as ArtworkQuality[],
   valueLabel: (v) => `artworkQuality.${v}` as MessageKey,
-  useValue: () => useStoredPref(artworkPrefStore),
+  useValue: () => useStoredPref(useArtworkPref()),
 });
 
 export const blurSetting: SettingsItem = toggleItem({

@@ -17,7 +17,7 @@ import {
 } from 'react';
 import { Platform, type View } from 'react-native';
 import type { AnySv } from '#ui/core';
-import { markFocusSettled } from '#ui/lib/focus-entry';
+import { useFocusEntry } from '#ui/lib/focus-entry';
 import { noteFocus } from '#ui/lib/focus-here';
 import { useFocusLift } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
@@ -79,6 +79,7 @@ function Focusable<R extends AnySv = AnySv>({
   value,
   ref,
 }: Readonly<FocusableProps<R>>) {
+  const { markFocusSettled } = useFocusEntry();
   const perf = usePerfSampler();
   const [selfFocused, setSelfFocused] = useState(false);
   const pressRef = useRef<() => void>(() => {});
@@ -147,7 +148,7 @@ function Focusable<R extends AnySv = AnySv>({
     reveal();
     report?.();
     onFocus?.();
-  }, [lift, onFocus, reveal, report, perf]);
+  }, [lift, onFocus, reveal, report, perf, markFocusSettled]);
 
   const handleBlur = useCallback(() => {
     lift?.(false);

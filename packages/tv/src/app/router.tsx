@@ -16,7 +16,12 @@ import {
   useState,
 } from 'react';
 import type { SettingsGroupId } from '#tv/app/settings/registry';
-import { perfHudPrefStore, useStoredPref } from '#tv/app/settings/store';
+import {
+  ARTWORK_SCALE,
+  perfHudPrefStore,
+  useArtworkPref,
+  useStoredPref,
+} from '#tv/app/settings/store';
 
 // The screen registry of the in-memory router: a TV has no address bar, so
 // history is a stack. Adding a key here type-checks `go` / `reset` / `<TvOutlet>`.
@@ -283,7 +288,10 @@ export function TvOutlet() {
         </FocusScope>
       </Suspense>
       {/* Outside the scope on purpose: the remote must not be able to land on it. */}
-      <PerfHud enabled={usePerfHud()} />
+      <PerfHud
+        enabled={usePerfHud()}
+        artworkScale={ARTWORK_SCALE[useStoredPref(useArtworkPref())[0]]}
+      />
     </PageMain>
   );
 }

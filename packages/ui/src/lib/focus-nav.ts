@@ -5,11 +5,12 @@
 
 import { useEffect } from 'react';
 import { BackHandler, type HWEvent, Platform, useTVEventHandler } from 'react-native';
-import { resetFocusEntry } from './focus-entry';
+import { useFocusEntry } from './focus-entry';
 import type { FocusNavHandlers } from './focus-types';
 import { inputHeld } from './input-gate';
 import { armPressGuard } from './press-guard';
-import { holdMenuKey, isRemoteKeyUp, releaseMenuKey } from './tv-remote';
+import { isRemoteKeyUp } from './tv-remote';
+import { useMenuKeys } from './use-menu-keys';
 
 // tvOS delivers Menu as this event once the menu key is claimed; Android TV
 // routes its Back button through BackHandler instead.
@@ -25,18 +26,20 @@ const useRemoteEvents: (handler: (event: HWEvent) => void) => void = HAS_TV_EVEN
   : () => {};
 
 function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers): void {
+  const menuKeys = useMenuKeys();
+  const { resetFocusEntry } = useFocusEntry();
   // biome-ignore lint/correctness/useExhaustiveDependencies: resetKey is an intentional re-run trigger, mirroring the web engine; it is not read inside the effect.
   useEffect(() => {
     // A held Select that opened this screen must not also fire the control the
     // OS auto-focuses here.
     armPressGuard();
     resetFocusEntry();
-  }, [resetKey]);
+  }, [resetKey, resetFocusEntry]);
 
   useEffect(() => {
     if (!onBack) return;
     // Claim the Menu key so tvOS reports it instead of backing out of the app.
-    holdMenuKey();
+    const releaseMenuKey = menuKeys.hold();
     // Android only, phone and TV alike, where BackHandler is a channel of its
     // own. On tvOS this fork implements it ON TOP of the same `menu` event
     // `BACK_EVENTS` maps below, so subscribing there routes one press twice and
@@ -58,7 +61,7 @@ function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers): void 
       sub?.remove();
       releaseMenuKey();
     };
-  }, [onBack]);
+  }, [onBack, menuKeys]);
 
   useRemoteEvents((evt: HWEvent) => {
     if (isRemoteKeyUp(evt) || inputHeld()) return;

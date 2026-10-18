@@ -32,7 +32,12 @@ function requestUrl(input: RequestInfo | URL): string {
  * cares about the REQUEST lets the parse fail and reads the recorded call. */
 export function recordingClient(
   reply?: (url: string, init?: RequestInit) => Reply,
-  options?: { authToken?: string; locale?: string; userAgent?: string },
+  options?: {
+    authToken?: string;
+    locale?: string;
+    userAgent?: string;
+    artworkScale?: () => number;
+  },
 ) {
   const calls: RecordedCall[] = [];
   const fetch = ((input: RequestInfo | URL, init?: RequestInit) => {

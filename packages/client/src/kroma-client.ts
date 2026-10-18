@@ -82,6 +82,7 @@ export function kromaClientParts(options: KromaClientOptions): {
     fetchFn: options.userAgent ? withUserAgent(base, options.userAgent) : base,
     token: () => authToken,
     locale: () => locale,
+    artworkScale: options.artworkScale,
     refresh: refreshSession,
     mediaTicket: sessionMediaTicket,
     setMediaTicket: setSessionMediaTicket,

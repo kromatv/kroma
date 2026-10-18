@@ -11,6 +11,8 @@ export interface KromaClientOptions {
   authToken?: string;
   locale?: string;
   userAgent?: string;
+  /** Root-owned artwork quality, read when a URL is minted. */
+  artworkScale?: () => number;
 }
 
 type ResponseSchema = z.ZodType;
@@ -64,6 +66,7 @@ interface Verb {
  * reaches a caller as a lie. */
 export interface RequestContext {
   readonly baseUrl: string;
+  artworkScale?: () => number;
   /** The absolute URL, for what fetches itself: a `<video>` src, an `<img>`, the
    * native downloader, a link the user opens. */
   url<const P extends string>(path: P, ...args: PathArgs<P>): string;
@@ -103,6 +106,7 @@ export interface RequestContext {
 export interface TransportConfig {
   baseUrl: string;
   fetchFn: typeof globalThis.fetch;
+  artworkScale?: () => number;
   token(): string | undefined;
   locale(): string | undefined;
   /** Mint a fresh bearer after a 401, or resolve undefined to give up. */
@@ -220,6 +224,7 @@ export function createRequestContext(config: TransportConfig): RequestContext {
 
   return {
     baseUrl,
+    artworkScale: config.artworkScale,
     url: (template, ...args) => `${baseUrl}/api${resolve(template, args[0])}`,
     mediaTicket: config.mediaTicket,
     setMediaTicket: config.setMediaTicket,
