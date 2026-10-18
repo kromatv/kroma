@@ -62,28 +62,16 @@ export function LibraryRow({
   onFollow: (row: LibraryTitle, monitored: boolean) => void;
   onSelect: (row: LibraryTitle) => void;
 }>) {
-  const s = useStyles(sDefinition);
   const t = useT();
   return (
     <Row align="center" gap={16} minW={0} flex self="stretch">
-      {selecting ? (
-        <Focusable
-          role="checkbox"
-          checked={selected}
-          disabled={row.tmdbId === null}
-          label={row.title}
-          onPress={() => onSelect(row)}
-          ring="focusInset"
-          style={s.row}
-        >
-          <CheckboxFace checked={selected} />
-          <Facts row={row} columns={columns} />
-        </Focusable>
-      ) : (
-        <Box flex minW={0} px={16} py={12}>
-          <Facts row={row} columns={columns} />
-        </Box>
-      )}
+      <RowBody
+        row={row}
+        columns={columns}
+        selecting={selecting}
+        selected={selected}
+        onSelect={onSelect}
+      />
       {row.tmdbId === null ? null : (
         <Box w={COLUMN.search} shrink={0} align="flex-end">
           <ModuleSlot
@@ -108,6 +96,56 @@ export function LibraryRow({
         />
       </Box>
     </Row>
+  );
+}
+
+function RowBody({
+  row,
+  columns,
+  selecting,
+  selected,
+  onSelect,
+}: Readonly<{
+  row: LibraryTitle;
+  columns: RowColumns;
+  selecting: boolean;
+  selected: boolean;
+  onSelect: (row: LibraryTitle) => void;
+}>) {
+  const s = useStyles(sDefinition);
+  const facts = <Facts row={row} columns={columns} />;
+  if (selecting) {
+    return (
+      <Focusable
+        role="checkbox"
+        checked={selected}
+        disabled={row.tmdbId === null}
+        label={row.title}
+        onPress={() => onSelect(row)}
+        ring="focusInset"
+        style={s.row}
+      >
+        <CheckboxFace checked={selected} />
+        {facts}
+      </Focusable>
+    );
+  }
+  if (row.tmdbId === null) {
+    return (
+      <Box flex minW={0} px={16} py={12}>
+        {facts}
+      </Box>
+    );
+  }
+  return (
+    <Focusable asChild label={row.title} ring="focusInset" style={s.row}>
+      <RouteLink
+        to="/admin/monitoring/$kind/$tmdbId"
+        params={{ kind: row.kind, tmdbId: String(row.tmdbId) }}
+      >
+        {facts}
+      </RouteLink>
+    </Focusable>
   );
 }
 
@@ -137,24 +175,12 @@ function Poster({ row }: Readonly<{ row: LibraryTitle }>) {
 function TitleCell({ row, columns }: Readonly<{ row: LibraryTitle; columns: RowColumns }>) {
   const t = useT();
   const km = kindMeta(row.kind === 'show' ? 'series' : 'film');
-  const name = (
-    <Text variant="label" lines={1} minW={0}>
-      {row.title}
-    </Text>
-  );
   return (
     <Box flex minW={0} gap={4}>
       <Row gap={10} align="center" minW={0}>
-        {row.tmdbId === null ? (
-          name
-        ) : (
-          <RouteLink
-            to="/admin/monitoring/$kind/$tmdbId"
-            params={{ kind: row.kind, tmdbId: String(row.tmdbId) }}
-          >
-            {name}
-          </RouteLink>
-        )}
+        <Text variant="label" lines={1} minW={0}>
+          {row.title}
+        </Text>
         <Box shrink={0}>
           <Pill ink={km.color} bg={km.bg} variant="overline">
             {t(`pipeline.type.${km.typeKey}` as MessageKey)}

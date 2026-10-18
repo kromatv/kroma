@@ -26,7 +26,7 @@ const ReactQueryDevtools = import.meta.env.DEV
     )
   : () => null;
 
-const BROWSER_KIT = { formFactor: 'browser' } as const;
+const BROWSER_KIT = { formFactor: 'browser', ground: 'dark' } as const;
 
 const sDefinition = styles({
   toasts: { position: 'fixed', inset: 0, zIndex: 90, pointerEvents: 'none' },

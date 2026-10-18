@@ -151,9 +151,10 @@ export function LibraryTitles({ view, onView }: Readonly<ViewProps>) {
         </Box>
         <Button
           size="sm"
-          variant="glass"
+          variant="outline"
           icon="checkbox"
           active={selecting}
+          pressed={selecting}
           label={t('monitoring.select')}
           onPress={() => (selecting ? leaveSelect() : setSelecting(true))}
         />

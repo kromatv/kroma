@@ -94,7 +94,7 @@ export function TitlePicker({
         <SelectionBar.Status>{picked(count)}</SelectionBar.Status>
         {everything ? null : (
           <SelectionBar.SelectAll
-            label={`Tout sélectionner (${TOTAL.toLocaleString('fr-FR')})`}
+            label={`Sélectionner les ${TOTAL.toLocaleString('fr-FR')} titres`}
             onPress={() => setEverything(true)}
           />
         )}

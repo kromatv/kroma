@@ -36,7 +36,10 @@ export function BulkBar({
       </SelectionBar.Status>
       {everything ? null : (
         <SelectionBar.SelectAll
-          label={t('monitoring.bulkSelectAll', { total: fmt.decimal(matching, 0) })}
+          label={t('monitoring.bulkSelectAll', {
+            count: matching,
+            amount: fmt.decimal(matching, 0),
+          })}
           onPress={onSelectAll}
         />
       )}

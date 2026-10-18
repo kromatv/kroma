@@ -174,7 +174,7 @@ const sDefinition = styles({
  * <SelectionBar.Root count={picked.size} onClear={clear} label="Sélection">
  *   <SelectionBar.Clear label="Tout désélectionner" />
  *   <SelectionBar.Status>4 titres sélectionnés</SelectionBar.Status>
- *   <SelectionBar.SelectAll label="Tout sélectionner (1 170)" onPress={selectAll} />
+ *   <SelectionBar.SelectAll label="Sélectionner les 1 170 titres" onPress={selectAll} />
  *   <SelectionBar.Actions label="Autres actions">
  *     <SelectionBar.Item icon="radar" tone="accent" label="Suivre" onPress={follow} />
  *     <SelectionBar.Item icon="radar-off" tone="danger" label="Ne plus suivre" onPress={drop} />

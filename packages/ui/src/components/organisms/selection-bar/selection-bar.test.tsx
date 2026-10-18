@@ -23,7 +23,7 @@ function Bar({
   return (
     <SelectionBar.Root count={count} onClear={onClear} label="Sélection">
       <SelectionBar.Status>{`${count} titres sélectionnés`}</SelectionBar.Status>
-      <SelectionBar.SelectAll label="Tout sélectionner (40)" onPress={() => {}} />
+      <SelectionBar.SelectAll label="Sélectionner les 40 titres" onPress={() => {}} />
       <SelectionBar.Clear label="Tout désélectionner" />
       <SelectionBar.Actions label="Autres actions">
         <SelectionBar.Item icon="radar" tone="accent" label="Suivre" onPress={() => {}} />

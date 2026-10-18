@@ -31,7 +31,8 @@ export function TitleProfilePicker({
           <Select.Trigger size="sm" block />
           <Select.Item
             value={NOT_LISTED}
-            label={t('acq.profileFollowsDefault', { name: defaultName(rules) })}
+            label={t('acq.profileFollowsDefault')}
+            note={defaultName(rules)}
           />
           {(rules?.profiles ?? []).map((profile) => (
             <Select.Item key={profile.id} value={profile.id} label={profile.name} />

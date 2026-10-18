@@ -30,7 +30,8 @@ function Status({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 interface SelectionBarSelectAllProps {
-  /** The drawn words and the accessible name: say the number it reaches. */
+  /** The drawn words and the accessible name: say the number it reaches in
+   *  them, « Sélectionner les 40 titres », never in parentheses. */
   label: string;
   onPress: () => void;
 }
@@ -100,7 +101,13 @@ const INK: Record<ControlSize, TypeRole> = { sm: 'label', md: 'label', tv: 'labe
 
 const selectAllVariants = svFor<{ root: StyleDecl }>()({
   slots: {
-    root: { row: true, align: 'center', _hover: { bg: 'tint/8' }, _press: { bg: 'tint/14' } },
+    root: {
+      row: true,
+      align: 'center',
+      gap: 8,
+      _hover: { bg: 'tint/8' },
+      _press: { bg: 'tint/14' },
+    },
   },
   variants: {
     size: bySize((m) => ({ root: { minH: m.height, px: m.gap, radius: m.radius } })),
