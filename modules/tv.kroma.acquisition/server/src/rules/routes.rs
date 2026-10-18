@@ -280,3 +280,6 @@ async fn title_profile<S: HostStorage + Clone + Send + Sync + 'static>(
     .await?;
     Ok(Json(json!({ "ok": true })).into_response())
 }
+
+#[cfg(test)]
+mod tests;

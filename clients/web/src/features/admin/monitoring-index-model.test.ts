@@ -1,6 +1,6 @@
 import type { LibraryTitle } from '@kromatv/client/monitoring';
 import { describe, expect, it } from 'vitest';
-import { filterLibrary, heldRatio, type LibraryFilter } from './monitoring-index-model';
+import { filterLibrary, heldRatio, type LibraryFilter, titleKey } from './monitoring-index-model';
 
 const EVERY: LibraryFilter = {
   kind: 'all',
@@ -78,5 +78,32 @@ describe('the held ratio', () => {
 
   it('never passes one when more files are held than are monitored', () => {
     expect(heldRatio(title({ available: 12, monitoredUnits: 8 }))).toBe(1);
+  });
+});
+
+describe('ordering the library index', () => {
+  const rows = [
+    title({ title: 'A', year: 2020, sizeBytes: 30, addedAt: '2026-03-01' }),
+    title({ title: 'B', year: 2010, sizeBytes: 10, addedAt: '2026-01-01' }),
+    title({ title: 'C', year: null, sizeBytes: 20, addedAt: null }),
+  ];
+
+  it.each([
+    ['year', ['C', 'B', 'A']],
+    ['size', ['B', 'C', 'A']],
+    ['added', ['C', 'B', 'A']],
+    ['title', ['A', 'B', 'C']],
+  ] as const)('orders by %s, ascending', (sort, expected) => {
+    const kept = filterLibrary(rows, { ...EVERY, sort });
+
+    expect(kept.map((row) => row.title)).toEqual(expected);
+  });
+});
+
+describe('a title key', () => {
+  it('prefers the tmdb id, then the local id, then the title', () => {
+    expect(titleKey(title())).toBe('show:95396');
+    expect(titleKey(title({ tmdbId: null }))).toBe('show:show-1');
+    expect(titleKey(title({ tmdbId: null, localId: null }))).toBe('show:Severance');
   });
 });

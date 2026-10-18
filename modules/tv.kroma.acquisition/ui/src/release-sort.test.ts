@@ -1,6 +1,6 @@
 import type { ScoredReleaseView } from '@kromatv/client/requests';
 import { describe, expect, it } from 'vitest';
-import { sortReleases, targetLabel } from './release-sort';
+import { releaseSortOf, sortReleases, targetLabel } from './release-sort';
 
 function release(over: Partial<ScoredReleaseView>): ScoredReleaseView {
   return {
@@ -69,5 +69,15 @@ describe('targetLabel', () => {
     expect(targetLabel(release({ target: 'movie' }))).toBeNull();
     expect(targetLabel(release({ target: 'season', season: 3 }))).toBe('S03');
     expect(targetLabel(release({ target: 'episode', season: 3, episodes: [7] }))).toBe('S03E07');
+  });
+});
+
+describe('releaseSortOf', () => {
+  it('reads a column the table can sort by', () => {
+    expect(releaseSortOf('seeders')).toBe('seeders');
+  });
+
+  it('refuses a column it cannot sort by', () => {
+    expect(releaseSortOf('indexer')).toBeNull();
   });
 });

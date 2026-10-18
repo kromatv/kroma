@@ -171,6 +171,13 @@ mod tests {
     }
 
     #[test]
+    fn an_episode_with_no_season_is_held_by_nothing() {
+        let file = judged(1, 1, Quality::WebDl720, 1);
+
+        assert!(!file.holds(None, Some(1)));
+    }
+
+    #[test]
     fn a_run_file_holds_each_episode_in_it() {
         let judged = JudgedFile {
             file_id: "f1".into(),

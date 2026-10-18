@@ -5,6 +5,12 @@ describe('the monitoring endpoints', () => {
   it.each<Endpoint>([
     { name: 'list', call: (c) => c.monitoring.list(), method: 'GET', path: '/monitoring' },
     {
+      name: 'library',
+      call: (c) => c.monitoring.library(),
+      method: 'GET',
+      path: '/monitoring/library',
+    },
+    {
       name: 'get',
       call: (c) => c.monitoring.get('show', 77),
       method: 'GET',

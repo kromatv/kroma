@@ -171,7 +171,19 @@ fn asked_for(row: &WantedRow, units: &[Unit]) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{Arc, Mutex};
+
+    use kroma_module_sdk::host::testing::StubHost;
+    use kroma_module_sdk::testing::blocking;
+
+    use super::queue::{self, Ask};
     use super::*;
+    use crate::search::best::test_world::{host, hold_file, monitor, monitored, want, wanted_row, Fakes};
+
+    pub(super) static SOLO: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+    const DUNE_1080: &str = "Dune.2021.1080p.BluRay.x264-GRP";
+    const DUNE_720: &str = "Dune.2021.720p.WEB-DL.x264-GRP";
 
     fn row(id: &str, season: Option<u32>, episode: Option<u32>, status: &str) -> WantedRow {
         WantedRow {
@@ -234,5 +246,208 @@ mod tests {
 
         assert_eq!(unit.season, Some(2));
         assert_eq!(unit.episode, None);
+    }
+
+    fn dune() -> kroma_module_sdk::engine::model::MonitoredTitle {
+        monitored(RequestKind::Movie, 2, "Dune", Some(2021))
+    }
+
+    async fn wanting_dune(fakes: &Fakes) -> StubHost {
+        let host = host(fakes).await;
+        let film = dune();
+        monitor(&host, &film);
+        want(&host, &[wanted_row("m1", &film, None, None, "wanted")]);
+        host
+    }
+
+    fn ask_for_dune(host: &StubHost) {
+        let ask = Ask {
+            kind: RequestKind::Movie,
+            tmdb_id: 2,
+            units: Vec::new(),
+        };
+        queue::push(host.store(), &ask, 1).unwrap();
+    }
+
+    fn logged() -> (Arc<Mutex<Vec<String>>>, impl Fn(String)) {
+        let lines = Arc::new(Mutex::new(Vec::new()));
+        let sink = lines.clone();
+        (lines, move |line| sink.lock().unwrap().push(line))
+    }
+
+    async fn drained(host: StubHost) -> (AutoSummary, Vec<String>) {
+        blocking(move || {
+            let (lines, log) = logged();
+            let summary = drain_queue(&host, &log).unwrap();
+            let lines = lines.lock().unwrap().clone();
+            (summary, lines)
+        })
+        .await
+    }
+
+    async fn swept(host: StubHost) -> (AutoSummary, Vec<String>) {
+        blocking(move || {
+            let (lines, log) = logged();
+            let summary = sweep_cutoff(&host, &log).unwrap();
+            let lines = lines.lock().unwrap().clone();
+            (summary, lines)
+        })
+        .await
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_queued_title_is_searched_and_its_missing_film_grabbed() {
+        let _solo = SOLO.lock().await;
+        let fakes = Fakes::new().offering(&[DUNE_1080]);
+        let host = wanting_dune(&fakes).await;
+        ask_for_dune(&host);
+
+        let (summary, _) = drained(host).await;
+
+        assert_eq!((summary.titles, summary.grabbed), (1, 1));
+        assert_eq!(fakes.grabbed_rows(), [["m1"]]);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn an_empty_queue_says_nothing_is_waiting() {
+        let _solo = SOLO.lock().await;
+        let fakes = Fakes::new();
+        let host = host(&fakes).await;
+
+        let (summary, lines) = drained(host).await;
+
+        assert_eq!(summary.titles, 0);
+        assert_eq!(lines, ["no title is waiting to be searched"]);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_title_with_nothing_missing_is_reported_and_not_searched() {
+        let _solo = SOLO.lock().await;
+        let fakes = Fakes::new().offering(&[DUNE_1080]);
+        let host = host(&fakes).await;
+        monitor(&host, &dune());
+        ask_for_dune(&host);
+
+        let (summary, lines) = drained(host).await;
+
+        assert_eq!(summary.targets, 0);
+        assert!(lines.iter().any(|l| l == "nothing is missing on title 2"), "{lines:?}");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_queue_drained_with_no_indexer_says_to_configure_one() {
+        let _solo = SOLO.lock().await;
+        let mut fakes = Fakes::new();
+        fakes.indexers.clear();
+        let host = wanting_dune(&fakes).await;
+        ask_for_dune(&host);
+
+        let (summary, lines) = drained(host).await;
+
+        assert_eq!(summary.titles, 0);
+        assert!(lines.iter().any(|l| l.starts_with("no enabled indexer")), "{lines:?}");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_queue_drained_with_no_indexer_module_says_none_answered() {
+        let _solo = SOLO.lock().await;
+        let host = StubHost::with_core(kroma_module_sdk::db::testing::temp_pool("acq-od"));
+        kroma_module_sdk::db::apply_migrations(
+            &host.store().get().unwrap(),
+            crate::rules::schema::MIGRATIONS,
+        )
+        .unwrap();
+        ask_for_dune(&host);
+
+        let (_, lines) = drained(host).await;
+
+        assert!(lines.iter().any(|l| l.starts_with("no indexer answered")), "{lines:?}");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_drain_started_while_another_search_runs_does_nothing() {
+        let _solo = SOLO.lock().await;
+        let fakes = Fakes::new().offering(&[DUNE_1080]);
+        let host = wanting_dune(&fakes).await;
+        ask_for_dune(&host);
+        let held = start::claim().expect("a free slot");
+
+        let (summary, lines) = drained(host).await;
+
+        drop(held);
+        assert_eq!(summary.titles, 0);
+        assert_eq!(lines, ["another search is already running"]);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_cutoff_sweep_upgrades_a_title_held_below_its_cutoff() {
+        let _solo = SOLO.lock().await;
+        let fakes = Fakes::new().offering(&[DUNE_720, DUNE_1080]);
+        let host = host(&fakes).await;
+        let film = dune();
+        monitor(&host, &film);
+        want(&host, &[wanted_row("m1", &film, None, None, "available")]);
+        hold_file(&host, &film, None, None, "Dune.2021.720p.WEB-DL.x264-GRP.mkv");
+
+        let (summary, lines) = swept(host).await;
+
+        assert_eq!(summary.upgrades, 1);
+        assert_eq!(fakes.grabbed_titles(), [DUNE_1080]);
+        assert_eq!(lines.last().unwrap(), "1 target(s) searched, 1 upgrade(s)");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_cutoff_sweep_with_no_indexer_searches_nothing() {
+        let _solo = SOLO.lock().await;
+        let mut fakes = Fakes::new();
+        fakes.indexers.clear();
+        let host = host(&fakes).await;
+
+        let (summary, _) = swept(host).await;
+
+        assert_eq!(summary.targets, 0);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_cutoff_sweep_started_while_another_runs_does_nothing() {
+        let _solo = SOLO.lock().await;
+        let fakes = Fakes::new();
+        let host = host(&fakes).await;
+        let held = start::claim().expect("a free slot");
+
+        let (_, lines) = swept(host).await;
+
+        drop(held);
+        assert_eq!(lines, ["another search is already running"]);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_missing_units_of_a_title_are_those_a_page_can_still_ask_for() {
+        let fakes = Fakes::new();
+        let host = host(&fakes).await;
+        let show = monitored(RequestKind::Show, 1, "Show", None);
+        monitor(&host, &show);
+        want(
+            &host,
+            &[
+                wanted_row("a", &show, Some(1), Some(1), "wanted"),
+                wanted_row("b", &show, Some(1), Some(2), "wanted"),
+                wanted_row("c", &show, Some(1), Some(3), "available"),
+            ],
+        );
+        let second = Unit {
+            season: Some(1),
+            episode: Some(2),
+        };
+
+        let (all, one) = blocking(move || {
+            (
+                missing_units(&host, RequestKind::Show, 1, &[]).unwrap(),
+                missing_units(&host, RequestKind::Show, 1, &[second]).unwrap(),
+            )
+        })
+        .await;
+
+        assert_eq!((all, one), (2, 1));
     }
 }

@@ -73,3 +73,6 @@ async fn cutoff_now<S: HostStorage + Clone + Send + Sync + 'static>(
     let answer = run(move || start_cutoff_search(&state)).await?;
     Ok(Json(answer).into_response())
 }
+
+#[cfg(test)]
+mod tests;

@@ -160,3 +160,6 @@ pub fn cutoff_list<S: HostStorage>(state: &S) -> anyhow::Result<Vec<CutoffEntry>
     }
     Ok(out)
 }
+
+#[cfg(test)]
+mod tests;

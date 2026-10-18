@@ -154,3 +154,49 @@ describe('shortfallsOf', () => {
     expect(shortfallsOf(keep, holding('unknown-720p', [], 0))).toEqual([]);
   });
 });
+
+function pairProfile() {
+  return profile({
+    tiers: TIERS_1080P,
+    cutoff: 'bluray-1080p',
+    formatScores: { hevc: 400, hdr10: 100 },
+    upgradeUntilScore: 500,
+  });
+}
+
+describe('shortfallsOf for a goal reached by a pair of formats', () => {
+  const either = goalOf(
+    profile({
+      tiers: TIERS_1080P,
+      cutoff: 'bluray-1080p',
+      formatScores: { hevc: 500, vff: 500 },
+      upgradeUntilScore: 500,
+    }),
+    FORMATS,
+  );
+  const both = goalOf(pairProfile(), FORMATS);
+
+  it('names both formats of an either goal when a file holds neither', () => {
+    expect(shortfallsOf(either, holding('webdl-1080p', [], 0))).toEqual([
+      {
+        kind: 'missing',
+        formats: [
+          { id: 'hevc', name: 'HEVC' },
+          { id: 'vff', name: 'VFF' },
+        ],
+      },
+    ]);
+  });
+
+  it('gives the score of an either goal when one of its formats is held', () => {
+    expect(shortfallsOf(either, holding('webdl-1080p', ['hevc'], 100))).toEqual([
+      { kind: 'score', score: 100, need: 500 },
+    ]);
+  });
+
+  it('names the format a both goal still lacks', () => {
+    expect(shortfallsOf(both, holding('webdl-1080p', ['hevc'], 400))).toEqual([
+      { kind: 'missing', formats: [{ id: 'hdr10', name: 'HDR10' }] },
+    ]);
+  });
+});

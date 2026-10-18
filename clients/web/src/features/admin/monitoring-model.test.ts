@@ -6,7 +6,9 @@ import {
   episodeState,
   fileLabel,
   monitorCandidates,
+  searchCandidates,
   seasonFollow,
+  seasonToOpen,
   showTotals,
 } from './monitoring-model';
 
@@ -185,5 +187,44 @@ describe('a season', () => {
 
   it('is not followed when nothing in it is', () => {
     expect(seasonFollow({ season: 2, episodeCount: 10, requested: 0, onDisk: 0 })).toBe('off');
+  });
+});
+
+describe('searchCandidates', () => {
+  const candidates = [
+    { kind: 'movie', tmdbId: 1, title: 'Arrival', year: 2016, posterUrl: null },
+    { kind: 'movie', tmdbId: 2, title: 'Dune', year: 2021, posterUrl: null },
+  ] as const;
+
+  it('keeps the titles that contain the search, however it is cased', () => {
+    expect(searchCandidates(candidates, '  DUN ').map((one) => one.title)).toEqual(['Dune']);
+  });
+
+  it('keeps everything for an empty search', () => {
+    expect(searchCandidates(candidates, ' ')).toHaveLength(2);
+  });
+});
+
+describe('the season to open', () => {
+  it('is the first season with a gap', () => {
+    expect(
+      seasonToOpen([
+        { season: 1, episodeCount: 8, requested: 8, onDisk: 8 },
+        { season: 2, episodeCount: 8, requested: 8, onDisk: 3 },
+      ]),
+    ).toBe(2);
+  });
+
+  it('is the only season when it has no gap', () => {
+    expect(seasonToOpen([{ season: 4, episodeCount: 8, requested: 8, onDisk: 8 }])).toBe(4);
+  });
+
+  it('is none when several seasons have no gap', () => {
+    expect(
+      seasonToOpen([
+        { season: 1, episodeCount: 8, requested: 8, onDisk: 8 },
+        { season: 2, episodeCount: 8, requested: 8, onDisk: 8 },
+      ]),
+    ).toBeNull();
   });
 });

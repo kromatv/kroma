@@ -166,7 +166,12 @@ fn rows_outside_request<S: HostStorage>(
 
 #[cfg(test)]
 mod tests {
+    use kroma_module_sdk::db::testing::temp_pool;
+    use kroma_module_sdk::engine::model::RequestStatus;
+    use kroma_module_sdk::host::testing::StubHost;
+
     use super::*;
+    use crate::search::best::test_world::{monitor, monitored, want, wanted_row};
 
     #[test]
     fn a_request_and_a_title_never_share_a_cache_slot() {
@@ -200,5 +205,134 @@ mod tests {
             }
         );
         assert_eq!(request, Subject::request("r1"));
+    }
+
+    fn host() -> StubHost {
+        StubHost::with_core(temp_pool("acq-subject"))
+    }
+
+    fn approve(host: &StubHost, id: &str, kind: RequestKind, tmdb_id: u64) {
+        let request = db::NewRequest {
+            id: id.into(),
+            kind,
+            tmdb_id,
+            title: "Show".into(),
+            year: Some(2020),
+            poster_url: None,
+            seasons: None,
+            episodes: None,
+            status: RequestStatus::Approved,
+            requested_by: None,
+        };
+        db::insert_request(host.db(), &request, 1).unwrap();
+    }
+
+    fn show_ledger(host: &StubHost, request_id: Option<&str>) {
+        let show = monitored(RequestKind::Show, 1, "Show", Some(2020));
+        monitor(host, &show);
+        let mut rows = vec![
+            wanted_row("a", &show, Some(1), Some(1), "wanted"),
+            wanted_row("b", &show, Some(1), Some(2), "available"),
+        ];
+        for row in &mut rows {
+            row.request_id = request_id.map(str::to_string);
+        }
+        want(host, &rows);
+    }
+
+    fn title(kind: RequestKind, tmdb_id: u64) -> Subject {
+        Subject::Title { kind, tmdb_id }
+    }
+
+    #[test]
+    fn a_titles_search_covers_every_row_whatever_its_state() {
+        let host = host();
+        show_ledger(&host, None);
+
+        let resolved = resolve(&host, &title(RequestKind::Show, 1), SearchScope::All).unwrap();
+
+        assert_eq!(resolved.title, "Show");
+        assert_eq!(resolved.year, Some(2020));
+        assert_eq!(resolved.ledger.len(), 2);
+        assert!(resolved.searched.iter().all(|w| w.status == "wanted"));
+        assert_eq!(resolved.searched.len(), 2);
+        assert_eq!(resolved.request_id, None);
+    }
+
+    #[test]
+    fn a_title_nobody_monitors_is_named_by_the_rows_it_has() {
+        let host = host();
+        let unmonitored = monitored(RequestKind::Movie, 5, "Dune", Some(2021));
+        want(&host, &[wanted_row("m", &unmonitored, None, None, "wanted")]);
+
+        let resolved = resolve(&host, &title(RequestKind::Movie, 5), SearchScope::Movie).unwrap();
+
+        assert_eq!(resolved.title, "Dune");
+        assert_eq!(resolved.year, Some(2021));
+    }
+
+    #[test]
+    fn a_title_with_an_open_request_carries_the_request() {
+        let host = host();
+        show_ledger(&host, None);
+        approve(&host, "r1", RequestKind::Show, 1);
+
+        let resolved = resolve(&host, &title(RequestKind::Show, 1), SearchScope::All).unwrap();
+
+        assert_eq!(resolved.request_id.as_deref(), Some("r1"));
+    }
+
+    #[test]
+    fn a_season_the_ledger_already_covers_adds_no_preview_rows() {
+        let host = host();
+        show_ledger(&host, None);
+
+        let resolved = resolve(
+            &host,
+            &title(RequestKind::Show, 1),
+            SearchScope::Season { season: 1 },
+        )
+        .unwrap();
+
+        assert_eq!(resolved.searched.len(), 2);
+    }
+
+    #[test]
+    fn a_requests_search_reads_the_ledger_it_was_approved_with() {
+        let host = host();
+        approve(&host, "r1", RequestKind::Show, 1);
+        show_ledger(&host, Some("r1"));
+
+        let resolved = resolve(&host, &Subject::request("r1"), SearchScope::All).unwrap();
+
+        assert_eq!(resolved.request_id.as_deref(), Some("r1"));
+        assert_eq!(resolved.tmdb_id, 1);
+        assert_eq!(resolved.ledger.len(), 2);
+        assert!(resolved.searched.iter().all(|w| w.status == "wanted"));
+    }
+
+    #[test]
+    fn a_season_of_a_request_the_ledger_covers_is_not_previewed() {
+        let host = host();
+        approve(&host, "r1", RequestKind::Show, 1);
+        show_ledger(&host, Some("r1"));
+
+        let resolved = resolve(
+            &host,
+            &Subject::request("r1"),
+            SearchScope::Season { season: 1 },
+        )
+        .unwrap();
+
+        assert_eq!(resolved.searched.len(), 2);
+    }
+
+    #[test]
+    fn a_request_nobody_filed_is_not_found() {
+        let host = host();
+
+        let err = resolve(&host, &Subject::request("ghost"), SearchScope::All).err();
+
+        assert_eq!(err.unwrap().to_string(), "request not found");
     }
 }

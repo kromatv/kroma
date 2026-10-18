@@ -163,4 +163,18 @@ mod tests {
         assert_eq!(targets[0].0.kind, "episode");
         assert_eq!(targets[0].1, ["a"]);
     }
+
+    #[test]
+    fn a_season_whose_every_episode_is_at_its_cutoff_is_left_alone() {
+        let rules = TestRules::new();
+        let rows = [row("a", Some(1), Some(1)), row("b", Some(1), Some(2))];
+        let files = [
+            file(Some(1), Some(1), Quality::Bluray1080, cutoff_rank(&rules)),
+            file(Some(1), Some(2), Quality::Bluray1080, cutoff_rank(&rules)),
+        ];
+
+        let targets = upgrade_targets(RequestKind::Show, &rows, &files, &rules.profile);
+
+        assert!(targets.is_empty());
+    }
 }

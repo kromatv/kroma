@@ -129,7 +129,7 @@ mod tests {
     use kroma_module_sdk::testing::{blocking, serve};
     use serde_json::Value;
 
-    static SOLO: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    use crate::on_demand::tests::SOLO;
 
     async fn host_with(gate: bool, indexers: Vec<Value>) -> StubHost {
         let list: &'static Vec<Value> = Box::leak(Box::new(indexers));
