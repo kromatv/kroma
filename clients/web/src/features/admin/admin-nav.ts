@@ -9,7 +9,6 @@ import {
   IconDatabase,
   IconFlag,
   IconHistory,
-  IconInbox,
   IconLayoutDashboard,
   IconLibrary,
   IconRadar,
@@ -25,12 +24,12 @@ import {
 import type { RoutePath } from '#web/shared/ui/route-link';
 
 /** One console page. `cap: null` is visible to any admin (the read-only
- *  dashboard panels); otherwise the page needs that capability, mirroring the
- *  server-side guards in `api/admin.rs`. */
+ *  dashboard panels); otherwise the page needs that capability, or any one of
+ *  a list of them, mirroring the server-side guards in `api/admin.rs`. */
 export interface AdminNavItem {
   to: RoutePath;
   labelKey: MessageKey;
-  cap: Permission | null;
+  cap: Permission | readonly Permission[] | null;
   icon: TablerIcon;
   /** Whether only the exact path reads as the current page. */
   exact?: boolean;
@@ -76,6 +75,12 @@ export const NAV_GROUPS: AdminNavGroup[] = [
     section: 'media',
     items: [
       {
+        to: '/admin/monitoring',
+        labelKey: 'admin.navMonitoring',
+        cap: ['library.manage', 'requests.manage'],
+        icon: IconRadar,
+      },
+      {
         to: '/admin/libraries',
         labelKey: 'admin.navLibraries',
         cap: 'library.manage',
@@ -88,24 +93,6 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         icon: IconTransform,
       },
       { to: '/admin/ai', labelKey: 'admin.navAi', cap: 'settings.manage', icon: IconSparkles },
-    ],
-  },
-  {
-    labelKey: 'admin.groupLibrary',
-    section: 'monitoring',
-    items: [
-      {
-        to: '/admin/monitoring',
-        labelKey: 'admin.navMonitoring',
-        cap: 'library.manage',
-        icon: IconRadar,
-      },
-      {
-        to: '/admin/requests',
-        labelKey: 'admin.navRequests',
-        cap: 'requests.manage',
-        icon: IconInbox,
-      },
     ],
   },
   {
@@ -183,6 +170,14 @@ const sectionOf = (item: ModuleNav): string => item.section ?? 'library';
  * them, and the module pages whose section names no group at all, which the
  * caller draws under a heading of its own.
  */
+function permitted(
+  cap: AdminNavItem['cap'],
+  allowed: (cap: Permission | null) => boolean,
+): boolean {
+  if (cap === null || typeof cap === 'string') return allowed(cap);
+  return cap.some(allowed);
+}
+
 export function adminNavSections(
   moduleNav: readonly ModuleNav[],
   allowed: (cap: Permission | null) => boolean,
@@ -190,7 +185,7 @@ export function adminNavSections(
   const known = new Set(NAV_GROUPS.map((group) => group.section));
   const sections = NAV_GROUPS.map((group) => ({
     labelKey: group.labelKey,
-    items: group.items.filter((item) => allowed(item.cap)),
+    items: group.items.filter((item) => permitted(item.cap, allowed)),
     modules: moduleNav.filter((module) => sectionOf(module) === group.section),
   })).filter((group) => group.items.length > 0 || group.modules.length > 0);
   return { sections, orphans: moduleNav.filter((module) => !known.has(sectionOf(module))) };

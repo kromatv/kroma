@@ -4,8 +4,8 @@ import { useLocale, useT } from '@kromatv/ui';
 import { Badge, Button, Checkbox, Divider, Row, Text } from '@kromatv/ui/kit';
 import { EpisodeList } from '#web/features/requests/missing-episodes';
 import { epKey, isFollowed, type MissingGroup } from '#web/features/requests/missing-model';
-import { RequestCard } from '#web/features/requests/request-card';
 import type { GroupAction } from '#web/features/requests/use-missing-actions';
+import { RequestCard } from '#web/shared/ui/request-card';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 const GROUP_ACTION = {

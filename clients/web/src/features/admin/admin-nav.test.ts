@@ -21,7 +21,6 @@ describe('the console navigation', () => {
     expect(labels([], anyAdmin)).toEqual([
       'admin.groupManagement',
       'admin.groupMedia',
-      'admin.groupLibrary',
       'admin.groupSystem',
       'admin.groupMaintenance',
     ]);
@@ -72,10 +71,12 @@ describe('the console pages', () => {
     expect(new Set(sections).size).toBe(sections.length);
   });
 
-  it('gathers the library and what was asked for', () => {
-    const group = NAV_GROUPS.find((g) => g.labelKey === 'admin.groupLibrary');
+  it('opens the library to whoever can manage titles or requests', () => {
+    const moderator = (cap: Permission | null) => cap === 'requests.manage';
 
-    expect(group?.items.map((item) => item.to)).toEqual(['/admin/monitoring', '/admin/requests']);
+    const items = adminNavSections([], moderator).sections.flatMap((section) => section.items);
+
+    expect(items.map((item) => item.to)).toEqual(['/admin/monitoring']);
   });
 
   it('keeps the watch history beside the dashboard, behind the users permission', () => {

@@ -6,13 +6,13 @@ import { KromaEvents } from '@kromatv/client/events';
 import type { MediaRequest, RequestStatus } from '@kromatv/client/requests';
 import { Table } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
-import { Button, EmptyState, Row } from '@kromatv/ui/kit';
+import { Box, Button, EmptyState, Row } from '@kromatv/ui/kit';
 
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { NewRequestDialog } from '#web/features/admin/request-new-dialog';
 import { RequestRowView } from '#web/features/admin/request-row';
-import { PageHeader, useCap, usePoll } from '#web/features/admin/shell';
+import { useCap, usePoll } from '#web/features/admin/shell';
 import {
   Chip,
   ConsoleSearch,
@@ -38,7 +38,8 @@ const BUCKETS: Record<string, (s: RequestStatus) => boolean> = {
   all: () => true,
 };
 
-export function RequestsQueuePage() {
+/** The moderation queue, as the Requests tab of the library page. */
+export function RequestsQueue() {
   const t = useT();
   const navigate = useNavigate();
   const { client } = useAuth();
@@ -98,20 +99,19 @@ export function RequestsQueuePage() {
 
   return (
     <>
-      <PageHeader.Root>
-        <PageHeader.Title>{t('admin.requestsTitle')}</PageHeader.Title>
-        <PageHeader.Actions>
+      <Row wrap gap={10} align="center" mb={16}>
+        <Box flex minW={200}>
           <ConsoleSearch value={q} onChange={setQ} placeholder={t('requests.searchPlaceholder')} />
-          {canReview ? (
-            <Button
-              size="sm"
-              icon="plus"
-              label={t('requests.newRequest')}
-              onPress={() => setAdding(true)}
-            />
-          ) : null}
-        </PageHeader.Actions>
-      </PageHeader.Root>
+        </Box>
+        {canReview ? (
+          <Button
+            size="sm"
+            icon="plus"
+            label={t('requests.newRequest')}
+            onPress={() => setAdding(true)}
+          />
+        ) : null}
+      </Row>
       <ConsoleSummary
         total={c?.total ?? 0}
         totalLabel={t('requests.totalLabel')}

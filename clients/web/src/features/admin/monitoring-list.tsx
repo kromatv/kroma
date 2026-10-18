@@ -23,7 +23,6 @@ import {
 import { MonitoringNotice, useMonitoringNotice } from '#web/features/admin/monitoring-notice';
 import { LibraryRow, type RowColumns } from '#web/features/admin/monitoring-title-row';
 import { LibraryFilters, LibraryHead } from '#web/features/admin/monitoring-toolbar';
-import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 import { ConsoleSearch } from '#web/features/admin/table-console';
 import { useLibraryIndex, useTitleFollow } from '#web/features/admin/use-monitoring';
 import { useAuth } from '#web/shared/lib/auth';
@@ -43,12 +42,8 @@ interface ViewProps {
   onView: (view: LibraryState) => void;
 }
 
-export function MonitoringListPage(props: Readonly<ViewProps>) {
-  if (!useCap('library.manage')) return <Denied />;
-  return <MonitoringList {...props} />;
-}
-
-function MonitoringList({ view, onView }: Readonly<ViewProps>) {
+/** Every title of the library, as the Titles tab of the library page. */
+export function LibraryTitles({ view, onView }: Readonly<ViewProps>) {
   const t = useT();
   const { client } = useAuth();
   const { notice, on, say } = useMonitoringNotice();
@@ -137,33 +132,31 @@ function MonitoringList({ view, onView }: Readonly<ViewProps>) {
 
   return (
     <>
-      <PageHeader.Root>
-        <PageHeader.Title>{t('monitoring.title')}</PageHeader.Title>
-        <PageHeader.Subtitle>{t('monitoring.subtitle')}</PageHeader.Subtitle>
-        <PageHeader.Actions>
+      <Row wrap gap={10} align="center">
+        <Box flex minW={200}>
           <ConsoleSearch
             value={filter.needle}
             onChange={(needle) => setFilter({ ...filter, needle })}
             placeholder={t('monitoring.searchPlaceholder')}
           />
-          <Button
-            size="sm"
-            variant="glass"
-            icon="checkbox"
-            active={selecting}
-            label={t('monitoring.select')}
-            onPress={() => (selecting ? leaveSelect() : setSelecting(true))}
-          />
-          <Button
-            size="sm"
-            icon="plus"
-            label={t('monitoring.addTitle')}
-            onPress={() => setAdding(true)}
-          />
-        </PageHeader.Actions>
-      </PageHeader.Root>
+        </Box>
+        <Button
+          size="sm"
+          variant="glass"
+          icon="checkbox"
+          active={selecting}
+          label={t('monitoring.select')}
+          onPress={() => (selecting ? leaveSelect() : setSelecting(true))}
+        />
+        <Button
+          size="sm"
+          icon="plus"
+          label={t('monitoring.addTitle')}
+          onPress={() => setAdding(true)}
+        />
+      </Row>
 
-      <Box gap={12} mt={24} mb={16}>
+      <Box gap={12} mt={16} mb={16}>
         <LibraryFilters filter={filter} onChange={setFilter} />
         {selecting ? (
           <BulkBar

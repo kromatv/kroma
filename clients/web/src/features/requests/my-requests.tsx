@@ -6,12 +6,12 @@ import { Box, Button, EmptyState, Icon, IconButton, PageHeader, Row, Text } from
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ViewProps } from 'react-native';
-import { RequestCard, RequestCardSkeleton } from '#web/features/requests/request-card';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
 import { requestStatusMeta, seasonsSummary } from '#web/shared/lib/request-status';
 import { PageFrame } from '#web/shared/ui';
+import { RequestCard, RequestCardSkeleton } from '#web/shared/ui/request-card';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 import { RouteLink } from '#web/shared/ui/route-link';
 
