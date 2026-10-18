@@ -166,7 +166,6 @@ export async function stage(options: StageOptions): Promise<string> {
   );
   for (const [dir, rel] of [
     ['cli', 'README.md'],
-    ['module-sdk', 'LICENSE'],
     ['i18n', 'schema/catalog.schema.json'],
   ] as const) {
     const source = join(root, 'packages', dir, rel);

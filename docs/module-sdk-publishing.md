@@ -2,8 +2,8 @@
 
 One package leaves this repository, public on npm: **`@kromatv/sdk`**. It is the whole
 of what a module written elsewhere depends on, and the only thing published.
-It is MIT, like every crate and package it is assembled from, so a module built
-on it can carry any license. The server it plugs into is AGPL-3.0-or-later.
+It is AGPL-3.0-or-later, like the rest of the repository, so a module built on
+it is too.
 
 | Inside it | From |
 |---|---|

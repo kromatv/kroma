@@ -4,7 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 description = "Reading and re-encoding media: the ffprobe reader, the ffmpeg budget, the HLS engine and the per-request program over it. No database, no catalog."
-license = "MIT"
+license.workspace = true
 
 [dependencies]
 # The track descriptions ffprobe fills in, which a module answers with too.

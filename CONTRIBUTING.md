@@ -81,7 +81,5 @@ Open an issue with:
 
 ## License
 
-By contributing, you agree your contributions are licensed under the license of
-the directory they land in: [AGPL-3.0-or-later](LICENSE) for most of the
-repository, MIT where a directory carries its own `LICENSE` (the module SDK and
-what it is assembled from).
+By contributing, you agree your contributions are licensed under the project's
+[AGPL-3.0-or-later](LICENSE).

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 description = "Low-level module manifest/registry/embedded types (below kroma-engine). Modules use the kroma-module-sdk facade; this is the shared manifest layer engine/kernel/wasm build on."
-license = "MIT"
+license.workspace = true
 
 [dependencies]
 # The embedded_module!() proc-macro, re-exported for the below-facade modules.

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 description = "The SQLite pool, the storage grant that scopes it and a module's own migrations: the mechanism a sidecar links, none of the schema."
-license = "MIT"
+license.workspace = true
 
 [features]
 # `testing::temp_pool`, the throwaway database. Off by default so nothing

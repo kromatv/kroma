@@ -4,7 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 description = "Shared low-level primitives: timestamps, short hashes, random tokens"
-license = "MIT"
+license.workspace = true
 
 [dependencies]
 time = { workspace = true }

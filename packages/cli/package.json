@@ -5,7 +5,7 @@
   "type": "module",
   "description": "The KROMA module author's CLI: `kroma create` scaffolds a module, `kroma dev` iterates it against a running server, `kroma build` packs the installable .kmod, `kroma check` validates it.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "homepage": "https://kroma.tv",
   "repository": {
     "type": "git",

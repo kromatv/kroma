@@ -4,7 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 description = "The host seam: the narrow HostCtx contract + shared HTTP extractors a module crate's backend needs, without depending on the whole app (kroma-engine)."
-license = "MIT"
+license.workspace = true
 
 [features]
 # Compiles `testing::{StubHost, Recording}`, the shared HostCtx doubles. Off by

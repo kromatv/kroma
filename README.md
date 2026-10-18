@@ -159,9 +159,3 @@ Run it, change it and share it freely. Whoever distributes KROMA, or lets people
 use a modified version of it over a network, has to offer them its source under
 the same license.
 
-The module SDK is MIT, so a module can carry any license: the published
-`@kromatv/sdk`, the crates a sidecar links
-(`server/crates/kroma-{module-sdk,module-runtime,module-host,module-manifest,module-macros,module-wire,media,sqlite,http,i18n,primitives,testing}`)
-and the packages a module imports
-(`packages/{module-sdk,ui,core,client,registry,i18n,spatial-nav,cli}`). Each of
-those directories carries its own `LICENSE`.
