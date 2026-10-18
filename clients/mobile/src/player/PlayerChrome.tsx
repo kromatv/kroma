@@ -1,4 +1,3 @@
-import { radius as cornerRadius, fontSizes as textSizes } from '@kromatv/ui/kit';
 // Pure presentation over the Engine; all playback logic lives in engine/.
 
 import type { MediaItem } from '@kromatv/client/media';
@@ -12,7 +11,7 @@ import {
   type SubtitleAppearance,
   useResumeNotice,
 } from '@kromatv/ui';
-import { Box, styles, Text } from '@kromatv/ui/kit';
+import { Box, radius as cornerRadius, styles, Text, fontSizes as textSizes } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';

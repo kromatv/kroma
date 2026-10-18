@@ -1,5 +1,5 @@
 import { color as tokenColor } from '#ui/core/color';
-import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
+
 // One live chart of the stats panel, with every series sharing its axis. Stays
 // SVG rather than canvas/Skia: a native canvas module would cost Tizen and
 // webOS their renderer to reclaim microseconds (see the render call below for
@@ -23,7 +23,7 @@ import {
 } from '#ui/components/organisms/player/lib/chart-geometry';
 import type { PlayerMeter } from '#ui/components/organisms/player/types';
 import { type ColorValue, styles } from '#ui/core';
-import { SERIES_COLORS } from '#ui/core/tokens';
+import { SERIES_COLORS, typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 import { Circle, Line, Path, Svg } from '#ui/lib/svg';
 
 // Tall enough for a trend to have shape, short enough that two charts and

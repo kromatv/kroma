@@ -43,9 +43,8 @@ function pickLocation(): File | null {
   return null;
 }
 
-let target: File | null = null;
-
 class DeviceStore implements SessionStorage {
+  constructor(private readonly target: File | null) {}
   private data: Record<string, string> = {};
 
   getItem(key: string): string | null {
@@ -72,9 +71,9 @@ class DeviceStore implements SessionStorage {
   }
 
   private flush(): void {
-    if (!target) return;
+    if (!this.target) return;
     try {
-      target.write(JSON.stringify(this.data));
+      this.target.write(JSON.stringify(this.data));
     } catch (cause) {
       // Must not throw (costs only the next launch) and must not be silent
       // (release builds strip console; the disk file is the only signal left).
@@ -83,18 +82,20 @@ class DeviceStore implements SessionStorage {
   }
 }
 
-const store = new DeviceStore();
-
 /** Await this before rendering the app: `loadSession()` runs during the first
  * render, so a session that arrives later is a profile picker the user has
  * already been shown. */
 export async function hydrateSessionStorage(): Promise<void> {
+  let target: File | null = null;
+  let raw: string | null = null;
   try {
     target = pickLocation();
-    if (target?.exists) store.load(await target.text());
+    if (target?.exists) raw = await target.text();
   } catch (cause) {
     console.warn('[kroma] session store unreadable, starting empty:', cause);
   }
+  const store = new DeviceStore(target);
+  if (raw !== null) store.load(raw);
   setSessionStorage(store);
   setDeviceStore(store);
 }

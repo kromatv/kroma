@@ -12,9 +12,7 @@ import {
   setBuildInfo,
   setHardwareSource,
   setLauncherBackend,
-  setSearchShell,
   setServerBrowse,
-  setVoiceSearchBackend,
   TvApp,
 } from '@kromatv/tv';
 import { expoImageBackend } from '@kromatv/ui/expo-image';
@@ -57,10 +55,6 @@ setBuildInfo(Constants.expoConfig?.extra?.buildInfo ?? {});
 // port drops an empty answer for us. No `subscribe`: this one is already there
 // when the app starts, unlike the buses the browser shells have to ask.
 const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
-// Speaking a search is the one capability the shared app cannot implement for
-// itself: the microphone belongs to the platform (see the module). Registered at
-// module scope, before the first render, exactly like the image backend.
-setVoiceSearchBackend(nativeVoiceSearch);
 // Hermes exposes no `navigator.hardwareConcurrency` / `deviceMemory`, so the
 // About screen's numbers come from the native module instead.
 setHardwareSource(nativeHardware);
@@ -68,9 +62,6 @@ setHardwareSource(nativeHardware);
 // direct-plays at all. Every other client guesses from the codec alone, and a
 // television that stops at 1080p answers a 4K file with a slideshow.
 setDecoderFrameLimits(decoderFrameLimits());
-// And on Apple TV the keyboard belongs to the platform too, because that is the
-// only keyboard the Siri Remote will dictate into (see the module).
-setSearchShell(nativeSearchShell);
 // The television's own home screen, which on Android TV an app may publish rows
 // onto. Null on Apple TV, where there is no such list (see the module).
 setLauncherBackend(nativeLauncher);
@@ -127,6 +118,8 @@ export function App() {
           Android TV client too, and reporting "AppleTV" there was wrong in the
           admin dashboard and the About screen alike. */}
       <TvApp
+        voiceSearch={nativeVoiceSearch}
+        searchShell={nativeSearchShell}
         platform={Platform.OS === 'ios' ? 'AppleTV' : 'AndroidTV'}
         // This television announces itself on its own link, so a phone in the
         // room can sign it in without the server having to place the two by

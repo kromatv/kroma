@@ -11,7 +11,7 @@ import { KromaEvents } from '@kromatv/client/events';
 import type { MediaItem } from '@kromatv/client/media';
 import { PlaybackSessionId } from '@kromatv/client/playback';
 import * as Device from 'expo-device';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 const PING_MS = 10_000;
@@ -43,17 +43,13 @@ function pingMode(s: HeartbeatSnapshot): 'direct' | 'remux' | 'transcode' {
   return s.aac ? 'transcode' : 'remux';
 }
 
-// Sessions opened by this process so far, so two playbacks started in the
-// same millisecond still get distinct ids.
-let sessionSeq = 0;
-
 // Not a secret and never an auth token, so this needs uniqueness, not
 // unpredictability. React Native has no `crypto.randomUUID`, and pulling in a
 // native crypto module just to name a dashboard row isn't a trade worth making.
-function newSessionId(device: string): PlaybackSessionId {
+function newSessionId(device: string, owner: string, sequence: number): PlaybackSessionId {
   const slug = device.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase();
   return PlaybackSessionId.parse(
-    `mob-${slug}-${Date.now().toString(36)}-${(sessionSeq++).toString(36)}`,
+    `mob-${slug}-${Date.now().toString(36)}-${owner.replace(/[^a-z0-9]/gi, '')}-${sequence.toString(36)}`,
   );
 }
 
@@ -71,8 +67,14 @@ interface Session {
   lastBeat: { at: number; positionSec: number } | null;
 }
 
-function openSession(itemId: string, device: string): Session {
-  return { itemId, id: newSessionId(device), opened: false, terminated: false, lastBeat: null };
+function openSession(itemId: string, device: string, owner: string, sequence: number): Session {
+  return {
+    itemId,
+    id: newSessionId(device, owner, sequence),
+    opened: false,
+    terminated: false,
+    lastBeat: null,
+  };
 }
 
 export function useHeartbeat(
@@ -83,6 +85,8 @@ export function useHeartbeat(
    *  '' for the localized default. The player pauses and shows it. */
   onTerminated?: (message: string) => void,
 ): void {
+  const owner = useId();
+  const sequence = useRef(0);
   const snapRef = useRef(snapshot);
   snapRef.current = snapshot;
   const onTerminatedRef = useRef(onTerminated);
@@ -99,7 +103,8 @@ export function useHeartbeat(
   clientRef.current = client;
 
   useEffect(() => {
-    if (session.current?.itemId !== item.id) session.current = openSession(item.id, device);
+    if (session.current?.itemId !== item.id)
+      session.current = openSession(item.id, device, owner, sequence.current++);
     const live = session.current;
     const fireTerminated = (message: string) => {
       if (live.terminated) return;
@@ -172,7 +177,7 @@ export function useHeartbeat(
       events.close();
       save();
     };
-  }, [client, item.id, device]);
+  }, [client, item.id, device, owner]);
 
   // Ending the session is the TITLE's lifecycle, not the loop's: a client
   // swapped underneath a running player rebinds the loop above, and stopping

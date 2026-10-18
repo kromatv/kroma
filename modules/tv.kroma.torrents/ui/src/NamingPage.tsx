@@ -13,7 +13,6 @@ import {
   Box,
   Button,
   Callout,
-  confirm,
   Field,
   Icon,
   PageHeader,
@@ -23,6 +22,7 @@ import {
   Surface,
   styles,
   Text,
+  useConfirm,
 } from '@kromatv/ui/kit';
 import {
   type CSSProperties,
@@ -251,6 +251,7 @@ function SampleLine({ label, value }: Readonly<{ label: string; value: string }>
 }
 
 function RenameSection() {
+  const confirm = useConfirm();
   const t = useT();
   const torrents = useTorrentsApi();
   const [plan, setPlan] = useState<OrganizePlan | null>(null);

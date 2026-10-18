@@ -1,8 +1,3 @@
-import {
-  radius as cornerRadius,
-  typeSpec as textRoles,
-  fontSizes as textSizes,
-} from '@kromatv/ui/kit';
 // One episode, as a row: still, title + status pills, ends-at, recap, and the
 // row's three actions as real buttons. Values ported literally from the
 // design source so a diff against it stays legible.
@@ -20,6 +15,7 @@ import {
   Box,
   Button,
   CARD_SCRIM,
+  radius as cornerRadius,
   Frost,
   gradient,
   Icon,
@@ -28,6 +24,8 @@ import {
   Row,
   styles,
   Text,
+  typeSpec as textRoles,
+  fontSizes as textSizes,
   tintGradient,
   WatchedBadge,
 } from '@kromatv/ui/kit';

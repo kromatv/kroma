@@ -1,10 +1,18 @@
-import { radius as cornerRadius, typeSpec as textRoles } from '@kromatv/ui/kit';
 // Overlays that sit above the video independently of the player controls.
 
 import type { MediaItem } from '@kromatv/client/media';
 import { sizedImageUrl } from '@kromatv/core';
 import { type SubtitleAppearance, withOpacity } from '@kromatv/ui';
-import { Box, Button, Icon, Spinner, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  radius as cornerRadius,
+  Icon,
+  Spinner,
+  styles,
+  Text,
+  typeSpec as textRoles,
+} from '@kromatv/ui/kit';
 import { Platform, Pressable, type TextStyle } from 'react-native';
 import { FadeImage } from '#mobile/components/FadeImage';
 import { useT } from '#mobile/lib/i18n';

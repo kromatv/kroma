@@ -89,10 +89,8 @@ vi.mock('expo-file-system', () => {
 const setSessionStorage = vi.hoisted(() => vi.fn());
 vi.mock('@kromatv/client', () => ({ setSessionStorage }));
 
-// The store is a module-scope singleton - one per process, as one launch has -
-// so each case re-imports the module. Without that, a key written by an earlier
-// test is still in memory for the next, and "starts empty" passes or fails on
-// whatever ran before it.
+// A new launch boots its own store; module reload also resets the mocked
+// platform installation used by these filesystem scenarios.
 async function launch(): Promise<void> {
   vi.resetModules();
   const { hydrateSessionStorage } = await import('./storage');
@@ -301,5 +299,23 @@ describe('writing', () => {
       '[kroma] session store write failed:',
       expect.any(Error),
     );
+  });
+});
+
+describe('bootstrap ownership', () => {
+  it('keeps each bootstrap’s memory and file target attached to its own store', async () => {
+    const { hydrateSessionStorage } = await import('./storage');
+    await hydrateSessionStorage();
+    const first = store();
+    first.setItem('first', 'document');
+    fs.refusing.add('/documents');
+    await hydrateSessionStorage();
+    const second = store();
+    expect(second).not.toBe(first);
+    expect(second.getItem('first')).toBeNull();
+    second.setItem('second', 'cache');
+    first.setItem('first', 'still-document');
+    expect(onDisk(DOC)).toEqual({ first: 'still-document' });
+    expect(onDisk(CACHE)).toEqual({ second: 'cache' });
   });
 });

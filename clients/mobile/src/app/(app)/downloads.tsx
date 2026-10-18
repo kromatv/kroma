@@ -1,11 +1,10 @@
-import { radius as cornerRadius } from '@kromatv/ui/kit';
 // Offline downloads screen: active downloads show a progress ring, finished
 // ones are swipe-to-delete rows.
 
 import type { MediaItem } from '@kromatv/client/media';
 import { episodeTag, formatRuntime } from '@kromatv/core';
 import { useFormat } from '@kromatv/ui';
-import { Box, type ColorValue, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, type ColorValue, radius as cornerRadius, Icon, styles, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';

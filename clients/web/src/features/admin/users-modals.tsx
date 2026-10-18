@@ -14,7 +14,6 @@ import {
   Button,
   Callout,
   ChoiceList,
-  confirm,
   Dialog,
   Field,
   Icon,
@@ -23,6 +22,7 @@ import {
   Row,
   styles,
   Text,
+  useConfirm,
 } from '@kromatv/ui/kit';
 import { useCallback, useState } from 'react';
 import { createCallable } from 'react-call';
@@ -225,6 +225,7 @@ function usePermissionSet(
  * access recovery, with a guarded delete). Resolves `true` when the user was
  * saved or deleted (the caller refreshes), `false` on dismiss. */
 export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ call, user }) => {
+  const confirm = useConfirm();
   const t = useT();
   const { client, user: me } = useAuth();
   const [name, setName] = useState(user.username);

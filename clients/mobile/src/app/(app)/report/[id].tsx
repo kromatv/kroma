@@ -1,10 +1,18 @@
-import { radius as cornerRadius, typeSpec as textRoles } from '@kromatv/ui/kit';
 // Report a problem on a title (film / series / episode): pick a category,
 // optionally describe, send. Mirrors the web client's "Signaler un probleme"
 // flow (POST /api/reports).
 
 import type { ReportCategory, ReportSubjectKind } from '@kromatv/client/reports';
-import { Box, Button, Field, Icon, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  radius as cornerRadius,
+  Field,
+  Icon,
+  styles,
+  Text,
+  typeSpec as textRoles,
+} from '@kromatv/ui/kit';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView } from 'react-native';

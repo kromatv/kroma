@@ -1,4 +1,3 @@
-import { radius as cornerRadius, typeSpec as textRoles } from '@kromatv/ui/kit';
 // Connect a device: two roads to the same place, and the reader picks which.
 //
 // - `network` (<NearbyTvs>): the televisions waiting on this network, one tap
@@ -20,7 +19,15 @@ import { radius as cornerRadius, typeSpec as textRoles } from '@kromatv/ui/kit';
 // The same televisions also appear in the cast picker (<CastDeviceList>), which
 // is where somebody already choosing a screen will look for them.
 
-import { Box, Icon, SegmentGroup, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  Icon,
+  SegmentGroup,
+  styles,
+  Text,
+  typeSpec as textRoles,
+} from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { NearbyTvs } from '#mobile/components/connect/NearbyTvs';
 import { ScanCode } from '#mobile/components/connect/ScanCode';

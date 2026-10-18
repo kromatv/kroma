@@ -271,14 +271,15 @@ export function TvOutlet() {
       ))}
       <Suspense fallback={<Box fill bg="bg" />}>
         <FocusScope key={scopeKey} entryKey={key}>
-          {inScope.map((layer) => (
-            <layer.render key={layer.routes[0]} />
-          ))}
-          <Screen key={key} />
-          {/* Inside the scope, because that is what a dialog needs to take the
+          <ConfirmHost>
+            {inScope.map((layer) => (
+              <layer.render key={layer.routes[0]} />
+            ))}
+            <Screen key={key} />
+            {/* Inside the scope, because that is what a dialog needs to take the
               remote: outside one, `useLockFocusBehind` is a documented no-op and
               the panel's own buttons never register with a navigator. */}
-          <ConfirmHost />
+          </ConfirmHost>
         </FocusScope>
       </Suspense>
       {/* Outside the scope on purpose: the remote must not be able to land on it. */}

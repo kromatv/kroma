@@ -1,4 +1,3 @@
-import { typeSpec as textRoles } from '@kromatv/ui/kit';
 // Shared scaffold for the onboarding/login surfaces. The lockup is the one
 // anchor: same size and position on every phase, with content swapping beneath.
 
@@ -10,6 +9,7 @@ import {
   type SplashCover,
   styles,
   Text,
+  typeSpec as textRoles,
 } from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';

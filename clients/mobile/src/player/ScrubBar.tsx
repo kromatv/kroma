@@ -1,11 +1,10 @@
-import { typeSpec as textRoles } from '@kromatv/ui/kit';
 // Touch scrub bar: buffered + played fills, drag preview with a storyboard
 // thumbnail + time bubble, drawn from the kit's seek-bar paints so it matches
 // the TV seek bar.
 
 import { seekBar } from '@kromatv/ui';
 import { formatTimecode } from '@kromatv/ui/intl';
-import { Box, styles, Text } from '@kromatv/ui/kit';
+import { Box, styles, Text, typeSpec as textRoles } from '@kromatv/ui/kit';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';

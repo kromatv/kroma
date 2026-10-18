@@ -27,6 +27,13 @@ import { TvApp } from '@kromatv/tv';
 <TvApp />
 ```
 
+Native shells pass search capabilities directly as
+`<TvApp voiceSearch={nativeVoiceSearch} searchShell={nativeSearchShell} />`.
+Both props are optional; missing or unavailable backends retain the on-screen
+keyboard and hide the microphone. Each mounted app owns these providers; the
+former `setVoiceSearchBackend` and `setSearchShell` registrations are removed.
+
+
 `react` / `react-dom` are peer dependencies (≥ 19.2). Built on
 [`@kromatv/core`](../core/README.md) (API, capabilities, remote map) and
 [`@kromatv/ui`](../ui/README.md) (components, tokens).

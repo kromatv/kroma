@@ -1,11 +1,10 @@
-import { typeSpec as textRoles } from '@kromatv/ui/kit';
 // The bottom hint strip shared by Home and the browse grids: three short remote
 // hints over a gradient that fades into the page. Purely decorative, so it never
 // takes pointer events and never joins the focus set.
 
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Box, gradient, Hint, shade, styles, Text } from '@kromatv/ui/kit';
+import { Box, gradient, Hint, shade, styles, Text, typeSpec as textRoles } from '@kromatv/ui/kit';
 
 const s = styles({
   hint: { fontSize: textRoles.meta.size, fontWeight: '600' },

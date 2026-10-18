@@ -1,10 +1,17 @@
-import { radius as cornerRadius, typeSpec as textRoles } from '@kromatv/ui/kit';
 // Shows a suggested list while the query is empty; debounced results render
 // as a poster grid.
 
 import type { MediaItem } from '@kromatv/client/media';
 import { sizedImageUrl } from '@kromatv/core';
-import { Box, Field, Icon, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  Field,
+  Icon,
+  styles,
+  Text,
+  typeSpec as textRoles,
+} from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';

@@ -1,4 +1,3 @@
-import { radius as cornerRadius } from '@kromatv/ui/kit';
 // The notification centre on the phone: what happened while you were away,
 // styled after the browser's list. The list is live (server push, see
 // lib/notifications) and swipe-to-delete, matching Downloads. Approve/Deny
@@ -7,7 +6,16 @@ import { radius as cornerRadius } from '@kromatv/ui/kit';
 
 import type { Notification, NotificationEvent } from '@kromatv/client/notifications';
 import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kromatv/core';
-import { Box, color, Icon, IconButton, type IconName, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  color,
+  radius as cornerRadius,
+  Icon,
+  IconButton,
+  type IconName,
+  styles,
+  Text,
+} from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, SectionList } from 'react-native';

@@ -1,4 +1,3 @@
-import { radius as cornerRadius } from '@kromatv/ui/kit';
 // The device list itself: which screen should this play on.
 //
 // Shared between the bottom sheet (<CastSheet>) and the player's own panel
@@ -15,7 +14,7 @@ import {
   grantRefusal,
 } from '@kromatv/core';
 import { useCast } from '@kromatv/ui';
-import { Badge, Box, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Badge, Box, radius as cornerRadius, Icon, styles, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable } from 'react-native';

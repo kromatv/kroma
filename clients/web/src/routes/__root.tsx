@@ -81,25 +81,27 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       </head>
       <body>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <WatchedProvider>
-              <MyListProvider>
-                <LocaleProvider>
-                  <NavActionsProvider actions={<NotificationBell />}>
-                    <ModuleHostProvider>{children}</ModuleHostProvider>
-                  </NavActionsProvider>
-                </LocaleProvider>
-              </MyListProvider>
-            </WatchedProvider>
-          </AuthProvider>
-          <Intro />
-          <ConfirmHost />
-          <div className={classes(s.toasts)}>
-            <Toaster position="bottom-center" inset={{ x: 16, y: 24 }} />
-          </div>
-          <Suspense fallback={null}>
-            <ReactQueryDevtools buttonPosition="bottom-left" />
-          </Suspense>
+          <ConfirmHost>
+            <AuthProvider>
+              <WatchedProvider>
+                <MyListProvider>
+                  <LocaleProvider>
+                    <NavActionsProvider actions={<NotificationBell />}>
+                      <ModuleHostProvider>{children}</ModuleHostProvider>
+                    </NavActionsProvider>
+                  </LocaleProvider>
+                </MyListProvider>
+              </WatchedProvider>
+            </AuthProvider>
+            <Intro />
+
+            <div className={classes(s.toasts)}>
+              <Toaster position="bottom-center" inset={{ x: 16, y: 24 }} />
+            </div>
+            <Suspense fallback={null}>
+              <ReactQueryDevtools buttonPosition="bottom-left" />
+            </Suspense>
+          </ConfirmHost>
         </QueryClientProvider>
         <Scripts />
       </body>

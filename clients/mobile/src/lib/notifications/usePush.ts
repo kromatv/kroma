@@ -4,7 +4,7 @@
 
 import type * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { deviceLabel } from '#mobile/lib/device';
 import { useT } from '#mobile/lib/i18n';
 import { useSession } from '#mobile/lib/session';
@@ -71,13 +71,10 @@ export function usePushGrantRefresh(): void {
   }, [signedIn, client]);
 }
 
-// Module scope on purpose: must outlive the effect (which re-runs on a profile
-// switch) and die only with the JS context.
-let coldStartConsumed = false;
-
 /** Routes taps on pushes, covering both a live tap and the tap that
  * cold-started the app. */
 export function usePushTaps(): void {
+  const coldStartConsumed = useRef(false);
   const { status, client } = useSession();
   const router = useRouter();
   const signedIn = status === 'signedIn';
@@ -112,10 +109,19 @@ export function usePushTaps(): void {
       // `getLastNotificationResponse` is STICKY for the life of the JS context,
       // and this effect re-runs on a profile switch; without this guard the
       // launch tap would replay under the new account.
-      if (!coldStartConsumed) {
-        coldStartConsumed = true;
+      if (!coldStartConsumed.current) {
+        coldStartConsumed.current = true;
         const initial = push.getLastNotificationResponse();
-        if (initial && !cancelled) await go(initial);
+        if (initial && !cancelled) {
+          // Consume the native response as well: a root remount must not replay
+          // an action under a different account.
+          try {
+            push.clearLastNotificationResponse();
+          } catch {
+            // Older native binaries may not expose the clearing capability.
+          }
+          await go(initial);
+        }
       }
       if (cancelled) return;
 

@@ -1,11 +1,10 @@
-import { typeSpec as textRoles } from '@kromatv/ui/kit';
 // Series detail: hero, up-next play block, season picker, episode list. Tap an
 // episode to play; long-press for its detail page. Row components live in
 // components/showEpisodes.tsx.
 
 import { ShowId } from '@kromatv/client/media';
 import { sizedImageUrl } from '@kromatv/core';
-import { Box, Button, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, styles, Text, typeSpec as textRoles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';

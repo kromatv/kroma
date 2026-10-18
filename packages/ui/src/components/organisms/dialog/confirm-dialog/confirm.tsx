@@ -1,8 +1,15 @@
-// The imperative confirm, the same shape as `toast()`: one <ConfirmHost/> is
-// mounted by the shell, and anything, anywhere, awaits `confirm(...)` for a
-// boolean - no open-state at the call site, no one-off confirm modals.
+// A confirmation queue belongs to the app root that draws its dialogs. Screens
+// ask through useConfirm(), so two roots never send questions to each other.
 
-import { useEffect, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { ConfirmDialog } from './confirm-dialog';
 
 export interface ConfirmOptions {
@@ -18,49 +25,59 @@ interface Ask extends ConfirmOptions {
   resolve: (answer: boolean) => void;
 }
 
-let accept: ((ask: Ask) => void) | null = null;
+type Confirm = (options: Readonly<ConfirmOptions>) => Promise<boolean>;
+const Context = createContext<Confirm>(() => Promise.resolve(false));
 
-/**
- * Ask a yes/no question. Resolves `true` on confirm, `false` when dismissed -
- * and immediately `false` when no <ConfirmHost/> is mounted, so a shell that
- * has not opted in fails closed instead of hanging the caller forever.
- */
-export function confirm(options: Readonly<ConfirmOptions>): Promise<boolean> {
-  const take = accept;
-  if (!take) return Promise.resolve(false);
-  return new Promise((resolve) => take({ ...options, resolve }));
+/** Ask this root a yes/no question; fail closed without a host. */
+export function useConfirm(): Confirm {
+  return useContext(Context);
 }
 
-/** Mount once, near the root. Draws whatever `confirm()` asks, one at a time. */
-export function ConfirmHost() {
+/** Wrap the app/screens whose questions this host owns. */
+export function ConfirmHost({ children }: Readonly<{ children?: ReactNode }>) {
   const [queue, setQueue] = useState<Ask[]>([]);
+  const pending = useRef(new Set<(answer: boolean) => void>());
+  const confirm = useCallback<Confirm>(
+    (options) =>
+      new Promise((resolve) => {
+        pending.current.add(resolve);
+        setQueue((queue) => [...queue, { ...options, resolve }]);
+      }),
+    [],
+  );
 
   useEffect(() => {
-    accept = (ask) => setQueue((pending) => [...pending, ask]);
+    const requests = pending.current;
     return () => {
-      accept = null;
+      for (const resolve of requests) resolve(false);
+      requests.clear();
     };
   }, []);
 
   const current = queue[0];
-  if (!current) return null;
-
   const answer = (value: boolean) => {
+    if (!current) return;
+    pending.current.delete(current.resolve);
     current.resolve(value);
-    setQueue((pending) => pending.slice(1));
+    setQueue((queue) => queue.slice(1));
   };
 
   return (
-    <ConfirmDialog
-      open
-      width="sm"
-      title={current.title}
-      description={current.message}
-      confirmLabel={current.confirmLabel}
-      cancelLabel={current.cancelLabel}
-      destructive={current.destructive}
-      onClose={() => answer(false)}
-      onConfirm={() => answer(true)}
-    />
+    <Context.Provider value={confirm}>
+      {children}
+      {current ? (
+        <ConfirmDialog
+          open
+          width="sm"
+          title={current.title}
+          description={current.message}
+          confirmLabel={current.confirmLabel}
+          cancelLabel={current.cancelLabel}
+          destructive={current.destructive}
+          onClose={() => answer(false)}
+          onConfirm={() => answer(true)}
+        />
+      ) : null}
+    </Context.Provider>
   );
 }

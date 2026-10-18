@@ -16,6 +16,15 @@ desktop shell and the web client.
 That is the whole point. The components and the tokens exist once. A rail tile
 looks the same on a Samsung panel and on an Apple TV because it *is* the same tile.
 
+## Confirmation ownership
+
+Wrap the app or persistent screen scope with `<ConfirmHost>{children}</ConfirmHost>`.
+A component or hook obtains its confirmation function with `const confirm = useConfirm()`
+from `@kromatv/ui/kit`, then awaits `confirm({ title, confirmLabel, cancelLabel })`.
+Each host owns its queue. Dismissal, missing hosts, and host teardown resolve to
+`false`; unmounting one root does not affect another root's questions. The former
+module-level `confirm` export is replaced by `useConfirm`.
+
 ```
 src/
   core/                     the styling engine: the vocabulary, `sv`, themes (see "Styling")

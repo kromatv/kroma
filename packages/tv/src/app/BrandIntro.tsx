@@ -25,10 +25,6 @@ const AUDIO_FADE_STEPS = 8;
 // finding the remote, not a request to navigate a screen it can't see.
 const SKIP_EVENTS = new Set(['select', 'longSelect', 'playPause', 'play', 'pause', 'menu', 'back']);
 
-// Module scope so the intro plays once per launch, not once per mount (a fast
-// refresh must not replay it), and outlives every remount.
-let introSeen = false;
-
 // `useTVEventHandler` exists only on the tvOS RN fork; bound once at module
 // scope so the hook count never changes between builds.
 const HAS_TV_EVENTS = typeof useTVEventHandler === 'function';
@@ -36,10 +32,11 @@ const useRemoteEvents: (handler: (event: HWEvent) => void) => void = HAS_TV_EVEN
   ? useTVEventHandler
   : () => {};
 
+// Mounted above the router by TvApp, so screen changes retain its state and
+// independent app mounts each own their launch animation.
 export function BrandIntro({ videoSrc }: Readonly<BrandIntroProps>) {
-  const [done, setDone] = useState(introSeen);
+  const [done, setDone] = useState(false);
   const finish = useCallback(() => {
-    introSeen = true;
     setDone(true);
   }, []);
   if (done) return null;

@@ -1,4 +1,3 @@
-import { radius as cornerRadius } from '@kromatv/ui/kit';
 // Poster + continue-watching cards and the horizontal media rail. Cards are
 // pure presentation; navigation targets are resolved by the small helpers at
 // the top so every screen routes titles the same way.
@@ -6,7 +5,14 @@ import { radius as cornerRadius } from '@kromatv/ui/kit';
 import type { KromaClient } from '@kromatv/client';
 import type { ContinueItem, MediaItem, SectionItem, Show } from '@kromatv/client/media';
 import { episodeTag, sizedImageUrl } from '@kromatv/core';
-import { Box, styles, Text, VirtualRail, WatchedBadge } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  styles,
+  Text,
+  VirtualRail,
+  WatchedBadge,
+} from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';

@@ -9,7 +9,7 @@
 // the results grid stays ours, rendered as its children in whatever room it
 // says it has left. Registering nothing keeps the on-screen keyboard.
 
-import type { ComponentType, ReactNode } from 'react';
+import { type ComponentType, createContext, type ReactNode, useContext } from 'react';
 
 export interface SearchShellProps {
   value: string;
@@ -23,16 +23,17 @@ export interface SearchShell {
   Shell: ComponentType<SearchShellProps>;
 }
 
-let current: SearchShell | null = null;
+const Context = createContext<SearchShell | null>(null);
+export const SearchShellProvider = Context.Provider;
 
-/** Call once at the app root, before the first render; null removes it. */
-export function setSearchShell(shell: SearchShell | null): void {
-  current = shell;
+/** Read the capability injected by this app root. */
+export function useSearchShell(): SearchShell | null {
+  return searchShell(useContext(Context));
 }
 
 /** Null when unregistered or its probe reports unavailable; a throwing probe
  * also counts as unavailable rather than taking the search screen down. */
-export function searchShell(): SearchShell | null {
+export function searchShell(current: SearchShell | null = null): SearchShell | null {
   if (!current) return null;
   try {
     return current.available() ? current : null;

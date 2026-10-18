@@ -1,4 +1,3 @@
-import { fontSizes as textSizes } from '@kromatv/ui/kit';
 // Notification settings: push on THIS device, and the per-category matrix for
 // the account. A push subscription belongs to one device; the categories
 // travel with the account.
@@ -11,7 +10,7 @@ import {
   type PushBlocker,
 } from '@kromatv/client/notifications';
 import { blockerOf, NOTIFICATION_CATEGORY_LABEL, PUSH_BLOCKER_LABEL } from '@kromatv/core';
-import { Box, color, Switch, styles, Text } from '@kromatv/ui/kit';
+import { Box, color, Switch, styles, Text, fontSizes as textSizes } from '@kromatv/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView } from 'react-native';

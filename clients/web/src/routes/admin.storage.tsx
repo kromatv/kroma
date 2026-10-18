@@ -3,7 +3,6 @@ import { useFormat, useT } from '@kromatv/ui';
 import {
   Box,
   Button,
-  confirm,
   EmptyState,
   Grid,
   Icon,
@@ -15,6 +14,7 @@ import {
   Surface,
   styles,
   Text,
+  useConfirm,
 } from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -26,6 +26,7 @@ export const Route = createFileRoute('/admin/storage')({
 });
 
 function StoragePage() {
+  const confirm = useConfirm();
   const t = useT();
   const fmt = useFormat();
   const { client } = useAuth();

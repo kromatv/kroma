@@ -26,8 +26,8 @@ import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav } from '#tv/app/router';
 import { onSearchRequest, takePendingSearch } from '#tv/app/searchRequest';
-import { searchShell } from '#tv/app/searchShell';
-import { voiceSearchBackend } from '#tv/app/voiceSearch';
+import { useSearchShell } from '#tv/app/searchShell';
+import { useVoiceSearchBackend } from '#tv/app/voiceSearch';
 import { addRecentSearch, getRecentSearches } from '#tv/features/catalog/searchHistory';
 import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
 import type { SearchResult, SearchSection } from '#tv/features/catalog/TvSearchResults';
@@ -57,11 +57,11 @@ export function TvSearch() {
   const hold = titleMenu.open;
   // Null on every shell that cannot hear (the browser TVs today, an Android TV
   // whose recogniser is missing): then no mic is shown at all.
-  const voice = voiceSearchBackend();
+  const voice = useVoiceSearchBackend();
   const [speaking, setSpeaking] = useState(false);
   const stopSpeaking = useCallback(() => setSpeaking(false), []);
   // Null on every shell that types on our keyboard, which is all but Apple TV.
-  const shell = searchShell();
+  const shell = useSearchShell();
 
   // Asking Siri again while the screen is already open re-targets it rather than
   // reopening it, so the second request is not silently dropped.

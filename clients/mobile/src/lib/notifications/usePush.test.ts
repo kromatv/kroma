@@ -30,6 +30,7 @@ vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
 const notifications = vi.hoisted(() => ({
   setNotificationHandler: vi.fn(),
   getLastNotificationResponse: vi.fn(() => null as unknown),
+  clearLastNotificationResponse: vi.fn(),
   addNotificationResponseReceivedListener: vi.fn(() => ({ remove: vi.fn() })),
 }));
 const native = vi.hoisted(() => ({ module: null as unknown }));
@@ -52,14 +53,17 @@ const { usePushGrantRefresh, usePushLabels, usePushTaps } = await import('./useP
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
-// A fresh module instance, i.e. a fresh launch: the cold-start latch lives for
-// the life of the JS context, so tests about it must not share one.
+// A fresh hook module stands in for a cold launch. The native response is
+// consumed by the notification API, independently of the hook lifetime.
 async function freshLaunch(): Promise<typeof usePushTaps> {
   vi.resetModules();
   return (await import('./usePush')).usePushTaps;
 }
 
 beforeEach(() => {
+  notifications.clearLastNotificationResponse.mockImplementation(() => {
+    notifications.getLastNotificationResponse.mockReturnValue(null);
+  });
   session.status = 'signedIn';
   native.module = notifications;
   translator.current = (key: string) => key;

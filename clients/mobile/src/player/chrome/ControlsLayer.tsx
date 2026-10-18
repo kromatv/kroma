@@ -1,4 +1,3 @@
-import { typeSpec as textRoles, fontSizes as textSizes } from '@kromatv/ui/kit';
 // The controls themselves: scrims, title bar, transport row and the scrub bar
 // with its actions. Mounted only while controls are up; every press pokes the
 // auto-hide timer, and a finger on the controls or a scrub in flight holds it off.
@@ -23,6 +22,8 @@ import {
   shade,
   styles,
   Text,
+  typeSpec as textRoles,
+  fontSizes as textSizes,
 } from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, View } from 'react-native';

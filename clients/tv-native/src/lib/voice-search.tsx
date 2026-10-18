@@ -6,20 +6,17 @@ import { useEffect, useRef } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
 import { VoiceSearch } from '../../modules/voice-search';
 
-// Cached: the search screen probes on every render, and the answer cannot change
-// while the app runs.
-let recogniserReady: boolean | null = null;
-
+// The native module is fixed for this build; probe Android once rather than
+// keeping a mutable render-time cache shared between app mounts.
 function recogniserAvailable(): boolean {
-  if (recogniserReady === null) {
-    try {
-      recogniserReady = VoiceSearch?.isAvailable() ?? false;
-    } catch {
-      recogniserReady = false;
-    }
+  try {
+    return VoiceSearch?.isAvailable() ?? false;
+  } catch {
+    return false;
   }
-  return recogniserReady;
 }
+
+const RECOGNISER_READY = Platform.OS === 'android' && recogniserAvailable();
 
 function ListenSession({ onText, onDone, locale }: Readonly<VoiceSessionProps>) {
   // The screen re-renders on every partial result, which would otherwise tear
@@ -78,7 +75,7 @@ function ListenSession({ onText, onDone, locale }: Readonly<VoiceSessionProps>) 
 }
 
 const androidVoiceSearch: VoiceSearchBackend = {
-  available: recogniserAvailable,
+  available: () => RECOGNISER_READY,
   Session: ListenSession,
 };
 
