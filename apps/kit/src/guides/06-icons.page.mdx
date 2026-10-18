@@ -79,8 +79,8 @@ outline.
 ## Where the tags come from
 
 The catalogue is `@tabler/icons`' `icons.json`, read at BUILD time by
-`kromaIconCatalog()` (`@kromatv/ui/vite/icon-catalog`) and registered with the kit
-through `setIconCatalogLoader()`. Only a workbench adds that plugin. It is a
+`kromaIconCatalog()` (`@kromatv/ui/vite/icon-catalog`) and passed to the workbench root
+through `createIconLibrary({ loadCatalog, loadGlyphs })` and `IconLibraryProvider`. Only a workbench adds that plugin. It is a
 megabyte of metadata for one page, and no product bundle should carry it, least of
 all a television's. Where it is absent the box searches names alone and the
 category picker does not appear, which is what the kit's own phone and TV builds

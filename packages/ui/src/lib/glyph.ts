@@ -8,7 +8,7 @@ import { CSS_FADED } from '#ui/core/tokens/css-palette';
 import { type Glyph, glyphFor, type IconName } from '#ui/lib/icons/glyphs';
 
 export type { Glyph, GlyphExports, IconName } from '#ui/lib/icons/glyphs';
-export { addGlyphs, hasGlyph, iconNames } from '#ui/lib/icons/glyphs';
+export { hasGlyph, iconNames } from '#ui/lib/icons/glyphs';
 
 export interface IconProps {
   name: IconName;
@@ -56,15 +56,18 @@ function paintFor(authored: string): Paint {
   return paints(authored, () => cascadePaint(authored) ?? splitAlpha(resolveColor(authored)));
 }
 
-export function resolveIcon({
-  name,
-  size = DEFAULT_ICON_SIZE,
-  color = 'text',
-  thickness = DEFAULT_ICON_THICKNESS,
-}: Readonly<IconProps>): ResolvedIcon {
+export function resolveIcon(
+  {
+    name,
+    size = DEFAULT_ICON_SIZE,
+    color = 'text',
+    thickness = DEFAULT_ICON_THICKNESS,
+  }: Readonly<IconProps>,
+  lookup: (name: string) => Glyph = glyphFor,
+): ResolvedIcon {
   const paint = paintFor(color);
   return {
-    Glyph: glyphFor(name),
+    Glyph: lookup(name),
     size,
     color: paint.color,
     opacity: paint.opacity,

@@ -673,3 +673,9 @@ Two things worth knowing when writing them:
 - [`@kromatv/core`](../core/README.md) the types and logic these components render
 - [`@kromatv/tv`](../tv/README.md) the 10-foot experience composed from these
 - [`src/components/DESIGN.md`](src/components/DESIGN.md) how a component's API is shaped
+
+Optional icon libraries belong to an app root: create `createIconLibrary(...)`
+with `useState` and wrap that root in `IconLibraryProvider`. Pass `glyphs` for
+extra components or `loadCatalog` for a workbench's lazy metadata. These replace
+`addGlyphs`, `setIconCatalog`, and `setIconCatalogLoader`; products use immutable
+build-subset lookups. See the [icon guide](src/lib/icons/README.md).

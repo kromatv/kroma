@@ -19,34 +19,35 @@ function flatten(name: string): string {
   return name.replaceAll('-', '');
 }
 
-let index = new Map<string, IconEntry>();
-let categories: string[] = [];
-
-/** Loads the catalogue the icon browser reads. A workbench calls this once at
- * startup; everywhere else it is never called and every lookup answers `null`. */
-function setIconCatalog(catalog: IconCatalog): void {
-  index = new Map(Object.entries(catalog).map(([name, entry]) => [flatten(name), entry]));
-  categories = [...new Set(Object.values(catalog).map((entry) => entry.category))].sort((a, b) =>
-    a.localeCompare(b),
+/** Immutable metadata lookup owned by the library that loaded it. */
+function createIconCatalog(catalog: IconCatalog) {
+  const index = new Map(Object.entries(catalog).map(([name, entry]) => [flatten(name), entry]));
+  const categories = Object.freeze(
+    [...new Set(Object.values(catalog).map((entry) => entry.category))].sort((a, b) =>
+      a.localeCompare(b),
+    ),
   );
-}
+  /** Tabler's entry for a glyph. A `-filled` variant inherits its base glyph's
+   * entry, since the catalogue lists only the outline. `null` when the catalogue
+   * is not loaded, or for the few names Tabler has since renamed. */
+  function iconEntry(name: string): IconEntry | null {
+    const flat = flatten(name);
+    const hit = index.get(flat);
+    if (hit) return hit;
+    if (!flat.endsWith(FILLED)) return null;
+    return index.get(flat.slice(0, -FILLED.length)) ?? null;
+  }
 
-/** Tabler's entry for a glyph. A `-filled` variant inherits its base glyph's
- * entry, since the catalogue lists only the outline. `null` when the catalogue
- * is not loaded, or for the few names Tabler has since renamed. */
-function iconEntry(name: string): IconEntry | null {
-  const flat = flatten(name);
-  const hit = index.get(flat);
-  if (hit) return hit;
-  if (!flat.endsWith(FILLED)) return null;
-  return index.get(flat.slice(0, -FILLED.length)) ?? null;
-}
+  /** Every category in the catalogue, sorted. Empty when it is not loaded, which
+   * is what a caller checks to know whether to offer the filter at all. */
+  function iconCategories(): readonly string[] {
+    return categories;
+  }
 
-/** Every category in the catalogue, sorted. Empty when it is not loaded, which
- * is what a caller checks to know whether to offer the filter at all. */
-function iconCategories(): readonly string[] {
-  return categories;
+  return Object.freeze({ iconEntry, iconCategories });
 }
+const EMPTY_ICON_CATALOG = createIconCatalog({});
+type IconCatalogIndex = ReturnType<typeof createIconCatalog>;
 
-export type { IconCatalog, IconEntry };
-export { iconCategories, iconEntry, setIconCatalog };
+export type { IconCatalog, IconCatalogIndex, IconEntry };
+export { createIconCatalog, EMPTY_ICON_CATALOG };

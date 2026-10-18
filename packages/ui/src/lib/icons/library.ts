@@ -1,70 +1,104 @@
-// What the icon browser needs and a product never does: all of Tabler, and
-// Tabler's own metadata about it. Both arrive after the app has started, so the
-// chunk it starts from carries neither.
+// Optional workbench assets belong to its root; products keep their build subset.
+import {
+  createContext,
+  createElement,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useSyncExternalStore,
+} from 'react';
+import { createIconCatalog, EMPTY_ICON_CATALOG, type IconCatalog } from '#ui/lib/icon-catalog';
+import { BUILTIN_GLYPHS, createGlyphSet, type GlyphExports, RAW } from './glyphs';
 
-import { useEffect, useState } from 'react';
-import { type IconCatalog, setIconCatalog } from '#ui/lib/icon-catalog';
-import { everyGlyph } from './every-glyph';
-import { addGlyphs } from './glyphs';
-
-/** Fetches Tabler's categories and tags. Only a workbench has them: they are
- * read at build time by `kromaIconCatalog()` (`@kromatv/ui/vite/icon-catalog`). */
 type IconCatalogLoader = () => Promise<IconCatalog>;
-
-let fetchCatalog: IconCatalogLoader | null = null;
-let fetching: Promise<void> | null = null;
-let loaded = false;
-
-/** Registers the catalogue, without reading it: a workbench calls this once at
- * startup and the fetch waits for the page that searches by meaning. */
-function setIconCatalogLoader(loader: IconCatalogLoader): void {
-  fetchCatalog = loader;
-  fetching = null;
-  loaded = false;
+interface IconLibraryOptions {
+  glyphs?: GlyphExports;
+  catalog?: IconCatalog;
+  loadCatalog?: IconCatalogLoader | null;
+  loadGlyphs?: (() => Promise<GlyphExports>) | null;
 }
-
-/** Whether every glyph this target can draw is drawable now. True wherever
- * there is nothing left to fetch, which is every product build. */
-function iconLibraryReady(): boolean {
-  return loaded || (everyGlyph === null && fetchCatalog === null);
-}
-
+const BUILTIN = Object.freeze({ glyphs: BUILTIN_GLYPHS, catalog: EMPTY_ICON_CATALOG, ready: true });
+const subscribeNothing = () => () => {};
+const readBuiltin = () => BUILTIN;
 const ignore = () => undefined;
 
-// Applied as each arrives, not once both have: the two are separate chunks, and
-// half a library beats none of it.
-async function fetchLibrary(): Promise<void> {
-  await Promise.all([
-    everyGlyph?.().then(addGlyphs).catch(ignore),
-    fetchCatalog?.().then(setIconCatalog).catch(ignore),
-  ]);
-  loaded = true;
-}
-
-/** Widens the drawable set to all of Tabler and loads the catalogue, once per
- * session. Never rejects: a chunk that fails to arrive leaves the glyphs the
- * build kept, which is a smaller gallery rather than a page that never opens. */
-function loadIconLibrary(): Promise<void> {
-  if (iconLibraryReady()) return Promise.resolve();
-  fetching ??= fetchLibrary();
-  return fetching;
-}
-
-/** The library's arrival, for a page that has to wait for it. The fetch starts
- * on the first render that asks. */
-function useIconLibrary(): boolean {
-  const [ready, setReady] = useState(iconLibraryReady);
-  useEffect(() => {
-    let live = true;
-    void loadIconLibrary().then(() => {
-      if (live) setReady(true);
-    });
+export function createIconLibrary({
+  glyphs,
+  catalog,
+  loadCatalog = null,
+  loadGlyphs = null,
+}: IconLibraryOptions = {}) {
+  let current = {
+    glyphs: glyphs ? createGlyphSet({ ...RAW, ...glyphs }) : BUILTIN_GLYPHS,
+    catalog: catalog ? createIconCatalog(catalog) : EMPTY_ICON_CATALOG,
+    ready: loadCatalog === null && loadGlyphs === null,
+  };
+  let fetching: Promise<void> | null = null;
+  const listeners = new Set<() => void>();
+  const read = () => current;
+  const subscribe = (listener: () => void) => {
+    listeners.add(listener);
     return () => {
-      live = false;
+      listeners.delete(listener);
     };
-  }, []);
+  };
+  const notify = () => {
+    for (const listener of listeners) listener();
+  };
+  const load = () => {
+    if (current.ready) return Promise.resolve();
+    fetching ??= Promise.all([
+      loadGlyphs
+        ? Promise.resolve()
+            .then(loadGlyphs)
+            .then((more) => {
+              current = { ...current, glyphs: createGlyphSet({ ...RAW, ...glyphs, ...more }) };
+              notify();
+            })
+            .catch(ignore)
+        : undefined,
+      loadCatalog
+        ? Promise.resolve()
+            .then(loadCatalog)
+            .then((more) => {
+              current = { ...current, catalog: createIconCatalog(more) };
+              notify();
+            })
+            .catch(ignore)
+        : undefined,
+    ]).then(() => {
+      current = { ...current, ready: true };
+      notify();
+    });
+    return fetching;
+  };
+  return { read, subscribe, load };
+}
+export type IconLibrary = ReturnType<typeof createIconLibrary>;
+const Context = createContext<IconLibrary | null>(null);
+export function IconLibraryProvider({
+  library,
+  children,
+}: {
+  library: IconLibrary;
+  children: ReactNode;
+}) {
+  return createElement(Context.Provider, { value: library }, children);
+}
+export function useIconAssets() {
+  const library = useContext(Context);
+  return useSyncExternalStore(
+    library?.subscribe ?? subscribeNothing,
+    library?.read ?? readBuiltin,
+    library?.read ?? readBuiltin,
+  );
+}
+export function useIconLibrary(): boolean {
+  const library = useContext(Context);
+  const { ready } = useIconAssets();
+  useEffect(() => {
+    void library?.load();
+  }, [library]);
   return ready;
 }
-
-export type { IconCatalogLoader };
-export { iconLibraryReady, loadIconLibrary, setIconCatalogLoader, useIconLibrary };
+export type { IconCatalogLoader, IconLibraryOptions };

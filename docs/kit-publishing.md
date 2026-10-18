@@ -77,9 +77,13 @@ you need and pay for those alone:
 
 ```tsx
 import { IconHeart } from '@tabler/icons-react';
-import { addGlyphs } from '@kromatv/ui';
+import { createIconLibrary, IconLibraryProvider } from '@kromatv/ui';
+import { useState } from 'react';
 
-addGlyphs({ IconHeart });
+function App() {
+  const [library] = useState(() => createIconLibrary({ glyphs: { IconHeart } }));
+  return <IconLibraryProvider library={library}>{/* your app */}</IconLibraryProvider>;
+}
 ```
 
 `IconName` is derived from a type-only namespace import of Tabler, so it always

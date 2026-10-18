@@ -1,18 +1,28 @@
+import { everyGlyph } from '#ui/lib/icons/every-glyph';
 import '@kromatv/ui/css';
-import { setIconCatalogLoader } from '@kromatv/ui/kit';
-import { StrictMode } from 'react';
+import { createIconLibrary, IconLibraryProvider } from '@kromatv/ui/kit';
+import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Kit } from './config';
 
-// Registered, not read: a megabyte of metadata for one page, so it is a chunk
-// the icons page asks for. Only this entry has it at all - the Metro half of
-// the kit runs on a phone and a television, and never fetches.
-setIconCatalogLoader(async () => (await import('virtual:kroma-icon-catalog')).ICON_CATALOG);
+function Root() {
+  const [library] = useState(() =>
+    createIconLibrary({
+      loadGlyphs: everyGlyph,
+      loadCatalog: async () => (await import('virtual:kroma-icon-catalog')).ICON_CATALOG,
+    }),
+  );
+  return (
+    <IconLibraryProvider library={library}>
+      <Kit />
+    </IconLibraryProvider>
+  );
+}
 
 const el = document.getElementById('root');
 if (!el) throw new Error('KROMA Kit: #root element not found');
 createRoot(el).render(
   <StrictMode>
-    <Kit />
+    <Root />
   </StrictMode>,
 );

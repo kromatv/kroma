@@ -11,6 +11,7 @@
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { classes } from '#ui/lib/classed';
 import { type IconProps, resolveIcon } from '#ui/lib/glyph';
+import { useIconAssets } from '#ui/lib/icons/library';
 import { STROKE_PROP } from '#ui/lib/icons/stroke-prop';
 import { WEB } from '#ui/lib/platform';
 
@@ -39,7 +40,8 @@ function fade(opacity: number | string): ViewStyle {
 }
 
 function Icon(props: Readonly<IconProps>) {
-  const { Glyph, size, color, opacity, thickness } = resolveIcon(props);
+  const { glyphs } = useIconAssets();
+  const { Glyph, size, color, opacity, thickness } = resolveIcon(props, glyphs.glyphFor);
   // Spread rather than a literal prop: the key is decided per platform, and a
   // computed key cannot be written inline without losing the type of the rest.
   const weight = { [STROKE_PROP]: thickness };

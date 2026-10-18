@@ -107,16 +107,20 @@ export { msg, useForm } from './lib/form';
 export { genreIcon } from './lib/genre-icon';
 export type { GlyphExports } from './lib/glyph';
 export {
-  addGlyphs,
   DEFAULT_ICON_SIZE,
   DEFAULT_ICON_THICKNESS,
   hasGlyph,
   iconNames,
 } from './lib/glyph';
-export type { IconCatalog, IconEntry } from './lib/icon-catalog';
-export { iconCategories, iconEntry, setIconCatalog } from './lib/icon-catalog';
-export type { IconCatalogLoader } from './lib/icons/library';
-export { setIconCatalogLoader } from './lib/icons/library';
+export type { IconCatalog, IconCatalogIndex, IconEntry } from './lib/icon-catalog';
+export { createIconCatalog } from './lib/icon-catalog';
+export type { IconCatalogLoader, IconLibrary, IconLibraryOptions } from './lib/icons/library';
+export {
+  createIconLibrary,
+  IconLibraryProvider,
+  useIconAssets,
+  useIconLibrary,
+} from './lib/icons/library';
 export type { ImageBackend, ImageBackendProps } from './lib/image-backend';
 export { imageBackend, reactNativeImage, setImageBackend } from './lib/image-backend';
 export { clearInputHolds, holdInput, inputHeld } from './lib/input-gate';

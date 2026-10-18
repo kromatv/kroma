@@ -1,63 +1,74 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { iconCategories, setIconCatalog } from '#ui/lib/icon-catalog';
-import { hasGlyph, iconNames } from './glyphs';
-import { iconLibraryReady, loadIconLibrary, setIconCatalogLoader } from './library';
+import { describe, expect, it, vi } from 'vitest';
+import { createIconLibrary } from './library';
 
-// One glyph stands in for the chunk the web half fetches: the runner resolves
-// `./every-glyph` to that half, and it would hand back all six thousand.
 const chunk = vi.hoisted<{ glyphs: Record<string, () => null> }>(() => ({
   glyphs: { IconNotShipped: () => null },
 }));
-vi.mock('./every-glyph', () => ({ everyGlyph: async () => chunk.glyphs }));
-
-afterEach(() => {
-  setIconCatalog({});
+const loadGlyphs = async () => chunk.glyphs;
+describe('the root-owned icon library', () => {
+  it('keeps the build subset until the root requests its library', () => {
+    const library = createIconLibrary({ loadGlyphs });
+    expect(library.read().ready).toBe(false);
+    expect(library.read().glyphs.hasGlyph('not-shipped')).toBe(false);
+    expect(library.read().catalog.iconCategories()).toEqual([]);
+  });
+  it('loads glyphs and metadata without changing a different root', async () => {
+    const a = createIconLibrary({
+      loadGlyphs,
+      loadCatalog: async () => ({ trash: { category: 'System', tags: ['delete'] } }),
+    });
+    const b = createIconLibrary({ loadGlyphs });
+    await a.load();
+    expect(a.read().ready).toBe(true);
+    expect(a.read().glyphs.hasGlyph('not-shipped')).toBe(true);
+    expect(a.read().glyphs.iconNames()).toContain('not-shipped');
+    expect(a.read().catalog.iconCategories()).toEqual(['System']);
+    expect(b.read().ready).toBe(false);
+    expect(b.read().glyphs.hasGlyph('not-shipped')).toBe(false);
+    expect(b.read().catalog.iconCategories()).toEqual([]);
+  });
+  it('fetches once per owner, however many consumers ask', async () => {
+    const loadCatalog = vi.fn(async () => ({}));
+    const library = createIconLibrary({ loadGlyphs, loadCatalog });
+    await Promise.all([library.load(), library.load()]);
+    await library.load();
+    expect(loadCatalog).toHaveBeenCalledOnce();
+  });
+  it('keeps the original subset when either chunk fails', async () => {
+    const library = createIconLibrary({
+      loadGlyphs: async () => {
+        throw new Error('missing glyphs');
+      },
+      loadCatalog: async () => {
+        throw new Error('missing metadata');
+      },
+    });
+    await expect(library.load()).resolves.toBeUndefined();
+    expect(library.read().ready).toBe(true);
+    expect(library.read().catalog.iconCategories()).toEqual([]);
+  });
+  it('uses the half that arrived when metadata failed', async () => {
+    const library = createIconLibrary({
+      loadGlyphs: async () => ({ IconArrivedAlone: () => null }),
+      loadCatalog: async () => {
+        throw new Error('missing metadata');
+      },
+    });
+    await library.load();
+    expect(library.read().glyphs.hasGlyph('arrived-alone')).toBe(true);
+    expect(library.read().catalog.iconCategories()).toEqual([]);
+  });
 });
 
-describe('the icon library', () => {
-  it('draws only what the build kept until someone asks for the rest', () => {
-    expect(iconLibraryReady()).toBe(false);
-    expect(hasGlyph('not-shipped')).toBe(false);
-    expect(iconCategories()).toEqual([]);
+it('settles loader failures that throw before returning a promise', async () => {
+  const library = createIconLibrary({
+    loadGlyphs: () => {
+      throw new Error('sync failure');
+    },
+    loadCatalog: () => {
+      throw new Error('sync failure');
+    },
   });
-
-  it('widens the drawable set and fills the catalogue in one step', async () => {
-    setIconCatalogLoader(async () => ({ trash: { category: 'System', tags: ['delete'] } }));
-
-    await loadIconLibrary();
-
-    expect(iconLibraryReady()).toBe(true);
-    expect(hasGlyph('not-shipped')).toBe(true);
-    expect(iconNames()).toContain('not-shipped');
-    expect(iconCategories()).toEqual(['System']);
-  });
-
-  it('fetches once, however many pages ask', async () => {
-    const fetchCatalog = vi.fn(async () => ({}));
-    setIconCatalogLoader(fetchCatalog);
-
-    await Promise.all([loadIconLibrary(), loadIconLibrary()]);
-    await loadIconLibrary();
-
-    expect(fetchCatalog).toHaveBeenCalledTimes(1);
-  });
-
-  it('leaves the glyphs the build kept when the fetch fails', async () => {
-    setIconCatalogLoader(() => Promise.reject(new Error('no such chunk')));
-
-    await expect(loadIconLibrary()).resolves.toBeUndefined();
-
-    expect(iconLibraryReady()).toBe(true);
-    expect(iconCategories()).toEqual([]);
-  });
-
-  it('keeps the half that landed when the other chunk does not', async () => {
-    chunk.glyphs = { IconArrivedAlone: () => null };
-    setIconCatalogLoader(() => Promise.reject(new Error('no such chunk')));
-
-    await loadIconLibrary();
-
-    expect(hasGlyph('arrived-alone')).toBe(true);
-    expect(iconCategories()).toEqual([]);
-  });
+  await expect(library.load()).resolves.toBeUndefined();
+  expect(library.read().ready).toBe(true);
 });

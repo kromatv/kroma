@@ -11,10 +11,9 @@ import { Select } from '#ui/components/molecules/select';
 import { SearchKeyboard } from '#ui/components/organisms/keyboard';
 import { styles } from '#ui/core';
 import { space } from '#ui/core/tokens';
-import { type IconName, iconNames } from '#ui/lib/glyph';
-import { iconCategories } from '#ui/lib/icon-catalog';
+import type { IconName } from '#ui/lib/glyph';
 import { type IconHit, searchIcons } from '#ui/lib/icon-search';
-import { useIconLibrary } from '#ui/lib/icons/library';
+import { useIconAssets, useIconLibrary } from '#ui/lib/icons/library';
 
 // Rendering thousands of glyphs at once locks the workbench up for seconds,
 // and far longer on a television.
@@ -66,14 +65,16 @@ function Browser() {
   const [category, setCategory] = useState(EVERY_CATEGORY);
   const [size, setSize] = useState('26');
   const [page, setPage] = useState(1);
-  const all = iconNames();
-  const categories = iconCategories();
+  const { glyphs, catalog } = useIconAssets();
+  const all = glyphs.iconNames();
+  const categories = catalog.iconCategories();
   const hits = useMemo(
     () =>
       searchIcons(all, query, {
+        catalog,
         category: category === EVERY_CATEGORY ? undefined : category,
       }),
-    [all, query, category],
+    [all, query, category, catalog],
   );
   const tagged = useMemo(() => hits.filter((hit) => hit.tags.length > 0).length, [hits]);
   const shown = paginate(hits, page, PAGE);
