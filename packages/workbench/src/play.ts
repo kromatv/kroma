@@ -100,7 +100,7 @@ function usePlay(play: PlayFunction | undefined, timeout?: number): PlayRunner {
   const [take, setTake] = useState(0);
   const [transcript, setTranscript] = useState<PlayTranscript>(IDLE);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `take` IS the replay; there is nothing in it for the effect to read
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- `take` IS the replay; there is nothing in it for the effect to read
   useEffect(() => {
     if (!play || !node) {
       setTranscript(IDLE);

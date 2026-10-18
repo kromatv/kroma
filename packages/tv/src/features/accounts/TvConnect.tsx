@@ -20,7 +20,7 @@ export function TvConnect() {
   const [value, setValue] = useState('');
   useFocusNav({ onBack: nav.back, resetKey: discovered.length });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: prefill once when discovery yields a hit; intentionally not re-run on `value` edits.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- prefill once when discovery yields a hit; intentionally not re-run on `value` edits.
   useEffect(() => {
     const found = discovered.at(-1);
     if (found && !value) {

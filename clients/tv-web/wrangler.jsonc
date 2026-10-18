@@ -20,10 +20,10 @@
     // in the URL and there is no deep link to rehydrate. The SPA fallback is
     // still the right handling for a stray path: serve the app rather than a
     // 404, and it opens at home.
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
   },
   // Served at https://tv.kroma.tv/. Requires the kroma.tv zone on this
   // Cloudflare account; wrangler provisions the custom domain + DNS record on
   // deploy.
-  "routes": [{ "pattern": "tv.kroma.tv", "custom_domain": true }]
+  "routes": [{ "pattern": "tv.kroma.tv", "custom_domain": true }],
 }

@@ -82,7 +82,7 @@ function CodeBlock({ code, numbers, maxHeight = 320 }: Readonly<CodeBlockProps>)
             {rows.map((_, at) => (
               // Line order is fixed for a given snippet, so the index IS the
               // identity.
-              // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
+              // oxlint-disable-next-line react/no-array-index-key -- positional by nature
               <Text key={at} style={s.gutter} color="textDim">
                 {String(at + 1).padStart(digits, ' ')}
               </Text>
@@ -95,12 +95,12 @@ function CodeBlock({ code, numbers, maxHeight = 320 }: Readonly<CodeBlockProps>)
             override. */}
         <ScrollView horizontal style={s.scrollX} contentContainerStyle={s.codeCol}>
           {rows.map((row, at) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
+            // oxlint-disable-next-line react/no-array-index-key -- positional by nature
             <Text key={at} style={s.line}>
               {row.length === 0
                 ? ' '
                 : row.map((token, index) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
+                    // oxlint-disable-next-line react/no-array-index-key -- positional by nature
                     <Text key={index} style={ink[token.kind]}>
                       {token.text}
                     </Text>

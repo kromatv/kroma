@@ -7,9 +7,10 @@ export type ReleaseRow =
   | { kind: 'owner'; lines: readonly string[] };
 
 export function releaseRows(release: Release): ReleaseRow[] {
-  const rows = release.highlights.map(
-    (highlight): ReleaseRow => ({ kind: 'highlight', highlight }),
-  );
+  const rows = release.highlights.map((highlight): ReleaseRow => ({
+    kind: 'highlight',
+    highlight,
+  }));
   if (release.fixed.length > 0) rows.push({ kind: 'fixed', lines: release.fixed });
   if (release.owner.length > 0) rows.push({ kind: 'owner', lines: release.owner });
   return rows;

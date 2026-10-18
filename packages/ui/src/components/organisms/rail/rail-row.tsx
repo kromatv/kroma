@@ -100,7 +100,7 @@ function GrowingRow({
           // `onActive`, not `onFocus`: this node is a container, and its tile
           // is what takes the focus. A container asked for `onFocus` is a
           // focusable that can never be focused, and the remote dies on it.
-          // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the identity here - it is the slot in the row.
+          // oxlint-disable-next-line react/no-array-index-key -- the index IS the identity here - it is the slot in the row.
           <NavigatorNode key={index} index={index} onActive={isNearEnd(index) ? grow : undefined}>
             {child as ReactElement}
           </NavigatorNode>

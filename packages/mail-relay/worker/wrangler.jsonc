@@ -16,7 +16,7 @@
     "FROM_ADDRESS": "no-reply@kroma.tv",
     "FROM_NAME": "KROMA",
     // Where the consent links point. Must be this Worker's own address.
-    "PUBLIC_URL": "https://mail.kroma.tv"
+    "PUBLIC_URL": "https://mail.kroma.tv",
   },
   "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["no-reply@kroma.tv"] }],
   // Daily counters, keyed on an HMAC of the address: the relay keeps no
@@ -28,20 +28,20 @@
       // members; anything beyond is harvesting.
       "name": "ENROL_IP",
       "namespace_id": "2003",
-      "simple": { "limit": 5, "period": 60 }
+      "simple": { "limit": 5, "period": 60 },
     },
     {
       // Sends from one address: the ceiling on how loud one server can be.
       "name": "SEND_IP",
       "namespace_id": "2004",
-      "simple": { "limit": 60, "period": 60 }
+      "simple": { "limit": 60, "period": 60 },
     },
     {
       // Sends to one MAILBOX, whichever server asks: re-minting buys nothing.
       "name": "SEND_ADDR",
       "namespace_id": "2005",
-      "simple": { "limit": 10, "period": 60 }
-    }
+      "simple": { "limit": 10, "period": 60 },
+    },
   ],
-  "routes": [{ "pattern": "mail.kroma.tv", "custom_domain": true }]
+  "routes": [{ "pattern": "mail.kroma.tv", "custom_domain": true }],
 }

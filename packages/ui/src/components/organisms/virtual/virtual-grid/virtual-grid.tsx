@@ -183,7 +183,7 @@ function VirtualGrid<T>({
 
   // Mount-only: this is where the grid OPENS. Re-running on prop change would
   // yank focus back out from under the D-pad.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: opening position, not a binding.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- opening position, not a binding.
   useEffect(() => {
     if (initialIndex !== undefined) focusRow(initialIndex);
   }, []);

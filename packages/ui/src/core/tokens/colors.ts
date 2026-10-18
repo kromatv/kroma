@@ -128,7 +128,7 @@ export const lightColors: Record<keyof typeof colors, string> = {
  *     interface ColorRegistry { brand: string }
  *   }
  */
-// biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
+// oxlint-disable-next-line typescript/no-empty-interface -- an augmentation point is empty by design
 export interface ColorRegistry {}
 
 export type ColorToken = TokenOf<typeof colors, ColorRegistry>;

@@ -41,12 +41,12 @@ function Headline({ text }: Readonly<{ text: string }>) {
     >
       {runs.map((run, i) =>
         run.kind === 'accent' ? (
-          // biome-ignore lint/suspicious/noArrayIndexKey: positional runs of one immutable string
+          // oxlint-disable-next-line react/no-array-index-key -- positional runs of one immutable string
           <span key={i} style={{ color: colors.accent }}>
             {run.value}
           </span>
         ) : (
-          // biome-ignore lint/suspicious/noArrayIndexKey: positional runs of one immutable string
+          // oxlint-disable-next-line react/no-array-index-key -- positional runs of one immutable string
           <span key={i}>{run.value}</span>
         ),
       )}

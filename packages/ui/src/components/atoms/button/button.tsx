@@ -23,8 +23,10 @@ import {
   UNFILLED,
 } from './button-variants';
 
-interface ButtonProps
-  extends Omit<FocusableProps, 'children' | 'style' | 'focusScale' | 'label' | 'ring' | 'busy'> {
+interface ButtonProps extends Omit<
+  FocusableProps,
+  'children' | 'style' | 'focusScale' | 'label' | 'ring' | 'busy'
+> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   /** Stretch to the width of the parent. */

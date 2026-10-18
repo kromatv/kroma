@@ -45,8 +45,10 @@ const checkboxVariants = sv({
   defaults: { size: 'sm', checked: false },
 });
 
-interface CheckboxProps
-  extends Omit<FocusableProps, 'children' | 'onPress' | 'role' | 'checked' | 'style'> {
+interface CheckboxProps extends Omit<
+  FocusableProps,
+  'children' | 'onPress' | 'role' | 'checked' | 'style'
+> {
   /** Present: you own the state (controlled). Absent: it runs itself from
    *  `defaultChecked` and reports through `onCheckedChange`. */
   checked?: boolean;

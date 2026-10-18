@@ -20,7 +20,7 @@
   "vars": {
     // The published app's bundle id, sent as `apns-topic`. Mirrors
     // `bundleIdentifier` in clients/mobile/app.json.
-    "APNS_TOPIC": "tv.kroma.app"
+    "APNS_TOPIC": "tv.kroma.app",
   },
   // Two different questions, so two different limiters.
   "ratelimits": [
@@ -30,17 +30,17 @@
       // harvesting from one address expensive.
       "name": "MINT_LIMIT",
       "namespace_id": "2001",
-      "simple": { "limit": 20, "period": 60 }
+      "simple": { "limit": 20, "period": 60 },
     },
     {
       // Sending: keyed on the DEVICE, so this is the ceiling on how loud any
       // server — including a compromised one — can be to one phone.
       "name": "PUSH_LIMIT",
       "namespace_id": "2002",
-      "simple": { "limit": 30, "period": 60 }
-    }
+      "simple": { "limit": 30, "period": 60 },
+    },
   ],
   // Served at https://push.kroma.tv/. Requires the kroma.tv zone on this
   // Cloudflare account.
-  "routes": [{ "pattern": "push.kroma.tv", "custom_domain": true }]
+  "routes": [{ "pattern": "push.kroma.tv", "custom_domain": true }],
 }

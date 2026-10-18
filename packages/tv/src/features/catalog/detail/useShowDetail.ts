@@ -27,7 +27,7 @@ export function useShowDetail(showId: ShowId): ShowDetailState {
 
   // Per-episode resume progress (mapped by item id) for the episode thumbnails.
   const [epProgress, setEpProgress] = useState<Record<string, number>>({});
-  // biome-ignore lint/correctness/useExhaustiveDependencies: show.id intentionally re-fetches when switching shows (the screen is reused on this route); it gates the effect even though the body reads it only indirectly.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- show.id intentionally re-fetches when switching shows (the screen is reused on this route); it gates the effect even though the body reads it only indirectly.
   useEffect(() => {
     let cancelled = false;
     client.playback

@@ -25,7 +25,7 @@ export interface TvEnvOverrides {
 
 function finePointer(): boolean {
   try {
-    // biome-ignore lint/style/noRestrictedGlobals: audited - the typeof guard is the point; a TV without matchMedia reports no fine pointer, which is correct.
+    // oxlint-disable-next-line no-restricted-globals -- audited - the typeof guard is the point; a TV without matchMedia reports no fine pointer, which is correct.
     return typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches;
   } catch {
     return false;

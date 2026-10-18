@@ -96,7 +96,7 @@ export function nestedRadius(outer: Radius, inset: number): Radius {
 
 /** Radii a theme adds. Augment it and the name is legal wherever a radius is
  *  written: the `radius:` shorthand, <Box radius> (see `ColorRegistry`). */
-// biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
+// oxlint-disable-next-line typescript/no-empty-interface -- an augmentation point is empty by design
 export interface RadiusRegistry {}
 
 export type RadiusToken = TokenOf<typeof radius, RadiusRegistry>;

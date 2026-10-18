@@ -1,9 +1,8 @@
 # KROMA lint rules
 
 Oxc enforces concrete requirements from `CONVENTIONS.md` and `CODE_STYLE.md`.
-The root `lint` command runs Oxlint; `check` runs it before Biome. CI runs the
-rule tests and `check`. Biome continues enforcing its existing rules, formatting,
-and import organization. Oxfmt is available for evaluation only.
+The root `lint` command runs Oxlint; `check` runs it and then `oxfmt --check`.
+CI runs the rule tests and `check`.
 
 ## Commands
 
@@ -165,8 +164,7 @@ agent can act without guessing the architecture.
 Do not add an automatic fix unless it preserves semantics without a design
 choice. These eleven rules deliberately leave repairs to the author. A suppression
 uses `// oxlint-disable-next-line kroma/rule-name -- concrete reason` and needs an
-actual policy exception, not a desire to make the gate green. Biome suppressions
-continue applying to Biome only.
+actual policy exception, not a desire to make the gate green.
 
 ## Evaluation
 

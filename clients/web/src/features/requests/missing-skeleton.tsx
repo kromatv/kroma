@@ -7,7 +7,7 @@ export function MissingSkeleton() {
   return (
     <Box mt={24} gap={12} aria-busy>
       {SKELETON_ROWS.map((rows, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder cards
+        // oxlint-disable-next-line react/no-array-index-key -- fixed-length placeholder cards
         <GroupSkeleton key={i} rows={rows} />
       ))}
     </Box>
@@ -27,7 +27,7 @@ function GroupSkeleton({ rows }: Readonly<{ rows: number }>) {
       </Row>
       <Divider color="tint/6" />
       {Array.from({ length: rows }, (_, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
+        // oxlint-disable-next-line react/no-array-index-key -- fixed-length placeholder rows
         <Row key={i} gap={16} px={14} py={14}>
           <Skeleton w={20} h={20} radius="sm" />
           <Skeleton w={62} h={12} radius="pill" />

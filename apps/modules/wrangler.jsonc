@@ -7,11 +7,11 @@
   "observability": { "enabled": true },
   "workers_dev": true,
   "vars": {
-    "GITHUB_REPO": "kromatv/kroma"
+    "GITHUB_REPO": "kromatv/kroma",
   },
   "assets": {
     "directory": "./dist/client",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
-  "routes": [{ "pattern": "modules.kroma.tv", "custom_domain": true }]
+  "routes": [{ "pattern": "modules.kroma.tv", "custom_domain": true }],
 }

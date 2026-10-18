@@ -47,7 +47,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
     <html lang={lang} suppressHydrationWarning>
       <head>
         <HeadContent />
-        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a literal, and it has to run before the first paint */}
+        {/* oxlint-disable-next-line react/no-danger -- a literal, and it has to run before the first paint */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
       </head>
       <body className="page-grain bg-bg text-text antialiased">

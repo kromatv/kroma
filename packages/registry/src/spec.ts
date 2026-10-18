@@ -36,8 +36,7 @@ export const schemaVersionOf = (name: SchemaName): number =>
   name === 'manifest' ? MODULE_SCHEMA_VERSION : REGISTRY_API_VERSION;
 
 /** Where a schema is published: `/schemas/<version>/<name>.json`, the shape
- *  Biome and json-schema.org already use (and that this repo already pins
- *  against in `biome.json`). Versioned, so a later contract is a NEW document
+ *  Biome and json-schema.org already use. Versioned, so a later contract is a NEW document
  *  rather than a silent edit to the one third parties pinned against. */
 export const schemaPath = (name: SchemaName, version = schemaVersionOf(name)): string =>
   `/schemas/${version}/${name}.json`;

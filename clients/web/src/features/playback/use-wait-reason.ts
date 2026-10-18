@@ -42,7 +42,7 @@ export function useWaitReason({
 }: WaitWatch): WaitReason | null {
   const [reason, setReason] = useState<WaitReason | null>(attaching ? 'loading' : null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `remount` is the trigger; the <video> is keyed by it.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- `remount` is the trigger; the <video> is keyed by it.
   useEffect(() => {
     const v = videoRef.current;
     const playhead = playheadWatch();

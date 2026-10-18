@@ -102,7 +102,7 @@ describe('the featured hero', () => {
 });
 
 describe('the plain reads', () => {
-  // biome-ignore lint/suspicious/noExplicitAny: heterogeneous by design
+  // oxlint-disable-next-line typescript/no-explicit-any -- heterogeneous by design
   const cases: [string, () => any, Mock, unknown?][] = [
     ['catalog.item', () => catalogQueries.item(ItemId.parse('m1')), c.media.item],
     ['catalog.show', () => catalogQueries.show(ShowId.parse('s1')), c.media.show],

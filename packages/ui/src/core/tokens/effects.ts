@@ -24,7 +24,7 @@ export const lightShadow: Record<keyof typeof shadow, string> = {
 
 /** Shadows a theme adds. Augment it and the name is legal wherever an elevation
  *  is written: the `shadow:` shorthand, <Box shadow> (see `ColorRegistry`). */
-// biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
+// oxlint-disable-next-line typescript/no-empty-interface -- an augmentation point is empty by design
 export interface ShadowRegistry {}
 
 export type ShadowToken = TokenOf<typeof shadow, ShadowRegistry>;

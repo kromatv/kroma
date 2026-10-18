@@ -17,7 +17,7 @@ export interface DeviceStore {
 export function deviceStore(provided?: DeviceStore | null): DeviceStore | null {
   if (provided !== undefined) return provided;
   try {
-    // biome-ignore lint/style/noRestrictedGlobals: audited - this IS the capability probe, and it returns null on every native target, where a host installs its own device store instead.
+    // oxlint-disable-next-line no-restricted-globals -- audited - this IS the capability probe, and it returns null on every native target, where a host installs its own device store instead.
     return typeof localStorage === 'undefined' ? null : localStorage;
   } catch {
     // Reading it can throw outright (privacy mode, a sandboxed iframe).

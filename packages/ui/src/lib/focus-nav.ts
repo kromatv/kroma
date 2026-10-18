@@ -28,7 +28,7 @@ function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers): void 
   const menuKeys = useMenuKeys();
   const { inputHeld, armPressGuard } = useInputGate();
   const { resetFocusEntry } = useFocusEntry();
-  // biome-ignore lint/correctness/useExhaustiveDependencies: resetKey is an intentional re-run trigger, mirroring the web engine; it is not read inside the effect.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- resetKey is an intentional re-run trigger, mirroring the web engine; it is not read inside the effect.
   useEffect(() => {
     // A held Select that opened this screen must not also fire the control the
     // OS auto-focuses here.

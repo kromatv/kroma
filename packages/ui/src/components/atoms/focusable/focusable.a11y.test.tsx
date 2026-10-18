@@ -94,7 +94,7 @@ describe('accessibility state reaches the DOM', () => {
 
   it('gives an adjustable control the value it adjusts', () => {
     render(
-      // biome-ignore lint/a11y/useValidAriaRole: React Native's vocabulary, not ARIA's - react-native-web renders `adjustable` as the ARIA `slider`.
+      // oxlint-disable-next-line jsx-a11y/aria-role -- React Native's vocabulary, not ARIA's - react-native-web renders `adjustable` as the ARIA `slider`.
       <Focusable label="Seam" role="adjustable" value={{ min: 0, max: 100, now: 40 }} />,
     );
     const el = screen.getByLabelText('Seam');

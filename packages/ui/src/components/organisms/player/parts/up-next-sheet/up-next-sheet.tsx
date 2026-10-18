@@ -203,7 +203,7 @@ function UpNextSheetBase({
                     <FocusRegion
                       // The line's position IS its identity: the items in it move
                       // as the data does, the line does not.
-                      // biome-ignore lint/suspicious/noArrayIndexKey: see above
+                      // oxlint-disable-next-line react/no-array-index-key -- see above
                       key={r}
                       style={s.row}
                     >

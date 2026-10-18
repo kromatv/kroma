@@ -13,6 +13,7 @@
   "bracketSpacing": true,
   "ignorePatterns": [
     ".claude/worktrees",
+    ".claude/skills",
     "**/dist",
     "**/dist-*",
     "**/build",
@@ -26,7 +27,12 @@
     "clients/synology",
     "server",
     "apps/www/src/styles.css",
-    "clients/mobile/google-services.json"
+    "clients/mobile/google-services.json",
+    "**/*.md",
+    "**/*.mdx",
+    "**/*.yml",
+    "**/*.yaml",
+    "**/*.html"
   ],
   "sortPackageJson": false,
   "sortImports": false

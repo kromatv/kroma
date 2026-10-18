@@ -87,7 +87,7 @@ function Tooltip({ label, children }: Readonly<TooltipProps>) {
   }, [shown]);
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: the wrapper only watches hover/focus travelling through it; the child stays the interactive element.
+    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- the wrapper only watches hover/focus travelling through it; the child stays the interactive element.
     <span
       ref={box}
       className={classes(s.wrap)}

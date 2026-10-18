@@ -15,10 +15,10 @@ export function Rich({ children }: Readonly<RichProps>) {
     <>
       {parseRich(children).map((token, i) =>
         token.kind === 'text' ? (
-          // biome-ignore lint/suspicious/noArrayIndexKey: runs are positional within one immutable string
+          // oxlint-disable-next-line react/no-array-index-key -- runs are positional within one immutable string
           <span key={i}>{token.value}</span>
         ) : (
-          // biome-ignore lint/suspicious/noArrayIndexKey: runs are positional within one immutable string
+          // oxlint-disable-next-line react/no-array-index-key -- runs are positional within one immutable string
           <span key={i} className={CLASS[token.kind]}>
             {token.value}
           </span>

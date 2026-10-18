@@ -13,7 +13,7 @@
 export interface FocusNavHandlers {
   /** Remote Back / Escape. Return `false` to say "not handled, keep the
    *  default"; returning nothing counts as handled. */
-  // biome-ignore lint/suspicious/noConfusingVoidType: the union IS the contract here - a handler may return nothing (handled) or false (not handled).
+  // oxlint-disable-next-line typescript/no-invalid-void-type -- the union IS the contract here - a handler may return nothing (handled) or false (not handled).
   onBack?: () => void | boolean;
   /** Remote Play / Pause / PlayPause. */
   onPlayPause?: () => void;

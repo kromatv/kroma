@@ -97,7 +97,7 @@ function twoByTwo(): HTMLElement {
 
 function stackFrom(label: string, box: HTMLElement): string[] {
   const layers: string[] = [];
-  for (let node = screen.getByLabelText(label); node !== box; ) {
+  for (let node = screen.getByLabelText(label); node !== box;) {
     layers.push(declared(node, 'zIndex') ?? '');
     node = node.parentElement as HTMLElement;
   }

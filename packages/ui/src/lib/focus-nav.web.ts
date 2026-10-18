@@ -21,7 +21,7 @@ function inTextField(): boolean {
 export function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers): void {
   const { armPressGuard } = useInputGate();
   const { resetFocusEntry } = useFocusEntry();
-  // biome-ignore lint/correctness/useExhaustiveDependencies: resetKey is an intentional re-run trigger (a view switch re-focuses the first element); it is not read inside the effect.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- resetKey is an intentional re-run trigger (a view switch re-focuses the first element); it is not read inside the effect.
   useEffect(() => {
     registerTvMediaKeys();
     // Arm the guard before the listener attaches, so the press that navigated

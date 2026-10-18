@@ -1,8 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
 
-  // What knip adds over `noUnusedLocals` and Biome's `noUnusedImports`: those
-  // see one file at a time, so they catch an unused local but never an export
+  // What knip adds over `noUnusedLocals`: that
+  // sees one file at a time, so it catches an unused local but never an export
   // nothing imports, or a whole file nothing references. This finds those.
   //
   // Run it with `bun run deadcode`. It is deliberately NOT in CI: a repo this
@@ -19,7 +19,7 @@
 
   "ignore": [
     // Vendored Rust crate sources, some carrying their own bundled web UIs
-    // (librqbit's, petgraph's docs CSS). Not ours; Biome excludes them too.
+    // (librqbit's, petgraph's docs CSS). Not ours; oxfmt excludes them too.
     "clients/synology/**",
     // Reached only through the runner's `cloudflare:workers` alias, which is a
     // resolution no static tool can follow.
@@ -27,7 +27,7 @@
     // Written by the i18n Vite plugin from the catalog folder, and gitignored.
     "packages/core/src/locales/messages.d.ts",
     "**/*.gen.ts",
-    "**/routeTree.gen.ts"
+    "**/routeTree.gen.ts",
   ],
 
   // Each of these is imported somewhere - knip cannot attribute it to the
@@ -49,7 +49,7 @@
     "react-native-svg",
     // Required by Metro/Expo at build time, never imported.
     "@babel/core",
-    "expo-atlas"
+    "expo-atlas",
   ],
 
   "workspaces": {
@@ -59,7 +59,7 @@
     // domain index is an entry because consumers reach it by subpath
     // (`@kromatv/client/media`), which the package's exports pattern resolves.
     "packages/client": {
-      "entry": ["src/api/*/index.ts", "src/api/*/client.ts", "src/api/discover.web.ts"]
+      "entry": ["src/api/*/index.ts", "src/api/*/client.ts", "src/api/discover.web.ts"],
     },
     ".": {
       // `clients/tv-build` and `clients/expo-build` hold no package.json, so
@@ -70,8 +70,8 @@
       "entry": [
         "clients/tv-build/**/*.{ts,tsx}",
         "clients/expo-build/**/*.{ts,js}",
-        "clients/tv-frame.vite.ts"
-      ]
+        "clients/tv-frame.vite.ts",
+      ],
     },
 
     "packages/*": {
@@ -97,8 +97,8 @@
         "src/precheck.ts",
         "scripts/*.ts",
         // A package's Vite plugin, and the CLI beside it (`bun run i18n:types`).
-        "vite/*.ts"
-      ]
+        "vite/*.ts",
+      ],
     },
 
     "clients/tizen": {
@@ -107,8 +107,8 @@
         // entry as a string no static tool can follow. Tizen-only, so it cannot
         // live in the clients/* block: a pattern that matches nothing is itself
         // something knip reports.
-        "src/main.deep.ts"
-      ]
+        "src/main.deep.ts",
+      ],
     },
 
     "clients/*": {
@@ -124,12 +124,12 @@
         // Loaded by the platform rather than by the bundle. Both sources are
         // TypeScript now and their build output is git-ignored, so this only
         // still covers anything a client drops into public/ by hand.
-        "public/**/*.js"
-      ]
+        "public/**/*.js",
+      ],
     },
 
     "modules/*": {
-      "entry": ["ui/src/module.{ts,tsx}"]
+      "entry": ["ui/src/module.{ts,tsx}"],
     },
 
     // knip's config loader parses an imported `.tsx` with JSX turned OFF, so
@@ -141,12 +141,12 @@
     "apps/kit": {
       // The guides are globbed at build time, and their figures are imported by
       // the `.page.mdx` files, which knip cannot parse.
-      "entry": ["src/main.tsx", "src/guides/*.{page.mdx,tsx}"]
+      "entry": ["src/main.tsx", "src/guides/*.{page.mdx,tsx}"],
     },
 
     "apps/www": {
       "vite": false,
-      "entry": ["vite.config.ts", "vite/*.{ts,tsx}", "src/router.tsx", "src/server.ts"]
-    }
-  }
+      "entry": ["vite.config.ts", "vite/*.{ts,tsx}", "src/router.tsx", "src/server.ts"],
+    },
+  },
 }

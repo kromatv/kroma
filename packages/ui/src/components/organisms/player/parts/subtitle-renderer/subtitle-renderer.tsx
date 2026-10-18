@@ -106,7 +106,7 @@ export function SubtitleRenderer({
   }, [activeUrl]);
 
   // Re-anchor the moving cue pointer on every committed seek.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset only on the seek signal.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- reset only on the seek signal.
   useEffect(() => {
     pointer.current = 0;
   }, [seekNonce]);
