@@ -264,6 +264,25 @@ describe('loadCatalog', () => {
     expect((await loadCatalog({}, () => undefined)).repo).toBe(DEFAULT_REPO);
   });
 
+  it('reads past a first page that module releases fill', async () => {
+    const modules = Array.from({ length: 100 }, (_, i) =>
+      release({ tag_name: `tv.kroma.vpn@0.4.${i}`, prerelease: true, assets: [] }),
+    );
+    const pages: Record<string, unknown[]> = { '1': modules, '2': [release()] };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = new URL(String(input));
+        if (url.hostname !== 'api.github.com') return new Response('', { status: 404 });
+        return new Response(JSON.stringify(pages[url.searchParams.get('page') ?? '1'] ?? []));
+      }),
+    );
+
+    const catalog = await loadCatalog({ GITHUB_REPO: 'paged/repo' }, () => undefined);
+
+    expect(catalog.entries.map((e) => e.tag)).toEqual(['v1.0.0']);
+  });
+
   it('throws when the releases API refuses, rather than publishing an empty catalog', async () => {
     vi.stubGlobal(
       'fetch',

@@ -59,6 +59,8 @@ export const DEFAULT_REPO = 'kromatv/kroma';
 const CACHE_FRESH = 'https://kroma-packages.cache/catalog-fresh';
 const CACHE_STALE = 'https://kroma-packages.cache/catalog-stale';
 const MAX_SIDECARS = 60;
+const PER_PAGE = 100;
+const MAX_PAGES = 5;
 
 const edgeCache = (): Cache | undefined =>
   (globalThis as unknown as { caches?: { default?: Cache } }).caches?.default;
@@ -81,11 +83,7 @@ function ghHeaders(env: Env): HeadersInit {
 
 async function fetchCatalogFromGitHub(env: Env): Promise<Catalog> {
   const repo = env.GITHUB_REPO || DEFAULT_REPO;
-  const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=100`, {
-    headers: ghHeaders(env),
-  });
-  if (!res.ok) throw new Error(`GitHub releases API ${res.status}`);
-  const releases = (await res.json()) as GhRelease[];
+  const releases = await fetchReleases(repo, env);
 
   const entries: Entry[] = [];
   for (const r of releases) {
@@ -129,6 +127,22 @@ async function fetchCatalogFromGitHub(env: Env): Promise<Catalog> {
 
   entries.sort(cmpEntries);
   return { fetchedAt: new Date().toISOString(), repo, entries };
+}
+
+async function fetchReleases(repo: string, env: Env): Promise<GhRelease[]> {
+  const releases: GhRelease[] = [];
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const paged = page === 1 ? '' : `&page=${page}`;
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/releases?per_page=${PER_PAGE}${paged}`,
+      { headers: ghHeaders(env) },
+    );
+    if (!res.ok) throw new Error(`GitHub releases API ${res.status}`);
+    const batch = (await res.json()) as GhRelease[];
+    releases.push(...batch);
+    if (batch.length < PER_PAGE) break;
+  }
+  return releases;
 }
 
 /** 5-minute edge cache, refreshed inline on miss; a week-long stale copy answers
