@@ -37,28 +37,6 @@ export function storedAudioFilter(): AudioFilterMode {
   return 'off';
 }
 
-// biome-ignore lint/style/noRestrictedGlobals: audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
-let sharedCtx: AudioContext | null = null;
-// biome-ignore lint/style/noRestrictedGlobals: audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
-function audioCtx(): AudioContext | null {
-  // biome-ignore lint/style/noRestrictedGlobals: audited - Web Audio is the browser's own leveling path; the native engines do their own (mpv af, Exo DynamicsProcessing, server-side aac-night), and this returns null there.
-  if (typeof AudioContext === 'undefined') return null;
-  if (!sharedCtx) {
-    // biome-ignore lint/style/noRestrictedGlobals: audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
-    sharedCtx = new AudioContext();
-    // Hydrating a persisted filter isn't a user gesture, so the context can be
-    // born suspended (a suspended context MUTES routed audio); any interaction un-sticks it.
-    const resume = () => {
-      if (sharedCtx?.state === 'suspended') void sharedCtx.resume();
-    };
-    const doc = webDocument();
-    doc?.addEventListener('pointerdown', resume, true);
-    doc?.addEventListener('keydown', resume, true);
-  }
-  if (sharedCtx.state === 'suspended') void sharedCtx.resume();
-  return sharedCtx;
-}
-
 interface Graph {
   source: MediaElementAudioSourceNode;
   comp: DynamicsCompressorNode;
@@ -82,11 +60,6 @@ function publishDebugHandle(handle: FilterDebugHandle): void {
   if (!(import.meta as { env?: { DEV?: boolean } }).env?.DEV) return;
   (globalThis as { __kromaAudioFilter?: FilterDebugHandle }).__kromaAudioFilter = handle;
 }
-
-// `createMediaElementSource` throws on a second call for the same element, and
-// the player remounts its <video> on re-anchor/audio switch, so graphs are
-// keyed by element rather than by player instance.
-const graphs = new WeakMap<HTMLMediaElement, Graph>();
 
 function configure(g: Graph, mode: Exclude<AudioFilterMode, 'off'>): void {
   const { comp, gain } = g;
@@ -136,32 +109,90 @@ function build(ctx: AudioContext, el: HTMLMediaElement): Graph {
   return { source, comp, gain, boost, limiter };
 }
 
-// Once a graph exists the element's audio always flows through it, so "off"
-// becomes a straight source → boost wire rather than a teardown. The boost is
-// the volume past the element's own ceiling; the limiter only sits in the path
-// while it is above unity, so a plain 100% is never coloured by it.
-function wire(el: HTMLMediaElement, mode: AudioFilterMode, boost: number): void {
-  if (mode === 'off' && boost <= 1 && !graphs.has(el)) return;
-  const ctx = audioCtx();
-  if (!ctx) return;
-
-  let g = graphs.get(el);
-  if (!g) {
-    g = build(ctx, el);
-    graphs.set(el, g);
+/** Audio graph lifetime matches the player controller that owns its video ref. */
+export function createAudioFilterOwner() {
+  // biome-ignore lint/style/noRestrictedGlobals: audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
+  let sharedCtx: AudioContext | null = null;
+  let unlisten = () => {};
+  // biome-ignore lint/style/noRestrictedGlobals: audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
+  function audioCtx(): AudioContext | null {
+    // biome-ignore lint/style/noRestrictedGlobals: audited - Web Audio is the browser's own leveling path; the native engines do their own (mpv af, Exo DynamicsProcessing, server-side aac-night), and this returns null there.
+    if (typeof AudioContext === 'undefined') return null;
+    if (!sharedCtx) {
+      // biome-ignore lint/style/noRestrictedGlobals: audited - inside audioCtx(), which returns null when AudioContext is absent; the native engines level audio themselves.
+      sharedCtx = new AudioContext();
+      // Hydrating a persisted filter isn't a user gesture, so the context can be
+      // born suspended (a suspended context MUTES routed audio); any interaction un-sticks it.
+      const resume = () => {
+        if (sharedCtx?.state === 'suspended') void sharedCtx.resume();
+      };
+      const doc = webDocument();
+      doc?.addEventListener('pointerdown', resume, true);
+      doc?.addEventListener('keydown', resume, true);
+      unlisten = () => {
+        doc?.removeEventListener('pointerdown', resume, true);
+        doc?.removeEventListener('keydown', resume, true);
+      };
+    }
+    if (sharedCtx.state === 'suspended') void sharedCtx.resume();
+    return sharedCtx;
   }
 
-  g.source.disconnect();
-  if (mode === 'off') {
-    g.source.connect(g.boost);
-  } else {
-    configure(g, mode);
-    g.source.connect(g.comp);
+  const graphs = new WeakMap<HTMLMediaElement, Graph>();
+  let holds = 0;
+  let generation = 0;
+  // Once a graph exists the element's audio always flows through it, so "off"
+  // becomes a straight source → boost wire rather than a teardown. The boost is
+  // the volume past the element's own ceiling; the limiter only sits in the path
+  // while it is above unity, so a plain 100% is never coloured by it.
+  function wire(el: HTMLMediaElement, mode: AudioFilterMode, boost: number): void {
+    if (mode === 'off' && boost <= 1 && !graphs.has(el)) return;
+    const ctx = audioCtx();
+    if (!ctx) return;
+
+    let g = graphs.get(el);
+    if (!g) {
+      g = build(ctx, el);
+      graphs.set(el, g);
+    }
+
+    g.source.disconnect();
+    if (mode === 'off') {
+      g.source.connect(g.boost);
+    } else {
+      configure(g, mode);
+      g.source.connect(g.comp);
+    }
+    g.boost.gain.value = Math.max(1, boost);
+    g.boost.disconnect();
+    g.boost.connect(boost > 1 ? g.limiter : ctx.destination);
+    publishDebugHandle({ ctx, graph: g, mode });
   }
-  g.boost.gain.value = Math.max(1, boost);
-  g.boost.disconnect();
-  g.boost.connect(boost > 1 ? g.limiter : ctx.destination);
-  publishDebugHandle({ ctx, graph: g, mode });
+
+  function retain(): () => void {
+    holds += 1;
+    generation += 1;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      holds -= 1;
+      const releasedAt = ++generation;
+      // StrictMode immediately restarts effects on the same video. Defer the
+      // teardown so that replay keeps its one permitted MediaElementSource.
+      queueMicrotask(() => {
+        if (holds > 0 || generation !== releasedAt) return;
+        const ctx = sharedCtx;
+        sharedCtx = null;
+        unlisten();
+        const handle = Reflect.get(globalThis, '__kromaAudioFilter');
+        if (handle && typeof handle === 'object' && 'ctx' in handle && handle.ctx === ctx)
+          Reflect.deleteProperty(globalThis, '__kromaAudioFilter');
+        if (ctx) void ctx.close().catch(() => undefined);
+      });
+    };
+  }
+  return { wire, retain };
 }
 
 function persistAudioFilter(m: AudioFilterMode): void {
@@ -180,6 +211,8 @@ export function useAudioFilter(
   remountKey: string,
   boost = 1,
 ): { mode: AudioFilterMode; setMode: (m: AudioFilterMode) => void; supported: boolean } {
+  const [owner] = useState(createAudioFilterOwner);
+  useEffect(() => owner.retain(), [owner]);
   const [modeState, setModeState] = useState<AudioFilterMode>('off');
   const [supported, setSupported] = useState(false);
 
@@ -192,8 +225,8 @@ export function useAudioFilter(
   // biome-ignore lint/correctness/useExhaustiveDependencies: remountKey tracks the element identity.
   useEffect(() => {
     const v = videoRef.current;
-    if (v) wire(v, modeState, boost);
-  }, [modeState, boost, remountKey, videoRef]);
+    if (v) owner.wire(v, modeState, boost);
+  }, [modeState, boost, remountKey, videoRef, owner]);
 
   const setMode = useCallback((m: AudioFilterMode) => {
     setModeState(m);
