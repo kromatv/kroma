@@ -9,6 +9,7 @@ import {
   styles,
   Text,
   typeSpec as textRoles,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -29,6 +30,8 @@ export function HeroBillboard({
   entry,
   progress,
 }: Readonly<{ entry: SectionItem; progress?: number | null }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -124,7 +127,7 @@ export function HeroBillboard({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   wrap: { self: 'center', mt: spacing.sm },
   content: {
     absolute: true,

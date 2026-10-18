@@ -1,3 +1,5 @@
+import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+
 // Notification settings: push on THIS device, and the per-category matrix for
 // the account. A push subscription belongs to one device; the categories
 // travel with the account.
@@ -10,7 +12,15 @@ import {
   type PushBlocker,
 } from '@kromatv/client/notifications';
 import { blockerOf, NOTIFICATION_CATEGORY_LABEL, PUSH_BLOCKER_LABEL } from '@kromatv/core';
-import { Box, color, Switch, styles, Text, fontSizes as textSizes } from '@kromatv/ui/kit';
+import {
+  Box,
+  color,
+  Switch,
+  styles,
+  Text,
+  fontSizes as textSizes,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView } from 'react-native';
@@ -23,6 +33,11 @@ import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 export default function NotificationSettings() {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const nativePush = useMemo(() => createNativePush(t), [t]);
   const client = useClient();
@@ -88,7 +103,7 @@ export default function NotificationSettings() {
                 style={({ pressed }) => [s.action, pressed && s.actionPressed]}
               >
                 {toggle.isPending ? (
-                  <ActivityIndicator color={color('text')} size="small" />
+                  <ActivityIndicator color={color('text', activeTheme(scope.theme))} size="small" />
                 ) : (
                   <Text style={s.actionLabel}>
                     {subscribed ? t('push.disable') : t('push.enable')}
@@ -131,7 +146,7 @@ export default function NotificationSettings() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   body: { gap: spacing.sm, p: spacing.md, ...boxed(contentWidth.reading) },
   group: {
     ...type.small,

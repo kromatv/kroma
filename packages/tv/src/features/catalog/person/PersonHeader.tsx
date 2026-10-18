@@ -9,6 +9,7 @@ import {
   styles,
   Text,
   fontSizes as textSizes,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { TITLE } from '#tv/features/catalog/screenStyle';
@@ -38,6 +39,8 @@ export function PersonHeader({
   titleCount: number;
   detail: PersonDetail | null;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const locale = useLocale();
   const [expanded, setExpanded] = useState(false);
@@ -99,6 +102,6 @@ export function PersonHeader({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   biography: { fontSize: textSizes.largeLabel, lineHeight: 27 },
 });

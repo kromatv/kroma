@@ -1,3 +1,7 @@
+import { webTheme } from './web-theme.ts';
+
+const BROWSER_THEME = webTheme();
+
 // From a declaration the evaluator produced to the compiled leaf the build
 // writes in its place: the engine's own resolver turns the vocabulary into
 // longhands, the compiler turns those into classes.
@@ -47,9 +51,10 @@ function layer(perStep: readonly Record<string, unknown>[], at: string): StepLay
  * runtime can resolve.
  */
 export function compileDeclaration(decl: object): CompiledLeaf {
-  const piece = split(decl, 0);
+  const piece = split(decl, 0, BROWSER_THEME);
   if (!piece) throw new Unstatic('an empty declaration');
-  const perStep = piece.breakpoints === 0 ? [piece] : STEPS.map((at) => split(decl, at) as Split);
+  const perStep =
+    piece.breakpoints === 0 ? [piece] : STEPS.map((at) => split(decl, at, BROWSER_THEME) as Split);
   const rest = layer(
     perStep.map((step) => step.rest),
     'rest',

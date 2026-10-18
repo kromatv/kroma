@@ -3,7 +3,8 @@ import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
-import { sharedStyle, styles } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
 import { useRise } from './rise';
@@ -81,7 +82,7 @@ const ART_FILL = 'linear-gradient(135deg, rgba(244,182,66,0.14), rgba(12,12,16,0
 // The copy sits at the foot of the left half, so the art is darkened from that
 // corner outwards rather than evenly: a flat scrim over a whole frame reads as
 // a dimmed picture instead of a picture with something written on it.
-const layers = styles({
+const layersDefinition = styles({
   scrim: gradient(
     'linear-gradient(90deg, rgba(8,8,11,0.94) 0%, rgba(8,8,11,0.7) 44%, transparent 80%)',
   ),
@@ -91,13 +92,17 @@ const layers = styles({
   ceiling: gradient('linear-gradient(180deg, rgba(8,8,11,0.72) 0%, transparent 20%)'),
 });
 
-const copyOf = (tier: (typeof TIERS)[keyof typeof TIERS]) =>
-  sharedStyle(`post-play:copy:${tier.copy}`, {
-    position: 'absolute',
-    left: tier.gutter,
-    bottom: tier.foot,
-    maxWidth: tier.copy,
-  });
+const copyOf = (tier: (typeof TIERS)[keyof typeof TIERS], scope: StyleScope) =>
+  sharedStyle(
+    `post-play:copy:${tier.copy}`,
+    {
+      position: 'absolute',
+      left: tier.gutter,
+      bottom: tier.foot,
+      maxWidth: tier.copy,
+    },
+    scope,
+  );
 // The one line above the art needs its own ground; the floor below reaches
 // nowhere near it.
 
@@ -115,6 +120,11 @@ export function PostPlay({
   onPlay,
   onHome,
 }: Readonly<PostPlayProps>) {
+  const scope = useStyleScope();
+
+  const layers = useStyles(layersDefinition);
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const tier = stageWidth >= TV_STAGE ? TIERS.tv : TIERS.desk;
   const rise = useRise();
@@ -136,7 +146,7 @@ export function PostPlay({
         </Text>
       </Box>
 
-      <Animated.View style={[copyOf(tier), rise.copy]}>
+      <Animated.View style={[copyOf(tier, scope), rise.copy]}>
         <Text variant={tier.eyebrow} color="accentText" mb={12}>
           {t('player.upNextTitle')}
         </Text>
@@ -192,7 +202,7 @@ export function PostPlay({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   art: { fill: true },
   inert: { pointerEvents: 'none' },
 });

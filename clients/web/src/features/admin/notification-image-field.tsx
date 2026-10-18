@@ -17,10 +17,11 @@ import {
   Spinner,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 
-const s = styles({
+const sDefinition = styles({
   tile: { minW: 0 },
   hidden: { display: 'none' },
   thumb: { width: 20, height: 20 },
@@ -34,6 +35,8 @@ export function NotificationImageField({
   value,
   onChange,
 }: Readonly<{ value: string; onChange: (url: string) => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [open, setOpen] = useState(false);
 
@@ -87,6 +90,8 @@ function ImagePickerDialog({
   onClose,
   onPick,
 }: Readonly<{ open: boolean; onClose: () => void; onPick: (url: string) => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { busy, error, run } = useAsyncAction();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -141,6 +146,8 @@ function ImagePickerDialog({
 }
 
 function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [images, setImages] = useState<NotificationImage[] | null>(null);
   const [failed, setFailed] = useState(false);

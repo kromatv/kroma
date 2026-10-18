@@ -1,14 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  boxStyle,
-  color,
-  createTheme,
-  KROMA,
-  setTheme,
-  splitShorthand,
-  TEXT_STYLE_PROPS,
-} from '#ui/core';
+import { createTheme, KROMA, splitShorthand, TEXT_STYLE_PROPS } from '#ui/core';
 import { CIRCLE_RADIUS } from '#ui/core/tokens';
+import { createStyleTestHost } from '#ui/testing-style';
+
+const styleHost = createStyleTestHost();
+const { boxStyle, color, setTheme } = styleHost;
 
 afterEach(() => setTheme(KROMA));
 

@@ -3,7 +3,6 @@ import { sourceRoots } from '../../bundler/index.ts';
 import { ModuleLoader } from './module-scope.ts';
 import { RuleSheet } from './sheet.ts';
 import { type Skip, transformModule } from './transform.ts';
-import { resolveAsBrowser } from './web-theme.ts';
 
 const SOURCE = /\.tsx?$/;
 
@@ -78,7 +77,6 @@ export function kromaAtomic({ repoRoot }: AtomicOptions): AtomicPlugin {
     enforce: 'pre',
     configResolved(config) {
       command = config.command;
-      resolveAsBrowser();
     },
     // Per environment: a server build counts its own modules, not the client's.
     buildStart() {

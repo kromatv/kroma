@@ -1,7 +1,15 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Animated, Platform, Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { sharedStyle, style, styles } from '#ui/core';
+import {
+  resolveStyles,
+  type StyleScope,
+  sharedStyle,
+  style,
+  styles,
+  useStyleScope,
+} from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { radius as cornerRadius } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
@@ -53,8 +61,8 @@ const CORNER_MASK = style({
   borderRadius: CARD_RADIUS * 2,
 });
 
-const cornerOf = (radius: number) =>
-  sharedStyle(`stage:corner:${radius}`, { borderRadius: radius });
+const cornerOf = (radius: number, scope: StyleScope) =>
+  sharedStyle(`stage:corner:${radius}`, { borderRadius: radius }, scope);
 
 const pct = (fraction: number): `${number}%` => `${fraction * 100}%`;
 
@@ -170,7 +178,12 @@ interface StageProps {
 // Where the picture sits, and where its captions and spinner sit with it. Its
 // own function because this is geometry rather than rendering, and reading
 // <Stage> should not mean holding three box ternaries at the same time.
-function stageBoxes(card: StageCard, settingsShrink: boolean, planeShrink: boolean) {
+function stageBoxes(
+  card: StageCard,
+  settingsShrink: boolean,
+  planeShrink: boolean,
+  scope: StyleScope,
+) {
   // Clipped, so the card's corners round whatever the host mounted; a surface
   // that must round ITSELF (a hardware plane is not clipped by a parent) still
   // reads the same radius off SurfaceRadiusProvider.
@@ -183,7 +196,7 @@ function stageBoxes(card: StageCard, settingsShrink: boolean, planeShrink: boole
         width: pct(card.picture.width),
         height: pct(card.picture.height),
       }
-    : s.picture;
+    : resolveStyles(sDefinition, scope).picture;
   // On a plane shrink the stage stays put and the picture's box moves to the
   // card, which is where the plane is asked to go, so a shell that measures the
   // box to place the plane lands it there too. This wrapper carries the spinner
@@ -209,7 +222,7 @@ function stageBoxes(card: StageCard, settingsShrink: boolean, planeShrink: boole
   // Anchored to the PICTURE once the card is out, rather than to the stage: the
   // card IS the picture's box, and a caption left on the stage's bottom edge
   // would sit outside it on a letterboxed film.
-  return { picture, content: settingsShrink ? picture : s.picture };
+  return { picture, content: settingsShrink ? picture : resolveStyles(sDefinition, scope).picture };
 }
 
 function Stage({
@@ -223,6 +236,10 @@ function Stage({
   onLongPress,
   children,
 }: Readonly<StageProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   useEffect(injectStageStyles, []);
   const t = useT();
   const stageWidth = stageSize.width;
@@ -246,6 +263,7 @@ function Stage({
     card,
     settingsShrink,
     planeShrink,
+    scope,
   );
 
   return (
@@ -269,7 +287,10 @@ function Stage({
           instead of the window's. Nothing here is added, removed or given a
           style key it did not already have when the card comes out: a video
           texture's surface does not survive its subtree being rebuilt. */}
-        <Animated.View nativeID={PICTURE_ID} style={[pictureBox, cornerOf(ANDROID ? 0 : radius)]}>
+        <Animated.View
+          nativeID={PICTURE_ID}
+          style={[pictureBox, cornerOf(ANDROID ? 0 : radius, scope)]}
+        >
           <SurfaceRadiusProvider radius={ANDROID ? 0 : radius}>{children}</SurfaceRadiusProvider>
           {/* Every native surface takes the mask, not just Android's texture: an
             AVPlayerLayer is not clipped by a rounded ancestor either (see
@@ -332,7 +353,7 @@ export const STAGE_ID = 'kroma-player-stage';
  * page measures, since the plane has to sit exactly where the picture is. */
 export const PICTURE_ID = 'kroma-player-picture';
 
-const s = styles({
+const sDefinition = styles({
   stage: { fill: true, z: 2, overflow: 'hidden' },
   picture: { fill: true, overflow: 'hidden' },
   maskSurround: { boxShadow: '0 0 0 100vmax #000', pointerEvents: 'none' },

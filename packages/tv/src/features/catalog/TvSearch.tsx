@@ -20,6 +20,7 @@ import {
   styles,
   Text,
   useFocusNav,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
@@ -43,6 +44,8 @@ import { KromaMark, SearchKeyboard } from '#tv/shared/ui';
  * `app/searchShell`). Falls back to the in-memory catalogue when the server's
  * `/api/search` request fails. */
 export function TvSearch() {
+  const s = useStyles(sDefinition);
+
   const { onSearchRequest, takePendingSearch } = useSearchRequests();
   const { movies, shows } = useConnection();
   const client = useClient();
@@ -276,7 +279,7 @@ const RESULTS_PADDING = 40;
 // What the pane is on the design's stage - the fallback the results grid divides
 // until it has measured the box it really got, not a width it is held to.
 const RESULTS_WIDTH = STAGE_W - SCREEN_PAD * 2 - KEYBOARD_W - COLUMN_GAP - RESULTS_PADDING;
-const s = styles({
+const sDefinition = styles({
   columns: { row: true, flex: true, gap: COLUMN_GAP, minH: 0 },
   keyboardColumn: { w: KEYBOARD_W, shrink: 0 },
   recentRow: { row: true, wrap: true, gap: 10 },

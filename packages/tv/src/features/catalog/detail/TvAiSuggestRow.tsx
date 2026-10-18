@@ -10,6 +10,7 @@ import {
   styles,
   Text,
   typeSpec as textRoles,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useClient, useNav } from '#tv/app/router';
 
@@ -24,7 +25,7 @@ const ROW_TILE = { pitch: 300 + RAIL_GAP, height: Math.round((300 * 9) / 16) };
 // the pitch would over-fetch every tile in the row.
 const TILE_ART_W = 300;
 
-const s = styles({
+const sDefinition = styles({
   label: {
     fontWeight: '700',
     fontSize: textRoles.label.size,
@@ -36,6 +37,8 @@ const s = styles({
 });
 
 export function TvAiSuggestRow({ id }: Readonly<{ id: ItemId }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { go } = useNav();

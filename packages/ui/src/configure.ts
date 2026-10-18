@@ -1,6 +1,7 @@
 import {
   type ComponentType,
   createElement,
+  Fragment,
   type ReactElement,
   type ReactNode,
   useEffect,
@@ -8,7 +9,14 @@ import {
   useState,
 } from 'react';
 import type { FrostBackdropProps } from './components/atoms/frost';
-import { applyMode, setTheme, type Theme, type ThemeMode } from './core';
+import type { Theme, ThemeMode } from './core';
+import { StyleRuntimeContext, useStyleRuntimeParent } from './core/style-context';
+import {
+  createStyleRuntime,
+  type StyleRuntime,
+  type StyleRuntimeOptions,
+} from './core/style-runtime';
+import { ThemeHost } from './core/theme-host';
 import type { DeviceStore } from './lib/device-store';
 import type { ControlSize } from './lib/field-shell';
 import { createFocusServices } from './lib/focus-services';
@@ -47,6 +55,7 @@ const FORM_FACTOR: Readonly<
 
 export interface KitConfig<P extends FrostBackdropProps = FrostBackdropProps> {
   formFactor?: FormFactor;
+  designWidth?: number;
   remote?: boolean;
   deviceStore?: DeviceStore | null;
   frostEnabled?: boolean;
@@ -58,13 +67,11 @@ export interface KitConfig<P extends FrostBackdropProps = FrostBackdropProps> {
   frost?: ComponentType<P>;
 }
 
-/** Prepare immutable root configuration and apply the initial theme, if given.
+/** Prepare immutable root configuration. The mounted provider applies it.
  * Pass the result to KitProvider; capability defaults belong to that tree. */
 export function configureKit<P extends FrostBackdropProps = FrostBackdropProps>(
   config: Readonly<KitConfig<P>>,
 ): Readonly<KitConfig<P>> {
-  if (config.ground) applyMode(config.ground);
-  if (config.theme) setTheme(config.theme);
   return Object.freeze({ ...config });
 }
 
@@ -78,6 +85,7 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
   children?: ReactNode;
 }): ReactElement {
   const parent = useKitSettings();
+
   const inheritedInput = useInputSourceParent();
   const [ownedInput] = useState(createInputSource);
   const input = inheritedInput ?? ownedInput;
@@ -113,8 +121,54 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
       createElement(
         InputGateProvider,
         { value: inheritedGate ?? ownedGate },
-        createElement(KitSettingsContext.Provider, { value }, children),
+        createElement(
+          KitSettingsContext.Provider,
+          { value },
+          createElement(KitStyleProvider, { config }, children),
+        ),
       ),
     ),
+  );
+}
+
+/** Ownership changes remount only this explicit styling boundary. */
+function KitStyleProvider({
+  config,
+  children,
+}: Readonly<{ config: Readonly<StyleRuntimeOptions>; children?: ReactNode }>): ReactElement {
+  const parent = useStyleRuntimeParent();
+  const ownsTheme = !parent || config.theme !== undefined || config.ground !== undefined;
+  const ownsWidth = !parent || config.designWidth !== undefined;
+  if (!ownsTheme && !ownsWidth) return createElement(Fragment, null, children);
+  return createElement(
+    OwnedKitStyleProvider,
+    { key: `${ownsTheme}:${ownsWidth}`, config, parent: parent ?? undefined },
+    children,
+  );
+}
+function OwnedKitStyleProvider({
+  config,
+  parent,
+  children,
+}: Readonly<{
+  config: Readonly<StyleRuntimeOptions>;
+  parent?: StyleRuntime;
+  children?: ReactNode;
+}>): ReactElement {
+  const [runtime] = useState(() => createStyleRuntime(config, parent));
+  useEffect(() => runtime.breakpoints.retain(), [runtime]);
+  useEffect(() => {
+    if (config.ground && config.ground !== runtime.mode()) runtime.setMode(config.ground);
+  }, [config.ground, runtime]);
+  useEffect(() => {
+    if (config.theme) runtime.theme.setTheme(config.theme);
+  }, [config.theme, runtime]);
+  useEffect(() => {
+    if (config.designWidth !== undefined) runtime.breakpoints.pinDesignWidth(config.designWidth);
+  }, [config.designWidth, runtime]);
+  return createElement(
+    StyleRuntimeContext.Provider,
+    { value: runtime },
+    createElement(ThemeHost, { runtime, themeScope: runtime.theme !== parent?.theme }, children),
   );
 }

@@ -12,7 +12,7 @@ import { motion } from '#ui/core/tokens';
 
 // Declared, not written as plain objects: a plain object is a style nothing
 // registered, which the browser paints inline on every control wearing it.
-const s = styles({
+const sDefinition = styles({
   hand: { cursor: 'pointer' },
   arrow: { cursor: 'default' } as unknown as StyleDecl,
   motion: {
@@ -23,11 +23,11 @@ const s = styles({
 });
 
 /** A control the pointer can press. */
-const HAND: ViewStyle = s.hand;
+const HAND: ViewStyle = sDefinition.hand;
 
 /** Stated rather than inherited: a face inside a group of controls, or a
  *  control that is disabled, would otherwise wear the group's hand. */
-const ARROW: ViewStyle = s.arrow;
+const ARROW: ViewStyle = sDefinition.arrow;
 
 export { ARROW, HAND };
 
@@ -39,6 +39,6 @@ export { ARROW, HAND };
  * reads as the control answering the pointer. Web only, since that is where a
  * pointer is, and stated here because React Native has no transition of its own.
  */
-const COLOUR_MOTION: ViewStyle = s.motion;
+const COLOUR_MOTION: ViewStyle = sDefinition.motion;
 
 export { COLOUR_MOTION };

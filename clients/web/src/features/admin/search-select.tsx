@@ -25,6 +25,7 @@ import {
   useAnchoredPlacement,
   useEntryDefaults,
   useStableCallback,
+  useStyles,
 } from '@kromatv/ui/kit';
 import {
   type KeyboardEvent,
@@ -41,7 +42,7 @@ import { SearchOption } from './search-select-option';
 // A popup is `position: fixed` and its list scrolls on one axis, neither of
 // which React Native has, so the panel stays real CSS. Every value in it still
 // comes from a token.
-const s = styles({
+const sDefinition = styles({
   ring: { ring: 'focusEdge' },
   backdrop: { ...PANEL_BACKDROP, m: 0, p: 0, borderWidth: 0, bg: 'transparent', cursor: 'default' },
   list: { maxHeight: 256, overflowY: 'auto', p: 6 },
@@ -147,6 +148,8 @@ function SearchPanel({
   onPick: (v: string) => void;
   onClose: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const listId = useId();
   const [q, setQ] = useState('');
   const [focused, setFocused] = useState(false);

@@ -16,7 +16,17 @@ import {
   shortDayLabel,
 } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
-import { Box, classes, EmptyState, Icon, PageHeader, Row, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  classes,
+  EmptyState,
+  Icon,
+  PageHeader,
+  Row,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { RequestCard, RequestCardSkeleton } from '#web/features/requests/request-card';
 import { userQueries } from '#web/shared/lib/queries';
@@ -27,6 +37,8 @@ import { RouteLink } from '#web/shared/ui/route-link';
 const IMMINENT_DAYS = 7;
 
 export function ComingSoonPage() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const locale = useLocale();
   const { data: entries, isPending } = useQuery({
@@ -142,4 +154,4 @@ function CalendarRow({ entry, locale }: Readonly<{ entry: CalendarEntry; locale:
   );
 }
 
-const s = styles({ heading: { m: 0 } });
+const sDefinition = styles({ heading: { m: 0 } });

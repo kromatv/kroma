@@ -14,7 +14,7 @@ import {
   grantRefusal,
 } from '@kromatv/core';
 import { useCast } from '@kromatv/ui';
-import { Badge, Box, radius as cornerRadius, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Badge, Box, radius as cornerRadius, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable } from 'react-native';
@@ -39,6 +39,8 @@ interface Attempt {
 }
 
 export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDeviceListProps>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { receivers, active, pairable } = useCast();
@@ -168,6 +170,8 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
 // Not a dead end: the roster stays live, so a device that wakes up appears
 // here without reopening the picker.
 function NoDevices() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
 
   return (
@@ -183,6 +187,8 @@ function NoDevices() {
 }
 
 function Searching() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const pulse = useRef(new Animated.Value(0.35)).current;
   useEffect(() => {
@@ -233,6 +239,8 @@ function DeviceRow({
   trailing?: ReactNode;
   onPress?: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       onPress={onPress}
@@ -255,7 +263,7 @@ function DeviceRow({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   row: { row: true, align: 'center', gap: spacing.sm, minH: 56, px: spacing.sm, radius: radius.md },
   rowText: { flex: true },
   rowName: { ...type.body, color: 'text', fontWeight: '600' },

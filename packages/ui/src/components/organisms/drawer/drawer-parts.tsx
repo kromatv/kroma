@@ -1,3 +1,5 @@
+import { type StyleScope, useStyleScope } from '#ui/core';
+
 // The sheet's three bands, and what the surface tells them: only the middle one
 // scrolls, the other two stay put behind a hairline.
 
@@ -7,6 +9,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
 import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
 import { sharedStyle, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { useTDefault } from '#ui/services/i18n';
 
 interface Shell {
@@ -30,12 +33,16 @@ interface DrawerBandProps {
 
 /** The pinned top of the sheet: it stays put while the panel scrolls under it. */
 
-const bandOf = (pad: number) =>
-  sharedStyle(`drawer:band:${pad}`, {
-    paddingHorizontal: pad,
-    paddingVertical: BAND_Y,
-    flexGrow: 1,
-  });
+const bandOf = (pad: number, scope: StyleScope) =>
+  sharedStyle(
+    `drawer:band:${pad}`,
+    {
+      paddingHorizontal: pad,
+      paddingVertical: BAND_Y,
+      flexGrow: 1,
+    },
+    scope,
+  );
 function Header({ children, style }: Readonly<DrawerBandProps>) {
   const { pad } = useShell();
   return (
@@ -50,13 +57,17 @@ function Header({ children, style }: Readonly<DrawerBandProps>) {
 
 /** The scrolling middle, and the only part of the sheet that scrolls. */
 function Panel({ children, style }: Readonly<DrawerBandProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const { pad } = useShell();
   return (
     <ScrollView
       style={[s.panel, style]}
       // Grows to the sheet's height so a short body can still pin something to
       // its bottom edge with `mt="auto"`, as the navigation sheets do.
-      contentContainerStyle={bandOf(pad)}
+      contentContainerStyle={bandOf(pad, scope)}
     >
       {children}
     </ScrollView>
@@ -98,7 +109,7 @@ function Close({ variant = 'ghost', ...button }: Readonly<DrawerCloseProps>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   panel: { shrink: 1 },
 });
 

@@ -1,5 +1,6 @@
 import { ItemId, type SectionItem, ShowId } from '@kromatv/client/media';
 import {
+  activeTheme,
   Box,
   color,
   radius as cornerRadius,
@@ -8,6 +9,9 @@ import {
   styles,
   Text,
   fontSizes as textSizes,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -31,6 +35,8 @@ import { useClient } from '#mobile/lib/session';
 import { posterWidth, spacing, TAB_BAR_CLEARANCE } from '#mobile/lib/theme';
 
 function DownloadsGlyph() {
+  const s = useStyles(sDefinition);
+
   const downloads = useDownloads();
   const pending = downloads.downloading.length + downloads.queuedItems.length;
   if (pending === 0) return <Icon name="download" size={22} thickness={2} />;
@@ -53,6 +59,8 @@ function DownloadsGlyph() {
 }
 
 function HomeHeader() {
+  const s = useStyles(sDefinition);
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const gutters = useGutters();
@@ -112,6 +120,11 @@ function MyListRail({ filter }: Readonly<{ filter: TitleFilter }>) {
 }
 
 export default function Home() {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { width } = useWindowDimensions();
@@ -152,7 +165,7 @@ export default function Home() {
             void cont.refetch();
             void featured.refetch();
           }}
-          tintColor={color('textMuted')}
+          tintColor={color('textMuted', activeTheme(scope.theme))}
         />
       }
     >
@@ -179,7 +192,7 @@ export default function Home() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   header: { row: true, between: true, align: 'center', pt: spacing.sm },
   brandRow: { row: true, align: 'center' },

@@ -3,7 +3,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type StyleDecl, style, svFor } from '#ui/core';
+import { type StyleDecl, style, svFor, useSv } from '#ui/core';
 import { bySize, CONTROL } from '#ui/lib/field-shell';
 import { nameOf } from '#ui/lib/name-of';
 import { partContext } from '#ui/lib/part-context';
@@ -120,6 +120,8 @@ interface StepperItemProps {
  *  rather than a second target. Rendering one is what puts the step in the
  *  flow, at whatever depth it sits. */
 function Item({ value, icon, label, disabled, children }: Readonly<StepperItemProps>) {
+  const stepperVariantsScoped = useSv(stepperVariants);
+
   const { flow, size, orientation, stepLabel, join, mark } = useStepperPart('Item');
   const step = useStepperItem(value);
   // Layout effects, not passive ones: they run before the first paint, so the
@@ -128,7 +130,7 @@ function Item({ value, icon, label, disabled, children }: Readonly<StepperItemPr
   useLayoutEffect(() => mark(value, disabled === true), [mark, value, disabled]);
 
   const state = stepStateOf(step.active, step.complete);
-  const slots = stepperVariants({ size, state });
+  const slots = stepperVariantsScoped({ size, state });
   const metrics = CONTROL[size];
   const shape = stepShape(metrics);
   const vertical = orientation === 'vertical';

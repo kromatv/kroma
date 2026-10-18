@@ -2,7 +2,7 @@
 // identity, and what build of the app this actually is.
 
 import { formatBuildDate, LOCALES } from '@kromatv/core';
-import { Box, Icon, type IconName, styles, Text, ThemeSwitch } from '@kromatv/ui/kit';
+import { Box, Icon, type IconName, styles, Text, ThemeSwitch, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
@@ -16,6 +16,8 @@ import { useClient, useSession } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 export default function Settings() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const router = useRouter();
   const { serverUrl } = useSession();
@@ -95,6 +97,8 @@ interface RowProps {
 }
 
 function Row({ label, value, mono, icon, onPress }: Readonly<RowProps>) {
+  const s = useStyles(sDefinition);
+
   // A row with no value renders nothing, which is how a git-less build hides
   // its own empty rows.
   if (!value) return null;
@@ -119,7 +123,7 @@ function Row({ label, value, mono, icon, onPress }: Readonly<RowProps>) {
 
 const MONO = Platform.select({ ios: 'Menlo', default: 'monospace' });
 
-const s = styles({
+const sDefinition = styles({
   body: { gap: spacing.sm, p: spacing.md, ...boxed(contentWidth.reading) },
   group: {
     ...type.small,

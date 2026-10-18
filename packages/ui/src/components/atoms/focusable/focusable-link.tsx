@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { cloneHost } from '#ui/lib/slot';
 import { hostRole } from './focusable-a11y';
 import { hostFor } from './focusable-delegate';
-import { coatStack } from './focusable-paint';
+import { useCoatStack } from './focusable-paint';
 import type { FocusableProps, HostAt } from './focusable-types';
 
 // One click handler, the delegate's. A second would navigate twice, and would
@@ -11,7 +11,7 @@ function LinkForm({
   child,
   at,
 }: Readonly<{ child: FocusableProps['children']; at: HostAt }>): ReactNode {
-  const painted = coatStack({
+  const painted = useCoatStack({
     base: at.style,
     hovered: at.hovered,
     hoveredStyle: at.hoveredStyle,

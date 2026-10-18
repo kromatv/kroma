@@ -1,3 +1,5 @@
+import { resolveStyles, type StyleScope } from '#ui/core';
+import { DEFAULT_STYLE_SCOPE } from '#ui/core/style-scope';
 import { useKitSettings } from './kit-settings';
 // THE control shell: the one well every input wears.
 //
@@ -101,8 +103,11 @@ export const CONTROL: Record<ControlSize, ControlMetrics> = {
 
 /** A control's corner, against the ACTIVE theme. Read it at render time: a
  *  value copied out at module load keeps the theme it was read under. */
-export function controlRadius(metrics: ControlMetrics): Radius {
-  return radiusValue(metrics.radius);
+export function controlRadius(
+  metrics: ControlMetrics,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
+): Radius {
+  return radiusValue(metrics.radius, undefined, activeTheme(scope.theme));
 }
 
 /**
@@ -158,18 +163,22 @@ export const keyFace = {
  * says where the focus is, and an amber edge under an amber ring reads as two
  * rings around one control. Invalid still speaks, since it says something the
  * ring does not. */
-export function edgeColor(_focused: boolean, invalid: boolean): string {
-  const { colors } = activeTheme();
+export function edgeColor(
+  _focused: boolean,
+  invalid: boolean,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
+): string {
+  const { colors } = activeTheme(scope.theme);
   return invalid ? colors.danger : colors.borderStrong;
 }
 
 /** A focused field wears the same amber ring as every other control, rather
  *  than a 1px edge recolour: a field is a focus target like any other and has
  *  to read as one from three metres. */
-const shell = styles({ ring: { ring: 'focusLift' } });
+const shellDefinition = styles({ ring: { ring: 'focusLift' } });
 
-export function fieldRing(): TextStyle {
-  return shell.ring;
+export function fieldRing(scope: StyleScope = DEFAULT_STYLE_SCOPE): TextStyle {
+  return resolveStyles(shellDefinition, scope).ring;
 }
 
 /**
@@ -185,6 +194,7 @@ export function fieldRing(): TextStyle {
 export function fieldShell(
   metrics: ControlMetrics,
   at: Readonly<{ flat: boolean; focused: boolean; invalid: boolean }>,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
 ): { box: Record<string, unknown>; edge: TextStyle | null } {
   if (at.flat) return { box: { radius: 0, bg: 'transparent', borderWidth: 0 }, edge: null };
   return {
@@ -193,10 +203,14 @@ export function fieldShell(
       bg: metrics.bg,
       borderWidth: 1,
     },
-    edge: sharedStyle(`field:edge:${at.focused}:${at.invalid}`, {
-      borderColor: edgeColor(at.focused, at.invalid),
-      ...(at.focused ? fieldRing() : null),
-    }) as TextStyle,
+    edge: sharedStyle(
+      `field:edge:${at.focused}:${at.invalid}`,
+      {
+        borderColor: edgeColor(at.focused, at.invalid, scope),
+        ...(at.focused ? fieldRing(scope) : null),
+      },
+      scope,
+    ) as TextStyle,
   };
 }
 

@@ -1,9 +1,9 @@
 import { deviceStorage } from '@kromatv/client';
 import { Appearance } from 'react-native';
+import type { DeviceStore } from '#ui/lib/device-store';
 import { webDocument } from '#ui/lib/dom';
 import { WEB } from '#ui/lib/platform';
-import { KROMA, KROMA_LIGHT, setTheme } from './theme.ts';
-import { CSS_COLORS } from './tokens/css-palette.ts';
+import type { StyleRuntime } from './style-runtime';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -21,23 +21,23 @@ export const isThemeMode = (v: unknown): v is ThemeMode =>
 
 const COOKIE = new RegExp(String.raw`(?:^|;\s*)${THEME_COOKIE}=([^;]+)`);
 
-function stored(jar?: string): string | null {
+function stored(jar?: string, storage?: DeviceStore | null): string | null {
   if (WEB) return COOKIE.exec(jar ?? webDocument()?.cookie ?? '')?.[1] ?? null;
   try {
-    return deviceStorage()?.getItem(THEME_KEY) ?? null;
+    return (storage === undefined ? deviceStorage() : storage)?.getItem(THEME_KEY) ?? null;
   } catch {
     return null; /* storage unavailable */
   }
 }
 
-function store(mode: ThemeMode): void {
+function store(mode: ThemeMode, storage?: DeviceStore | null): void {
   if (WEB) {
     const doc = webDocument();
     if (doc) doc.cookie = `${THEME_COOKIE}=${mode};path=/;max-age=31536000;samesite=lax`;
     return;
   }
   try {
-    deviceStorage()?.setItem(THEME_KEY, mode);
+    (storage === undefined ? deviceStorage() : storage)?.setItem(THEME_KEY, mode);
   } catch {
     /* storage unavailable */
   }
@@ -50,8 +50,8 @@ export function resolveMode(mode: ThemeMode): 'light' | 'dark' {
   return Appearance.getColorScheme() === 'light' ? 'light' : 'dark';
 }
 
-export function readMode(cookie?: string): ThemeMode {
-  const found = stored(cookie);
+export function readMode(cookie?: string, storage?: DeviceStore | null): ThemeMode {
+  const found = stored(cookie, storage);
   return isThemeMode(found) ? found : 'system';
 }
 
@@ -61,16 +61,14 @@ export function readMode(cookie?: string): ThemeMode {
  * re-render, and `system` is stamped as ABSENCE for the media query to answer.
  * React Native has no cascade, so there the store moves instead.
  */
-export function applyMode(mode: ThemeMode): void {
-  const root = webDocument()?.documentElement;
-  if (root) {
-    if (mode === 'system') delete root.dataset.theme;
-    else root.dataset.theme = mode;
-  }
-  if (!CSS_COLORS) setTheme(resolveMode(mode) === 'light' ? KROMA_LIGHT : KROMA);
+export function applyMode(mode: ThemeMode, runtime: StyleRuntime): void {
+  runtime.setMode(mode);
 }
-
-export function writeMode(mode: ThemeMode): void {
-  store(mode);
-  applyMode(mode);
+export function writeMode(
+  mode: ThemeMode,
+  runtime: StyleRuntime,
+  storage?: DeviceStore | null,
+): void {
+  store(mode, storage);
+  runtime.setMode(mode);
 }

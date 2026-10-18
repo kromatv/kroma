@@ -1,3 +1,4 @@
+import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // The request page's side panel and moderation chrome: who asked, what for, the
 // approve/deny/delete controls and the deny note. Pure presentation, so the page
 // itself stays data + layout.
@@ -38,13 +39,16 @@ export function IdentityCard({
   /** The catalog entry this title already is, when the library holds it. */
   localId?: string | null;
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   const t = useT();
   const km = kindMeta(req.kind === 'show' ? 'series' : 'film');
   return (
     <Surface elevated radius="xl" pad="lg">
       <Box row gap={16}>
         <Box w={70} h={104} shrink={0} radius="xs" overflow="hidden">
-          <Box fill style={posterScrim(req.title)} />
+          <Box fill style={posterScrim(req.title, scope)} />
           <Image src={posterUrl ?? req.posterUrl} fit="cover" fill />
         </Box>
         <Box minW={0} pt={4} align="flex-start" gap={10}>

@@ -1,11 +1,10 @@
 // @vitest-environment jsdom
 
-import { renderHook } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { KitProvider } from '#ui/configure';
-import { pinDesignWidth } from '#ui/core';
 import { breakpoint } from '#ui/core/tokens';
+import { createStyleTestHost } from '#ui/testing-style';
 import {
   bySize,
   CONTROL,
@@ -18,6 +17,9 @@ import {
   useEntryDefaults,
   useEntryFontSize,
 } from './field-shell';
+
+const styleHost = createStyleTestHost();
+const { renderHook, pinDesignWidth } = styleHost;
 
 afterEach(() => {
   pinDesignWidth();

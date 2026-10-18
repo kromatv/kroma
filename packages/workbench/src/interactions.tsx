@@ -1,6 +1,6 @@
 // The interactions panel: a story's play function as it runs, one row per step.
 
-import { Box, Chip, Icon, type IconName, Spinner, styles, Text } from '@kromatv/ui/kit';
+import { Box, Chip, Icon, type IconName, Spinner, styles, Text, useStyles } from '@kromatv/ui/kit';
 import type { ColorToken } from '@kromatv/ui/tokens';
 import { RULE } from './chrome';
 import type { PlayStatus, PlayStep } from './play-types';
@@ -33,6 +33,8 @@ const INDENT = 16;
 const GUTTER = 25;
 
 function StepRow({ step, last }: Readonly<{ step: PlayStep; last: boolean }>) {
+  const s = useStyles(sDefinition);
+
   const look = LOOK[step.status];
   return (
     <Box gap={5} py={9} pl={step.depth * INDENT} style={last ? undefined : RULE}>
@@ -59,6 +61,8 @@ function StepRow({ step, last }: Readonly<{ step: PlayStep; last: boolean }>) {
 }
 
 function Failure({ message, indent }: Readonly<{ message: string; indent: number }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box ml={indent} px={10} py={8} radius="md" bg="surface2">
       <Text variant="meta" color="danger" style={s.message}>
@@ -78,6 +82,8 @@ interface InteractionsProps {
 
 /** The transcript of the run on the stage, live. */
 function Interactions({ steps, status, error, onReplay }: Readonly<InteractionsProps>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box gap={14}>
       <Box row align="center" between gap={12}>
@@ -112,7 +118,7 @@ function Interactions({ steps, status, error, onReplay }: Readonly<InteractionsP
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   label: { fontSize: 12.5, fontWeight: '600', shrink: 1 },
   message: { font: 'mono', fontSize: 11.5 },
   status: { fontSize: 10.5, letterSpacing: 0.4, textTransform: 'uppercase', fontWeight: '700' },

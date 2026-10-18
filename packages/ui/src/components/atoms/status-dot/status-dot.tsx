@@ -1,8 +1,9 @@
+import { useStyleScope } from '#ui/core';
 // Reachability dot: green up, red down, grey while the first probe is in flight.
 // The third state matters: "not known yet" must not look like "down".
 
 import { Box } from '#ui/components/atoms/box';
-import { type ColorValue, color, sharedStyle } from '#ui/core';
+import { activeTheme, type ColorValue, color, type StyleScope, sharedStyle } from '#ui/core';
 
 /** What one status reads as: the dot's fill and its optional halo. */
 interface Look {
@@ -18,7 +19,9 @@ interface StatusDotProps {
 }
 
 function StatusDot({ online, size = 10, overArt = false }: Readonly<StatusDotProps>) {
-  const look = lookOf(online);
+  const scope = useStyleScope();
+
+  const look = lookOf(online, scope);
   const shadow = [overArt ? ART_RING : null, look.glow].filter(Boolean).join(', ');
   return (
     <Box
@@ -27,19 +30,19 @@ function StatusDot({ online, size = 10, overArt = false }: Readonly<StatusDotPro
       shrink={0}
       radius="circle"
       bg={look.bg}
-      style={shadow ? sharedStyle(`status-dot:glow:${shadow}`, { boxShadow: shadow }) : null}
+      style={shadow ? sharedStyle(`status-dot:glow:${shadow}`, { boxShadow: shadow }, scope) : null}
     />
   );
 }
 
-function lookOf(online?: boolean) {
+function lookOf(online: boolean | undefined, scope: StyleScope): Look {
   if (online === undefined) return PENDING;
-  return online ? UP : DOWN;
+  const token = online ? 'success' : 'danger';
+  const halo = color(`${token}/75`, activeTheme(scope.theme));
+  return { bg: token, glow: `0 0 7px ${halo}` };
 }
 
 const PENDING: Look = { bg: 'tint/25', glow: null };
-const UP: Look = { bg: 'success', glow: `0 0 7px ${color('success/75')}` };
-const DOWN: Look = { bg: 'danger', glow: `0 0 7px ${color('danger/75')}` };
 
 const ART_RING = `0 0 0 2px ${color('black/40')}`;
 

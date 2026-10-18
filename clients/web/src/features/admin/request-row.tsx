@@ -1,3 +1,4 @@
+import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // One request row in the admin queue: poster, title + type pill + seasons,
 // requester, date, status chip, and quick approve/deny on pending rows.
 
@@ -14,9 +15,12 @@ import { Image } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 function Poster({ req }: Readonly<{ req: MediaRequest }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   return (
     <Box w={32} h={46} shrink={0} radius="xs" overflow="hidden">
-      <Box fill style={posterScrim(req.title)} />
+      <Box fill style={posterScrim(req.title, scope)} />
       <Image src={req.posterUrl} fit="cover" fill />
     </Box>
   );

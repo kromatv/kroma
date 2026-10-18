@@ -1,3 +1,4 @@
+import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // Circular progress ring (downloads), from the design system. Wraps
 // @kromatv/ui's <ProgressRing> with this app's own contract: a negative value
 // means "indeterminate", shown as the platform spinner instead of a ring
@@ -14,6 +15,9 @@ export function ProgressRing({
   size?: number;
   thickness?: number;
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   if (progress < 0) return <Spinner size={20} color="accent" />;
   return (
     <Ring
@@ -22,8 +26,8 @@ export function ProgressRing({
       value={Math.max(0.02, progress)}
       size={size}
       thickness={thickness}
-      track={color('borderStrong')}
-      fill={color('accent')}
+      track={color('borderStrong', activeTheme(scope.theme))}
+      fill={color('accent', activeTheme(scope.theme))}
     />
   );
 }

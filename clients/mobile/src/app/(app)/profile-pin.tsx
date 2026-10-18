@@ -2,7 +2,7 @@
 // Face ID / Touch ID.
 
 import { apiErrorText } from '@kromatv/client';
-import { Box, Button, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
@@ -32,6 +32,8 @@ type Step =
   | { kind: 'confirm'; current?: string; first: string };
 
 export default function ProfilePin() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { user, setUser, serverUrl } = useSession();
@@ -258,7 +260,7 @@ export default function ProfilePin() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   body: { gap: spacing.lg, p: spacing.md, ...boxed(contentWidth.form) },
   buttons: { gap: 10 },
   saved: { ...type.caption, color: 'accentText', textAlign: 'center' },

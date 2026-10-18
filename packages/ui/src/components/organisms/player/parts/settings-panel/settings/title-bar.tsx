@@ -1,3 +1,5 @@
+import { type StyleScope, useStyleScope } from '#ui/core';
+
 // The panel's top line: where it is, the way back, and the way out.
 //
 // The Back button appears in a sub-view only, and is lit from the open list's
@@ -10,11 +12,12 @@ import { IconButton } from '#ui/components/atoms/icon-button';
 import { Text } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
 import { sharedStyle, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { useRevealWhenFocused } from '#ui/lib/focus-scroll';
 import { useT } from '#ui/services/i18n';
 
-const titleOf = (fontSize: number) =>
-  sharedStyle(`title-bar:size:${fontSize}`, { fontSize, flexShrink: 1 });
+const titleOf = (fontSize: number, scope: StyleScope) =>
+  sharedStyle(`title-bar:size:${fontSize}`, { fontSize, flexShrink: 1 }, scope);
 export function TitleBar({
   title,
   back,
@@ -30,6 +33,10 @@ export function TitleBar({
   onClose?: () => void;
   px: (n: number) => number;
 }>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const anchor = useRevealWhenFocused(backFocused);
   return (
@@ -43,7 +50,7 @@ export function TitleBar({
           label={t('player.back')}
         />
       ) : null}
-      <Text lines={1} variant="h1" style={titleOf(px(38))}>
+      <Text lines={1} variant="h1" style={titleOf(px(38), scope)}>
         {title}
       </Text>
       {onClose ? (
@@ -64,6 +71,6 @@ export function TitleBar({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   close: { ml: 'auto' },
 });

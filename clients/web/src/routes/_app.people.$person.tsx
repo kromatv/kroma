@@ -11,6 +11,9 @@ import {
   Row,
   styles,
   Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
 
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -121,7 +124,7 @@ function renderPersonBody(
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   credit: { gap: 8 },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 20 },
   sheen: {
@@ -130,6 +133,8 @@ const s = styles({
 });
 
 function TmdbFilmography({ credits }: Readonly<{ credits: readonly TmdbCredit[] }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <section>
@@ -183,8 +188,13 @@ function TmdbFilmography({ credits }: Readonly<{ credits: readonly TmdbCredit[] 
 }
 
 function PersonInitials({ name, g1, g2 }: Readonly<{ name: string; g1: string; g2: string }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   return (
-    <Box fill center style={wash(g1, g2)}>
+    <Box fill center style={wash(g1, g2, undefined, scope)}>
       <Box fill style={s.sheen} />
       <Text variant="heading" color="white/90">
         {initials(name)}

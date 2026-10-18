@@ -1,3 +1,4 @@
+import { useStyleScope } from '#ui/core';
 // <Grid>: the tile grid of the browse screens.
 //
 // React Native has no CSS grid (and neither does the legacy webOS tier this app
@@ -55,6 +56,8 @@ function columnsFor(width: number, min: number, gap: number): number {
 }
 
 function Grid({ min, columns, width, gap = 24, rowGap, children }: Readonly<GridProps>) {
+  const scope = useStyleScope();
+
   const [measured, setMeasured] = useState(0);
   // Both the cell width and an auto-fill count need the room, so a grid handed
   // no width paints nothing until it has measured itself.
@@ -66,11 +69,15 @@ function Grid({ min, columns, width, gap = 24, rowGap, children }: Readonly<Grid
     setMeasured((current) => (current === next ? current : next));
   }, []);
 
-  const style = sharedStyle(`grid:gap:${rowGap ?? gap}`, { gap: rowGap ?? gap });
-  const line = sharedStyle(`grid:line:${gap}`, { flexDirection: 'row', gap });
-  const cell = sharedStyle(`grid:cell:${cellWidth(room, count, gap)}`, {
-    width: cellWidth(room, count, gap),
-  });
+  const style = sharedStyle(`grid:gap:${rowGap ?? gap}`, { gap: rowGap ?? gap }, scope);
+  const line = sharedStyle(`grid:line:${gap}`, { flexDirection: 'row', gap }, scope);
+  const cell = sharedStyle(
+    `grid:cell:${cellWidth(room, count, gap)}`,
+    {
+      width: cellWidth(room, count, gap),
+    },
+    scope,
+  );
   return (
     <Box onLayout={onLayout}>
       <FocusColumn grid style={style}>

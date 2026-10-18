@@ -15,6 +15,7 @@ import {
   Row,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { clock, dur, rel } from '#web/features/admin/jobs-format';
@@ -23,9 +24,11 @@ import { useAuth } from '#web/shared/lib/auth';
 
 // A pane that scrolls: `overflow-y` and a capped height have no React Native
 // spelling, so the pane stays a real element.
-const s = styles({ pane: { maxHeight: 320, overflowY: 'auto' } });
+const sDefinition = styles({ pane: { maxHeight: 320, overflowY: 'auto' } });
 
 export function JobDetailPanel({ jobKey }: Readonly<{ jobKey: JobKey }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { client } = useAuth();
   const { data } = usePoll(['admin', 'job', jobKey], () => client.jobs.detail(jobKey), 4000);

@@ -11,6 +11,7 @@ import type {
   PlayerStats,
 } from '#ui/components/organisms/player/types';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { useT } from '#ui/services/i18n';
@@ -36,6 +37,8 @@ export function StatsPanel({
   width?: number;
   maxHeight?: number;
 }>) {
+  const sx = useStyles(sxDefinition);
+
   const t = useT();
   const place = useMemo(
     () => ({ position: 'absolute' as const, top, left, zIndex: 20 }),
@@ -143,6 +146,8 @@ function sameStrings(a: readonly string[], b: readonly string[]): boolean {
 }
 
 function SummaryBlockView({ headline, pairs }: Readonly<{ headline?: string; pairs: string[] }>) {
+  const sx = useStyles(sxDefinition);
+
   if (!headline && pairs.length === 0) return null;
   return (
     <Box gap={8}>
@@ -166,6 +171,8 @@ const SummaryBlock = memo(
 );
 
 function GroupGridView({ groups }: Readonly<{ groups: [string, [string, string][]][] }>) {
+  const sx = useStyles(sxDefinition);
+
   if (groups.length === 0) return null;
   return (
     <Box row wrap gap={COL_GAP} align="flex-start" style={sx.topRule}>
@@ -193,6 +200,8 @@ function sameGroups(
 }
 
 function StatBlock({ title, rows }: Readonly<{ title: string; rows: [string, string][] }>) {
+  const sx = useStyles(sxDefinition);
+
   if (rows.length === 0) return null;
   return (
     <Box gap={8} style={sx.column}>
@@ -207,6 +216,8 @@ function StatBlock({ title, rows }: Readonly<{ title: string; rows: [string, str
 }
 
 function StatRow({ label, value }: Readonly<{ label: string; value: string }>) {
+  const sx = useStyles(sxDefinition);
+
   return (
     <Box row between gap={16}>
       <Text style={sx.statLabel} color="text/50">
@@ -291,7 +302,7 @@ const PANEL_PAD = 22;
 const COL_GAP = 26;
 const PAIR_GAP = 14;
 
-const sx = styles({
+const sxDefinition = styles({
   // flexBasis is kept under a third of the inner width (724px): at exactly a
   // third, sub-pixel rounding tips the third column onto its own line.
   column: { flexBasis: 200, grow: 1, shrink: 1, minW: 180 },

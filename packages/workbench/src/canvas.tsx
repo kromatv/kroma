@@ -2,7 +2,7 @@
 // a variant matrix derived from the component's `sv`. The frame table and the
 // arithmetic under all of it are in `viewport.ts`.
 
-import { Box, styles, Text, useTheme } from '@kromatv/ui/kit';
+import { Box, styles, Text, useStyles, useTheme } from '@kromatv/ui/kit';
 import { type ColorToken, colors, nestedRadius } from '@kromatv/ui/tokens';
 import { useCallback, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
@@ -57,6 +57,8 @@ function ViewportFrame({
   inset = 32,
   children,
 }: Readonly<ViewportFrameProps>) {
+  const s = useStyles(sDefinition);
+
   const [area, onLayout] = useMeasuredSize();
   const theme = useTheme();
   const device = frameSize(viewport, rotate && canRotate(viewport));
@@ -142,6 +144,8 @@ function Staged({
   room: number;
   children: React.ReactNode;
 }>) {
+  const s = useStyles(sDefinition);
+
   if (stage.width === undefined) return <Fit available={room}>{children}</Fit>;
   const sized = <Box w={stage.width}>{children}</Box>;
   if (!stage.scroll) return sized;
@@ -165,6 +169,8 @@ function Caption({
   inset: number;
   oriented: boolean;
 }>) {
+  const s = useStyles(sDefinition);
+
   const orientation = size.width > size.height ? 'landscape' : 'portrait';
   return (
     <Box row align="center" px={Math.round(inset * 0.75)} pt={12}>
@@ -188,6 +194,8 @@ function Caption({
 // against the full one. Those stories declare `width` and the stage scrolls
 // them instead.
 function Fit({ available, children }: Readonly<{ available: number; children: React.ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const [natural, measure] = useMeasuredSize();
 
   const wanted = natural.width;
@@ -232,6 +240,8 @@ interface MatrixProps {
 // One labelled row per variant group, every other axis held at its current value, deliberately
 // not the full cartesian product.
 function Matrix({ rows, args, render }: Readonly<MatrixProps>) {
+  const s = useStyles(sDefinition);
+
   if (rows.length === 0) {
     return (
       <Text variant="meta" color="textDim">
@@ -265,7 +275,7 @@ function Matrix({ rows, args, render }: Readonly<MatrixProps>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   caption: { fontSize: 11, opacity: 0.75 },
   scaledBox: { overflow: 'visible' },
   measure: { self: 'flex-start' },

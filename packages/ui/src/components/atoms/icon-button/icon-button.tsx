@@ -1,3 +1,4 @@
+import { activeTheme, useStyleScope } from '#ui/core';
 // <IconButton>: a round, icon-only control (the theme-song mute, a close button,
 // a player transport key). Same focus behaviour as <Button>, no label.
 
@@ -165,6 +166,8 @@ function IconButton({
   onBlur,
   ...focusProps
 }: Readonly<IconButtonProps>) {
+  const scope = useStyleScope();
+
   const entryDefaults = useEntryDefaults();
   const delegate = delegateOf(asChild, children);
   const group = useGroupMember(onFocus, onBlur);
@@ -172,7 +175,8 @@ function IconButton({
   const shell = CONTROL[row ?? entryDefaults.size];
   const box$ = diameter ?? shell.height;
   const asked = cornerRadius ?? (row ? shell.radius : undefined);
-  const corner = asked === undefined ? undefined : radiusValue(asked);
+  const corner =
+    asked === undefined ? undefined : radiusValue(asked, undefined, activeTheme(scope.theme));
   const glyphSize = glyph ?? Math.round(box$ * 0.4);
   const theme = useTheme();
   const frost = useFrostCoat(metrics(box$, corner ?? theme.radius.pill), {

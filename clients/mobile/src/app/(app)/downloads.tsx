@@ -4,7 +4,15 @@
 import type { MediaItem } from '@kromatv/client/media';
 import { episodeTag, formatRuntime } from '@kromatv/core';
 import { useFormat } from '@kromatv/ui';
-import { Box, type ColorValue, radius as cornerRadius, Icon, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  type ColorValue,
+  radius as cornerRadius,
+  Icon,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
@@ -24,6 +32,8 @@ import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 function RowArt({ uri, seed }: Readonly<{ uri: string | null; seed: string }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box>
       <FadeImage uri={uri} seed={seed} radius={radius.sm} style={s.thumb} />
@@ -37,6 +47,8 @@ function RowArt({ uri, seed }: Readonly<{ uri: string | null; seed: string }>) {
 }
 
 function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const fmt = useFormat();
   const router = useRouter();
@@ -108,6 +120,8 @@ function ActiveRow({
   progress: number;
   mode: 'downloading' | 'paused' | 'queued';
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const downloads = useDownloads();
@@ -168,6 +182,8 @@ function ActiveRow({
 }
 
 function LegendItem({ tint, label }: Readonly<{ tint?: ColorValue; label: string }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.legendItem}>
       <Box bg={tint} style={[s.legendDot, !tint && s.legendDotOutlined]} />
@@ -177,6 +193,8 @@ function LegendItem({ tint, label }: Readonly<{ tint?: ColorValue; label: string
 }
 
 function StorageMeter() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const fmt = useFormat();
   const downloads = useDownloads();
@@ -221,6 +239,8 @@ function StorageMeter() {
 }
 
 export default function Downloads() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const downloads = useDownloads();
   const hasAnything =
@@ -268,7 +288,7 @@ export default function Downloads() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   list: { gap: 4, px: spacing.md, pb: spacing.xl, ...boxed(contentWidth.reading) },
   activeBlock: { gap: 4, mb: spacing.sm },
   row: { row: true, align: 'center', gap: 12, p: 8, bg: 'bg', radius: radius.md },

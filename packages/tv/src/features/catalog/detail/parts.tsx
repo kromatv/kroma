@@ -13,12 +13,15 @@ import {
   styles,
   Text,
   typeSpec as textRoles,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { useClient, useNav } from '#tv/app/router';
 
 /** "Se termine à 21h32 si vous lancez maintenant", only when a runtime is known. */
 export function EndsAtHint({ runtimeMs }: Readonly<{ runtimeMs?: number | null }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const locale = useLocale();
   const at = endsAtClock(runtimeMs, locale);
@@ -60,6 +63,8 @@ export function CastRow({
   cast,
   crew,
 }: Readonly<{ cast?: CastMember[] | null; crew?: CrewMember[] | null }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const nav = useNav();
@@ -153,7 +158,7 @@ export function ThemeButton({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   sectionLabelSm: { fontSize: textRoles.label.size, fontWeight: '600' },
   sectionLabel: {
     fontSize: textRoles.label.size,

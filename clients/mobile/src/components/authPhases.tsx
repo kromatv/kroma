@@ -1,6 +1,6 @@
 // Presentation only; auth calls and phase switching stay in sign-in.
 
-import { Box, Button, Field, OtpField, Spinner, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, Field, OtpField, Spinner, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { spacing, type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';
@@ -13,6 +13,8 @@ function IdentityHeader({
   identity,
   subtitle,
 }: Readonly<{ identity: Identity; subtitle?: string }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.identity}>
       <Avatar uri={identity.avatarUri} name={identity.name} size={72} />
@@ -137,7 +139,7 @@ export function CredentialsPhase({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   identity: { align: 'center', gap: spacing.xs, mb: spacing.xs },
   name: { ...type.heading, mt: 6 },
   subtitle: { ...type.caption, mt: 4, textAlign: 'center' },

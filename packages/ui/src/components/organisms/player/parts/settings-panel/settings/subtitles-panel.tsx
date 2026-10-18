@@ -10,6 +10,7 @@ import { subtitleName } from '#ui/components/organisms/player/lib/subtitle-name'
 import { IconAi } from '#ui/components/organisms/player/parts/icons';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
 import { style, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import { useT } from '#ui/services/i18n';
 import type { PlayerSubtitleGeneration } from '../../../media-types';
@@ -41,6 +42,8 @@ export function SubtitlesPanel({
   onBack,
   ref,
 }: Readonly<SubtitlesPanelProps>) {
+  const panelScoped = useStyles(panel);
+
   const t = useT();
   const [wizardOpen, setWizardOpen] = useState(false);
   const wizardRef = useRef<PanelHandle>(null);
@@ -78,7 +81,7 @@ export function SubtitlesPanel({
 
   return (
     <Box>
-      <Box style={panel.panelList}>
+      <Box style={panelScoped.panelList}>
         <SelectRow
           index={0}
           label={t('player.subtitlesOff')}
@@ -157,6 +160,8 @@ export function SubtitlesPanel({
 
 const MIN_W = style({ minWidth: 0 });
 function AiBadge() {
+  const s = useStyles(sDefinition);
+
   return (
     <Box row align="center" gap={4} shrink={0} radius="xs" px={6} py={2} bg="ai/18">
       <IconAi size={11} color="aiLabel" />
@@ -186,6 +191,8 @@ function GenRow({
   gen,
   onCancel,
 }: Readonly<{ gen: PlayerSubtitleGeneration; onCancel: (id: string) => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const pct = Math.round(gen.progress * 100);
   const err = gen.status === 'error';
@@ -226,7 +233,7 @@ function GenRow({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   pct: { text: 'footnoteTv', fontVariant: ['tabular-nums'] },
   eta: { text: 'footnoteTv', mt: 6 },
   aiBadgeLabel: { text: 'overline', color: 'aiLabel' },

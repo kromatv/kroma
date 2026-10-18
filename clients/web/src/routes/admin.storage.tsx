@@ -15,6 +15,7 @@ import {
   styles,
   Text,
   useConfirm,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -242,6 +243,8 @@ function LimitSelect({
 }
 
 function VolumeCard({ v }: Readonly<{ v: Volume }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const fmt = useFormat();
   const pct = v.totalBytes ? Math.round((v.usedBytes / v.totalBytes) * 100) : 0;
@@ -277,7 +280,10 @@ function VolumeCard({ v }: Readonly<{ v: Volume }>) {
   );
 }
 
-const s = styles({ figures: { fontVariant: ['tabular-nums'] }, quiet: { fontWeight: '500' } });
+const sDefinition = styles({
+  figures: { fontVariant: ['tabular-nums'] },
+  quiet: { fontWeight: '500' },
+});
 
 function MaintRow({
   title,

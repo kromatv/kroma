@@ -1,3 +1,6 @@
+import type { StyleScope } from '#ui/core';
+import { useStyleScope, useSv } from '#ui/core';
+
 // <Keypad>: the remote's half of <PinField>. Nine digits, a zero and a
 // delete, laid out as the phone dial everybody knows so the D-pad walks it
 // without instructions.
@@ -19,6 +22,7 @@ import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, sharedStyle, styles, svFor } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { HAND } from '#ui/lib/cursor';
 import { keyFace } from '#ui/lib/field-shell';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
@@ -31,7 +35,7 @@ import { useTDefault } from '#ui/services/i18n';
 // module, and a bare `import` would break both. (`await import()` is not an
 // option under Metro - it throws in dev builds.)
 
-const gapOf = (gap: number) => sharedStyle(`keypad:gap:${gap}`, { gap });
+const gapOf = (gap: number, scope: StyleScope) => sharedStyle(`keypad:gap:${gap}`, { gap }, scope);
 function loadHaptics(): { selectionAsync: () => Promise<void> } | null {
   try {
     return require('expo-haptics');
@@ -100,6 +104,10 @@ function Keypad({
   autoFocus = true,
   disabled,
 }: Readonly<KeypadProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const t = useTDefault();
   const gap = GAP[size];
   const padRow = [s.padRow, { gap }];
@@ -112,7 +120,7 @@ function Keypad({
     else onDigit(value);
   });
   return (
-    <FocusColumn grid style={[HAND, s.pad, gapOf(gap)]}>
+    <FocusColumn grid style={[HAND, s.pad, gapOf(gap, scope)]}>
       {ROWS.map((row) => (
         <FocusRegion key={row.join('')} style={padRow}>
           {row.map((d) => (
@@ -169,7 +177,9 @@ function PadKey({
   autoFocus,
   onPress,
 }: Readonly<PadKeyProps>) {
-  const frost = useFrostCoat(keypadVariants({ kind, size }).root);
+  const keypadVariantsScoped = useSv(keypadVariants);
+
+  const frost = useFrostCoat(keypadVariantsScoped({ kind, size }).root);
   return (
     <Focusable
       onPress={() => onPress(value)}
@@ -203,7 +213,7 @@ function PadSpacer({ size }: Readonly<{ size: KeypadSize }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   pad: {},
   padRow: { row: true },
 });

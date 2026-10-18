@@ -2,7 +2,7 @@ import { type ReactNode, useMemo } from 'react';
 import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import type { ResizableStorage } from '#ui/components/organisms/resizable';
-import { useBreakpointStep } from '#ui/core';
+import { useBreakpointStep, useStyleScope } from '#ui/core';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { Cell } from './table-cell';
 import {
@@ -66,6 +66,7 @@ function Root({
   storage,
   children,
 }: Readonly<TableRootProps>) {
+  const scope = useStyleScope();
   const sections = useMemo(() => parts(children), [children]);
   const places = useMemo(
     () =>
@@ -80,8 +81,12 @@ function Root({
   );
   const declared = useMemo(() => {
     const list = columns ?? NO_COLUMNS;
-    return { list, boxes: list.map(columnBox), breakpoints: breakpointMask(list) };
-  }, [columns]);
+    return {
+      list,
+      boxes: list.map((column) => columnBox(column, scope)),
+      breakpoints: breakpointMask(list),
+    };
+  }, [columns, scope]);
   const press = useStableCallback((column: string) => {
     onSortChange?.(nextSort(sort ?? NO_SORT, column, { multiple, required }), { column });
   });

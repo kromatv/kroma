@@ -18,6 +18,9 @@ import {
   typeSpec as textRoles,
   fontSizes as textSizes,
   tintGradient,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -35,6 +38,8 @@ import { FadeImage } from './FadeImage';
 export { DetailActions } from './DetailActions';
 
 export function MetaBadge({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.badge}>
       <Text style={s.badgeText}>{children}</Text>
@@ -45,6 +50,8 @@ export function MetaBadge({ children }: Readonly<{ children: ReactNode }>) {
 const MAX_GENRE_CHIPS = 4;
 
 export function GenreChips({ meta }: Readonly<{ meta: TitleGenres | null | undefined }>) {
+  const s = useStyles(sDefinition);
+
   const router = useRouter();
   const t = useT();
   const slugs = genreSlugs(meta).slice(0, MAX_GENRE_CHIPS);
@@ -80,6 +87,11 @@ export function DetailHero({
   meta?: ReactNode;
   scrollY?: SharedValue<number>;
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -96,7 +108,7 @@ export function DetailHero({
       transform: [{ translateY: y / 2 }, { scale: 1 - y / height }],
     };
   });
-  const ground = shades();
+  const ground = shades(scope);
 
   return (
     <Box style={{ height }}>
@@ -129,6 +141,8 @@ export function DetailHero({
 
 /** Circular cast photos; tapping a member opens their credits page. */
 export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
+  const s = useStyles(sDefinition);
+
   const client = useClient();
   const router = useRouter();
   const gutters = useGutters();
@@ -154,7 +168,7 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   genreRow: { row: true, wrap: true, gap: 8 },
   back: { absolute: true, z: 2 },
   heroText: { absolute: true, bottom: spacing.sm, gap: 6 },

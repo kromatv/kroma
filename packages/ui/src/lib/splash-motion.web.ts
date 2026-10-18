@@ -1,3 +1,4 @@
+import { useStyleScope } from '#ui/core';
 // The splash backdrop's slow drift, web (Tizen / webOS / desktop / browser).
 //
 // react-native-web silently drops `useNativeDriver` (its TurboModuleRegistry
@@ -75,6 +76,8 @@ function sheet(spec: Readonly<DriftSpec>): ViewStyle {
  * the native half needs.
  */
 export function useDrift(spec: Readonly<DriftSpec>): StyleProp<ViewStyle> {
+  const scope = useStyleScope();
+
   const { x, y, zoom, ms, width, height } = spec;
   return useMemo(() => {
     // A zero-height box is the frame before layout: there is nothing to pan yet,
@@ -82,9 +85,9 @@ export function useDrift(spec: Readonly<DriftSpec>): StyleProp<ViewStyle> {
     if (!width || !height) return null;
     return [
       sheet({ x, y, zoom, ms, width, height }),
-      sharedStyle(`splash:drift:${ms}`, { animationDuration: `${ms * 2}ms` }),
+      sharedStyle(`splash:drift:${ms}`, { animationDuration: `${ms * 2}ms` }, scope),
     ];
-  }, [x, y, zoom, ms, width, height]);
+  }, [x, y, zoom, ms, width, height, scope]);
 }
 
 /** The colour grade for the artwork.

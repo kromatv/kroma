@@ -31,7 +31,6 @@ export type {
 export {
   activeTheme,
   applyMode,
-  applyTheme,
   boxStyle,
   color,
   createTheme,
@@ -40,11 +39,8 @@ export {
   KROMA,
   KROMA_LIGHT,
   onPaper,
-  onThemeChange,
-  pinDesignWidth,
   readMode,
   registered,
-  setTheme,
   sharedStyle,
   style,
   styles,
@@ -58,7 +54,16 @@ export {
   useTheme,
   writeMode,
 } from './core';
+export { createBreakpointRuntime } from './core/breakpoint';
+export { useSv } from './core/recipe';
+export { useStyleRuntime, useStyleScope } from './core/style-context';
+export { createStyleRuntime } from './core/style-runtime';
+export type { StyleScope } from './core/style-scope';
+export { DEFAULT_STYLE_SCOPE } from './core/style-scope';
+export { resolveStyles, useStyles } from './core/styles';
+export { createThemeRuntime } from './core/theme';
 export * from './core/tokens';
+export { useThemeControls, useThemeVersion } from './core/use-theme';
 export type { AnchorPlacement, AnchorRect, AnchorViewport } from './lib/anchor';
 export { placeUnder } from './lib/anchor';
 export type { ListKeysAt, PanelKeyEvent, PanelScroll } from './lib/anchored-keys';

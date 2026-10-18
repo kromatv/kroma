@@ -8,15 +8,18 @@
 import { Image } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { gradient } from '#ui/lib/css';
 import type { StoryboardTile } from '#ui/services/storyboard';
 
-const s = styles({
+const sDefinition = styles({
   vignette: { pointerEvents: 'none' },
 });
 const TILE_VIGNETTE = 'radial-gradient(120% 120% at 50% 35%, transparent, rgba(0,0,0,0.5))';
 
 export function StoryboardThumb({ tile }: Readonly<{ tile: StoryboardTile }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box
       w={tile.width}

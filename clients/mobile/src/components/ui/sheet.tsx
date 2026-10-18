@@ -1,3 +1,5 @@
+import { resolveStyles, type StyleScope } from '@kromatv/ui/kit';
+
 // The chrome every drawer in the app is drawn in.
 
 import {
@@ -5,7 +7,7 @@ import {
   type BottomSheetBackdropProps,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { styles, Text } from '@kromatv/ui/kit';
+import { styles, Text, useStyles } from '@kromatv/ui/kit';
 import { type ReactNode, useMemo } from 'react';
 import { type StyleProp, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,21 +35,25 @@ export function SheetBody({
   children,
   style,
 }: Readonly<{ children: ReactNode; style?: StyleProp<ViewStyle> }>) {
+  const s = useStyles(sDefinition);
+
   const insets = useSafeAreaInsets();
   const minHeight = useSheetMinHeight();
   const body = useMemo(
     () =>
       StyleSheet.flatten([s.body, { minHeight, paddingBottom: insets.bottom + spacing.md }, style]),
-    [minHeight, insets.bottom, style],
+    [minHeight, insets.bottom, style, s.body],
   );
   return <BottomSheetView style={body}>{children}</BottomSheetView>;
 }
 
 export function SheetTitle({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return <Text style={s.title}>{children}</Text>;
 }
 
-const s = styles({
+const sDefinition = styles({
   surface: { bg: 'surface2', borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
   grabber: { w: 40, bg: 'textDim' },
   body: { px: spacing.md, pt: spacing.sm },
@@ -56,10 +62,10 @@ const s = styles({
 
 /** The backdrop, surface and grabber every drawer spreads onto its modal.
  *  Called during render, so the surface follows the active ground. */
-export function sheetChrome() {
+export function sheetChrome(scope: StyleScope) {
   return {
     backdropComponent: SheetBackdrop,
-    backgroundStyle: s.surface,
-    handleIndicatorStyle: s.grabber,
+    backgroundStyle: resolveStyles(sDefinition, scope).surface,
+    handleIndicatorStyle: resolveStyles(sDefinition, scope).grabber,
   };
 }

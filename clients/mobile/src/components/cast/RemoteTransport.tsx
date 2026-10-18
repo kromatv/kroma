@@ -1,5 +1,12 @@
 import { BACK_10_ICON, FWD_10_ICON } from '@kromatv/ui';
-import { Box, radius as cornerRadius, Icon, type IconName, styles } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  Icon,
+  type IconName,
+  styles,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { spacing } from '#mobile/lib/theme';
@@ -17,6 +24,8 @@ export function RemoteTransport({
   onSkip(deltaMs: number): void;
   onTogglePlay(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <Box style={s.transport}>
@@ -38,6 +47,8 @@ function Round({
   onPress,
   big,
 }: Readonly<{ icon: IconName; label: string; onPress(): void; big?: boolean }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       onPress={onPress}
@@ -50,7 +61,7 @@ function Round({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   transport: { row: true, center: true, gap: spacing.lg, py: spacing.sm },
   round: { center: true, w: 56, h: 56, bg: 'surface2', radius: cornerRadius.mobileHero },
   roundBig: { w: 76, h: 76, bg: 'surface3', radius: cornerRadius.transport },

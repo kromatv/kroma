@@ -6,6 +6,7 @@ import {
   styles,
   Text,
   fontSizes as textSizes,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useT } from '#mobile/lib/i18n';
@@ -13,6 +14,8 @@ import { useUnreadCount } from '#mobile/lib/notifications';
 import { type } from '#mobile/lib/theme';
 
 export function NotificationBell() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const router = useRouter();
   const unread = useUnreadCount();
@@ -39,7 +42,7 @@ export function NotificationBell() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   badge: {
     absolute: true,
     top: -5,

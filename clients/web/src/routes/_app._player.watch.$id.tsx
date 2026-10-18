@@ -1,12 +1,12 @@
 import { ItemId } from '@kromatv/client/media';
-import { Box, styles } from '@kromatv/ui/kit';
+import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { Player } from '#web/features/playback/player';
 import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
 
-const s = styles({ black: { position: 'fixed', inset: 0, bg: 'black' } });
+const sDefinition = styles({ black: { position: 'fixed', inset: 0, bg: 'black' } });
 export const Route = createFileRoute('/_app/_player/watch/$id')({
   loader: async ({ params, context: { queryClient } }) => {
     if (!isAuthed()) throw redirect({ to: '/' });
@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_app/_player/watch/$id')({
   },
   // Player is fullscreen with its own buffering spinner; a black hold beats a
   // structural skeleton here.
-  pendingComponent: () => <Box style={s.black} />,
+  pendingComponent: PendingPlayer,
   component: WatchPage,
 });
 
@@ -44,4 +44,9 @@ function WatchPage() {
       }
     />
   );
+}
+
+function PendingPlayer() {
+  const s = useStyles(sDefinition);
+  return <Box style={s.black} />;
 }

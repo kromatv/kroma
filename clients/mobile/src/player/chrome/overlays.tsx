@@ -12,6 +12,7 @@ import {
   styles,
   Text,
   typeSpec as textRoles,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { Platform, Pressable, type TextStyle } from 'react-native';
 import { FadeImage } from '#mobile/components/FadeImage';
@@ -68,6 +69,8 @@ export function CueLine({
   bottom,
   appearance,
 }: Readonly<{ cue: string; bottom: number; appearance: SubtitleAppearance }>) {
+  const s = useStyles(sDefinition);
+
   if (!cue) return null;
   return (
     <Box style={[s.cueBox, { bottom }]}>
@@ -77,6 +80,8 @@ export function CueLine({
 }
 
 export function BufferingSpinner() {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.centerOverlay} pointerEvents="none">
       <Spinner size={40} color={colors.text} />
@@ -88,6 +93,8 @@ export function SkipIntroButton({
   onPress,
   bottom,
 }: Readonly<{ onPress(): void; bottom: number }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <Button
@@ -109,6 +116,8 @@ export function UpNextCard({
   onPlayNext(): void;
   bottom: number;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const thumb = sizedImageUrl(
@@ -129,7 +138,7 @@ export function UpNextCard({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   centerOverlay: { fill: true, center: true },
   cueBox: { absolute: true, right: 40, left: 40, align: 'center' },
   cueText: {

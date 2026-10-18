@@ -18,6 +18,7 @@ import {
   Row,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useRouter, useRouterState } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
@@ -54,6 +55,8 @@ function ErrorScreen({
   onRetry?: () => void;
   signIn?: HostElement;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { code, title, body } = COPY[kind];
 
@@ -115,7 +118,7 @@ function ErrorScreen({
 // collapse the glyph box to a 1px band and clip the gradient to nothing.
 const NUMERAL = 104;
 
-const s = styles({
+const sDefinition = styles({
   screen: {
     display: 'flex',
     flexDirection: 'column',

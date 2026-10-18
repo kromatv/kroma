@@ -7,9 +7,13 @@ import {
   Img,
   Progress,
   rhythm,
+  type StyleScope,
   sharedStyle,
   styles,
   Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
   VirtualRail,
 } from '@kromatv/ui/kit';
 import { type ReactElement, type ReactNode, useState } from 'react';
@@ -36,9 +40,10 @@ const RAIL_TILE = rhythm.cardWidth;
 const RAIL_GAP = rhythm.rowGap;
 const RAIL_PAD = 12;
 
-const rail = styles({ content: { py: RAIL_PAD } });
+const railDefinition = styles({ content: { py: RAIL_PAD } });
 
-const railHeight = (height: number) => sharedStyle(`poster-rail:${height}`, { height });
+const railHeight = (height: number, scope: StyleScope) =>
+  sharedStyle(`poster-rail:${height}`, { height }, scope);
 
 export interface PosterRailProps<T> {
   data: readonly T[];
@@ -53,12 +58,17 @@ export function PosterRail<T>({
   extraHeight = 0,
   onEndReached,
 }: Readonly<PosterRailProps<T>>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const rail = useStyles(railDefinition);
+
   return (
     <VirtualRail
       data={data}
       itemWidth={RAIL_TILE + RAIL_GAP}
       gap={RAIL_GAP}
-      style={railHeight(Math.round(RAIL_TILE * 1.5) + extraHeight + RAIL_PAD * 2)}
+      style={railHeight(Math.round(RAIL_TILE * 1.5) + extraHeight + RAIL_PAD * 2, scope)}
       contentStyle={rail.content}
       onEndReached={onEndReached}
       renderItem={(item, index) => (

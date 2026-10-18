@@ -2,7 +2,7 @@
 
 import buildInfo from 'virtual:build-info';
 import { useT } from '@kromatv/ui';
-import { Box, Menu, type MenuTriggerBind, styles, Text } from '@kromatv/ui/kit';
+import { Box, Menu, type MenuTriggerBind, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouterState } from '@tanstack/react-router';
 import { type Ref, useState } from 'react';
@@ -18,7 +18,7 @@ import { UserAvatar } from '#web/shared/ui/user-avatar';
 // on: the button has to carry the surface's own radius, or it rings the row as a
 // square. The gap above is a margin for the same reason, so the box the outline
 // traces is the box the eye sees.
-const s = styles({
+const sDefinition = styles({
   tabular: { fontVariant: ['tabular-nums'] },
   noCaps: { textTransform: 'none' },
   chipButton: {
@@ -42,6 +42,8 @@ const s = styles({
 /** Client version + commit come from the build-time `virtual:build-info`
  *  module; the server version is the public `/api/health` endpoint. */
 export function VersionInfo() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { data: health } = useQuery(serverQueries.health());
   const clientTitle = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''} · ${buildInfo.branch} · ${buildInfo.buildDate}`;
@@ -113,6 +115,8 @@ function UserChipTrigger({
   user,
   label,
 }: Readonly<{ bind: MenuTriggerBind; user: ChipUser; label: string }>) {
+  const s = useStyles(sDefinition);
+
   const { ref, expanded, onPress } = bind;
   const [hovered, setHovered] = useState(false);
   const focus = useFocusRing(s.chipButton, 'focusLift');

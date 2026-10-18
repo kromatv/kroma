@@ -58,12 +58,11 @@ function readsPerStep(property: string, steps: readonly Step[]): [string, Compil
     if (!carrier || !substitutes(carrier, text, property, step.value)) {
       throw new Unstatic(`a ${property} stated per breakpoint`);
     }
-    if (step.at === 0) continue;
     const value = cssValue(property, step.value);
     const reached = BREAKPOINTS[step.at] as string;
     rules.push({
       group: STEP_GROUP + step.at,
-      css: `:root[${BREAKPOINT_ATTRIBUTE}~="${reached}"] .${carrier.cls}{${variable}:${value};}`,
+      css: `[${BREAKPOINT_ATTRIBUTE}~="${reached}"]{${variable}:${value};}`,
     });
   }
   return [text, rules];

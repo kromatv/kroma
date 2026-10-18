@@ -1,3 +1,4 @@
+import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // "Signaler un probleme" dialog: any logged-in user flags an issue on a movie /
 // show / episode (wrong metadata, audio, video, subtitles, other) with an
 // optional note. Posts to /api/reports; the server resolves the title itself.
@@ -98,6 +99,8 @@ export const ReportDialog = createCallable<
   { subjectKind: ReportSubjectKind; subjectId: string; subjectTitle: string },
   void
 >(({ call, subjectKind, subjectId, subjectTitle }) => {
+  const scope = useStyleScope();
+  useThemeVersion();
   const t = useT();
   const { client } = useAuth();
   const [category, setCategory] = useState<ReportCategory>('metadata');
@@ -136,7 +139,11 @@ export const ReportDialog = createCallable<
         {sent ? (
           <Box align="center" gap={16} py={32}>
             <Box center w={56} h={56} radius="circle" bg="success/15">
-              <IconCheck size={30} stroke={2.4} color={color('success')} />
+              <IconCheck
+                size={30}
+                stroke={2.4}
+                color={color('success', activeTheme(scope.theme))}
+              />
             </Box>
             <Text variant="label" color="white/85" textAlign="center">
               {t('report.submitted')}
@@ -162,7 +169,11 @@ export const ReportDialog = createCallable<
                       onPress={() => setCategory(c.key)}
                     >
                       <Box mt={2} shrink={0}>
-                        <c.Icon size={19} stroke={1.9} color={color(on ? 'accent' : 'white/45')} />
+                        <c.Icon
+                          size={19}
+                          stroke={1.9}
+                          color={color(on ? 'accent' : 'white/45', activeTheme(scope.theme))}
+                        />
                       </Box>
                       <Box minW={0}>
                         <Text variant="label" color="white">

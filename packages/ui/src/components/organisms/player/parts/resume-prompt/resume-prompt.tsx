@@ -7,7 +7,17 @@ import { Text } from '#ui/components/atoms/text';
 import { useFadeRise } from '#ui/components/organisms/player/hooks/use-fade-rise';
 import { RESUME_WINDOW } from '#ui/components/organisms/player/hooks/use-resume-notice';
 import { GUTTER, scaler } from '#ui/components/organisms/player/lib/metrics';
-import { scaledRadius, sharedStyle, styles, sv } from '#ui/core';
+import {
+  activeTheme,
+  type StyleScope,
+  scaledRadius,
+  sharedStyle,
+  styles,
+  sv,
+  useStyleScope,
+  useSv,
+} from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { formatTimecode } from '#ui/lib/intl';
 import { useT } from '#ui/services/i18n';
 
@@ -18,7 +28,8 @@ const PLATE_WIDTH = 360;
 // the button moved a pixel the moment focus landed on it (as the skip pill did).
 const restartPill = sv({ base: { _focus: { border: 'accent' } } });
 
-const sizeOf = (fontSize: number) => sharedStyle(`resume:size:${fontSize}`, { fontSize });
+const sizeOf = (fontSize: number, scope: StyleScope) =>
+  sharedStyle(`resume:size:${fontSize}`, { fontSize }, scope);
 
 export interface ResumePromptProps {
   /** The second playback opened on, drawn as the timecode it reads. */
@@ -48,6 +59,12 @@ export function ResumePrompt({
   lift,
   onStartOver,
 }: Readonly<ResumePromptProps>) {
+  const restartPillScoped = useSv(restartPill);
+
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const px = scaler(scale);
   const fade = useFadeRise(shown);
@@ -68,13 +85,13 @@ export function ResumePrompt({
           <Box
             w={px(PLATE_WIDTH)}
             maxW="100%"
-            radius={scaledRadius('xl', scale)}
+            radius={scaledRadius('xl', scale, activeTheme(scope.theme))}
             overflow="hidden"
             accessibilityLiveRegion="polite"
             style={s.plate}
           >
             <Box px={px(18)} py={px(14)} gap={px(12)} align="flex-start">
-              <Text variant="labelTv" style={sizeOf(px(LABEL_SIZE))}>
+              <Text variant="labelTv" style={sizeOf(px(LABEL_SIZE), scope)}>
                 {t('player.resumedAt', { time: formatTimecode(at) })}
               </Text>
               <Button
@@ -84,7 +101,7 @@ export function ResumePrompt({
                 icon="rotate-clockwise-2"
                 label={t('player.restart')}
                 onPress={onStartOver}
-                style={restartPill(undefined, { focus: focused }).root}
+                style={restartPillScoped(undefined, { focus: focused }).root}
               />
             </Box>
             {secondsLeft == null ? null : (
@@ -102,4 +119,4 @@ export function ResumePrompt({
   );
 }
 
-const s = styles({ plate: { bg: 'tint/12', border: 'tint/20' } });
+const sDefinition = styles({ plate: { bg: 'tint/12', border: 'tint/20' } });

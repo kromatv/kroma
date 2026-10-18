@@ -14,6 +14,7 @@ import {
   subtitleStyle,
   subtitleWindowStyle,
 } from '#ui/components/organisms/player/lib/subtitle-appearance';
+import { useStyleScope } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
 import { AppearanceRow, Choice, Meter, Seg, Swatches } from './subtitle-appearance-parts';
@@ -71,6 +72,8 @@ export function SubtitleAppearancePanel({
   onBack,
   ref,
 }: Readonly<SubtitleAppearancePanelProps>) {
+  const scope = useStyleScope();
+
   const t = useT();
   const set = (patch: Partial<SubtitleAppearance>) => onAppearanceChange(patch);
 
@@ -172,8 +175,8 @@ export function SubtitleAppearancePanel({
         mb={18}
         style={gradient('linear-gradient(135deg, #1c1c24, #0d0d11)')}
       >
-        <Box style={subtitleWindowStyle(appearance)}>
-          <Text style={subtitleStyle(appearance)}>{t('player.subPreview')}</Text>
+        <Box style={subtitleWindowStyle(appearance, scope)}>
+          <Text style={subtitleStyle(appearance, scope)}>{t('player.subPreview')}</Text>
         </Box>
       </Box>
       <Box gap={10}>

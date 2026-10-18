@@ -1,4 +1,12 @@
-import { Box, radius as cornerRadius, Icon, type IconName, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  Icon,
+  type IconName,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
@@ -8,6 +16,8 @@ export function PrefRow({
   value,
   onPress,
 }: Readonly<{ icon: IconName; label: string; value: string; onPress(): void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       onPress={onPress}
@@ -33,7 +43,7 @@ export function PrefRow({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   row: {
     row: true,
     between: true,

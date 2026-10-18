@@ -1,6 +1,6 @@
 import { useFormat, useT } from '@kromatv/module-sdk';
 import type { ChartCurve, IconName } from '@kromatv/ui/kit';
-import { Box, Chart, Icon, Row, Surface, styles, Text } from '@kromatv/ui/kit';
+import { Box, Chart, Icon, Row, Surface, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import type { DownloadStatsView, SpeedSample } from './schemas';
 import { useLiveStats } from './use-live-stats';
@@ -129,6 +129,8 @@ function StatTile({
   quietCeiling: number;
   curve: ChartCurve;
 }>) {
+  const s = useStyles(sDefinition);
+
   const peak = samples.reduce((top, sample) => Math.max(top, sample[field]), 0);
   const ceiling = Math.max(peak * SCALE_HEADROOM, quietCeiling);
   const floor = floorFor(ceiling);
@@ -157,4 +159,4 @@ function StatTile({
   );
 }
 
-const s = styles({ value: { fontVariant: ['tabular-nums'] } });
+const sDefinition = styles({ value: { fontVariant: ['tabular-nums'] } });

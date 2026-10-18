@@ -1,3 +1,4 @@
+import { type StyleScope, useStyleScope } from '#ui/core';
 // What a <ButtonGroup> publishes to each of its children, and the style a member
 // builds from it.
 //
@@ -85,12 +86,16 @@ function corners(
 // group must never clip: an `overflow` there would cut the ring.
 const RAISED = { zIndex: 1 };
 
-function shapeOf(slot: GroupSlot, focused: boolean): ViewStyle {
+function shapeOf(slot: GroupSlot, focused: boolean, scope: StyleScope): ViewStyle {
   const { orientation, position, radius } = slot;
-  return sharedStyle(`group-shape:${orientation}:${position}:${radius}:${focused}`, {
-    ...corners(orientation, position, radius),
-    ...(focused ? RAISED : null),
-  }) as ViewStyle;
+  return sharedStyle(
+    `group-shape:${orientation}:${position}:${radius}:${focused}`,
+    {
+      ...corners(orientation, position, radius),
+      ...(focused ? RAISED : null),
+    },
+    scope,
+  ) as ViewStyle;
 }
 
 /** What the surrounding <ButtonGroup> published for this child, or null outside
@@ -110,8 +115,10 @@ function useGroupSlot(): GroupSlot | null {
  * long as it wears the ring.
  */
 function useGroupShape(focused = false): ViewStyle | null {
+  const scope = useStyleScope();
+
   const slot = useContext(GroupSlotContext);
-  return slot ? shapeOf(slot, focused) : null;
+  return slot ? shapeOf(slot, focused, scope) : null;
 }
 
 /**
@@ -121,6 +128,8 @@ function useGroupShape(focused = false): ViewStyle | null {
  * state, so an ungrouped control still does not re-render when focus arrives.
  */
 function useGroupMember(onFocus?: () => void, onBlur?: () => void): GroupMember {
+  const scope = useStyleScope();
+
   const slot = useContext(GroupSlotContext);
   const [raised, setRaised] = useState(false);
   const grouped = slot !== null;
@@ -134,7 +143,7 @@ function useGroupMember(onFocus?: () => void, onBlur?: () => void): GroupMember 
   }, [grouped, onBlur]);
   return {
     grouped,
-    style: slot ? shapeOf(slot, raised) : null,
+    style: slot ? shapeOf(slot, raised, scope) : null,
     size: slot?.size ?? null,
     onFocus: enter,
     onBlur: leave,

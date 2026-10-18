@@ -9,6 +9,7 @@ import {
   Text,
   fontSizes as textSizes,
   useFocusNav,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useEffect, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
@@ -41,6 +42,8 @@ function addrOf(url: string): string {
  * answers before you commit to it. Picking one advances to Quick Connect.
  */
 export function TvAddProfile() {
+  const s = useStyles(sDefinition);
+
   const nav = useNav();
   const t = useT();
   const { servers, discovered, discovering, discover, addServer } = useConnection();
@@ -136,7 +139,7 @@ export function TvAddProfile() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   list: { gap: 12 },
   section: { fontSize: textSizes.caption },
 });

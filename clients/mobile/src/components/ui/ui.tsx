@@ -1,7 +1,7 @@
 // Shared primitives for the mobile screens, re-exporting the controls and state
 // views so every screen imports them from one place.
 
-import { Box, ExpandableText as KitExpandableText, styles, Text } from '@kromatv/ui/kit';
+import { Box, ExpandableText as KitExpandableText, styles, Text, useStyles } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import type { ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +27,8 @@ export function Screen({
   padded?: boolean;
   style?: ViewStyle;
 }>) {
+  const s = useStyles(sDefinition);
+
   const insets = useSafeAreaInsets();
   // In landscape the notch sits at the left edge, so the padding absorbs the
   // horizontal inset rather than stacking on top of it.
@@ -54,6 +56,8 @@ export function ExpandableText({
   lines = 3,
   moreLabel,
 }: Readonly<{ children: string; lines?: number; moreLabel?: string }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <KitExpandableText
@@ -67,12 +71,14 @@ export function ExpandableText({
 }
 
 export function SectionTitle({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   // Section titles sit on full-bleed pages, so they clear the notch themselves.
   const gutters = useGutters();
   return <Text style={[s.sectionTitle, gutters.style]}>{children}</Text>;
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   expandable: { ...type.body, color: 'textMuted', lineHeight: 22 },
   sectionTitle: { ...type.section, mt: spacing.lg, mb: spacing.sm },

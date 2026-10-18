@@ -1,3 +1,4 @@
+import { useStyleScope } from '#ui/core';
 // <ListRow>: one focusable row of a menu or a settings list.
 //
 // Yoga has no `order` and there is no `:has()` selector, so the Root sorts its
@@ -105,6 +106,8 @@ function Root({
   style,
   ...focusProps
 }: Readonly<ListRowRootProps>) {
+  const scope = useStyleScope();
+
   const entryDefaults = useEntryDefaults();
   const delegate = delegateOf(asChild, children);
   const group = useListGroup();
@@ -113,7 +116,7 @@ function Root({
   const shell = size ?? group?.size ?? entryDefaults.size;
   const metrics = CONTROL[shell];
   const frost = useFrostCoat(
-    { borderRadius: controlRadius(metrics) },
+    { borderRadius: controlRadius(metrics, scope) },
     { on: ground === 'artwork' },
   );
   const pressable = onPress !== undefined || asChild;

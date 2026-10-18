@@ -4,8 +4,7 @@ import { cleanup, render } from '@testing-library/react';
 import { act, StrictMode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
-
-import { onScreen as baseOnScreen, layout, wearsRing } from '#ui/testing';
+import { onScreen as baseOnScreen, contentRoot, layout, wearsRing } from '#ui/testing';
 import { VirtualGrid } from './virtual-grid';
 
 const onScreen = (ui: Parameters<typeof baseOnScreen>[0]) => baseOnScreen(ui, { remote: true });
@@ -54,7 +53,7 @@ function open(initialIndex: number) {
       )}
     </StrictMode>,
   );
-  layout(view.container.firstElementChild as Element, { width: 520, height: LIST });
+  layout(contentRoot(view.container) as Element, { width: 520, height: LIST });
   return view;
 }
 
@@ -133,7 +132,7 @@ function openWithHeader(initialIndex: number) {
       )}
     </StrictMode>,
   );
-  layout(view.container.firstElementChild as Element, { width: 520, height: LIST });
+  layout(contentRoot(view.container) as Element, { width: 520, height: LIST });
   return view;
 }
 

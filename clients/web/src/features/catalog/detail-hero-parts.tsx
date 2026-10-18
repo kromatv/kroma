@@ -10,18 +10,21 @@ import {
   styles,
   Text,
   useEntryDefaults,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { Link } from '@tanstack/react-router';
 import { useFocusRing } from '#web/shared/lib/use-focus-ring';
 
 const FIELD_GAP_X = { base: 24, md: 44 } as const;
-const s = styles({
+const sDefinition = styles({
   rule: { borderTopWidth: 1, borderTopColor: 'white/8' },
   link: { color: 'inherit', textDecorationLine: 'underline', textUnderlineOffset: 2, radius: 'xs' },
   bold: { fontWeight: '600' },
 });
 
 function DirectorLink({ person, label }: Readonly<{ person: CrewMember; label: string }>) {
+  const s = useStyles(sDefinition);
+
   const focus = useFocusRing(s.link);
   return (
     <Link
@@ -37,6 +40,8 @@ function DirectorLink({ person, label }: Readonly<{ person: CrewMember; label: s
 }
 
 export function DirectorsLine({ directors }: Readonly<{ directors?: CrewMember[] }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   if (!directors || directors.length === 0) return null;
   return (
@@ -110,6 +115,8 @@ export function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) 
 }
 
 export function HeroFields({ audio, subtitles }: Readonly<{ audio?: string; subtitles?: string }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   if (audio == null && subtitles == null) return null;
   return (

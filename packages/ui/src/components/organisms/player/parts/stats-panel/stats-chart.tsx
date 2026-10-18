@@ -1,4 +1,5 @@
 import { color as tokenColor } from '#ui/core/color';
+import { useStyles } from '#ui/core/styles';
 
 // One live chart of the stats panel, with every series sharing its axis. Stays
 // SVG rather than canvas/Skia: a native canvas module would cost Tizen and
@@ -69,6 +70,8 @@ interface Resolved {
 }
 
 export function StatsChart({ meters, history, width, slot }: Readonly<StatsChartProps>) {
+  const sx = useStyles(sxDefinition);
+
   const plotW = Math.max(1, width - DOT_ROOM);
   const box: ChartBox = { width: plotW, height: PLOT_H, padY: PAD_Y };
 
@@ -214,7 +217,7 @@ export const STATS_CHART_HEIGHT = PLOT_H;
 
 export type { Extent } from '#ui/components/organisms/player/lib/chart-geometry';
 
-const sx = styles({
+const sxDefinition = styles({
   chartLabel: {
     font: 'ui',
     fontSize: textSizes.micro,

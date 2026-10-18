@@ -1,3 +1,5 @@
+import { type StyleScope, useStyleScope } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { fontSizes as textSizes } from '#ui/core/tokens';
 // <MediaCard>: the 16:9 landscape rail tile of the 10-foot home. Focusable, so
 // the same source is a D-pad stop on a TV and a click target in a browser.
@@ -13,8 +15,8 @@ import { sharedStyle, styles, useTheme } from '#ui/core';
 
 /** The fill behind artwork, so a tile is never blank while the art loads. */
 
-const frameOf = (width: number | string) =>
-  sharedStyle(`media-card:${width}`, { width, flexShrink: 0, radius: 'xl' });
+const frameOf = (width: number | string, scope: StyleScope) =>
+  sharedStyle(`media-card:${width}`, { width, flexShrink: 0, radius: 'xl' }, scope);
 function tintGradient(tint: readonly [string, string]): string {
   // `to bottom`, not a tilt: a tilted gradient's iso-lines run diagonally, so it
   // reads as a wedge across the card's width rather than as a fade.
@@ -55,6 +57,10 @@ function MediaCard({
   onFocus,
   autoFocus,
 }: Readonly<MediaCardProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const { radius } = useTheme();
   return (
     <Focusable
@@ -64,7 +70,7 @@ function MediaCard({
       autoFocus={autoFocus}
       label={title}
       focusScale={1.06}
-      style={frameOf(width)}
+      style={frameOf(width, scope)}
     >
       <Box w={width} aspect={16 / 9} radius="xl" overflow="hidden" bg="surface1">
         {/* Every layer rounds itself as well as being clipped by the parent:
@@ -89,7 +95,7 @@ function MediaCard({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   overline: {
     font: 'ui',
     fontWeight: '700',

@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Box } from '#ui/components/atoms/box';
 import { KitProvider } from '#ui/configure';
-import { declared } from '#ui/testing';
+import { contentRoot, declared } from '#ui/testing';
 import { Frost } from './frost';
 
 function Surface({ enabled }: { enabled: boolean }) {
@@ -18,7 +19,7 @@ function Surface({ enabled }: { enabled: boolean }) {
 describe('root frost preferences', () => {
   it('reaches a surface already on screen through provider updates', () => {
     const root = render(<Surface enabled />);
-    const node = root.container.firstElementChild;
+    const node = contentRoot(root.container);
     if (!node) throw new Error('expected a surface');
     expect(declared(node, 'backdropFilter')).toContain('blur');
     root.rerender(<Surface enabled={false} />);
@@ -30,8 +31,8 @@ describe('root frost preferences', () => {
   it('keeps different mounted roots independent', () => {
     const a = render(<Surface enabled={false} />);
     const b = render(<Surface enabled />);
-    const first = a.container.firstElementChild;
-    const second = b.container.firstElementChild;
+    const first = contentRoot(a.container);
+    const second = contentRoot(b.container);
     if (!(first && second)) throw new Error('expected both surfaces');
     expect(declared(first, 'backdropFilter')).toBeNull();
     expect(declared(second, 'backdropFilter')).toContain('blur');

@@ -1,3 +1,5 @@
+import { activeTheme, type StyleScope, useStyleScope } from '#ui/core';
+
 // <TextArea>: the multi-line entry. A real TextInput where there is a physical
 // keyboard, a non-focusable display plus caret on a television.
 
@@ -11,6 +13,7 @@ import {
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { color, sharedStyle, style, styles, useTheme } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { Caret } from '#ui/lib/caret';
 import { fieldSizing } from '#ui/lib/css';
 import {
@@ -54,13 +57,22 @@ interface TextAreaProps extends Omit<BoxProps, 'children' | 'ring'> {
 
 const SHRINK = style({ flexShrink: 1 });
 
-const entryOf = (minHeight: number, maxHeight: number | undefined, fontSize: number) =>
-  sharedStyle(`text-area:entry:${minHeight}:${maxHeight}:${fontSize}`, {
-    color: 'text',
-    minHeight,
-    maxHeight,
-    fontSize,
-  });
+const entryOf = (
+  minHeight: number,
+  maxHeight: number | undefined,
+  fontSize: number,
+  scope: StyleScope,
+) =>
+  sharedStyle(
+    `text-area:entry:${minHeight}:${maxHeight}:${fontSize}`,
+    {
+      color: 'text',
+      minHeight,
+      maxHeight,
+      fontSize,
+    },
+    scope,
+  );
 function TextArea({
   value: valueProp,
   defaultValue = '',
@@ -80,6 +92,10 @@ function TextArea({
   flat = false,
   ...box
 }: Readonly<TextAreaProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const entryDefaults = useEntryDefaults();
   const physicalKeyboard = askedPhysicalKeyboard ?? entryDefaults.physicalKeyboard;
   const metrics = useControlMetrics(size);
@@ -93,7 +109,7 @@ function TextArea({
   const min = lines(rows);
   const max = lines(maxRows);
   const grown = Math.min(Math.max(content, min), max);
-  const shell = fieldShell(metrics, { flat, focused, invalid });
+  const shell = fieldShell(metrics, { flat, focused, invalid }, scope);
 
   return (
     <Box
@@ -125,7 +141,7 @@ function TextArea({
             onBlur?.();
           }}
           placeholder={placeholder}
-          placeholderTextColor={color(PLACEHOLDER)}
+          placeholderTextColor={color(PLACEHOLDER, activeTheme(scope.theme))}
           accessibilityLabel={label}
           autoFocus={autoFocus}
           autoCorrect={false}
@@ -141,9 +157,9 @@ function TextArea({
           style={[
             s.entry,
             NO_OUTLINE,
-            entryOf(min, max, fontSize),
+            entryOf(min, max, fontSize, scope),
             textStyle,
-            growth(autoSize, min, grown),
+            growth(autoSize, min, grown, scope),
           ]}
         />
       ) : (
@@ -161,8 +177,13 @@ function TextArea({
 
 const SIZED = style(fieldSizing());
 
-function growth(autoSize: boolean, min: number, grown: number): StyleProp<TextStyle> {
-  if (!autoSize) return sharedStyle(`text-area:height:${min}`, { height: min });
+function growth(
+  autoSize: boolean,
+  min: number,
+  grown: number,
+  scope: StyleScope,
+): StyleProp<TextStyle> {
+  if (!autoSize) return sharedStyle(`text-area:height:${min}`, { height: min }, scope);
   return WEB ? SIZED : { height: grown };
 }
 
@@ -171,7 +192,7 @@ function growth(autoSize: boolean, min: number, grown: number): StyleProp<TextSt
 const LINE = CONTROL.md.line;
 const lines = (n: number) => n * LINE;
 
-const s = styles({
+const sDefinition = styles({
   entry: {
     flex: true,
     w: '100%',

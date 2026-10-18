@@ -1,3 +1,4 @@
+import { type StyleScope, useStyleScope } from '#ui/core';
 // <Progress>: the determinate bar (resume position on a tile, download, import).
 // The fill eases to a new value; `indeterminate` sweeps a segment across the
 // track instead and ignores `value`.
@@ -59,12 +60,14 @@ function Progress({
   waiting = false,
   label,
 }: Readonly<ProgressProps>) {
+  const scope = useStyleScope();
+
   const breathing = waiting && !indeterminate;
   const sweep = useLoop('sweep', SWEEP_MS, indeterminate);
   const breath = useLoop('pulse', BREATH_MS, breathing);
   const corner = rounded ? 'pill' : 0;
   const position = clamp01(value);
-  const bar = layerStyle(color, corner);
+  const bar = layerStyle(color, corner, undefined, scope);
 
   return (
     <Box
@@ -81,7 +84,7 @@ function Progress({
       {buffered === undefined ? null : (
         <ProgressFill
           value={Math.max(clamp01(buffered), position)}
-          style={layerStyle(color, corner, BUFFERED_OPACITY)}
+          style={layerStyle(color, corner, BUFFERED_OPACITY, scope)}
         />
       )}
       {breathing ? (
@@ -104,14 +107,18 @@ export { clamp01, Progress };
 // Shared by identity across every bar asking for the same paint: styleq keys its
 // compiled-style cache on the leaf object, so resolving one per render is a
 // guaranteed miss for every bar on a browse grid.
-function layerStyle(color: ColorValue, corner: 'pill' | 0, opacity = 1) {
-  return sharedStyle(`bar:${color}:${corner}:${opacity}`, {
-    absolute: true,
-    top: 0,
-    bottom: 0,
-    left: 0,
-    bg: color,
-    radius: corner,
-    opacity,
-  });
+function layerStyle(color: ColorValue, corner: 'pill' | 0, opacity = 1, scope: StyleScope) {
+  return sharedStyle(
+    `bar:${color}:${corner}:${opacity}`,
+    {
+      absolute: true,
+      top: 0,
+      bottom: 0,
+      left: 0,
+      bg: color,
+      radius: corner,
+      opacity,
+    },
+    scope,
+  );
 }

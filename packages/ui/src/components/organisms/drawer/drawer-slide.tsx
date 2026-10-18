@@ -1,3 +1,5 @@
+import { type StyleScope, useStyleScope } from '#ui/core';
+
 // The sheet's entrance and exit: a CSS transition on the browser, an animated
 // transform on native, and the mounted/shown pair that keeps the panel in the
 // tree long enough for the exit to play.
@@ -6,6 +8,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { Animated, type StyleProp, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { sharedStyle, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
 import { WEB } from '#ui/lib/platform';
@@ -56,10 +59,18 @@ interface SlidePanelProps {
 }
 
 function SlidePanel({ shown, side, width, inset, children }: Readonly<SlidePanelProps>) {
-  const holder = [side === 'right' ? s.holderRight : s.holderLeft, inset ? frame(inset) : null];
+  const scope = useStyleScope();
+
+  const move = useStyles(moveDefinition);
+  const s = useStyles(sDefinition);
+
+  const holder = [
+    side === 'right' ? s.holderRight : s.holderLeft,
+    inset ? frame(inset, scope) : null,
+  ];
   if (WEB) {
     const away = side === 'right' ? SLIDE_OUT : SLIDE_OUT_LEFT;
-    return <Box style={[holder, move.slide, slideTo(shown ? 0 : away)]}>{children}</Box>;
+    return <Box style={[holder, move.slide, slideTo(shown ? 0 : away, scope)]}>{children}</Box>;
   }
   return (
     <SlidePanelNative shown={shown} side={side} width={width + 2 * inset} holder={holder}>
@@ -103,7 +114,7 @@ function SlidePanelNative({
 const SLIDE_OUT = '105%' as unknown as number;
 const SLIDE_OUT_LEFT = '-105%' as unknown as number;
 
-const move = styles({
+const moveDefinition = styles({
   slide: {
     transitionProperty: 'transform',
     transitionDuration: `${SLIDE_MS}ms`,
@@ -116,14 +127,15 @@ const move = styles({
   },
 });
 
-const FADE = move.fade;
+const FADE = moveDefinition.fade;
 
-const slideTo = (x: number) => sharedStyle(`drawer:slide:${x}`, { transform: [{ translateX: x }] });
+const slideTo = (x: number, scope: StyleScope) =>
+  sharedStyle(`drawer:slide:${x}`, { transform: [{ translateX: x }] }, scope);
 
-const frame = (inset: number) =>
-  sharedStyle(`drawer:frame:${inset}`, { padding: inset, pointerEvents: 'box-none' });
+const frame = (inset: number, scope: StyleScope) =>
+  sharedStyle(`drawer:frame:${inset}`, { padding: inset, pointerEvents: 'box-none' }, scope);
 
-const s = styles({
+const sDefinition = styles({
   holderRight: { absolute: true, top: 0, bottom: 0, right: 0, maxW: '100%' },
   holderLeft: { absolute: true, top: 0, bottom: 0, left: 0, maxW: '100%' },
 });

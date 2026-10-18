@@ -1,6 +1,16 @@
 import { Children, cloneElement, type ReactElement, type ReactNode } from 'react';
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
-import { type CornerValue, onPaper, radiusValue, sharedStyle, styles } from '#ui/core';
+import {
+  activeTheme,
+  type CornerValue,
+  onPaper,
+  radiusValue,
+  resolveStyles,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  useStyleScope,
+} from '#ui/core';
 import { backdropBlur } from '#ui/lib/css';
 import { useKitSettings } from '#ui/lib/kit-settings';
 import { WEB } from '#ui/lib/platform';
@@ -17,7 +27,8 @@ interface FrostBackdropProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const cornerStyle = (corner: number) => sharedStyle(`frost:corner:${corner}`, { radius: corner });
+const cornerStyle = (corner: number, scope: StyleScope) =>
+  sharedStyle(`frost:corner:${corner}`, { radius: corner }, scope);
 
 interface FrostOptions {
   /** False renders the surface untouched, so a caller that is only sometimes
@@ -57,14 +68,17 @@ const webCoats = new Map<number, FrostCoat>();
  * drawn: call it at the top of the control, like any other.
  */
 function useFrostCoat(surface: StyleProp<ViewStyle>, options: FrostOptions = {}): FrostCoat {
+  const scope = useStyleScope();
+
   const { frost, frostEnabled } = useKitSettings();
-  return frostEnabled ? coatOf(surface, options, frost) : BARE;
+  return frostEnabled ? coatOf(surface, options, frost, scope) : BARE;
 }
 
 function coatOf(
   surface: StyleProp<ViewStyle>,
   options: FrostOptions,
   PlatformFrost: ReturnType<typeof useKitSettings>['frost'],
+  scope: StyleScope,
 ): FrostCoat {
   const { on = true, amount = 12, tint } = options;
   if (!on) return BARE;
@@ -72,7 +86,7 @@ function coatOf(
     const cached = webCoats.get(amount);
     if (cached) return cached;
     const coat: FrostCoat = {
-      style: sharedStyle(`frost:${amount}`, backdropBlur(amount) as never) as ViewStyle,
+      style: sharedStyle(`frost:${amount}`, backdropBlur(amount) as never, scope) as ViewStyle,
       layer: null,
     };
     webCoats.set(amount, coat);
@@ -86,14 +100,18 @@ function coatOf(
       <PlatformFrost
         // expo-blur's 0-100 scale: about four steps to the CSS pixel.
         intensity={Math.min(100, amount * 4)}
-        tint={tint ?? (onPaper() ? 'light' : 'dark')}
-        style={[s.fill, s.clip, typeof corner === 'number' ? cornerStyle(corner) : null]}
+        tint={tint ?? (onPaper(activeTheme(scope.theme)) ? 'light' : 'dark')}
+        style={[
+          resolveStyles(sDefinition, scope).fill,
+          resolveStyles(sDefinition, scope).clip,
+          typeof corner === 'number' ? cornerStyle(corner, scope) : null,
+        ]}
       />
     ),
   };
 }
 
-const s = styles({
+const sDefinition = styles({
   fill: {
     fill: true,
     // Never a touch target: the surface underneath owns the press.
@@ -107,11 +125,13 @@ const s = styles({
 
 // The child declares its corner as a style or as <Box>'s `radius` shorthand,
 // and the native layer clips itself to whichever it used.
-function cornerOf(props: Record<string, unknown>): ViewStyle {
+function cornerOf(props: Record<string, unknown>, scope: StyleScope): ViewStyle {
   const flat = StyleSheet.flatten(props.style as StyleProp<ViewStyle>);
   if (typeof flat?.borderRadius === 'number') return flat;
   if (props.radius == null) return EMPTY;
-  return { borderRadius: radiusValue(props.radius as CornerValue) };
+  return {
+    borderRadius: radiusValue(props.radius as CornerValue, undefined, activeTheme(scope.theme)),
+  };
 }
 
 interface FrostProps extends FrostOptions {
@@ -128,8 +148,10 @@ interface FrostProps extends FrostOptions {
  * those call `useFrostCoat` and place `layer` themselves.
  */
 function Frost({ children, ...options }: Readonly<FrostProps>) {
+  const scope = useStyleScope();
+
   const el = Children.only(children) as ReactElement<Record<string, unknown>>;
-  const coat = useFrostCoat(cornerOf(el.props), options);
+  const coat = useFrostCoat(cornerOf(el.props, scope), options);
   if (!coat.style && !coat.layer) return el;
   const merged = mergeSlotProps(coat.style ? { style: coat.style } : {}, el.props);
   if (coat.layer) {

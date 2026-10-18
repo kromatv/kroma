@@ -1,3 +1,4 @@
+import { useStyles } from '#ui/core/styles';
 import { fontSizes as textSizes } from '#ui/core/tokens';
 // <CodeBlock>: a block of TSX, highlighted, numbered and copyable.
 //
@@ -21,7 +22,7 @@ import { lines } from './code-tokens';
 // its own, which is what keeps a number level with its line.
 const LINE = { font: 'mono', fontSize: textSizes.captionRaised, lineHeight: 19 } as const;
 
-const ink = styles({
+const inkDefinition = styles({
   plain: { ...LINE, color: 'text' },
   tag: { ...LINE, color: 'accent' },
   attr: { ...LINE, color: 'info' },
@@ -54,6 +55,9 @@ interface CodeBlockProps {
  * ```
  */
 function CodeBlock({ code, numbers, maxHeight = 320 }: Readonly<CodeBlockProps>) {
+  const ink = useStyles(inkDefinition);
+  const s = useStyles(sDefinition);
+
   const trimmed = code.trim();
   const rows = useMemo(() => lines(trimmed), [trimmed]);
   const showNumbers = numbers ?? rows.length > 1;
@@ -109,7 +113,7 @@ function CodeBlock({ code, numbers, maxHeight = 320 }: Readonly<CodeBlockProps>)
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   frame: { border: 'border', overflow: 'hidden' },
   // Hug the content: the cap lives on the frame's maxHeight, and a ScrollView
   // that grows would stretch a two-line snippet to fill it.

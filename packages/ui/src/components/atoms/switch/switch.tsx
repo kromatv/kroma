@@ -1,3 +1,5 @@
+import { type StyleScope, useStyleScope, useSv } from '#ui/core';
+
 // <Switch>: the on/off primitive. A television has no gestures, so this is
 // not a draggable thumb: it is a Focusable that toggles on Select, and the
 // track fills amber (rather than relying on thumb position alone) so the
@@ -13,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { Animated, type StyleProp, View, type ViewStyle } from 'react-native';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { sharedStyle, styles, sv } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
 import { WEB } from '#ui/lib/platform';
@@ -121,8 +124,10 @@ interface SwitchFaceProps {
  * to fight past).
  */
 function SwitchFace({ checked, size = 'sm', style }: Readonly<SwitchFaceProps>) {
+  const switchVariantsScoped = useSv(switchVariants);
+
   return (
-    <View style={[switchVariants({ size }).root, style]}>
+    <View style={[switchVariantsScoped({ size }).root, style]}>
       <Flip on={checked} travel={travelOf(size)} thumb={track[size].thumb} />
     </View>
   );
@@ -133,12 +138,17 @@ function SwitchFace({ checked, size = 'sm', style }: Readonly<SwitchFaceProps>) 
 // happening. One value drives both the fill and the slide, so neither can
 // arrive before the other.
 function Flip({ on, travel, thumb }: Readonly<{ on: boolean; travel: number; thumb: number }>) {
-  const face = sharedStyle(`switch:thumb:${thumb}`, { w: thumb, h: thumb, radius: 'pill' });
+  const scope = useStyleScope();
+
+  const move = useStyles(moveDefinition);
+  const s = useStyles(sDefinition);
+
+  const face = sharedStyle(`switch:thumb:${thumb}`, { w: thumb, h: thumb, radius: 'pill' }, scope);
   if (WEB) {
     return (
       <>
         <View style={[s.fill, move.opacity, on ? move.shown : move.hidden]} />
-        <View style={[face, s.thumb, move.transform, slideOf(on ? travel : 0)]} />
+        <View style={[face, s.thumb, move.transform, slideOf(on ? travel : 0, scope)]} />
       </>
     );
   }
@@ -150,6 +160,8 @@ function FlipNative({
   travel,
   face,
 }: Readonly<{ on: boolean; travel: number; face: ViewStyle }>) {
+  const s = useStyles(sDefinition);
+
   // Initial value matches the initial state, so a switch mounted on doesn't
   // play its own flip as an entrance.
   const [flip] = useState(() => new Animated.Value(on ? 1 : 0));
@@ -172,9 +184,10 @@ function FlipNative({
 
 // react-native-web understands these CSS-only props; React Native's types do
 // not, hence the casts at the use sites.
-const slideOf = (x: number) => sharedStyle(`switch:slide:${x}`, { transform: [{ translateX: x }] });
+const slideOf = (x: number, scope: StyleScope) =>
+  sharedStyle(`switch:slide:${x}`, { transform: [{ translateX: x }] }, scope);
 
-const move = styles({
+const moveDefinition = styles({
   opacity: {
     transitionProperty: 'opacity',
     transitionDuration: `${FLIP_MS}ms`,
@@ -189,7 +202,7 @@ const move = styles({
   hidden: { opacity: 0 },
 });
 
-const s = styles({
+const sDefinition = styles({
   fill: { fill: true, bg: 'accent', radius: 'pill' },
   thumb: { bg: 'text' },
 });

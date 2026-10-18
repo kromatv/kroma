@@ -1,3 +1,4 @@
+import { useSv } from '#ui/core';
 import { typeSpec as textRoles } from '#ui/core/tokens';
 // <Badge>: the small quality / status pill (4K, HDR, H.265, FR, Disponible).
 // Text only, never emoji.
@@ -57,10 +58,12 @@ interface BadgeProps {
 }
 
 function Badge({ tone = '4K', size = 'sm', children }: Readonly<BadgeProps>) {
+  const badgeVariantsScoped = useSv(badgeVariants);
+
   // The catalogue can hand over a quality string the design never named;
   // anything unrecognised gets the neutral treatment.
   const known = badgeVariants.options.tone.includes(tone) ? tone : 'neutral';
-  const s = badgeVariants({ tone: known, size });
+  const s = badgeVariantsScoped({ tone: known, size });
   return (
     <Box style={s.root}>
       <Text lines={1} style={s.label}>

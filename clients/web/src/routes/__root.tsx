@@ -1,5 +1,5 @@
 import appCss from '@kromatv/ui/css?url';
-import { ConfirmHost, classes, KitProvider, styles, Toaster } from '@kromatv/ui/kit';
+import { ConfirmHost, classes, KitProvider, styles, Toaster, useStyles } from '@kromatv/ui/kit';
 import bricolageLatin from '@kromatv/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
 import hankenLatin from '@kromatv/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
 import type { QueryClient } from '@tanstack/react-query';
@@ -27,7 +27,7 @@ const ReactQueryDevtools = import.meta.env.DEV
 
 const BROWSER_KIT = { formFactor: 'browser' } as const;
 
-const s = styles({
+const sDefinition = styles({
   toasts: { position: 'fixed', inset: 0, zIndex: 90, pointerEvents: 'none' },
 });
 
@@ -63,6 +63,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   // React hoists a `data-precedence` stylesheet to the top of the head, and a
   // <link rel="preload"> rendered through <HeadContent> is not hoisted at all,
   // so the route's own links land after the stylesheet and every modulepreload.

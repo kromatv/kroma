@@ -1,5 +1,5 @@
 import { CastProvider } from '@kromatv/ui';
-import { Box, classes, styles, useBreakpoint } from '@kromatv/ui/kit';
+import { Box, classes, styles, useBreakpoint, useStyles } from '@kromatv/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { GateLoading } from '#web/features/accounts/auth-gate';
 import { CatalogModalHosts } from '#web/features/catalog/modal-hosts';
@@ -28,13 +28,15 @@ const BROWSER_LABEL =
 // `z-index: 0`, and as a flex item that makes this column a stacking context,
 // so the player fixed inside it could never rise above the phone top bar, and
 // its root would size "fullscreen" to the content beside the rail.
-const s = styles({
+const sDefinition = styles({
   column: { display: 'flex', flexDirection: 'column', flexGrow: 1, flexBasis: 0, minWidth: 0 },
 });
 
 const RAIL_WIDTH = 248;
 
 function AppLayout() {
+  const s = useStyles(sDefinition);
+
   const { ready, authed } = useRequireAuth();
   const step = useBreakpoint();
   const wide = step === 'lg' || step === 'tv';

@@ -6,7 +6,7 @@
 
 import type { CastMember, ItemId, MediaItem, SubjectId } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
-import { Box, Chip, classes, ringRoomBlock, styles, Text } from '@kromatv/ui/kit';
+import { Box, Chip, classes, ringRoomBlock, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { CastRail } from '#web/features/catalog/detail';
@@ -21,7 +21,7 @@ import type { TitleSeason } from '#web/shared/lib/titleView';
 // axis, so both stay plain elements around kit content.
 const GUTTER = { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' } as const;
 
-const s = styles({
+const sDefinition = styles({
   gutter: GUTTER,
   chipScroller: {
     ...GUTTER,
@@ -43,6 +43,8 @@ function SeasonSwitcher({
   current,
   onPick,
 }: Readonly<{ seasons: TitleSeason[]; current: number; onPick: (n: number) => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <div className={classes(s.chipScroller)}>
@@ -92,6 +94,8 @@ export function SeasonSection({
   pendingEpisodes: Set<string>;
   requestBusy: boolean;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [season, setSeason] = useState(seasons[0]?.number ?? 1);
   const { data: listing } = useQuery({
@@ -224,6 +228,8 @@ function SeasonEpisodes({
   onToggleEpisode: (season: number, episode: number) => void;
   pendingEpisodes: Set<string>;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <div className={classes(s.gutter)}>
       <Box gap={14}>

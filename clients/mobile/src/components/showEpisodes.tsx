@@ -1,6 +1,14 @@
 import type { MediaItem, ProgressEntry } from '@kromatv/client/media';
 import { formatRuntime, sizedImageUrl } from '@kromatv/core';
-import { Box, Button, radius as cornerRadius, Icon, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  radius as cornerRadius,
+  Icon,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { Pressable } from 'react-native';
 import { useDownloads } from '#mobile/lib/downloads';
@@ -15,6 +23,8 @@ import { ProgressRing } from './ProgressRing';
 /** Enqueues every not-yet-downloaded episode; while transferring it shows x/y
  * and a tap cancels the remainder. */
 export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const downloads = useDownloads();
   const states = episodes.map((ep) => downloads.stateFor(ep.id));
@@ -63,6 +73,8 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
 }
 
 export function UpNextCard({ next, frac }: Readonly<{ next: MediaItem; frac: number }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { play } = usePlay();
@@ -105,6 +117,8 @@ export function EpisodeRow({
   progress: ProgressEntry | undefined;
   watched: boolean;
 }>) {
+  const s = useStyles(sDefinition);
+
   const client = useClient();
   const router = useRouter();
   const { play } = usePlay();
@@ -156,7 +170,7 @@ export function EpisodeRow({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   seasonDl: { row: true, align: 'center', gap: 8 },
   seasonDlLabel: { ...type.caption, color: 'accentText', fontWeight: '600' },
   upNextCard: {

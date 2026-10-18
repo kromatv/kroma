@@ -1,3 +1,5 @@
+import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+
 // The notification centre on the phone: what happened while you were away,
 // styled after the browser's list. The list is live (server push, see
 // lib/notifications) and swipe-to-delete, matching Downloads. Approve/Deny
@@ -15,6 +17,7 @@ import {
   type IconName,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
@@ -32,6 +35,11 @@ import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 export default function NotificationsScreen() {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const refresh = useRefreshNotifications();
@@ -98,7 +106,7 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={() => void refetch()}
-              tintColor={color('textMuted')}
+              tintColor={color('textMuted', activeTheme(scope.theme))}
             />
           }
           renderSectionHeader={({ section }) => <Text style={s.dayLabel}>{section.title}</Text>}
@@ -110,6 +118,8 @@ export default function NotificationsScreen() {
 }
 
 function NotificationRow({ row }: Readonly<{ row: Notification }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -238,7 +248,7 @@ function sinceLabel(t: ReturnType<typeof useT>, createdAt: number): string {
   return t('time.daysAgo', { n: Math.round(hours / 24) });
 }
 
-const s = styles({
+const sDefinition = styles({
   list: { px: spacing.sm, pb: spacing.xl, ...boxed(contentWidth.reading) },
   dayLabel: {
     ...type.small,

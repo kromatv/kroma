@@ -15,6 +15,7 @@ import {
   styles,
   Text,
   tintGradient,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { ScrollView } from 'react-native';
 import { useAccountOptions } from '#web/features/admin/dashboard-accounts';
@@ -85,6 +86,8 @@ export function MostWatchedSection() {
 }
 
 function KindColumn({ column }: Readonly<{ column: MostWatchedColumn }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { client } = useAuth();
   const [top] = column.entries;
@@ -121,6 +124,8 @@ function KindColumn({ column }: Readonly<{ column: MostWatchedColumn }>) {
 }
 
 function EntryRow({ entry }: Readonly<{ entry: MostWatchedEntry }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { client } = useAuth();
   return (
@@ -146,7 +151,7 @@ function EntryRow({ entry }: Readonly<{ entry: MostWatchedEntry }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   entry: { row: true, align: 'center', gap: 12, px: 14, py: 10 },
   list: { maxH: LIST_HEIGHT },
 });

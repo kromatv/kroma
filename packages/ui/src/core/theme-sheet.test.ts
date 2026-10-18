@@ -4,11 +4,14 @@
 // is an attribute, so a theme written as inline properties would outrank it and
 // pin every token it touched.
 
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { applyTheme, createTheme, KROMA, KROMA_LIGHT, setTheme, themeVersion } from './theme';
-import { applyMode } from './theme-mode';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { createStyleTestHost } from '#ui/testing-style';
+import { createTheme, KROMA, KROMA_LIGHT } from './theme';
 
-const sheet = () => document.getElementById('kroma-theme')?.textContent ?? '';
+const styleHost = createStyleTestHost();
+const { applyTheme, setTheme, themeVersion, applyMode } = styleHost;
+
+const sheet = () => document.getElementById('kroma-theme-test')?.textContent ?? '';
 
 // The token sheet, as a page always has it before a theme is applied: it is
 // where the derived properties (the alpha steps) are declared, and so what a
@@ -16,6 +19,16 @@ const sheet = () => document.getElementById('kroma-theme')?.textContent ?? '';
 beforeAll(() => {
   document.head.innerHTML =
     '<style>:root{--kroma-text:#FFF;--kroma-text-75:rgba(255,255,255,0.75)}</style>';
+});
+
+beforeEach(() => {
+  const host = document.createElement('div');
+  document.body.append(host);
+  const detach = styleHost.runtime.theme.attach(host, 'test');
+  return () => {
+    detach();
+    host.remove();
+  };
 });
 
 afterEach(() => {
@@ -40,8 +53,10 @@ describe('publishing a theme', () => {
   it('paints one theme in both grounds when it names only one', () => {
     setTheme(createTheme({ colors: { accent: '#FF0000' } }));
 
-    expect(sheet()).toContain(':root,[data-theme="dark"]{--kroma-accent:#FF0000}');
-    expect(sheet()).toContain('[data-theme="light"]{--kroma-accent:#FF0000}');
+    expect(sheet()).toContain('[data-kroma-theme="test"]{--kroma-accent:#FF0000}');
+    expect(sheet()).toContain(
+      '[data-kroma-theme="test"][data-theme="light"]{--kroma-accent:#FF0000}',
+    );
   });
 
   // The unstamped document - `system`, the default - is painted by a rule
@@ -52,7 +67,7 @@ describe('publishing a theme', () => {
     setTheme(createTheme({ colors: { accent: '#FF0000' } }));
 
     expect(sheet()).toContain(
-      '@media(prefers-color-scheme:light){:root:not([data-theme]){--kroma-accent:#FF0000}}',
+      '@media(prefers-color-scheme:light){[data-kroma-theme="test"]:not([data-theme]){--kroma-accent:#FF0000}}',
     );
   });
 
@@ -61,9 +76,11 @@ describe('publishing a theme', () => {
     const light = createTheme({ colors: { bg: '#F2F5F3' } });
     setTheme(dark, light);
 
-    expect(sheet()).toContain(':root,[data-theme="dark"]{--kroma-bg:#050807}');
-    expect(sheet()).toContain('[data-theme="light"]{--kroma-bg:#F2F5F3}');
-    expect(sheet()).toContain('@media(prefers-color-scheme:light){:root:not([data-theme])');
+    expect(sheet()).toContain('[data-kroma-theme="test"]{--kroma-bg:#050807}');
+    expect(sheet()).toContain('[data-kroma-theme="test"][data-theme="light"]{--kroma-bg:#F2F5F3}');
+    expect(sheet()).toContain(
+      '@media(prefers-color-scheme:light){[data-kroma-theme="test"]:not([data-theme])',
+    );
   });
 
   it('hands a ground-aware theme back to the cascade, so a JS read follows too', () => {
@@ -147,6 +164,6 @@ describe('publishing a theme', () => {
 
     setTheme(KROMA);
 
-    expect(document.getElementById('kroma-theme')).toBeNull();
+    expect(document.getElementById('kroma-theme-test')).toBeNull();
   });
 });

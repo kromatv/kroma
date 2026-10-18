@@ -12,6 +12,7 @@ import {
   typeSpec as textRoles,
   useFocusNav,
   useGrowingCount,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
@@ -36,7 +37,7 @@ const ROW_TILE = { pitch: 328 + RAIL_GAP, height: Math.round((328 * 9) / 16) };
 
 // The design sizes the hero with viewport units and clamps; on the fixed
 // 1920x1080 stage those resolve to the values below.
-const s = styles({
+const sDefinition = styles({
   pageScroll: { flex: true, minH: 0 },
   // Padding belongs on the content, not the scroller box.
   pageContent: { pb: 40 },
@@ -58,6 +59,8 @@ interface Row {
  * rails. Films, Séries and Search live on their own screens via the shared
  * top nav. */
 export function TvHome() {
+  const s = useStyles(sDefinition);
+
   const { movies, shows } = useConnection();
   const { items: continueItems, refresh: refreshContinue } = useContinue();
   const { sections, featured } = useRecommend();

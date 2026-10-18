@@ -2,18 +2,22 @@ import {
   Box,
   backdropBlur,
   classes,
+  type StyleScope,
   sharedStyle,
   styles,
   Text,
   fontSizes as textSizes,
   useBreakpoint,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { useCrossfade } from '#web/shared/lib/use-crossfade';
 import { Image } from '#web/shared/ui';
 import { PAGE_GUTTER } from '#web/shared/ui/page';
 
-const TITLE = styles({
+const TITLEDefinition = styles({
   base: { fontSize: textSizes.pageTitle },
   md: { fontSize: textSizes.pageTitleMedium },
   lg: { fontSize: textSizes.pageTitleWide },
@@ -21,6 +25,8 @@ const TITLE = styles({
 });
 
 export function BrowseTitle({ children }: Readonly<{ children: ReactNode }>) {
+  const TITLE = useStyles(TITLEDefinition);
+
   const step = useBreakpoint();
   return (
     <Text variant="hero" accessibilityRole="header" style={TITLE[step]}>
@@ -29,7 +35,7 @@ export function BrowseTitle({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   band: {
     position: 'relative',
     display: 'flex',
@@ -87,15 +93,20 @@ const s = styles({
   tabular: { fontVariant: ['tabular-nums'] },
 });
 
-const bleed = (gutter: number) =>
-  sharedStyle(`bleed:${gutter}`, {
-    marginLeft: -gutter,
-    marginRight: -gutter,
-    paddingLeft: gutter,
-    paddingRight: gutter,
-  });
+const bleed = (gutter: number, scope: StyleScope) =>
+  sharedStyle(
+    `bleed:${gutter}`,
+    {
+      marginLeft: -gutter,
+      marginRight: -gutter,
+      paddingLeft: gutter,
+      paddingRight: gutter,
+    },
+    scope,
+  );
 
-const creditAt = (gutter: number) => sharedStyle(`credit:${gutter}`, { right: gutter });
+const creditAt = (gutter: number, scope: StyleScope) =>
+  sharedStyle(`credit:${gutter}`, { right: gutter }, scope);
 
 export interface BrowseHeroProps {
   heading: string;
@@ -112,10 +123,15 @@ export function BrowseHero({
   backdrop = null,
   creditTitle,
 }: Readonly<BrowseHeroProps>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const prev = useCrossfade(backdrop);
   const gutter = PAGE_GUTTER[useBreakpoint()];
   return (
-    <section className={classes(s.band, bleed(gutter))}>
+    <section className={classes(s.band, bleed(gutter, scope))}>
       {backdrop ? (
         <>
           {prev ? <Image src={prev} fit="cover" position="center 22%" fill /> : null}
@@ -144,7 +160,7 @@ export function BrowseHero({
         </Box>
       </Box>
       {backdrop && creditTitle ? (
-        <Box key={creditTitle} style={[s.credit, creditAt(gutter)]}>
+        <Box key={creditTitle} style={[s.credit, creditAt(gutter, scope)]}>
           <Text variant="meta" color="white/35">
             {creditTitle}
           </Text>

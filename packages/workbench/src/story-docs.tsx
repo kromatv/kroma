@@ -5,7 +5,7 @@
 // story: the same centred cap, the same outline rail on a desk - plus the story
 // scope, so the `<Scene>` specimens in the prose draw with the live args.
 
-import { Box, styles, Text } from '@kromatv/ui/kit';
+import { Box, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { space } from '@kromatv/ui/tokens';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView } from 'react-native';
@@ -30,6 +30,8 @@ interface StoryDocsProps {
 /** The reading view of a story written as a document. Scrolls itself, so it is
  * given a region to fill rather than a height. */
 function StoryDocs({ story, args, content, layout }: Readonly<StoryDocsProps>) {
+  const s = useStyles(sDefinition);
+
   const outline = useOutline(story.id);
   const [active, setActive] = useState<string | undefined>(undefined);
   const [scroller, setScroller] = useState<ScrollView | null>(null);
@@ -114,6 +116,8 @@ const Document = memo(function Document({
 // than the first two lines of the prose. It scrolls with the article, unlike the
 // heading over the tabs, which names the story on every view of it.
 function DocHeading({ story, compact }: Readonly<{ story: Story; compact: boolean }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box
       gap={compact ? space[1] : space[2]}
@@ -129,7 +133,7 @@ function DocHeading({ story, compact }: Readonly<{ story: Story; compact: boolea
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   scroll: { flex: true },
   // Centred by the scroller rather than by a margin: a margin would leave the
   // scroll bar hugging the text instead of the region.

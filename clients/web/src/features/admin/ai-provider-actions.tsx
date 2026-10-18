@@ -1,8 +1,17 @@
 import { useT } from '@kromatv/ui';
-import { Button, Icon, Row, Spacer, styles, Text, typeSpec as textRoles } from '@kromatv/ui/kit';
+import {
+  Button,
+  Icon,
+  Row,
+  Spacer,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  useStyles,
+} from '@kromatv/ui/kit';
 import type { Busy, Probe } from '#web/features/admin/ai-provider-spec';
 
-const s = styles({ dangerLabel: { fontSize: textRoles.meta.size, fontWeight: '600' } });
+const sDefinition = styles({ dangerLabel: { fontSize: textRoles.meta.size, fontWeight: '600' } });
 
 export function CardActions({
   busy,
@@ -19,6 +28,8 @@ export function CardActions({
   onSetDefault: () => void;
   onRemove: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <Row wrap gap={10} mt={8} mb={20}>

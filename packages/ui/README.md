@@ -262,13 +262,19 @@ so a one-off tweak at a call site never has to fight the component.
 ### `styles()`: the rest
 
 For shapes that are not a variant of anything, `styles()` is `StyleSheet.create` in
-the kit's vocabulary: named, registered, theme-aware, one lowercase binding.
+the kit's vocabulary. Bind the declaration inside a component with `useStyles` so
+it resolves against that root's theme and relevant breakpoint steps.
 
 ```tsx
-const s = styles({
+const rowStyles = styles({
   row: { row: true, align: 'center', gap: 6, px: 8, radius: 'sm' },
   label: { text: 'meta', color: 'textMuted' },
 });
+
+function LabelRow() {
+  const s = useStyles(rowStyles);
+  return <Box style={s.row}><Text style={s.label}>Label</Text></Box>;
+}
 ```
 
 ### Compiled ahead of time
@@ -287,13 +293,13 @@ nothing and lands on the element inline. See
 
 ### Themes
 
-Every token group (colours, radius, shadows, fonts, type roles, motion) lives in one
-live store. `KROMA` is the default. A theme is created by restating any slice of it,
+Each `KitProvider` root owns its theme and design-width stores. Nested providers
+inherit them unless they explicitly configure a theme, ground or design width. `KROMA` is the default. A theme is created by restating any slice of it,
 and everything derived, meaning type roles from specs plus families and the focus
 ring from the accent, re-derives:
 
 ```tsx
-import { createTheme, setTheme, ThemeProvider, useTheme } from '@kromatv/ui/kit';
+import { createTheme, KitProvider, ThemeProvider, useThemeControls } from '@kromatv/ui/kit';
 
 const ocean = createTheme({
   colors: { accent: '#3FB6F2', accentHover: '#66C6F5' },
@@ -301,13 +307,29 @@ const ocean = createTheme({
   radius: { lg: 18 },
 });
 
-setTheme(ocean);                      // boot-time, before mount
-<ThemeProvider theme={ocean}>…        // or runtime: remounts the subtree
+<KitProvider config={{ theme: ocean, designWidth: 1920 }}>…</KitProvider>
+<ThemeProvider theme={ocean}>…</ThemeProvider>
+
+function ThemePicker() {
+  const { applyTheme } = useThemeControls();
+  return <Button onPress={() => applyTheme(ocean)}>Ocean</Button>;
+}
 ```
 
 Nothing re-resolves eagerly. Recipes, `styles()` and `<Box>` all key their caches on
 the theme version and rebuild lazily on next use, so a swap costs one rebuild per
-recipe actually rendered.
+recipe actually rendered. Browser sheets and responsive custom properties are
+scoped to their root and removed on unmount. A width-only nested provider keeps
+its parent's palette. Native targets use the same context without another view.
+
+Use `useSv(recipe)` when invoking a recipe directly in a component. Passing the
+declaration to `<Focusable sv={recipe}>` binds it there. Pure helpers accept an
+explicit `StyleScope`; `useStyleScope()` supplies the current root snapshot.
+`createStyleRuntime()` creates an explicit owner for tools and non-React hosts.
+The former process-wide `setTheme`, `applyTheme` and `pinDesignWidth` exports are
+replaced by root configuration and `useThemeControls()` / `useStyleRuntime()`.
+Tests can use `createStyleTestHost()` from `@kromatv/ui/testing` to bind renderers,
+setters and declaration resolvers to one isolated root.
 
 **New token names stay typed everywhere.** Token unions are `keyof` the base table
 plus an augmentable registry, so a name added once is immediately legal, and

@@ -1,7 +1,16 @@
 import { useT } from '@kromatv/ui';
-import { Button, classes, IconButton, Row, Surface, styles, Text } from '@kromatv/ui/kit';
+import {
+  Button,
+  classes,
+  IconButton,
+  Row,
+  Surface,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 
-const s = styles({
+const sDefinition = styles({
   sticky: {
     position: 'sticky',
     bottom: 16,
@@ -23,6 +32,8 @@ export function RequestBar({
   onRequestSelected: () => void;
   onClear: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   if (count === 0) return null;
   return (

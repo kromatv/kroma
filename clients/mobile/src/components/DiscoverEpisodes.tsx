@@ -1,6 +1,6 @@
 import type { DiscoverEpisode, DiscoverSeason } from '@kromatv/client/discovery';
 import { sizedImageUrl } from '@kromatv/core';
-import { Box, Button, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import type { View } from 'react-native';
@@ -15,6 +15,8 @@ import { radius, spacing, type } from '#mobile/lib/theme';
 const STILL_W = 480;
 
 function EpisodeRow({ episode }: Readonly<{ episode: DiscoverEpisode }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   return (
@@ -43,6 +45,8 @@ export function DiscoverEpisodes({
   tmdbId,
   seasons,
 }: Readonly<{ tmdbId: number; seasons: readonly DiscoverSeason[] }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const gutters = useGutters();
@@ -95,7 +99,7 @@ export function DiscoverEpisodes({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   seasonHeader: { row: true, align: 'center', mb: spacing.sm },
   list: { gap: 4 },
   episode: { row: true, align: 'center', gap: 12, p: 8, radius: radius.md },

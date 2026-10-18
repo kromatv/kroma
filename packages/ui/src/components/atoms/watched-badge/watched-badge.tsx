@@ -1,8 +1,11 @@
+import { activeTheme, useStyleScope } from '#ui/core';
+
 // <WatchedBadge>: the one mark that says a title has been watched.
 
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 import { color, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { Polygon, Svg } from '#ui/lib/svg';
 import { useTDefault } from '#ui/services/i18n';
 
@@ -28,6 +31,10 @@ interface WatchedBadgeProps {
  * and the fold takes the tile's own rounded corner from that.
  */
 function WatchedBadge({ size = 40, corner = 'top-left' }: Readonly<WatchedBadgeProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const t = useTDefault();
   const right = corner === 'top-right';
   const glyph = Math.round(size * 0.34);
@@ -46,7 +53,10 @@ function WatchedBadge({ size = 40, corner = 'top-left' }: Readonly<WatchedBadgeP
       accessibilityLabel={t('content.watched')}
     >
       <Svg width={size} height={size} viewBox="0 0 40 40">
-        <Polygon points={right ? '0,0 40,0 40,40' : '0,0 40,0 0,40'} fill={color('accent')} />
+        <Polygon
+          points={right ? '0,0 40,0 40,40' : '0,0 40,0 0,40'}
+          fill={color('accent', activeTheme(scope.theme))}
+        />
       </Svg>
       <Box absolute top={inset} left={right ? undefined : inset} right={right ? inset : undefined}>
         <Icon name="check" size={glyph} color="accentInk" thickness={3} />
@@ -55,7 +65,7 @@ function WatchedBadge({ size = 40, corner = 'top-left' }: Readonly<WatchedBadgeP
   );
 }
 
-const s = styles({ mark: { pointerEvents: 'none' } });
+const sDefinition = styles({ mark: { pointerEvents: 'none' } });
 
 export type { WatchedBadgeProps, WatchedCorner };
 export { WatchedBadge };

@@ -12,7 +12,15 @@
 import type { DiscoveredTv, GrantResult } from '@kromatv/core';
 import { HANDOFF_CHECK_LENGTH } from '@kromatv/core';
 import { useCheckPrompt } from '@kromatv/core/react';
-import { Box, Button, OtpField, REGEXP_ONLY_DIGITS_AND_CHARS, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  OtpField,
+  REGEXP_ONLY_DIGITS_AND_CHARS,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { spacing, type } from '#mobile/lib/theme';
 
@@ -25,6 +33,8 @@ export interface CheckPromptProps {
 }
 
 export function CheckPrompt({ device, onGrant, onCancel }: Readonly<CheckPromptProps>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { code, setCode, busy, refused, submit } = useCheckPrompt({ device, onGrant });
   const asked = t('handoff.checkPrompt', { name: device.name });
@@ -52,7 +62,7 @@ export function CheckPrompt({ device, onGrant, onCancel }: Readonly<CheckPromptP
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   prompt: { align: 'center', gap: spacing.md, py: spacing.lg },
   title: { ...type.section, color: 'text', textAlign: 'center' },
   hint: { ...type.caption, color: 'textMuted', textAlign: 'center' },

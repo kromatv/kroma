@@ -1,3 +1,4 @@
+import { useStyles } from '#ui/core/styles';
 import { fontSizes as textSizes } from '#ui/core/tokens';
 // One row of the palette, and the empty face the list falls back to.
 
@@ -22,6 +23,8 @@ interface CommandRowProps {
 }
 
 function CommandRow({ item, open, cursor, onHover, onPress }: Readonly<CommandRowProps>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Focusable
       label={item.label}
@@ -55,7 +58,7 @@ function CommandRow({ item, open, cursor, onHover, onPress }: Readonly<CommandRo
   );
 }
 
-const s = styles({ meta: { fontSize: textSizes.overlineRaised } });
+const sDefinition = styles({ meta: { fontSize: textSizes.overlineRaised } });
 
 // The sheet is a lifted surface, where the chrome's plain focus wash reads as
 // nothing; the keyboard cursor wears the same coat as focus, since only one of

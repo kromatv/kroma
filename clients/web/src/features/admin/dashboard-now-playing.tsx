@@ -17,6 +17,8 @@ import {
   Row,
   Surface,
   Text,
+  useStyleScope,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
@@ -32,6 +34,9 @@ const THUMB_W = 132;
 // The current storyboard frame when the sheet is ready, else the item poster,
 // else a title-seeded gradient.
 function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   // Never kick/await lazy ffmpeg generation just to paint a 132px thumb: fetch
   // once and only use the sheet if it already exists (else poster / gradient).
   const story = useStoryboard(s.itemId, { generate: false });
@@ -41,7 +46,7 @@ function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
 
   return (
     <Box w={THUMB_W} aspect={16 / 9} shrink={0} self="flex-start" radius="xs" overflow="hidden">
-      <Box fill style={posterScrim(s.title)} />
+      <Box fill style={posterScrim(s.title, scope)} />
       {posterFailed ? null : (
         <Image src={poster} fit="cover" fill onError={() => setPosterFailed(true)} />
       )}

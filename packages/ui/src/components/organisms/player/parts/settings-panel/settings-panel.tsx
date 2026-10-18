@@ -1,3 +1,5 @@
+import { type StyleScope, useStyleScope } from '#ui/core';
+
 // The right-side settings panel (§5).
 //
 // Two levels and nothing more: a MENU of every setting, and the ONE sub-view a
@@ -32,6 +34,7 @@ import type { SubtitleAppearance } from '#ui/components/organisms/player/lib/sub
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import type { PlayerController } from '#ui/components/organisms/player/types';
 import { sharedStyle, style, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { ease } from '#ui/lib/ease';
 import { FocusScroll } from '#ui/lib/focus-scroll';
 import { WEB } from '#ui/lib/platform';
@@ -83,7 +86,7 @@ interface SettingsPanelProps {
 // animation), so there the panel travels on a CSS transition and the movement
 // belongs to the compositor rather than to the thread the chrome ticks on.
 
-const veil = styles({
+const veilDefinition = styles({
   box: { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 41 },
   live: { pointerEvents: 'auto' },
   inert: { pointerEvents: 'none' },
@@ -91,13 +94,14 @@ const veil = styles({
 
 const SCROLL = style({ flex: true });
 
-const veilTo = (right: number | string) => sharedStyle(`settings:veil:${right}`, { right });
+const veilTo = (right: number | string, scope: StyleScope) =>
+  sharedStyle(`settings:veil:${right}`, { right }, scope);
 
-const panelWidth = (width: number | string) =>
-  sharedStyle(`settings:panel:${width}`, { width, maxWidth: PANEL_MAX });
+const panelWidth = (width: number | string, scope: StyleScope) =>
+  sharedStyle(`settings:panel:${width}`, { width, maxWidth: PANEL_MAX }, scope);
 
-const panelPad = (x: number, y: number) =>
-  sharedStyle(`settings:pad:${x}:${y}`, { paddingHorizontal: x, paddingVertical: y });
+const panelPad = (x: number, y: number, scope: StyleScope) =>
+  sharedStyle(`settings:pad:${x}:${y}`, { paddingHorizontal: x, paddingVertical: y }, scope);
 function webPanelTravel(shown: boolean, width: number): ViewStyle {
   return {
     opacity: shown ? 1 : 0,
@@ -151,6 +155,12 @@ export function SettingsPanel({
   onClose,
   ref,
 }: Readonly<SettingsPanelProps>) {
+  const playerStyleScoped = useStyles(playerStyle);
+
+  const scope = useStyleScope();
+
+  const veil = useStyles(veilDefinition);
+
   const t = useT();
   const px = scaler(scale);
   const travel = usePanelTravel(shown, width ?? PANEL_MAX);
@@ -207,12 +217,12 @@ export function SettingsPanel({
         accessibilityRole="button"
         accessibilityLabel={t('common.close')}
         onPress={onClose}
-        style={[veil.box, veilTo(width ?? '44%'), shown ? veil.live : veil.inert]}
+        style={[veil.box, veilTo(width ?? '44%', scope), shown ? veil.live : veil.inert]}
       />
-      <Animated.View style={[playerStyle.panel, panelWidth(width ?? '44%'), travel]}>
+      <Animated.View style={[playerStyleScoped.panel, panelWidth(width ?? '44%', scope), travel]}>
         <FocusScroll
           style={SCROLL}
-          contentStyle={panelPad(px(58), px(56))}
+          contentStyle={panelPad(px(58), px(56), scope)}
           reveal="nearest"
           offsetFromStart={px(12)}
         >

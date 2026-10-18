@@ -1,3 +1,4 @@
+import { activeTheme, useStyleScope } from '#ui/core';
 // The marks: one series each, drawn inside the Root's plot. Everything they
 // need beyond their own paint comes off the context, because the scale belongs
 // to the chart and not to any one series on it.
@@ -56,21 +57,27 @@ function Trace({ paint, d, thickness }: Readonly<{ paint: string; d: string; thi
 
 /** One series as an open trace. */
 function Line({ series, curve = 'monotone', thickness = TRACE }: Readonly<ChartTraceProps>) {
+  const scope = useStyleScope();
+
   const state = useChart('Line');
   const found = seriesOf(state, series);
   if (!found) return null;
   const d = linePath(found.column, state.domain, state.plot, curve);
-  return d ? <Trace paint={color(found.color)} d={d} thickness={thickness} /> : null;
+  return d ? (
+    <Trace paint={color(found.color, activeTheme(scope.theme))} d={d} thickness={thickness} />
+  ) : null;
 }
 
 /** One series as a trace over a wash down to the baseline. */
 function Area({ series, curve = 'monotone', thickness = TRACE }: Readonly<ChartTraceProps>) {
+  const scope = useStyleScope();
+
   const state = useChart('Area');
   const found = seriesOf(state, series);
   if (!found) return null;
   const d = linePath(found.column, state.domain, state.plot, curve);
   if (!d) return null;
-  const paint = color(found.color);
+  const paint = color(found.color, activeTheme(scope.theme));
   return (
     <>
       <Path
@@ -107,13 +114,15 @@ function extentOf(stack: readonly ChartSeries[], at: number, state: ChartState):
 
 /** One series as a bar per sample. */
 function Bar({ series }: Readonly<ChartBarProps>) {
+  const scope = useStyleScope();
+
   const state = useChart('Bar');
   const found = seriesOf(state, series);
   if (!found) return null;
   const stack = state.series.filter(
     (entry) => entry.mark === 'bar' && entry.stackAt === found.stackAt,
   );
-  const paint = color(found.color);
+  const paint = color(found.color, activeTheme(scope.theme));
   return (
     <>
       {found.column.map((_, at) => {

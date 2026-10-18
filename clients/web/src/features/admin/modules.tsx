@@ -4,13 +4,23 @@
 // and registry management in its own drawer.
 
 import { useT } from '@kromatv/ui';
-import { Box, Button, classes, Field, Row, SegmentGroup, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  classes,
+  Field,
+  Row,
+  SegmentGroup,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useMemo, useRef, useState } from 'react';
 
 // The file input is a handle for the upload button, never a control a reader
 // sees; `display: none` has no React Native spelling.
-const s = styles({ hidden: { display: 'none' } });
+const sDefinition = styles({ hidden: { display: 'none' } });
 
 import { installBundle, message, updateModules } from '#web/features/admin/module-api';
 import { useModuleData } from '#web/features/admin/module-data';
@@ -31,6 +41,8 @@ export function ModulesAdminPage() {
 }
 
 function ModulesInner() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const navigate = useNavigate();
   const { modules, catalog, refreshAll } = useModuleData();

@@ -1,3 +1,4 @@
+import { useStyleScope, useSv } from '#ui/core';
 import { typeSpec as textRoles } from '#ui/core/tokens';
 // One segment: a radio in the group's row, and the shell it is drawn in.
 
@@ -54,11 +55,19 @@ interface ItemProps {
 }
 
 function Item({ value, label, icon, disabled, children }: Readonly<ItemProps>) {
+  const segmentGroupVariantsScoped = useSv(segmentGroupVariants);
+
+  const scope = useStyleScope();
+
   const { value: picked, select, size, stretch, report } = useSegmentGroup('Item');
   const active = value === picked;
   const glyph = Math.round(CONTROL[size].fontSize * 1.2);
-  const corner = sharedStyle(`segment:corner:${size}`, { radius: segmentRadius(size) });
-  const slots = segmentGroupVariants({ size, active });
+  const corner = sharedStyle(
+    `segment:corner:${size}`,
+    { radius: segmentRadius(size, scope) },
+    scope,
+  );
+  const slots = segmentGroupVariantsScoped({ size, active });
   return (
     <ItemContext.Provider value={slots}>
       <Focusable

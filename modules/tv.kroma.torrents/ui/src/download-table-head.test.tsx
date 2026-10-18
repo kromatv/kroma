@@ -1,14 +1,18 @@
 // @vitest-environment jsdom
 
 import { I18nProvider } from '@kromatv/ui';
-import { pinDesignWidth, Table } from '@kromatv/ui/kit';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { Table } from '@kromatv/ui/kit';
+import { createStyleTestHost } from '@kromatv/ui/testing';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { memo, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DOWNLOAD_BOXES } from './download-columns';
 import { DownloadTableHead } from './download-table-head';
 import type { DownloadQuery, PageView } from './schemas';
 import { useDownloadsTable } from './use-downloads-table';
+
+const styleHost = createStyleTestHost();
+const { pinDesignWidth, render } = styleHost;
 
 const PAGE: PageView = { page: 1, perPage: 10, total: 3, pageCount: 1 };
 

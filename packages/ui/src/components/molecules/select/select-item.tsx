@@ -1,3 +1,4 @@
+import { useSv } from '#ui/core';
 // One option, in both presentations: a row of the D-pad dialog, and a row of
 // the pointer's anchored listbox. Which one it renders is the surface's
 // decision, handed down through the row context.
@@ -10,6 +11,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { styles, sv } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { CONTROL } from '#ui/lib/field-shell';
 import {
   SelectItemContext,
@@ -96,6 +98,10 @@ function mediaOf(props: Readonly<SelectItemProps>): ReactNode {
 }
 
 function Item(props: Readonly<SelectItemProps>) {
+  const optionVariantsScoped = useSv(optionVariants);
+
+  const s = useStyles(sDefinition);
+
   const { value, children, disabled = false } = props;
   const { values, pick } = useSelect('Item');
   const row = useSelectRow();
@@ -112,7 +118,7 @@ function Item(props: Readonly<SelectItemProps>) {
   );
 
   if (row.presentation === 'panel') {
-    const slots = optionVariants({ chosen });
+    const slots = optionVariantsScoped({ chosen });
     return (
       <SelectItemContext.Provider value={state}>
         <Pressable
@@ -211,7 +217,7 @@ function Indicator() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   row: { radius: CONTROL.sm.radius },
   active: { bg: 'tint/8' },
   // On the edge: the rows abut, so a gap either way lands on something.

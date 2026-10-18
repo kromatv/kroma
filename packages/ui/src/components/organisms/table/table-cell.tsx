@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
+import { resolveStyles, type StyleScope, styles, useStyleScope } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { space } from '#ui/core/tokens';
 import { ColumnSeam } from './table-column-seam';
 import { drawn, FILL, lastDrawn, NO_COLUMNS, useTableGrid } from './table-columns';
@@ -52,6 +53,10 @@ function CellText({
 }
 
 function Cell({ children }: Readonly<TableCellProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const { head, variant, at, of } = useTable('Cell');
   const grid = useTableGrid();
   const sorting = useTableSort();
@@ -60,7 +65,11 @@ function Cell({ children }: Readonly<TableCellProps>) {
   const step = grid?.step ?? 0;
   if (!drawn(column, step)) return null;
   const { onLayout, seam } = resizeOf(head ? resize : null, at, children);
-  const { pad, bleed } = padsFor(variant, at !== lastDrawn(grid?.columns ?? NO_COLUMNS, of, step));
+  const { pad, bleed } = padsFor(
+    variant,
+    at !== lastDrawn(grid?.columns ?? NO_COLUMNS, of, step),
+    scope,
+  );
   const box = grid?.boxes[at] ?? FILL;
   const sortsBy = head ? column?.column : undefined;
   if (sortsBy !== undefined && sorting) {
@@ -95,7 +104,7 @@ function Cell({ children }: Readonly<TableCellProps>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   cell: { px: space[3], py: space[2], justify: 'center', overflow: 'hidden' },
   bleed: { mx: -space[3], my: -space[2] },
   cellPlain: { py: space[3], justify: 'center', overflow: 'hidden' },
@@ -105,11 +114,21 @@ const s = styles({
   end: { align: 'flex-end' },
 });
 
-function padsFor(variant: TableVariant, gutter: boolean) {
-  if (variant === 'framed') return { pad: s.cell, bleed: s.bleed };
+function padsFor(variant: TableVariant, gutter: boolean, scope: StyleScope) {
+  if (variant === 'framed')
+    return {
+      pad: resolveStyles(sDefinition, scope).cell,
+      bleed: resolveStyles(sDefinition, scope).bleed,
+    };
   return gutter
-    ? { pad: s.cellGutter, bleed: s.bleedGutter }
-    : { pad: s.cellPlain, bleed: s.bleedPlain };
+    ? {
+        pad: resolveStyles(sDefinition, scope).cellGutter,
+        bleed: resolveStyles(sDefinition, scope).bleedGutter,
+      }
+    : {
+        pad: resolveStyles(sDefinition, scope).cellPlain,
+        bleed: resolveStyles(sDefinition, scope).bleedPlain,
+      };
 }
 
 export type { TableCellProps };

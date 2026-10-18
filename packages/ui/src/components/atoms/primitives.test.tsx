@@ -1,6 +1,9 @@
-import type { ReactElement } from 'react';
-import { createInputTestHost } from '#ui/testing-input';
 // @vitest-environment jsdom
+
+import type { ReactElement } from 'react';
+import { contentRoot } from '#ui/testing';
+import { createInputTestHost } from '#ui/testing-input';
+
 //
 // Renders the universal primitives through react-native-web and asserts the DOM
 // they produce. The same components compile to native views on Apple TV and
@@ -45,7 +48,7 @@ const css = (el: Element) => getComputedStyle(el);
 
 // The navigator scope `render` adds contributes no DOM of its own, so the
 // disc is the first child.
-const disc = (container: HTMLElement) => container.firstElementChild as HTMLElement;
+const disc = (container: HTMLElement) => contentRoot(container) as HTMLElement;
 
 const padlock = (container: HTMLElement) =>
   (container.querySelector('svg') as SVGElement).parentElement as HTMLElement;

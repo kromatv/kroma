@@ -13,6 +13,7 @@ import {
   space,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { memo, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { AUTH_SCREENS } from '#tv/app/navPolicy';
@@ -122,6 +123,8 @@ export const AUTH_BACKDROP: TvChrome = {
  * and the beacon this TV is waiting under, on whichever gate screen it is
  * showing. */
 export function AuthScreen({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const nav = useNav();
   const t = useT();
   return (
@@ -150,6 +153,8 @@ export function AuthScreen({ children }: Readonly<{ children: ReactNode }>) {
 // televisions, or a device that named itself after theirs, can tell which row in
 // the phone's list is this screen.
 function BeaconMark() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const beacon = useHandoffBeacon();
   if (!beacon) return null;
@@ -165,7 +170,7 @@ function BeaconMark() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   scroll: { flex: true },
   // Growth and centring sit on the content, not the box, so it centres when it
   // fits and scrolls from the top when it does not.

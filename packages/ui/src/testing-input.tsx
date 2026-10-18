@@ -20,10 +20,13 @@ export type InputTestHost = InputGate & {
 };
 
 /** Bind test controls to the same real gate the rendered controls read. */
-export function createInputTestHost(): InputTestHost {
+export function createInputTestHost(options?: {
+  wrapper?: ComponentType<{ children?: ReactNode }>;
+}): InputTestHost {
   const gate = createInputGate();
   function Host({ children }: { children: ReactNode }) {
-    return createElement(InputGateProvider, { value: gate }, children);
+    const content = createElement(InputGateProvider, { value: gate }, children);
+    return options?.wrapper ? createElement(options.wrapper, null, content) : content;
   }
   function render(ui: ReactNode, options?: RenderOptions) {
     const Outer = options?.wrapper;

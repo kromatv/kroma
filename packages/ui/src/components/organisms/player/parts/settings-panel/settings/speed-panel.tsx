@@ -2,6 +2,7 @@ import { type Ref, useImperativeHandle } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
+import { useStyles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
 import { panel } from './panel-style';
 import { SelectRow } from './select-row';
@@ -17,6 +18,8 @@ interface SpeedPanelProps {
 
 /** Playback-speed picker (§5). `1` reads as "Normal"; others as "1.25×". */
 export function SpeedPanel({ rate, onSelect, onBack, ref }: Readonly<SpeedPanelProps>) {
+  const panelScoped = useStyles(panel);
+
   const t = useT();
   const pick = (i: number) => {
     const r = RATES[i];
@@ -27,7 +30,7 @@ export function SpeedPanel({ rate, onSelect, onBack, ref }: Readonly<SpeedPanelP
   useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
   return (
-    <Box style={panel.panelList}>
+    <Box style={panelScoped.panelList}>
       {RATES.map((r, i) => (
         <SelectRow
           key={r}

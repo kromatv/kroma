@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import type { TextStyle, ViewStyle } from 'react-native';
 import { z } from 'zod';
 import type { ColorValue } from '#ui/core';
-import { sharedStyle } from '#ui/core';
+import { type StyleScope, sharedStyle } from '#ui/core';
+import { DEFAULT_STYLE_SCOPE } from '#ui/core/style-scope';
 import { radius as cornerRadius } from '#ui/core/tokens';
 import { type DeviceStore, useDeviceStore } from '#ui/lib/device-store';
 import { edgeStyle } from './subtitle-edge';
@@ -237,14 +238,21 @@ export function withOpacity(hex: string, pct: number): string {
 
 /** The caption window's style: the band the cue block sits in. A ViewStyle,
  * not a TextStyle: RN's stricter native typings require it for a container. */
-export function subtitleWindowStyle(style: SubtitleAppearance): ViewStyle {
+export function subtitleWindowStyle(
+  style: SubtitleAppearance,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
+): ViewStyle {
   if (style.windowOpacity <= 0) return NO_WINDOW;
-  return sharedStyle(`subtitle:window:${style.windowColor}:${style.windowOpacity}`, {
-    backgroundColor: withOpacity(style.windowColor, style.windowOpacity),
-    paddingVertical: 6,
-    paddingHorizontal: 18,
-    borderRadius: cornerRadius.md,
-  });
+  return sharedStyle(
+    `subtitle:window:${style.windowColor}:${style.windowOpacity}`,
+    {
+      backgroundColor: withOpacity(style.windowColor, style.windowOpacity),
+      paddingVertical: 6,
+      paddingHorizontal: 18,
+      borderRadius: cornerRadius.md,
+    },
+    scope,
+  );
 }
 
 // Interned: the default appearance has no window, and the cue re-renders at
@@ -254,29 +262,36 @@ const NO_WINDOW: ViewStyle = Object.freeze({});
 /** The text style for a subtitle line, from the viewer's appearance choice.
  * The edge treatment is the one piece that differs per platform (see
  * subtitle-edge.ts); everything else is one set of numbers. */
-export function subtitleStyle(style: SubtitleAppearance): TextStyle {
+export function subtitleStyle(
+  style: SubtitleAppearance,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
+): TextStyle {
   const size = SIZE_PX[style.size];
   const hasBg = clampPct(style.bgOpacity) > 0;
-  return sharedStyle(`subtitle:text:${JSON.stringify(style)}`, {
-    // Folded into the colour, not node opacity: the node also carries the
-    // background box, so `opacity` would dim it too, and the window (a
-    // separate View) wouldn't dim at all. CEA-708 gives each layer its own opacity.
-    color: withOpacity(style.color, Math.max(20, style.opacity)),
-    fontSize: size,
-    fontWeight: '600',
-    // React Native needs an absolute line height, not the design's 1.3 ratio.
-    lineHeight: Math.round(size * 1.3),
-    fontFamily: FONT_STACK[style.font],
-    ...(style.font === 'smallCaps' ? ({ fontVariant: ['small-caps'] } as TextStyle) : null),
-    textAlign: 'center',
-    borderRadius: cornerRadius.md,
-    ...(hasBg
-      ? {
-          backgroundColor: withOpacity(style.bgColor, style.bgOpacity),
-          paddingVertical: 4,
-          paddingHorizontal: 16,
-        }
-      : null),
-    ...edgeStyle(style.edge),
-  });
+  return sharedStyle(
+    `subtitle:text:${JSON.stringify(style)}`,
+    {
+      // Folded into the colour, not node opacity: the node also carries the
+      // background box, so `opacity` would dim it too, and the window (a
+      // separate View) wouldn't dim at all. CEA-708 gives each layer its own opacity.
+      color: withOpacity(style.color, Math.max(20, style.opacity)),
+      fontSize: size,
+      fontWeight: '600',
+      // React Native needs an absolute line height, not the design's 1.3 ratio.
+      lineHeight: Math.round(size * 1.3),
+      fontFamily: FONT_STACK[style.font],
+      ...(style.font === 'smallCaps' ? ({ fontVariant: ['small-caps'] } as TextStyle) : null),
+      textAlign: 'center',
+      borderRadius: cornerRadius.md,
+      ...(hasBg
+        ? {
+            backgroundColor: withOpacity(style.bgColor, style.bgOpacity),
+            paddingVertical: 4,
+            paddingHorizontal: 16,
+          }
+        : null),
+      ...edgeStyle(style.edge),
+    },
+    scope,
+  );
 }

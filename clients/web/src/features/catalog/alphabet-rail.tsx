@@ -1,13 +1,13 @@
 import { TITLE_LETTERS } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import type { LetterRange } from '@kromatv/ui/kit';
-import { classes, AlphabetRail as Rail, styles, useBreakpoint } from '@kromatv/ui/kit';
+import { classes, AlphabetRail as Rail, styles, useBreakpoint, useStyles } from '@kromatv/ui/kit';
 
 export type { LetterRange };
 
 // Fixed to the viewport and centred in it: neither position is in the kit's
 // vocabulary, which lays out inside a flow rather than against the window.
-const s = styles({
+const sDefinition = styles({
   rail: {
     position: 'fixed',
     top: 0,
@@ -35,6 +35,8 @@ export interface AlphabetRailProps {
  * wrapper decides where it lives on the web (fixed, vertically centred,
  * hidden on phones where the grid is short enough to flick). */
 export function AlphabetRail({ available, range, onJump }: Readonly<AlphabetRailProps>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   // A phone flicks the grid instead; the rail is a pointer and a wide-screen
   // affordance, so below `md` it is not rendered at all.

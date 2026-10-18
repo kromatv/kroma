@@ -19,6 +19,7 @@ import {
   Row,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useWindowDimensions } from 'react-native';
@@ -28,6 +29,8 @@ import { castPicker } from '#web/shared/ui/cast-picker';
 const SKIP_MS = 10_000;
 
 export function CastBar() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { active, positionMs, send, select } = useCast();
   const wide = useWindowDimensions().width >= breakpoint.md;
@@ -71,6 +74,8 @@ function NowPlaying({
   playingOn,
   onSelect,
 }: Readonly<{ item?: MediaItem; playingOn: string; onSelect: Cast['select'] }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const poster = item ? kromaClient().media.artwork.posterFor(item, 96) : null;
   return (
@@ -152,6 +157,8 @@ function Scrubber({
   positionMs,
   send,
 }: Readonly<{ playing: CastNowPlaying; positionMs: number; send: Cast['send'] }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   // While a drag is in flight the bar follows the finger: the receiver's
   // heartbeats would otherwise yank the handle back mid-gesture.
@@ -189,7 +196,7 @@ function Scrubber({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   bar: {
     position: 'fixed',
     left: 0,

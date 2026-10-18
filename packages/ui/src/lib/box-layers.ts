@@ -1,3 +1,5 @@
+import { resolveStyles, type StyleScope } from '#ui/core';
+import { DEFAULT_STYLE_SCOPE } from '#ui/core/style-scope';
 // Splits one control's authored style between the two views a native
 // <Focusable> renders: the navigator's own outer view, and the painted face
 // inside it (the browser targets are a single element, so nothing to split
@@ -50,7 +52,7 @@ const BOX_PROPS = new Set([
   'zIndex',
 ]);
 
-const s = styles({
+const sDefinition = styles({
   /** Makes the face fill the box it was split from. Growing (rather than `flex: 1`,
    * which would zero the basis) keeps a control that sizes itself from its content
    * sizing itself from its content: there is no free space to grow into. */
@@ -62,7 +64,10 @@ const s = styles({
  * `box` is undefined when the style is pure paint, which is the common case and
  * lets the caller leave the outer view unstyled.
  */
-export function splitBoxLayers(style: StyleProp<ViewStyle>): {
+export function splitBoxLayers(
+  style: StyleProp<ViewStyle>,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
+): {
   box?: ViewStyle;
   face: StyleProp<ViewStyle>;
 } {
@@ -84,6 +89,8 @@ export function splitBoxLayers(style: StyleProp<ViewStyle>): {
   if (!boxed) return { face: style };
   return {
     box: box as ViewStyle,
-    face: sized ? [face as ViewStyle, s.faceFill] : (face as ViewStyle),
+    face: sized
+      ? [face as ViewStyle, resolveStyles(sDefinition, scope).faceFill]
+      : (face as ViewStyle),
   };
 }

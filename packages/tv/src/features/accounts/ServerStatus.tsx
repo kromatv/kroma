@@ -1,10 +1,12 @@
 import { useT } from '@kromatv/ui';
-import { Box, StatusDot, styles, Text, typeSpec as textRoles } from '@kromatv/ui/kit';
+import { Box, StatusDot, styles, Text, typeSpec as textRoles, useStyles } from '@kromatv/ui/kit';
 import type { ServerProbe } from '#tv/app/useServersHealth';
 
 /** The dot plus the round-trip time, rather than a bare "En ligne": on a LAN
  * list it's the one number that separates two live servers. */
 export function ServerStatusPill({ probe }: Readonly<{ probe?: ServerProbe }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const online = probe?.online;
   let label = t('addProfile.checking');
@@ -22,6 +24,6 @@ export function ServerStatusPill({ probe }: Readonly<{ probe?: ServerProbe }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   label: { fontSize: textRoles.meta.size, fontWeight: '600', letterSpacing: 0.26 },
 });

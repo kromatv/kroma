@@ -1,6 +1,7 @@
 // A server-side folder browser: `value` is the committed path and `onChange`
 // fires on "use this folder"; browsing state is internal, seeded from `value`.
 // `onCancel` adds a cancel button for callers that show the browser on demand.
+
 import type { AdminFsList } from '@kromatv/client/admin';
 import { useT } from '@kromatv/ui';
 import {
@@ -13,6 +14,7 @@ import {
   Spinner,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
@@ -25,6 +27,8 @@ export function FolderPicker({
   onChange,
   onCancel,
 }: Readonly<{ value: string; onChange: (path: string) => void; onCancel?: () => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [path, setPath] = useState(value || '');
   const [list, setList] = useState<AdminFsList | null>(null);
@@ -117,4 +121,4 @@ export function FolderPicker({
   );
 }
 
-const s = styles({ pane: { maxH: 232 } });
+const sDefinition = styles({ pane: { maxH: 232 } });

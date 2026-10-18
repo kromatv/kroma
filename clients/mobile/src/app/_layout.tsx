@@ -3,14 +3,13 @@ import { lanBeacon } from '@kromatv/lan-beacon';
 import { CastProvider, I18nProvider as KitI18nProvider } from '@kromatv/ui';
 import { expoImageBackend } from '@kromatv/ui/expo-image';
 import {
-  applyMode,
   configureKit,
   KitProvider,
   onPaper,
   readMode,
-  setTheme,
   styles,
   ThemeProvider,
+  useStyles,
   useSystemGround,
   useTheme,
 } from '@kromatv/ui/kit';
@@ -86,12 +85,6 @@ function Shell() {
   const overArtwork = status !== 'signedIn' || segments.includes('player');
   const ground = useTheme();
   const theme = overArtwork ? MOBILE : mobileTheme(ground);
-  // The store moved to get here, so the stored mode is re-derived on the way out.
-  useEffect(() => {
-    if (overArtwork) return;
-    applyMode(readMode());
-    setTheme(mobileTheme());
-  }, [overArtwork]);
   // One cache per signed-in account: switching users drops everything.
   const [clients] = useState(() => new Map<string, QueryClient>());
   const cacheKey = user?.id ?? 'anon';
@@ -146,20 +139,27 @@ function Shell() {
 export default function RootLayout() {
   const [kitConfig] = useState(() => {
     const deviceStore = installDeviceStore();
-    return configureKit({ ...MOBILE_KIT, deviceStore, ground: readMode(), theme: mobileTheme() });
+    return configureKit({ ...MOBILE_KIT, deviceStore, ground: readMode(undefined, deviceStore) });
   });
-  useSystemGround();
-  const paper = onPaper(useTheme());
   return (
     <KitProvider config={kitConfig}>
-      <GestureHandlerRootView style={s.root}>
-        <SessionProvider>
-          <StatusBar style={paper ? 'dark' : 'light'} />
-          <Shell />
-        </SessionProvider>
-      </GestureHandlerRootView>
+      <RootShell />
     </KitProvider>
   );
 }
 
-const s = styles({ root: { flex: true, bg: 'bg' } });
+function RootShell() {
+  const s = useStyles(sDefinition);
+  useSystemGround();
+  const paper = onPaper(useTheme());
+  return (
+    <GestureHandlerRootView style={s.root}>
+      <SessionProvider>
+        <StatusBar style={paper ? 'dark' : 'light'} />
+        <Shell />
+      </SessionProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+const sDefinition = styles({ root: { flex: true, bg: 'bg' } });

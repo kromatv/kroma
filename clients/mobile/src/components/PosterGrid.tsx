@@ -6,7 +6,7 @@
 // reports which rows are on screen without a cell ever having been measured.
 // The cells recycle (FlashList), so a library of thousands costs a screenful.
 
-import { Box, styles } from '@kromatv/ui/kit';
+import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import {
   type ReactElement,
@@ -65,6 +65,8 @@ export function PosterGrid({
   /** The items whose rows are on screen, each time that changes. */
   onVisibleItems?: (items: ItemRange | null) => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const insets = useSafeAreaInsets();
   const [listW, setListW] = useState<number | null>(null);
   const [headerH, setHeaderH] = useState(0);
@@ -152,6 +154,6 @@ export function PosterGrid({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   cell: { px: GAP / 2, pb: spacing.md },
 });

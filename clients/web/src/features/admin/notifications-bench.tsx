@@ -19,6 +19,7 @@ import {
   Surface,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAsyncAction } from '#web/features/admin/hooks';
@@ -47,6 +48,8 @@ interface Draft {
 const EMPTY: Draft = { title: '', body: '', category: 'system', link: '', imageUrl: '' };
 
 export function NotificationBench() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [target, setTarget] = useState<Target>('me');
@@ -197,7 +200,7 @@ export function NotificationBench() {
 
 // The composer's preview draws its own shell, where a drawer row takes its
 // <ListRow.Root>'s.
-const s = styles({
+const sDefinition = styles({
   centred: { textAlign: 'center' },
   previewCard: { radius: 'xl', bg: 'surface2', p: 10, pl: 8 },
   note: { flex: true },
@@ -206,6 +209,8 @@ const s = styles({
 // The same tile, gutter and metrics the drawer uses, so the preview matches
 // what recipients actually see; `custom` is the event type this bench always sends.
 function PreviewRow({ draft, empty }: Readonly<{ draft: Draft; empty: string }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const art = draft.imageUrl ? kromaClient().media.artwork.resolve(draft.imageUrl) : null;
   return (

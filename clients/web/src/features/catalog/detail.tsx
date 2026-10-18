@@ -14,6 +14,9 @@ import {
   styles,
   Text,
   useBreakpoint,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
 import { type ReactNode, useEffect, useState } from 'react';
 import {
@@ -45,7 +48,7 @@ export {
 // inline`, and three of them in a row then run together as one paragraph with
 // their margins dropped, which is what put the director, the tagline and the
 // overview on the same line.
-const s = styles({
+const sDefinition = styles({
   frame: { position: 'relative', minHeight: '62vh' },
   gutter: { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' },
   text: {
@@ -129,6 +132,11 @@ export function DetailHero({
   adminAction,
   onReport,
 }: Readonly<DetailHeroProps>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [c1, c2] = posterColors(art.id);
   const heroGradient = `linear-gradient(135deg, ${c1}, ${c2})`;
@@ -169,7 +177,7 @@ export function DetailHero({
               shrink={0}
               overflow="hidden"
               radius="xl"
-              style={wash(c1, c2)}
+              style={wash(c1, c2, undefined, scope)}
             >
               <Image src={art.poster} fit="cover" fill />
             </Box>

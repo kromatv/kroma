@@ -1,3 +1,5 @@
+import { type StyleScope, useStyleScope } from '#ui/core';
+
 // The ends of the rail: the fade signalling more content, plus the pointer's
 // paging control. A CSS mask over the row would fade to whatever is behind it,
 // but a masked ancestor forms a BACKDROP ROOT and every <Frost> beneath it goes
@@ -9,6 +11,7 @@ import { Icon } from '#ui/components/atoms/icon';
 import { FOCUS_BLEED } from '#ui/components/organisms/virtual/clip';
 import { EASE_NATIVE, FADE, SETTLE_MS } from '#ui/components/organisms/virtual/strip-motion';
 import { sharedStyle, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { SHADE, shade } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';
 import { WEB } from '#ui/lib/platform';
@@ -21,7 +24,8 @@ const EDGE_INSET = 8;
 /** Fade length scales with row width, clamped to EDGE_MIN..EDGE_MAX so it reads
  *  correctly at both TV and narrow (e.g. workbench) widths. */
 
-const widthOf = (width: number) => sharedStyle(`rail-edge:width:${width}`, { width });
+const widthOf = (width: number, scope: StyleScope) =>
+  sharedStyle(`rail-edge:width:${width}`, { width }, scope);
 export function edgeWidth(row: number): number {
   if (row <= 0) return EDGE_MIN;
   return Math.round(Math.min(EDGE_MAX, Math.max(EDGE_MIN, row * EDGE_SHARE)));
@@ -51,8 +55,8 @@ function scrim(start: boolean, fade: number): string {
 // `RailEdge` isn't memoised and mounts twice, so recomputing on every D-pad
 // scroll would remap the curve needlessly.
 
-function scrimStyle(start: boolean, fade: number): ViewStyle {
-  return sharedStyle(`rail-edge:scrim:${start}:${fade}`, gradient(scrim(start, fade)));
+function scrimStyle(start: boolean, fade: number, scope: StyleScope): ViewStyle {
+  return sharedStyle(`rail-edge:scrim:${start}:${fade}`, gradient(scrim(start, fade)), scope);
 }
 
 /** One end of the row: the fade over the row's last tiles, plus the pointer's
@@ -71,6 +75,10 @@ export function RailEdge({
   onPress: () => void;
   width: number;
 }>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const start = side === 'start';
   // CSS transitions (`FADE`) are silently ignored on native and the gradient
   // blinks instead of fading; drive it through Animated there.
@@ -91,9 +99,9 @@ export function RailEdge({
       style={[
         s.edge,
         shown && arrow ? s.passThrough : s.inert,
-        widthOf(width + FOCUS_BLEED),
+        widthOf(width + FOCUS_BLEED, scope),
         start ? s.edgeStart : s.edgeEnd,
-        scrimStyle(start, width),
+        scrimStyle(start, width, scope),
         webFade,
         WEB ? FADE : null,
       ]}
@@ -119,7 +127,7 @@ export function RailEdge({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   shown: { opacity: 1 },
   hidden: { opacity: 0 },
   // Sized to the row's own height, not the clip's, so the scrim doesn't bleed

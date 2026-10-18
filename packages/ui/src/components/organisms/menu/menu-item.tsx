@@ -1,3 +1,5 @@
+import { useSv } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles } from '#ui/core/tokens';
 // One action, in both presentations: a row of the D-pad dialog, and a row of
 // the pointer's anchored panel. Which one it renders is the surface's
@@ -99,7 +101,11 @@ interface RowProps {
 }
 
 function PanelRow({ row, label, icon, disabled, danger, composed, delegate }: Readonly<RowProps>) {
-  const slots = menuItemVariants({ danger });
+  const menuItemVariantsScoped = useSv(menuItemVariants);
+
+  const s = useStyles(sDefinition);
+
+  const slots = menuItemVariantsScoped({ danger });
   const wash = danger ? s.activeDanger : s.active;
   const face = composed ? (
     delegate.content
@@ -197,7 +203,7 @@ function Separator() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   row: { radius: CONTROL.sm.radius },
   active: { bg: 'tint/7' },
   // On the edge: the rows abut, so a gap either way lands on something.

@@ -1,3 +1,4 @@
+import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // Export / import dialogs for the admin "Sauvegarde" panel. Export asks whether
 // to encrypt (+ password); import detects an encrypted file from its magic bytes
 // and only then asks for a password, always confirming before it overwrites.
@@ -45,6 +46,9 @@ function ErrorLine({ text }: Readonly<{ text: string }>) {
 }
 
 function ChosenFile({ name }: Readonly<{ name: string }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   const control = controlMetrics();
   return (
     <Box
@@ -58,7 +62,11 @@ function ChosenFile({ name }: Readonly<{ name: string }>) {
     >
       <Text
         lines={1}
-        style={sharedStyle(`backup:font:${control.fontSize}`, { fontSize: control.fontSize })}
+        style={sharedStyle(
+          `backup:font:${control.fontSize}`,
+          { fontSize: control.fontSize },
+          scope,
+        )}
       >
         {name}
       </Text>

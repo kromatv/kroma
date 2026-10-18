@@ -1,3 +1,4 @@
+import { useStyleScope } from '#ui/core/style-context';
 // <Icon>: one glyph component for every target.
 //
 // Each name maps to a Tabler component (see icons/glyphs.ts). The web bundlers
@@ -40,8 +41,9 @@ function fade(opacity: number | string): ViewStyle {
 }
 
 function Icon(props: Readonly<IconProps>) {
+  const scope = useStyleScope();
   const { glyphs } = useIconAssets();
-  const { Glyph, size, color, opacity, thickness } = resolveIcon(props, glyphs.glyphFor);
+  const { Glyph, size, color, opacity, thickness } = resolveIcon(props, glyphs.glyphFor, scope);
   // Spread rather than a literal prop: the key is decided per platform, and a
   // computed key cannot be written inline without losing the type of the rest.
   const weight = { [STROKE_PROP]: thickness };

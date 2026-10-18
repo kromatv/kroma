@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
-import { pinDesignWidth } from '#ui/core';
 import { breakpoint } from '#ui/core/tokens';
 import { declared } from '#ui/testing';
+import { createStyleTestHost } from '#ui/testing-style';
 import { InputGroup } from './input-group';
+
+const styleHost = createStyleTestHost();
+const { render, pinDesignWidth } = styleHost;
 
 afterEach(() => {
   cleanup();

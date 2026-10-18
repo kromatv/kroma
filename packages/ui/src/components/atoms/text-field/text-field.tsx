@@ -1,3 +1,5 @@
+import { activeTheme, type StyleScope, useStyleScope } from '#ui/core';
+
 // On a TV, typing goes through the on-screen keyboard, so the field renders as a
 // non-focusable value plus caret - nothing may invite a click that summons the
 // platform IME.
@@ -10,6 +12,7 @@ import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { color, sharedStyle, styles, useTheme } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { Caret } from '#ui/lib/caret';
 import {
   type ControlSize,
@@ -77,13 +80,18 @@ interface TextFieldProps extends Omit<BoxProps, 'children' | 'ring'> {
   flat?: boolean;
 }
 
-const typeOf = (fontSize: number, lineHeight: number) =>
-  sharedStyle(`text-field:type:${fontSize}:${lineHeight}`, { fontSize, lineHeight });
+const typeOf = (fontSize: number, lineHeight: number, scope: StyleScope) =>
+  sharedStyle(`text-field:type:${fontSize}:${lineHeight}`, { fontSize, lineHeight }, scope);
 
-const revealAt = (right: number) => sharedStyle(`text-field:reveal:${right}`, { right });
+const revealAt = (right: number, scope: StyleScope) =>
+  sharedStyle(`text-field:reveal:${right}`, { right }, scope);
 
-const inputOf = (fontSize: number, minHeight: number) =>
-  sharedStyle(`text-field:input:${fontSize}:${minHeight}`, { color: 'text', minHeight, fontSize });
+const inputOf = (fontSize: number, minHeight: number, scope: StyleScope) =>
+  sharedStyle(
+    `text-field:input:${fontSize}:${minHeight}`,
+    { color: 'text', minHeight, fontSize },
+    scope,
+  );
 function TextField({
   value: valueProp,
   defaultValue = '',
@@ -109,6 +117,10 @@ function TextField({
   flat = false,
   ...box
 }: Readonly<TextFieldProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const entryDefaults = useEntryDefaults();
   const physicalKeyboard = askedPhysicalKeyboard ?? entryDefaults.physicalKeyboard;
   const theme = useTheme();
@@ -127,8 +139,8 @@ function TextField({
   const keyboardProps = keyboardType ? { keyboardType } : null;
   const autoCompleteProps = autoComplete ? { autoComplete } : null;
   const masked = type === 'password' && !revealed;
-  const shell = fieldShell(metrics, { flat, focused, invalid });
-  const frost = useFrostCoat({ borderRadius: controlRadius(metrics) }, { on: !flat });
+  const shell = fieldShell(metrics, { flat, focused, invalid }, scope);
+  const frost = useFrostCoat({ borderRadius: controlRadius(metrics, scope) }, { on: !flat });
   return (
     <Box
       row
@@ -178,7 +190,7 @@ function TextField({
           readOnly={readOnly}
           selectTextOnFocus={selectOnFocus}
           placeholder={placeholder}
-          placeholderTextColor={color(PLACEHOLDER)}
+          placeholderTextColor={color(PLACEHOLDER, activeTheme(scope.theme))}
           accessibilityLabel={label}
           autoFocus={autoFocus}
           autoCorrect={false}
@@ -188,7 +200,7 @@ function TextField({
           {...keyboardProps}
           {...autoCompleteProps}
           selectionColor={theme.colors.accent}
-          style={[s.input, NO_OUTLINE, inputOf(fontSize, CONTENT), textStyle]}
+          style={[s.input, NO_OUTLINE, inputOf(fontSize, CONTENT, scope), textStyle]}
         />
       ) : (
         <SoftValue
@@ -241,12 +253,16 @@ function SoftValue({
   fontSize: number;
   textStyle: StyleProp<TextStyle>;
 }>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const shown = masked ? '•'.repeat(value.length) : value;
   return (
     <Box row align="center" flex gap={2} h={content}>
       <Text
         lines={1}
-        style={[s.tvValue, typeOf(fontSize, content), textStyle]}
+        style={[s.tvValue, typeOf(fontSize, content, scope), textStyle]}
         color={value ? 'text' : PLACEHOLDER}
       >
         {shown || placeholder || ''}
@@ -261,8 +277,12 @@ function RevealButton({
   onToggle,
   right,
 }: Readonly<{ revealed: boolean; onToggle: () => void; right: number }>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   return (
-    <Box absolute style={[s.revealSlot, revealAt(right)]}>
+    <Box absolute style={[s.revealSlot, revealAt(right, scope)]}>
       <Focusable
         label={revealed ? 'Hide password' : 'Show password'}
         ring="focusEdge"
@@ -284,7 +304,7 @@ function RevealButton({
 const REVEAL_SIZE = 20;
 const REVEAL_STATES = { hover: { bg: 'tint/10' } } as const;
 
-const s = styles({
+const sDefinition = styles({
   input: { flex: true, minW: 0, borderWidth: 0, bg: 'transparent', p: 0 },
   tvValue: { shrink: 1 },
   revealSlot: { top: 0, bottom: 0, justify: 'center' },

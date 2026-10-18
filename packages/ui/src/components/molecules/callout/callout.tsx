@@ -11,6 +11,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type ColorValue, styles, type TypeRole } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import {
   CONTROL,
   type ControlMetrics,
@@ -146,6 +147,8 @@ function Media({ name, children }: Readonly<{ name?: IconName; children?: ReactN
 
 /** The one sentence the block exists to say, in the tone's ink. */
 function Title({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const { shape, paint } = useCallout('Title');
   return (
     <Text variant={shape.title} color={paint.ink} style={s.title}>
@@ -175,7 +178,7 @@ function Actions({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-const s = styles({ title: { fontWeight: '600' } });
+const sDefinition = styles({ title: { fontWeight: '600' } });
 
 /**
  * A toned block carrying one message, and sometimes the action that answers it.

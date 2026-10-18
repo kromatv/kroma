@@ -1,3 +1,4 @@
+import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles } from '#ui/core/tokens';
 // The palette's parts: the field, the list, the face when nothing matches, and
 // the row of hints under it.
@@ -22,6 +23,8 @@ interface CommandInputProps {
 
 /** The one thing a palette can be typed into. */
 function Input({ placeholder, label = 'Search' }: Readonly<CommandInputProps>) {
+  const s = useStyles(sDefinition);
+
   const { query, setQuery, sections, choose } = useCommand('Input');
   return (
     <Box row align="center" px={14} style={s.rule}>
@@ -57,6 +60,8 @@ function firstOf(sections: readonly CommandSection[]): CommandItem | undefined {
 /** The scrolling list of results. Renders nothing while the query matches
  * nothing, which is when a `<Command.Empty>` beside it takes the space. */
 function List() {
+  const s = useStyles(sDefinition);
+
   const { sections, cursor, selected, point, choose, scroll, shown } = useCommand('List');
   const list = useRef<ScrollView>(null);
   const offset = useRef(0);
@@ -127,6 +132,8 @@ function Empty({ children }: Readonly<{ children?: ReactNode }>) {
  * `<Kbd>` and `<Text>`; `useCommandResults()` is how something inside it reads
  * how many rows are showing. */
 function Footer({ children }: Readonly<{ children?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box row align="center" gap={14} px={14} py={9} style={s.ruleTop}>
       {children}
@@ -134,7 +141,7 @@ function Footer({ children }: Readonly<{ children?: ReactNode }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   rule: { borderBottomWidth: 1, borderBottomColor: 'border' },
   ruleTop: { borderTopWidth: 1, borderTopColor: 'border' },
   list: { maxH: METRICS.maxHeight },

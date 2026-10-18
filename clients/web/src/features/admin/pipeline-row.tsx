@@ -1,3 +1,4 @@
+import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // One element row in the pipeline table: poster, title + kind badge, a subtitle
 // (metadata, or the failing/running stage), the treatment "flow" of status dots,
 // the overall status pill, and a reprocess shortcut.
@@ -52,6 +53,9 @@ function Poster({
   seed,
   poster,
 }: Readonly<{ id: string; kind: string; seed: string; poster?: string | null }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   const { client } = useAuth();
   // Prefer the cached TMDB poster; fall back to the by-id endpoint, then the
   // gradient placeholder (onError) if neither has real art.
@@ -62,7 +66,7 @@ function Poster({
       : client.media.artwork.posterUrl(ItemId.parse(id)));
   return (
     <Box w={32} h={46} shrink={0} radius="xs" overflow="hidden">
-      <Box fill style={posterScrim(seed)} />
+      <Box fill style={posterScrim(seed, scope)} />
       <Image src={src} fit="cover" fill />
     </Box>
   );

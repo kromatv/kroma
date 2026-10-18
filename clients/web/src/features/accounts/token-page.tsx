@@ -1,4 +1,4 @@
-import { Box, Button, classes, Logo, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, classes, Logo, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Spinner } from '#web/features/accounts/auth-gate';
@@ -103,6 +103,8 @@ export function TokenScreen({
   onSubmit: () => void;
   children?: ReactNode;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <main className={classes(s.screen)}>
       {/* Auto margins (not justify-center) so a form taller than a small phone
@@ -169,7 +171,7 @@ function Outcome({ title, desc }: Readonly<{ title: string; desc: string }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: {
     position: 'fixed',
     inset: 0,

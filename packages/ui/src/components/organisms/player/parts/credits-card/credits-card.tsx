@@ -5,7 +5,18 @@ import { clamp01 } from '#ui/components/atoms/progress';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
 import { Text } from '#ui/components/atoms/text';
 import { scaler } from '#ui/components/organisms/player/lib/metrics';
-import { scaledRadius, sharedStyle, styles, sv, useTheme } from '#ui/core';
+import {
+  activeTheme,
+  type StyleScope,
+  scaledRadius,
+  sharedStyle,
+  styles,
+  sv,
+  useStyleScope,
+  useSv,
+  useTheme,
+} from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
@@ -56,7 +67,8 @@ const playFill = sv({ base: { flex: 1, _focus: { bg: 'accentHover' } } });
  * platform.
  */
 
-const sizeOf = (fontSize: number) => sharedStyle(`credits-card:size:${fontSize}`, { fontSize });
+const sizeOf = (fontSize: number, scope: StyleScope) =>
+  sharedStyle(`credits-card:size:${fontSize}`, { fontSize }, scope);
 export function CreditsCard({
   item,
   secondsLeft,
@@ -67,6 +79,13 @@ export function CreditsCard({
   onPlay,
   onCancel,
 }: Readonly<CreditsCardProps>) {
+  const cancelFillScoped = useSv(cancelFill);
+  const playFillScoped = useSv(playFill);
+
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const theme = useTheme();
   const px = scaler(scale);
@@ -80,13 +99,18 @@ export function CreditsCard({
       z={38}
       w={px(CARD_WIDTH)}
       maxW="100%"
-      radius={scaledRadius('2xl', scale)}
+      radius={scaledRadius('2xl', scale, activeTheme(scope.theme))}
       borderWidth={1}
       border="white/12"
       bg="playerSurface/90"
       p={px(20)}
     >
-      <Box h={px(150)} mb={px(16)} radius={scaledRadius('lg', scale)} overflow="hidden">
+      <Box
+        h={px(150)}
+        mb={px(16)}
+        radius={scaledRadius('lg', scale, activeTheme(scope.theme))}
+        overflow="hidden"
+      >
         <Img src={item.posterUrl ?? null} background={ART_FILL} fill />
         <Box fill style={[s.vignette, gradient(VIGNETTE)]} />
         <Box absolute left={px(14)} bottom={px(14)} w={ring} h={ring} center>
@@ -100,7 +124,9 @@ export function CreditsCard({
             />
           </Box>
           <Box w={px(42)} h={px(42)} center radius="circle" bg="playerSurface">
-            <Text style={[s.countdown, sizeOf(px(COUNTDOWN_SIZE))]}>{String(secondsLeft)}</Text>
+            <Text style={[s.countdown, sizeOf(px(COUNTDOWN_SIZE), scope)]}>
+              {String(secondsLeft)}
+            </Text>
           </Box>
         </Box>
       </Box>
@@ -123,7 +149,7 @@ export function CreditsCard({
           variant="ghost"
           size="sm"
           focused={cancelFocused}
-          style={cancelFill(undefined, { focus: cancelFocused }).root}
+          style={cancelFillScoped(undefined, { focus: cancelFocused }).root}
           onPress={onCancel}
           label={t('player.cancel')}
         />
@@ -134,7 +160,7 @@ export function CreditsCard({
           focused={playFocused}
           onPress={onPlay}
           label={t('player.playNow')}
-          style={playFill(undefined, { focus: playFocused }).root}
+          style={playFillScoped(undefined, { focus: playFocused }).root}
         />
       </Box>
     </Box>
@@ -143,7 +169,7 @@ export function CreditsCard({
 
 const COUNTDOWN_SIZE = 19;
 
-const s = styles({
+const sDefinition = styles({
   vignette: { pointerEvents: 'none' },
   countdown: {
     font: 'ui',

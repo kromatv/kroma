@@ -23,6 +23,7 @@ import {
   typeSpec as textRoles,
   fontSizes as textSizes,
   tintGradient,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { entryId, entryMetadata } from '#tv/features/catalog/home/sectionEntry';
 
@@ -38,7 +39,7 @@ const HERO_EMPTY_HEIGHT = 432;
 // there is nothing sharper to ask for.
 const HERO_W = 1280;
 
-const s = styles({
+const sDefinition = styles({
   titleGap: { mt: 16, mb: 14 },
   moreInfo: { px: 34 },
   heroActions: { row: true, gap: 18 },
@@ -98,6 +99,8 @@ export interface HeroProps {
 
 /** The home screen's cinematic spotlight, or a spacer while there is nothing to feature. */
 export function Hero({ info, onPlay, onSelectShow, onSelectEntry }: Readonly<HeroProps>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { hero, heroId, heroMeta, heroBackdrop, heroBadge } = info;
   if (!hero || !heroId) return <Box h={HERO_EMPTY_HEIGHT} />;

@@ -149,7 +149,10 @@ hoist the component itself, which on TV means the router's chrome and backdrop
 slots, rather than parking the state beside it.
 
 Caches keyed on the theme version are the deliberate exception (`sv`, `styles()`),
-and they are already written.
+and they are already written. Bind declarations with `useStyles` or `useSv`;
+`Focusable` binds its `sv` prop itself. Theme and breakpoint state belong to the
+nearest `KitProvider` / explicit `ThemeProvider`, including nested scopes. Use
+`useThemeControls()` for changes and `config.designWidth` for a fixed canvas.
 
 ## A package is reached by name, never by path
 

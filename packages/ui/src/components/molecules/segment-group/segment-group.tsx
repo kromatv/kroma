@@ -1,3 +1,4 @@
+import { useStyleScope } from '#ui/core';
 // <SegmentGroup>: one selected option among a few. A radiogroup to assistive
 // tech: each segment is a radio carrying `checked`, and on a physical keyboard
 // the arrow keys move the selection the way a native radio group does.
@@ -46,6 +47,8 @@ function Root<T extends string>({
   children,
   style,
 }: Readonly<RootProps<T>>) {
+  const scope = useStyleScope();
+
   const entryDefaults = useEntryDefaults();
   const shell = size ?? entryDefaults.size;
   const metrics = CONTROL[shell];
@@ -124,7 +127,7 @@ function Root<T extends string>({
           }}
           style={style}
         >
-          <Thumb at={thumb} radius={segmentRadius(shell)} />
+          <Thumb at={thumb} radius={segmentRadius(shell, scope)} />
           {children}
         </Box>
       </FocusRegion>
@@ -134,6 +137,8 @@ function Root<T extends string>({
 
 // One layer behind every segment, which is why a segment paints no fill.
 function Thumb({ at, radius }: Readonly<{ at: Box2D | null; radius: Radius }>) {
+  const scope = useStyleScope();
+
   const [x] = useState(() => new Animated.Value(0));
   const [width] = useState(() => new Animated.Value(0));
   const placed = useRef(false);
@@ -156,7 +161,7 @@ function Thumb({ at, radius }: Readonly<{ at: Box2D | null; radius: Radius }>) {
     <Animated.View
       style={[
         THUMB,
-        sharedStyle(`segment:thumb:${radius}`, { radius }),
+        sharedStyle(`segment:thumb:${radius}`, { radius }, scope),
         { transform: [{ translateX: x }], width },
       ]}
     />

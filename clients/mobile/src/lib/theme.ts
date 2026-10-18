@@ -1,3 +1,4 @@
+import type { StyleScope } from '@kromatv/ui/kit';
 // The mobile app's design vocabulary, sourced entirely from @kromatv/ui: this
 // file only maps the design system's tokens onto the names the mobile screens
 // already use, so a colour never drifts between phone, TV and web.
@@ -50,7 +51,7 @@ export const MOBILE = createTheme(FORM_FACTOR);
 export const MOBILE_LIGHT = createTheme(FORM_FACTOR, KROMA_LIGHT);
 
 /** The phone's theme for whichever ground is currently set. */
-export function mobileTheme(ground: Theme = activeTheme()): Theme {
+export function mobileTheme(ground: Theme): Theme {
   return onPaper(ground) ? MOBILE_LIGHT : MOBILE;
 }
 
@@ -67,8 +68,12 @@ export {
 /** The stops artwork fades into, on whichever ground is active. Not the kit's
  *  `SHADE`, which names the dark one and would band black across a hero on
  *  paper. Call it during render. */
-export function shades(): { transparent: string; mid: string; full: string } {
-  return { transparent: groundShade(0), mid: groundShade(0.55), full: groundShade(1) };
+export function shades(scope: StyleScope): { transparent: string; mid: string; full: string } {
+  return {
+    transparent: groundShade(0, activeTheme(scope.theme)),
+    mid: groundShade(0.55, activeTheme(scope.theme)),
+    full: groundShade(1, activeTheme(scope.theme)),
+  };
 }
 
 export const colors = {

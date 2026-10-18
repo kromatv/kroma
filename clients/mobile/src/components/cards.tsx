@@ -10,6 +10,7 @@ import {
   radius as cornerRadius,
   styles,
   Text,
+  useStyles,
   VirtualRail,
   WatchedBadge,
 } from '@kromatv/ui/kit';
@@ -81,6 +82,8 @@ export const PosterCard = memo(function PosterCard({
   width: number | '100%';
   labelled?: boolean;
 }>) {
+  const s = useStyles(sDefinition);
+
   const router = useRouter();
   const size =
     typeof width === 'number'
@@ -146,6 +149,8 @@ export function ContinueCard({
   width: number | '100%';
   artWidth: number;
 }>) {
+  const s = useStyles(sDefinition);
+
   const { play } = usePlay();
   const { item, positionMs, durationMs } = entry;
   const total = durationMs ?? item.durationMs ?? 0;
@@ -205,7 +210,7 @@ export function ContinueRail({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   art: { radius: radius.sm, overflow: 'hidden' },
   label: { h: POSTER_LABEL_H, pt: 6 },
   labelTitle: { ...type.caption, color: 'text', fontWeight: '600' },

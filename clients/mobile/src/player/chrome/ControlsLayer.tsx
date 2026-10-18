@@ -24,6 +24,7 @@ import {
   Text,
   typeSpec as textRoles,
   fontSizes as textSizes,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, View } from 'react-native';
@@ -63,6 +64,8 @@ export function ControlsLayer({
   onPip?(): void;
   onCast?(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const title = item.showTitle ?? item.metadata?.title ?? item.title;
   // For an episode the big line is the SHOW, so the subtitle carries both the
@@ -253,6 +256,8 @@ function ScrubRow({
   tileFor?: (abs: number) => StoryboardTile | null;
   item: MediaItem;
 }>) {
+  const s = useStyles(sDefinition);
+
   const markers = (item.markers ?? []).map((m) => m.startMs / 1000);
   const scrub = useControlsHold(hold);
   return (
@@ -278,7 +283,7 @@ function ScrubRow({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   scrim: { fill: true, bg: 'bg/22' },
   scrimTop: { absolute: true, top: 0, right: 0, left: 0, h: 120 },
   scrimBottom: { absolute: true, right: 0, bottom: 0, left: 0, h: 160 },

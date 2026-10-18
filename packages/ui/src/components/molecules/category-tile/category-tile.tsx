@@ -1,4 +1,5 @@
 import type { StyleProp, ViewStyle } from 'react-native';
+import { type StyleScope, useStyleScope, useSv } from '#ui/core';
 import { fontSizes as textSizes } from '#ui/core/tokens';
 // A labelled artwork tile for anything that groups titles. `background` is the
 // instant fill under the art, `wash` the veil over it that keeps the label
@@ -69,9 +70,11 @@ interface CategoryTileProps extends Omit<FocusableProps, 'children' | 'style' | 
   style?: StyleProp<ViewStyle>;
 }
 
-const washOf = (wash: string) => sharedStyle(`category:wash:${wash}`, gradient(wash));
+const washOf = (wash: string, scope: StyleScope) =>
+  sharedStyle(`category:wash:${wash}`, gradient(wash), scope);
 
-const widthOf = (width: number | string) => sharedStyle(`category:width:${width}`, { width });
+const widthOf = (width: number | string, scope: StyleScope) =>
+  sharedStyle(`category:width:${width}`, { width }, scope);
 function CategoryTile({
   label,
   meta,
@@ -88,7 +91,11 @@ function CategoryTile({
   focusScale = 1.04,
   ...focusProps
 }: Readonly<CategoryTileProps>) {
-  const s = categoryTileVariants({ size });
+  const categoryTileVariantsScoped = useSv(categoryTileVariants);
+
+  const scope = useStyleScope();
+
+  const s = categoryTileVariantsScoped({ size });
   return (
     <Focusable
       {...focusProps}
@@ -97,11 +104,11 @@ function CategoryTile({
       // Frame and artwork are the same box, on the same radius: the ring keeps
       // itself clear of the art (RING_GAP), so padding here would be a second
       // gap and a corner nobody could keep concentric.
-      style={[s.frame, widthOf(width ?? '100%'), style]}
+      style={[s.frame, widthOf(width ?? '100%', scope), style]}
     >
       <Box aspect={aspect} radius="xl" overflow="hidden" bg="surface1">
         <Img src={art} background={background} position="50% 25%" fill />
-        {wash ? <Box fill style={[NO_POINTER, washOf(wash)]} /> : null}
+        {wash ? <Box fill style={[NO_POINTER, washOf(wash, scope)]} /> : null}
         <Box absolute left={20} right={20} bottom={16} gap={2}>
           {accent ? <Box h={4} w={28} radius="pill" bg={accent} mb={8} /> : null}
           <Box row align="center" gap={8}>

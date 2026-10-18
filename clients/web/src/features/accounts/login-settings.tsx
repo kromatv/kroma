@@ -12,6 +12,7 @@ import {
   StatusDot,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
@@ -22,7 +23,7 @@ import { CapabilityChip } from '#web/shared/ui/capability-chip';
 // The three web-only frames of this sheet: a safe-area inset, a fixed overlay
 // and a scroll container, none of which the kit's vocabulary can spell.
 
-const s = styles({
+const sDefinition = styles({
   gear: { position: 'absolute', right: 16, top: 'max(1rem, env(safe-area-inset-top))', zIndex: 20 },
   layer: {
     position: 'fixed',
@@ -51,6 +52,8 @@ function SectionHead({ title, children }: Readonly<{ title: string; children?: R
 }
 
 function InfoRow({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Row between gap={16} py={8}>
       <Text variant="meta" color="textMuted" shrink={0}>
@@ -69,6 +72,8 @@ function InfoRow({ label, value }: Readonly<{ label: string; value: ReactNode }>
  * and this device's playback capabilities, for checking a deployment before
  * anyone can sign in. */
 export function LoginSettings() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [open, setOpen] = useState(false);
   const locale = useLocale();

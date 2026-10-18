@@ -11,6 +11,7 @@ import {
   Text,
   typeSpec as textRoles,
   useFocusNav,
+  useStyles,
 } from '@kromatv/ui/kit';
 // Static import on purpose: Metro has no code splitting, and a dynamic `import()`
 // throws "Expected HMRClient.setup() call at startup" without the dev server.
@@ -28,6 +29,8 @@ const EXPIRY_MARGIN_SEC = 5;
  * approves from the web/mobile app, pairing the profile on the next poll.
  */
 export function TvQuickConnect() {
+  const s = useStyles(sDefinition);
+
   const nav = useNav();
   const t = useT();
   const { client, activeServerUrl, activeServerName } = useConnection();
@@ -198,7 +201,7 @@ function connectUrl(client: KromaClient, code: string, serverUrl?: string | null
   }
 }
 
-const s = styles({
+const sDefinition = styles({
   code: {
     fontSize: textRoles.codeTv.size,
     lineHeight: 96,

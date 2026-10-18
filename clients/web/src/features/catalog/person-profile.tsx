@@ -7,11 +7,13 @@
 import type { PersonDetail } from '@kromatv/client/media';
 import { personFacts } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
-import { Box, DataField, ExpandableText, styles, Text } from '@kromatv/ui/kit';
+import { Box, DataField, ExpandableText, styles, Text, useStyles } from '@kromatv/ui/kit';
 
-const s = styles({ rule: { borderBottomWidth: 1, borderBottomColor: 'border' } });
+const sDefinition = styles({ rule: { borderBottomWidth: 1, borderBottomColor: 'border' } });
 
 export function PersonProfile({ detail }: Readonly<{ detail: PersonDetail | null }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const locale = useLocale();
   const facts = personFacts(t, detail, locale);

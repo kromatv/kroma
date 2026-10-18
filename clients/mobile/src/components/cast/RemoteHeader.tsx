@@ -1,8 +1,10 @@
-import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { spacing, type } from '#mobile/lib/theme';
 
 export function RemoteHeader({ title, onBack }: Readonly<{ title: string; onBack(): void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.header}>
       <Pressable onPress={onBack} hitSlop={12} accessibilityRole="button">
@@ -16,7 +18,7 @@ export function RemoteHeader({ title, onBack }: Readonly<{ title: string; onBack
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   header: { row: true, align: 'center', gap: spacing.sm, py: spacing.sm },
   headerTitle: { ...type.heading, flex: true, color: 'text' },
   headerSpacer: { w: 26 },

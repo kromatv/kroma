@@ -1,3 +1,4 @@
+import { KROMA, type Theme } from '#ui/core/theme';
 // Authored declaration -> the canonical form the resolver merges. Runs once per
 // declaration at module load, never per render, and once per build for the
 // declarations the build compiles ahead of time: nothing here reads a store.
@@ -92,7 +93,11 @@ function sortKeys(decl: object): Sorted {
   return sorted;
 }
 
-export function split(decl: object | undefined, index: number): Split | undefined {
+export function split(
+  decl: object | undefined,
+  index: number,
+  theme: Theme = KROMA,
+): Split | undefined {
   if (!decl) return undefined;
   if (isStaticStyle(decl)) {
     const states = staticStates(decl);
@@ -108,11 +113,11 @@ export function split(decl: object | undefined, index: number): Split | undefine
     if (!stated && !layer) continue;
     const merged = { ...stated, ...layer };
     breakpoints |= declaredBreakpoints(merged);
-    states[name] = normalize(merged, index);
+    states[name] = normalize(merged, index, theme);
     declared.push(name);
   }
   return {
-    rest: normalize(authored, index),
+    rest: normalize(authored, index, theme),
     states,
     declared,
     breakpoints: breakpoints | declaredBreakpoints(authored),
@@ -131,18 +136,22 @@ export function split(decl: object | undefined, index: number): Split | undefine
  *
  * A layer the build already compiled is its own canonical form.
  */
-export function normalize(decl: object, index: number): Record<string, unknown> {
+export function normalize(
+  decl: object,
+  index: number,
+  theme: Theme = KROMA,
+): Record<string, unknown> {
   if (isStaticStyle(decl)) return decl;
   const { shorthand, rest, any } = splitShorthand(decl);
   // Text before colour: `text` may bring keys the loop below never touches, and
   // consuming `text`/`font` first keeps them out of the colour pass entirely.
-  const type = textStyle(rest);
+  const type = textStyle(rest, theme);
   for (const key of Object.keys(rest)) {
     const value = rest[key];
-    if (COLOR_KEYS.has(key) && typeof value === 'string') rest[key] = color(value);
+    if (COLOR_KEYS.has(key) && typeof value === 'string') rest[key] = color(value, theme);
   }
   if (!any && !type) return rest;
   // Shorthands first, the role's bundle under them, so a longhand in the same
   // layer wins over both.
-  return { ...type, ...boxStyle(shorthand as BoxStyleProps, index), ...rest };
+  return { ...type, ...boxStyle(shorthand as BoxStyleProps, index, theme), ...rest };
 }

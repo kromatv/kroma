@@ -3,7 +3,7 @@
 import { tmdbKindOf } from '@kromatv/client/discovery';
 import { ItemId, type SubjectId } from '@kromatv/client/media';
 import { useCast, useT } from '@kromatv/ui';
-import { classes, type HostElement, styles, Text } from '@kromatv/ui/kit';
+import { classes, type HostElement, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { AiSuggestRail } from '#web/features/catalog/ai-suggest-rail';
@@ -23,7 +23,7 @@ import { RouteLink } from '#web/shared/ui/route-link';
 // The page gutter is a fluid CSS custom property, which no style number can
 // carry, so anything indented by it stays a plain element.
 
-const s = styles({
+const sDefinition = styles({
   page: {
     minWidth: 0,
     pb: 80,
@@ -101,11 +101,13 @@ function TitleBody({
   onRequestAll: () => void;
   onClearSelection: () => void;
 }>) {
+  const pageScoped = useStyles(page);
+
   const t = useT();
   return (
     <>
       {error ? (
-        <div className={classes(page.gutter)}>
+        <div className={classes(pageScoped.gutter)}>
           <Text variant="label" color="dangerHover" mt={8}>
             {error}
           </Text>
@@ -151,6 +153,8 @@ function TitleBody({
 }
 
 export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { user } = useAuth();
   const navigate = useNavigate();

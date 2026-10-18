@@ -1,3 +1,4 @@
+import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles } from '#ui/core/tokens';
 // The performance HUD: frame timings, focus response, heap and surface size,
 // read on the television they are about. Turned on in the device settings.
@@ -18,6 +19,8 @@ function PerfHud({
   enabled,
   artworkScale = 1,
 }: Readonly<{ enabled: boolean; artworkScale?: number }>) {
+  const s = useStyles(sDefinition);
+
   const perf = usePerfSampler();
   const [report, setReport] = useState<PerfReport | null>(null);
 
@@ -75,6 +78,8 @@ function screenText(): string {
 }
 
 function Row({ label, value, bad }: Readonly<{ label: string; value: string; bad: boolean }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box row between gap={16}>
       <Text style={s.label} color="textDim">
@@ -87,7 +92,7 @@ function Row({ label, value, bad }: Readonly<{ label: string; value: string; bad
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   panel: {
     pointerEvents: 'none',
     top: 24,

@@ -4,7 +4,17 @@ import {
   NOTIFICATION_DAY_LABEL,
 } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Box, classes, EmptyState, ListRow, Row, Skeleton, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  classes,
+  EmptyState,
+  ListRow,
+  Row,
+  Skeleton,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { NotificationEntry } from '#web/features/notifications/notification-row';
@@ -20,6 +30,8 @@ export function PanelBody({
   filter,
   onNavigate,
 }: Readonly<{ filter: NotificationFilter; onNavigate: () => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { data, isPending } = useQuery(userQueries.notifications());
   // Held across renders on purpose: the set is what keeps a row the reader just
@@ -78,7 +90,7 @@ export function PanelBody({
   );
 }
 
-const s = styles({ dayLabel: { position: 'sticky', top: 0, zIndex: 10, m: 0 } });
+const sDefinition = styles({ dayLabel: { position: 'sticky', top: 0, zIndex: 10, m: 0 } });
 
 function PanelSkeleton() {
   return (

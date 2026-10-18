@@ -11,6 +11,7 @@ import {
   styles,
   Text,
   typeSpec as textRoles,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -38,6 +39,8 @@ function useDebounced(value: string, ms: number): string {
 }
 
 function SuggestedRow({ item }: Readonly<{ item: MediaItem }>) {
+  const s = useStyles(sDefinition);
+
   const client = useClient();
   const router = useRouter();
   const { play } = usePlay();
@@ -71,6 +74,8 @@ function SuggestedRow({ item }: Readonly<{ item: MediaItem }>) {
 }
 
 export default function Search() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { width } = useWindowDimensions();
@@ -166,7 +171,7 @@ export default function Search() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   inputBox: { gap: spacing.sm, pb: spacing.md },
   pageTitle: { ...type.display, fontSize: textRoles.heading.size },

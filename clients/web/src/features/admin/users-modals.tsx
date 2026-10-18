@@ -20,9 +20,13 @@ import {
   InputGroup,
   ListRow,
   Row,
+  resolveStyles,
   styles,
   Text,
   useConfirm,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
 import { useCallback, useState } from 'react';
 import { createCallable } from 'react-call';
@@ -30,7 +34,7 @@ import { LibraryVisibility } from '#web/features/admin/library-visibility';
 import { useAsyncAction } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
-const s = styles({
+const sDefinition = styles({
   dashed: { borderWidth: 1, borderColor: 'text/25', borderStyle: 'dashed' },
   code: { fontFamily: 'monospace', letterSpacing: 4 },
 });
@@ -126,6 +130,8 @@ function LinkResult({
 }
 
 export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChange: () => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { client } = useAuth();
   const [copied, setCopied] = useState(false);
@@ -225,6 +231,8 @@ function usePermissionSet(
  * access recovery, with a guarded delete). Resolves `true` when the user was
  * saved or deleted (the caller refreshes), `false` on dismiss. */
 export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ call, user }) => {
+  const scope = useStyleScope();
+  useThemeVersion();
   const confirm = useConfirm();
   const t = useT();
   const { client, user: me } = useAuth();
@@ -402,7 +410,11 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
         {reset ? (
           <Callout.Root tone="accent">
             <Callout.Title>{t('admin.resetCode')}</Callout.Title>
-            <Text variant="heading" textAlign="center" style={s.code}>
+            <Text
+              variant="heading"
+              textAlign="center"
+              style={resolveStyles(sDefinition, scope).code}
+            >
               {reset.code}
             </Text>
             <Text variant="meta" color="textMuted">

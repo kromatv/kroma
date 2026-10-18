@@ -1,3 +1,6 @@
+import { KitProvider } from '#ui/configure';
+import { type StyleScope, useStyleScope } from '#ui/core';
+
 // The 10-foot stage: every TV screen is authored against a fixed 1920x1080 canvas
 // and scaled here to what the platform reports. Android TV reports 960x540 dp at
 // density 2.0, so without this the whole design renders at double size there.
@@ -5,27 +8,36 @@
 import type { ReactNode } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import { sharedStyle, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { CANVAS } from '#ui/core/tokens';
 
 interface TvStageProps {
   children: ReactNode;
 }
 
-const scaleOf = (scale: number) =>
-  sharedStyle(`tv-stage:scale:${scale}`, { transform: [{ scale }] });
+const scaleOf = (scale: number, scope: StyleScope) =>
+  sharedStyle(`tv-stage:scale:${scale}`, { transform: [{ scale }] }, scope);
 function TvStage({ children }: Readonly<TvStageProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const { width, height } = useWindowDimensions();
   // Contain, never cover: a cropped stage loses the overscan-safe gutters.
   const scale = Math.min(width / CANVAS.width, height / CANVAS.height);
 
   return (
-    <View style={s.viewport}>
-      <View style={[s.canvas, scaleOf(scale)]}>{children}</View>
-    </View>
+    <KitProvider config={STAGE_CONFIG}>
+      <View style={s.viewport}>
+        <View style={[s.canvas, scaleOf(scale, scope)]}>{children}</View>
+      </View>
+    </KitProvider>
   );
 }
 
-const s = styles({
+const STAGE_CONFIG = Object.freeze({ designWidth: CANVAS.width });
+
+const sDefinition = styles({
   viewport: { flex: true, bg: 'bg', center: true, overflow: 'hidden' },
   canvas: { w: CANVAS.width, h: CANVAS.height, bg: 'bg', overflow: 'hidden' },
 });

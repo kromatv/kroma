@@ -1,3 +1,4 @@
+import { type StyleScope, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // Shared building blocks for the account-creation forms. Both the in-app
 // registration screen (`auth-forms.tsx`) and the public `/join` invite page
 // render the exact same avatar tile + email/username/password inputs, so that
@@ -45,9 +46,9 @@ const avatarPicker = svFor<{ root: StyleDecl; caption: StyleDecl }>()({
  * form. The object-URL preview and hidden file input are managed internally; the
  * chosen File is reported through `onAvatar`. */
 
-const avatarWash = (seed: string) => {
+const avatarWash = (seed: string, scope: StyleScope) => {
   const image = avatarGradient(seed);
-  return sharedStyle(`avatar:wash:${image}`, { backgroundImage: image });
+  return sharedStyle(`avatar:wash:${image}`, { backgroundImage: image }, scope);
 };
 export function RegisterFields({
   values,
@@ -58,6 +59,9 @@ export function RegisterFields({
   onChange: (values: RegisterValues) => void;
   onAvatar: (avatar: File | null) => void;
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   const t = useT();
   const [preview, setPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -87,7 +91,7 @@ export function RegisterFields({
             {preview ? (
               <Image src={preview} fit="cover" fill />
             ) : (
-              <Box fill center style={avatarWash(username || email || 'new')}>
+              <Box fill center style={avatarWash(username || email || 'new', scope)}>
                 {username.trim() ? (
                   <Text variant="h1" font="display" color="white/85">
                     {initials(username)}

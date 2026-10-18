@@ -12,6 +12,7 @@ import {
   styles,
   Text,
   typeSpec as textRoles,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -37,6 +38,8 @@ export default function ReportRoute() {
 }
 
 function ReportProblem({ id }: Readonly<{ id: string }>) {
+  const s = useStyles(sDefinition);
+
   const { kind, title } = useLocalSearchParams<{ kind: string; title?: string }>();
   const t = useT();
   const client = useClient();
@@ -142,7 +145,7 @@ function ReportProblem({ id }: Readonly<{ id: string }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   body: { gap: spacing.sm, p: spacing.md, pb: spacing.xl * 2 },
   subjectRow: { row: true, align: 'center', gap: 8, mb: spacing.xs },
   subject: { ...type.caption, shrink: 1, color: 'text', fontWeight: '600' },

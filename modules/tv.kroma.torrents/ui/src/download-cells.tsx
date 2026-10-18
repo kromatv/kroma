@@ -19,13 +19,14 @@ import {
   styles,
   Text,
   Tooltip,
+  useStyles,
 } from '@kromatv/ui/kit';
 import type { DownloadView } from './schemas';
 
 const POSTER_WIDTH = 34;
 const POSTER_HEIGHT = 50;
 
-const chip = styles({
+const chipDefinition = styles({
   dot: { w: 6, h: 6, radius: 'circle', flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
   breathe: {
     animationKeyframes: 'kroma-breathe',
@@ -41,7 +42,7 @@ const washOf = (ink: string) =>
   });
 
 const dotOf = (ink: string) => sharedStyle(`download:dot:${ink}`, { backgroundColor: ink });
-const s = styles({
+const sDefinition = styles({
   tabular: { fontVariant: ['tabular-nums'] },
   trackerLink: { display: 'inline-flex', flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
 });
@@ -59,6 +60,8 @@ function targetPill(dl: DownloadView): string | null {
 }
 
 export function RowTitleCell({ dl }: Readonly<{ dl: DownloadView }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const target = targetPill(dl);
   return (
@@ -122,6 +125,8 @@ export function RowProgressCell({
   progress,
   tone,
 }: Readonly<{ dl: DownloadView; progress: number; tone: ColorValue }>) {
+  const s = useStyles(sDefinition);
+
   const fmt = useFormat();
   const done = dl.sizeBytes != null ? fmt.bytes(dl.sizeBytes * progress) : null;
   return (
@@ -153,6 +158,8 @@ export function RowSpeedCell({
   active,
   stat,
 }: Readonly<{ dl: DownloadView; active: boolean; stat: LiveStat }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const fmt = useFormat();
   if (!active) {
@@ -202,6 +209,8 @@ function Rate({
   tone,
   value,
 }: Readonly<{ icon: 'arrow-up' | 'arrow-down'; tone: ColorValue; value: string }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Row gap={3} minW={0}>
       <Icon name={icon} size={11} thickness={2.4} color={tone} />
@@ -213,6 +222,8 @@ function Rate({
 }
 
 export function RowAddedCell({ dl }: Readonly<{ dl: DownloadView }>) {
+  const s = useStyles(sDefinition);
+
   const fmt = useFormat();
   return (
     <Text variant="meta" color="text/45" lines={1} style={s.tabular}>
@@ -234,6 +245,8 @@ export function RowStatusCell({
   active: boolean;
   showClient: boolean;
 }>) {
+  const chip = useStyles(chipDefinition);
+
   const t = useT();
   const ink = color(tone);
   return (

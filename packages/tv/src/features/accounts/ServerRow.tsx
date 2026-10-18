@@ -12,6 +12,7 @@ import {
   styles,
   Text,
   fontSizes as textSizes,
+  useStyles,
 } from '@kromatv/ui/kit';
 import type { ServerProbe } from '#tv/app/useServersHealth';
 import { ServerStatusPill } from '#tv/features/accounts/ServerStatus';
@@ -95,6 +96,8 @@ export function ActionRow({
 /** Placeholder shown while LAN discovery is still looking. Deliberately not
  * focusable, so the remote walks straight past it. */
 export function ServerRowSkeleton() {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={[listRowVariants({ size: 'tv' }).root, s.ghost]}>
       <Skeleton w={42} h={42} radius="xl" />
@@ -108,6 +111,8 @@ export function ServerRowSkeleton() {
 }
 
 function MetaLine({ meta, pending }: Readonly<{ meta: string | null; pending: boolean }>) {
+  const s = useStyles(sDefinition);
+
   if (meta) {
     return (
       <Text lines={1} style={s.meta} color="text/42">
@@ -127,7 +132,7 @@ function metaOf(probe: ServerProbe | undefined, t: Translate): string | null {
   return parts.length > 0 ? parts.join(' · ') : null;
 }
 
-const s = styles({
+const sDefinition = styles({
   meta: { fontSize: textSizes.captionRaised, fontWeight: '600', letterSpacing: 0.2 },
   ghost: { opacity: 0.55 },
 });

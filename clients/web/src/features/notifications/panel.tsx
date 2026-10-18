@@ -6,7 +6,7 @@
 // happened, not a console.
 
 import { useT } from '@kromatv/ui';
-import { Box, Drawer, Icon, IconButton, styles, Text } from '@kromatv/ui/kit';
+import { Box, Drawer, Icon, IconButton, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { PanelBody } from '#web/features/notifications/panel-body';
 import { PanelHeader } from '#web/features/notifications/panel-header';
@@ -18,6 +18,8 @@ import {
 
 /** Bell + badge + drawer. Mounted in the sidebar (desktop) and topbar (mobile). */
 export function NotificationBell() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const unread = useUnreadCount();
   const { open, setOpen, everOpened } = usePanelState();
@@ -78,7 +80,7 @@ export function NotificationBell() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   panelFill: { bg: 'bg' },
   headerBand: { px: 16, paddingTop: 'max(1.15rem, env(safe-area-inset-top))', pb: 12 },
 });

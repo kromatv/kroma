@@ -17,14 +17,13 @@ export interface SeekBarPaint {
 
 /** The seek bar's paints, shared with the mobile touch scrub bar so both draw
  *  the identical track. A function, so the accent follows the theme. */
-export const seekBar = themed(
-  ({ colors }): SeekBarPaint => ({
-    track: 'rgba(255, 255, 255, 0.2)',
-    buffered: 'rgba(255, 255, 255, 0.28)',
-    played: [colors.accent, colors.accentBright],
-    playheadHalo: withAlpha(colors.accentWash, 0.5),
-  }),
-);
+export const seekBarPaint = ({ colors }: import('#ui/core/theme').Theme): SeekBarPaint => ({
+  track: 'rgba(255, 255, 255, 0.2)',
+  buffered: 'rgba(255, 255, 255, 0.28)',
+  played: [colors.accent, colors.accentBright],
+  playheadHalo: withAlpha(colors.accentWash, 0.5),
+});
+export const seekBar = themed(seekBarPaint);
 
 export const SCRIM = 'rgba(0, 0, 0, 0.45)';
 

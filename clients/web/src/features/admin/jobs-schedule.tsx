@@ -1,3 +1,4 @@
+import { resolveStyles, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // The "edit schedule" modal for a background job: cron input with presets, a
 // "manual only" option, and reset-to-default. The server validates the cron.
 
@@ -21,7 +22,7 @@ import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
-const s = styles({
+const sDefinition = styles({
   mono: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' },
   cron: {
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
@@ -40,6 +41,8 @@ const PRESETS: { label: string; expr: string }[] = [
 ];
 
 export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, job }) => {
+  const scope = useStyleScope();
+  useThemeVersion();
   const t = useT();
   const { client } = useAuth();
   const [value, setValue] = useState(job.schedule ?? '');
@@ -65,14 +68,14 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
           value={value}
           onValueChange={setValue}
           placeholder="0 4 * * *"
-          textStyle={s.mono}
+          textStyle={resolveStyles(sDefinition, scope).mono}
         />
       </Field.Root>
 
       <Row wrap gap={8}>
         {PRESETS.map((p) => (
           <Chip key={p.expr} variant="surface" onPress={() => setValue(p.expr)}>
-            <Text style={s.cron} color="textMuted">
+            <Text style={resolveStyles(sDefinition, scope).cron} color="textMuted">
               {p.label}
             </Text>
           </Chip>
@@ -91,7 +94,7 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
             label={t('jobs.resetDefault')}
             onPress={() => setValue(job.defaultSchedule ?? '')}
           >
-            <Text color="accentText" style={s.resetLabel}>
+            <Text color="accentText" style={resolveStyles(sDefinition, scope).resetLabel}>
               {t('jobs.resetDefault')}
             </Text>
             <Badge tone="neutral">{job.defaultSchedule}</Badge>

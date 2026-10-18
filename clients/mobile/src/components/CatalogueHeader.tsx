@@ -1,3 +1,5 @@
+import { useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+
 // The catalogue's masthead: the current view's best-rated backdrop fading into
 // the ground, the heading over it, and one strip of filters under it.
 
@@ -12,6 +14,7 @@ import {
   styles,
   Text,
   fontSizes as textSizes,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
@@ -57,10 +60,15 @@ export function CatalogueHeader({
   /** Room kept clear on the right, where the letter rail sits. */
   insetRight?: number;
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const insets = useSafeAreaInsets();
   const gutters = useGutters();
-  const ground = shades();
+  const ground = shades(scope);
   const sortButton = useRef<View>(null);
   const [sortAnchor, setSortAnchor] = useState<PopoverAnchor | null>(null);
   const openSort = () =>
@@ -144,7 +152,7 @@ export function CatalogueHeader({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   heading: { gap: 6, pb: spacing.md },
   eyebrow: { ...type.small, color: 'accent', textTransform: 'uppercase', letterSpacing: 1.2 },
   titleRow: { row: true, wrap: true, align: 'baseline', gap: 12 },

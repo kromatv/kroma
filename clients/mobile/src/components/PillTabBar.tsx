@@ -1,4 +1,4 @@
-import { Box, radius as cornerRadius, NavPill, styles } from '@kromatv/ui/kit';
+import { Box, radius as cornerRadius, NavPill, styles, useStyles } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 // expo-router vendors react-navigation and does not re-export this type from its root.
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
@@ -9,6 +9,8 @@ import { CastMiniBar } from '#mobile/components/cast/CastMiniBar';
 const GLYPH = 24;
 
 export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTabBarProps>) {
+  const s = useStyles(sDefinition);
+
   const insets = useSafeAreaInsets();
   return (
     <Box pointerEvents="box-none" style={[s.dock, { bottom: insets.bottom + 8 }]}>
@@ -55,7 +57,7 @@ export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTa
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   dock: { absolute: true, right: 0, left: 0, px: 12, align: 'center' },
   shadow: {
     self: 'stretch',

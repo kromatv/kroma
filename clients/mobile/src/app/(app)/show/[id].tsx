@@ -4,7 +4,7 @@
 
 import { ShowId } from '@kromatv/client/media';
 import { sizedImageUrl } from '@kromatv/core';
-import { Box, Button, styles, Text, typeSpec as textRoles } from '@kromatv/ui/kit';
+import { Box, Button, styles, Text, typeSpec as textRoles, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -27,6 +27,8 @@ export default function ShowRoute() {
 }
 
 function ShowDetail({ id }: Readonly<{ id: ShowId }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -209,7 +211,7 @@ function ShowDetail({ id }: Readonly<{ id: ShowId }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   body: { gap: spacing.md, pt: spacing.md },
   metaText: { ...type.caption, color: 'text', fontWeight: '600' },

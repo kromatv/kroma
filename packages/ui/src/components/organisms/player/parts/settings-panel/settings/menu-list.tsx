@@ -1,3 +1,4 @@
+import { type StyleScope, useStyleScope, useStyles } from '#ui/core';
 // The settings menu, rendered.
 //
 // `moved` is how many of the entries are controls the transport row could not
@@ -13,9 +14,11 @@ import { useT } from '#ui/services/i18n';
 import type { Entry } from './entries';
 import { MenuRow } from './menu-row';
 
-const sizeOf = (fontSize: number) => sharedStyle(`menu-list:size:${fontSize}`, { fontSize });
+const sizeOf = (fontSize: number, scope: StyleScope) =>
+  sharedStyle(`menu-list:size:${fontSize}`, { fontSize }, scope);
 
-const gapOf = (marginTop: number) => sharedStyle(`menu-list:gap:${marginTop}`, { marginTop });
+const gapOf = (marginTop: number, scope: StyleScope) =>
+  sharedStyle(`menu-list:gap:${marginTop}`, { marginTop }, scope);
 export function MenuList({
   entries,
   moved,
@@ -30,13 +33,19 @@ export function MenuList({
   /** The chrome's scaler (see ../../lib/metrics). */
   px: (n: number) => number;
 }>) {
+  const playerStyleScoped = useStyles(playerStyle);
+
+  const scope = useStyleScope();
+
   const t = useT();
   return (
     <Box gap={px(12)}>
       {entries.map((e, i) => (
         <Fragment key={e.id}>
           {moved > 0 && i === 0 ? (
-            <Text style={[playerStyle.eyebrow, sizeOf(px(12))]}>{t('player.movedControls')}</Text>
+            <Text style={[playerStyleScoped.eyebrow, sizeOf(px(12), scope)]}>
+              {t('player.movedControls')}
+            </Text>
           ) : null}
           <MenuRow
             icon={e.icon}
@@ -47,7 +56,7 @@ export function MenuList({
             focused={focused === i}
             onActivate={e.activate}
             onFocus={onFocus(i)}
-            style={moved > 0 && i === moved ? gapOf(px(20)) : undefined}
+            style={moved > 0 && i === moved ? gapOf(px(20), scope) : undefined}
           />
         </Fragment>
       ))}

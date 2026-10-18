@@ -1,3 +1,5 @@
+import { activeTheme, useStyleScope } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { useImageBackend } from '#ui/lib/image-backend';
 // <Img>: the artwork surface, with a built-in fade-in and cross-fade on `src`
 // change; `background` shows instantly as the fallback so the surface is never
@@ -63,7 +65,7 @@ export interface ImgProps {
 
 export const IMG_FADE_MS = 400;
 
-const s = styles({ clip: { overflow: 'hidden' }, fill: { fill: true } });
+const sDefinition = styles({ clip: { overflow: 'hidden' }, fill: { fill: true } });
 
 function Img({
   src: requested,
@@ -82,6 +84,10 @@ function Img({
   onLoad,
   onError,
 }: Readonly<ImgProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const backend = useImageBackend();
   const src = safeImageUrl(requested);
   const cross = useCrossFade(src, duration);
@@ -92,7 +98,8 @@ function Img({
   const [decoded, setDecoded] = useState<string | null>(null);
   const [opacity] = useState(() => new Animated.Value(0));
   const focal = parsePosition(position);
-  const radius = corner === undefined ? undefined : radiusValue(corner);
+  const radius =
+    corner === undefined ? undefined : radiusValue(corner, undefined, activeTheme(scope.theme));
 
   // Before paint, not after it: the leaf remounts with this source's key in
   // the same commit, and one frame of the previous cover at full opacity is
@@ -119,8 +126,10 @@ function Img({
   const container = [
     fill ? s.fill : null,
     s.clip,
-    radius === undefined ? null : sharedStyle(`img:radius:${radius}`, { radius }),
-    background === undefined ? null : sharedStyle(`img:bg:${background}`, gradient(background)),
+    radius === undefined ? null : sharedStyle(`img:radius:${radius}`, { radius }, scope),
+    background === undefined
+      ? null
+      : sharedStyle(`img:bg:${background}`, gradient(background), scope),
     style,
   ];
 
@@ -141,22 +150,25 @@ function Img({
     return (
       <View style={container}>
         {placeholderLayer}
-        {webLayers({
-          src,
-          under,
-          alt,
-          fit,
-          position,
-          radius,
-          priority,
-          duration,
-          errored,
-          decoded: decoded === src,
-          markDecoded: () => setDecoded(src),
-          markLoaded,
-          onLoad,
-          onError: handleError,
-        })}
+        {webLayers(
+          {
+            src,
+            under,
+            alt,
+            fit,
+            position,
+            radius,
+            priority,
+            duration,
+            errored,
+            decoded: decoded === src,
+            markDecoded: () => setDecoded(src),
+            markLoaded,
+            onLoad,
+            onError: handleError,
+          },
+          scope,
+        )}
         {fallbackLayer}
       </View>
     );

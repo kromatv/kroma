@@ -11,7 +11,7 @@ describe('the blur view a native shell registers', () => {
     const backdrop = vi.fn((_props: FrostBackdropProps) => null);
 
     render(
-      <KitProvider config={{ frost: backdrop }}>
+      <KitProvider config={{ frost: backdrop, ground: 'dark' }}>
         <Frost amount={12}>
           <View style={{ borderRadius: 12 }} />
         </Frost>

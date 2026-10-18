@@ -1,3 +1,4 @@
+import { useStyles } from '#ui/core/styles';
 import { radius as cornerRadius } from '#ui/core/tokens';
 // The frame-time chart: one bar per recent frame, tallest is slowest.
 //
@@ -31,6 +32,8 @@ function barColor(ms: number): string {
 
 /** The last frames as a bar chart, newest at the right. */
 function PerfChart({ frames }: Readonly<{ frames: readonly number[] }>) {
+  const s = useStyles(sDefinition);
+
   // A television draws this every refresh, so the bar count is what keeps it
   // cheap. The newest samples are the ones being asked about.
   const shown = frames.slice(-CHART_FRAMES);
@@ -61,7 +64,7 @@ function PerfChart({ frames }: Readonly<{ frames: readonly number[] }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   budget: { bottom: (BUDGET_MS / CEILING_MS) * HEIGHT },
   budgetTwice: { bottom: ((BUDGET_MS * 2) / CEILING_MS) * HEIGHT },
   chart: { h: HEIGHT, justify: 'flex-end', mt: 6 },

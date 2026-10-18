@@ -1,3 +1,5 @@
+import { type StyleScope, useStyleScope } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // <PosterCard>: the 2:3 portrait tile of the browse grids (Films, Series).
 //
@@ -36,8 +38,8 @@ interface PosterCardProps {
   autoFocus?: boolean;
 }
 
-const frameOf = (width: number | string) =>
-  sharedStyle(`poster-card:${width}`, { width, radius: 'xl' });
+const frameOf = (width: number | string, scope: StyleScope) =>
+  sharedStyle(`poster-card:${width}`, { width, radius: 'xl' }, scope);
 function PosterCard({
   title,
   overline,
@@ -51,6 +53,10 @@ function PosterCard({
   onFocus,
   autoFocus,
 }: Readonly<PosterCardProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const { radius } = useTheme();
   return (
     <Focusable
@@ -60,7 +66,7 @@ function PosterCard({
       autoFocus={autoFocus}
       label={title}
       focusScale={1.05}
-      style={frameOf(width ?? '100%')}
+      style={frameOf(width ?? '100%', scope)}
     >
       <Box aspect={2 / 3} radius="xl" overflow="hidden" bg="surface1">
         {/* Every layer rounds itself as well as the parent clipping: Chrome
@@ -89,7 +95,7 @@ function PosterCard({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   overline: {
     font: 'ui',
     fontWeight: '700',

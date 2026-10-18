@@ -1,3 +1,5 @@
+import { activeTheme, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+
 // Per-element "Traitements" panel (admin-only): the status of every processing
 // treatment applied to this film/episode/show (probe, TMDB, storyboard previews,
 // markers, embedding), plus a one-click reprocess and a "fix the TMDB match"
@@ -9,7 +11,7 @@ import { ItemId, ShowId } from '@kromatv/client/media';
 import type { Treatment } from '@kromatv/client/pipeline';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Box, Button, classes, color, Spinner, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, classes, color, Spinner, styles, Text, useStyles } from '@kromatv/ui/kit';
 import {
   IconAlertTriangleFilled,
   IconCircle,
@@ -37,13 +39,18 @@ const STATUS = {
 const PANEL_PAD = { base: 24, md: 64 } as const;
 
 // A <span> so the native tooltip survives: react-native-web drops a `title`.
-const s = styles({ treatment: { display: 'inline-flex', alignItems: 'center', gap: 6 } });
+const sDefinition = styles({ treatment: { display: 'inline-flex', alignItems: 'center', gap: 6 } });
 
 export function TreatmentsPanel({
   kind,
   id,
   title,
 }: Readonly<{ kind: Kind; id: string; title: string }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { user, client } = useAuth();
   const queryClient = useQueryClient();
@@ -125,7 +132,7 @@ export function TreatmentsPanel({
               {spin ? (
                 <Spinner size={16} color={meta.ink} />
               ) : (
-                <Icon size={16} color={color(meta.ink)} />
+                <Icon size={16} color={color(meta.ink, activeTheme(scope.theme))} />
               )}
               <Text variant="meta" color="white/80">
                 {t(`pipeline.t.${tr.key}` as MessageKey)}

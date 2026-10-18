@@ -2,7 +2,7 @@ import type { MediaItem } from '@kromatv/client/media';
 import { audioTracksOf, langCode, preferredAudioIndex } from '@kromatv/core';
 import { useHeldSeek } from '@kromatv/core/react';
 import { useCast } from '@kromatv/ui';
-import { Box, styles } from '@kromatv/ui/kit';
+import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigation, useRouter } from 'expo-router';
 import type { VideoView as VideoViewRef } from 'expo-video';
@@ -35,6 +35,8 @@ export function PlayerBody({
   localUri?: string;
   offline?: DownloadEntry;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -218,6 +220,6 @@ export function PlayerBody({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   stage: { flex: true, bg: 'bg' },
 });

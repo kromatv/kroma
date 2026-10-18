@@ -27,6 +27,7 @@ import {
   styles,
   Text,
   typeSpec as textRoles,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { NearbyTvs } from '#mobile/components/connect/NearbyTvs';
@@ -41,6 +42,8 @@ const MODES = ['network', 'scan'] as const;
 type ConnectMode = (typeof MODES)[number];
 
 export default function ConnectDevice() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const [mode, setMode] = useState<ConnectMode>(MODES[0]);
   const [done, setDone] = useState(false);
@@ -84,7 +87,7 @@ export default function ConnectDevice() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   body: { flex: true, px: spacing.md, gap: spacing.md },
   done: { flex: true, center: true, gap: spacing.md, px: spacing.lg },
   doneTitle: { ...type.title, fontSize: textRoles.title.size, textAlign: 'center' },

@@ -11,7 +11,14 @@ import {
   type SubtitleAppearance,
   useResumeNotice,
 } from '@kromatv/ui';
-import { Box, radius as cornerRadius, styles, Text, fontSizes as textSizes } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  styles,
+  Text,
+  fontSizes as textSizes,
+  useStyles,
+} from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
@@ -144,6 +151,8 @@ export function PlayerChrome({
   onPip?(): void;
   onCast?(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const insets = useSafeAreaInsets();
   const { shown: visible, poke, toggle, hold } = useChromeReveal();
@@ -277,7 +286,7 @@ export function PlayerChrome({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   zoomNote: {
     absolute: true,
     self: 'center',

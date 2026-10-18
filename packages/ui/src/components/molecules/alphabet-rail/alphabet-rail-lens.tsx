@@ -1,3 +1,5 @@
+import { type StyleScope, useStyleScope } from '#ui/core';
+
 // The amber lens covering the stretch of letters on screen, and the bubble a
 // scrubbing finger drags with it. Both belong to the Root: the lens is one box
 // crossing several rows, so no row can draw it.
@@ -7,6 +9,7 @@ import { Animated } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { sharedStyle, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { ease } from '#ui/lib/ease';
 import { WEB } from '#ui/lib/platform';
 import { PAD, ROW_W } from './alphabet-rail-context';
@@ -25,12 +28,16 @@ interface LensBox {
 // Single short row: the lens tightens to a true circle; any taller stretch
 // fills the rail's width as a stadium.
 
-const motionOf = (entering: boolean, chase: boolean) =>
-  sharedStyle(`alphabet:lens:${entering}:${chase}`, {
-    transitionProperty: entering ? 'opacity' : 'left, top, width, height, opacity',
-    transitionDuration: `${chase ? CHASE_MS : TRAVEL_MS}ms`,
-    transitionTimingFunction: ease.spring.css,
-  });
+const motionOf = (entering: boolean, chase: boolean, scope: StyleScope) =>
+  sharedStyle(
+    `alphabet:lens:${entering}:${chase}`,
+    {
+      transitionProperty: entering ? 'opacity' : 'left, top, width, height, opacity',
+      transitionDuration: `${chase ? CHASE_MS : TRAVEL_MS}ms`,
+      transitionTimingFunction: ease.spring.css,
+    },
+    scope,
+  );
 function lensFor(lit: [number, number], rowH: number): LensBox {
   const height = (lit[1] - lit[0] + 1) * rowH;
   const width = Math.min(ROW_W, height);
@@ -48,6 +55,8 @@ function Lens({ box, chase }: Readonly<{ box: LensBox | null; chase: boolean }>)
 }
 
 function WebLens({ box, chase }: Readonly<{ box: LensBox | null; chase: boolean }>) {
+  const scope = useStyleScope();
+
   // Both are state updated during render - the sanctioned previous-value shape,
   // and the one the compiler can memoise around. `last` is the box the lens
   // HELD, so a lens fading out keeps its place; `entering` is true until the
@@ -65,7 +74,7 @@ function WebLens({ box, chase }: Readonly<{ box: LensBox | null; chase: boolean 
       radius="pill"
       bg="accent"
       style={[
-        motionOf(entering, chase),
+        motionOf(entering, chase, scope),
         {
           left: shown.x,
           top: shown.y,
@@ -87,6 +96,8 @@ interface LensMotion {
 }
 
 function NativeLens({ box, chase }: Readonly<{ box: LensBox | null; chase: boolean }>) {
+  const s = useStyles(sDefinition);
+
   const [motion] = useState<LensMotion>(() => ({
     left: new Animated.Value(0),
     top: new Animated.Value(0),
@@ -135,6 +146,8 @@ function NativeLens({ box, chase }: Readonly<{ box: LensBox | null; chase: boole
 
 /** The letter under a scrubbing finger, held clear of it. */
 function Bubble({ letter, y }: Readonly<{ letter: string; y: number }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box
       absolute
@@ -151,7 +164,7 @@ function Bubble({ letter, y }: Readonly<{ letter: string; y: number }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   bubble: { right: ROW_W + PAD * 2 + 18, w: BUBBLE, h: BUBBLE },
   lens: { absolute: true, radius: 'pill', bg: 'accent' },
 });

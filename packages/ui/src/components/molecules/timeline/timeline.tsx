@@ -1,3 +1,5 @@
+import { type StyleScope, useStyleScope } from '#ui/core';
+
 // <Timeline>: a sequence of events down a rail - a history, an activity feed,
 // the steps a job went through.
 //
@@ -13,6 +15,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type ColorValue, sharedStyle, styles, sv, type TypeRole } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
 
@@ -65,8 +68,8 @@ interface TimelineRootProps {
   children?: ReactNode;
 }
 
-const bodyOf = (gap: number) =>
-  sharedStyle(`timeline:body:${gap}`, { flex: true, minWidth: 0, ml: gap });
+const bodyOf = (gap: number, scope: StyleScope) =>
+  sharedStyle(`timeline:body:${gap}`, { flex: true, minWidth: 0, ml: gap }, scope);
 function Root({ size, children }: Readonly<TimelineRootProps>) {
   const entryDefaults = useEntryDefaults();
   const shape = SHAPE[size ?? entryDefaults.size];
@@ -118,6 +121,10 @@ function Item({
   label,
   children,
 }: Readonly<TimelineItemProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const { shape, last } = useTimeline('Item');
   const body = (
     <>
@@ -146,7 +153,7 @@ function Item({
           focusScale={1}
           onPress={onPress}
           sv={timelineEntry}
-          style={bodyOf(shape.gap)}
+          style={bodyOf(shape.gap, scope)}
         >
           {body}
         </Focusable>
@@ -187,7 +194,7 @@ function Node({ tone, size }: Readonly<{ tone: TimelineTone; size: number }>) {
   return <Box w={size} h={size} radius="pill" bg={INK[tone]} />;
 }
 
-const s = styles({ title: { fontWeight: '600' } });
+const sDefinition = styles({ title: { fontWeight: '600' } });
 
 const timelineEntry = sv({
   base: {

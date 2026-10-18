@@ -12,6 +12,7 @@ import {
   Spinner,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -28,6 +29,8 @@ export function PanelHeader({
   filter,
   onFilterChange,
 }: Readonly<{ filter: NotificationFilter; onFilterChange: (next: NotificationFilter) => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const queryClient = useQueryClient();
   const unread = useUnreadCount();
@@ -94,4 +97,4 @@ export function PanelHeader({
   );
 }
 
-const s = styles({ heading: { m: 0 }, off: { opacity: 0.3 } });
+const sDefinition = styles({ heading: { m: 0 }, off: { opacity: 0.3 } });

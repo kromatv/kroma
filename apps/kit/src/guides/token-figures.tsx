@@ -1,3 +1,4 @@
+import { useStyles } from '@kromatv/ui/kit';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
@@ -55,6 +56,8 @@ function SpaceScale() {
 
 /** The corner language, one swatch per token. */
 function RadiusScale() {
+  const s = useStyles(sDefinition);
+
   return (
     <Box row wrap gapX={space[4]} gapY={space[4]}>
       {Object.entries(radius).map(([name, value]) => (
@@ -72,7 +75,7 @@ function RadiusScale() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   swatch: { borderWidth: 1, borderColor: 'borderStrong' },
 });
 

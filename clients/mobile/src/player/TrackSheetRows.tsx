@@ -6,6 +6,7 @@ import {
   SwitchFace,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { Pressable } from 'react-native';
@@ -24,6 +25,8 @@ export function Row({
   note?: string;
   onPress(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       onPress={onPress}
@@ -57,6 +60,8 @@ export function MenuRow({
   on?: boolean;
   onPress(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       onPress={onPress}
@@ -84,6 +89,8 @@ export function MenuRow({
 }
 
 export function SubHeader({ title, onBack }: Readonly<{ title: string; onBack(): void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable onPress={onBack} style={({ pressed }) => [s.subHeader, pressed && { opacity: 0.7 }]}>
       <Icon name="chevron-left" size={20} thickness={2.4} color={colors.text} />
@@ -93,6 +100,8 @@ export function SubHeader({ title, onBack }: Readonly<{ title: string; onBack():
 }
 
 export function ChipGroup({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.chipGroup}>
       <Text style={s.group}>{label}</Text>
@@ -101,7 +110,7 @@ export function ChipGroup({ label, children }: Readonly<{ label: string; childre
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   menuRow: {
     row: true,
     align: 'center',

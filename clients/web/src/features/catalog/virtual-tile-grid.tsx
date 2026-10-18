@@ -1,4 +1,4 @@
-import { classes, styles } from '@kromatv/ui/kit';
+import { classes, styles, useStyles } from '@kromatv/ui/kit';
 import {
   Fragment,
   memo,
@@ -26,7 +26,7 @@ const NOTHING: RowWindow = { first: 0, count: 0 };
 // size, which is exactly what mounting a row is. Left on, its compensation
 // fires the scroll listener, which mounts another row, which compensates again:
 // the page runs away to the end.
-const s = styles({
+const sDefinition = styles({
   box: { position: 'relative', overflowAnchor: 'none' },
   row: { position: 'absolute', left: 0, right: 0, display: 'flex', gap: TILE_GAP },
 });
@@ -109,6 +109,8 @@ const GridRow = memo(function GridRow<T>({
   keyOf,
   renderItem,
 }: Readonly<GridRowProps<T>>) {
+  const s = useStyles(sDefinition);
+
   return (
     <div className={classes(s.row)} style={{ top }}>
       {data.slice(from, to).map((item) => (
@@ -128,6 +130,8 @@ export interface VirtualTileGridProps<T> {
  * every row and mounts only the ones near the viewport. `TileGrid` is the one
  * to reach for where the whole list fits a screen or two. */
 export function VirtualTileGrid<T>({ data, keyOf, renderItem }: Readonly<VirtualTileGridProps<T>>) {
+  const s = useStyles(sDefinition);
+
   const box = useRef<HTMLDivElement>(null);
   const room = useRoom(box);
   const shape = gridShape(room, data.length);

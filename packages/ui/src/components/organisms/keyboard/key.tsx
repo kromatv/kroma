@@ -1,3 +1,4 @@
+import { useSv } from '#ui/core';
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // One key of an <OnScreenKeyboard>. A <Focusable>, so the spatial focus nav
 // reaches it and OK activates it.
@@ -85,7 +86,9 @@ function Key({
   size,
   autoFocus,
 }: Readonly<KeyProps>) {
-  const frost = useFrostCoat(face({ size }).root, { on: size !== 'tv' });
+  const faceScoped = useSv(face);
+
+  const frost = useFrostCoat(faceScoped({ size }).root, { on: size !== 'tv' });
   return (
     <Focusable
       onPress={() => onPress(value ?? label ?? '')}

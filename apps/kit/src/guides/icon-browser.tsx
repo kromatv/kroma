@@ -1,3 +1,4 @@
+import { useStyles } from '@kromatv/ui/kit';
 import { type ReactNode, type Ref, useMemo, useRef, useState } from 'react';
 import { Platform, ScrollView, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -50,6 +51,8 @@ function IconBrowser() {
 }
 
 function Arriving() {
+  const s = useStyles(sDefinition);
+
   return (
     <Box radius="lg" bg="surface1" style={s.frame} py={space[10]} gap={space[3]} center>
       <Spinner label="Loading the icon library" />
@@ -61,6 +64,8 @@ function Arriving() {
 }
 
 function Browser() {
+  const s = useStyles(sDefinition);
+
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState(EVERY_CATEGORY);
   const [size, setSize] = useState('26');
@@ -209,6 +214,8 @@ function Grid({ children, ref }: Readonly<{ children: ReactNode; ref: Ref<Scroll
 }
 
 function Glyph({ hit, size }: Readonly<{ hit: IconHit<IconName>; size: number }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box w={104} align="center" gap={space[2]}>
       <Box h={52} center>
@@ -240,7 +247,7 @@ function summarize({ matched, total, tagged, first, last }: Readonly<Summary>): 
   return tagged > 0 ? `${head}${range} · ${tagged} matched by tag` : `${head}${range}`;
 }
 
-const s = styles({
+const sDefinition = styles({
   frame: { borderWidth: 1, borderColor: 'border', overflow: 'hidden' },
   bar: { borderBottomWidth: 1, borderBottomColor: 'border' },
   pager: { borderTopWidth: 1, borderTopColor: 'border' },

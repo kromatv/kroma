@@ -1,3 +1,8 @@
+import { declaredBreakpoints } from './shorthand-resolve';
+import { useStyleScope } from './style-context';
+import { DEFAULT_STYLE_SCOPE, type StyleScope } from './style-scope';
+import type { AnySv } from './types';
+import { useBreakpointStep } from './use-breakpoint';
 // `sv`, the recipe compiler: a props-to-style lookup for React Native, which has
 // no className for cva/tailwind-variants to drive. Panda's `cva` shape, with
 // interaction states nested under a `_` prefix inside the style they change.
@@ -10,7 +15,7 @@ import { breakpointIndex, breakpointStep } from '#ui/core/breakpoint';
 import { type Split, split } from '#ui/core/normalize';
 import { stabilise } from '#ui/core/stabilise';
 import { maskOf, SV_STATES, type SvState, type SvStateName, stateSuffix } from '#ui/core/states';
-import { themeVersion } from '#ui/core/theme';
+import { activeTheme, themeVersion } from '#ui/core/theme';
 import type {
   CompoundVariant,
   FlatVariantGroups,
@@ -108,6 +113,13 @@ export function sv<
 export function sv(
   config: SvConfig<SlotShapes, VariantGroups<SlotShapes>> | SvFlatConfig<FlatVariantGroups>,
 ): unknown {
+  return defineRecipe(config);
+}
+
+function compileSv(
+  config: SvConfig<SlotShapes, VariantGroups<SlotShapes>> | SvFlatConfig<FlatVariantGroups>,
+  scope: StyleScope,
+): SvFn<SlotShapes, VariantGroups<SlotShapes>> {
   // Normalised here into one slot called `root`, so everything past this point
   // sees only the slotted form.
   const flat = 'base' in config;
@@ -126,7 +138,7 @@ export function sv(
   const build = (): Compiled => {
     const declared = new Set<SvStateName>();
     let breakpoints = 0;
-    const at = breakpointIndex();
+    const at = breakpointIndex(scope.breakpoints);
     const layersOf = (layer: object): (Split | undefined)[] => {
       const wrapped = wrap(layer);
       return names.map((name) => {
@@ -137,7 +149,7 @@ export function sv(
         ) {
           throw new Error(`sv: slot "${name}" must be a style object.`);
         }
-        const piece = split(declaration, at);
+        const piece = split(declaration, at, activeTheme(scope.theme));
         for (const state of piece?.declared ?? []) declared.add(state);
         breakpoints |= piece?.breakpoints ?? 0;
         return piece;
@@ -145,7 +157,7 @@ export function sv(
     };
 
     const bases = names.map((name) => {
-      const piece = split(slots[name], at) as Split;
+      const piece = split(slots[name], at, activeTheme(scope.theme)) as Split;
       for (const state of piece.declared) declared.add(state);
       breakpoints |= piece.breakpoints;
       return piece;
@@ -178,16 +190,16 @@ export function sv(
   // is 0 forever, which is why crossing one costs it nothing - not a rebuild,
   // not a wider cache key.
   const fn = ((picks?: Record<string, PropertyKey | undefined>, state?: SvState) => {
-    const at = themeVersion();
+    const at = themeVersion(scope.theme);
     const stale =
       builtAt !== at ||
       (compiled !== undefined &&
         compiled.breakpoints !== 0 &&
-        breakpointStep(compiled.breakpoints) !== builtStep);
+        breakpointStep(compiled.breakpoints, breakpointIndex(scope.breakpoints)) !== builtStep);
     if (stale) {
       compiled = build();
       builtAt = at;
-      builtStep = breakpointStep(compiled.breakpoints);
+      builtStep = breakpointStep(compiled.breakpoints, breakpointIndex(scope.breakpoints));
     }
     const active = compiled as Compiled;
     const pickOf: PickOf = (group) => picks?.[group] ?? defaults[group];
@@ -232,4 +244,48 @@ export function svFor<P extends SlotShapes>() {
   return <const V extends VariantGroups<P> = Record<string, never>>(
     config: SvConfig<P, V>,
   ): SvFn<P, V> => sv(config as never) as SvFn<P, V>;
+}
+
+const BIND_RECIPE = Symbol('scoped-recipe');
+const RECIPE_MASK = Symbol('recipe-breakpoints');
+function recipeMask(value: unknown): number {
+  if (!value || typeof value !== 'object') return 0;
+  return Object.values(value).reduce<number>(
+    (mask, child) => mask | recipeMask(child),
+    declaredBreakpoints(value),
+  );
+}
+type ScopedRecipe = AnySv & {
+  [RECIPE_MASK]?: number;
+  [BIND_RECIPE]?: (scope: StyleScope) => unknown;
+};
+function defineRecipe(config: Parameters<typeof compileSv>[0]): ReturnType<typeof compileSv> {
+  const definition = compileSv(config, DEFAULT_STYLE_SCOPE);
+  const mask = recipeMask(config);
+  Object.defineProperty(definition, RECIPE_MASK, { value: mask });
+  const roots = new WeakMap<
+    StyleScope,
+    { version: number; index: number; fn: ReturnType<typeof compileSv> }
+  >();
+  Object.defineProperty(definition, BIND_RECIPE, {
+    value: (scope: StyleScope) => {
+      const version = themeVersion(scope.theme);
+      const index = breakpointStep(mask, breakpointIndex(scope.breakpoints));
+      const hit = roots.get(scope);
+      if (hit?.version === version && hit.index === index) return hit.fn;
+      const fn = compileSv(config, scope);
+      roots.set(scope, { version, index, fn });
+      return fn;
+    },
+  });
+  return definition;
+}
+export function bindRecipe<R>(recipe: R, scope: StyleScope): R {
+  return ((recipe as unknown as ScopedRecipe | undefined)?.[BIND_RECIPE]?.(scope) ?? recipe) as R;
+}
+
+export function useSv<R>(recipe: R): R {
+  const scope = useStyleScope();
+  useBreakpointStep((recipe as ScopedRecipe | undefined)?.[RECIPE_MASK] ?? 0);
+  return ((recipe as unknown as ScopedRecipe | undefined)?.[BIND_RECIPE]?.(scope) ?? recipe) as R;
 }

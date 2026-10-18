@@ -1,3 +1,4 @@
+import { type StyleScope, useStyleScope } from '#ui/core';
 // <Rail>: a titled horizontal row of tiles, the backbone of the 10-foot home.
 // A rail IS a row: the spatial navigator moves between rows vertically and
 // inside one horizontally, so nothing needs measuring for that to hold.
@@ -32,11 +33,14 @@ interface RailTitleProps {
 
 /** The row's heading, inset to the same gutter its first tile starts at. */
 
-const insetOf = (paddingLeft: number) => sharedStyle(`rail:inset:${paddingLeft}`, { paddingLeft });
+const insetOf = (paddingLeft: number, scope: StyleScope) =>
+  sharedStyle(`rail:inset:${paddingLeft}`, { paddingLeft }, scope);
 function Title({ variant = 'h2', style, children }: Readonly<RailTitleProps>) {
+  const scope = useStyleScope();
+
   const { inset } = useRail('Title');
   return (
-    <Text variant={variant} style={[insetOf(inset), style]}>
+    <Text variant={variant} style={[insetOf(inset, scope), style]}>
       {children}
     </Text>
   );

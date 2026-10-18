@@ -1,3 +1,4 @@
+import { useSv } from '#ui/core';
 // <IconWell>: a glyph sunk into a rounded, tinted square. The leading mark of a
 // settings row, a server in a list, a menu entry.
 
@@ -34,7 +35,9 @@ interface IconWellProps {
 }
 
 function IconWell({ name, size = 'tv', tone = 'neutral' }: Readonly<IconWellProps>) {
-  const s = iconWellVariants({ size, tone });
+  const iconWellVariantsScoped = useSv(iconWellVariants);
+
+  const s = iconWellVariantsScoped({ size, tone });
   return (
     <Box style={s.root}>
       <Icon name={name} size={GLYPH[size]} color={tone === 'accent' ? 'accent' : 'textMuted'} />

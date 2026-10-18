@@ -1,3 +1,5 @@
+import { type StyleScope, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
+
 // The request status chip, one component for every surface: poster-card
 // overlay, table rows and the discover-detail hero.
 
@@ -12,6 +14,7 @@ import {
   styles,
   Text,
   useLoop,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { requestStatusMeta } from '#web/shared/lib/request-status';
 
@@ -19,6 +22,8 @@ const PULSE_MS = 2000;
 const RING_MS = 500;
 
 function Ring({ value, size, color }: Readonly<{ value: number; size: number; color: string }>) {
+  const s = useStyles(sDefinition);
+
   const sw = size <= 12 ? 2 : 2.5;
   const r = (size - sw) / 2;
   const circ = 2 * Math.PI * r;
@@ -63,7 +68,7 @@ const SHAPE = {
   hero: { dot: 8, ring: 16, gap: 8, px: 16, py: 8 },
 } as const;
 
-const s = styles({
+const sDefinition = styles({
   ring: { transform: [{ rotate: '-90deg' }], flexShrink: 0 },
   arc: { transitionProperty: 'stroke-dashoffset', transitionDuration: `${RING_MS}ms` },
   bold: { fontWeight: '700' },
@@ -71,7 +76,8 @@ const s = styles({
   cardFrost: backdropBlur(6),
 });
 
-const inkOf = (ink: string) => sharedStyle(`chip:ink:${ink}`, { backgroundColor: ink });
+const inkOf = (ink: string, scope: StyleScope) =>
+  sharedStyle(`chip:ink:${ink}`, { backgroundColor: ink }, scope);
 
 export function RequestStatusChip({
   status,
@@ -82,6 +88,11 @@ export function RequestStatusChip({
   size?: 'card' | 'row' | 'hero';
   progress?: number | null;
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const m = requestStatusMeta(status);
   const shape = SHAPE[size];
@@ -89,11 +100,17 @@ export function RequestStatusChip({
   const pct = downloading ? `${Math.round((progress ?? 0) * 100)}%` : null;
   const pulse = useLoop('pulse', PULSE_MS, m.pulse === true);
 
-  const fill = inkOf(m.bg);
+  const fill = inkOf(m.bg, scope);
   const lead = downloading ? (
     <Ring value={progress ?? 0} size={shape.ring} color={m.dot} />
   ) : (
-    <Box w={shape.dot} h={shape.dot} shrink={0} radius="circle" style={[inkOf(m.dot), pulse]} />
+    <Box
+      w={shape.dot}
+      h={shape.dot}
+      shrink={0}
+      radius="circle"
+      style={[inkOf(m.dot, scope), pulse]}
+    />
   );
 
   if (size === 'card') {

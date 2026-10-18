@@ -5,7 +5,7 @@
 // carries it at every window width - the list of sections beside a guide is a
 // wide-window luxury, and when a page was written is not.
 
-import { Box, Button, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { space } from '@kromatv/ui/tokens';
 import { useState } from 'react';
 import { HistoryBlock, summaryOf } from './history-view';
@@ -38,6 +38,8 @@ function documented(Content: DocComponent, path: string): DocComponent {
 }
 
 function PageHistory({ path }: Readonly<{ path: string }>) {
+  const s = useStyles(sDefinition);
+
   const source = usePathSource(path);
   const [open, setOpen] = useState(false);
   if (!source) return null;
@@ -78,6 +80,6 @@ function PageHistory({ path }: Readonly<{ path: string }>) {
   );
 }
 
-const s = styles({ rule: { borderTopWidth: 1, borderTopColor: 'border' } });
+const sDefinition = styles({ rule: { borderTopWidth: 1, borderTopColor: 'border' } });
 
 export { withPageHistory };

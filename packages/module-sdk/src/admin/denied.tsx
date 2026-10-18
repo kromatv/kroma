@@ -2,11 +2,13 @@
 // a capability.
 
 import { useT } from '@kromatv/ui';
-import { Box, Surface, styles, Text } from '@kromatv/ui/kit';
+import { Box, Surface, styles, Text, useStyles } from '@kromatv/ui/kit';
 
-const s = styles({ panel: { minHeight: '60vh' } });
+const sDefinition = styles({ panel: { minHeight: '60vh' } });
 
 export function Denied() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <Box center px={24} style={s.panel}>
