@@ -30,11 +30,13 @@ export default defineRule(
       return {
         Program() {
           for (const comment of context.sourceCode.getAllComments()) {
-            if (
-              comment.value
-                .split('\n')
-                .some((line) => /^\s*\*?\s*(?:[-=]{4,}|[-=]{3,}\s*.*?\s*[-=]{3,})\s*$/.test(line))
-            ) {
+            const banner = comment.value.split('\n').some((line) => {
+              const text = line.trim().replace(/^\*/, '').trim();
+              const separator = text.length >= 4 && /^[-=]+$/.test(text);
+              const framed = text.length >= 6 && /^[-=]{3}/.test(text) && /[-=]{3}$/.test(text);
+              return separator || framed;
+            });
+            if (banner) {
               context.report({ loc: comment.loc, messageId: 'banner' });
             }
           }

@@ -17,6 +17,7 @@ package and use:
 | `bun run rules [name] [--json]` | Read repair guides |
 | `bun run new <name>` | Scaffold an inactive rule draft |
 | `bun run test` | Test the rules and tooling |
+| `bun run coverage` | Run the tests and generate LCOV for Sonar |
 | `bun run compare [--rounds 5] [--output /tmp/results.json]` | Run the comparison |
 
 Use `bun run lint --format agent` at the repository root for agent diagnostics.

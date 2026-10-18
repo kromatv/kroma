@@ -11,7 +11,7 @@ const option = (name, fallback) => (args.includes(name) ? args[args.indexOf(name
 const rounds = Number(option('--rounds', '5'));
 if (!Number.isInteger(rounds) || rounds < 1)
   throw new Error('--rounds must be a positive integer.');
-const output = option('--output', '/tmp/kroma-oxc-comparison.json');
+const output = option('--output', join(root, '.oxc-comparison.json'));
 const biome = JSON.parse(readFileSync('biome.json', 'utf8'));
 const config = JSON.parse(readFileSync('.oxlintrc.json', 'utf8'));
 const excluded = biome.files.includes
@@ -48,7 +48,7 @@ const native = {
   ),
 };
 const nativePath = join(root, `.oxlintrc.native-${process.pid}.json`);
-writeFileSync(nativePath, JSON.stringify(native));
+writeFileSync(nativePath, JSON.stringify(native), { flag: 'wx' });
 const tasks = [
   {
     name: 'biome-lint',
@@ -150,7 +150,7 @@ try {
     pluginHashes: Object.fromEntries(
       [...new Bun.Glob('packages/lint-rules/src/**/*.mjs').scanSync({ cwd: root })]
         .filter((path) => !path.endsWith('.test.mjs'))
-        .sort()
+        .sort((left, right) => left.localeCompare(right))
         .map((path) => [path, hash(readFileSync(path))]),
     ),
     corpus: {

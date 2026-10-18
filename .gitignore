@@ -162,3 +162,5 @@ clients/web/public/sw.js
 
 # Signed Tizen packages (clients/tizen/scripts/package-all.ts)
 clients/tizen/out/
+
+.oxc-comparison.json

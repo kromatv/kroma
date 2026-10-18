@@ -1,3 +1,4 @@
+import { basename } from 'node:path';
 import { defineRule } from '../define-rule.mjs';
 
 export default defineRule(
@@ -27,7 +28,7 @@ export default defineRule(
       },
     },
     create(context) {
-      if (!/(?:^|[/])index\.tsx?$/.test(context.filename)) return {};
+      if (!/^index\.tsx?$/.test(basename(context.filename))) return {};
       return {
         Program(node) {
           for (const statement of node.body) {

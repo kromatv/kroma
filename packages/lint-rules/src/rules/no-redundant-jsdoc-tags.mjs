@@ -30,7 +30,12 @@ export default defineRule(
         Program() {
           for (const comment of context.sourceCode.getAllComments()) {
             if (comment.type !== 'Block' || !comment.value.startsWith('*')) continue;
-            if (/(?:^|\n)\s*\*?\s*@(param|returns?|type)\b/.test(comment.value)) {
+            const redundant = comment.value
+              .split('\n')
+              .some((line) =>
+                /^@(param|returns?|type)\b/.test(line.trim().replace(/^\*/, '').trim()),
+              );
+            if (redundant) {
               context.report({ loc: comment.loc, messageId: 'violation' });
             }
           }

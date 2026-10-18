@@ -145,7 +145,7 @@ run(
     `const text = <span>Start ${emDash} end</span>;`,
     `const text = <span title="Start ${emDash} end" />;`,
     `const text = \`Start ${emDash} \${name}\`;`,
-    'const text = "Start \\u2014 end";',
+    String.raw`const text = "Start \u2014 end";`,
   ],
 );
 run(

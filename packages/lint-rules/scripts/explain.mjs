@@ -18,9 +18,10 @@ if (args.includes('--json')) {
       console.log(`\n## ${field}\n\n${rule[field]}`);
     }
     for (const kind of ['invalid', 'valid']) {
-      console.log(
-        `\n## ${kind}\n\n${rule[kind].map((code) => `\x60\x60\x60ts\n${code}\n\x60\x60\x60`).join('\n\n')}`,
-      );
+      const examples = rule[kind]
+        .map((code) => `\x60\x60\x60ts\n${code}\n\x60\x60\x60`)
+        .join('\n\n');
+      console.log(`\n## ${kind}\n\n${examples}`);
     }
   }
 }

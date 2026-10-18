@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import plugin from './index.mjs';
 
+const bun = realpathSync(process.env.npm_execpath);
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 function run(script, ...args) {
   const command = script === 'explain' ? 'rules' : 'new';
-  return spawnSync('bun', ['run', '--cwd', 'packages/lint-rules', command, ...args], {
+  return spawnSync(bun, ['run', '--cwd', 'packages/lint-rules', command, ...args], {
     cwd: root,
     encoding: 'utf8',
   });
@@ -20,6 +21,11 @@ it('exposes actionable structured guidance and rejects unknown rules', () => {
   assert.equal(guides.length, Object.keys(plugin.rules).length);
   assert.ok(guides.every((guide) => guide.id.startsWith('kroma/') && guide.repair && guide.why));
   assert.equal(run('explain', 'unknown-rule').status, 1);
+  const readable = run('explain', 'no-relative-workspace-imports');
+  assert.equal(readable.status, 0);
+  assert.match(readable.stdout, /## repair/);
+  assert.match(readable.stdout, /## valid/);
+  assert.match(readable.stdout, /## invalid/);
 });
 it('scaffolds inactive drafts and rejects overwrites and path traversal', () => {
   const name = `test-draft-${process.pid}`;

@@ -119,8 +119,8 @@ include existing failures. The benchmark deliberately does not apply fixes.
 
 ## Validation
 
-- 139 focused tests pass (99.71% implementation line coverage, 93.01% branch
-  coverage under Node), including actual CLI/config loading, AST false-positive
+- 139 focused tests pass (99.73% implementation/tooling line coverage, 94.14% branch
+  coverage under c8/Node), including actual CLI/config loading, AST false-positive
   cases, structured guidance, and draft overwrite/path-traversal rejection.
 - Frozen-lockfile installation succeeds with lifecycle scripts disabled.
 - The independent Biome check passes with its existing schema-version info.
