@@ -64,7 +64,7 @@ export {
   SHARED_MODULES,
   sharedKey,
 } from './shared';
-export { ModuleSlot, ModuleSlotProvider, useSlotEntries } from './slot';
+export { ModuleSlot, ModuleSlotProvider, useSlotEntries, useSlotFilled } from './slot';
 export type {
   ConfigField,
   Contribution,

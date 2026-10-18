@@ -79,6 +79,9 @@ export interface SlotProps {
    *  core page lists them: an automatic search and a hand-picked one. `season`
    *  and `episode` narrow the search; both null searches the whole title.
    *  `compact` asks for icon buttons that fit a table row. */
+  /** The library page's « À améliorer » tab: titles that hold a copy the
+   *  server would still replace. The tab shows only when a module fills it. */
+  'library.upgrades': Record<never, never>;
   'monitoring.search': {
     kind: 'movie' | 'show';
     tmdbId: number;

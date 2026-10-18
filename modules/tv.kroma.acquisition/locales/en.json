@@ -226,7 +226,6 @@
   "acq.summaryOptional": "At least one of: {list}.",
   "acq.summaryRequired": "Holds when: {list}.",
   "acq.tabBlocklist": "Blocklist",
-  "acq.tabCutoff": "To improve",
   "acq.tabFormats": "Formats",
   "acq.tabProfiles": "Profiles",
   "acq.tabSettings": "Settings",

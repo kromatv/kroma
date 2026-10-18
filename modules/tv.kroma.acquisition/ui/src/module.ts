@@ -16,6 +16,10 @@ const acquisitionModule = defineModule({
   ],
   slots: [
     {
+      slot: 'library.upgrades',
+      component: lazy(() => import('./cutoff-view').then((m) => ({ default: m.CutoffView }))),
+    },
+    {
       slot: 'requests.detail',
       component: lazy(() =>
         import('./request-search-panel').then((m) => ({ default: m.RequestSearchPanel })),

@@ -9,7 +9,6 @@ import {
 import { Box, PageHeader, SegmentGroup, Select, useBreakpoint } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { BlocklistView } from './blocklist-view';
-import { CutoffView } from './cutoff-view';
 import { FormatsView } from './formats-view';
 import { ProfilesView } from './profiles-view';
 import type { RulesView } from './rules-schemas';
@@ -17,7 +16,7 @@ import { RulesTestBox } from './rules-test-box';
 import { SizesView } from './sizes-view';
 import { useRules } from './use-rules';
 
-const TABS = ['settings', 'profiles', 'formats', 'sizes', 'trial', 'cutoff', 'blocklist'] as const;
+const TABS = ['settings', 'profiles', 'formats', 'sizes', 'trial', 'blocklist'] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_LABEL: Record<Tab, string> = {
@@ -26,7 +25,6 @@ const TAB_LABEL: Record<Tab, string> = {
   formats: 'acq.tabFormats',
   sizes: 'acq.tabSizes',
   trial: 'acq.tabTrial',
-  cutoff: 'acq.tabCutoff',
   blocklist: 'acq.tabBlocklist',
 };
 
@@ -89,8 +87,6 @@ function TabPanel({ tab }: Readonly<{ tab: Tab }>) {
       );
     case 'trial':
       return <RulesTestBox />;
-    case 'cutoff':
-      return <CutoffView />;
     case 'blocklist':
       return <BlocklistView />;
     default:

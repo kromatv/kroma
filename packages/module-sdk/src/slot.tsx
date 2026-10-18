@@ -28,6 +28,14 @@ export function ModuleSlotProvider({
   return <SlotRegistryContext.Provider value={registry}>{children}</SlotRegistryContext.Provider>;
 }
 
+/** True when an enabled module fills `slot`, for a page that shows a tab or a
+ *  heading only when there is something to put under it. */
+export function useSlotFilled(slot: SlotName): boolean {
+  const registered = useSlotEntries(slot);
+  const isEnabled = useModuleEnabledCheck();
+  return registered.some((entry) => isEnabled(entry.moduleId));
+}
+
 /** What is registered for `slot`, before the enabled check. */
 export function useSlotEntries(slot: SlotName): ModuleSlotEntry[] {
   const registry = useContext(SlotRegistryContext);

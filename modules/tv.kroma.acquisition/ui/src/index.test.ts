@@ -10,6 +10,7 @@ describe('acquisitionModule', () => {
 
   it('fills every core slot only this module can answer', () => {
     expect(acquisitionModule.slots?.map((entry) => entry.slot)).toEqual([
+      'library.upgrades',
       'requests.detail',
       'monitoring.detail',
       'monitoring.search',
