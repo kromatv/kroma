@@ -1,3 +1,13 @@
+import {
+  type ColorValue,
+  type StyleScope,
+  sharedStyle,
+  styles,
+  sv,
+  type TypeRole,
+  useStyleScope,
+} from '#ui/core';
+
 // <Timeline>: a sequence of events down a rail - a history, an activity feed,
 // the steps a job went through.
 //
@@ -12,8 +22,9 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type ColorValue, sharedStyle, styles, sv, type TypeRole } from '#ui/core';
-import { type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+
+import { useStyles } from '#ui/core/styles';
+import { type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
 
 /** What an entry is: something that happened (`event`), the state the thing is
@@ -58,17 +69,18 @@ const [TimelineContext, useTimeline] = partContext<Context>('Timeline.Root');
 
 interface TimelineRootProps {
   /** How loud the entries read, defaulting to the app's entry size
-   *  (`setEntryDefaults`). */
+   *  (`KitProvider`). */
   size?: ControlSize;
   /** The entries, newest first by convention. Only a DIRECT element is counted,
    *  which is what lets the last one stop the rail. */
   children?: ReactNode;
 }
 
-const bodyOf = (gap: number) =>
-  sharedStyle(`timeline:body:${gap}`, { flex: true, minWidth: 0, ml: gap });
+const bodyOf = (gap: number, scope: StyleScope) =>
+  sharedStyle(`timeline:body:${gap}`, { flex: true, minWidth: 0, ml: gap }, scope);
 function Root({ size, children }: Readonly<TimelineRootProps>) {
-  const shape = SHAPE[size ?? entryDefaultSize()];
+  const entryDefaults = useEntryDefaults();
+  const shape = SHAPE[size ?? entryDefaults.size];
   const items = useMemo(
     () => Children.toArray(children).filter((child) => isValidElement(child)),
     [children],
@@ -117,6 +129,10 @@ function Item({
   label,
   children,
 }: Readonly<TimelineItemProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const { shape, last } = useTimeline('Item');
   const body = (
     <>
@@ -145,7 +161,7 @@ function Item({
           focusScale={1}
           onPress={onPress}
           sv={timelineEntry}
-          style={bodyOf(shape.gap)}
+          style={bodyOf(shape.gap, scope)}
         >
           {body}
         </Focusable>
@@ -186,7 +202,7 @@ function Node({ tone, size }: Readonly<{ tone: TimelineTone; size: number }>) {
   return <Box w={size} h={size} radius="pill" bg={INK[tone]} />;
 }
 
-const s = styles({ title: { fontWeight: '600' } });
+const sDefinition = styles({ title: { fontWeight: '600' } });
 
 const timelineEntry = sv({
   base: {

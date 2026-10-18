@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { ResizableStorage } from '#ui/components/organisms/resizable';
-import { clearPressGuard } from '#ui/lib/press-guard';
 import { onScreen } from '#ui/testing';
+import { createInputTestHost } from '#ui/testing-input';
 import { Table, type TableColumn, type TableRootProps } from './table';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 const CELL = 300;
 

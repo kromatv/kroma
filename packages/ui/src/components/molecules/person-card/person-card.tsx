@@ -1,3 +1,4 @@
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // The cast rail's tile, on both distances.
 //
 // The focus ring is drawn on the photo instead of around the tile, which is why
@@ -39,15 +40,15 @@ const personCardVariants = svFor<{
     size: {
       sm: {
         root: { w: 92, gap: 5 },
-        name: { fontSize: 11, lineHeight: 14 },
-        role: { fontSize: 10 },
+        name: { fontSize: textRoles.overline.size, lineHeight: 14 },
+        role: { fontSize: textSizes.micro },
         photo: { size: 84 },
         caption: { lines: 2 },
       },
       tv: {
         root: { w: 120, gap: 6 },
-        name: { fontSize: 16 },
-        role: { fontSize: 14 },
+        name: { fontSize: textRoles.body.size },
+        role: { fontSize: textSizes.compactLabel },
       },
     },
   },

@@ -2,7 +2,7 @@
 // moved, and the commits behind that. It sits beside the source link because
 // the two answer the same question - where this component came from.
 
-import { Box, styles, Text } from '@kromatv/ui/kit';
+import { Box, styles, Text, useStyles } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { ScrollView } from 'react-native';
 import { useEscapeKey } from './command';
@@ -39,6 +39,8 @@ function StoryHistory({ open, onOpen, onClose }: Readonly<StoryHistoryProps>) {
 }
 
 function Panel({ onClose, children }: Readonly<{ onClose: () => void; children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   useEscapeKey(onClose);
   return (
     <Box absolute top="100%" right={0} mt={6} w={344} z={2} style={s.panel} bg="surface2">
@@ -54,7 +56,7 @@ function Panel({ onClose, children }: Readonly<{ onClose: () => void; children: 
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   panel: { border: 'borderStrong', borderWidth: 1, radius: 'md', shadow: 'pop' },
   scroll: { grow: 0, shrink: 1, maxH: 420 },
   body: { px: 12, pb: 12 },

@@ -1,3 +1,4 @@
+import { type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
 // Focus transition, web (Tizen / webOS / desktop / browser).
 //
 // A CSS transition rather than Animated: on a TV's weak CPU a JS interpolation
@@ -7,7 +8,7 @@
 // cost a third of the frame rate on a Samsung LS03D, so the ring does not fade.
 
 import { useCallback, useState } from 'react';
-import { sharedStyle } from '#ui/core';
+
 import { motion } from '#ui/core/tokens';
 import { type PressScale, pressScaleFor, useLongestSide } from '#ui/lib/press-dip';
 import { ease } from './ease';
@@ -26,23 +27,32 @@ const scaled = (
   scale: number,
   duration: string,
   timing: string,
+  scope: StyleScope,
 ): Record<string, unknown> =>
-  sharedStyle(`scale:${key}:${scale}`, {
-    transform: [{ scale }],
-    transitionProperty: 'transform',
-    transitionDuration: duration,
-    transitionTimingFunction: timing,
-  } as never) as Record<string, unknown>;
+  sharedStyle(
+    `scale:${key}:${scale}`,
+    {
+      transform: [{ scale }],
+      transitionProperty: 'transform',
+      transitionDuration: duration,
+      transitionTimingFunction: timing,
+    },
+    scope,
+  );
 
 export function useFocusScale(focused: boolean, to: number): Record<string, unknown> {
+  const scope = useStyleScope();
+
   if (to === 1) return RING_ONLY;
-  return scaled('focus', focused ? to : 1, DURATION, TIMING);
+  return scaled('focus', focused ? to : 1, DURATION, TIMING, scope);
 }
 
 const DURATION_FAST = `${motion.duration.fast}ms`;
 const SPRING = ease.spring.css;
 
 export function usePressScale(): PressScale {
+  const scope = useStyleScope();
+
   const [pressed, setPressed] = useState(false);
   const { longest, onLayout } = useLongestSide();
   const onPressIn = useCallback(() => setPressed(true), []);
@@ -50,7 +60,13 @@ export function usePressScale(): PressScale {
   return {
     pressed,
     onLayout,
-    style: scaled('press', pressed ? pressScaleFor(longest.current) : 1, DURATION_FAST, SPRING),
+    style: scaled(
+      'press',
+      pressed ? pressScaleFor(longest.current) : 1,
+      DURATION_FAST,
+      SPRING,
+      scope,
+    ),
     onPressIn,
     onPressOut,
   };

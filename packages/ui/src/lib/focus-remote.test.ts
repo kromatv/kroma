@@ -12,27 +12,18 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const nav = vi.hoisted(() => ({
-  subscribe: null as ((handle: (direction: string) => void) => () => void) | null,
-}));
-
-vi.mock('@kromatv/spatial-nav/react', () => ({
-  configureRemote: (config: { subscribe: (handle: (direction: string) => void) => () => void }) => {
-    nav.subscribe = config.subscribe;
-  },
-}));
-
 const tab = vi.hoisted(() => ({ walk: vi.fn() }));
 vi.mock('./focus-tab', () => ({ walkTab: tab.walk }));
 
-import { mirrorFocus } from './focus-mirror';
-import { configureRemote } from './focus-remote';
+import { createFocusServices } from './focus-services';
+
+let services = createFocusServices(true);
+const mirrorFocus = (view: unknown) => services.mirror.mirrorFocus(view);
 
 /** Wires the remote up and hands back what the navigator would hold. */
 function mount() {
-  configureRemote();
   const handle = vi.fn();
-  const stop = nav.subscribe?.(handle);
+  const stop = services.remote.subscribe(handle);
   return { handle, stop: stop ?? (() => undefined) };
 }
 
@@ -55,6 +46,7 @@ function focus(tag: string, editable = false) {
 }
 
 beforeEach(() => {
+  services = createFocusServices(true);
   document.body.innerHTML = '';
   tab.walk.mockClear();
   Reflect.deleteProperty(document, 'activeElement');

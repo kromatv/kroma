@@ -5,7 +5,7 @@
 import type { SearchHit } from '@kromatv/client/media';
 import { episodeTag, posterColors } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Box, classes, EmptyState, Row, styles, Text } from '@kromatv/ui/kit';
+import { Box, classes, EmptyState, Row, styles, Text, useStyles } from '@kromatv/ui/kit';
 
 import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
@@ -16,7 +16,7 @@ import { Poster } from '#web/shared/ui/poster';
 import { RouteLink } from '#web/shared/ui/route-link';
 import { TileGrid } from '#web/shared/ui/tile-grid';
 
-const s = styles({
+const sDefinition = styles({
   count: { fontVariant: ['tabular-nums'] },
   band: {
     mb: 36,
@@ -32,6 +32,8 @@ function Section({
   count,
   children,
 }: Readonly<{ title: string; count: number; children: (width: number) => ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <section className={classes(s.band)}>
       {/* Still an <h2>: <Text accessibilityRole="header"> can only render an h1. */}

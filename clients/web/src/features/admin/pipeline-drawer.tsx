@@ -2,7 +2,19 @@ import { ItemId, ShowId } from '@kromatv/client/media';
 import type { ElementRow } from '@kromatv/client/pipeline';
 import type { MessageKey } from '@kromatv/i18n';
 import { useFormat, useT } from '@kromatv/ui';
-import { Box, Button, Callout, Drawer, IconButton, Row, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  Callout,
+  Drawer,
+  IconButton,
+  Row,
+  resolveStyles,
+  styles,
+  Text,
+  useStyleScope,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
 import { createCallable } from 'react-call';
 import { Pill, PillDot } from '#web/features/admin/pill';
 import { kindMeta, statusMeta } from '#web/features/admin/pipeline-meta';
@@ -11,6 +23,9 @@ import { useAuth } from '#web/shared/lib/auth';
 import { Image } from '#web/shared/ui';
 
 function DrawerPoster({ el }: Readonly<{ el: ElementRow }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
   const { client } = useAuth();
   const src =
     (el.poster ? client.media.artwork.resolve(el.poster) : null) ??
@@ -19,7 +34,7 @@ function DrawerPoster({ el }: Readonly<{ el: ElementRow }>) {
       : client.media.artwork.posterUrl(ItemId.parse(el.id)));
   return (
     <Box w={70} h={104} shrink={0} radius="xs" overflow="hidden">
-      <Box fill style={posterScrim(el.title)} />
+      <Box fill style={posterScrim(el.title, scope)} />
       <Image src={src} fit="cover" fill />
     </Box>
   );
@@ -44,6 +59,8 @@ export const PipelineDrawer = createCallable<
   }>,
   void
 >(({ call, el, busy, onReprocess, onRetryStage }) => {
+  const scope = useStyleScope();
+  useThemeVersion();
   const t = useT();
   const fmt = useFormat();
   // react-call keeps us mounted for `unmountingDelay` ms after `call.end()`,
@@ -58,7 +75,7 @@ export const PipelineDrawer = createCallable<
       open={!call.ended}
       onClose={close}
       title={t('pipeline.elementSheet')}
-      panelStyle={s.drawerFill}
+      panelStyle={resolveStyles(sDefinition, scope).drawerFill}
     >
       <Drawer.Header>
         <Row between mb={16}>
@@ -160,4 +177,4 @@ export const PipelineDrawer = createCallable<
 }, 400);
 
 // The drawers' darker fill, kept from the hand-rolled asides they replace.
-const s = styles({ drawerFill: { bg: 'bg' }, flex1: { flex: true } });
+const sDefinition = styles({ drawerFill: { bg: 'bg' }, flex1: { flex: true } });

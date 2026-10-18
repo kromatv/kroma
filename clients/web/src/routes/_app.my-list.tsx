@@ -26,8 +26,8 @@ import { useSavedTitles } from '#web/features/catalog/use-saved-titles';
 import { DiscoverCard } from '#web/features/requests/discover-card';
 import { isAuthed } from '#web/shared/lib/api';
 import { useMyList } from '#web/shared/lib/mylist';
-import { catalogQueries } from '#web/shared/lib/queries';
 import { useWatched } from '#web/shared/lib/watched';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
 import { TileCaption } from '#web/shared/ui/tile-caption';
@@ -58,11 +58,11 @@ function validateSearch(s: Record<string, unknown>): MyListSearch {
 
 export const Route = createFileRoute('/_app/my-list')({
   validateSearch,
-  loader: async ({ context: { queryClient } }) => {
+  loader: async ({ context: { runtime: webRuntime, queryClient } }) => {
     if (!isAuthed()) return;
     await Promise.all([
-      queryClient.ensureQueryData(catalogQueries.moviesView()),
-      queryClient.ensureQueryData(catalogQueries.showsView()),
+      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.moviesView()),
+      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.showsView()),
     ]);
   },
   pendingComponent: MyListPending,
@@ -197,12 +197,14 @@ function isEmpty(list: SavedTitles): boolean {
 }
 
 function MyListPage() {
+  const webRuntime = useWebRuntime();
+
   const { tab = 'toWatch' } = Route.useSearch();
   const navigate = Route.useNavigate();
   const setTab = (next: SavedTab) =>
     navigate({ search: (p) => ({ ...p, tab: next === 'toWatch' ? undefined : next }) });
-  const { data: movies } = useSuspenseQuery(catalogQueries.moviesView());
-  const { data: shows } = useSuspenseQuery(catalogQueries.showsView());
+  const { data: movies } = useSuspenseQuery(webRuntime.queries.catalogQueries.moviesView());
+  const { data: shows } = useSuspenseQuery(webRuntime.queries.catalogQueries.showsView());
   const { ids: myListIds, ready: myListReady } = useMyList();
   const { ids: watchedIds, ready: watchedReady } = useWatched();
 

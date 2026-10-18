@@ -1,7 +1,17 @@
 import { hasPermission } from '@kromatv/client/accounts';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Box, classes, Drawer, Logo, Row, styles, Text, useBreakpoint } from '@kromatv/ui/kit';
+import {
+  Box,
+  classes,
+  Drawer,
+  Logo,
+  Row,
+  styles,
+  Text,
+  useBreakpoint,
+  useStyles,
+} from '@kromatv/ui/kit';
 import {
   IconBookmark,
   IconCategory,
@@ -32,7 +42,7 @@ import { SIDE_NAV_FRAME, SIDE_NAV_GUTTER } from '#web/shared/ui/side-nav-style';
 
 // `position: sticky`, `100vh`, `overflow-y` and `env()` have no React Native
 // spelling, so the shell's own frames stay CSS around kit content.
-const s = styles({
+const sDefinition = styles({
   sidebar: {
     position: 'sticky',
     top: 0,
@@ -84,6 +94,8 @@ const NAV: { labelKey: MessageKey; to: RoutePath; icon: TablerIcon; exact?: bool
 ];
 
 export function Sidebar() {
+  const s = useStyles(sDefinition);
+
   const step = useBreakpoint();
   if (step !== 'lg' && step !== 'tv') return null;
   return (
@@ -141,6 +153,8 @@ function SidebarNav() {
 }
 
 export function MobileTopbar() {
+  const s = useStyles(sDefinition);
+
   const actions = useNavActions();
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });

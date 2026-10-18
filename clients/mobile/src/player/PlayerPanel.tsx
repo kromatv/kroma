@@ -10,7 +10,7 @@
 // the rounded clip of the view it sits in, so an unrounded blur pane would
 // poke out of the panel's rounded corners.
 
-import { Box, styles } from '@kromatv/ui/kit';
+import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
 import {
@@ -39,6 +39,8 @@ export function PlayerPanel({
   onRequestClose?(): void;
   children: ReactNode;
 }>) {
+  const s = useStyles(sDefinition);
+
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const landscape = width > height;
@@ -97,7 +99,7 @@ export function PlayerPanel({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   overlayRow: { flex: true, row: true },
   overlayColumn: { flex: true, justify: 'flex-end', flexDirection: 'column' },
   backdrop: { flex: true, bg: 'black/45' },

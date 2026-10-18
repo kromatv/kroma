@@ -187,11 +187,11 @@ describe('an engine without the Intl constructors', () => {
   ) => {
     vi.resetModules();
     const had = Intl[name];
-    (Intl as unknown as Record<string, unknown>)[name] = refuses;
+    Reflect.set(Intl, name, refuses);
     try {
       use(await import('./intl'));
     } finally {
-      (Intl as unknown as Record<string, unknown>)[name] = had;
+      Reflect.set(Intl, name, had);
     }
   };
 

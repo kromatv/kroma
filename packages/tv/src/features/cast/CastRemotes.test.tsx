@@ -2,13 +2,17 @@
 
 import { type CastController, ControllerId } from '@kromatv/client/cast';
 import { fakeClient } from '@kromatv/client/test';
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { onScreen } from '@kromatv/ui/testing';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type Connection, ConnectionProvider } from '#tv/app/providers/connection';
 import { CastRemotes } from '#tv/features/cast/CastRemotes';
-import { setCastControllers, setCastUplink } from '#tv/features/cast/controllers';
+import {
+  CastControllerStoreProvider,
+  createCastControllerStore,
+} from '#tv/features/cast/controllers';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 const phone = (id: string, username: string, name: string): CastController => ({
   id: ControllerId.parse(id),
@@ -19,11 +23,13 @@ const phone = (id: string, username: string, name: string): CastController => ({
 
 const client = fakeClient({ media: { artwork: { resolve: () => null } } });
 
-function show() {
+function show(store: ReturnType<typeof createCastControllerStore>) {
   return render(
     onScreen(
       <ConnectionProvider value={{ client } as Connection}>
-        <CastRemotes />
+        <CastControllerStoreProvider value={store}>
+          <CastRemotes />
+        </CastControllerStoreProvider>
       </ConnectionProvider>,
     ),
   );
@@ -40,10 +46,6 @@ const uplink = vi.fn();
 
 beforeEach(() => {
   uplink.mockClear();
-  // Module state outlives a test; setting the uplink to null also empties the
-  // roster.
-  setCastUplink(null);
-  setCastUplink(uplink);
 });
 
 afterEach(() => {
@@ -53,13 +55,17 @@ afterEach(() => {
 
 describe('CastRemotes', () => {
   it('draws nothing while no remote is driving this television', () => {
-    show();
+    const store = createCastControllerStore();
+    store.setCastUplink(uplink);
+    show(store);
     expect(screen.queryByLabelText('Remotes')).toBeNull();
   });
 
   it('counts the remotes on the chip and names them behind it', () => {
-    setCastControllers([phone('c1', 'max', 'iPhone'), phone('c2', 'lea', 'Pixel')]);
-    show();
+    const store = createCastControllerStore();
+    store.setCastUplink(uplink);
+    store.setCastControllers([phone('c1', 'max', 'iPhone'), phone('c2', 'lea', 'Pixel')]);
+    show(store);
 
     expect(screen.getByText('2')).toBeTruthy();
     // The count is drawn INSIDE the chip, which is one control with one name,
@@ -72,8 +78,10 @@ describe('CastRemotes', () => {
   });
 
   it('hangs up on the remote whose row is pressed', () => {
-    setCastControllers([phone('c1', 'max', 'iPhone')]);
-    show();
+    const store = createCastControllerStore();
+    store.setCastUplink(uplink);
+    store.setCastControllers([phone('c1', 'max', 'iPhone')]);
+    show(store);
     openPanel();
 
     fireEvent.click(screen.getByRole('button', { name: /max/ }));
@@ -81,8 +89,10 @@ describe('CastRemotes', () => {
   });
 
   it('closes on the panel’s own button', () => {
-    setCastControllers([phone('c1', 'max', 'iPhone')]);
-    show();
+    const store = createCastControllerStore();
+    store.setCastUplink(uplink);
+    store.setCastControllers([phone('c1', 'max', 'iPhone')]);
+    show(store);
     openPanel();
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
@@ -90,8 +100,10 @@ describe('CastRemotes', () => {
   });
 
   it('closes on Back', () => {
-    setCastControllers([phone('c1', 'max', 'iPhone')]);
-    show();
+    const store = createCastControllerStore();
+    store.setCastUplink(uplink);
+    store.setCastControllers([phone('c1', 'max', 'iPhone')]);
+    show(store);
     openPanel();
 
     fireEvent.keyDown(window, { key: 'Escape' });
@@ -101,12 +113,14 @@ describe('CastRemotes', () => {
   // The chip that opened the panel goes with the last remote, so an open panel
   // would have nothing left to hand focus back to.
   it('closes itself when the last remote leaves', () => {
-    setCastControllers([phone('c1', 'max', 'iPhone')]);
-    show();
+    const store = createCastControllerStore();
+    store.setCastUplink(uplink);
+    store.setCastControllers([phone('c1', 'max', 'iPhone')]);
+    show(store);
     openPanel();
 
     act(() => {
-      setCastControllers([]);
+      store.setCastControllers([]);
     });
     expect(screen.queryByText('iPhone')).toBeNull();
     expect(screen.queryByLabelText('Remotes')).toBeNull();

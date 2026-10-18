@@ -1,72 +1,64 @@
+// @vitest-environment jsdom
+
+import { useFrostCoat } from '@kromatv/ui/kit';
+import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { BlurPreferenceProvider, getBlurPref, useBlurPreference } from './blur-pref';
 
-const setFrostEnabled = vi.hoisted(() => vi.fn());
-vi.mock('@kromatv/ui/kit', () => ({ setFrostEnabled }));
-
-const KEY = 'kroma:blur';
-
-function fakeStorage(initial: Record<string, string> = {}) {
-  const m = new Map(Object.entries(initial));
-  return {
-    getItem: (k: string) => m.get(k) ?? null,
-    setItem: (k: string, v: string) => void m.set(k, v),
-    _map: m,
+function storage(initial: Record<string, string> = {}) {
+  const values = new Map(Object.entries(initial));
+  const store = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      values.set(key, value);
+    },
   };
+  vi.stubGlobal('localStorage', store);
+  return { store, values };
 }
-
-// The module pushes at import, so each case loads it fresh under its own store.
-async function load(storage: unknown) {
-  vi.stubGlobal('localStorage', storage);
-  vi.resetModules();
-  setFrostEnabled.mockClear();
-  return import('./blur-pref');
+function usePreferenceAndCoat() {
+  return { pref: useBlurPreference(), coat: useFrostCoat(null) };
 }
-
 afterEach(() => {
   vi.unstubAllGlobals();
-  vi.restoreAllMocks();
 });
-
-describe('the device blur preference', () => {
-  it('blurs unless the device turned it off', async () => {
-    expect((await load(fakeStorage())).getBlurPref()).toBe(true);
-    expect((await load(fakeStorage({ [KEY]: 'off' }))).getBlurPref()).toBe(false);
+describe('root-owned blur preferences', () => {
+  it('reads the saved choice, with blur enabled by default', () => {
+    storage();
+    expect(getBlurPref()).toBe(true);
+    storage({ 'kroma:blur': 'off' });
+    expect(getBlurPref()).toBe(false);
   });
-
-  it('pushes the stored choice into the kit at import, before the first paint', async () => {
-    await load(fakeStorage({ [KEY]: 'off' }));
-    expect(setFrostEnabled).toHaveBeenCalledWith(false);
+  it('renders the saved choice immediately and updates existing coats', () => {
+    const { values } = storage({ 'kroma:blur': 'off' });
+    const root = renderHook(usePreferenceAndCoat, { wrapper: BlurPreferenceProvider });
+    expect(root.result.current.coat.style).toBeNull();
+    act(() => root.result.current.pref[1](true));
+    expect(values.get('kroma:blur')).toBe('on');
+    expect(root.result.current.coat.style).not.toBeNull();
+    root.unmount();
   });
-
-  it('reaches the kit on a write, so a surface already drawn hears it', async () => {
-    const store = fakeStorage();
-    const { setBlurPref } = await load(store);
-    setFrostEnabled.mockClear();
-
-    setBlurPref(false);
-    expect(store._map.get(KEY)).toBe('off');
-    expect(setFrostEnabled).toHaveBeenCalledWith(false);
-  });
-
-  it('holds for the session where the write cannot land', async () => {
-    const { setBlurPref } = await load({
+  it('keeps a changed choice when persistence fails, without changing a different root', () => {
+    vi.stubGlobal('localStorage', {
       getItem: () => null,
       setItem: () => {
         throw new Error('quota');
       },
     });
-    setFrostEnabled.mockClear();
-
-    expect(() => setBlurPref(false)).not.toThrow();
-    expect(setFrostEnabled).toHaveBeenCalledWith(false);
+    const a = renderHook(usePreferenceAndCoat, { wrapper: BlurPreferenceProvider });
+    const b = renderHook(usePreferenceAndCoat, { wrapper: BlurPreferenceProvider });
+    act(() => a.result.current.pref[1](false));
+    expect(a.result.current.coat.style).toBeNull();
+    expect(b.result.current.coat.style).not.toBeNull();
+    a.unmount();
+    expect(b.result.current.pref[0]).toBe(true);
+    b.unmount();
   });
-
-  it('blurs when storage cannot be read at all', async () => {
-    const { getBlurPref } = await load({
+  it('uses blur when storage cannot be read', () => {
+    vi.stubGlobal('localStorage', {
       getItem: () => {
         throw new Error('denied');
       },
-      setItem: () => {},
     });
     expect(getBlurPref()).toBe(true);
   });

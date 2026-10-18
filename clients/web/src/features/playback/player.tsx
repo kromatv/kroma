@@ -7,19 +7,30 @@ import {
   useT,
   WEB_FLAGS,
 } from '@kromatv/ui';
-import { Box, Button, backdropBlur, classes, Icon, styles, Text, toast } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  backdropBlur,
+  classes,
+  Icon,
+  styles,
+  Text,
+  toast,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useCallback, useMemo, useState } from 'react';
 import { usePlaybackSession } from '#web/features/playback/use-playback-session';
 import { useResumeProgress } from '#web/features/playback/use-resume-progress';
 import { useWebController } from '#web/features/playback/use-web-controller';
 import { useWebUpNext } from '#web/features/playback/use-web-upnext';
-import { kromaClient, type MovieView } from '#web/shared/lib/api';
+import type { MovieView } from '#web/shared/lib/api';
 import { useStoryboard } from '#web/shared/lib/use-storyboard';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { castPicker } from '#web/shared/ui/cast-picker';
 
 const PREVIEW_W = 176;
 
-const s = styles({ frost: backdropBlur(4), inheritCorner: { borderRadius: 'inherit' } });
+const sDefinition = styles({ frost: backdropBlur(4), inheritCorner: { borderRadius: 'inherit' } });
 
 /** Adapts the web engine to the shared unified `<Player>`; layers on web-only
  *  concerns (admin-stop overlay, session heartbeat). */
@@ -40,6 +51,10 @@ export function Player({
   onGoHome?: () => void;
   onClose: () => void;
 }>) {
+  const webRuntime = useWebRuntime();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const cast = useCast();
   const wc = useWebController(item);
@@ -92,8 +107,8 @@ export function Player({
             ? `S${next.season} E${next.episode}`
             : undefined,
         posterUrl:
-          kromaClient().media.artwork.backdropFor(next) ??
-          kromaClient().media.artwork.posterFor(next),
+          webRuntime.client.media.artwork.backdropFor(next) ??
+          webRuntime.client.media.artwork.posterFor(next),
       }
     : null;
 

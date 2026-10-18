@@ -12,6 +12,7 @@ import {
   styles,
   sv,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import type { ColorToken } from '@kromatv/ui/tokens';
 import type { ReactNode } from 'react';
@@ -110,6 +111,8 @@ function Face({
 }
 
 function Menu({ onClose, children }: Readonly<{ onClose: () => void; children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   useEscapeKey(onClose);
   return (
     <Box absolute top="100%" left={0} mt={6} minW={186} z={2} style={s.panel} bg="surface2" p={5}>
@@ -129,6 +132,8 @@ function Item({
   chosen: boolean;
   onPress: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Focusable label={choice.label} ring={false} onPress={onPress} sv={menuItem} vars={{ chosen }}>
       {({ slots }) => (
@@ -198,7 +203,7 @@ const menuItem = sv({
   defaults: { chosen: false },
 });
 
-const s = styles({
+const sDefinition = styles({
   panel: { border: 'borderStrong', radius: 'md', shadow: 'pop' },
   itemNote: { fontSize: 11 },
 });

@@ -20,7 +20,7 @@ import {
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
-import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { RingScopeProvider } from '#ui/lib/ring-scope';
 
 interface ListGroupSlot {
@@ -38,7 +38,7 @@ export function useListGroup(): ListGroupSlot | null {
 interface ListGroupProps {
   children: ReactNode;
   /** The size members fall back to, defaulting to the app's
-   *  (`setEntryDefaults`). A member's own `size` still wins. */
+   *  (`KitProvider`). A member's own `size` still wins. */
   size?: ControlSize;
   /** Insets the hairlines from the card's edge, so they read as separators
    *  between rows rather than as full-width rules. Defaults to the members'
@@ -48,7 +48,8 @@ interface ListGroupProps {
 }
 
 function ListGroup({ children, size, divider, style }: Readonly<ListGroupProps>) {
-  const shell = size ?? entryDefaultSize();
+  const entryDefaults = useEntryDefaults();
+  const shell = size ?? entryDefaults.size;
   const metrics = CONTROL[shell];
   const items = Children.toArray(children);
   const slot = useMemo(() => ({ size: shell }), [shell]);

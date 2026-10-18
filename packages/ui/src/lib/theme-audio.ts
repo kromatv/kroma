@@ -6,7 +6,7 @@
 // is what stops a television and a browser from disagreeing about how loud a
 // series page is.
 
-import { deviceStorage } from '@kromatv/client';
+import { deviceStorage, type SessionStorage } from '@kromatv/client';
 
 const MUTE_KEY = 'kroma.theme.muted';
 
@@ -16,17 +16,17 @@ export const FADE_OUT_MS = 600;
 
 /** The stored mute preference. Safe everywhere: a device with no store reads
  * as unmuted, which is the design's default. */
-export function readThemeMuted(): boolean {
+export function readThemeMuted(storage?: SessionStorage | null): boolean {
   try {
-    return deviceStorage()?.getItem(MUTE_KEY) === '1';
+    return deviceStorage(storage)?.getItem(MUTE_KEY) === '1';
   } catch {
     return false;
   }
 }
 
-export function writeThemeMuted(muted: boolean): void {
+export function writeThemeMuted(muted: boolean, storage?: SessionStorage | null): void {
   try {
-    deviceStorage()?.setItem(MUTE_KEY, muted ? '1' : '0');
+    deviceStorage(storage)?.setItem(MUTE_KEY, muted ? '1' : '0');
   } catch {
     // A device that cannot persist still honours the choice for this session.
   }

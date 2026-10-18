@@ -14,7 +14,8 @@ import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-butt
 import { Text } from '#ui/components/atoms/text';
 import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
 import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field';
-import { type BoxStyleProps, sharedStyle, styles } from '#ui/core';
+import { type BoxStyleProps, sharedStyle, styles, useStyleScope } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { nestedRadius } from '#ui/core/tokens';
 import type { Radius } from '#ui/core/tokens/layout';
 import { controlRadius } from '#ui/lib/field-shell';
@@ -111,6 +112,10 @@ function Addon({
   style,
   children,
 }: Readonly<AddonProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const { metrics, focusControl } = useInputGroup('Addon');
   const block = align.startsWith('block');
   const items = Children.toArray(children);
@@ -156,7 +161,7 @@ function Addon({
         onPress?.();
         focusControl();
       }}
-      style={[sharedStyle(`input-group:addon:${JSON.stringify(shape)}`, shape), ...coats]}
+      style={[sharedStyle(`input-group:addon:${JSON.stringify(shape)}`, shape, scope), ...coats]}
     >
       {slotted}
     </Pressable>
@@ -176,6 +181,8 @@ function slotKey(child: ReactNode, index: number): string {
 /** What a control inside the shell measures: the shell's height minus its
  *  inset, the concentric corner, and the pull-in an inline addon needs. */
 function useInShell(part: string): { box: number; radius: Radius; pull: ViewStyle } {
+  const scope = useStyleScope();
+
   const { metrics } = useInputGroup(part);
   const slot = useAddonSlot();
   return useMemo(() => {
@@ -183,17 +190,19 @@ function useInShell(part: string): { box: number; radius: Radius; pull: ViewStyl
     const edge = slot?.edge ? slot.align : null;
     return {
       box: metrics.height - INSET * 2,
-      radius: nestedRadius(controlRadius(metrics), INSET),
+      radius: nestedRadius(controlRadius(metrics, scope), INSET),
       pull: {
         ...(edge === 'inline-start' ? { marginLeft: by } : null),
         ...(edge === 'inline-end' ? { marginRight: by } : null),
       },
     };
-  }, [metrics, slot]);
+  }, [metrics, slot, scope]);
 }
 
 /** A labelled button that lives inside the shell. */
 function GroupButton({ style, ...props }: Readonly<ButtonProps>) {
+  const scope = useStyleScope();
+
   const at = useInShell('Button');
   const shape = sharedStyle(
     `input-group:button:${at.box}:${at.radius}:${JSON.stringify(at.pull)}`,
@@ -206,6 +215,7 @@ function GroupButton({ style, ...props }: Readonly<ButtonProps>) {
       borderRadius: at.radius,
       ...at.pull,
     },
+    scope,
   );
   return <Button variant="ghost" size="sm" {...props} style={[shape, style]} />;
 }
@@ -233,7 +243,7 @@ function GroupText({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   blockAddon: { w: '100%' },
   ruleBelow: { border: 'border', borderWidth: 0, borderBottomWidth: 1 },
   ruleAbove: { border: 'border', borderWidth: 0, borderTopWidth: 1 },

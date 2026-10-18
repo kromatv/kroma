@@ -1,7 +1,7 @@
 import type { KromaClient } from '@kromatv/client';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { buildCrashReport } from '#tv/app/crashReport';
-import { crashReportingPrefStore } from '#tv/app/crashReportingPref';
+import { useDevicePreferences } from './device-preferences';
 
 interface Props {
   client: KromaClient | null;
@@ -19,7 +19,7 @@ interface State {
 /** App-level error boundary: on a render-time crash it shows `fallback` instead
  * of the broken tree, and, only when the user opted in, posts a
  * [`CrashReport`] to the connected server (best-effort, never rethrown). */
-export class CrashBoundary extends Component<Props, State> {
+class OwnedCrashBoundary extends Component<Props & { reporting: () => boolean }, State> {
   state: State = { crashed: false };
 
   static getDerivedStateFromError(): State {
@@ -27,7 +27,7 @@ export class CrashBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: unknown, info: ErrorInfo): void {
-    if (crashReportingPrefStore.get() !== 'on') return;
+    if (!this.props.reporting()) return;
     const { client, platform } = this.props;
     if (!client) return;
     const report = buildCrashReport(error, info.componentStack, platform, Date.now());
@@ -41,4 +41,9 @@ export class CrashBoundary extends Component<Props, State> {
   render(): ReactNode {
     return this.state.crashed ? this.props.fallback(this.retry) : this.props.children;
   }
+}
+
+export function CrashBoundary(props: Readonly<Props>) {
+  const { crashReporting } = useDevicePreferences();
+  return <OwnedCrashBoundary {...props} reporting={() => crashReporting.get() === 'on'} />;
 }

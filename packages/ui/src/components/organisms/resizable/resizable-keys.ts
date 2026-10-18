@@ -10,7 +10,7 @@
 import { useEffect, useEffectEvent } from 'react';
 import { type HWEvent, Platform, useTVEventHandler } from 'react-native';
 import type { GroupOrientation } from '#ui/lib/group-shape';
-import { holdInput } from '#ui/lib/input-gate';
+import { useInputGate } from '#ui/lib/input-gate';
 import type { ResizableKeysOptions } from './resizable-keys-types';
 
 const MOVES: Record<string, { orientation: GroupOrientation; towards: -1 | 1 }> = {
@@ -40,7 +40,8 @@ function isKeyUp(event: HWEvent): boolean {
 }
 
 function useResizableKeys({ held, orientation, onNudge, onRelease }: ResizableKeysOptions): void {
-  useEffect(() => (held ? holdInput() : undefined), [held]);
+  const { holdInput } = useInputGate();
+  useEffect(() => (held ? holdInput() : undefined), [held, holdInput]);
 
   const onRemote = useEffectEvent((event: HWEvent) => {
     if (!held || isKeyUp(event)) return;

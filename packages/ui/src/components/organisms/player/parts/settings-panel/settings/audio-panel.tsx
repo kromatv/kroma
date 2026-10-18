@@ -4,6 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
+import { useStyles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
 import type { PlayerAudioTrack } from '../../../media-types';
 import { panel } from './panel-style';
@@ -19,6 +20,8 @@ interface AudioPanelProps {
 
 /** Audio-track picker (§5). */
 export function AudioPanel({ tracks, current, onSelect, onBack, ref }: Readonly<AudioPanelProps>) {
+  const panelScoped = useStyles(panel);
+
   const t = useT();
   const pick = (i: number) => {
     const track = tracks[i];
@@ -31,11 +34,11 @@ export function AudioPanel({ tracks, current, onSelect, onBack, ref }: Readonly<
   useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
   if (tracks.length === 0) {
-    return <Text style={panel.panelEmpty}>{t('player.noAudioTracks')}</Text>;
+    return <Text style={panelScoped.panelEmpty}>{t('player.noAudioTracks')}</Text>;
   }
 
   return (
-    <Box style={panel.panelList}>
+    <Box style={panelScoped.panelList}>
       {tracks.map((a, i) => {
         const ch = channelLabel(a.channels);
         const codec = a.codec.toUpperCase();

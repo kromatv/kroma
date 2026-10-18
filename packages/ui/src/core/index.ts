@@ -16,30 +16,32 @@
 //   styles.ts      `styles`, for the shapes that are not a variant of anything
 
 export type { Breakpoints, Responsive } from './breakpoint';
-export { breakpointIndex, currentBreakpoint, pinDesignWidth } from './breakpoint';
+export { breakpointIndex, createBreakpointRuntime, currentBreakpoint } from './breakpoint';
 export type { ColorValue } from './color';
 export { color, withAlpha } from './color';
 export { normalize } from './normalize';
-export { sv, svFor } from './recipe';
+export { sv, svFor, useSv } from './recipe';
 export { boxStyle, declaredBreakpoints, splitShorthand } from './shorthand-resolve';
 export type { BoxStyleProps, TextLayoutProps } from './shorthands';
 export { TEXT_STYLE_PROPS } from './shorthands';
 export { stabilise } from './stabilise';
 export type { SvState, SvStateName } from './states';
-export { registered, sharedStyle, style, styles } from './styles';
+export { useStyleRuntime, useStyleScope } from './style-context';
+export { createStyleRuntime } from './style-runtime';
+export type { StyleScope } from './style-scope';
+export { DEFAULT_STYLE_SCOPE } from './style-scope';
+export { registered, resolveStyles, sharedStyle, style, styles, useStyles } from './styles';
 export type { RingToken, Theme, ThemeOverrides, ThemeTokens } from './theme';
 export {
   activeTheme,
-  applyTheme,
   createTheme,
+  createThemeRuntime,
   groundShade,
   KROMA,
   KROMA_LIGHT,
   onPaper,
-  onThemeChange,
   radiusValue,
   scaledRadius,
-  setTheme,
   themed,
   themedCache,
   themeVersion,
@@ -56,4 +58,10 @@ export type {
   VariantSource,
 } from './types';
 export { useBreakpoint, useBreakpointStep } from './use-breakpoint';
-export { ThemeProvider, useSystemGround, useTheme } from './use-theme';
+export {
+  ThemeProvider,
+  useSystemGround,
+  useTheme,
+  useThemeControls,
+  useThemeVersion,
+} from './use-theme';

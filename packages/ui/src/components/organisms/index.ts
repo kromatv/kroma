@@ -30,7 +30,7 @@ export type {
   DialogActionsProps,
   DialogRootProps,
 } from './dialog';
-export { ConfirmDialog, ConfirmHost, confirm, Dialog } from './dialog';
+export { ConfirmDialog, ConfirmHost, Dialog, useConfirm } from './dialog';
 export type { DrawerBandProps, DrawerCloseProps, DrawerRootProps, DrawerSide } from './drawer';
 export { Drawer } from './drawer';
 export type {

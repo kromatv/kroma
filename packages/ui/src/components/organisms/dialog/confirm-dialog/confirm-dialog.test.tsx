@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { clearPressGuard } from '#ui/lib/press-guard';
+import { createInputTestHost } from '#ui/testing-input';
+
 import { ConfirmDialog } from './confirm-dialog';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(() => {
   cleanup();

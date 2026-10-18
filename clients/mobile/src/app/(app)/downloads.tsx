@@ -4,7 +4,15 @@
 import type { MediaItem } from '@kromatv/client/media';
 import { episodeTag, formatRuntime } from '@kromatv/core';
 import { useFormat } from '@kromatv/ui';
-import { Box, type ColorValue, Icon, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  type ColorValue,
+  radius as cornerRadius,
+  Icon,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
@@ -24,6 +32,8 @@ import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 function RowArt({ uri, seed }: Readonly<{ uri: string | null; seed: string }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box>
       <FadeImage uri={uri} seed={seed} radius={radius.sm} style={s.thumb} />
@@ -37,6 +47,8 @@ function RowArt({ uri, seed }: Readonly<{ uri: string | null; seed: string }>) {
 }
 
 function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const fmt = useFormat();
   const router = useRouter();
@@ -108,6 +120,8 @@ function ActiveRow({
   progress: number;
   mode: 'downloading' | 'paused' | 'queued';
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const downloads = useDownloads();
@@ -168,6 +182,8 @@ function ActiveRow({
 }
 
 function LegendItem({ tint, label }: Readonly<{ tint?: ColorValue; label: string }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.legendItem}>
       <Box bg={tint} style={[s.legendDot, !tint && s.legendDotOutlined]} />
@@ -177,6 +193,8 @@ function LegendItem({ tint, label }: Readonly<{ tint?: ColorValue; label: string
 }
 
 function StorageMeter() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const fmt = useFormat();
   const downloads = useDownloads();
@@ -221,6 +239,8 @@ function StorageMeter() {
 }
 
 export default function Downloads() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const downloads = useDownloads();
   const hasAnything =
@@ -268,14 +288,14 @@ export default function Downloads() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   list: { gap: 4, px: spacing.md, pb: spacing.xl, ...boxed(contentWidth.reading) },
   activeBlock: { gap: 4, mb: spacing.sm },
   row: { row: true, align: 'center', gap: 12, p: 8, bg: 'bg', radius: radius.md },
   rowPressed: { bg: 'surface1' },
   thumb: { w: 130, h: 73 },
   playBadge: { absolute: true, top: 0, right: 0, bottom: 0, left: 0, center: true },
-  playCircle: { center: true, w: 32, h: 32, bg: 'bg/55', radius: 16 },
+  playCircle: { center: true, w: 32, h: 32, bg: 'bg/55', radius: cornerRadius.xl },
   text: { flex: true, gap: 3 },
   rowTitle: { ...type.body, fontWeight: '600' },
   rowSub: { ...type.small },
@@ -285,12 +305,19 @@ const s = styles({
   deleteAction: { center: true, gap: 4, w: 92, ml: 8, bg: 'danger', radius: radius.md },
   deleteLabel: { ...type.small, color: 'text', fontWeight: '700' },
   meter: { gap: 10, px: 8, mt: spacing.lg },
-  meterTrack: { row: true, gap: 2, h: 8, bg: 'surface2', radius: 999, overflow: 'hidden' },
-  meterFill: { bg: 'borderStrong', radius: 999 },
-  meterFillApp: { bg: 'accent', radius: 999 },
+  meterTrack: {
+    row: true,
+    gap: 2,
+    h: 8,
+    bg: 'surface2',
+    radius: cornerRadius.pill,
+    overflow: 'hidden',
+  },
+  meterFill: { bg: 'borderStrong', radius: cornerRadius.pill },
+  meterFillApp: { bg: 'accent', radius: cornerRadius.pill },
   meterLegend: { row: true, wrap: true, justify: 'center', columnGap: spacing.md, rowGap: 6 },
   legendItem: { row: true, align: 'center', gap: 6 },
-  legendDot: { w: 8, h: 8, radius: 4 },
+  legendDot: { w: 8, h: 8, radius: cornerRadius.compact },
   legendDotOutlined: { border: 'borderStrong', borderWidth: 1.5 },
   legendText: { ...type.small, color: 'textMuted' },
 });

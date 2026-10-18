@@ -3,7 +3,7 @@
 // Store responses cross a trust boundary and are parsed with the zod wire
 // schemas from @kromatv/client/modules.
 
-import { sessionToken } from '@kromatv/client';
+import type { KromaClient } from '@kromatv/client';
 import {
   ModuleEnabledResult,
   ModuleRestartResult,
@@ -15,7 +15,6 @@ import {
   StoreUpdateResult,
 } from '@kromatv/client/modules';
 import type { ModuleManifest } from '@kromatv/module-sdk';
-import { apiBase } from '#web/shared/lib/api';
 
 /** A module as `GET /api/admin/modules` returns it: the manifest plus its
  *  runtime admin state. */
@@ -60,91 +59,6 @@ export function matchesQuery(
   return [m.id, m.name, m.description ?? ''].some((s) => s.toLowerCase().includes(q));
 }
 
-// The bearer + base-URL core every admin request shares, JSON or not.
-function adminFetch(path: string, init?: RequestInit): Promise<Response> {
-  const token = sessionToken();
-  return fetch(`${apiBase()}/api/admin${path}`, {
-    ...init,
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init?.headers,
-    },
-  });
-}
-
-export async function adminApi<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await adminFetch(path, {
-    ...init,
-    headers: init?.body ? { 'Content-Type': 'application/json' } : undefined,
-  });
-  if (!res.ok) {
-    // Surface the server's message (compat verdicts, dependency conflicts,
-    // checksum mismatches) instead of a bare status code.
-    const text = await res.text().catch(() => '');
-    throw new Error(text || `${init?.method ?? 'GET'} ${path} -> ${res.status}`);
-  }
-  return (res.status === 204 ? undefined : await res.json()) as T;
-}
-
-export const fetchAdminModules = () => adminApi<AdminModule[]>('/modules');
-
-export async function setModuleEnabled(id: string, enabled: boolean): Promise<ModuleEnabledResult> {
-  return ModuleEnabledResult.parse(
-    await adminApi<unknown>(`/modules/${encodeURIComponent(id)}/enabled`, {
-      method: 'POST',
-      body: JSON.stringify({ enabled }),
-    }),
-  );
-}
-
-export async function fetchStoreCatalog(): Promise<StoreCatalog> {
-  return StoreCatalog.parse(await adminApi<unknown>('/store/catalog'));
-}
-
-/** Dry-run of an install: what it would pull, and the optional deps on offer. */
-export async function fetchInstallPlan(id: string, include: string[] = []): Promise<StorePlan> {
-  return StorePlan.parse(
-    await adminApi<unknown>('/store/plan', {
-      method: 'POST',
-      body: JSON.stringify({ id, include }),
-    }),
-  );
-}
-
-/** Install/update a module (+ opted-in optional deps) from the registry.
- *  Progress streams as `module.op.*` events while this call is in flight. */
-export async function installById(id: string, include: string[] = []): Promise<StoreInstallReport> {
-  return StoreInstallReport.parse(
-    await adminApi<unknown>('/store/install-id', {
-      method: 'POST',
-      body: JSON.stringify({ id, include }),
-    }),
-  );
-}
-
-/** Batch-update outdated modules off one catalog fetch; absent `ids` means
- *  every outdated one. */
-export async function updateModules(ids?: string[]): Promise<StoreUpdateResult> {
-  return StoreUpdateResult.parse(
-    await adminApi<unknown>('/store/update', {
-      method: 'POST',
-      body: JSON.stringify(ids ? { ids } : {}),
-    }),
-  );
-}
-
-/** Fetch + parse a candidate registry URL before saving it. */
-export async function previewRegistry(url: string): Promise<StoreRegistryPreview> {
-  return StoreRegistryPreview.parse(
-    await adminApi<unknown>('/store/registry-preview', {
-      method: 'POST',
-      body: JSON.stringify({ url }),
-    }),
-  );
-}
-
-/** Thrown by [`uninstallModule`] when other enabled modules still depend on
- *  the target; retrying with `force` skips the guard. */
 export class UninstallConflictError extends Error {
   readonly dependents: string[];
 
@@ -155,33 +69,135 @@ export class UninstallConflictError extends Error {
   }
 }
 
-export async function uninstallModule(id: string, force = false): Promise<void> {
-  const suffix = force ? '?force=true' : '';
-  const res = await adminFetch(`/store/${encodeURIComponent(id)}${suffix}`, { method: 'DELETE' });
-  if (res.status === 409) {
-    const conflict = StoreUninstallConflict.parse(await res.json());
-    throw new UninstallConflictError(conflict.error, conflict.dependents);
+/** Bind admin operations to the router-owned authenticated client. */
+export function createAdminApi(client: KromaClient) {
+  // The bearer + base-URL core every admin request shares, JSON or not.
+  function adminFetch(path: string, init?: RequestInit): Promise<Response> {
+    return fetch(`${client.baseUrl}/api/admin${path}`, {
+      ...init,
+      headers: {
+        ...client.authHeaders(),
+        ...init?.headers,
+      },
+    });
   }
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(text || `uninstall failed (${res.status})`);
-  }
-}
 
-/** The manual escape hatch: upload a `.kmod` directly, no registry involved.
- *  The body is the raw file, so this skips `adminApi`'s JSON content type. */
-export async function installBundle(file: File): Promise<void> {
-  const res = await adminFetch('/store/install', { method: 'POST', body: file });
-  if (!res.ok) {
-    throw new Error((await res.text().catch(() => '')) || `install failed (${res.status})`);
+  async function adminApi<T>(path: string, init?: RequestInit): Promise<T> {
+    const res = await adminFetch(path, {
+      ...init,
+      headers: init?.body ? { 'Content-Type': 'application/json' } : undefined,
+    });
+    if (!res.ok) {
+      // Surface the server's message (compat verdicts, dependency conflicts,
+      // checksum mismatches) instead of a bare status code.
+      const text = await res.text().catch(() => '');
+      throw new Error(text || `${init?.method ?? 'GET'} ${path} -> ${res.status}`);
+    }
+    return (res.status === 204 ? undefined : await res.json()) as T;
   }
-}
 
-/** Stop a module's sidecar and start it again from the binary on disk. */
-export async function restartModule(id: string): Promise<ModuleRestartResult> {
-  const res = await adminFetch(`/modules/${encodeURIComponent(id)}/restart`, { method: 'POST' });
-  if (!res.ok) {
-    throw new Error((await res.text()) || `restart failed (${res.status})`);
+  const fetchAdminModules = () => adminApi<AdminModule[]>('/modules');
+
+  async function setModuleEnabled(id: string, enabled: boolean): Promise<ModuleEnabledResult> {
+    return ModuleEnabledResult.parse(
+      await adminApi<unknown>(`/modules/${encodeURIComponent(id)}/enabled`, {
+        method: 'POST',
+        body: JSON.stringify({ enabled }),
+      }),
+    );
   }
-  return ModuleRestartResult.parse(await res.json());
+
+  async function fetchStoreCatalog(): Promise<StoreCatalog> {
+    return StoreCatalog.parse(await adminApi<unknown>('/store/catalog'));
+  }
+
+  /** Dry-run of an install: what it would pull, and the optional deps on offer. */
+  async function fetchInstallPlan(id: string, include: string[] = []): Promise<StorePlan> {
+    return StorePlan.parse(
+      await adminApi<unknown>('/store/plan', {
+        method: 'POST',
+        body: JSON.stringify({ id, include }),
+      }),
+    );
+  }
+
+  /** Install/update a module (+ opted-in optional deps) from the registry.
+   *  Progress streams as `module.op.*` events while this call is in flight. */
+  async function installById(id: string, include: string[] = []): Promise<StoreInstallReport> {
+    return StoreInstallReport.parse(
+      await adminApi<unknown>('/store/install-id', {
+        method: 'POST',
+        body: JSON.stringify({ id, include }),
+      }),
+    );
+  }
+
+  /** Batch-update outdated modules off one catalog fetch; absent `ids` means
+   *  every outdated one. */
+  async function updateModules(ids?: string[]): Promise<StoreUpdateResult> {
+    return StoreUpdateResult.parse(
+      await adminApi<unknown>('/store/update', {
+        method: 'POST',
+        body: JSON.stringify(ids ? { ids } : {}),
+      }),
+    );
+  }
+
+  /** Fetch + parse a candidate registry URL before saving it. */
+  async function previewRegistry(url: string): Promise<StoreRegistryPreview> {
+    return StoreRegistryPreview.parse(
+      await adminApi<unknown>('/store/registry-preview', {
+        method: 'POST',
+        body: JSON.stringify({ url }),
+      }),
+    );
+  }
+
+  /** Thrown by [`uninstallModule`] when other enabled modules still depend on
+   *  the target; retrying with `force` skips the guard. */
+
+  /** The manual escape hatch: upload a `.kmod` directly, no registry involved.
+   *  The body is the raw file, so this skips `adminApi`'s JSON content type. */
+  async function installBundle(file: File): Promise<void> {
+    const res = await adminFetch('/store/install', { method: 'POST', body: file });
+    if (!res.ok) {
+      throw new Error((await res.text().catch(() => '')) || `install failed (${res.status})`);
+    }
+  }
+
+  /** Stop a module's sidecar and start it again from the binary on disk. */
+  async function restartModule(id: string): Promise<ModuleRestartResult> {
+    const res = await adminFetch(`/modules/${encodeURIComponent(id)}/restart`, { method: 'POST' });
+    if (!res.ok) {
+      throw new Error((await res.text()) || `restart failed (${res.status})`);
+    }
+    return ModuleRestartResult.parse(await res.json());
+  }
+
+  async function uninstallModule(id: string, force = false): Promise<void> {
+    const suffix = force ? '?force=true' : '';
+    const res = await adminFetch(`/store/${encodeURIComponent(id)}${suffix}`, { method: 'DELETE' });
+    if (res.status === 409) {
+      const conflict = StoreUninstallConflict.parse(await res.json());
+      throw new UninstallConflictError(conflict.error, conflict.dependents);
+    }
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(text || `uninstall failed (${res.status})`);
+    }
+  }
+
+  return {
+    adminApi,
+    fetchAdminModules,
+    setModuleEnabled,
+    fetchStoreCatalog,
+    fetchInstallPlan,
+    installById,
+    updateModules,
+    previewRegistry,
+    uninstallModule,
+    installBundle,
+    restartModule,
+  };
 }

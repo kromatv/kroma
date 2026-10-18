@@ -14,16 +14,6 @@ export interface FocusBox {
   height: number;
 }
 
-/** Called by `<Focusable>` as it takes the focus. */
-export function noteFocus(_view: unknown): void {
-  // Intentionally empty.
-}
-
-/** Bumped by every focus, so a caller can tell a move from a refusal. */
-export function focusSeq(): number {
-  return 0;
-}
-
-export function focusBox(): FocusBox | null {
-  return null;
+export function createFocusProbe() {
+  return { noteFocus: (_view: unknown) => {}, seq: () => 0, box: (): FocusBox | null => null };
 }

@@ -3,6 +3,8 @@ import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
+import { fontSizes as textSizes } from '#ui/core/tokens';
 import { partContext } from '#ui/lib/part-context';
 
 type EmptyStateSize = 'sm' | 'md' | 'tv';
@@ -71,6 +73,8 @@ function Media({ variant = 'icon', name, children }: Readonly<MediaProps>) {
 
 /** What is missing. */
 function Title({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const shape = useShape('Title');
   return (
     <Text variant={shape.titleVariant} style={[s.centred, shape.titleStyle]}>
@@ -81,6 +85,8 @@ function Title({ children }: Readonly<{ children: ReactNode }>) {
 
 /** Why it is missing, and what would fix it. */
 function Hint({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   const shape = useShape('Hint');
   return (
     <Text variant="body" color="textMuted" style={[s.centred, shape.hintStyle]}>
@@ -92,6 +98,8 @@ function Hint({ children }: Readonly<{ children: ReactNode }>) {
 /** The raw cause, when there is one worth showing: an error message, a path.
  *  Set apart in a chip under the hint, the way the error pages do. */
 function Detail({ children }: Readonly<{ children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   useShape('Detail');
   return (
     <Box bg="surface1" border="border" radius="xl" px={14} py={10} maxW={420}>
@@ -115,11 +123,11 @@ function frameOf(shape: Shape, layout: EmptyStateLayout) {
 
 const FILL = { flex: 1, py: 64 } as const;
 
-const s = styles({
+const sDefinition = styles({
   centred: { textAlign: 'center' },
   titleSm: { mt: 2, fontWeight: '700' },
   titleMd: { mt: 6 },
-  hint: { fontSize: 14.5, lineHeight: 22, maxW: 420 },
+  hint: { fontSize: textSizes.compactLabelRaised, lineHeight: 22, maxW: 420 },
   hintTv: { maxW: 720 },
 });
 
@@ -130,8 +138,8 @@ const SHAPE = {
     badge: 56,
     glyph: 24,
     titleVariant: 'body' as const,
-    titleStyle: s.titleSm,
-    hintStyle: s.hint,
+    titleStyle: sDefinition.titleSm,
+    hintStyle: sDefinition.hint,
     actionMt: 6,
     inlinePad: 24,
   },
@@ -140,8 +148,8 @@ const SHAPE = {
     badge: 64,
     glyph: 26,
     titleVariant: 'title' as const,
-    titleStyle: s.titleMd,
-    hintStyle: s.hint,
+    titleStyle: sDefinition.titleMd,
+    hintStyle: sDefinition.hint,
     actionMt: 6,
     inlinePad: 64,
   },
@@ -151,7 +159,7 @@ const SHAPE = {
     glyph: 40,
     titleVariant: 'h2' as const,
     titleStyle: null,
-    hintStyle: s.hintTv,
+    hintStyle: sDefinition.hintTv,
     actionMt: 8,
     inlinePad: 96,
   },

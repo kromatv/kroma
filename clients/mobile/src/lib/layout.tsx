@@ -2,7 +2,7 @@
 // window width (useIsWide), never the device class: iPadOS windows resize
 // freely, so a narrow floating window must collapse back to single-column.
 
-import { Box, styles } from '@kromatv/ui/kit';
+import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import * as Device from 'expo-device';
 import { type ReactNode, useMemo } from 'react';
 import { type StyleProp, useWindowDimensions, type ViewStyle } from 'react-native';
@@ -81,6 +81,8 @@ export function SplitColumns({
   rightFlex?: number;
   style?: StyleProp<ViewStyle>;
 }>) {
+  const s = useStyles(sDefinition);
+
   const wide = useIsWide();
   if (!wide) {
     return (
@@ -98,7 +100,7 @@ export function SplitColumns({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   splitRow: { row: true, align: 'flex-start', gap: spacing.lg },
   splitCol: { gap: spacing.md },
 });

@@ -12,7 +12,7 @@ export interface ServerProbe {
 }
 
 export function useServerProbes(urls: string[]): Record<string, ServerProbe> {
-  const { renameServer } = useSession();
+  const { renameServer, requestLocale } = useSession();
   const [probes, setProbes] = useState<Record<string, ServerProbe>>({});
   const key = urls.join('|');
 
@@ -24,7 +24,9 @@ export function useServerProbes(urls: string[]): Record<string, ServerProbe> {
         const abort = new AbortController();
         const timer = setTimeout(() => abort.abort(), 4000);
         try {
-          const health = await makeClient(url).media.health({ signal: abort.signal });
+          const health = await makeClient(url, requestLocale()).media.health({
+            signal: abort.signal,
+          });
           if (cancelled) return;
           setProbes((prev) => ({ ...prev, [url]: { online: true, name: health.name } }));
           if (health.name) renameServer(url, health.name);
@@ -38,7 +40,7 @@ export function useServerProbes(urls: string[]): Record<string, ServerProbe> {
     return () => {
       cancelled = true;
     };
-  }, [key, renameServer]);
+  }, [key, renameServer, requestLocale]);
 
   return probes;
 }

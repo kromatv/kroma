@@ -1,5 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { FocusColumn, type IconName, ListRow, styles, Text } from '@kromatv/ui/kit';
+import { FocusColumn, type IconName, ListRow, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { type ReleaseRow, rowLabel } from '#tv/features/releases/releaseRows';
 
 export const ROW_ICON = {
@@ -8,7 +8,7 @@ export const ROW_ICON = {
   owner: 'server',
 } as const satisfies Record<ReleaseRow['kind'], IconName>;
 
-const s = styles({ rows: { gap: 12, mt: 36 } });
+const sDefinition = styles({ rows: { gap: 12, mt: 36 } });
 
 /** Focusing a row is what picks it. */
 export function ReleaseRowList({
@@ -16,6 +16,8 @@ export function ReleaseRowList({
   picked,
   onPick,
 }: Readonly<{ rows: readonly ReleaseRow[]; picked: number; onPick: (at: number) => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <FocusColumn style={s.rows}>

@@ -3,6 +3,8 @@ import { Box } from '#ui/components/atoms/box';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
 import { EmptyState } from '#ui/components/molecules/empty-state';
 import { styles } from '#ui/core';
+import { color as tokenColor } from '#ui/core/color';
+import { useStyles } from '#ui/core/styles';
 import { backdropBlur } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
 
@@ -34,6 +36,8 @@ function useSpinnerShown(waiting: boolean): boolean {
 /** What covers the picture while there is none: the failure across the stage,
  *  or the spinner. Nothing when the film is playing. */
 function StageOverlay({ error, hint, waiting = false, reason }: Readonly<StageOverlayProps>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const shown = useSpinnerShown(waiting && !error);
   if (error) {
@@ -55,7 +59,7 @@ function StageOverlay({ error, hint, waiting = false, reason }: Readonly<StageOv
           size={48}
           thickness={4}
           track="rgba(255, 255, 255, 0.14)"
-          fill="#F4B642"
+          fill={tokenColor('accent')}
           label={t(reason === 'buffering' ? 'player.buffering' : 'player.loading')}
         />
       </Box>
@@ -63,7 +67,7 @@ function StageOverlay({ error, hint, waiting = false, reason }: Readonly<StageOv
   );
 }
 
-const s = styles({ frost: backdropBlur(8) });
+const sDefinition = styles({ frost: backdropBlur(8) });
 
 export type { StageOverlayProps };
 export { StageOverlay };

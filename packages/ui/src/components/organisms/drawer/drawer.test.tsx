@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { Text } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { clearPressGuard } from '#ui/lib/press-guard';
+import { createInputTestHost } from '#ui/testing-input';
+
 import { Drawer } from './drawer';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(() => {
   cleanup();

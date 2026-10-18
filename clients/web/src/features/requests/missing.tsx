@@ -13,16 +13,17 @@ import {
 import { MissingSkeleton } from '#web/features/requests/missing-skeleton';
 import { type MissingActions, useMissingActions } from '#web/features/requests/use-missing-actions';
 import { useAuth } from '#web/shared/lib/auth';
-import { userQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 type SearchAllState = 'idle' | 'busy' | 'started';
 
 /** What is aired and not on disk, as the Missing tab of the requests page. */
 export function MissingList() {
+  const webRuntime = useWebRuntime();
   const t = useT();
   const { user, client } = useAuth();
-  const query = userQueries.missing();
+  const query = webRuntime.queries.userQueries.missing();
   const { data: entries, isPending } = useQuery({ ...query, refetchInterval: 30_000 });
   const canManage = !!user && hasPermission(user, 'requests.manage');
 

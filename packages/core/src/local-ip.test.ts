@@ -4,9 +4,7 @@ import { getLocalIPv4 } from './local-ip';
 describe('getLocalIPv4', () => {
   afterEach(() => {
     vi.useRealTimers();
-    for (const key of ['tizen', 'webOS', 'RTCPeerConnection']) {
-      delete (globalThis as Record<string, unknown>)[key];
-    }
+    vi.unstubAllGlobals();
   });
 
   it('resolves null when no platform network API is available (node)', async () => {
@@ -16,7 +14,7 @@ describe('getLocalIPv4', () => {
   // Tizen's `getPropertyValue(prop, onSuccess, onError)`. Wi-Fi is asked first: a
   // set that is plugged in AND associated answers both.
   function tizenWith(answers: Record<string, { ipAddress?: string } | 'error'>) {
-    (globalThis as Record<string, unknown>).tizen = {
+    vi.stubGlobal('tizen', {
       systeminfo: {
         getPropertyValue(
           prop: string,
@@ -28,7 +26,7 @@ describe('getLocalIPv4', () => {
           else onSuccess(a);
         },
       },
-    };
+    });
   }
 
   it('takes the Tizen Wi-Fi address when there is one', async () => {
@@ -61,45 +59,45 @@ describe('getLocalIPv4', () => {
   });
 
   it('keeps the first answer when the Tizen bridge fires its callback twice', async () => {
-    (globalThis as Record<string, unknown>).tizen = {
+    vi.stubGlobal('tizen', {
       systeminfo: {
         getPropertyValue(_prop: string, onSuccess: (v: { ipAddress?: string }) => void) {
           onSuccess({ ipAddress: '192.168.1.11' });
           onSuccess({ ipAddress: '192.168.1.22' });
         },
       },
-    };
+    });
     await expect(getLocalIPv4()).resolves.toBe('192.168.1.11');
   });
 
   it('gives up on a Tizen bridge that never calls back', async () => {
     vi.useFakeTimers();
-    (globalThis as Record<string, unknown>).tizen = { systeminfo: { getPropertyValue() {} } };
+    vi.stubGlobal('tizen', { systeminfo: { getPropertyValue() {} } });
     const pending = getLocalIPv4();
     await vi.advanceTimersByTimeAsync(1500);
     await expect(pending).resolves.toBeNull();
   });
 
   it('survives a Tizen bridge that throws outright', async () => {
-    (globalThis as Record<string, unknown>).tizen = {
+    vi.stubGlobal('tizen', {
       systeminfo: {
         getPropertyValue() {
           throw new Error('systeminfo unavailable');
         },
       },
-    };
+    });
     await expect(getLocalIPv4()).resolves.toBeNull();
   });
 
   function webOsWith(res: unknown, fail = false) {
-    (globalThis as Record<string, unknown>).webOS = {
+    vi.stubGlobal('webOS', {
       service: {
         request(_uri: string, opts: { onSuccess: (r: unknown) => void; onFailure: () => void }) {
           if (fail) opts.onFailure();
           else opts.onSuccess(res);
         },
       },
-    };
+    });
   }
 
   it('prefers the webOS wired address over the wireless one', async () => {
@@ -123,39 +121,42 @@ describe('getLocalIPv4', () => {
   });
 
   it('survives a webOS bridge whose request throws', async () => {
-    (globalThis as Record<string, unknown>).webOS = {
+    vi.stubGlobal('webOS', {
       service: {
         request() {
           throw new Error('luna bus unavailable');
         },
       },
-    };
+    });
     await expect(getLocalIPv4()).resolves.toBeNull();
   });
 
   it('gives up on a webOS bridge that never calls back', async () => {
     vi.useFakeTimers();
-    (globalThis as Record<string, unknown>).webOS = { service: { request() {} } };
+    vi.stubGlobal('webOS', { service: { request() {} } });
     const pending = getLocalIPv4();
     await vi.advanceTimersByTimeAsync(1500);
     await expect(pending).resolves.toBeNull();
   });
 
   function rtcEmitting(candidates: (string | null)[]) {
-    (globalThis as Record<string, unknown>).RTCPeerConnection = class {
-      onicecandidate: ((e: { candidate: { candidate: string } | null }) => void) | null = null;
-      createDataChannel() {}
-      close() {}
-      setLocalDescription() {}
-      async createOffer() {
-        queueMicrotask(() => {
-          for (const c of candidates) {
-            this.onicecandidate?.({ candidate: c === null ? null : { candidate: c } });
-          }
-        });
-        return {};
-      }
-    };
+    vi.stubGlobal(
+      'RTCPeerConnection',
+      class {
+        onicecandidate: ((e: { candidate: { candidate: string } | null }) => void) | null = null;
+        createDataChannel() {}
+        close() {}
+        setLocalDescription() {}
+        async createOffer() {
+          queueMicrotask(() => {
+            for (const c of candidates) {
+              this.onicecandidate?.({ candidate: c === null ? null : { candidate: c } });
+            }
+          });
+          return {};
+        }
+      },
+    );
   }
 
   it('reads a private IPv4 out of an ICE candidate', async () => {
@@ -191,11 +192,14 @@ describe('getLocalIPv4', () => {
   });
 
   it('resolves null when the peer connection cannot be built', async () => {
-    (globalThis as Record<string, unknown>).RTCPeerConnection = class {
-      constructor() {
-        throw new Error('no webrtc');
-      }
-    };
+    vi.stubGlobal(
+      'RTCPeerConnection',
+      class {
+        constructor() {
+          throw new Error('no webrtc');
+        }
+      },
+    );
     await expect(getLocalIPv4()).resolves.toBeNull();
   });
 });

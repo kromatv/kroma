@@ -11,39 +11,46 @@ import {
   Row,
   styles,
   Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
-
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
 import { initials } from '#web/features/catalog/detail';
 import { PersonProfile } from '#web/features/catalog/person-profile';
-import { imageUrl, isAuthed, kromaClient, toMovieView, toShowView } from '#web/shared/lib/api';
+import { imageUrl, isAuthed, toMovieView, toShowView } from '#web/shared/lib/api';
 import { wash } from '#web/shared/lib/art-styles';
-import { catalogQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+
 import { Image, PageFrame, PageSkeleton } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 const PORTRAIT_W = 104;
 
 export const Route = createFileRoute('/_app/people/$person')({
-  loader: async ({ params, context: { queryClient } }) => {
+  loader: async ({ params, context: { runtime: webRuntime, queryClient } }) => {
     if (!isAuthed()) throw redirect({ to: '/' });
-    void queryClient.prefetchQuery(catalogQueries.personDetails(params.person));
-    await queryClient.ensureQueryData(catalogQueries.personCredits(params.person));
+    void queryClient.prefetchQuery(webRuntime.queries.catalogQueries.personDetails(params.person));
+    await queryClient.ensureQueryData(
+      webRuntime.queries.catalogQueries.personCredits(params.person),
+    );
   },
   pendingComponent: () => <PageSkeleton rails={0} />,
   component: PersonPage,
 });
 
 function PersonPage() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const { person } = Route.useParams();
-  const { data } = useSuspenseQuery(catalogQueries.personCredits(person));
-  const { data: profile } = useQuery(catalogQueries.personDetails(person));
+  const { data } = useSuspenseQuery(webRuntime.queries.catalogQueries.personCredits(person));
+  const { data: profile } = useQuery(webRuntime.queries.catalogQueries.personDetails(person));
   const detail = profile?.person ?? null;
   const tmdbCredits = profile?.credits ?? [];
-  const c = kromaClient();
+  const c = webRuntime.client;
   const { name: creditedName, results } = data;
   const entries: CatalogEntry[] = results.map((hit) =>
     hit.type === 'show'
@@ -121,7 +128,7 @@ function renderPersonBody(
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   credit: { gap: 8 },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 20 },
   sheen: {
@@ -130,6 +137,8 @@ const s = styles({
 });
 
 function TmdbFilmography({ credits }: Readonly<{ credits: readonly TmdbCredit[] }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <section>
@@ -183,8 +192,13 @@ function TmdbFilmography({ credits }: Readonly<{ credits: readonly TmdbCredit[] 
 }
 
 function PersonInitials({ name, g1, g2 }: Readonly<{ name: string; g1: string; g2: string }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   return (
-    <Box fill center style={wash(g1, g2)}>
+    <Box fill center style={wash(g1, g2, undefined, scope)}>
       <Box fill style={s.sheen} />
       <Text variant="heading" color="white/90">
         {initials(name)}

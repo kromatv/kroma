@@ -8,18 +8,20 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ViewProps } from 'react-native';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { userQueries } from '#web/shared/lib/queries';
 import { requestStatusMeta, seasonsSummary } from '#web/shared/lib/request-status';
+import { useKromaClient, useWebRuntime } from '#web/shared/lib/web-runtime';
 import { RequestCard, RequestCardSkeleton } from '#web/shared/ui/request-card';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 import { RouteLink } from '#web/shared/ui/route-link';
 
 /** The reader's own requests, as the first tab of the requests page. */
 export function MyRequestsList() {
+  const eventClient = useKromaClient();
+  const webRuntime = useWebRuntime();
   const t = useT();
   const { client } = useAuth();
   const queryClient = useQueryClient();
-  const requestsQuery = userQueries.myRequests();
+  const requestsQuery = webRuntime.queries.userQueries.myRequests();
   const { data: requests, isPending } = useQuery({
     ...requestsQuery,
     refetchInterval: 15000,
@@ -31,6 +33,8 @@ export function MyRequestsList() {
   const lastReloadRef = useRef(0);
   useEffect(() => {
     const ev = new KromaEvents<ServerEvent | DownloadProgressEvent>(apiBase(), {
+      token: () => eventClient.sessionToken,
+      refresh: () => eventClient.refreshSession(),
       onEvent: (e) => {
         if (e.type === 'request.updated') {
           const now = Date.now();
@@ -45,7 +49,7 @@ export function MyRequestsList() {
     });
     ev.connect();
     return () => ev.close();
-  }, [queryClient, requestsQuery.queryKey]);
+  }, [queryClient, requestsQuery.queryKey, eventClient.sessionToken, eventClient.refreshSession]);
 
   const cancel = (req: MediaRequest) => {
     setBusyId(req.id);

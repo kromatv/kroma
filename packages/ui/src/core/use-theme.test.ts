@@ -1,10 +1,15 @@
 // @vitest-environment jsdom
-import { act, renderHook } from '@testing-library/react';
+
+import { act } from '@testing-library/react';
 import { createElement, type ReactNode, useEffect } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createTheme, KROMA, setTheme } from './theme';
-import { applyMode, writeMode } from './theme-mode';
+import { createStyleTestHost } from '#ui/testing-style';
+import { createTheme, KROMA } from './theme';
+
 import { ThemeProvider, useSystemGround, useTheme } from './use-theme';
+
+const styleHost = createStyleTestHost();
+const { renderHook, setTheme, applyMode, writeMode } = styleHost;
 
 const OCEAN = createTheme({ colors: { accent: '#3FB6F2' } });
 
@@ -80,7 +85,9 @@ describe('useSystemGround', () => {
 
     wake();
 
-    expect(document.documentElement.dataset.theme).toBeUndefined();
+    expect(
+      styleHost.runtime.mode() === 'system' ? undefined : styleHost.runtime.mode(),
+    ).toBeUndefined();
   });
 
   it('leaves a ground the visitor pinned alone', () => {
@@ -89,7 +96,9 @@ describe('useSystemGround', () => {
 
     wake();
 
-    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(styleHost.runtime.mode() === 'system' ? undefined : styleHost.runtime.mode()).toBe(
+      'light',
+    );
   });
 
   it('does not repaint while the app is in the background', () => {
@@ -99,7 +108,9 @@ describe('useSystemGround', () => {
 
     wake();
 
-    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(styleHost.runtime.mode() === 'system' ? undefined : styleHost.runtime.mode()).toBe(
+      'light',
+    );
   });
 
   it('stops listening once the app root unmounts', () => {
@@ -109,6 +120,8 @@ describe('useSystemGround', () => {
 
     wake();
 
-    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(styleHost.runtime.mode() === 'system' ? undefined : styleHost.runtime.mode()).toBe(
+      'light',
+    );
   });
 });

@@ -6,7 +6,7 @@
 // stale position as a real one.
 
 import { describe, expect, it } from 'vitest';
-import { focusBox, focusSeq, noteFocus } from './focus-here';
+import { createFocusProbe } from './focus-here';
 
 describe('focus-here (native)', () => {
   it('reports no box, whatever it is told holds the focus', () => {
@@ -26,3 +26,5 @@ describe('focus-here (native)', () => {
     expect(() => noteFocus(undefined)).not.toThrow();
   });
 });
+
+const { box: focusBox, seq: focusSeq, noteFocus } = createFocusProbe();

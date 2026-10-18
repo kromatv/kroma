@@ -15,8 +15,8 @@
 // positions belong to generated code.
 
 import { readdirSync, readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { join, relative, resolve } from 'node:path';
+import { babelAt } from './source-scan';
 
 /** One prop a component allocates per item, per render. */
 interface Alloc {
@@ -38,9 +38,6 @@ interface BabelNode {
 interface BabelPath {
   node: BabelNode;
   parentPath?: BabelPath;
-}
-interface BabelCore {
-  transformAsync(src: string, options: object): Promise<{ code?: string } | null>;
 }
 
 function kindOf(path: BabelPath): Alloc['kind'] | null {
@@ -97,23 +94,14 @@ function* sources(dir: string): Generator<string> {
   }
 }
 
-// Same trick as scripts/compiler-coverage.ts: the plugin belongs to
-// @kromatv/bundler, and babel itself is only reachable through the plugin's tree.
-function babelOf(root: string) {
-  const bundlerRequire = createRequire(resolve(root, 'packages/bundler/package.json'));
-  const compiler = bundlerRequire.resolve('babel-plugin-react-compiler');
-  const pluginRequire = createRequire(compiler);
-  return {
-    babel: pluginRequire('@babel/core') as BabelCore,
-    compiler,
-    presetTs: pluginRequire.resolve('@babel/preset-typescript'),
-  };
-}
-
 /** Every prop the kit still allocates inside a list render once the compiler has
  * had its pass, with the line in the SOURCE that wrote it. */
 async function scanKit(root: string): Promise<Alloc[]> {
-  const { babel, compiler, presetTs } = babelOf(root);
+  const {
+    core: babel,
+    compile,
+    presetTs,
+  } = babelAt([resolve(root, 'packages/bundler/package.json')]);
   const src = resolve(root, 'packages/ui/src');
   const ts = {
     presets: [[presetTs, { isTSX: true, allExtensions: true }]],
@@ -134,11 +122,7 @@ async function scanKit(root: string): Promise<Alloc[]> {
         filename: file,
         plugins: [collector(written, name)],
       });
-      const compiled = await babel.transformAsync(code, {
-        ...ts,
-        filename: file,
-        plugins: [[compiler, { target: '19' }]],
-      });
+      const compiled = compile(code, file);
       await babel.transformAsync(compiled?.code ?? '', {
         ...ts,
         filename: file,

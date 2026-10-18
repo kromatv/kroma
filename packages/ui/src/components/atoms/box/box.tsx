@@ -1,3 +1,6 @@
+import { useStyleScope } from '#ui/core/style-context';
+import type { StyleScope } from '#ui/core/style-scope';
+
 // <Box>: the layout primitive.
 //
 // A React Native <View> that takes the design's vocabulary directly, so a screen
@@ -10,6 +13,7 @@
 import type { ReactNode, Ref } from 'react';
 import { type StyleProp, View, type ViewProps, type ViewStyle } from 'react-native';
 import { type BoxStyleProps, splitShorthand, styles, useBreakpointStep } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { sharedBoxStyle } from '#ui/lib/box-style';
 import { Slot } from '#ui/lib/slot';
 
@@ -31,7 +35,7 @@ interface BoxProps extends BoxStyleProps, Omit<ViewProps, 'style'> {
 
 // A style, never the prop of the same name: react-native-web deprecated the
 // prop form, and every target has read it off the style since RN 0.71.
-const HIT = styles({
+const HITDefinition = styles({
   auto: { pointerEvents: 'auto' },
   none: { pointerEvents: 'none' },
   'box-none': { pointerEvents: 'box-none' },
@@ -39,6 +43,9 @@ const HIT = styles({
 });
 
 function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonly<BoxProps>) {
+  const HIT = useStyles(HITDefinition);
+  const scope = useStyleScope();
+
   const split = splitShorthand(props);
   const Host = asChild ? Slot : View;
   const hit = pointerEvents ? HIT[pointerEvents] : null;
@@ -53,7 +60,7 @@ function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonl
     );
   }
   return (
-    <Host {...split.rest} ref={ref} style={[layoutOf(split, 0), hit, style]}>
+    <Host {...split.rest} ref={ref} style={[layoutOf(split, 0, scope), hit, style]}>
       {children}
     </Host>
   );
@@ -70,9 +77,10 @@ interface FluidBoxProps {
 }
 
 function FluidBox({ host: Host, split, style, ref, children }: Readonly<FluidBoxProps>) {
+  const scope = useStyleScope();
   const step = useBreakpointStep(split.breakpoints);
   return (
-    <Host {...split.rest} ref={ref} style={[layoutOf(split, step), style]}>
+    <Host {...split.rest} ref={ref} style={[layoutOf(split, step, scope), style]}>
       {children}
     </Host>
   );
@@ -92,10 +100,12 @@ function Column(props: Readonly<BoxProps>) {
 
 /** Pushes whatever follows it to the far end of a <Row>. */
 function Spacer() {
+  const s = useStyles(sDefinition);
+
   return <View style={s.spacer} />;
 }
 
-const s = styles({ spacer: { flex: true } });
+const sDefinition = styles({ spacer: { flex: true } });
 
 // Anything the vocabulary does not name is a real View prop and is forwarded
 // untouched (onLayout, pointerEvents, testID, accessibility...). The resolved
@@ -104,10 +114,10 @@ const s = styles({ spacer: { flex: true } });
 // rather than on the finished style, since the key is thrown away on a hit. The
 // step joins that key only for a box that states a value per breakpoint, so a
 // flat one still mints the single entry it always has.
-function layoutOf(split: Split, step: number): ViewStyle {
+function layoutOf(split: Split, step: number, scope: StyleScope): ViewStyle {
   if (!split.key) return EMPTY;
   const key = split.breakpoints === 0 ? split.key : `${step}|${split.key}`;
-  return sharedBoxStyle(key, split.shorthand as BoxStyleProps);
+  return sharedBoxStyle(key, split.shorthand as BoxStyleProps, scope);
 }
 
 // A box with no shorthand at all still must not mint an object per render.

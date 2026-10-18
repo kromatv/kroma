@@ -1,16 +1,26 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { kromaClient } from '#web/shared/lib/api';
-import { userQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 export function useMarkReleaseSeen(unseen: string | null): void {
+  const webRuntime = useWebRuntime();
+
   const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!unseen) return;
-    void kromaClient()
-      .releases.markSeen(unseen)
-      .then(() => queryClient.invalidateQueries({ queryKey: userQueries.releases().queryKey }))
+    void webRuntime.client.releases
+      .markSeen(unseen)
+      .then(() =>
+        queryClient.invalidateQueries({
+          queryKey: webRuntime.queries.userQueries.releases().queryKey,
+        }),
+      )
       .catch(() => undefined);
-  }, [unseen, queryClient]);
+  }, [
+    unseen,
+    queryClient,
+    webRuntime.queries.userQueries.releases,
+    webRuntime.client.releases.markSeen,
+  ]);
 }

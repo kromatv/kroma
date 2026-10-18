@@ -39,6 +39,15 @@ vi.mock('#web/shared/lib/api', () => ({
   toMovieView: (_c: unknown, m: unknown) => m,
   toShowView: (_c: unknown, s: unknown) => s,
 }));
+vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
+  const original = await importOriginal<typeof import('#web/shared/lib/web-runtime')>();
+  const { createWebTestRuntime } = await import('#web/shared/lib/web-runtime.fixture');
+  const { QueryClient } =
+    await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+  const queryCache = new QueryClient();
+  const runtime = createWebTestRuntime(c, () => queryCache);
+  return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
+});
 
 const invalidateQueries = vi.hoisted(() => vi.fn(async () => undefined));
 vi.mock('@tanstack/react-query', () => ({
@@ -46,7 +55,10 @@ vi.mock('@tanstack/react-query', () => ({
   queryOptions: <T>(options: T) => options,
 }));
 
-import { catalogQueries } from './queries';
+import { createQueries } from './queries';
+
+const { catalogQueries } = createQueries(c);
+
 import { useCatalogLiveRefresh } from './use-live-refresh';
 
 const COALESCE_MS = 600;

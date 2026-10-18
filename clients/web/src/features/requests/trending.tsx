@@ -4,7 +4,7 @@
 
 import type { DiscoverEntry, DiscoverType } from '@kromatv/client/discovery';
 import { useT } from '@kromatv/ui';
-import { Box, classes, Icon, Row, styles, Text } from '@kromatv/ui/kit';
+import { Box, classes, Icon, Row, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
@@ -14,6 +14,8 @@ import { PosterRail, SkeletonRow } from '#web/shared/ui';
 const CAPTION_H = 52;
 
 function RailHeading({ title, action }: Readonly<{ title: string; action?: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Row between gap={12} mt={36} mb={16}>
       {/* Still an <h2>: <Text accessibilityRole="header"> can only render an h1. */}
@@ -33,6 +35,8 @@ function TrendRail({
   entries,
   linkType,
 }: Readonly<{ title: string; entries: DiscoverEntry[]; linkType: 'movie' | 'tv' }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   if (entries.length === 0) return null;
   return (
@@ -62,6 +66,8 @@ export function TrendingBrowse({
   loading,
   type,
 }: Readonly<{ entries: DiscoverEntry[]; loading: boolean; type: DiscoverType }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
 
   if (loading) {
@@ -90,7 +96,7 @@ export function TrendingBrowse({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   heading: { m: 0 },
   inlineLink: {
     display: 'inline-flex',

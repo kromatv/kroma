@@ -1,4 +1,4 @@
-import { Box, Button, Field, styles } from '@kromatv/ui/kit';
+import { Box, Button, Field, styles, useStyles } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { type Note, ProfileNote } from '#mobile/components/profile/ProfileNote';
 import { useT } from '#mobile/lib/i18n';
@@ -6,6 +6,8 @@ import { useClient } from '#mobile/lib/session';
 import { radius, spacing } from '#mobile/lib/theme';
 
 export function PasswordForm() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const [current, setCurrent] = useState('');
@@ -58,7 +60,7 @@ export function PasswordForm() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   card: { gap: 10, p: spacing.md, bg: 'surface1', radius: radius.lg, border: 'border' },
   submit: { mt: 4 },
 });

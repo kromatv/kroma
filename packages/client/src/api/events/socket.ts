@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { sessionRefresh, sessionToken } from '../../core/session';
 import type { CastClientMessage } from '../cast';
 import type { ServerEvent } from './schemas';
 
@@ -72,10 +71,9 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
     let ws: WebSocket;
     // A browser can't set headers on a WS handshake, so the bearer rides as a
     // subprotocol the server validates and echoes back (see server ws.rs), read
-    // fresh on each (re)connect. A multi-server client (the TV) must supply
-    // `token`: the fallback reads the default store, which would authenticate it
-    // against the wrong server.
-    const token = this.refreshedToken ?? this.opts.token?.() ?? sessionToken();
+    // fresh from the owning client on each (re)connect. Every authenticated
+    // consumer supplies `token`; no process-wide credential fallback exists.
+    const token = this.refreshedToken ?? this.opts.token?.();
     if (!token) {
       this.waitForToken();
       return;
@@ -107,7 +105,7 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
       // The server answers an expired bearer with a 401 on the upgrade (ws.rs),
       // which a WebSocket surfaces as a plain close carrying no readable status:
       // closing without ever opening is the only sign the bearer may be at fault.
-      const refresh = this.opts.refresh ?? sessionRefresh();
+      const refresh = this.opts.refresh;
       if (this.closed || opened || this.refreshSpent || !refresh) {
         this.scheduleReconnect();
         return;

@@ -5,7 +5,15 @@
 import type { KromaClient } from '@kromatv/client';
 import type { ContinueItem, MediaItem, SectionItem, Show } from '@kromatv/client/media';
 import { episodeTag, sizedImageUrl } from '@kromatv/core';
-import { Box, styles, Text, VirtualRail, WatchedBadge } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  styles,
+  Text,
+  useStyles,
+  VirtualRail,
+  WatchedBadge,
+} from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
@@ -74,6 +82,8 @@ export const PosterCard = memo(function PosterCard({
   width: number | '100%';
   labelled?: boolean;
 }>) {
+  const s = useStyles(sDefinition);
+
   const router = useRouter();
   const size =
     typeof width === 'number'
@@ -139,6 +149,8 @@ export function ContinueCard({
   width: number | '100%';
   artWidth: number;
 }>) {
+  const s = useStyles(sDefinition);
+
   const { play } = usePlay();
   const { item, positionMs, durationMs } = entry;
   const total = durationMs ?? item.durationMs ?? 0;
@@ -198,13 +210,21 @@ export function ContinueRail({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   art: { radius: radius.sm, overflow: 'hidden' },
   label: { h: POSTER_LABEL_H, pt: 6 },
   labelTitle: { ...type.caption, color: 'text', fontWeight: '600' },
   labelSub: { ...type.small },
   cardTitle: { ...type.caption, mt: 6, color: 'text' },
   cardSub: { ...type.small, mt: 1 },
-  progressTrack: { absolute: true, right: 6, bottom: 6, left: 6, h: 3, bg: 'text/30', radius: 2 },
-  progressFill: { h: 3, bg: 'accent', radius: 2 },
+  progressTrack: {
+    absolute: true,
+    right: 6,
+    bottom: 6,
+    left: 6,
+    h: 3,
+    bg: 'text/30',
+    radius: cornerRadius.track,
+  },
+  progressFill: { h: 3, bg: 'accent', radius: cornerRadius.track },
 });

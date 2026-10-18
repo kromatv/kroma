@@ -1,7 +1,15 @@
 // The shell: what is selected, where that lives in the URL, and where the three
 // regions go. One story on the canvas is `story-view.tsx`.
 
-import { Box, configureRemote, Focusable, FocusScope, Resizable, styles } from '@kromatv/ui/kit';
+import {
+  Box,
+  Focusable,
+  FocusScope,
+  KitProvider,
+  Resizable,
+  styles,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { RULE } from './chrome';
 import { CommandPalette, useCommandKey } from './command';
@@ -35,14 +43,12 @@ interface WorkbenchProps {
 }
 
 function Workbench(props: Readonly<WorkbenchProps>) {
-  // In render rather than at module load or in an effect: a module-scope call
-  // would reconfigure the host app's navigator on mere import, and an effect
-  // runs after the children that subscribe to the remote.
-  useState(configureRemote);
   return (
-    <FocusScope>
-      <WorkbenchShell {...props} />
-    </FocusScope>
+    <KitProvider config={{ remote: true }}>
+      <FocusScope>
+        <WorkbenchShell {...props} />
+      </FocusScope>
+    </KitProvider>
   );
 }
 
@@ -267,6 +273,8 @@ function WorkbenchShell({
 }
 
 function NavDrawer({ onClose, children }: Readonly<{ onClose: () => void; children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     // `z` above the toolbar's 30 and below the palette's 40. The tree hangs
     // directly off this row: a wrapper box between them collapses it, because a
@@ -282,7 +290,7 @@ function NavDrawer({ onClose, children }: Readonly<{ onClose: () => void; childr
 // arrangements, and each is stored per panel count anyway.
 const COLUMN_STORE = 'kroma:workbench-columns';
 const DOCK_STORE = 'kroma:workbench-dock';
-const s = styles({ scrim: { flex: true, bg: 'bg/60' } });
+const sDefinition = styles({ scrim: { flex: true, bg: 'bg/60' } });
 
 // What the panel can do while there is no story to do it to.
 const NO_CONTROLS = { show: false, reset: false } as const;

@@ -11,6 +11,7 @@ import {
   RING_ROOM,
   SURFACE_WIDTH,
   styles,
+  useStyles,
   VirtualGrid,
 } from '@kromatv/ui/kit';
 import type { ChoiceItem } from '#tv/app/settings/items';
@@ -30,7 +31,7 @@ const LIST_HEIGHT = (ROW_HEIGHT + ROW_GAP) * VISIBLE_ROWS;
 // glyph.
 const ROW_WIDTH = SURFACE_WIDTH.lg - DIALOG_PAD * 2;
 
-const s = styles({
+const sDefinition = styles({
   list: { h: LIST_HEIGHT, w: ROW_WIDTH },
   row: { h: ROW_HEIGHT, w: ROW_WIDTH },
 });
@@ -54,6 +55,8 @@ export function ChoicePicker({
   value,
   onPick,
 }: Readonly<ChoicePickerProps>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   // Unmounted while closed rather than hidden, so `initialIndex` below fires on
   // every opening instead of only the first.

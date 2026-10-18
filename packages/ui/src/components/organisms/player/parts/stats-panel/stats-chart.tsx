@@ -1,3 +1,6 @@
+import { color as tokenColor } from '#ui/core/color';
+import { useStyles } from '#ui/core/styles';
+
 // One live chart of the stats panel, with every series sharing its axis. Stays
 // SVG rather than canvas/Skia: a native canvas module would cost Tizen and
 // webOS their renderer to reclaim microseconds (see the render call below for
@@ -21,7 +24,7 @@ import {
 } from '#ui/components/organisms/player/lib/chart-geometry';
 import type { PlayerMeter } from '#ui/components/organisms/player/types';
 import { type ColorValue, styles } from '#ui/core';
-import { SERIES_COLORS } from '#ui/core/tokens';
+import { SERIES_COLORS, typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 import { Circle, Line, Path, Svg } from '#ui/lib/svg';
 
 // Tall enough for a trend to have shape, short enough that two charts and
@@ -67,6 +70,8 @@ interface Resolved {
 }
 
 export function StatsChart({ meters, history, width, slot }: Readonly<StatsChartProps>) {
+  const sx = useStyles(sxDefinition);
+
   const plotW = Math.max(1, width - DOT_ROOM);
   const box: ChartBox = { width: plotW, height: PLOT_H, padY: PAD_Y };
 
@@ -114,7 +119,7 @@ export function StatsChart({ meters, history, width, slot }: Readonly<StatsChart
             y1={drawn.refY}
             x2={plotW + DOT_ROOM}
             y2={drawn.refY}
-            stroke="rgba(244, 243, 240, 0.18)"
+            stroke={tokenColor('text/18')}
             strokeWidth={1}
           />
         ) : null}
@@ -212,19 +217,19 @@ export const STATS_CHART_HEIGHT = PLOT_H;
 
 export type { Extent } from '#ui/components/organisms/player/lib/chart-geometry';
 
-const sx = styles({
+const sxDefinition = styles({
   chartLabel: {
     font: 'ui',
-    fontSize: 10,
+    fontSize: textSizes.micro,
     fontWeight: '700',
     letterSpacing: 1.4,
     textTransform: 'uppercase',
   },
   chartValue: {
     font: 'ui',
-    fontSize: 13,
+    fontSize: textRoles.meta.size,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
-  chartFoot: { font: 'ui', fontSize: 10, fontWeight: '500' },
+  chartFoot: { font: 'ui', fontSize: textSizes.micro, fontWeight: '500' },
 });

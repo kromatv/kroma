@@ -5,7 +5,7 @@
 // article is the one place in the workbench wide enough to answer it. A host
 // puts it wherever it likes by rendering this in a `.page.mdx`.
 
-import { Box, ListRow, styles, Text } from '@kromatv/ui/kit';
+import { Box, ListRow, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { space } from '@kromatv/ui/tokens';
 import { agoLabel, BUCKETS, bucketOf, dayLabel, type HistoryRow } from './history';
 import { useKitHistory } from './source';
@@ -14,6 +14,8 @@ import { useKitHistory } from './source';
  * Renders nothing where the build read no history - on Metro, which has no
  * build-time reader at all. */
 function RecentChanges() {
+  const s = useStyles(sDefinition);
+
   const kit = useKitHistory();
   if (!kit) return null;
   if (kit.rows.length === 0) return <Nothing shallow={kit.shallow} />;
@@ -46,6 +48,8 @@ function RecentChanges() {
 }
 
 function Row({ row, onOpen }: Readonly<{ row: HistoryRow; onOpen: (row: HistoryRow) => void }>) {
+  const s = useStyles(sDefinition);
+
   const latest = row.entry.commits[0];
   return (
     <ListRow.Root icon={row.page ? 'book' : 'components'} onPress={() => onOpen(row)}>
@@ -71,6 +75,8 @@ const changedLabel = (row: HistoryRow): string =>
   row.entry.changed ? agoLabel(row.entry.changed) : 'uncommitted';
 
 function Nothing({ shallow }: Readonly<{ shallow: boolean }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box p={space[4]} radius="md" bg="surface1" style={s.nothing}>
       <Text variant="meta" color="textDim">
@@ -82,7 +88,7 @@ function Nothing({ shallow }: Readonly<{ shallow: boolean }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   count: { fontSize: 11 },
   when: { fontSize: 12, fontWeight: '600' },
   added: { fontSize: 11 },

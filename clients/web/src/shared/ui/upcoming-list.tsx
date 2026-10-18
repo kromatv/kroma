@@ -10,9 +10,9 @@ import {
   shortDayLabel,
 } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
-import { Box, classes, EmptyState, Icon, Row, styles, Text } from '@kromatv/ui/kit';
+import { Box, classes, EmptyState, Icon, Row, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { userQueries } from '#web/shared/lib/queries';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { RequestCard, RequestCardSkeleton } from '#web/shared/ui/request-card';
 import { RouteLink } from '#web/shared/ui/route-link';
 
@@ -21,10 +21,12 @@ const IMMINENT_DAYS = 7;
 /** What is due to land, grouped by month: the reader's requests, and for a
  *  library manager the titles the server follows too. */
 export function UpcomingList() {
+  const webRuntime = useWebRuntime();
+  const s = useStyles(sDefinition);
   const t = useT();
   const locale = useLocale();
   const { data: entries, isPending } = useQuery({
-    ...userQueries.calendar(),
+    ...webRuntime.queries.userQueries.calendar(),
     refetchInterval: 60_000,
   });
 
@@ -119,4 +121,4 @@ function CalendarRow({ entry, locale }: Readonly<{ entry: CalendarEntry; locale:
   );
 }
 
-const s = styles({ heading: { m: 0 } });
+const sDefinition = styles({ heading: { m: 0 } });

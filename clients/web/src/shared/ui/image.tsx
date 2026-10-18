@@ -2,7 +2,7 @@
 // and owns the fade, cross-fade, fallback and sanitising. `fill` stretches the
 // box itself to a positioned parent.
 
-import { Box, Img, type ImgProps, styles } from '@kromatv/ui/kit';
+import { Box, Img, type ImgProps, styles, useStyles } from '@kromatv/ui/kit';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 export interface ImageProps extends Omit<ImgProps, 'fill' | 'style'> {
@@ -10,12 +10,14 @@ export interface ImageProps extends Omit<ImgProps, 'fill' | 'style'> {
   fill?: boolean;
 }
 
-const s = styles({
+const sDefinition = styles({
   box: { position: 'relative', overflow: 'hidden' },
   fill: { fill: true, overflow: 'hidden' },
 });
 
 export function Image({ style, fill = false, ...img }: Readonly<ImageProps>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={[fill ? s.fill : s.box, style]}>
       <Img fill {...img} />

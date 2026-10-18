@@ -5,6 +5,7 @@ import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-foc
 import { audioFilterLabels } from '#ui/components/organisms/player/lib/audio-filter';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import type { AudioFilterMode } from '#ui/components/organisms/player/types';
+import { useStyles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
 import { panel } from './panel-style';
 import { SelectRow } from './select-row';
@@ -26,6 +27,8 @@ export function AudioFilterPanel({
   onBack,
   ref,
 }: Readonly<AudioFilterPanelProps>) {
+  const panelScoped = useStyles(panel);
+
   const t = useT();
   const labels = audioFilterLabels(t);
   const pick = (i: number) => {
@@ -38,7 +41,7 @@ export function AudioFilterPanel({
 
   return (
     <Box>
-      <Box style={panel.panelList}>
+      <Box style={panelScoped.panelList}>
         {MODES.map((m, i) => (
           <SelectRow
             key={m}
@@ -51,7 +54,7 @@ export function AudioFilterPanel({
           />
         ))}
       </Box>
-      <Text style={panel.panelHint}>{t('player.audioFilterHint')}</Text>
+      <Text style={panelScoped.panelHint}>{t('player.audioFilterHint')}</Text>
     </Box>
   );
 }

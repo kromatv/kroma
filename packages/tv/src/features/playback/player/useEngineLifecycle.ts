@@ -8,12 +8,10 @@ import {
   preferredAudioIndex,
 } from '@kromatv/core';
 import { storedAudioFilter } from '@kromatv/ui';
+import { useDeviceStore } from '@kromatv/ui/device-store';
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import {
-  type EnginePref,
-  getEnginePref,
-  setEnginePref as persistEnginePref,
-} from '#tv/app/enginePref';
+import { type EnginePref, useEnginePref } from '#tv/app/enginePref';
+import { usePlaybackCapabilities } from '#tv/app/providers/playbackCapabilities';
 import { createTvEngine, type EnginePlan, planEngine } from '#tv/features/playback/player/backend';
 import { detectTvEnv } from '#tv/features/playback/player/detectTvEnv';
 import {
@@ -66,6 +64,9 @@ export function useEngineLifecycle(
   item: MediaItem,
   audioLanguage?: string | null,
 ): EngineLifecycle {
+  const { get: getEnginePref, set: persistEnginePref } = useEnginePref();
+  const deviceStore = useDeviceStore();
+  const playbackCapabilities = usePlaybackCapabilities();
   const videoRef = useRef<HTMLVideoElement>(null);
   const engineRef = useRef<TvEngine | null>(null);
   const startedRef = useRef(false);
@@ -120,7 +121,7 @@ export function useEngineLifecycle(
   // from the fallback below because it would answer the frame the hardware
   // refused with its own software decoder, which on a set that HAS a ceiling is a
   // slideshow rather than a film.
-  const overrun = beyondDecoder(item) !== null;
+  const overrun = beyondDecoder(item, playbackCapabilities) !== null;
   // Both ways a title can die end here: the engine reporting an error, and the load
   // watchdog giving up on one that never errors and never becomes ready - which is
   // precisely the silently-undecodable case this engine exists for. Only from
@@ -133,11 +134,14 @@ export function useEngineLifecycle(
     }
     setError(failure);
   });
-  const plan = planEngine(item, env, fellBackToVlc ? 'vlc' : enginePref);
+  const plan = planEngine(item, env, fellBackToVlc ? 'vlc' : enginePref, playbackCapabilities);
   const { surface, playbackMode, deviceLabel, rebuildKey } = plan;
   const durationSec = item.durationMs ? item.durationMs / 1000 : 0;
   // Remux-only server: an undecodable video codec here truly cannot play.
-  const playVerdict = useMemo(() => canDirectPlay(item), [item]);
+  const playVerdict = useMemo(
+    () => canDirectPlay(item, playbackCapabilities),
+    [item, playbackCapabilities],
+  );
   const failure: PlayerFailure =
     surface === 'video' && !playVerdict.canDirectPlay
       ? playVerdict
@@ -191,6 +195,7 @@ export function useEngineLifecycle(
     };
 
     const engine = createTvEngine({
+      capabilities: playbackCapabilities,
       plan,
       client,
       item,
@@ -198,7 +203,7 @@ export function useEngineLifecycle(
       rendition: renditionFor(item, audioIndexRef.current),
       startSec,
       // Read at build time because AVPlay picks its source from it.
-      audioFilter: storedAudioFilter(),
+      audioFilter: storedAudioFilter(deviceStore),
       dom: { video: videoRef.current, nativeHls: env.nativeHls },
       listeners,
     });
@@ -210,7 +215,16 @@ export function useEngineLifecycle(
       engine.destroy();
     };
     // `rebuildKey` stands in for every backend flag the plan resolved.
-  }, [client, item, rebuildKey, durationSec, startSec, failure.messageKey]);
+  }, [
+    client,
+    item,
+    rebuildKey,
+    durationSec,
+    startSec,
+    failure.messageKey,
+    playbackCapabilities,
+    deviceStore,
+  ]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: audioPickNonce is an intentional dep, not read in the body; it carries the pick that landed on the rendition already playing, which AVPlay's direct source has to re-assert.
   useEffect(() => {
@@ -256,7 +270,7 @@ export function useEngineLifecycle(
       setVlcFallbackFor(null);
       setEnginePref(p);
     },
-    [enginePref, setStartSec],
+    [enginePref, setStartSec, persistEnginePref],
   );
 
   return {

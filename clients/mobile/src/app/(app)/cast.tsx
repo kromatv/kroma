@@ -4,7 +4,7 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useCast } from '@kromatv/ui';
 import { formatTimecode } from '@kromatv/ui/intl';
-import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
 import { Pressable, ScrollView } from 'react-native';
@@ -21,6 +21,8 @@ import { spacing, type } from '#mobile/lib/theme';
 import { ScrubBar } from '#mobile/player/ScrubBar';
 
 export default function CastRemoteScreen() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const router = useRouter();
   const { active, positionMs, send, select } = useCast();
@@ -155,7 +157,7 @@ export default function CastRemoteScreen() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   body: { gap: spacing.md, pb: spacing.xl },
   deviceRow: { row: true, align: 'center', gap: spacing.xs, py: spacing.xs, mb: spacing.sm },
   deviceText: { ...type.caption, flex: true, color: 'accentText' },

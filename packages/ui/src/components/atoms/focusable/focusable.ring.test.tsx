@@ -2,15 +2,13 @@
 
 import { cleanup, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { activeTheme } from '#ui/core';
-import { configureRemote } from '#ui/lib/focus-remote';
+
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
 import { RingScopeProvider } from '#ui/lib/ring-scope';
 import { declared } from '#ui/testing';
 import { Focusable } from './focusable';
-
-beforeAll(() => configureRemote());
 
 afterEach(() => {
   cleanup();

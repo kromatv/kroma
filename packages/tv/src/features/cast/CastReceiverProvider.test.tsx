@@ -5,7 +5,7 @@ import { onScreen } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CastReceiverProvider } from '#tv/features/cast/CastReceiverProvider';
-import { deviceId } from '#tv/shared/device';
+import { createDeviceIdentity, type DeviceIdentity } from '#tv/shared/device';
 
 interface SocketHooks {
   onOpen?: () => void;
@@ -59,10 +59,10 @@ const client = fakeClient({ cast: { announce: async () => ({ commands: [], ttlSe
 
 const PLAY = { type: 'play', itemId: 'it1', positionMs: 0 } as const;
 
-function mount() {
+function mount(identity: DeviceIdentity = createDeviceIdentity()) {
   return render(
     onScreen(
-      <CastReceiverProvider client={client} name="Salon">
+      <CastReceiverProvider client={client} name="Salon" identity={identity}>
         <div>picker</div>
       </CastReceiverProvider>,
     ),
@@ -96,7 +96,8 @@ describe('CastReceiverProvider', () => {
   });
 
   it('obeys a command numbered 1 again once the socket has come back', async () => {
-    mount();
+    const deviceId = createDeviceIdentity();
+    mount(deviceId);
     const hooks = H.hooks;
     if (!hooks) throw new Error('expected the receiver to have opened a socket');
     const command = { type: 'cast.command', receiverId: deviceId(), seq: 1, command: PLAY };

@@ -4,7 +4,17 @@
 // Everything is a `Focusable` rather than a link, so the same tree works with a
 // mouse in a browser and a D-pad on a television.
 
-import { Box, Focusable, Icon, IconButton, Kbd, styles, sv, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Focusable,
+  Icon,
+  IconButton,
+  Kbd,
+  styles,
+  sv,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { commandHint } from './command';
 import { glyphFor } from './registry';
@@ -18,6 +28,8 @@ function Brand({
   count,
   onClose,
 }: Readonly<{ brand?: ReactNode; title: string; count: number; onClose?: () => void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box row align="center" gap={10} px={16} pt={16} pb={14}>
       {brand}
@@ -51,6 +63,8 @@ function Brand({
 // Storybook's, and it is the right shape - a field you cannot type into would be a lie, but a
 // field-shaped button carrying `⌘ K` teaches the shortcut to everyone who ever clicks it.
 function SearchButton({ onPress }: Readonly<{ onPress: () => void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Focusable label="Search components" ring={false} onPress={onPress} sv={searchButton}>
       <Icon name="search" size={15} color="textDim" />
@@ -72,6 +86,8 @@ function Branch({
   open,
   onPress,
 }: Readonly<{ label: string; count: number; open: boolean; onPress: () => void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Focusable
       label={`${open ? 'Collapse' : 'Expand'} ${label}`}
@@ -104,6 +120,8 @@ function Leaf({
   active,
   onPress,
 }: Readonly<{ name: string; active: boolean; onPress: () => void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Focusable
       label={name}
@@ -134,7 +152,7 @@ const INDENT = 12;
 // The 16pt glyph in the box the old padded shape came to.
 const CLOSE_BOX = 30;
 
-const s = styles({
+const sDefinition = styles({
   brand: { fontWeight: '700', fontSize: 13 },
   tally: { fontSize: 10.5 },
   searchInk: { fontSize: 12.5 },

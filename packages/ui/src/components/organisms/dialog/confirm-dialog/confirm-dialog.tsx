@@ -9,7 +9,7 @@ interface ConfirmDialogProps extends Omit<DialogRootProps, 'children'> {
 }
 
 /** A whole yes/no panel: a question, and a pair of full-size buttons with the
- *  ring already on the answer. `confirm()` is the imperative way to raise one. */
+ *  ring already on the answer. `useConfirm()` supplies the function that raises one for this app root. */
 function ConfirmDialog({
   confirmLabel,
   cancelLabel,

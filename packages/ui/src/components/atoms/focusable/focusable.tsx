@@ -17,19 +17,18 @@ import {
 } from 'react';
 import { Platform, type View } from 'react-native';
 import type { AnySv } from '#ui/core';
-import { markFocusSettled } from '#ui/lib/focus-entry';
-import { noteFocus } from '#ui/lib/focus-here';
+import { useFocusEntry } from '#ui/lib/focus-entry';
 import { useFocusLift } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { useFocusReport } from '#ui/lib/focus-report';
 import { useRevealOnFocus } from '#ui/lib/focus-scroll';
+import { useFocusServices } from '#ui/lib/focus-services-context';
 import { useFocusScale } from '#ui/lib/focus-transition';
 import { useFocusVisible } from '#ui/lib/focus-visible';
 import { useHoverPassthrough } from '#ui/lib/hover-passthrough';
-import { inputHeld } from '#ui/lib/input-gate';
-import { markFocus } from '#ui/lib/perf';
+import { useInputGate } from '#ui/lib/input-gate';
+import { usePerfSampler } from '#ui/lib/perf-provider';
 import { WEB } from '#ui/lib/platform';
-import { pressGuardActive } from '#ui/lib/press-guard';
 import { useRingScope } from '#ui/lib/ring-scope';
 import { claimProps } from './focusable-a11y';
 import { contentFor } from './focusable-delegate';
@@ -80,6 +79,10 @@ function Focusable<R extends AnySv = AnySv>({
   value,
   ref,
 }: Readonly<FocusableProps<R>>) {
+  const { probe } = useFocusServices();
+  const { inputHeld, pressGuardActive } = useInputGate();
+  const { markFocusSettled } = useFocusEntry();
+  const perf = usePerfSampler();
   const [selfFocused, setSelfFocused] = useState(false);
   const pressRef = useRef<() => void>(() => {});
 
@@ -138,8 +141,8 @@ function Focusable<R extends AnySv = AnySv>({
     // lifted inside a row is still under the NEXT row without this.
     lift?.(true);
     // Where the ring landed, for the reading-order walk Tab does.
-    noteFocus(box.current);
-    markFocus();
+    probe.noteFocus(box.current);
+    perf?.markFocus();
     // The screen now has a focus owner, so a control that mounts later must not
     // take it away.
     markFocusSettled();
@@ -147,7 +150,7 @@ function Focusable<R extends AnySv = AnySv>({
     reveal();
     report?.();
     onFocus?.();
-  }, [lift, onFocus, reveal, report]);
+  }, [lift, onFocus, reveal, report, perf, markFocusSettled, probe]);
 
   const handleBlur = useCallback(() => {
     lift?.(false);
@@ -162,14 +165,14 @@ function Focusable<R extends AnySv = AnySv>({
   const press = useCallback(() => {
     if (disabled || inputHeld() || pressGuardActive()) return;
     onPress?.();
-  }, [disabled, onPress]);
+  }, [disabled, onPress, inputHeld, pressGuardActive]);
   useLayoutEffect(() => {
     pressRef.current = press;
   });
   const longPress = useCallback(() => {
     if (disabled || inputHeld() || pressGuardActive()) return;
     onLongPress?.();
-  }, [disabled, onLongPress]);
+  }, [disabled, onLongPress, inputHeld, pressGuardActive]);
 
   const { entry, isEntry, pointerPress } = useEntryFocus(autoFocus, press);
 

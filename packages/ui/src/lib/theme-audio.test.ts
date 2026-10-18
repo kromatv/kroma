@@ -1,6 +1,6 @@
-import { type SessionStorage, setSessionStorage } from '@kromatv/client';
-import { afterEach, describe, expect, it } from 'vitest';
-import { readThemeMuted, writeThemeMuted } from './theme-audio';
+import type { SessionStorage } from '@kromatv/client';
+import { describe, expect, it } from 'vitest';
+import { readThemeMuted as readMuted, writeThemeMuted as writeMuted } from './theme-audio';
 
 function refusing(): SessionStorage {
   const no = () => {
@@ -18,24 +18,22 @@ function inMemory(): SessionStorage {
   };
 }
 
-afterEach(() => setSessionStorage(null));
-
 describe('the theme mute preference', () => {
   it('round-trips through the device store', () => {
-    setSessionStorage(inMemory());
-    writeThemeMuted(true);
-    expect(readThemeMuted()).toBe(true);
-    writeThemeMuted(false);
-    expect(readThemeMuted()).toBe(false);
+    const backend = inMemory();
+    writeMuted(true, backend);
+    expect(readMuted(backend)).toBe(true);
+    writeMuted(false, backend);
+    expect(readMuted(backend)).toBe(false);
   });
 
   it('reads as unmuted on a device whose store refuses', () => {
-    setSessionStorage(refusing());
-    expect(readThemeMuted()).toBe(false);
+    const backend = refusing();
+    expect(readMuted(backend)).toBe(false);
   });
 
   it('honours the choice for the session even when it cannot be persisted', () => {
-    setSessionStorage(refusing());
-    expect(() => writeThemeMuted(true)).not.toThrow();
+    const backend = refusing();
+    expect(() => writeMuted(true, backend)).not.toThrow();
   });
 });

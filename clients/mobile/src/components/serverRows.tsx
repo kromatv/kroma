@@ -3,7 +3,7 @@
 // system's, so a phone's server list is the same object as the TV's and the
 // console's. What stays here is the section header and hint that frame it.
 
-import { Box, ListRow, Spinner, styles, Text } from '@kromatv/ui/kit';
+import { Box, ListRow, Spinner, styles, Text, useStyles } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { spacing, type } from '#mobile/lib/theme';
 
@@ -25,6 +25,8 @@ export function ServerRow({
   dimmed?: boolean;
   onPress(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <ListRow.Root
       size="sm"
@@ -44,6 +46,8 @@ export function ServerSectionHeader({
   title,
   loading,
 }: Readonly<{ title: string; loading?: boolean }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box style={s.sectionHeader}>
       <Text style={s.sectionTitle}>{title}</Text>
@@ -53,10 +57,12 @@ export function ServerSectionHeader({
 }
 
 export function ServerSectionHint({ children }: Readonly<{ children: string }>) {
+  const s = useStyles(sDefinition);
+
   return <Text style={s.sectionHint}>{children}</Text>;
 }
 
-const s = styles({
+const sDefinition = styles({
   // A row the list shows but cannot be used yet (an offline server).
   dimmed: { opacity: 0.5 },
   sectionHeader: { row: true, align: 'center', gap: 10, px: spacing.xs },

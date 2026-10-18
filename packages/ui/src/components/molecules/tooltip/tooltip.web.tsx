@@ -1,3 +1,5 @@
+import { useStyles } from '#ui/core/styles';
+import { fontSizes as textSizes } from '#ui/core/tokens';
 // The pointer half of <Tooltip>: a delayed bubble over the child on hover or
 // focus-within, portalled so no overflow ancestor clips it. The wrapper names
 // the bubble with aria-describedby while it shows.
@@ -17,7 +19,7 @@ interface Spot {
   top: number;
 }
 
-const s = styles({
+const sDefinition = styles({
   wrap: { display: 'inline-flex' },
   tip: {
     position: 'fixed',
@@ -32,13 +34,15 @@ const s = styles({
     borderColor: 'borderStrong',
     bg: 'surface2',
     color: 'text',
-    fontSize: 12,
+    fontSize: textSizes.caption,
     fontWeight: '600',
     lineHeight: '1.4',
     pointerEvents: 'none',
   },
 });
 function Tooltip({ label, children }: Readonly<TooltipProps>) {
+  const s = useStyles(sDefinition);
+
   const id = useId();
   const box = useRef<HTMLSpanElement>(null);
   const [spot, setSpot] = useState<Spot | null>(null);
@@ -103,6 +107,8 @@ function Tooltip({ label, children }: Readonly<TooltipProps>) {
 }
 
 function Bubble({ id, label, spot }: Readonly<{ id: string; label: string; spot: Spot }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Portal>
       <span

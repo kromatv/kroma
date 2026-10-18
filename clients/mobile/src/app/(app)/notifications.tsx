@@ -1,3 +1,18 @@
+import {
+  activeTheme,
+  Box,
+  color,
+  radius as cornerRadius,
+  Icon,
+  IconButton,
+  type IconName,
+  styles,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
+
 // The notification centre on the phone: what happened while you were away,
 // styled after the browser's list. The list is live (server push, see
 // lib/notifications) and swipe-to-delete, matching Downloads. Approve/Deny
@@ -6,7 +21,7 @@
 
 import type { Notification, NotificationEvent } from '@kromatv/client/notifications';
 import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kromatv/core';
-import { Box, color, Icon, IconButton, type IconName, styles, Text } from '@kromatv/ui/kit';
+
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, SectionList } from 'react-native';
@@ -23,6 +38,11 @@ import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 export default function NotificationsScreen() {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const refresh = useRefreshNotifications();
@@ -89,7 +109,7 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={() => void refetch()}
-              tintColor={color('textMuted')}
+              tintColor={color('textMuted', activeTheme(scope.theme))}
             />
           }
           renderSectionHeader={({ section }) => <Text style={s.dayLabel}>{section.title}</Text>}
@@ -101,6 +121,8 @@ export default function NotificationsScreen() {
 }
 
 function NotificationRow({ row }: Readonly<{ row: Notification }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -229,7 +251,7 @@ function sinceLabel(t: ReturnType<typeof useT>, createdAt: number): string {
   return t('time.daysAgo', { n: Math.round(hours / 24) });
 }
 
-const s = styles({
+const sDefinition = styles({
   list: { px: spacing.sm, pb: spacing.xl, ...boxed(contentWidth.reading) },
   dayLabel: {
     ...type.small,
@@ -246,7 +268,7 @@ const s = styles({
   // notification turns a backlog into one solid block.
   rowPressed: { bg: 'surface1' },
   gutter: { center: true, w: 6, h: 48, mr: 8 },
-  dot: { w: 6, h: 6, bg: 'accent', radius: 3 },
+  dot: { w: 6, h: 6, bg: 'accent', radius: cornerRadius.indicator },
   tile: { w: 48, h: 48, mr: 12, radius: radius.md },
   tilePlate: { center: true, bg: 'wash' },
   body: { flex: true, minW: 0 },

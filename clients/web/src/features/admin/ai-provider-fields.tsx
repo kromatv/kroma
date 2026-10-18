@@ -11,6 +11,7 @@ import {
   Switch,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { CardActions } from '#web/features/admin/ai-provider-actions';
@@ -24,7 +25,7 @@ import {
 } from '#web/features/admin/ai-provider-spec';
 import { SearchSelect } from './search-select';
 
-const s = styles({
+const sDefinition = styles({
   mono: { fontFamily: 'monospace' },
   modelPicker: { width: 288, maxWidth: '100%' },
 });
@@ -44,6 +45,8 @@ function ModelField({
   onModel: (v: string) => void;
   onLoad: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <Field.Root label={t('admin.aiModel')} mb={16}>
@@ -173,6 +176,8 @@ export function ProviderBody({
   onSetDefault: () => void;
   onRemove: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   // Placed in the main column (openai) or under Advanced (openrouter/anthropic).
   const baseUrlField = (

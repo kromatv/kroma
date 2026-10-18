@@ -13,6 +13,7 @@ import {
   styles,
   sv,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { KIND_SERIES } from '#web/features/admin/chart-palette';
 import { kindLabelKey, WATCH_KINDS } from '#web/features/admin/dashboard-filters';
@@ -25,7 +26,7 @@ const FACE = 48;
 const HEAD_PAD = 18;
 const HEAD_HEIGHT = FACE + HEAD_PAD * 2;
 
-const s = styles({ rowRule: { borderBottomWidth: 1, borderBottomColor: 'tint/4' } });
+const sDefinition = styles({ rowRule: { borderBottomWidth: 1, borderBottomColor: 'tint/4' } });
 
 const viewerCard = sv({
   base: {
@@ -121,6 +122,8 @@ interface KindRowProps {
 }
 
 function KindRow({ kind, watchedMs, dominant }: Readonly<KindRowProps>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const fmt = useFormat();
   return (

@@ -5,6 +5,7 @@
 
 import { Box } from '#ui/components/atoms/box';
 import { type CornerValue, color, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { gradient } from '#ui/lib/css';
 
 type ArtScrimVariant = 'soft' | 'deep';
@@ -25,7 +26,7 @@ const POSTER_SCRIM = [
   `${color('black/0')} 78%)`,
 ].join(' ');
 
-const ramp = styles({ soft: gradient(CARD_SCRIM), deep: gradient(POSTER_SCRIM) });
+const rampDefinition = styles({ soft: gradient(CARD_SCRIM), deep: gradient(POSTER_SCRIM) });
 
 interface ArtScrimProps {
   /** How far up the dark reaches. `soft` leaves the artwork alone until the
@@ -38,10 +39,13 @@ interface ArtScrimProps {
 }
 
 function ArtScrim({ variant = 'soft', radius = 0 }: Readonly<ArtScrimProps>) {
+  const ramp = useStyles(rampDefinition);
+  const s = useStyles(sDefinition);
+
   return <Box radius={radius} style={[s.layer, ramp[variant]]} />;
 }
 
-const s = styles({ layer: { fill: true, pointerEvents: 'none' } });
+const sDefinition = styles({ layer: { fill: true, pointerEvents: 'none' } });
 
 export type { ArtScrimProps, ArtScrimVariant };
 export { ArtScrim, CARD_SCRIM, POSTER_SCRIM };

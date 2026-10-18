@@ -19,6 +19,7 @@ import {
   Icon,
   styles,
   tintGradient,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -39,6 +40,8 @@ const CELL_MIN = 160;
 const CELL_MAX = 304;
 
 export default function Genres() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -98,6 +101,6 @@ export default function Genres() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   content: { pt: spacing.sm, pb: spacing.xl },
 });

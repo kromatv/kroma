@@ -1,12 +1,14 @@
 import type { MediaItem } from '@kromatv/client/media';
 import { sizedImageUrl } from '@kromatv/core';
-import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { Image } from 'expo-image';
 import { useWindowDimensions } from 'react-native';
 import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 export function RemoteArtwork({ item }: Readonly<{ item?: MediaItem }>) {
+  const s = useStyles(sDefinition);
+
   const client = useClient();
   const { width } = useWindowDimensions();
   const art = item
@@ -36,7 +38,7 @@ export function RemoteArtwork({ item }: Readonly<{ item?: MediaItem }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   art: { w: '100%', aspect: 16 / 9, bg: 'surface1', radius: radius.md },
   artFallback: { center: true },
   title: { ...type.title, color: 'text' },

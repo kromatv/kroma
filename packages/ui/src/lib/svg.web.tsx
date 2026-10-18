@@ -1,3 +1,5 @@
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
+
 // The SVG element set, web (Tizen / webOS / desktop / browser): plain DOM svg.
 //
 // react-native-svg does run under react-native-web, but it drags a large runtime
@@ -7,7 +9,8 @@
 // wrappers are pass-throughs rather than translations.
 
 import type { SVGProps } from 'react';
-import { sharedStyle, styles } from '#ui/core';
+
+import { useStyles } from '#ui/core/styles';
 import { classes } from '#ui/lib/classed';
 
 type El<T> = (props: SVGProps<T>) => React.ReactElement;
@@ -32,19 +35,26 @@ export const G: El<SVGGElement> = (props) => <g {...props} />;
  * markup is app-generated from a trusted server URL plus a server-issued code,
  * never user input. */
 
-const s = styles({ box: { display: 'flex' } });
+const sDefinition = styles({ box: { display: 'flex' } });
 
-const sizeOf = (width?: number | string, height?: number | string) =>
-  sharedStyle(`svg:${width}:${height}`, { width, height });
+const sizeOf = (
+  width: number | string | undefined,
+  height: number | string | undefined,
+  scope: StyleScope,
+) => sharedStyle(`svg:${width}:${height}`, { width, height }, scope);
 export function SvgXml({
   xml,
   width,
   height,
 }: Readonly<{ xml: string | null; width?: number | string; height?: number | string }>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   if (!xml) return null;
   return (
     <div
-      className={classes(s.box, sizeOf(width, height))}
+      className={classes(s.box, sizeOf(width, height, scope))}
       // biome-ignore lint/security/noDangerouslySetInnerHtml: app-generated QR SVG built by qrcode-generator from a trusted server URL + server-issued code, never user input.
       dangerouslySetInnerHTML={{ __html: xml }}
     />

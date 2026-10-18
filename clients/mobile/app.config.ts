@@ -2,8 +2,8 @@
 // to edit. This collects the build's identity (git commit, branch, compile time)
 // so the settings screen can show which build the user is running.
 
+import { collectBuildInfo } from '@kromatv/build-info';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
-import { collectBuildInfo } from '../build-info';
 
 export default function mobileAppConfig({ config }: ConfigContext): Partial<ExpoConfig> {
   return {

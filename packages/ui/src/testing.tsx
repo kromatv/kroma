@@ -1,3 +1,4 @@
+import { KitProvider } from './configure';
 // Test helpers for anything that renders kit components.
 //
 // A <Focusable> is a node of the spatial navigator, and a node needs a navigator
@@ -23,7 +24,7 @@ import { I18nProvider } from './services/i18n';
  * arrived. An app can only assert "the new screen gets to choose again" through
  * these: `autoFocus` is honoured or ignored on the strength of that one flag
  * (see lib/focus-entry), and no rendered output shows it. */
-export { focusSettled, markFocusSettled } from './lib/focus-entry';
+export { useFocusEntry } from './lib/focus-entry';
 
 const kebab = (property: string) => property.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 
@@ -60,11 +61,13 @@ export function wearsRing(el: Element | null | undefined): boolean {
 
 /** Wrap a tree in the same navigator and locale a real screen runs inside.
  * English, because an assertion reads better against the words in the test. */
-export function onScreen(ui: ReactElement): ReactElement {
+export function onScreen(ui: ReactElement, options?: { remote?: boolean }): ReactElement {
   return (
-    <I18nProvider locale="en">
-      <FocusScope>{ui}</FocusScope>
-    </I18nProvider>
+    <KitProvider config={{ remote: options?.remote ?? false }}>
+      <I18nProvider locale="en">
+        <FocusScope>{ui}</FocusScope>
+      </I18nProvider>
+    </KitProvider>
   );
 }
 
@@ -95,4 +98,16 @@ export function layout(node: Element, box: Partial<LayoutRectangle>): void {
       timeStamp: Date.now(),
     } as LayoutChangeEvent);
   });
+}
+
+export { createInputTestHost } from './testing-input';
+
+export { createStyleTestHost } from './testing-style';
+
+/** The first product node beneath any root styling hosts. */
+export function contentRoot(container: Element): HTMLElement {
+  let node = container.firstElementChild;
+  while (node?.hasAttribute('data-kroma-bp')) node = node.firstElementChild;
+  if (!(node instanceof HTMLElement)) throw new Error('expected rendered screen content');
+  return node;
 }

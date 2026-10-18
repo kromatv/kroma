@@ -3,9 +3,8 @@
 import type { DiscoverEntry, DiscoverResponse } from '@kromatv/client/discovery';
 import type { MediaItem, SearchResponse, Show } from '@kromatv/client/media';
 import { fakeClient } from '@kromatv/client/test';
-import { clearPressGuard } from '@kromatv/ui/kit';
-import { onScreen } from '@kromatv/ui/testing';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type Connection, ConnectionProvider } from '#tv/app/providers/connection';
 import { EnvProvider } from '#tv/app/providers/env';
@@ -16,11 +15,17 @@ import {
   type TvScreens,
   useNav,
 } from '#tv/app/router';
-import { requestSearch, takePendingSearch } from '#tv/app/searchRequest';
-import { type SearchShellProps, setSearchShell } from '#tv/app/searchShell';
-import { setVoiceSearchBackend } from '#tv/app/voiceSearch';
+import {
+  createSearchRequests,
+  type SearchRequests,
+  SearchRequestsProvider,
+} from '#tv/app/searchRequest';
+import { type SearchShell, type SearchShellProps, SearchShellProvider } from '#tv/app/searchShell';
+import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voiceSearch';
 import { addRecentSearch } from '#tv/features/catalog/searchHistory';
 import { TvSearch } from '#tv/features/catalog/TvSearch';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 const movie = (id: string, title: string, genre = 'sci-fi'): MediaItem =>
   ({ id, title, video: null, metadata: { genres: [genre] } }) as unknown as MediaItem;
@@ -63,11 +68,17 @@ function mount({
   discover = vi.fn(async () => known()),
   movies = [] as MediaItem[],
   shows = [] as Show[],
+  requests = createSearchRequests(),
+  voiceSearch = null,
+  searchShell = null,
 }: {
   search?: () => Promise<SearchResponse>;
   discover?: () => Promise<DiscoverResponse>;
   movies?: MediaItem[];
   shows?: Show[];
+  requests?: SearchRequests;
+  voiceSearch?: VoiceSearchBackend | null;
+  searchShell?: SearchShell | null;
 } = {}) {
   const client = fakeClient({
     media: {
@@ -83,20 +94,26 @@ function mount({
   let nav!: TvNav;
   render(
     onScreen(
-      <EnvProvider platform="TV" overrides={{ physicalKeyboard: false }}>
-        <ConnectionProvider value={{ movies, shows } as Connection}>
-          <TvClientProvider client={client}>
-            <TvNavProvider screens={{} as TvScreens}>
-              <NavHandle
-                onReady={(n) => {
-                  nav = n;
-                }}
-              />
-              <TvSearch />
-            </TvNavProvider>
-          </TvClientProvider>
-        </ConnectionProvider>
-      </EnvProvider>,
+      <SearchRequestsProvider value={requests}>
+        <VoiceSearchProvider value={voiceSearch}>
+          <SearchShellProvider value={searchShell}>
+            <EnvProvider platform="TV" overrides={{ physicalKeyboard: false }}>
+              <ConnectionProvider value={{ movies, shows } as Connection}>
+                <TvClientProvider client={client}>
+                  <TvNavProvider screens={{} as TvScreens}>
+                    <NavHandle
+                      onReady={(n) => {
+                        nav = n;
+                      }}
+                    />
+                    <TvSearch />
+                  </TvNavProvider>
+                </TvClientProvider>
+              </ConnectionProvider>
+            </EnvProvider>
+          </SearchShellProvider>
+        </VoiceSearchProvider>
+      </SearchRequestsProvider>,
     ),
   );
   // The screen arms the press guard as it mounts, and would otherwise swallow
@@ -122,15 +139,12 @@ beforeEach(() => {
   // The router mirrors its stack to sessionStorage under a dev build, which the
   // runner is; without this each mount resumes the previous test's stack.
   sessionStorage.clear();
-  takePendingSearch();
 });
 
 afterEach(() => {
   cleanup();
   clearPressGuard();
   vi.unstubAllGlobals();
-  setSearchShell(null);
-  setVoiceSearchBackend(null);
 });
 
 describe('TvSearch', () => {
@@ -209,15 +223,14 @@ describe('TvSearch', () => {
   });
 
   it('listens once the microphone is pressed', () => {
-    setVoiceSearchBackend({ available: () => true, Session: () => null });
-    mount();
+    mount({ voiceSearch: { available: () => true, Session: () => null } });
 
     fireEvent.click(screen.getByLabelText('Voice search'));
     expect(screen.getByText('Speak now…')).toBeTruthy();
   });
 
   it('hands the whole screen to the platform’s own chrome where there is one', () => {
-    setSearchShell({
+    const searchShell = {
       available: () => true,
       Shell: ({ placeholder, children }: SearchShellProps) => (
         <>
@@ -225,8 +238,8 @@ describe('TvSearch', () => {
           {children({ width: 900, height: 600 })}
         </>
       ),
-    });
-    mount();
+    };
+    mount({ searchShell });
 
     expect(screen.getByText('shell:Search')).toBeTruthy();
     // Ours is gone with it: the platform draws its own field and keys.
@@ -254,12 +267,13 @@ describe('TvSearch', () => {
   });
 
   it('opens on a query asked for from outside the app, and re-targets a second one', async () => {
-    requestSearch('alien');
-    const { search } = mount();
+    const requests = createSearchRequests();
+    requests.requestSearch('alien');
+    const { search } = mount({ requests });
     await waitFor(() => expect(search).toHaveBeenCalledWith('alien'));
 
     act(() => {
-      requestSearch('aliens');
+      requests.requestSearch('aliens');
     });
     await waitFor(() => expect(search).toHaveBeenCalledWith('aliens'));
   });

@@ -90,11 +90,14 @@ describe('serving the module', () => {
 });
 
 describe('the stamp it serves', () => {
-  function stamp(projectRoot = PROJECT_ROOT) {
+  function stamp(projectRoot = PROJECT_ROOT): object {
     const code = hooks(projectRoot).load(RESOLVED) ?? '';
     const json = /export default (\{.*?\});/s.exec(code)?.[1];
     if (!json) throw new Error('no default export in the generated module');
-    return JSON.parse(json) as Record<string, unknown>;
+    const stamp: unknown = JSON.parse(json);
+    if (!stamp || typeof stamp !== 'object' || Array.isArray(stamp))
+      throw new Error('build stamp is not an object');
+    return stamp;
   }
 
   it('carries every field the app reads', () => {
@@ -108,11 +111,11 @@ describe('the stamp it serves', () => {
     // so a client stamping its manifest advertised a number that had not moved
     // in thirty releases.
     const cargo = readFileSync(join(REPO_ROOT, 'server', 'Cargo.toml'), 'utf8');
-    expect(stamp().version).toBe(/^version\s*=\s*"([^"]+)"/m.exec(cargo)?.[1]);
+    expect(Reflect.get(stamp(), 'version')).toBe(/^version\s*=\s*"([^"]+)"/m.exec(cargo)?.[1]);
   });
 
   it('carries a real ISO build date', () => {
-    expect(() => new Date(String(stamp().buildDate)).toISOString()).not.toThrow();
+    expect(() => new Date(String(Reflect.get(stamp(), 'buildDate'))).toISOString()).not.toThrow();
   });
 
   it('says `unknown` rather than throwing outside a checkout', () => {
@@ -120,10 +123,10 @@ describe('the stamp it serves', () => {
     // each git field is a STRING either way. A build from a source tarball still
     // has to produce a site.
     for (const key of ['commit', 'commitFull', 'branch']) {
-      expect(stamp()[key]).toBeTypeOf('string');
-      expect(stamp()[key]).not.toBe('');
+      expect(Reflect.get(stamp(), key)).toBeTypeOf('string');
+      expect(Reflect.get(stamp(), key)).not.toBe('');
     }
-    expect(stamp().dirty).toBeTypeOf('boolean');
+    expect(Reflect.get(stamp(), 'dirty')).toBeTypeOf('boolean');
   });
 
   it('reads `unknown` off a source tree with no git in it', () => {
@@ -131,11 +134,11 @@ describe('the stamp it serves', () => {
     writeFileSync(join(root, 'package.json'), JSON.stringify({ version: '9.9.9' }));
     try {
       const outside = stamp(root);
-      expect(outside.version).toBe('9.9.9');
-      expect(outside.commit).toBe('unknown');
-      expect(outside.commitFull).toBe('unknown');
-      expect(outside.branch).toBe('unknown');
-      expect(outside.repository).toBeNull();
+      expect(Reflect.get(outside, 'version')).toBe('9.9.9');
+      expect(Reflect.get(outside, 'commit')).toBe('unknown');
+      expect(Reflect.get(outside, 'commitFull')).toBe('unknown');
+      expect(Reflect.get(outside, 'branch')).toBe('unknown');
+      expect(Reflect.get(outside, 'repository')).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -1,7 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { ModuleLoader } from './module-scope.ts';
 import { transformModule } from './transform.ts';
-import { resolveAsBrowser } from './web-theme.ts';
 
 const REPO = '/repo';
 
@@ -10,8 +9,6 @@ const FILE = `${REPO}/packages/ui/src/probe.tsx`;
 const loader = new ModuleLoader({ repoRoot: REPO });
 
 const run = (code: string, inject = false) => transformModule({ code, file: FILE, loader, inject });
-
-beforeAll(() => resolveAsBrowser());
 
 describe('transformModule', () => {
   it('compiles each static entry of a set and leaves the rest as written', () => {

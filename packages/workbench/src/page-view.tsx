@@ -11,7 +11,7 @@
 // line readable lives on the elements themselves (see `MEASURE` in
 // `mdx-blocks.tsx`), so a wide page spends its width on what asked for it.
 
-import { Box, styles, Text } from '@kromatv/ui/kit';
+import { Box, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { space } from '@kromatv/ui/tokens';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView } from 'react-native';
@@ -57,6 +57,8 @@ function landing(page: string, at: Section, top: number): string {
 /** A whole `.page.mdx`, with its own heading. Scrolls itself, so it is given a
  * region to fill rather than a height. */
 function PageView({ page, layout, section, onSection }: Readonly<PageViewProps>) {
+  const s = useStyles(sDefinition);
+
   const outline = useOutline(page.id);
   const scroller = useRef<ScrollView>(null);
   const [active, setActive] = useState<string | undefined>(undefined);
@@ -170,6 +172,8 @@ const Article = memo(function Article({ page, layout }: Readonly<ArticleProps>) 
 // the rule is what makes the three of them one block rather than the first three
 // paragraphs of the article.
 function PageHeader({ page, compact }: Readonly<{ page: Page; compact: boolean }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box
       gap={compact ? space[1] : space[2]}
@@ -190,7 +194,7 @@ function PageHeader({ page, compact }: Readonly<{ page: Page; compact: boolean }
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   scroll: { flex: true },
   // The column is centred by the scroller rather than by a margin: a margin
   // would leave the scroll bar hugging the text instead of the region.

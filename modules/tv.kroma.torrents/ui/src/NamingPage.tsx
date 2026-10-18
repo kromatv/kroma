@@ -13,7 +13,6 @@ import {
   Box,
   Button,
   Callout,
-  confirm,
   Field,
   Icon,
   PageHeader,
@@ -23,6 +22,8 @@ import {
   Surface,
   styles,
   Text,
+  useConfirm,
+  useStyles,
 } from '@kromatv/ui/kit';
 import {
   type CSSProperties,
@@ -83,7 +84,7 @@ const MOVE_PATH: CSSProperties = {
 const MOVE_FROM: CSSProperties = { ...MOVE_PATH, color: 'var(--kroma-text-dim)' };
 const MOVE_TO: CSSProperties = { ...MOVE_PATH, color: 'var(--kroma-info)' };
 
-const s = styles({
+const sDefinition = styles({
   moveRule: { borderBottomWidth: 1, borderBottomColor: 'tint/4' },
 });
 
@@ -251,6 +252,7 @@ function SampleLine({ label, value }: Readonly<{ label: string; value: string }>
 }
 
 function RenameSection() {
+  const confirm = useConfirm();
   const t = useT();
   const torrents = useTorrentsApi();
   const [plan, setPlan] = useState<OrganizePlan | null>(null);
@@ -363,6 +365,8 @@ function MoveRow({
   to,
   last,
 }: Readonly<{ from: string; to: string; last: boolean }>): ReactNode {
+  const s = useStyles(sDefinition);
+
   return (
     <Row gap={8} px={12} py={8} style={last ? undefined : s.moveRule}>
       <code title={from} style={MOVE_FROM}>

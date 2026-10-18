@@ -1,3 +1,5 @@
+import { resolveStyles, type StyleScope, styles, useStyleScope } from '#ui/core';
+
 // <Drawer>: the edge-anchored slide-in sheet (a detail inspector, an edit form,
 // the phone nav), on all four targets. The same overlay contract as <Dialog> -
 // portalled, scroll-locked, focus-locked behind, Esc/Back and outside-press
@@ -9,7 +11,8 @@ import { type ReactNode, useMemo } from 'react';
 import { Modal, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
 import { Box, Row } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
+
+import { useStyles } from '#ui/core/styles';
 import { DismissBackdrop } from '#ui/lib/dismiss-backdrop';
 import { useFocusNav } from '#ui/lib/focus-nav';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
@@ -120,6 +123,10 @@ function DrawerSurface({
     bridge: boolean;
   }
 >) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   useFocusNav({ onBack: onClose });
   const window = useWindowDimensions();
   const full = fullBelow > 0 && window.width < fullBelow;
@@ -153,7 +160,7 @@ function DrawerSurface({
           w={panelWidth}
           maxW="100%"
           bg={inset ? 'surface2' : 'surface1'}
-          style={[edgeOf(side, inset), panelStyle]}
+          style={[edgeOf(side, inset, scope), panelStyle]}
           role="dialog"
           aria-modal
           accessibilityLabel={title}
@@ -177,9 +184,11 @@ function DrawerSurface({
   );
 }
 
-function edgeOf(side: DrawerSide, inset: number): ViewStyle {
-  if (inset) return s.card;
-  return side === 'right' ? s.panelRight : s.panelLeft;
+function edgeOf(side: DrawerSide, inset: number, scope: StyleScope): ViewStyle {
+  if (inset) return resolveStyles(sDefinition, scope).card;
+  return side === 'right'
+    ? resolveStyles(sDefinition, scope).panelRight
+    : resolveStyles(sDefinition, scope).panelLeft;
 }
 
 function defaultHeader(title: string): ReactNode {
@@ -197,7 +206,7 @@ function defaultHeader(title: string): ReactNode {
 
 const FOCUS_SCOPE = { focusScope: '' } as const;
 
-const s = styles({
+const sDefinition = styles({
   fill: { flex: true },
   scrim: { bg: 'overlay' },
   scrimActive: { pointerEvents: 'auto' },

@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // "Media details" modal (admin): the technical truth about the file(s) backing
 // one catalog item path, container, size, duration, and every video / audio /
 // subtitle stream ffprobe found. All of this already rides on the item DTO the
@@ -14,16 +15,20 @@ import { useFormat, useT } from '@kromatv/ui';
 import { Box, Dialog, IconButton, Row, Spinner, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { createCallable } from 'react-call';
-import { catalogQueries } from '#web/shared/lib/queries';
+
 import { FileCard } from '#web/shared/ui/media-info-card';
 
 // Open with `await MediaInfoModal.call({ id, title })`; read-only, so it resolves
 // (`void`) purely on dismiss. Its root is mounted once by `CatalogModalHosts`.
 export const MediaInfoModal = createCallable<{ id: string; title: string }, void>(
   ({ call, id, title }) => {
+    const webRuntime = useWebRuntime();
+
     const t = useT();
     // Cached: the fiche already loaded this item, so this resolves instantly.
-    const { data: item, isPending } = useQuery(catalogQueries.item(ItemId.parse(id)));
+    const { data: item, isPending } = useQuery(
+      webRuntime.queries.catalogQueries.item(ItemId.parse(id)),
+    );
     const files = item ? filesOf(item) : [];
 
     return (

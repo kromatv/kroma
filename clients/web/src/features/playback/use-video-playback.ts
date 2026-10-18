@@ -13,6 +13,7 @@ import { useWaitReason } from '#web/features/playback/use-wait-reason';
 import { attachMediaSource, type VideoPlayback } from '#web/features/playback/video-engine';
 import type { MovieView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 export type { VideoPlayback } from '#web/features/playback/video-engine';
 
@@ -27,6 +28,7 @@ function modeOf(decision: EngineDecision): PlaybackMode {
  * HLS remux), fullscreen, and every transport action. The underlying HLS clock
  * is anchor-relative; positions reported by the hook are always absolute. */
 export function useVideoPlayback(item: MovieView): VideoPlayback {
+  const webRuntime = useWebRuntime();
   const videoRef = useRef<HTMLVideoElement>(null);
   const frame = useFullscreenFrame();
   const barRef = useRef<HTMLDivElement>(null);
@@ -131,22 +133,26 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     // Shaka is the default MSE engine; hls.js only on the explicit `remux`
     // override. Safari keeps native HLS unless the user picks Shaka.
     const safariNative = env.safari && enginePref !== 'shaka';
-    return attachMediaSource({
-      v,
-      item,
-      decision,
-      useNativeHls: safariNative,
-      useShaka: !safariNative && enginePref !== 'remux',
-      startSec: anchor,
-      audioRel: audioIndex,
-      hlsRef,
-      shakaRef,
-      setUseHls,
-      setReady,
-      onGiveUp: giveUp,
-      onRefused,
-    });
+    return attachMediaSource(
+      {
+        v,
+        item,
+        decision,
+        useNativeHls: safariNative,
+        useShaka: !safariNative && enginePref !== 'remux',
+        startSec: anchor,
+        audioRel: audioIndex,
+        hlsRef,
+        shakaRef,
+        setUseHls,
+        setReady,
+        onGiveUp: giveUp,
+        onRefused,
+      },
+      webRuntime,
+    );
   }, [
+    webRuntime,
     item,
     decision,
     env.safari,

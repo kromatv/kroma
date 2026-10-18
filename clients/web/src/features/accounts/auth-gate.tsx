@@ -1,7 +1,7 @@
 // The login gate, rendered as a full-screen overlay whenever no session is
 // active so the catalogue underneath stays unusable until an account is chosen.
 
-import { Box, classes, Logo, styles } from '@kromatv/ui/kit';
+import { Box, classes, Logo, styles, useStyles } from '@kromatv/ui/kit';
 import { GateBody } from '#web/features/accounts/gate-body';
 import { LoginBackdrop } from '#web/features/accounts/login-backdrop';
 import { LoginSettings } from '#web/features/accounts/login-settings';
@@ -11,7 +11,7 @@ import { PAGE_RADIAL } from '#web/shared/ui';
 // The gate is one viewport tall, and the kit carries no viewport unit: every
 // screen it draws sits on a fixed 1920x1080 stage instead. So the two frames
 // that measure themselves against the window stay plain CSS.
-const s = styles({
+const sDefinition = styles({
   gate: {
     position: 'relative',
     display: 'flex',
@@ -43,6 +43,8 @@ const s = styles({
 });
 
 export function LoginGate() {
+  const s = useStyles(sDefinition);
+
   const { ready } = useAuth();
   return (
     <div className={classes(s.gate)}>
@@ -76,6 +78,8 @@ export function Spinner() {
 /** Shown by authenticated layouts while the session hydrates or a redirect to
  * /login is in flight (see {@link useRequireAuth}). */
 export function GateLoading() {
+  const s = useStyles(sDefinition);
+
   return (
     <div className={classes(s.centred)}>
       <Spinner />

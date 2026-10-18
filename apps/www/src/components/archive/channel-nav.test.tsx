@@ -33,7 +33,7 @@ describe('ChannelNav', () => {
   it('shows an em dash for a channel that holds no build yet', () => {
     render(<ChannelNav cards={[card({ version: null, at: null })]} />);
 
-    expect(screen.getByText('—')).toBeDefined();
+    expect(screen.getByText('-')).toBeDefined();
   });
 
   it('shows the moment a build was made beside how often the channel moves', () => {

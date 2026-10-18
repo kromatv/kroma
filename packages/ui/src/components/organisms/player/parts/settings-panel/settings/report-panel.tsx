@@ -3,6 +3,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
+import { useStyles } from '#ui/core';
 import { REPORT_CATEGORIES } from '#ui/lib/report-categories';
 import { useT } from '#ui/services/i18n';
 import type { PlayerReportCategory } from '../../../media-types';
@@ -18,6 +19,8 @@ interface ReportPanelProps {
 }
 
 export function ReportPanel({ onReport, onBack, ref }: Readonly<ReportPanelProps>) {
+  const panelScoped = useStyles(panel);
+
   const t = useT();
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'failed'>('idle');
 
@@ -45,14 +48,14 @@ export function ReportPanel({ onReport, onBack, ref }: Readonly<ReportPanelProps
   // playback chrome from under the viewer loses their place in the film.
   if (state === 'done') {
     return (
-      <Box style={panel.panelList}>
+      <Box style={panelScoped.panelList}>
         <Text variant="subheadingTv">{t('report.submitted')}</Text>
       </Box>
     );
   }
 
   return (
-    <Box style={panel.panelList}>
+    <Box style={panelScoped.panelList}>
       {REPORT_CATEGORIES.map((c, i) => (
         <SelectRow
           key={c.key}

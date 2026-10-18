@@ -7,7 +7,7 @@
 // every focus, which is the only way the walk tells a move from a refusal.
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { focusBox, focusSeq, noteFocus } from './focus-here';
+import { createFocusProbe } from './focus-here';
 
 function viewAt(top: number, left: number, height: number) {
   const rect = { top, left, height };
@@ -55,3 +55,5 @@ describe('focusSeq', () => {
     expect(focusSeq()).toBe(start + 2);
   });
 });
+
+const { box: focusBox, seq: focusSeq, noteFocus } = createFocusProbe();

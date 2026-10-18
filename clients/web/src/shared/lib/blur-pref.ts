@@ -6,11 +6,18 @@
 // Device-local, like the engine override in features/playback/engine-pref: it is
 // a property of the machine, not of the account, so it is not sent anywhere.
 
-import { setFrostEnabled } from '@kromatv/ui/kit';
+import { KitProvider } from '@kromatv/ui/kit';
+import {
+  createContext,
+  createElement,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from 'react';
 
 const KEY = 'kroma:blur';
-
-/** The saved choice for this device; blurred unless it was turned off. */
 export function getBlurPref(): boolean {
   try {
     return localStorage.getItem(KEY) !== 'off';
@@ -18,20 +25,30 @@ export function getBlurPref(): boolean {
     return true;
   }
 }
-
-export function setBlurPref(on: boolean): void {
+function persist(on: boolean): void {
   try {
     localStorage.setItem(KEY, on ? 'on' : 'off');
   } catch {
-    /* storage unavailable, the switch still holds for this session */
+    /* the root still keeps its choice */
   }
-  setFrostEnabled(on);
 }
-
-/** Push the stored choice into the kit. Called at import, before the first
- *  paint, so a device that turned frost off never flashes it. */
-export function applyBlurPref(): void {
-  setFrostEnabled(getBlurPref());
+const Context = createContext<readonly [boolean, (on: boolean) => void] | null>(null);
+export function BlurPreferenceProvider({ children }: { children: ReactNode }) {
+  const [enabled, setEnabled] = useState(getBlurPref);
+  const set = useCallback((next: boolean) => {
+    setEnabled(next);
+    persist(next);
+  }, []);
+  const value = useMemo(() => [enabled, set] as const, [enabled, set]);
+  const config = useMemo(() => ({ frostEnabled: enabled }), [enabled]);
+  return createElement(
+    Context.Provider,
+    { value },
+    createElement(KitProvider, { config }, children),
+  );
 }
-
-applyBlurPref();
+export function useBlurPreference(): readonly [boolean, (on: boolean) => void] {
+  const value = useContext(Context);
+  if (!value) throw new Error('Blur preferences require BlurPreferenceProvider');
+  return value;
+}

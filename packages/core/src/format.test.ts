@@ -1,9 +1,4 @@
-import {
-  type AudioTrack,
-  type MediaItem,
-  setArtworkScale,
-  type VideoTrack,
-} from '@kromatv/client/media';
+import type { AudioTrack, MediaItem, VideoTrack } from '@kromatv/client/media';
 import type { Translate } from '@kromatv/i18n';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -101,8 +96,6 @@ describe('playerSubtitle', () => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('sizedImageUrl', () => {
-  afterEach(() => setArtworkScale(1));
-
   // jsdom reports a ratio of 1, which is also what a 1920x1080 television
   // reports.
   it('asks for the display width on a 1x screen (a television)', () => {
@@ -131,8 +124,7 @@ describe('sizedImageUrl', () => {
   });
 
   it('honours the artwork-quality setting, like the client art helpers', () => {
-    setArtworkScale(0.5);
-    expect(sizedImageUrl('/api/images/abc.webp', 320)).toBe('/api/images/abc.webp?w=160');
+    expect(sizedImageUrl('/api/images/abc.webp', 320, 0.5)).toBe('/api/images/abc.webp?w=160');
   });
 
   it('passes through remote, non-image, already-queried, and empty URLs', () => {

@@ -2,7 +2,7 @@
 // engine (embedded / Transmission / qBittorrent) with enable toggle, live
 // connection test and the add/edit modal.
 
-import { addEngine, apiErrorText, useEnabledEngines, usePoll, useT } from '@kromatv/module-sdk';
+import { apiErrorText, useAddEngine, useEnabledEngines, usePoll, useT } from '@kromatv/module-sdk';
 import {
   Badge,
   Box,
@@ -19,6 +19,7 @@ import {
   styles,
   TableSkeleton,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useTorrentsApi } from './api';
@@ -27,11 +28,14 @@ import type { ClientTestResult, DownloadClientView } from './schemas';
 
 type TestState = { busy?: boolean; result?: ClientTestResult; error?: string };
 
-const s = styles({
+const sDefinition = styles({
   footRule: { borderTopWidth: 1, borderTopColor: 'tint/6' },
 });
 
 export function DownloadClientsSection() {
+  const s = useStyles(sDefinition);
+
+  const addEngine = useAddEngine();
   const t = useT();
   const torrents = useTorrentsApi();
   const engines = useEnabledEngines('tv.kroma.torrents/client');

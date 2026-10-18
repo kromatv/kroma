@@ -1,3 +1,6 @@
+import { type StyleScope, sharedStyle, styles, useStyleScope, useTheme } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // <PosterCard>: the 2:3 portrait tile of the browse grids (Films, Series).
 //
 // The same anatomy as <MediaCard> at a different aspect and type scale. It fills
@@ -7,11 +10,10 @@ import { ArtScrim } from '#ui/components/atoms/art-scrim';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
-import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { tintGradient } from '#ui/components/molecules/media-card';
-import { sharedStyle, styles, useTheme } from '#ui/core';
+import { CardProgress } from '#ui/lib/card-progress';
 
 interface PosterCardProps {
   title: string;
@@ -35,8 +37,8 @@ interface PosterCardProps {
   autoFocus?: boolean;
 }
 
-const frameOf = (width: number | string) =>
-  sharedStyle(`poster-card:${width}`, { width, radius: 'xl' });
+const frameOf = (width: number | string, scope: StyleScope) =>
+  sharedStyle(`poster-card:${width}`, { width, radius: 'xl' }, scope);
 function PosterCard({
   title,
   overline,
@@ -50,6 +52,10 @@ function PosterCard({
   onFocus,
   autoFocus,
 }: Readonly<PosterCardProps>) {
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const { radius } = useTheme();
   return (
     <Focusable
@@ -59,7 +65,7 @@ function PosterCard({
       autoFocus={autoFocus}
       label={title}
       focusScale={1.05}
-      style={frameOf(width ?? '100%')}
+      style={frameOf(width ?? '100%', scope)}
     >
       <Box aspect={2 / 3} radius="xl" overflow="hidden" bg="surface1">
         {/* Every layer rounds itself as well as the parent clipping: Chrome
@@ -78,21 +84,17 @@ function PosterCard({
             {title}
           </Text>
         </Box>
-        {progress == null ? null : (
-          <Box absolute left={0} right={0} bottom={0}>
-            <Progress value={progress} rounded={false} />
-          </Box>
-        )}
+        <CardProgress value={progress} />
       </Box>
     </Focusable>
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   overline: {
     font: 'ui',
     fontWeight: '700',
-    fontSize: 11,
+    fontSize: textRoles.overline.size,
     lineHeight: 13,
     letterSpacing: 1.1,
     textTransform: 'uppercase',
@@ -101,7 +103,7 @@ const s = styles({
   title: {
     font: 'display',
     fontWeight: '700',
-    fontSize: 18,
+    fontSize: textSizes.largeLabel,
     lineHeight: 19,
     color: 'white',
   },

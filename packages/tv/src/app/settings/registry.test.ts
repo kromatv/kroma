@@ -35,9 +35,16 @@ const {
   perfHudSetting,
   subtitleLanguageSetting,
 } = await import('./registry');
-const { ARTWORK_SCALE, perfHudPrefStore } = await import('./store');
-const { castReceiverPrefStore } = await import('#tv/features/cast/castPref');
-const { crashReportingPrefStore } = await import('#tv/app/crashReportingPref');
+const { ARTWORK_SCALE } = await import('./store');
+const { createDevicePreferences, DevicePreferencesProvider } = await import(
+  '../device-preferences'
+);
+const preferences = createDevicePreferences();
+const {
+  perfHud: perfHudPrefStore,
+  castReceiver: castReceiverPrefStore,
+  crashReporting: crashReportingPrefStore,
+} = preferences;
 type SettingsItem = typeof localeSetting;
 
 // langOptions sorts by the translated name, so an identity translator keeps the
@@ -144,7 +151,11 @@ const toggleBinding = (item: SettingsItem) =>
   (item as { useValue: () => readonly [boolean, (value: boolean) => void] }).useValue();
 
 const wrapper = ({ children }: { children: ReactNode }) =>
-  createElement(I18nProvider, { locale: 'fr' as Locale, onLocaleChange: H.setLocale, children });
+  createElement(
+    DevicePreferencesProvider,
+    { value: preferences },
+    createElement(I18nProvider, { locale: 'fr' as Locale, onLocaleChange: H.setLocale, children }),
+  );
 
 beforeEach(() => {
   vi.clearAllMocks();

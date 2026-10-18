@@ -5,7 +5,7 @@ import { ItemId, type MediaItem, type ProgressEntry } from '@kromatv/client/medi
 import { episodeTag, formatRuntime, qualityBadge, sizedImageUrl } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { formatTimecode } from '@kromatv/ui/intl';
-import { Box, styles, Text } from '@kromatv/ui/kit';
+import { Box, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
@@ -51,6 +51,8 @@ function reportPath(media: MediaItem, title: string): string {
 }
 
 function ItemMeta({ media }: Readonly<{ media: MediaItem }>) {
+  const s = useStyles(sDefinition);
+
   const runtime = formatRuntime(media.durationMs);
   const badge = qualityBadge(media);
   const rating = media.metadata?.rating;
@@ -71,6 +73,8 @@ export default function ItemRoute() {
 }
 
 function ItemDetail({ id }: Readonly<{ id: ItemId }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -181,7 +185,7 @@ function ItemDetail({ id }: Readonly<{ id: ItemId }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   body: { gap: spacing.md, pt: spacing.md },
   metaText: { ...type.caption, color: 'text', fontWeight: '600' },

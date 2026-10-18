@@ -5,7 +5,17 @@
 // needs is READ from it rather than held beside it - the body, the prose, the
 // sample and the script are four answers to the same question.
 
-import { applyTheme, Box, CodeBlock, Focusable, Icon, styles, sv, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  CodeBlock,
+  Focusable,
+  Icon,
+  styles,
+  sv,
+  Text,
+  useStyles,
+  useThemeControls,
+} from '@kromatv/ui/kit';
 import type { ColorToken } from '@kromatv/ui/tokens';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Matrix, ViewportFrame } from './canvas';
@@ -26,6 +36,7 @@ import type { ViewportName } from './viewport';
 /** The lenses the toolbar sets and the canvas reads. Held here rather than in
  * the shell because every one of them is about the story on screen. */
 function useStageView(story: Story | undefined) {
+  const { applyTheme } = useThemeControls();
   const [viewport, setViewport] = useState<ViewportName>('fit');
   const [rotate, setRotate] = useState(false);
   const [surface, setSurface] = useState<ColorToken>('bg');
@@ -33,12 +44,15 @@ function useStageView(story: Story | undefined) {
   const [themeId, setThemeId] = useState('kroma');
 
   // The state change is also the re-render that makes every style re-resolve.
-  const pickTheme = useCallback((next: string) => {
-    const chosen = PREVIEW_THEMES.find((candidate) => candidate.id === next);
-    if (!chosen) return;
-    applyTheme(chosen.theme, chosen.light);
-    setThemeId(chosen.id);
-  }, []);
+  const pickTheme = useCallback(
+    (next: string) => {
+      const chosen = PREVIEW_THEMES.find((candidate) => candidate.id === next);
+      if (!chosen) return;
+      applyTheme(chosen.theme, chosen.light);
+      setThemeId(chosen.id);
+    },
+    [applyTheme],
+  );
 
   // An effect rather than derived state so switching frame by hand is not
   // undone on the next render.
@@ -190,6 +204,8 @@ function StoryHeading({
   group,
   layout,
 }: Readonly<{ name: string; group: string; layout: WorkbenchLayout }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box px={layout.gutter} pt={layout.mode === 'compact' ? 16 : 22} gap={4}>
       <Text variant="overline" color="accent">
@@ -269,6 +285,8 @@ function CodeBar({
   defaultOpen,
   layout,
 }: Readonly<{ code: string; defaultOpen: boolean; layout: WorkbenchLayout }>) {
+  const s = useStyles(sDefinition);
+
   const [open, setOpen] = useState(defaultOpen);
   return (
     <Box style={[RULE_TOP, s.codeBar]}>
@@ -296,7 +314,7 @@ function CodeBar({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   title: { fontSize: 24 },
   titleCompact: { fontSize: 20 },
   codeBar: { maxH: 320 },

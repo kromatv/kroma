@@ -10,6 +10,7 @@ import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { WEB } from '#ui/lib/platform';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { useControllable } from '#ui/lib/use-controllable';
@@ -65,6 +66,8 @@ function Root({
   onQueryChange,
   children,
 }: Readonly<CommandRootProps>) {
+  const s = useStyles(sDefinition);
+
   const [query, setQueryValue] = useControllable(queryProp, defaultQuery, onQueryChange);
   const [cursor, setCursor] = useState(0);
   const sections = useMemo(() => sectionsOf(items, query), [items, query]);
@@ -144,7 +147,7 @@ function Root({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   scrim: { bg: 'bg/72' },
   // Absolute rather than `flex: 1`: a flex sibling would push the sheet down
   // the column, and the catcher has to sit UNDER the whole layer.

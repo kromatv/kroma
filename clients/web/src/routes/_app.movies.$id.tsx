@@ -6,13 +6,13 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 import { TitleDetail } from '#web/features/catalog/title-detail';
 import { isAuthed } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { catalogQueries } from '#web/shared/lib/queries';
 import { buildTitleView } from '#web/shared/lib/titleView';
 import { useCatalogLiveRefresh } from '#web/shared/lib/use-live-refresh';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { DetailSkeleton } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/movies/$id')({
-  loader: async ({ params, context: { queryClient } }) => {
+  loader: async ({ params, context: { runtime: webRuntime, queryClient } }) => {
     // Catalogue is auth-gated: a signed-out deep-link goes to the gate (the
     // AuthGate overlay covers /, and its loader is guarded too).
     if (!isAuthed()) throw redirect({ to: '/' });
@@ -20,9 +20,9 @@ export const Route = createFileRoute('/_app/movies/$id')({
     // similar-items fallback + embedding neighbours).
     const id = ItemId.parse(params.id);
     await Promise.all([
-      queryClient.ensureQueryData(catalogQueries.item(id)),
-      queryClient.ensureQueryData(catalogQueries.movies()),
-      queryClient.ensureQueryData(catalogQueries.similar(id)),
+      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.item(id)),
+      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.movies()),
+      queryClient.ensureQueryData(webRuntime.queries.catalogQueries.similar(id)),
     ]);
   },
   pendingComponent: DetailSkeleton,
@@ -30,14 +30,16 @@ export const Route = createFileRoute('/_app/movies/$id')({
 });
 
 function MovieDetailPage() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const { client, user } = useAuth();
   const id = ItemId.parse(Route.useParams().id);
   // Re-enrichment (incl. a corrected TMDB match) lands via the event stream.
   useCatalogLiveRefresh('item', id);
-  const { data: item } = useSuspenseQuery(catalogQueries.item(id));
-  const { data: movies } = useSuspenseQuery(catalogQueries.movies());
-  const { data: embed } = useSuspenseQuery(catalogQueries.similar(id));
+  const { data: item } = useSuspenseQuery(webRuntime.queries.catalogQueries.item(id));
+  const { data: movies } = useSuspenseQuery(webRuntime.queries.catalogQueries.movies());
+  const { data: embed } = useSuspenseQuery(webRuntime.queries.catalogQueries.similar(id));
 
   // "Titres similaires" prefers content-embedding neighbours, falling back to
   // genre overlap, then any other movie.

@@ -1,12 +1,16 @@
+import { createFocusServices } from './focus-services';
+import { FocusServicesProvider, useFocusServicesParent } from './focus-services-context';
+import { InputGateProvider, useInputGate } from './input-gate';
+import { InputSourceProvider, useInputSourceParent } from './input-source';
 // <FocusScope>: the navigator for one screen, and the groups inside it.
 // Exactly one navigator answers the remote at a time; shared between web and
 // native on purpose so behaviour can't drift between them (only the screen
 // root is forked, into focus-root.tsx / focus-root.web.tsx).
 
-import { NavigatorView, useLockNavigator } from '@kromatv/spatial-nav/react';
-import { type ReactNode, useEffect } from 'react';
+import { NavigatorView, RemoteProvider, useLockNavigator } from '@kromatv/spatial-nav/react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
-import { useFocusEntryScope } from './focus-entry';
+import { createFocusEntry, FocusEntryProvider } from './focus-entry';
 import { FocusLiftHost, GROUNDED, LIFTED } from './focus-lift';
 import { PlatformFocusProvider, usePlatformFocusHost } from './focus-platform';
 import { FocusPresenceProvider, useInsideFocusScope } from './focus-presence';
@@ -46,12 +50,12 @@ interface FocusColumnProps extends FocusScopeProps {
  * Also what a DIALOG mounts, over the screen that opened it, paired with
  * {@link useLockFocusBehind} on the screen: that locks the screen's navigator
  * out of the remote, leaving this root the only one listening. Its
- * `useFocusEntryScope` runs during render (not an effect) so the dialog's
+ * `FocusEntryProvider` runs during render (not an effect) so the dialog's
  * `autoFocus` claims the ring before the screen underneath decides; on the
  * browser targets it also resets device-type to remote-keys mode regardless
  * of where the pointer was left.
  */
-function FocusScope({
+function FocusScopeHost({
   children,
   style,
   entryKey,
@@ -64,23 +68,50 @@ function FocusScope({
   // this bridge too, and posting those presses would walk the ring behind it.
   const remote = bridge && platform.owner !== 'platform';
   useRemoteBridge(remote);
-  useFocusEntryScope(entryKey);
+  // A replacement screen gets a fresh claim before children render.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: entryKey explicitly names the lifetime of this screen.
+  const entry = useMemo(() => createFocusEntry(), [entryKey]);
   return (
     // Lets a kit control exist OUTSIDE any scope (a phone screen, a plain web
     // page) without registering with a navigator that was never mounted.
-    <FocusPresenceProvider value={true}>
-      <PlatformFocusProvider value={platform.host}>
-        <FocusRoot
-          style={style}
-          active={active}
-          bridge={remote}
-          keyHost={platform.owner === null}
-          onEdge={platform.onEdge}
-        >
-          {children}
-        </FocusRoot>
-      </PlatformFocusProvider>
-    </FocusPresenceProvider>
+    <FocusEntryProvider value={entry}>
+      <FocusPresenceProvider value={true}>
+        <PlatformFocusProvider value={platform.host}>
+          <FocusRoot
+            style={style}
+            active={active}
+            bridge={remote}
+            keyHost={platform.owner === null}
+            onEdge={platform.onEdge}
+          >
+            {children}
+          </FocusRoot>
+        </PlatformFocusProvider>
+      </FocusPresenceProvider>
+    </FocusEntryProvider>
+  );
+}
+
+function FocusScope(props: Readonly<ScreenScopeProps>) {
+  const parent = useFocusServicesParent();
+  const input = useInputGate();
+  const source = useInputSourceParent();
+  const [owned] = useState(() =>
+    parent ? null : createFocusServices(true, input, source ?? undefined),
+  );
+  const services = parent ?? owned;
+  if (!services) throw new Error('Focus scope requires its owning host');
+  useEffect(() => services.source.retain(), [services]);
+  return (
+    <FocusServicesProvider value={services}>
+      <InputGateProvider value={services.input}>
+        <InputSourceProvider value={services.source}>
+          <RemoteProvider value={services.remote}>
+            <FocusScopeHost {...props} />
+          </RemoteProvider>
+        </InputSourceProvider>
+      </InputGateProvider>
+    </FocusServicesProvider>
   );
 }
 

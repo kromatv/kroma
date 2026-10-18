@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { style, styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { gradient } from '#ui/lib/css';
 import { formatTimecode as fmtTime } from '#ui/lib/intl';
 import { useLocale, useT } from '#ui/services/i18n';
@@ -37,6 +38,8 @@ function Transport({
   bottomInset,
   onLayout,
 }: Readonly<TransportProps>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const locale = useLocale();
   const px = scaler(metrics.scale);
@@ -105,7 +108,7 @@ function Transport({
 
 const BOTTOM_SCRIM = style(gradient('linear-gradient(0deg, rgba(0,0,0,0.82), transparent)'));
 
-const s = styles({
+const sDefinition = styles({
   inert: { pointerEvents: 'none' },
   chromeLive: { pointerEvents: 'box-none' },
 });

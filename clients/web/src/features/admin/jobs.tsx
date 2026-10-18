@@ -1,3 +1,4 @@
+import { useKromaClient } from '#web/shared/lib/web-runtime';
 // Admin "Tâches" console: every background job with its schedule, next/last run
 // and live progress, plus run-now / cancel / enable / edit-schedule actions and
 // an expandable run-history + log panel. Mirrors the server's job registry
@@ -19,6 +20,8 @@ import { TableSkeleton } from '#web/shared/ui';
 type LiveProgress = Record<string, { done: number; total: number }>;
 
 export function JobsPage() {
+  const eventClient = useKromaClient();
+
   const t = useT();
   const { client } = useAuth();
   const { data, reload } = usePoll(['admin', 'jobs'], () => client.jobs.list(), 6000);
@@ -28,6 +31,9 @@ export function JobsPage() {
   // start/finish (the shell's stream only bumps the refetch `tick`).
   useEffect(() => {
     const ev = new KromaEvents(apiBase(), {
+      token: () => eventClient.sessionToken,
+      refresh: () => eventClient.refreshSession(),
+
       onEvent: (e) => {
         if (e.type === 'job.progress') {
           setLive((s) => ({ ...s, [e.key]: { done: e.done, total: e.total } }));
@@ -38,7 +44,7 @@ export function JobsPage() {
     });
     ev.connect();
     return () => ev.close();
-  }, [reload]);
+  }, [reload, eventClient.sessionToken, eventClient.refreshSession]);
 
   // Pipeline stages live in their own "Pipeline" console, not the general task
   // list, so filter them out here.

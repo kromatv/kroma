@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
 import { Animated, View } from 'react-native';
 import { absoluteFill } from '#ui/core/tokens';
-import { imageBackend } from '#ui/lib/image-backend';
+import type { ImageBackend } from '#ui/lib/image-backend';
 
 interface Size {
   width: number;
@@ -9,6 +9,7 @@ interface Size {
 }
 
 interface NativeLayersArgs {
+  backend: ImageBackend;
   src: string | null;
   under: string | null;
   alt: string;
@@ -26,7 +27,7 @@ interface NativeLayersArgs {
 function nativeLayers(at: Readonly<NativeLayersArgs>): ReactNode {
   const layer = at.rect ? { position: 'absolute' as const, ...at.rect } : absoluteFill;
   const mode = at.rect ? ('stretch' as const) : at.fit;
-  const backend = imageBackend();
+  const { backend } = at;
   // A backend that fades itself (expo-image) is left alone; one that doesn't
   // (React Native's <Image>) is cross-faded here instead.
   const leaf = (uri: string, animated: boolean) =>

@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // The install dialog: a dry-run plan (see module-install-plan.tsx) the admin
 // confirms before anything is fetched, then live per-module progress off the
 // `module.op.*` stream while the install runs. Resolves `true` when an
@@ -9,7 +10,7 @@ import { useT } from '@kromatv/ui';
 import { Box, Button, Dialog, Divider, Icon, Progress, Row, Text } from '@kromatv/ui/kit';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
-import { fetchInstallPlan, installById, message } from '#web/features/admin/module-api';
+import { message } from '#web/features/admin/module-api';
 import { ErrorBox, PlanStage } from '#web/features/admin/module-install-plan';
 import {
   type OpModule,
@@ -47,6 +48,8 @@ function RunningRow({ name, op }: Readonly<{ name: string; op: OpModule | undefi
 }
 
 export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id }) => {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const [stage, setStage] = useState<Stage>('plan');
   const [plan, setPlan] = useState<StorePlan | null>(null);
@@ -60,11 +63,14 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
   const defaulted = useRef(false);
 
   useEffect(() => {
+    const webRuntime = useWebRuntime();
+
     if (stage !== 'plan') return;
     let alive = true;
     setPlanBusy(true);
     setPlanError(null);
-    fetchInstallPlan(id, include)
+    webRuntime.moduleApi
+      .fetchInstallPlan(id, include)
       .then((p) => {
         if (!alive) return;
         setPlan(p);
@@ -115,7 +121,8 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
 
   const run = () => {
     setStage('running');
-    installById(id, include)
+    webRuntime.moduleApi
+      .installById(id, include)
       .then((report) => {
         const requested = report.installed.find((m) => m.id === report.requested);
         setResult(t('admin.modulesInstallSuccess', { name: requested?.name ?? report.requested }));

@@ -1,17 +1,22 @@
-// The small toned pill an admin row wears: a kind, a status, a role. Not the
-// kit's <Badge>, whose tones are the palette's own semantic steps; these carry a
-// hue the page already holds (a pipeline stage, a report category).
-
 import {
+  activeTheme,
   Box,
   type ColorValue,
   color,
   Row,
+  type StyleScope,
   sharedStyle,
   styles,
   Text,
   type TypeRole,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
 } from '@kromatv/ui/kit';
+// The small toned pill an admin row wears: a kind, a status, a role. Not the
+// kit's <Badge>, whose tones are the palette's own semantic steps; these carry a
+// hue the page already holds (a pipeline stage, a report category).
+
 import type { ReactNode } from 'react';
 
 const PAD: Partial<Record<TypeRole, { px: number; py: number }>> = {
@@ -43,7 +48,7 @@ export function Pill({ ink, bg, variant = 'meta', leading, children }: Readonly<
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   dot: { radius: 'circle', flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
   breathe: {
     animationKeyframes: 'kroma-breathe',
@@ -53,12 +58,16 @@ const s = styles({
   },
 });
 
-const dotOf = (size: number, tone: ColorValue) =>
-  sharedStyle(`pill:dot:${size}:${tone}`, {
-    width: size,
-    height: size,
-    backgroundColor: color(tone),
-  });
+const dotOf = (size: number, tone: ColorValue, scope: StyleScope) =>
+  sharedStyle(
+    `pill:dot:${size}:${tone}`,
+    {
+      width: size,
+      height: size,
+      backgroundColor: color(tone, activeTheme(scope.theme)),
+    },
+    scope,
+  );
 
 interface PillDotProps {
   tone: ColorValue;
@@ -69,5 +78,10 @@ interface PillDotProps {
 
 /** The dot a status pill leads with. */
 export function PillDot({ tone, size = 6, pulse }: Readonly<PillDotProps>) {
-  return <Box style={[s.dot, dotOf(size, tone), pulse ? s.breathe : null]} />;
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
+  return <Box style={[s.dot, dotOf(size, tone, scope), pulse ? s.breathe : null]} />;
 }

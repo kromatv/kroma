@@ -1,4 +1,12 @@
-import { Box, Icon, Spinner, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  radius as cornerRadius,
+  Icon,
+  Spinner,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { Pressable } from 'react-native';
@@ -9,6 +17,8 @@ import { useClient, useSession } from '#mobile/lib/session';
 import { spacing, type } from '#mobile/lib/theme';
 
 export function ProfilePhoto() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { user, setUser } = useSession();
@@ -63,7 +73,7 @@ export function ProfilePhoto() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   identity: { align: 'center', gap: spacing.xs, mt: spacing.xs },
   editBadge: {
     absolute: true,
@@ -73,7 +83,7 @@ const s = styles({
     w: 30,
     h: 30,
     bg: 'accent',
-    radius: 15,
+    radius: cornerRadius.photo,
     border: 'bg',
     borderWidth: 3,
   },

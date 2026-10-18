@@ -8,7 +8,8 @@ vi.mock('#web/shared/lib/api', () => ({
   toShowView: (_c: unknown, s: { id: string }) => ({ ...s, mapped: 'show' }),
 }));
 
-const { catalogQueries } = await import('#web/shared/lib/queries');
+const { createQueries } = await import('#web/shared/lib/queries');
+const { catalogQueries } = createQueries(c);
 
 installHarness();
 

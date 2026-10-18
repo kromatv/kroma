@@ -4,7 +4,7 @@
 
 import type { ItemId } from '@kromatv/client/media';
 import { useAiSuggest, useT } from '@kromatv/ui';
-import { Box, classes, ProgressRing, Row, styles, Text } from '@kromatv/ui/kit';
+import { Box, classes, ProgressRing, Row, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { SectionPoster } from '#web/features/catalog/cards';
 import { useAuth } from '#web/shared/lib/auth';
 import { PosterRail, page } from '#web/shared/ui';
@@ -12,9 +12,13 @@ import { PosterRail, page } from '#web/shared/ui';
 // The page gutter is a fluid CSS custom property, which no style number can
 // carry, so anything indented by it stays a plain element.
 
-const s = styles({ section: { mt: 44 } });
+const sDefinition = styles({ section: { mt: 44 } });
 
 export function AiSuggestRail({ id }: Readonly<{ id: ItemId }>) {
+  const pageScoped = useStyles(page);
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { ready, user, client } = useAuth();
   const { section, pending, progress } = useAiSuggest(client, id, { active: ready && !!user });
@@ -22,13 +26,13 @@ export function AiSuggestRail({ id }: Readonly<{ id: ItemId }>) {
   if (section && section.items.length > 0) {
     return (
       <section className={classes(s.section)}>
-        <h2 className={classes(page.gutter)}>
+        <h2 className={classes(pageScoped.gutter)}>
           <Text variant="h2" mb={4}>
             {section.title}
           </Text>
         </h2>
         {section.reason ? (
-          <div className={classes(page.gutter)}>
+          <div className={classes(pageScoped.gutter)}>
             <Text variant="meta" color="white/45" mb={16}>
               {section.reason}
             </Text>
@@ -36,7 +40,7 @@ export function AiSuggestRail({ id }: Readonly<{ id: ItemId }>) {
         ) : (
           <Box mb={12} />
         )}
-        <div className={classes(page.gutter)}>
+        <div className={classes(pageScoped.gutter)}>
           <PosterRail
             data={section.items}
             renderItem={(entry) => <SectionPoster entry={entry} />}
@@ -51,12 +55,12 @@ export function AiSuggestRail({ id }: Readonly<{ id: ItemId }>) {
   if (pending) {
     return (
       <section className={classes(s.section)}>
-        <h2 className={classes(page.gutter)}>
+        <h2 className={classes(pageScoped.gutter)}>
           <Text variant="h2" mb={4}>
             {t('content.aiSuggestions')}
           </Text>
         </h2>
-        <div className={classes(page.gutter)}>
+        <div className={classes(pageScoped.gutter)}>
           <Row gap={12} mt={12}>
             <ProgressRing value={progress} />
             <Text variant="meta" color="white/40">

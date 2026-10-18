@@ -1,30 +1,38 @@
+import { useStyles } from '#ui/core/styles';
+import { typeSpec as textRoles } from '#ui/core/tokens';
 // The performance HUD: frame timings, focus response, heap and surface size,
 // read on the television they are about. Turned on in the device settings.
 
-import { artworkScaleValue } from '@kromatv/client/media';
 import { useEffect, useState } from 'react';
 import { Dimensions, PixelRatio } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
-import { type PerfReport, perfReport, startPerf, stopPerf } from '#ui/lib/perf';
+import type { PerfReport } from '#ui/lib/perf';
+import { usePerfSampler } from '#ui/lib/perf-provider';
 import { PerfChart } from './perf-chart';
 
 // Slow enough to read, fast enough to blame the thing you just did.
 const REFRESH_MS = 500;
 
-function PerfHud({ enabled }: Readonly<{ enabled: boolean }>) {
+function PerfHud({
+  enabled,
+  artworkScale = 1,
+}: Readonly<{ enabled: boolean; artworkScale?: number }>) {
+  const s = useStyles(sDefinition);
+
+  const perf = usePerfSampler();
   const [report, setReport] = useState<PerfReport | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
-    startPerf();
-    const timer = setInterval(() => setReport(perfReport()), REFRESH_MS);
+    if (!enabled || !perf) return;
+    perf.startPerf();
+    const timer = setInterval(() => setReport(perf.perfReport()), REFRESH_MS);
     return () => {
       clearInterval(timer);
-      stopPerf();
+      perf.stopPerf();
     };
-  }, [enabled]);
+  }, [enabled, perf]);
 
   if (!enabled || !report) return null;
   return (
@@ -41,7 +49,7 @@ function PerfHud({ enabled }: Readonly<{ enabled: boolean }>) {
       <Row label="HEAP" value={heapText(report)} bad={isHeapTight(report)} />
       <Row label="FOCUS" value={report.gridCell} bad={false} />
       <Row label="SCREEN" value={screenText()} bad={false} />
-      <Row label="ART" value={`${Math.round(artworkScaleValue() * 100)}%`} bad={false} />
+      <Row label="ART" value={`${Math.round(artworkScale * 100)}%`} bad={false} />
     </Box>
   );
 }
@@ -70,6 +78,8 @@ function screenText(): string {
 }
 
 function Row({ label, value, bad }: Readonly<{ label: string; value: string; bad: boolean }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box row between gap={16}>
       <Text style={s.label} color="textDim">
@@ -82,7 +92,7 @@ function Row({ label, value, bad }: Readonly<{ label: string; value: string; bad
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   panel: {
     pointerEvents: 'none',
     top: 24,
@@ -96,8 +106,8 @@ const s = styles({
     bg: 'bg/86',
     border: 'border',
   },
-  label: { fontSize: 13, fontWeight: '700', letterSpacing: 1 },
-  value: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  label: { fontSize: textRoles.meta.size, fontWeight: '700', letterSpacing: 1 },
+  value: { fontSize: textRoles.label.size, fontWeight: '700', fontVariant: ['tabular-nums'] },
 });
 
 export { PerfHud };

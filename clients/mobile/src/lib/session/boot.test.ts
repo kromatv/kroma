@@ -42,7 +42,13 @@ function deps(over: Record<string, unknown> = {}) {
     accounts: [] as Account[],
     hydratedServers: null as Array<{ url: string }> | null,
     hydratedAccounts: null as Account[] | null,
-    entered: null as { url: string; accessToken: string; token: string; user: unknown } | null,
+    entered: null as {
+      url: string;
+      accessToken: string;
+      token: string;
+      user: unknown;
+      mediaTicket?: string;
+    } | null,
     serverUrl: undefined as string | null | undefined,
     signedOut: 0,
     forgotten: [] as Array<[string, string]>,
@@ -81,8 +87,14 @@ function deps(over: Record<string, unknown> = {}) {
         })),
       }),
     ),
-    enterSession: (url: string, accessToken: string, token: string, user: unknown) => {
-      state.entered = { url, accessToken, token, user };
+    enterSession: (
+      url: string,
+      accessToken: string,
+      token: string,
+      user: unknown,
+      mediaTicket?: string,
+    ) => {
+      state.entered = { url, accessToken, token, user, ...(mediaTicket ? { mediaTicket } : {}) };
     },
     setServerUrl: (url: string | null) => {
       state.serverUrl = url;
@@ -481,4 +493,19 @@ describe('leaving before the restore finishes', () => {
     expect(state.entered).toBeNull();
     expect(state.signedOut).toBe(0);
   });
+});
+
+it('passes the media ticket to the new session client on resume', async () => {
+  loadAccounts.mockResolvedValue([account()]);
+  loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
+  const { state } = await boot({
+    makeClient: withAccounts({
+      exchangeToken: async () => ({
+        token: 'session',
+        mediaTicket: 'ticket-for-this-root',
+        user: account().user,
+      }),
+    }),
+  });
+  expect(state.entered).toMatchObject({ token: 'session', mediaTicket: 'ticket-for-this-root' });
 });

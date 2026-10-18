@@ -1,3 +1,18 @@
+import {
+  activeTheme,
+  Box,
+  classes,
+  color,
+  DataField,
+  Grid,
+  Row,
+  styles,
+  Text,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+} from '@kromatv/ui/kit';
+
 // One physical file's technical card, as rendered inside the "Media details"
 // modal: name / path header, container-size-duration fields, then the video,
 // audio and subtitle streams ffprobe found. Split out of `media-info-modal.tsx`
@@ -6,11 +21,11 @@
 import type { AudioTrack, MediaFile, SubtitleTrack, VideoTrack } from '@kromatv/client/media';
 import { channelLabel, codecLabel, langName } from '@kromatv/core';
 import { useFormat, useT } from '@kromatv/ui';
-import { Box, classes, color, DataField, Grid, Row, styles, Text } from '@kromatv/ui/kit';
+
 import { IconFileInfo } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
-const s = styles({
+const sDefinition = styles({
   topRule: { borderTopWidth: 1, borderTopColor: 'white/6' },
   bottomRule: { borderBottomWidth: 1, borderBottomColor: 'white/6' },
   glyph: { mt: 2, flexShrink: 0 },
@@ -59,11 +74,21 @@ function FileHeader({
   index,
   multi,
 }: Readonly<{ file: MediaFile; index: number; multi: boolean }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const name = file.relPath?.split('/').pop() ?? t('mediaInfo.unknownFile');
   return (
     <Box row align="flex-start" gap={12} px={16} py={12} style={s.bottomRule}>
-      <IconFileInfo size={18} stroke={1.9} color={color('white/40')} className={classes(s.glyph)} />
+      <IconFileInfo
+        size={18}
+        stroke={1.9}
+        color={color('white/40', activeTheme(scope.theme))}
+        className={classes(s.glyph)}
+      />
       <Box minW={0} flex>
         <Row wrap gap={8}>
           <Text variant="label" lines={1}>
@@ -85,6 +110,8 @@ function FileHeader({
 }
 
 function Unprobed() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <Box px={16} py={12} style={s.topRule}>
@@ -96,6 +123,8 @@ function Unprobed() {
 }
 
 function Unreadable({ reason }: Readonly<{ reason: string }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <Box px={16} py={12} gap={4} style={s.topRule}>
@@ -184,6 +213,8 @@ function Section({
   last,
   children,
 }: Readonly<{ label: string; last?: boolean; children: ReactNode }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box px={16} py={12} style={last ? undefined : s.bottomRule}>
       <Text variant="overline" color="white/35" mb={6}>
@@ -219,6 +250,8 @@ function FileField({ label, value }: Readonly<{ label: string; value: string }>)
 }
 
 function Chip({ children, accent }: Readonly<{ children: string; accent?: boolean }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box radius="pill" px={6} py={2} bg={accent ? 'accent/20' : 'white/8'}>
       <Text variant="overline" color={accent ? 'accent' : 'white/50'} style={s.noCaps}>

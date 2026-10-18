@@ -27,7 +27,7 @@ import {
   IconPlay,
   IconSubtitles,
 } from '#ui/components/organisms/player/parts/icons';
-import { sv } from '#ui/core';
+import { sv, useSv } from '#ui/core';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { useFocusVisible } from '#ui/lib/focus-visible';
 import { useT } from '#ui/services/i18n';
@@ -78,8 +78,13 @@ function Circle({
   onFocus: (id: ControlId) => void;
   children: ReactNode;
 }>) {
+  const circleFillScoped = useSv(circleFill);
+
   const lit = useFocusVisible(focused);
-  const dress = useMemo(() => [circleFill(undefined, { focus: lit }).root, NO_OUTLINE], [lit]);
+  const dress = useMemo(
+    () => [circleFillScoped(undefined, { focus: lit }).root, NO_OUTLINE],
+    [lit, circleFillScoped],
+  );
   return (
     <IconButton
       variant="glass"
@@ -152,6 +157,8 @@ export const ControlCluster = memo(function ControlCluster({
   onFocus,
   onVolume,
 }: Readonly<ControlClusterProps>) {
+  const playFillScoped = useSv(playFill);
+
   const t = useT();
   const { scale, controls, rail, clusterWidth } = metrics;
   const px = scaler(scale);
@@ -163,8 +170,8 @@ export const ControlCluster = memo(function ControlCluster({
   // cluster, so the modality has to be re-read on every move.
   const lit = useFocusVisible(focused);
   const playDress = useMemo(
-    () => [playFill(undefined, { focus: lit && focused === 'play' }).root, NO_OUTLINE],
-    [lit, focused],
+    () => [playFillScoped(undefined, { focus: lit && focused === 'play' }).root, NO_OUTLINE],
+    [lit, focused, playFillScoped],
   );
 
   const render = (id: ControlId) => {

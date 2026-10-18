@@ -1,19 +1,20 @@
 // @vitest-environment jsdom
 import type { HandoffBeaconView } from '@kromatv/core';
-import { configureRemote, Focusable } from '@kromatv/ui/kit';
-import { onScreen, wearsRing } from '@kromatv/ui/testing';
+import { Focusable } from '@kromatv/ui/kit';
+import { onScreen as baseOnScreen, wearsRing } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { type ReactNode, useEffect } from 'react';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TvNavProvider, useNav } from '#tv/app/router';
 import { AuthScreen } from '#tv/shared/ui/AuthScreen';
+
+const onScreen = (ui: Parameters<typeof baseOnScreen>[0]) => baseOnScreen(ui, { remote: true });
 
 const beacon = vi.hoisted(() => ({ current: null as { name: string; check: string } | null }));
 vi.mock('#tv/app/providers/handoffBeacon', () => ({
   useHandoffBeacon: (): HandoffBeaconView | null => beacon.current,
 }));
 
-beforeAll(() => configureRemote());
 beforeEach(() => {
   beacon.current = null;
 });

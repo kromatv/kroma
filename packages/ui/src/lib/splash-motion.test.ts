@@ -14,6 +14,7 @@ import { renderHook } from '@testing-library/react';
 import { StyleSheet } from 'react-native';
 import { describe, expect, it } from 'vitest';
 import { GRADE, useDrift } from './splash-motion';
+import type { CssDrift } from './splash-motion.web';
 
 const SPEC = { x: 0.04, y: 0.03, zoom: 1.12, ms: 12_000, width: 1920, height: 1080 };
 
@@ -23,7 +24,7 @@ function drift(spec = SPEC) {
 }
 
 function flat(spec = SPEC) {
-  return StyleSheet.flatten(drift(spec)) as Record<string, unknown>;
+  return StyleSheet.flatten<CssDrift>(drift(spec));
 }
 
 type Keyframes = Record<string, { transform?: string }>;
@@ -102,7 +103,7 @@ describe('useDrift', () => {
 
 describe('GRADE', () => {
   it('is a filter, held apart from the drift so it rasterises once', () => {
-    const style = StyleSheet.flatten(GRADE) as Record<string, unknown>;
-    expect(style.filter).toBe('brightness(0.86) saturate(1.02)');
+    const style = StyleSheet.flatten(GRADE);
+    expect(style).toHaveProperty('filter', 'brightness(0.86) saturate(1.02)');
   });
 });

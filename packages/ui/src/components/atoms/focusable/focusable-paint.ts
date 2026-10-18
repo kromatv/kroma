@@ -3,14 +3,18 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import {
   type AnySv,
   activeTheme,
-  breakpointIndex,
   normalize,
   type StyleDecl,
   type SvStateName,
   sharedStyle,
   stabilise,
 } from '#ui/core';
-import type { RingToken } from '#ui/core/theme';
+import { useSv } from '#ui/core/recipe';
+import { useStyleScope } from '#ui/core/style-context';
+import { DEFAULT_STYLE_SCOPE, type StyleScope } from '#ui/core/style-scope';
+import type { RingToken, Theme } from '#ui/core/theme';
+import { useBreakpointIndex } from '#ui/core/use-breakpoint';
+import { useTheme } from '#ui/core/use-theme';
 import { splitBoxLayers } from '#ui/lib/box-layers';
 import { ARROW, COLOUR_MOTION, HAND } from '#ui/lib/cursor';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
@@ -18,10 +22,8 @@ import { GROUNDED, LIFTED } from '#ui/lib/focus-lift';
 import { WEB } from '#ui/lib/platform';
 import type { Resolve } from './focusable-types';
 
-function coat(decl: StyleDecl | undefined): ViewStyle | undefined {
-  return decl
-    ? (stabilise(normalize(decl as Record<string, unknown>, breakpointIndex())) as ViewStyle)
-    : undefined;
+function coat(decl: StyleDecl | undefined, index: number, theme: Theme): ViewStyle | undefined {
+  return decl ? (stabilise(normalize(decl, index, theme)) as ViewStyle) : undefined;
 }
 
 const NO_SLOTS = Object.freeze({ root: undefined }) as unknown as ReturnType<AnySv>;
@@ -33,7 +35,7 @@ function deltaOf(base: object | undefined, next: object | undefined): ViewStyle 
   const out: Record<string, unknown> = {};
   let any = false;
   for (const [key, value] of Object.entries(next)) {
-    if ((base as Record<string, unknown>)[key] === value) continue;
+    if (Reflect.get(base, key) === value) continue;
     out[key] = value;
     any = true;
   }
@@ -71,7 +73,7 @@ interface PaintInput {
 /** Resolves the recipe and the one-off state coats into the styles a form
  *  paints with: `dressed` for the rest state, the rest per interaction. */
 function useFocusablePaint({
-  recipe,
+  recipe: definition,
   vars,
   states,
   style,
@@ -82,9 +84,18 @@ function useFocusablePaint({
   canPress,
   actionable,
 }: PaintInput) {
+  const scope = useStyleScope();
+
+  const theme = useTheme();
+  const index = useBreakpointIndex();
+  const recipe = useSv(definition);
   const coats = useMemo(
-    () => ({ focus: coat(states?.focus), hover: coat(states?.hover), press: coat(states?.press) }),
-    [states],
+    () => ({
+      focus: coat(states?.focus, index, theme),
+      hover: coat(states?.hover, index, theme),
+      press: coat(states?.press, index, theme),
+    }),
+    [states, theme, index],
   );
   const focusedStyle = coats.focus;
   const hoveredStyle = coats.hover;
@@ -112,7 +123,7 @@ function useFocusablePaint({
   // Native renders the control as two views, so the half of the style that says
   // how the parent places this control has to ride on the outer one; the web
   // targets have a single view and keep the style whole.
-  const layers = useMemo(() => (WEB ? null : splitBoxLayers(painted)), [painted]);
+  const layers = useMemo(() => (WEB ? null : splitBoxLayers(painted, scope)), [painted, scope]);
 
   // Under `painted`, never over it: a control that states its own cursor - a
   // resize seam asking for `col-resize` - has to keep it.
@@ -126,8 +137,13 @@ function useFocusablePaint({
   return { dressed, focusedStyle, hoveredStyle, layers, paintedPressed, resolve, rest };
 }
 
-const focusRing = (token: RingToken) =>
-  sharedStyle(`focusable:ring:${token}`, { ...activeTheme().ring[token] });
+const focusRing = (token: RingToken, scope: StyleScope = DEFAULT_STYLE_SCOPE) =>
+  sharedStyle(`focusable:ring:${token}`, { ...activeTheme(scope.theme).ring[token] }, scope);
+
+function useFocusRing(token: RingToken) {
+  const scope = useStyleScope();
+  return focusRing(token, scope);
+}
 
 interface CoatStack {
   base: StyleProp<ViewStyle>;
@@ -143,16 +159,21 @@ interface CoatStack {
   animated: StyleProp<ViewStyle>;
 }
 
-function coatStack(at: CoatStack): StyleProp<ViewStyle>[] {
+function coatStack(at: CoatStack, scope: StyleScope = DEFAULT_STYLE_SCOPE): StyleProp<ViewStyle>[] {
   return [
     at.base,
     at.hovered ? at.hoveredStyle : null,
     at.pressed ? at.pressedStyle : null,
     at.focusVisible ? at.focusedStyle : null,
     at.lifted ? LIFTED : GROUNDED,
-    at.showRing && at.focusVisible ? focusRing(at.ringToken) : null,
+    at.showRing && at.focusVisible ? focusRing(at.ringToken, scope) : null,
     at.animated,
   ];
 }
 
-export { coatStack, focusRing, useFocusablePaint };
+function useCoatStack(at: CoatStack) {
+  const scope = useStyleScope();
+  return coatStack(at, scope);
+}
+
+export { coatStack, focusRing, useCoatStack, useFocusablePaint, useFocusRing };

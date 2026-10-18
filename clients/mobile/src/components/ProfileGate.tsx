@@ -2,7 +2,7 @@
 // profile tiles. Presentation only; every tile's action arrives prebuilt from
 // the sign-in screen.
 
-import { AddTile, styles } from '@kromatv/ui/kit';
+import { AddTile, styles, useStyles } from '@kromatv/ui/kit';
 import { ScrollView } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { spacing } from '#mobile/lib/theme';
@@ -32,6 +32,8 @@ export function ProfileGate({
   error: string | null;
   onAdd(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <OnboardingBox>
@@ -57,7 +59,7 @@ export function ProfileGate({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   scroll: { grow: 0 },
   grid: {
     row: true,

@@ -156,7 +156,7 @@ describe('publish', () => {
   });
 
   it('derives a host label from the name, and falls back when nothing survives it', () => {
-    publish({ instance: 'Salon — TV 4K!' });
+    publish({ instance: 'Salon: TV 4K!' });
     latest().bound?.();
     vi.advanceTimersByTime(0);
     expect(latest().sent[0]?.packet.toString('utf8')).toContain('salon-tv-4k');

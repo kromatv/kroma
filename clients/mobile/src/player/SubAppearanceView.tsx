@@ -1,6 +1,6 @@
-import type { SubtitleAppearance } from '@kromatv/ui';
-import { SUB_COLORS } from '@kromatv/ui';
-import { Box, Chip, styles } from '@kromatv/ui/kit';
+import { SUB_COLORS, type SubtitleAppearance } from '@kromatv/ui';
+
+import { Box, Chip, radius as cornerRadius, styles, useStyles } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import type { useT } from '#mobile/lib/i18n';
 import { ChipGroup, SubHeader } from './TrackSheetRows';
@@ -23,6 +23,8 @@ export function SubAppearanceView({
   onAppearance(next: Partial<SubtitleAppearance>): void;
   onBack(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box>
       <SubHeader title={t('player.subAppearance')} onBack={onBack} />
@@ -67,7 +69,7 @@ export function SubAppearanceView({
   );
 }
 
-const s = styles({
-  swatch: { w: 30, h: 30, radius: 15, border: 'transparent', borderWidth: 2 },
+const sDefinition = styles({
+  swatch: { w: 30, h: 30, radius: cornerRadius.photo, border: 'transparent', borderWidth: 2 },
   swatchOn: { borderColor: 'accent' },
 });

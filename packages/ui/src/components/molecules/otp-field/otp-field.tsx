@@ -24,6 +24,7 @@ import {
 import { Pressable, TextInput } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { NO_ZOOM_FONT_SIZE } from '#ui/lib/field-shell';
 import { useCompleteOnce } from '#ui/lib/use-complete-once';
 import { useControllable } from '#ui/lib/use-controllable';
@@ -91,6 +92,8 @@ function Root({
   children,
   ...box
 }: Readonly<OtpFieldRootProps>) {
+  const s = useStyles(sDefinition);
+
   const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
   const input = useRef<TextInput>(null);
   const [focused, setFocused] = useState(false);
@@ -226,7 +229,7 @@ function oneGroup(maxLength: number): ReactNode {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   entry: {
     absolute: true,
     left: 0,

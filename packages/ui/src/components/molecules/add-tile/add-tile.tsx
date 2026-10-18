@@ -1,3 +1,4 @@
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // <AddTile>: the "one more" slot at the end of a row of tiles: add a profile,
 // add a server. A dashed square with a plus, and a LABEL under it, because the
 // two together are one control: one focus stop, one hit area, one thing a
@@ -57,7 +58,11 @@ const addTileVariants = svFor<{
     // A SOLID ink, never an alpha: the plus is two crossing strokes, and a
     // translucent colour double-paints where they overlap into a brighter knot
     // at the centre.
-    glyph: { color: '#BDBCC4', _hover: { color: 'accentText' }, _focus: { color: 'accentText' } },
+    glyph: {
+      color: 'chromeMuted',
+      _hover: { color: 'accentText' },
+      _focus: { color: 'accentText' },
+    },
     label: { color: 'text/80', fontWeight: '500' },
   },
   variants: {
@@ -66,13 +71,13 @@ const addTileVariants = svFor<{
         root: { gap: 6 },
         well: { w: WELL.md, h: WELL.md, radius: corner('md') },
         glyph: { size: 34 },
-        label: { fontSize: 15 },
+        label: { fontSize: textRoles.label.size },
       },
       tv: {
         root: { gap: 12 },
         well: { w: WELL.tv, h: WELL.tv, radius: corner('tv') },
         glyph: { size: 46 },
-        label: { fontSize: 18 },
+        label: { fontSize: textSizes.largeLabel },
       },
     },
   },

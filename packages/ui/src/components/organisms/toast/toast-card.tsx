@@ -1,3 +1,5 @@
+import { useStyles } from '#ui/core/styles';
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // One notice, drawn. The column it belongs to and the timer's length are the
 // host's business (see toast.tsx); this file is the card and its motion.
 
@@ -16,6 +18,8 @@ function ToastCard({
   from,
   onDone,
 }: Readonly<{ entry: ToastOptions; stay: number; from: number; onDone: () => void }>) {
+  const s = useStyles(sDefinition);
+
   const [appear] = useState(() => new Animated.Value(0));
   const done = useEffectEvent(onDone);
 
@@ -85,7 +89,7 @@ function wellTone(tone: ToastOptions['tone']): ColorToken {
   return 'text';
 }
 
-const s = styles({
+const sDefinition = styles({
   card: {
     bg: 'overlay',
     border: 'border',
@@ -94,8 +98,8 @@ const s = styles({
   },
   well: { bg: 'tint/8' },
   text: { minW: 0, shrink: 1 },
-  message: { font: 'ui', fontSize: 17, fontWeight: '600' },
-  detail: { font: 'ui', fontSize: 14, mt: 2 },
+  message: { font: 'ui', fontSize: textRoles.cardTitle.size, fontWeight: '600' },
+  detail: { font: 'ui', fontSize: textSizes.compactLabel, mt: 2 },
 });
 
 export { ToastCard };

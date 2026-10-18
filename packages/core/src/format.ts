@@ -13,10 +13,14 @@ import { formatRuntime } from './player';
  * a server-side bucket) for the given DISPLAY width, through the same
  * {@link artworkWidth} the client's own art helpers use. Remote (TMDB fallback)
  * and non-image URLs pass through untouched. */
-export function sizedImageUrl(url: string | null | undefined, displayWidth: number): string | null {
+export function sizedImageUrl(
+  url: string | null | undefined,
+  displayWidth: number,
+  scale = 1,
+): string | null {
   if (!url) return null;
   if (!url.includes('/api/images/') || url.includes('?')) return url;
-  return `${url}?w=${artworkWidth(displayWidth)}`;
+  return `${url}?w=${artworkWidth(displayWidth, scale)}`;
 }
 
 // Schemes an <img> may load. `data:` is narrowed to images: a bare `data:` allow-list would

@@ -36,65 +36,71 @@ function parsePayload(raw: string): DeepLink | null {
   return null;
 }
 
-// A link pushed before anyone is listening is kept and read once the catalogue
-// mounts (a launcher tile cold-starts the app); with a listener it is delivered
-// and not kept, or a remount would replay an old tile.
-let pending: DeepLink | null = null;
-const listeners = new Set<(link: DeepLink) => void>();
+/** Owns links delivered before this catalogue mounts. */
+export function createDeepLinks() {
+  // A link pushed before anyone is listening is kept and read once the catalogue
+  // mounts (a launcher tile cold-starts the app); with a listener it is delivered
+  // and not kept, or a remount would replay an old tile.
+  let pending: DeepLink | null = null;
+  const listeners = new Set<(link: DeepLink) => void>();
 
-/** Open `link` from outside React; called by a shell. */
-export function requestDeepLink(link: DeepLink): void {
-  if (listeners.size === 0) {
-    pending = link;
-    return;
+  /** Open `link` from outside React; called by a shell. */
+  function requestDeepLink(link: DeepLink): void {
+    if (listeners.size === 0) {
+      pending = link;
+      return;
+    }
+    for (const listener of listeners) listener(link);
   }
-  for (const listener of listeners) listener(link);
-}
 
-function takePendingDeepLink(): DeepLink | null {
-  const link = pending;
-  pending = null;
-  return link;
-}
-
-/** The tile selection that launched/targeted the app, or null. */
-export function readDeepLink(): DeepLink | null {
-  const t = tizen();
-  if (!t) return takePendingDeepLink();
-  try {
-    const req = t.application.getCurrentApplication().getRequestedAppControl();
-    const payload = req?.appControl.data.find((d) => d.key === 'PAYLOAD')?.value?.[0];
-    return payload ? parsePayload(payload) : null;
-  } catch {
-    return null;
+  function takePendingDeepLink(): DeepLink | null {
+    const link = pending;
+    pending = null;
+    return link;
   }
-}
 
-/** Fire `cb` when the running app is re-targeted by a preview tile; the cold
- *  launch is covered by readDeepLink(). Returns a cleanup function. */
-export function onDeepLink(cb: (link: DeepLink) => void): () => void {
-  listeners.add(cb);
-  const link = takePendingDeepLink();
-  if (link) cb(link);
-  const unsubscribe = () => {
-    listeners.delete(cb);
-  };
-
-  // Testing `window` alone would not detect the WebView shell: React Native
-  // defines `window` as an alias of `global`, without `addEventListener`.
-  if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
-    return unsubscribe;
+  /** The tile selection that launched/targeted the app, or null. */
+  function readDeepLink(): DeepLink | null {
+    const t = tizen();
+    if (!t) return takePendingDeepLink();
+    try {
+      const req = t.application.getCurrentApplication().getRequestedAppControl();
+      const payload = req?.appControl.data.find((d) => d.key === 'PAYLOAD')?.value?.[0];
+      return payload ? parsePayload(payload) : null;
+    } catch {
+      return null;
+    }
   }
-  // Tizen warm start: the platform re-targets the running app with a new
-  // appControl when another preview tile is selected.
-  if (!tizen()) return unsubscribe;
-  const handler = () => {
-    const link = readDeepLink();
+
+  /** Fire `cb` when the running app is re-targeted by a preview tile; the cold
+   *  launch is covered by readDeepLink(). Returns a cleanup function. */
+  function onDeepLink(cb: (link: DeepLink) => void): () => void {
+    listeners.add(cb);
+    const link = takePendingDeepLink();
     if (link) cb(link);
-  };
-  window.addEventListener('appcontrol', handler);
-  return () => {
-    unsubscribe();
-    window.removeEventListener('appcontrol', handler);
-  };
+    const unsubscribe = () => {
+      listeners.delete(cb);
+    };
+
+    // Testing `window` alone would not detect the WebView shell: React Native
+    // defines `window` as an alias of `global`, without `addEventListener`.
+    if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
+      return unsubscribe;
+    }
+    // Tizen warm start: the platform re-targets the running app with a new
+    // appControl when another preview tile is selected.
+    if (!tizen()) return unsubscribe;
+    const handler = () => {
+      const link = readDeepLink();
+      if (link) cb(link);
+    };
+    window.addEventListener('appcontrol', handler);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('appcontrol', handler);
+    };
+  }
+
+  return { requestDeepLink, readDeepLink, onDeepLink };
 }
+export type DeepLinks = ReturnType<typeof createDeepLinks>;

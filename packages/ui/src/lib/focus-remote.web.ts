@@ -1,17 +1,12 @@
+import type { RemoteTransportOptions } from './remote-transport-types';
 // Wiring the remote into the spatial navigator, on the browser targets, where
 // it arrives as ordinary key events on the document.
 
 import { type Direction, Directions } from '@kromatv/spatial-nav';
-import { configureRemote as configureNavigatorRemote } from '@kromatv/spatial-nav/react';
+import { useEffect } from 'react';
 import { holdsCaret, webDocument } from './dom';
-import { focusBox, focusSeq } from './focus-here';
-import { isMirrored } from './focus-mirror';
 import { walkTab } from './focus-tab';
-import { markPress } from './perf';
-
-const PROBE = { seq: focusSeq, box: focusBox };
-
-const handlers = new Set<(direction: Direction) => void>();
+import { usePerfSampler } from './perf-provider';
 
 // Tizen and webOS name the four directions without the `Arrow` prefix.
 const KEYS: Record<string, Direction> = {
@@ -56,28 +51,17 @@ const TAB_CODE = 9;
 // arrives, the navigator takes the focus back. A field is left alone: a caret
 // belongs where the typing goes. So is the control the navigator itself handed
 // the focus to (see `focus-mirror`), which is not stray at all.
-function dropStrayFocus(document: Document): void {
+function dropStrayFocus(document: Document, isMirrored: (element: unknown) => boolean): void {
   const held = document.activeElement as (HTMLElement & { blur?: () => void }) | null;
   if (!held || held === document.body || holdsCaret(held) || isMirrored(held)) return;
   held.blur?.();
 }
 
-let configured = false;
-
-/**
- * False in the web client, which has no remote and never calls
- * {@link configureRemote}: a chrome driving its own focus (the player) must then
- * post the presses itself, and posting them where a transport IS named would walk
- * the ring twice.
- */
-export function remoteConfigured(): boolean {
-  return configured;
-}
-
-export function configureRemote(): void {
-  configured = true;
-  configureNavigatorRemote({
-    subscribe: (handle) => {
+export function createRemoteTransport({ enabled, probe, mirror }: RemoteTransportOptions) {
+  const handlers = new Set<(direction: Direction) => void>();
+  return {
+    subscribe(handle: (direction: Direction) => void) {
+      if (!enabled) return () => {};
       handlers.add(handle);
       const document = webDocument();
       if (!document) {
@@ -94,9 +78,8 @@ export function configureRemote(): void {
         // (see `focus-tab`).
         if (event.key === 'Tab' || (!event.key && legacyCode(event) === TAB_CODE)) {
           event.preventDefault();
-          dropStrayFocus(document);
-          markPress();
-          walkTab(handle, PROBE, event.shiftKey);
+          dropStrayFocus(document, mirror.isMirrored);
+          walkTab(handle, probe, event.shiftKey);
           return;
         }
         // Only where `key` is absent, matching the Tab branch above. This file
@@ -115,8 +98,7 @@ export function configureRemote(): void {
         // Without preventDefault a television's browser scrolls the page on an
         // arrow key and the focused control walks out of the viewport.
         event.preventDefault();
-        dropStrayFocus(document);
-        markPress();
+        dropStrayFocus(document, mirror.isMirrored);
         handle(direction);
       };
       const onKeyUp = (event: KeyboardEvent) => {
@@ -131,23 +113,32 @@ export function configureRemote(): void {
         document.removeEventListener('keyup', onKeyUp);
       };
     },
-  });
+    postRemoteDirection(direction: Direction) {
+      for (const handle of handlers) handle(direction);
+    },
+    enabled,
+  };
 }
 
-/**
- * Posts a direction the app never heard as a press. One caller: a platform
- * chrome that answered the press itself and is handing the focus over (see
- * lib/focus-platform), where the navigator has to pick the ring up in the
- * direction the viewer was already moving.
- */
-export function postRemoteDirection(direction: Direction): void {
-  for (const handle of handlers) handle(direction);
-}
-
-/** Nothing to mount: the listener above is not tied to a screen. Kept so
- * <FocusScope> can call it on every target. */
-export function useRemoteBridge(_on = true): void {
-  // Intentionally empty.
+/** A screen records its own remote latency through its app's sampler. */
+export function useRemoteBridge(on = true): void {
+  const perf = usePerfSampler();
+  useEffect(() => {
+    const document = webDocument();
+    if (!on || !perf || !document) return;
+    const pressed = (event: KeyboardEvent) => {
+      if (
+        KEYS[event.key] ||
+        CODES[legacyCode(event)] ||
+        event.key === 'Tab' ||
+        legacyCode(event) === TAB_CODE
+      ) {
+        perf.markPress();
+      }
+    };
+    document.addEventListener('keydown', pressed, true);
+    return () => document.removeEventListener('keydown', pressed, true);
+  }, [on, perf]);
 }
 
 /** Nothing to subscribe to: a browser shell already reads its hardware keyboard

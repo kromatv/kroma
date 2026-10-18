@@ -1,10 +1,11 @@
 import { useHeldSeek } from '@kromatv/core/react';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
-import type { LayoutChangeEvent, View } from 'react-native';
-import { Dimensions } from 'react-native';
+import { Dimensions, type LayoutChangeEvent, type View } from 'react-native';
+
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { PLAYER_ROOT_ID, useIdleCursor } from './hooks/use-idle-cursor';
 import { usePlayerEnding } from './hooks/use-player-ending';
 import { usePlayerKeys } from './hooks/use-player-keys';
@@ -102,6 +103,8 @@ function Root({
   ref,
   children,
 }: Readonly<PlayerRootProps>) {
+  const s = useStyles(sDefinition);
+
   const c = useHeldSeek(controller);
   const slots = useMemo(() => sortSlots(children), [children]);
   const upNext = slots.upNext?.data ?? NO_UP_NEXT;
@@ -407,7 +410,7 @@ function Root({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   inert: { pointerEvents: 'none' },
   chromeLive: { pointerEvents: 'box-none' },
 });

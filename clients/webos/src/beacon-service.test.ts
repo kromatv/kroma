@@ -39,7 +39,7 @@ vi.mock('@kromatv/mdns-beacon', () => ({
   },
 }));
 
-await import('./beacon-service');
+const { registerBeaconService } = await import('./beacon-service');
 
 function send(method: string, payload: Record<string, unknown>): Record<string, unknown> {
   let answer: Record<string, unknown> = {};
@@ -97,4 +97,39 @@ describe('the webOS beacon service', () => {
     expect(send('unpublish', {})).toEqual({ returnValue: true });
     expect(stop.calls).toBe(1);
   });
+});
+
+describe('bounded Luna TXT payloads', () => {
+  it('drops entries exceeding the DNS TXT byte limit', () => {
+    send('publish', {
+      name: 'Salon',
+      txt: { proof: 'abc', tooLong: 'é'.repeat(128), ['k'.repeat(64)]: 'value' },
+    });
+    // An invalid key rejects the complete TXT map.
+    expect(raised[0]?.txt).toEqual({});
+    send('publish', { name: 'Salon', txt: { proof: 'abc', tooLong: 'é'.repeat(128) } });
+    expect(raised[1]?.txt).toEqual({ proof: 'abc' });
+  });
+});
+
+it('keeps independent service registrations from stopping each other', () => {
+  const a = new Map<string, (message: LunaMessage) => void>();
+  const b = new Map<string, (message: LunaMessage) => void>();
+  const stopA = registerBeaconService({
+    register: (method, handler) => {
+      a.set(method, handler);
+    },
+  });
+  const stopB = registerBeaconService({
+    register: (method, handler) => {
+      b.set(method, handler);
+    },
+  });
+  const message = (name: string): LunaMessage => ({ payload: { name }, respond: () => {} });
+  a.get('publish')?.(message('A'));
+  b.get('publish')?.(message('B'));
+  stopA();
+  expect(stop.calls).toBe(1);
+  stopB();
+  expect(stop.calls).toBe(2);
 });

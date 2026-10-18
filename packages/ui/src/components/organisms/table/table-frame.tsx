@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import type { TableVariant } from './table-context';
 
 interface FrameProps {
@@ -13,6 +14,8 @@ interface FrameProps {
 // flex column shrinks to its `min` and truncates, and a column that cannot fit
 // a phone says `from: 'md'` and leaves.
 function Frame({ variant, label, children }: Readonly<FrameProps>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box role="table" aria-label={label} style={variant === 'framed' ? s.framed : undefined}>
       {children}
@@ -20,7 +23,7 @@ function Frame({ variant, label, children }: Readonly<FrameProps>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   framed: { border: 'border', radius: 'xl', bg: 'surface1', overflow: 'hidden' },
 });
 

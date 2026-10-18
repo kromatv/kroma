@@ -5,7 +5,7 @@ import { type ReactElement, type RefObject, useCallback, useMemo } from 'react';
 import type { View } from 'react-native';
 import { Dialog } from '#ui/components/organisms/dialog';
 import { FocusColumn } from '#ui/lib/focus-scope';
-import { pointerDriving } from '#ui/lib/input-source';
+import { usePointerDriving } from '#ui/lib/input-source';
 import type { SurfacePresentation } from '#ui/lib/surface-presentation';
 import { type MenuDismissReason, MenuRowContext, type MenuRowState } from './menu-context';
 
@@ -34,7 +34,7 @@ export interface MenuSurfaceProps {
 // The dialog's two ways out, and it is handed neither: the backdrop belongs to
 // a pointer, and everything else here is Back - a remote's button, a phone's
 // system gesture, the key a browser TV shell sends.
-function dismissReason(): MenuDismissReason {
+function dismissReason(pointerDriving: () => boolean): MenuDismissReason {
   return pointerDriving() ? 'outside' : 'back';
 }
 
@@ -67,6 +67,7 @@ export function MenuSurfaceDialog({
   entries,
   rows,
 }: Readonly<MenuSurfaceProps>) {
+  const pointerDriving = usePointerDriving();
   const fire = useCallback(
     (spec: MenuRowSpec) => {
       if (spec.disabled) return;
@@ -77,7 +78,12 @@ export function MenuSurfaceDialog({
   );
   const opening = rows.find((row) => !row.disabled)?.at;
   return (
-    <Dialog.Root open={open} onClose={() => onDismiss(dismissReason())} title={label} width="sm">
+    <Dialog.Root
+      open={open}
+      onClose={() => onDismiss(dismissReason(pointerDriving))}
+      title={label}
+      width="sm"
+    >
       <FocusColumn>
         {entries.map((entry, at) => (
           <DialogEntry

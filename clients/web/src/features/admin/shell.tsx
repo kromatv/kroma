@@ -1,17 +1,19 @@
 import { KromaEvents } from '@kromatv/client/events';
-import { AdminHostProvider, ModuleSlotProvider } from '@kromatv/module-sdk';
+import { AddEngineHost, AdminHostProvider, ModuleSlotProvider } from '@kromatv/module-sdk';
 import { Box, useBreakpoint } from '@kromatv/ui/kit';
 import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { usePoll } from '#web/features/admin/hooks';
 import { AdminModalHosts } from '#web/features/admin/modal-hosts';
+import { StoreOpsProvider } from '#web/features/admin/module-ops';
 import { AdminContext } from '#web/features/admin/shell-context';
 import { AdminMobileTopbar, AdminSidebar } from '#web/features/admin/shell-sidebar';
 import { ADMIN_SCROLLER, ADMIN_SCROLLER_CONTENT } from '#web/features/admin/web-style';
-import { moduleRegistry } from '#web/modules/registry';
+import { useModuleRegistry } from '#web/modules/ModuleHostProvider';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
+import { useKromaClient } from '#web/shared/lib/web-runtime';
 import { PageFrame } from '#web/shared/ui';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal';
 
@@ -20,6 +22,9 @@ export { Denied, isAnyAdmin, useAsyncAction, useCap, usePoll } from '#web/featur
 export { useAdmin } from '#web/features/admin/shell-context';
 
 export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const eventClient = useKromaClient();
+
+  const moduleRegistry = useModuleRegistry();
   const { client, user } = useAuth();
   const queryClient = useQueryClient();
   const kit = useMemo(
@@ -48,6 +53,9 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
     ]);
     let pending: ReturnType<typeof setTimeout> | null = null;
     const ev = new KromaEvents(apiBase(), {
+      token: () => eventClient.sessionToken,
+      refresh: () => eventClient.refreshSession(),
+
       onEvent: (e) => {
         if (highFrequency.has(e.type)) return;
         if (pending) return;
@@ -62,14 +70,18 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
       if (pending) clearTimeout(pending);
       ev.close();
     };
-  }, [queryClient]);
+  }, [queryClient, eventClient.sessionToken, eventClient.refreshSession]);
 
   const adminValue = useMemo(() => ({ serverInfo }), [serverInfo]);
 
   return (
     <AdminHostProvider value={kit}>
       <ModuleSlotProvider registry={moduleRegistry}>
-        <AdminContext.Provider value={adminValue}>{children}</AdminContext.Provider>
+        <AddEngineHost>
+          <StoreOpsProvider>
+            <AdminContext.Provider value={adminValue}>{children}</AdminContext.Provider>
+          </StoreOpsProvider>
+        </AddEngineHost>
       </ModuleSlotProvider>
     </AdminHostProvider>
   );

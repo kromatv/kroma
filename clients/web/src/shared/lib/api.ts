@@ -1,17 +1,14 @@
+import { createAdminApi } from '#web/features/admin/module-api';
+import { createQueries } from './queries';
+import { makeQueryClient } from './query';
 // KROMA API origin resolution.
 
-import {
-  createKromaClient,
-  type KromaClient,
-  sessionToken,
-  setSessionToken,
-  sharedTokenExchange,
-} from '@kromatv/client';
+import type { KromaClient } from '@kromatv/client';
 import { loadSession } from '@kromatv/client/accounts';
 import type { MediaItem, Show } from '@kromatv/client/media';
 import { createQueryClient, type QueryClient } from '@kromatv/client/query';
 import type { SubtitleId } from '@kromatv/client/subtitles';
-import { activeLocale, isTextSubtitle, resolveImageUrl } from '@kromatv/core';
+import { deviceLocale, isTextSubtitle, resolveImageUrl } from '@kromatv/core';
 
 declare global {
   interface Window {
@@ -52,44 +49,37 @@ export function isAuthed(): boolean {
   return loadSession() != null;
 }
 
-// Exchange the stored access token for a fresh in-memory session bearer. Shared
-// app-wide via `sharedTokenExchange`, so a reload's boot exchange (auth provider),
-// this refresh, and any concurrent 401s coalesce into ONE POST /auth/token.
-function exchangeStoredSession(): Promise<string | undefined> {
-  const active = loadSession();
-  if (!active) return Promise.resolve(undefined);
-  return sharedTokenExchange(() =>
-    createKromaClient({ baseUrl: apiBase() }).accounts.exchangeToken(active.accessToken),
-  )
-    .then((res) => {
-      setSessionToken(res.token);
-      return res.token;
-    })
-    .catch(() => {
-      setSessionToken(undefined);
+/** Request state and query factories belong to one router, including SSR. */
+export function createWebRuntime(options: { client?: QueryClient } = {}) {
+  const client =
+    options.client ?? createQueryClient({ baseUrl: apiBase(), locale: deviceLocale() });
+  const queryClient = makeQueryClient();
+  async function exchangeStoredSession(): Promise<string | undefined> {
+    const active = loadSession();
+    if (!active) return undefined;
+    try {
+      const result = await client.session.sharedTokenExchange(() =>
+        client.accounts.exchangeToken(active.accessToken),
+      );
+      client.setAuthToken(result.token);
+      return result.token;
+    } catch {
+      client.setAuthToken(undefined);
       return undefined;
-    });
+    }
+  }
+  client.setRefreshHandler(exchangeStoredSession);
+  return {
+    client,
+    queryClient,
+    queries: createQueries(client),
+    moduleApi: createAdminApi(client),
+    async ensureSession(): Promise<void> {
+      if (!client.sessionToken) await exchangeStoredSession();
+    },
+  };
 }
-
-/** Ensure an in-memory session bearer exists, running the boot token exchange if
- * it hasn't happened yet. Route loaders `await` this so their first authed
- * request carries a bearer instead of racing the boot exchange and 401-then-
- * retrying on every reload. A no-op once a bearer is in memory or when signed
- * out (no stored session to exchange). */
-export function ensureSession(): Promise<void> {
-  if (sessionToken()) return Promise.resolve();
-  return exchangeStoredSession().then(() => undefined);
-}
-
-export function kromaClient(): QueryClient {
-  const c = createQueryClient({
-    baseUrl: apiBase(),
-    authToken: sessionToken(),
-    locale: activeLocale(),
-  });
-  c.setRefreshHandler(exchangeStoredSession);
-  return c;
-}
+export type WebRuntime = ReturnType<typeof createWebRuntime>;
 
 /** Resolve a metadata image path (relative `/api/…` cached art, or an absolute
  * URL) against the KROMA origin. Works on both server and client. */

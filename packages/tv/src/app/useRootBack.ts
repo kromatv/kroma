@@ -1,5 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { confirm, type FocusNavHandlers } from '@kromatv/ui/kit';
+import { type FocusNavHandlers, useConfirm } from '@kromatv/ui/kit';
 import { useCallback, useRef } from 'react';
 import { exitNeedsConfirm } from '#tv/app/appQuit';
 import { useNav } from '#tv/app/router';
@@ -11,6 +11,7 @@ import { useNav } from '#tv/app/router';
  * before the panel's, so only leaving the press unhandled lets the panel's own
  * Back dismiss it instead of stacking a second question behind it. */
 export function useRootBack(): FocusNavHandlers['onBack'] {
+  const confirm = useConfirm();
   const { back, canExit } = useNav();
   const t = useT();
   const asking = useRef(false);
@@ -29,6 +30,6 @@ export function useRootBack(): FocusNavHandlers['onBack'] {
       asking.current = false;
       if (yes) back();
     });
-  }, [back, t]);
+  }, [back, t, confirm]);
   return canExit ? ask : undefined;
 }

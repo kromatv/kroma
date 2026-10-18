@@ -14,16 +14,3 @@ export interface AnnouncedServer {
 }
 
 export type ServerBrowse = (timeoutMs: number) => Promise<AnnouncedServer[]>;
-
-let current: ServerBrowse | null = null;
-
-/** Call once at the app root, before the first render; null restores the
- * sweep-only default. */
-export function setServerBrowse(browse: ServerBrowse | null): void {
-  current = browse;
-}
-
-/** The registered browser, or null on a target that cannot browse. */
-export function serverBrowse(): ServerBrowse | null {
-  return current;
-}

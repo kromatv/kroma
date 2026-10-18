@@ -2,9 +2,9 @@ import { Pressable } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { useFocusMirror } from '#ui/lib/use-focus-mirror';
 import { useT } from '#ui/services/i18n';
 
@@ -32,6 +32,8 @@ export function CycleField({
   onDec: () => void;
   onInc: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const mirror = useFocusMirror(focused);
   return (
@@ -71,6 +73,8 @@ function CycleArrow({
   dim,
   onPress,
 }: Readonly<{ icon: IconName; label: string; dim: boolean; onPress: () => void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       {...VIRTUAL_FOCUS}
@@ -85,7 +89,7 @@ function CycleArrow({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   dim: { opacity: 0.45 },
   full: { opacity: 1 },
   cycleRow: { row: true, align: 'center', between: true, gap: 18, radius: 'xl', px: 22, py: 18 },

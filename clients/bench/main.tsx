@@ -4,7 +4,6 @@
 
 import {
   Box,
-  configureRemote,
   FocusScope,
   FocusScroll,
   FocusSlot,
@@ -16,8 +15,6 @@ import {
   useGrowingCount,
 } from '@kromatv/ui/kit';
 import { createRoot } from 'react-dom/client';
-
-configureRemote();
 
 const params = new URLSearchParams(location.search);
 const RAILS = Number(params.get('rails') ?? 8);

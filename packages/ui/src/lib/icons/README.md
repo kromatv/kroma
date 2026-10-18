@@ -59,18 +59,21 @@ time, so `expo start` and `expo export` both get it.
 
 ## The gallery, which needs the rest
 
-A workbench browsing the icons is the one app that must answer from the whole set,
-and `every-glyph.web.ts` fetches it as its own chunk. `library.ts` merges what
-arrives into the drawable set through `addGlyphs`, alongside the catalogue the
-workbench registered, and `useIconLibrary()` is what the icon browser waits on.
-That keeps 2,529 KB of glyphs and 373 KB of metadata (490 KB and 119 KB gzipped)
-out of the chunk `apps/kit` starts from, where they were 60% of it.
+A workbench creates `createIconLibrary({ loadCatalog, loadGlyphs: everyGlyph })` in its root's
+`useState` and passes it to `<IconLibraryProvider library={library}>`.
+Only the workbench supplies `every-glyph.web.ts`, which loads the complete glyph set as its own chunk;
+`useIconLibrary()` starts both fetches when the gallery mounts. Each root owns
+its metadata, expanded glyph set, fetch promise and subscriptions. Concurrent
+consumers share one fetch within that root, while other roots retain their subset.
 
-The widening reaches the NEXT render. `addGlyphs` drops the memoised resolutions,
-but nothing already on screen re-renders, so a component that drew the fallback
-keeps it until something else moves it. That is why the scan reads `.mdx`, so no
-page draws a fallback for a name it spells, and why the widening stays a workbench
-affair.
+Product lookups use an immutable table of the build's own glyphs, with constant
+time name resolution and a stable sorted name list. A loaded library notifies its
+subscribers, so an already-mounted icon can replace a fallback immediately.
+`useIconAssets()` exposes that root's glyph lookup and metadata index. Pure
+`searchIcons` accepts the index as `options.catalog`; it never reads another
+root's metadata. The former `addGlyphs`, `setIconCatalog`, and
+`setIconCatalogLoader` module mutations are removed. Published consumers pass
+additional glyphs through `createIconLibrary({ glyphs: { IconHeart } })`.
 
 Native has no such door. Metro cannot split a chunk off, so `every-glyph.ts` is
 `null`, the browser waits for nothing, and a Metro workbench that wants the gallery

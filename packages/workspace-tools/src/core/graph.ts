@@ -20,7 +20,7 @@ export interface Project {
 
 export interface Graph {
   projects: Project[];
-  // The server project, if present — the target of every `engines.server` check.
+  // The server project, if present: the target of every `engines.server` check.
   server?: Project;
 }
 

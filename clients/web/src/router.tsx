@@ -1,20 +1,17 @@
-import { configureKit } from '@kromatv/ui/kit';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { NotFound, RouteError } from '#web/features/errors/error-page';
 import { routeTree } from '#web/routeTree.gen';
-import { queryClient } from '#web/shared/lib/query';
-
-// A mouse-and-keyboard page, so real inputs rather than the TV caret form.
-configureKit({ formFactor: 'browser' });
+import { createWebRuntime } from '#web/shared/lib/api';
 
 export function getRouter() {
+  const runtime = createWebRuntime();
   return createTanStackRouter({
     routeTree,
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultNotFoundComponent: NotFound,
     defaultErrorComponent: RouteError,
-    context: { queryClient },
+    context: { runtime, queryClient: runtime.queryClient },
     defaultPreloadStaleTime: 0,
     defaultPendingMs: 150,
     defaultPendingMinMs: 400,

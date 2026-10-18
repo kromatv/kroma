@@ -13,7 +13,7 @@ import {
   sortTitles,
   titleLetter,
 } from '@kromatv/core';
-import { Box, Icon, styles } from '@kromatv/ui/kit';
+import { Box, Icon, styles, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
@@ -61,6 +61,8 @@ export function CatalogueScreen<T extends MediaItem | Show>({
   refetch(): void;
   refreshing: boolean;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { width, height } = useWindowDimensions();
@@ -178,6 +180,6 @@ export function CatalogueScreen<T extends MediaItem | Show>({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
 });

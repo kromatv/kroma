@@ -14,14 +14,15 @@ import { cellWidth, columnsFor } from '#ui/components/atoms/grid';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
 import { MovingStrip } from '#ui/components/organisms/virtual/moving-strip';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { FocusReporter } from '#ui/lib/focus-report';
-import { markGridFocus } from '#ui/lib/perf';
+import { usePerfSampler } from '#ui/lib/perf-provider';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { GridRow } from './grid-row';
 import { freeOffset, type GridRows, rowMetrics, rowTop, rowWindow, stripOffset } from './grid-rows';
 import { useWheelScroll } from './use-wheel-rows';
 
-const boxes = styles({
+const boxesDefinition = styles({
   noPointer: { pointerEvents: 'none' },
   viewport: { flex: true, minHeight: 0 },
   row: { position: 'absolute', left: 0 },
@@ -101,6 +102,11 @@ function VirtualGrid<T>({
   onEndReached,
   initialIndex,
 }: Readonly<VirtualGridProps<T>>) {
+  const clipStylesScoped = useStyles(clipStyles);
+
+  const boxes = useStyles(boxesDefinition);
+
+  const perf = usePerfSampler();
   const viewport = useRef<View>(null);
   // What to divide until the grid has measured its own box. A television never
   // resizes, so the measurement settles on the first layout and never moves
@@ -202,7 +208,7 @@ function VirtualGrid<T>({
     const row = Math.floor(index / geometry.count);
     // Which cell took focus, for the on-screen read-out: a remote bug on a
     // television has no inspector to ask.
-    markGridFocus(row, index % geometry.count);
+    perf?.markGridFocus(row, index % geometry.count);
     ringed.current = row + metrics.headerRows;
     setFocusedRow(row + metrics.headerRows);
   });
@@ -221,7 +227,10 @@ function VirtualGrid<T>({
     () => ({ paddingHorizontal: px, paddingTop: pt, height: metrics.height }),
     [px, pt, metrics.height],
   );
-  const rowStyle = useMemo<ViewStyle>(() => ({ ...boxes.row, flexDirection: 'row', gap }), [gap]);
+  const rowStyle = useMemo<ViewStyle>(
+    () => ({ ...boxes.row, flexDirection: 'row', gap }),
+    [gap, boxes.row],
+  );
 
   const rows = useMemo<GridRows>(() => ({ focus: focusRow, focusedRow }), [focusRow, focusedRow]);
   const lastRow = Math.max(0, metrics.count - metrics.headerRows - 1);
@@ -254,7 +263,7 @@ function VirtualGrid<T>({
       {/* Inert on the inner clip, not the viewport: the wheel listener lives on
           the viewport's node, and pointer-events none there would drop the pan
           events too. */}
-      <View style={[clipStyles.column, fraction === null ? null : boxes.noPointer]}>
+      <View style={[clipStylesScoped.column, fraction === null ? null : boxes.noPointer]}>
         {cell > 0 ? (
           <MovingStrip axis="y" offset={offset} still={fraction !== null} style={contentStyle}>
             <NavigatorView direction="vertical" alignInGrid>

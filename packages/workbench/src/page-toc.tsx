@@ -5,7 +5,7 @@
 // nothing here needs one. Every entry is a `Focusable`, so the list is walked
 // with a D-pad exactly as the component tree is.
 
-import { Box, Focusable, styles, sv, Text } from '@kromatv/ui/kit';
+import { Box, Focusable, styles, sv, Text, useStyles } from '@kromatv/ui/kit';
 import { space } from '@kromatv/ui/tokens';
 import { ScrollView } from 'react-native';
 import type { Section } from './outline';
@@ -37,6 +37,8 @@ function hasOutline(sections: readonly Section[]): boolean {
 }
 
 function PageToc({ sections, active, onJump }: Readonly<PageTocProps>) {
+  const s = useStyles(sDefinition);
+
   return (
     // The rule is what makes the list an aside rather than a second column of
     // the article: the article is centred in what is left of the window, so
@@ -96,7 +98,7 @@ const GUTTER = space[6];
 // than with their borders.
 const RAIL = 2;
 
-const s = styles({
+const sDefinition = styles({
   aside: { borderLeftWidth: 1, borderLeftColor: 'border' },
   title: { paddingLeft: RAIL + space[3], paddingBottom: space[3] },
   scroll: { grow: 0, shrink: 1 },

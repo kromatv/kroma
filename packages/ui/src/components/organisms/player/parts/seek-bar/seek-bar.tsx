@@ -9,7 +9,18 @@ import { msAtOffset, offsetAt, SEGMENT_GAP } from '#ui/components/organisms/play
 import { seekBar } from '#ui/components/organisms/player/lib/style';
 import { StoryboardThumb } from '#ui/components/organisms/player/parts/storyboard-thumb';
 import type { Chapter } from '#ui/components/organisms/player/types';
-import { sharedStyle, style, styles, sv, themed } from '#ui/core';
+import {
+  resolveStyles,
+  type StyleScope,
+  sharedStyle,
+  style,
+  styles,
+  sv,
+  themed,
+  useStyleScope,
+  useSv,
+} from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { a11yValue } from '#ui/lib/a11y';
 import { gradient } from '#ui/lib/css';
 import { suppressSelection } from '#ui/lib/drag-select';
@@ -17,6 +28,7 @@ import { formatTimecode } from '#ui/lib/intl';
 import { useFocusMirror } from '#ui/lib/use-focus-mirror';
 import { useT } from '#ui/services/i18n';
 import type { StoryboardTile } from '#ui/services/storyboard';
+import { seekBarPaint } from '../../lib/style';
 
 const seekTrack = sv({ base: { _focus: { ring: 'focusWash' } } });
 
@@ -62,12 +74,18 @@ export function SeekBar({
   onScrub,
   onScrubCommit,
 }: Readonly<SeekBarProps>) {
+  const seekTrackScoped = useSv(seekTrack);
+
+  const scope = useStyleScope();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const mirror = useFocusMirror(focused);
   const px = scaler(scale);
   // Built per scale, not per tick: this bar re-renders ~4 Hz and is not memoized,
   // so a fresh array would miss the style cache four times a second.
-  const sized = useMemo(() => scaled(scale), [scale]);
+  const sized = useMemo(() => scaled(scale, scope), [scale, scope]);
   // The track measures itself rather than reading a DOM rect, so the same drag
   // maths runs on a TV; PanResponder is the one gesture API both renderers have.
   const track = useDragTrack();
@@ -188,7 +206,7 @@ export function SeekBar({
         accessibilityRole="adjustable"
         accessibilityLabel={t('player.seekBar')}
         {...a11yValue({ min: 0, max: Math.round(dur), now: Math.round(shown), text: elapsed })}
-        style={seekTrack(undefined, { focus: focused }).root}
+        style={seekTrackScoped(undefined, { focus: focused }).root}
       >
         {/* The varying offset rides the transform via `style`, never a shorthand
             prop: a shorthand mints a permanent sharedBoxStyle entry per pixel. */}
@@ -225,7 +243,7 @@ export function SeekBar({
                 h="100%"
                 radius="pill"
                 overflow="hidden"
-                bg={seekBar().track}
+                bg={seekBar(scope.theme).track}
                 style={s.inert}
               >
                 {/* Insets vary per tick, so they bypass the shared cache via `style`.
@@ -234,14 +252,14 @@ export function SeekBar({
                   <Box
                     fill
                     radius="pill"
-                    bg={seekBar().buffered}
+                    bg={seekBar(scope.theme).buffered}
                     style={{ right: `${(1 - buffed) * 100}%` }}
                   />
                 )}
                 <Box
                   fill
                   radius="pill"
-                  style={[playedFill(), { right: `${(1 - played) * 100}%` }]}
+                  style={[playedFill(scope.theme), { right: `${(1 - played) * 100}%` }]}
                 />
               </Box>
             );
@@ -256,10 +274,10 @@ export function SeekBar({
             w={px(16)}
             h={px(16)}
             radius="circle"
-            bg="#FFFFFF"
+            bg="white"
             style={[
               s.inert,
-              playheadRing(),
+              playheadRing(scope.theme),
               {
                 transform: [{ translateX: playheadX - px(16) / 2 }, { translateY: -px(16) / 2 }],
               },
@@ -275,13 +293,19 @@ const TIME_SIZE = 18;
 const STAMP_SIZE = 14;
 const TRACK_HEIGHT = 6;
 
-const playedFill = themed(() =>
-  style(gradient(`linear-gradient(90deg, ${seekBar().played[0]}, ${seekBar().played[1]})`)),
+const playedFill = themed((theme) =>
+  style(
+    gradient(
+      `linear-gradient(90deg, ${seekBarPaint(theme).played[0]}, ${seekBarPaint(theme).played[1]})`,
+    ),
+  ),
 );
 
-const playheadRing = themed(() => style({ boxShadow: `0 0 0 4px ${seekBar().playheadHalo}` }));
+const playheadRing = themed((theme) =>
+  style({ boxShadow: `0 0 0 4px ${seekBarPaint(theme).playheadHalo}` }),
+);
 
-const s = styles({
+const sDefinition = styles({
   time: { font: 'ui', fontWeight: '600', color: 'text', fontVariant: ['tabular-nums'] },
   muted: { fontWeight: '500' },
   shrink: { shrink: 1 },
@@ -290,15 +314,29 @@ const s = styles({
   inert: { pointerEvents: 'none' },
 });
 
-function scaled(scale: number) {
+function scaled(scale: number, scope: StyleScope) {
   const px = scaler(scale);
-  const time = sharedStyle(`seek:time:${scale}`, { fontSize: px(TIME_SIZE) });
+  const time = sharedStyle(`seek:time:${scale}`, { fontSize: px(TIME_SIZE) }, scope);
   return {
-    time: [s.time, time],
-    timeMuted: [s.time, time, s.muted],
-    timeShrink: [s.time, time, s.shrink],
-    stamp: [s.stamp, sharedStyle(`seek:stamp:${scale}`, { fontSize: px(STAMP_SIZE) })],
-    track: [s.track, sharedStyle(`seek:track:${scale}`, { height: px(TRACK_HEIGHT) })],
+    time: [resolveStyles(sDefinition, scope).time, time],
+    timeMuted: [
+      resolveStyles(sDefinition, scope).time,
+      time,
+      resolveStyles(sDefinition, scope).muted,
+    ],
+    timeShrink: [
+      resolveStyles(sDefinition, scope).time,
+      time,
+      resolveStyles(sDefinition, scope).shrink,
+    ],
+    stamp: [
+      resolveStyles(sDefinition, scope).stamp,
+      sharedStyle(`seek:stamp:${scale}`, { fontSize: px(STAMP_SIZE) }, scope),
+    ],
+    track: [
+      resolveStyles(sDefinition, scope).track,
+      sharedStyle(`seek:track:${scale}`, { height: px(TRACK_HEIGHT) }, scope),
+    ],
   };
 }
 

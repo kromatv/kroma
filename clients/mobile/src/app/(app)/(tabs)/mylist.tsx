@@ -2,7 +2,7 @@
 // catalogues, in the order the server returned them (newest first).
 
 import type { MediaItem, Show } from '@kromatv/client/media';
-import { Box, Icon, styles, Text } from '@kromatv/ui/kit';
+import { Box, Icon, styles, Text, typeSpec as textRoles, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
@@ -16,6 +16,8 @@ import { useClient } from '#mobile/lib/session';
 import { spacing, type } from '#mobile/lib/theme';
 
 export default function MyList() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const { width } = useWindowDimensions();
@@ -85,9 +87,9 @@ export default function MyList() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   titleRow: { row: true, align: 'baseline', gap: 10, mb: spacing.sm },
-  title: { ...type.display, fontSize: 30 },
+  title: { ...type.display, fontSize: textRoles.heading.size },
   count: { ...type.caption },
 });

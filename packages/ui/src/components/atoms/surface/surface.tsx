@@ -1,3 +1,6 @@
+import { useSv } from '#ui/core/recipe';
+import { useStyleScope } from '#ui/core/style-context';
+import { useBreakpointStep } from '#ui/core/use-breakpoint';
 // <Surface>: a raised panel.
 //
 // Screens kept spelling out `bg="surface1" radius="lg" border="border" p={20}`,
@@ -8,7 +11,7 @@
 import type { ReactNode } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
-import { type BoxStyleProps, breakpointIndex, splitShorthand, sv, type Variant } from '#ui/core';
+import { type BoxStyleProps, splitShorthand, sv, type Variant } from '#ui/core';
 import { sharedBoxStyle } from '#ui/lib/box-style';
 
 const surfaceVariants = sv({
@@ -56,12 +59,15 @@ function Surface({
   children,
   ...box
 }: Readonly<SurfaceProps>) {
-  const { root } = surfaceVariants({ tone, pad, elevated });
+  const scope = useStyleScope();
+  const recipe = useSv(surfaceVariants);
+  const { root } = recipe({ tone, pad, elevated });
   // Resolved here so the layers land in the order a reader expects: recipe,
   // then the caller's shorthands, then the one-off `style`.
   const split = splitShorthand(box);
-  const key = split.breakpoints === 0 ? split.key : `${breakpointIndex()}|${split.key}`;
-  const asked = split.key ? sharedBoxStyle(key, split.shorthand as BoxStyleProps) : null;
+  const step = useBreakpointStep(split.breakpoints);
+  const key = split.breakpoints === 0 ? split.key : `${step}|${split.key}`;
+  const asked = split.key ? sharedBoxStyle(key, split.shorthand as BoxStyleProps, scope) : null;
   const panel = (
     <Box {...split.rest} style={[root, asked, style]}>
       {children}

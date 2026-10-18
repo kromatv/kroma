@@ -60,6 +60,29 @@ export type RoleStyle = Omit<
   letterSpacing?: number | string;
 };
 
+/** Size-only tokens for custom layouts that supply their own weight and leading.
+ * Complete text styles use the authored type roles below. */
+export const fontSizes = {
+  micro: 10,
+  microRaised: 10.5,
+  overlineRaised: 11.5,
+  caption: 12,
+  captionRaised: 12.5,
+  metaRaised: 13.5,
+  compactLabel: 14,
+  compactLabelRaised: 14.5,
+  largeLabel: 18,
+  controlTitle: 19,
+  tileTitle: 23,
+  panelTitle: 24,
+  mobileDisplay: 34,
+  pageTitle: 36,
+  pageTitleMedium: 40,
+  browseTitle: 46,
+  pageTitleWide: 48,
+  pageTitleTv: 56,
+} as const;
+
 export const typeSpec = {
   hero: { family: 'display', weight: '700', size: 66, ratio: 0.98, em: tracking.display },
   h1: { family: 'display', weight: '700', size: 38, ratio: 1, em: tracking.display },

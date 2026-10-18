@@ -1,3 +1,7 @@
+import { webTheme } from './web-theme.ts';
+
+const BROWSER_THEME = webTheme();
+
 // From a declaration the evaluator produced to the compiled leaf the build
 // writes in its place: the engine's own resolver turns the vocabulary into
 // longhands, the compiler turns those into classes.
@@ -22,7 +26,7 @@ function checkSerializable(value: unknown, at: string): void {
     case 'boolean':
       return;
     case 'object':
-      for (const [key, inner] of Object.entries(value as Record<string, unknown>)) {
+      for (const [key, inner] of Object.entries(value)) {
         checkSerializable(inner, `${at}.${key}`);
       }
       return;
@@ -46,10 +50,11 @@ function layer(perStep: readonly Record<string, unknown>[], at: string): StepLay
  * Compiles one declaration, or throws {@link Unstatic} for one only the
  * runtime can resolve.
  */
-export function compileDeclaration(decl: Record<string, unknown>): CompiledLeaf {
-  const piece = split(decl, 0);
+export function compileDeclaration(decl: object): CompiledLeaf {
+  const piece = split(decl, 0, BROWSER_THEME);
   if (!piece) throw new Unstatic('an empty declaration');
-  const perStep = piece.breakpoints === 0 ? [piece] : STEPS.map((at) => split(decl, at) as Split);
+  const perStep =
+    piece.breakpoints === 0 ? [piece] : STEPS.map((at) => split(decl, at, BROWSER_THEME) as Split);
   const rest = layer(
     perStep.map((step) => step.rest),
     'rest',

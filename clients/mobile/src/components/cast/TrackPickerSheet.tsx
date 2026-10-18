@@ -1,3 +1,5 @@
+import { Icon, styles, Text, useStyleScope, useStyles, useThemeVersion } from '@kromatv/ui/kit';
+
 // Audio / subtitle picker for the remote.
 //
 // Rows come from the receiver's own track list (sent with its heartbeat), so
@@ -5,7 +7,7 @@
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { CastTrack } from '@kromatv/client/cast';
-import { Icon, styles, Text } from '@kromatv/ui/kit';
+
 import type { Ref } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import { SheetBody, SheetTitle, sheetChrome } from '#mobile/components/ui';
@@ -28,8 +30,13 @@ export function TrackPickerSheet({
   onPick,
   ref,
 }: Readonly<TrackPickerSheetProps>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   return (
-    <BottomSheetModal ref={ref} {...sheetChrome()}>
+    <BottomSheetModal ref={ref} {...sheetChrome(scope)}>
       <SheetBody>
         <SheetTitle>{title}</SheetTitle>
         {/* Bounded: a long-dubbed film can carry a dozen tracks, so the sheet
@@ -58,6 +65,8 @@ function Row({
   selected,
   onPress,
 }: Readonly<{ label: string; selected: boolean; onPress(): void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       onPress={onPress}
@@ -73,7 +82,7 @@ function Row({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   list: { maxH: 380 },
   row: { row: true, align: 'center', gap: spacing.sm, minH: 52, px: spacing.sm, radius: radius.md },
   rowLabel: { ...type.body, flex: true, color: 'text' },

@@ -250,7 +250,7 @@ function VideoIntro({
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          background: '#0A0A0C',
+          background: 'bg',
         }}
       >
         {/* With no playable source (no HEVC decoder), play() rejects
@@ -276,7 +276,7 @@ function VideoIntro({
             fontSize: '1.8vmin',
             letterSpacing: '.42em',
             textTransform: 'uppercase',
-            color: 'rgba(244,243,240,.52)',
+            color: 'text/52',
             whiteSpace: 'nowrap',
             animation: 'kroma-tagIn .85s ease both',
             pointerEvents: 'none',

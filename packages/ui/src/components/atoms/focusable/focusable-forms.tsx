@@ -12,7 +12,7 @@ import { useControlledMirror } from '#ui/lib/controlled-focus-mirror';
 import { GROUNDED, LIFTED } from '#ui/lib/focus-lift';
 import { WEB } from '#ui/lib/platform';
 import { linkProps, platformRole } from './focusable-a11y';
-import { coatStack, focusRing } from './focusable-paint';
+import { useCoatStack, useFocusRing } from './focusable-paint';
 import type {
   A11yState,
   FocusableProps,
@@ -86,6 +86,7 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   // control in a pointer-driven shell with no focus state at all, and the page
   // sheet's `:focus-visible` rule drawing a square outline in its place.
   const lit = at.focusVisible;
+  const ring = useFocusRing(at.ringToken);
   const box = useControlledMirror(at.controlled && at.focused, at.setBox);
   // Hover goes UNDER the focus coats: a control the cursor is over and the
   // remote is on is a focused control, not a doubly-lit one.
@@ -95,7 +96,7 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
     hover,
     lit ? at.focusedStyle : null,
     lit ? LIFTED : GROUNDED,
-    lit && at.showRing ? focusRing(at.ringToken) : null,
+    lit && at.showRing ? ring : null,
     at.animated,
   ];
   return (
@@ -182,7 +183,7 @@ function NavigatorForm({
     children: FocusableProps['children'];
   };
 }>): ReactNode {
-  const painted = coatStack({
+  const painted = useCoatStack({
     base: at.layers ? at.layers.face : at.style,
     hovered: at.hovered,
     hoveredStyle: at.hoveredStyle,

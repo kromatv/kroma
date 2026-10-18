@@ -2,7 +2,7 @@
 // profile tile of the "Who's watching?" gate. Code and PIN entry is the kit's
 // <OtpField>, and the trailing "add" tile its <AddTile>.
 
-import { Box, Spinner, StatusDot, styles, Text } from '@kromatv/ui/kit';
+import { Box, Spinner, StatusDot, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { Pressable } from 'react-native';
 import { type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';
@@ -28,6 +28,8 @@ export function ProfileTile({
   locked?: boolean;
   onPress(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       onPress={onPress}
@@ -63,7 +65,7 @@ export function ProfileTile({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   tile: { align: 'center', gap: 6, w: 96 },
   tileBusy: {
     absolute: true,

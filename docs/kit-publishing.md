@@ -77,9 +77,13 @@ you need and pay for those alone:
 
 ```tsx
 import { IconHeart } from '@tabler/icons-react';
-import { addGlyphs } from '@kromatv/ui';
+import { createIconLibrary, IconLibraryProvider } from '@kromatv/ui';
+import { useState } from 'react';
 
-addGlyphs({ IconHeart });
+function App() {
+  const [library] = useState(() => createIconLibrary({ glyphs: { IconHeart } }));
+  return <IconLibraryProvider library={library}>{/* your app */}</IconLibraryProvider>;
+}
 ```
 
 `IconName` is derived from a type-only namespace import of Tabler, so it always
@@ -94,20 +98,19 @@ design system that ships someone else's catalogs is carrying their whole
 vocabulary to say ninety-five things.
 
 ```tsx
-import { createI18n, I18nProvider, setKitI18n } from '@kromatv/ui/i18n';
+import { createI18n, I18nProvider } from '@kromatv/ui/i18n';
 
 const i18n = createI18n({
   catalogs: { en: { 'player.play': 'Play' }, sv: { 'player.play': 'Spela' } },
   defaultLocale: 'en',
 });
-setKitI18n(i18n, 'en');
 
-<I18nProvider locale="sv">{children}</I18nProvider>;
+<I18nProvider i18n={i18n} locale="sv">{children}</I18nProvider>;
 ```
 
-`createI18n` is re-exported from the package, so there is no second install. Until
-`setKitI18n` is called every key renders as itself, which is a legible
-placeholder rather than a crash. `src/services/i18n-instance.ts` names the
+`createI18n` is re-exported from the package, so there is no second install. A published kit component outside a provider renders each key as itself.
+Pass the instance as an `i18n` prop so separate app roots retain their own
+catalogs; the former global `setKitI18n` registration is removed. `src/services/i18n-instance.ts` names the
 instance for this repo and the build swaps it for the published one, the same
 way `glyph-source.ts` is swapped for the icon subset.
 
@@ -124,3 +127,20 @@ sites across web, tv and mobile.
 - **`<KromaIntro>` is drawn from CSS.** Its 4K master and sting are stripped, so
   the component falls back to the scene it already falls back to on a decoder
   that cannot play HEVC.
+
+## Root defaults
+
+Wrap the app in `KitProvider` with a stable config, rather than calling global
+capability setters. For example:
+
+```tsx
+import { configureKit, KitProvider } from '@kromatv/ui';
+const config = configureKit({ formFactor: 'browser', surfaces: 'auto' });
+
+function Root() {
+  return <KitProvider config={config}><App /></KitProvider>;
+}
+```
+
+Native hosts pass `image` and `frost` components through the same config. Nested
+providers can state a TV form factor while inheriting the host's native backends.

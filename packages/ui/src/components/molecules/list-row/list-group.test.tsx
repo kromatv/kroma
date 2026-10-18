@@ -1,16 +1,14 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { activeTheme } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
-import { configureRemote } from '#ui/lib/focus-remote';
+
 import { FocusScope } from '#ui/lib/focus-scope';
 import { declared } from '#ui/testing';
 import { ListRow } from './list-row';
-
-beforeAll(() => configureRemote());
 
 afterEach(cleanup);
 

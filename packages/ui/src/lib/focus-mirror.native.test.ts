@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { isMirrored, mirrorFocus, redeliverKey } from './focus-mirror';
+import { createFocusMirror } from './focus-mirror';
 
 describe('focus-mirror (native)', () => {
   it('moves no focus, since the platform focus engine owns it', () => {
@@ -26,3 +26,5 @@ describe('focus-mirror (native)', () => {
     expect(event.stopImmediatePropagation).not.toHaveBeenCalled();
   });
 });
+
+const { isMirrored, mirrorFocus, redeliverKey } = createFocusMirror(() => false);

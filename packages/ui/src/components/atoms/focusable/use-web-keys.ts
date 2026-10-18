@@ -1,10 +1,8 @@
 import { type RefObject, useMemo } from 'react';
 import { webDocument } from '#ui/lib/dom';
-import { isMirrored } from '#ui/lib/focus-mirror';
+import { useFocusServices } from '#ui/lib/focus-services-context';
 import { WEB } from '#ui/lib/platform';
 import type { FocusRole, WebKeys } from './focusable-types';
-
-const navigatorHolds = () => isMirrored(webDocument()?.activeElement ?? null);
 
 function useWebKeys(
   active: boolean,
@@ -12,6 +10,7 @@ function useWebKeys(
   press: RefObject<() => void>,
   tabbable = true,
 ): { pressable: WebKeys; view: WebKeys } | null {
+  const { mirror } = useFocusServices();
   return useMemo(() => {
     if (!WEB || !active) return null;
     const answering = (owns: (key: string) => boolean): WebKeys => ({
@@ -24,9 +23,13 @@ function useWebKeys(
     });
     return {
       pressable: answering((key) => key === ' ' && role !== 'button'),
-      view: answering((key) => (key === 'Enter' || key === ' ') && !navigatorHolds()),
+      view: answering(
+        (key) =>
+          (key === 'Enter' || key === ' ') &&
+          !mirror.isMirrored(webDocument()?.activeElement ?? null),
+      ),
     };
-  }, [active, role, press, tabbable]);
+  }, [active, role, press, mirror, tabbable]);
 }
 
 export { useWebKeys };

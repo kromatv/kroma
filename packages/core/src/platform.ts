@@ -8,8 +8,7 @@
 // so that decision stays with them.
 
 function hasGlobal(name: string): boolean {
-  const globals = globalThis as Record<string, unknown>;
-  return globals[name] !== undefined;
+  return Reflect.get(globalThis, name) !== undefined;
 }
 
 /** Samsung Tizen: the UA carries "Tizen" and the platform injects the `tizen`

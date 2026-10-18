@@ -17,7 +17,6 @@ import {
   detectCapabilities,
   type HdrCapabilities,
   type PlaybackCapabilities,
-  setDecoderFrameLimits,
 } from './capabilities';
 
 type G = Record<string, unknown>;
@@ -348,26 +347,20 @@ describe('capabilities (cached)', () => {
   });
 });
 
-describe('setDecoderFrameLimits', () => {
-  afterEach(() => setDecoderFrameLimits(null));
-
-  it('carries an injected ceiling into both the native and the browser answer', () => {
+describe('explicit decoder frame ceilings', () => {
+  it('carries a ceiling into a native or browser capability value', () => {
     const limits = { hevc: { width: 1920, height: 1920 } };
-
-    setDecoderFrameLimits(limits);
-
-    expect(asReactNative('android', detectCapabilities).frameLimits).toEqual(limits);
-    expect(detectCapabilities().frameLimits).toEqual(limits);
+    expect(asReactNative('android', () => detectCapabilities(limits)).frameLimits).toEqual(limits);
+    expect(detectCapabilities(limits).frameLimits).toEqual(limits);
   });
-
-  it('drops the memoized capabilities so a ceiling set after the first read still lands', () => {
+  it('keeps independent ceilings from changing the default runtime snapshot', () => {
     const before = capabilities();
-
-    setDecoderFrameLimits({ hevc: { width: 1920, height: 1920 } });
-
+    const a = detectCapabilities({ hevc: { width: 1920, height: 1920 } });
+    const b = detectCapabilities({ hevc: { width: 3840, height: 2160 } });
+    expect(a.frameLimits?.hevc?.width).toBe(1920);
+    expect(b.frameLimits?.hevc?.width).toBe(3840);
+    expect(capabilities()).toBe(before);
     expect(before.frameLimits).toBeUndefined();
-    expect(capabilities().frameLimits).toEqual({ hevc: { width: 1920, height: 1920 } });
-    setDecoderFrameLimits(null);
-    expect(capabilities().frameLimits).toBeUndefined();
+    expect(Object.isFrozen(before.audio)).toBe(true);
   });
 });

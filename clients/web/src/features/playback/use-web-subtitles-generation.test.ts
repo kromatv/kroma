@@ -34,6 +34,15 @@ vi.mock('@kromatv/ui', () => ({
 }));
 
 vi.mock('#web/shared/lib/api', () => ({ kromaClient: kromaClientStub }));
+vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
+  const original = await importOriginal<typeof import('#web/shared/lib/web-runtime')>();
+  const { createWebTestRuntime } = await import('#web/shared/lib/web-runtime.fixture');
+  const { QueryClient } =
+    await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+  const cache = new QueryClient();
+  const runtime = createWebTestRuntime(kromaClientStub(), () => cache);
+  return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
+});
 
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({

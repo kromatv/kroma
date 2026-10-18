@@ -20,7 +20,7 @@
 //   viewfinder square: it computes height from width and beats the flex, which
 //   is what pushed the pad off the bottom.
 
-import { Box, Icon, Keypad, OtpField, styles, Text } from '@kromatv/ui/kit';
+import { Box, Icon, Keypad, OtpField, styles, Text, useStyles } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
@@ -55,6 +55,8 @@ export function codeFromQr(payload: string): string | null {
 }
 
 export function ScanCode({ onConnected }: Readonly<{ onConnected: () => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const client = useClient();
   const [code, setCode] = useState('');
@@ -155,7 +157,7 @@ export function ScanCode({ onConnected }: Readonly<{ onConnected: () => void }>)
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   scan: { flex: true, align: 'center', gap: spacing.md, pt: spacing.sm, pb: spacing.sm },
   // The one thing here that gives, and the reason nothing scrolls.
   cameraBox: {

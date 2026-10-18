@@ -5,8 +5,7 @@ const shouting = {
   translator: () => (key: string) => key.toUpperCase(),
 } as unknown as KitI18n;
 
-// The installed instance is module state with no reset, which is what it should
-// be: a host installs one once, at start-up. Each test gets its own module.
+// Each standalone fallback is tested separately from explicit instance injection.
 beforeEach(() => vi.resetModules());
 
 // A fresh module here re-imports KROMA's whole catalog set, and under the
@@ -17,7 +16,7 @@ const CATALOGS_LOAD = 30_000;
 const load = () => import('./i18n-instance');
 
 describe('the instance the kit translates through', () => {
-  it("speaks KROMA's catalogs until a host installs its own", {
+  it("speaks KROMA's catalogs by default", {
     timeout: CATALOGS_LOAD,
   }, async () => {
     const { fallbackLocale, providerI18n, translatorFor } = await load();
@@ -27,21 +26,21 @@ describe('the instance the kit translates through', () => {
     expect(providerI18n()).toBeDefined();
   });
 
-  it('speaks the installed one once a host gives it one', { timeout: CATALOGS_LOAD }, async () => {
-    const { fallbackLocale, providerI18n, setKitI18n, translatorFor } = await load();
+  it('uses an explicit instance without replacing the default', {
+    timeout: CATALOGS_LOAD,
+  }, async () => {
+    const { fallbackLocale, providerI18n, translatorFor } = await load();
 
-    setKitI18n(shouting, 'fr');
-
-    expect(translatorFor('fr')('player.play')).toBe('PLAYER.PLAY');
+    expect(translatorFor('fr', shouting)('player.play')).toBe('PLAYER.PLAY');
     expect(fallbackLocale()).toBe('fr');
-    expect(providerI18n()).toBe(shouting);
+    expect(providerI18n()).not.toBe(shouting);
   });
 });
 
 describe('the instance the published package translates through', () => {
   const loadPublished = () => import('./i18n-instance.published');
 
-  it('renders every key as itself until a host installs one', async () => {
+  it('renders every key as itself without an instance', async () => {
     const { fallbackLocale, providerI18n, translatorFor } = await loadPublished();
 
     expect(translatorFor('en')('player.play')).toBe('player.play');
@@ -49,13 +48,11 @@ describe('the instance the published package translates through', () => {
     expect(providerI18n()).toBeUndefined();
   });
 
-  it('speaks the host catalogs it is given', async () => {
-    const { fallbackLocale, providerI18n, setKitI18n, translatorFor } = await loadPublished();
+  it('uses explicit host catalogs without changing the standalone fallback', async () => {
+    const { fallbackLocale, providerI18n, translatorFor } = await loadPublished();
 
-    setKitI18n(shouting, 'fr');
-
-    expect(translatorFor('fr')('player.play')).toBe('PLAYER.PLAY');
-    expect(fallbackLocale()).toBe('fr');
-    expect(providerI18n()).toBe(shouting);
+    expect(translatorFor('fr', shouting)('player.play')).toBe('PLAYER.PLAY');
+    expect(fallbackLocale()).toBe('en');
+    expect(providerI18n()).not.toBe(shouting);
   });
 });

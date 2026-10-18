@@ -1,3 +1,5 @@
+import { type StyleDecl, sharedStyle, style, svFor, useStyleScope, useSv } from '#ui/core';
+import { typeSpec as textRoles } from '#ui/core/tokens';
 // One segment: a radio in the group's row, and the shell it is drawn in.
 
 import { type ReactNode, useCallback } from 'react';
@@ -5,7 +7,7 @@ import type { LayoutChangeEvent, View } from 'react-native';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type StyleDecl, sharedStyle, style, svFor } from '#ui/core';
+
 import { bySize, CONTROL } from '#ui/lib/field-shell';
 import { nameOf } from '#ui/lib/name-of';
 import { partContext } from '#ui/lib/part-context';
@@ -18,7 +20,7 @@ const segmentGroupVariants = svFor<{ root: StyleDecl; label: StyleDecl; hint: St
   slots: {
     root: { row: true, center: true, gap: 7, _hover: { bg: 'tint/8' }, _press: { bg: 'tint/14' } },
     label: { font: 'ui', fontWeight: '600', color: 'text/75' },
-    hint: { font: 'ui', fontSize: 11, color: 'textDim' },
+    hint: { font: 'ui', fontSize: textRoles.overline.size, color: 'textDim' },
   },
   variants: {
     size: bySize((m) => ({
@@ -53,11 +55,19 @@ interface ItemProps {
 }
 
 function Item({ value, label, icon, disabled, children }: Readonly<ItemProps>) {
+  const segmentGroupVariantsScoped = useSv(segmentGroupVariants);
+
+  const scope = useStyleScope();
+
   const { value: picked, select, size, stretch, report, tabStop, mount } = useSegmentGroup('Item');
   const active = value === picked;
   const glyph = Math.round(CONTROL[size].fontSize * 1.2);
-  const corner = sharedStyle(`segment:corner:${size}`, { radius: segmentRadius(size) });
-  const slots = segmentGroupVariants({ size, active });
+  const corner = sharedStyle(
+    `segment:corner:${size}`,
+    { radius: segmentRadius(size, scope) },
+    scope,
+  );
+  const slots = segmentGroupVariantsScoped({ size, active });
   const keep = useCallback((view: View | null) => mount(value, view), [mount, value]);
   return (
     <ItemContext.Provider value={slots}>

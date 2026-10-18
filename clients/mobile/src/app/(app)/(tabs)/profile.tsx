@@ -2,7 +2,15 @@
 // else lives in dedicated pages.
 
 import { useFormat } from '@kromatv/ui';
-import { Box, Button, Icon, styles, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  radius as cornerRadius,
+  Icon,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +32,8 @@ function Row({
   value?: string;
   onPress(): void;
 }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [s.row, pressed && s.rowPressed]}>
       <Box style={s.rowIconLabel}>
@@ -43,6 +53,8 @@ function Row({
 }
 
 export default function Profile() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const fmt = useFormat();
   const router = useRouter();
@@ -113,7 +125,7 @@ export default function Profile() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   body: { gap: spacing.md, p: spacing.md, pb: TAB_BAR_CLEARANCE, ...boxed(contentWidth.reading) },
   identity: { align: 'center', gap: 3, mb: spacing.md },
@@ -125,7 +137,7 @@ const s = styles({
     w: 28,
     h: 28,
     bg: 'accent',
-    radius: 14,
+    radius: cornerRadius.mobile,
     border: 'bg',
     borderWidth: 3,
   },
@@ -143,7 +155,7 @@ const s = styles({
   },
   rowPressed: { bg: 'surface2' },
   rowIconLabel: { row: true, align: 'center', shrink: 1, gap: 12 },
-  rowIconBox: { center: true, w: 34, h: 34, bg: 'accentSoft', radius: 10 },
+  rowIconBox: { center: true, w: 34, h: 34, bg: 'accentSoft', radius: cornerRadius.md },
   rowLabel: { ...type.body, fontWeight: '500' },
   rowRight: { row: true, align: 'center', shrink: 1, gap: 8 },
   rowValue: { ...type.caption, shrink: 1 },

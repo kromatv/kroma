@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // The push opt-in for this device, plus the per-account delivery matrix.
 
 import {
@@ -23,9 +24,8 @@ import {
 } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { kromaClient } from '#web/shared/lib/api';
+
 import { pushBlocker, webPush } from '#web/shared/lib/push';
-import { userQueries } from '#web/shared/lib/queries';
 
 // The two channel columns must line up with the switches under them, and a
 // switch is one shell step wide.
@@ -41,6 +41,8 @@ export function NotificationsCard() {
 }
 
 function PushPanel() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const qc = useQueryClient();
   const [blocker, setBlocker] = useState<PushBlocker | null>(null);
@@ -51,7 +53,7 @@ function PushPanel() {
   // Reads `navigator`, so it cannot run in the prerendered shell's first render.
   useEffect(() => setBlocker(pushBlocker()), []);
 
-  const { data } = useQuery(userQueries.pushKey());
+  const { data } = useQuery(webRuntime.queries.userQueries.pushKey());
   const subscribed = data?.subscribed ?? false;
 
   const toggle = async () => {
@@ -59,9 +61,9 @@ function PushPanel() {
     setError(null);
     setTested(null);
     try {
-      if (subscribed) await disablePush(webPush, kromaClient());
-      else await enablePush(webPush, kromaClient());
-      await qc.invalidateQueries({ queryKey: userQueries.pushKey().queryKey });
+      if (subscribed) await disablePush(webPush, webRuntime.client);
+      else await enablePush(webPush, webRuntime.client);
+      await qc.invalidateQueries({ queryKey: webRuntime.queries.userQueries.pushKey().queryKey });
     } catch (e) {
       const reason = blockerOf(e);
       setError(reason ? t(PUSH_BLOCKER_LABEL[reason]) : t('push.failed'));
@@ -73,7 +75,7 @@ function PushPanel() {
   const sendTest = async () => {
     setBusy(true);
     try {
-      const { delivered } = await kromaClient().notifications.push.test();
+      const { delivered } = await webRuntime.client.notifications.push.test();
       setTested(delivered);
     } finally {
       setBusy(false);
@@ -135,9 +137,11 @@ function PushPanel() {
 }
 
 function CategoryMatrix() {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const qc = useQueryClient();
-  const { data, isPending } = useQuery(userQueries.notificationPrefs());
+  const { data, isPending } = useQuery(webRuntime.queries.userQueries.notificationPrefs());
   const [saving, setSaving] = useState<NotificationCategory | null>(null);
 
   const update = async (category: NotificationCategory, patch: Partial<CategoryPref>) => {
@@ -147,8 +151,8 @@ function CategoryMatrix() {
       const categories = data.categories.map((c) =>
         c.category === category ? { ...c, ...patch } : c,
       );
-      const saved = await kromaClient().notifications.setPrefs({ categories });
-      qc.setQueryData(userQueries.notificationPrefs().queryKey, saved);
+      const saved = await webRuntime.client.notifications.setPrefs({ categories });
+      qc.setQueryData(webRuntime.queries.userQueries.notificationPrefs().queryKey, saved);
     } finally {
       setSaving(null);
     }

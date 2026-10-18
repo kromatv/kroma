@@ -10,81 +10,64 @@
 // rendering <TvStage> at half size) states it with `pinDesignWidth`.
 
 import { Dimensions, Platform } from 'react-native';
-import {
-  BREAKPOINT_ATTRIBUTE,
-  breakpointAt,
-  stepAt,
-  stepsReached,
-} from '#ui/core/breakpoint-cascade';
+import { breakpointAt, stepAt } from '#ui/core/breakpoint-cascade';
 import { BREAKPOINTS, type BreakpointName, CANVAS } from '#ui/core/tokens';
-import { webDocument } from '#ui/lib/dom';
 
 export type { Breakpoints, Responsive } from '#ui/core/breakpoint-cascade';
 export { breakpointBits, valueAt } from '#ui/core/breakpoint-cascade';
 
-const listeners = new Set<() => void>();
-
-let current = -1;
-let pinned: number | undefined;
-
+/** Pure viewport reading for tools and declarations outside a mounted tree. */
 function measure(): number {
-  if (pinned !== undefined) return pinned;
-  if (Platform.isTV) return CANVAS.width;
-  return Dimensions.get('window').width;
+  return Platform.isTV ? CANVAS.width : Dimensions.get('window').width;
 }
-
-function stampStepOnRoot(index: number): void {
-  webDocument()?.documentElement.setAttribute(BREAKPOINT_ATTRIBUTE, stepsReached(index));
-}
-
-function settle(): void {
-  const next = breakpointAt(measure());
-  if (next === current) return;
-  current = next;
-  stampStepOnRoot(next);
-  for (const listener of listeners) listener();
-}
-
-/** The active breakpoint as a position in {@link BREAKPOINTS}, which is what
- *  the cascade and every cache key are expressed in. */
-export function breakpointIndex(): number {
-  if (current < 0) {
-    Dimensions.addEventListener('change', settle);
-    current = breakpointAt(measure());
-    stampStepOnRoot(current);
-  }
-  return current;
-}
-
-/** The active breakpoint. */
-export function currentBreakpoint(): BreakpointName {
-  return BREAKPOINTS[breakpointIndex()] as BreakpointName;
-}
-
-/**
- * States the width every declaration resolves against, for a surface whose own
- * size is not the design's: `<TvStage>` paints a fixed `CANVAS.width` canvas
- * however small the window it is scaled into. Call it with nothing to follow
- * the viewport again.
- */
-export function pinDesignWidth(width?: number): void {
-  breakpointIndex();
-  pinned = width;
-  settle();
-}
-
-/** Subscribe to breakpoint CROSSINGS; returns the unsubscribe. A resize that
- *  stays inside one step notifies nobody. */
-export function subscribeBreakpoint(listener: () => void): () => void {
-  breakpointIndex();
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
+export function createBreakpointRuntime(width?: number) {
+  const listeners = new Set<() => void>();
+  let pinned = width;
+  let current = breakpointAt(pinned ?? measure());
+  let holds = 0;
+  let stop = () => {};
+  const settle = () => {
+    const next = breakpointAt(pinned ?? measure());
+    if (next === current) return;
+    current = next;
+    for (const listener of listeners) listener();
+  };
+  return {
+    index: () => current,
+    pinDesignWidth(next?: number) {
+      pinned = next;
+      settle();
+    },
+    retain() {
+      holds += 1;
+      if (holds === 1) {
+        settle();
+        const sub = Dimensions.addEventListener('change', settle);
+        stop = () => sub.remove();
+      }
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        holds -= 1;
+        if (!holds) stop();
+      };
+    },
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
   };
 }
-
-/** The step a declaration naming `mask` resolves at, against the active
- *  breakpoint unless `at` says otherwise; see {@link stepAt}. */
-export function breakpointStep(mask: number, at?: number): number {
-  return stepAt(mask, at ?? breakpointIndex());
+export type BreakpointRuntime = ReturnType<typeof createBreakpointRuntime>;
+export function breakpointIndex(runtime?: BreakpointRuntime): number {
+  return runtime?.index() ?? breakpointAt(measure());
+}
+export function currentBreakpoint(runtime?: BreakpointRuntime): BreakpointName {
+  return BREAKPOINTS[breakpointIndex(runtime)] as BreakpointName;
+}
+export function breakpointStep(mask: number, at = breakpointIndex()): number {
+  return stepAt(mask, at);
 }

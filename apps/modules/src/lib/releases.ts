@@ -98,7 +98,7 @@ async function fetchReleases(env: Env | undefined): Promise<History> {
 }
 
 /** Every published version of every module, or `{}` when the listing cannot be
- *  read — history enriches a record, it never gates one. */
+ *  read: history enriches a record, it never gates one. */
 export async function releaseHistory(
   env: Env | undefined,
   waitUntil: (p: Promise<unknown>) => void,

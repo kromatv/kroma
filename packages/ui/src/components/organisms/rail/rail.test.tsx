@@ -27,7 +27,7 @@ describe('<Rail> parts', () => {
           {CHIPS}
         </Rail.Root>,
       ),
-    ).container.innerHTML;
+    ).container.querySelector('[data-kroma-theme]')?.innerHTML;
 
     cleanup();
     const last = render(
@@ -37,7 +37,7 @@ describe('<Rail> parts', () => {
           <Rail.Title>Reprendre</Rail.Title>
         </Rail.Root>,
       ),
-    ).container.innerHTML;
+    ).container.querySelector('[data-kroma-theme]')?.innerHTML;
     expect(last).toBe(first);
   });
 

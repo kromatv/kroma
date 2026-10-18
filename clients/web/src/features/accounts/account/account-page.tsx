@@ -15,6 +15,7 @@ import {
   Surface,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { NotificationsCard } from '#web/features/accounts/account/notifications-card';
@@ -47,6 +48,8 @@ export function AccountPage() {
 }
 
 function ProfileEditor() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { user, client, updateUser, logout } = useAuth();
 
@@ -218,7 +221,7 @@ function ProfileEditor() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   dock: {
     position: 'sticky',
     bottom: 0,

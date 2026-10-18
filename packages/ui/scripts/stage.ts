@@ -120,7 +120,9 @@ const manifest = {
   // still say so. Node and TypeScript both read an `imports` map from the
   // package that declares it, so the specifier resolves inside the tarball.
   imports: { '#ui/*': { types: './*.d.ts', default: './*.js' } },
+  dependencies: { zod: source.dependencies.zod },
   peerDependencies: {
+    '@testing-library/react': '>=16',
     react: '>=18',
     'react-dom': '>=18',
     'react-native-web': '>=0.21',
@@ -135,6 +137,7 @@ const manifest = {
   // but the Expo two, which only the image backend and the theme audio reach.
   peerDependenciesMeta: Object.fromEntries(
     [
+      '@testing-library/react',
       'react-dom',
       'react-native-web',
       '@tabler/icons-react',

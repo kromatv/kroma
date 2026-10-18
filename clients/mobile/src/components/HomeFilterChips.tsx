@@ -1,6 +1,6 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { genreSegment } from '@kromatv/core';
-import { Chip, Icon, IconButton, styles } from '@kromatv/ui/kit';
+import { Chip, Icon, IconButton, styles, useStyles } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
@@ -17,6 +17,8 @@ export function HomeFilterChips({
   filter,
   onFilter,
 }: Readonly<{ filter: TitleFilter; onFilter: (next: TitleFilter) => void }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const router = useRouter();
   const gutters = useGutters();
@@ -77,6 +79,6 @@ export function HomeFilterChips({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   row: { row: true, align: 'center', gap: 8, pt: spacing.md },
 });

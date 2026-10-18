@@ -1,10 +1,19 @@
-import { Box, classes, PageMain, PosterSkeleton, rhythm, Skeleton, styles } from '@kromatv/ui/kit';
+import {
+  Box,
+  classes,
+  PageMain,
+  PosterSkeleton,
+  rhythm,
+  Skeleton,
+  styles,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { PAGE_GUTTER, PageFrame } from '#web/shared/ui/page';
 import { TileGrid } from '#web/shared/ui/tile-grid';
 
 export { CardSkeleton, Skeleton, TableSkeleton } from '@kromatv/ui/kit';
 
-const s = styles({
+const sDefinition = styles({
   homeBand: { width: '100%', height: '46vh', minHeight: 320 },
   detailBand: {
     position: 'relative',
@@ -43,6 +52,8 @@ export function RailSkeleton({ count = 7 }: Readonly<{ count?: number }>) {
 }
 
 export function PageSkeleton({ rails = 3 }: Readonly<{ rails?: number }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <PageFrame>
       <div className={classes(s.homeBand)}>
@@ -57,6 +68,8 @@ export function PageSkeleton({ rails = 3 }: Readonly<{ rails?: number }>) {
 }
 
 export function DetailSkeleton() {
+  const s = useStyles(sDefinition);
+
   return (
     <PageMain>
       <Box pb={64}>

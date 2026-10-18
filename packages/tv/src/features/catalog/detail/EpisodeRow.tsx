@@ -1,3 +1,28 @@
+import {
+  Badge,
+  Box,
+  Button,
+  CARD_SCRIM,
+  radius as cornerRadius,
+  Frost,
+  gradient,
+  Icon,
+  Img,
+  Progress,
+  Row,
+  resolveStyles,
+  type StyleScope,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  fontSizes as textSizes,
+  tintGradient,
+  useStyleScope,
+  useStyles,
+  useThemeVersion,
+  WatchedBadge,
+} from '@kromatv/ui/kit';
+
 // One episode, as a row: still, title + status pills, ends-at, recap, and the
 // row's three actions as real buttons. Values ported literally from the
 // design source so a diff against it stays legible.
@@ -10,22 +35,7 @@
 import type { MediaItem } from '@kromatv/client/media';
 import { episodeTag, formatRuntime, posterColors } from '@kromatv/core';
 import { endsAtClock, useLocale, useT } from '@kromatv/ui';
-import {
-  Badge,
-  Box,
-  Button,
-  CARD_SCRIM,
-  Frost,
-  gradient,
-  Icon,
-  Img,
-  Progress,
-  Row,
-  styles,
-  Text,
-  tintGradient,
-  WatchedBadge,
-} from '@kromatv/ui/kit';
+
 import { type ReactNode, useState } from 'react';
 
 export const EPISODE_W = 480;
@@ -37,16 +47,19 @@ const PLAY_DISC = 54;
 
 type RowAction = 'play' | 'seen' | 'report';
 
-function episodeStill(at: {
-  episode: MediaItem;
-  still: string | null;
-  watched: boolean;
-  action: RowAction | null;
-  tag: string;
-  runtime: string | null;
-  progress: number | null;
-  inProgress: boolean;
-}): ReactNode {
+function episodeStill(
+  at: {
+    episode: MediaItem;
+    still: string | null;
+    watched: boolean;
+    action: RowAction | null;
+    tag: string;
+    runtime: string | null;
+    progress: number | null;
+    inProgress: boolean;
+  },
+  scope: StyleScope,
+): ReactNode {
   return (
     <Box w={STILL_W} aspect={16 / 9} center radius="lg" overflow="hidden" bg="surface2" shrink={0}>
       {/* Every layer rounds itself and the parent still clips - same
@@ -57,7 +70,7 @@ function episodeStill(at: {
         radius="lg"
         position="50% 30%"
         fill
-        style={at.watched ? s.dimmed : undefined}
+        style={at.watched ? resolveStyles(sDefinition, scope).dimmed : undefined}
       />
       <Box fill pointerEvents="none" radius="lg" style={gradient(CARD_SCRIM)} />
       <Box
@@ -74,13 +87,13 @@ function episodeStill(at: {
         />
       </Box>
       {at.tag ? (
-        <Box absolute top={10} left={10} px={9} py={4} radius={7} bg={CHIP_BG}>
-          <Text style={s.tagChip}>{at.tag}</Text>
+        <Box absolute top={10} left={10} px={9} py={4} radius={cornerRadius.badge} bg={CHIP_BG}>
+          <Text style={resolveStyles(sDefinition, scope).tagChip}>{at.tag}</Text>
         </Box>
       ) : null}
       {at.runtime ? (
-        <Box absolute bottom={11} right={11} px={8} py={3} radius={6} bg={CHIP_BG}>
-          <Text style={s.runtimeChip}>{at.runtime}</Text>
+        <Box absolute bottom={11} right={11} px={8} py={3} radius={cornerRadius.xs} bg={CHIP_BG}>
+          <Text style={resolveStyles(sDefinition, scope).runtimeChip}>{at.runtime}</Text>
         </Box>
       ) : null}
       {at.watched ? <WatchedBadge corner="top-right" /> : null}
@@ -112,6 +125,11 @@ export function EpisodeRow({
   onReport: () => void;
   onFocus?: () => void;
 }>) {
+  const scope = useStyleScope();
+  useThemeVersion();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const locale = useLocale();
   const title = episode.episodeTitle ?? episode.title;
@@ -141,7 +159,10 @@ export function EpisodeRow({
     <Frost>
       <Box style={[s.row, watched ? s.rowWatched : null, lit ? s.rowLit : null]}>
         <Row gap={26}>
-          {episodeStill({ episode, still, watched, action, tag, runtime, progress, inProgress })}
+          {episodeStill(
+            { episode, still, watched, action, tag, runtime, progress, inProgress },
+            scope,
+          )}
 
           <Box flex={1} gap={8}>
             <Row gap={12} wrap>
@@ -217,31 +238,31 @@ const CHIP_BG = 'bg/68';
 const SYNOPSIS_DIM = 'text/60';
 const SYNOPSIS_LIT = 'text/78';
 
-const s = styles({
+const sDefinition = styles({
   // <Frost> blurs the artwork behind the card: CSS backdrop-filter on the
   // browser tiers, the shell's registered blur view on Apple TV.
-  row: { p: 18, radius: 20, bg: 'tint/2.5', border: 'tint/5' },
+  row: { p: 18, radius: cornerRadius.row, bg: 'tint/2.5', border: 'tint/5' },
   rowLit: { bg: 'tint/6', borderColor: 'tint/12' },
   rowWatched: { borderColor: 'accentWash/22' },
   dimmed: { opacity: 0.55 },
-  actionBtn: { py: 12, px: 19, radius: 11 },
+  actionBtn: { py: 12, px: 19, radius: cornerRadius.control },
   tagChip: {
-    fontSize: 12,
+    fontSize: textSizes.caption,
     lineHeight: 15,
     fontWeight: '700',
     letterSpacing: 0.72,
     textTransform: 'uppercase',
   },
   runtimeChip: {
-    fontSize: 12,
+    fontSize: textSizes.caption,
     lineHeight: 15,
     fontWeight: '700',
     color: 'text/90',
     fontVariant: ['tabular-nums'],
   },
   title: { shrink: 1 },
-  endsAt: { fontSize: 15, fontWeight: '500' },
+  endsAt: { fontSize: textRoles.label.size, fontWeight: '500' },
   // Measure is the design's, not the card's: on the full-width card an
   // unclamped recap ran as one screen-wide line.
-  synopsis: { fontSize: 16, lineHeight: 23, fontWeight: '400', maxW: 660 },
+  synopsis: { fontSize: textRoles.body.size, lineHeight: 23, fontWeight: '400', maxW: 660 },
 });

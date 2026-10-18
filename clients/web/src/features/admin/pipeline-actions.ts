@@ -6,6 +6,7 @@ import type { MessageKey } from '@kromatv/i18n';
 import type { useT } from '@kromatv/ui';
 import { type Dispatch, type SetStateAction, useEffect } from 'react';
 import { apiBase } from '#web/shared/lib/api';
+import { useKromaClient } from '#web/shared/lib/web-runtime';
 
 const apiKind = (el: ElementRow): 'item' | 'show' => (el.kind === 'series' ? 'show' : 'item');
 
@@ -22,15 +23,20 @@ const RELOAD_EVENTS = new Set([
 ]);
 
 export function usePipelineReloadEvents(onReload: () => void): void {
+  const eventClient = useKromaClient();
+
   useEffect(() => {
     const ev = new KromaEvents(apiBase(), {
+      token: () => eventClient.sessionToken,
+      refresh: () => eventClient.refreshSession(),
+
       onEvent: (e) => {
         if (RELOAD_EVENTS.has(e.type)) onReload();
       },
     });
     ev.connect();
     return () => ev.close();
-  }, [onReload]);
+  }, [onReload, eventClient.sessionToken, eventClient.refreshSession]);
 }
 
 export function pipelineActions(deps: {

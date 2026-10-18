@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // Typed settings form for a module's declared `config` fields. Renders the right
 // control per field kind (text / number / checkbox / select) and PUTs properly
 // typed JSON values to /api/admin/modules/:id/config (bool and number, not the
@@ -16,14 +17,14 @@ import {
   Select,
   Switch,
   styles,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';
-import { adminApi } from '#web/features/admin/module-api';
 
 type ConfigValue = string | number | boolean;
 
 const CONTROL_WIDTH = 160;
-const s = styles({ select: { width: CONTROL_WIDTH } });
+const sDefinition = styles({ select: { width: CONTROL_WIDTH } });
 
 function initial(field: ConfigField, stored: unknown): ConfigValue {
   const raw = stored ?? field.default;
@@ -53,6 +54,8 @@ export function ModuleConfigForm({
   values: Record<string, unknown>;
   onSaved: () => void;
 }>) {
+  const webRuntime = useWebRuntime();
+
   const t = useT();
   const [draft, setDraft] = useState<Record<string, ConfigValue>>(() =>
     Object.fromEntries(fields.map((f) => [f.key, initial(f, values[f.key])])),
@@ -63,7 +66,7 @@ export function ModuleConfigForm({
   const save = async () => {
     setSaving(true);
     try {
-      await adminApi(`/modules/${encodeURIComponent(moduleId)}/config`, {
+      await webRuntime.moduleApi.adminApi(`/modules/${encodeURIComponent(moduleId)}/config`, {
         method: 'PUT',
         body: JSON.stringify(draft),
       });
@@ -108,6 +111,8 @@ function ConfigRow({
   value: ConfigValue | undefined;
   onChange: (v: ConfigValue) => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   let control: ReactNode;
   if (field.type === 'bool') {
     control = <Switch checked={value === true} onCheckedChange={onChange} label={field.label} />;

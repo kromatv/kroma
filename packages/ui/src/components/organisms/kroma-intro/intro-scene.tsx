@@ -1,3 +1,5 @@
+import { color as tokenColor } from '#ui/core/color';
+import { CIRCLE_PERCENT as circleRadius } from '#ui/core/tokens';
 import { KROMA_KR_PATH, KROMA_LOCKUP, KROMA_MA_PATH } from '#ui/lib/lockup-paths';
 import { KROMA_WHEEL_COLORS, KROMA_WHEEL_SEGMENTS } from '#ui/lib/wheel-paths';
 import { EMBERS, GRAIN } from './constants';
@@ -60,7 +62,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
         style={{
           position: 'absolute',
           inset: 0,
-          background: '#0A0A0C',
+          background: 'bg',
           zIndex: 40,
           pointerEvents: 'none',
           animation: 'kroma-blackIn .7s ease .35s both',
@@ -72,7 +74,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
           position: 'absolute',
           width: '74vmin',
           height: '74vmin',
-          borderRadius: '50%',
+          borderRadius: circleRadius,
           background:
             'radial-gradient(circle, rgba(242,180,66,.55), rgba(242,180,66,.12) 42%, transparent 70%)',
           filter: `blur(${glowBlur}px)`,
@@ -86,7 +88,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
           position: 'absolute',
           width: flashSize,
           height: flashSize,
-          borderRadius: '50%',
+          borderRadius: circleRadius,
           background:
             'radial-gradient(circle, rgba(255,236,190,.9), rgba(242,180,66,.38) 16%, transparent 44%)',
           transform: 'translateZ(0)',
@@ -98,7 +100,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
       {embers.map(({ anim, ...s }) => (
         <div
           key={anim}
-          style={{ position: 'absolute', borderRadius: '50%', animation: anim, ...s }}
+          style={{ position: 'absolute', borderRadius: circleRadius, animation: anim, ...s }}
         />
       ))}
 
@@ -124,7 +126,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
             viewBox={`0 0 ${KROMA_LOCKUP.krWidth} ${KROMA_LOCKUP.height}`}
             style={{ animation: wordAnim, willChange: 'transform,opacity' }}
           >
-            <path d={KROMA_KR_PATH} fill="#F4F3F0" />
+            <path d={KROMA_KR_PATH} fill={tokenColor('text')} />
           </svg>
 
           <div
@@ -143,7 +145,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
                 position: 'absolute',
                 width: '70%',
                 height: '70%',
-                borderRadius: '50%',
+                borderRadius: circleRadius,
                 border: '2px solid rgba(242,180,66,.6)',
                 animation: 'kroma-shock 1.1s ease-out 1.27s both',
               }}
@@ -154,7 +156,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
                 position: 'absolute',
                 width: '40%',
                 height: '40%',
-                borderRadius: '50%',
+                borderRadius: circleRadius,
                 background:
                   'radial-gradient(circle, rgba(255,231,168,.9), rgba(242,180,66,.35) 55%, transparent 75%)',
                 animation: hubAnim,
@@ -192,7 +194,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
             viewBox={`${KROMA_LOCKUP.maX} 0 ${KROMA_LOCKUP.maWidth} ${KROMA_LOCKUP.height}`}
             style={{ animation: wordAnim, willChange: 'transform,opacity' }}
           >
-            <path d={KROMA_MA_PATH} fill="#F4F3F0" />
+            <path d={KROMA_MA_PATH} fill={tokenColor('text')} />
           </svg>
         </div>
 
@@ -203,7 +205,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
               fontSize: '1.8vmin',
               letterSpacing: '.42em',
               textTransform: 'uppercase',
-              color: 'rgba(244,243,240,.52)',
+              color: 'text/52',
               whiteSpace: 'nowrap',
               animation: 'kroma-tagIn .85s ease 2.5s both',
             }}

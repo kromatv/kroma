@@ -9,9 +9,10 @@ import { StyleSheet, type ViewStyle } from 'react-native';
 import { breakpointIndex } from '#ui/core/breakpoint';
 import { boxStyle } from '#ui/core/shorthand-resolve';
 import type { BoxStyleProps } from '#ui/core/shorthands';
-import { themedCache } from '#ui/core/theme';
+import { DEFAULT_STYLE_SCOPE, type StyleScope } from '#ui/core/style-scope';
+import { activeTheme, themedCache } from '#ui/core/theme';
 
-const shared = themedCache<ViewStyle>(4096);
+const shared = new WeakMap<StyleScope, ReturnType<typeof themedCache<ViewStyle>>>();
 
 /**
  * The same style, by identity, for the same shorthand props.
@@ -26,9 +27,21 @@ const shared = themedCache<ViewStyle>(4096);
  * The engine's `sharedStyle` is the same thing for a declaration in the kit's
  * own vocabulary; this one takes <Box>'s prop bag.
  */
-export function sharedBoxStyle(key: string, p: Readonly<BoxStyleProps>): ViewStyle {
-  return shared(
+export function sharedBoxStyle(
+  key: string,
+  p: Readonly<BoxStyleProps>,
+  scope: StyleScope = DEFAULT_STYLE_SCOPE,
+): ViewStyle {
+  let cache = shared.get(scope);
+  if (!cache) {
+    cache = themedCache<ViewStyle>(4096, scope.theme);
+    shared.set(scope, cache);
+  }
+  return cache(
     key,
-    () => StyleSheet.create({ box: boxStyle(p, breakpointIndex()) }).box as ViewStyle,
+    () =>
+      StyleSheet.create({
+        box: boxStyle(p, breakpointIndex(scope.breakpoints), activeTheme(scope.theme)),
+      }).box as ViewStyle,
   );
 }

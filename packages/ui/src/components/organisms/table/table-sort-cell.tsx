@@ -5,6 +5,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import type { TableColumn } from './table-columns';
 import { SORT_GLYPH, sortClaim, sortPlace, type TableSort } from './table-sort';
 
@@ -31,6 +32,8 @@ function SortCell({
   onLayout,
   children,
 }: Readonly<SortCellProps>) {
+  const s = useStyles(sDefinition);
+
   const place = sortPlace(sort.columns, column);
   const state = place?.direction ?? 'none';
   const press = sort.press;
@@ -72,7 +75,7 @@ function SortCell({
 
 const HEAD_STATES = { hover: { bg: 'tint/10' }, press: { bg: 'tint/18' } } as const;
 
-const s = styles({
+const sDefinition = styles({
   head: { flex: true, row: true, align: 'center', justify: 'flex-start', gap: 6, minW: 0 },
   end: { justify: 'flex-end' },
 });

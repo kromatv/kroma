@@ -2,8 +2,9 @@ import type { DiscoverDetail, DiscoverEntry } from '@kromatv/client/discovery';
 import { useQueries } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { SavedTitle, SavedTitles } from '#web/features/catalog/saved-titles';
-import { kromaClient, type MovieView, type ShowView } from '#web/shared/lib/api';
+import type { MovieView, ShowView, WebRuntime } from '#web/shared/lib/api';
 import { TMDB_PREFIX } from '#web/shared/lib/saved-title-id';
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 function tmdbIdOf(id: string): number | null {
   if (!id.startsWith(TMDB_PREFIX)) return null;
@@ -39,8 +40,8 @@ function entryOf(detail: DiscoverDetail): DiscoverEntry {
   };
 }
 
-async function fetchDiscoverEntry(tmdbId: number): Promise<DiscoverEntry> {
-  const client = kromaClient();
+async function fetchDiscoverEntry(tmdbId: number, webRuntime: WebRuntime): Promise<DiscoverEntry> {
+  const client = webRuntime.client;
   try {
     return entryOf(await client.discovery.detail('movie', tmdbId));
   } catch {
@@ -49,10 +50,12 @@ async function fetchDiscoverEntry(tmdbId: number): Promise<DiscoverEntry> {
 }
 
 function useDiscoverEntries(tmdbIds: readonly number[]) {
+  const webRuntime = useWebRuntime();
+
   const queries = useQueries({
     queries: tmdbIds.map((tmdbId) => ({
       queryKey: ['discover', 'entry', tmdbId] as const,
-      queryFn: () => fetchDiscoverEntry(tmdbId),
+      queryFn: () => fetchDiscoverEntry(tmdbId, webRuntime),
       retry: 1,
     })),
   });

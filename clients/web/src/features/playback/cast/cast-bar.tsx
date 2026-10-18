@@ -1,3 +1,4 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // The docked remote, pinned to the bottom of the app shell while this browser
 // drives a TV. It shows what the TV last reported, not what was last asked of
 // it, with the position interpolated between the receiver's heartbeats.
@@ -19,15 +20,18 @@ import {
   Row,
   styles,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { kromaClient } from '#web/shared/lib/api';
+
 import { castPicker } from '#web/shared/ui/cast-picker';
 
 const SKIP_MS = 10_000;
 
 export function CastBar() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { active, positionMs, send, select } = useCast();
   const wide = useWindowDimensions().width >= breakpoint.md;
@@ -71,8 +75,12 @@ function NowPlaying({
   playingOn,
   onSelect,
 }: Readonly<{ item?: MediaItem; playingOn: string; onSelect: Cast['select'] }>) {
+  const webRuntime = useWebRuntime();
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
-  const poster = item ? kromaClient().media.artwork.posterFor(item, 96) : null;
+  const poster = item ? webRuntime.client.media.artwork.posterFor(item, 96) : null;
   return (
     <>
       {poster ? (
@@ -152,6 +160,8 @@ function Scrubber({
   positionMs,
   send,
 }: Readonly<{ playing: CastNowPlaying; positionMs: number; send: Cast['send'] }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   // While a drag is in flight the bar follows the finger: the receiver's
   // heartbeats would otherwise yank the handle back mid-gesture.
@@ -189,7 +199,7 @@ function Scrubber({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   bar: {
     position: 'fixed',
     left: 0,

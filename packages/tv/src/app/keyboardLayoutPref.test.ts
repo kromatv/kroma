@@ -21,7 +21,9 @@ describe('getKeyboardLayoutPref / setKeyboardLayoutPref', () => {
   async function fresh(storage: unknown) {
     vi.resetModules();
     vi.stubGlobal('localStorage', storage);
-    return import('./keyboardLayoutPref');
+    const module = await import('./keyboardLayoutPref');
+    const owner = module.createKeyboardLayoutPref();
+    return { ...module, getKeyboardLayoutPref: owner.get, setKeyboardLayoutPref: owner.set };
   }
 
   it('defaults to abc when nothing is stored', async () => {

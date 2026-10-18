@@ -5,7 +5,8 @@ import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { SUB_COLORS } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
-import { sharedStyle, styles, useTheme } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope, useTheme } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { a11yState } from '#ui/lib/a11y';
 import { useFocusedRow } from '#ui/lib/use-focused-row';
 import { useT } from '#ui/services/i18n';
@@ -17,10 +18,14 @@ import { panel, rowStyle } from './panel-style';
  * boolean draws the ring, never CSS :hover.
  */
 
-const swatchRing = (selected: boolean, accent: string) =>
-  sharedStyle(`swatch:ring:${selected}:${accent}`, {
-    boxShadow: selected ? `0 0 0 2px ${accent}` : '0 0 0 1px rgba(255, 255, 255, 0.2)',
-  });
+const swatchRing = (selected: boolean, accent: string, scope: StyleScope) =>
+  sharedStyle(
+    `swatch:ring:${selected}:${accent}`,
+    {
+      boxShadow: selected ? `0 0 0 2px ${accent}` : '0 0 0 1px rgba(255, 255, 255, 0.2)',
+    },
+    scope,
+  );
 export function AppearanceRow({
   index,
   label,
@@ -36,6 +41,8 @@ export function AppearanceRow({
   onNudge: (index: number, dir: -1 | 1) => void;
   children: ReactNode;
 }>) {
+  const panelScoped = useStyles(panel);
+
   const t = useT();
   const anchor = useFocusedRow(focused);
   return (
@@ -44,10 +51,10 @@ export function AppearanceRow({
       role="group"
       accessibilityLabel={label}
       onPointerEnter={() => onFocus(index)}
-      style={rowStyle(panel.valueRow, panel.valueRowOn, focused)}
+      style={rowStyle(panelScoped.valueRow, panelScoped.valueRowOn, focused)}
     >
       <Box row align="center" between mb={11}>
-        <Text style={panel.valueLabel}>{label}</Text>
+        <Text style={panelScoped.valueLabel}>{label}</Text>
         <Box row align="center" gap={16}>
           <Arrow
             glyph="◀"
@@ -74,6 +81,8 @@ function Arrow({
   dim,
   onPress,
 }: Readonly<{ glyph: string; label: string; dim: boolean; onPress: () => void }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       {...VIRTUAL_FOCUS}
@@ -89,9 +98,11 @@ function Arrow({
 }
 
 export function Choice({ label }: Readonly<{ label: string }>) {
+  const panelScoped = useStyles(panel);
+
   return (
-    <Box row align="center" center px={14} style={panel.pill} accessibilityRole="text">
-      <Text style={panel.pillLabel} color="text/92">
+    <Box row align="center" center px={14} style={panelScoped.pill} accessibilityRole="text">
+      <Text style={panelScoped.pillLabel} color="text/92">
         {label}
       </Text>
     </Box>
@@ -118,6 +129,10 @@ function SegCell<V extends string>({
   on,
   onPick,
 }: Readonly<{ value: V; label: string; on: boolean; onPick: (v: V) => void }>) {
+  const panelScoped = useStyles(panel);
+
+  const s = useStyles(sDefinition);
+
   return (
     <Pressable
       {...VIRTUAL_FOCUS}
@@ -125,9 +140,9 @@ function SegCell<V extends string>({
       accessibilityRole="button"
       accessibilityLabel={label}
       {...a11yState({ selected: on })}
-      style={[panel.pill, s.segCell, on ? s.segOn : null]}
+      style={[panelScoped.pill, s.segCell, on ? s.segOn : null]}
     >
-      <Text style={panel.pillLabel} color={on ? 'accentInk' : 'text/70'}>
+      <Text style={panelScoped.pillLabel} color={on ? 'accentInk' : 'text/70'}>
         {label}
       </Text>
     </Pressable>
@@ -159,6 +174,8 @@ function Swatch({
   selected: boolean;
   onPick: (color: string) => void;
 }>) {
+  const scope = useStyleScope();
+
   return (
     <Pressable
       {...VIRTUAL_FOCUS}
@@ -167,12 +184,14 @@ function Swatch({
       accessibilityLabel={value}
       {...a11yState({ selected })}
     >
-      <Box w={32} h={32} radius="pill" bg={value} style={swatchRing(selected, accent)} />
+      <Box w={32} h={32} radius="pill" bg={value} style={swatchRing(selected, accent, scope)} />
     </Pressable>
   );
 }
 
 export function Meter({ value }: Readonly<{ value: number }>) {
+  const s = useStyles(sDefinition);
+
   return (
     <Box row align="center" gap={14}>
       <Box flex>
@@ -183,7 +202,7 @@ export function Meter({ value }: Readonly<{ value: number }>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   dim: { opacity: 0.4 },
   full: { opacity: 1 },
   arrow: { px: 4, text: 'strongTv' },

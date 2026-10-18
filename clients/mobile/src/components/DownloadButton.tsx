@@ -2,7 +2,7 @@
 // Long-press (or tap when done) removes the download.
 
 import type { MediaItem } from '@kromatv/client/media';
-import { Box, Icon, IconButton, styles } from '@kromatv/ui/kit';
+import { Box, Icon, IconButton, styles, useStyles } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { Alert } from 'react-native';
 import { useDownloads } from '#mobile/lib/downloads';
@@ -12,6 +12,8 @@ import { ProgressRing } from './ProgressRing';
 const RING = 34;
 
 export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; size?: number }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const downloads = useDownloads();
   const state = downloads.stateFor(item.id);
@@ -79,7 +81,7 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   pausedBox: { center: true },
   pausedGlyph: { absolute: true, top: 0, right: 0, bottom: 0, left: 0, center: true },
   doneBadge: { center: true, w: RING - 6, h: RING - 6, bg: 'accent', radius: (RING - 6) / 2 },

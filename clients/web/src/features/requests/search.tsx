@@ -14,6 +14,7 @@ import {
   PageHeader,
   SegmentGroup,
   styles,
+  useStyles,
 } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { SearchResults } from '#web/features/requests/search-results';
@@ -32,7 +33,7 @@ const TYPES: {
 
 const GUTTER = { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' } as const;
 
-const s = styles({
+const sDefinition = styles({
   searchBox: { width: '100%', maxWidth: 672 },
   page: { minWidth: 0, pb: 80 },
   gutter: GUTTER,
@@ -70,6 +71,8 @@ export function SearchPage({
   setQuery: (q: string) => void;
   setType: (t: DiscoverType) => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { user } = useAuth();
   const canDiscover = !!user && hasPermission(user, 'requests.create');

@@ -5,7 +5,7 @@
 
 import type { PersonDetail } from '@kromatv/client/media';
 import { personFacts } from '@kromatv/core';
-import { Box, DataField, styles, Text } from '@kromatv/ui/kit';
+import { Box, DataField, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { Avatar } from '#mobile/components/Avatar';
 import { ExpandableText } from '#mobile/components/ui';
 import { useI18n, useT } from '#mobile/lib/i18n';
@@ -24,6 +24,8 @@ export function PersonProfile({
   name: string;
   roles: string[];
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { locale } = useI18n();
   const facts = personFacts(t, detail, locale);
@@ -62,7 +64,7 @@ export function PersonProfile({
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   wrap: { gap: spacing.md, pb: spacing.sm },
   identity: { row: true, align: 'center', gap: spacing.md },
   facts: { flex: true, gap: 6 },

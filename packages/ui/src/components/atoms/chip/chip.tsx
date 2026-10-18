@@ -1,3 +1,4 @@
+import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // <Chip>: the pill filter / selector (language codes, audio formats, genres,
 // recent searches). Focusable, so the same component is a click target in the
 // browser and a D-pad stop on a TV.
@@ -85,11 +86,15 @@ const chipVariants = svFor<{
       },
     },
     size: {
-      sm: { label: { fontSize: 13 }, count: { fontSize: 13 }, icon: { size: 15 } },
+      sm: {
+        label: { fontSize: textRoles.meta.size },
+        count: { fontSize: textRoles.meta.size },
+        icon: { size: 15 },
+      },
       tv: {
         root: { py: 10, px: 22 },
-        label: { fontSize: 18 },
-        count: { fontSize: 18 },
+        label: { fontSize: textSizes.largeLabel },
+        count: { fontSize: textSizes.largeLabel },
         dot: { w: 9, h: 9 },
         icon: { size: 17 },
       },

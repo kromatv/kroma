@@ -1,3 +1,4 @@
+import { radius as cornerRadius } from '#ui/core/tokens';
 // The faces a <Dropzone> shows, and the contract both halves are written to.
 //
 // Their own file because the two Roots are platform variants of each OTHER:
@@ -11,7 +12,7 @@ import { Text } from '#ui/components/atoms/text';
 
 export const SURFACE_SHAPE = {
   borderWidth: 1.5,
-  borderRadius: 16,
+  borderRadius: cornerRadius.xl,
   paddingX: 24,
   paddingY: 28,
   gap: 8,

@@ -6,13 +6,16 @@
 // Main10 on an 8-bit decoder, VC-1, MPEG-2) has no second chance. VLC carries its
 // own decoders.
 //
-// Apple builds no module, `VlcPlayerView` is null and nothing is registered -
+// Apple builds no module, so `VlcPlayerView` is null,
 // the correct answer there, and what keeps the engine out of that picker.
 
-import { registerVlcPlane, type VlcPlaneProps } from '@kromatv/tv';
+import { type VlcPlaneProps, vlcBackendFor } from '@kromatv/tv/vlc-plane';
 import type { ComponentType } from 'react';
 import { releaseVlcPlayers, VlcPlayerView } from '../../modules/vlc-player';
 
-export function installVlcPlane(): void {
-  registerVlcPlane(VlcPlayerView as ComponentType<VlcPlaneProps> | null, releaseVlcPlayers);
-}
+export const { getVlcPlane, vlcAvailable, releaseVlcPlanes } = vlcBackendFor(
+  VlcPlayerView as ComponentType<VlcPlaneProps> | null,
+  releaseVlcPlayers,
+);
+export type { VlcPlaneProps, VlcPlaneStats } from '@kromatv/tv/vlc-plane';
+export { VLC_CACHE_MS } from '@kromatv/tv/vlc-plane';

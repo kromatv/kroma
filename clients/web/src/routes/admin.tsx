@@ -1,6 +1,6 @@
 import { hasPermission } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
-import { Box, classes, Text } from '@kromatv/ui/kit';
+import { Box, classes, Text, useStyles } from '@kromatv/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { GateLoading } from '#web/features/accounts/auth-gate';
 import { AdminLayout } from '#web/features/admin/shell';
@@ -14,6 +14,8 @@ export const Route = createFileRoute('/admin')({
 });
 
 function AdminRoute() {
+  const pageScoped = useStyles(page);
+
   const t = useT();
   const { user } = useAuth();
   const { ready } = useRequireAuth();
@@ -29,7 +31,7 @@ function AdminRoute() {
 
   if (!allowed) {
     return (
-      <main className={classes(page.screen)}>
+      <main className={classes(pageScoped.screen)}>
         <Box flex center px={24}>
           <Text variant="body" color="textMuted">
             {t('admin.noAdminAccess')}

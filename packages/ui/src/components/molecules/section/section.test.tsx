@@ -12,7 +12,7 @@ const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
 const markup = (ui: ReactElement): string => {
   const { container } = render(ui);
-  const html = container.innerHTML;
+  const html = container.querySelector('[data-kroma-theme]')?.innerHTML ?? container.innerHTML;
   cleanup();
   return html;
 };

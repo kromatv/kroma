@@ -7,6 +7,7 @@ import { Modal, useWindowDimensions, type View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { DismissBackdrop } from '#ui/lib/dismiss-backdrop';
 import { useFocusNav } from '#ui/lib/focus-nav';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
@@ -115,6 +116,8 @@ function DialogSurface({
     bridge: boolean;
   }
 >) {
+  const s = useStyles(sDefinition);
+
   useFocusNav({ onBack: onClose });
   const windowWidth = useWindowDimensions().width;
   const gutter = surfaceGutter(windowWidth);
@@ -209,7 +212,7 @@ function defaultHeader(at: {
 
 const FOCUS_SCOPE = { focusScope: '' } as const;
 
-const s = styles({
+const sDefinition = styles({
   fill: { flex: true },
 });
 

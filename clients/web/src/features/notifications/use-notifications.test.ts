@@ -40,11 +40,22 @@ vi.mock('#web/shared/lib/api', () => ({
   toMovieView: (v: unknown) => v,
   toShowView: (v: unknown) => v,
 }));
+vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
+  const original = await importOriginal<typeof import('#web/shared/lib/web-runtime')>();
+  const { createWebTestRuntime } = await import('#web/shared/lib/web-runtime.fixture');
+  const { QueryClient } =
+    await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+  const queryCache = new QueryClient();
+  const runtime = createWebTestRuntime(client, () => queryCache);
+  return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
+});
 
 const { useNotificationStream, usePanelState, useReadState, useUnreadCount } = await import(
   '#web/features/notifications/use-notifications'
 );
-const { userQueries } = await import('#web/shared/lib/queries');
+const { createQueries } = await import('#web/shared/lib/queries');
+const { createWebTestClient } = await import('#web/shared/lib/web-runtime.fixture');
+const { userQueries } = createQueries(createWebTestClient(client));
 
 installHarness();
 

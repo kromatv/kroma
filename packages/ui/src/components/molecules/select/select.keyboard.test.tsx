@@ -6,20 +6,20 @@
 // recognises as interactive, which silently left `combobox`, `menuitem` and
 // `option` out of the tab order entirely.
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { act } from 'react';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
 import { activeTheme } from '#ui/core';
-import { configureRemote } from '#ui/lib/focus-remote';
+
 import { FocusScope } from '#ui/lib/focus-scope';
-import { clearPressGuard } from '#ui/lib/press-guard';
 import { layout } from '#ui/testing';
+import { createInputTestHost } from '#ui/testing-input';
 import { Select, type SelectSingleRootProps } from './select';
 
-beforeAll(() => configureRemote());
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(() => {
   cleanup();

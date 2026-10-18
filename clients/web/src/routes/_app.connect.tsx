@@ -1,5 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { Box, Button, classes, Icon, OtpField, styles, Text } from '@kromatv/ui/kit';
+import { Box, Button, classes, Icon, OtpField, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { NearbyTvs } from '#web/features/accounts/nearby-tvs';
@@ -17,6 +17,10 @@ export const Route = createFileRoute('/_app/connect')({
 });
 
 function ConnectPage() {
+  const pageScoped = useStyles(page);
+
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { code: initial } = Route.useSearch();
   const { client, user } = useAuth();
@@ -40,7 +44,7 @@ function ConnectPage() {
   }
 
   return (
-    <main className={classes(page.screen)}>
+    <main className={classes(pageScoped.screen)}>
       <Box flex center px={24} py={64}>
         <Box w="100%" maxW={420} radius="xl" border="border" bg="surface1" p={32}>
           <Text variant="subheading" accessibilityRole="header" textAlign="center" mb={8}>
@@ -108,6 +112,6 @@ function ConnectPage() {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   form: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 },
 });

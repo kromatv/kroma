@@ -5,12 +5,15 @@
 // there, so the focus GROUP a dialog carries (Dialog.Actions) degrades to a
 // plain view instead of asking a navigator that does not exist.
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
-import { clearPressGuard } from '#ui/lib/press-guard';
+import { createInputTestHost } from '#ui/testing-input';
+
 import { Dialog } from './dialog';
+
+const { clearPressGuard, render } = createInputTestHost();
 
 afterEach(cleanup);
 

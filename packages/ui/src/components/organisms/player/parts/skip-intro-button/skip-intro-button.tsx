@@ -1,7 +1,7 @@
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { GUTTER, scaler } from '#ui/components/organisms/player/lib/metrics';
-import { sv } from '#ui/core';
+import { sv, useSv } from '#ui/core';
 import { useT } from '#ui/services/i18n';
 
 // The scrim variant carries a 1px border and primary none; pinning the border on
@@ -38,6 +38,8 @@ export function SkipIntroButton({
   lift,
   onSkip,
 }: Readonly<SkipIntroButtonProps>) {
+  const skipPillScoped = useSv(skipPill);
+
   const t = useT();
   const px = scaler(scale);
   if (!visible) return null;
@@ -51,7 +53,7 @@ export function SkipIntroButton({
         onPress={onSkip}
         label={t('player.skipIntro')}
         iconRight="chevron-right"
-        style={skipPill(undefined, { focus: focused }).root}
+        style={skipPillScoped(undefined, { focus: focused }).root}
       />
     </Box>
   );

@@ -1,12 +1,11 @@
+import type { SessionStorage } from '@kromatv/client';
+import { useDeviceStore } from '@kromatv/ui/device-store';
 // Reactive layer over devicePref: ONE shared, subscribable value per stored
 // preference, so every mounted consumer (a menu row, the on-screen keyboard,
 // the player) sees a change the moment any of them writes it. localStorage has
 // no same-tab change events, so writes notify the in-process listeners here.
 
-import { onDeviceStorageChange } from '@kromatv/client';
-import { setArtworkScale } from '@kromatv/client/media';
-import { setFrostEnabled } from '@kromatv/ui/kit';
-import { useSyncExternalStore } from 'react';
+import { createContext, useContext, useState, useSyncExternalStore } from 'react';
 import { clientHardware } from '#tv/app/clientHardware';
 import { devicePref } from '#tv/app/devicePref';
 
@@ -32,9 +31,10 @@ export function reactivePref<T extends string>(
   key: string,
   values: readonly T[],
   fallback: T | (() => T),
+  storage?: SessionStorage | null,
 ): ReactivePref<T> {
   const stored = () =>
-    devicePref(key, values, typeof fallback === 'string' ? fallback : fallback());
+    devicePref(key, values, typeof fallback === 'string' ? fallback : fallback(), storage);
   const listeners = new Set<() => void>();
   let chosen: T | null = null;
   return {
@@ -61,7 +61,9 @@ export function useStoredPref<T extends string>(
   return [value, pref.set] as const;
 }
 
-export const perfHudPrefStore = reactivePref('kroma:perf-hud', ['off', 'on'] as const, 'off');
+export function createPerfHudPref(storage?: SessionStorage | null) {
+  return reactivePref('kroma:perf-hud', ['off', 'on'] as const, 'off', storage);
+}
 
 /** How much artwork to ask the server for, as a fraction of the width the
  * surface would otherwise request. `full` is the right answer on any panel that
@@ -80,38 +82,32 @@ export type ArtworkQuality = keyof typeof ARTWORK_SCALE;
 
 const LOW_MEMORY_GB = 2;
 
-// Latched on the first answer rather than read per call: a set's RAM does not
-// move mid-session, and a native shell installs its hardware source after this
-// module is evaluated, so the reads before that have nothing to answer with.
-let lowMemory: boolean | null = null;
-
+// Hardware adapters are selected by the bundler, before this module loads.
+// Total RAM is immutable, so probe once without a late-registration latch.
+const MEMORY_GB = clientHardware().memoryGb;
 function defaultArtworkQuality(): ArtworkQuality {
-  if (lowMemory === null) {
-    const gb = clientHardware().memoryGb;
-    if (gb === null) return 'full';
-    lowMemory = gb <= LOW_MEMORY_GB;
-  }
-  return lowMemory ? 'high' : 'full';
+  return MEMORY_GB !== null && MEMORY_GB <= LOW_MEMORY_GB ? 'high' : 'full';
 }
 
-export const artworkPrefStore = reactivePref(
-  'kroma:artwork',
-  Object.keys(ARTWORK_SCALE) as readonly ArtworkQuality[],
-  defaultArtworkQuality,
-);
-
-// Applied on import rather than from an effect, and this module is loaded by the
-// router at boot: the scale is read when a URL is MINTED, so a screen that
-// rendered before it was applied would go on asking for full-size art until
-// something re-rendered it. The store reads through, but this is a PUSH, so it
-// goes out again when a shell installs its device store late.
-function applyArtworkScale(): void {
-  setArtworkScale(ARTWORK_SCALE[artworkPrefStore.get()]);
+/** One root owns the reactive quality choice and the client's URL getter. */
+export function createArtworkPref(storage?: SessionStorage | null): ReactivePref<ArtworkQuality> {
+  return reactivePref(
+    'kroma:artwork',
+    Object.keys(ARTWORK_SCALE) as readonly ArtworkQuality[],
+    defaultArtworkQuality,
+    storage,
+  );
 }
-
-applyArtworkScale();
-artworkPrefStore.subscribe(applyArtworkScale);
-onDeviceStorageChange(applyArtworkScale);
+const ArtworkContext = createContext<ReactivePref<ArtworkQuality> | null>(null);
+export const ArtworkPrefProvider = ArtworkContext.Provider;
+export function useArtworkPref(): ReactivePref<ArtworkQuality> {
+  const storage = useDeviceStore();
+  const provided = useContext(ArtworkContext);
+  const [owned] = useState(() => (provided ? null : createArtworkPref(storage)));
+  const pref = provided ?? owned;
+  if (!pref) throw new Error('Artwork preference requires its owning root');
+  return pref;
+}
 
 /** Whether glass surfaces blur what is behind them.
  *
@@ -120,15 +116,16 @@ onDeviceStorageChange(applyArtworkScale);
  * TV box drops to ~52fps with double-digit jank once every frosted control
  * blurs the screen behind it. The plain fill underneath is what the design
  * falls back to anyway, so the switch is there for whoever wants to pay. */
-export const blurPrefStore = reactivePref('kroma:blur', ['on', 'off'] as const, 'off');
-
-// Pushed, not read: the kit holds one flag for the whole app (see
-// atoms/frost), so like the artwork scale it has to go out again when a shell
-// installs its device store late.
-function applyBlur(): void {
-  setFrostEnabled(blurPrefStore.get() === 'on');
+export function createBlurPref(storage?: SessionStorage | null): ReactivePref<'on' | 'off'> {
+  return reactivePref('kroma:blur', ['on', 'off'] as const, 'off', storage);
 }
-
-applyBlur();
-blurPrefStore.subscribe(applyBlur);
-onDeviceStorageChange(applyBlur);
+const BlurContext = createContext<ReactivePref<'on' | 'off'> | null>(null);
+export const BlurPrefProvider = BlurContext.Provider;
+export function useBlurPref(): ReactivePref<'on' | 'off'> {
+  const storage = useDeviceStore();
+  const provided = useContext(BlurContext);
+  const [owned] = useState(() => (provided ? null : createBlurPref(storage)));
+  const pref = provided ?? owned;
+  if (!pref) throw new Error('Blur preference requires its owning root');
+  return pref;
+}

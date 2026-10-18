@@ -22,21 +22,14 @@ import { WEB } from '#ui/lib/platform';
 // stop at `absolute`.
 const OVERLAY = (WEB ? 'fixed' : 'absolute') as 'absolute';
 
-const s = styles({
-  backdrop: {
-    position: OVERLAY,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    zIndex: OVERLAY_Z.backdrop,
-  },
+const sDefinition = styles({
+  backdrop: { position: OVERLAY, top: 0, right: 0, bottom: 0, left: 0, zIndex: OVERLAY_Z.backdrop },
   shell: { position: OVERLAY, zIndex: OVERLAY_Z.panel },
 });
 
-export const PANEL_BACKDROP = s.backdrop;
+export const PANEL_BACKDROP = sDefinition.backdrop;
 
-export const PANEL_SHELL = s.shell;
+export const PANEL_SHELL = sDefinition.shell;
 
 interface AnchorHandle {
   focus?: () => void;

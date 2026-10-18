@@ -1,7 +1,7 @@
 import type { ElementRow } from '@kromatv/client/pipeline';
 import { Table } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout, EmptyState, Row, styles } from '@kromatv/ui/kit';
+import { Box, Button, Callout, EmptyState, Row, styles, useStyles } from '@kromatv/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 import { pipelineActions, usePipelineReloadEvents } from '#web/features/admin/pipeline-actions';
 import { PipelineDrawer } from '#web/features/admin/pipeline-drawer';
@@ -20,9 +20,11 @@ import { useAuth } from '#web/shared/lib/auth';
 
 const PER_PAGE = 30;
 
-const s = styles({ resumeFill: { bg: 'success/14', borderColor: 'success/40' } });
+const sDefinition = styles({ resumeFill: { bg: 'success/14', borderColor: 'success/40' } });
 
 export function PipelinePage() {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   const { client } = useAuth();
   const canManage = useCap('settings.manage');

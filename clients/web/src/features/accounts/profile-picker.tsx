@@ -9,6 +9,7 @@ import {
   styles,
   svFor,
   Text,
+  useStyles,
 } from '@kromatv/ui/kit';
 import { ProfileTile } from '#web/features/accounts/profile-tile';
 
@@ -19,7 +20,7 @@ const forgetLink = svFor<{ root: StyleDecl; label: StyleDecl }>()({
   },
 });
 
-const s = styles({
+const sDefinition = styles({
   tiles: { columnGap: 28, rowGap: 36, alignContent: 'flex-start' },
 });
 
@@ -46,6 +47,8 @@ export function ProfilePicker({
   onAdd: () => void;
   onForgot?: () => void;
 }>) {
+  const s = useStyles(sDefinition);
+
   const t = useT();
   return (
     <Box w="100%" maxW={896} align="center">

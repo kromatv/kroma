@@ -19,6 +19,23 @@ vi.mock('#web/shared/lib/api', () => ({
     },
   }),
 }));
+vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
+  const original = await importOriginal<typeof import('#web/shared/lib/web-runtime')>();
+  const { createWebTestRuntime } = await import('#web/shared/lib/web-runtime.fixture');
+  const { QueryClient } =
+    await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+  const queryCache = new QueryClient();
+  const runtime = createWebTestRuntime(
+    {
+      media: {
+        similar: api.similar,
+        artwork: { backdropFor: api.backdropFor, posterFor: api.posterFor },
+      },
+    },
+    () => queryCache,
+  );
+  return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
+});
 
 import { useWebUpNext } from './use-web-upnext';
 

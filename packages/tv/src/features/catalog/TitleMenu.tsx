@@ -1,5 +1,12 @@
 import type { MediaItem, Show } from '@kromatv/client/media';
-import { Drawer, FocusColumn, type FocusNavHandlers, ListRow, styles } from '@kromatv/ui/kit';
+import {
+  Drawer,
+  FocusColumn,
+  type FocusNavHandlers,
+  ListRow,
+  styles,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { type ReactNode, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { TitleMenuHeader } from '#tv/features/catalog/TitleMenuHeader';
 import { useTitleActions } from '#tv/features/catalog/useTitleActions';
@@ -20,6 +27,8 @@ interface TitleMenuProps {
 }
 
 function TitleMenu({ title, open, onClose }: Readonly<TitleMenuProps>) {
+  const s = useStyles(sDefinition);
+
   const actions = useTitleActions(title);
   return (
     <Drawer.Root open={open} onClose={onClose} title={title.item.title} width="md" floating>
@@ -50,7 +59,7 @@ function TitleMenu({ title, open, onClose }: Readonly<TitleMenuProps>) {
   );
 }
 
-const s = styles({
+const sDefinition = styles({
   actions: { gap: 12 },
 });
 

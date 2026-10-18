@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+vi.mock('#mobile/lib/session', () => ({ useSession: () => ({ requestLocale }) }));
+
 //
 // The data behind the sign-in screen. This is the one screen a user reaches
 // before anything works, so every hook here must leave the screen usable on
@@ -14,6 +16,7 @@ const createQueryClient = vi.hoisted(() =>
     clients.built.push(baseUrl);
     return {
       baseUrl,
+      setLocale: vi.fn(),
       accounts: {
         config: async () => api.config(baseUrl),
         users: async () => api.users(baseUrl),
@@ -30,7 +33,7 @@ const api = vi.hoisted(() => ({
 vi.mock('@kromatv/client/query', () => ({ createQueryClient }));
 vi.mock('@kromatv/core', () => ({
   discoverServers,
-  activeLocale: () => 'fr',
+  deviceLocale: () => 'fr',
   clientUserAgent: () => 'Kroma/test',
 }));
 
@@ -305,3 +308,7 @@ describe('the server’s public profile roster', () => {
     expect(result.current).toEqual([]);
   });
 });
+
+function requestLocale() {
+  return 'fr';
+}

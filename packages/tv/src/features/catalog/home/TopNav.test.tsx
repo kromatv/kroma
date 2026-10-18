@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { Focusable } from '@kromatv/ui/kit';
-import { onScreen, wearsRing } from '@kromatv/ui/testing';
+import { onScreen as baseOnScreen, wearsRing } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type TvNav, TvNavProvider, useNav } from '#tv/app/router';
+
+const onScreen = (ui: Parameters<typeof baseOnScreen>[0]) => baseOnScreen(ui, { remote: true });
 
 vi.mock('#tv/app/providers/auth', () => ({
   useAuth: () => ({ user: { id: 'u1', username: 'Max' } }),
@@ -14,10 +16,8 @@ vi.mock('#tv/app/providers/connection', () => ({
 // Late-mounting in its own right, and not what this file is about.
 vi.mock('#tv/features/cast/CastRemotes', () => ({ CastRemotes: () => null }));
 
-const { configureRemote } = await import('@kromatv/ui/kit');
 const { TvTopNav } = await import('#tv/features/catalog/home/TopNav');
 
-beforeAll(() => configureRemote());
 afterEach(cleanup);
 
 const LABELS = ['Back', 'Home', 'Max', 'Content'];

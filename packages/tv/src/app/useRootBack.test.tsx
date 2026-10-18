@@ -15,7 +15,7 @@ vi.mock('@kromatv/ui', async (importOriginal) => ({
 
 vi.mock('@kromatv/ui/kit', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@kromatv/ui/kit')>()),
-  confirm: () => confirmMock(),
+  useConfirm: () => () => confirmMock(),
 }));
 
 afterEach(() => {

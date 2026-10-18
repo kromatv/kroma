@@ -17,4 +17,3 @@ export {
   useTDefault,
 } from './services/i18n';
 export type { KitI18n } from './services/i18n-instance';
-export { setKitI18n } from './services/i18n-instance';

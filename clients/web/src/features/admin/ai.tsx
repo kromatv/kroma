@@ -14,7 +14,7 @@ import {
   Switch,
   Text,
 } from '@kromatv/ui/kit';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ProviderCard, type ProviderForm } from '#web/features/admin/ai-providers';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
@@ -24,15 +24,9 @@ import { useAuth } from '#web/shared/lib/auth';
 type ProviderRow = ProviderForm & { key: string };
 type Config = { enabled: boolean; defaultKey: string; providers: ProviderRow[] };
 
-let keySeq = 0;
-function nextKey(): string {
-  keySeq += 1;
-  return `row-${keySeq}`;
-}
-
-function emptyProvider(): ProviderRow {
+function emptyProvider(key: string): ProviderRow {
   return {
-    key: nextKey(),
+    key,
     id: '',
     name: '',
     provider: 'openai',
@@ -47,7 +41,11 @@ function emptyProvider(): ProviderRow {
 }
 
 function toConfig(c: LlmAdminConfig): Config {
-  const providers: ProviderRow[] = c.providers.map((p) => ({ ...p, key: nextKey(), apiKey: '' }));
+  const providers: ProviderRow[] = c.providers.map((p) => ({
+    ...p,
+    key: `provider-${p.id}`,
+    apiKey: '',
+  }));
   const def = providers.find((p) => p.id === c.defaultId) ?? providers[0];
   return { enabled: c.enabled, defaultKey: def?.key ?? '', providers };
 }
@@ -57,6 +55,7 @@ export function AiPage() {
   const { client } = useAuth();
   const canManage = useCap('settings.manage');
 
+  const keySeq = useRef(0);
   const [config, setConfig] = useState<Config | null>(null);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [busy, setBusy] = useState<'idle' | 'save'>('idle');
@@ -82,7 +81,7 @@ export function AiPage() {
     update({ providers: cfg.providers.map((p) => (p.key === key ? { ...p, ...patch } : p)) });
 
   const addProvider = () => {
-    const np = emptyProvider();
+    const np = emptyProvider(`draft-${keySeq.current++}`);
     update({
       providers: [...cfg.providers, np],
       defaultKey: cfg.providers.length === 0 ? np.key : cfg.defaultKey,
