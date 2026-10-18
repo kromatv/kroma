@@ -37,7 +37,9 @@ export function withTheme(handler: Fetch): Fetch {
  * The response is buffered rather than streamed: a recipe compiles on its first
  * render, so the rules a page needs exist only after `</head>` would have been
  * flushed. The element carries the WHOLE sheet under the id react-native-web
- * looks for, or the client adopts an empty one and mints every rule again.
+ * looks for, or the client adopts an empty one and mints every rule again. It
+ * opens the head, ahead of the token sheet, so a compiled class outranks the
+ * reset react-native-web gives every view and text.
  */
 export function withKitStyles(handler: Fetch): Fetch {
   return async (request: Request) => {
@@ -49,7 +51,7 @@ export function withKitStyles(handler: Fetch): Fetch {
     const headers = new Headers(response.headers);
     headers.delete('content-length');
     return new Response(
-      html.replace('</head>', `<style id="${sheet.id}">${sheet.textContent}</style></head>`),
+      html.replace(/<head[^>]*>/, (head) => `${head}<style id="${sheet.id}">${sheet.textContent}</style>`),
       { status: response.status, statusText: response.statusText, headers },
     );
   };
