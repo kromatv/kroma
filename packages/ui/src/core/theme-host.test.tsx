@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import { hydrateRoot, type Root } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import { Dimensions } from 'react-native';
@@ -8,6 +8,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { KitProvider } from '#ui/configure';
 import { createStyleTestHost } from '#ui/testing-style';
 import { breakpointAt, stepsReached } from './breakpoint-cascade';
+import { useStyleRuntime } from './style-context';
+import type { StyleRuntime } from './style-runtime';
 
 const { writeMode } = createStyleTestHost();
 let root: Root | null = null;
@@ -16,6 +18,7 @@ afterEach(() => {
   act(() => root?.unmount());
   root = null;
   document.body.innerHTML = '';
+  document.documentElement.removeAttribute('data-theme');
   writeMode('system');
   vi.restoreAllMocks();
 });
@@ -44,6 +47,11 @@ const WINDOW = { width: 1440, height: 900, scale: 1, fontScale: 1 };
 
 const host = (container: HTMLElement) => container.querySelector('[data-kroma-theme]');
 
+function Runtime({ into }: Readonly<{ into: { runtime?: StyleRuntime } }>) {
+  into.runtime = useStyleRuntime();
+  return null;
+}
+
 describe('a styling root hydrating over what the server sent', () => {
   it("moves to the visitor's breakpoint without a mismatch", async () => {
     const container = served(windowless());
@@ -71,5 +79,43 @@ describe('a styling root hydrating over what the server sent', () => {
 
     expect(host(container)?.getAttribute('data-theme')).toBe('light');
     expect(errors).not.toHaveBeenCalled();
+  });
+});
+
+describe("the document's ground", () => {
+  it('follows the outermost root', () => {
+    render(
+      <KitProvider config={{ ground: 'light' }}>
+        <span>Bibliothèque</span>
+      </KitProvider>,
+    );
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('is left alone by a root nested inside another', () => {
+    render(
+      <KitProvider config={{ ground: 'dark' }}>
+        <KitProvider config={{ ground: 'light' }}>
+          <span>Aperçu</span>
+        </KitProvider>
+      </KitProvider>,
+    );
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+  });
+
+  it('is let go when the root goes back to following the system', () => {
+    const held: { runtime?: StyleRuntime } = {};
+    document.documentElement.setAttribute('data-theme', 'dark');
+    render(
+      <KitProvider config={{ ground: 'dark' }}>
+        <Runtime into={held} />
+      </KitProvider>,
+    );
+
+    act(() => held.runtime?.setMode('system'));
+
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
   });
 });

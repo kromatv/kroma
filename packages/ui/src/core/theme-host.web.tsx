@@ -9,6 +9,11 @@ import type { ThemeHostProps } from './theme-host.types';
 const HOST = StyleSheet.create({
   host: { display: 'flex', flexDirection: 'column', width: '100%', height: '100%' },
 }).host;
+
+/** Stamps a styling root's theme, ground and breakpoint steps on an element of
+ *  its own, and hands them to whatever renders outside it. The outermost root
+ *  also keeps the document's ground in step: `<html>` paints the canvas
+ *  behind a short page and sets the scrollbars' scheme. */
 export function ThemeHost({ runtime, themeScope = true, children }: Readonly<ThemeHostProps>) {
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const host = useRef<HTMLDivElement>(null);
@@ -27,6 +32,13 @@ export function ThemeHost({ runtime, themeScope = true, children }: Readonly<The
   useLayoutEffect(() => {
     if (host.current && themeScope) return runtime.theme.attach(host.current, id);
   }, [runtime, id, themeScope]);
+  const outermost = parent === null;
+  useLayoutEffect(() => {
+    const page = host.current?.ownerDocument.documentElement;
+    if (!outermost || !page) return;
+    if (ground) page.setAttribute('data-theme', ground);
+    else page.removeAttribute('data-theme');
+  }, [outermost, ground]);
   return (
     <div
       ref={host}

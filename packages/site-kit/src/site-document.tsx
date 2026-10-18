@@ -1,8 +1,12 @@
+import { KitProvider } from '@kromatv/ui/kit';
 import bricolageLatin from '@kromatv/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
 import hankenLatin from '@kromatv/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
 import { HeadContent, Scripts } from '@tanstack/react-router';
-import type { JSX, ReactNode } from 'react';
+import { type JSX, type ReactNode, useMemo } from 'react';
 import { preload } from 'react-dom';
+import { visitorGround } from './site-ground';
+
+const SITE_KIT = { formFactor: 'browser', entry: { size: 'md' } } as const;
 
 /**
  * The `<head>` every KROMA site shares - font preloads, stylesheet and favicon -
@@ -49,13 +53,15 @@ export function SiteDocument({ children }: Readonly<{ children: ReactNode }>) {
   for (const href of [hankenLatin, bricolageLatin]) {
     preload(href, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
   }
+  const ground = visitorGround();
+  const kit = useMemo(() => ({ ...SITE_KIT, ground }), [ground]);
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body>
-        {children}
+        <KitProvider config={kit}>{children}</KitProvider>
         <Scripts />
       </body>
     </html>
