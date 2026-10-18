@@ -244,10 +244,25 @@ A test reads a control's paint with `declared(el, property)` from
 for the ring with `wearsRing(el)`; `el.style` reads nothing of a class, and
 jsdom's computed style drops `z-index` and every `var()`.
 
+## `<Box>` props
+
+A `<Box>` whose shorthand props the reader can see compiles like a `styles()`
+entry. `<Box row gap={12} px={64} style={extra}>` is written, in the build
+output only, as a module constant the element wears ahead of its own style:
+
+```tsx
+const __kromaBox0 = __kromaStatic({ flexDirection: 'row', gap: 12, paddingLeft: 64, paddingRight: 64 });
+<Box style={[__kromaBox0, extra]}>
+```
+
+The box then finds no shorthand at render and skips the resolver, and its
+classes are in the sheet before the first frame, breakpoints included. A box
+with a spread, or a prop only a render knows (`gap={gap}`), stays as written
+and resolves at runtime as before. Source keeps the props; nothing authors
+`style` for this.
+
 ## Not compiled yet
 
-`<Box>` props resolve at render as before, breakpoints and all: only a
-declaration a reader can see becomes classes, and a prop is written per call
-site. Interaction states are still resolved by the recipe from the state
-`<Focusable>` passes it, merging static coats; attribute selectors would let the
-browser do that.
+`<Text>` and `<Row>` props still resolve at render. Interaction states are
+resolved by the recipe from the state `<Focusable>` passes it, merging static
+coats; attribute selectors would let the browser do that.
