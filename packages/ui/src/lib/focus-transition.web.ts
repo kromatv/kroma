@@ -12,6 +12,7 @@ import { useCallback, useState } from 'react';
 import { motion } from '#ui/core/tokens';
 import { type PressScale, pressScaleFor, useLongestSide } from '#ui/lib/press-dip';
 import { ease } from './ease';
+import { FROST_UNSCALE } from './frost-motion';
 
 const DURATION = `${motion.duration.base}ms`;
 const TIMING = ease.out.css;
@@ -34,6 +35,7 @@ const scaled = (
     `scale:${key}:${scale}`,
     {
       transform: [{ scale }],
+      ...(key === 'focus' ? { [FROST_UNSCALE]: String(1 / scale) } : null),
       transitionProperty: 'transform',
       transitionDuration: duration,
       transitionTimingFunction: timing,

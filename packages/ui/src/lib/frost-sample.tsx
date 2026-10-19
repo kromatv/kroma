@@ -1,6 +1,9 @@
 import { type CSSProperties, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { motion } from '#ui/core/tokens';
 import { coverRect, parsePosition } from './cover-rect';
 import { webDocument } from './dom';
+import { ease } from './ease';
+import { FROST_UNSCALE, frostFollow } from './frost-motion';
 import type { FrostSourceValue } from './frost-source';
 import { paintRamps, parseRamps } from './ramp-paint';
 
@@ -82,23 +85,28 @@ function useSample(source: FrostSourceValue, amount: number): string | null {
   return drawn?.for === source ? drawn.url : null;
 }
 
-const ART: CSSProperties = { position: 'absolute', left: 0, top: 0, pointerEvents: 'none' };
-
-const WASH: CSSProperties = {
+const ART: CSSProperties = {
   position: 'absolute',
   left: 0,
   top: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'inherit',
+  pointerEvents: 'none',
+  ...frostFollow(),
 };
 
+const FILL: CSSProperties = { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 };
+
+const UNSCALE: CSSProperties = {
+  ...FILL,
+  scale: `var(${FROST_UNSCALE}, 1)`,
+  transitionProperty: 'scale',
+  transitionDuration: `${motion.duration.base}ms`,
+  transitionTimingFunction: ease.out.css,
+};
+
+const WASH: CSSProperties = { ...FILL, backgroundColor: 'inherit' };
+
 const CLIP: CSSProperties = {
-  position: 'absolute',
-  left: 0,
-  top: 0,
-  right: 0,
-  bottom: 0,
+  ...FILL,
   zIndex: -1,
   overflow: 'hidden',
   borderRadius: 'inherit',
@@ -111,43 +119,61 @@ const asElement = (node: unknown): HTMLElement | null =>
     ? (node as HTMLElement)
     : null;
 
+const px = (value: number): string => `${Math.round(value * 10) / 10}px`;
+
 function useLineUp(source: FrostSourceValue, url: string | null) {
-  const clip = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLDivElement>(null);
   const art = useRef<HTMLImageElement>(null);
   useLayoutEffect(() => {
     if (!url) return undefined;
     return source.tracker.watch(() => {
       const frame = asElement(source.frame.current);
-      const box = clip.current;
+      const unscaled = box.current;
       const img = art.current;
-      if (!(frame && box && img)) return null;
+      if (!(frame && unscaled && img)) return null;
       const f = frame.getBoundingClientRect();
-      const b = box.getBoundingClientRect();
-      const k = b.width > 0 ? box.offsetWidth / b.width : 1;
+      const b = unscaled.getBoundingClientRect();
+      const i = img.getBoundingClientRect();
+      const k = b.width > 0 ? unscaled.offsetWidth / b.width : 1;
+      const { style } = img;
+      const next = [
+        px((Number.parseFloat(style.left) || 0) + (f.left - i.left) * k),
+        px((Number.parseFloat(style.top) || 0) + (f.top - i.top) * k),
+        px(f.width * k),
+        px(f.height * k),
+      ] as const;
+      if (
+        style.left === next[0] &&
+        style.top === next[1] &&
+        style.width === next[2] &&
+        style.height === next[3]
+      ) {
+        return null;
+      }
       return () => {
-        img.style.left = `${(f.left - b.left) * k}px`;
-        img.style.top = `${(f.top - b.top) * k}px`;
-        img.style.width = `${f.width * k}px`;
-        img.style.height = `${f.height * k}px`;
+        [style.left, style.top, style.width, style.height] = next;
       };
     });
   }, [source, url]);
-  return { clip, art };
+  return { box, art };
 }
 
 /** The screen's artwork, shrunk and stretched back over the frame of its
- *  `<FrostSource>`, showing through the surface it is drawn in. The surface's
- *  own fill is repeated above it as the wash. */
+ *  `<FrostSource>`, showing through the surface it is drawn in. It counter-moves
+ *  the scrolls and the focus scale it rides on, so it holds still against the
+ *  backdrop. The surface's own fill is repeated above it as the wash. */
 export function FrostSample({
   source,
   amount,
 }: Readonly<{ source: FrostSourceValue; amount: number }>) {
   const url = useSample(source, amount);
-  const { clip, art } = useLineUp(source, url);
+  const { box, art } = useLineUp(source, url);
   if (!url) return null;
   return (
-    <div ref={clip} style={CLIP} aria-hidden>
-      <img ref={art} src={url} alt="" draggable={false} style={ART} />
+    <div style={CLIP} aria-hidden>
+      <div ref={box} style={UNSCALE}>
+        <img ref={art} src={url} alt="" draggable={false} style={ART} />
+      </div>
       <div style={WASH} />
     </div>
   );

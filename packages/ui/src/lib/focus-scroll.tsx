@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { RING_ROOM } from '#ui/core/tokens';
 import { FocusLiftView } from '#ui/lib/focus-lift';
+import { declareFrostTimeline } from '#ui/lib/frost-timeline';
 import { usePointerDriving } from '#ui/lib/input-source';
 import { WEB } from '#ui/lib/platform';
 import { useReducedMotion } from '#ui/lib/reduced-motion';
@@ -228,6 +229,11 @@ function AxisScroll({
         onLayout={(e: LayoutChangeEvent) => {
           const { width, height } = e.nativeEvent.layout;
           extent.current.viewport = horizontal ? width : height;
+          declareFrostTimeline(
+            scroller.current,
+            horizontal,
+            extent.current.content - extent.current.viewport,
+          );
         }}
         scrollEventThrottle={16}
         onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -236,6 +242,11 @@ function AxisScroll({
         }}
         onContentSizeChange={(width: number, height: number) => {
           extent.current.content = horizontal ? width : height;
+          declareFrostTimeline(
+            scroller.current,
+            horizontal,
+            extent.current.content - extent.current.viewport,
+          );
           // Re-reveal: the content may only now be long enough to bring the
           // anchor where it belongs. Not under the pointer, where re-pinning the
           // old anchor snatches the page back mid-scroll.

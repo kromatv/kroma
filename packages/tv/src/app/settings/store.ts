@@ -114,7 +114,7 @@ export function useArtworkPref(): ReactivePref<ArtworkQuality> {
  * screen's artwork instead of filtering the live backdrop, so it costs a
  * picture rather than a blur per frame. */
 export function createBlurPref(storage?: SessionStorage | null): ReactivePref<'on' | 'off'> {
-  return reactivePref('kroma:blur', ['on', 'off'] as const, 'on', storage);
+  return reactivePref('kroma:blur', ['on', 'off'] as const, 'off', storage);
 }
 const BlurContext = createContext<ReactivePref<'on' | 'off'> | null>(null);
 export const BlurPrefProvider = BlurContext.Provider;
