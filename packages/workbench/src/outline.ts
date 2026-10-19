@@ -15,7 +15,6 @@ import {
   useContext,
   useId,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
@@ -98,28 +97,31 @@ function useOutline(article: string): Outline {
     sections: [],
     top: 0,
   });
-  const claims = useRef<{ article: string; claims: Claims }>({
+  const [claimed, setClaimed] = useState<{ article: string; claims: Claims }>({
     article,
     claims: { byKey: new Map(), byBase: new Map() },
   });
   if (seen.article !== article) setSeen({ article, sections: [], top: 0 });
-  if (claims.current.article !== article) {
-    claims.current = { article, claims: { byKey: new Map(), byBase: new Map() } };
+  if (claimed.article !== article) {
+    setClaimed({ article, claims: { byKey: new Map(), byBase: new Map() } });
   }
 
   // Two headings of the same words are two addresses, so the second takes `-2`.
   // Keyed by instance, which is what makes a re-render return the same id
   // instead of numbering the document again.
-  const claim = useCallback((key: string, base: string) => {
-    const { byKey, byBase } = claims.current.claims;
-    const known = byKey.get(key);
-    if (known) return known;
-    const nth = (byBase.get(base) ?? 0) + 1;
-    byBase.set(base, nth);
-    const id = nth === 1 ? base : `${base}-${nth}`;
-    byKey.set(key, id);
-    return id;
-  }, []);
+  const claim = useCallback(
+    (key: string, base: string) => {
+      const { byKey, byBase } = claimed.claims;
+      const known = byKey.get(key);
+      if (known) return known;
+      const nth = (byBase.get(base) ?? 0) + 1;
+      byBase.set(base, nth);
+      const id = nth === 1 ? base : `${base}-${nth}`;
+      byKey.set(key, id);
+      return id;
+    },
+    [claimed],
+  );
 
   const reportSection = useCallback((next: Section) => {
     setSeen((prev) => {

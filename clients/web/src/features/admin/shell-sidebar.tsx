@@ -18,7 +18,7 @@ import {
 } from '@kromatv/ui/kit';
 import { IconChevronRight } from '@tabler/icons-react';
 import { useRouterState } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { adminNavSections } from '#web/features/admin/admin-nav';
 import { PillDot } from '#web/features/admin/pill';
@@ -185,8 +185,11 @@ export function AdminMobileTopbar() {
   const actions = useNavActions();
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- intentional re-run key; pathname closes the drawer on navigation
-  useEffect(() => setOpen(false), [pathname]);
+  const [openedAt, setOpenedAt] = useState(pathname);
+  if (openedAt !== pathname) {
+    setOpenedAt(pathname);
+    setOpen(false);
+  }
   return (
     <Box
       role="banner"

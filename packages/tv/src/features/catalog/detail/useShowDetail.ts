@@ -67,11 +67,16 @@ export function useShowDetail(showId: ShowId): ShowDetailState {
     [watched],
   );
 
-  useEffect(() => {
-    let cancelled = false;
+  const [loadedFor, setLoadedFor] = useState({ client, showId });
+  if (loadedFor.client !== client || loadedFor.showId !== showId) {
+    setLoadedFor({ client, showId });
     setDetail(null);
     setSeason(null);
     setError(null);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
     client.media
       .show(showId)
       .then((d) => {

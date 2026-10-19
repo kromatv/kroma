@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export const RESUME_WINDOW = 6;
 
@@ -30,9 +30,12 @@ export function useResumeNotice(opts: {
   const [phase, setPhase] = useState<Phase>('waiting');
   const [secondsLeft, setSecondsLeft] = useState(RESUME_WINDOW);
   const [offered, setOffered] = useState(at);
-  const seen = useRef(cur);
-  const landed = useRef(false);
-  const landedAt = useRef(at);
+  const [track, setTrack] = useState({
+    cur,
+    shown: false,
+    at,
+    landed: at != null && Math.abs(cur - at) <= SEEK_JUMP_SEC,
+  });
   const shown = phase === 'counting' || phase === 'kept';
 
   // Stated during the render that changes it rather than in an effect, which
@@ -42,35 +45,29 @@ export function useResumeNotice(opts: {
     setPhase('waiting');
   }
 
-  useEffect(() => {
-    if (at == null || !playing || waiting) return;
-    setPhase((p) => (p === 'waiting' ? 'counting' : p));
-  }, [at, playing, waiting]);
+  if (phase === 'waiting' && at != null && playing && !waiting) {
+    setPhase('counting');
+    setSecondsLeft(RESUME_WINDOW);
+  }
+
+  if (phase === 'counting' && secondsLeft === 0) setPhase('gone');
 
   useEffect(() => {
     if (phase !== 'counting') return;
-    setSecondsLeft(RESUME_WINDOW);
     const tick = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(tick);
   }, [phase]);
 
-  useEffect(() => {
-    if (phase === 'counting' && secondsLeft === 0) setPhase('gone');
-  }, [phase, secondsLeft]);
-
-  // A shell that anchors its stream reports the clock at 0 until the offset
-  // lands, so the first jump of all is the film arriving where it was left.
-  // Nothing counts as a seek until it has got there.
-  useEffect(() => {
-    if (landedAt.current !== at) {
-      landedAt.current = at;
-      landed.current = false;
-    }
-    const armed = shown && landed.current;
-    if (armed && Math.abs(cur - seen.current) > SEEK_JUMP_SEC) setPhase('gone');
-    if (at != null && Math.abs(cur - at) <= SEEK_JUMP_SEC) landed.current = true;
-    seen.current = cur;
-  }, [cur, shown, at]);
+  if (track.cur !== cur || track.shown !== shown || track.at !== at) {
+    const landed = track.at === at && track.landed;
+    if (shown && landed && Math.abs(cur - track.cur) > SEEK_JUMP_SEC) setPhase('gone');
+    setTrack({
+      cur,
+      shown,
+      at,
+      landed: landed || (at != null && Math.abs(cur - at) <= SEEK_JUMP_SEC),
+    });
+  }
 
   return {
     shown,

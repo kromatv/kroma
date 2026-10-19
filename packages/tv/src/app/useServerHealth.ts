@@ -21,16 +21,23 @@ export function useServerHealth(
   const [serverVersion, setServerVersion] = useState<string | null>(null);
   // Ref so a fresh `onReconnect` closure each render doesn't restart the monitor.
   const reconnectRef = useRef(onReconnect);
-  reconnectRef.current = onReconnect;
+  useEffect(() => {
+    reconnectRef.current = onReconnect;
+  });
   const kickRef = useRef<() => void>(() => {});
 
-  useEffect(() => {
-    if (!client || !enabled) {
-      // No active session → assume reachable so the picker shows no offline chrome.
+  const active = !!client && enabled;
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    if (!active) {
       setOnline(true);
       setServerVersion(null);
-      return;
     }
+  }
+
+  useEffect(() => {
+    if (!client || !enabled) return;
     const monitor = startHealthMonitor({
       probe: async () => {
         const ctrl = new AbortController();

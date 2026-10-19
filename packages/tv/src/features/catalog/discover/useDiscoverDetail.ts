@@ -12,17 +12,21 @@ const READING: DiscoverFiche = { state: 'reading' };
 
 export function useDiscoverDetail(kind: RequestKind, tmdbId: number): DiscoverFiche {
   const client = useClient();
-  const [fiche, setFiche] = useState<DiscoverFiche>(READING);
+  const [settled, setSettled] = useState<{
+    client: typeof client;
+    kind: RequestKind;
+    tmdbId: number;
+    fiche: DiscoverFiche;
+  } | null>(null);
 
   useEffect(() => {
     let live = true;
-    setFiche(READING);
     client.discovery.detail(tmdbKindOf(kind), tmdbId).then(
       (detail) => {
-        if (live) setFiche({ state: 'read', detail });
+        if (live) setSettled({ client, kind, tmdbId, fiche: { state: 'read', detail } });
       },
       () => {
-        if (live) setFiche({ state: 'refused' });
+        if (live) setSettled({ client, kind, tmdbId, fiche: { state: 'refused' } });
       },
     );
     return () => {
@@ -30,5 +34,7 @@ export function useDiscoverDetail(kind: RequestKind, tmdbId: number): DiscoverFi
     };
   }, [client, kind, tmdbId]);
 
-  return fiche;
+  return settled?.client === client && settled.kind === kind && settled.tmdbId === tmdbId
+    ? settled.fiche
+    : READING;
 }

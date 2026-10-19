@@ -45,17 +45,20 @@ export default function SignIn() {
   const serverLabel = (url: string) =>
     probes[url]?.name ?? servers.find((s) => s.url === url)?.name ?? hostOf(url);
 
-  const [phase, setPhase] = useState<Phase>({ kind: 'gate' });
+  const { phase: phaseParam } = useLocalSearchParams<{ phase?: string }>();
+  const [phase, setPhase] = useState<Phase>(() =>
+    phaseParam === 'form' ? { kind: 'form' } : { kind: 'gate' },
+  );
+  const [seenPhaseParam, setSeenPhaseParam] = useState(phaseParam);
+  if (seenPhaseParam !== phaseParam) {
+    setSeenPhaseParam(phaseParam);
+    if (phaseParam === 'form') setPhase({ kind: 'form' });
+  }
   const [password, setPassword] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const { phase: phaseParam } = useLocalSearchParams<{ phase?: string }>();
-  useEffect(() => {
-    if (phaseParam === 'form') setPhase({ kind: 'form' });
-  }, [phaseParam]);
 
   const bioLocked = useBiometricLockedKeys(accounts);
 

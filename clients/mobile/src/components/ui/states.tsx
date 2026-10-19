@@ -11,7 +11,7 @@ import {
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Animated } from 'react-native';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
@@ -20,8 +20,8 @@ import { radius, spacing, type } from '#mobile/lib/theme';
 export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
   const s = useStyles(sDefinition);
 
-  const shake = useRef(new Animated.Value(0)).current;
-  const fade = useRef(new Animated.Value(0)).current;
+  const [shake] = useState(() => new Animated.Value(0));
+  const [fade] = useState(() => new Animated.Value(0));
   useEffect(() => {
     if (!message) return;
     fade.setValue(0);

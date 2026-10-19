@@ -20,12 +20,16 @@ export interface PanelSlide {
 export function usePanelSlide(open: boolean): PanelSlide {
   const [mounted, setMounted] = useState(open);
   const [run, setRun] = useState(0);
-  useEffect(() => {
+  const [wasOpen, setWasOpen] = useState(false);
+  if (wasOpen !== open) {
+    setWasOpen(open);
     if (open) {
       setMounted(true);
       setRun((n) => n + 1);
-      return;
     }
+  }
+  useEffect(() => {
+    if (open) return;
     const out = setTimeout(() => setMounted(false), CARD_MS);
     return () => clearTimeout(out);
   }, [open]);

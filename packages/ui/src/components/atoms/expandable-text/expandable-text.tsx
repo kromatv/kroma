@@ -64,17 +64,11 @@ function ExpandableText({
   // the whole growth (there is nothing to reveal otherwise) and stays that way
   // until a collapse has finished shrinking, or the last lines would vanish
   // before the box reached them.
-  const [clamped, setClamped] = useState(true);
+  const [settled, setSettled] = useState(true);
+  const clamped = !expanded && (!animate || settled);
   useEffect(() => {
-    if (expanded) {
-      setClamped(false);
-      return;
-    }
-    if (!animate) {
-      setClamped(true);
-      return;
-    }
-    const settle = setTimeout(() => setClamped(true), GROW_MS);
+    if (expanded || !animate) return;
+    const settle = setTimeout(() => setSettled(true), GROW_MS);
     return () => clearTimeout(settle);
   }, [expanded, animate]);
 
@@ -86,7 +80,11 @@ function ExpandableText({
 
   return (
     <Pressable
-      onPress={() => clampable && setExpanded((prev) => !prev)}
+      onPress={() => {
+        if (!clampable) return;
+        if (!expanded) setSettled(false);
+        setExpanded(!expanded);
+      }}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       accessibilityRole={clampable ? 'button' : undefined}

@@ -64,7 +64,11 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
   const { client } = useAdminHost();
   // `null` is "not answered yet"; an empty array is a view with no groups.
   const [groups, setGroups] = useState<SettingGroup[] | null>(null);
-  const [failure, setFailure] = useState<{ error: unknown } | null>(null);
+  const [failed, setFailed] = useState<{
+    error: unknown;
+    view: typeof view;
+    attempt: number;
+  } | null>(null);
   const [saved, setSaved] = useState(false);
 
   // One fetch, reused as the retry: a view that failed offers to ask again
@@ -73,11 +77,10 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- `attempt` is an intentional re-run key (the retry), not something the effect reads
   useEffect(() => {
     let active = true;
-    setFailure(null);
     client.admin
       .settings(view)
       .then((r) => active && setGroups(r.groups))
-      .catch((e: unknown) => active && setFailure({ error: e }));
+      .catch((e: unknown) => active && setFailed({ error: e, view, attempt }));
     return () => {
       active = false;
     };
@@ -93,6 +96,8 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
       })
       .catch(() => undefined);
   });
+
+  const failure = failed?.view === view && failed.attempt === attempt ? failed : null;
 
   // Before the first answer there is nothing to show and nothing to claim: an
   // empty page would read as a settings view with no settings in it.
@@ -384,7 +389,11 @@ function EditableText({
   onCommit,
 }: Readonly<{ label: string; value: string; onCommit: (v: string) => void }>) {
   const [v, setV] = useState(value);
-  useEffect(() => setV(value), [value]);
+  const [seen, setSeen] = useState(value);
+  if (seen !== value) {
+    setSeen(value);
+    setV(value);
+  }
   return (
     <Field.Root label={label} hideLabel value={v} onValueChange={setV}>
       <Field.Input

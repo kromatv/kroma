@@ -14,7 +14,9 @@ function usePointerHold(onLongSelect: (() => void) | undefined): PointerHold {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const held = useRef(false);
   const latest = useRef(onLongSelect);
-  latest.current = onLongSelect;
+  useEffect(() => {
+    latest.current = onLongSelect;
+  });
 
   const end = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);

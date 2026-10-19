@@ -36,7 +36,9 @@ export function TvReport() {
   // through a ref so it stays stable: an unstable one re-registers the remote's
   // Back key on every keystroke.
   const typingRef = useRef(typing);
-  typingRef.current = typing;
+  useEffect(() => {
+    typingRef.current = typing;
+  });
   const onBack = useCallback(() => {
     if (typingRef.current) setTyping(false);
     else nav.back();

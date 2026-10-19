@@ -104,13 +104,19 @@ export function CastProvider({
     knowsReceiver: (id) => receiversRef.current.some((r) => r.id === id),
   });
 
-  // Roster: fetched once, then kept live off the bus.
-  useEffect(() => {
-    if (!enabled || !client) {
+  const live = enabled && Boolean(client);
+  const [wasLive, setWasLive] = useState(live);
+  if (wasLive !== live) {
+    setWasLive(live);
+    if (!live) {
       setReceivers([]);
       setActiveId(null);
-      return;
     }
+  }
+
+  // Roster: fetched once, then kept live off the bus.
+  useEffect(() => {
+    if (!enabled || !client) return;
     refresh();
     const events = new KromaEvents(client.baseUrl, {
       token: () => client.sessionToken,
@@ -151,11 +157,9 @@ export function CastProvider({
 
   // A TV that left the roster (switched off, app quit) is no longer something
   // this sender is driving - drop the selection rather than show a dead remote.
-  useEffect(() => {
-    if (activeId && receivers.length && !receivers.some((r) => r.id === activeId)) {
-      setActiveId(null);
-    }
-  }, [receivers, activeId]);
+  if (activeId && receivers.length && !receivers.some((r) => r.id === activeId)) {
+    setActiveId(null);
+  }
 
   // Advance the interpolated position while the active TV is playing. One timer,
   // only while it is needed: an idle or paused receiver costs nothing.

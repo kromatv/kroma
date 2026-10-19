@@ -76,22 +76,23 @@ export function useBiometricLockedKeys(accounts: MobileAccount[]): Set<string> {
   return locked;
 }
 
+const EMPTY_ROSTER: PublicUser[] = [];
+
 /** Public profile roster of the selected server, when it exposes one; empty on
  * failure. */
 export function useServerRoster(serverUrl: string | null): PublicUser[] {
   const { requestLocale } = useSession();
-  const [roster, setRoster] = useState<PublicUser[]>([]);
+  const [loaded, setLoaded] = useState<{ serverUrl: string; users: PublicUser[] } | null>(null);
   useEffect(() => {
     if (!serverUrl) return;
     let cancelled = false;
-    setRoster([]);
     void (async () => {
       try {
         const probe = makeClient(serverUrl, requestLocale());
         const config = await probe.accounts.config();
         if (cancelled || !config.publicUserList || !config.hasAccounts) return;
         const users = await probe.accounts.users();
-        if (!cancelled) setRoster(users);
+        if (!cancelled) setLoaded({ serverUrl, users });
       } catch {
         // No roster; saved accounts + the form still work.
       }
@@ -100,5 +101,5 @@ export function useServerRoster(serverUrl: string | null): PublicUser[] {
       cancelled = true;
     };
   }, [serverUrl, requestLocale]);
-  return roster;
+  return loaded !== null && loaded.serverUrl === serverUrl ? loaded.users : EMPTY_ROSTER;
 }

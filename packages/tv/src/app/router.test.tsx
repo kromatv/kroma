@@ -14,7 +14,10 @@ afterEach(() => {
 
 let entry: ReturnType<typeof useFocusEntry>;
 function Bar() {
-  entry = useFocusEntry();
+  const current = useFocusEntry();
+  useEffect(() => {
+    entry = current;
+  });
   const mounts = useRef(0);
   useEffect(() => {
     mounts.current += 1;
@@ -24,7 +27,10 @@ function Bar() {
 }
 
 function Movie() {
-  entry = useFocusEntry();
+  const current = useFocusEntry();
+  useEffect(() => {
+    entry = current;
+  });
   useEffect(() => {
     MOUNTS.movie += 1;
   }, []);
@@ -39,7 +45,10 @@ const CHROME: TvChrome = { routes: ['home', 'grid'], render: Bar };
 
 let nav: TvNav;
 function Capture() {
-  nav = useNav();
+  const current = useNav();
+  useEffect(() => {
+    nav = current;
+  });
   return null;
 }
 

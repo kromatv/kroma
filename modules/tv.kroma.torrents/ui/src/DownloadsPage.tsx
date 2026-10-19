@@ -76,9 +76,9 @@ export default function DownloadsPage() {
 
   const queryKey = useMemo(() => ['admin', 'downloads', query] as const, [query]);
   const { data, failed, reload } = usePoll(queryKey, () => torrents.downloads(query), POLL_MS);
-  const shownRef = useRef(data);
-  if (data) shownRef.current = data;
-  const shown = data ?? shownRef.current;
+  const [lastData, setLastData] = useState(data);
+  if (data && data !== lastData) setLastData(data);
+  const shown = data ?? lastData;
   const clientsPoll = usePoll(['admin', 'downloads', 'clients'], () => torrents.clients(), 60000);
   const { table, headings, sort, onSortChange } = useDownloadsTable({
     downloads: shown?.downloads,

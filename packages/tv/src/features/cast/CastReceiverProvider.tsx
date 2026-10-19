@@ -72,7 +72,9 @@ function CastReceiver({
 
   // Read through a ref so the effect below doesn't reconnect on every render.
   const deps = useRef({ client, nav, t, platform, name, bridge });
-  deps.current = { client, nav, t, platform, name, bridge };
+  useEffect(() => {
+    deps.current = { client, nav, t, platform, name, bridge };
+  });
 
   const applied = useRef(0);
   const signedIn = ready && Boolean(user);

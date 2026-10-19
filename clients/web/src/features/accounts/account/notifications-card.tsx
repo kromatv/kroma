@@ -6,7 +6,6 @@ import {
   disablePush,
   enablePush,
   type NotificationCategory,
-  type PushBlocker,
 } from '@kromatv/client/notifications';
 import { blockerOf, NOTIFICATION_CATEGORY_LABEL, PUSH_BLOCKER_LABEL } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
@@ -23,12 +22,14 @@ import {
   Text,
 } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 
 import { pushBlocker, webPush } from '#web/shared/lib/push';
 
 // The two channel columns must line up with the switches under them, and a
 // switch is one shell step wide.
+const subscribeNever = () => () => {};
+
 const CHANNEL_COLUMN = 46;
 
 export function NotificationsCard() {
@@ -45,13 +46,10 @@ function PushPanel() {
 
   const t = useT();
   const qc = useQueryClient();
-  const [blocker, setBlocker] = useState<PushBlocker | null>(null);
+  const blocker = useSyncExternalStore(subscribeNever, pushBlocker, () => null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tested, setTested] = useState<number | null>(null);
-
-  // Reads `navigator`, so it cannot run in the prerendered shell's first render.
-  useEffect(() => setBlocker(pushBlocker()), []);
 
   const { data } = useQuery(webRuntime.queries.userQueries.pushKey());
   const subscribed = data?.subscribed ?? false;

@@ -33,22 +33,19 @@ export function FolderPicker({
 
   const t = useT();
   const [path, setPath] = useState(value || '');
-  const [list, setList] = useState<AdminFsList | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState<{ path: string; list: AdminFsList | null } | null>(null);
+  const list = loaded?.list ?? null;
+  const loading = loaded?.path !== path;
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
     webRuntime.client.library
       .browse(path)
       .then((res) => {
-        if (active) setList(res);
+        if (active) setLoaded({ path, list: res });
       })
       .catch(() => {
-        if (active) setList(null);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        if (active) setLoaded({ path, list: null });
       });
     return () => {
       active = false;

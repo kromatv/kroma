@@ -3,7 +3,7 @@
 // reusable for any small option list (seasons, sort, ...).
 
 import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
@@ -38,8 +38,8 @@ export function PopoverMenu({
   const s = useStyles(sDefinition);
 
   const { width: screenW, height: screenH } = useWindowDimensions();
-  const scale = useRef(new Animated.Value(0.85)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const [scale] = useState(() => new Animated.Value(0.85));
+  const [opacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (visible) {

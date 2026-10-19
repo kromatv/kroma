@@ -23,12 +23,17 @@ export function useSearchAnswers(
   const client = useClient();
   const [answers, setAnswers] = useState<SearchAnswers>(NOTHING);
   const seq = useRef(0);
+  const empty = !typed.trim();
+  const [wasEmpty, setWasEmpty] = useState(empty);
+  if (wasEmpty !== empty) {
+    setWasEmpty(empty);
+    if (empty) setAnswers(NOTHING);
+  }
 
   useEffect(() => {
     const query = typed.trim();
     if (!query) {
       seq.current += 1;
-      setAnswers(NOTHING);
       return;
     }
     const mine = ++seq.current;

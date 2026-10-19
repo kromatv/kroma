@@ -70,3 +70,19 @@ export interface EngineCore {
 export function nativeTrackKey(t: AudioTrack): string {
   return t.id ?? `${t.language}|${t.label}`;
 }
+
+export function patchCore(core: EngineCore, patch: Partial<EngineCore>): void {
+  Object.assign(core, patch);
+}
+
+export function nextLoadId(core: EngineCore): number {
+  core.loadId += 1;
+  return core.loadId;
+}
+
+export function patchPlayer(
+  player: VideoPlayer,
+  patch: Partial<Pick<VideoPlayer, 'muted' | 'currentTime' | 'audioTrack' | 'playbackRate'>>,
+): void {
+  Object.assign(player, patch);
+}

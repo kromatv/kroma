@@ -4,24 +4,26 @@
 // play (avoids a hydration mismatch).
 
 import { KromaIntro } from '@kromatv/ui/kit';
-import { useEffect, useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 
 const SEEN_KEY = 'kroma:intro-seen';
 
+const subscribeNever = () => () => {};
+const readNever = () => false;
+
+function readUnseen() {
+  try {
+    return !sessionStorage.getItem(SEEN_KEY);
+  } catch {
+    return true;
+  }
+}
+
 export function Intro() {
-  const [show, setShow] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [done, setDone] = useState(false);
+  const unseen = useSyncExternalStore(subscribeNever, readUnseen, readNever);
 
-  useEffect(() => {
-    setMounted(true);
-    try {
-      if (!sessionStorage.getItem(SEEN_KEY)) setShow(true);
-    } catch {
-      setShow(true); // private mode / storage blocked → still play it once.
-    }
-  }, []);
-
-  if (!mounted || !show) return null;
+  if (!unseen || done) return null;
 
   return (
     <KromaIntro
@@ -31,7 +33,7 @@ export function Intro() {
         } catch {
           /* ignore */
         }
-        setShow(false);
+        setDone(true);
       }}
     />
   );

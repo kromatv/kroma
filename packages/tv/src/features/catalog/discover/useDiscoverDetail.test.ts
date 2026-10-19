@@ -3,11 +3,12 @@ import type { DiscoverDetail } from '@kromatv/client/discovery';
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const detail = vi.hoisted(() =>
-  vi.fn<(kind: 'movie' | 'tv', tmdbId: number) => Promise<DiscoverDetail>>(),
-);
+const { detail, client } = vi.hoisted(() => {
+  const detail = vi.fn<(kind: 'movie' | 'tv', tmdbId: number) => Promise<DiscoverDetail>>();
+  return { detail, client: { discovery: { detail } } };
+});
 
-vi.mock('#tv/app/router', () => ({ useClient: () => ({ discovery: { detail } }) }));
+vi.mock('#tv/app/router', () => ({ useClient: () => client }));
 
 import { useDiscoverDetail } from './useDiscoverDetail';
 

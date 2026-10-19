@@ -3,7 +3,14 @@
 
 import type { VideoPlayer } from 'expo-video';
 import { useCallback, useEffect } from 'react';
-import { type AudioFilterMode, type EngineCore, NATIVE_SEEK_AHEAD } from './types';
+import {
+  type AudioFilterMode,
+  type EngineCore,
+  NATIVE_SEEK_AHEAD,
+  nextLoadId,
+  patchCore,
+  patchPlayer,
+} from './types';
 
 export interface ControlDeps {
   player: VideoPlayer;
@@ -46,9 +53,9 @@ export function useEngineControls(deps: ControlDeps): Controls {
   // outlive both the unmount and the modal dismissal, so every exit path
   // (back button, up-next, beforeRemove, unmount) calls this to silence it.
   const shutdown = useCallback(() => {
-    core.loadId++;
+    nextLoadId(core);
     try {
-      player.muted = true;
+      patchPlayer(player, { muted: true });
       player.pause();
     } catch {
       // Player already released.
@@ -71,15 +78,15 @@ export function useEngineControls(deps: ControlDeps): Controls {
     (abs: number) => {
       const clamped = Math.max(0, Math.min(abs, dur > 0 ? dur - 1 : abs));
       if (core.mode === 'direct') {
-        player.currentTime = clamped;
-        core.elSec = clamped;
+        patchPlayer(player, { currentTime: clamped });
+        patchCore(core, { elSec: clamped });
         setCur(clamped);
         return;
       }
       const pos = core.baseSec + core.elSec;
       if (clamped >= core.baseSec && clamped <= pos + NATIVE_SEEK_AHEAD) {
-        player.currentTime = clamped - core.baseSec;
-        core.elSec = clamped - core.baseSec;
+        patchPlayer(player, { currentTime: clamped - core.baseSec });
+        patchCore(core, { elSec: clamped - core.baseSec });
         setCur(clamped);
         return;
       }
@@ -107,14 +114,13 @@ export function useEngineControls(deps: ControlDeps): Controls {
       if (localUri) {
         const target = player.availableAudioTracks[index];
         if (!target) return;
-        player.audioTrack = target;
-        core.audioIndex = index;
+        patchPlayer(player, { audioTrack: target });
+        patchCore(core, { audioIndex: index });
         setAudioIndex(index);
         return;
       }
       if (index === core.audioIndex && core.mode === 'master') return;
-      core.audioIndex = index;
-      core.mode = 'master';
+      patchCore(core, { audioIndex: index, mode: 'master' });
       setAudioIndex(index);
       void load(core.baseSec + core.elSec);
     },
@@ -126,10 +132,11 @@ export function useEngineControls(deps: ControlDeps): Controls {
   const setFilter = useCallback(
     (f: AudioFilterMode) => {
       if (localUri || f === core.filter) return;
-      core.filter = f;
+      patchCore(core, { filter: f });
       setFilterState(f);
-      if (f === 'off' && directPlayable && !core.fellBack) core.mode = 'direct';
-      else core.mode = 'master';
+      patchCore(core, {
+        mode: f === 'off' && directPlayable && !core.fellBack ? 'direct' : 'master',
+      });
       void load(core.baseSec + core.elSec);
     },
     [core, load, directPlayable, localUri, setFilterState],
@@ -137,7 +144,7 @@ export function useEngineControls(deps: ControlDeps): Controls {
 
   const setRate = useCallback(
     (r: number) => {
-      player.playbackRate = r;
+      patchPlayer(player, { playbackRate: r });
       setRateState(r);
     },
     [player, setRateState],

@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import { type ComponentType, createElement, type ReactElement } from 'react';
 import { groupByName, pickLocale } from '#site/lib/content-locale';
 import type { Lang } from '#site/lib/i18n';
 
@@ -15,10 +15,11 @@ interface LegalModule {
 const modules = import.meta.glob<LegalModule>('../../content/legal/*.mdx', { eager: true });
 const docs = groupByName(modules);
 
-/** The rendered component for a legal document in a locale: the translation
- *  when it exists, the fallback-locale version otherwise, `undefined` only
- *  when no file for that name exists at all. */
-export function getLegalDoc(name: string, lang: Lang): ComponentType | undefined {
+/** The rendered legal document in a locale: the translation when it exists,
+ *  the fallback-locale version otherwise, `null` only when no file for that
+ *  name exists at all. */
+export function getLegalDoc(name: string, lang: Lang): ReactElement | null {
   const byLang = docs.get(name);
-  return byLang ? pickLocale(byLang, lang)?.default : undefined;
+  const doc = byLang ? pickLocale(byLang, lang)?.default : undefined;
+  return doc ? createElement(doc) : null;
 }

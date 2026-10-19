@@ -41,8 +41,12 @@ export function usePlayerCredits(opts: {
   const show = hasNext && !cancelled && !seeking && creditsAt > 0 && cur >= creditsAt;
 
   const [secondsLeft, setSecondsLeft] = useState(AUTO_NEXT);
-  useEffect(() => {
+  const [wasShown, setWasShown] = useState(show);
+  if (wasShown !== show) {
+    setWasShown(show);
     setSecondsLeft(AUTO_NEXT);
+  }
+  useEffect(() => {
     if (!show) return;
     const id = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);

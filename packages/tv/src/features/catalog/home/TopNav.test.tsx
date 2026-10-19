@@ -2,6 +2,7 @@
 import { Focusable } from '@kromatv/ui/kit';
 import { onScreen as baseOnScreen, wearsRing } from '@kromatv/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
+import { useEffect } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type TvNav, TvNavProvider, useNav } from '#tv/app/router';
 
@@ -34,7 +35,10 @@ function press(key: string) {
 
 let nav: TvNav;
 function Capture() {
-  nav = useNav();
+  const current = useNav();
+  useEffect(() => {
+    nav = current;
+  });
   return null;
 }
 

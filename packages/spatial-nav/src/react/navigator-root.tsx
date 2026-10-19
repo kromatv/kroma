@@ -37,19 +37,16 @@ function NavigatorRoot({ children, active = true, onEdge }: Readonly<NavigatorRo
   );
 
   const edge = useRef(onEdge);
-  edge.current = onEdge;
+  useEffect(() => {
+    edge.current = onEdge;
+  });
 
   useEffect(() => {
     navigator.registerNode(ROOT_ID, { orientation: 'vertical' });
     return () => navigator.unregisterNode(ROOT_ID);
   }, [navigator]);
 
-  useEffect(() => {
-    navigator.onEdge = (direction) => edge.current?.(direction);
-    return () => {
-      navigator.onEdge = undefined;
-    };
-  }, [navigator]);
+  useEffect(() => navigator.routeEdge((direction) => edge.current?.(direction)), [navigator]);
 
   useEffect(
     () => remote?.subscribe((direction) => navigator.handle(direction)),
@@ -67,12 +64,7 @@ function NavigatorRoot({ children, active = true, onEdge }: Readonly<NavigatorRo
   // parent has registered, and no render of this component follows to go back
   // for it. So the retry hangs off registration, which is where the tree
   // becomes whole, and the effect below stays only as the backstop.
-  useEffect(() => {
-    navigator.onRegister = queue.flush;
-    return () => {
-      navigator.onRegister = undefined;
-    };
-  }, [navigator, queue]);
+  useEffect(() => navigator.watchRegistrations(queue.flush), [navigator, queue]);
 
   useEffect(queue.flush);
 

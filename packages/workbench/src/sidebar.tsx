@@ -5,7 +5,7 @@
 // input across three branches. The rows themselves are in `sidebar-rows.tsx`.
 
 import { Box, styles, useStyles } from '@kromatv/ui/kit';
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { RULE_TOP } from './chrome';
 import type { StoryEntry } from './entry';
@@ -100,13 +100,8 @@ function Sidebar({
   // A story chosen from the palette (or arrived at by deep link) has to become
   // visible here. Additive, never a reset: the branches someone opened to compare
   // two components stay open behind the one that just got revealed.
-  useEffect(() => {
-    setOpen((prev) => {
-      const path = revealPath(groups, pages, selected);
-      if ([...path].every((key) => prev.has(key))) return prev;
-      return new Set([...prev, ...path]);
-    });
-  }, [groups, pages, selected]);
+  const path = revealPath(groups, pages, selected);
+  if (![...path].every((key) => open.has(key))) setOpen(new Set([...open, ...path]));
 
   return (
     <Box

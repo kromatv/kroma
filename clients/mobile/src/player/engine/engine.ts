@@ -12,10 +12,17 @@ import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
 import { resolveMasterStart } from '@kromatv/core';
 import { type AudioTrack, useVideoPlayer, type VideoPlayer } from 'expo-video';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { decideSource, mobileVideoCodecs } from '#mobile/player/caps';
 import { useEngineControls } from './controls';
-import { type AudioFilterMode, type Engine, type EngineCore, nativeTrackKey } from './types';
+import {
+  type AudioFilterMode,
+  type Engine,
+  type EngineCore,
+  nativeTrackKey,
+  nextLoadId,
+  patchCore,
+} from './types';
 
 export type { AudioFilterMode, Engine, EngineState } from './types';
 
@@ -35,7 +42,7 @@ export function useKromaEngine(
   startAudioIndex = 0,
 ): Engine {
   const decision = useMemo(() => decideSource(item), [item]);
-  const core = useRef<EngineCore>({
+  const [core] = useState<EngineCore>(() => ({
     // A non-default OPENING track forces the master, same as a manual switch:
     // direct play always carries the container's default audio.
     mode: localUri || (decision.direct && startAudioIndex === 0) ? 'direct' : 'master',
@@ -50,7 +57,7 @@ export function useKromaEngine(
     filter: 'off',
     loadId: 0,
     started: false,
-  }).current;
+  }));
 
   const [cur, setCur] = useState(startSec);
   const [buffered, setBuffered] = useState(startSec);
@@ -86,27 +93,22 @@ export function useKromaEngine(
   // clock stays honest.
   const load = useCallback(
     async (absSec: number) => {
-      const id = ++core.loadId;
+      const id = nextLoadId(core);
       const resume = resumeOnLoad(core, player);
       setWaiting(true);
       setReady(false);
       let uri: string;
       if (core.mode === 'direct') {
-        core.baseSec = 0;
-        core.pendingSeek = absSec > 0 ? absSec : null;
+        patchCore(core, { baseSec: 0, pendingSeek: absSec > 0 ? absSec : null });
         uri = sourceUrl();
       } else {
-        core.baseSec = absSec;
-        core.pendingSeek = null;
+        patchCore(core, { baseSec: absSec, pendingSeek: null });
         uri = sourceUrl();
-        core.baseSec = await resolveMasterStart(uri, absSec);
+        patchCore(core, { baseSec: await resolveMasterStart(uri, absSec) });
         uri = sourceUrl();
       }
       if (id !== core.loadId) return;
-      core.elSec = 0;
-      core.bufSec = 0;
-      core.started = false;
-      core.resumeOnLoad = resume;
+      patchCore(core, { elSec: 0, bufSec: 0, started: false, resumeOnLoad: resume });
       setMode(core.mode);
       setCur(core.baseSec + (core.pendingSeek ?? 0));
       setBuffered(core.baseSec + (core.pendingSeek ?? 0));
@@ -136,13 +138,12 @@ export function useKromaEngine(
     }
     const pos = core.baseSec + core.elSec;
     if (core.mode === 'direct' && !core.fellBack) {
-      core.fellBack = true;
-      core.mode = 'master';
+      patchCore(core, { fellBack: true, mode: 'master' });
       void load(pos);
       return;
     }
     if (core.mode === 'master' && !core.forceAac) {
-      core.forceAac = true;
+      patchCore(core, { forceAac: true });
       void load(pos);
       return;
     }
@@ -167,20 +168,18 @@ export function useKromaEngine(
           if (localUri) setLocalAudio(player.availableAudioTracks);
           if (core.pendingSeek != null) {
             player.currentTime = core.pendingSeek;
-            core.elSec = core.pendingSeek;
-            core.pendingSeek = null;
+            patchCore(core, { elSec: core.pendingSeek, pendingSeek: null });
           }
           if (core.mode === 'direct' && player.duration > 0) setDur(player.duration);
           if (core.resumeOnLoad) {
-            core.resumeOnLoad = false;
+            patchCore(core, { resumeOnLoad: false });
             player.play();
           }
         }
       }),
       player.addListener('timeUpdate', ({ currentTime, bufferedPosition }) => {
-        if (currentTime > 0.5) core.started = true;
-        core.elSec = currentTime;
-        core.bufSec = Math.max(0, bufferedPosition);
+        if (currentTime > 0.5) patchCore(core, { started: true });
+        patchCore(core, { elSec: currentTime, bufSec: Math.max(0, bufferedPosition) });
         setCur(core.baseSec + currentTime);
         setBuffered(core.baseSec + Math.max(currentTime, core.bufSec));
       }),
@@ -206,7 +205,7 @@ export function useKromaEngine(
           (t) => nativeTrackKey(t) === nativeTrackKey(audioTrack),
         );
         if (i >= 0) {
-          core.audioIndex = i;
+          patchCore(core, { audioIndex: i });
           setAudioIndex(i);
         }
       }),
@@ -218,6 +217,7 @@ export function useKromaEngine(
 
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- open once per item; startSec/load must not re-trigger a reload mid-playback
   useEffect(() => {
+    // oxlint-disable-next-line react-compiler/set-state-in-effect -- opening the native source is the effect; load's state writes report its progress
     void load(startSec);
   }, [item.id]);
 

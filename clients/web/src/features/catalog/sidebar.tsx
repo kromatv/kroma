@@ -26,7 +26,7 @@ import {
   type TablerIcon,
 } from '@tabler/icons-react';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { UserChip, VersionInfo } from '#web/features/catalog/sidebar-account';
 import { WhatsNewLink } from '#web/features/catalog/whats-new-link';
@@ -159,8 +159,11 @@ export function MobileTopbar() {
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const step = useBreakpoint();
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- intentional re-run key; pathname closes the drawer on navigation
-  useEffect(() => setOpen(false), [pathname]);
+  const [openedAt, setOpenedAt] = useState(pathname);
+  if (openedAt !== pathname) {
+    setOpenedAt(pathname);
+    setOpen(false);
+  }
   if (step === 'lg' || step === 'tv') return null;
   return (
     <header className={classes(s.topbar)}>

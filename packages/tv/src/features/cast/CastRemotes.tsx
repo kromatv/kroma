@@ -12,7 +12,7 @@ import {
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useCastControllerStore, useCastControllers } from '#tv/features/cast/controllers';
 
@@ -28,9 +28,7 @@ export function CastRemotes() {
 
   // With the last remote gone the chip that opened this dialog is gone too, so
   // there would be nothing left to return focus to.
-  useEffect(() => {
-    if (count === 0) setOpen(false);
-  }, [count]);
+  if (count === 0 && open) setOpen(false);
 
   if (count === 0) return null;
 

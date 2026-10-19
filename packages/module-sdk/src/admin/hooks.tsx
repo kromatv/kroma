@@ -2,7 +2,7 @@
 
 import { hasPermission, type Permission, type User } from '@kromatv/client/accounts';
 import { type QueryKey, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAdminHost } from './context';
 
 const OFF: QueryKey = ['module-sdk', 'idle'];
@@ -34,7 +34,9 @@ export function usePoll<T>(
   });
   // Callers put `reload` in effect deps, so its identity must stay stable.
   const keyRef = useRef(key);
-  keyRef.current = key;
+  useEffect(() => {
+    keyRef.current = key;
+  });
   // Returns the refetch so a caller that must not show stale rows can await it;
   // ignoring it is fine and is what most call sites do.
   const reload = useCallback(
@@ -72,7 +74,9 @@ export function useFetch<T>(
     staleTime: Number.POSITIVE_INFINITY,
   });
   const keyRef = useRef(key);
-  keyRef.current = key;
+  useEffect(() => {
+    keyRef.current = key;
+  });
   const reload = useCallback(async () => {
     if (keyRef.current) await queryClient.invalidateQueries({ queryKey: keyRef.current });
   }, [queryClient]);

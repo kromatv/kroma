@@ -16,6 +16,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -87,6 +88,7 @@ export function AuthProvider({
   const [resumed, setResumed] = useState<string | null>(null);
   const unlocked = useRef<Set<string>>(new Set(session ? [keyOf(session)] : []));
 
+  if (!session && resumed !== null) setResumed(null);
   const ready = !client || !session || resumed === session.accessToken;
 
   const drop = useCallback(
@@ -101,6 +103,23 @@ export function AuthProvider({
     [clearSession],
   );
 
+  const foreign = !!client && !!session && norm(session.serverUrl) !== norm(activeServerUrl);
+  const [dropNonce, setDropNonce] = useState(0);
+  if (foreign) {
+    setSession(null);
+    setResumed(null);
+    setDropNonce((n) => n + 1);
+  }
+  const releaseForeign = useEffectEvent(() => {
+    client?.setAuthToken();
+    client?.setRefreshHandler();
+    unlocked.current.clear();
+    clearSession();
+  });
+  useEffect(() => {
+    if (dropNonce > 0) releaseForeign();
+  }, [dropNonce]);
+
   // The bearer is only applied when the session belongs to the server the client
   // points at: a token for server A must never ride a request to server B.
   useEffect(() => {
@@ -108,13 +127,9 @@ export function AuthProvider({
     if (!session) {
       client.setAuthToken();
       client.setRefreshHandler();
-      setResumed(null);
       return;
     }
-    if (norm(session.serverUrl) !== norm(activeServerUrl)) {
-      drop(client);
-      return;
-    }
+    if (norm(session.serverUrl) !== norm(activeServerUrl)) return;
 
     let cancelled = false;
     // One exchange for the boot and for a 401 alike: `sharedTokenExchange`

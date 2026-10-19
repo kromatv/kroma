@@ -24,13 +24,11 @@ export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readon
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const start = useEffectEvent(() => {
-    reopen();
-    setStarted(false);
+  const begin = useEffectEvent(() => {
     const a = audioRef.current;
     // The keyframe delays are timed to the sting, so the visual timeline has to
     // start at audio onset (or its rejection).
-    const begin = () => setStarted(true);
+    const onset = () => setStarted(true);
     if (a) {
       try {
         a.currentTime = 0;
@@ -38,12 +36,18 @@ export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readon
         /* not yet seekable harmless */
       }
       const p = a.play();
-      if (typeof p?.then === 'function') p.then(begin).catch(begin);
-      else begin();
+      if (typeof p?.then === 'function') p.then(onset).catch(onset);
+      else onset();
     } else {
-      begin();
+      onset();
     }
     if (!loop) armSafety(SAFETY_MS, exit);
+  });
+
+  const start = useEffectEvent(() => {
+    reopen();
+    setStarted(false);
+    begin();
   });
 
   const replay = useEffectEvent(() => {
@@ -81,7 +85,7 @@ export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readon
 
     a.addEventListener('ended', onEnded);
 
-    start();
+    begin();
 
     return () => {
       clearTimers();

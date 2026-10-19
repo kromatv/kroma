@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { PostPlayFocus, PostPlayItem } from '#ui/components/organisms/player/parts/post-play';
 import type { UpNextItem } from '#ui/components/organisms/player/parts/up-next-sheet';
 import { handleCreditsKey, handlePostPlayKey } from '#ui/components/organisms/player/player-input';
@@ -53,9 +53,11 @@ export function usePlayerEnding(opts: {
     onAdvance: () => onPlayNext?.(),
   });
   const [creditsFocus, setCreditsFocus] = useState<'play' | 'cancel'>('play');
-  useEffect(() => {
+  const [creditsShown, setCreditsShown] = useState(credits.show);
+  if (creditsShown !== credits.show) {
+    setCreditsShown(credits.show);
     if (credits.show) setCreditsFocus('play');
-  }, [credits.show]);
+  }
 
   const [over, setOver] = useState(false);
   const [postPlayFocus, setPostPlayFocus] = useState<PostPlayFocus>('play');

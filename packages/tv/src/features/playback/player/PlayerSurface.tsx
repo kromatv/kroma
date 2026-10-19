@@ -3,7 +3,7 @@
 import { type SurfaceRadius, useSurfaceRadius } from '@kromatv/ui';
 import { style } from '@kromatv/ui/kit';
 import { VideoView } from 'expo-video';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import type { ExpoVideoEngine } from '#tv/features/playback/player/expoVideoEngine';
 import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
@@ -50,7 +50,7 @@ function VlcSurface({
   title,
   radius,
 }: Readonly<{ pb: Playback; title: string; radius: SurfaceRadius }>): ReactNode {
-  const Plane = getVlcPlane();
+  const [Plane] = useState(getVlcPlane);
   const current = pb.engineRef.current;
   // `surface` flips to vlc a render before the engine is rebuilt, so the ref still
   // holds the outgoing player here. Checking the KIND rather than casting is what

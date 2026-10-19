@@ -25,6 +25,13 @@ export function readMode(): ThemeMode {
   return isMode(found) ? found : 'system';
 }
 
+const listeners = new Set<() => void>();
+
+export function subscribeMode(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 /** `system` is stored as ABSENCE of the attribute, which is what leaves
  *  `prefers-color-scheme` in charge. */
 export function writeMode(mode: ThemeMode): void {
@@ -33,4 +40,5 @@ export function writeMode(mode: ThemeMode): void {
   const root = document.documentElement;
   if (mode === 'system') delete root.dataset.theme;
   else root.dataset.theme = mode;
+  for (const listener of listeners) listener();
 }

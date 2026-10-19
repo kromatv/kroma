@@ -11,6 +11,7 @@ import type { PlayerSub } from '#ui/components/organisms/player/types';
 import { style, useStyleScope } from '#ui/core';
 
 const MAX_VTT_BYTES = 8 * 1024 * 1024;
+const NO_CUES: Cue[] = [];
 
 const NO_POINTER = style({ pointerEvents: 'none' });
 
@@ -54,12 +55,16 @@ export function SubtitleRenderer({
   const scope = useStyleScope();
 
   const [text, setText] = useState('');
-  const [cues, setCues] = useState<Cue[]>([]);
-  const cache = useRef<Map<string, Cue[]>>(new Map());
+  const [loaded, setLoaded] = useState<Readonly<Record<string, Cue[]>>>({});
   const pointer = useRef(0);
 
   const activeUrl =
     activeIndex == null ? null : (subtitles.find((s) => s.index === activeIndex)?.url ?? null);
+
+  const cues = (activeUrl ? loaded[activeUrl] : undefined) ?? NO_CUES;
+  if (cues.length === 0 && text !== '') setText('');
+
+  const isLoaded = useEffectEvent((url: string) => url in loaded);
 
   const reportFailed = useEffectEvent(() => {
     if (activeIndex != null) onTrackFailed?.(activeIndex);
@@ -69,15 +74,7 @@ export function SubtitleRenderer({
   // makes switching back to a previously-loaded track instant. Errors → nothing.
   useEffect(() => {
     pointer.current = 0;
-    if (!activeUrl) {
-      setCues([]);
-      return;
-    }
-    const cached = cache.current.get(activeUrl);
-    if (cached) {
-      setCues(cached);
-      return;
-    }
+    if (!activeUrl || isLoaded(activeUrl)) return;
     let cancelled = false;
     fetch(activeUrl)
       .then((r) => {
@@ -91,13 +88,11 @@ export function SubtitleRenderer({
         if (raw.length > MAX_VTT_BYTES) throw new Error('track too large');
         const parsed = parseVtt(raw);
         if (parsed.length === 0) throw new Error('empty track');
-        cache.current.set(activeUrl, parsed);
-        if (!cancelled) setCues(parsed);
+        setLoaded((held) => ({ ...held, [activeUrl]: parsed }));
         return undefined;
       })
       .catch(() => {
         if (cancelled) return;
-        setCues([]);
         reportFailed();
       });
     return () => {
@@ -120,10 +115,7 @@ export function SubtitleRenderer({
 
   // Tick the interpolated clock and update only when the visible line changes.
   useEffect(() => {
-    if (cues.length === 0) {
-      setText('');
-      return;
-    }
+    if (cues.length === 0) return;
     let last: string | null = null;
     const tick = () => {
       const c = clock.current;

@@ -1,19 +1,17 @@
 import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
-import { readMode, THEME_MODES, type ThemeMode, writeMode } from '#site/lib/theme';
+import { useSyncExternalStore } from 'react';
+import { readMode, subscribeMode, THEME_MODES, type ThemeMode, writeMode } from '#site/lib/theme';
 import { m } from '#site/paraglide/messages';
 
 const GLYPH = { system: IconDeviceDesktop, light: IconSun, dark: IconMoon } as const;
+
+const serverMode = (): ThemeMode => 'system';
 
 const label = (mode: ThemeMode) =>
   ({ system: m.theme_system(), light: m.theme_light(), dark: m.theme_dark() })[mode];
 
 export function ThemeSwitcher({ className }: Readonly<{ className?: string }>) {
-  const [mode, setMode] = useState<ThemeMode>('system');
-
-  useEffect(() => {
-    setMode(readMode());
-  }, []);
+  const mode = useSyncExternalStore(subscribeMode, readMode, serverMode);
 
   return (
     <fieldset
@@ -33,7 +31,6 @@ export function ThemeSwitcher({ className }: Readonly<{ className?: string }>) {
             aria-label={label(value)}
             title={label(value)}
             onClick={() => {
-              setMode(value);
               writeMode(value);
             }}
             className={[

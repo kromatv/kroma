@@ -101,22 +101,24 @@ export function useTvController(client: KromaClient, item: MediaItem): TvControl
   }, [pb.engineRef, rate, pb.surfaceNonce]);
 
   const statsRef = useRef<() => ReturnType<typeof buildLeanStats>>(() => ({}));
-  statsRef.current = () =>
-    buildLeanStats({
-      item,
-      cur: pb.cur,
-      dur: pb.dur,
-      bufEnd: pb.bufEnd,
-      audioTracks: pb.audioTracks,
-      audioIndex: pb.audioIndex,
-      video: pb.videoRef.current,
-      mode: pb.surface,
-      bufferTarget: BUFFER_TARGET_SEC[pb.surface],
-      t,
-      // Whatever only the running engine can answer (which plane, what its
-      // decoder is doing), so the panel can say why a picture is not moving.
-      extra: pb.engineRef.current?.debugRows?.().map((row) => ({ ...row, group: 'Engine' })),
-    });
+  useEffect(() => {
+    statsRef.current = () =>
+      buildLeanStats({
+        item,
+        cur: pb.cur,
+        dur: pb.dur,
+        bufEnd: pb.bufEnd,
+        audioTracks: pb.audioTracks,
+        audioIndex: pb.audioIndex,
+        video: pb.videoRef.current,
+        mode: pb.surface,
+        bufferTarget: BUFFER_TARGET_SEC[pb.surface],
+        t,
+        // Whatever only the running engine can answer (which plane, what its
+        // decoder is doing), so the panel can say why a picture is not moving.
+        extra: pb.engineRef.current?.debugRows?.().map((row) => ({ ...row, group: 'Engine' })),
+      });
+  });
   const getStats = useCallback(() => statsRef.current(), []);
   const setEngine = useCallback((id: string) => pb.setEngine(id as EnginePref), [pb.setEngine]);
 

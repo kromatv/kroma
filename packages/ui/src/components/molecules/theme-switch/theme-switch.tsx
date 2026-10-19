@@ -40,6 +40,7 @@ export function ThemeSwitch({
 
   useEffect(() => {
     const stored = readMode(undefined, store);
+    // oxlint-disable-next-line react-compiler/set-state-in-effect -- storage is read after mount only, so hydration matches the server's 'system'.
     setMode(stored);
     applyMode(stored, runtime);
   }, [runtime, store]);

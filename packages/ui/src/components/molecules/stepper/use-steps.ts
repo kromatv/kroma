@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { useControllable } from '#ui/lib/use-controllable';
 
@@ -50,13 +50,9 @@ function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): S
   const index = seat === -1 ? 0 : seat;
   const current = steps[index] ?? '';
 
-  // Raised in an effect so a controlled value that jumps forward and comes back
-  // does not take the steps it opened away again.
   const [visited, setVisited] = useState(index);
   const reached = Math.max(visited, index);
-  useEffect(() => {
-    setVisited((far) => Math.max(far, index));
-  }, [index]);
+  if (index > visited) setVisited(index);
 
   const off = useMemo(() => new Set(disabled), [disabled]);
   const done = useMemo(() => (complete ? new Set(complete) : null), [complete]);

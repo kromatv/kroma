@@ -7,6 +7,7 @@
 
 import { Box, ListRow, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { space } from '@kromatv/ui/tokens';
+import { useState } from 'react';
 import { agoLabel, BUCKETS, bucketOf, dayLabel, type HistoryRow } from './history';
 import { useKitHistory } from './source';
 
@@ -17,9 +18,9 @@ function RecentChanges() {
   const s = useStyles(sDefinition);
 
   const kit = useKitHistory();
+  const [now] = useState(() => Date.now());
   if (!kit) return null;
   if (kit.rows.length === 0) return <Nothing shallow={kit.shallow} />;
-  const now = Date.now();
   return (
     <Box gap={space[6]}>
       {BUCKETS.map((bucket) => {

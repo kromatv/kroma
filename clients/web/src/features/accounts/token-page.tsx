@@ -1,6 +1,6 @@
 import { Box, Button, classes, Logo, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { Spinner } from '#web/features/accounts/auth-gate';
 import { PAGE_RADIAL } from '#web/shared/ui';
 
@@ -39,19 +39,14 @@ export function useTokenLink(
   // The resolver is fixed for the life of the page and the token is what
   // changes, so holding it in a ref keeps an inline arrow from re-running the
   // check on every render.
-  const resolve = useRef(check);
-  resolve.current = check;
+  const resolve = useEffectEvent(check);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
 
   useEffect(() => {
-    if (!token) {
-      setStatus('invalid');
-      return;
-    }
+    if (!token) return;
     let cancelled = false;
-    resolve
-      .current(token)
+    resolve(token)
       .then((r) => {
         if (cancelled) return;
         setUsername(r.username ?? null);
@@ -79,7 +74,7 @@ export function useTokenLink(
     }
   }
 
-  return { status, username, busy, error, run };
+  return { status: token ? status : 'invalid', username, busy, error, run };
 }
 
 /** The chrome both token-link pages wear. `children` are the fields the flow
