@@ -29,7 +29,9 @@ import {
   rowTop,
   stripOffset,
 } from './grid-rows';
+import { usePrefetchRows } from './use-prefetch-rows';
 import { useWheelScroll } from './use-wheel-rows';
+import type { VirtualGridProps } from './virtual-grid-props';
 
 const boxesDefinition = styles({
   noPointer: { pointerEvents: 'none' },
@@ -43,48 +45,6 @@ const boxesDefinition = styles({
 // Rows left before the grid asks for more. Enough that the next page is in
 // hand by the time a held D-pad reaches it.
 const END_THRESHOLD = 3;
-
-interface VirtualGridProps<T> {
-  data: readonly T[];
-  /** The narrowest a tile may be. The grid fits as many as the room allows, the
-   *  way `auto-fill` does in CSS and `<Grid min>` does for a static grid. */
-  min?: number;
-  /** A fixed column count, for a design that demands one whatever the width.
-   *  Wins over `min`. */
-  columns?: number;
-  /** Tile height ÷ tile width (a 2:3 poster is 1.5), which with the measured
-   *  cell width is the row pitch. */
-  ratio?: number;
-  /** An explicit tile height in px, for tiles that are not `ratio`-shaped. Wins
-   *  over `ratio`; `rowGap` is added to it the same way. */
-  itemHeight?: number;
-  /** Between tiles in a row, and what the column maths removes. */
-  gap?: number;
-  /** Between rows. Defaults to `gap`. */
-  rowGap?: number;
-  /** Inset of the rows. Not of the viewport, which is what clips: padding there
-   *  would inset the clip and shave the rows. */
-  px?: number;
-  /** Room above the first row, for a focused tile's ring and scale: the strip
-   *  parks the top row at the content origin and the clip is flush there. */
-  pt?: number;
-  /** The box width to assume until the grid has measured its own: the design
-   *  width. Without one the first frame has no columns to draw. */
-  width?: number;
-  /** Given the tile's index and the pixel width of the cell it lands in, so a
-   *  tile can size its own artwork request to the column it is drawn at. */
-  renderItem: (item: T, index: number, width: number) => ReactElement;
-  /** Scrolls with the first row; needs `headerHeight` set alongside it. */
-  header?: ReactElement;
-  headerHeight?: number;
-  /** The viewport that clips. Defaults to filling its parent; give it a bounded
-   *  height either way, or nothing scrolls. */
-  style?: ViewStyle;
-  onEndReached?: () => void;
-  /** Opens the grid on this ROW (not item index) with focus, since the row is
-   *  not mounted yet for `autoFocus` to reach. Read once, on mount. */
-  initialIndex?: number;
-}
 
 /**
  * A vertically scrolling grid of auto-filled tiles, rendering only the rows near
@@ -105,6 +65,7 @@ function VirtualGrid<T>({
   pt = 0,
   width,
   renderItem,
+  art,
   header,
   headerHeight,
   style,
@@ -250,6 +211,7 @@ function VirtualGrid<T>({
   const fraction = useWheelScroll(viewport, rows, lastRow, metrics.headerRows, geometry.pitch);
 
   const shown = catchUpWindow(focusedRow, settledRow, metrics, OVERSCAN);
+  usePrefetchRows({ data, art, focusedRow, shown, metrics, columns: geometry.count, cell });
   const offset =
     fraction === null ? stripOffset(focusedRow, metrics) : freeOffset(fraction, metrics);
   const mounted: ReactElement[] = [];

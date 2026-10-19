@@ -21,6 +21,8 @@ export interface ImageBackend {
    *  alone instead of cross-fading a component it does not control. */
   fades: boolean;
   render: (props: ImageBackendProps) => ReactElement;
+  /** Warms this backend's own cache with `uri`; resolves true once it is cached. */
+  prefetch?: (uri: string) => Promise<boolean>;
 }
 
 // `Animated.Image`, not the plain one: <Img> hands its fade in as an
