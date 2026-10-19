@@ -10,6 +10,7 @@ import {
   type Ref,
   type RefObject,
   useCallback,
+  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -57,6 +58,7 @@ function Focusable<R extends AnySv = AnySv>({
   onHoverIn,
   onLayout,
   autoFocus,
+  focusHandle,
   disabled = false,
   focused: controlledFocus,
   hitSlop,
@@ -175,6 +177,7 @@ function Focusable<R extends AnySv = AnySv>({
   }, [disabled, onLongPress, inputHeld, pressGuardActive]);
 
   const { entry, isEntry, pointerPress } = useEntryFocus(autoFocus, press);
+  useImperativeHandle(focusHandle, () => ({ focus: () => entry.current?.focus() }), [entry]);
 
   // Whether anything downstream can report a press, so a recipe's `_press` is
   // only resolved where it can land: a pointerless television cannot.
@@ -305,5 +308,11 @@ function Focusable<R extends AnySv = AnySv>({
 
 export type { Delegate } from './focusable-delegate';
 export { delegateOf } from './focusable-delegate';
-export type { FocusableProps, FocusCurrent, FocusState, HostElement } from './focusable-types';
+export type {
+  FocusableProps,
+  FocusCurrent,
+  FocusHandle,
+  FocusState,
+  HostElement,
+} from './focusable-types';
 export { Focusable };

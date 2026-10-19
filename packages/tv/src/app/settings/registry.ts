@@ -1,18 +1,16 @@
 import { useDevicePreferences } from '../device-preferences';
 // Every shared user-facing setting, declared once: identity, level, binding and
-// presentation. Screens compose menus from these lists (plus screen-local
-// actionItems built inline, e.g. the PIN row which needs auth + nav context).
+// presentation. The groups in groups.ts arrange them into screens.
 
 import { LANG_NO_PREF, LANG_OFF, LOCALES, langKey, langOptions } from '@kromatv/core';
 import type { Locale, MessageKey, Translate } from '@kromatv/i18n';
 import { useLocale, useSetLocale } from '@kromatv/ui';
 import { useEffect, useState } from 'react';
-import { canQuitApp, quitApp } from '#tv/app/appQuit';
 import { getGpuRendering, gpuToggleAvailable, setGpuRendering } from '#tv/app/desktopGpu';
 import { availableEngines, ENGINE_LABEL_KEY, useEnginePref } from '#tv/app/enginePref';
 import { ALL_KEYBOARD_LAYOUTS, KEYBOARD_LAYOUT_LABEL_KEY } from '#tv/app/keyboardLayoutPref';
 import { prefValue, useLangPrefs } from '#tv/app/langPref';
-import { actionItem, choiceItem, type RowIcon, type SettingsItem, toggleItem } from './items';
+import { choiceItem, type SettingsItem, toggleItem } from './items';
 import {
   ARTWORK_SCALE,
   type ArtworkQuality,
@@ -37,6 +35,7 @@ export const audioLanguageSetting: SettingsItem = choiceItem({
   label: 'account.audioLanguage',
   icon: 'volume',
   pick: 'list',
+  summary: 'settings.audioSummary',
   options: (t, locale) => [LANG_NO_PREF, ...langCodes(t, locale)],
   valueLabel: langValueLabel,
   useValue: () => {
@@ -51,6 +50,7 @@ export const subtitleLanguageSetting: SettingsItem = choiceItem({
   label: 'account.subtitleLanguage',
   icon: 'badge-cc',
   pick: 'list',
+  summary: 'settings.subtitleSummary',
   options: (t, locale) => [LANG_NO_PREF, LANG_OFF, ...langCodes(t, locale)],
   valueLabel: langValueLabel,
   useValue: () => {
@@ -73,6 +73,7 @@ export const keyboardLayoutSetting: SettingsItem = choiceItem({
   level: 'device',
   label: 'keyboardLayout.title',
   icon: 'keyboard',
+  summary: 'settings.keyboardSummary',
   options: () => ALL_KEYBOARD_LAYOUTS,
   valueLabel: (v) => KEYBOARD_LAYOUT_LABEL_KEY[v],
   useValue: () => useStoredPref(useDevicePreferences().keyboard),
@@ -112,6 +113,7 @@ export const artworkSetting: SettingsItem = choiceItem({
   level: 'device',
   label: 'artworkQuality.title',
   icon: 'photo',
+  summary: 'settings.artworkSummary',
   options: () => Object.keys(ARTWORK_SCALE) as ArtworkQuality[],
   valueLabel: (v) => `artworkQuality.${v}` as MessageKey,
   useValue: () => useStoredPref(useArtworkPref()),
@@ -160,91 +162,3 @@ export const crashReportingSetting: SettingsItem = toggleItem({
     return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
   },
 });
-
-export const quitAppItem: SettingsItem = actionItem({
-  id: 'quitApp',
-  label: 'profileMenu.quitApp',
-  icon: 'power',
-  available: canQuitApp,
-  run: quitApp,
-});
-
-export function aboutItem(open: () => void): SettingsItem {
-  return actionItem({ id: 'about', label: 'about.title', icon: 'info-circle', run: open });
-}
-
-export const DEVICE_SETTINGS: readonly SettingsItem[] = [
-  localeSetting,
-  keyboardLayoutSetting,
-  castReceiverSetting,
-  gpuRenderingSetting,
-  artworkSetting,
-  blurSetting,
-  perfHudSetting,
-  crashReportingSetting,
-];
-
-export const PROFILE_SETTINGS: readonly SettingsItem[] = [
-  localeSetting,
-  audioLanguageSetting,
-  subtitleLanguageSetting,
-  keyboardLayoutSetting,
-  engineSetting,
-  castReceiverSetting,
-  gpuRenderingSetting,
-  artworkSetting,
-  blurSetting,
-  perfHudSetting,
-  crashReportingSetting,
-];
-
-// Signed in, the flat settings block plus account rows is taller than a 1080
-// screen, so it collapses into three rows that each open a group screen.
-
-export type SettingsGroupId = 'languages' | 'playback' | 'device';
-
-export interface SettingsGroup {
-  id: SettingsGroupId;
-  label: MessageKey;
-  icon: RowIcon;
-  items: readonly SettingsItem[];
-}
-
-export const SETTINGS_GROUPS: Record<SettingsGroupId, SettingsGroup> = {
-  languages: {
-    id: 'languages',
-    label: 'settings.languages',
-    icon: 'language',
-    items: [localeSetting, audioLanguageSetting, subtitleLanguageSetting],
-  },
-  playback: {
-    id: 'playback',
-    label: 'settings.playback',
-    icon: 'movie',
-    items: [engineSetting, perfHudSetting],
-  },
-  device: {
-    id: 'device',
-    label: 'settings.device',
-    icon: 'device-tv',
-    items: [
-      keyboardLayoutSetting,
-      castReceiverSetting,
-      gpuRenderingSetting,
-      artworkSetting,
-      blurSetting,
-      crashReportingSetting,
-    ],
-  },
-};
-
-/** Hidden when the platform gates away every item inside the group. */
-export function groupItem(group: SettingsGroup, open: () => void): SettingsItem {
-  return actionItem({
-    id: `group:${group.id}`,
-    icon: group.icon,
-    label: group.label,
-    available: () => group.items.some((item) => !item.available || item.available()),
-    run: open,
-  });
-}

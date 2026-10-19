@@ -23,6 +23,11 @@ type FocusRole = AccessibilityRole | 'option';
  *  (`#ui/lib/a11y`). */
 type A11yState = A11yProps | undefined;
 
+/** Moves the spatial navigator's focus onto one control, from code. */
+interface FocusHandle {
+  focus: () => void;
+}
+
 /** What `aria-current` a control claims; see `current` on FocusableProps. */
 type FocusCurrent = 'page' | 'step';
 
@@ -73,6 +78,8 @@ interface FocusableProps<R extends AnySv = AnySv> {
    *  measures the control itself rather than paying a wrapper per item. */
   onLayout?: (event: LayoutChangeEvent) => void;
   autoFocus?: boolean;
+  /** Filled with a handle that moves the remote's focus onto this control. */
+  focusHandle?: Ref<FocusHandle>;
   disabled?: boolean;
   /** Controlled focus: the control leaves the navigator entirely and paints its
    *  focus states from this prop. */
@@ -187,6 +194,7 @@ export type {
   A11yState,
   FocusableProps,
   FocusCurrent,
+  FocusHandle,
   FocusRole,
   FocusState,
   HostAt,
