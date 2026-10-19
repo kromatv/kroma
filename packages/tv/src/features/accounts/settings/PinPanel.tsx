@@ -9,7 +9,7 @@ import { isPinLockout, PinEntry } from '../PinEntry';
 
 type Step =
   | { kind: 'menu'; done: boolean }
-  | { kind: 'current'; then: 'change' | 'remove' }
+  | { kind: 'current'; next: 'change' | 'remove' }
   | { kind: 'new'; current?: string }
   | { kind: 'confirm'; current?: string; first: string };
 
@@ -27,18 +27,18 @@ const MANAGE: readonly PinAction[] = [
   {
     icon: 'pencil',
     label: 'profileMenu.changePin',
-    step: { kind: 'current', then: 'change' },
+    step: { kind: 'current', next: 'change' },
   },
   {
     icon: 'lock-open',
     label: 'profileMenu.removePin',
-    step: { kind: 'current', then: 'remove' },
+    step: { kind: 'current', next: 'remove' },
   },
 ];
 
 function subtitle(step: Exclude<Step, { kind: 'menu' }>): MessageKey {
   if (step.kind === 'current')
-    return step.then === 'remove' ? 'pin.clearSubtitle' : 'pin.changeSubtitle';
+    return step.next === 'remove' ? 'pin.clearSubtitle' : 'pin.changeSubtitle';
   return step.kind === 'confirm' ? 'pin.confirmSubtitle' : 'pin.setSubtitle';
 }
 
@@ -66,7 +66,7 @@ export function PinPanel({ entry }: Readonly<{ entry: RefObject<FocusHandle | nu
       return undefined;
     } catch (e) {
       if (current === undefined || isPinLockout(e)) throw e;
-      setStep({ kind: 'current', then: 'change' });
+      setStep({ kind: 'current', next: 'change' });
       return 'auth.pinCurrentWrong';
     }
   };
@@ -80,7 +80,7 @@ export function PinPanel({ entry }: Readonly<{ entry: RefObject<FocusHandle | nu
 
   const submit = async (pin: string): Promise<MessageKey | undefined> => {
     if (step.kind === 'current') {
-      if (step.then === 'remove') {
+      if (step.next === 'remove') {
         await remove(pin);
         return undefined;
       }
