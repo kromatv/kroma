@@ -1,15 +1,9 @@
-// <Dropzone>: the surface a file is dropped on, or clicked to browse for.
-//
-// Dragging a file from the desktop is a POINTER-and-filesystem idea, and a
-// television has neither, so the native targets render the surface as a plain
-// pressable that reports its press and nothing else: a shell that wants to open
-// a picker there does it with the platform's own. The half that listens for
-// drags, reads the files and enforces `accept` / `maxSize` is in ./dropzone.web.
-
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { style } from '#ui/core';
 import { HAND } from '#ui/lib/cursor';
+import { DomOnly } from '#ui/lib/dom-only';
+import { DropRoot } from './dropzone-drop-root';
 import {
   DropzoneDescription,
   DropzoneIcon,
@@ -28,13 +22,21 @@ const SURFACE = style({
   paddingVertical: SURFACE_SHAPE.paddingY,
 });
 
-function Root({ label, disabled = false, children }: Readonly<DropzoneRootProps>) {
+function PressRoot({ label, disabled = false, children }: Readonly<DropzoneRootProps>) {
   return (
     <Focusable role="button" label={label} disabled={disabled} style={[SURFACE, HAND]}>
       <Box center gap={SURFACE_SHAPE.gap}>
         {children}
       </Box>
     </Focusable>
+  );
+}
+
+function Root(props: Readonly<DropzoneRootProps>) {
+  return (
+    <DomOnly fallback={<PressRoot {...props} />}>
+      <DropRoot {...props} />
+    </DomOnly>
   );
 }
 

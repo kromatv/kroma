@@ -1,28 +1,17 @@
 import { activeTheme, radiusValue, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
-import { useImageBackend } from '#ui/lib/image-backend';
 // <Img>: the artwork surface, with a built-in fade-in and cross-fade on `src`
 // change; `background` shows instantly as the fallback so the surface is never
 // blank.
 
-import { type ReactNode, useLayoutEffect, useState } from 'react';
-import {
-  Animated,
-  type LayoutChangeEvent,
-  type StyleProp,
-  View,
-  type ViewStyle,
-} from 'react-native';
+import { type ReactNode, useState } from 'react';
+import { type StyleProp, View, type ViewStyle } from 'react-native';
 
 import type { CornerValue } from '#ui/core/tokens';
-import { coverRect, parsePosition } from '#ui/lib/cover-rect';
+import { useArtLayers } from '#ui/lib/art-layers';
 import { gradient } from '#ui/lib/css';
-import { WEB } from '#ui/lib/platform';
 import { safeImageUrl } from '#ui/lib/safe-image-url';
-import { StaticView } from '#ui/lib/static-view';
-import { nativeLayers, type Size } from './native-layers';
 import { useCrossFade } from './use-cross-fade';
-import { webLayers } from './web-layers';
 
 export interface ImgProps {
   /** Already-sized artwork URL. This component never rewrites it. */
@@ -98,38 +87,16 @@ function Img({
 
   const s = useStyles(sDefinition);
 
-  const backend = useImageBackend();
   const src = safeImageUrl(requested);
   const { loaded, errored, under, markLoaded, markErrored } = useCrossFade(src, duration, {
     crossFade: !noCrossFade,
     watched: placeholder != null,
   });
-  const [box, setBox] = useState<Size | null>(null);
-  const [natural, setNatural] = useState<Size | null>(null);
-  const [opacity] = useState(() => new Animated.Value(0));
   const [covered, setCovered] = useState<string | null>(null);
   const shownOver = src != null && !errored && covered != null && (covered === src || !noCrossFade);
   const onCovered = opaque && background !== undefined ? setCovered : undefined;
-  const focal = parsePosition(position);
   const radius =
     corner === undefined ? undefined : radiusValue(corner, undefined, activeTheme(scope.theme));
-
-  // Before paint, not after it: the leaf remounts with this source's key in
-  // the same commit, and one frame of the previous cover at full opacity is
-  // exactly the cut the fade exists to avoid.
-  useLayoutEffect(() => {
-    if (!WEB && src) opacity.setValue(0);
-  }, [src, opacity]);
-
-  // React Native has no object-position, so the native leaf places the cover
-  // rectangle itself; `contain` never overflows, so it needs no focal maths.
-  const rect = !WEB && fit === 'cover' ? coverRect(box, natural, focal) : null;
-
-  const onBoxLayout = (e: LayoutChangeEvent) => {
-    if (WEB) return;
-    const { width, height } = e.nativeEvent.layout;
-    setBox((prev) => (prev?.width === width && prev.height === height ? prev : { width, height }));
-  };
 
   const handleError = () => {
     markErrored();
@@ -146,6 +113,23 @@ function Img({
     style,
   ];
 
+  const art = useArtLayers({
+    src,
+    under,
+    alt,
+    fit,
+    position,
+    radius,
+    priority,
+    duration,
+    errored,
+    layered,
+    markLoaded,
+    onCovered,
+    onLoad,
+    onError: handleError,
+  });
+
   const showPlaceholder = placeholder != null && src != null && !loaded && !errored;
   const showFallback = fallback != null && (src == null || errored);
   const placeholderLayer = showPlaceholder ? (
@@ -159,55 +143,13 @@ function Img({
     </View>
   ) : null;
 
-  if (WEB) {
-    return (
-      <StaticView style={container}>
-        {placeholderLayer}
-        {webLayers(
-          {
-            src,
-            under,
-            alt,
-            fit,
-            position,
-            radius,
-            priority,
-            duration,
-            errored,
-            layered,
-            markLoaded,
-            onCovered,
-            onLoad,
-            onError: handleError,
-          },
-          scope,
-        )}
-        {fallbackLayer}
-      </StaticView>
-    );
-  }
-
-  return (
-    <View onLayout={onBoxLayout} style={container}>
+  return art.surface(
+    container,
+    <>
       {placeholderLayer}
-      {nativeLayers({
-        backend,
-        src,
-        under,
-        alt,
-        fit,
-        rect,
-        duration,
-        errored,
-        opacity,
-        setNatural,
-        markLoaded,
-        onCovered,
-        onLoad,
-        onError: handleError,
-      })}
+      {art.layers}
       {fallbackLayer}
-    </View>
+    </>,
   );
 }
 

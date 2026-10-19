@@ -12,7 +12,7 @@ import { useDeviceStore } from '@kromatv/ui/device-store';
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { type EnginePref, useEnginePref } from '#tv/app/enginePref';
 import { usePlaybackCapabilities } from '#tv/app/providers/playbackCapabilities';
-import { createTvEngine, type EnginePlan, planEngine } from '#tv/features/playback/player/backend';
+import { type EnginePlan, usePlaybackBackend } from '#tv/features/playback/player/playbackBackend';
 import { detectTvEnv } from '#tv/features/playback/player/detectTvEnv';
 import {
   type EngineListeners,
@@ -67,6 +67,7 @@ export function useEngineLifecycle(
   const { get: getEnginePref, set: persistEnginePref } = useEnginePref();
   const deviceStore = useDeviceStore();
   const playbackCapabilities = usePlaybackCapabilities();
+  const backend = usePlaybackBackend();
   const videoRef = useRef<HTMLVideoElement>(null);
   const engineRef = useRef<TvEngine | null>(null);
   const startedRef = useRef(false);
@@ -136,7 +137,12 @@ export function useEngineLifecycle(
     }
     setError(failure);
   });
-  const plan = planEngine(item, env, fellBackToVlc ? 'vlc' : enginePref, playbackCapabilities);
+  const plan = backend.planEngine(
+    item,
+    env,
+    fellBackToVlc ? 'vlc' : enginePref,
+    playbackCapabilities,
+  );
   const { surface, playbackMode, deviceLabel, rebuildKey } = plan;
   const durationSec = item.durationMs ? item.durationMs / 1000 : 0;
   // Remux-only server: an undecodable video codec here truly cannot play.
@@ -210,7 +216,7 @@ export function useEngineLifecycle(
       },
     };
 
-    const engine = createTvEngine({
+    const engine = backend.createTvEngine({
       capabilities: playbackCapabilities,
       plan,
       client,
@@ -240,6 +246,7 @@ export function useEngineLifecycle(
     failure.messageKey,
     playbackCapabilities,
     deviceStore,
+    backend,
   ]);
 
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- audioPickNonce is an intentional dep, not read in the body; it carries the pick that landed on the rendition already playing, which AVPlay's direct source has to re-assert.

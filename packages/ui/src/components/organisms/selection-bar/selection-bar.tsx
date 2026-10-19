@@ -10,9 +10,9 @@ import {
 import { Animated, type LayoutChangeEvent, type View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { styles, useStyles } from '#ui/core';
+import { BOTTOM_DOCK } from '#ui/lib/bottom-dock';
 import { type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
-import { WEB } from '#ui/lib/platform';
 import { useFadeRise } from '#ui/lib/use-fade-rise';
 import { Actions } from './selection-bar-actions';
 import { Announce } from './selection-bar-announce';
@@ -78,7 +78,6 @@ function Root({
   children,
 }: Readonly<SelectionBarRootProps>) {
   const s = useStyles(sDefinition);
-  const dock = WEB ? s.dockWeb : s.dockNative;
   const defaults = useEntryDefaults();
   const shell = size ?? defaults.size;
   const shown = count > 0;
@@ -108,7 +107,7 @@ function Root({
         <Box
           onLayout={measure}
           pointerEvents={shown ? 'box-none' : 'none'}
-          style={floating ? dock : s.inline}
+          style={floating ? [s.dock, BOTTOM_DOCK] : s.inline}
         >
           <Animated.View style={fade.style}>
             <FocusRegion>
@@ -131,15 +130,7 @@ function Root({
 }
 
 const sDefinition = styles({
-  dockWeb: {
-    position: 'sticky',
-    bottom: 0,
-    z: 70,
-    align: 'center',
-    pt: 12,
-    paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
-  },
-  dockNative: { align: 'center', pt: 12, pb: 16 },
+  dock: { align: 'center', pt: 12 },
   inline: { self: 'stretch' },
   bar: {
     row: true,

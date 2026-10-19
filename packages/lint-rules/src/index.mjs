@@ -2,6 +2,7 @@ import indexReexportsOnly from './rules/index-reexports-only.mjs';
 import noCommentBanners from './rules/no-comment-banners.mjs';
 import noEmDashes from './rules/no-em-dashes.mjs';
 import noModuleMutableBindings from './rules/no-module-mutable-bindings.mjs';
+import noPlatformBranch from './rules/no-platform-branch.mjs';
 import noNestedTemplates from './rules/no-nested-templates.mjs';
 import noRawDesignValues from './rules/no-raw-design-values.mjs';
 import noReactForwardRef from './rules/no-react-forward-ref.mjs';
@@ -17,6 +18,7 @@ export default {
   rules: {
     'index-reexports-only': indexReexportsOnly,
     'no-nested-templates': noNestedTemplates,
+    'no-platform-branch': noPlatformBranch,
     'owned-task-comments': ownedTaskComments,
     'no-redundant-jsdoc-tags': noRedundantJsdocTags,
     'no-unknown-record-assertions': noUnknownRecordAssertions,

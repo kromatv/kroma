@@ -10,7 +10,7 @@ import { useWindowDimensions, View } from 'react-native';
 
 import { useStyles } from '#ui/core/styles';
 import { CANVAS } from '#ui/core/tokens';
-import { WEB } from '#ui/lib/platform';
+import { STAGE_PAINTS_GROUND } from '#ui/lib/stage-ground';
 
 interface TvStageProps {
   children: ReactNode;
@@ -29,7 +29,7 @@ function TvStage({ children }: Readonly<TvStageProps>) {
 
   return (
     <KitProvider config={STAGE_CONFIG}>
-      <View style={WEB ? [s.viewport, s.ground] : s.viewport}>
+      <View style={STAGE_PAINTS_GROUND ? [s.viewport, s.ground] : s.viewport}>
         <View style={[s.canvas, scaleOf(scale, scope)]}>{children}</View>
       </View>
     </KitProvider>

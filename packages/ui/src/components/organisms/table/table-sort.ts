@@ -1,6 +1,6 @@
+import { a11ySort } from '#ui/lib/a11y';
 import { createContext, useContext } from 'react';
 import type { IconName } from '#ui/lib/glyph';
-import { WEB } from '#ui/lib/platform';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -78,7 +78,7 @@ function nextSort(
 /** React Native has no sort claim and no screen reader on those platforms reads
  *  one, so the rank a heading DRAWS is what reaches assistive tech there. */
 function sortClaim(state: SortState): { 'aria-sort'?: string } {
-  return WEB ? { 'aria-sort': ARIA_SORT[state] } : {};
+  return a11ySort(ARIA_SORT[state]);
 }
 
 export type { SortColumn, SortDirection, TableSort };

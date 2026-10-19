@@ -17,7 +17,6 @@ import {
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
-  Platform,
   ScrollView,
   View,
   type ViewStyle,
@@ -29,13 +28,11 @@ import { useStyles } from '#ui/core/styles';
 import { FocusLiftView } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusReporter } from '#ui/lib/focus-report';
-import { WEB } from '#ui/lib/platform';
+import { keyedEdges, pointerControls } from '#ui/lib/input-kind';
+import { useKeyGrace } from '#ui/lib/key-grace';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { edgeScrollOffset, fitPitch, horizontalInset, maxOffset } from './edge-scroll';
 import { edgeWidth, RailEdge } from './rail-edge';
-import { KEY_GRACE_MS, useKeyGrace } from './use-key-grace';
-
-const TOUCH = !WEB && !Platform.isTV;
 
 interface VirtualRailProps<T> {
   data: readonly T[];
@@ -81,7 +78,7 @@ function VirtualRail<T>({
   // delivers faster than React commits).
   const at = useRef(0);
   const measured = useRef(0);
-  const keyAt = useKeyGrace(scoped);
+  const keyed = useKeyGrace(scoped);
 
   const count = data.length;
   const contentInset = useMemo(() => horizontalInset(contentStyle), [contentStyle]);
@@ -108,7 +105,7 @@ function VirtualRail<T>({
     // Only a PRESS moves the row: the navigator focuses whatever the cursor
     // enters, so scrolling on every focus change made the row creep sideways
     // under a wandering pointer.
-    if (WEB && Date.now() - keyAt.current > KEY_GRACE_MS) return;
+    if (!keyed()) return;
     at.current = edgeScrollOffset({
       offset: at.current,
       index,
@@ -202,7 +199,7 @@ function VirtualRail<T>({
   }
 
   const furthest = maxOffset(count, pitch, width);
-  const arrowsOn = WEB && arrows;
+  const arrowsOn = pointerControls(arrows);
   const buttonsUp = arrowsOn && hovered;
   const fadeOn = scoped || buttonsUp;
   const fadeStart = fadeOn && offset > 1;
@@ -242,7 +239,7 @@ function VirtualRail<T>({
         </ScrollView>
       )}
       {/* Mounted whether shown or not, so the control fades rather than appears. */}
-      {arrowsOn || (scoped && !TOUCH) ? (
+      {arrowsOn || keyedEdges(scoped) ? (
         <>
           <RailEdge
             side="start"

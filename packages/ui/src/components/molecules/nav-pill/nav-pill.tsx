@@ -15,11 +15,12 @@ import {
   useRef,
   useState,
 } from 'react';
-import { PanResponder, Platform, type StyleProp, type View, type ViewStyle } from 'react-native';
+import { PanResponder, type StyleProp, type View, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
 import { RING_ROOM } from '#ui/core';
 import { HAND } from '#ui/lib/cursor';
+import { panHandlers } from '#ui/lib/pan-gestures';
 import {
   type LensRect,
   NavPillContext,
@@ -230,7 +231,7 @@ function Root({
     <NavPillContext.Provider value={context}>
       <Box
         ref={capsule}
-        {...(slide && !Platform.isTV ? pan.panHandlers : null)}
+        {...(slide ? panHandlers(pan) : null)}
         accessibilityRole="tablist"
         accessibilityLabel={label}
         row

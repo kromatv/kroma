@@ -41,3 +41,10 @@ export function a11yValue(value: AccessibilityValue): A11yProps {
   }
   return { accessibilityValue: value };
 }
+
+/** A column heading's sort claim; native platforms have none, so it is empty there. */
+export function a11ySort(sort: 'none' | 'ascending' | 'descending'): {
+  'aria-sort'?: 'none' | 'ascending' | 'descending';
+} {
+  return WEB ? { 'aria-sort': sort } : {};
+}

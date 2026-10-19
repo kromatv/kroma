@@ -1,11 +1,4 @@
 import { radius as cornerRadius } from '#ui/core/tokens';
-// The faces a <Dropzone> shows, and the contract both halves are written to.
-//
-// Their own file because the two Roots are platform variants of each OTHER:
-// under web resolution `./dropzone` from inside `dropzone.web` is `dropzone.web`
-// itself, so anything shared has to sit outside that pair or the import is a
-// cycle that resolves to undefined.
-
 import type { ReactNode } from 'react';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';

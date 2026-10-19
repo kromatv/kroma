@@ -12,20 +12,14 @@ import { fontSizes as textSizes } from '#ui/core/tokens';
 // its web half compiles the drift to @keyframes so the compositor owns it.
 
 import { useEffect, useState } from 'react';
-import {
-  Animated,
-  type LayoutChangeEvent,
-  Image as RNImage,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Animated, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
 import { IMG_FADE_MS, Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
 import { styles, WHEEL_COLORS } from '#ui/core';
 import { gradient, promote } from '#ui/lib/css';
-import { WEB } from '#ui/lib/platform';
+import { prefetchImage } from '#ui/lib/prefetch-image';
 import { safeImageUrl } from '#ui/lib/safe-image-url';
 import { GRADE, useDrift } from '#ui/lib/splash-motion';
 
@@ -122,15 +116,7 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
     if (covers.length < 2) return;
     const next = safeImageUrl(covers[(slide + 1) % covers.length]?.url ?? null);
     if (!next) return;
-    if (WEB) {
-      const img = (globalThis as { document?: Document }).document?.createElement('img');
-      if (img) {
-        img.src = next;
-        img.decode?.().catch(() => undefined);
-      }
-    } else {
-      RNImage.prefetch(next).catch(() => undefined);
-    }
+    prefetchImage(next);
   }, [slide, covers]);
 
   // The drift is a pan across a frame held oversized for it, so no edge of the

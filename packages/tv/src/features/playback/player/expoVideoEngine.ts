@@ -10,18 +10,17 @@
 import type { MediaItem } from '@kromatv/client/media';
 import { audioTracksOf } from '@kromatv/core';
 import { createVideoPlayer, type VideoPlayer } from 'expo-video';
-import { Platform } from 'react-native';
 import {
   BaseTvEngine,
   type EngineOptions,
   NATIVE_SEEK_AHEAD,
 } from '#tv/features/playback/player/baseEngine';
-import { nativeBufferBudget } from '#tv/features/playback/player/bufferBudget';
+import { nativeBufferBudget, nativePlayerPlane } from '@kromatv/ui/native-player';
 import type { TvEngine } from '#tv/features/playback/player/engine';
 
 // What the platform player is actually made of, so the stats panel names the
 // same thing the logs do.
-const PLANE = Platform.OS === 'android' ? 'media3' : 'AVPlayer';
+const PLANE: string = nativePlayerPlane();
 
 // The chrome interpolates between reports, so a coarser interval than the
 // frame rate is plenty and costs less.

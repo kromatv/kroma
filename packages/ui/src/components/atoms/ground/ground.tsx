@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { WEB } from '#ui/lib/platform';
 
 export interface GroundProps {
   /** The ground this subtree paints on, whatever the page around it chose. */
@@ -22,7 +21,7 @@ export interface GroundProps {
  */
 export function Ground({ tone, flex, style, children }: Readonly<GroundProps>) {
   return (
-    <Box flex={flex} style={style} dataSet={WEB ? { theme: tone } : undefined}>
+    <Box flex={flex} style={style} dataSet={{ theme: tone }}>
       {children}
     </Box>
   );

@@ -3,17 +3,13 @@ import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import {
   activeTheme,
   type CornerValue,
-  onPaper,
   radiusValue,
-  resolveStyles,
   type StyleScope,
-  sharedStyle,
-  styles,
   useStyleScope,
 } from '#ui/core';
-import { backdropBlur } from '#ui/lib/css';
 import { useKitSettings } from '#ui/lib/kit-settings';
-import { WEB } from '#ui/lib/platform';
+import { frostCoat } from '#ui/lib/frost-coat';
+import { BARE, type FrostCoat } from '#ui/lib/frost-coat-types';
 import { mergeSlotProps } from '#ui/lib/slot';
 
 /** What a registered platform blur must accept - expo-blur's <BlurView> as it
@@ -26,9 +22,6 @@ interface FrostBackdropProps {
   tint?: 'light' | 'dark' | 'default' | (string & {});
   style?: StyleProp<ViewStyle>;
 }
-
-const cornerStyle = (corner: number, scope: StyleScope) =>
-  sharedStyle(`frost:corner:${corner}`, { radius: corner }, scope);
 
 interface FrostOptions {
   /** False renders the surface untouched, so a caller that is only sometimes
@@ -43,21 +36,7 @@ interface FrostOptions {
   tint?: 'light' | 'dark' | 'default';
 }
 
-/** The two halves of a frost. Spread `style` onto the surface's own style list
- *  and render `layer` as its first child; exactly one of them is ever set. */
-interface FrostCoat {
-  style: ViewStyle | null;
-  layer: ReactNode;
-}
-
-const BARE: FrostCoat = { style: null, layer: null };
-
 const EMPTY: ViewStyle = {};
-
-// One coat per strength, shared by identity: <Focusable> keys its style memo on
-// the values it is handed, and a fresh object per render would re-run the
-// box/face split on every frame of every frosted control on screen.
-const webCoats = new Map<number, FrostCoat>();
 
 /**
  * The frost a glass surface wears, for a control that places the layer itself.
@@ -71,57 +50,9 @@ function useFrostCoat(surface: StyleProp<ViewStyle>, options: FrostOptions = {})
   const scope = useStyleScope();
 
   const { frost, frostEnabled } = useKitSettings();
-  return frostEnabled ? coatOf(surface, options, frost, scope) : BARE;
-}
-
-function coatOf(
-  surface: StyleProp<ViewStyle>,
-  options: FrostOptions,
-  PlatformFrost: ReturnType<typeof useKitSettings>['frost'],
-  scope: StyleScope,
-): FrostCoat {
   const { on = true, amount = 12, tint } = options;
-  if (!on) return BARE;
-  if (WEB) {
-    const cached = webCoats.get(amount);
-    if (cached) return cached;
-    const coat: FrostCoat = {
-      style: sharedStyle(`frost:${amount}`, backdropBlur(amount) as never, scope) as ViewStyle,
-      layer: null,
-    };
-    webCoats.set(amount, coat);
-    return coat;
-  }
-  if (!PlatformFrost) return BARE;
-  const corner = StyleSheet.flatten(surface)?.borderRadius;
-  return {
-    style: null,
-    layer: (
-      <PlatformFrost
-        // expo-blur's 0-100 scale: about four steps to the CSS pixel.
-        intensity={Math.min(100, amount * 4)}
-        tint={tint ?? (onPaper(activeTheme(scope.theme)) ? 'light' : 'dark')}
-        style={[
-          resolveStyles(sDefinition, scope).fill,
-          resolveStyles(sDefinition, scope).clip,
-          typeof corner === 'number' ? cornerStyle(corner, scope) : null,
-        ]}
-      />
-    ),
-  };
+  return frostEnabled && on ? frostCoat(surface, amount, tint, frost, scope) : BARE;
 }
-
-const sDefinition = styles({
-  fill: {
-    fill: true,
-    // Never a touch target: the surface underneath owns the press.
-    pointerEvents: 'none',
-    // Below the surface's content: a positioned element on the web paints over
-    // its static siblings regardless of document order.
-    z: -1,
-  },
-  clip: { overflow: 'hidden' },
-});
 
 // The child declares its corner as a style or as <Box>'s `radius` shorthand,
 // and the native layer clips itself to whichever it used.
