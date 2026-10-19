@@ -4,6 +4,7 @@ import { type Ref, useImperativeHandle } from 'react';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { useFocusServices } from '#ui/lib/focus-services-context';
 import { walkTab } from '#ui/lib/focus-tab';
+import { sheetMovesRing } from '#ui/lib/player/sheet-moves-ring';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 
 const MOVES: Partial<Record<RemoteKey, Direction>> = {
@@ -33,7 +34,7 @@ export function SheetKeys({ handle, open, onClose }: Readonly<SheetKeysProps>) {
           return true;
         }
         const move = MOVES[key];
-        if (move && !enabled) send(move);
+        if (move && sheetMovesRing(enabled)) send(move);
         return true;
       },
       onTab: (backwards: boolean) => {
