@@ -101,18 +101,16 @@ export function PinPanel({ entry }: Readonly<{ entry: RefObject<FocusHandle | nu
 
   if (step.kind !== 'menu') {
     return (
-      <>
+      <Box self="center" align="center">
         <Text variant="bodyTv" color="textDim">
           {t(subtitle(step))}
         </Text>
-        <Box self="flex-start">
-          <PinEntry
-            label={t(subtitle(step))}
-            onSubmit={submit}
-            wrongKey={step.kind === 'current' ? 'auth.pinCurrentWrong' : 'auth.pinInvalid'}
-          />
-        </Box>
-      </>
+        <PinEntry
+          label={t(subtitle(step))}
+          onSubmit={submit}
+          wrongKey={step.kind === 'current' ? 'auth.pinCurrentWrong' : 'auth.pinInvalid'}
+        />
+      </Box>
     );
   }
 
