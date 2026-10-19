@@ -7,8 +7,6 @@
   "releases.fixed": "Corrections",
   "releases.highlightCount": "{count} nouveautés",
   "releases.highlightCount_one": "{count} nouveauté",
-  "releases.hintBrowse": "Parcourir",
-  "releases.hintVersion": "Version",
   "releases.owner": "Pour le propriétaire du serveur",
   "releases.subtitle": "Ce qui a changé dans KROMA, version par version.",
   "releases.title": "Nouveautés",

@@ -6,10 +6,8 @@ import {
   Chip,
   FocusRegion,
   FocusSlot,
-  Hint,
   Rail,
   Row,
-  Spacer,
   styles,
   Text,
   typeSpec as textRoles,
@@ -190,14 +188,6 @@ export function TvShowDetail() {
                   count: activeSeason.episodes.length,
                 })}
               </Text>
-              <Spacer />
-              <Hint
-                text={t('content.episodesHint')}
-                size={14}
-                gap={4}
-                color="text/30"
-                textStyle={s.episodesHint}
-              />
             </Row>
             <EpisodeGrid
               episodes={activeSeason.episodes}
@@ -232,6 +222,5 @@ const sDefinition = styles({
     textTransform: 'uppercase',
   },
   episodesProgress: { fontSize: textRoles.label.size, fontWeight: '500' },
-  episodesHint: { fontWeight: '600' },
   actionRow: { row: true, align: 'center', gap: 16 },
 });
