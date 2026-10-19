@@ -21,7 +21,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function sheet(over: { onClose?: () => void; onPlay?: (item: { id: string }) => void } = {}) {
+function sheet(
+  over: { onClose?: () => void; onPlay?: (item: { id: string }) => void; remote?: boolean } = {},
+) {
   const panel = createRef<PanelHandle>();
   render(
     onScreen(
@@ -34,6 +36,7 @@ function sheet(over: { onClose?: () => void; onPlay?: (item: { id: string }) => 
         onClose={over.onClose ?? (() => {})}
         onPlay={over.onPlay ?? (() => {})}
       />,
+      { remote: over.remote },
     ),
   );
   const press = (key: RemoteKey) => act(() => void panel.current?.onKey(key));
@@ -88,5 +91,23 @@ describe('the up-next sheet where nothing feeds the navigator', () => {
 
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(wearsRing(control('Lord Snow'))).toBe(true);
+  });
+});
+
+describe('the up-next sheet on a browser television, whose remote the player swallows', () => {
+  it('walks the row on ▶', () => {
+    const { press } = sheet({ remote: true });
+
+    press('Right');
+
+    expect(wearsRing(control('Lord Snow'))).toBe(true);
+  });
+
+  it('drops to the line below on ▼', () => {
+    const { press } = sheet({ remote: true });
+
+    press('Down');
+
+    expect(wearsRing(control('Blade Runner 2049'))).toBe(true);
   });
 });
