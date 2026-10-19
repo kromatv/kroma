@@ -72,10 +72,10 @@ export function createPerfHudPref(storage?: SessionStorage | null) {
  * a grid. Each step lands on its own rendition bucket at a rail tile (320 →
  * 320/240/160) and at the hero (1280 → 1280/960/780).
  *
- * The default is `full`, and `high` on a set reporting no more RAM than
- * `LOW_MEMORY_GB` - the one capability read that tells a 2 GB Android TV box
- * from a panel that keeps up, where a model name would tell nothing. A quality
- * chosen in settings wins over both. */
+ * The default is `full` on a set reporting more RAM than `LOW_MEMORY_GB`, and
+ * `high` on one reporting less or nothing at all: a television's webview hides
+ * its RAM and rasterizes in software, where a poster grid at `high` holds its
+ * frame rate better. A quality chosen in settings wins over both. */
 export const ARTWORK_SCALE = { full: 1, high: 0.75, medium: 0.5 } as const;
 
 export type ArtworkQuality = keyof typeof ARTWORK_SCALE;
@@ -86,7 +86,7 @@ const LOW_MEMORY_GB = 2;
 // Total RAM is immutable, so probe once without a late-registration latch.
 const MEMORY_GB = clientHardware().memoryGb;
 function defaultArtworkQuality(): ArtworkQuality {
-  return MEMORY_GB !== null && MEMORY_GB <= LOW_MEMORY_GB ? 'high' : 'full';
+  return MEMORY_GB !== null && MEMORY_GB > LOW_MEMORY_GB ? 'full' : 'high';
 }
 
 /** One root owns the reactive quality choice and the client's URL getter. */
