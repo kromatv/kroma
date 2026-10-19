@@ -48,7 +48,7 @@ function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonl
   const scope = useStyleScope();
 
   const split = splitShorthand(props);
-  const Host = hostOf(asChild, split.rest, ref);
+  const Host = hostOf(asChild, ref == null && isStaticHost(split.rest));
   const hit = pointerEvents ? HIT[pointerEvents] : null;
   // A box holding a breakpoint object is a different component, not a branch:
   // it is the only one that has to follow the design width, and a hook here
@@ -69,9 +69,9 @@ function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonl
 
 type Split = ReturnType<typeof splitShorthand>;
 
-function hostOf(asChild: boolean | undefined, rest: Split['rest'], ref: unknown) {
+function hostOf(asChild: boolean | undefined, plain: boolean) {
   if (asChild) return Slot;
-  return isStaticHost(rest, ref) ? StaticView : View;
+  return plain ? StaticView : View;
 }
 
 interface FluidBoxProps {

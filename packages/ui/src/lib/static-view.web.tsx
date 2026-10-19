@@ -36,10 +36,9 @@ const PASS = new Set(['testID', 'dataSet']);
 
 const hyphenate = (key: string) => key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 
-/** Whether a box can skip react-native-web's View: no ref, and nothing beside
+/** Whether a box with no ref can skip react-native-web's View: nothing beside
  *  its style and children but `testID` and `dataSet`. */
-export function isStaticHost(rest: Readonly<Record<string, unknown>>, ref: unknown): boolean {
-  if (ref != null) return false;
+export function isStaticHost(rest: Readonly<Record<string, unknown>>): boolean {
   for (const key in rest) if (!PASS.has(key)) return false;
   return true;
 }
