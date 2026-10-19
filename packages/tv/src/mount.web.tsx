@@ -5,6 +5,7 @@
 import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 
+import { cutFadesWhileMoving } from '#tv/app/cut-fades-while-moving';
 import { muteTransitionEvents } from '#tv/app/mute-transition-events';
 import { TvApp, type TvAppProps } from '#tv/app/TvApp';
 
@@ -23,6 +24,7 @@ export function mountTv(props: TvAppProps = {}): void {
   const el = document.getElementById('root');
   if (!el) throw new Error('KROMA TV: #root element not found');
   muteTransitionEvents(window);
+  cutFadesWhileMoving(window);
   createRoot(el).render(
     <StrictMode>
       {wantsWorkbench() ? (
