@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from 'react';
-import type { FrostBackdropProps } from './components/atoms/frost';
+import type { FrostBackdropProps } from './lib/frost-types';
 import type { Theme, ThemeMode } from './core';
 import { StyleRuntimeProvider, useStyleRuntimeParent } from './core/style-context';
 import {
@@ -46,9 +46,12 @@ export type FormFactor = 'tv' | 'phone' | 'browser';
 type EntryDefaults = Readonly<{ physicalKeyboard: boolean; size: ControlSize }>;
 
 const FORM_FACTOR: Readonly<
-  Record<FormFactor, { entry: EntryDefaults; surfaces: SurfacePresentation }>
+  Record<
+    FormFactor,
+    { entry: EntryDefaults; surfaces: SurfacePresentation; frostSampled?: boolean }
+  >
 > = {
-  tv: { entry: { physicalKeyboard: false, size: 'tv' }, surfaces: 'auto' },
+  tv: { entry: { physicalKeyboard: false, size: 'tv' }, surfaces: 'auto', frostSampled: true },
   phone: { entry: { physicalKeyboard: true, size: 'md' }, surfaces: 'dialog' },
   browser: { entry: { physicalKeyboard: true, size: 'sm' }, surfaces: 'auto' },
 };
@@ -59,6 +62,7 @@ export interface KitConfig<P extends FrostBackdropProps = FrostBackdropProps> {
   remote?: boolean;
   deviceStore?: DeviceStore | null;
   frostEnabled?: boolean;
+  frostSampled?: boolean;
   entry?: Partial<EntryDefaults>;
   surfaces?: SurfacePresentation;
   ground?: ThemeMode;
@@ -108,6 +112,7 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
       entry: { ...parent.entry, ...preset?.entry, ...config.entry },
       surfaces: config.surfaces ?? preset?.surfaces ?? parent.surfaces,
       frostEnabled: config.frostEnabled ?? parent.frostEnabled,
+      frostSampled: config.frostSampled ?? preset?.frostSampled ?? parent.frostSampled,
       image: config.image ?? parent.image,
       frost: (config.frost ?? parent.frost) as ComponentType<FrostBackdropProps> | null,
     };

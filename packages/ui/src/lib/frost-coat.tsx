@@ -1,36 +1,28 @@
-import type { ComponentType } from 'react';
-import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
-import {
-  activeTheme,
-  onPaper,
-  resolveStyles,
-  type StyleScope,
-  sharedStyle,
-  styles,
-} from '#ui/core';
-import type { FrostBackdropProps } from '#ui/components/atoms/frost';
-import { BARE, type FrostCoat } from './frost-coat-types';
+import { StyleSheet, type ViewStyle } from 'react-native';
+import { activeTheme, onPaper, resolveStyles, sharedStyle, styles } from '#ui/core';
+import { BARE, type FrostCoat, type FrostInput } from './frost-types';
 
 const sDefinition = styles({
   fill: { fill: true, pointerEvents: 'none', z: -1 },
   clip: { overflow: 'hidden' },
 });
 
-/** A registered platform blur drawn as the surface's first layer, clipped to its corner. */
-export function frostCoat(
-  surface: StyleProp<ViewStyle>,
-  amount: number,
-  tint: string | undefined,
-  Backdrop: ComponentType<FrostBackdropProps> | null,
-  scope: StyleScope,
-): FrostCoat {
-  if (!Backdrop) return BARE;
-  const corner = StyleSheet.flatten(surface)?.borderRadius;
+/** The coat a glass surface wears on native: the shell's registered blur view,
+ *  clipped to the surface's corner, or nothing when no shell registered one. */
+export function frostCoat({
+  surface,
+  options,
+  platform: PlatformFrost,
+  scope,
+}: FrostInput): FrostCoat {
+  const { on = true, amount = 12, tint } = options;
+  if (!on || !PlatformFrost) return BARE;
+  const corner = (StyleSheet.flatten(surface) as ViewStyle | undefined)?.borderRadius;
   const s = resolveStyles(sDefinition, scope);
   return {
     style: null,
     layer: (
-      <Backdrop
+      <PlatformFrost
         intensity={Math.min(100, amount * 4)}
         tint={tint ?? (onPaper(activeTheme(scope.theme)) ? 'light' : 'dark')}
         style={[

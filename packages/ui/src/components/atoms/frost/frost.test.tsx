@@ -4,6 +4,7 @@ import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Box } from '#ui/components/atoms/box';
 import { KitProvider } from '#ui/configure';
+import { FrostSource } from '#ui/lib/frost-source';
 import { contentRoot, declared } from '#ui/testing';
 import { Frost } from './frost';
 
@@ -39,5 +40,24 @@ describe('root frost preferences', () => {
     a.unmount();
     expect(declared(second, 'backdropFilter')).toContain('blur');
     b.unmount();
+  });
+});
+
+describe('a sampling kit', () => {
+  it('never filters the live backdrop', () => {
+    const root = render(
+      <KitProvider config={{ frostEnabled: true, frostSampled: true }}>
+        <FrostSource src="/art.webp">
+          <Frost amount={12}>
+            <Box radius="lg" testID="glass" />
+          </Frost>
+        </FrostSource>
+      </KitProvider>,
+    );
+
+    const node = root.getByTestId('glass');
+
+    expect(declared(node, 'backdropFilter')).toBeNull();
+    root.unmount();
   });
 });

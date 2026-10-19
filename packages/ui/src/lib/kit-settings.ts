@@ -1,5 +1,5 @@
 import { type ComponentType, createContext, useContext } from 'react';
-import type { FrostBackdropProps } from '#ui/components/atoms/frost';
+import type { FrostBackdropProps } from './frost-types';
 import type { DeviceStore } from './device-store';
 import type { ControlSize } from './field-shell';
 import type { ImageBackend } from './image-backend';
@@ -13,6 +13,7 @@ interface KitSettings {
   scrollLock: ReturnType<typeof createScrollLock> | null;
   entry: Readonly<{ physicalKeyboard: boolean; size: ControlSize }>;
   frostEnabled: boolean;
+  frostSampled: boolean;
   surfaces: SurfacePresentation;
   image: ImageBackend | null;
   frost: ComponentType<FrostBackdropProps> | null;
@@ -24,6 +25,7 @@ const DEFAULTS: KitSettings = Object.freeze({
   entry: Object.freeze({ physicalKeyboard: false, size: 'md' }),
   surfaces: 'auto',
   frostEnabled: true,
+  frostSampled: false,
   image: null,
   frost: null,
 });

@@ -2,7 +2,7 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Veil } from './veil';
-import { parseRamps } from '#ui/lib/veil-bitmap';
+import { parseRamps } from '#ui/lib/ramp-paint';
 
 afterEach(() => {
   cleanup();

@@ -7,55 +7,30 @@ import {
   type StyleScope,
   useStyleScope,
 } from '#ui/core';
-import { useKitSettings } from '#ui/lib/kit-settings';
 import { frostCoat } from '#ui/lib/frost-coat';
-import { BARE, type FrostCoat } from '#ui/lib/frost-coat-types';
+import { useFrostSource } from '#ui/lib/frost-source';
+import { BARE, type FrostCoat, type FrostOptions } from '#ui/lib/frost-types';
+import { useKitSettings } from '#ui/lib/kit-settings';
 import { mergeSlotProps } from '#ui/lib/slot';
-
-/** What a registered platform blur must accept - expo-blur's <BlurView> as it
- * stands, so a shell registers the component itself, unconfigured. */
-interface FrostBackdropProps {
-  /** Platform blur strength, 0-100 (expo-blur's scale). */
-  intensity?: number;
-  /** Open string union: expo-blur's tint set is wider than the three the kit
-   *  asks for, and the registered component must remain assignable. */
-  tint?: 'light' | 'dark' | 'default' | (string & {});
-  style?: StyleProp<ViewStyle>;
-}
-
-interface FrostOptions {
-  /** False renders the surface untouched, so a caller that is only sometimes
-   *  glass states the condition rather than branching around the coat.
-   *  Defaults to true. */
-  on?: boolean;
-  /** Blur strength in CSS px; the platform intensity is derived from it. */
-  amount?: number;
-  /** Defaults to the ground the app is on. Pass it only for a surface that holds
-   *  one ground whatever the app chose, the way the player's chrome stays dark.
-   *  Native only: a browser coat has no tint of its own. */
-  tint?: 'light' | 'dark' | 'default';
-}
 
 const EMPTY: ViewStyle = {};
 
 /**
  * The frost a glass surface wears, for a control that places the layer itself.
- * `surface` is the surface's own resolved style: the native layer takes its
- * corner from that rather than being told one twice.
+ * `surface` is the surface's own resolved style: the layer takes its corner
+ * from that rather than being told one twice.
  *
  * A hook, so root configuration reaches a surface that is already
  * drawn: call it at the top of the control, like any other.
  */
 function useFrostCoat(surface: StyleProp<ViewStyle>, options: FrostOptions = {}): FrostCoat {
   const scope = useStyleScope();
-
-  const { frost, frostEnabled } = useKitSettings();
-  const { on = true, amount = 12, tint } = options;
-  return frostEnabled && on ? frostCoat(surface, amount, tint, frost, scope) : BARE;
+  const source = useFrostSource();
+  const { frost, frostEnabled, frostSampled } = useKitSettings();
+  if (!frostEnabled) return BARE;
+  return frostCoat({ surface, options, platform: frost, sampled: frostSampled, source, scope });
 }
 
-// The child declares its corner as a style or as <Box>'s `radius` shorthand,
-// and the native layer clips itself to whichever it used.
 function cornerOf(props: Record<string, unknown>, scope: StyleScope): ViewStyle {
   const flat = StyleSheet.flatten(props.style as StyleProp<ViewStyle>);
   if (typeof flat?.borderRadius === 'number') return flat;
@@ -100,5 +75,6 @@ function Frost({ children, ...options }: Readonly<FrostProps>) {
   return cloneElement(el, merged);
 }
 
-export type { FrostBackdropProps, FrostCoat, FrostOptions, FrostProps };
+export type { FrostBackdropProps } from '#ui/lib/frost-types';
+export type { FrostCoat, FrostOptions, FrostProps };
 export { Frost, useFrostCoat };

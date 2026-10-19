@@ -16,7 +16,7 @@ import {
 import { useEffect } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useClient, useNav, useParams } from '#tv/app/router';
-import { TvDetailScaffold } from '#tv/features/catalog/detail/DetailScaffold';
+import { BACKDROP_SAMPLE_W, TvDetailScaffold } from '#tv/features/catalog/detail/DetailScaffold';
 import { CastRow } from '#tv/features/catalog/detail/parts';
 import { useDiscoverDetail } from '#tv/features/catalog/discover/useDiscoverDetail';
 
@@ -70,6 +70,10 @@ export function TvDiscoverDetail() {
       kind={`${t(entry.kind === 'show' ? 'discover.kindShow' : 'discover.kindMovie')} · ${t('discover.notInLibrary')}`}
       title={entry.title}
       backdrop={client.media.artwork.resolve(entry.backdropUrl ?? entry.posterUrl, STAGE_W)}
+      backdropSample={client.media.artwork.resolve(
+        entry.backdropUrl ?? entry.posterUrl,
+        BACKDROP_SAMPLE_W,
+      )}
       rating={entry.rating}
       meta={meta}
       badge={null}

@@ -4,7 +4,7 @@ import { Button, FocusRegion, styles, useFocusNav, useStyles } from '@kromatv/ui
 import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav, useParams } from '#tv/app/router';
-import { TvDetailScaffold } from '#tv/features/catalog/detail/DetailScaffold';
+import { BACKDROP_SAMPLE_W, TvDetailScaffold } from '#tv/features/catalog/detail/DetailScaffold';
 import {
   CastRow,
   EndsAtHint,
@@ -50,6 +50,10 @@ export function TvMovieDetail() {
       backdrop={
         client.media.artwork.backdropFor(item, STAGE_W) ??
         client.media.artwork.posterFor(item, STAGE_W)
+      }
+      backdropSample={
+        client.media.artwork.backdropFor(item, BACKDROP_SAMPLE_W) ??
+        client.media.artwork.posterFor(item, BACKDROP_SAMPLE_W)
       }
       rating={meta?.rating}
       meta={metaLong}

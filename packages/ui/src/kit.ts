@@ -91,6 +91,8 @@ export {
   useEntryDefaults,
 } from './lib/field-shell';
 export { useFocusNav } from './lib/focus-nav';
+export type { FrostSourceValue } from './lib/frost-source';
+export { FrostSource, useFrostSource } from './lib/frost-source';
 export type { FocusDirection, FocusOwner } from './lib/focus-platform';
 export { usePlatformFocus } from './lib/focus-platform';
 export { useHardwareKeys } from './lib/focus-remote';

@@ -19,7 +19,7 @@ import {
 import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav, useParams } from '#tv/app/router';
-import { TvDetailScaffold } from '#tv/features/catalog/detail/DetailScaffold';
+import { BACKDROP_SAMPLE_W, TvDetailScaffold } from '#tv/features/catalog/detail/DetailScaffold';
 import { EpisodeGrid } from '#tv/features/catalog/detail/EpisodeGrid';
 import {
   CastRow,
@@ -53,6 +53,9 @@ export function TvShowDetail() {
   const backdrop =
     client.media.artwork.backdropFor(show, STAGE_W) ??
     client.media.artwork.showPosterFor(show, STAGE_W);
+  const backdropSample =
+    client.media.artwork.backdropFor(show, BACKDROP_SAMPLE_W) ??
+    client.media.artwork.showPosterFor(show, BACKDROP_SAMPLE_W);
   const theme = useThemeAudio(client.media.artwork.themeFor(show));
 
   const firstEpisode = activeSeason?.episodes[0] ?? null;
@@ -73,6 +76,7 @@ export function TvShowDetail() {
       kind={t('content.series')}
       title={show.title}
       backdrop={backdrop}
+      backdropSample={backdropSample}
       rating={meta?.rating}
       meta={metaLong}
       badge={qualityBadgeForVideo(show.video)}

@@ -109,15 +109,12 @@ export function useArtworkPref(): ReactivePref<ArtworkQuality> {
   return pref;
 }
 
-/** Whether glass surfaces blur what is behind them.
- *
- * Off by default on a television, and measured both ways: a 2024 Samsung panel
- * gave 40fps with the web tier's backdrop-filter and 60 without, and an Android
- * TV box drops to ~52fps with double-digit jank once every frosted control
- * blurs the screen behind it. The plain fill underneath is what the design
- * falls back to anyway, so the switch is there for whoever wants to pay. */
+/** Whether glass surfaces blur what is behind them. On by default: on the
+ * browser televisions a frosted surface draws a small blurred copy of the
+ * screen's artwork instead of filtering the live backdrop, so it costs a
+ * picture rather than a blur per frame. */
 export function createBlurPref(storage?: SessionStorage | null): ReactivePref<'on' | 'off'> {
-  return reactivePref('kroma:blur', ['on', 'off'] as const, 'off', storage);
+  return reactivePref('kroma:blur', ['on', 'off'] as const, 'on', storage);
 }
 const BlurContext = createContext<ReactivePref<'on' | 'off'> | null>(null);
 export const BlurPrefProvider = BlurContext.Provider;

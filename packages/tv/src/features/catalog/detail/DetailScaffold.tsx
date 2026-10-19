@@ -5,6 +5,7 @@ import {
   colors,
   FocusScroll,
   FocusSlot,
+  FrostSource,
   Img,
   qualityTone,
   styles,
@@ -19,6 +20,10 @@ import type { ReactNode } from 'react';
 const VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 12%, transparent 68%)`;
 const VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 4%, transparent 60%)`;
 const VEIL = `${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`;
+const BACKDROP_POSITION = '50% 18%';
+
+/** The width a detail screen asks its backdrop sample at, for its frosted rows. */
+export const BACKDROP_SAMPLE_W = 160;
 
 /**
  * Shared chrome for the Film / Série detail screens: full-bleed backdrop,
@@ -34,6 +39,7 @@ export function TvDetailScaffold({
   kind,
   title,
   backdrop,
+  backdropSample,
   rating,
   meta,
   badge,
@@ -45,6 +51,7 @@ export function TvDetailScaffold({
   kind: string;
   title: string;
   backdrop: string | null;
+  backdropSample: string | null;
   rating: number | null | undefined;
   meta: string;
   badge: string | null;
@@ -55,11 +62,11 @@ export function TvDetailScaffold({
   const s = useStyles(sDefinition);
 
   return (
-    <Box fill overflow="hidden">
+    <FrostSource src={backdropSample} position={BACKDROP_POSITION} veil={VEIL} style={s.frame}>
       <Img
         src={backdrop}
         background={tintGradient(posterColors(id))}
-        position="50% 18%"
+        position={BACKDROP_POSITION}
         fill
         layered
         opaque
@@ -103,11 +110,12 @@ export function TvDetailScaffold({
 
         {children}
       </FocusScroll>
-    </Box>
+    </FrostSource>
   );
 }
 
 const sDefinition = styles({
+  frame: { fill: true, overflow: 'hidden' },
   titleGap: { mt: 14, mb: 16 },
   // clamp(46px, 7.6vh, 86px) resolves to 82px on the fixed 1080-tall stage.
   title: {
