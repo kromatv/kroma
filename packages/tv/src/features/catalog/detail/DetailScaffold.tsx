@@ -5,7 +5,6 @@ import {
   colors,
   FocusScroll,
   FocusSlot,
-  gradient,
   Img,
   qualityTone,
   styles,
@@ -13,12 +12,13 @@ import {
   typeSpec as textRoles,
   tintGradient,
   useStyles,
+  Veil,
 } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 
 const VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 12%, transparent 68%)`;
 const VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 4%, transparent 60%)`;
-const VEIL = gradient(`${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`);
+const VEIL = `${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`;
 
 /**
  * Shared chrome for the Film / Série detail screens: full-bleed backdrop,
@@ -64,7 +64,7 @@ export function TvDetailScaffold({
         layered
         opaque
       />
-      <Box fill pointerEvents="none" style={VEIL} />
+      <Veil ramp={VEIL} />
 
       <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
         <FocusSlot>

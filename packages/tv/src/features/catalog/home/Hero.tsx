@@ -15,7 +15,6 @@ import {
   Button,
   colors,
   FocusRegion,
-  gradient,
   Img,
   qualityTone,
   styles,
@@ -24,12 +23,13 @@ import {
   fontSizes as textSizes,
   tintGradient,
   useStyles,
+  Veil,
 } from '@kromatv/ui/kit';
 import { entryId, entryMetadata } from '#tv/features/catalog/home/sectionEntry';
 
 const HERO_VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 5%, transparent 60%)`;
 const HERO_VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 1%, transparent 48%)`;
-const HERO_VEIL = gradient(`${HERO_VEIL_VERTICAL}, ${HERO_VEIL_HORIZONTAL}`);
+const HERO_VEIL = `${HERO_VEIL_VERTICAL}, ${HERO_VEIL_HORIZONTAL}`;
 
 const HERO_HEIGHT = 691;
 const HERO_EMPTY_HEIGHT = 432;
@@ -114,7 +114,7 @@ export function Hero({ info, onPlay, onSelectShow, onSelectEntry }: Readonly<Her
         layered
         opaque
       />
-      <Box fill pointerEvents="none" style={HERO_VEIL} />
+      <Veil ramp={HERO_VEIL} />
       <Box absolute left={64} bottom={36} z={2} maxW={820}>
         <Text variant="overlineTv" style={s.featuredLabel} color="accentText">
           {t('content.featured')}

@@ -1,0 +1,34 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Backdrop } from './veil.fixtures';
+
+export const story = defineStory({
+  group: 'Media',
+  width: { min: 320, max: 720 },
+  render: () => <Backdrop />,
+});
+
+The darkening laid over full-screen art (a backdrop, a hero) so the title and the rows standing on it read. It takes the same `linear-gradient(...)` list `background-image` does, the first on top, and fades to the page ground rather than to the art.
+
+On the browser targets the ramp is drawn once into a small bitmap and stretched over the box: a television rasterizes in software, and a full-screen gradient there is two million pixels to paint again whenever anything near it changes, while a stretched image is one upload the GPU scales. React Native draws the gradient itself.
+
+```tsx
+<Box fill>
+  <Img src={backdrop} fill layered />
+  <Veil ramp={`${VERTICAL}, ${HORIZONTAL}`} />
+</Box>
+```
+
+<Scene name="Bare artwork">
+  The same art without the veil, which is what the title has to survive.
+
+  <Backdrop veiled={false} />
+</Scene>
+
+<Do>
+- Write every gradient of the veil in one `ramp`: two veils are two full-screen layers.
+- Keep the ramps smooth. A hard stop softens when the bitmap is stretched.
+</Do>
+
+<Dont>
+- Use it over a tile's caption; that is `ArtScrim`, which rounds with the tile.
+</Dont>

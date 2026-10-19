@@ -1,6 +1,6 @@
 import type { KromaClient } from '@kromatv/client';
 import type { MediaItem, Show } from '@kromatv/client/media';
-import { Box, gradient, Img, promote, SHADE, shade, useSettledValue } from '@kromatv/ui/kit';
+import { Box, Img, SHADE, shade, useSettledValue, Veil } from '@kromatv/ui/kit';
 import { memo } from 'react';
 import { useClient } from '#tv/app/router';
 import { STAGE_W } from '#tv/shared/stage';
@@ -21,11 +21,7 @@ export function AmbientBackdrop({ entry }: Readonly<{ entry: CatalogEntry | null
   return (
     <Box fill z={-1} overflow="hidden" pointerEvents="none" accessibilityElementsHidden>
       <AmbientArt src={entryBackdrop(client, settled)} />
-      {/* One element for both gradients, on its own compositing layer
-          (`translateZ(0)`): without it the 1920x1080 gradients re-rasterize on
-          every frame of the fade, and a second element is a second full-screen
-          layer the GPU blends on every frame. */}
-      <Box fill pointerEvents="none" style={VEIL} />
+      <Veil ramp={VEIL} />
     </Box>
   );
 }
@@ -36,7 +32,7 @@ function AmbientArtImpl({ src }: Readonly<{ src: string | null }>) {
 
 const AmbientArt = memo(AmbientArtImpl);
 
-const VEIL = [gradient(`${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`), promote()];
+const VEIL = `${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`;
 
 export type CatalogEntry = { kind: 'movie'; item: MediaItem } | { kind: 'show'; item: Show };
 
