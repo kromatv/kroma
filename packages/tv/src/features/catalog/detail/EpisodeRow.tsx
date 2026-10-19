@@ -9,6 +9,7 @@ import {
   Icon,
   Img,
   Progress,
+  promote,
   Row,
   resolveStyles,
   type StyleScope,
@@ -241,7 +242,7 @@ const SYNOPSIS_LIT = 'text/78';
 const sDefinition = styles({
   // <Frost> blurs the artwork behind the card: CSS backdrop-filter on the
   // browser tiers, the shell's registered blur view on Apple TV.
-  row: { p: 18, radius: cornerRadius.row, bg: 'tint/2.5', border: 'tint/5' },
+  row: { p: 18, radius: cornerRadius.row, bg: 'tint/2.5', border: 'tint/5', ...promote() },
   rowLit: { bg: 'tint/6', borderColor: 'tint/12' },
   rowWatched: { borderColor: 'accentWash/22' },
   dimmed: { opacity: 0.55 },
