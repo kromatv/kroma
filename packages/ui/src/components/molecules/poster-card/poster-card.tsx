@@ -1,4 +1,4 @@
-import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
+import { type StyleScope, color, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // <PosterCard>: the 2:3 portrait tile of the browse grids (Films, Series).
@@ -6,7 +6,6 @@ import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // The same anatomy as <MediaCard> at a different aspect and type scale. It fills
 // its grid cell rather than declaring a width, so the grid owns the column maths.
 
-import { ArtScrim } from '#ui/components/atoms/art-scrim';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
@@ -14,6 +13,7 @@ import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { FADE_UNIT, tintFill, tintGradient } from '#ui/components/molecules/media-card';
 import { CardProgress } from '#ui/lib/card-progress';
+import { gradient } from '#ui/lib/css';
 import { WEB } from '#ui/lib/platform';
 
 interface PosterCardProps {
@@ -56,6 +56,7 @@ function PosterCard({
   const scope = useStyleScope();
 
   const s = useStyles(sDefinition);
+  const ramp = useStyles(rampDefinition);
 
   return (
     <Focusable
@@ -75,9 +76,18 @@ function PosterCard({
           fill
           noCrossFade
         />
-        <ArtScrim variant="deep" radius={WEB ? 0 : 'xl'} />
         {watched ? <WatchedBadge /> : null}
-        <Box absolute left={14} right={14} bottom={12} gap={3}>
+        <Box
+          absolute
+          left={0}
+          right={0}
+          bottom={0}
+          px={14}
+          pt={48}
+          pb={12}
+          gap={3}
+          style={ramp.band}
+        >
           {overline ? (
             <Text style={s.overline} lines={1}>
               {overline}
@@ -92,6 +102,10 @@ function PosterCard({
     </Focusable>
   );
 }
+
+const BAND = `linear-gradient(to bottom, ${color('black/0')}, ${color('black/70')} 40px, ${color('black/70')})`;
+
+const rampDefinition = styles({ band: gradient(BAND) });
 
 const sDefinition = styles({
   overline: {
