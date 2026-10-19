@@ -80,7 +80,7 @@ style compiled at runtime: the same hashing, the same classes, the same cache
 hit on every render. Only the rule insertion is skipped, because the sheet
 already holds them.
 
-The patch on react-native-web carries seven hunks, each a few lines:
+The patch on react-native-web carries eight hunks, each a few lines:
 
 - `StyleSheet.create` compiles a `$$static` style and inserts nothing.
 - The class name is the hash alone, six characters, on a dev server as in a
@@ -93,6 +93,9 @@ The patch on react-native-web carries seven hunks, each a few lines:
   ordered sheet.
 - `<Text numberOfLines>` clamps with a registered style per line count rather
   than an inline declaration.
+- The package exports `unstable_TextAncestorContext`, so `<StaticText>`
+  (`lib/static-text.web.tsx`) can tell it is inside another Text from the very
+  context react-native-web's Text provides, whichever build resolved.
 - `ModalPortal` puts its container back into the document when React
   reconnects its effect. React disconnects the effects of a tree it hides
   behind a Suspense fallback, and upstream's cleanup removed the container for
