@@ -5,7 +5,6 @@ import {
   type FocusHandle,
   FocusColumn,
   FocusRegion,
-  Hint,
   shade,
   styles,
   useFocusNav,
@@ -16,10 +15,10 @@ import { type ReactNode, useRef, useState } from 'react';
 import { groupAvailable } from '#tv/app/settings/groups';
 import { useNav } from '#tv/app/router';
 import { BeaconMark } from '#tv/shared/ui';
-import { weight } from '#tv/shared/ui/weight';
 import { PaneDetail } from './PaneDetail';
 import { PaneRow } from './PaneRow';
 import { type SettingsPane, paneId } from './panes';
+import { SettingsPopups } from './settingsPopups';
 
 const CALM = `linear-gradient(90deg, ${shade(0.97)} 0%, ${shade(0.93)} 38%, ${shade(0.88)} 100%)`;
 
@@ -49,16 +48,24 @@ export function SettingsPanes({ header, sections }: Readonly<SettingsPanesProps>
   const rows = useRef(new Map<string, FocusHandle>());
   const detail = useRef<FocusHandle>(null);
   const onLeft = useRef(true);
+  const popups = useRef(0);
+  const [visit, setVisit] = useState(0);
 
   useFocusNav({
     onBack: () => {
+      if (popups.current > 0) return false;
       if (onLeft.current || !active) {
         nav.back();
         return;
       }
+      setVisit((n) => n + 1);
       rows.current.get(paneId(active))?.focus();
     },
   });
+
+  const countPopup = (delta: 1 | -1) => {
+    popups.current += delta;
+  };
 
   const register = (id: string) => (handle: FocusHandle | null) => {
     if (handle) rows.current.set(id, handle);
@@ -66,50 +73,44 @@ export function SettingsPanes({ header, sections }: Readonly<SettingsPanesProps>
   };
 
   return (
-    <Box fill z={10}>
-      <Veil ramp={CALM} />
-      <FocusRegion style={s.screen}>
-        <FocusColumn style={s.left}>
-          {nav.canGoBack ? (
-            <Box style={s.back}>
-              <BackButton onPress={nav.back} label={t('common.back')} />
-            </Box>
-          ) : null}
-          <Box style={s.header}>{header}</Box>
-          {visible.map((section, index) => (
-            <Box key={section.map(paneId).join()} style={index > 0 ? s.section : s.first}>
-              {section.map((pane) => (
-                <PaneRow
-                  key={paneId(pane)}
-                  pane={pane}
-                  active={active !== undefined && paneId(active) === paneId(pane)}
-                  entry={paneId(pane) === entryId}
-                  handle={register(paneId(pane))}
-                  onFocus={(id) => {
-                    onLeft.current = true;
-                    setActiveId(id);
-                  }}
-                  onBlur={() => {
-                    onLeft.current = false;
-                  }}
-                  onEnter={() => detail.current?.focus()}
-                />
-              ))}
-            </Box>
-          ))}
-          <Hint
-            text={t('profileMenu.navHint')}
-            size={14}
-            gap={4}
-            mt={28}
-            color="text/40"
-            textStyle={weight.medium}
-          />
-        </FocusColumn>
-        {active ? <PaneDetail pane={active} entry={detail} /> : null}
-      </FocusRegion>
-      <BeaconMark />
-    </Box>
+    <SettingsPopups value={countPopup}>
+      <Box fill z={10}>
+        <Veil ramp={CALM} />
+        <FocusRegion style={s.screen}>
+          <FocusColumn style={s.left}>
+            {nav.canGoBack ? (
+              <Box style={s.back}>
+                <BackButton onPress={nav.back} label={t('common.back')} />
+              </Box>
+            ) : null}
+            <Box style={s.header}>{header}</Box>
+            {visible.map((section, index) => (
+              <Box key={section.map(paneId).join()} style={index > 0 ? s.section : s.first}>
+                {section.map((pane) => (
+                  <PaneRow
+                    key={paneId(pane)}
+                    pane={pane}
+                    active={active !== undefined && paneId(active) === paneId(pane)}
+                    entry={paneId(pane) === entryId}
+                    handle={register(paneId(pane))}
+                    onFocus={(id) => {
+                      onLeft.current = true;
+                      setActiveId(id);
+                    }}
+                    onBlur={() => {
+                      onLeft.current = false;
+                    }}
+                    onEnter={() => detail.current?.focus()}
+                  />
+                ))}
+              </Box>
+            ))}
+          </FocusColumn>
+          {active ? <PaneDetail pane={active} entry={detail} visit={visit} /> : null}
+        </FocusRegion>
+        <BeaconMark />
+      </Box>
+    </SettingsPopups>
   );
 }
 

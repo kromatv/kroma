@@ -14,8 +14,8 @@ interface PaneRowProps {
   onEnter: () => void;
 }
 
-/** A left-pane row: a group previews its rows on the right as it takes focus
- * and enters them on OK, an action runs on OK. */
+/** A left-pane row: a group or a panel previews on the right as it takes focus
+ * and is entered on OK, an action runs on OK. */
 export function PaneRow({
   pane,
   active,
@@ -35,7 +35,12 @@ export function PaneRow({
           hint: <GroupSummary items={pane.group.summary} />,
           run: onEnter,
         }
-      : { icon: pane.icon, label: pane.label, hint: pane.hint && t(pane.hint), run: pane.run };
+      : {
+          icon: pane.icon,
+          label: pane.label,
+          hint: pane.hint && t(pane.hint),
+          run: pane.kind === 'panel' ? onEnter : pane.run,
+        };
   return (
     <ListRow.Root
       ground="surface"
@@ -43,7 +48,7 @@ export function PaneRow({
       icon={face.icon}
       autoFocus={entry}
       selected={active}
-      chevron={pane.kind === 'group'}
+      chevron={pane.kind !== 'action'}
       focusHandle={handle}
       onFocus={() => onFocus(id)}
       onBlur={onBlur}

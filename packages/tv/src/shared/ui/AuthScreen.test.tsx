@@ -39,7 +39,7 @@ function press(key: string) {
 function Deep({ children }: Readonly<{ children: ReactNode }>) {
   const nav = useNav();
   useEffect(() => {
-    if (!nav.canGoBack) nav.go('about');
+    if (!nav.canGoBack) nav.go('deviceSettings');
   }, [nav]);
   return nav.canGoBack ? children : null;
 }

@@ -1,6 +1,5 @@
 import { useT } from '@kromatv/ui';
 import { Box, Text } from '@kromatv/ui/kit';
-import { useNav } from '#tv/app/router';
 import { DEVICE_GROUPS } from '#tv/app/settings/groups';
 import { GATE_MARK, KromaMark } from '#tv/shared/ui';
 import { appPanes } from './settings/appPanes';
@@ -15,7 +14,6 @@ const GROUP_PANES: readonly SettingsPane[] = DEVICE_GROUPS.map((group) => ({
 /** Device settings (route `deviceSettings`), reachable from the signed-out
  * profile picker: the prefs that must not require an account. */
 export function TvDeviceSettings() {
-  const nav = useNav();
   const t = useT();
 
   return (
@@ -26,7 +24,7 @@ export function TvDeviceSettings() {
           <Text variant="headingTv">{t('deviceSettings.title')}</Text>
         </Box>
       }
-      sections={[GROUP_PANES, appPanes(() => nav.go('about'))]}
+      sections={[GROUP_PANES, appPanes]}
     />
   );
 }

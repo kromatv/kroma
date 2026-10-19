@@ -110,7 +110,7 @@ describe('Back on the root screen', () => {
     const onExit = vi.fn();
     mount(stubScreens(), onExit);
 
-    act(() => nav.go('about'));
+    act(() => nav.go('deviceSettings'));
     act(() => nav.back());
 
     expect(onExit).not.toHaveBeenCalled();

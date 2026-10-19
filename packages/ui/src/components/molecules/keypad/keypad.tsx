@@ -23,8 +23,9 @@ import {
 // as a diagonal.
 
 import { NavigatorNode } from '@kromatv/spatial-nav/react';
+import type { Ref } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Focusable } from '#ui/components/atoms/focusable';
+import { type FocusHandle, Focusable } from '#ui/components/atoms/focusable';
 import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
@@ -102,6 +103,8 @@ interface KeypadProps {
   autoFocus?: boolean;
   /** Ignore presses (a code is being checked, a lockout is counting down). */
   disabled?: boolean;
+  /** Focuses the 1 key on demand, for a pad that opens after its screen has settled. */
+  focusHandle?: Ref<FocusHandle>;
 }
 
 function Keypad({
@@ -110,6 +113,7 @@ function Keypad({
   size = 'tv',
   autoFocus = true,
   disabled,
+  focusHandle,
 }: Readonly<KeypadProps>) {
   const scope = useStyleScope();
 
@@ -138,6 +142,7 @@ function Keypad({
               size={size}
               disabled={disabled}
               autoFocus={autoFocus && d === '1'}
+              focusHandle={d === '1' ? focusHandle : undefined}
               onPress={press}
             />
           ))}
@@ -172,6 +177,7 @@ interface PadKeyProps {
   size: KeypadSize;
   disabled?: boolean;
   autoFocus?: boolean;
+  focusHandle?: Ref<FocusHandle>;
   onPress: (value: string) => void;
 }
 
@@ -182,6 +188,7 @@ function PadKey({
   size,
   disabled,
   autoFocus,
+  focusHandle,
   onPress,
 }: Readonly<PadKeyProps>) {
   const keypadVariantsScoped = useSv(keypadVariants);
@@ -193,6 +200,7 @@ function PadKey({
       label={label}
       disabled={disabled}
       autoFocus={autoFocus}
+      focusHandle={focusHandle}
       focusScale={1.08}
       sv={keypadVariants}
       vars={{ kind, size }}

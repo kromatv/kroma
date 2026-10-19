@@ -27,8 +27,7 @@ export interface TvRoutes {
   addProfile: undefined;
   quick: undefined;
   deviceSettings: undefined;
-  about: undefined;
-  pin: { intent: 'verify' | 'set' | 'clear'; account?: StoredSession };
+  pin: { account: StoredSession };
   profileMenu: undefined;
   home: undefined;
   grid: { kind: 'films' | 'series' | 'mylist' };

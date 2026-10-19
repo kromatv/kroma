@@ -72,7 +72,7 @@ export function TvProfiles() {
     // Signing in would only fail against a server that isn't answering.
     if (offline) return;
     const locked = a.user.hasPin && !isUnlocked(a);
-    if (locked) nav.go('pin', { intent: 'verify', account: a });
+    if (locked) nav.go('pin', { account: a });
     else activate(a);
   };
 

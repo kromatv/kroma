@@ -9,8 +9,8 @@
 import type { RedirectRule } from '#tv/app/guard';
 import type { RouteName } from '#tv/app/router';
 
-// `both` covers screens that serve either session (the PIN pad: unlock a
-// locked profile signed out, set/clear one signed in).
+// `both` covers screens that serve either session (the PIN pad unlocks a
+// profile signed out, and the session it opens is signed in before it leaves).
 type Access = 'signedOut' | 'signedIn' | 'both';
 
 // The profile picker is the signed-out home; even with no servers yet it shows
@@ -22,9 +22,6 @@ const ACCESS: Record<RouteName, Access> = {
   connect: 'signedOut',
   quick: 'signedOut',
   deviceSettings: 'signedOut',
-  // Reached from device settings signed out and from the profile menu signed
-  // in, and it needs neither: it only reports what this build is.
-  about: 'both',
   pin: 'both',
   home: 'signedIn',
   grid: 'signedIn',

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { onScreen } from '@kromatv/ui/testing';
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as hardware from '#tv/app/clientHardware';
 import { type HardwareSource, readClientHardware } from '#tv/app/hardwareReadings';
@@ -12,7 +12,7 @@ function hardwareSource(source: HardwareSource) {
 
 import { EnvProvider } from '#tv/app/providers/env';
 import { TvNavProvider } from '#tv/app/router';
-import { TvAbout } from '#tv/features/accounts/TvAbout';
+import { AboutPanel } from './AboutPanel';
 
 const auth = vi.hoisted(() => {
   const session: { current: { user: { id: string } | null } | null } = { current: null };
@@ -39,14 +39,14 @@ function mount(platform = 'Tizen') {
     onScreen(
       <EnvProvider platform={platform}>
         <TvNavProvider screens={{} as never}>
-          <TvAbout />
+          <AboutPanel entry={{ current: null }} />
         </TvNavProvider>
       </EnvProvider>,
     ),
   );
 }
 
-describe('TvAbout hardware rows', () => {
+describe('AboutPanel hardware rows', () => {
   it('names the running platform', () => {
     withNavigator({ hardwareConcurrency: 4 });
     mount('webOS');
@@ -142,7 +142,7 @@ describe('TvAbout hardware rows', () => {
   });
 });
 
-describe('TvAbout release notes', () => {
+describe('AboutPanel release notes', () => {
   it('keeps the release notes from a reader who is not signed in', () => {
     withNavigator({});
 
@@ -158,5 +158,17 @@ describe('TvAbout release notes', () => {
     mount();
 
     expect(screen.getByText("What's new")).toBeTruthy();
+  });
+});
+
+describe('AboutPanel privacy', () => {
+  it('keeps the privacy policy behind its row until it is opened', () => {
+    withNavigator({});
+    mount();
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    act(() => screen.getByRole('button', { name: 'Privacy' }).click());
+
+    expect(screen.getByRole('dialog')).toBeTruthy();
   });
 });
