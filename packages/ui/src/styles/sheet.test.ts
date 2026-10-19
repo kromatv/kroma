@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { atMedia, atSupports, keyframes, rule, sheetCss } from './sheet';
+import { atMedia, keyframes, rule, sheetCss } from './sheet';
 
 describe('sheetCss', () => {
   it('writes a selector list one selector to a line, as it is read', () => {
@@ -50,11 +50,5 @@ describe('sheetCss', () => {
     const css = sheetCss([rule('a', { color: 'red' }), rule('b', { color: 'blue' })]);
 
     expect(css).toBe('a {\n  color: red;\n}\n\nb {\n  color: blue;\n}');
-  });
-
-  it('wraps rules in a feature query an older engine skips whole', () => {
-    const css = sheetCss([atSupports('selector(:has(a))', [rule('a:has(b)', { opacity: 0 })])]);
-
-    expect(css).toBe('@supports selector(:has(a)) {\n  a:has(b) {\n    opacity: 0;\n  }\n}');
   });
 });

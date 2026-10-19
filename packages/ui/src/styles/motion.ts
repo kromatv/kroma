@@ -1,4 +1,4 @@
-import { atSupports, keyframes, rule, type SheetEntry } from './sheet.ts';
+import { keyframes, rule, type SheetEntry } from './sheet.ts';
 
 const IMG_WAIT = rule('img[data-kroma-reveal="wait"]', {
   opacity: 0,
@@ -13,30 +13,28 @@ const IMG_FAILSAFE = keyframes('kroma-img-failsafe', [rule('to', { opacity: 1 })
 
 const UNIT = '[data-kroma-fade-unit]';
 
-const WAITING = 'img[data-kroma-reveal="wait"]';
-
 const UNIT_FAILSAFE = keyframes('kroma-unit-failsafe', [
   rule('to', { opacity: 1, visibility: 'visible' }),
 ]);
 
-const FADE_UNIT = atSupports('selector(:has(a))', [
+const FADE_UNIT = [
   rule(UNIT, {
     willChange: 'opacity',
-    transitionProperty: 'opacity, visibility',
+    transitionProperty: 'opacity',
     transitionDuration: '400ms',
     transitionTimingFunction: 'ease',
   }),
-  rule(`${UNIT}:has(${WAITING})`, {
+  rule(`${UNIT}[data-kroma-wait]`, {
     opacity: 0,
     visibility: 'hidden',
     animation: 'kroma-unit-failsafe 1ms linear 1500ms forwards',
   }),
   rule(`${UNIT} img[data-kroma-reveal]`, { opacity: 1, animation: 'none', transition: 'none' }),
-  rule(`:has(> ${UNIT}):not(:has(> ${UNIT} ${WAITING}))`, {
+  rule('[data-kroma-art-in]', {
     backgroundColor: 'transparent',
     transition: 'background-color 0s linear 400ms',
   }),
-]);
+];
 
 const BREATHE = keyframes('kroma-breathe', [
   rule(['0%', '100%'], { opacity: 0.45 }),
@@ -55,7 +53,7 @@ export const MOTION: readonly SheetEntry[] = [
   IMG_SHOWN,
   IMG_FAILSAFE,
   UNIT_FAILSAFE,
-  FADE_UNIT,
+  ...FADE_UNIT,
   BREATHE,
   FADE_IN,
   POP_IN,

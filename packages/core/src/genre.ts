@@ -7,13 +7,24 @@ import type { Translate } from '@kromatv/i18n';
 import { genreRowOfSlug } from './genre-glyph';
 import { GENRES, type GenreCopyKey, type GenreRow, type GenreSlug } from './genre-table';
 import { SUPPORTED_LOCALES, translate } from './i18n';
-import { slugify as fold } from './slug';
+import { slugify } from './slug';
 
 export type { GenreRow, GenreSlug } from './genre-table';
 export { GENRES } from './genre-table';
 
 // The combining-marks range, not `\p{M}`: this module ships to the legacy webOS
 // tier, whose engine cannot parse unicode property escapes.
+const SLUGS = new Map<string, string>();
+
+function fold(name: string): string {
+  let slug = SLUGS.get(name);
+  if (slug === undefined) {
+    slug = slugify(name);
+    if (SLUGS.size < 4096) SLUGS.set(name, slug);
+  }
+  return slug;
+}
+
 function labelKey(slug: GenreSlug): GenreCopyKey {
   return `genre.${slug}`;
 }

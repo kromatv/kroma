@@ -40,9 +40,25 @@ const fadeIn = (duration: number, scope: StyleScope) =>
   );
 
 const REVEAL = 'data-kroma-reveal';
+const UNIT = '[data-kroma-fade-unit]';
+const WAIT = 'data-kroma-wait';
+const ART_IN = 'data-kroma-art-in';
+
+function hold(unit: HTMLElement | null): void {
+  unit?.setAttribute(WAIT, '');
+  unit?.parentElement?.removeAttribute(ART_IN);
+}
+
+function release(unit: HTMLElement | null, shown: boolean): void {
+  unit?.removeAttribute(WAIT);
+  if (shown) unit?.parentElement?.setAttribute(ART_IN, '');
+  else unit?.parentElement?.removeAttribute(ART_IN);
+}
 
 function reveal(event: SyntheticEvent<HTMLImageElement>): void {
-  event.currentTarget.setAttribute(REVEAL, 'in');
+  const img = event.currentTarget;
+  img.setAttribute(REVEAL, 'in');
+  release(img.closest<HTMLElement>(UNIT), true);
 }
 
 function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
@@ -74,9 +90,20 @@ function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
           alt={at.alt}
           {...{ [REVEAL]: 'wait' }}
           ref={(el) => {
-            if (!(el?.complete && el.naturalWidth > 0)) return;
-            el.setAttribute(REVEAL, 'shown');
-            at.markLoaded();
+            if (!el) return;
+            const unit = el.closest<HTMLElement>(UNIT);
+            if (el.getAttribute(REVEAL) === 'in') {
+              release(unit, true);
+              return;
+            }
+            if (el.complete && el.naturalWidth > 0) {
+              el.setAttribute(REVEAL, 'shown');
+              release(unit, true);
+              at.markLoaded();
+              return;
+            }
+            hold(unit);
+            return () => release(unit, false);
           }}
           loading={at.priority ? 'eager' : 'lazy'}
           fetchPriority={at.priority ? 'high' : undefined}

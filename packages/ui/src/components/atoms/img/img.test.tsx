@@ -174,6 +174,55 @@ describe('Img', () => {
     expect(under(container)?.getAttribute('src')).toBe('a.jpg');
   });
 
+  describe('inside a card that fades as one unit', () => {
+    const inUnit = (props: ImgProps) =>
+      createElement(
+        'div',
+        { 'data-testid': 'frame' },
+        createElement('div', { 'data-kroma-fade-unit': '', 'data-testid': 'unit' }, el(props)),
+      );
+    const parts = (root: HTMLElement) => ({
+      frame: root.querySelector('[data-testid="frame"]') as HTMLElement,
+      unit: root.querySelector('[data-testid="unit"]') as HTMLElement,
+    });
+
+    it('holds the unit until its art loads, then clears the frame under it', () => {
+      const { container } = render(inUnit({ src: 'a.jpg' }));
+      const { frame, unit } = parts(container);
+      expect(unit.hasAttribute('data-kroma-wait')).toBe(true);
+      expect(frame.hasAttribute('data-kroma-art-in')).toBe(false);
+
+      const img = main(container);
+      if (!img) throw new Error('no <img> rendered');
+      fireEvent.load(img);
+
+      expect(unit.hasAttribute('data-kroma-wait')).toBe(false);
+      expect(frame.hasAttribute('data-kroma-art-in')).toBe(true);
+    });
+
+    it('never holds a unit whose art the browser had already decoded', () => {
+      alreadyDecoded();
+      const { container } = render(inUnit({ src: 'a.jpg' }));
+      const { frame, unit } = parts(container);
+      expect(unit.hasAttribute('data-kroma-wait')).toBe(false);
+      expect(frame.hasAttribute('data-kroma-art-in')).toBe(true);
+    });
+
+    it('lets the unit go when the art fails or goes away', () => {
+      const { container, rerender } = render(inUnit({ src: 'bad.jpg' }));
+      const img = main(container);
+      if (!img) throw new Error('no <img> rendered');
+      fireEvent.error(img);
+      expect(parts(container).unit.hasAttribute('data-kroma-wait')).toBe(false);
+
+      rerender(inUnit({ src: 'a.jpg' }));
+      expect(parts(container).unit.hasAttribute('data-kroma-wait')).toBe(true);
+      rerender(inUnit({ src: null }));
+      expect(parts(container).unit.hasAttribute('data-kroma-wait')).toBe(false);
+      expect(parts(container).frame.hasAttribute('data-kroma-art-in')).toBe(false);
+    });
+  });
+
   it('skips the underlay when noCrossFade is set', () => {
     const { container, rerender } = render(el({ src: 'a.jpg', noCrossFade: true }));
     const first = main(container);
