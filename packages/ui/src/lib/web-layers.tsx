@@ -2,6 +2,7 @@ import type { ReactNode, SyntheticEvent } from 'react';
 import { resolveStyles, type StyleScope, sharedStyle, styles } from '#ui/core';
 import type { Radius } from '#ui/core/tokens/layout';
 import { classes } from '#ui/lib/classed';
+import { isImageReady, markImageReady } from '#ui/lib/image-ready';
 
 interface WebLayersArgs {
   src: string | null;
@@ -98,7 +99,7 @@ function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
               release(unit, true);
               return;
             }
-            if (el.complete && el.naturalWidth > 0) {
+            if ((el.complete && el.naturalWidth > 0) || isImageReady(src)) {
               el.setAttribute(REVEAL, 'shown');
               release(unit, true);
               at.markLoaded();
@@ -113,7 +114,8 @@ function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
           decoding="async"
           draggable={false}
           onLoad={(event) => {
-            reveal(event);
+            markImageReady(src);
+            if (event.currentTarget.getAttribute(REVEAL) !== 'shown') reveal(event);
             at.markLoaded();
             if (at.onCovered) setTimeout(() => at.onCovered?.(src), at.duration);
             at.onLoad?.();

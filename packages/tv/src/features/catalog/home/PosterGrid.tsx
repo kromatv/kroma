@@ -27,6 +27,8 @@ const POSTER_RATIO = 3 / 2;
 const GAP = 24;
 const ROW_GAP = 32;
 
+const posterAt = (card: GridCard, width: number) => card.poster(width);
+
 /** The 2:3 poster grid for the Films / Séries browse views. Virtualised: only the rows near the
  * viewport are mounted, so a 2000-title library costs the same as a 40-title one. */
 function PosterGridImpl({ cards }: Readonly<{ cards: GridCard[] }>) {
@@ -40,6 +42,7 @@ function PosterGridImpl({ cards }: Readonly<{ cards: GridCard[] }>) {
       px={SCREEN_PAD}
       pt={32}
       width={STAGE_W}
+      art={posterAt}
       renderItem={(c, index, width) => (
         <PosterCard
           // The grid's entry point. tvOS picks by geometry and the web engine by

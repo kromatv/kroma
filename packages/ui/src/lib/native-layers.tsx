@@ -2,6 +2,7 @@ import { Fragment, type ReactNode } from 'react';
 import { Animated, View } from 'react-native';
 import { absoluteFill } from '#ui/core/tokens';
 import type { ImageBackend } from '#ui/lib/image-backend';
+import { isImageReady, markImageReady } from '#ui/lib/image-ready';
 
 interface Size {
   width: number;
@@ -31,22 +32,24 @@ function nativeLayers(at: Readonly<NativeLayersArgs>): ReactNode {
   const { backend } = at;
   // A backend that fades itself (expo-image) is left alone; one that doesn't
   // (React Native's <Image>) is cross-faded here instead.
-  const leaf = (uri: string, animated: boolean) =>
-    backend.render({
+  const leaf = (uri: string, animated: boolean) => {
+    const fadeMs = isImageReady(uri) ? 0 : at.duration;
+    return backend.render({
       uri,
       fit: mode,
-      fadeMs: at.duration,
+      fadeMs,
       accessibilityLabel: at.alt || undefined,
       onLoad: (size: Size | null) => {
         if (size) at.setNatural(size);
+        markImageReady(uri);
         at.markLoaded();
         const cover = () => at.onCovered?.(uri);
         if (backend.fades) {
-          if (at.onCovered) setTimeout(cover, at.duration);
+          if (at.onCovered) setTimeout(cover, fadeMs);
         } else {
           Animated.timing(at.opacity, {
             toValue: 1,
-            duration: at.duration,
+            duration: fadeMs,
             useNativeDriver: true,
           }).start(({ finished }) => {
             if (finished) cover();
@@ -61,6 +64,7 @@ function nativeLayers(at: Readonly<NativeLayersArgs>): ReactNode {
       // does not run at all.
       style: [layer, animated && !backend.fades ? { opacity: at.opacity } : null],
     });
+  };
 
   return (
     <>

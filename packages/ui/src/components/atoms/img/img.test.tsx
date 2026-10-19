@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { createElement } from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { markImageReady, resetImageReady } from '#ui/lib/image-ready';
 import { Img, type ImgProps } from './img';
 
 const el = (props: ImgProps) => createElement(Img, props);
@@ -29,6 +30,8 @@ const frame = async () => {
 const reveal = (img: Element | null) => img?.getAttribute('data-kroma-reveal');
 
 describe('Img', () => {
+  beforeEach(() => resetImageReady());
+
   it('waits transparent for its own load, then fades in', () => {
     const { container } = render(el({ src: 'a.jpg' }));
     const img = main(container);
@@ -41,6 +44,14 @@ describe('Img', () => {
     fireEvent.load(img);
 
     expect(reveal(img)).toBe('in');
+  });
+
+  it('shows art already prefetched without a fade', () => {
+    markImageReady('a.jpg');
+
+    const { container } = render(el({ src: 'a.jpg' }));
+
+    expect(reveal(main(container))).toBe('shown');
   });
 
   it('shows art the browser had already decoded without a fade', () => {
