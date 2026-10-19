@@ -108,24 +108,3 @@ export function useArtworkPref(): ReactivePref<ArtworkQuality> {
   if (!pref) throw new Error('Artwork preference requires its owning root');
   return pref;
 }
-
-/** Whether glass surfaces blur what is behind them.
- *
- * Off by default on a television, and measured both ways: a 2024 Samsung panel
- * gave 40fps with the web tier's backdrop-filter and 60 without, and an Android
- * TV box drops to ~52fps with double-digit jank once every frosted control
- * blurs the screen behind it. The plain fill underneath is what the design
- * falls back to anyway, so the switch is there for whoever wants to pay. */
-export function createBlurPref(storage?: SessionStorage | null): ReactivePref<'on' | 'off'> {
-  return reactivePref('kroma:blur', ['on', 'off'] as const, 'off', storage);
-}
-const BlurContext = createContext<ReactivePref<'on' | 'off'> | null>(null);
-export const BlurPrefProvider = BlurContext.Provider;
-export function useBlurPref(): ReactivePref<'on' | 'off'> {
-  const storage = useDeviceStore();
-  const provided = useContext(BlurContext);
-  const [owned] = useState(() => (provided ? null : createBlurPref(storage)));
-  const pref = provided ?? owned;
-  if (!pref) throw new Error('Blur preference requires its owning root');
-  return pref;
-}
