@@ -19,8 +19,6 @@ import { STAGE_W } from '#tv/shared/stage';
 const SETTLE_MS = 400;
 const FADE_MS = 500;
 
-// Two separate layers rather than one comma-separated background-image: a
-// multi-value background is CSS-only, React Native's gradients cannot do it.
 const VEIL_HORIZONTAL = `linear-gradient(90deg, ${shade(0.8)} 0%, ${shade(0.38)} 48%, ${shade(0.12)} 100%)`;
 const VEIL_VERTICAL = `linear-gradient(0deg, ${SHADE.full} 0%, ${shade(0.78)} 30%, ${shade(0.35)} 68%, ${shade(0.12)} 100%)`;
 
@@ -37,10 +35,11 @@ export function AmbientBackdrop({ entry }: Readonly<{ entry: CatalogEntry | null
         src={entryBackdrop(client, settled)}
         tint={tintGradient(settled ? posterColors(settled.item.id) : FALLBACK_TINT)}
       />
-      {/* Each veil on its own compositing layer (`translateZ(0)`): without it
-          both 1920x1080 gradients re-rasterize on every frame of the fade. */}
-      <Box fill pointerEvents="none" style={VEIL_H} />
-      <Box fill pointerEvents="none" style={VEIL_V} />
+      {/* One element for both gradients, on its own compositing layer
+          (`translateZ(0)`): without it the 1920x1080 gradients re-rasterize on
+          every frame of the fade, and a second element is a second full-screen
+          layer the GPU blends on every frame. */}
+      <Box fill pointerEvents="none" style={VEIL} />
     </Box>
   );
 }
@@ -53,8 +52,7 @@ function AmbientArtImpl({ src, tint }: Readonly<{ src: string | null; tint: stri
 
 const AmbientArt = memo(AmbientArtImpl);
 
-const VEIL_H = [gradient(VEIL_HORIZONTAL), promote()];
-const VEIL_V = [gradient(VEIL_VERTICAL), promote()];
+const VEIL = [gradient(`${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`), promote()];
 
 const FALLBACK_TINT: [string, string] = [colors.surface2, colors.bg];
 
