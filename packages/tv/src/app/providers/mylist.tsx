@@ -2,18 +2,10 @@
 // client) via the my-list API, hydrated once into a set; toggles are optimistic
 // and revert if the server call fails. Mirrors the watched provider.
 
+import type { KromaClient } from '@kromatv/client';
 import type { SubjectId } from '@kromatv/client/media';
-import {
-  createContext,
-  type ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-import { useAuth } from '#tv/app/providers/auth';
-import { useConnection } from '#tv/app/providers/connection';
+import { createContext, type ReactNode, useCallback, useContext, useMemo } from 'react';
+import { useSignedInIds } from '#tv/app/providers/signed-in-ids';
 
 interface MyList {
   has: (id: SubjectId) => boolean;
@@ -23,27 +15,10 @@ interface MyList {
 
 const Ctx = createContext<MyList | null>(null);
 
+const loadMyList = (client: KromaClient) => client.playback.myList();
+
 export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const { user, ready } = useAuth();
-  const { client } = useConnection();
-  const [ids, setIds] = useState<ReadonlySet<SubjectId>>(() => new Set());
-
-  const active = ready && !!user && !!client;
-  const [wasActive, setWasActive] = useState(active);
-  if (wasActive !== active) {
-    setWasActive(active);
-    if (!active) setIds(new Set());
-  }
-
-  const refresh = useCallback(() => {
-    if (!ready || !user || !client) return;
-    client.playback
-      .myList()
-      .then((list) => setIds(new Set(list)))
-      .catch(() => undefined);
-  }, [client, user, ready]);
-
-  useEffect(() => refresh(), [refresh]);
+  const { ids, setIds, client, refresh } = useSignedInIds(loadMyList);
 
   const setInList = useCallback(
     (id: SubjectId, inList: boolean) => {

@@ -1,5 +1,5 @@
 import type { MediaItem, Show, SubjectId } from '@kromatv/client/media';
-import { collectGenres, hasGenre, posterColors, type SortMode, sortTitles } from '@kromatv/core';
+import { collectGenres, hasGenre, type SortMode, sortTitles } from '@kromatv/core';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Text, useFocusNav } from '@kromatv/ui/kit';
@@ -11,8 +11,8 @@ import { useClient, useNav, useParams } from '#tv/app/router';
 import {
   AmbientBackdrop,
   type CatalogEntry as Entry,
-  entryPoster,
 } from '#tv/features/catalog/home/AmbientBackdrop';
+import { entryCard } from '#tv/features/catalog/home/entry-card';
 import { HintBar } from '#tv/features/catalog/home/HintBar';
 import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid';
 import { EMPTY } from '#tv/features/catalog/screenStyle';
@@ -85,17 +85,9 @@ export function TvGrid() {
   const cards = useMemo<GridCard[]>(
     () =>
       entries.map((e) => ({
-        id: e.item.id,
-        title: e.item.title,
+        ...entryCard(e, { client, nav, openMenu: titleMenu.open, focus: setFocusId }),
         overline: t(e.kind === 'show' ? 'content.series' : 'content.film'),
-        poster: (width: number) => entryPoster(client, e, width),
-        colors: posterColors(e.item.id),
         watched: watched.has(e.item.id),
-        progress: e.kind === 'show' ? (e.item.progress ?? null) : null,
-        onClick: () =>
-          e.kind === 'movie' ? nav.go('movie', { item: e.item }) : nav.go('show', { show: e.item }),
-        onLongPress: () => titleMenu.open(e),
-        onFocus: () => setFocusId(e.item.id),
       })),
     [entries, client, nav, watched, titleMenu.open, t],
   );
