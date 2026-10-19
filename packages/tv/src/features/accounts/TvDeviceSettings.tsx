@@ -1,5 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { Box, Text, useFocusNav } from '@kromatv/ui/kit';
+import { Box, Text } from '@kromatv/ui/kit';
 import { useNav } from '#tv/app/router';
 import { DEVICE_GROUPS } from '#tv/app/settings/groups';
 import { GATE_MARK, KromaMark } from '#tv/shared/ui';
@@ -17,7 +17,6 @@ const GROUP_PANES: readonly SettingsPane[] = DEVICE_GROUPS.map((group) => ({
 export function TvDeviceSettings() {
   const nav = useNav();
   const t = useT();
-  useFocusNav({ onBack: nav.back });
 
   return (
     <SettingsPanes

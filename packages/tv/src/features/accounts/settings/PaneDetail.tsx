@@ -1,10 +1,14 @@
 import { useT } from '@kromatv/ui';
-import { Box, FocusColumn, styles, Text, useStyles } from '@kromatv/ui/kit';
+import { Box, FocusColumn, type FocusHandle, styles, Text, useStyles } from '@kromatv/ui/kit';
+import type { Ref } from 'react';
 import { SettingsRows } from '../SettingsRows';
 import type { SettingsPane } from './panes';
 
 /** The right pane: the rows of the group the left pane is on, or what its action does. */
-export function PaneDetail({ pane }: Readonly<{ pane: SettingsPane }>) {
+export function PaneDetail({
+  pane,
+  entry,
+}: Readonly<{ pane: SettingsPane; entry: Ref<FocusHandle> }>) {
   const s = useStyles(sDefinition);
   const t = useT();
   const title = pane.kind === 'group' ? pane.group.label : pane.label;
@@ -15,7 +19,7 @@ export function PaneDetail({ pane }: Readonly<{ pane: SettingsPane }>) {
       </Text>
       {pane.kind === 'group' ? (
         <FocusColumn key={pane.group.id} style={s.rows}>
-          <SettingsRows items={pane.group.items} entry={false} />
+          <SettingsRows items={pane.group.items} entry={false} firstHandle={entry} />
         </FocusColumn>
       ) : (
         <Text variant="bodyTv" color="textDim" style={s.description}>

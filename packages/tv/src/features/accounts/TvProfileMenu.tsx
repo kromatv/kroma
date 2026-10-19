@@ -1,4 +1,4 @@
-import { Avatar, Box, Text, useFocusNav } from '@kromatv/ui/kit';
+import { Avatar, Box, Text } from '@kromatv/ui/kit';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
@@ -17,9 +17,8 @@ export function TvProfileMenu() {
   const nav = useNav();
   const { activeServerUrl, client } = useConnection();
   const { user, switchProfile, logout, forget } = useAuth();
-  useFocusNav({ onBack: nav.back });
 
-  if (!user) return null;
+  if (!user || !client) return null;
 
   const onSignOut = () => {
     if (activeServerUrl) forget(user.id, activeServerUrl);
@@ -63,7 +62,7 @@ export function TvProfileMenu() {
             seed={user.id}
             size={72}
             roundness={0.27}
-            src={client?.media.artwork.resolve(user.avatarUrl, 72)}
+            src={client.media.artwork.resolve(user.avatarUrl, 72)}
           />
           <Text variant="headingTv" lines={1}>
             {user.username}

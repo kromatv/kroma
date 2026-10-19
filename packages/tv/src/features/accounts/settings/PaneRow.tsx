@@ -1,5 +1,6 @@
 import { useT } from '@kromatv/ui';
-import { ListRow } from '@kromatv/ui/kit';
+import { type FocusHandle, ListRow } from '@kromatv/ui/kit';
+import type { Ref } from 'react';
 import { GroupSummary } from './GroupSummary';
 import { type SettingsPane, paneId } from './panes';
 
@@ -7,12 +8,23 @@ interface PaneRowProps {
   pane: SettingsPane;
   active: boolean;
   entry: boolean;
+  handle: Ref<FocusHandle>;
   onFocus: (id: string) => void;
+  onBlur: () => void;
+  onEnter: () => void;
 }
 
-/** A left-pane row: a group previews its rows on the right as it takes focus,
- * an action runs on OK. */
-export function PaneRow({ pane, active, entry, onFocus }: Readonly<PaneRowProps>) {
+/** A left-pane row: a group previews its rows on the right as it takes focus
+ * and enters them on OK, an action runs on OK. */
+export function PaneRow({
+  pane,
+  active,
+  entry,
+  handle,
+  onFocus,
+  onBlur,
+  onEnter,
+}: Readonly<PaneRowProps>) {
   const t = useT();
   const id = paneId(pane);
   const face =
@@ -21,7 +33,7 @@ export function PaneRow({ pane, active, entry, onFocus }: Readonly<PaneRowProps>
           icon: pane.group.icon,
           label: pane.group.label,
           hint: <GroupSummary items={pane.group.summary} />,
-          run: undefined,
+          run: onEnter,
         }
       : { icon: pane.icon, label: pane.label, hint: pane.hint && t(pane.hint), run: pane.run };
   return (
@@ -32,7 +44,9 @@ export function PaneRow({ pane, active, entry, onFocus }: Readonly<PaneRowProps>
       autoFocus={entry}
       selected={active}
       chevron={pane.kind === 'group'}
+      focusHandle={handle}
       onFocus={() => onFocus(id)}
+      onBlur={onBlur}
       onPress={face.run}
     >
       <ListRow.Label>{t(face.label)}</ListRow.Label>

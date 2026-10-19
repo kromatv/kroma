@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { I18nProvider } from '@kromatv/ui';
-import { onScreen, wearsRing } from '@kromatv/ui/testing';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { createInputTestHost, onScreen, wearsRing } from '@kromatv/ui/testing';
+import { act, cleanup, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SettingsGroup } from '#tv/app/settings/groups';
 import { toggleItem } from '#tv/app/settings/items';
@@ -11,7 +11,10 @@ import { SettingsPanes } from './SettingsPanes';
 
 vi.mock('#tv/app/providers/handoffBeacon', () => ({ useHandoffBeacon: () => null }));
 
+const { clearPressGuard, render } = createInputTestHost();
+
 afterEach(cleanup);
+afterEach(clearPressGuard);
 
 const toggle = (id: string, label: 'profileMenu.perfHud' | 'settings.blur') =>
   toggleItem({ id, level: 'device', label, icon: 'check', useValue: () => [false, () => {}] });
@@ -77,8 +80,21 @@ describe('SettingsPanes', () => {
     const run = mount();
     press('ArrowDown');
     press('ArrowDown');
+    clearPressGuard();
     expect(screen.getByText(/App and server versions/)).toBeTruthy();
     press('Enter');
     expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it('enters a group on OK, and Back returns to the group it came from', () => {
+    mount();
+    press('ArrowDown');
+    clearPressGuard();
+    press('Enter');
+    expect(wearsRing(screen.getByRole('switch'))).toBe(true);
+
+    press('Escape');
+    expect(wearsRing(screen.getByRole('switch'))).toBe(false);
+    expect(wearsRing(screen.getByRole('button', { name: /^Device/ }))).toBe(true);
   });
 });

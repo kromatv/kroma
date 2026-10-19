@@ -2,15 +2,17 @@ import { useT } from '@kromatv/ui';
 import {
   BackButton,
   Box,
+  type FocusHandle,
   FocusColumn,
   FocusRegion,
   Hint,
   shade,
   styles,
+  useFocusNav,
   useStyles,
   Veil,
 } from '@kromatv/ui/kit';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { groupAvailable } from '#tv/app/settings/groups';
 import { useNav } from '#tv/app/router';
 import { BeaconMark } from '#tv/shared/ui';
@@ -34,7 +36,7 @@ function shown(pane: SettingsPane): boolean {
 }
 
 /** The two-pane settings screen: groups and actions on the left, and on the
- * right the rows of whichever one holds the focus, reached with Right. */
+ * right the rows of whichever one holds the focus, reached with Right or OK and left with Left or Back. */
 export function SettingsPanes({ header, sections }: Readonly<SettingsPanesProps>) {
   const s = useStyles(sDefinition);
   const t = useT();
@@ -44,6 +46,24 @@ export function SettingsPanes({ header, sections }: Readonly<SettingsPanesProps>
   const [activeId, setActiveId] = useState(() => (panes[0] ? paneId(panes[0]) : ''));
   const active = panes.find((pane) => paneId(pane) === activeId) ?? panes[0];
   const entryId = panes[0] ? paneId(panes[0]) : '';
+  const rows = useRef(new Map<string, FocusHandle>());
+  const detail = useRef<FocusHandle>(null);
+  const onLeft = useRef(true);
+
+  useFocusNav({
+    onBack: () => {
+      if (onLeft.current || !active) {
+        nav.back();
+        return;
+      }
+      rows.current.get(paneId(active))?.focus();
+    },
+  });
+
+  const register = (id: string) => (handle: FocusHandle | null) => {
+    if (handle) rows.current.set(id, handle);
+    else rows.current.delete(id);
+  };
 
   return (
     <Box fill z={10}>
@@ -64,7 +84,15 @@ export function SettingsPanes({ header, sections }: Readonly<SettingsPanesProps>
                   pane={pane}
                   active={active !== undefined && paneId(active) === paneId(pane)}
                   entry={paneId(pane) === entryId}
-                  onFocus={setActiveId}
+                  handle={register(paneId(pane))}
+                  onFocus={(id) => {
+                    onLeft.current = true;
+                    setActiveId(id);
+                  }}
+                  onBlur={() => {
+                    onLeft.current = false;
+                  }}
+                  onEnter={() => detail.current?.focus()}
                 />
               ))}
             </Box>
@@ -78,7 +106,7 @@ export function SettingsPanes({ header, sections }: Readonly<SettingsPanesProps>
             textStyle={weight.medium}
           />
         </FocusColumn>
-        {active ? <PaneDetail pane={active} /> : null}
+        {active ? <PaneDetail pane={active} entry={detail} /> : null}
       </FocusRegion>
       <BeaconMark />
     </Box>

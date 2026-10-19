@@ -1,6 +1,6 @@
 import { useLocale, useT } from '@kromatv/ui';
-import { ListRow, Text } from '@kromatv/ui/kit';
-import { useMemo, useState } from 'react';
+import { type FocusHandle, ListRow, Text } from '@kromatv/ui/kit';
+import { type Ref, useMemo, useState } from 'react';
 import type { ChoiceItem, SettingsEntry, ToggleItem } from '#tv/app/settings/items';
 import { ChoicePicker } from './ChoicePicker';
 
@@ -9,7 +9,8 @@ import { ChoicePicker } from './ChoicePicker';
 export function SettingsRows({
   items,
   entry = true,
-}: Readonly<{ items: readonly SettingsEntry[]; entry?: boolean }>) {
+  firstHandle,
+}: Readonly<{ items: readonly SettingsEntry[]; entry?: boolean; firstHandle?: Ref<FocusHandle> }>) {
   const visible = items.filter(
     (item): item is Exclude<SettingsEntry, false | null | undefined> =>
       item !== false && item != null && (!item.available || item.available()),
@@ -20,8 +21,11 @@ export function SettingsRows({
         // First rendered row is the focus entry point: tvOS picks by geometry,
         // the web engine by DOM order.
         const first = entry && index === 0;
-        if (item.kind === 'choice') return <ChoiceRow key={item.id} item={item} first={first} />;
-        return <ToggleRow key={item.id} item={item} first={first} />;
+        const handle = index === 0 ? firstHandle : undefined;
+        if (item.kind === 'choice') {
+          return <ChoiceRow key={item.id} item={item} first={first} handle={handle} />;
+        }
+        return <ToggleRow key={item.id} item={item} first={first} handle={handle} />;
       })}
     </>
   );
@@ -36,7 +40,11 @@ function OnOff({ on }: Readonly<{ on: boolean }>) {
   );
 }
 
-function ChoiceRow({ item, first }: Readonly<{ item: ChoiceItem; first?: boolean }>) {
+function ChoiceRow({
+  item,
+  first,
+  handle,
+}: Readonly<{ item: ChoiceItem; first?: boolean; handle?: Ref<FocusHandle> }>) {
   const t = useT();
   const locale = useLocale();
   const [value, set] = item.useValue();
@@ -59,6 +67,7 @@ function ChoiceRow({ item, first }: Readonly<{ item: ChoiceItem; first?: boolean
         ground="surface"
         icon={item.icon}
         autoFocus={first}
+        focusHandle={handle}
         onPress={list ? () => setPicking(true) : cycle}
       >
         <ListRow.Label>{t(item.label)}</ListRow.Label>
@@ -83,7 +92,11 @@ function ChoiceRow({ item, first }: Readonly<{ item: ChoiceItem; first?: boolean
   );
 }
 
-function ToggleRow({ item, first }: Readonly<{ item: ToggleItem; first?: boolean }>) {
+function ToggleRow({
+  item,
+  first,
+  handle,
+}: Readonly<{ item: ToggleItem; first?: boolean; handle?: Ref<FocusHandle> }>) {
   const t = useT();
   const [on, set] = item.useValue();
   return (
@@ -91,6 +104,7 @@ function ToggleRow({ item, first }: Readonly<{ item: ToggleItem; first?: boolean
       ground="surface"
       icon={item.icon}
       autoFocus={first}
+      focusHandle={handle}
       role="switch"
       checked={on}
       onPress={() => set(!on)}
