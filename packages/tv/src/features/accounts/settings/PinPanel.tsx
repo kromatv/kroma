@@ -1,6 +1,6 @@
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { type FocusHandle, ListRow, styles, Text, useStyles } from '@kromatv/ui/kit';
+import { Box, type FocusHandle, ListRow, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { type RefObject, useEffect, useState } from 'react';
 import type { RowIcon } from '#tv/app/settings/items';
 import { useAuth } from '#tv/app/providers/auth';
@@ -105,12 +105,13 @@ export function PinPanel({ entry }: Readonly<{ entry: RefObject<FocusHandle | nu
         <Text variant="bodyTv" color="textDim">
           {t(subtitle(step))}
         </Text>
-        <PinEntry
-          label={t(subtitle(step))}
-          onSubmit={submit}
-          wrongKey={step.kind === 'current' ? 'auth.pinCurrentWrong' : 'auth.pinInvalid'}
-          align="flex-start"
-        />
+        <Box self="flex-start">
+          <PinEntry
+            label={t(subtitle(step))}
+            onSubmit={submit}
+            wrongKey={step.kind === 'current' ? 'auth.pinCurrentWrong' : 'auth.pinInvalid'}
+          />
+        </Box>
       </>
     );
   }
