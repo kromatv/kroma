@@ -1,7 +1,7 @@
-import { useStyleScope } from './style-context';
+import { useContext, useSyncExternalStore } from 'react';
+import { StyleRuntimeContext } from './style-context';
+import type { StyleRuntime } from './style-runtime';
 import { DEFAULT_STYLE_SCOPE, type StyleScope } from './style-scope';
-import { useBreakpointStep } from './use-breakpoint';
-import { useThemeVersion } from './use-theme';
 // Reusable styles that are not a variant of anything.
 //
 // `sv` covers a component's design: what changes with a prop or a state.
@@ -96,13 +96,36 @@ export function resolveStyles<S>(definition: Styles<S>, scope: StyleScope): Styl
   return (definition as StyleBinding<S>)[RESOLVE](scope);
 }
 
+type Subscribe = (listener: () => void) => () => void;
+
+const EMPTY_SUBSCRIBE: Subscribe = () => () => {};
+const subscribers = new WeakMap<StyleRuntime, readonly [Subscribe, Subscribe]>();
+
+function subscriberOf(runtime: StyleRuntime | null, responsive: boolean): Subscribe {
+  if (!runtime) return EMPTY_SUBSCRIBE;
+  let pair = subscribers.get(runtime);
+  if (!pair) {
+    const themed: Subscribe = (listener) => runtime.theme.onThemeChange(listener);
+    const both: Subscribe = (listener) => {
+      const stopTheme = runtime.theme.onThemeChange(listener);
+      const stopWidth = runtime.breakpoints.subscribe(listener);
+      return () => {
+        stopTheme();
+        stopWidth();
+      };
+    };
+    pair = [themed, both];
+    subscribers.set(runtime, pair);
+  }
+  return pair[responsive ? 1 : 0];
+}
+
 /** Bind a declaration to this root and subscribe only to relevant breakpoint steps. */
 export function useStyles<S>(definition: Styles<S>): Styles<S> {
-  const scope = useStyleScope();
+  const runtime = useContext(StyleRuntimeContext);
   const binding = definition as StyleBinding<S>;
-  const version = useThemeVersion();
-  const step = useBreakpointStep(binding[MASK]);
-  return binding[RESOLVE](scope, version, step);
+  const read = () => binding[RESOLVE](runtime?.styleScope() ?? DEFAULT_STYLE_SCOPE);
+  return useSyncExternalStore(subscriberOf(runtime, binding[MASK] !== 0), read, read);
 }
 
 /** One style, for the handful of places a set of one would be noise. Resolved

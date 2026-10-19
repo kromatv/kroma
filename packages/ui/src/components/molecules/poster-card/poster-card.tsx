@@ -1,4 +1,4 @@
-import { type StyleScope, sharedStyle, styles, useStyleScope, useTheme } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // <PosterCard>: the 2:3 portrait tile of the browse grids (Films, Series).
@@ -57,7 +57,6 @@ function PosterCard({
 
   const s = useStyles(sDefinition);
 
-  const { radius } = useTheme();
   return (
     <Focusable
       onPress={onPress}
@@ -72,7 +71,7 @@ function PosterCard({
         <Img
           src={art}
           background={WEB ? undefined : tintGradient(tint)}
-          radius={WEB ? undefined : radius.xl}
+          radius={WEB ? undefined : 'xl'}
           fill
           opaque
           noCrossFade

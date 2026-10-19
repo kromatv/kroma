@@ -1,5 +1,5 @@
 import type { ViewStyle } from 'react-native';
-import { type StyleScope, sharedStyle, styles, useStyleScope, useTheme } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { fontSizes as textSizes } from '#ui/core/tokens';
 // <MediaCard>: the 16:9 landscape rail tile of the 10-foot home. Focusable, so
@@ -73,7 +73,6 @@ function MediaCard({
 
   const s = useStyles(sDefinition);
 
-  const { radius } = useTheme();
   return (
     <Focusable
       onPress={onPress}
@@ -88,7 +87,7 @@ function MediaCard({
         <Img
           src={art}
           background={WEB ? undefined : tintGradient(tint)}
-          radius={WEB ? undefined : radius.xl}
+          radius={WEB ? undefined : 'xl'}
           position="50% 28%"
           fill
           opaque
