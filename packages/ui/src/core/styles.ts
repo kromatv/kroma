@@ -1,7 +1,6 @@
-import { useStyleScope } from './style-context';
+import { use } from 'react';
+import { BreakpointIndexContext, useStyleScope } from './style-context';
 import { DEFAULT_STYLE_SCOPE, type StyleScope } from './style-scope';
-import { useBreakpointStep } from './use-breakpoint';
-import { useThemeVersion } from './use-theme';
 // Reusable styles that are not a variant of anything.
 //
 // `sv` covers a component's design: what changes with a prop or a state.
@@ -98,11 +97,11 @@ export function resolveStyles<S>(definition: Styles<S>, scope: StyleScope): Styl
 
 /** Bind a declaration to this root and subscribe only to relevant breakpoint steps. */
 export function useStyles<S>(definition: Styles<S>): Styles<S> {
-  const scope = useStyleScope();
   const binding = definition as StyleBinding<S>;
-  const version = useThemeVersion();
-  const step = useBreakpointStep(binding[MASK]);
-  return binding[RESOLVE](scope, version, step);
+  const scope = useStyleScope();
+  if (binding[MASK] === 0) return binding[RESOLVE](scope);
+  const at = use(BreakpointIndexContext);
+  return binding[RESOLVE](scope, undefined, at < 0 ? undefined : at);
 }
 
 /** One style, for the handful of places a set of one would be noise. Resolved

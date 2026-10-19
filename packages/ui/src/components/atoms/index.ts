@@ -75,6 +75,8 @@ export { Text } from './text';
 // through <Field>, whose <Field.Input> and <Field.Textarea> are the two doors.
 export type { TextAreaProps } from './text-area';
 export type { TextFieldProps, TextFieldType } from './text-field';
+export type { VeilProps } from './veil';
+export { Veil } from './veil';
 export type { WatchedBadgeProps } from './watched-badge';
 export { WatchedBadge } from './watched-badge';
 export type { WheelProps } from './wheel';

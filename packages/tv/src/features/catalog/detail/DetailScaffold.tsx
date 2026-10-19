@@ -5,7 +5,6 @@ import {
   colors,
   FocusScroll,
   FocusSlot,
-  gradient,
   Img,
   qualityTone,
   styles,
@@ -13,13 +12,13 @@ import {
   typeSpec as textRoles,
   tintGradient,
   useStyles,
+  Veil,
 } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 
-// Two layers rather than one comma-separated background-image: multi-value
-// backgrounds are a CSS-only luxury React Native's gradient support lacks.
 const VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 12%, transparent 68%)`;
 const VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 4%, transparent 60%)`;
+const VEIL = `${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`;
 
 /**
  * Shared chrome for the Film / Série detail screens: full-bleed backdrop,
@@ -56,10 +55,16 @@ export function TvDetailScaffold({
   const s = useStyles(sDefinition);
 
   return (
-    <Box fill bg="bg" overflow="hidden">
-      <Img src={backdrop} background={tintGradient(posterColors(id))} position="50% 18%" fill />
-      <Box fill pointerEvents="none" style={gradient(VEIL_HORIZONTAL)} />
-      <Box fill pointerEvents="none" style={gradient(VEIL_VERTICAL)} />
+    <Box fill overflow="hidden">
+      <Img
+        src={backdrop}
+        background={tintGradient(posterColors(id))}
+        position="50% 18%"
+        fill
+        layered
+        opaque
+      />
+      <Veil ramp={VEIL} />
 
       <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
         <FocusSlot>

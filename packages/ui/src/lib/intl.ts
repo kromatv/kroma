@@ -45,6 +45,18 @@ function numberFormat(locale: Locale, digits: number): Intl.NumberFormat {
   return made;
 }
 
+const COUNTS = new Map<Locale, Intl.NumberFormat>();
+
+/** A count with the locale's grouping: `1 064` in French, `1,064` in English. */
+export function formatCount(n: number, locale: Locale): string {
+  let made = COUNTS.get(locale);
+  if (!made) {
+    made = new Intl.NumberFormat(locale);
+    COUNTS.set(locale, made);
+  }
+  return made.format(n);
+}
+
 // `dateStyle` is Chromium 76, and the legacy television tier runs engines older
 // than that; Hermes without full ICU refuses it too. Both throw at construction
 // rather than ignoring it, so the shape is tried once per locale and a plain

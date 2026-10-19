@@ -28,6 +28,7 @@ const scaled = (
   duration: string,
   timing: string,
   scope: StyleScope,
+  layered = false,
 ): Record<string, unknown> =>
   sharedStyle(
     `scale:${key}:${scale}`,
@@ -36,6 +37,7 @@ const scaled = (
       transitionProperty: 'transform',
       transitionDuration: duration,
       transitionTimingFunction: timing,
+      ...(layered ? { willChange: 'transform' } : null),
     },
     scope,
   );
@@ -44,7 +46,7 @@ export function useFocusScale(focused: boolean, to: number): Record<string, unkn
   const scope = useStyleScope();
 
   if (to === 1) return RING_ONLY;
-  return scaled('focus', focused ? to : 1, DURATION, TIMING, scope);
+  return scaled('focus', focused ? to : 1, DURATION, TIMING, scope, true);
 }
 
 const DURATION_FAST = `${motion.duration.fast}ms`;

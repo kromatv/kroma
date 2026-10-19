@@ -26,6 +26,7 @@ import {
   themed,
   useBreakpointStep,
 } from '#ui/core';
+import { isStaticText, StaticText } from '#ui/lib/static-text';
 
 // Registered, not spread: a role read straight off the theme is a plain object,
 // which react-native-web re-serialises onto every string it paints.
@@ -141,19 +142,21 @@ function PaintedText({
   const layout = split.key
     ? sharedStyle(`txt:layout:${key}`, split.shorthand as StyleDecl, scope)
     : null;
-  return (
-    <RNText
-      {...split.rest}
-      numberOfLines={lines}
-      style={[
-        typeStyles(scope.theme)[variant],
-        font ? familyStyles(scope.theme)[font] : null,
-        ink,
-        layout,
-        style,
-        sizeFix(variant, style, scope),
-      ]}
-    />
+  const painted = [
+    typeStyles(scope.theme)[variant],
+    font ? familyStyles(scope.theme)[font] : null,
+    ink,
+    layout,
+    style,
+    sizeFix(variant, style, scope),
+  ];
+  const { rest } = split;
+  return isStaticText(rest) ? (
+    <StaticText style={painted} lines={lines} testID={rest.testID}>
+      {rest.children}
+    </StaticText>
+  ) : (
+    <RNText {...rest} numberOfLines={lines} style={painted} />
   );
 }
 

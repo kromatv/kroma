@@ -71,8 +71,12 @@ export function answer(url: string, movies: readonly MediaItem[]): Answer {
   };
 }
 
+export function isApiCall(url: URL): boolean {
+  return url.pathname.startsWith('/api/');
+}
+
 export async function stubApi(page: Page, movies: readonly MediaItem[]): Promise<void> {
-  await page.route('**/api/**', (route) => route.fulfill(answer(route.request().url(), movies)));
+  await page.route(isApiCall, (route) => route.fulfill(answer(route.request().url(), movies)));
 }
 
 /** The localStorage a signed-in television boots from, in the language the run

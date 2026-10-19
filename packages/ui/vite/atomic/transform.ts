@@ -5,6 +5,7 @@
 
 import MagicString from 'magic-string';
 import type { RuleEntry } from '#ui/core/atomic';
+import { type BoxLeaf, boxLocals, compileBox } from './box-props.ts';
 import type { CompiledRule } from './compile.ts';
 import { type CompiledLeaf, compileDeclaration } from './declaration.ts';
 import { evaluate } from './evaluate.ts';
@@ -32,11 +33,13 @@ const HELPER = '__kromaStatic';
 
 const INJECT = '__kromaInject';
 
+const BOX = '__kromaBox';
+
 type Api = 'styles' | 'style' | 'sv' | 'svFor';
 
 const APIS: ReadonlySet<string> = new Set<Api>(['styles', 'style', 'sv', 'svFor']);
 
-const PREFILTER = /\b(styles|style|sv)\s*\(|\bsvFor\b/;
+const PREFILTER = /\b(styles|style|sv)\s*\(|\bsvFor\b|<Box\b/;
 
 export interface Skip {
   readonly line: number;
@@ -86,6 +89,7 @@ interface Edit {
 
 class Rewrite {
   readonly edits: Edit[] = [];
+  readonly boxes: BoxLeaf[] = [];
   readonly skipped: Skip[] = [];
   private readonly code: string;
   private readonly scope: ModuleScope;
@@ -115,6 +119,16 @@ class Rewrite {
       if (!(error instanceof Unstatic)) throw error;
       this.skip(node, error.reason);
       return null;
+    }
+  }
+
+  box(opening: Node, locals: ReadonlySet<string>): void {
+    try {
+      const box = compileBox(opening, locals, this.scope, this.loader);
+      if (box) this.boxes.push(box);
+    } catch (error) {
+      if (!(error instanceof Unstatic)) throw error;
+      this.skip(opening, error.reason);
     }
   }
 
@@ -199,9 +213,20 @@ function visitCall(node: Node, bindings: Map<string, Api>, rewrite: Rewrite): vo
   else rewrite.skip(node, 'svFor without an inline slot type');
 }
 
-function header(inject: boolean, rules: readonly CompiledRule[]): string {
+function wearLayout(s: MagicString, box: BoxLeaf, name: string): string {
+  for (const attribute of box.shorthand) s.remove(attribute.start, attribute.end);
+  if (box.style) {
+    s.prependLeft(box.style.start, `[${name}, `);
+    s.appendRight(box.style.end, ']');
+  } else {
+    s.appendLeft(box.nameEnd, ` style={${name}}`);
+  }
+  return `\nconst ${name} = ${leafCode(box.leaf)};`;
+}
+
+function header(inject: boolean, rules: readonly CompiledRule[], hoisted: string): string {
   const names = [`staticStyle as ${HELPER}`, ...(inject ? [`injectRules as ${INJECT}`] : [])];
-  let out = `import { ${names.join(', ')} } from '${RUNTIME}';`;
+  let out = `import { ${names.join(', ')} } from '${RUNTIME}';${hoisted}`;
   if (inject) {
     const entries: RuleEntry[] = [...new Map(rules.map((rule) => [rule.css, rule.group]))].map(
       ([css, group]) => [group, css],
@@ -222,12 +247,14 @@ export function transformModule({
   const program = parseModule(code, file);
   const scope = scopeOf(program, file);
   const bindings = kitBindings(scope);
-  if (bindings.size === 0) return null;
+  const boxes = boxLocals(scope);
+  if (bindings.size === 0 && boxes.size === 0) return null;
   const rewrite = new Rewrite(code, scope, loader);
   walk(program.body, (node) => {
     if (node.type === 'CallExpression') visitCall(node, bindings, rewrite);
+    else if (node.type === 'JSXOpeningElement' && boxes.size > 0) rewrite.box(node, boxes);
   });
-  if (rewrite.edits.length === 0) {
+  if (rewrite.edits.length === 0 && rewrite.boxes.length === 0) {
     if (rewrite.skipped.length === 0) return null;
     return { code: null, map: null, rules: [], compiled: 0, skipped: rewrite.skipped };
   }
@@ -238,12 +265,14 @@ export function transformModule({
     s.overwrite(node.start, node.end, leafCode(leaf));
     rules.push(...leaf.rules);
   }
-  s.prepend(header(inject, rules));
+  const hoisted = rewrite.boxes.map((box, at) => wearLayout(s, box, `${BOX}${at}`)).join('');
+  for (const box of rewrite.boxes) rules.push(...box.leaf.rules);
+  s.prepend(header(inject, rules, hoisted));
   return {
     code: s.toString(),
     map: s.generateMap({ hires: true, source: file, includeContent: false }),
     rules,
-    compiled: rewrite.edits.length,
+    compiled: rewrite.edits.length + rewrite.boxes.length,
     skipped: rewrite.skipped,
   };
 }

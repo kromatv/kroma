@@ -16,6 +16,7 @@ import type { ReactNode } from 'react';
 import { Pressable, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { style } from '#ui/core';
 import { useRemoteHostProps } from './focus-remote';
+import { FocusShield } from './focus-shield';
 import { flat } from './nav-style';
 
 export interface FocusRootProps {
@@ -76,9 +77,11 @@ export function FocusRoot({
         {keyHost && bridge ? (
           <Pressable focusable isTVSelectable hasTVPreferredFocus style={KEY_HOST} />
         ) : null}
-        <NavigatorView direction="vertical" style={flat([FILL, style])}>
-          {children}
-        </NavigatorView>
+        <FocusShield shielded={keyHost} style={FILL}>
+          <NavigatorView direction="vertical" style={flat([FILL, style])}>
+            {children}
+          </NavigatorView>
+        </FocusShield>
       </View>
     </NavigatorRoot>
   );

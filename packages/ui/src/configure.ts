@@ -10,7 +10,7 @@ import {
 } from 'react';
 import type { FrostBackdropProps } from './components/atoms/frost';
 import type { Theme, ThemeMode } from './core';
-import { StyleRuntimeContext, useStyleRuntimeParent } from './core/style-context';
+import { StyleRuntimeProvider, useStyleRuntimeParent } from './core/style-context';
 import {
   createStyleRuntime,
   type StyleRuntime,
@@ -167,8 +167,8 @@ function OwnedKitStyleProvider({
     if (config.designWidth !== undefined) runtime.breakpoints.pinDesignWidth(config.designWidth);
   }, [config.designWidth, runtime]);
   return createElement(
-    StyleRuntimeContext.Provider,
-    { value: runtime },
+    StyleRuntimeProvider,
+    { runtime },
     createElement(ThemeHost, { runtime, themeScope: runtime.theme !== parent?.theme }, children),
   );
 }

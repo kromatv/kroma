@@ -58,6 +58,7 @@
       "./plugins/with-siri-intents",
       "./plugins/with-tv-key-events",
       "./plugins/with-keep-screen-on",
+      "./plugins/with-no-window-background",
       "./plugins/with-top-shelf",
       "./plugins/with-tv-blur-link",
       "./plugins/with-conscrypt",

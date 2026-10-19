@@ -119,4 +119,38 @@ const v = svFor<{ root: StyleDecl; icon: Pick<IconProps, 'color'> }>()({
     );
     expect(out?.skipped.map((skip) => skip.reason)).toEqual(['svFor without an inline slot type']);
   });
+
+  it('compiles the literal shorthand of a box into a constant worn ahead of its own style', () => {
+    const out = run(`import { Box } from '#ui/components/atoms/box';
+const GAP = 12;
+export const A = () => <Box row gap={GAP} px={64} style={extra} testID="a" />;
+export const B = () => <Box absolute left={14} />;`);
+
+    expect(out?.compiled).toBe(2);
+    expect(out?.code).toContain(
+      'const __kromaBox0 = __kromaStatic({"flexDirection":"row","gap":12,"paddingLeft":64,"paddingRight":64});',
+    );
+    expect(out?.code).toMatch(/<Box\s+style=\{\[__kromaBox0, extra\]\} testID="a" \/>/);
+    expect(out?.code).toMatch(/<Box style=\{__kromaBox1\}\s+\/>/);
+  });
+
+  it('leaves a box whose layout only a render knows as written', () => {
+    const out = run(`import { Box } from '@kromatv/ui/kit';
+export const A = ({ gap }) => <Box row gap={gap} />;
+export const B = (props) => <Box row {...props} />;`);
+
+    expect(out?.compiled).toBe(0);
+    expect(out?.code).toBeNull();
+    expect(out?.skipped.map((skip) => skip.reason)).toEqual([
+      'the binding gap',
+      'a box with spread props',
+    ]);
+  });
+
+  it('leaves alone a box that is not the kit box', () => {
+    const out = run(`import { Box } from 'some-layout-lib';
+export const A = () => <Box row gap={4} />;`);
+
+    expect(out).toBeNull();
+  });
 });

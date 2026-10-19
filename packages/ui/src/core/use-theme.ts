@@ -9,32 +9,23 @@ import {
 } from 'react';
 import { Appearance, AppState } from 'react-native';
 import { useDeviceStore } from '#ui/lib/device-store';
-import { StyleRuntimeContext, useStyleRuntime, useStyleRuntimeParent } from './style-context';
+import {
+  StyleRuntimeProvider,
+  useStyleRuntime,
+  useStyleRuntimeParent,
+  useStyleScope,
+} from './style-context';
 import { createStyleRuntime, type StyleRuntime } from './style-runtime';
-import { KROMA, type Theme } from './theme';
+import { activeTheme, type Theme, themeVersion } from './theme';
 import { ThemeHost } from './theme-host';
 import { readMode } from './theme-mode';
 
-const EMPTY_SUBSCRIBE = () => () => {};
-const DEFAULT_THEME = () => KROMA;
-const ZERO = () => 0;
-
 /** The theme snapshot of this styling root. */
 export function useTheme(): Theme {
-  const theme = useStyleRuntimeParent()?.theme;
-  return useSyncExternalStore(
-    theme?.onThemeChange ?? EMPTY_SUBSCRIBE,
-    theme?.activeTheme ?? DEFAULT_THEME,
-    theme?.activeTheme ?? DEFAULT_THEME,
-  );
+  return activeTheme(useStyleScope().theme);
 }
 export function useThemeVersion(): number {
-  const theme = useStyleRuntimeParent()?.theme;
-  return useSyncExternalStore(
-    theme?.onThemeChange ?? EMPTY_SUBSCRIBE,
-    theme?.themeVersion ?? ZERO,
-    theme?.themeVersion ?? ZERO,
-  );
+  return themeVersion(useStyleScope().theme);
 }
 export function useThemeControls() {
   return useStyleRuntime().theme;
@@ -96,8 +87,8 @@ function OwnedThemeProvider({
   }, [runtime, theme]);
   useEffect(() => runtime.breakpoints.retain(), [runtime]);
   return createElement(
-    StyleRuntimeContext.Provider,
-    { value: runtime },
+    StyleRuntimeProvider,
+    { runtime },
     createElement(ThemeHost, { runtime }, createElement(Fragment, { key: version }, children)),
   );
 }

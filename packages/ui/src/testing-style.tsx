@@ -15,7 +15,7 @@ import { color as resolveColor } from './core/color';
 import { normalize as normalizeDecl } from './core/normalize';
 import { bindRecipe, sv as defineRecipe } from './core/recipe';
 import { boxStyle as resolveBox, textStyle as resolveText } from './core/shorthand-resolve';
-import { StyleRuntimeContext } from './core/style-context';
+import { StyleRuntimeProvider } from './core/style-context';
 import {
   createStyleRuntime,
   type StyleRuntime,
@@ -87,7 +87,7 @@ export function createStyleTestHost(options: StyleRuntimeOptions = {}): StyleTes
     return createElement(
       KitSettingsContext.Provider,
       { value: settings },
-      createElement(StyleRuntimeContext.Provider, { value: runtime }, children),
+      createElement(StyleRuntimeProvider, { runtime }, children),
     );
   }
   function wrapper(Outer: RenderOptions['wrapper']) {
