@@ -4,9 +4,9 @@ import { createContext, useContext, useState } from 'react';
 // User-selectable playback engine: a manual override of the automatic
 // `selectEngine` decision, persisted per device.
 
-import { isTizenRuntime, isWebOsRuntime } from '@kromatv/core';
+import { isTizenRuntime } from '@kromatv/core';
 import type { MessageKey } from '@kromatv/i18n';
-import { Platform } from 'react-native';
+import { htmlVideoEngines } from '@kromatv/ui/kit';
 import { devicePref } from '#tv/app/devicePref';
 import type { ReactivePref } from '#tv/app/settings/store';
 import { mpvAvailable, shakaAvailable } from '#tv/features/playback/player/engine';
@@ -57,22 +57,16 @@ export function useEnginePref(): ReactivePref<EnginePref> {
 /** Engines choosable on THIS platform, always starting with `auto`. An empty
  * list hides the row. */
 export function availableEngines(): EnginePref[] {
-  // Both native shells build the libVLC plane, so the choice is the platform
-  // player, the server's remux, or the engine that brings its own decoders. On
-  // Apple that last one also brings a Matroska demuxer, which AVFoundation has
-  // none of.
-  if (Platform.OS !== 'web') {
-    return vlcAvailable() ? ['auto', 'remux', 'vlc'] : ['auto', 'remux'];
-  }
-  // The legacy tier ships without Shaka (see shakaAvailable), so the pref only
-  // appears where picking it can change anything.
-  const shaka: EnginePref[] = shakaAvailable() ? ['shaka'] : [];
-  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-  if (isTizenRuntime(ua)) return ['auto', 'avplay', ...shaka, 'remux'];
-  if (isWebOsRuntime(ua)) return ['auto', 'webview', ...shaka, 'remux'];
-  const list: EnginePref[] = ['auto', 'webview', ...shaka, 'remux'];
-  if (mpvAvailable()) list.splice(1, 0, 'mpv');
-  return list;
+  const tizen = isTizenRuntime(typeof navigator === 'undefined' ? '' : navigator.userAgent);
+  return [
+    'auto',
+    ...(tizen ? (['avplay'] as const) : []),
+    ...(mpvAvailable() ? (['mpv'] as const) : []),
+    ...htmlVideoEngines<EnginePref>(tizen ? [] : ['webview']),
+    ...htmlVideoEngines<EnginePref>(shakaAvailable() ? ['shaka'] : []),
+    'remux',
+    ...(vlcAvailable() ? (['vlc'] as const) : []),
+  ];
 }
 
 /** One line saying what an engine actually does, since its name cannot. */

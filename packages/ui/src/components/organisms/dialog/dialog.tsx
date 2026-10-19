@@ -14,7 +14,7 @@ import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { useModalPortalRepair } from '#ui/lib/modal-portal';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
-import { WEB } from '#ui/lib/platform';
+import { namingProps } from '#ui/lib/naming-props';
 import { ScopeCarrier } from '#ui/lib/scope-carrier';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { surfaceBands } from '#ui/lib/surface-bands';
@@ -145,13 +145,11 @@ function DialogSurface({
   // By reference only when this panel rendered the node carrying the id: a
   // composed <Dialog.Header> replaces the fallback, and those ids go with it.
   const namesOwnTitle = !headerPart && showsTitle;
-  const naming = WEB
-    ? {
-        'aria-labelledby': namesOwnTitle ? titleId : undefined,
-        'aria-label': namesOwnTitle ? undefined : title,
-        'aria-describedby': !headerPart && description ? descriptionId : undefined,
-      }
-    : { accessibilityLabel: title };
+  const naming = namingProps({
+    title,
+    titleId: namesOwnTitle ? titleId : undefined,
+    descriptionId: !headerPart && description ? descriptionId : undefined,
+  });
   const panel = (
     <Box flex center bg="overlay" p={gutter}>
       <DismissBackdrop onPress={onClose} />

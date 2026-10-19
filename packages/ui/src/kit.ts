@@ -124,10 +124,16 @@ export {
 } from './lib/icons/library';
 export type { ImageBackend, ImageBackendProps } from './lib/image-backend';
 export { reactNativeImage, useImageBackend } from './lib/image-backend';
+export { htmlVideoEngines } from './lib/html-video';
 export { createInputGate, InputGateProvider, useInputGate } from './lib/input-gate';
 export { PageMain } from './lib/landmark';
 export type { LoopKind } from './lib/loop';
 export { useLoop } from './lib/loop';
+export { monoFont } from './lib/mono-font';
+export type { NativeDevice } from './lib/native-device';
+export { nativeDevice } from './lib/native-device';
+export type { SessionFlag } from './lib/session-flag';
+export { sessionFlag } from './lib/session-flag';
 export { OverlayHost } from './lib/overlay-host';
 export type { PerfReport } from './lib/perf';
 export { createPerfSampler } from './lib/perf';

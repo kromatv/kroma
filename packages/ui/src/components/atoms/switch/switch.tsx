@@ -1,4 +1,4 @@
-import { type StyleScope, sharedStyle, styles, sv, useStyleScope, useSv } from '#ui/core';
+import { sharedStyle, styles, sv, useStyleScope, useSv } from '#ui/core';
 
 // <Switch>: the on/off primitive. A television has no gestures, so this is
 // not a draggable thumb: it is a Focusable that toggles on Select, and the
@@ -11,19 +11,15 @@ import { type StyleScope, sharedStyle, styles, sv, useStyleScope, useSv } from '
 // `translateX` and the amber is a fill layer crossfading over the off-track,
 // since neither driver can animate a background colour natively.
 
-import { useEffect, useState } from 'react';
 import { Animated, type StyleProp, View, type ViewStyle } from 'react-native';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 
 import { useStyles } from '#ui/core/styles';
 import { motion } from '#ui/core/tokens';
-import { ease } from '#ui/lib/ease';
-import { WEB } from '#ui/lib/platform';
+import { useFlipMotion } from '#ui/lib/flip-motion';
 import { useControllable } from '#ui/lib/use-controllable';
 
 const FLIP_MS = motion.duration.fast;
-const EASE_CSS = ease.out.css;
-const EASE_NATIVE = ease.out.native;
 
 // The hairline is INSIDE the declared width (React Native sizes border-box) and
 // the padding inside that, so the thumb's run is the width less both. Leaving
@@ -142,67 +138,17 @@ function SwitchFace({ checked, size = 'sm', style }: Readonly<SwitchFaceProps>) 
 function Flip({ on, travel, thumb }: Readonly<{ on: boolean; travel: number; thumb: number }>) {
   const scope = useStyleScope();
 
-  const move = useStyles(moveDefinition);
   const s = useStyles(sDefinition);
+  const motion = useFlipMotion(on, travel, FLIP_MS);
 
   const face = sharedStyle(`switch:thumb:${thumb}`, { w: thumb, h: thumb, radius: 'pill' }, scope);
-  if (WEB) {
-    return (
-      <>
-        <View style={[s.fill, move.opacity, on ? move.shown : move.hidden]} />
-        <View style={[face, s.thumb, move.transform, slideOf(on ? travel : 0, scope)]} />
-      </>
-    );
-  }
-  return <FlipNative on={on} travel={travel} face={face} />;
-}
-
-function FlipNative({
-  on,
-  travel,
-  face,
-}: Readonly<{ on: boolean; travel: number; face: ViewStyle }>) {
-  const s = useStyles(sDefinition);
-
-  // Initial value matches the initial state, so a switch mounted on doesn't
-  // play its own flip as an entrance.
-  const [flip] = useState(() => new Animated.Value(on ? 1 : 0));
-  useEffect(() => {
-    Animated.timing(flip, {
-      toValue: on ? 1 : 0,
-      duration: FLIP_MS,
-      easing: EASE_NATIVE,
-      useNativeDriver: true,
-    }).start();
-  }, [on, flip]);
-  const slide = flip.interpolate({ inputRange: [0, 1], outputRange: [0, travel] });
   return (
     <>
-      <Animated.View style={[s.fill, { opacity: flip }]} />
-      <Animated.View style={[face, s.thumb, { transform: [{ translateX: slide }] }]} />
+      <Animated.View style={[s.fill, motion.fill]} />
+      <Animated.View style={[face, s.thumb, motion.slide]} />
     </>
   );
 }
-
-// react-native-web understands these CSS-only props; React Native's types do
-// not, hence the casts at the use sites.
-const slideOf = (x: number, scope: StyleScope) =>
-  sharedStyle(`switch:slide:${x}`, { transform: [{ translateX: x }] }, scope);
-
-const moveDefinition = styles({
-  opacity: {
-    transitionProperty: 'opacity',
-    transitionDuration: `${FLIP_MS}ms`,
-    transitionTimingFunction: EASE_CSS,
-  },
-  transform: {
-    transitionProperty: 'transform',
-    transitionDuration: `${FLIP_MS}ms`,
-    transitionTimingFunction: EASE_CSS,
-  },
-  shown: { opacity: 1 },
-  hidden: { opacity: 0 },
-});
 
 const sDefinition = styles({
   fill: { fill: true, bg: 'accent', radius: 'pill' },

@@ -14,30 +14,20 @@ import { type StyleScope, sharedStyle, style, styles, useStyleScope } from '#ui/
 // keeps no notion of focus of its own - two of those is what once lit a row and
 // the Back button at the same time.
 
-import {
-  type Ref,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { Animated, Pressable, type ViewStyle } from 'react-native';
+import { type Ref, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { Animated, Pressable } from 'react-native';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import { PANEL_MAX, scaler } from '#ui/components/organisms/player/lib/metrics';
 import type { ControlId, PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { PanelHeaderProvider } from '#ui/components/organisms/player/lib/panel-header';
-import { CARD_MS } from '#ui/components/organisms/player/lib/panel-slide';
 import { playerStyle } from '#ui/components/organisms/player/lib/style';
 import type { SubtitleAppearance } from '#ui/components/organisms/player/lib/subtitle-appearance';
-import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
+import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
 import type { PlayerController } from '#ui/components/organisms/player/types';
 
 import { useStyles } from '#ui/core/styles';
-import { ease } from '#ui/lib/ease';
 import { FocusScroll } from '#ui/lib/focus-scroll';
-import { WEB } from '#ui/lib/platform';
+import { usePanelTravel } from '#ui/lib/player/panel-travel';
 import { useT } from '#ui/services/i18n';
 import type { PlayerReportCategory } from '../../media-types';
 import { menuEntries, movedEntries, panelTitle, type View } from './settings/entries';
@@ -80,12 +70,6 @@ interface SettingsPanelProps {
   ref?: Ref<PanelHandle>;
 }
 
-// Starts off its own edge whatever `shown` says, so a panel mounted open still
-// plays its entrance; the player remounts it on each open.
-// The browsers have no native driver (react-native-web falls back to a JS
-// animation), so there the panel travels on a CSS transition and the movement
-// belongs to the compositor rather than to the thread the chrome ticks on.
-
 const veilDefinition = styles({
   box: { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 41 },
   live: { pointerEvents: 'auto' },
@@ -102,41 +86,6 @@ const panelWidth = (width: number | string, scope: StyleScope) =>
 
 const panelPad = (x: number, y: number, scope: StyleScope) =>
   sharedStyle(`settings:pad:${x}:${y}`, { paddingHorizontal: x, paddingVertical: y }, scope);
-function webPanelTravel(shown: boolean, width: number): ViewStyle {
-  return {
-    opacity: shown ? 1 : 0,
-    transform: `translateX(${shown ? 0 : width}px)`,
-    transitionProperty: 'transform, opacity',
-    transitionDuration: `${CARD_MS}ms`,
-    transitionTimingFunction: ease.out.css,
-    willChange: 'transform',
-  } as ViewStyle;
-}
-
-function useNativePanelTravel(shown: boolean, width: number) {
-  const [slide] = useState(() => new Animated.Value(1));
-  useEffect(() => {
-    if (WEB) return;
-    const anim = Animated.timing(slide, {
-      toValue: shown ? 0 : 1,
-      duration: CARD_MS,
-      easing: ease.out.native,
-      useNativeDriver: true,
-    });
-    anim.start();
-    return () => anim.stop();
-  }, [shown, slide]);
-  return {
-    opacity: slide.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
-    transform: [{ translateX: slide.interpolate({ inputRange: [0, 1], outputRange: [0, width] }) }],
-  };
-}
-
-function usePanelTravel(shown: boolean, width: number) {
-  const native = useNativePanelTravel(shown, width);
-  return WEB ? webPanelTravel(shown, width) : native;
-}
-
 export function SettingsPanel({
   controller,
   appearance,

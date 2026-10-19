@@ -7,7 +7,7 @@ import { cellWidth } from '#ui/components/atoms/grid';
 import { Text } from '#ui/components/atoms/text';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { FOCUS_SCALE, playerStyle } from '#ui/components/organisms/player/lib/style';
-import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
+import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
 import { IconCollapse } from '#ui/components/organisms/player/parts/icons';
 import {
   UP_NEXT_COLUMNS,
@@ -25,7 +25,7 @@ import { FocusScroll } from '#ui/lib/focus-scroll';
 import { usePointerDriving } from '#ui/lib/input-source';
 import { useT } from '#ui/services/i18n';
 import { SheetKeys } from './sheet-keys';
-import { useSheetSlide } from './slide';
+import { useSheetSlide } from '#ui/lib/player/sheet-slide';
 
 export type { UpNextItem };
 

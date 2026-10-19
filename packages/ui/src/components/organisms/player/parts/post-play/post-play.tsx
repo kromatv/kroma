@@ -7,7 +7,7 @@ import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
-import { useRise } from './rise';
+import { useRise } from '#ui/lib/player/rise';
 
 /**
  * The film offered once this one is over. Declared here rather than reusing

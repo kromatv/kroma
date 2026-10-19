@@ -24,7 +24,11 @@ vi.mock('#tv/features/playback/player/useStallGuard', () => ({
   useStallGuard: () => H.stalled,
 }));
 
-vi.mock('#tv/features/playback/player/backend', () => ({
+vi.mock('#tv/features/playback/player/playbackBackend', () => ({
+  usePlaybackBackend: () => BACKEND,
+}));
+
+const BACKEND = {
   planEngine: () => ({
     eng: 'video',
     surface: 'video',
@@ -36,7 +40,7 @@ vi.mock('#tv/features/playback/player/backend', () => ({
     H.listeners = args.listeners;
     return H.engine;
   },
-}));
+};
 
 vi.mock('#tv/features/playback/player/useResolvedStart', () => ({
   useResolvedStart: () => ({ startSec: 0, resumedAt: null, setStartSec: vi.fn() }),

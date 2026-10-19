@@ -7,7 +7,7 @@ import { IconButton } from '#ui/components/atoms/icon-button';
 import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
-import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
+import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
 import type { PlayerSubCapabilities } from '#ui/components/organisms/player/media-types';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
 import {

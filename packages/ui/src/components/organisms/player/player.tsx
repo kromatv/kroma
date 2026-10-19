@@ -8,7 +8,7 @@ import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { PLAYER_ROOT_ID, useIdleCursor } from './hooks/use-idle-cursor';
 import { usePlayerEnding } from './hooks/use-player-ending';
-import { usePlayerKeys } from './hooks/use-player-keys';
+import { usePlayerKeys } from '#ui/lib/player/use-player-keys';
 import { usePlayerNav } from './hooks/use-player-nav';
 import { useResumeNotice } from './hooks/use-resume-notice';
 import { useSeekNudge } from './hooks/use-seek-nudge';

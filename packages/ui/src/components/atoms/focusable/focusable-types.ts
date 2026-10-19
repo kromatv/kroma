@@ -11,6 +11,7 @@ import type {
 import type { AnySv, StyleDecl, SvStateName } from '#ui/core';
 import type { RingToken } from '#ui/core/theme';
 import type { A11yProps } from '#ui/lib/a11y';
+import type { KeyProps } from '#ui/lib/key-press';
 
 // `option` is not in React Native's union: react-native-web passes it through
 // to the ARIA role a listbox row needs, but Android's accessibility delegate
@@ -180,10 +181,7 @@ interface TouchAt extends HostAt {
 
 /** Tab reachability, plus whichever activation keys the form underneath does
  *  not already answer, on the web; null elsewhere. */
-type WebKeys = {
-  tabIndex: number;
-  onKeyDown: (event: { nativeEvent: { key: string }; preventDefault: () => void }) => void;
-} | null;
+type WebKeys = KeyProps;
 
 export type {
   A11yState,

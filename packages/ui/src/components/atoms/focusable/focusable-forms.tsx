@@ -1,17 +1,14 @@
-import {
-  NavigatorItem,
-  type NavigatorItemProps,
-  type NodeHandle,
-} from '@kromatv/spatial-nav/react';
+import type { NodeHandle } from '@kromatv/spatial-nav/react';
 import type { ReactNode, RefObject } from 'react';
-import { Animated, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import type { StyleProp, View, ViewStyle } from 'react-native';
 import type { AnySv } from '#ui/core';
 import type { RingToken } from '#ui/core/theme';
 import type { splitBoxLayers } from '#ui/lib/box-layers';
+import { StillHost } from '#ui/lib/control-platform';
+import { linkProps, platformRole } from '#ui/lib/control-role';
 import { useControlledMirror } from '#ui/lib/controlled-focus-mirror';
+import { faceLift, NavigatorItemHost } from '#ui/lib/navigator-item-host';
 import { GROUNDED, LIFTED } from '#ui/lib/focus-lift';
-import { WEB } from '#ui/lib/platform';
-import { linkProps, platformRole } from './focusable-a11y';
 import { useCoatStack, useFocusRing } from './focusable-paint';
 import type {
   A11yState,
@@ -23,19 +20,6 @@ import type {
 } from './focusable-types';
 import { Painted, TouchPressable } from './touch-pressable';
 import { useMirroredFocus } from './use-mirrored-focus';
-
-// The navigator's `style` type follows whichever react-native copy the consuming
-// app resolves (the tvos fork on a TV, mainline on the phone), and those two are
-// not assignable to each other.
-type NavigatorStyle = NavigatorItemProps['style'];
-const flat = (style: StyleProp<ViewStyle>[]): NavigatorStyle =>
-  StyleSheet.flatten(style) as NavigatorStyle;
-// The browser keeps the array: flattened, a style is a fresh object nothing
-// registered, which react-native-web serialises inline on every control, and
-// the classes its declarations compiled to never reach the element.
-const layered = (style: StyleProp<ViewStyle>[]): NavigatorStyle => style as NavigatorStyle;
-
-type ItemViewProps = NavigatorItemProps['viewProps'];
 
 function DisabledForm({
   at,
@@ -55,7 +39,7 @@ function DisabledForm({
   };
 }>): ReactNode {
   return (
-    <DisabledHost
+    <StillHost
       accessibilityRole={platformRole(at.role)}
       {...at.disabledState}
       accessibilityLabel={at.label}
@@ -70,14 +54,9 @@ function DisabledForm({
             slots: at.slots,
           })
         : at.children}
-    </DisabledHost>
+    </StillHost>
   );
 }
-
-// A plain view on the browser: react-native-web's Animated rewrites a
-// `transform` in the style it is handed into plain values, so even a scale a
-// class already declares would paint inline on every disabled control.
-const DisabledHost = WEB ? View : Animated.View;
 
 function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   // Not `at.controlled &&`: an uncontrolled control on a browser target reports
@@ -133,16 +112,6 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   );
 }
 
-// The outer view is the one the parent orders, so the lift has to ride there:
-// the painted face inside it is an only child and outranks nothing.
-function liftedBox(
-  layers: ReturnType<typeof splitBoxLayers> | null,
-  focused: boolean,
-): NavigatorStyle {
-  const box = layers?.box;
-  return flat([box, focused ? LIFTED : GROUNDED]);
-}
-
 function NavigatorForm({
   entry,
   at,
@@ -191,73 +160,58 @@ function NavigatorForm({
     pressedStyle: at.pressedStyle,
     focusVisible: at.focusVisible,
     focusedStyle: at.focusedStyle,
-    lifted: WEB && at.focused,
+    lifted: faceLift(at.focused),
     showRing: at.showRing,
     ringToken: at.ringToken,
     animated: at.animated,
   });
   const mirror = useMirroredFocus(at.setBox, at.handleFocus);
 
+  const render = (focused: boolean, pressed: boolean) =>
+    typeof at.children === 'function'
+      ? at.children({ focused, pressed, hovered: at.hovered, slots: at.resolve(pressed) })
+      : at.children;
+
   return (
-    <NavigatorItem
-      ref={entry}
+    <NavigatorItemHost
+      entry={entry}
       onSelect={at.press}
       onLongSelect={at.onLongSelect}
       onFocus={mirror.focus}
       onBlur={at.handleBlur}
-      // On the browser targets the control is ONE element: a second view per
-      // control is a cost Tizen pays on every focus move. The native builds keep
-      // the inner view because their focus scale is a real Animated value.
-      style={WEB ? layered(painted) : liftedBox(at.layers, at.focused)}
-      viewProps={
-        {
-          accessibilityRole: platformRole(at.role),
-          ...(at.a11yState as object | undefined),
-          ...linkProps(at.href, at.role),
-          ...(at.webKeys ?? null),
-          accessibilityLabel: at.label,
-          onLayout: at.onLayout,
-          ref: mirror.ref,
-          // Browser targets only: this view is a plain <View>, so there is no
-          // hover callback to lean on and react-native-web forwards these two
-          // straight to the element.
-          ...(WEB
-            ? {
-                onPointerEnter: at.onHoverIn,
-                onPointerLeave: at.onHoverOut,
-                onPointerDown: at.onPointerDown,
-                onPointerUp: at.onPointerUp,
-                onPointerCancel: at.onPointerUp,
-              }
-            : null),
-        } as ItemViewProps
-      }
-    >
-      {({ focused }) => {
-        const render = (pressed: boolean) =>
-          typeof at.children === 'function'
-            ? at.children({
-                focused,
-                pressed,
-                hovered: at.hovered,
-                slots: at.resolve(pressed),
-              })
-            : at.children;
-        if (WEB) return <>{render(at.pressed)}</>;
-        return (
-          <Painted
-            painted={painted}
-            pressedStyle={at.pressedStyle}
-            onPress={at.pointerPress}
-            onLongPress={at.onLongPress}
-            hitSlop={at.hitSlop}
-            role={at.role}
-            a11yState={at.a11yState}
-            render={render}
-          />
-        );
+      painted={painted}
+      layers={at.layers}
+      focused={at.focused}
+      pressed={at.pressed}
+      viewProps={{
+        accessibilityRole: platformRole(at.role),
+        ...(at.a11yState as object | undefined),
+        ...linkProps(at.href, at.role),
+        ...(at.webKeys ?? null),
+        accessibilityLabel: at.label,
+        onLayout: at.onLayout,
+        ref: mirror.ref,
       }}
-    </NavigatorItem>
+      pointer={{
+        onHoverIn: at.onHoverIn,
+        onHoverOut: at.onHoverOut,
+        onPointerDown: at.onPointerDown,
+        onPointerUp: at.onPointerUp,
+      }}
+      render={render}
+      renderFace={(focused, face) => (
+        <Painted
+          painted={face}
+          pressedStyle={at.pressedStyle}
+          onPress={at.pointerPress}
+          onLongPress={at.onLongPress}
+          hitSlop={at.hitSlop}
+          role={at.role}
+          a11yState={at.a11yState}
+          render={(pressed) => render(focused, pressed)}
+        />
+      )}
+    />
   );
 }
 

@@ -15,11 +15,8 @@ import { DEFAULT_STYLE_SCOPE, type StyleScope } from '#ui/core/style-scope';
 import type { RingToken, Theme } from '#ui/core/theme';
 import { useBreakpointIndex } from '#ui/core/use-breakpoint';
 import { useTheme } from '#ui/core/use-theme';
-import { splitBoxLayers } from '#ui/lib/box-layers';
-import { ARROW, COLOUR_MOTION, HAND } from '#ui/lib/cursor';
-import { NO_OUTLINE } from '#ui/lib/field-shell';
+import { controlLayers, dressControl } from '#ui/lib/control-dress';
 import { GROUNDED, LIFTED } from '#ui/lib/focus-lift';
-import { WEB } from '#ui/lib/platform';
 import type { Resolve } from './focusable-types';
 
 function coat(decl: StyleDecl | undefined, index: number, theme: Theme): ViewStyle | undefined {
@@ -49,12 +46,6 @@ function usePair(a: StyleProp<ViewStyle>, b: StyleProp<ViewStyle>): StyleProp<Vi
     if (a == null) return b;
     return b == null ? a : [a, b];
   }, [a, b]);
-}
-
-function pointerCursor(disabled: boolean, actionable: boolean): ViewStyle | null {
-  if (!WEB) return null;
-  if (disabled) return ARROW;
-  return actionable ? HAND : null;
 }
 
 interface PaintInput {
@@ -123,15 +114,13 @@ function useFocusablePaint({
   // Native renders the control as two views, so the half of the style that says
   // how the parent places this control has to ride on the outer one; the web
   // targets have a single view and keep the style whole.
-  const layers = useMemo(() => (WEB ? null : splitBoxLayers(painted, scope)), [painted, scope]);
+  const layers = useMemo(() => controlLayers(painted, scope), [painted, scope]);
 
   // Under `painted`, never over it: a control that states its own cursor - a
   // resize seam asking for `col-resize` - has to keep it.
-  const cursor = pointerCursor(disabled, actionable);
-  // Under `painted` as well: a control that states its own transition keeps it.
   const dressed = useMemo(
-    () => (WEB ? [COLOUR_MOTION, cursor, NO_OUTLINE, painted] : painted),
-    [cursor, painted],
+    () => dressControl(painted, disabled, actionable),
+    [painted, disabled, actionable],
   );
 
   return { dressed, focusedStyle, hoveredStyle, layers, paintedPressed, resolve, rest };

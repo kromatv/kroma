@@ -26,3 +26,12 @@ This does not extend to app components or to any other interface member. See
 
 When editing existing code, match the file's density. A file that already
 carries prose comments is not licence to add more.
+
+## One code, every device
+
+Never write a platform branch in a component or a feature: no `WEB ? a : b`,
+no `Platform.OS`, no `Platform.select`, no `.web.tsx` / `.ios.tsx` /
+`.native.tsx` twin. Write the same code for every target and make the engine
+(`packages/ui/src/core`, `packages/ui/src/lib`) render it correctly. If a
+platform needs something different, change the engine primitive, never the
+caller. `kroma/no-platform-branch` fails the lint on any of these.

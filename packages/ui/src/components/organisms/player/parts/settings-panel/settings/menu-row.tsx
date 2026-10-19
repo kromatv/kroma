@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 import { SwitchFace } from '#ui/components/atoms/switch';
 import { Text } from '#ui/components/atoms/text';
-import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
+import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
 import { style, styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { a11yState } from '#ui/lib/a11y';

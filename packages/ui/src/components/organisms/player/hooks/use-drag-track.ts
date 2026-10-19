@@ -5,7 +5,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import type { LayoutChangeEvent, View } from 'react-native';
-import { WEB } from '#ui/lib/platform';
+import { pointerToCanvas } from '#ui/lib/player/pointer-to-canvas';
 
 interface DragTrack {
   /** Put on the track view, alongside `onLayout`. */
@@ -51,15 +51,7 @@ function useDragTrack(): DragTrack {
   const offsetOf = useCallback((locationX: number): number | null => {
     const inCanvas = canvas.current;
     if (inCanvas <= 0) return null;
-    // Only a browser hands this out in screen pixels. React Native's hit test
-    // undoes the ancestor transforms first, so `locationX` already arrives in the
-    // track's own canvas units and rescaling it here doubles every offset on a
-    // 1920-into-960 stage: past the halfway point, every seek lands on the end.
-    if (!WEB) return locationX;
-    // Before the first measure (and on any target that reports nothing) the two
-    // spaces are assumed to be the same, which is true wherever nothing scales.
-    const onScreen = screen.current || inCanvas;
-    return (locationX / onScreen) * inCanvas;
+    return pointerToCanvas(locationX, screen.current, inCanvas);
   }, []);
 
   return { ref, onLayout, measure, width, offsetOf };

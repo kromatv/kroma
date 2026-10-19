@@ -369,7 +369,7 @@
       }
     },
     {
-      "files": ["packages/tv/src/features/playback/player/PlayerSurface.web.tsx"],
+      "files": ["packages/tv/src/features/playback/browser/PlayerSurface.tsx"],
       "rules": {
         "sonarjs/object-alt-content": "off"
       }
