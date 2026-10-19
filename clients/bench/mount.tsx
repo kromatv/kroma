@@ -162,15 +162,19 @@ export function mountBench(params: URLSearchParams, root: HTMLElement): void {
     await new Promise((done) => setTimeout(done, 500));
     if (recycle) flushSync(() => show(-1));
     await new Promise((done) => setTimeout(done, 60));
-    for (let round = 0; round < runs; round += 1) {
+    const measure = async (round: number): Promise<void> => {
+      if (round >= runs) return;
       const start = performance.now();
       flushSync(() => show(round));
       report.runs.push(performance.now() - start);
       await new Promise((done) => setTimeout(done, 60));
-      if (recycle) continue;
-      flushSync(() => show(null));
-      await new Promise((done) => setTimeout(done, 60));
-    }
+      if (!recycle) {
+        flushSync(() => show(null));
+        await new Promise((done) => setTimeout(done, 60));
+      }
+      return measure(round + 1);
+    };
+    await measure(0);
     const sorted = [...report.runs].sort((a, b) => a - b);
     report.perCard = (sorted[Math.floor(sorted.length / 2)] ?? 0) / count;
     (globalThis as { KROMA_MOUNT?: MountReport }).KROMA_MOUNT = report;
