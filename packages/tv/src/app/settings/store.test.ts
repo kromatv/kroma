@@ -158,10 +158,10 @@ describe('the artwork default', () => {
     expect(ARTWORK_SCALE[store.createArtworkPref().get()]).toBe(0.75);
   });
 
-  it('stays full where the set will not report its memory at all', async () => {
+  it('steps down to high where the set will not report its memory at all', async () => {
     const { store } = await boot(null);
 
-    expect(store.createArtworkPref().get()).toBe('full');
+    expect(store.createArtworkPref().get()).toBe('high');
   });
 
   it('is beaten by the quality the viewer chose', async () => {
@@ -196,7 +196,7 @@ describe('a preference stored by an earlier run', () => {
     vi.resetModules();
     const store = await import('./store');
     const late = new Map([['kroma:artwork', 'medium']]);
-    expect(ARTWORK_SCALE[store.createArtworkPref().get()]).toBe(1);
+    expect(ARTWORK_SCALE[store.createArtworkPref().get()]).toBe(0.75);
 
     const backend = {
       getItem: (k: string) => late.get(k) ?? null,
