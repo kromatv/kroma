@@ -19,6 +19,7 @@ export type CssDrift = ViewStyle & {
   animationTimingFunction?: string;
   animationDuration?: string;
   animationIterationCount?: string;
+  animationFillMode?: string;
   willChange?: string;
 };
 
@@ -40,16 +41,13 @@ function frames(spec: Readonly<DriftSpec>): CssDrift {
   const out = `translate(${x * 100}%, ${y * 100}%) scale(${zoom})`;
   const back = `translate(${-x * 100}%, ${-y * 100}%) scale(${zoom})`;
   return {
-    // The round trip is spelt out rather than left to `animation-direction:
-    // alternate`, which the legacy Chromium 53 tier does not honour reliably.
-    animationKeyframes: [
-      { '0%': { transform: out }, '50%': { transform: back }, '100%': { transform: out } },
-    ],
+    animationKeyframes: [{ '0%': { transform: out }, '100%': { transform: back } }],
     // Stepped, not continuous: a full-screen layer in motion is re-composited
     // under every overlay above it, and a 60Hz pan at single-digit px/s pays
     // that sixty times a second to move less than a pixel (40fps against 60).
     animationTimingFunction: `steps(${steps(spec)}, end)`,
-    animationIterationCount: 'infinite',
+    animationIterationCount: '1',
+    animationFillMode: 'forwards',
     // The compositor is asked for its own layer up front, so the first frame of
     // the drift is not also the frame that promotes it.
     willChange: 'transform',
@@ -72,7 +70,7 @@ function sheet(spec: Readonly<DriftSpec>): ViewStyle {
 
 /**
  * The drift for the artwork layer: a slow pan across a frame held oversized for
- * it, out and back, forever. Plain styles, so it rides on the `Animated.View`
+ * it, one way, from the moment the layer mounts. Plain styles, so it rides on the `Animated.View`
  * the native half needs.
  */
 export function useDrift(spec: Readonly<DriftSpec>): StyleProp<ViewStyle> {
@@ -85,7 +83,7 @@ export function useDrift(spec: Readonly<DriftSpec>): StyleProp<ViewStyle> {
     if (!width || !height) return null;
     return [
       sheet({ x, y, zoom, ms, width, height }),
-      sharedStyle(`splash:drift:${ms}`, { animationDuration: `${ms * 2}ms` }, scope),
+      sharedStyle(`splash:drift:${ms}`, { animationDuration: `${ms}ms` }, scope),
     ];
   }, [x, y, zoom, ms, width, height, scope]);
 }
