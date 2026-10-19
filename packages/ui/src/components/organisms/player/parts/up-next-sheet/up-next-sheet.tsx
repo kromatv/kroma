@@ -2,13 +2,12 @@ import type { Translate } from '@kromatv/i18n';
 import { memo, type ReactNode, type Ref, useMemo, useState } from 'react';
 import { Animated, Pressable, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Focusable } from '#ui/components/atoms/focusable';
+import { Veil } from '#ui/components/atoms/veil';
 import { cellWidth } from '#ui/components/atoms/grid';
 import { Text } from '#ui/components/atoms/text';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { FOCUS_SCALE, playerStyle } from '#ui/components/organisms/player/lib/style';
 import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
-import { IconCollapse } from '#ui/components/organisms/player/parts/icons';
 import {
   UP_NEXT_COLUMNS,
   UP_NEXT_GAP,
@@ -17,13 +16,12 @@ import {
 } from '#ui/components/organisms/player/parts/up-next-card';
 import { RING_ROOM, styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
-import { typeSpec as textRoles } from '#ui/core/tokens';
-import { gradient, maskImage } from '#ui/lib/css';
+import { maskImage } from '#ui/lib/css';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { FocusColumn, FocusRegion, FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { FocusScroll } from '#ui/lib/focus-scroll';
-import { usePointerDriving } from '#ui/lib/input-source';
 import { useT } from '#ui/services/i18n';
+import { SheetHeader } from './sheet-header';
 import { SheetKeys } from './sheet-keys';
 import { useSheetSlide } from '#ui/lib/player/sheet-slide';
 
@@ -59,15 +57,14 @@ function parkOffset(sheetHeight: number): number {
 // it goes: a hard cut reads as a row sliced in half.
 const TOP_FADE = maskImage('linear-gradient(180deg, transparent 0, #000 40px)');
 
+const SCRIM = 'linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.55) 45%)';
+
+const SHEET_FILL =
+  'linear-gradient(180deg, transparent, rgba(10,10,12,0.55) 12%, rgba(10,10,12,0.97) 30%)';
+
 const fillsDefinition = styles({
-  scrim: gradient('linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.55) 45%)'),
-  sheet: gradient(
-    'linear-gradient(180deg, transparent, rgba(10,10,12,0.55) 12%, rgba(10,10,12,0.97) 30%)',
-  ),
   scrimOn: { opacity: 1, pointerEvents: 'auto' },
   scrimOff: { opacity: 0, pointerEvents: 'none' },
-  chevronOpen: { transform: [{ rotate: '0deg' }] },
-  chevronClosed: { transform: [{ rotate: '180deg' }] },
 });
 
 interface Section {
@@ -161,15 +158,18 @@ function UpNextSheetBase({
         onPress={onClose}
         accessibilityRole="button"
         accessibilityLabel={t('player.back')}
-        style={[s.scrimBox, NO_OUTLINE, fills.scrim, open ? fills.scrimOn : fills.scrimOff]}
-      />
+        style={[s.scrimBox, NO_OUTLINE, open ? fills.scrimOn : fills.scrimOff]}
+      >
+        <Veil ramp={SCRIM} />
+      </Pressable>
       <Animated.View
         onLayout={(e) => {
           const h = Math.round(e.nativeEvent.layout.height);
           setSheetHeight((prev) => (prev === h ? prev : h));
         }}
-        style={[s.sheetBox, fills.sheet, slide]}
+        style={[s.sheetBox, slide]}
       >
+        <Veil ramp={SHEET_FILL} />
         {/* One column, so ▲ off the top row reaches the header rather than
             leaving the sheet. `bridge={false}`: the screen's remote bridge is
             already listening, and a second would fire every press twice. */}
@@ -243,9 +243,6 @@ const sDefinition = styles({
     z: 45,
     overflow: 'hidden',
   },
-  sheetTitle: { font: 'display', fontSize: textRoles.h2.size, fontWeight: '700' },
-  headerRow: { row: true, align: 'flex-start' },
-  headerBox: { px: 56, pt: 28, pb: 18, radius: 'xl' },
   fill: { flex: true, minH: 0 },
   list: { flex: true, minH: 0 },
   grid: { gap: 32 },
@@ -282,54 +279,4 @@ function rowsOf(items: readonly UpNextItem[]): UpNextItem[][] {
     out.push(items.slice(at, at + UP_NEXT_COLUMNS));
   }
   return out;
-}
-
-function SheetHeader({
-  open,
-  title,
-  onToggle,
-}: Readonly<{ open: boolean; title: string; onToggle: () => void }>) {
-  const fills = useStyles(fillsDefinition);
-  const s = useStyles(sDefinition);
-
-  // Arriving here on the remote closes the sheet, so ▲ off the top row is one
-  // press and not two - the header is the way out, not a stop on the way. Only
-  // on the remote: a cursor sweeping over it must not close anything, and the
-  // navigator focuses on mouse-enter (see lib/input-source).
-  const pointerDriving = usePointerDriving();
-  const leave = () => {
-    if (!pointerDriving()) onToggle();
-  };
-  const inside = (
-    <Box row align="center" gap={14}>
-      <Text style={s.sheetTitle}>{title}</Text>
-      <Box style={open ? fills.chevronOpen : fills.chevronClosed}>
-        <Chevron />
-      </Box>
-    </Box>
-  );
-  // Parked, the sheet is a picture and the chrome owns the remote, so the header
-  // is pointer-only. Open, it is where ▲ off the top row goes and how a remote
-  // closes the sheet without Back.
-  return (
-    <FocusRegion style={s.headerRow}>
-      <Focusable
-        label={title}
-        onPress={onToggle}
-        onFocus={open ? leave : undefined}
-        // Registered while parked so it keeps its place ABOVE the grid (the
-        // navigator fixes a node's order when it mounts), but it wears nothing:
-        // a ring on a parked sheet marks a focus the remote is not on.
-        ring={open}
-        focusScale={1}
-        style={[s.headerBox, NO_OUTLINE]}
-      >
-        {inside}
-      </Focusable>
-    </FocusRegion>
-  );
-}
-
-function Chevron() {
-  return <IconCollapse size={20} thickness={2.2} color="accentText" />;
 }
