@@ -12,8 +12,9 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
-import { tintGradient } from '#ui/components/molecules/media-card';
+import { FADE_UNIT, tintFill, tintGradient } from '#ui/components/molecules/media-card';
 import { CardProgress } from '#ui/lib/card-progress';
+import { WEB } from '#ui/lib/platform';
 
 interface PosterCardProps {
   title: string;
@@ -65,14 +66,17 @@ function PosterCard({
       autoFocus={autoFocus}
       label={title}
       focusScale={1.05}
-      style={frameOf(width ?? '100%', scope)}
+      style={[frameOf(width ?? '100%', scope), tintFill(tint, scope)]}
     >
-      <Box aspect={2 / 3} radius="xl" overflow="hidden" bg="surface1">
-        {/* Every layer rounds itself as well as the parent clipping: Chrome
-            doesn't reliably apply an `overflow: hidden` + `border-radius` clip
-            to a composited descendant like the `<img>` below. */}
-        <Img src={art} background={tintGradient(tint)} radius={radius.xl} fill />
-        <ArtScrim variant="deep" radius="xl" />
+      <Box aspect={2 / 3} radius="xl" overflow="hidden" bg="surface1" dataSet={FADE_UNIT}>
+        <Img
+          src={art}
+          background={WEB ? undefined : tintGradient(tint)}
+          radius={WEB ? undefined : radius.xl}
+          fill
+          noCrossFade
+        />
+        <ArtScrim variant="deep" radius={WEB ? 0 : 'xl'} />
         {watched ? <WatchedBadge /> : null}
         <Box absolute left={14} right={14} bottom={12} gap={3}>
           {overline ? (

@@ -1,3 +1,4 @@
+import type { ViewStyle } from 'react-native';
 import { type StyleScope, sharedStyle, styles, useStyleScope, useTheme } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { fontSizes as textSizes } from '#ui/core/tokens';
@@ -11,6 +12,7 @@ import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { CardProgress } from '#ui/lib/card-progress';
+import { WEB } from '#ui/lib/platform';
 
 /** The fill behind artwork, so a tile is never blank while the art loads. */
 
@@ -21,6 +23,17 @@ function tintGradient(tint: readonly [string, string]): string {
   // reads as a wedge across the card's width rather than as a fade.
   return `linear-gradient(to bottom, ${tint[0]} 0%, ${tint[1]} 72%)`;
 }
+
+/** A card frame's stand-in fill on the browser targets, where the art fades in
+ *  over it as one layer; nothing on React Native, where the art carries it. */
+function tintFill(tint: readonly [string, string], scope: StyleScope): ViewStyle | null {
+  return WEB
+    ? (sharedStyle(`card:tint:${tint[0]}`, { backgroundColor: tint[0] }, scope) as ViewStyle)
+    : null;
+}
+
+/** Marks the box a card's art and caption fade in with. */
+const FADE_UNIT = { kromaFadeUnit: '' } as const;
 
 interface MediaCardProps {
   title: string;
@@ -69,14 +82,25 @@ function MediaCard({
       autoFocus={autoFocus}
       label={title}
       focusScale={1.06}
-      style={frameOf(width, scope)}
+      style={[frameOf(width, scope), tintFill(tint, scope)]}
     >
-      <Box w={width} aspect={16 / 9} radius="xl" overflow="hidden" bg="surface1">
-        {/* Every layer rounds itself as well as being clipped by the parent:
-            Chrome fails to apply an `overflow: hidden` + `border-radius` clip to
-            a composited descendant, which the `<img decoding="async">` is. */}
-        <Img src={art} background={tintGradient(tint)} radius={radius.xl} position="50% 28%" fill />
-        <ArtScrim radius="xl" />
+      <Box
+        w={width}
+        aspect={16 / 9}
+        radius="xl"
+        overflow="hidden"
+        bg="surface1"
+        dataSet={FADE_UNIT}
+      >
+        <Img
+          src={art}
+          background={WEB ? undefined : tintGradient(tint)}
+          radius={WEB ? undefined : radius.xl}
+          position="50% 28%"
+          fill
+          noCrossFade
+        />
+        <ArtScrim radius={WEB ? 0 : 'xl'} />
         {watched ? <WatchedBadge /> : null}
         <Box absolute left={18} right={18} bottom={16} gap={5}>
           {overline ? <Text style={s.overline}>{overline}</Text> : null}
@@ -107,4 +131,4 @@ const sDefinition = styles({
 });
 
 export type { MediaCardProps };
-export { MediaCard, tintGradient };
+export { FADE_UNIT, MediaCard, tintFill, tintGradient };

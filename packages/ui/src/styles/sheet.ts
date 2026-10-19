@@ -25,6 +25,11 @@ export const atMedia = (query: string, rules: readonly StyleRule[]): GroupRule =
   rules,
 });
 
+export const atSupports = (condition: string, rules: readonly StyleRule[]): GroupRule => ({
+  at: `@supports ${condition}`,
+  rules,
+});
+
 /** An animation, its steps written as rules whose selector is the offset. */
 export const keyframes = (name: string, steps: readonly StyleRule[]): GroupRule => ({
   at: `@keyframes ${name}`,

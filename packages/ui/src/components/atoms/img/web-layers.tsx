@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, SyntheticEvent } from 'react';
 import { resolveStyles, type StyleScope, sharedStyle, styles } from '#ui/core';
 import type { Radius } from '#ui/core/tokens/layout';
 import { classes } from '#ui/lib/classed';
@@ -13,8 +13,7 @@ interface WebLayersArgs {
   priority: boolean;
   duration: number;
   errored: boolean;
-  decoded: boolean;
-  markDecoded: () => void;
+  layered: boolean;
   markLoaded: () => void;
   onLoad: (() => void) | undefined;
   onError: () => void;
@@ -26,20 +25,25 @@ const sDefinition = styles({
   layer: { fill: true, width: '100%', height: '100%' },
   cover: { objectFit: 'cover' },
   contain: { objectFit: 'contain' },
-  still: { animationKeyframes: 'none' },
+  layered: { willChange: 'opacity' },
 });
 
 const fadeIn = (duration: number, scope: StyleScope) =>
   sharedStyle(
-    `img:fade:${duration}`,
+    `img:reveal:${duration}`,
     {
-      animationKeyframes: 'kroma-img-in',
-      animationDuration: `${duration}ms`,
-      animationTimingFunction: 'ease',
-      animationFillMode: 'both',
+      transitionProperty: 'opacity',
+      transitionDuration: `${duration}ms`,
+      transitionTimingFunction: 'ease',
     },
     scope,
   );
+
+const REVEAL = 'data-kroma-reveal';
+
+function reveal(event: SyntheticEvent<HTMLImageElement>): void {
+  event.currentTarget.setAttribute(REVEAL, 'in');
+}
 
 function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
   const layer = [
@@ -49,6 +53,7 @@ function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
     at.radius === undefined
       ? null
       : sharedStyle(`img:radius:${at.radius}`, { radius: at.radius }, scope),
+    at.layered ? resolveStyles(sDefinition, scope).layered : null,
   ];
   return (
     <>
@@ -67,29 +72,23 @@ function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
           key={at.src}
           src={at.src}
           alt={at.alt}
-          // Cached art can already be `complete` before React attaches onLoad,
-          // so the event never fires: check the element the moment it mounts.
+          {...{ [REVEAL]: 'wait' }}
           ref={(el) => {
             if (!(el?.complete && el.naturalWidth > 0)) return;
-            at.markDecoded();
+            el.setAttribute(REVEAL, 'shown');
             at.markLoaded();
           }}
           loading={at.priority ? 'eager' : 'lazy'}
           fetchPriority={at.priority ? 'high' : undefined}
           decoding="async"
           draggable={false}
-          onLoad={() => {
+          onLoad={(event) => {
+            reveal(event);
             at.markLoaded();
             at.onLoad?.();
           }}
           onError={at.onError}
-          // The fade is an ANIMATION the browser owns (`kroma-img-in`, in
-          // styles.css), never an opacity React drives: the resting state is
-          // VISIBLE, so a missed load event cannot leave decoded art invisible.
-          className={classes(
-            ...layer,
-            at.decoded ? resolveStyles(sDefinition, scope).still : fadeIn(at.duration, scope),
-          )}
+          className={classes(...layer, fadeIn(at.duration, scope))}
         />
       ) : null}
     </>
