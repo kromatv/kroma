@@ -8,18 +8,34 @@
 // runs the last tiles off the right edge.
 
 import { NavigatorNode, NavigatorView, type NodeHandle } from '@kromatv/spatial-nav/react';
-import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ReactElement,
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Dimensions, type LayoutChangeEvent, View, type ViewStyle } from 'react-native';
 import { cellWidth, columnsFor } from '#ui/components/atoms/grid';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
 import { MovingStrip } from '#ui/components/organisms/virtual/moving-strip';
+import { SETTLE_MS } from '#ui/components/organisms/virtual/strip-motion';
 import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { FocusReporter } from '#ui/lib/focus-report';
 import { usePerfSampler } from '#ui/lib/perf-provider';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { GridRow } from './grid-row';
-import { freeOffset, type GridRows, rowMetrics, rowTop, rowWindow, stripOffset } from './grid-rows';
+import {
+  catchUpWindow,
+  freeOffset,
+  type GridRows,
+  rowMetrics,
+  rowTop,
+  stripOffset,
+} from './grid-rows';
 import { useWheelScroll } from './use-wheel-rows';
 
 const boxesDefinition = styles({
@@ -115,6 +131,7 @@ function VirtualGrid<T>({
   const [screen] = useState(() => Dimensions.get('window').height);
   const [box, setBox] = useState({ width: 0, height: 0 });
   const [focusedRow, setFocusedRow] = useState(0);
+  const [settledRow, setSettledRow] = useState(0);
 
   const nodes = useRef(new Map<number, NodeHandle>());
   const wanted = useRef<number | null>(null);
@@ -192,6 +209,12 @@ function VirtualGrid<T>({
     if (metrics.count > 1 && focusedRow >= metrics.count - 1 - END_THRESHOLD) onEndReached?.();
   }, [focusedRow, metrics.count, onEndReached]);
 
+  useEffect(() => {
+    if (settledRow === focusedRow) return;
+    const timer = setTimeout(() => startTransition(() => setSettledRow(focusedRow)), SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [focusedRow, settledRow]);
+
   const onNode = useStableCallback((row: number, node: NodeHandle | null) => {
     if (node) nodes.current.set(row, node);
     else nodes.current.delete(row);
@@ -238,7 +261,7 @@ function VirtualGrid<T>({
   // navigator would focus whatever slides beneath the stationary cursor.
   const fraction = useWheelScroll(viewport, rows, lastRow, metrics.headerRows, geometry.pitch);
 
-  const shown = rowWindow(focusedRow, metrics, OVERSCAN);
+  const shown = catchUpWindow(focusedRow, settledRow, metrics, OVERSCAN);
   const offset =
     fraction === null ? stripOffset(focusedRow, metrics) : freeOffset(fraction, metrics);
   const mounted: ReactElement[] = [];
