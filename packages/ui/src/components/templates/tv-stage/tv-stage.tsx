@@ -10,6 +10,7 @@ import { useWindowDimensions, View } from 'react-native';
 
 import { useStyles } from '#ui/core/styles';
 import { CANVAS } from '#ui/core/tokens';
+import { WEB } from '#ui/lib/platform';
 
 interface TvStageProps {
   children: ReactNode;
@@ -28,7 +29,7 @@ function TvStage({ children }: Readonly<TvStageProps>) {
 
   return (
     <KitProvider config={STAGE_CONFIG}>
-      <View style={s.viewport}>
+      <View style={WEB ? [s.viewport, s.ground] : s.viewport}>
         <View style={[s.canvas, scaleOf(scale, scope)]}>{children}</View>
       </View>
     </KitProvider>
@@ -38,7 +39,8 @@ function TvStage({ children }: Readonly<TvStageProps>) {
 const STAGE_CONFIG = Object.freeze({ designWidth: CANVAS.width });
 
 const sDefinition = styles({
-  viewport: { flex: true, bg: 'bg', center: true, overflow: 'hidden' },
+  viewport: { flex: true, center: true, overflow: 'hidden' },
+  ground: { bg: 'bg' },
   canvas: { w: CANVAS.width, h: CANVAS.height, bg: 'bg', overflow: 'hidden' },
 });
 
