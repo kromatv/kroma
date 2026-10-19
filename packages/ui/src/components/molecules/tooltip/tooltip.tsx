@@ -1,20 +1,14 @@
-// <Tooltip>: a short label that appears over its child on hover or keyboard
-// focus. A pointer-only pattern: on a television there is no hover and the
-// ten-foot design says what things are in place, so the native targets render
-// the child untouched (the label still reaches assistive tech as the child's
-// own accessibilityLabel, which callers keep setting). The web half is in
-// ./tooltip.web.
+import { DomOnly } from '#ui/lib/dom-only';
+import { TooltipBubble } from './tooltip-bubble';
+import type { TooltipProps } from './tooltip-props';
 
-import type { ReactNode } from 'react';
-
-interface TooltipProps {
-  /** Already translated. */
-  label: string;
-  children: ReactNode;
-}
-
-function Tooltip({ children }: Readonly<TooltipProps>) {
-  return <>{children}</>;
+/** A short label over its child on hover or keyboard focus; where there is no pointer the child renders untouched. */
+function Tooltip({ label, children }: Readonly<TooltipProps>) {
+  return (
+    <DomOnly fallback={children}>
+      <TooltipBubble label={label}>{children}</TooltipBubble>
+    </DomOnly>
+  );
 }
 
 export type { TooltipProps };

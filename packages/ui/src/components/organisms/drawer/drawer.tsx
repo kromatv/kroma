@@ -24,7 +24,7 @@ import { useScrollLock } from '#ui/lib/scroll-lock';
 import { surfaceBands } from '#ui/lib/surface-bands';
 import { SURFACE_WIDTH, type SurfaceWidth, surfaceGutter } from '#ui/lib/surface-shell';
 import { Close, Footer, Header, PAD, Panel, type Shell, ShellContext } from './drawer-parts';
-import { type DrawerSide, FADE, SlidePanel, useSlide, WEB } from './drawer-slide';
+import { type DrawerSide, FADE, SlidePanel, useSlide } from './drawer-slide';
 
 interface DrawerRootProps {
   open: boolean;
@@ -148,7 +148,7 @@ function DrawerSurface({
         style={[
           StyleSheet.absoluteFill,
           s.scrim,
-          WEB ? (FADE as ViewStyle) : null,
+          FADE as ViewStyle,
           shown ? s.scrimActive : s.scrimInert,
         ]}
         opacity={shown ? 1 : 0}

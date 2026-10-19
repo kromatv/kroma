@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { SUB_COLORS } from '#ui/components/organisms/player/lib/subtitle-appearance';
-import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
+import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
 import { type StyleScope, sharedStyle, styles, useStyleScope, useTheme } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { a11yState } from '#ui/lib/a11y';

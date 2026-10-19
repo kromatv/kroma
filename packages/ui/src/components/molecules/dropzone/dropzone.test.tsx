@@ -2,7 +2,7 @@
 
 import { fireEvent, isInaccessible, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { Dropzone } from './dropzone.web';
+import { Dropzone } from './dropzone';
 
 const file = (name: string, size: number, type = '') => {
   const made = new File(['x'], name, { type });

@@ -267,6 +267,12 @@ each other, and both reach a library by its `@kromatv/*` name.
   D-pad stop, a pointer-sized hit area), so indicators are non-pressable faces;
   and a control's shape comes from the one shell table in `lib/field-shell`,
   never from its own paddings.
+- **One code, every device.** Nothing in `packages/ui/src/components` or
+  `packages/tv/src` branches on the platform: no `WEB ?`, no `Platform.OS`, no
+  `.web.*` / `.ios.*` / `.native.*` twin. The engine (`packages/ui/src/core`,
+  `packages/ui/src/lib`) owns every platform difference behind a primitive, so
+  the developer writes one code path and it renders right everywhere.
+  `kroma/no-platform-branch` enforces it.
 - **Clients stay thin.** UI belongs in `@kromatv/ui`, logic in `@kromatv/core`, the TV
   experience in `@kromatv/tv`. Write platform code once.
 - Both `clients/web/src` and `packages/tv/src` are **feature-sliced**

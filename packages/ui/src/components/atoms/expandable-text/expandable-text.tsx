@@ -12,15 +12,14 @@
 // A television build simply renders it clamped: the press is a pointer's or
 // a thumb's gesture, and a D-pad synopsis wants a screen of its own.
 
-import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Animated, Pressable } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable } from 'react-native';
 import { Text, type TextProps } from '#ui/components/atoms/text';
-import { style, styles } from '#ui/core';
+import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { motion } from '#ui/core/tokens';
 import { a11yState } from '#ui/lib/a11y';
-import { ease } from '#ui/lib/ease';
-import { WEB } from '#ui/lib/platform';
+import { HeightGlide } from '#ui/lib/height-glide';
 
 const GROW_MS = motion.duration.base;
 
@@ -90,7 +89,7 @@ function ExpandableText({
       accessibilityRole={clampable ? 'button' : undefined}
       {...(clampable ? a11yState({ expanded }) : null)}
     >
-      <Grow height={box}>
+      <HeightGlide height={box} durationMs={GROW_MS}>
         <Text
           variant={variant}
           color={color}
@@ -104,7 +103,7 @@ function ExpandableText({
         >
           {children}
         </Text>
-      </Grow>
+      </HeightGlide>
       {/* The measuring ghost: unclamped, invisible, untouchable. `aria-hidden`
           as well as `accessible={false}`, which react-native-web does not
           implement - without it the paragraph is in the tree twice. */}
@@ -130,50 +129,9 @@ function ExpandableText({
   );
 }
 
-/** The growing box. A height cannot go through the native driver, so the two
- *  platforms animate it their own way: a CSS transition in the browser, an
- *  `Animated` value elsewhere. `undefined` means "size to the content", which
- *  is how the first measurement happens. */
-function Grow({ height, children }: Readonly<{ height?: number; children: ReactNode }>) {
-  const s = useStyles(sDefinition);
-
-  const [value] = useState(() => new Animated.Value(height ?? 0));
-  const settled = useRef(height);
-  useEffect(() => {
-    if (WEB || height === undefined) return;
-    // The first known height is adopted rather than animated to: there was no
-    // previous one to grow from.
-    if (settled.current === undefined) {
-      value.setValue(height);
-      settled.current = height;
-      return;
-    }
-    settled.current = height;
-    Animated.timing(value, {
-      toValue: height,
-      duration: GROW_MS,
-      easing: ease.out.native,
-      useNativeDriver: false,
-    }).start();
-  }, [height, value]);
-
-  if (height === undefined) return <>{children}</>;
-  if (WEB) {
-    return <Animated.View style={[s.clip, TRANSITION, { height }]}>{children}</Animated.View>;
-  }
-  return <Animated.View style={[s.clip, { height: value }]}>{children}</Animated.View>;
-}
-
-const TRANSITION = style({
-  transitionProperty: 'height',
-  transitionDuration: `${GROW_MS}ms`,
-  transitionTimingFunction: ease.out.css,
-});
-
 const sDefinition = styles({
   ghost: { absolute: true, left: 0, right: 0, top: 0, opacity: 0, pointerEvents: 'none' },
   more: { fontWeight: '700', mt: 2 },
-  clip: { overflow: 'hidden' },
 });
 
 export type { ExpandableTextProps };

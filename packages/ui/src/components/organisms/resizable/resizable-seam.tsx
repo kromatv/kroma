@@ -13,8 +13,8 @@ import { styles, sv } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { space } from '#ui/core/tokens';
 import type { GroupOrientation } from '#ui/lib/group-shape';
-import { holdCursor } from './resizable-cursor';
-import { useResizableKeys } from './resizable-keys';
+import { holdCursor } from '#ui/lib/drag-cursor';
+import { useResizableKeys } from '#ui/lib/seam-keys';
 
 // Under this much movement the gesture is still a press. Deliberately tiny: a
 // seam that wants a shove before it moves reads as stuck.

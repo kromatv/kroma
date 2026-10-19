@@ -1,8 +1,16 @@
 import { commitLabel, formatBuildDate, repoLabel } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { useLocale, useT } from '@kromatv/ui';
-import { Box, Hint, ListRow, styles, Text, useFocusNav, useStyles } from '@kromatv/ui/kit';
-import { Platform } from 'react-native';
+import {
+  Box,
+  Hint,
+  ListRow,
+  monoFont,
+  styles,
+  Text,
+  useFocusNav,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { buildInfo } from '#tv/app/clientBuild';
 import { type ClientHardware, clientHardware } from '#tv/app/clientHardware';
 import { useAuthMaybe } from '#tv/app/providers/auth';
@@ -133,13 +141,5 @@ function Fact({
 }
 
 const sDefinition = styles({
-  // Native takes one font family name (a CSS-style list resolves to nothing
-  // and silently falls back); the browser shells take the list.
-  mono: {
-    fontFamily: Platform.select({
-      ios: 'Menlo',
-      android: 'monospace',
-      default: "ui-monospace, 'SF Mono', Menlo, monospace",
-    }),
-  },
+  mono: { fontFamily: monoFont() },
 });

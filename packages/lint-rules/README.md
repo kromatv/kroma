@@ -68,6 +68,16 @@ accesses. Aliases and computed string properties are covered; shadowed variables
 and unrelated libraries are allowed. Use a plain component with `ref` as a prop.
 Run `bun run --cwd packages/lint-rules rules no-react-forward-ref` for repair steps.
 
+### no-platform-branch
+
+Reject any platform branch in `packages/ui/src/components` and `packages/tv/src`:
+an import of `#ui/lib/platform`, a read of `Platform.OS` / `select` / `isTV` /
+`isTVOS` / `isPad` / `Version`, or a `*.web.*`, `*.ios.*`, `*.android.*`,
+`*.native.*` or `*.tv.*` file. One source renders on every device; the engine in
+`packages/ui/src/core` and `packages/ui/src/lib` owns the difference. Tests are
+excluded.
+Run `bun run --cwd packages/lint-rules rules no-platform-branch` for repair steps.
+
 ### no-comment-banners
 
 Reject comment lines framed with hyphens/equals and decorative separators.

@@ -10,26 +10,14 @@ import {
 // television would otherwise list itself as an unknown desktop.
 
 import { deviceLocale } from '@kromatv/core';
-import { Platform } from 'react-native';
+import { nativeDevice } from '@kromatv/ui/kit';
 import { buildInfo } from '#tv/app/clientBuild';
 
 /** This television, as `clientUserAgent` wants it. `null` in a browser shell,
  * where the browser's own User-Agent is both better and unchangeable. */
 export function tvIdentity(version = buildInfo().version): DeviceIdentity | null {
-  if (Platform.OS === 'ios') {
-    // tvOS exposes no model API without a native module.
-    const { systemName, osVersion } = Platform.constants;
-    return {
-      version,
-      model: Platform.isTV ? 'Apple TV' : 'Apple device',
-      os: `${systemName} ${osVersion}`,
-    };
-  }
-  if (Platform.OS === 'android') {
-    const { Model, Release, uiMode } = Platform.constants;
-    return { version, model: Model, os: `Android${uiMode === 'tv' ? ' TV' : ''} ${Release}` };
-  }
-  return null;
+  const device = nativeDevice();
+  return device ? { version, ...device } : null;
 }
 
 export function makeClient(

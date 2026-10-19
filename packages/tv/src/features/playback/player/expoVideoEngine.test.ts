@@ -3,7 +3,7 @@ import { fakeClient } from '@kromatv/client/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineOptions } from './baseEngine';
 import { NATIVE_SEEK_AHEAD } from './baseEngine';
-import { nativeBufferBudget } from './bufferBudget';
+import { nativeBufferBudget } from '@kromatv/ui/native-player';
 import type { EngineListeners } from './engine';
 import { ExpoVideoEngine } from './expoVideoEngine';
 

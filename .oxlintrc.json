@@ -74,6 +74,18 @@
   "overrides": [
     {
       "files": [
+        "packages/ui/src/components/**/*.ts",
+        "packages/ui/src/components/**/*.tsx",
+        "packages/tv/src/**/*.ts",
+        "packages/tv/src/**/*.tsx"
+      ],
+      "excludeFiles": ["**/*.test.*", "**/*.d.ts"],
+      "rules": {
+        "kroma/no-platform-branch": "error"
+      }
+    },
+    {
+      "files": [
         "packages/core/src/**/*.ts",
         "packages/client/src/**/*.ts",
         "packages/ui/src/**/*.ts",

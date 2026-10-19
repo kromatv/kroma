@@ -5,13 +5,11 @@ import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 // tree long enough for the exit to play.
 
 import { type ReactNode, useEffect, useState } from 'react';
-import { Animated, type StyleProp, type ViewStyle } from 'react-native';
-import { Box } from '#ui/components/atoms/box';
 
 import { useStyles } from '#ui/core/styles';
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
-import { WEB } from '#ui/lib/platform';
+import { GlideView } from '#ui/lib/glide-view';
 
 const SLIDE_MS = motion.duration.slow;
 
@@ -59,65 +57,21 @@ interface SlidePanelProps {
 function SlidePanel({ shown, side, width, inset, children }: Readonly<SlidePanelProps>) {
   const scope = useStyleScope();
 
-  const move = useStyles(moveDefinition);
   const s = useStyles(sDefinition);
 
   const holder = [
     side === 'right' ? s.holderRight : s.holderLeft,
     inset ? frame(inset, scope) : null,
   ];
-  if (WEB) {
-    const away = side === 'right' ? SLIDE_OUT : SLIDE_OUT_LEFT;
-    return <Box style={[holder, move.slide, slideTo(shown ? 0 : away, scope)]}>{children}</Box>;
-  }
+  const away = (width + 2 * inset) * 1.05 * (side === 'right' ? 1 : -1);
   return (
-    <SlidePanelNative shown={shown} side={side} width={width + 2 * inset} holder={holder}>
+    <GlideView x={shown ? 0 : away} ms={SLIDE_MS} easing={ease.out} style={holder}>
       {children}
-    </SlidePanelNative>
+    </GlideView>
   );
 }
-
-function SlidePanelNative({
-  shown,
-  side,
-  width,
-  holder,
-  children,
-}: Readonly<{
-  shown: boolean;
-  side: DrawerSide;
-  width: number;
-  holder: StyleProp<ViewStyle>;
-  children: ReactNode;
-}>) {
-  // Initial value matches the initial state so a drawer restored open does not
-  // play its own entrance.
-  const [slide] = useState(() => new Animated.Value(shown ? 0 : 1));
-  useEffect(() => {
-    Animated.timing(slide, {
-      toValue: shown ? 0 : 1,
-      duration: SLIDE_MS,
-      easing: ease.out.native,
-      useNativeDriver: true,
-    }).start();
-  }, [shown, slide]);
-  const off = width * 1.05 * (side === 'right' ? 1 : -1);
-  const translateX = slide.interpolate({ inputRange: [0, 1], outputRange: [0, off] });
-  return (
-    <Animated.View style={[holder, { transform: [{ translateX }] }]}>{children}</Animated.View>
-  );
-}
-
-// Past its own edge plus the shadow's reach, so nothing peeks while closed.
-const SLIDE_OUT = '105%' as unknown as number;
-const SLIDE_OUT_LEFT = '-105%' as unknown as number;
 
 const moveDefinition = styles({
-  slide: {
-    transitionProperty: 'transform',
-    transitionDuration: `${SLIDE_MS}ms`,
-    transitionTimingFunction: ease.out.css,
-  },
   fade: {
     transitionProperty: 'opacity',
     transitionDuration: `${SLIDE_MS}ms`,
@@ -126,9 +80,6 @@ const moveDefinition = styles({
 });
 
 const FADE = moveDefinition.fade;
-
-const slideTo = (x: number, scope: StyleScope) =>
-  sharedStyle(`drawer:slide:${x}`, { transform: [{ translateX: x }] }, scope);
 
 const frame = (inset: number, scope: StyleScope) =>
   sharedStyle(`drawer:frame:${inset}`, { padding: inset, pointerEvents: 'box-none' }, scope);
@@ -139,4 +90,4 @@ const sDefinition = styles({
 });
 
 export type { DrawerSide };
-export { FADE, SLIDE_MS, SlidePanel, useSlide, WEB };
+export { FADE, SLIDE_MS, SlidePanel, useSlide };

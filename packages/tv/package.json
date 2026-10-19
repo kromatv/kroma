@@ -13,11 +13,12 @@
   },
   "exports": {
     ".": "./src/index.tsx",
-    "./mount": "./src/mount.web.tsx",
+    "./mount": "./src/mount.tsx",
     "./stage": "./src/shared/stage.ts",
     "./build-info": "./src/app/buildMetadata.ts",
     "./hardware": "./src/app/hardwareReadings.ts",
-    "./vlc-plane": "./src/features/playback/player/vlcBackend.ts"
+    "./vlc-plane": "./src/features/playback/player/vlcBackend.ts",
+    "./native-playback": "./src/features/playback/native/NativePlayer.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

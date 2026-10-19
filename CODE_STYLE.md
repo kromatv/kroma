@@ -179,6 +179,13 @@ The same instinct applies to the code:
   function-component fibers only: inside `forwardRef` or `memo` it keeps the
   closure it had at mount. A memoised component that needs one stable, fresh
   callback uses `useStableCallback` (`#ui/lib/stable-callback`).
+- **One code, every device.** A component or a feature never branches on the
+  platform: no `WEB ?` ternary, no `Platform.OS`, no `.web.tsx` / `.ios.tsx`
+  twin. Write the same code for Tizen, webOS, the browser, Apple TV, Android
+  TV, iOS and Android, and let the engine render it correctly on each. When a
+  platform needs something different, the fix belongs in the engine
+  (`packages/ui/src/core`, `packages/ui/src/lib`), behind a primitive every
+  caller uses the same way. `kroma/no-platform-branch` enforces it.
 - **No dead code, no unused exports.** `bun run deadcode` catches them.
 - Follow `.oxlintrc.json` for lint and house rules and `.oxfmtrc.json` for
   formatting. Run

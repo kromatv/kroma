@@ -9,7 +9,8 @@ const platform = vi.hoisted<{
 }>(() => ({
   current: { OS: 'web' },
 }));
-vi.mock('react-native', () => ({
+vi.mock('react-native', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   get Platform() {
     return platform.current;
   },

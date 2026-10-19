@@ -11,11 +11,10 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
-import { WEB } from '#ui/lib/platform';
+import { useListCursorKeys } from '#ui/lib/list-cursor-keys';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { useControllable } from '#ui/lib/use-controllable';
 import { CommandContext, type CommandState } from './command-context';
-import { useCommandKeys } from './command-keys';
 import { type CommandItem, flatten, scrollTo, sectionsOf, stepTo } from './command-list';
 import { Empty, Footer, Input, List } from './command-parts';
 
@@ -88,7 +87,8 @@ function Root({
   // the cursor.
   const point = useStableCallback((item: CommandItem) => setCursor(flat.indexOf(item)));
 
-  useCommandKeys({
+  const cursorId = useListCursorKeys({
+    cursor: flat[at]?.id,
     onStep: (rows) => setCursor((prev) => stepTo(prev, rows, flat.length)),
     onChoose: () => choose(flat[at]),
     onClose,
@@ -100,7 +100,7 @@ function Root({
       total: items.length,
       query,
       sections,
-      cursor: WEB ? flat[at]?.id : undefined,
+      cursor: cursorId,
       selected,
       setQuery: (next: string) => {
         setQueryValue(next);
@@ -111,7 +111,19 @@ function Root({
       close: onClose,
       scroll: (offset, viewport) => scrollTo(sections, at, offset, viewport),
     }),
-    [flat, items.length, query, sections, at, selected, setQueryValue, point, choose, onClose],
+    [
+      flat,
+      items.length,
+      query,
+      sections,
+      at,
+      cursorId,
+      selected,
+      setQueryValue,
+      point,
+      choose,
+      onClose,
+    ],
   );
 
   return (

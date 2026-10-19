@@ -1,9 +1,10 @@
-import { type ReactElement, useEffect, useState } from 'react';
-import { Animated, View, type ViewStyle } from 'react-native';
+import type { ReactElement } from 'react';
+import type { ViewStyle } from 'react-native';
 import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
-import { WEB } from '#ui/lib/platform';
-import { EASE_CSS, EASE_NATIVE, SETTLE_MS } from './strip-motion';
+import { ease } from '#ui/lib/ease';
+import { GlideView } from '#ui/lib/glide-view';
+import { SETTLE_MS } from './strip-motion';
 
 type Axis = 'x' | 'y';
 
@@ -19,74 +20,20 @@ interface MovingStripProps {
   children: ReactElement;
 }
 
-// Web: a CSS transition on `transform`, since react-native-web has no native
-// driver and an Animated value there is a rAF loop competing with React for the
-// main thread. Native: `Animated`, where the driver is real.
 function MovingStrip({ offset, axis, still = false, style, children }: Readonly<MovingStripProps>) {
   const s = useStyles(sDefinition);
 
-  if (WEB) {
-    return (
-      <View
-        style={[
-          axis === 'x' ? s.row : null,
-          style,
-          {
-            transform: axis === 'x' ? [{ translateX: -offset }] : [{ translateY: -offset }],
-            // CSS-only props react-native-web understands and RN's types do not.
-            transitionProperty: 'transform',
-            transitionDuration: still ? '0ms' : `${SETTLE_MS}ms`,
-            transitionTimingFunction: EASE_CSS,
-          } as ViewStyle,
-        ]}
-      >
-        {children}
-      </View>
-    );
-  }
   return (
-    <MovingStripNative offset={offset} axis={axis} still={still} style={style}>
-      {children}
-    </MovingStripNative>
-  );
-}
-
-function MovingStripNative({
-  offset,
-  axis,
-  still = false,
-  style,
-  children,
-}: Readonly<MovingStripProps>) {
-  const s = useStyles(sDefinition);
-
-  const [slide] = useState(() => new Animated.Value(0));
-
-  useEffect(() => {
-    if (still) {
-      slide.setValue(-offset);
-      return;
-    }
-    Animated.timing(slide, {
-      toValue: -offset,
-      duration: SETTLE_MS,
-      easing: EASE_NATIVE,
-      useNativeDriver: true,
-    }).start();
-  }, [offset, still, slide]);
-
-  return (
-    <Animated.View
-      style={[
-        axis === 'x' ? s.row : null,
-        style,
-        axis === 'x'
-          ? { transform: [{ translateX: slide }] }
-          : { transform: [{ translateY: slide }] },
-      ]}
+    <GlideView
+      x={axis === 'x' ? -offset : 0}
+      y={axis === 'y' ? -offset : 0}
+      ms={SETTLE_MS}
+      easing={ease.out}
+      still={still}
+      style={[axis === 'x' ? s.row : null, style]}
     >
       {children}
-    </Animated.View>
+    </GlideView>
   );
 }
 

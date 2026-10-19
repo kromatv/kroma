@@ -13,18 +13,13 @@ import {
 // keyboard, a non-focusable display plus caret on a television.
 
 import { useRef, useState } from 'react';
-import {
-  type StyleProp,
-  TextInput,
-  type TextInputContentSizeChangeEvent,
-  type TextStyle,
-} from 'react-native';
+import { type StyleProp, TextInput, type TextStyle } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 
 import { useStyles } from '#ui/core/styles';
 import { Caret } from '#ui/lib/caret';
-import { fieldSizing } from '#ui/lib/css';
+import { useContentHeight } from '#ui/lib/content-height';
 import {
   CONTROL,
   type ControlSize,
@@ -35,7 +30,6 @@ import {
   useEntryDefaults,
   useEntryFontSize,
 } from '#ui/lib/field-shell';
-import { WEB } from '#ui/lib/platform';
 import { useControllable } from '#ui/lib/use-controllable';
 
 interface TextAreaProps extends Omit<BoxProps, 'children' | 'ring'> {
@@ -112,12 +106,11 @@ function TextArea({
   const theme = useTheme();
   const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState(false);
-  const [content, setContent] = useState(0);
   const input = useRef<TextInput>(null);
 
   const min = lines(rows);
   const max = lines(maxRows);
-  const grown = Math.min(Math.max(content, min), max);
+  const height = useContentHeight(min, max);
   const shell = fieldShell(metrics, { flat, focused, invalid }, scope);
 
   return (
@@ -156,19 +149,13 @@ function TextArea({
           autoCorrect={false}
           autoCapitalize="sentences"
           selectionColor={theme.colors.accent}
-          // Native only: the browser has `field-sizing`, and the callback there
-          // would cost a state write per keystroke for the same layout.
-          onContentSizeChange={
-            autoSize && !WEB
-              ? (e: TextInputContentSizeChangeEvent) => setContent(e.nativeEvent.contentSize.height)
-              : undefined
-          }
+          onContentSizeChange={autoSize ? height.onContentSizeChange : undefined}
           style={[
             s.entry,
             NO_OUTLINE,
             entryOf(min, max, fontSize, scope),
             textStyle,
-            growth(autoSize, min, grown, scope),
+            growth(autoSize, min, height.style, scope),
           ]}
         />
       ) : (
@@ -184,16 +171,14 @@ function TextArea({
   );
 }
 
-const SIZED = style(fieldSizing());
-
 function growth(
   autoSize: boolean,
   min: number,
-  grown: number,
+  sized: StyleProp<TextStyle>,
   scope: StyleScope,
 ): StyleProp<TextStyle> {
   if (!autoSize) return sharedStyle(`text-area:height:${min}`, { height: min }, scope);
-  return WEB ? SIZED : { height: grown };
+  return sized;
 }
 
 // The row unit `rows`/`maxRows` count in: the md shell's content line, so a

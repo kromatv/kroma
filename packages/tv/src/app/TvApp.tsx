@@ -69,9 +69,7 @@ import { TvMovieDetail } from '#tv/features/catalog/TvMovieDetail';
 import { TvPerson } from '#tv/features/catalog/TvPerson';
 import { TvSearch } from '#tv/features/catalog/TvSearch';
 import { TvShowDetail } from '#tv/features/catalog/TvShowDetail';
-// Loading the player is a platform decision: the browser targets code-split it,
-// the native ones cannot.
-import { TvPlayer } from '#tv/features/playback/playerChunk';
+import type { PlaybackPlatform } from '#tv/features/playback/player/playbackBackend';
 import { TvReleases } from '#tv/features/releases/TvReleases';
 import { TvReport } from '#tv/features/reports/TvReport';
 import { createDeviceIdentity } from '#tv/shared/device';
@@ -80,6 +78,8 @@ import { AUTH_BACKDROP } from '#tv/shared/ui';
 import { createDevicePreferences, DevicePreferencesProvider } from './device-preferences';
 
 export interface TvAppProps {
+  /** The player screen and the engines behind it, from the shell. */
+  playback: PlaybackPlatform;
   searchRequests?: SearchRequests;
   deepLinks?: DeepLinks;
   decoderFrameLimits?: DecoderFrameLimits;
@@ -138,6 +138,7 @@ export function TvApp({
   decoderFrameLimits,
   lan,
   deviceName,
+  playback,
 }: Readonly<TvAppProps>) {
   const storage = useDeviceStore();
   const inheritedTheme = useStyleScope().theme;
@@ -165,6 +166,7 @@ export function TvApp({
   const [ownedSearchRequests] = useState(createSearchRequests);
   const searchRequests = suppliedSearchRequests ?? ownedSearchRequests;
   const name = useDeviceName(deviceName, platform);
+  const screens = useMemo(() => ({ ...SCREENS, player: playback.Player }), [playback.Player]);
 
   return (
     <DevicePreferencesProvider value={devicePreferences}>
@@ -180,7 +182,7 @@ export function TvApp({
                         <SearchShellProvider value={searchShell}>
                           <EnvProvider platform={platform} overrides={capabilities}>
                             <TvNavProvider
-                              screens={SCREENS}
+                              screens={screens}
                               chrome={LAYERS}
                               onExit={canExitOnBack() ? exitOnBack : undefined}
                             >
@@ -259,7 +261,7 @@ export function TvApp({
   );
 }
 
-const SCREENS: TvScreens = {
+const SCREENS: Omit<TvScreens, 'player'> = {
   connect: TvConnect,
   profiles: TvProfiles,
   addProfile: TvAddProfile,
@@ -278,7 +280,6 @@ const SCREENS: TvScreens = {
   movie: TvMovieDetail,
   show: TvShowDetail,
   discover: TvDiscoverDetail,
-  player: TvPlayer,
   report: TvReport,
   releases: TvReleases,
 };

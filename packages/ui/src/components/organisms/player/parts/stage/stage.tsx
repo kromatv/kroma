@@ -1,27 +1,25 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
-import { Animated, Platform, Pressable, type ViewStyle } from 'react-native';
+import { Animated, Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import {
-  resolveStyles,
-  type StyleScope,
-  sharedStyle,
-  style,
-  styles,
-  useStyleScope,
-} from '#ui/core';
+import { resolveStyles, type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { radius as cornerRadius } from '#ui/core/tokens';
-import { ease } from '#ui/lib/ease';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
-import { WEB } from '#ui/lib/platform';
+import {
+  CARD_RADIUS,
+  cardCorner,
+  StageCornerMask,
+  useStageZoom,
+  zoomStyle,
+} from '#ui/lib/player/stage-zoom';
 import { useT } from '#ui/services/i18n';
 import { CARD_MS } from '../../lib/panel-slide';
 import { type StageCard, stageCard } from '../../lib/stage-card';
-import { useStageRatio } from '../../lib/stage-ratio';
+import { useStageRatio } from '#ui/lib/player/stage-ratio';
 import { injectStageStyles } from '../../lib/styles';
 import type { SubtitleAppearance } from '../../lib/subtitle-appearance';
 import { surfaceShrink } from '../../lib/surface-shrink';
-import { VIRTUAL_FOCUS } from '../../lib/virtual-focus';
+import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
 import type { PlaneRect, PlayerController } from '../../types';
 import { SubtitleRenderer } from '../subtitle-renderer';
 import { SurfaceRadiusProvider } from '../surface-radius';
@@ -29,61 +27,10 @@ import { StageOverlay } from './stage-overlay';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const CARD_RADIUS = 72;
-
-// Android is the one platform that cannot have the card's shape asked of it
-// directly, and it fails two ways at once:
-//
-//  - a rounded clip on the box makes it render through an offscreen pass, and a
-//    video texture whose parent renders offscreen loses its surface for good;
-//  - a `transformOrigin` on a transformed view blanks the whole subtree, its own
-//    background included.
-//
-// So there the corners are cut by a mask drawn over the picture, and the card is
-// reached by scaling about the middle and translating the rest of the way.
-// Everywhere else keeps the road it already had: the web box rounds its own
-// child element, an AVPlayerLayer rounds itself off SurfaceRadiusProvider (see
-// PlayerSurface), and the origin lands the card in one property.
-const ANDROID = Platform.OS === 'android';
-
-// A black frame whose INNER corners are the card's, drawn over the picture and
-// clipped to it. Inner radius = borderRadius - borderWidth, hence the doubling.
-// Always mounted, with the same geometry throughout; only its opacity moves,
-// on the same value as the shrink.
-const CORNER_MASK = style({
-  position: 'absolute',
-  left: -CARD_RADIUS,
-  right: -CARD_RADIUS,
-  top: -CARD_RADIUS,
-  bottom: -CARD_RADIUS,
-  borderWidth: CARD_RADIUS,
-  borderColor: 'black',
-  borderRadius: CARD_RADIUS * 2,
-});
-
 const cornerOf = (radius: number, scope: StyleScope) =>
   sharedStyle(`stage:corner:${radius}`, { borderRadius: radius }, scope);
 
 const pct = (fraction: number): `${number}%` => `${fraction * 100}%`;
-
-// On the UI thread: a scale is one of the two properties the native driver
-// takes, and the slowest box we support cannot spare a JS frame per frame.
-// `active` is what keeps a surface that does not scale from running it at all.
-function useStageZoom(settingsShrink: boolean, active: boolean): Animated.Value {
-  const [zoom] = useState(() => new Animated.Value(settingsShrink ? 1 : 0));
-  useEffect(() => {
-    if (!active) return;
-    const anim = Animated.timing(zoom, {
-      toValue: settingsShrink ? 1 : 0,
-      duration: CARD_MS,
-      easing: ease.out.native,
-      useNativeDriver: true,
-    });
-    anim.start();
-    return () => anim.stop();
-  }, [settingsShrink, active, zoom]);
-  return zoom;
-}
 
 // Snapped, not eased: a radius is not a native-driver property, and animating
 // one would drag the whole shrink back onto the JS thread for a corner nobody
@@ -97,48 +44,6 @@ function useCardRadius(settingsShrink: boolean): number {
     return () => clearTimeout(out);
   }, [settingsShrink]);
   return rounded ? CARD_RADIUS : 0;
-}
-
-const between = (zoom: Animated.Value, from: number, to: number) =>
-  zoom.interpolate({ inputRange: [0, 1], outputRange: [from, to] });
-
-// The browsers do not have `Animated`'s native driver at all: react-native-web
-// warns once and falls back to a JS animation, so every frame of the shrink
-// would be a render on the same thread the chrome ticks on. A CSS transition
-// hands the whole movement to the compositor instead and costs one style write,
-// which on a television is the difference between a shrink and a stutter.
-function webZoomStyle(shrink: boolean, card: StageCard): ViewStyle {
-  return {
-    transformOrigin: `${pct(card.origin)} 50%`,
-    transform: `scale(${shrink ? card.scale : 1})`,
-    transitionProperty: 'transform',
-    transitionDuration: `${CARD_MS}ms`,
-    transitionTimingFunction: ease.out.css,
-    // Asked for up front, so the first frame of the shrink is not also the frame
-    // that promotes the layer.
-    willChange: 'transform',
-  } as ViewStyle;
-}
-
-// `transformOrigin` is the web's road, and only the web's: a television shell
-// CSS-scales its whole canvas, so a pixel written back there is read at layout
-// size while `onLayout` reported the scaled one, and the origin is the one way
-// to say it without a unit.
-//
-// No native platform takes it. Under a native-driver transform it blanks the
-// whole subtree, its own background included, which is what left the card black
-// on every engine. Native scales about the default middle and covers the rest
-// with a translate instead, which is safe there precisely because that
-// pixel-versus-layout mismatch is a web trick: the pixel this is written in is
-// the one `onLayout` measured. `stage-card` proves the two land identically.
-function zoomStyle(zoom: Animated.Value, card: StageCard, width: number, shrink: boolean) {
-  if (WEB) return webZoomStyle(shrink, card);
-  return {
-    transform: [
-      { translateX: between(zoom, 0, card.shift * width) },
-      { scale: between(zoom, 1, card.scale) },
-    ],
-  };
 }
 
 // A hardware plane behind the page can't be CSS-transformed, and animating its
@@ -255,7 +160,7 @@ function Stage({
   const planeShrink = shrink === 'plane' && settingsShrink;
   const hasPlane = shrink === 'plane' && Boolean(c.setPlaneRect);
   useNativePlaneShrink(planeShrink, card.rect, c.setPlaneRect);
-  const zoom = useStageZoom(settingsShrink, shrink === 'transform' && !WEB);
+  const zoom = useStageZoom(settingsShrink, shrink === 'transform');
   const radius = useCardRadius(settingsShrink);
   const { picture: pictureBox, content: contentShrink } = stageBoxes(
     card,
@@ -287,17 +192,10 @@ function Stage({
           texture's surface does not survive its subtree being rebuilt. */}
         <Animated.View
           nativeID={PICTURE_ID}
-          style={[pictureBox, cornerOf(ANDROID ? 0 : radius, scope)]}
+          style={[pictureBox, cornerOf(cardCorner(radius), scope)]}
         >
-          <SurfaceRadiusProvider radius={ANDROID ? 0 : radius}>{children}</SurfaceRadiusProvider>
-          {/* Every native surface takes the mask, not just Android's texture: an
-            AVPlayerLayer is not clipped by a rounded ancestor either (see
-            PlayerSurface), so on Apple TV the card came out square-cornered.
-            Cutting the corners with a frame over the picture is the one way
-            that works whatever the platform hands the layer to. */}
-          {WEB ? null : (
-            <Animated.View style={[CORNER_MASK, { opacity: zoom }]} pointerEvents="none" />
-          )}
+          <SurfaceRadiusProvider radius={cardCorner(radius)}>{children}</SurfaceRadiusProvider>
+          <StageCornerMask zoom={zoom} />
         </Animated.View>
         {/* Carries the spinner + subtitles onto the card. The stage itself does
           not move on a plane shrink, so there this box takes the scale. */}

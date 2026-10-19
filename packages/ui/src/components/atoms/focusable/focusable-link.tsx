@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
+import { hostRole } from '#ui/lib/control-role';
 import { cloneHost } from '#ui/lib/slot';
-import { hostRole } from './focusable-a11y';
 import { hostFor } from './focusable-delegate';
 import { useCoatStack } from './focusable-paint';
 import type { FocusableProps, HostAt } from './focusable-types';

@@ -19,8 +19,7 @@ export const VIDEO_SOURCES = [
 // Fallback when the audio is blocked: past the 4.992s sting, so a sting that
 // does play always reaches its own `ended`.
 export const SAFETY_MS = 5400;
-export const EXIT_MS = 850;
-export const SAFETY_SLACK_MS = 1500;
+export { EXIT_MS, SAFETY_SLACK_MS } from '#ui/lib/intro-timing';
 
 // A hidden page gets its safety window re-checked rather than spent, so a tab
 // parked in the background still opens on the film. Bounded, because a webview

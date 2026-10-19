@@ -15,7 +15,7 @@ import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';
 import { useCastTarget } from '#tv/features/cast/castBridge';
 import { revealNativeSurface } from '#tv/features/playback/player/nativeSurface';
-import { PlayerSurface } from '#tv/features/playback/player/PlayerSurface';
+import { usePlaybackBackend } from '#tv/features/playback/player/playbackBackend';
 import { useNowPlaying } from '#tv/features/playback/player/useNowPlaying';
 import { useStoryboard } from '#tv/features/playback/player/useStoryboard';
 import { useTvController } from '#tv/features/playback/use-tv-controller';
@@ -36,6 +36,7 @@ export function TvPlayer() {
   const { item } = useParams('player');
   const client = useClient();
   const t = useT();
+  const { Surface } = usePlaybackBackend();
   // Reveal-on-pointer only with a real desktop mouse: a TV remote emits
   // phantom pointermove that would pin the chrome open, so there the D-pad
   // drives reveal instead (see env.mousePointer).
@@ -157,7 +158,7 @@ export function TvPlayer() {
       ) : null}
       {pb.resumedAt ? <Player.Resume at={pb.resumedAt} /> : null}
       <Player.Media>
-        <PlayerSurface pb={pb} title={item.title} />
+        <Surface pb={pb} title={item.title} />
       </Player.Media>
       {pb.terminated != null ? (
         <Player.Panel>

@@ -5,16 +5,16 @@ import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 // but a masked ancestor forms a BACKDROP ROOT and every <Frost> beneath it goes
 // blind (see lib/css.web.ts); React Native has no `maskImage` at all.
 
-import { useEffect, useState } from 'react';
-import { Animated, Pressable, type ViewStyle } from 'react-native';
+import { Pressable, type ViewStyle } from 'react-native';
 import { Icon } from '#ui/components/atoms/icon';
 import { FOCUS_BLEED } from '#ui/components/organisms/virtual/clip';
-import { EASE_NATIVE, FADE, SETTLE_MS } from '#ui/components/organisms/virtual/strip-motion';
+import { FADE, SETTLE_MS } from '#ui/components/organisms/virtual/strip-motion';
 
 import { useStyles } from '#ui/core/styles';
 import { SHADE, shade } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';
-import { WEB } from '#ui/lib/platform';
+import { ease } from '#ui/lib/ease';
+import { GlideView } from '#ui/lib/glide-view';
 
 const EDGE_SHARE = 0.15;
 const EDGE_MIN = 88;
@@ -80,30 +80,17 @@ export function RailEdge({
   const s = useStyles(sDefinition);
 
   const start = side === 'start';
-  // CSS transitions (`FADE`) are silently ignored on native and the gradient
-  // blinks instead of fading; drive it through Animated there.
-  const [fade] = useState(() => new Animated.Value(shown ? 1 : 0));
-  useEffect(() => {
-    if (WEB) return;
-    Animated.timing(fade, {
-      toValue: shown ? 1 : 0,
-      duration: SETTLE_MS,
-      easing: EASE_NATIVE,
-      useNativeDriver: true,
-    }).start();
-  }, [shown, fade]);
-  const webOpacity = shown ? s.shown : s.hidden;
-  const webFade = WEB ? webOpacity : { opacity: fade };
   return (
-    <Animated.View
+    <GlideView
+      opacity={shown ? 1 : 0}
+      ms={SETTLE_MS}
+      easing={ease.out}
       style={[
         s.edge,
         shown && arrow ? s.passThrough : s.inert,
         widthOf(width + FOCUS_BLEED, scope),
         start ? s.edgeStart : s.edgeEnd,
         scrimStyle(start, width, scope),
-        webFade,
-        WEB ? FADE : null,
       ]}
     >
       <Pressable
@@ -123,7 +110,7 @@ export function RailEdge({
       >
         <Icon name={start ? 'chevron-left' : 'chevron-right'} size={24} color="text" />
       </Pressable>
-    </Animated.View>
+    </GlideView>
   );
 }
 

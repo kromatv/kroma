@@ -6,7 +6,7 @@ import { type ColorValue, type StyleScope, sharedStyle } from '#ui/core';
 import { DEFAULT_STYLE_SCOPE } from '#ui/core/style-scope';
 import { radius as cornerRadius } from '#ui/core/tokens';
 import { type DeviceStore, useDeviceStore } from '#ui/lib/device-store';
-import { edgeStyle } from './subtitle-edge';
+import { edgeStyle } from '#ui/lib/player/subtitle-edge';
 
 /**
  * Subtitle appearance (§8): size, colour, edge, font, opacity, background and

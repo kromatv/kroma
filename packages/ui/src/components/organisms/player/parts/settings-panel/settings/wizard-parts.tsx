@@ -2,7 +2,7 @@ import { Pressable } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
+import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
 import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { useFocusMirror } from '#ui/lib/use-focus-mirror';

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, type TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
+import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
 import { IconOk } from '#ui/components/organisms/player/parts/icons';
 import { style, useStyles } from '#ui/core';
 import { a11yState } from '#ui/lib/a11y';
