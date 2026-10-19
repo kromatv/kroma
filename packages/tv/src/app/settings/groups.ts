@@ -3,7 +3,6 @@ import type { RowIcon, SettingsItem } from './items';
 import {
   artworkSetting,
   audioLanguageSetting,
-  blurSetting,
   castReceiverSetting,
   crashReportingSetting,
   engineSetting,
@@ -47,7 +46,6 @@ const deviceItems = [
   castReceiverSetting,
   gpuRenderingSetting,
   artworkSetting,
-  blurSetting,
   crashReportingSetting,
 ];
 
