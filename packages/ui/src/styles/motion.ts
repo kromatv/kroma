@@ -29,7 +29,6 @@ const FADE_UNIT = [
     visibility: 'hidden',
     animation: 'kroma-unit-failsafe 1ms linear 1500ms forwards',
   }),
-  rule(`:root[data-kroma-moving] ${UNIT}`, { transition: 'none' }),
   rule(`${UNIT} img[data-kroma-reveal]`, { opacity: 1, animation: 'none', transition: 'none' }),
   rule('[data-kroma-art-in]', {
     backgroundColor: 'transparent',

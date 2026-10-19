@@ -2,7 +2,6 @@ import { webWindow } from '@kromatv/ui/kit';
 import { mountRoot } from '@kromatv/ui/mount-root';
 import { lazy, StrictMode, Suspense } from 'react';
 
-import { cutFadesWhileMoving } from '#tv/app/cut-fades-while-moving';
 import { muteTransitionEvents } from '#tv/app/mute-transition-events';
 import { TvApp, type TvAppProps } from '#tv/app/TvApp';
 import { BROWSER_PLAYBACK } from '#tv/features/playback/browser/browserPlayback';
@@ -22,7 +21,6 @@ export function mountTv(props: Omit<TvAppProps, 'playback'> = {}): void {
   const win = webWindow();
   if (win) {
     muteTransitionEvents(win);
-    cutFadesWhileMoving(win);
   }
   mountRoot(
     <StrictMode>
