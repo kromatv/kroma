@@ -46,7 +46,7 @@ export function AmbientBackdrop({ entry }: Readonly<{ entry: CatalogEntry | null
 }
 
 function AmbientArtImpl({ src, tint }: Readonly<{ src: string | null; tint: string }>) {
-  return <Img src={src} background={tint} position="50% 20%" duration={FADE_MS} fill />;
+  return <Img src={src} background={tint} position="50% 20%" duration={FADE_MS} fill layered />;
 }
 
 const AmbientArt = memo(AmbientArtImpl);

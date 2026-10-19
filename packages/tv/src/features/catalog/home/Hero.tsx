@@ -112,6 +112,7 @@ export function Hero({ info, onPlay, onSelectShow, onSelectEntry }: Readonly<Her
         position="50% 22%"
         priority
         fill
+        layered
       />
       <Box fill pointerEvents="none" style={gradient(HERO_VEIL_HORIZONTAL)} />
       <Box fill pointerEvents="none" style={gradient(HERO_VEIL_VERTICAL)} />
