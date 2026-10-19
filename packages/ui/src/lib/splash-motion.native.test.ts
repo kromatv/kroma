@@ -21,7 +21,7 @@ function drift(spec = SPEC) {
 }
 
 describe('useDrift (native)', () => {
-  it('pans out and back on both axes, in pixels of the measured box', () => {
+  it('pans one way on both axes, in pixels of the measured box', () => {
     const style = drift().result.current as unknown as {
       transform: [
         { translateX: { _config: { outputRange: number[] } } },
@@ -56,18 +56,18 @@ describe('useDrift (native)', () => {
     expect(result.current).not.toBe(first);
   });
 
-  it('runs the loop while it is mounted and stops it on the way out', () => {
+  it('runs the pan once while it is mounted and stops it on the way out', () => {
     const stop = vi.fn();
     const start = vi.fn();
-    const loop = vi
-      .spyOn(Animated, 'loop')
+    const timing = vi
+      .spyOn(Animated, 'timing')
       .mockReturnValue({ start, stop } as unknown as Animated.CompositeAnimation);
 
     const { unmount } = drift();
     expect(start).toHaveBeenCalledTimes(1);
     unmount();
     expect(stop).toHaveBeenCalledTimes(1);
-    loop.mockRestore();
+    timing.mockRestore();
   });
 });
 

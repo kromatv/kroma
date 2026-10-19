@@ -64,13 +64,7 @@ const PAN_X = 0.06;
 const PAN_Y = 0.04;
 const ZOOM = 1.14;
 
-// The travel is a FRACTION of the box, so the drift is given a speed rather
-// than a duration: one duration walks 82px on a phone and 246px on a 1080p
-// panel. The bounds keep a hairline box from strobing and a wall-sized one
-// from stalling.
-const DRIFT_PX_PER_S = 4;
-const DRIFT_MIN_MS = 8000;
-const DRIFT_MAX_MS = 60000;
+const DRIFT_PX_PER_S = 6;
 
 interface SplashCover {
   /** Full artwork URL, already resolved against the server. */
@@ -88,11 +82,36 @@ interface SplashBackdropProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/** One leg of the drift, in ms: the travel the pan covers across the measured
- *  box, walked at `DRIFT_PX_PER_S`. */
-function legMs(width: number, height: number): number {
-  const travel = Math.hypot(width * PAN_X * 2, height * PAN_Y * 2);
-  return Math.min(Math.max((travel / DRIFT_PX_PER_S) * 1000, DRIFT_MIN_MS), DRIFT_MAX_MS);
+/** The share of the full pan a cover walks in `ms` at `DRIFT_PX_PER_S`. */
+function travelShare(width: number, height: number, ms: number): number {
+  const span = Math.hypot(width * PAN_X * 2, height * PAN_Y * 2);
+  if (!span) return 0;
+  return Math.min(1, (DRIFT_PX_PER_S * ms) / 1000 / span);
+}
+
+interface CoverLayerProps {
+  cover: SplashCover;
+  box: { width: number; height: number };
+  ms: number;
+  fadeMs: number;
+}
+
+function CoverLayer({ cover, box, ms, fadeMs }: Readonly<CoverLayerProps>) {
+  const s = useStyles(sDefinition);
+  const share = travelShare(box.width, box.height, ms);
+  const drift = useDrift({
+    x: PAN_X * share,
+    y: PAN_Y * share,
+    zoom: ZOOM,
+    ms,
+    width: box.width,
+    height: box.height,
+  });
+  return (
+    <Animated.View style={[s.art, drift]}>
+      <Img src={cover.url} fill duration={fadeMs} position="50% 40%" style={GRADE} />
+    </Animated.View>
+  );
 }
 
 /** The universal sign-in splash: hosts fetch `/api/splash`, map it to covers
@@ -104,11 +123,20 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
   const s = useStyles(sDefinition);
 
   const [slide, setSlide] = useState(0);
+  const [fading, setFading] = useState(false);
   useEffect(() => {
     if (covers.length < 2) return;
-    const timer = setInterval(() => setSlide((n) => n + 1), holdMs);
+    const timer = setInterval(() => {
+      setSlide((n) => n + 1);
+      setFading(true);
+    }, holdMs);
     return () => clearInterval(timer);
   }, [covers.length, holdMs]);
+  useEffect(() => {
+    if (!fading) return;
+    const timer = setTimeout(() => setFading(false), FADE_MS);
+    return () => clearTimeout(timer);
+  }, [fading, slide]);
 
   // Warm the next cover through the whole hold, so a dissolve never starts
   // against a half-loaded image.
@@ -119,25 +147,15 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
     prefetchImage(next);
   }, [slide, covers]);
 
-  // The drift is a pan across a frame held oversized for it, so no edge of the
-  // artwork ever enters the picture. Measured off THIS box rather than off the
-  // window: a host that gives the backdrop less than the whole screen still
-  // keeps its edges out of frame. The same measurement times the crawl, so a
-  // phone and a 65-inch panel drift at one speed.
   const [box, setBox] = useState({ width: 0, height: 0 });
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     setBox((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
   };
-  const drift = useDrift({
-    x: PAN_X,
-    y: PAN_Y,
-    zoom: ZOOM,
-    ms: legMs(box.width, box.height),
-    width: box.width,
-    height: box.height,
-  });
-  const cover = covers[slide % Math.max(covers.length, 1)];
+  const ms = holdMs + FADE_MS;
+  const count = Math.max(covers.length, 1);
+  const cover = covers[slide % count];
+  const previous = fading ? covers[(slide - 1) % count] : undefined;
   if (!cover) return null;
 
   return (
@@ -151,19 +169,16 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
         onLayout={onLayout}
         style={style}
       >
-        <Animated.View style={[s.art, drift]}>
-          {/* The long dissolve belongs to the HANDOVER between two covers; the
-              gate's first sight of any artwork takes the kit's short reveal
-              instead, since a 2.8s ramp from the page colour reads as a fade
-              from black rather than as a cross-fade. */}
-          <Img
-            src={cover.url}
-            fill
-            duration={slide === 0 ? IMG_FADE_MS : FADE_MS}
-            position="50% 40%"
-            style={GRADE}
-          />
-        </Animated.View>
+        {previous ? (
+          <CoverLayer key={slide - 1} cover={previous} box={box} ms={ms} fadeMs={FADE_MS} />
+        ) : null}
+        <CoverLayer
+          key={slide}
+          cover={cover}
+          box={box}
+          ms={ms}
+          fadeMs={slide === 0 ? IMG_FADE_MS : FADE_MS}
+        />
         <Box fill style={layers.veil} />
         <Box fill style={layers.vignette} />
         <Box absolute left={0} right={0} bottom={0} h={FOOT_H} style={layers.foot} />
