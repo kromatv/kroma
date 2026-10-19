@@ -27,7 +27,6 @@ import {
   type GridRows,
   rowMetrics,
   rowTop,
-  rowWindow,
   stripOffset,
 } from './grid-rows';
 import { useWheelScroll } from './use-wheel-rows';
@@ -250,10 +249,7 @@ function VirtualGrid<T>({
   // navigator would focus whatever slides beneath the stationary cursor.
   const fraction = useWheelScroll(viewport, rows, lastRow, metrics.headerRows, geometry.pitch);
 
-  const shown =
-    settledRow === null
-      ? rowWindow(focusedRow, metrics, OVERSCAN)
-      : catchUpWindow(focusedRow, settledRow, metrics, OVERSCAN);
+  const shown = catchUpWindow(focusedRow, settledRow, metrics, OVERSCAN);
   const offset =
     fraction === null ? stripOffset(focusedRow, metrics) : freeOffset(fraction, metrics);
   const mounted: ReactElement[] = [];
