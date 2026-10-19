@@ -36,11 +36,9 @@ export interface StageFlashProps {
 
 function useLinger<T>(value: T | null): T | null {
   const [held, setHeld] = useState(value);
+  if (value && held !== value) setHeld(value);
   useEffect(() => {
-    if (value) {
-      setHeld(value);
-      return;
-    }
+    if (value) return;
     const out = setTimeout(() => setHeld(null), FADE_MS);
     return () => clearTimeout(out);
   }, [value]);

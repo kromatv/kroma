@@ -25,12 +25,15 @@ interface WatchedValue {
   noteWatched: (id: SubjectId) => void;
 }
 
+const NONE: ReadonlySet<SubjectId> = new Set();
+
 const WatchedContext = createContext<WatchedValue | null>(null);
 
 export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { client, user, ready: authReady } = useAuth();
   const [ids, setIds] = useState<ReadonlySet<SubjectId>>(() => new Set());
-  const [ready, setReady] = useState(false);
+  const [loadedFor, setLoadedFor] = useState<typeof user>(null);
+  const ready = authReady && (!user || loadedFor === user);
   const idsRef = useRef<ReadonlySet<SubjectId>>(ids);
   const apply = useCallback((next: ReadonlySet<SubjectId>) => {
     idsRef.current = next;
@@ -38,24 +41,18 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
   }, []);
 
   useEffect(() => {
-    if (!authReady) return;
-    if (!user) {
-      apply(new Set());
-      setReady(true);
-      return;
-    }
+    if (!authReady || !user) return;
     let cancelled = false;
-    setReady(false);
     client.playback
       .watched()
       .then((list) => {
         if (!cancelled) {
           apply(new Set(list));
-          setReady(true);
+          setLoadedFor(user);
         }
       })
       .catch(() => {
-        if (!cancelled) setReady(true);
+        if (!cancelled) setLoadedFor(user);
       });
     return () => {
       cancelled = true;
@@ -85,22 +82,24 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
 
   const noteWatched = useCallback(
     (id: SubjectId) => {
-      if (idsRef.current.has(id)) return;
+      if (!user || idsRef.current.has(id)) return;
       apply(new Set(idsRef.current).add(id));
     },
-    [apply],
+    [apply, user],
   );
+
+  const visible = user ? ids : NONE;
 
   const value = useMemo<WatchedValue>(
     () => ({
       ready,
-      ids: [...ids],
-      isWatched: (id) => ids.has(id),
+      ids: [...visible],
+      isWatched: (id) => visible.has(id),
       setWatched,
-      toggleWatched: (id) => setWatched(id, !ids.has(id)),
+      toggleWatched: (id) => setWatched(id, !visible.has(id)),
       noteWatched,
     }),
-    [ids, ready, setWatched, noteWatched],
+    [visible, ready, setWatched, noteWatched],
   );
 
   return <WatchedContext.Provider value={value}>{children}</WatchedContext.Provider>;

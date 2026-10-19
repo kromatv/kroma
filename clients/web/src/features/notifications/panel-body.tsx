@@ -16,7 +16,7 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { useRef } from 'react';
+import { useState } from 'react';
 import { NotificationEntry } from '#web/features/notifications/notification-row';
 import {
   NO_STICKY,
@@ -24,6 +24,9 @@ import {
   unreadView,
 } from '#web/features/notifications/use-notifications';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
+
+const sameMembers = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
+  a.size === b.size && [...a].every((id) => b.has(id));
 
 /** The drawer's scrolling half: day headings, and the rows folded under them. */
 export function PanelBody({
@@ -39,18 +42,18 @@ export function PanelBody({
   // Held across renders on purpose: the set is what keeps a row the reader just
   // marked read from vanishing before they can undo it, and an effect would
   // only decide that a frame after it had already gone.
-  const sticky = useRef<ReadonlySet<string>>(NO_STICKY);
+  const [sticky, setSticky] = useState<ReadonlySet<string>>(NO_STICKY);
 
   if (isPending) return <PanelSkeleton />;
 
   const all = data?.notifications ?? [];
   let rows = all;
   if (filter === 'unread') {
-    const view = unreadView(all, sticky.current);
-    sticky.current = view.sticky;
+    const view = unreadView(all, sticky);
+    if (!sameMembers(view.sticky, sticky)) setSticky(view.sticky);
     rows = view.items;
-  } else {
-    sticky.current = NO_STICKY;
+  } else if (sticky !== NO_STICKY) {
+    setSticky(NO_STICKY);
   }
 
   if (rows.length === 0) {

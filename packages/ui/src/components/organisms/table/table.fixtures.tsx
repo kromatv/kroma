@@ -167,8 +167,12 @@ export function ServerSorted({ variant }: Readonly<Take>) {
   const [sort, setSort] = useState<readonly SortColumn[]>([{ column: 'added', direction: 'desc' }]);
   const [rows, setRows] = useState<readonly Download[]>([]);
   const [waiting, setWaiting] = useState(true);
-  useEffect(() => {
+  const [asked, setAsked] = useState(sort);
+  if (asked !== sort) {
+    setAsked(sort);
     setWaiting(true);
+  }
+  useEffect(() => {
     const answer = setTimeout(() => {
       setRows(ordered(DOWNLOADS, sort));
       setWaiting(false);

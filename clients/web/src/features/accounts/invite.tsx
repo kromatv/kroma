@@ -221,8 +221,9 @@ function PendingInviteRow({ inv, onChange }: Readonly<{ inv: Invite; onChange: (
   const { client } = useAuth();
   const [copied, copy] = useCopied();
   const [revoking, setRevoking] = useState(false);
+  const [now] = useState(() => Date.now());
 
-  const daysLeft = Math.max(0, Math.ceil((inv.expiresAt * 1000 - Date.now()) / DAY_MS));
+  const daysLeft = Math.max(0, Math.ceil((inv.expiresAt * 1000 - now) / DAY_MS));
   const labels = PERMISSIONS.filter((p) => inv.permissions.includes(p.key)).map((p) =>
     t(p.labelKey),
   );

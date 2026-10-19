@@ -75,7 +75,9 @@ export function useCatalogue(
     return makeClient(activeServerUrl, undefined, artworkScale, storage);
   }, [activeServerUrl, artworkScale, storage]);
   const liveClient = useRef(client);
-  liveClient.current = client;
+  useEffect(() => {
+    liveClient.current = client;
+  }, [client]);
 
   // Reported up by the auth provider once the session's bearer is live; gates
   // the catalogue + event stream so neither the signed-out picker nor a boot
@@ -85,7 +87,7 @@ export function useCatalogue(
   const [movies, setMovies] = useState<MediaItem[]>([]);
   const [shows, setShows] = useState<Show[]>([]);
   const [error, setError] = useState('');
-  const [discovering, setDiscovering] = useState(false);
+  const [discovering, setDiscovering] = useState(servers.length === 0);
   const [discovered, setDiscovered] = useState<string[]>([]);
   const [deepLink, setDeepLink] = useState<DeepLink | null>(() => readDeepLink());
 
@@ -116,8 +118,7 @@ export function useCatalogue(
     ],
   );
 
-  const discover = useCallback(() => {
-    setDiscovering(true);
+  const runDiscovery = useCallback(() => {
     let cancelled = false;
     // Discovery uses the backend supplied by this app root.
     void discoverServer({ browse })
@@ -133,39 +134,63 @@ export function useCatalogue(
       });
     return () => {
       cancelled = true;
-      setDiscovering(false);
     };
   }, [servers.length, addServer, browse]);
 
+  const discover = useCallback(() => {
+    setDiscovering(true);
+    const stop = runDiscovery();
+    return () => {
+      stop();
+      setDiscovering(false);
+    };
+  }, [runDiscovery]);
+
   // No saved servers → auto-discover on the LAN (first run).
+  const hasServers = servers.length > 0;
+  const [hadServers, setHadServers] = useState(hasServers);
+  if (hadServers !== hasServers) {
+    setHadServers(hasServers);
+    setDiscovering(!hasServers);
+    if (hasServers) setStatus((s) => (s === 'discovering' ? 'connecting' : s));
+  }
+
   useEffect(() => {
-    if (servers.length === 0) return discover();
-    setStatus((s) => (s === 'discovering' ? 'connecting' : s));
-  }, [servers.length, discover]);
+    if (servers.length === 0) return runDiscovery();
+  }, [servers.length, runDiscovery]);
 
   // Fetch the catalogue. `quiet` skips the status/error toggles (used by the live
   // refetch below no "connecting" flicker, keep current data on a transient error).
-  const fetchCatalogue = useCallback(async (c: KromaClient, quiet = false) => {
-    if (!quiet) setStatus('connecting');
-    try {
-      const [mvs, shs] = await Promise.all([c.media.movies(), c.media.shows()]);
-      // A server switch mid-flight: the answer belongs to the server that has
-      // just been left, so it must not become the catalogue on screen.
-      if (liveClient.current !== c) return;
-      setMovies(mvs);
-      setShows(shs);
-      if (!quiet) setStatus('ready');
-    } catch (err) {
-      if (liveClient.current !== c) return;
-      if (!quiet) {
-        setError(err instanceof Error ? err.message : String(err));
-        setStatus('error');
-      }
-    }
-  }, []);
+  const fetchCatalogue = useCallback(
+    (c: KromaClient, quiet = false): Promise<void> =>
+      Promise.all([c.media.movies(), c.media.shows()])
+        .then(([mvs, shs]) => {
+          // A server switch mid-flight: the answer belongs to the server that has
+          // just been left, so it must not become the catalogue on screen.
+          if (liveClient.current !== c) return;
+          setMovies(mvs);
+          setShows(shs);
+          if (!quiet) setStatus('ready');
+        })
+        .catch((err: unknown) => {
+          if (liveClient.current !== c) return;
+          if (!quiet) {
+            setError(err instanceof Error ? err.message : String(err));
+            setStatus('error');
+          }
+        }),
+    [],
+  );
 
   // Load the catalogue only once a profile is active the signed-out picker
   // stays silent (no /api/movies, /api/shows before sign-in).
+  const loadingClient = signedIn ? client : null;
+  const [loadedClient, setLoadedClient] = useState(loadingClient);
+  if (loadedClient !== loadingClient) {
+    setLoadedClient(loadingClient);
+    if (loadingClient) setStatus('connecting');
+  }
+
   useEffect(() => {
     if (client && signedIn) void fetchCatalogue(client);
   }, [client, signedIn, fetchCatalogue]);

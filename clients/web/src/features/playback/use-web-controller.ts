@@ -106,7 +106,7 @@ export function useWebController(item: MovieView): WebController {
       v.removeEventListener('leavepictureinpicture', onLeave);
     };
   }, [pb.anchor, pb.audioIndex, pb.videoRef]);
-  const togglePip = useCallback(() => {
+  const togglePip = () => {
     const v = pb.videoRef.current;
     if (!document.pictureInPictureEnabled || !v) return;
     if (document.pictureInPictureElement) {
@@ -114,7 +114,7 @@ export function useWebController(item: MovieView): WebController {
     } else {
       void v.requestPictureInPicture().catch(() => undefined);
     }
-  }, [pb.videoRef]);
+  };
 
   // The picture's shape, so the chrome can hug it before a frame is decoded.
   // `videoWidth/videoHeight` is the DISPLAY size, anamorphic storage already
@@ -165,25 +165,27 @@ export function useWebController(item: MovieView): WebController {
 
   const fpsSamplerRef = useRef(makeFpsSampler());
   const statsRef = useRef<() => PlayerStats>(() => ({}));
-  statsRef.current = () =>
-    buildWebStats({
-      v: pb.videoRef.current,
-      item,
-      cur: pb.cur,
-      dur: pb.dur,
-      bufEnd: pb.bufEnd,
-      useHls: pb.useHls,
-      aac: pb.aac,
-      anchor: pb.anchor,
-      baseSec: pb.baseSec,
-      audioTracks: pb.audioTracks,
-      audioIndex: pb.audioIndex,
-      fps: fpsSamplerRef.current(pb.videoRef.current),
-      engine: readEngineStats(pb.hlsRef.current, pb.shakaRef.current),
-      bytes,
-      t,
-      locale,
-    });
+  useEffect(() => {
+    statsRef.current = () =>
+      buildWebStats({
+        v: pb.videoRef.current,
+        item,
+        cur: pb.cur,
+        dur: pb.dur,
+        bufEnd: pb.bufEnd,
+        useHls: pb.useHls,
+        aac: pb.aac,
+        anchor: pb.anchor,
+        baseSec: pb.baseSec,
+        audioTracks: pb.audioTracks,
+        audioIndex: pb.audioIndex,
+        fps: fpsSamplerRef.current(pb.videoRef.current),
+        engine: readEngineStats(pb.hlsRef.current, pb.shakaRef.current),
+        bytes,
+        t,
+        locale,
+      });
+  });
   const getStats = useCallback(() => statsRef.current(), []);
 
   const qualities = useMemo(() => {

@@ -10,17 +10,18 @@ import { useClient } from '#tv/app/router';
  */
 export function usePersonDetail(name: string): PersonDetail | null {
   const client = useClient();
-  const [detail, setDetail] = useState<PersonDetail | null>(null);
+  const [settled, setSettled] = useState<{
+    client: typeof client;
+    name: string;
+    detail: PersonDetail | null;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    // The screen is reused across `person` routes; drop the previous
-    // biography immediately rather than show it under the wrong name.
-    setDetail(null);
     client.media
       .person(name)
       .then((res) => {
-        if (!cancelled) setDetail(res.person ?? null);
+        if (!cancelled) setSettled({ client, name, detail: res.person ?? null });
       })
       .catch(() => undefined);
     return () => {
@@ -28,5 +29,5 @@ export function usePersonDetail(name: string): PersonDetail | null {
     };
   }, [client, name]);
 
-  return detail;
+  return settled?.client === client && settled.name === name ? settled.detail : null;
 }

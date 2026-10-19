@@ -92,7 +92,9 @@ export function useEngineLifecycle(
   // late switch would re-anchor the stream.
   const [audioIndex, setAudioIndex] = useState(() => openingAudioIndex(item, audioLanguage));
   const audioIndexRef = useRef(audioIndex);
-  audioIndexRef.current = audioIndex;
+  useEffect(() => {
+    audioIndexRef.current = audioIndex;
+  });
   const [audioPickNonce, setAudioPickNonce] = useState(0);
   const pickAudio = useCallback((index: number) => {
     setAudioIndex(index);
@@ -109,7 +111,7 @@ export function useEngineLifecycle(
 
   // Tizen routes everything through native AVPlay (surround passthrough); webOS MSE
   // cannot decode AC3/EAC3, so it runs hls.js on the AAC master.
-  const env = useMemo(detectTvEnv, []);
+  const [env] = useState(detectTvEnv);
   const [enginePref, setEnginePref] = useState<EnginePref>(getEnginePref);
   // The last resort under `auto`: a title the platform player cannot decode goes to
   // the engine that carries its own decoders. Held as the item it applies to, so a
@@ -151,13 +153,27 @@ export function useEngineLifecycle(
 
   // Audio switches do NOT re-create the engine; they call setAudioRendition in place.
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- env.nativeHls is a session-constant capability; the dep list is intentionally curated to rebuild only on item/engine changes.
-  useEffect(() => {
+  const engineDeps = [
+    client,
+    item,
+    rebuildKey,
+    durationSec,
+    startSec,
+    failure.messageKey,
+    playbackCapabilities,
+    deviceStore,
+  ];
+  const [builtFor, setBuiltFor] = useState<unknown[] | null>(null);
+  if (builtFor === null || engineDeps.some((dep, i) => !Object.is(dep, builtFor[i]))) {
+    setBuiltFor(engineDeps);
     setReady(false);
     setDecodedAspect(undefined);
+    if (startSec != null) setCur(startSec);
+  }
+
+  useEffect(() => {
     startedRef.current = false;
     if (startSec == null) return;
-    // The stream opens there, so the cursor must not sit at 0:00 then teleport.
-    setCur(startSec);
 
     const listeners: EngineListeners = {
       onTime: (s) => {

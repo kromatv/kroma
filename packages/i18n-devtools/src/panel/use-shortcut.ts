@@ -3,7 +3,9 @@ import { isChord, isEditableTarget, type Shortcut } from './shortcut';
 
 export function useShortcut(shortcuts: readonly Shortcut[], onDismiss?: () => void): void {
   const latest = useRef({ shortcuts, onDismiss });
-  latest.current = { shortcuts, onDismiss };
+  useEffect(() => {
+    latest.current = { shortcuts, onDismiss };
+  });
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

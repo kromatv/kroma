@@ -2,6 +2,7 @@
 
 import { UserId } from '@kromatv/client/accounts';
 import { act, cleanup, render } from '@testing-library/react';
+import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from '#tv/app/providers/auth';
 import { ConnectionProvider } from '#tv/app/providers/connection';
@@ -93,7 +94,10 @@ class SilentSocket {
 let auth: ReturnType<typeof useAuth> | null = null;
 
 function CaptureAuth() {
-  auth = useAuth();
+  const current = useAuth();
+  useEffect(() => {
+    auth = current;
+  });
   return null;
 }
 

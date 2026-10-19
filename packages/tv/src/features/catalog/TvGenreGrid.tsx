@@ -1,14 +1,14 @@
-import { compareTitles, genreLabel, hasGenre, posterColors, type SortMode } from '@kromatv/core';
+import { compareTitles, genreLabel, hasGenre, type SortMode } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Box, Text, useFocusNav } from '@kromatv/ui/kit';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav, useParams } from '#tv/app/router';
 import {
   AmbientBackdrop,
   type CatalogEntry as Entry,
-  entryPoster,
 } from '#tv/features/catalog/home/AmbientBackdrop';
+import { entryCard } from '#tv/features/catalog/home/entry-card';
 import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid';
 import { EMPTY, TITLE } from '#tv/features/catalog/screenStyle';
 import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
@@ -29,8 +29,11 @@ export function TvGenreGrid() {
   useFocusNav({ onBack: titleMenu.onBack, resetKey: slug });
 
   const [focusId, setFocusId] = useState<string | null>(null);
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- slug is an intentional re-run key (a genre switch clears the focus echo), not read inside the effect
-  useEffect(() => setFocusId(null), [slug]);
+  const [prevSlug, setPrevSlug] = useState(slug);
+  if (prevSlug !== slug) {
+    setPrevSlug(slug);
+    setFocusId(null);
+  }
 
   const entries = useMemo<Entry[]>(() => {
     const tagged: Entry[] = [
@@ -43,17 +46,9 @@ export function TvGenreGrid() {
 
   const cards = useMemo<GridCard[]>(
     () =>
-      entries.map((e) => ({
-        id: e.item.id,
-        title: e.item.title,
-        poster: (width: number) => entryPoster(client, e, width),
-        colors: posterColors(e.item.id),
-        progress: e.kind === 'show' ? (e.item.progress ?? null) : null,
-        onClick: () =>
-          e.kind === 'movie' ? nav.go('movie', { item: e.item }) : nav.go('show', { show: e.item }),
-        onLongPress: () => titleMenu.open(e),
-        onFocus: () => setFocusId(e.item.id),
-      })),
+      entries.map((e) =>
+        entryCard(e, { client, nav, openMenu: titleMenu.open, focus: setFocusId }),
+      ),
     [entries, client, nav, titleMenu.open],
   );
 

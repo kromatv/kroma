@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, render } from '@testing-library/react';
+import { useEffect } from 'react';
 import { hydrateRoot, type Root } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import { Dimensions } from 'react-native';
@@ -47,8 +48,11 @@ const WINDOW = { width: 1440, height: 900, scale: 1, fontScale: 1 };
 
 const host = (container: HTMLElement) => container.querySelector('[data-kroma-theme]');
 
-function Runtime({ into }: Readonly<{ into: { runtime?: StyleRuntime } }>) {
-  into.runtime = useStyleRuntime();
+function Runtime({ onRuntime }: Readonly<{ onRuntime: (runtime: StyleRuntime) => void }>) {
+  const runtime = useStyleRuntime();
+  useEffect(() => {
+    onRuntime(runtime);
+  }, [onRuntime, runtime]);
   return null;
 }
 
@@ -110,7 +114,7 @@ describe("the document's ground", () => {
     document.documentElement.setAttribute('data-theme', 'dark');
     render(
       <KitProvider config={{ ground: 'dark' }}>
-        <Runtime into={held} />
+        <Runtime onRuntime={(runtime) => (held.runtime = runtime)} />
       </KitProvider>,
     );
 

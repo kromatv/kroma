@@ -18,7 +18,7 @@ import {
   useStyles,
   useThemeVersion,
 } from '@kromatv/ui/kit';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useSyncExternalStore } from 'react';
 import {
   DirectorsLine,
   HeroFields,
@@ -68,6 +68,8 @@ const sDefinition = styles({
   noCaps: { textTransform: 'none' },
   italic: { fontStyle: 'italic' },
 });
+
+const subscribeNever = () => () => {};
 
 const CORNER_LEFT = { base: 16, md: 32 } as const;
 const CORNER_TOP = { base: 16, md: 26 } as const;
@@ -147,12 +149,15 @@ export function DetailHero({
 
   // Direct-play depends on the runtime's codecs (navigator/MediaSource), so it
   // must stay client-only, or SSR would compute a mismatched hydration value.
-  const [unsupported, setUnsupported] = useState<string | null>(null);
-  useEffect(() => {
-    if (!playable) return setUnsupported(null);
-    const v = canDirectPlay(playable);
-    setUnsupported(v.canDirectPlay ? null : t(v.messageKey, v.messageVars));
-  }, [playable, t]);
+  const unsupported = useSyncExternalStore(
+    subscribeNever,
+    () => {
+      if (!playable) return null;
+      const v = canDirectPlay(playable);
+      return v.canDirectPlay ? null : t(v.messageKey, v.messageVars);
+    },
+    () => null,
+  );
 
   return (
     <div className={classes(s.frame)}>

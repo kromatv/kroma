@@ -173,8 +173,11 @@ function SearchPanel({
     input.current?.focus();
   }, []);
 
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- q is an intentional re-run key, not something the effect reads
-  useEffect(() => setActive(0), [q]);
+  const [activeFor, setActiveFor] = useState(q);
+  if (activeFor !== q) {
+    setActiveFor(q);
+    setActive(0);
+  }
 
   useEffect(() => {
     const rowId = CSS.escape(`${listId}-${active}`);

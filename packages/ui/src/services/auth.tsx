@@ -126,6 +126,7 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
   // the account remembered. Runs once per client.
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- boot once per client.
   useEffect(() => {
+    // oxlint-disable-next-line react-compiler/set-state-in-effect -- storage is read after mount only, so the first client render matches the prerendered shell.
     setAccounts(loadAccounts());
     const active = loadSession();
     if (!client || !active) {

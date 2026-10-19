@@ -98,18 +98,13 @@ function Menu() {
 }
 
 function Harness({ play }: Readonly<{ play?: PlayFunction }>) {
-  const runner = usePlay(play, 120);
+  const { stage, steps, status, error, replay } = usePlay(play, 120);
   return (
     <Box gap={12}>
-      <View ref={runner.stage}>
+      <View ref={stage}>
         <Menu />
       </View>
-      <Interactions
-        steps={runner.steps}
-        status={runner.status}
-        error={runner.error}
-        onReplay={runner.replay}
-      />
+      <Interactions steps={steps} status={status} error={error} onReplay={replay} />
     </Box>
   );
 }

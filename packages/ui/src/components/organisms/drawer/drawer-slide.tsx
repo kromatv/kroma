@@ -23,12 +23,10 @@ type DrawerSide = 'left' | 'right';
 function useSlide(open: boolean): { mounted: boolean; shown: boolean } {
   const [mounted, setMounted] = useState(open);
   const [shown, setShown] = useState(false);
+  if (open && !mounted) setMounted(true);
+  if (!open && shown) setShown(false);
   useEffect(() => {
-    if (open) {
-      setMounted(true);
-      return;
-    }
-    setShown(false);
+    if (open) return;
     const out = setTimeout(() => setMounted(false), SLIDE_MS);
     return () => clearTimeout(out);
   }, [open]);

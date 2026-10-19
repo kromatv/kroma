@@ -10,19 +10,22 @@ import {
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const api = vi.hoisted(() => ({
-  show: vi.fn(),
-  progress: vi.fn(),
-  upNext: vi.fn(),
-  toggle: vi.fn(),
-  watched: new Set<string>(),
-}));
+const api = vi.hoisted(() => {
+  const show = vi.fn();
+  const progress = vi.fn();
+  const upNext = vi.fn();
+  return {
+    show,
+    progress,
+    upNext,
+    toggle: vi.fn(),
+    watched: new Set<string>(),
+    client: { media: { show }, playback: { progress, upNext } },
+  };
+});
 
 vi.mock('#tv/app/router', () => ({
-  useClient: () => ({
-    media: { show: api.show },
-    playback: { progress: api.progress, upNext: api.upNext },
-  }),
+  useClient: () => api.client,
 }));
 vi.mock('#tv/app/providers/watched', () => ({
   useWatched: () => ({ has: (id: string) => api.watched.has(id), toggle: api.toggle }),

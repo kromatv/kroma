@@ -40,7 +40,9 @@ export function I18nProvider({
   // translator on every render of this provider, and a caller holding it in a
   // dependency list would re-run with it.
   const change = useRef(onLocaleChange);
-  change.current = onLocaleChange;
+  useEffect(() => {
+    change.current = onLocaleChange;
+  });
   // The dev tools reach an engine they were never handed, so the engine says
   // what it can render rather than being read out of the app's own table.
   useEffect(() => {

@@ -10,7 +10,7 @@ import {
   styles,
   useStyles,
 } from '@kromatv/ui/kit';
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { RULE } from './chrome';
 import { CommandPalette, useCommandKey } from './command';
 import { type Registry, storyEntries, useStory } from './entry';
@@ -75,12 +75,10 @@ function WorkbenchShell({
   const layout = useLayout();
   const drawer = layout.nav === 'drawer';
 
-  const openSearch = useCallback(() => setSearchOpen(true), []);
+  const openSearch = () => setSearchOpen(true);
   useCommandKey(openSearch);
 
-  useEffect(() => {
-    if (!drawer) setNavOpen(false);
-  }, [drawer]);
+  if (!drawer && navOpen) setNavOpen(false);
 
   // A bare address opens the first article rather than the first component: the
   // guides say how to use the kit, and landing on an arbitrary component asks
@@ -100,33 +98,24 @@ function WorkbenchShell({
   const stage = useStageView(story);
   const run = usePlay(story ? playFor(story, view) : undefined);
 
-  const select = useCallback(
-    (id: string) => {
-      go({ story: id, view: 'preview' });
-      setNavOpen(false);
-    },
-    [go],
-  );
+  const select = (id: string) => {
+    go({ story: id, view: 'preview' });
+    setNavOpen(false);
+  };
 
-  const show = useCallback((next: View) => go({ view: next }), [go]);
+  const show = (next: View) => go({ view: next });
 
-  const openPage = useCallback(
-    (id: string) => {
-      go({ page: id });
-      setNavOpen(false);
-    },
-    [go],
-  );
+  const openPage = (id: string) => {
+    go({ page: id });
+    setNavOpen(false);
+  };
 
-  const openSection = useCallback((id: string) => go({ section: id }), [go]);
+  const openSection = (id: string) => go({ section: id });
 
-  const change = useCallback(
-    (key: string, value: unknown) => {
-      const id = entry?.id ?? '';
-      setEdits((prev) => ({ ...prev, [id]: { ...prev[id], [key]: value } }));
-    },
-    [entry],
-  );
+  const change = (key: string, value: unknown) => {
+    const id = entry?.id ?? '';
+    setEdits((prev) => ({ ...prev, [id]: { ...prev[id], [key]: value } }));
+  };
 
   if (!entry) return null;
 

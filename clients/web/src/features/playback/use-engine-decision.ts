@@ -30,7 +30,7 @@ export interface EngineChoice {
 /** Picks direct-play against the HLS remux for this browser, honouring the
  * stored per-device override and the direct-play safety net (`setForceHls`). */
 export function useEngineDecision(item: MovieView): EngineChoice {
-  const env = useMemo(detectWebEnv, []);
+  const env = useMemo(() => detectWebEnv(), []);
   const [forceHls, setForceHls] = useState(false);
   const [enginePref, setEnginePref] = useState<WebEnginePref>(getWebEnginePref);
   const decision = useMemo<EngineDecision>(() => {

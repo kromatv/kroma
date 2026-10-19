@@ -76,9 +76,11 @@ export function PipelinePage() {
     () => client.pipeline.overview(),
     30000,
   );
-  useEffect(() => {
+  const [seenHealth, setSeenHealth] = useState(health);
+  if (seenHealth !== health) {
+    setSeenHealth(health);
     if (health) setPaused(health.paused);
-  }, [health]);
+  }
 
   const { togglePause, reprocess, retryStage } = pipelineActions({
     client,

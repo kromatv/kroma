@@ -32,6 +32,7 @@ function LoginPage() {
   // Set once the session is cleared, so being already signed in on arrival never
   // triggers an immediate bounce.
   const [armed, setArmed] = useState(false);
+  if (ready && !armed && !user) setArmed(true);
 
   // Entering /login behaves like "change profile": drop the session so the
   // picker shows, rather than bouncing a signed-in visitor straight back out.
@@ -42,11 +43,7 @@ function LoginPage() {
   }, [switchProfile]);
 
   useEffect(() => {
-    if (!ready) return;
-    if (!armed) {
-      if (!user) setArmed(true);
-      return;
-    }
+    if (!ready || !armed) return;
     if (user) navigate({ to: redirect ?? '/', replace: true });
   }, [armed, ready, user, redirect, navigate]);
 

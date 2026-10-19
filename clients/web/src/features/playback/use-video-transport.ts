@@ -42,9 +42,12 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
 
   const [hover, setHover] = useState<{ x: number; t: number; w: number } | null>(null);
   const [scrubbing, setScrubbing] = useState(false);
-  const [scrubPreview, setScrubPreview] = useState<number | null>(null);
+  const [previewSec, setPreviewSec] = useState<number | null>(null);
   const scrubPreviewRef = useRef<number | null>(null);
-  scrubPreviewRef.current = scrubPreview;
+  const setScrubPreview = useCallback((value: number | null) => {
+    scrubPreviewRef.current = value;
+    setPreviewSec(value);
+  }, []);
 
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
@@ -113,13 +116,13 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
       const s = clientXToSec(clientX);
       if (s != null) setScrubPreview(s);
     },
-    [clientXToSec],
+    [clientXToSec, setScrubPreview],
   );
   const commitScrub = useCallback(() => {
     const s = scrubPreviewRef.current;
     setScrubPreview(null);
     if (s != null) seekTo(s);
-  }, [seekTo]);
+  }, [seekTo, setScrubPreview]);
   const seekToClientX = useCallback(
     (clientX: number) => {
       const s = clientXToSec(clientX);
@@ -137,7 +140,7 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
       setHover({ x: pct * rect.width, t: pct * dur, w: rect.width });
       if (scrubbing) setScrubPreview(pct * dur);
     },
-    [dur, scrubbing, barRef],
+    [dur, scrubbing, barRef, setScrubPreview],
   );
 
   const setVol = useCallback(
@@ -164,7 +167,7 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
     [videoRef],
   );
 
-  const toggleFullscreen = useCallback(() => {
+  const toggleFullscreen = () => {
     const el = frame?.current;
     if (!el) return;
     if (document.fullscreenElement) {
@@ -180,14 +183,14 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
       | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
       | null;
     if (typeof v?.webkitEnterFullscreen === 'function') v.webkitEnterFullscreen();
-  }, [videoRef, frame]);
+  };
 
   return {
     hover,
     setHover,
     scrubbing,
     setScrubbing,
-    scrubPreview,
+    scrubPreview: previewSec,
     scrubToClientX,
     commitScrub,
     togglePlay,

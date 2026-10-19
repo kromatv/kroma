@@ -28,12 +28,15 @@ export function useServersHealth(urls: string[]): Record<string, ServerProbe> {
   // urls changes, not on every render's fresh array identity.
   const key = urls.join('|');
 
+  const [prevKey, setPrevKey] = useState(key);
+  if (prevKey !== key) {
+    setPrevKey(key);
+    if (!key) setMap({});
+  }
+
   useEffect(() => {
     const list = key ? key.split('|') : [];
-    if (list.length === 0) {
-      setMap({});
-      return;
-    }
+    if (list.length === 0) return;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
 

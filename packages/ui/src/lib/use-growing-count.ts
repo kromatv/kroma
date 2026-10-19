@@ -12,7 +12,7 @@
 // A scroll offset would also miss the case a remote makes constant: several fast
 // presses that outrun the scroll animation.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 interface GrowingCount {
   /** How many items to render right now. */
@@ -34,7 +34,11 @@ function useGrowingCount(total: number, step: number): GrowingCount {
   const [count, setCount] = useState(() => Math.min(step, total));
 
   // A new list (a different genre, a new search) restarts from the first chunk.
-  useEffect(() => setCount(Math.min(step, total)), [total, step]);
+  const [seen, setSeen] = useState({ total, step });
+  if (seen.total !== total || seen.step !== step) {
+    setSeen({ total, step });
+    setCount(Math.min(step, total));
+  }
 
   const grow = useCallback(
     () => setCount((c) => (c >= total ? c : Math.min(c + step, total))),

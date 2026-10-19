@@ -85,6 +85,15 @@ async function runPlay(at: RunPlay): Promise<PlayTranscript> {
 }
 
 const IDLE: PlayTranscript = { status: 'pending', steps: [] };
+const RUNNING: PlayTranscript = { status: 'running', steps: [] };
+
+interface Outcome {
+  play: PlayFunction;
+  node: object;
+  timeout: number | undefined;
+  take: number;
+  transcript: PlayTranscript;
+}
 
 interface PlayRunner extends PlayTranscript {
   /** The stage's `ref`: the host node the story renders into. */
@@ -98,28 +107,33 @@ interface PlayRunner extends PlayTranscript {
 function usePlay(play: PlayFunction | undefined, timeout?: number): PlayRunner {
   const [node, setNode] = useState<object | null>(null);
   const [take, setTake] = useState(0);
-  const [transcript, setTranscript] = useState<PlayTranscript>(IDLE);
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
 
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- `take` IS the replay; there is nothing in it for the effect to read
   useEffect(() => {
-    if (!play || !node) {
-      setTranscript(IDLE);
-      return;
-    }
+    if (!play || !node) return;
     let live = true;
-    setTranscript({ status: 'running', steps: [] });
     void runPlay({
       play,
       stage: node,
       timeout,
       onProgress: (next) => {
-        if (live) setTranscript(next);
+        if (live) setOutcome({ play, node, timeout, take, transcript: next });
       },
     });
     return () => {
       live = false;
     };
   }, [play, node, timeout, take]);
+
+  let transcript = IDLE;
+  if (play && node) {
+    const current =
+      outcome?.play === play &&
+      outcome.node === node &&
+      outcome.timeout === timeout &&
+      outcome.take === take;
+    transcript = current ? outcome.transcript : RUNNING;
+  }
 
   const stage = useCallback((next: unknown) => setNode((next ?? null) as object | null), []);
   const replay = useCallback(() => setTake((count) => count + 1), []);

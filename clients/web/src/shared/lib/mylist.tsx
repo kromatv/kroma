@@ -22,6 +22,8 @@ interface MyListValue {
   toggle: (id: SubjectId) => void;
 }
 
+const NONE: readonly SubjectId[] = [];
+
 const MyListContext = createContext<MyListValue | null>(null);
 
 function revertMembership(id: SubjectId, wasAdding: boolean) {
@@ -33,28 +35,24 @@ function revertMembership(id: SubjectId, wasAdding: boolean) {
 
 export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { client, user, ready: authReady } = useAuth();
-  const [ids, setIds] = useState<readonly SubjectId[]>([]);
-  const [ready, setReady] = useState(false);
+  const [storedIds, setStoredIds] = useState<readonly SubjectId[]>([]);
+  const [loadedFor, setLoadedFor] = useState<typeof user>(null);
+  const ready = authReady && (!user || loadedFor === user);
+  const ids = user ? storedIds : NONE;
 
   useEffect(() => {
-    if (!authReady) return;
-    if (!user) {
-      setIds([]);
-      setReady(true);
-      return;
-    }
+    if (!authReady || !user) return;
     let cancelled = false;
-    setReady(false);
     client.playback
       .myList()
       .then((list) => {
         if (!cancelled) {
-          setIds(list);
-          setReady(true);
+          setStoredIds(list);
+          setLoadedFor(user);
         }
       })
       .catch(() => {
-        if (!cancelled) setReady(true);
+        if (!cancelled) setLoadedFor(user);
       });
     return () => {
       cancelled = true;
@@ -64,13 +62,13 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
   const setInList = useCallback(
     (id: SubjectId, inList: boolean) => {
       if (!user) return;
-      setIds((prev) => {
+      setStoredIds((prev) => {
         if (prev.includes(id) === inList) return prev;
         return inList ? [id, ...prev] : prev.filter((x) => x !== id);
       });
       const call = inList ? client.playback.addToList(id) : client.playback.removeFromList(id);
       call.catch(() => {
-        setIds(revertMembership(id, inList));
+        setStoredIds(revertMembership(id, inList));
       });
     },
     [client, user],

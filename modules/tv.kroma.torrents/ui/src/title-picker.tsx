@@ -2,7 +2,7 @@
 
 import { useT } from '@kromatv/module-sdk';
 import { Box, Button, EmptyState, Field, Row, Spinner } from '@kromatv/ui/kit';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTorrentsApi } from './api';
 import { CandidateRow } from './candidate-row';
 import type { MatchCandidateView } from './schemas';
@@ -17,6 +17,13 @@ interface TitlePickerProps {
   busy?: boolean;
 }
 
+interface Answer {
+  request: object;
+  kind: string;
+  year: number | null;
+  results: MatchCandidateView[];
+}
+
 export function TitlePicker({
   initialQuery,
   kind,
@@ -28,24 +35,40 @@ export function TitlePicker({
   const t = useT();
   const torrents = useTorrentsApi();
   const [query, setQuery] = useState(initialQuery);
-  const [results, setResults] = useState<MatchCandidateView[] | null>(null);
-  const [searching, setSearching] = useState(false);
+  const [request, setRequest] = useState({ text: initialQuery.trim() });
+  const [seenInitial, setSeenInitial] = useState(initialQuery);
+  const [answer, setAnswer] = useState<Answer | null>(null);
+  if (seenInitial !== initialQuery) {
+    setSeenInitial(initialQuery);
+    setRequest({ text: initialQuery.trim() });
+  }
+  const answered =
+    answer !== null &&
+    answer.request === request &&
+    answer.kind === kind &&
+    answer.year === (year ?? null);
+  const searching = request.text !== '' && !answered;
+  const results = answer?.results ?? null;
 
-  const search = useCallback(
-    (text: string) => {
-      const words = text.trim();
-      if (!words) return;
-      setSearching(true);
-      torrents
-        .searchTitles(words, kind, year ?? undefined)
-        .then((view) => setResults(view.results))
-        .catch(() => setResults([]))
-        .finally(() => setSearching(false));
-    },
-    [torrents, kind, year],
-  );
+  const search = (text: string) => {
+    const words = text.trim();
+    if (words) setRequest({ text: words });
+  };
 
-  useEffect(() => search(initialQuery), [search, initialQuery]);
+  useEffect(() => {
+    if (!request.text) return;
+    let stale = false;
+    torrents
+      .searchTitles(request.text, kind, year ?? undefined)
+      .then((view) => view.results)
+      .catch(() => [])
+      .then((found) => {
+        if (!stale) setAnswer({ request, kind, year: year ?? null, results: found });
+      });
+    return () => {
+      stale = true;
+    };
+  }, [torrents, request, kind, year]);
 
   return (
     <Box gap={10}>

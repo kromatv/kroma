@@ -17,6 +17,7 @@ import {
   styles,
   Text,
   fontSizes as textSizes,
+  useStableCallback,
   useStyles,
 } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
@@ -173,39 +174,37 @@ export function PlayerChrome({
     return () => clearTimeout(id);
   }, [zoomNote]);
 
-  // The gesture tree is memoized so GestureDetector does not re-diff the native
-  // handler config on every engine tick; churning values reach it via this ref.
-  const live = useRef({ fill, engine, onZoom, t, poke, toggle });
-  live.current = { fill, engine, onZoom, t, poke, toggle };
+  const onTap = useStableCallback(() => toggle());
+  const onDoubleTap = useStableCallback((x: number) => {
+    if (x < screenWidth / 3) engine.skip(-10);
+    else if (x > (screenWidth * 2) / 3) engine.skip(10);
+    else return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    poke();
+  });
+  const onPinch = useStableCallback((scale: number) => {
+    if (Math.abs(scale - 1) < 0.15) return;
+    const wantFill = scale > 1;
+    if (wantFill === fill) return;
+    onZoom(wantFill);
+    setZoomNote(wantFill ? t('player.zoomFill') : t('player.zoomFit'));
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  });
   const gestures = useMemo(() => {
     const tap = Gesture.Tap()
       .runOnJS(true)
-      .onEnd(() => live.current.toggle());
+      .onEnd(() => onTap());
     const doubleTap = Gesture.Tap()
       .runOnJS(true)
       .numberOfTaps(2)
       .onEnd((e, ok) => {
-        if (!ok) return;
-        if (e.x < screenWidth / 3) live.current.engine.skip(-10);
-        else if (e.x > (screenWidth * 2) / 3) live.current.engine.skip(10);
-        else return;
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        live.current.poke();
+        if (ok) onDoubleTap(e.x);
       });
     const pinch = Gesture.Pinch()
       .runOnJS(true)
-      .onEnd((e) => {
-        // A near-1 scale is an accidental two-finger touch, not an intent.
-        if (Math.abs(e.scale - 1) < 0.15) return;
-        const wantFill = e.scale > 1;
-        const now = live.current;
-        if (wantFill === now.fill) return;
-        now.onZoom(wantFill);
-        setZoomNote(wantFill ? now.t('player.zoomFill') : now.t('player.zoomFit'));
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      });
+      .onEnd((e) => onPinch(e.scale));
     return Gesture.Race(pinch, Gesture.Exclusive(doubleTap, tap));
-  }, [screenWidth]);
+  }, [onTap, onDoubleTap, onPinch]);
 
   const { intro, inCredits } = markersAt(item, engine.cur);
   const lift = (visible ? 110 : 40) + insets.bottom;

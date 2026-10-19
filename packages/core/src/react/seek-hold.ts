@@ -52,7 +52,9 @@ function landed(t: HeldSeekTransport, held: Held): boolean {
 export function useHeldSeek<T extends HeldSeekTransport>(transport: T): T {
   const [held, setHeld] = useState<Held | null>(null);
   const live = useRef(transport);
-  live.current = transport;
+  useEffect(() => {
+    live.current = transport;
+  });
 
   if (held !== null && landed(transport, held)) setHeld(null);
 

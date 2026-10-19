@@ -12,6 +12,14 @@ import { weight } from '#tv/shared/ui/weight';
  * Add a server by address via an on-screen URL keyboard; on submit the server is
  * upserted and the flow advances to Quick Connect.
  */
+function hostOf(found: string): string {
+  try {
+    return new URL(found).host;
+  } catch {
+    return found;
+  }
+}
+
 export function TvConnect() {
   const nav = useNav();
   const t = useT();
@@ -20,17 +28,12 @@ export function TvConnect() {
   const [value, setValue] = useState('');
   useFocusNav({ onBack: nav.back, resetKey: discovered.length });
 
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- prefill once when discovery yields a hit; intentionally not re-run on `value` edits.
-  useEffect(() => {
+  const [seenDiscovered, setSeenDiscovered] = useState(discovered);
+  if (seenDiscovered !== discovered) {
+    setSeenDiscovered(discovered);
     const found = discovered.at(-1);
-    if (found && !value) {
-      try {
-        setValue(new URL(found).host);
-      } catch {
-        setValue(found);
-      }
-    }
-  }, [discovered]);
+    if (found && !value) setValue(hostOf(found));
+  }
 
   // Only one of http and https is safe to put a password into, so the
   // address is probed and the scheme shown rather than left implicit. The
@@ -41,13 +44,16 @@ export function TvConnect() {
   );
   const [probing, setProbing] = useState(false);
 
+  const [probedValue, setProbedValue] = useState(value);
+  if (probedValue !== value) {
+    setProbedValue(value);
+    setProbe(null);
+    if (!value.trim()) setProbing(false);
+  }
+
   useEffect(() => {
     const address = value.trim();
-    setProbe(null);
-    if (!address) {
-      setProbing(false);
-      return;
-    }
+    if (!address) return;
     let cancelled = false;
     // Debounced: each keystroke would otherwise cost a pair of requests.
     const timer = setTimeout(() => {

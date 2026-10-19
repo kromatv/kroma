@@ -70,7 +70,8 @@ export function LocaleProvider({
   useEffect(() => {
     if (accountLocale) return;
     const detected = deviceLocale(storage);
-    apply(detected);
+    applied.current = detected;
+    client?.setLocale(detected);
     if (onAccountChange) {
       onAccountChange(detected);
       client?.accounts.updateLanguage(detected).catch(() => {});
@@ -84,6 +85,7 @@ export function LocaleProvider({
   // accountLocale changes, so it leaves a signed-out device override alone.
   useEffect(() => {
     if (accountLocale) {
+      // oxlint-disable-next-line react-compiler/set-state-in-effect -- the header moves in this same step; a render-time adopt would let children's effects refetch under the old Accept-Language.
       apply(accountLocale);
       saveLocalePref(accountLocale, storage);
     }

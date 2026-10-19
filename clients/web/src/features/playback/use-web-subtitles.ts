@@ -13,7 +13,7 @@ import {
   type SubtitleGenRequest,
   useSubtitleGenerations,
 } from '@kromatv/ui';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { MovieView, SubtitleView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { useLangPrefs } from '#web/shared/lib/lang-pref';
@@ -45,16 +45,15 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
   const [failed, setFailed] = useState<ReadonlySet<number>>(() => new Set());
 
   // Auto-enable the account's preferred subtitle language once, when hydrated.
-  const prefApplied = useRef(false);
-  useEffect(() => {
-    if (prefApplied.current || !user) return;
-    prefApplied.current = true;
+  const [prefApplied, setPrefApplied] = useState(false);
+  if (!prefApplied && user) {
+    setPrefApplied(true);
     const idx = preferredSubIndex(
       item.subs.map((s) => ({ ...s, generated: s.downloaded })),
       user.subtitleLanguage,
     );
     if (idx != null) setActiveIndex(idx);
-  }, [user, item.subs]);
+  }
 
   useEffect(() => {
     let cancelled = false;

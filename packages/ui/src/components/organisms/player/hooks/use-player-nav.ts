@@ -127,20 +127,20 @@ export function usePlayerNav(
     hideTimer.current = setTimeout(() => setRevealed(false), HIDE_MS);
   }, [clearHide, playing, overlay]);
 
+  const [chromeKey, setChromeKey] = useState({ playing, overlay });
+  if (chromeKey.playing !== playing || chromeKey.overlay !== overlay) {
+    setChromeKey({ playing, overlay });
+    setRevealed(true);
+  }
+
   useEffect(() => {
-    if (!playing || overlay) {
-      setRevealed(true);
-      clearHide();
-    } else {
-      poke();
-    }
+    clearHide();
+    if (playing && !overlay) rearmHide();
     return clearHide;
-  }, [playing, overlay, poke, clearHide]);
+  }, [playing, overlay, rearmHide, clearHide]);
 
   const resumeShown = actions.resume != null;
-  useEffect(() => {
-    if (!resumeShown) setZone((z) => (z === 'resume' ? 'controls' : z));
-  }, [resumeShown]);
+  if (!resumeShown && zone === 'resume') setZone('controls');
 
   const openOverlay = useCallback((o: Exclude<Overlay, null>) => {
     setOverlay(o);

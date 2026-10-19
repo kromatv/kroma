@@ -49,20 +49,17 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   });
   const { client, user } = useAuth();
   const { anchor, setAnchor, bootAnchor } = useResumeAnchor(item, client, user);
-  const audioIndexRef = useRef(0);
-  audioIndexRef.current = audioIndex;
   const wantPlay = useRef(true);
   const giveUps = useRef(0);
 
   const audioTracks = audioTracksOf(item);
 
-  const audioPrefApplied = useRef(false);
-  useEffect(() => {
-    if (audioPrefApplied.current || !user) return;
-    audioPrefApplied.current = true;
+  const [audioPrefApplied, setAudioPrefApplied] = useState(false);
+  if (!audioPrefApplied && user) {
+    setAudioPrefApplied(true);
     const idx = preferredAudioIndex(audioTracks, user.audioLanguage);
     if (idx != null) setAudioIndex(idx);
-  }, [user, audioTracks]);
+  }
 
   const { env, decision, enginePref, setEnginePrefState, setForceHls } = useEngineDecision(item);
   const hlsRef = useRef<import('hls.js').default | null>(null);
@@ -82,9 +79,11 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
 
   const knownDurationMs =
     item.durationMs || (serverDurSec > 0 ? Math.round(serverDurSec * 1000) : 0);
-  useEffect(() => {
+  const [seenDurationMs, setSeenDurationMs] = useState(knownDurationMs);
+  if (seenDurationMs !== knownDurationMs) {
+    setSeenDurationMs(knownDurationMs);
     if (knownDurationMs > 0) setDur(knownDurationMs / 1000);
-  }, [knownDurationMs]);
+  }
 
   // Re-binds on anchor/audio change: those remount the <video> (keyed by
   // anchor+audio in the parent), so this must rebind to the fresh element.
@@ -220,11 +219,11 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   // `audioTrack` swap, which can leave the new audio out of sync with the picture.
   const setAudio = useCallback(
     (index: number) => {
-      if (index === audioIndexRef.current) return;
+      if (index === audioIndex) return;
       setAudioIndex(index);
       if (decision.kind !== 'direct') setAnchor(Math.max(0, Math.floor(absNow())));
     },
-    [decision.kind, absNow, setAnchor],
+    [audioIndex, decision.kind, absNow, setAnchor],
   );
 
   const setEnginePref = useCallback(

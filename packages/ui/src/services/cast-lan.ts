@@ -56,11 +56,15 @@ export function useLanCast(opts: LanCastOptions): DiscoveredTv[] {
     }
   });
 
+  const browsing = enabled && inFront && Boolean(lan?.browse);
+  const [wasBrowsing, setWasBrowsing] = useState(browsing);
+  if (wasBrowsing !== browsing) {
+    setWasBrowsing(browsing);
+    if (!browsing) setPairable([]);
+  }
+
   useEffect(() => {
-    if (!enabled || !inFront || !lan?.browse) {
-      setPairable((held) => (held.length === 0 ? held : []));
-      return;
-    }
+    if (!enabled || !inFront || !lan?.browse) return;
 
     return watchLanBeacons(lan, report);
   }, [lan, enabled, inFront]);

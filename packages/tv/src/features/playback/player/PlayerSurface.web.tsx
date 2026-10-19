@@ -7,20 +7,21 @@ import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
 
 const FILL = style({ width: '100%', height: '100%' });
 export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: string }>): ReactNode {
-  if (pb.surface === 'avplay') {
+  const { surface, objectRef, videoRef } = pb;
+  if (surface === 'avplay') {
     // NO child text: AVPlay renders to a hardware plane, not into this <object>'s
     // box, so fallback children draw visibly over the video. aria-label carries
     // the accessible name without drawing anything.
     return (
       <object
-        ref={pb.objectRef}
+        ref={objectRef}
         type="application/avplayer"
         className={classes(FILL)}
         aria-label={title}
       />
     );
   }
-  if (pb.surface === 'mpv') {
+  if (surface === 'mpv') {
     return <div className={classes(FILL)} role="img" aria-label={title} />;
   }
   // Subtitles render through the shared SubtitleRenderer; the empty captions
@@ -32,7 +33,7 @@ export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: str
   // (tainted). The server's CORS allowlist answers a document loaded off a
   // device, which is what keeps this element readable (server api/origin.rs).
   return (
-    <video ref={pb.videoRef} autoPlay playsInline crossOrigin="anonymous" style={ROUNDED}>
+    <video ref={videoRef} autoPlay playsInline crossOrigin="anonymous" style={ROUNDED}>
       <track kind="captions" />
     </video>
   );

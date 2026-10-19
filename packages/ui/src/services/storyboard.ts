@@ -51,15 +51,19 @@ export function useStoryboard(
   const [manifest, setManifest] = useState<StoryboardManifest | null>(null);
   const [sheetUrl, setSheetUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [seen, setSeen] = useState({ client, itemId, generate });
+  if (seen.client !== client || seen.itemId !== itemId || seen.generate !== generate) {
+    setSeen({ client, itemId, generate });
+    setManifest(null);
+    setSheetUrl(null);
+    setLoaded(false);
+  }
 
   useEffect(() => {
     let cancelled = false;
     let resolved = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let tries = 0;
-    setManifest(null);
-    setSheetUrl(null);
-    setLoaded(false);
 
     // `Image.prefetch`, not `new Image()`: the DOM constructor doesn't exist on
     // a television, and inside this poll's promise chain the ReferenceError was

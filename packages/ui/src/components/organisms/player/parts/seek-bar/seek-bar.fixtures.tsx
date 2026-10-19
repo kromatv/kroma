@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
 import { currentChapter } from '#ui/components/organisms/player/lib/chapters';
@@ -32,7 +32,11 @@ export function Scrubbable({
 }: Readonly<ScrubbableProps>) {
   const [cur, setCur] = useState(curArg);
   const [preview, setPreview] = useState<number | null>(null);
-  useEffect(() => setCur(curArg), [curArg]);
+  const [curSeen, setCurSeen] = useState(curArg);
+  if (curSeen !== curArg) {
+    setCurSeen(curArg);
+    setCur(curArg);
+  }
 
   // The pending position is a ref as well as state so the handlers stay
   // identity-stable and the PanResponder is not rebuilt mid-drag.

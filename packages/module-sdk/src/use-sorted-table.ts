@@ -159,6 +159,7 @@ export function useSortedTable<Row, Key extends string, Query extends TableQuery
     [pagination, query, onQueryChange],
   );
 
+  // oxlint-disable-next-line react-compiler/incompatible-library -- TanStack's useReactTable is the table engine; the compiler skips this hook, which is what we want
   const table = useReactTable({
     data: rows,
     columns: definitions,

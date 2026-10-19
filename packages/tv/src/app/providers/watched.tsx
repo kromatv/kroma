@@ -1,18 +1,10 @@
 // Per-user "watched" state, server-backed and shared across every tile plus the
 // detail toggle. Toggles are optimistic and revert if the server call fails.
 
+import type { KromaClient } from '@kromatv/client';
 import { ItemId, type SubjectId } from '@kromatv/client/media';
-import {
-  createContext,
-  type ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-import { useAuth } from '#tv/app/providers/auth';
-import { useConnection } from '#tv/app/providers/connection';
+import { createContext, type ReactNode, useCallback, useContext, useMemo } from 'react';
+import { useSignedInIds } from '#tv/app/providers/signed-in-ids';
 
 interface Watched {
   has: (id: SubjectId) => boolean;
@@ -23,23 +15,10 @@ interface Watched {
 
 const Ctx = createContext<Watched | null>(null);
 
+const loadWatched = (client: KromaClient) => client.playback.watched();
+
 export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const { user, ready } = useAuth();
-  const { client } = useConnection();
-  const [ids, setIds] = useState<ReadonlySet<SubjectId>>(() => new Set());
-
-  const refresh = useCallback(() => {
-    if (!ready || !user || !client) {
-      setIds(new Set());
-      return;
-    }
-    client.playback
-      .watched()
-      .then((list) => setIds(new Set(list)))
-      .catch(() => undefined);
-  }, [client, user, ready]);
-
-  useEffect(() => refresh(), [refresh]);
+  const { ids, setIds, client, refresh } = useSignedInIds(loadWatched);
 
   const setWatched = useCallback(
     (id: SubjectId, watched: boolean) => {

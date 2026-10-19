@@ -56,11 +56,11 @@ export function useChromeReveal(): ChromeReveal {
   }, [poke, arm]);
 
   useEffect(() => {
-    poke();
+    arm();
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [poke]);
+  }, [arm]);
 
   return { shown, poke, toggle, hold };
 }

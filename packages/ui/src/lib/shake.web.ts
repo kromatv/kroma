@@ -31,9 +31,14 @@ export function useShake(at: number): Animated.WithAnimatedValue<ViewStyle> {
   const [travel, setTravel] = useState<number>(HOME);
   const reduced = useReducedMotion();
 
+  const [seen, setSeen] = useState({ at: 0, reduced: false });
+  if (seen.at !== at || seen.reduced !== reduced) {
+    setSeen({ at, reduced });
+    setTravel(at === 0 || reduced ? HOME : LEGS[0]);
+  }
+
   useEffect(() => {
     if (at === 0 || reduced) return;
-    setTravel(LEGS[0]);
     // Each leg is scheduled off the same instant, so a late timer costs its own
     // leg and never the ones behind it.
     const timers = LEGS.slice(1).map((to, leg) =>
@@ -41,7 +46,6 @@ export function useShake(at: number): Animated.WithAnimatedValue<ViewStyle> {
     );
     return () => {
       for (const timer of timers) clearTimeout(timer);
-      setTravel(HOME);
     };
   }, [at, reduced]);
 

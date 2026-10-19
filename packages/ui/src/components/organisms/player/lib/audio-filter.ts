@@ -1,5 +1,5 @@
 import type { MessageKey, Translate } from '@kromatv/i18n';
-import { type RefObject, useCallback, useEffect, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import type { AudioFilterMode } from '#ui/components/organisms/player/types';
 import { type DeviceStore, deviceStore, useDeviceStore } from '#ui/lib/device-store';
 import { webDocument } from '#ui/lib/dom';
@@ -195,6 +195,15 @@ export function createAudioFilterOwner() {
   return { wire, retain };
 }
 
+function subscribeNever(): () => void {
+  return () => {};
+}
+
+function hasAudioContext(): boolean {
+  // oxlint-disable-next-line no-restricted-globals -- audited - this IS the capability probe; false on native, where the engines level audio themselves.
+  return typeof AudioContext !== 'undefined';
+}
+
 function persistAudioFilter(m: AudioFilterMode, store: DeviceStore | null): void {
   try {
     store?.setItem(KEY, m);
@@ -215,11 +224,10 @@ export function useAudioFilter(
   const [owner] = useState(createAudioFilterOwner);
   useEffect(() => owner.retain(), [owner]);
   const [modeState, setModeState] = useState<AudioFilterMode>('off');
-  const [supported, setSupported] = useState(false);
+  const supported = useSyncExternalStore(subscribeNever, hasAudioContext, () => false);
 
   useEffect(() => {
-    // oxlint-disable-next-line no-restricted-globals -- audited - this IS the capability probe; false on native, where the engines level audio themselves.
-    setSupported(typeof AudioContext !== 'undefined');
+    // oxlint-disable-next-line react-compiler/set-state-in-effect -- storage is read after mount only, so hydration matches 'off'.
     setModeState(storedAudioFilter(store));
   }, [store]);
 

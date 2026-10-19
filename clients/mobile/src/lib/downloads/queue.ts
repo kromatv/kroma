@@ -41,12 +41,24 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
   const [queuedIds, setQueuedIds] = useState<string[]>([]);
   const runningRef = useRef<Set<string>>(new Set());
   const activeItemsRef = useRef<Map<string, MediaItem>>(new Map());
+  const [activeItems, setActiveItems] = useState<Map<string, MediaItem>>(new Map());
+  const pumpRef = useRef<(() => void) | null>(null);
   const handlesRef = useRef<Map<string, TransferHandle>>(new Map());
   const pausedRef = useRef<Set<string>>(new Set());
   const queueRef = useRef<string[]>([]);
   const cancelledRef = useRef<Set<string>>(new Set());
   const attemptsRef = useRef<Map<string, number>>(new Map());
   const retryTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  const rememberItem = useCallback((item: MediaItem) => {
+    activeItemsRef.current.set(item.id, item);
+    setActiveItems(new Map(activeItemsRef.current));
+  }, []);
+
+  const forgetItem = useCallback((id: string) => {
+    activeItemsRef.current.delete(id);
+    setActiveItems(new Map(activeItemsRef.current));
+  }, []);
 
   const syncQueue = useCallback((next: string[]) => {
     queueRef.current = next;
@@ -110,7 +122,7 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
     ) => {
       if (runningRef.current.has(item.id)) return;
       runningRef.current.add(item.id);
-      activeItemsRef.current.set(item.id, item);
+      rememberItem(item);
       persistWanted();
       trackProgress(item.id, startingProgress);
       void (async () => {
@@ -154,7 +166,7 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
           if (requeue) {
             syncQueue([item.id, ...queueRef.current.filter((id) => id !== item.id)]);
           } else {
-            activeItemsRef.current.delete(item.id);
+            forgetItem(item.id);
             attemptsRef.current.delete(item.id);
           }
           persistWanted();
@@ -167,7 +179,17 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
         }
       })();
     },
-    [markPaused, persistWanted, scheduleRetry, syncQueue, trackProgress, upsertEntry, t],
+    [
+      forgetItem,
+      markPaused,
+      persistWanted,
+      rememberItem,
+      scheduleRetry,
+      syncQueue,
+      trackProgress,
+      upsertEntry,
+      t,
+    ],
   );
 
   const runDownload = useCallback(
@@ -178,9 +200,6 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
     [client, execute],
   );
 
-  // pump() lives behind a ref so runDownload's finally can call the latest one;
-  // set in an effect since a ref written during render can go stale.
-  const pumpRef = useRef<(() => void) | null>(null);
   const pump = useCallback(() => {
     if (!client) return;
     while (runningRef.current.size < MAX_CONCURRENT && queueRef.current.length > 0) {
@@ -207,12 +226,12 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
         hasEntry(item.id)
       )
         return;
-      activeItemsRef.current.set(item.id, item);
+      rememberItem(item);
       syncQueue([...queueRef.current, item.id]);
       persistWanted();
       pump();
     },
-    [client, hasEntry, persistWanted, pump, syncQueue],
+    [client, hasEntry, persistWanted, pump, rememberItem, syncQueue],
   );
 
   const reconciledRef = useRef(false);
@@ -253,7 +272,7 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
     (itemId: string) => {
       if (queueRef.current.includes(itemId)) {
         syncQueue(queueRef.current.filter((id) => id !== itemId));
-        activeItemsRef.current.delete(itemId);
+        forgetItem(itemId);
         attemptsRef.current.delete(itemId);
         persistWanted();
         return;
@@ -267,7 +286,7 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
       }
       handle.cancel();
     },
-    [persistWanted, syncQueue],
+    [forgetItem, persistWanted, syncQueue],
   );
 
   return {
@@ -275,7 +294,7 @@ export function useTransferQueue(client: KromaClient | null): TransferQueue {
     active,
     pausedIds,
     queuedIds,
-    activeItems: activeItemsRef.current,
+    activeItems,
     canDownload,
     start,
     pause,

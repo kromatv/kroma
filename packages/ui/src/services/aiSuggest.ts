@@ -34,9 +34,13 @@ export interface UseAiSuggestResult {
  */
 function useEstimatedProgress(active: boolean): number {
   const [progress, setProgress] = useState(0);
+  const [armed, setArmed] = useState(active);
+  if (armed !== active) {
+    setArmed(active);
+    if (active) setProgress(0);
+  }
   useEffect(() => {
     if (!active) return;
-    setProgress(0);
     const start = Date.now();
     const id = setInterval(() => {
       setProgress(Math.min(0.96, 1 - Math.exp(-(Date.now() - start) / 14000)));
@@ -54,14 +58,20 @@ export function useAiSuggest(
   const [section, setSection] = useState<Section | null>(null);
   const [pending, setPending] = useState(false);
   const progress = useEstimatedProgress(pending && active);
+  const [seen, setSeen] = useState({ client, id, active });
+  if (seen.client !== client || seen.id !== id || seen.active !== active) {
+    setSeen({ client, id, active });
+    if (active) {
+      setSection(null);
+      setPending(false);
+    }
+  }
 
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
     let tries = 0;
     let timer: ReturnType<typeof setTimeout>;
-    setSection(null);
-    setPending(false);
     const poll = () => {
       client.media
         .aiSuggest(id)

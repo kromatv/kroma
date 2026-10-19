@@ -26,7 +26,7 @@ import {
   useStyles,
   useThemeVersion,
 } from '@kromatv/ui/kit';
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 
 import { PAGE_GUTTER } from '#web/shared/ui/page';
 
@@ -140,17 +140,20 @@ function useEdgeFades(strip: RefObject<HTMLDivElement | null>, deps: readonly un
     left: false,
     right: false,
   });
-  const update = useCallback(() => {
+  const update = () => {
     const el = strip.current;
     if (!el) return;
     const left = el.scrollLeft > 2;
     const right = el.scrollLeft < el.scrollWidth - el.clientWidth - 2;
     setFades((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
-  }, [strip]);
+  };
   useEffect(() => {
-    update();
+    const frame = requestAnimationFrame(update);
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', update);
+    };
   }, [update, ...deps]);
   return { fades, update };
 }

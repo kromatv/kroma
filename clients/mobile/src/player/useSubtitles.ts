@@ -50,8 +50,7 @@ export function useSubtitles(
 ): Subtitles {
   const [active, setActive] = useState<number | null>(null);
   const [downloaded, setDownloaded] = useState<DownloadedSub[]>([]);
-  const [cues, setCues] = useState<Cue[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState<{ index: number; cues: Cue[] } | null>(null);
   const [failed, setFailed] = useState<ReadonlySet<number>>(new Set());
   const hintRef = useRef(0);
 
@@ -96,15 +95,9 @@ export function useSubtitles(
     return [...embedded, ...gen];
   }, [client, item, downloaded, offline]);
 
-  // Auto-enable the preferred language, once per item. Keyed on the item so an
-  // episode hand-off re-applies it, and never after a manual pick (the effect
-  // only fires when the item changes, and a pick is a different setState).
-  const appliedFor = useRef<string | null>(null);
-  useEffect(() => {
-    if (appliedFor.current === item.id) return;
-    if (tracks.length === 0) return;
-    appliedFor.current = item.id;
-    // A fresh item gets a fresh benefit of the doubt.
+  const [appliedFor, setAppliedFor] = useState<string | null>(null);
+  if (appliedFor !== item.id && tracks.length > 0) {
+    setAppliedFor(item.id);
     setFailed(new Set());
     const hit = preferredSubIndex(
       tracks.map((track) => ({
@@ -116,20 +109,12 @@ export function useSubtitles(
       preferredLanguage,
     );
     if (hit != null) setActive(hit);
-  }, [item.id, tracks, preferredLanguage]);
+  }
 
-  // Fetch + parse the selected track (subtitle extraction can take a while
-  // server-side on first request; the fetch just waits).
   useEffect(() => {
-    if (active === null) {
-      setCues(null);
-      return;
-    }
     const track = tracks.find((t) => t.index === active);
-    if (!track) return;
+    if (active === null || !track) return;
     let cancelled = false;
-    setLoading(true);
-    setCues(null);
     // Local sidecar VTTs are file:// URIs; RN fetch cannot read those.
     const load = track.url.startsWith('file:')
       ? FileSystem.readAsStringAsync(track.url)
@@ -141,7 +126,6 @@ export function useSubtitles(
     // app. Mark it and step aside, so the sheet can say "unavailable".
     const broke = () => {
       if (cancelled) return;
-      setCues(null);
       setFailed((prev) => new Set(prev).add(active));
       setActive(null);
     };
@@ -154,14 +138,16 @@ export function useSubtitles(
           return;
         }
         hintRef.current = 0;
-        setCues(parsed);
+        setLoaded({ index: active, cues: parsed });
       })
-      .catch(broke)
-      .finally(() => !cancelled && setLoading(false));
+      .catch(broke);
     return () => {
       cancelled = true;
     };
   }, [active, tracks]);
+
+  const cues = loaded !== null && loaded.index === active ? loaded.cues : null;
+  const loading = cues === null && tracks.some((t) => t.index === active);
 
   const pick = useCallback((index: number | null) => setActive(index), []);
 
