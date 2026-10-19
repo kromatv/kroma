@@ -56,13 +56,14 @@ export function TvDetailScaffold({
   const s = useStyles(sDefinition);
 
   return (
-    <Box fill bg="bg" overflow="hidden">
+    <Box fill overflow="hidden">
       <Img
         src={backdrop}
         background={tintGradient(posterColors(id))}
         position="50% 18%"
         fill
         layered
+        opaque
       />
       <Box fill pointerEvents="none" style={gradient(VEIL_HORIZONTAL)} />
       <Box fill pointerEvents="none" style={gradient(VEIL_VERTICAL)} />

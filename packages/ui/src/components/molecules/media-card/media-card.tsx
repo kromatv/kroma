@@ -84,20 +84,14 @@ function MediaCard({
       focusScale={1.06}
       style={[frameOf(width, scope), tintFill(tint, scope)]}
     >
-      <Box
-        w={width}
-        aspect={16 / 9}
-        radius="xl"
-        overflow="hidden"
-        bg="surface1"
-        dataSet={FADE_UNIT}
-      >
+      <Box w={width} aspect={16 / 9} radius="xl" overflow="hidden" dataSet={FADE_UNIT}>
         <Img
           src={art}
           background={WEB ? undefined : tintGradient(tint)}
           radius={WEB ? undefined : radius.xl}
           position="50% 28%"
           fill
+          opaque
           noCrossFade
         />
         <ArtScrim radius={WEB ? 0 : 'xl'} />

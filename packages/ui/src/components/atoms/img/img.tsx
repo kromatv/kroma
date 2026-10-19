@@ -63,6 +63,9 @@ export interface ImgProps {
   /** Browser targets: keep the picture on a compositor layer of its own, so
    *  full-screen art is handed to the GPU instead of rasterized on the CPU. */
   layered?: boolean;
+  /** The art covers its whole box with no transparency (a poster, a backdrop).
+   *  On React Native, `background` then stops drawing once the art has faded in. */
+  opaque?: boolean;
   onLoad?: () => void;
   onError?: () => void;
 }
@@ -86,6 +89,7 @@ function Img({
   priority = false,
   noCrossFade = false,
   layered = false,
+  opaque = false,
   onLoad,
   onError,
 }: Readonly<ImgProps>) {
@@ -102,6 +106,7 @@ function Img({
   const [box, setBox] = useState<Size | null>(null);
   const [natural, setNatural] = useState<Size | null>(null);
   const [opacity] = useState(() => new Animated.Value(0));
+  const [covered, setCovered] = useState<string | null>(null);
   const focal = parsePosition(position);
   const radius =
     corner === undefined ? undefined : radiusValue(corner, undefined, activeTheme(scope.theme));
@@ -132,7 +137,7 @@ function Img({
     fill ? s.fill : null,
     s.clip,
     radius === undefined ? null : sharedStyle(`img:radius:${radius}`, { radius }, scope),
-    background === undefined
+    background === undefined || (src != null && covered === src)
       ? null
       : sharedStyle(`img:bg:${background}`, gradient(background), scope),
     style,
@@ -193,6 +198,7 @@ function Img({
         opacity,
         setNatural,
         markLoaded,
+        onCovered: opaque ? setCovered : undefined,
         onLoad,
         onError: handleError,
       })}

@@ -68,12 +68,13 @@ function PosterCard({
       focusScale={1.05}
       style={[frameOf(width ?? '100%', scope), tintFill(tint, scope)]}
     >
-      <Box aspect={2 / 3} radius="xl" overflow="hidden" bg="surface1" dataSet={FADE_UNIT}>
+      <Box aspect={2 / 3} radius="xl" overflow="hidden" dataSet={FADE_UNIT}>
         <Img
           src={art}
           background={WEB ? undefined : tintGradient(tint)}
           radius={WEB ? undefined : radius.xl}
           fill
+          opaque
           noCrossFade
         />
         <ArtScrim variant="deep" radius={WEB ? 0 : 'xl'} />
