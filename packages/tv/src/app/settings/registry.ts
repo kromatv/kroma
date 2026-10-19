@@ -11,13 +11,7 @@ import { availableEngines, ENGINE_LABEL_KEY, useEnginePref } from '#tv/app/engin
 import { ALL_KEYBOARD_LAYOUTS, KEYBOARD_LAYOUT_LABEL_KEY } from '#tv/app/keyboardLayoutPref';
 import { prefValue, useLangPrefs } from '#tv/app/langPref';
 import { choiceItem, type SettingsItem, toggleItem } from './items';
-import {
-  ARTWORK_SCALE,
-  type ArtworkQuality,
-  useArtworkPref,
-  useBlurPref,
-  useStoredPref,
-} from './store';
+import { ARTWORK_SCALE, type ArtworkQuality, useArtworkPref, useStoredPref } from './store';
 
 export const localeSetting: SettingsItem = choiceItem({
   id: 'locale',
@@ -117,17 +111,6 @@ export const artworkSetting: SettingsItem = choiceItem({
   options: () => Object.keys(ARTWORK_SCALE) as ArtworkQuality[],
   valueLabel: (v) => `artworkQuality.${v}` as MessageKey,
   useValue: () => useStoredPref(useArtworkPref()),
-});
-
-export const blurSetting: SettingsItem = toggleItem({
-  id: 'blur',
-  level: 'device',
-  label: 'settings.blur',
-  icon: 'blur',
-  useValue: () => {
-    const [on, set] = useStoredPref(useBlurPref());
-    return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
-  },
 });
 
 export const perfHudSetting: SettingsItem = toggleItem({
