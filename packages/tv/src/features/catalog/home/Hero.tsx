@@ -144,22 +144,33 @@ export function Hero({ info, onPlay, onSelectShow, onSelectEntry }: Readonly<Her
           </Text>
         ) : null}
         <FocusRegion style={s.heroActions}>
-          <Button
-            size="tv"
-            // Home's entry point: the hero's own action, which is what the
-            // design puts the eye on.
-            autoFocus
-            icon="player-play-filled"
-            label={hero.type === 'movie' ? t('player.play') : t('content.moreInfo')}
-            onPress={() => (hero.type === 'movie' ? onPlay(hero.item) : onSelectShow(hero.show))}
-          />
-          <Button
-            size="tv"
-            variant="outline"
-            label={t('content.moreInfo')}
-            onPress={() => onSelectEntry(hero)}
-            style={s.moreInfo}
-          />
+          {hero.type === 'movie' ? (
+            <>
+              <Button
+                size="tv"
+                // Home's entry point: the hero's own action, which is what the
+                // design puts the eye on.
+                autoFocus
+                icon="player-play-filled"
+                label={t('player.play')}
+                onPress={() => onPlay(hero.item)}
+              />
+              <Button
+                size="tv"
+                variant="outline"
+                label={t('content.moreInfo')}
+                onPress={() => onSelectEntry(hero)}
+                style={s.moreInfo}
+              />
+            </>
+          ) : (
+            <Button
+              size="tv"
+              autoFocus
+              label={t('content.moreInfo')}
+              onPress={() => onSelectShow(hero.show)}
+            />
+          )}
         </FocusRegion>
       </Box>
     </Box>
