@@ -19,5 +19,6 @@ export function useSheetSlide(open: boolean, by: number): StyleProp<ViewStyle> {
     transitionProperty: 'transform',
     transitionDuration: `${SLIDE_MS}ms`,
     transitionTimingFunction: ease.out.css,
+    willChange: 'transform',
   } as ViewStyle;
 }
