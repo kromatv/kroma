@@ -32,13 +32,12 @@ export function createPrefetchQueue({
       if (uri === undefined) break;
       if (isImageReady(uri) || inFlight.has(uri)) continue;
       inFlight.add(uri);
-      prefetch(uri)
-        .catch(() => false)
-        .then((ok) => {
-          inFlight.delete(uri);
-          if (ok) markImageReady(uri);
-          request();
-        });
+      const settle = (ok: boolean) => {
+        inFlight.delete(uri);
+        if (ok) markImageReady(uri);
+        request();
+      };
+      prefetch(uri).then(settle, () => settle(false));
     }
   };
 
