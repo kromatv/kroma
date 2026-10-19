@@ -3,6 +3,7 @@ import { type FocusHandle, ListRow, Text } from '@kromatv/ui/kit';
 import { type Ref, useMemo, useState } from 'react';
 import type { ChoiceItem, SettingsEntry, ToggleItem } from '#tv/app/settings/items';
 import { ChoicePicker } from './ChoicePicker';
+import { useSettingsPopup } from './settings/settingsPopups';
 
 /** Each row is its own component so an item's `use()` hook sits in a stable
  * instance and an early return cannot break hook order (React #300). */
@@ -49,6 +50,7 @@ function ChoiceRow({
   const locale = useLocale();
   const [value, set] = item.useValue();
   const [picking, setPicking] = useState(false);
+  useSettingsPopup(picking);
   // A language row's options are ~190 names through a collator, and this list
   // re-renders whenever any pref on the menu changes.
   const options = useMemo(() => item.options(t, locale), [item, t, locale]);

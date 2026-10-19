@@ -1,8 +1,8 @@
 import { Avatar, Box, Text } from '@kromatv/ui/kit';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
-import { useNav } from '#tv/app/router';
 import { PROFILE_GROUPS } from '#tv/app/settings/groups';
+import { PinPanel } from './settings/PinPanel';
 import { appPanes } from './settings/appPanes';
 import type { SettingsPane } from './settings/panes';
 import { SettingsPanes } from './settings/SettingsPanes';
@@ -14,7 +14,6 @@ const GROUP_PANES: readonly SettingsPane[] = PROFILE_GROUPS.map((group) => ({
 
 /** The signed-in settings (route `profileMenu`): the profile's groups, then its account actions. */
 export function TvProfileMenu() {
-  const nav = useNav();
   const { activeServerUrl, client } = useConnection();
   const { user, switchProfile, logout, forget } = useAuth();
 
@@ -27,13 +26,12 @@ export function TvProfileMenu() {
 
   const account: SettingsPane[] = [
     {
-      kind: 'action',
+      kind: 'panel',
       id: 'pin',
       icon: 'lock',
       label: 'profileMenu.pin',
       hint: user.hasPin ? 'profileMenu.on' : 'profileMenu.off',
-      description: user.hasPin ? 'settings.pinOnDesc' : 'settings.pinOffDesc',
-      run: () => nav.go('pin', { intent: user.hasPin ? 'clear' : 'set' }),
+      Panel: PinPanel,
     },
     {
       kind: 'action',
@@ -69,7 +67,7 @@ export function TvProfileMenu() {
           </Text>
         </Box>
       }
-      sections={[GROUP_PANES, account, appPanes(() => nav.go('about'))]}
+      sections={[GROUP_PANES, account, appPanes]}
     />
   );
 }

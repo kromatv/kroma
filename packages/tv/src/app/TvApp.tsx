@@ -42,7 +42,6 @@ import { ARTWORK_SCALE, ArtworkPrefProvider, createArtworkPref } from '#tv/app/s
 import { useCatalogue } from '#tv/app/useCatalogue';
 import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voiceSearch';
 import { HandoffBeaconProvider } from '#tv/features/accounts/HandoffBeaconProvider';
-import { TvAbout } from '#tv/features/accounts/TvAbout';
 import { TvAddProfile } from '#tv/features/accounts/TvAddProfile';
 import { TvConnect } from '#tv/features/accounts/TvConnect';
 import { TvDeviceSettings } from '#tv/features/accounts/TvDeviceSettings';
@@ -255,7 +254,6 @@ const SCREENS: Omit<TvScreens, 'player'> = {
   addProfile: TvAddProfile,
   quick: TvQuickConnect,
   deviceSettings: TvDeviceSettings,
-  about: TvAbout,
   pin: TvPin,
   profileMenu: TvProfileMenu,
   home: TvHome,
