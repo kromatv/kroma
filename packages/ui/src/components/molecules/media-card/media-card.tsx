@@ -90,7 +90,6 @@ function MediaCard({
           radius={WEB ? undefined : 'xl'}
           position="50% 28%"
           fill
-          opaque
           noCrossFade
         />
         <ArtScrim radius={WEB ? 0 : 'xl'} />

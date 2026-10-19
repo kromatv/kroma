@@ -73,7 +73,6 @@ function PosterCard({
           background={WEB ? undefined : tintGradient(tint)}
           radius={WEB ? undefined : 'xl'}
           fill
-          opaque
           noCrossFade
         />
         <ArtScrim variant="deep" radius={WEB ? 0 : 'xl'} />

@@ -26,6 +26,7 @@ import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { FocusReporter } from '#ui/lib/focus-report';
 import { usePerfSampler } from '#ui/lib/perf-provider';
+import { WEB } from '#ui/lib/platform';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { GridRow } from './grid-row';
 import {
@@ -34,6 +35,7 @@ import {
   type GridRows,
   rowMetrics,
   rowTop,
+  rowWindow,
   stripOffset,
 } from './grid-rows';
 import { useWheelScroll } from './use-wheel-rows';
@@ -210,7 +212,7 @@ function VirtualGrid<T>({
   }, [focusedRow, metrics.count, onEndReached]);
 
   useEffect(() => {
-    if (settledRow === focusedRow) return;
+    if (!WEB || settledRow === focusedRow) return;
     const timer = setTimeout(() => startTransition(() => setSettledRow(focusedRow)), SETTLE_MS);
     return () => clearTimeout(timer);
   }, [focusedRow, settledRow]);
@@ -261,7 +263,9 @@ function VirtualGrid<T>({
   // navigator would focus whatever slides beneath the stationary cursor.
   const fraction = useWheelScroll(viewport, rows, lastRow, metrics.headerRows, geometry.pitch);
 
-  const shown = catchUpWindow(focusedRow, settledRow, metrics, OVERSCAN);
+  const shown = WEB
+    ? catchUpWindow(focusedRow, settledRow, metrics, OVERSCAN)
+    : rowWindow(focusedRow, metrics, OVERSCAN);
   const offset =
     fraction === null ? stripOffset(focusedRow, metrics) : freeOffset(fraction, metrics);
   const mounted: ReactElement[] = [];
