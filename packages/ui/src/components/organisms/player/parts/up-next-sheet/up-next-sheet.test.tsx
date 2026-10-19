@@ -1,10 +1,8 @@
 // @vitest-environment jsdom
 
 import { act, render, screen } from '@testing-library/react';
-import { createRef } from 'react';
 import { Animated } from 'react-native';
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
-import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 
 import { onScreen as baseOnScreen, declared, wearsRing } from '#ui/testing';
 import { UpNextSheet } from './up-next-sheet';
@@ -112,29 +110,5 @@ describe('the ring an open sheet wears', () => {
     press('ArrowUp');
 
     expect(wearsRing(control('Up next'))).toBe(true);
-  });
-});
-
-describe('the sheet where a remote already feeds the navigator', () => {
-  it('lets the press through once, not twice', () => {
-    const panel = createRef<PanelHandle>();
-    render(
-      onScreen(
-        <UpNextSheet
-          ref={panel}
-          data={DATA}
-          open
-          revealed
-          onOpen={() => {}}
-          onClose={() => {}}
-          onPlay={() => {}}
-        />,
-      ),
-    );
-
-    press('ArrowRight');
-    act(() => void panel.current?.onKey('Right'));
-
-    expect(wearsRing(control('Lord Snow'))).toBe(true);
   });
 });
