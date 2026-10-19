@@ -12,7 +12,6 @@ import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { CardProgress } from '#ui/lib/card-progress';
-import { WEB } from '#ui/lib/platform';
 
 /** The fill behind artwork, so a tile is never blank while the art loads. */
 
@@ -24,12 +23,9 @@ function tintGradient(tint: readonly [string, string]): string {
   return `linear-gradient(to bottom, ${tint[0]} 0%, ${tint[1]} 72%)`;
 }
 
-/** A card frame's stand-in fill on the browser targets, where the art fades in
- *  over it as one layer; nothing on React Native, where the art carries it. */
-function tintFill(tint: readonly [string, string], scope: StyleScope): ViewStyle | null {
-  return WEB
-    ? (sharedStyle(`card:tint:${tint[0]}`, { backgroundColor: tint[0] }, scope) as ViewStyle)
-    : null;
+/** A card frame's stand-in fill, shown until the art covers it. */
+function tintFill(tint: readonly [string, string], scope: StyleScope): ViewStyle {
+  return sharedStyle(`card:tint:${tint[0]}`, { backgroundColor: tint[0] }, scope) as ViewStyle;
 }
 
 /** Marks the box a card's art and caption fade in with. */
@@ -84,15 +80,8 @@ function MediaCard({
       style={[frameOf(width, scope), tintFill(tint, scope)]}
     >
       <Box w={width} aspect={16 / 9} radius="xl" overflow="hidden" dataSet={FADE_UNIT}>
-        <Img
-          src={art}
-          background={WEB ? undefined : tintGradient(tint)}
-          radius={WEB ? undefined : 'xl'}
-          position="50% 28%"
-          fill
-          noCrossFade
-        />
-        <ArtScrim radius={WEB ? 0 : 'xl'} />
+        <Img src={art} position="50% 28%" fill noCrossFade />
+        <ArtScrim radius={0} />
         {watched ? <WatchedBadge /> : null}
         <Box absolute left={18} right={18} bottom={16} gap={5}>
           {overline ? <Text style={s.overline}>{overline}</Text> : null}

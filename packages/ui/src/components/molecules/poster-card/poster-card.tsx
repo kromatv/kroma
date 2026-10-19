@@ -11,17 +11,16 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
-import { FADE_UNIT, tintFill, tintGradient } from '#ui/components/molecules/media-card';
+import { FADE_UNIT, tintFill } from '#ui/components/molecules/media-card';
 import { CardProgress } from '#ui/lib/card-progress';
 import { gradient } from '#ui/lib/css';
-import { WEB } from '#ui/lib/platform';
 
 interface PosterCardProps {
   title: string;
   /** A word above the title naming what the tile is - `FILM`, `SERIES`. Cased by
    *  the style, so pass it in the reading case. Omit it and the title sits alone. */
   overline?: string;
-  /** Portrait key art. Falls back to the `tint` gradient. */
+  /** Portrait key art. Falls back to the `tint` fill. */
   art: string | null;
   tint: readonly [string, string];
   /** Resume / series-completion position, 0..1, or null for no bar. */
@@ -69,13 +68,7 @@ function PosterCard({
       style={[frameOf(width ?? '100%', scope), tintFill(tint, scope)]}
     >
       <Box aspect={2 / 3} radius="xl" overflow="hidden" dataSet={FADE_UNIT}>
-        <Img
-          src={art}
-          background={WEB ? undefined : tintGradient(tint)}
-          radius={WEB ? undefined : 'xl'}
-          fill
-          noCrossFade
-        />
+        <Img src={art} fill noCrossFade />
         {watched ? <WatchedBadge /> : null}
         <Box
           absolute
