@@ -1,16 +1,6 @@
 import type { KromaClient } from '@kromatv/client';
 import type { MediaItem, Show } from '@kromatv/client/media';
-import {
-  Box,
-  colors,
-  gradient,
-  Img,
-  promote,
-  SHADE,
-  shade,
-  tintGradient,
-  useSettledValue,
-} from '@kromatv/ui/kit';
+import { Box, gradient, Img, promote, SHADE, shade, useSettledValue } from '@kromatv/ui/kit';
 import { memo } from 'react';
 import { useClient } from '#tv/app/router';
 import { STAGE_W } from '#tv/shared/stage';
@@ -41,16 +31,12 @@ export function AmbientBackdrop({ entry }: Readonly<{ entry: CatalogEntry | null
 }
 
 function AmbientArtImpl({ src }: Readonly<{ src: string | null }>) {
-  return (
-    <Img src={src} background={GROUND} position="50% 20%" duration={FADE_MS} fill layered opaque />
-  );
+  return <Img src={src} position="50% 20%" duration={FADE_MS} fill layered />;
 }
 
 const AmbientArt = memo(AmbientArtImpl);
 
 const VEIL = [gradient(`${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`), promote()];
-
-const GROUND = tintGradient([colors.surface2, colors.bg]);
 
 export type CatalogEntry = { kind: 'movie'; item: MediaItem } | { kind: 'show'; item: Show };
 
