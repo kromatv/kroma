@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   decimal,
   formatBytes,
+  formatCount,
   formatDuration,
   formatElapsed,
   formatHours,
@@ -27,6 +28,14 @@ describe('decimal', () => {
     expect(decimal(Math.PI, 'fr', 2)).toBe('3,14');
     expect(decimal(Math.PI, 'fr', 0)).toBe('3');
     expect(decimal(Math.E, 'en', 3)).toBe('2.718');
+  });
+});
+
+describe('formatCount', () => {
+  it('groups thousands the way toLocaleString does', () => {
+    for (const n of [0, 7, 1064, 1234567])
+      for (const locale of ['fr', 'en'] as const)
+        expect(formatCount(n, locale)).toBe(n.toLocaleString(locale));
   });
 });
 

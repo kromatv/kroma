@@ -20,6 +20,7 @@ interface NativeLayersArgs {
   opacity: Animated.Value;
   setNatural: (size: Size) => void;
   markLoaded: () => void;
+  onCovered: ((uri: string) => void) | undefined;
   onLoad: (() => void) | undefined;
   onError: () => void;
 }
@@ -39,12 +40,17 @@ function nativeLayers(at: Readonly<NativeLayersArgs>): ReactNode {
       onLoad: (size: Size | null) => {
         if (size) at.setNatural(size);
         at.markLoaded();
-        if (!backend.fades) {
+        const cover = () => at.onCovered?.(uri);
+        if (backend.fades) {
+          if (at.onCovered) setTimeout(cover, at.duration);
+        } else {
           Animated.timing(at.opacity, {
             toValue: 1,
             duration: at.duration,
             useNativeDriver: true,
-          }).start();
+          }).start(({ finished }) => {
+            if (finished) cover();
+          });
         }
         at.onLoad?.();
       },

@@ -10,6 +10,7 @@ import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type ColorValue, type StyleDecl, svFor } from '#ui/core';
+import { formatCount } from '#ui/lib/intl';
 import { useLocaleDefault } from '#ui/services/i18n';
 
 /**
@@ -173,7 +174,7 @@ function Chip({
             </Text>
           )}
           {count === undefined ? null : (
-            <Text style={state.slots.count}>{count.toLocaleString(locale)}</Text>
+            <Text style={state.slots.count}>{formatCount(count, locale)}</Text>
           )}
           {children}
         </>

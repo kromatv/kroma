@@ -48,9 +48,12 @@ export function posterGradient(title: string): string {
   return `radial-gradient(120% 90% at 30% 16%, hsla(${(h + 22) % 360},60%,46%,.5), transparent 62%), linear-gradient(155deg, hsl(${h} 42% 27%), hsl(${(h + 30) % 360} 48% 10%))`;
 }
 
-/** Deterministic two-stop key-art gradient derived from an item id. */
+const TINT_STEP = 15;
+
+/** Deterministic two-stop key-art gradient derived from an item id, drawn from
+ *  24 hues so every title shares one of 24 fills. */
 export function posterColors(id: string): [string, string] {
-  const hue = hueFromString(id);
+  const hue = (Math.round(hueFromString(id) / TINT_STEP) * TINT_STEP) % 360;
   const hue2 = (hue + 40) % 360;
   return [`hsl(${hue} 38% 26%)`, `hsl(${hue2} 50% 12%)`];
 }

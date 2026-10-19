@@ -29,7 +29,7 @@ describe('the plugin', () => {
     const css = transform('@import "@kromatv/ui/css";');
     expect(css).toContain('@font-face');
     expect(css).toContain('--kroma-bg:');
-    expect(css).toContain('@keyframes kroma-img-in');
+    expect(css).toContain('@keyframes kroma-img-failsafe');
     expect(css).toContain('box-sizing: border-box;');
   });
 
@@ -52,7 +52,7 @@ describe('the plugin', () => {
 
     expect(tv).toContain('@font-face');
     expect(tv).toContain('--kroma-bg:');
-    expect(tv).toContain('@keyframes kroma-img-in');
+    expect(tv).toContain('@keyframes kroma-img-failsafe');
     expect(tv).toContain('font-size: inherit');
     expect(tv).not.toContain('::-webkit-scrollbar');
   });
@@ -206,7 +206,7 @@ describe('the virtual stylesheet', () => {
 
     expect(css).toContain('@font-face');
     expect(css).toContain('--kroma-bg:');
-    expect(css).toContain('@keyframes kroma-img-in');
+    expect(css).toContain('@keyframes kroma-img-failsafe');
     expect(css).toContain('box-sizing: border-box;');
   });
 

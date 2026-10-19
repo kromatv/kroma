@@ -148,8 +148,10 @@ describe('hueFromString', () => {
     }
   });
 
-  it('is the hash behind posterColors', () => {
-    expect(posterColors('tt123')[0]).toBe(`hsl(${hueFromString('tt123')} 38% 26%)`);
+  it('is the hash behind posterColors, rounded to the nearest of its hues', () => {
+    const hue = (Math.round(hueFromString('tt123') / 15) * 15) % 360;
+
+    expect(posterColors('tt123')[0]).toBe(`hsl(${hue} 38% 26%)`);
   });
 });
 
@@ -170,6 +172,14 @@ describe('posterColors', () => {
   it('handles an empty id', () => {
     const [a] = posterColors('');
     expect(a).toBe('hsl(0 38% 26%)');
+  });
+
+  it('draws every title from the same 24 fills', () => {
+    const ids = Array.from({ length: 2000 }, (_, at) => `title-${at}`);
+
+    const fills = new Set(ids.map((id) => posterColors(id).join()));
+
+    expect(fills.size).toBe(24);
   });
 });
 

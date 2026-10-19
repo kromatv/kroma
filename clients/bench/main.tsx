@@ -15,13 +15,14 @@ import {
   useGrowingCount,
 } from '@kromatv/ui/kit';
 import { createRoot } from 'react-dom/client';
+import { tmdbArt } from './art-url';
+import { mountBench } from './mount';
 
 const params = new URLSearchParams(location.search);
 const RAILS = Number(params.get('rails') ?? 8);
 const TILES = Number(params.get('tiles') ?? 20);
 // Cache-busted per tile so each tile actually decodes, instead of reusing one image.
-const artParam = params.get('art');
-const ART = artParam?.startsWith('https://') ? artParam : null;
+const ART = tmdbArt(params.get('art'));
 const WIDTH = params.get('w');
 // react-native-web has no native animation driver: each loader is a JS timer writing
 // an inline style every frame, so `?loaders=N` stress-tests that cost.
@@ -109,4 +110,5 @@ function Loaders({ count }: Readonly<{ count: number }>) {
 }
 
 const root = document.getElementById('root');
-if (root) createRoot(root).render(<Bench />);
+if (root && params.has('mount')) mountBench(params, root);
+else if (root) createRoot(root).render(<Bench />);

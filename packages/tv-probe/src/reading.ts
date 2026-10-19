@@ -10,7 +10,8 @@ export interface Reading {
 /** What the screen looks like right now, counted inside `#root` so a dev-only
  * overlay appended to `<body>` is never mistaken for the app. Runs in the page,
  * so it closes over nothing: `page.evaluate` ships its source, not its scope.
- * A ring is an inline `outlineWidth`, which is what `focusable.tsx` draws.
+ * A ring is a computed outline, which is what `focusable.tsx` draws, through
+ * an inline style or a compiled atomic class alike.
  *
  * Buried rather than merely overlapping: a rect on its own ignores the clip an
  * ancestor puts on it and whatever is painted over it, so a tile scrolled under
@@ -24,9 +25,10 @@ export async function readDocument({
 }): Promise<Reading> {
   const root = document.getElementById('root') ?? document.body;
   const all = [...root.querySelectorAll<HTMLElement>('*')];
-  const ringed = all.filter(
-    (el) => el.style.outlineWidth !== '' && el.style.outlineWidth !== '0px',
-  );
+  const ringed = all.filter((el) => {
+    const { outlineStyle, outlineWidth } = getComputedStyle(el);
+    return outlineStyle !== '' && outlineStyle !== 'none' && Number.parseFloat(outlineWidth) > 0;
+  });
   const name = (el: Element) =>
     `${el.getAttribute('role') ?? el.tagName.toLowerCase()}:${el.getAttribute('aria-label') ?? el.textContent ?? ''}`.slice(
       0,

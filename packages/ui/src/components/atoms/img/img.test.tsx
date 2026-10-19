@@ -2,7 +2,6 @@
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { createElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { declared } from '#ui/testing';
 import { Img, type ImgProps } from './img';
 
 const el = (props: ImgProps) => createElement(Img, props);
@@ -19,9 +18,6 @@ const alreadyDecoded = () => {
   vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(640);
 };
 
-// The web reveal waits one frame before it turns opaque, so the browser paints
-// the transparent state the CSS transition starts from. Tests have to let that
-// frame happen before asserting the settled opacity.
 const frame = async () => {
   await act(async () => {
     await new Promise((resolve) => {
@@ -30,26 +26,29 @@ const frame = async () => {
   });
 };
 
+const reveal = (img: Element | null) => img?.getAttribute('data-kroma-reveal');
+
 describe('Img', () => {
-  it('fades the artwork in with a CSS animation, and is never left invisible', () => {
+  it('waits transparent for its own load, then fades in', () => {
     const { container } = render(el({ src: 'a.jpg' }));
     const img = main(container);
     if (!img) throw new Error('no <img> rendered');
-    // The fade is the browser's, so the element's RESTING state is opaque: an
-    // image whose reveal depended on React state stayed invisible whenever that
-    // state never arrived, with its bytes already decoded.
-    expect(declared(img, 'animation-name')).toBe('kroma-img-in');
-    expect(img.style.opacity).toBe('');
+
+    expect(reveal(img)).toBe('wait');
     expect(img.getAttribute('loading')).toBe('lazy');
     expect(img.getAttribute('decoding')).toBe('async');
+
+    fireEvent.load(img);
+
+    expect(reveal(img)).toBe('in');
   });
 
-  it('shows art the browser had already decoded without replaying the fade', () => {
+  it('shows art the browser had already decoded without a fade', () => {
     alreadyDecoded();
 
     const { container } = render(el({ src: 'a.jpg' }));
 
-    expect(declared(main(container) as Element, 'animation-name')).toBe('none');
+    expect(reveal(main(container))).toBe('shown');
   });
 
   it('loads eagerly at high priority when marked the LCP art', () => {
@@ -135,7 +134,7 @@ describe('Img', () => {
       const next = main(container);
       if (!next) throw new Error('no incoming <img> rendered');
       expect(next.getAttribute('src')).toBe('b.jpg');
-      expect(declared(next, 'animation-name')).toBe('kroma-img-in');
+      expect(reveal(next)).toBe('wait');
 
       fireEvent.load(next);
       act(() => vi.advanceTimersByTime(16));
@@ -156,11 +155,9 @@ describe('Img', () => {
 
     const next = main(container);
     if (!next) throw new Error('no incoming <img> rendered');
-    // A new element for the new source (keyed on it), so its animation runs
-    // from the start rather than inheriting the previous one's finished state.
     expect(next.getAttribute('src')).toBe('b.jpg');
     expect(next).not.toBe(first);
-    expect(declared(next, 'animation-name')).toBe('kroma-img-in');
+    expect(reveal(next)).toBe('wait');
     await frame();
   });
 
@@ -175,6 +172,90 @@ describe('Img', () => {
     await frame();
     expect(container.querySelector('[data-testid="ph"]')).not.toBeNull();
     expect(under(container)?.getAttribute('src')).toBe('a.jpg');
+  });
+
+  describe('over a background', () => {
+    const box = (root: HTMLElement) => (root.firstElementChild as HTMLElement).className;
+    const bare = () => box(render(el({ src: null })).container);
+
+    it('stops painting it once opaque art has faded in', () => {
+      vi.useFakeTimers();
+      try {
+        const { container } = render(el({ src: 'a.jpg', background: 'red', opaque: true }));
+        expect(box(container)).not.toBe(bare());
+        const img = main(container);
+        if (!img) throw new Error('no <img> rendered');
+        fireEvent.load(img);
+        act(() => vi.advanceTimersByTime(400));
+        expect(box(container)).toBe(bare());
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('keeps it under art that may be transparent', () => {
+      vi.useFakeTimers();
+      try {
+        const { container } = render(el({ src: 'a.jpg', background: 'red' }));
+        const filled = box(container);
+        const img = main(container);
+        if (!img) throw new Error('no <img> rendered');
+        fireEvent.load(img);
+        act(() => vi.advanceTimersByTime(400));
+        expect(box(container)).toBe(filled);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
+  describe('inside a card that fades as one unit', () => {
+    const inUnit = (props: ImgProps) =>
+      createElement(
+        'div',
+        { 'data-testid': 'frame' },
+        createElement('div', { 'data-kroma-fade-unit': '', 'data-testid': 'unit' }, el(props)),
+      );
+    const parts = (root: HTMLElement) => ({
+      frame: root.querySelector('[data-testid="frame"]') as HTMLElement,
+      unit: root.querySelector('[data-testid="unit"]') as HTMLElement,
+    });
+
+    it('holds the unit until its art loads, then clears the frame under it', () => {
+      const { container } = render(inUnit({ src: 'a.jpg' }));
+      const { frame, unit } = parts(container);
+      expect(unit.hasAttribute('data-kroma-wait')).toBe(true);
+      expect(frame.hasAttribute('data-kroma-art-in')).toBe(false);
+
+      const img = main(container);
+      if (!img) throw new Error('no <img> rendered');
+      fireEvent.load(img);
+
+      expect(unit.hasAttribute('data-kroma-wait')).toBe(false);
+      expect(frame.hasAttribute('data-kroma-art-in')).toBe(true);
+    });
+
+    it('never holds a unit whose art the browser had already decoded', () => {
+      alreadyDecoded();
+      const { container } = render(inUnit({ src: 'a.jpg' }));
+      const { frame, unit } = parts(container);
+      expect(unit.hasAttribute('data-kroma-wait')).toBe(false);
+      expect(frame.hasAttribute('data-kroma-art-in')).toBe(true);
+    });
+
+    it('lets the unit go when the art fails or goes away', () => {
+      const { container, rerender } = render(inUnit({ src: 'bad.jpg' }));
+      const img = main(container);
+      if (!img) throw new Error('no <img> rendered');
+      fireEvent.error(img);
+      expect(parts(container).unit.hasAttribute('data-kroma-wait')).toBe(false);
+
+      rerender(inUnit({ src: 'a.jpg' }));
+      expect(parts(container).unit.hasAttribute('data-kroma-wait')).toBe(true);
+      rerender(inUnit({ src: null }));
+      expect(parts(container).unit.hasAttribute('data-kroma-wait')).toBe(false);
+      expect(parts(container).frame.hasAttribute('data-kroma-art-in')).toBe(false);
+    });
   });
 
   it('skips the underlay when noCrossFade is set', () => {

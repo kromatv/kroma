@@ -8,7 +8,7 @@ import { InputSourceProvider, useInputSourceParent } from './input-source';
 // root is forked, into focus-root.tsx / focus-root.web.tsx).
 
 import { NavigatorView, RemoteProvider, useLockNavigator } from '@kromatv/spatial-nav/react';
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { createFocusEntry, FocusEntryProvider } from './focus-entry';
 import { FocusLiftHost, GROUNDED, LIFTED } from './focus-lift';
@@ -69,8 +69,9 @@ function FocusScopeHost({
   const remote = bridge && platform.owner !== 'platform';
   useRemoteBridge(remote);
   // A replacement screen gets a fresh claim before children render.
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- entryKey explicitly names the lifetime of this screen.
-  const entry = useMemo(() => createFocusEntry(), [entryKey]);
+  const [claim, setClaim] = useState(() => ({ key: entryKey, entry: createFocusEntry() }));
+  if (claim.key !== entryKey) setClaim({ key: entryKey, entry: createFocusEntry() });
+  const { entry } = claim;
   return (
     // Lets a kit control exist OUTSIDE any scope (a phone screen, a plain web
     // page) without registering with a navigator that was never mounted.

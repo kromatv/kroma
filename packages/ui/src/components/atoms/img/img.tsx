@@ -19,6 +19,7 @@ import { coverRect, parsePosition } from '#ui/lib/cover-rect';
 import { gradient } from '#ui/lib/css';
 import { WEB } from '#ui/lib/platform';
 import { safeImageUrl } from '#ui/lib/safe-image-url';
+import { StaticView } from '#ui/lib/static-view';
 import { nativeLayers, type Size } from './native-layers';
 import { useCrossFade } from './use-cross-fade';
 import { webLayers } from './web-layers';
@@ -59,6 +60,13 @@ export interface ImgProps {
    * full-size layers for the length of the fade.
    */
   noCrossFade?: boolean;
+  /** Browser targets: keep the picture on a compositor layer of its own, so
+   *  full-screen art is handed to the GPU instead of rasterized on the CPU. */
+  layered?: boolean;
+  /** The art covers its whole box with no transparency (a poster, a backdrop):
+   *  `background` stops drawing once the art has faded in, and stays off while a
+   *  cross-fade holds that art under the next one. */
+  opaque?: boolean;
   onLoad?: () => void;
   onError?: () => void;
 }
@@ -81,6 +89,8 @@ function Img({
   style,
   priority = false,
   noCrossFade = false,
+  layered = false,
+  opaque = false,
   onLoad,
   onError,
 }: Readonly<ImgProps>) {
@@ -90,13 +100,16 @@ function Img({
 
   const backend = useImageBackend();
   const src = safeImageUrl(requested);
-  const cross = useCrossFade(src, duration);
-  const { loaded, errored, markLoaded, markErrored } = cross;
-  const under = noCrossFade ? null : cross.under;
+  const { loaded, errored, under, markLoaded, markErrored } = useCrossFade(src, duration, {
+    crossFade: !noCrossFade,
+    watched: placeholder != null,
+  });
   const [box, setBox] = useState<Size | null>(null);
   const [natural, setNatural] = useState<Size | null>(null);
-  const [decoded, setDecoded] = useState<string | null>(null);
   const [opacity] = useState(() => new Animated.Value(0));
+  const [covered, setCovered] = useState<string | null>(null);
+  const shownOver = src != null && !errored && covered != null && (covered === src || !noCrossFade);
+  const onCovered = opaque && background !== undefined ? setCovered : undefined;
   const focal = parsePosition(position);
   const radius =
     corner === undefined ? undefined : radiusValue(corner, undefined, activeTheme(scope.theme));
@@ -127,7 +140,7 @@ function Img({
     fill ? s.fill : null,
     s.clip,
     radius === undefined ? null : sharedStyle(`img:radius:${radius}`, { radius }, scope),
-    background === undefined
+    background === undefined || shownOver
       ? null
       : sharedStyle(`img:bg:${background}`, gradient(background), scope),
     style,
@@ -148,7 +161,7 @@ function Img({
 
   if (WEB) {
     return (
-      <View style={container}>
+      <StaticView style={container}>
         {placeholderLayer}
         {webLayers(
           {
@@ -161,16 +174,16 @@ function Img({
             priority,
             duration,
             errored,
-            decoded: decoded === src,
-            markDecoded: () => setDecoded(src),
+            layered,
             markLoaded,
+            onCovered,
             onLoad,
             onError: handleError,
           },
           scope,
         )}
         {fallbackLayer}
-      </View>
+      </StaticView>
     );
   }
 
@@ -189,6 +202,7 @@ function Img({
         opacity,
         setNatural,
         markLoaded,
+        onCovered,
         onLoad,
         onError: handleError,
       })}

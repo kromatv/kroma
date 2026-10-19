@@ -26,6 +26,7 @@ export function TvGenreGrid() {
   const t = useT();
   const nav = useNav();
   const titleMenu = useTitleMenu(nav.back);
+  const hold = titleMenu.open;
   useFocusNav({ onBack: titleMenu.onBack, resetKey: slug });
 
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -45,11 +46,8 @@ export function TvGenreGrid() {
   }, [movies, shows, slug]);
 
   const cards = useMemo<GridCard[]>(
-    () =>
-      entries.map((e) =>
-        entryCard(e, { client, nav, openMenu: titleMenu.open, focus: setFocusId }),
-      ),
-    [entries, client, nav, titleMenu.open],
+    () => entries.map((e) => entryCard(e, { client, nav, openMenu: hold, focus: setFocusId })),
+    [entries, client, nav, hold],
   );
 
   const focused = useMemo<Entry | null>(

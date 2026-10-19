@@ -9,6 +9,7 @@ import {
   createContext,
   type ReactNode,
   Suspense,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -161,25 +162,25 @@ export function TvNavProvider({
   }, [stack]);
 
   const go = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
-    setStack((s) => [...s, make(name, params)]);
+    startTransition(() => setStack((s) => [...s, make(name, params)]));
   }, []);
   // The bottom of the stack is always a root (home / profiles), so there is
   // nowhere to go back to: Back there leaves the app where the shell can.
   const root = stack.length <= 1;
   const back = useCallback(() => {
     if (root) onExit?.();
-    else setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
+    else startTransition(() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)));
   }, [root, onExit]);
   const reset = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
-    setStack(name === 'home' ? [HOME] : [HOME, make(name, params)]);
+    startTransition(() => setStack(name === 'home' ? [HOME] : [HOME, make(name, params)]));
   }, []);
   const replace = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
-    setStack([make(name, params)]);
+    startTransition(() => setStack([make(name, params)]));
   }, []);
   const swap = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
-    setStack((s) => [...s.slice(0, -1), make(name, params)]);
+    startTransition(() => setStack((s) => [...s.slice(0, -1), make(name, params)]));
   }, []);
-  const home = useCallback(() => setStack([HOME]), []);
+  const home = useCallback(() => startTransition(() => setStack([HOME])), []);
 
   const value = useMemo<TvNav>(
     () => ({

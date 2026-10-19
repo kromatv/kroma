@@ -1016,6 +1016,7 @@
       },
       "peerDependencies": {
         "@testing-library/react": ">=16",
+        "expo": "^57.0.13",
         "expo-image": "~57.0.3",
         "expo-video": "~57.0.2",
         "react": ">=18",
@@ -1024,6 +1025,7 @@
       },
       "optionalPeers": [
         "@testing-library/react",
+        "expo",
         "expo-image",
         "expo-video",
       ],

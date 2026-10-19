@@ -1,3 +1,6 @@
+diff --git a/node_modules/react-native-web/.bun-tag-23c2a9b88fb8dd57 b/.bun-tag-23c2a9b88fb8dd57
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/node_modules/react-native-web/.bun-tag-53c7926c465f5221 b/.bun-tag-53c7926c465f5221
 new file mode 100644
 index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
@@ -276,6 +279,19 @@ index ec9227892217fedcd6ad92b836ad8afb55f7ce40..c85965c3169a2f51406b2fc2f044dfd5
    },
    caretHidden: {
      caretColor: 'transparent'
+diff --git a/dist/cjs/index.js b/dist/cjs/index.js
+index b6962700f4e31dfccfacb7e5267eb8a0e5515463..469f8213c392756aa4fc9782c0f009870a0a323b 100644
+--- a/dist/cjs/index.js
++++ b/dist/cjs/index.js
+@@ -97,6 +97,8 @@ var _Switch = _interopRequireDefault(require("./exports/Switch"));
+ exports.Switch = _Switch.default;
+ var _Text = _interopRequireDefault(require("./exports/Text"));
+ exports.Text = _Text.default;
++var _TextAncestorContext = _interopRequireDefault(require("./exports/Text/TextAncestorContext"));
++exports.unstable_TextAncestorContext = _TextAncestorContext.default;
+ var _TextInput = _interopRequireDefault(require("./exports/TextInput"));
+ exports.TextInput = _TextInput.default;
+ var _Touchable = _interopRequireDefault(require("./exports/Touchable"));
 diff --git a/dist/exports/Modal/ModalPortal.js b/dist/exports/Modal/ModalPortal.js
 index df3bcbbd4dee13c614466ca30af52f10bf20398c..320adbb723af18ce36b514123d8bc5853fc19f94 100644
 --- a/dist/exports/Modal/ModalPortal.js
@@ -529,3 +545,15 @@ index 0f476a7db2658a4f969ec7a0736d57e4656b2356..3d9ca82dadb517c5617aac99d5725aa4
    },
    caretHidden: {
      caretColor: 'transparent'
+diff --git a/dist/index.js b/dist/index.js
+index 4f699876d1902f758c3af4df5438e8ecc78bd6b4..335ee8f95325e67a025434e68fc9e1ccc3ca6014 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -49,6 +49,7 @@ export { default as SectionList } from './exports/SectionList';
+ export { default as StatusBar } from './exports/StatusBar';
+ export { default as Switch } from './exports/Switch';
+ export { default as Text } from './exports/Text';
++export { default as unstable_TextAncestorContext } from './exports/Text/TextAncestorContext';
+ export { default as TextInput } from './exports/TextInput';
+ export { default as Touchable } from './exports/Touchable';
+ export { default as TouchableHighlight } from './exports/TouchableHighlight';

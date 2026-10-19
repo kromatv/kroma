@@ -1,5 +1,8 @@
 import { Image } from 'expo-image';
+import { Platform } from 'react-native';
 import type { ImageBackend } from './image-backend';
+
+const DOWNSCALE = Platform.OS !== 'ios';
 
 /** <Img>'s decoder on the Expo targets. Adds the memory + disk cache and the
  *  list recycling React Native's own <Image> lacks, so a rail does not
@@ -12,6 +15,7 @@ export const expoImageBackend: ImageBackend = {
       contentFit={fit === 'stretch' ? 'fill' : fit}
       transition={fadeMs}
       cachePolicy="memory-disk"
+      allowDownscaling={DOWNSCALE}
       recyclingKey={uri}
       style={style}
       accessibilityLabel={accessibilityLabel}

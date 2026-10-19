@@ -48,6 +48,7 @@ export function TvGrid() {
   const isFilms = kind === 'films';
   const isSeries = kind === 'series';
   const titleMenu = useTitleMenu(nav.back);
+  const hold = titleMenu.open;
   useFocusNav({ onBack: titleMenu.onBack, resetKey: kind });
 
   const [sort, setSort] = useState<SortMode>('added');
@@ -85,11 +86,11 @@ export function TvGrid() {
   const cards = useMemo<GridCard[]>(
     () =>
       entries.map((e) => ({
-        ...entryCard(e, { client, nav, openMenu: titleMenu.open, focus: setFocusId }),
+        ...entryCard(e, { client, nav, openMenu: hold, focus: setFocusId }),
         overline: t(e.kind === 'show' ? 'content.series' : 'content.film'),
         watched: watched.has(e.item.id),
       })),
-    [entries, client, nav, watched, titleMenu.open, t],
+    [entries, client, nav, watched, hold, t],
   );
 
   const focused = useMemo<Entry | null>(

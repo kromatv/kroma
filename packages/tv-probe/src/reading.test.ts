@@ -24,7 +24,7 @@ function button(label: string, ringed = false): HTMLElement {
   const el = document.createElement('div');
   el.setAttribute('role', 'button');
   el.setAttribute('aria-label', label);
-  if (ringed) el.style.outlineWidth = '2px';
+  if (ringed) Object.assign(el.style, { outlineStyle: 'solid', outlineWidth: '2px' });
   root().append(el);
   return el;
 }
@@ -91,7 +91,7 @@ describe('a reading of the screen', () => {
   it('leaves a ring drawn outside the app root out of the count', async () => {
     const tile = button('A', true);
     const overlay = document.createElement('div');
-    overlay.style.outlineWidth = '3px';
+    Object.assign(overlay.style, { outlineStyle: 'solid', outlineWidth: '3px' });
     document.body.append(overlay);
 
     laidOut([tile]);

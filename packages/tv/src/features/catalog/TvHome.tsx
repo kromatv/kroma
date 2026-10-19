@@ -233,7 +233,7 @@ export function TvHome() {
   } = useGrowingCount(rows.length, ROW_CHUNK);
 
   return (
-    <Box fill bg="bg" overflow="hidden">
+    <Box fill overflow="hidden">
       <FocusScroll style={s.pageScroll} contentStyle={s.pageContent} offsetFromStart={120}>
         {/* A permanent slot for the hero row: it arrives from the server after
             the first rails have already mounted, and the navigator orders rows
