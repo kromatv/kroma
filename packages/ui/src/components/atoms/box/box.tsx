@@ -16,6 +16,7 @@ import { type BoxStyleProps, splitShorthand, styles, useBreakpointStep } from '#
 import { useStyles } from '#ui/core/styles';
 import { sharedBoxStyle } from '#ui/lib/box-style';
 import { Slot } from '#ui/lib/slot';
+import { isStaticHost, StaticView } from '#ui/lib/static-view';
 
 interface BoxProps extends BoxStyleProps, Omit<ViewProps, 'style'> {
   children?: ReactNode;
@@ -47,7 +48,7 @@ function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonl
   const scope = useStyleScope();
 
   const split = splitShorthand(props);
-  const Host = asChild ? Slot : View;
+  const Host = hostOf(asChild, split.rest, ref);
   const hit = pointerEvents ? HIT[pointerEvents] : null;
   // A box holding a breakpoint object is a different component, not a branch:
   // it is the only one that has to follow the design width, and a hook here
@@ -68,8 +69,13 @@ function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonl
 
 type Split = ReturnType<typeof splitShorthand>;
 
+function hostOf(asChild: boolean | undefined, rest: Split['rest'], ref: unknown) {
+  if (asChild) return Slot;
+  return isStaticHost(rest, ref) ? StaticView : View;
+}
+
 interface FluidBoxProps {
-  host: typeof View | typeof Slot;
+  host: typeof View | typeof Slot | typeof StaticView;
   split: Split;
   style?: StyleProp<ViewStyle>;
   ref?: Ref<View>;
