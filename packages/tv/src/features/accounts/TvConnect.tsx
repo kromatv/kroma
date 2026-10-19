@@ -1,12 +1,11 @@
 import { type ResolvedOrigin, resolveServerOrigin } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Box, Field, Hint, Icon, type IconName, Text, useFocusNav } from '@kromatv/ui/kit';
+import { Box, Field, Icon, type IconName, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
 import { useNav } from '#tv/app/router';
 import { AuthScreen, GATE_MARK, KromaMark, UrlKeyboard } from '#tv/shared/ui';
-import { weight } from '#tv/shared/ui/weight';
 
 /**
  * Add a server by address via an on-screen URL keyboard; on submit the server is
@@ -137,16 +136,6 @@ export function TvConnect() {
           onValueChange={setValue}
           onSubmit={submit}
           submitLabel={t('connect.connect')}
-        />
-
-        <Hint
-          text={t('connect.keyboardHint')}
-          size={14}
-          gap={4}
-          justify="center"
-          mt={20}
-          color="text/40"
-          textStyle={weight.medium}
         />
       </Box>
     </AuthScreen>

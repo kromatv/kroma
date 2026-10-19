@@ -23,7 +23,6 @@ import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav } from '#tv/app/router';
 import { useRootBack } from '#tv/app/useRootBack';
 import { computeHero, Hero } from '#tv/features/catalog/home/Hero';
-import { HintBar } from '#tv/features/catalog/home/HintBar';
 import { entryId } from '#tv/features/catalog/home/sectionEntry';
 import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
 
@@ -263,7 +262,6 @@ export function TvHome() {
         ))}
       </FocusScroll>
 
-      <HintBar browseKey="content.hintBrowse" />
       {titleMenu.menu}
     </Box>
   );

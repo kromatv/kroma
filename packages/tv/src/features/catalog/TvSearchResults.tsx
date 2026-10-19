@@ -1,7 +1,6 @@
 import { useT } from '@kromatv/ui';
-import { Box, FocusScroll, Grid, Hint, PosterCard, styles, Text, useStyles } from '@kromatv/ui/kit';
+import { Box, FocusScroll, Grid, PosterCard, styles, Text, useStyles } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
-import { weight } from '#tv/shared/ui/weight';
 
 export interface SearchResult {
   id: string;
@@ -46,13 +45,6 @@ export function TvSearchResults({
         <Text variant="strongTv" color="textMuted">
           {t('search.results')}
         </Text>
-        <Hint
-          text={t('search.hint')}
-          size={12}
-          gap={3}
-          color="text/34"
-          textStyle={weight.semibold}
-        />
       </Box>
       {found.length === 0 ? (
         <Text variant="leadTv" pt={20} color="text/40">

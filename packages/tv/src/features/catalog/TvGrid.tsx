@@ -13,7 +13,6 @@ import {
   type CatalogEntry as Entry,
 } from '#tv/features/catalog/home/AmbientBackdrop';
 import { entryCard } from '#tv/features/catalog/home/entry-card';
-import { HintBar } from '#tv/features/catalog/home/HintBar';
 import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid';
 import { EMPTY } from '#tv/features/catalog/screenStyle';
 import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
@@ -134,7 +133,6 @@ export function TvGrid() {
         <PosterGrid cards={cards} />
       )}
 
-      <HintBar browseKey="content.hintBrowseAll" strength={0.85} />
       {titleMenu.menu}
     </Box>
   );

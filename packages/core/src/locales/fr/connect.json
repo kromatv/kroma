@@ -14,7 +14,6 @@
   "connect.kbdClear": "Tout effacer",
   "connect.kbdDelete": "Effacer",
   "connect.kbdSpace": "Espace",
-  "connect.keyboardHint": "{left} {right} {up} {down} Naviguer · OK Saisir · Retour",
   "connect.localServers": "Serveurs locaux",
   "connect.mode.network": "Sur ce réseau",
   "connect.mode.scan": "Scanner ou code",

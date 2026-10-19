@@ -14,7 +14,6 @@
   "connect.kbdClear": "Clear",
   "connect.kbdDelete": "Delete",
   "connect.kbdSpace": "Space",
-  "connect.keyboardHint": "{left} {right} {up} {down} Navigate · OK Enter · Back",
   "connect.localServers": "Local servers",
   "connect.mode.network": "On this network",
   "connect.mode.scan": "Scan or code",
