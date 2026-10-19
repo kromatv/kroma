@@ -15,7 +15,7 @@ export interface DriftSpec {
    *  still rather than animated: a scale in flight makes a compositor
    *  re-rasterise the layer on every frame. */
   zoom: number;
-  /** One leg of the round trip, in ms. */
+  /** How long the pan takes to cross its travel, in ms. */
   ms: number;
   /** The measured box the fractions are taken against. React Native cannot
    *  interpret a percentage inside a transform, so the native half needs the
@@ -26,7 +26,7 @@ export interface DriftSpec {
 
 /**
  * The drift for the artwork layer: a slow pan across a frame held oversized for
- * it, out and back, forever. Belongs on an `Animated.View` - it carries an
+ * it, one way, from the moment the layer mounts. Belongs on an `Animated.View` - it carries an
  * `Animated.Value`, which is why it is cast rather than typed.
  */
 export function useDrift(spec: Readonly<DriftSpec>): StyleProp<ViewStyle> {
@@ -34,13 +34,12 @@ export function useDrift(spec: Readonly<DriftSpec>): StyleProp<ViewStyle> {
   const [clock] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
-    const leg = { duration: ms, easing: Easing.inOut(Easing.quad), useNativeDriver: true } as const;
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(clock, { toValue: 1, ...leg }),
-        Animated.timing(clock, { toValue: 0, ...leg }),
-      ]),
-    );
+    const anim = Animated.timing(clock, {
+      toValue: 1,
+      duration: ms,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    });
     anim.start();
     return () => anim.stop();
   }, [clock, ms]);

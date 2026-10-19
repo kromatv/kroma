@@ -48,19 +48,16 @@ describe('useDrift', () => {
     expect(drift({ ...SPEC, height: 0 })).toBeNull();
   });
 
-  it('runs the round trip forever, out and back', () => {
-    expect(Object.keys(keyframes())).toEqual(['0%', '50%', '100%']);
-    // Spelt out rather than left to `animation-direction: alternate`, which the
-    // legacy Chromium 53 tier does not honour reliably: the last frame must
-    // return to the first.
-    expect(frameAt('100%')).toBe(frameAt('0%'));
-    expect(frameAt('50%')).not.toBe(frameAt('0%'));
-    expect(flat().animationIterationCount).toBe('infinite');
+  it('pans one way, once, and holds its last frame', () => {
+    expect(Object.keys(keyframes())).toEqual(['0%', '100%']);
+    expect(frameAt('100%')).not.toBe(frameAt('0%'));
+    expect(flat().animationIterationCount).toBe('1');
+    expect(flat().animationFillMode).toBe('forwards');
   });
 
   it("pans by the spec fractions, taken against the layer's own box", () => {
     expect(frameAt('0%')).toBe('translate(4%, 3%) scale(1.12)');
-    expect(frameAt('50%')).toBe('translate(-4%, -3%) scale(1.12)');
+    expect(frameAt('100%')).toBe('translate(-4%, -3%) scale(1.12)');
   });
 
   it('never changes the scale, which is what keeps the layer off the rasteriser', () => {
@@ -77,8 +74,8 @@ describe('useDrift', () => {
     expect(flat({ ...SPEC, ms: 20 }).animationTimingFunction).toBe('steps(1, end)');
   });
 
-  it('spends the full round trip on the duration, not the leg', () => {
-    expect(flat().animationDuration).toBe(`${SPEC.ms * 2}ms`);
+  it('spends the spec duration on the pan', () => {
+    expect(flat().animationDuration).toBe(`${SPEC.ms}ms`);
   });
 
   it('asks for a compositor layer up front so the first drifting frame is not also the promoting one', () => {
