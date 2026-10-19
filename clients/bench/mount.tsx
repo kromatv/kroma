@@ -11,6 +11,7 @@ import {
 import { createRef, type ReactElement, type Ref, useImperativeHandle, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
+import { tmdbArt } from './art-url';
 
 interface MountReport {
   card: string;
@@ -151,7 +152,10 @@ export function mountBench(params: URLSearchParams, root: HTMLElement): void {
   const count = Number(params.get('n') ?? 32);
   const runs = Number(params.get('runs') ?? 12);
   const recycle = params.has('recycle');
-  const art = (params.get('art') ?? '').split(',').filter((url) => url.startsWith('http'));
+  const art = (params.get('art') ?? '')
+    .split(',')
+    .map(tmdbArt)
+    .filter((url): url is string => url !== null);
   const stage = createRef<StageHandle>();
   createRoot(root).render(
     <Stage kind={kind} count={count} recycle={recycle} art={art} ref={stage} />,
