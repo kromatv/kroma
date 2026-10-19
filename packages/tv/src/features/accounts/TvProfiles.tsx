@@ -8,7 +8,6 @@ import {
   radius as cornerRadius,
   Focusable,
   FocusRegion,
-  Hint,
   StatusDot,
   style,
   styles,
@@ -153,24 +152,11 @@ export function TvProfiles() {
           style={SETTINGS}
         />
       </Box>
-
-      <Hint
-        text={t('profiles.navHint')}
-        size={14}
-        gap={4}
-        mt={24}
-        color="text/40"
-        textStyle={s.navHint}
-      />
     </AuthScreen>
   );
 }
 
 const sDefinition = styles({
-  // Type only. Anything that lays the ROW out (the margin above it) goes on the
-  // <Hint> itself: `textStyle` reaches the words alone, so a margin here drops
-  // the words below the chevrons instead of moving the whole line.
-  navHint: { fontWeight: '600', letterSpacing: 0.42 },
   profileRow: {
     row: true,
     wrap: true,

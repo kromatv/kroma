@@ -3,7 +3,6 @@ import { useT } from '@kromatv/ui';
 import {
   Box,
   FocusColumn,
-  Hint,
   Spinner,
   styles,
   Text,
@@ -17,7 +16,6 @@ import { useNav } from '#tv/app/router';
 import { useServersHealth } from '#tv/app/useServersHealth';
 import { ActionRow, ServerRow, ServerRowSkeleton } from '#tv/features/accounts/ServerRow';
 import { AuthScreen, hostOf } from '#tv/shared/ui';
-import { weight } from '#tv/shared/ui/weight';
 
 interface Entry {
   url: string;
@@ -124,16 +122,6 @@ export function TvAddProfile() {
             onPress={() => nav.go('connect')}
           />
         </Box>
-
-        <Hint
-          text={t('addProfile.navHint')}
-          size={14}
-          gap={4}
-          justify="center"
-          mt={28}
-          color="text/40"
-          textStyle={weight.medium}
-        />
       </Box>
     </AuthScreen>
   );

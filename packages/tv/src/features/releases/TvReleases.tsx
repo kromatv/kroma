@@ -6,7 +6,6 @@ import { Box, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useNav } from '#tv/app/router';
 import { BrandBar } from '#tv/features/releases/BrandBar';
-import { HintStrip, KeyHint } from '#tv/features/releases/HintStrip';
 import { ReleasePane } from '#tv/features/releases/ReleasePane';
 import { ReleaseRowList } from '#tv/features/releases/ReleaseRowList';
 import { releaseRows } from '#tv/features/releases/releaseRows';
@@ -58,12 +57,6 @@ export function TvReleases() {
           {row ? <ReleasePane row={row} /> : null}
         </>
       ) : null}
-
-      <HintStrip>
-        <KeyHint keys="{left}{right}" label={t('releases.hintVersion')} />
-        <KeyHint keys="{up}{down}" label={t('releases.hintBrowse')} />
-        <KeyHint keys="{back}" label={t('common.back')} />
-      </HintStrip>
     </Box>
   );
 }
