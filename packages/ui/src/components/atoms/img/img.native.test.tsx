@@ -52,13 +52,24 @@ describe('Img on React Native', () => {
     expect(img.classes()).toBe(bare());
   });
 
-  it('draws the background again while the next source loads', () => {
+  it('keeps it off while a cross-fade holds the faded art under the next', () => {
     const img = mount({ src: 'a.jpg', background: '#123456', opaque: true, duration: 400 });
-    const filled = img.classes();
     img.load();
     img.settle();
 
     img.rerender({ src: 'b.jpg', background: '#123456', opaque: true, duration: 400 });
+
+    expect(img.classes()).toBe(bare());
+  });
+
+  it('draws it again while the next source loads with nothing under it', () => {
+    const at = { background: '#123456', opaque: true, noCrossFade: true, duration: 400 };
+    const img = mount({ src: 'a.jpg', ...at });
+    const filled = img.classes();
+    img.load();
+    img.settle();
+
+    img.rerender({ src: 'b.jpg', ...at });
 
     expect(img.classes()).toBe(filled);
   });

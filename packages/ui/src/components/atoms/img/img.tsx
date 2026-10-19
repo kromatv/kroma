@@ -63,8 +63,9 @@ export interface ImgProps {
   /** Browser targets: keep the picture on a compositor layer of its own, so
    *  full-screen art is handed to the GPU instead of rasterized on the CPU. */
   layered?: boolean;
-  /** The art covers its whole box with no transparency (a poster, a backdrop).
-   *  On React Native, `background` then stops drawing once the art has faded in. */
+  /** The art covers its whole box with no transparency (a poster, a backdrop):
+   *  `background` stops drawing once the art has faded in, and stays off while a
+   *  cross-fade holds that art under the next one. */
   opaque?: boolean;
   onLoad?: () => void;
   onError?: () => void;
@@ -107,6 +108,8 @@ function Img({
   const [natural, setNatural] = useState<Size | null>(null);
   const [opacity] = useState(() => new Animated.Value(0));
   const [covered, setCovered] = useState<string | null>(null);
+  const shownOver = src != null && !errored && covered != null && (covered === src || !noCrossFade);
+  const onCovered = opaque && background !== undefined ? setCovered : undefined;
   const focal = parsePosition(position);
   const radius =
     corner === undefined ? undefined : radiusValue(corner, undefined, activeTheme(scope.theme));
@@ -137,7 +140,7 @@ function Img({
     fill ? s.fill : null,
     s.clip,
     radius === undefined ? null : sharedStyle(`img:radius:${radius}`, { radius }, scope),
-    background === undefined || (src != null && covered === src)
+    background === undefined || shownOver
       ? null
       : sharedStyle(`img:bg:${background}`, gradient(background), scope),
     style,
@@ -173,6 +176,7 @@ function Img({
             errored,
             layered,
             markLoaded,
+            onCovered,
             onLoad,
             onError: handleError,
           },
@@ -198,7 +202,7 @@ function Img({
         opacity,
         setNatural,
         markLoaded,
-        onCovered: opaque ? setCovered : undefined,
+        onCovered,
         onLoad,
         onError: handleError,
       })}

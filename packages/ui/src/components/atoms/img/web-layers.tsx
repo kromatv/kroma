@@ -15,6 +15,7 @@ interface WebLayersArgs {
   errored: boolean;
   layered: boolean;
   markLoaded: () => void;
+  onCovered: ((src: string) => void) | undefined;
   onLoad: (() => void) | undefined;
   onError: () => void;
 }
@@ -71,9 +72,10 @@ function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
       : sharedStyle(`img:radius:${at.radius}`, { radius: at.radius }, scope),
     at.layered ? resolveStyles(sDefinition, scope).layered : null,
   ];
+  const { src } = at;
   return (
     <>
-      {at.under && at.under !== at.src ? (
+      {at.under && at.under !== src ? (
         <img
           key="under"
           src={at.under}
@@ -83,10 +85,10 @@ function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
           className={classes(...layer)}
         />
       ) : null}
-      {at.src && !at.errored ? (
+      {src && !at.errored ? (
         <img
-          key={at.src}
-          src={at.src}
+          key={src}
+          src={src}
           alt={at.alt}
           {...{ [REVEAL]: 'wait' }}
           ref={(el) => {
@@ -100,6 +102,7 @@ function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
               el.setAttribute(REVEAL, 'shown');
               release(unit, true);
               at.markLoaded();
+              at.onCovered?.(src);
               return;
             }
             hold(unit);
@@ -112,6 +115,7 @@ function webLayers(at: Readonly<WebLayersArgs>, scope: StyleScope): ReactNode {
           onLoad={(event) => {
             reveal(event);
             at.markLoaded();
+            if (at.onCovered) setTimeout(() => at.onCovered?.(src), at.duration);
             at.onLoad?.();
           }}
           onError={at.onError}

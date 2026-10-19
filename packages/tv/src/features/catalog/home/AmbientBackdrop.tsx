@@ -1,6 +1,5 @@
 import type { KromaClient } from '@kromatv/client';
 import type { MediaItem, Show } from '@kromatv/client/media';
-import { posterColors } from '@kromatv/core';
 import {
   Box,
   colors,
@@ -31,10 +30,7 @@ export function AmbientBackdrop({ entry }: Readonly<{ entry: CatalogEntry | null
   const settled = useSettledValue(entry, SETTLE_MS);
   return (
     <Box fill z={-1} overflow="hidden" pointerEvents="none" accessibilityElementsHidden>
-      <AmbientArt
-        src={entryBackdrop(client, settled)}
-        tint={tintGradient(settled ? posterColors(settled.item.id) : FALLBACK_TINT)}
-      />
+      <AmbientArt src={entryBackdrop(client, settled)} />
       {/* One element for both gradients, on its own compositing layer
           (`translateZ(0)`): without it the 1920x1080 gradients re-rasterize on
           every frame of the fade, and a second element is a second full-screen
@@ -44,9 +40,9 @@ export function AmbientBackdrop({ entry }: Readonly<{ entry: CatalogEntry | null
   );
 }
 
-function AmbientArtImpl({ src, tint }: Readonly<{ src: string | null; tint: string }>) {
+function AmbientArtImpl({ src }: Readonly<{ src: string | null }>) {
   return (
-    <Img src={src} background={tint} position="50% 20%" duration={FADE_MS} fill layered opaque />
+    <Img src={src} background={GROUND} position="50% 20%" duration={FADE_MS} fill layered opaque />
   );
 }
 
@@ -54,7 +50,7 @@ const AmbientArt = memo(AmbientArtImpl);
 
 const VEIL = [gradient(`${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`), promote()];
 
-const FALLBACK_TINT: [string, string] = [colors.surface2, colors.bg];
+const GROUND = tintGradient([colors.surface2, colors.bg]);
 
 export type CatalogEntry = { kind: 'movie'; item: MediaItem } | { kind: 'show'; item: Show };
 

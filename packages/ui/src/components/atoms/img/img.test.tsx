@@ -174,6 +174,41 @@ describe('Img', () => {
     expect(under(container)?.getAttribute('src')).toBe('a.jpg');
   });
 
+  describe('over a background', () => {
+    const box = (root: HTMLElement) => (root.firstElementChild as HTMLElement).className;
+    const bare = () => box(render(el({ src: null })).container);
+
+    it('stops painting it once opaque art has faded in', () => {
+      vi.useFakeTimers();
+      try {
+        const { container } = render(el({ src: 'a.jpg', background: 'red', opaque: true }));
+        expect(box(container)).not.toBe(bare());
+        const img = main(container);
+        if (!img) throw new Error('no <img> rendered');
+        fireEvent.load(img);
+        act(() => vi.advanceTimersByTime(400));
+        expect(box(container)).toBe(bare());
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('keeps it under art that may be transparent', () => {
+      vi.useFakeTimers();
+      try {
+        const { container } = render(el({ src: 'a.jpg', background: 'red' }));
+        const filled = box(container);
+        const img = main(container);
+        if (!img) throw new Error('no <img> rendered');
+        fireEvent.load(img);
+        act(() => vi.advanceTimersByTime(400));
+        expect(box(container)).toBe(filled);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
   describe('inside a card that fades as one unit', () => {
     const inUnit = (props: ImgProps) =>
       createElement(
