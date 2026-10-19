@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, render } from '@testing-library/react';
+import { useEffect } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useFocusEntry } from '#ui/lib/focus-entry';
 import { FocusScope } from '#ui/lib/focus-scope';
@@ -10,7 +11,10 @@ afterEach(cleanup);
 let seen: ReturnType<typeof useFocusEntry> | null = null;
 
 function Probe() {
-  seen = useFocusEntry();
+  const entry = useFocusEntry();
+  useEffect(() => {
+    seen = entry;
+  });
   return null;
 }
 

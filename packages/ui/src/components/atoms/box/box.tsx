@@ -48,22 +48,37 @@ function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonl
   const scope = useStyleScope();
 
   const split = splitShorthand(props);
-  const Host = hostOf(asChild, ref == null && isStaticHost(split.rest));
+  const plain = ref == null && isStaticHost(split.rest);
   const hit = pointerEvents ? HIT[pointerEvents] : null;
   // A box holding a breakpoint object is a different component, not a branch:
   // it is the only one that has to follow the design width, and a hook here
   // would tax every box in the app with a subscription it never reads.
   if (split.breakpoints !== 0) {
     return (
-      <FluidBox host={Host} split={split} style={[hit, style]} ref={ref}>
+      <FluidBox host={hostOf(asChild, plain)} split={split} style={[hit, style]} ref={ref}>
         {children}
       </FluidBox>
     );
   }
+  const hostStyle = [layoutOf(split, 0, scope), hit, style];
+  if (asChild) {
+    return (
+      <Slot {...split.rest} ref={ref} style={hostStyle}>
+        {children}
+      </Slot>
+    );
+  }
+  if (plain) {
+    return (
+      <StaticView {...split.rest} style={hostStyle}>
+        {children}
+      </StaticView>
+    );
+  }
   return (
-    <Host {...split.rest} ref={ref} style={[layoutOf(split, 0, scope), hit, style]}>
+    <View {...split.rest} ref={ref} style={hostStyle}>
       {children}
-    </Host>
+    </View>
   );
 }
 
