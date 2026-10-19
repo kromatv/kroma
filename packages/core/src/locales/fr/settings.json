@@ -1,5 +1,4 @@
 {
-  "settings.aboutDesc": "Les versions de l'application et du serveur, et ce que l'on sait de cet appareil.",
   "settings.artworkSummary": "Visuels : {value}",
   "settings.audioSummary": "Audio : {value}",
   "settings.blur": "Flou d'arrière-plan",
@@ -17,8 +16,8 @@
   "settings.libraryCount_one": "{count} bibliothèque",
   "settings.mediaCount": "{count} médias",
   "settings.mediaCount_one": "{count} média",
-  "settings.pinOffDesc": "Aucun code ne protège ce profil : n'importe qui devant ce téléviseur peut l'ouvrir. Appuyez sur OK pour en définir un.",
-  "settings.pinOnDesc": "Ce profil demande son code PIN à l'ouverture. Appuyez sur OK pour le supprimer.",
+  "settings.pinOffDesc": "Aucun code ne protège ce profil : n'importe qui devant ce téléviseur peut l'ouvrir.",
+  "settings.pinOnDesc": "Ce profil demande son code PIN à l'ouverture.",
   "settings.playback": "Lecture",
   "settings.quitAppDesc": "Ferme KROMA sur cet appareil.",
   "settings.signOutDesc": "Retire ce profil de ce téléviseur. Il faudra vous reconnecter pour le retrouver ici.",

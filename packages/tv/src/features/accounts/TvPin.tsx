@@ -1,227 +1,54 @@
-import { KromaApiError, type KromaClient } from '@kromatv/client';
-import type { StoredSession, User } from '@kromatv/client/accounts';
-import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
-import { Avatar, Box, Icon, Keypad, PinField, Spinner, Text, useFocusNav } from '@kromatv/ui/kit';
-import { useEffect, useMemo, useState } from 'react';
+import { Avatar, Box, Icon, Text, useFocusNav } from '@kromatv/ui/kit';
+import { useMemo } from 'react';
 import { makeClient } from '#tv/app/apiClient';
 import { useAuth } from '#tv/app/providers/auth';
-import { useConnection } from '#tv/app/providers/connection';
-import { useEnv } from '#tv/app/providers/env';
 import { useNav, useParams } from '#tv/app/router';
 import { AuthScreen, artUrl } from '#tv/shared/ui';
+import { PinEntry } from './PinEntry';
 
-const PIN_LENGTH = 4;
-
-interface HeaderUser {
-  name: string;
-  seed: string;
-  src?: string | null;
-}
-
-function resolveHeaderUser(
-  intent: 'verify' | 'set' | 'clear',
-  account: StoredSession | undefined,
-  activeUser: User | null,
-  activeClient: KromaClient | null,
-): HeaderUser | null {
-  if (intent === 'verify' && account) {
-    return {
-      name: account.user.username,
-      seed: account.user.id,
-      src: artUrl(account.serverUrl ?? '', account.user.avatarUrl),
-    };
-  }
-  if (activeUser) {
-    return {
-      name: activeUser.username,
-      seed: activeUser.id,
-      src: activeClient?.media.artwork.resolve(activeUser.avatarUrl, 118),
-    };
-  }
-  return null;
-}
-
-function pinSubtitle(intent: 'verify' | 'set' | 'clear', hasFirst: boolean): MessageKey {
-  if (intent === 'set') return hasFirst ? 'pin.confirmSubtitle' : 'pin.setSubtitle';
-  if (intent === 'clear') return 'pin.clearSubtitle';
-  return 'pin.verifySubtitle';
-}
-
-/** PIN entry for the three intents: `verify` (unlock a remembered profile),
- * `set` and `clear`. There is no OK button: the fourth digit submits. */
+/** Unlocks a remembered profile behind its PIN (route `pin`), against the account's own server. */
 export function TvPin() {
   const nav = useNav();
   const t = useT();
-  const { intent, account } = useParams('pin');
-  const { client: activeClient } = useConnection();
-  const { user: activeUser, activate, updateUser } = useAuth();
-
-  // For `verify`, talk to the account's own server rather than the active one.
-  const verifyClient = useMemo(
-    () => (account?.serverUrl ? makeClient(account.serverUrl) : null),
+  const { account } = useParams('pin');
+  const { activate } = useAuth();
+  const client = useMemo(
+    () => (account.serverUrl ? makeClient(account.serverUrl) : null),
     [account],
   );
 
-  const [buffer, setBuffer] = useState('');
-  const [first, setFirst] = useState<string | null>(null);
-  const [error, setError] = useState<MessageKey | ''>('');
-  const [shake, setShake] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
-
   useFocusNav({ onBack: nav.back });
 
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const id = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
-    return () => clearInterval(id);
-  }, [cooldown]);
-
-  const headerUser = resolveHeaderUser(intent, account, activeUser, activeClient);
-  const subtitle = pinSubtitle(intent, first != null);
-
-  const fail = (key: MessageKey) => {
-    setError(key);
-    setBuffer('');
-    setShake((s) => s + 1);
-  };
-
-  // The exchange takes the PIN so a not-yet-verified token doesn't 401
-  // before `accounts.verifyPin`, the authoritative gate, can run.
-  const runVerify = async (pin: string) => {
-    if (!verifyClient || !account) return;
-    const sess = await verifyClient.accounts.exchangeToken(account.accessToken, pin);
-    verifyClient.setAuthToken(sess.token);
-    await verifyClient.accounts.verifyPin(pin);
+  const verify = async (pin: string): Promise<undefined> => {
+    if (!client) return;
+    const sess = await client.accounts.exchangeToken(account.accessToken, pin);
+    client.setAuthToken(sess.token);
+    await client.accounts.verifyPin(pin);
     activate(account);
-    nav.home(); // `pin` is allowed while signed in (set/clear), so move on explicitly
+    nav.home();
   };
-
-  const runSetPin = async (pin: string) => {
-    if (first == null) {
-      setFirst(pin);
-      setBuffer('');
-      return;
-    }
-    if (pin !== first) {
-      setFirst(null);
-      fail('pin.mismatch');
-      return;
-    }
-    const res = await activeClient?.accounts.setPin(pin);
-    if (!res) return; // offline: don't fake success
-    updateUser(res.user);
-    nav.back();
-  };
-
-  const runClearPin = async (pin: string) => {
-    const res = await activeClient?.accounts.clearPin(pin);
-    if (!res) return; // offline: don't fake a disabled PIN
-    updateUser(res.user);
-    nav.back();
-  };
-
-  const handleSubmitError = (e: unknown) => {
-    if (e instanceof KromaApiError && e.status === 429) {
-      const secs = Number((e.body as { retryAfter?: number } | undefined)?.retryAfter ?? 30);
-      setCooldown(secs);
-      fail('auth.pinLocked');
-    } else if (intent === 'verify' || intent === 'clear') {
-      fail(intent === 'clear' ? 'auth.pinCurrentWrong' : 'auth.pinIncorrect');
-    } else {
-      fail('auth.pinInvalid');
-    }
-  };
-
-  const submit = async (pin: string) => {
-    if (busy || cooldown > 0) return;
-    setError('');
-    setBusy(true);
-    try {
-      if (intent === 'verify') await runVerify(pin);
-      else if (intent === 'set') await runSetPin(pin);
-      else await runClearPin(pin);
-    } catch (e) {
-      handleSubmitError(e);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const addDigit = (d: string) => {
-    if (busy || cooldown > 0) return;
-    setError('');
-    setBuffer((b) => (b.length < PIN_LENGTH ? b + d : b));
-  };
-
-  const removeDigit = () => {
-    if (busy || cooldown > 0) return;
-    setBuffer((b) => b.slice(0, -1));
-  };
-
-  // The PinField captures a physical keyboard; on a TV the on-screen keypad
-  // below is what a remote uses, feeding the same buffer.
-  const { physicalKeyboard } = useEnv();
 
   return (
     <AuthScreen>
-      {headerUser ? (
-        <Avatar
-          name={headerUser.name}
-          seed={headerUser.seed}
-          size={118}
-          roundness={0.25}
-          src={headerUser.src}
-        />
-      ) : null}
+      <Avatar
+        name={account.user.username}
+        seed={account.user.id}
+        size={118}
+        roundness={0.25}
+        src={artUrl(account.serverUrl ?? '', account.user.avatarUrl)}
+      />
       <Text variant="headingTv" mt={24} mb={4}>
-        {headerUser?.name}
+        {account.user.username}
       </Text>
       <Box row align="center" gap={8}>
         <Icon name="lock" size={14} color="accentText" />
         <Text variant="label" color="textDim">
-          {t(subtitle)}
+          {t('pin.verifySubtitle')}
         </Text>
       </Box>
 
-      <Box key={shake} mt={32}>
-        <PinField
-          maxLength={PIN_LENGTH}
-          value={buffer}
-          onValueChange={(next) => {
-            if (busy || cooldown > 0) return;
-            setError('');
-            setBuffer(next);
-          }}
-          onComplete={(pin) => void submit(pin)}
-          disabled={busy}
-          label={t(subtitle)}
-          physicalKeyboard={physicalKeyboard}
-        />
-      </Box>
-
-      <Box row align="center" gap={8} h={24}>
-        {busy ? (
-          <>
-            <Spinner size={16} thickness={2} />
-            <Text variant="label" color="textDim">
-              {t('pin.verifying')}
-            </Text>
-          </>
-        ) : null}
-        {!busy && error ? (
-          <Text variant="label" color="danger">
-            {error === 'auth.pinLocked' && cooldown > 0
-              ? t('pin.lockedRetry', { seconds: cooldown })
-              : t(error)}
-          </Text>
-        ) : null}
-      </Box>
-
-      <Box mt={8}>
-        <Keypad onDigit={addDigit} onDelete={removeDigit} />
-      </Box>
+      <PinEntry label={t('pin.verifySubtitle')} onSubmit={verify} wrongKey="auth.pinIncorrect" />
 
       <Text variant="meta" mt={28} color="text/38">
         {t('pin.backHint')}
