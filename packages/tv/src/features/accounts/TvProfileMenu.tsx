@@ -1,25 +1,20 @@
-import { useT } from '@kromatv/ui';
-import { Avatar, Box, Hint, Text, useFocusNav } from '@kromatv/ui/kit';
+import { Avatar, Box, Text, useFocusNav } from '@kromatv/ui/kit';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
-import { actionItem } from '#tv/app/settings/items';
-import {
-  aboutItem,
-  groupItem,
-  perfHudSetting,
-  quitAppItem,
-  SETTINGS_GROUPS,
-} from '#tv/app/settings/registry';
-import { AuthScreen } from '#tv/shared/ui';
-import { weight } from '#tv/shared/ui/weight';
-import { SettingsRows } from './SettingsRows';
+import { PROFILE_GROUPS } from '#tv/app/settings/groups';
+import { appPanes } from './settings/appPanes';
+import type { SettingsPane } from './settings/panes';
+import { SettingsPanes } from './settings/SettingsPanes';
 
-/** Every stateful hook lives inside SettingsRows' row components, so the `!user`
- * early return below cannot break hook order. */
+const GROUP_PANES: readonly SettingsPane[] = PROFILE_GROUPS.map((group) => ({
+  kind: 'group',
+  group,
+}));
+
+/** The signed-in settings (route `profileMenu`): the profile's groups, then its account actions. */
 export function TvProfileMenu() {
   const nav = useNav();
-  const t = useT();
   const { activeServerUrl, client } = useConnection();
   const { user, switchProfile, logout, forget } = useAuth();
   useFocusNav({ onBack: nav.back });
@@ -31,59 +26,51 @@ export function TvProfileMenu() {
     else void logout();
   };
 
-  const rows = [
-    ...Object.values(SETTINGS_GROUPS).map((group) =>
-      groupItem(group, () => nav.go('settingsGroup', { group: group.id })),
-    ),
-    actionItem({
+  const account: SettingsPane[] = [
+    {
+      kind: 'action',
       id: 'pin',
       icon: 'lock',
-      label: user.hasPin ? 'profileMenu.removePin' : 'profileMenu.setPin',
-      badge: user.hasPin
-        ? { label: 'profileMenu.on', tone: 'success' as const }
-        : { label: 'profileMenu.off', tone: 'dim' as const },
+      label: 'profileMenu.pin',
+      hint: user.hasPin ? 'profileMenu.on' : 'profileMenu.off',
+      description: user.hasPin ? 'settings.pinOnDesc' : 'settings.pinOffDesc',
       run: () => nav.go('pin', { intent: user.hasPin ? 'clear' : 'set' }),
-    }),
-    actionItem({
+    },
+    {
+      kind: 'action',
       id: 'changeProfile',
       icon: 'users-group',
       label: 'nav.changeProfile',
+      description: 'settings.changeProfileDesc',
       run: switchProfile,
-    }),
-    actionItem({ id: 'signOut', icon: 'logout', label: 'auth.logout', run: onSignOut }),
-    // Also here, not only inside the Playback group: it is the one setting
-    // somebody reaches for WHILE something looks wrong, and three rows of
-    // navigation to find it is three rows during which the symptom passes.
-    perfHudSetting,
-    aboutItem(() => nav.go('about')),
-    quitAppItem,
+    },
+    {
+      kind: 'action',
+      id: 'signOut',
+      icon: 'logout',
+      label: 'auth.logout',
+      description: 'settings.signOutDesc',
+      run: onSignOut,
+    },
   ];
 
   return (
-    <AuthScreen>
-      <Box align="center" gap={14} mb={32}>
-        <Avatar
-          name={user.username}
-          seed={user.id}
-          size={96}
-          roundness={0.27}
-          src={client?.media.artwork.resolve(user.avatarUrl, 96)}
-        />
-        <Text variant="headingTv">{user.username}</Text>
-      </Box>
-
-      <Box w="100%" maxW={560} gap={12}>
-        <SettingsRows items={rows} />
-      </Box>
-
-      <Hint
-        text={t('profileMenu.navHint')}
-        size={14}
-        gap={4}
-        mt={28}
-        color="text/40"
-        textStyle={weight.medium}
-      />
-    </AuthScreen>
+    <SettingsPanes
+      header={
+        <Box row align="center" gap={20}>
+          <Avatar
+            name={user.username}
+            seed={user.id}
+            size={72}
+            roundness={0.27}
+            src={client?.media.artwork.resolve(user.avatarUrl, 72)}
+          />
+          <Text variant="headingTv" lines={1}>
+            {user.username}
+          </Text>
+        </Box>
+      }
+      sections={[GROUP_PANES, account, appPanes(() => nav.go('about'))]}
+    />
   );
 }

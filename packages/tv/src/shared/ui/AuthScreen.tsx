@@ -149,10 +149,9 @@ export function AuthScreen({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-// Nobody types the check string. It is printed so a person facing two
-// televisions, or a device that named itself after theirs, can tell which row in
-// the phone's list is this screen.
-function BeaconMark() {
+/** The name and check string a phone lists this television under, while it
+ * waits under a beacon. */
+export function BeaconMark() {
   const s = useStyles(sDefinition);
 
   const t = useT();

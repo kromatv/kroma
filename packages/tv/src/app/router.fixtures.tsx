@@ -11,7 +11,6 @@ export function stubScreens(screens: Partial<TvScreens> = {}): TvScreens {
     about: stub('about'),
     pin: stub('pin'),
     profileMenu: stub('profileMenu'),
-    settingsGroup: stub('settingsGroup'),
     home: stub('home'),
     grid: stub('grid'),
     genres: stub('genres'),

@@ -5,7 +5,7 @@ import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { actionItem, choiceItem, type SettingsEntry, toggleItem } from '#tv/app/settings/items';
+import { choiceItem, type SettingsEntry, toggleItem } from '#tv/app/settings/items';
 import { reactivePref, useStoredPref } from '#tv/app/settings/store';
 import { SettingsRows } from './SettingsRows';
 
@@ -98,9 +98,8 @@ describe('SettingsRows', () => {
     expect(set).toHaveBeenCalledWith('sv');
   });
 
-  it('flips a toggle and runs an action', () => {
+  it('flips a toggle and says which way it is set', () => {
     const setToggle = vi.fn();
-    const run = vi.fn();
     show([
       toggleItem({
         id: 'gpu',
@@ -109,33 +108,24 @@ describe('SettingsRows', () => {
         icon: 'check',
         useValue: () => [false, setToggle] as const,
       }),
-      actionItem({ id: 'quit', label: 'profileMenu.quitApp', icon: 'check', run }),
     ]);
-    // A row that turns something on and off is a switch, and says which way it
-    // is set; a row that runs something stays a button.
     const toggle = screen.getByRole('switch');
     expect(toggle.getAttribute('aria-checked')).toBe('false');
     fireEvent.click(toggle);
     expect(setToggle).toHaveBeenCalledWith(true);
-    fireEvent.click(screen.getByRole('button'));
-    expect(run).toHaveBeenCalledTimes(1);
   });
 
   it('skips unavailable items and falsy inline entries', () => {
-    const run = vi.fn();
-    show([
-      false,
-      null,
-      undefined,
-      actionItem({
-        id: 'gated',
-        label: 'profileMenu.quitApp',
+    const toggle = (id: string, available: boolean) =>
+      toggleItem({
+        id,
+        level: 'device',
+        label: 'profileMenu.perfHud',
         icon: 'check',
-        available: () => false,
-        run,
-      }),
-      actionItem({ id: 'shown', label: 'profileMenu.quitApp', icon: 'check', run }),
-    ]);
-    expect(screen.getAllByRole('button')).toHaveLength(1);
+        available: () => available,
+        useValue: () => [false, () => {}] as const,
+      });
+    show([false, null, undefined, toggle('gated', false), toggle('shown', true)]);
+    expect(screen.getAllByRole('switch')).toHaveLength(1);
   });
 });

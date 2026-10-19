@@ -23,7 +23,6 @@ vi.mock('#tv/app/router', () => ({
 }));
 
 const {
-  aboutItem,
   artworkSetting,
   audioLanguageSetting,
   castReceiverSetting,
@@ -242,15 +241,5 @@ describe('what each row is bound to', () => {
     expect(result.current[0]).toBe(false);
     expect(H.invoke).toHaveBeenCalledWith('webview_gpu_set', { enabled: false });
     expect(H.invoke).toHaveBeenCalledWith('app_relaunch');
-  });
-});
-
-describe('aboutItem', () => {
-  it('is an action row that opens whatever it was handed', () => {
-    const open = vi.fn();
-    const item = aboutItem(open);
-    expect(item).toMatchObject({ kind: 'action', id: 'about', label: 'about.title' });
-    (item as { run: () => void }).run();
-    expect(open).toHaveBeenCalled();
   });
 });

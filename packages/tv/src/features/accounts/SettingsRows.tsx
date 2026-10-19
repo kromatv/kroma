@@ -1,18 +1,15 @@
 import { useLocale, useT } from '@kromatv/ui';
 import { ListRow, Text } from '@kromatv/ui/kit';
 import { useMemo, useState } from 'react';
-import type {
-  ActionItem,
-  ChoiceItem,
-  RowBadge,
-  SettingsEntry,
-  ToggleItem,
-} from '#tv/app/settings/items';
+import type { ChoiceItem, SettingsEntry, ToggleItem } from '#tv/app/settings/items';
 import { ChoicePicker } from './ChoicePicker';
 
 /** Each row is its own component so an item's `use()` hook sits in a stable
  * instance and an early return cannot break hook order (React #300). */
-export function SettingsRows({ items }: Readonly<{ items: readonly SettingsEntry[] }>) {
+export function SettingsRows({
+  items,
+  entry = true,
+}: Readonly<{ items: readonly SettingsEntry[]; entry?: boolean }>) {
   const visible = items.filter(
     (item): item is Exclude<SettingsEntry, false | null | undefined> =>
       item !== false && item != null && (!item.available || item.available()),
@@ -22,20 +19,19 @@ export function SettingsRows({ items }: Readonly<{ items: readonly SettingsEntry
       {visible.map((item, index) => {
         // First rendered row is the focus entry point: tvOS picks by geometry,
         // the web engine by DOM order.
-        const first = index === 0;
+        const first = entry && index === 0;
         if (item.kind === 'choice') return <ChoiceRow key={item.id} item={item} first={first} />;
-        if (item.kind === 'toggle') return <ToggleRow key={item.id} item={item} first={first} />;
-        return <ActionRow key={item.id} item={item} first={first} />;
+        return <ToggleRow key={item.id} item={item} first={first} />;
       })}
     </>
   );
 }
 
-function Badge({ badge }: Readonly<{ badge: RowBadge }>) {
+function OnOff({ on }: Readonly<{ on: boolean }>) {
   const t = useT();
   return (
-    <Text variant="label" color={badge.tone === 'success' ? 'success' : 'textDim'}>
-      {t(badge.label)}
+    <Text variant="label" color={on ? 'success' : 'textDim'}>
+      {t(on ? 'profileMenu.on' : 'profileMenu.off')}
     </Text>
   );
 }
@@ -60,6 +56,7 @@ function ChoiceRow({ item, first }: Readonly<{ item: ChoiceItem; first?: boolean
   return (
     <>
       <ListRow.Root
+        ground="surface"
         icon={item.icon}
         autoFocus={first}
         onPress={list ? () => setPicking(true) : cycle}
@@ -91,6 +88,7 @@ function ToggleRow({ item, first }: Readonly<{ item: ToggleItem; first?: boolean
   const [on, set] = item.useValue();
   return (
     <ListRow.Root
+      ground="surface"
       icon={item.icon}
       autoFocus={first}
       role="switch"
@@ -99,20 +97,8 @@ function ToggleRow({ item, first }: Readonly<{ item: ToggleItem; first?: boolean
     >
       <ListRow.Label>{t(item.label)}</ListRow.Label>
       <ListRow.Trailing>
-        <Badge
-          badge={{ label: on ? 'profileMenu.on' : 'profileMenu.off', tone: on ? 'success' : 'dim' }}
-        />
+        <OnOff on={on} />
       </ListRow.Trailing>
-    </ListRow.Root>
-  );
-}
-
-function ActionRow({ item, first }: Readonly<{ item: ActionItem; first?: boolean }>) {
-  const t = useT();
-  return (
-    <ListRow.Root icon={item.icon} autoFocus={first} onPress={item.run}>
-      <ListRow.Label>{t(item.label)}</ListRow.Label>
-      <ListRow.Trailing>{item.badge ? <Badge badge={item.badge} /> : null}</ListRow.Trailing>
     </ListRow.Root>
   );
 }

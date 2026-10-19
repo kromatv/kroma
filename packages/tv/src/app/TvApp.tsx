@@ -57,7 +57,6 @@ import { TvPin } from '#tv/features/accounts/TvPin';
 import { TvProfileMenu } from '#tv/features/accounts/TvProfileMenu';
 import { TvProfiles } from '#tv/features/accounts/TvProfiles';
 import { TvQuickConnect } from '#tv/features/accounts/TvQuickConnect';
-import { TvSettingsGroup } from '#tv/features/accounts/TvSettingsGroup';
 import { CastReceiverProvider } from '#tv/features/cast/CastReceiverProvider';
 import { TvDiscoverDetail } from '#tv/features/catalog/discover/TvDiscoverDetail';
 import { BROWSE_CHROME } from '#tv/features/catalog/home/chrome';
@@ -268,7 +267,6 @@ const SCREENS: TvScreens = {
   about: TvAbout,
   pin: TvPin,
   profileMenu: TvProfileMenu,
-  settingsGroup: TvSettingsGroup,
   home: TvHome,
   grid: TvGrid,
   genres: TvGenres,

@@ -1,11 +1,10 @@
 // The declarative settings model: a settings menu is a plain list of items,
 // each declared once (identity, level, binding, presentation) and rendered by
-// <SettingsRows>. Three kinds cover every row:
+// <SettingsRows>. Two kinds cover every row:
 //
 //  - choice : cycles through the currently-offerable values on OK; hides
 //             itself when there is no real choice (fewer than two).
 //  - toggle : boolean on/off with a colored badge.
-//  - action : fires a handler, optional badge.
 //
 // `level` names WHERE a value lives: device (localStorage, settings/store.ts),
 // shell (the desktop shell's config file, applied at boot), or account
@@ -18,12 +17,6 @@ export type SettingsLevel = 'device' | 'shell' | 'account';
 
 /** Icon slot: a name from the kit's generated glyph set (see its registry). */
 export type RowIcon = IconName;
-
-/** Trailing status badge (the PIN row's On, a toggle's Off...). */
-export interface RowBadge {
-  label: MessageKey;
-  tone: 'success' | 'dim';
-}
 
 interface BaseItem {
   id: string;
@@ -47,6 +40,9 @@ export interface ChoiceItem extends BaseItem {
    *  freezes the row's value for the life of the screen. */
   useValue: () => readonly [string, (value: string) => void];
   pick?: ChoicePick;
+  /** How the value reads in its group's one-line summary, given as `{value}`.
+   *  Left out, the value label stands alone. */
+  summary?: MessageKey;
 }
 
 export interface ToggleItem extends BaseItem {
@@ -55,13 +51,7 @@ export interface ToggleItem extends BaseItem {
   useValue: () => readonly [boolean, (value: boolean) => void];
 }
 
-export interface ActionItem extends BaseItem {
-  kind: 'action';
-  badge?: RowBadge;
-  run: () => void;
-}
-
-export type SettingsItem = ChoiceItem | ToggleItem | ActionItem;
+export type SettingsItem = ChoiceItem | ToggleItem;
 
 /** What menus accept: items plus falsy entries from inline `cond && item`. */
 export type SettingsEntry = SettingsItem | false | null | undefined;
@@ -76,6 +66,7 @@ export function choiceItem<T extends string>(
     valueLabel: (value: T) => MessageKey;
     useValue: () => readonly [T, (value: T) => void];
     pick?: ChoicePick;
+    summary?: MessageKey;
   },
 ): SettingsItem {
   const { options, valueLabel, useValue, ...base } = spec;
@@ -93,8 +84,4 @@ export function choiceItem<T extends string>(
 
 export function toggleItem(spec: Omit<ToggleItem, 'kind'>): SettingsItem {
   return { kind: 'toggle', ...spec };
-}
-
-export function actionItem(spec: Omit<ActionItem, 'kind'>): SettingsItem {
-  return { kind: 'action', ...spec };
 }

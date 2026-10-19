@@ -39,7 +39,6 @@ const ACCESS: Record<RouteName, Access> = {
   report: 'signedIn',
   releases: 'signedIn',
   profileMenu: 'signedIn',
-  settingsGroup: 'both',
 };
 
 function screensFor(access: Exclude<Access, 'both'>): RouteName[] {
