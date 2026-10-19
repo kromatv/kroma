@@ -47,7 +47,7 @@ export function NewRequestDialog({
   const { client } = useAuth();
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<Scope>('all');
-  const [busy, setBusy] = useState(false);
+  const [settled, setSettled] = useState<string | null>(null);
   const [results, setResults] = useState<DiscoverEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState<number | null>(null);
@@ -56,16 +56,14 @@ export function NewRequestDialog({
 
   const needle = query.trim();
   const short = needle.length < MIN_CHARS;
+  const key = `${scope}:${needle}`;
+  const busy = !short && settled !== key;
+  if (short && results !== null) setResults(null);
 
   // Debounced, and every answer checked against the input that asked for it:
   // typing fast must not let an early, shorter query land last.
   useEffect(() => {
-    if (short) {
-      setResults(null);
-      setBusy(false);
-      return;
-    }
-    setBusy(true);
+    if (short) return;
     let live = true;
     const at = setTimeout(() => {
       client.discovery
@@ -79,14 +77,14 @@ export function NewRequestDialog({
           if (live) setError(apiErrorText(e, t('requests.searchFailed')));
         })
         .finally(() => {
-          if (live) setBusy(false);
+          if (live) setSettled(key);
         });
     }, DEBOUNCE_MS);
     return () => {
       live = false;
       clearTimeout(at);
     };
-  }, [client, t, needle, scope, short]);
+  }, [client, t, needle, scope, short, key]);
 
   const requestIdOf = (entry: DiscoverEntry) => entry.requestId ?? created[entry.tmdbId] ?? null;
 

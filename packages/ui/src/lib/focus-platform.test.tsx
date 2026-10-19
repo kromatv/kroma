@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen } from '@testing-library/react';
+import { useEffect } from 'react';
 import { Text } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -34,7 +35,10 @@ function Scope({
   onEdge?: (direction: FocusDirection) => void;
 }>) {
   const platform = usePlatformFocusHost();
-  handled = platform.onEdge;
+  const { onEdge: edge } = platform;
+  useEffect(() => {
+    handled = edge;
+  }, [edge]);
   return (
     <PlatformFocusProvider value={platform.host}>
       <Text testID="owner">{platform.owner ?? 'none'}</Text>

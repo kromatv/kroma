@@ -7,6 +7,14 @@ import { useAuth } from '#web/shared/lib/auth';
 const DEBOUNCE_MS = 350;
 const MIN_CHARS = 2;
 
+interface Answer {
+  query: string | null;
+  results: MonitorCandidate[] | null;
+  error: string | null;
+}
+
+const IDLE: Answer = { query: null, results: null, error: null };
+
 export interface DiscoverState {
   results: MonitorCandidate[] | null;
   busy: boolean;
@@ -16,42 +24,36 @@ export interface DiscoverState {
 export function useDiscoveredTitles(needle: string, enabled: boolean): DiscoverState {
   const t = useT();
   const { client } = useAuth();
-  const [state, setState] = useState<DiscoverState>({
-    results: null,
-    busy: false,
-    error: null,
-  });
+  const [answer, setAnswer] = useState<Answer>(IDLE);
   const query = needle.trim();
   const short = query.length < MIN_CHARS;
+  const active = enabled && !short;
+  if (!active && answer !== IDLE) setAnswer(IDLE);
 
   useEffect(() => {
-    if (!enabled || short) {
-      setState({ results: null, busy: false, error: null });
-      return;
-    }
-    setState((current) => ({ ...current, busy: true }));
+    if (!enabled || short) return;
     let live = true;
     const at = setTimeout(() => {
       client.discovery.search(query).then(
-        (answer) => {
+        (found) => {
           if (!live) return;
-          setState({
-            results: answer.results.map((entry) => ({
+          setAnswer({
+            query,
+            results: found.results.map((entry) => ({
               kind: entry.kind,
               tmdbId: entry.tmdbId,
               title: entry.title,
               year: entry.year,
               posterUrl: entry.posterUrl,
             })),
-            busy: false,
             error: null,
           });
         },
         (cause: unknown) => {
           if (!live) return;
-          setState({
+          setAnswer({
+            query,
             results: null,
-            busy: false,
             error: apiErrorText(cause, t('monitoring.addExternalFailed')),
           });
         },
@@ -63,5 +65,5 @@ export function useDiscoveredTitles(needle: string, enabled: boolean): DiscoverS
     };
   }, [client, t, query, short, enabled]);
 
-  return state;
+  return { results: answer.results, busy: active && answer.query !== query, error: answer.error };
 }

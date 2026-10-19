@@ -22,7 +22,7 @@ export const Route = createFileRoute('/privacy')({
 });
 
 function Privacy() {
-  const Policy = getLegalDoc('privacy', useLang());
+  const policy = getLegalDoc('privacy', useLang());
   return (
     <PageShell
       size="prose"
@@ -33,7 +33,7 @@ function Privacy() {
     >
       <div className="mt-12 h-px bg-border" />
 
-      <div className="prose-kroma mt-12">{Policy ? <Policy /> : null}</div>
+      <div className="prose-kroma mt-12">{policy}</div>
 
       <div className="mt-14">
         <ContactCard

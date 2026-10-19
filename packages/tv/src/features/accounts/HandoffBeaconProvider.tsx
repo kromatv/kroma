@@ -49,17 +49,23 @@ export function HandoffBeaconProvider({
   // up again would blank the screen's check string and go through a moment with
   // nothing on the link at all.
   const latest = useRef(name);
-  latest.current = name;
+  useEffect(() => {
+    latest.current = name;
+  });
+
+  const waiting = ready && !!client && !!activeServerUrl && !signedIn;
+  const [wasWaiting, setWasWaiting] = useState(waiting);
+  if (wasWaiting !== waiting) {
+    setWasWaiting(waiting);
+    if (!waiting) setBeacon(null);
+  }
 
   useEffect(() => {
     // Only a signed-out TV waits: once there is an account, the beacon has done
     // its job and would only offer a second one. A boot still resuming its
     // session is not signed out either, or the beacon goes up and is retracted
     // a round trip later.
-    if (!ready || !client || !activeServerUrl || signedIn) {
-      setBeacon(null);
-      return;
-    }
+    if (!ready || !client || !activeServerUrl || signedIn) return;
     const handoff = startHandoff({
       client,
       deviceId: deviceId(),

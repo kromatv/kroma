@@ -211,6 +211,7 @@ export function useSubtitleAppearance(): [
 
   useEffect(() => {
     const stored = readStoredAppearance(store);
+    // oxlint-disable-next-line react-compiler/set-state-in-effect -- storage is read after mount only, so hydration matches the defaults.
     if (stored) setStyle(stored);
   }, [store]);
 

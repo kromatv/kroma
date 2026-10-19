@@ -91,9 +91,11 @@ export function useNowPlaying({
   // Current values in refs so the poster/seek effects don't re-run on every position tick
   // (they only care about item changes / play-pause), yet always send fresh data.
   const infoRef = useRef({ title, subtitle, durationSec, positionSec, playing });
-  infoRef.current = { title, subtitle, durationSec, positionSec, playing };
   const seekRef = useRef(seekTo);
-  seekRef.current = seekTo;
+  useEffect(() => {
+    infoRef.current = { title, subtitle, durationSec, positionSec, playing };
+    seekRef.current = seekTo;
+  });
 
   // One place to build + send the payload (artwork empty = keep the current poster).
   const push = useCallback(

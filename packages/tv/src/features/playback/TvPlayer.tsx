@@ -53,9 +53,13 @@ export function TvPlayer() {
   // Upcoming episodes (series autoplay uses [0]) + the up-next sheet data.
   const [following, setFollowing] = useState<MediaItem[]>([]);
   const advancedRef = useRef(false);
+  const [followingFor, setFollowingFor] = useState({ client, id: item.id });
+  if (followingFor.client !== client || followingFor.id !== item.id) {
+    setFollowingFor({ client, id: item.id });
+    setFollowing([]);
+  }
   useEffect(() => {
     advancedRef.current = false;
-    setFollowing([]);
     let cancelled = false;
     client.playback
       .following(item.id)

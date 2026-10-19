@@ -3,7 +3,7 @@ import { collectGenres, hasGenre, posterColors, type SortMode, sortTitles } from
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Text, useFocusNav } from '@kromatv/ui/kit';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
@@ -53,11 +53,12 @@ export function TvGrid() {
   const [sort, setSort] = useState<SortMode>('added');
   const [genre, setGenre] = useState<string | undefined>(undefined);
   const [focusId, setFocusId] = useState<string | null>(null);
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- kind is an intentional re-run key (resets the filter on a section switch), not read inside the effect
-  useEffect(() => {
+  const [prevKind, setPrevKind] = useState(kind);
+  if (prevKind !== kind) {
+    setPrevKind(kind);
     setGenre(undefined);
     setFocusId(null);
-  }, [kind]);
+  }
 
   const baseMovies = useMemo(
     () => sectionList(movies, isFilms, isSeries, myList),

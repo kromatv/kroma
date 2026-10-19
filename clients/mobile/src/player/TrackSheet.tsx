@@ -63,11 +63,13 @@ export function TrackSheet({
   const done = () => onClose();
   // The Modal stays mounted between opens, so each open must reset to
   // `initialView` rather than resuming wherever the last visit ended.
-  useEffect(() => {
+  const [opened, setOpened] = useState({ visible, initialView });
+  if (opened.visible !== visible || opened.initialView !== initialView) {
+    setOpened({ visible, initialView });
     if (visible) setView(initialView);
-  }, [visible, initialView]);
+  }
 
-  const slide = useRef(new Animated.Value(1)).current;
+  const [slide] = useState(() => new Animated.Value(1));
   const prevView = useRef(view);
   useEffect(() => {
     if (prevView.current === view) return;

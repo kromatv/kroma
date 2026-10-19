@@ -56,10 +56,7 @@ function useVisibleLetters(
 ): LetterRange | undefined {
   const [range, setRange] = useState<LetterRange | undefined>();
   useEffect(() => {
-    if (!enabled || marks.length === 0) {
-      setRange(undefined);
-      return;
-    }
+    if (!enabled || marks.length === 0) return;
     let raf = 0;
     const measure = () => {
       raf = 0;
@@ -94,7 +91,7 @@ function useVisibleLetters(
       if (raf !== 0) cancelAnimationFrame(raf);
     };
   }, [enabled, marks, gridWrap, bar]);
-  return range;
+  return enabled && marks.length > 0 ? range : undefined;
 }
 
 export interface BrowseScreenProps<T extends Sortable & { backdrop: string | null }> {
@@ -132,7 +129,7 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
   const t = useT();
   const gridWrap = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLDivElement>(null);
-  const [pending, setPending] = useState<string | null>(null);
+  const pending = useRef<string | null>(null);
 
   const genres = useMemo(() => collectGenres(items), [items]);
   const filtered = useMemo(
@@ -154,8 +151,12 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
     [filtered],
   );
   const [slide, setSlide] = useState(0);
-  useEffect(() => {
+  const [slidePool, setSlidePool] = useState(featuredPool);
+  if (slidePool !== featuredPool) {
+    setSlidePool(featuredPool);
     setSlide(0);
+  }
+  useEffect(() => {
     if (featuredPool.length < 2) return;
     const timer = setInterval(() => setSlide((s) => s + 1), 8000);
     return () => clearInterval(timer);
@@ -180,7 +181,7 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
       if (sort === 'title') {
         scrollToLetter(letter);
       } else {
-        setPending(letter);
+        pending.current = letter;
         onSort('title', { resetScroll: false });
       }
     },
@@ -188,10 +189,10 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
   );
 
   useLayoutEffect(() => {
-    if (pending === null || sort !== 'title') return;
-    scrollToLetter(pending);
-    setPending(null);
-  }, [pending, sort, scrollToLetter]);
+    if (pending.current === null || sort !== 'title') return;
+    scrollToLetter(pending.current);
+    pending.current = null;
+  }, [sort, scrollToLetter]);
 
   const visibleLetters = useVisibleLetters(sort === 'title', marks, gridWrap, bar);
   const showRail = filtered.length >= RAIL_MIN_ITEMS && letters.size > 1;

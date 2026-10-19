@@ -22,6 +22,15 @@ export interface StreamProbe {
   fail: (failure: StreamFailure) => void;
 }
 
+interface ProbeKey {
+  booted: boolean;
+  itemId: ItemId;
+  decision: EngineDecision;
+  anchor: number;
+  audioIndex: number;
+  renewals: number;
+}
+
 function numberHeader(r: Response, name: string): number {
   const raw = r.headers.get(name);
   return raw === null ? Number.NaN : Number(raw);
@@ -73,16 +82,27 @@ export function useStreamProbe({
     [restartAt, webRuntime.client.refreshSession],
   );
 
+  const [seen, setSeen] = useState<ProbeKey | null>(null);
+  if (
+    seen?.booted !== booted ||
+    seen.itemId !== itemId ||
+    seen.decision !== decision ||
+    seen.anchor !== anchor ||
+    seen.audioIndex !== audioIndex ||
+    seen.renewals !== renewals
+  ) {
+    setSeen({ booted, itemId, decision, anchor, audioIndex, renewals });
+    if (booted) {
+      const direct = decision.kind === 'direct';
+      setSrcReady(direct);
+      setFailure(null);
+      if (direct) setBaseSec(0);
+    }
+  }
+
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- `renewals` is the retry trigger.
   useEffect(() => {
-    if (!booted) return;
-    setSrcReady(false);
-    setFailure(null);
-    if (decision.kind === 'direct') {
-      setBaseSec(0);
-      setSrcReady(true);
-      return;
-    }
+    if (!booted || decision.kind === 'direct') return;
     let cancelled = false;
     const url = webRuntime.client.media.hlsMasterUrl(
       itemId,

@@ -8,9 +8,27 @@
     {
       "name": "kroma",
       "specifier": "./packages/lint-rules/src/index.mjs"
+    },
+    {
+      "name": "react-compiler",
+      "specifier": "eslint-plugin-react-hooks"
     }
   ],
   "rules": {
+    "react-compiler/config": "error",
+    "react-compiler/error-boundaries": "error",
+    "react-compiler/gating": "error",
+    "react-compiler/globals": "error",
+    "react-compiler/immutability": "error",
+    "react-compiler/incompatible-library": "error",
+    "react-compiler/preserve-manual-memoization": "error",
+    "react-compiler/purity": "error",
+    "react-compiler/refs": "error",
+    "react-compiler/set-state-in-effect": "error",
+    "react-compiler/set-state-in-render": "error",
+    "react-compiler/static-components": "error",
+    "react-compiler/unsupported-syntax": "error",
+    "react-compiler/use-memo": "error",
     "no-nested-ternary": "error",
     "kroma/no-relative-workspace-imports": "error",
     "no-debugger": "error",

@@ -30,6 +30,7 @@ function TileAskingOnMount() {
 function BranchArrivingWhole() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
+    // oxlint-disable-next-line react-compiler/set-state-in-effect -- the test needs the branch to mount on a second commit
     setReady(true);
   }, []);
   if (!ready) return null;
@@ -65,6 +66,7 @@ describe('focus asked for before the tree that holds it is whole', () => {
     function Later() {
       const [ready, setReady] = useState(false);
       useEffect(() => {
+        // oxlint-disable-next-line react-compiler/set-state-in-effect -- the test needs the branch to mount on a second commit
         setReady(true);
       }, []);
       return ready ? <TileAskingOnMount /> : null;

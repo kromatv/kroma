@@ -1,7 +1,7 @@
 import { compareTitles, genreLabel, hasGenre, posterColors, type SortMode } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Box, Text, useFocusNav } from '@kromatv/ui/kit';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav, useParams } from '#tv/app/router';
 import {
@@ -29,8 +29,11 @@ export function TvGenreGrid() {
   useFocusNav({ onBack: titleMenu.onBack, resetKey: slug });
 
   const [focusId, setFocusId] = useState<string | null>(null);
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- slug is an intentional re-run key (a genre switch clears the focus echo), not read inside the effect
-  useEffect(() => setFocusId(null), [slug]);
+  const [prevSlug, setPrevSlug] = useState(slug);
+  if (prevSlug !== slug) {
+    setPrevSlug(slug);
+    setFocusId(null);
+  }
 
   const entries = useMemo<Entry[]>(() => {
     const tagged: Entry[] = [

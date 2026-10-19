@@ -190,7 +190,7 @@ function Searching() {
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const pulse = useRef(new Animated.Value(0.35)).current;
+  const [pulse] = useState(() => new Animated.Value(0.35));
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([

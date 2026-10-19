@@ -24,8 +24,8 @@ const DISC = 88;
 
 function useSpinnerShown(waiting: boolean): boolean {
   const [shown, setShown] = useState(false);
+  if (!waiting && shown) setShown(false);
   useEffect(() => {
-    setShown(false);
     if (!waiting) return;
     const spin = setTimeout(() => setShown(true), SPIN_AFTER_MS);
     return () => clearTimeout(spin);

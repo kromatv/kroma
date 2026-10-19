@@ -65,6 +65,7 @@ export function useThemeAudio(themeUrl: string | null | undefined): ThemeAudio {
   const fadeRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   // Reflect the stored preference once mounted (no storage read during SSR).
+  // oxlint-disable-next-line react-compiler/set-state-in-effect -- storage is read after mount only, so hydration matches the server's unmuted icon.
   useEffect(() => setMuted(readThemeMuted(storage)), [storage]);
 
   // Ramp the element volume toward `target` over `ms`, then optionally pause.

@@ -29,12 +29,18 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
   const [sections, setSections] = useState<Section[]>([]);
   const [featured, setFeatured] = useState<SectionItem | null>(null);
 
-  useEffect(() => {
-    if (!ready || !user || !client) {
+  const active = ready && !!user && !!client;
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    if (!active) {
       setSections([]);
       setFeatured(null);
-      return;
     }
+  }
+
+  useEffect(() => {
+    if (!ready || !user || !client) return;
     let cancelled = false;
     client.media
       .home()

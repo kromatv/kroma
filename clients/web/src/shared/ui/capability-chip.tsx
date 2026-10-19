@@ -1,17 +1,17 @@
 import { capabilities, type HdrCapabilities, type PlaybackCapabilities } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Badge, Row, Tooltip } from '@kromatv/ui/kit';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+const subscribeNever = () => () => {};
+const readNothing = (): PlaybackCapabilities | null => null;
 
 /** Readout of what this device can direct-play, with a tooltip showing the
  * detection method. Detection touches the DOM → client-only (neutral on the
  * server, filled in after mount to avoid a hydration mismatch). */
 export function CapabilityChip() {
   const t = useT();
-  const [caps, setCaps] = useState<PlaybackCapabilities | null>(null);
-  useEffect(() => {
-    setCaps(capabilities());
-  }, []);
+  const caps = useSyncExternalStore(subscribeNever, capabilities, readNothing);
 
   return (
     <Tooltip label={caps ? t('common.detection', { source: caps.source }) : t('common.detecting')}>

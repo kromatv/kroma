@@ -27,11 +27,15 @@ export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>
   const { client } = useConnection();
   const [items, setItems] = useState<ContinueItem[]>([]);
 
+  const active = ready && !!user && !!client;
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    if (!active) setItems([]);
+  }
+
   const refresh = useCallback(() => {
-    if (!ready || !user || !client) {
-      setItems([]);
-      return;
-    }
+    if (!ready || !user || !client) return;
     client.playback
       .continueWatching()
       .then(setItems)

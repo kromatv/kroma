@@ -16,7 +16,9 @@ export interface PersistPort {
  * re-seeked here. */
 export function useResumeAndPersist(client: KromaClient, item: MediaItem, port: PersistPort): void {
   const portRef = useRef(port);
-  portRef.current = port;
+  useEffect(() => {
+    portRef.current = port;
+  });
 
   const save = useCallback(() => {
     if (!client.hasAuth) return;

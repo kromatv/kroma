@@ -32,6 +32,22 @@ export class SpatialNavigator {
    *  is worth trying again. */
   onRegister?: () => void;
 
+  /** Routes presses that run off the edge to `handler` until the returned function is called. */
+  routeEdge(handler: (direction: Direction) => void): () => void {
+    this.onEdge = handler;
+    return () => {
+      this.onEdge = undefined;
+    };
+  }
+
+  /** Calls `handler` whenever a node joins the tree, until the returned function is called. */
+  watchRegistrations(handler: () => void): () => void {
+    this.onRegister = handler;
+    return () => {
+      this.onRegister = undefined;
+    };
+  }
+
   get focusedId(): string | null {
     return this.owner.focusedNode?.id ?? null;
   }

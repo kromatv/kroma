@@ -28,11 +28,15 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
   const { client } = useConnection();
   const [ids, setIds] = useState<ReadonlySet<SubjectId>>(() => new Set());
 
+  const active = ready && !!user && !!client;
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    if (!active) setIds(new Set());
+  }
+
   const refresh = useCallback(() => {
-    if (!ready || !user || !client) {
-      setIds(new Set());
-      return;
-    }
+    if (!ready || !user || !client) return;
     client.playback
       .myList()
       .then((list) => setIds(new Set(list)))

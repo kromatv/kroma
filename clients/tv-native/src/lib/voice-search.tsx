@@ -22,7 +22,9 @@ function ListenSession({ onText, onDone, locale }: Readonly<VoiceSessionProps>) 
   // The screen re-renders on every partial result, which would otherwise tear
   // the session down and start a new one on each word.
   const handlers = useRef({ onText, onDone });
-  handlers.current = { onText, onDone };
+  useEffect(() => {
+    handlers.current = { onText, onDone };
+  });
 
   useEffect(() => {
     const mod = VoiceSearch;

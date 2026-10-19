@@ -17,7 +17,7 @@ import { formatTimecode } from '@kromatv/ui/intl';
 
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { radius } from '#mobile/lib/theme';
 import type { StoryboardTile } from './useStoryboard';
@@ -53,12 +53,8 @@ export function ScrubBar({
 
   const [preview, setPreview] = useState<number | null>(null);
   const [width, setWidth] = useState(1);
-  const widthRef = useRef(1);
-  const durRef = useRef(dur);
-  durRef.current = dur;
 
-  const toTime = (x: number) =>
-    Math.max(0, Math.min(durRef.current, (x / widthRef.current) * durRef.current));
+  const toTime = (x: number) => Math.max(0, Math.min(dur, (x / width) * dur));
 
   const pan = Gesture.Pan()
     .runOnJS(true)
@@ -100,7 +96,6 @@ export function ScrubBar({
       <Box
         style={s.touch}
         onLayout={(e) => {
-          widthRef.current = e.nativeEvent.layout.width;
           setWidth(e.nativeEvent.layout.width);
         }}
       >

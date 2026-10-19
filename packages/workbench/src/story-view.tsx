@@ -17,7 +17,7 @@ import {
   useThemeControls,
 } from '@kromatv/ui/kit';
 import type { ColorToken } from '@kromatv/ui/tokens';
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useState } from 'react';
 import { Matrix, ViewportFrame } from './canvas';
 import { CanvasTabs } from './canvas-tabs';
 import { RULE_TOP } from './chrome';
@@ -54,13 +54,12 @@ function useStageView(story: Story | undefined) {
     [applyTheme],
   );
 
-  // An effect rather than derived state so switching frame by hand is not
-  // undone on the next render.
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- keyed on the story, not on the frame the user may have chosen since
-  useEffect(() => {
+  const [framedStory, setFramedStory] = useState(story?.id);
+  if (framedStory !== story?.id) {
+    setFramedStory(story?.id);
     setViewport(story?.viewport ?? 'fit');
     setRotate(false);
-  }, [story?.id]);
+  }
 
   const pickViewport = useCallback((next: ViewportName) => {
     setViewport(next);
@@ -138,6 +137,7 @@ function StoryCanvas({
   layout,
   onMenu,
 }: Readonly<StoryCanvasProps>) {
+  const { stage: host } = run;
   const docs = viewDocs(story, view);
   const code = viewCode(story, view, args);
   if (view === 'docs' && typeof story.docs === 'function') {
@@ -180,7 +180,7 @@ function StoryCanvas({
             for the whole stage (the player, a screen) is written as `flex`, and
             `flex: 1` against a parent with no definite height resolves to zero,
             which is a component drawn at no height at all. */}
-        <Box ref={run.stage} flex minH={0}>
+        <Box ref={host} flex minH={0}>
           {renderBody(story, view, args)}
         </Box>
       </ViewportFrame>

@@ -1,7 +1,7 @@
 // Copy to the clipboard, and the confirmation that follows it: the write, the
 // tick, and the reason a control has to say when the write was refused.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { webWindow } from '#ui/lib/dom';
 import { WEB } from '#ui/lib/platform';
 
@@ -26,6 +26,10 @@ interface Copier {
   copy: (text: string | undefined) => void;
 }
 
+function subscribeNever(): () => void {
+  return () => {};
+}
+
 function clipboard(): Clipboard | undefined {
   return webWindow()?.navigator?.clipboard;
 }
@@ -33,13 +37,14 @@ function clipboard(): Clipboard | undefined {
 /** The clipboard where the platform has one, a write, and a tick that reverts
  * on its own. */
 function useCopy(): Copier {
-  const [available, setAvailable] = useState(() => WEB);
+  const available = useSyncExternalStore(
+    subscribeNever,
+    () => Boolean(clipboard()),
+    () => WEB,
+  );
   const [state, setState] = useState<CopyState>('idle');
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  useEffect(() => {
-    setAvailable(Boolean(clipboard()));
-  }, []);
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const copy = useCallback((text: string | undefined) => {

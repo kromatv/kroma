@@ -69,15 +69,17 @@ function SpatialNode({
     onInactive,
     watched: false,
   });
-  latest.current = {
-    onFocus,
-    onBlur,
-    onSelect,
-    onLongSelect,
-    onActive,
-    onInactive,
-    watched: typeof children === 'function',
-  };
+  useEffect(() => {
+    latest.current = {
+      onFocus,
+      onBlur,
+      onSelect,
+      onLongSelect,
+      onActive,
+      onInactive,
+      watched: typeof children === 'function',
+    };
+  });
 
   useImperativeHandle(ref, () => ({ focus: () => host.requestFocus(id) }), [host, id]);
 

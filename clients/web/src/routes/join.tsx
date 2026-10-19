@@ -27,7 +27,8 @@ function JoinPage() {
   const { client, register } = useAuth();
   const navigate = useNavigate();
 
-  const [status, setStatus] = useState<'checking' | 'invalid' | 'ok'>('checking');
+  const [checkedStatus, setCheckedStatus] = useState<'checking' | 'invalid' | 'ok'>('checking');
+  const status = invite ? checkedStatus : 'invalid';
   const [values, setValues] = useState<RegisterValues>({ email: '', username: '', password: '' });
   const [avatar, setAvatar] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -35,18 +36,15 @@ function JoinPage() {
   const { email, username, password } = values;
 
   useEffect(() => {
-    if (!invite) {
-      setStatus('invalid');
-      return;
-    }
+    if (!invite) return;
     let cancelled = false;
     client.accounts
       .checkInvite(invite)
       .then((r) => {
-        if (!cancelled) setStatus(r.valid ? 'ok' : 'invalid');
+        if (!cancelled) setCheckedStatus(r.valid ? 'ok' : 'invalid');
       })
       .catch(() => {
-        if (!cancelled) setStatus('invalid');
+        if (!cancelled) setCheckedStatus('invalid');
       });
     return () => {
       cancelled = true;

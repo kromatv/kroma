@@ -10,6 +10,7 @@ import { KromaApiError, type KromaClient } from '@kromatv/client';
 import { KromaEvents } from '@kromatv/client/events';
 import type { MediaItem } from '@kromatv/client/media';
 import { PlaybackSessionId } from '@kromatv/client/playback';
+import { useStableCallback } from '@kromatv/ui/kit';
 import * as Device from 'expo-device';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Platform } from 'react-native';
@@ -87,10 +88,9 @@ export function useHeartbeat(
 ): void {
   const owner = useId();
   const sequence = useRef(0);
-  const snapRef = useRef(snapshot);
-  snapRef.current = snapshot;
-  const onTerminatedRef = useRef(onTerminated);
-  onTerminatedRef.current = onTerminated;
+  const readSnapshot = useStableCallback(snapshot);
+  const notifyTerminated = useStableCallback((message: string) => onTerminated?.(message));
+  const currentClient = useStableCallback(() => client);
   const [device] = useState(deviceLabel);
   // One id per title watched, NOT one per effect run: a client swapped
   // underneath a running player is the same viewing, and re-minting here would
@@ -99,8 +99,6 @@ export function useHeartbeat(
   // A stop that overtakes its own ping ends nothing, and the ping then leaves a
   // session no one will ever close.
   const inFlight = useRef<Promise<unknown>>(Promise.resolve());
-  const clientRef = useRef(client);
-  clientRef.current = client;
 
   useEffect(() => {
     if (session.current?.itemId !== item.id)
@@ -109,11 +107,11 @@ export function useHeartbeat(
     const fireTerminated = (message: string) => {
       if (live.terminated) return;
       live.terminated = true;
-      onTerminatedRef.current?.(message);
+      notifyTerminated(message);
     };
 
     const save = () => {
-      const s = snapRef.current();
+      const s = readSnapshot();
       if (s.positionSec <= 0) return;
       void client.playback
         .save(item.id, Math.round(s.positionSec * 1000), Math.round(s.durationSec * 1000) || null)
@@ -122,7 +120,7 @@ export function useHeartbeat(
 
     const ping = () => {
       if (live.terminated) return;
-      const s = snapRef.current();
+      const s = readSnapshot();
       const now = Date.now();
       const previous = live.lastBeat;
       live.lastBeat = { at: now, positionSec: s.positionSec };
@@ -190,7 +188,7 @@ export function useHeartbeat(
       const live = session.current;
       if (!live || live.terminated || !live.opened) return;
       live.opened = false;
-      const owner = clientRef.current;
+      const owner = currentClient();
       inFlight.current = inFlight.current
         .then(() => owner.playback.stop(live.id))
         .catch(() => undefined);

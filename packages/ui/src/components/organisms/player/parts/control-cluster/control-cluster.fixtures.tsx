@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Box } from '#ui/components/atoms/box';
 
@@ -40,9 +40,17 @@ export function Live({
   ...rest
 }: Readonly<LiveProps>) {
   const [state, setState] = useState({ focused: focusedArg, playing, muted, volume });
-  useEffect(() => {
-    setState({ focused: focusedArg, playing, muted, volume });
-  }, [focusedArg, playing, muted, volume]);
+  const [args, setArgs] = useState({ focused: focusedArg, playing, muted, volume });
+  if (
+    args.focused !== focusedArg ||
+    args.playing !== playing ||
+    args.muted !== muted ||
+    args.volume !== volume
+  ) {
+    const next = { focused: focusedArg, playing, muted, volume };
+    setArgs(next);
+    setState(next);
+  }
 
   const activate = (id: ControlId) => {
     if (id === 'play') setState((prev) => ({ ...prev, playing: !prev.playing }));

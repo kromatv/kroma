@@ -112,6 +112,7 @@ function Root({
   // The Root's own layout effect runs after every step's, so an empty flow here
   // is a flow nothing joined rather than one that has not settled yet.
   const [settled, setSettled] = useState(false);
+  // oxlint-disable-next-line react-compiler/set-state-in-effect -- the commit after the steps' layout effects is what tells a flow nothing joined from one still settling.
   useLayoutEffect(() => setSettled(true), []);
   const state = useMemo<StepperState>(
     () => ({ flow, size: shell, orientation, label, stepLabel, join, mark }),

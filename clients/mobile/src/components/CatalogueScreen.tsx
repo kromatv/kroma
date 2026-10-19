@@ -70,7 +70,7 @@ export function CatalogueScreen<T extends MediaItem | Show>({
   const [sort, setSort] = useState<SortMode>('added');
   const [genre, setGenre] = useState<string | null>(null);
   const [visible, setVisible] = useState<ItemRange | null>(null);
-  const [pendingJump, setPendingJump] = useState<string | null>(null);
+  const pendingJump = useRef<string | null>(null);
   const grid = useRef<PosterGridHandle>(null);
   const watched = useQuery({ ...client.query.playback.watched(), staleTime: 60_000 });
   const watchedIds = useMemo(() => new Set<string>(watched.data ?? []), [watched.data]);
@@ -119,14 +119,14 @@ export function CatalogueScreen<T extends MediaItem | Show>({
       scrollToLetter(letter);
       return;
     }
-    setPendingJump(letter);
+    pendingJump.current = letter;
     setSort('title');
   };
   useEffect(() => {
-    if (pendingJump === null || sort !== 'title') return;
-    scrollToLetter(pendingJump);
-    setPendingJump(null);
-  }, [pendingJump, sort, scrollToLetter]);
+    if (pendingJump.current === null || sort !== 'title') return;
+    scrollToLetter(pendingJump.current);
+    pendingJump.current = null;
+  }, [sort, scrollToLetter]);
 
   if (pending) return <Loading label={t('common.loading')} />;
   if (error)

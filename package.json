@@ -103,6 +103,7 @@
     "abortcontroller-polyfill": "^1.7.8",
     "concurrently": "^10.0.5",
     "core-js": "^3.50.0",
+    "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-sonarjs": "^4.2.2",
     "intersection-observer": "^0.12.2",
     "jsdom": "^29.1.1",

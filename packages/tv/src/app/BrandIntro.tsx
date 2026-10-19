@@ -55,7 +55,7 @@ function IntroFilm({ source, onDone }: Readonly<{ source: string | number; onDon
     p.play();
   });
 
-  const veil = useRef(new Animated.Value(0)).current;
+  const [veil] = useState(() => new Animated.Value(0));
   const exited = useRef(false);
   const safety = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const handoff = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -63,7 +63,9 @@ function IntroFilm({ source, onDone }: Readonly<{ source: string | number; onDon
   // Read through a ref so the effects below never have to re-run (which would
   // restart the film) when the prop identity changes.
   const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  });
 
   // The hand-off runs on a timer, not the animation's completion callback: an
   // interrupted animation drops its callback, which would strand the app

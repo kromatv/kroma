@@ -33,6 +33,13 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
+type Uniforms = { uColor: { value: Color }; uSize: { value: number } };
+
+function paint(uniforms: Uniforms, color: string, size: number): void {
+  uniforms.uColor.value.set(color);
+  uniforms.uSize.value = size;
+}
+
 export function LandDots({ color }: Readonly<{ color: string }>) {
   const [positions] = useState(() => decodeLand(points));
   const [uniforms] = useState(() => ({
@@ -44,9 +51,7 @@ export function LandDots({ color }: Readonly<{ color: string }>) {
   const invalidate = useThree((state) => state.invalidate);
 
   useEffect(() => {
-    uniforms.uColor.value.set(color);
-    const scale = Math.min(1.2, Math.max(0.6, height / REFERENCE_HEIGHT));
-    uniforms.uSize.value = DOT_PX * dpr * scale;
+    paint(uniforms, color, DOT_PX * dpr * Math.min(1.2, Math.max(0.6, height / REFERENCE_HEIGHT)));
     invalidate();
   }, [color, dpr, height, uniforms, invalidate]);
 
