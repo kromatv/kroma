@@ -245,7 +245,8 @@ function Root({
   const introLift = chromeShown ? bottomInset + transport + px(SKIP_GAP) : px(SKIP_REST);
   const input = playerInputHandlers(nav, c, flags, locked);
 
-  const openSheet = () => nav.openOverlay('sheet');
+  const { openOverlay } = nav;
+  const openSheet = useCallback(() => openOverlay('sheet'), [openOverlay]);
   // Close first: pip, cast and the next episode all change what is on screen, and
   // leaving the panel over it would hide the thing just asked for.
   const runOverflow = (id: ControlId) => {
