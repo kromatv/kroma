@@ -11,14 +11,14 @@
 // press actually takes.
 
 import { cleanup, fireEvent, screen } from '@testing-library/react';
-import { act } from 'react';
+import { act, createRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { activeTheme } from '#ui/core';
 
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
 import { declared, wearsRing } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
-import { Focusable } from './focusable';
+import { Focusable, type FocusHandle } from './focusable';
 
 const { armPressGuard, clearPressGuard, render } = createInputTestHost();
 
@@ -87,6 +87,22 @@ describe('Focusable on react-native-web', () => {
 
     press('ArrowLeft');
     expect(ringed('Un')).toBe(true);
+  });
+
+  it('takes the focus from code through its focus handle', () => {
+    const handle = createRef<FocusHandle>();
+    screenWith(
+      <>
+        <Focusable label="Un" autoFocus />
+        <Focusable label="Deux" />
+        <Focusable label="Trois" focusHandle={handle} />
+      </>,
+    );
+    expect(ringed('Un')).toBe(true);
+
+    act(() => handle.current?.focus());
+    expect(ringed('Trois')).toBe(true);
+    expect(ringed('Un')).toBe(false);
   });
 
   it('moves between rows on Up and Down, and each row remembers its place', () => {

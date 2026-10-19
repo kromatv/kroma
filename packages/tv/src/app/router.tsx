@@ -16,7 +16,6 @@ import {
   useMemo,
   useState,
 } from 'react';
-import type { SettingsGroupId } from '#tv/app/settings/registry';
 import { ARTWORK_SCALE, useArtworkPref, useStoredPref } from '#tv/app/settings/store';
 import { useDevicePreferences } from './device-preferences';
 
@@ -31,7 +30,6 @@ export interface TvRoutes {
   about: undefined;
   pin: { intent: 'verify' | 'set' | 'clear'; account?: StoredSession };
   profileMenu: undefined;
-  settingsGroup: { group: SettingsGroupId };
   home: undefined;
   grid: { kind: 'films' | 'series' | 'mylist' };
   genres: undefined;
