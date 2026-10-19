@@ -16,12 +16,11 @@ interface PinEntryProps {
   label: string;
   onSubmit: (pin: string) => Promise<MessageKey | undefined>;
   wrongKey: MessageKey;
-  align?: 'center' | 'flex-start';
 }
 
 /** The PIN field, its status line and the remote's keypad. The fourth digit submits; a
  * key `onSubmit` returns is shown as the error, and anything it throws but a lockout as `wrongKey`. */
-export function PinEntry({ label, onSubmit, wrongKey, align = 'center' }: Readonly<PinEntryProps>) {
+export function PinEntry({ label, onSubmit, wrongKey }: Readonly<PinEntryProps>) {
   const t = useT();
   const { physicalKeyboard } = useEnv();
   const [buffer, setBuffer] = useState('');
@@ -74,7 +73,7 @@ export function PinEntry({ label, onSubmit, wrongKey, align = 'center' }: Readon
   };
 
   return (
-    <Box align={align}>
+    <Box align="center">
       <Box key={shake} mt={32}>
         <PinField
           maxLength={PIN_LENGTH}
