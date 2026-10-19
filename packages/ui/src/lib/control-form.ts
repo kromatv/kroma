@@ -7,17 +7,17 @@ export function controlForm({
   controlled,
   scoped,
   asChild,
-  link,
-  touch,
-  navigator,
+  renderLink,
+  renderTouch,
+  renderNavigator,
 }: Readonly<{
   controlled: boolean;
   scoped: boolean;
   asChild: boolean;
-  link: () => ReactNode;
-  touch: () => ReactNode;
-  navigator: () => ReactNode;
+  renderLink: () => ReactNode;
+  renderTouch: () => ReactNode;
+  renderNavigator: () => ReactNode;
 }>): ReactNode {
-  if (!controlled && (scoped || NAVIGATED)) return navigator();
-  return asChild && WEB ? link() : touch();
+  if (!controlled && (scoped || NAVIGATED)) return renderNavigator();
+  return asChild && WEB ? renderLink() : renderTouch();
 }

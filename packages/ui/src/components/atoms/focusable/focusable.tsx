@@ -297,9 +297,9 @@ function Focusable<R extends AnySv = AnySv>({
     controlled,
     scoped,
     asChild,
-    link: () => <LinkForm child={children} at={at} />,
-    touch: () => <TouchForm at={at} />,
-    navigator: () => (isEntry ? <DefaultFocus>{node}</DefaultFocus> : node),
+    renderLink: () => <LinkForm child={children} at={at} />,
+    renderTouch: () => <TouchForm at={at} />,
+    renderNavigator: () => (isEntry ? <DefaultFocus>{node}</DefaultFocus> : node),
   });
 }
 

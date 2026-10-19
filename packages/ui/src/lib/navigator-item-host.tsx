@@ -27,7 +27,7 @@ export interface NavigatorItemHostProps {
   focused: boolean;
   pressed: boolean;
   render: (focused: boolean, pressed: boolean) => ReactNode;
-  face: (focused: boolean, painted: StyleProp<ViewStyle>[]) => ReactNode;
+  renderFace: (focused: boolean, painted: StyleProp<ViewStyle>[]) => ReactNode;
 }
 
 type NavigatorStyle = NavigatorItemProps['style'];
@@ -38,7 +38,7 @@ export const faceLift = (_focused: boolean): boolean => false;
 /** A navigator node as two views: the outer box placed and lifted, the painted face inside. */
 export function NavigatorItemHost({
   entry,
-  face,
+  renderFace,
   focused,
   layers,
   onBlur,
@@ -58,7 +58,7 @@ export function NavigatorItemHost({
       style={StyleSheet.flatten([layers?.box, focused ? LIFTED : GROUNDED]) as NavigatorStyle}
       viewProps={viewProps as NavigatorItemProps['viewProps']}
     >
-      {(state) => face(state.focused, painted)}
+      {(state) => renderFace(state.focused, painted)}
     </NavigatorItem>
   );
 }

@@ -199,7 +199,7 @@ function NavigatorForm({
         onPointerUp: at.onPointerUp,
       }}
       render={render}
-      face={(focused, face) => (
+      renderFace={(focused, face) => (
         <Painted
           painted={face}
           pressedStyle={at.pressedStyle}

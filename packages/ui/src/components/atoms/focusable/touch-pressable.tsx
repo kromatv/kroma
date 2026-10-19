@@ -40,7 +40,7 @@ function Painted({
     <PointerFace
       style={painted}
       render={render}
-      touch={(unfocusable) => (
+      renderTouch={(unfocusable) => (
         <TouchPressable
           base={painted}
           pressedStyle={pressedStyle}
