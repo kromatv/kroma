@@ -53,7 +53,13 @@ pub(super) fn run_job(
         });
     }
 
-    if !finalize_run(&pool, &run_id, key, status, finished_ms, error.as_deref()) {
+    let start = db::RunStart {
+        id: &run_id,
+        key,
+        trigger,
+        started_ms,
+    };
+    if !finalize_run(&pool, &start, status, finished_ms, error.as_deref()) {
         warn!(job = key, run = %run_id, "gave up recording job finish; run may show as running until restart");
     }
     let _ = db::prune_job_runs(&pool, key, RUNS_KEPT);
@@ -65,6 +71,7 @@ pub(super) fn run_job(
         }
         other => info!(job = key, run = %run_id, status = other, "job finished"),
     }
+    let repeated = status == "failed" && already_failing(&pool, key, &run_id);
     state.events.publish(ServerEvent::JobFinished {
         key: key.to_string(),
         run_id,
@@ -73,7 +80,7 @@ pub(super) fn run_job(
 
     // `notifications.digest` is excluded so a broken notifier cannot notify about
     // itself in a loop.
-    if status == "failed" && key != "notifications.digest" {
+    if status == "failed" && key != "notifications.digest" && !repeated {
         let spec = crate::model::NotificationSpec::new(
             crate::model::NotificationEvent::SystemJobFailed,
             "notifications.system.job.failed.title",
@@ -106,28 +113,33 @@ fn classify_result(
     }
 }
 
-// Retries, because a row left without a terminal status is only swept by
-// `reconcile_running_runs` at startup and shows as running until then.
+const FINISH_RETRY_DELAYS_MS: [u64; 8] = [250, 500, 1_000, 2_000, 5_000, 10_000, 20_000, 30_000];
+
 fn finalize_run(
     pool: &db::Pool,
-    run_id: &str,
-    key: &'static str,
+    start: &db::RunStart<'_>,
     status: &str,
     finished_ms: i64,
     error: Option<&str>,
 ) -> bool {
-    for attempt in 0..3u32 {
-        match db::finish_job_run(pool, run_id, status, finished_ms, error) {
-            Ok(_) => return true,
+    let mut delays = FINISH_RETRY_DELAYS_MS.iter();
+    loop {
+        match db::finish_job_run(pool, start, status, finished_ms, error) {
+            Ok(()) => return true,
             Err(e) => {
-                warn!(job = key, run = %run_id, attempt, error = %e, "failed to record job run finish; retrying");
-                std::thread::sleep(std::time::Duration::from_millis(
-                    200 * u64::from(attempt + 1),
-                ));
+                let Some(&delay) = delays.next().filter(|_| db::is_busy(&e)) else {
+                    warn!(job = start.key, run = %start.id, error = %e, "failed to record job run finish");
+                    return false;
+                };
+                warn!(job = start.key, run = %start.id, error = %e, "failed to record job run finish; retrying");
+                std::thread::sleep(std::time::Duration::from_millis(delay));
             }
         }
     }
-    false
+}
+
+fn already_failing(pool: &db::Pool, key: &str, run_id: &str) -> bool {
+    db::previous_run_failed(pool, key, run_id).unwrap_or(false)
 }
 
 // A failed or cancelled upstream must not start its dependents: they consume its
