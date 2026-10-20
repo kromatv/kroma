@@ -57,6 +57,13 @@ describe('matchLanes', () => {
     expect(matchLanes('all')).toEqual(all);
   });
 
+  it('checks a release workflow or its scripts as code, and builds nothing for it', () => {
+    expect(
+      matchLanes(['.github/workflows/release-notes.yml', '.github/scripts/draft-release-notes.sh']),
+    ).toEqual(only('code'));
+    expect(matchLanes(['.github/workflows/synology.yml'])).toEqual(only('code', 'synology'));
+  });
+
   it('puts the site in its own lane', () => {
     expect(matchLanes(['apps/www/src/routes/download.tsx'])).toEqual(only('code', 'fleet', 'site'));
   });
