@@ -123,6 +123,8 @@ mod it_reset_faults;
 #[cfg(test)]
 mod it_stream_hls;
 #[cfg(test)]
+mod it_updates;
+#[cfg(test)]
 mod it_verify_email;
 #[cfg(test)]
 mod test_support;

@@ -16,13 +16,15 @@ use super::store::Settings;
 static BUILD_INFO: OnceLock<Build> = OnceLock::new();
 
 /// What the running binary is: its released version, the commit it was built
-/// from, when it was built, and the target triple it was built for.
+/// from, when it was built, the target triple it was built for, and the CI
+/// build number (minutes since 2020; 0 for a local build).
 #[derive(Debug, Clone)]
 pub struct Build {
     pub version: String,
     pub commit: String,
     pub built: String,
     pub target: String,
+    pub number: u64,
 }
 
 /// Call once from the server binary; later calls are ignored.
@@ -31,12 +33,14 @@ pub fn set_build_info(
     commit: impl Into<String>,
     built: impl Into<String>,
     target: impl Into<String>,
+    number: u64,
 ) {
     let _ = BUILD_INFO.set(Build {
         version: version.into(),
         commit: commit.into(),
         built: built.into(),
         target: target.into(),
+        number,
     });
 }
 
@@ -48,6 +52,7 @@ pub fn build_info() -> Build {
         commit: "unknown".to_string(),
         built: "unknown".to_string(),
         target: "unknown".to_string(),
+        number: 0,
     })
 }
 
@@ -195,6 +200,24 @@ pub fn groups(
                         "toggle",
                         &[],
                         g("watchAutoScan"),
+                        true,
+                    ),
+                    row(
+                        "autoUpdate",
+                        t("admin.autoUpdate"),
+                        None,
+                        "toggle",
+                        &[],
+                        g("autoUpdate"),
+                        true,
+                    ),
+                    row(
+                        "updateChannel",
+                        t("admin.updateChannel"),
+                        Some(t("admin.updateChannelHint")),
+                        "select",
+                        &["Stable", "Canary"],
+                        g("updateChannel"),
                         true,
                     ),
                     row(
