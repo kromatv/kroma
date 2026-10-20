@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
+import { oidcFederationProvider } from '@anthropic-ai/sdk/lib/credentials/oidc-federation';
 import { z } from 'zod';
 import type { Commit } from './commits';
 import { CANARY_SYSTEM, type PullRequestBrief, releaseSystem, releaseTask } from './notes-prompt';
@@ -91,13 +92,36 @@ function previousNotes() {
   return ['en', 'fr'].map((lang) => ({ lang, text: read(`releases/${written}/${lang}.md`) }));
 }
 
-const hasToken = (file: string | undefined) =>
-  !!file && existsSync(file) && statSync(file).size > 0;
+const API = 'https://api.anthropic.com';
+const GithubToken = z.object({ value: z.string().min(1) });
+
+async function githubIdentityToken(): Promise<string> {
+  const env = process.env;
+  const res = await fetch(`${env.ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${API}`, {
+    headers: { authorization: `Bearer ${env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}` },
+  });
+  if (!res.ok) throw new Error(`GitHub refused an identity token: ${res.status}`);
+  return GithubToken.parse(await res.json()).value;
+}
 
 function client(): Anthropic | null {
   const env = process.env;
-  const federated = env.ANTHROPIC_FEDERATION_RULE_ID && hasToken(env.ANTHROPIC_IDENTITY_TOKEN_FILE);
-  return env.ANTHROPIC_API_KEY || federated ? new Anthropic() : null;
+  if (env.ANTHROPIC_API_KEY) return new Anthropic({ maxRetries: 1 });
+  const rule = env.ANTHROPIC_FEDERATION_RULE_ID;
+  const organization = env.ANTHROPIC_ORGANIZATION_ID;
+  if (!rule || !organization || !env.ACTIONS_ID_TOKEN_REQUEST_URL) return null;
+  return new Anthropic({
+    maxRetries: 1,
+    credentials: oidcFederationProvider({
+      identityTokenProvider: githubIdentityToken,
+      federationRuleId: rule,
+      organizationId: organization,
+      serviceAccountId: env.ANTHROPIC_SERVICE_ACCOUNT_ID,
+      workspaceId: env.ANTHROPIC_WORKSPACE_ID,
+      baseURL: API,
+      fetch,
+    }),
+  });
 }
 
 async function ask<T extends z.ZodType>(
@@ -108,7 +132,7 @@ async function ask<T extends z.ZodType>(
   schema: T,
 ): Promise<z.infer<T> | null> {
   try {
-    const response = await anthropic.beta.messages.parse(
+    const stream = anthropic.beta.messages.stream(
       {
         model: call.model,
         max_tokens: call.maxTokens,
@@ -121,6 +145,7 @@ async function ask<T extends z.ZodType>(
       },
       { timeout: call.timeoutMs },
     );
+    const response = await stream.finalMessage();
     if (response.stop_reason !== 'end_turn') {
       console.warn(`::warning::the model stopped on ${response.stop_reason}; using the plain list`);
       return null;
