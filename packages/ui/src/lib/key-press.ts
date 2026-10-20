@@ -1,6 +1,6 @@
 import { type RefObject, useMemo } from 'react';
 import { webDocument } from '#ui/lib/dom';
-import { useFocusServices } from '#ui/lib/focus-services-context';
+import type { FocusServices } from '#ui/lib/focus-services';
 import { WEB } from '#ui/lib/platform';
 
 /** The key props a browser element answers Enter and Space with; null where nothing does. */
@@ -14,9 +14,9 @@ function useKeyPress(
   active: boolean,
   role: string,
   press: RefObject<() => void>,
+  mirror: FocusServices['mirror'],
   tabbable = true,
 ): { pressable: KeyProps; view: KeyProps } | null {
-  const { mirror } = useFocusServices();
   return useMemo(() => {
     if (!WEB || !active) return null;
     const answering = (owns: (key: string) => boolean): KeyProps => ({

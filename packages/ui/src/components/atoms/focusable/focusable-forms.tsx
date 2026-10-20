@@ -6,6 +6,7 @@ import type { RingToken } from '#ui/core/theme';
 import type { splitBoxLayers } from '#ui/lib/box-layers';
 import { StillHost } from '#ui/lib/control-platform';
 import { linkProps, platformRole } from '#ui/lib/control-role';
+import type { FocusServices } from '#ui/lib/focus-services';
 import { useControlledMirror } from '#ui/lib/controlled-focus-mirror';
 import { faceLift, NavigatorItemHost } from '#ui/lib/navigator-item-host';
 import { GROUNDED, LIFTED } from '#ui/lib/focus-lift';
@@ -135,6 +136,7 @@ function NavigatorForm({
     handleFocus: () => void;
     handleBlur: () => void;
     setBox: (view: View | null) => void;
+    mirror: FocusServices['mirror'];
     label: string | undefined;
     role: FocusRole;
     a11yState: A11yState;
@@ -165,7 +167,7 @@ function NavigatorForm({
     ringToken: at.ringToken,
     animated: at.animated,
   });
-  const mirror = useMirroredFocus(at.setBox, at.handleFocus);
+  const mirror = useMirroredFocus(at.setBox, at.handleFocus, at.mirror);
 
   const render = (focused: boolean, pressed: boolean) =>
     typeof at.children === 'function'
