@@ -16,6 +16,7 @@ import {
   colors,
   FocusRegion,
   Img,
+  ScrollMask,
   qualityTone,
   styles,
   Text,
@@ -49,6 +50,7 @@ const sDefinition = styles({
     letterSpacing: -1.64,
   },
   featuredLabel: { fontSize: textSizes.compactLabel },
+  copy: { position: 'absolute', left: 64, bottom: 36, zIndex: 2, maxWidth: 820 },
 });
 
 export interface HeroInfo {
@@ -94,10 +96,17 @@ export interface HeroProps {
   onPlay: (m: MediaItem) => void;
   onSelectShow: (show: Show) => void;
   onSelectEntry: (e: SectionItem) => void;
+  maskInset: number;
 }
 
 /** The home screen's cinematic spotlight, or a spacer while there is nothing to feature. */
-export function Hero({ info, onPlay, onSelectShow, onSelectEntry }: Readonly<HeroProps>) {
+export function Hero({
+  info,
+  onPlay,
+  onSelectShow,
+  onSelectEntry,
+  maskInset,
+}: Readonly<HeroProps>) {
   const s = useStyles(sDefinition);
 
   const t = useT();
@@ -115,7 +124,7 @@ export function Hero({ info, onPlay, onSelectShow, onSelectEntry }: Readonly<Her
         opaque
       />
       <Veil ramp={HERO_VEIL} />
-      <Box absolute left={64} bottom={36} z={2} maxW={820}>
+      <ScrollMask inset={maskInset} style={s.copy}>
         <Text variant="overlineTv" style={s.featuredLabel} color="accentText">
           {t('content.featured')}
         </Text>
@@ -172,7 +181,7 @@ export function Hero({ info, onPlay, onSelectShow, onSelectEntry }: Readonly<Her
             />
           )}
         </FocusRegion>
-      </Box>
+      </ScrollMask>
     </Box>
   );
 }

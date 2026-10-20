@@ -41,7 +41,7 @@ import {
 import { TvVoiceSearch } from '#tv/features/catalog/TvVoiceSearch';
 import { useSearchAnswers } from '#tv/features/catalog/useSearchAnswers';
 import { SCREEN_PAD, STAGE_W } from '#tv/shared/stage';
-import { KromaMark, SearchKeyboard } from '#tv/shared/ui';
+import { KromaMark, SearchKeyboard, WallClock } from '#tv/shared/ui';
 
 /** Search with a live results grid, typed either on our D-pad on-screen
  * keyboard or on the platform's own where that is the better one (Apple TV,
@@ -211,7 +211,7 @@ export function TvSearch() {
   }
 
   return (
-    <Box fill z={10} bg="bg" px={SCREEN_PAD} py={44}>
+    <Box fill z={10} bg="bg" px={SCREEN_PAD} pt={48} pb={44}>
       <Box row align="center" gap={14} mb={28}>
         {/* Back (mouse users); the remote's Back key is wired via useFocusNav. */}
         {nav.canGoBack ? <BackButton onPress={nav.back} label={t('common.back')} /> : null}
@@ -220,6 +220,7 @@ export function TvSearch() {
         <Text variant="label" color="textDim">
           {t('search.backHint')}
         </Text>
+        <WallClock />
       </Box>
 
       {/* Two columns to the NAVIGATOR, not only to the eye: a plain box is

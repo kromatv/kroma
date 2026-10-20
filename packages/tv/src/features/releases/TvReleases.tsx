@@ -38,7 +38,6 @@ export function TvReleases() {
 
   return (
     <Box fill overflow="hidden" style={RADIAL_GROUND}>
-      <BrandBar />
       {view && releases.length === 0 ? (
         <Box absolute left={64} top={190}>
           <Text variant="bodyTv" color="textDim">
@@ -49,7 +48,6 @@ export function TvReleases() {
 
       {release ? (
         <>
-          <VersionPicker releases={releases} picked={picked.version} onPick={pickVersion} />
           <Box absolute left={64} top={190} w={700}>
             <ReleaseHeading release={release} date={formatDay(release.date, locale)} />
             <ReleaseRowList rows={rows} picked={picked.row} onPick={pickRow} />
@@ -57,6 +55,11 @@ export function TvReleases() {
           {row ? <ReleasePane row={row} /> : null}
         </>
       ) : null}
+      <BrandBar>
+        {release ? (
+          <VersionPicker releases={releases} picked={picked.version} onPick={pickVersion} />
+        ) : null}
+      </BrandBar>
     </Box>
   );
 }
