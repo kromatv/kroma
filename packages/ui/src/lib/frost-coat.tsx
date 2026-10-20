@@ -9,7 +9,7 @@ import {
   styles,
 } from '#ui/core';
 import type { FrostBackdropProps } from '#ui/components/atoms/frost';
-import { BARE, type FrostCoat } from './frost-coat-types';
+import { BARE, type FrostCoat, type FrostReach } from './frost-coat-types';
 
 const sDefinition = styles({
   fill: { fill: true, pointerEvents: 'none', z: -1 },
@@ -23,8 +23,9 @@ export function frostCoat(
   tint: string | undefined,
   Backdrop: ComponentType<FrostBackdropProps> | null,
   scope: StyleScope,
+  reach: FrostReach,
 ): FrostCoat {
-  if (!Backdrop) return BARE;
+  if (!Backdrop || reach.layerOnly) return BARE;
   const corner = StyleSheet.flatten(surface)?.borderRadius;
   const s = resolveStyles(sDefinition, scope);
   return {

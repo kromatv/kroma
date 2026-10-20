@@ -9,6 +9,7 @@ import {
 } from '#ui/core';
 import { useKitSettings } from '#ui/lib/kit-settings';
 import { frostCoat } from '#ui/lib/frost-coat';
+import { useFrostLayer } from '#ui/lib/gl-frost/context';
 import { BARE, type FrostCoat } from '#ui/lib/frost-coat-types';
 import { mergeSlotProps } from '#ui/lib/slot';
 
@@ -49,9 +50,11 @@ const EMPTY: ViewStyle = {};
 function useFrostCoat(surface: StyleProp<ViewStyle>, options: FrostOptions = {}): FrostCoat {
   const scope = useStyleScope();
 
-  const { frost, frostEnabled } = useKitSettings();
+  const layer = useFrostLayer();
+  const { frost, frostEnabled, frostLayerOnly } = useKitSettings();
   const { on = true, amount = 12, tint } = options;
-  return frostEnabled && on ? frostCoat(surface, amount, tint, frost, scope) : BARE;
+  if (!(frostEnabled && on)) return BARE;
+  return frostCoat(surface, amount, tint, frost, scope, { layer, layerOnly: frostLayerOnly });
 }
 
 // The child declares its corner as a style or as <Box>'s `radius` shorthand,

@@ -5,6 +5,7 @@ import {
   colors,
   FocusScroll,
   FocusSlot,
+  FrostSource,
   Img,
   qualityTone,
   styles,
@@ -21,6 +22,7 @@ const VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 12%, transparent 68
 const VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 4%, transparent 60%)`;
 const FADE_FROM = 104;
 const VEIL = `${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`;
+const BACKDROP_POSITION = '50% 18%';
 
 /**
  * Shared chrome for the Film / Série detail screens: full-bleed backdrop,
@@ -60,7 +62,7 @@ export function TvDetailScaffold({
       <Img
         src={backdrop}
         background={tintGradient(posterColors(id))}
-        position="50% 18%"
+        position={BACKDROP_POSITION}
         fill
         opaque
       />
@@ -69,17 +71,25 @@ export function TvDetailScaffold({
   );
 
   return (
-    <Box fill overflow="hidden">
-      <Img
-        src={backdrop}
-        background={tintGradient(posterColors(id))}
-        position="50% 18%"
-        fill
-        layered
-        opaque
-      />
-      <Veil ramp={VEIL} />
-
+    <FrostSource
+      src={backdrop}
+      position={BACKDROP_POSITION}
+      veil={VEIL}
+      style={s.frame}
+      backdrop={
+        <>
+          <Img
+            src={backdrop}
+            background={tintGradient(posterColors(id))}
+            position={BACKDROP_POSITION}
+            fill
+            layered
+            opaque
+          />
+          <Veil ramp={VEIL} />
+        </>
+      }
+    >
       <TopFade style={s.scroll} inset={FADE_FROM} backdrop={backdropLayers}>
         <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
           <FocusSlot>
@@ -119,11 +129,12 @@ export function TvDetailScaffold({
           {children}
         </FocusScroll>
       </TopFade>
-    </Box>
+    </FrostSource>
   );
 }
 
 const sDefinition = styles({
+  frame: { fill: true, overflow: 'hidden' },
   titleGap: { mt: 14, mb: 16 },
   // clamp(46px, 7.6vh, 86px) resolves to 82px on the fixed 1080-tall stage.
   title: {
