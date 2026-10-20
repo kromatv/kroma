@@ -26,7 +26,8 @@ lanes ─┬─ checks (typecheck + lint)                     code
        ├─ build {web, site, tizen, webos, tv-native}    fleet
        ├─ android (Kotlin compile)                      android
        ├─ desktop (cargo check, Linux mpv path)         desktop
-       ├─ rust (clippy, llvm-cov tests → lcov)          rust
+       ├─ rust (server) ┐                               rust
+       ├─ rust (modules n) ┴─ rust (one lcov)           rust
        └─ sonar ◄── test-report + rust                  SONAR_TOKEN present
 ```
 
@@ -36,8 +37,10 @@ docs-only pull request passes in a minute without building anything.
 
 `lanes` lists the changed files through the GitHub API (pull request files, or
 the push's compare) and matches them against `packages/ci-tools/src/lanes.ts`.
-A change under `.github/workflows`, `.github/scripts` or `packages/ci-tools`
-opens every lane; so does a push with no parent or a manual run.
+A change to `.github/workflows/ci.yml` or `packages/ci-tools` opens every lane;
+so does a push with no parent or a manual run. Another workflow, or a script
+only a release workflow calls, cannot change what CI checks: it is linted as
+code and builds nothing (`synology.yml` reaches the synology lane).
 
 `bun run typecheck` is `ci typecheck`: every workspace's own script, one per
 core at a time. `bun run --filter '*'` starts all thirty-seven at once, and
@@ -49,10 +52,16 @@ the blobs into one `coverage/lcov.info` and one summary. The shards are not
 required checks; the merge is, so a shard that never ran cannot pass as a
 green run.
 
-The Rust job runs clippy and then every test under `cargo llvm-cov`, across
-the server workspace and each module's, and leaves `server/lcov.info`. One
-cache entry (`rust`) holds the check artifacts and the instrumented build; it
-saves from `main` only. `CARGO_PROFILE_DEV_DEBUG=0` keeps it near 1.7 GB.
+Rust runs clippy and then every test under `cargo llvm-cov`, but only for the
+workspaces a change can reach. `lanes` reads the path dependencies between the
+server workspace and each module's from their `Cargo.toml` files: a module
+change runs that module and whatever links it, a server change runs every
+workspace, since every module links the server's crates. The workspaces then
+split into parallel `Rust (...)` jobs, the server on its own and the modules in
+groups of five, each with its own cache entry saved from `main` only
+(`CARGO_PROFILE_DEV_DEBUG=0` keeps each near 1.7 GB). `bun run ci rust test
+--only <id,id>` runs the same on a laptop. The required **Rust** check waits for
+every job and joins their coverage into `server/lcov.info`.
 
 Sonar reads the two lcov files the gates produced. Nothing runs twice. Rust
 coverage is absent on a change that touched no Rust, which is fine: the

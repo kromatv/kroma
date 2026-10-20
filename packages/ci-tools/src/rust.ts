@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { $ } from 'bun';
 import { summary } from './actions';
 import { root } from './root';
+import { parseArgs } from 'node:util';
 import { featured, on, SERVER, type Workspace, workspaces } from './rust-workspaces';
 
 const env = (ws: Workspace) => ({
@@ -28,19 +29,33 @@ async function each(
 
 const scope = (ws: Workspace) => (ws === SERVER ? ['--workspace'] : []);
 
-async function clippy(): Promise<void> {
-  await each('clippy', (ws) => ['clippy', ...scope(ws), '--all-targets']);
+async function clippy(list: Workspace[]): Promise<void> {
+  await each('clippy', (ws) => ['clippy', ...scope(ws), '--all-targets'], list);
   await each(
     'clippy with features',
     (ws) => ['clippy', ...scope(ws), '--all-targets', ...on(ws)],
-    featured(),
+    withFeatures(list),
   );
 }
 
-async function test(): Promise<void> {
+const withFeatures = (list: Workspace[]) =>
+  featured().filter((ws) => list.some((chosen) => chosen.id === ws.id));
+
+function chosen(only: string | undefined): Workspace[] {
+  const all = workspaces();
+  if (!only) return all;
+  const ids = only
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const unknown = ids.filter((id) => !all.some((ws) => ws.id === id));
+  if (unknown.length > 0) throw new Error(`unknown workspace(s): ${unknown.join(', ')}`);
+  return all.filter((ws) => ids.includes(ws.id));
+}
+
+async function test(list: Workspace[]): Promise<void> {
   const report = join(root, 'server/lcov.info');
   rmSync(report, { force: true });
-  const list = workspaces();
   const partial = (ws: Workspace) => join(ws.dir, 'lcov.part.info');
   const featuredPartial = (ws: Workspace) => join(ws.dir, 'lcov.features.info');
   await each(
@@ -51,9 +66,9 @@ async function test(): Promise<void> {
   await each(
     'test with features',
     (ws) => ['llvm-cov', ...scope(ws), ...on(ws), '--lcov', '--output-path', featuredPartial(ws)],
-    featured(),
+    withFeatures(list),
   );
-  const measured = [...list.map(partial), ...featured().map(featuredPartial)].filter((at) =>
+  const measured = [...list.map(partial), ...withFeatures(list).map(featuredPartial)].filter((at) =>
     existsSync(at),
   );
   writeFileSync(report, measured.map((at) => readFileSync(at, 'utf8')).join('\n'));
@@ -66,8 +81,14 @@ async function test(): Promise<void> {
 }
 
 export async function main(argv: string[]): Promise<void> {
-  const [verb] = argv;
-  if (verb === 'clippy') return clippy();
-  if (verb === 'test') return test();
-  throw new Error(`usage: bun run ci rust <clippy|test>`);
+  const { values, positionals } = parseArgs({
+    args: argv,
+    allowPositionals: true,
+    options: { only: { type: 'string' } },
+  });
+  const [verb] = positionals;
+  const list = chosen(values.only);
+  if (verb === 'clippy') return clippy(list);
+  if (verb === 'test') return test(list);
+  throw new Error(`usage: bun run ci rust <clippy|test> [--only id,id]`);
 }
