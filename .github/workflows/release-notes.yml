@@ -1,8 +1,8 @@
 name: Release notes
 
 # Drafts releases/<version>/{en,fr}.md for the version main is heading for and
-# opens a pull request with them, marked `"draft": true` so the server leaves
-# them out until a person has read them. Claude writes the draft from the
+# pushes them as a branch, linked from the run summary, marked `"draft": true`
+# so the server leaves them out until a person has read them. Claude writes the draft from the
 # release-notes skill, docs/release-notes.md and every PR since the last tag,
 # authenticated by workload identity federation, which only answers a run on
 # main; anywhere else, or when Claude cannot be reached, the draft is the
@@ -34,7 +34,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # push the draft branch
-      pull-requests: write # open its pull request
       id-token: write # federate to Claude
     timeout-minutes: 15
     env:
