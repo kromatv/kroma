@@ -36,7 +36,13 @@ VERSION="$(tr -d '[:space:]' < "$dir/candidate-version.txt")"
 # Already released is a conflict only for a different commit: deploy-release.sh
 # reuses the tag and re-uploads with --clobber, so re-promoting the same one is
 # a no-op rather than a wasted version number.
-if released_sha=$(gh release view "v$VERSION" --json targetCommitish --jq '.targetCommitish' 2>/dev/null); then
+if released=$(gh release view "v$VERSION" --json targetCommitish,isPrerelease --jq '"\(.targetCommitish) \(.isPrerelease)"' 2>/dev/null); then
+  released_sha="${released% *}"
+  if [[ "$released_sha" != "$SHA" && "${released#* }" == "true" ]]; then
+    echo "::error::v$VERSION is a prerelease of $released_sha, not $SHA, and release tags cannot move."
+    echo "Delete the v$VERSION prerelease and its tag first (lift the 'release tags are immutable' rule for it), then promote again."
+    exit 1
+  fi
   if [[ "$released_sha" != "$SHA" ]]; then
     echo "::error::v$VERSION is already released from $released_sha, not $SHA."
     echo "Promote the newer run, or land a feat or fix so main computes the next version."
