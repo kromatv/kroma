@@ -29,21 +29,7 @@ pub fn build(
             .map(char::from)
             .collect()
     };
-    let supervisor = Supervisor::new(SupervisorConfig {
-        modules_dir: config.data_dir.join("modules"),
-        core_url: format!("http://127.0.0.1:{}", config.port),
-        host_token,
-        db_path: config.db_path(),
-        data_dir: config.data_dir.clone(),
-        // An in-core backend can't be shadowed by an installed `.kmod` of the
-        // same id (two live backends); sidecar-only modules are not reserved.
-        reserved_ids: kroma_module_kernel::backend_ids(),
-        server_version: crate::VERSION.to_string(),
-        log_line: Some(Arc::new(|id: &str, line: &str| {
-            println!("[{id}] {line}");
-            infra::logbuf::LOG_BUFFER.push_module_line(id, line);
-        })),
-    });
+    let supervisor = Supervisor::new(supervisor_config(&config, host_token));
 
     let mut services: std::collections::HashMap<
         std::any::TypeId,
@@ -110,4 +96,48 @@ fn point(resolve: &state::Contributions, name: &'static str) -> kroma_module_hos
         let found = resolve(name).into_iter().next()?;
         Some((found.base_url, found.token))
     })
+}
+
+fn supervisor_config(config: &Config, host_token: String) -> SupervisorConfig {
+    SupervisorConfig {
+        modules_dir: config.data_dir.join("modules"),
+        core_url: format!("http://127.0.0.1:{}", config.port),
+        host_token,
+        db_path: config.db_path(),
+        data_dir: config.data_dir.clone(),
+        // An in-core backend can't be shadowed by an installed `.kmod` of the
+        // same id (two live backends); sidecar-only modules are not reserved.
+        reserved_ids: kroma_module_kernel::backend_ids(),
+        server_version: crate::VERSION.to_string(),
+        log_line: Some(Arc::new(|id: &str, line: &str| {
+            println!("[{id}] {line}");
+            infra::logbuf::LOG_BUFFER.push_module_line(id, line);
+        })),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_module_is_checked_against_the_version_this_binary_reports() {
+        let config = Config::default();
+
+        let supervisor = supervisor_config(&config, "token".into());
+
+        assert_eq!(supervisor.server_version, crate::VERSION);
+    }
+
+    #[test]
+    fn a_module_s_output_reaches_the_log_viewer_under_its_id() {
+        let supervisor = supervisor_config(&Config::default(), "token".into());
+
+        (supervisor.log_line.expect("a log sink"))("tv.kroma.state-test", "hello");
+
+        assert!(infra::logbuf::LOG_BUFFER
+            .sources()
+            .iter()
+            .any(|source| source.contains("tv.kroma.state-test")));
+    }
 }
