@@ -9,6 +9,7 @@ import {
   FocusScroll,
   gradient,
   SplashBackdrop,
+  TopFade,
   type SplashCover,
   space,
   styles,
@@ -25,6 +26,7 @@ import { ARTWORK_SCALE, useArtworkPref, useStoredPref } from '#tv/app/settings/s
 // Wide enough to stay sharp on a 1080p panel under the veil, and the widest
 // rendition the server makes. The kit's own home backdrop asks for the same.
 const SPLASH_W = 960;
+const BACK_BOTTOM = 96;
 
 export const RADIAL_GROUND = gradient(
   `radial-gradient(120% 90% at 50% 0%, #15131C, ${colors.bg} 68%)`,
@@ -141,9 +143,11 @@ export function AuthScreen({ children }: Readonly<{ children: ReactNode }>) {
           <BackButton onPress={nav.back} label={t('common.back')} />
         </Box>
       ) : null}
-      <FocusScroll style={s.scroll} contentStyle={s.content}>
-        {children}
-      </FocusScroll>
+      <TopFade inset={BACK_BOTTOM}>
+        <FocusScroll style={s.scroll} contentStyle={s.content}>
+          {children}
+        </FocusScroll>
+      </TopFade>
       <BeaconMark />
     </Box>
   );

@@ -16,18 +16,33 @@ const VEIL_VERTICAL = `linear-gradient(0deg, ${SHADE.full} 0%, ${shade(0.78)} 30
  * a veil so the poster grid stays legible. Renders at `zIndex: -1` under the
  * screen's own content. */
 export function AmbientBackdrop({ entry }: Readonly<{ entry: CatalogEntry | null }>) {
-  const client = useClient();
-  const settled = useSettledValue(entry, SETTLE_MS);
+  const src = useAmbientSrc(entry);
   return (
     <Box fill z={-1} overflow="hidden" pointerEvents="none" accessibilityElementsHidden>
-      <AmbientArt src={entryBackdrop(client, settled)} />
+      <AmbientArt src={src} layered />
       <Veil ramp={VEIL} />
     </Box>
   );
 }
 
-function AmbientArtImpl({ src }: Readonly<{ src: string | null }>) {
-  return <Img src={src} position="50% 20%" duration={FADE_MS} fill layered />;
+/** The art and veil of {@link AmbientBackdrop} on no layer of their own, for a copy drawn inside a masked one. */
+export function AmbientLayers({ entry }: Readonly<{ entry: CatalogEntry | null }>) {
+  const src = useAmbientSrc(entry);
+  return (
+    <>
+      <AmbientArt src={src} layered={false} />
+      <Veil ramp={VEIL} />
+    </>
+  );
+}
+
+function useAmbientSrc(entry: CatalogEntry | null): string | null {
+  const client = useClient();
+  return entryBackdrop(client, useSettledValue(entry, SETTLE_MS));
+}
+
+function AmbientArtImpl({ src, layered }: Readonly<{ src: string | null; layered: boolean }>) {
+  return <Img src={src} position="50% 20%" duration={FADE_MS} fill layered={layered} />;
 }
 
 const AmbientArt = memo(AmbientArtImpl);

@@ -17,6 +17,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
 import { IMG_FADE_MS, Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
+import { Veil } from '#ui/components/atoms/veil';
 import { styles, WHEEL_COLORS } from '#ui/core';
 import { gradient, promote } from '#ui/lib/css';
 import { prefetchImage } from '#ui/lib/prefetch-image';
@@ -32,14 +33,11 @@ const FADE_MS = 2800;
 // a vertical veil that seats the frame top and bottom, and a radial one that
 // sinks the middle, where the form is. Two layers rather than one
 // comma-separated background, which React Native's gradients cannot express;
-// each is promoted so a full-screen gradient is rasterised once.
+// the veil is a stretched <Veil> bitmap and the radial one is promoted, so
+// neither full-screen gradient is rasterised more than once.
+const VEIL =
+  'linear-gradient(180deg, rgba(8, 8, 10, 0.86) 0%, rgba(8, 8, 10, 0.5) 20%, rgba(8, 8, 10, 0.3) 38%, rgba(8, 8, 10, 0.72) 62%, rgba(8, 8, 10, 0.97) 88%)';
 const layersDefinition = styles({
-  veil: {
-    ...gradient(
-      'linear-gradient(180deg, rgba(8, 8, 10, 0.86) 0%, rgba(8, 8, 10, 0.5) 20%, rgba(8, 8, 10, 0.3) 38%, rgba(8, 8, 10, 0.72) 62%, rgba(8, 8, 10, 0.97) 88%)',
-    ),
-    ...promote(),
-  },
   vignette: {
     ...gradient(
       'radial-gradient(58% 46% at 50% 50%, rgba(8, 8, 10, 0.72) 0%, rgba(8, 8, 10, 0.34) 58%, rgba(8, 8, 10, 0) 100%)',
@@ -179,7 +177,7 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
           ms={ms}
           fadeMs={slide === 0 ? IMG_FADE_MS : FADE_MS}
         />
-        <Box fill style={layers.veil} />
+        <Veil ramp={VEIL} />
         <Box fill style={layers.vignette} />
         <Box absolute left={0} right={0} bottom={0} h={FOOT_H} style={layers.foot} />
         <Box absolute left={0} right={0} bottom={0} h={RULE_H} row>

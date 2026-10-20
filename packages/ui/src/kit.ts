@@ -78,6 +78,8 @@ export { classes } from './lib/classed';
 export type { Rect } from './lib/cover-rect';
 export { coverRect, parsePosition } from './lib/cover-rect';
 export { backdropBlur, bgPosition, bgSize, gradient, promote } from './lib/css';
+export { TopFade } from './lib/top-fade';
+export { TopFadeBand } from './lib/top-fade-band';
 export { ARROW, HAND } from './lib/cursor';
 // The one sanctioned way to ask for the DOM from shared code (null on a TV).
 export { webDocument, webWindow } from './lib/dom';
