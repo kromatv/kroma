@@ -16,7 +16,7 @@ use super::registries;
 use crate::state::SharedState;
 
 // This server's version, checked against each entry's `engines.server` range.
-pub(super) const SERVER_VERSION: &str = env!("KROMA_VERSION");
+pub(super) const SERVER_VERSION: &str = crate::VERSION;
 
 pub(super) struct Planned<'a> {
     pub entry: &'a CatalogModule,

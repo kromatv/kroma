@@ -3,19 +3,10 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { setOutput } from './actions';
 import { prependSection, renderSection } from './changelog';
-import { commitsSince, lastStable } from './history';
-import { nextVersion } from './next-version';
+import { heading } from './history';
 import { root } from './root';
 
 const CHANGELOG = join(root, 'CHANGELOG.md');
-const CARGO_TOML = join(root, 'server/Cargo.toml');
-const PACKAGE_VERSION = /^(version\s*=\s*")[^"]+(")/m;
-
-/** `server/Cargo.toml` with its package version set to `version`. */
-export function stampCargo(toml: string, version: string): string {
-  if (!PACKAGE_VERSION.test(toml)) throw new Error('server/Cargo.toml carries no version');
-  return toml.replace(PACKAGE_VERSION, `$1${version}$2`);
-}
 
 export function main(argv: string[]): void {
   const { values } = parseArgs({
@@ -28,16 +19,16 @@ export function main(argv: string[]): void {
       write: { type: 'boolean', default: false },
     },
   });
-  const last = lastStable(values.to, values.version);
-  const commits = commitsSince(last ? `v${last}` : null, values.to);
-  const version = values.version ?? (last ? nextVersion(last, commits) : null);
+  const { last, commits, version: next } = heading(values.to, values.version);
+  const version = values.version ?? (next !== last ? next : null);
   if (!version) throw new Error(`nothing releasable since v${last}`);
   const section = renderSection(version, values.date, commits);
   if (values.out) writeFileSync(values.out, `${section}\n`);
   if (values.write) {
     const current = existsSync(CHANGELOG) ? readFileSync(CHANGELOG, 'utf8') : '';
+    if (current.includes(`\n## ${version} (`))
+      throw new Error(`CHANGELOG.md already has ${version}`);
     writeFileSync(CHANGELOG, prependSection(current, section));
-    writeFileSync(CARGO_TOML, stampCargo(readFileSync(CARGO_TOML, 'utf8'), version));
   }
   setOutput('version', version);
   console.log(section);

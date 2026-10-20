@@ -8,27 +8,17 @@ const context = (over: Partial<Context>): Context => ({
   refType: 'branch',
   refName: 'main',
   input: undefined,
-  manifestVersion: '0.1.39',
-  nextVersion: null,
+  heading: '0.1.39',
   now: NOW,
   ...over,
 });
 
 describe('resolveVersion', () => {
-  it('builds a push to main as a candidate of the version its commits make', () => {
-    const resolved = resolveVersion(context({ nextVersion: '0.1.40' }));
+  it('builds a push to main as a candidate of the version it is heading for', () => {
+    const resolved = resolveVersion(context({ heading: '0.1.40' }));
 
     expect(resolved).toMatchObject({ version: '0.1.40', triplet: '0.1.40', channel: 'candidate' });
     expect(resolved.canary).toBe(`0.1.40-canary.${buildNumber(NOW)}`);
-  });
-
-  it('builds a push to main with nothing releasable as the version main is on', () => {
-    const resolved = resolveVersion(context({}));
-
-    expect(resolved.version).toBe('0.1.39');
-    expect(resolved.triplet).toBe('0.1.39');
-    expect(resolved.channel).toBe('candidate');
-    expect(resolved.canary).toBe(`0.1.39-canary.${buildNumber(NOW)}`);
   });
 
   it('releases a tag push as stable, stamped with the tag', () => {

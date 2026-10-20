@@ -38,7 +38,7 @@ pub fn build(
         // An in-core backend can't be shadowed by an installed `.kmod` of the
         // same id (two live backends); sidecar-only modules are not reserved.
         reserved_ids: kroma_module_kernel::backend_ids(),
-        server_version: env!("KROMA_VERSION").to_string(),
+        server_version: crate::VERSION.to_string(),
         log_line: Some(Arc::new(|id: &str, line: &str| {
             println!("[{id}] {line}");
             infra::logbuf::LOG_BUFFER.push_module_line(id, line);

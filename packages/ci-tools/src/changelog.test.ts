@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { prependSection, renderSection } from './changelog';
 import { type Commit, parseCommit } from './commits';
-import { stampCargo } from './changelog-command';
 
 const commits = (...subjects: string[]): Commit[] =>
   subjects.flatMap((subject) => parseCommit('0123456789abcdef', subject) ?? []);
@@ -45,16 +44,6 @@ describe('prependSection', () => {
   it('puts the new release above the older ones', () => {
     expect(prependSection('# Changelog\n\n## 0.1.40\n', '## 0.1.41')).toBe(
       '# Changelog\n\n## 0.1.41\n\n## 0.1.40\n',
-    );
-  });
-});
-
-describe('stampCargo', () => {
-  it('sets the package version and leaves dependency versions alone', () => {
-    const toml = '[package]\nversion = "0.1.39"\n\n[dependencies]\nserde = { version = "1" }\n';
-
-    expect(stampCargo(toml, '0.1.40')).toBe(
-      '[package]\nversion = "0.1.40"\n\n[dependencies]\nserde = { version = "1" }\n',
     );
   });
 });

@@ -26,11 +26,12 @@ gate="$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/jobs" --paginate \
 [[ "$gate" = "success" ]] \
   || { echo "::error::Candidate gate on run $RUN_ID is '${gate:-missing}', not success. Not promotable."; exit 1; }
 
-# The version that run stamped: what the commits up to that one make, the same
-# computation release.yml's version job ran, so it needs the full history.
-VERSION="$(GITHUB_OUTPUT='' bun packages/ci-tools/src/cli.ts changelog --to "$SHA" \
-  | sed -nE 's/^version=//p' | head -1)"
-[[ -n "$VERSION" ]] || { echo "::error::Could not compute a version at $SHA."; exit 1; }
+# The version that run stamped, as its version job recorded it.
+dir="$(mktemp -d)"
+gh run download "$RUN_ID" -n candidate-version -D "$dir" \
+  || { echo "::error::Run $RUN_ID recorded no candidate-version; it predates the computed version."; exit 1; }
+VERSION="$(tr -d '[:space:]' < "$dir/candidate-version.txt")"
+[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Run $RUN_ID recorded '$VERSION', not X.Y.Z."; exit 1; }
 
 # Already released is a conflict only for a different commit: deploy-release.sh
 # reuses the tag and re-uploads with --clobber, so re-promoting the same one is

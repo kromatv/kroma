@@ -110,7 +110,8 @@ concurrency:
 
 jobs:
   # One version for every artifact: the tag, the manual input, or what the
-  # commits since the last tag make, server/Cargo.toml when none is releasable. `triplet` is the sanitized x.y.z the TV stores
+  # commits since the last tag make (the last release when none is
+  # releasable). `triplet` is the sanitized x.y.z the TV stores
   # require (appinfo.json / config.xml reject suffixes); `build` is the one
   # monotonic build number every store-bound package in this run carries.
   # Also decides the channel: stable tag, candidate, or build-only.
@@ -130,6 +131,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
+          filter: blob:none
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
@@ -139,6 +141,15 @@ jobs:
         run: bun run ci version
         env:
           VERSION_INPUT: ${{ github.event.inputs.version }}
+      # deploy.yml promotes the version this run stamped, read back from here
+      # rather than worked out again once other tags may exist.
+      - name: Record the stamped version
+        run: echo "${{ steps.v.outputs.version }}" > candidate-version.txt
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: candidate-version
+          path: candidate-version.txt
+          retention-days: 90
 
   # NB: the Synology .spk + its GitHub Pages "package source" (stable + canary)
   # live in their own workflow, .github/workflows/synology.yml. So do the module

@@ -211,7 +211,7 @@ async fn platform(AuthUser(user): AuthUser) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
     Ok(Json(json!({
         "target": catalog::BUILD_TARGET,
-        "serverVersion": env!("KROMA_VERSION"),
+        "serverVersion": crate::VERSION,
     }))
     .into_response())
 }

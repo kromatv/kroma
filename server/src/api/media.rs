@@ -78,7 +78,7 @@ pub async fn health(
         status: "ok",
         name: is_lan.then(|| crate::services::settings::server_name(&state.settings)),
         instance_id: state.instance_id.clone(),
-        version: env!("KROMA_VERSION"),
+        version: crate::VERSION,
         ffprobe: state.ffprobe_available,
         libraries,
         items,
