@@ -14,7 +14,7 @@ pub fn announce(config: &Config) -> bool {
     // Only the binary knows the released version; the engine crate's own
     // CARGO_PKG_VERSION is a stale 0.1.0.
     kroma_engine::services::settings::set_build_info(
-        env!("CARGO_PKG_VERSION"),
+        crate::VERSION,
         env!("KROMA_GIT_HASH"),
         env!("KROMA_BUILD_DATE"),
         env!("KROMA_BUILD_TARGET"),

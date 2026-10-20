@@ -6,6 +6,7 @@ const COMMANDS = {
   build: async (args: string[]) => (await import('./build')).main(args),
   version: async (args: string[]) => (await import('./version')).main(args),
   canary: async (args: string[]) => (await import('./canary-command')).main(args),
+  changelog: async (args: string[]) => (await import('./changelog-command')).main(args),
   cache: async (args: string[]) => (await import('./cache')).main(args),
   tools: async (args: string[]) => (await import('./tools')).main(args),
   sonar: async (args: string[]) => (await import('./sonar')).main(args),

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Tag the promoted commit and publish its Release from artifacts already built.
 #
-# Inputs (env): GH_TOKEN, GH_REPO, TAG, VERSION, SHA, PRERELEASE, and ./assets
-# holding every file to attach.
+# Inputs (env): GH_TOKEN, GH_REPO, TAG, VERSION, SHA, PRERELEASE, NOTES_FILE,
+# and ./assets holding every file to attach.
 set -euo pipefail
 
 # Recursive `-type f`: the desktop artifacts arrive in their own subfolders even
@@ -32,11 +32,12 @@ if ! gh release view "$TAG" >/dev/null 2>&1; then
   gh release create "$TAG" \
     --target "$SHA" \
     --title "KROMA $VERSION" \
-    --generate-notes \
+    --notes-file "$NOTES_FILE" \
     --draft >/dev/null
   echo "created draft release $TAG"
 fi
 
+gh release edit "$TAG" --notes-file "$NOTES_FILE" >/dev/null
 gh release upload "$TAG" "${files[@]}" --clobber
 echo "uploaded ${#files[@]} assets"
 
