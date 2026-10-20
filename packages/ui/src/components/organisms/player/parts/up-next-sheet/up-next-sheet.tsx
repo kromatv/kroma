@@ -1,5 +1,5 @@
 import type { Translate } from '@kromatv/i18n';
-import { memo, type ReactNode, type Ref, useMemo, useState } from 'react';
+import { memo, type ReactNode, type Ref, useDeferredValue, useMemo, useState } from 'react';
 import { Animated, Pressable, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Veil } from '#ui/components/atoms/veil';
@@ -127,6 +127,7 @@ function UpNextSheetBase({
   const [sheetHeight, setSheetHeight] = useState(() => Math.round(stageHeight * SHEET_FRACTION));
 
   const slide = useSheetSlide(open, parkOffset(sheetHeight));
+  const live = useDeferredValue(open);
 
   // An open sheet is an OVERLAY: it takes the remote from the screen behind it
   // (which is also what stops ▲ off the top row climbing out of the sheet), and
@@ -146,10 +147,10 @@ function UpNextSheetBase({
   // against it.
   const overhang = RING_ROOM + (((card ?? 0) * 9) / 16) * ((FOCUS_SCALE - 1) / 2);
   const headroom = overhang * 2;
-  if (!open && (!revealed || items.length === 0)) return null;
+  if (!open && !live && (!revealed || items.length === 0)) return null;
 
   const grouped = sections.length > 1;
-  const shown = open ? sections : peekSections(sections);
+  const shown = live ? sections : peekSections(sections);
 
   return (
     <>
@@ -173,12 +174,12 @@ function UpNextSheetBase({
         {/* One column, so ▲ off the top row reaches the header rather than
             leaving the sheet. `bridge={false}`: the screen's remote bridge is
             already listening, and a second would fire every press twice. */}
-        <SheetScope open={open}>
-          <SheetKeys handle={ref} open={open} onClose={onClose} />
+        <SheetScope open={live}>
+          <SheetKeys handle={ref} open={live} onClose={onClose} />
           <SheetHeader
-            open={open}
+            open={live}
             title={t('player.upNextTitle')}
-            onToggle={open ? onClose : onOpen}
+            onToggle={live ? onClose : onOpen}
           />
           <FocusScroll
             style={[s.list, TOP_FADE]}
@@ -212,8 +213,8 @@ function UpNextSheetBase({
                           key={it.id}
                           item={it}
                           width={card}
-                          interactive={open}
-                          autoFocus={open && sec.offset === 0 && r === 0 && c === 0}
+                          interactive={live}
+                          autoFocus={live && sec.offset === 0 && r === 0 && c === 0}
                           onActivate={onPlay}
                         />
                       ))}
