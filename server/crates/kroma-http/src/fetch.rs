@@ -20,6 +20,7 @@ pub struct Fetch {
     cookie_jar: Option<PathBuf>,
     digest: Option<(String, String)>,
     max_time_secs: u32,
+    max_bytes: Option<u64>,
     http2: bool,
 }
 
@@ -32,6 +33,7 @@ impl Default for Fetch {
             cookie_jar: None,
             digest: None,
             max_time_secs: 30,
+            max_bytes: None,
             http2: false,
         }
     }
@@ -51,6 +53,13 @@ impl Fetch {
         if !p.trim().is_empty() {
             self.socks5 = Some(p);
         }
+        self
+    }
+
+    /// Refuse a response body larger than `bytes`, so a third-party answer is
+    /// bounded before anything parses it.
+    pub fn max_bytes(mut self, bytes: u64) -> Self {
+        self.max_bytes = Some(bytes);
         self
     }
 
@@ -172,6 +181,9 @@ impl Fetch {
         // the status ourselves so error bodies (and 409 handshakes) stay readable.
         let mut config = String::from("silent\nshow-error\nlocation\n");
         config.push_str(&option_line("max-time", &self.max_time_secs.to_string()));
+        if let Some(bytes) = self.max_bytes {
+            config.push_str(&option_line("max-filesize", &bytes.to_string()));
+        }
         if self.http2 {
             config.push_str("http2\n");
         }
@@ -233,6 +245,15 @@ mod tests {
         assert!(config.contains(r#"max-time = "99""#), "{config}");
         assert!(config.contains(r#"cookie-jar = "/tmp/jar""#), "{config}");
         assert!(config.contains(r#"cookie = "/tmp/jar""#), "{config}");
+    }
+
+    #[test]
+    fn a_body_cap_reaches_curl_only_when_asked_for() {
+        assert!(Fetch::new()
+            .max_bytes(1024)
+            .base_config()
+            .contains(r#"max-filesize = "1024""#));
+        assert!(!Fetch::new().base_config().contains("max-filesize"));
     }
 
     #[test]

@@ -645,6 +645,7 @@
   "admin.upLimit": "Limite de débit montant",
   "admin.upLimitHint": "Bande passante réservée à la diffusion distante",
   "admin.updateAvailable": "KROMA {version} est disponible",
+  "admin.updateAvailableBuild": "La compilation {build} de KROMA {version} est disponible",
   "admin.updateAvailableDetail": "La mise à jour redémarre le serveur et coupe les lectures en cours. Faites une sauvegarde, puis choisissez un moment calme.",
   "admin.updateBackup": "Sauvegarder",
   "admin.updateChannel": "Canal de mise à jour",

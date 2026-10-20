@@ -1,6 +1,3 @@
-//! `update.check` asks the owner's channel whether a newer server exists. It
-//! only stores the answer: Admin shows it, and the owner decides when.
-
 use super::prelude::*;
 
 use crate::services::updates;

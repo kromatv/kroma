@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
-/** The newest build a channel offers. `build` is the CI build number, set on
- * the canary channel only. */
+/** The newest build a channel offers, with the CI build number its server
+ * package carries. `url` is always an https page. */
 export const UpdateRelease = z.object({
   version: z.string(),
   build: z.number().nullish(),
-  url: z.string(),
+  url: z.string().refine((url) => url.startsWith('https://')),
   publishedAt: z.string().nullish(),
 });
 export type UpdateRelease = z.infer<typeof UpdateRelease>;

@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 
-use super::Channel;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 pub(super) struct Release {
@@ -19,8 +19,8 @@ struct Asset {
     created_at: Option<String>,
 }
 
-/// The newest build a channel offers: its version, the CI build number when
-/// the feed carries one, and where to read about it.
+/// The newest build a channel offers: its version, the CI build number its
+/// server package carries, and where to read about it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Latest {
@@ -32,10 +32,17 @@ pub struct Latest {
 
 pub(super) fn stable(release: Release) -> Option<Latest> {
     let version = release.tag_name.strip_prefix('v')?.to_owned();
-    triplet(&version)?;
+    semver::Version::parse(&version).ok()?;
+    let build = release
+        .assets
+        .iter()
+        .filter_map(|asset| server_package(&asset.name))
+        .filter(|(packaged, _)| *packaged == version)
+        .map(|(_, build)| build)
+        .max();
     Some(Latest {
         version,
-        build: None,
+        build,
         url: release.html_url,
         published_at: release.published_at,
     })
@@ -55,35 +62,34 @@ pub(super) fn canary(release: Release) -> Option<Latest> {
                 published_at: asset.created_at,
             })
         })
-        .max_by_key(|latest| latest.build)
+        .max_by(|a, b| order(a, &b.version, b.build.unwrap_or(0)))
 }
 
 fn server_package(name: &str) -> Option<(String, u64)> {
-    let rest = name.strip_prefix("kroma-")?;
-    let stem = rest.strip_suffix(".spk")?;
+    let stem = name.strip_prefix("kroma-")?.strip_suffix(".spk")?;
     let (versioned, _arch) = stem.rsplit_once('-')?;
     let (version, build) = versioned.rsplit_once('.')?;
-    triplet(version)?;
+    semver::Version::parse(version).ok()?;
     Some((version.to_owned(), build.parse().ok()?))
 }
 
-fn triplet(version: &str) -> Option<(u64, u64, u64)> {
-    let base = version.split(['-', '+']).next()?;
-    let mut parts = base.split('.').map(|p| p.parse::<u64>().ok());
-    let found = (parts.next()??, parts.next()??, parts.next()??);
-    parts.next().is_none().then_some(found)
+fn order(latest: &Latest, version: &str, build: u64) -> Ordering {
+    let (Ok(theirs), Ok(ours)) = (
+        semver::Version::parse(&latest.version),
+        semver::Version::parse(version),
+    ) else {
+        return Ordering::Equal;
+    };
+    theirs.cmp(&ours).then_with(|| match latest.build {
+        Some(theirs) if build > 0 => theirs.cmp(&build),
+        _ => Ordering::Equal,
+    })
 }
 
-/// Whether `latest` is newer than the running `version` built as `build`: by
-/// version on the stable channel, by build number on the canary one, where
-/// every build shares the version it is heading for. A local build (number 0)
-/// is never behind a canary.
-pub fn is_newer(channel: Channel, latest: &Latest, version: &str, build: u64) -> bool {
-    match channel {
-        Channel::Stable => match (triplet(&latest.version), triplet(version)) {
-            (Some(theirs), Some(ours)) => theirs > ours,
-            _ => false,
-        },
-        Channel::Canary => build > 0 && latest.build.is_some_and(|theirs| theirs > build),
-    }
+/// Whether `latest` is newer than the running `version` built as `build`:
+/// by version first, then, for the same version, by CI build number, so an
+/// earlier build of a version hears that a later one shipped. A local build
+/// (number 0) is only ever behind a higher version.
+pub fn is_newer(latest: &Latest, version: &str, build: u64) -> bool {
+    order(latest, version, build) == Ordering::Greater
 }

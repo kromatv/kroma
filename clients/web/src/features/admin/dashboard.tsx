@@ -59,10 +59,12 @@ export function DashboardScreen() {
         </PageHeader.Actions>
       </PageHeader.Root>
 
-      <Box mt={24} gap={12}>
-        {canManageSettings ? <UpdateCallout /> : null}
-        {canManageLibrary ? <MissingCallout /> : null}
-      </Box>
+      {canManageSettings ? <UpdateCallout /> : null}
+      {canManageLibrary ? (
+        <Box mt={24}>
+          <MissingCallout />
+        </Box>
+      ) : null}
 
       <Section.Root mt={28}>
         <Section.Header>
