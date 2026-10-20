@@ -16,6 +16,14 @@ describe('releaseSystem', () => {
     expect(system.indexOf('You have no tools')).toBeLessThan(system.indexOf('SKILL'));
   });
 
+  it('adds the writing rules the drafts kept breaking, after the skill they refine', () => {
+    const system = releaseSystem(sources);
+
+    expect(system.indexOf('<writing_rules>')).toBeGreaterThan(system.indexOf('UNSLOP'));
+    expect(system).toContain('`nav.films` is Movies in English, Films in');
+    expect(system).toContain('`#123:`');
+  });
+
   it('carries the rules, the voice and the catalog, each in its own tag', () => {
     const system = releaseSystem(sources);
 
