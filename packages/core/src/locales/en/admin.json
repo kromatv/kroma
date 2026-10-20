@@ -656,6 +656,7 @@
   "admin.upLimit": "Upstream rate limit",
   "admin.upLimitHint": "Bandwidth reserved for remote streaming",
   "admin.updateAvailable": "KROMA {version} is available",
+  "admin.updateAvailableBuild": "KROMA {version}, build {build}, is available",
   "admin.updateAvailableDetail": "Updating restarts the server and stops every stream in progress. Back up first, then pick a quiet moment.",
   "admin.updateBackup": "Back up",
   "admin.updateChannel": "Update channel",

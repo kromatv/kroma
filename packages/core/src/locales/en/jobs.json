@@ -82,5 +82,7 @@
   "jobs.trigger.chain": "chained",
   "jobs.trigger.manual": "manual",
   "jobs.trigger.schedule": "scheduled",
-  "jobs.trigger.watch": "file change"
+  "jobs.trigger.watch": "file change",
+  "jobs.update.check.desc": "Asks GitHub every six hours whether a newer KROMA is out on the update channel chosen in General, unless update checks are off. It only reports: nothing is downloaded or installed.",
+  "jobs.update.check.name": "Update check"
 }

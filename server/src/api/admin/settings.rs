@@ -80,9 +80,19 @@ pub async fn put_settings(
     if written.iter().any(|k| k == settings::stats::ENABLED_KEY) {
         settings::stats::ensure_identity(&state.settings, &state.db);
     }
-    if written.iter().any(|k| k == crate::services::updates::CHANNEL_KEY) {
+    if written
+        .iter()
+        .any(|k| k == crate::services::updates::CHANNEL_KEY)
+        && state
+            .settings
+            .get_bool(crate::services::updates::AUTO_KEY, true)
+    {
         let state = state.clone();
-        tokio::task::spawn_blocking(move || crate::services::updates::check(&state));
+        tokio::task::spawn_blocking(move || {
+            if let Err(error) = crate::services::updates::check(&state) {
+                tracing::warn!(%error, "the update check after a channel change failed");
+            }
+        });
     }
     state.events.publish(ServerEvent::SettingsUpdated);
     Ok(Json(json!({ "updated": written })).into_response())

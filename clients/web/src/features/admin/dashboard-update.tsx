@@ -1,5 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { Button, Callout } from '@kromatv/ui/kit';
+import { Box, Button, Callout } from '@kromatv/ui/kit';
 import { Linking } from 'react-native';
 import { usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
@@ -13,22 +13,28 @@ export function UpdateCallout() {
   const { data } = usePoll(['admin', 'updates'], () => client.admin.updates(), UPDATES_POLL_MS);
   const latest = data?.latest;
   if (!data?.available || !latest) return null;
+  const title =
+    latest.version === data.version && latest.build
+      ? t('admin.updateAvailableBuild', { version: latest.version, build: String(latest.build) })
+      : t('admin.updateAvailable', { version: latest.version });
 
   return (
-    <Callout.Root tone="accent" icon="download">
-      <Callout.Title>{t('admin.updateAvailable', { version: latest.version })}</Callout.Title>
-      <Callout.Detail>{t('admin.updateAvailableDetail')}</Callout.Detail>
-      <Callout.Actions>
-        <Button variant="glass" size="sm" label={t('admin.updateBackup')} asChild>
-          <RouteLink to="/admin/backup" />
-        </Button>
-        <Button
-          variant="glass"
-          size="sm"
-          label={t('admin.updateNotes')}
-          onPress={() => Linking.openURL(latest.url)}
-        />
-      </Callout.Actions>
-    </Callout.Root>
+    <Box mt={24}>
+      <Callout.Root tone="accent" icon="download">
+        <Callout.Title>{title}</Callout.Title>
+        <Callout.Detail>{t('admin.updateAvailableDetail')}</Callout.Detail>
+        <Callout.Actions>
+          <Button variant="glass" size="sm" label={t('admin.updateBackup')} asChild>
+            <RouteLink to="/admin/backup" />
+          </Button>
+          <Button
+            variant="glass"
+            size="sm"
+            label={t('admin.updateNotes')}
+            onPress={() => void Linking.openURL(latest.url).catch(() => undefined)}
+          />
+        </Callout.Actions>
+      </Callout.Root>
+    </Box>
   );
 }
