@@ -19,7 +19,6 @@ const UNIT_FAILSAFE = keyframes('kroma-unit-failsafe', [
 
 const FADE_UNIT = [
   rule(UNIT, {
-    willChange: 'opacity',
     transitionProperty: 'opacity',
     transitionDuration: '400ms',
     transitionTimingFunction: 'ease',
