@@ -194,9 +194,7 @@ impl DownloadManager {
             let Ok(Some(status)) = client.status(&row.client_ref) else {
                 continue;
             };
-            // A reseed is a remove/re-add, which RESETS the torrent to 0%, so
-            // only touch a grab with no progress, no peer and none ever seen.
-            if status.progress > 0.0 || status.peers > 0 || status.peers_seen > 0 {
+            if !status.is_stalled_at_start() {
                 continue;
             }
             // librqbit persists `<info_hash>.torrent`; client_ref is that hex.
