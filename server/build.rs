@@ -23,7 +23,6 @@ fn main() {
     println!("cargo:rustc-env=KROMA_BUILD_DATE={date}");
 
     let version = from_env("KROMA_VERSION")
-        .or_else(after_last_release)
         .unwrap_or_else(|| std::env::var("CARGO_PKG_VERSION").unwrap_or_default());
     println!("cargo:rustc-env=KROMA_VERSION={version}");
     let build = from_env("KROMA_BUILD").unwrap_or_else(|| "0".to_owned());
@@ -33,30 +32,6 @@ fn main() {
     println!("cargo:rerun-if-env-changed=KROMA_VERSION");
     println!("cargo:rerun-if-env-changed=KROMA_BUILD");
     println!("cargo:rerun-if-changed=../.git/HEAD");
-    println!("cargo:rerun-if-changed=../.git/refs/tags");
-    println!("cargo:rerun-if-changed=../.git/packed-refs");
-}
-
-fn after_last_release() -> Option<String> {
-    let tag = output(
-        "git",
-        &[
-            "describe",
-            "--tags",
-            "--abbrev=0",
-            "--match",
-            "v[0-9]*.[0-9]*.[0-9]*",
-            "--exclude",
-            "v*-*",
-        ],
-    )?;
-    let mut parts = tag.strip_prefix('v')?.split('.').map(str::parse::<u64>);
-    let (major, minor, patch) = (
-        parts.next()?.ok()?,
-        parts.next()?.ok()?,
-        parts.next()?.ok()?,
-    );
-    Some(format!("{major}.{minor}.{}", patch + 1))
 }
 
 fn from_env(key: &str) -> Option<String> {
