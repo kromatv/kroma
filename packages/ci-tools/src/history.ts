@@ -48,6 +48,9 @@ export function lastStable(to = 'HEAD', exclude?: string): string | null {
   }
 }
 
+/** The full sha `ref` names. */
+export const commitOf = (ref: string) => git('rev-parse', `${ref}^{commit}`).trim();
+
 /** Every conventional commit after `since` (a tag or sha) up to `to`, oldest first. */
 export function commitsSince(since: string | null, to = 'HEAD'): Commit[] {
   const range = since ? `${since}..${to}` : to;

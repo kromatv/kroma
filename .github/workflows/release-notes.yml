@@ -1,0 +1,67 @@
+name: Release notes
+
+# Drafts releases/<version>/{en,fr}.md for the version main is heading for and
+# opens a pull request with them, marked `"draft": true` so the server leaves
+# them out until a person has read them. Claude writes the draft from the
+# release-notes skill, docs/release-notes.md and every PR since the last tag,
+# authenticated by workload identity federation, which only answers a run on
+# main; anywhere else, or when Claude cannot be reached, the draft is the
+# commit subjects.
+#
+#   gh workflow run release-notes.yml
+#
+# Editing the draft and deleting `"draft": true` is what makes it a note.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to draft (X.Y.Z). Defaults to the computed next version.'
+        type: string
+        default: ''
+      force:
+        description: 'Replace an existing draft branch, edits and all.'
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-notes
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    name: Draft the notes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the draft branch
+      pull-requests: write # open its pull request
+      id-token: write # federate to Claude
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - name: Fetch the GitHub OIDC token for Claude
+        continue-on-error: true
+        run: |
+          curl -sSf -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" \
+            | jq -r .value > "$RUNNER_TEMP/anthropic-oidc"
+      - name: Draft and open the pull request
+        env:
+          ANTHROPIC_FEDERATION_RULE_ID: fdrl_01SKjkxdn6pfKsK4aQDajSRL
+          ANTHROPIC_ORGANIZATION_ID: 41981912-0a73-4832-b434-743ff1b4a4a8
+          ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01CV1EApwC5Lp2jSCRzyPpr8
+          ANTHROPIC_WORKSPACE_ID: wrkspc_016CYAvvxkS4fuLX2KuZAUHk
+          ANTHROPIC_IDENTITY_TOKEN_FILE: ${{ runner.temp }}/anthropic-oidc
+          VERSION_INPUT: ${{ inputs.version }}
+          FORCE: ${{ inputs.force }}
+        run: .github/scripts/draft-release-notes.sh
