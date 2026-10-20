@@ -1,9 +1,10 @@
 import { type ReactNode, useState } from 'react';
 import type { LayoutChangeEvent, ViewStyle } from 'react-native';
 import { View } from 'react-native';
-import { maskImage } from '#ui/lib/css';
+import { colors } from '#ui/core/tokens';
+import { gradient, maskImage } from '#ui/lib/css';
 
-const RAMP = 48;
+const RAMP = 160;
 const FILL: ViewStyle = {
   position: 'absolute',
   top: 0,
@@ -12,10 +13,21 @@ const FILL: ViewStyle = {
   left: 0,
   pointerEvents: 'none',
 };
+const FADE = {
+  transitionProperty: 'opacity',
+  transitionDuration: '200ms',
+  willChange: 'opacity',
+} as ViewStyle;
 
-/** A copy of the backdrop over the top edge: it hides scrolled content above `inset` and fades it back in over the next 48 px. Nothing on native, which has no mask. */
-export function TopFadeBand({ inset, children }: Readonly<{ inset: number; children: ReactNode }>) {
+/** A copy of the backdrop over the top edge: while `active`, it hides scrolled content above `inset` and fades it back in over the next 160 px. `offset` is how far below the backdrop's origin the band's parent sits; no `children` fades to the ground colour. Nothing on native, which has no mask. */
+export function TopFadeBand({
+  inset,
+  active,
+  offset = 0,
+  children,
+}: Readonly<{ inset: number; active: boolean; offset?: number; children?: ReactNode }>) {
   const [height, setHeight] = useState(0);
+  const ramp = `180deg, #000 ${inset}px, transparent ${inset + RAMP}px`;
   const band: ViewStyle = {
     position: 'absolute',
     top: 0,
@@ -24,13 +36,35 @@ export function TopFadeBand({ inset, children }: Readonly<{ inset: number; child
     height: inset + RAMP,
     overflow: 'hidden',
     pointerEvents: 'none',
-    ...maskImage(`linear-gradient(180deg, #000 ${inset}px, transparent ${inset + RAMP}px)`),
+    opacity: active ? 1 : 0,
+    ...FADE,
   };
+  if (!children) {
+    return (
+      <View
+        style={{
+          ...band,
+          ...gradient(
+            `linear-gradient(180deg, ${colors.bg} ${inset}px, transparent ${inset + RAMP}px)`,
+          ),
+        }}
+      />
+    );
+  }
   return (
     <View style={FILL} onLayout={(e: LayoutChangeEvent) => setHeight(e.nativeEvent.layout.height)}>
       {height > 0 ? (
-        <View style={band}>
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height }}>
+        <View style={{ ...band, ...maskImage(`linear-gradient(${ramp})`) }}>
+          <View
+            style={{
+              position: 'absolute',
+              top: -offset,
+              left: 0,
+              right: 0,
+              height: height + offset,
+              backgroundColor: colors.bg,
+            }}
+          >
             {children}
           </View>
         </View>

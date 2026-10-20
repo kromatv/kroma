@@ -17,6 +17,7 @@ import {
   styles,
   Text,
   tintGradient,
+  TopFade,
   useFocusNav,
   useStyles,
 } from '@kromatv/ui/kit';
@@ -51,23 +52,25 @@ export function TvGenres() {
       </Box>
 
       {genres.length ? (
-        <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
-          <Grid min={CARD_MIN} gap={GAP}>
-            {genres.map((g, index) => {
-              const pick = showcases.get(g.slug);
-              return (
-                <GenreCard
-                  autoFocus={index === 0}
-                  key={g.slug}
-                  genre={g}
-                  count={t('person.titleCount', { count: g.count })}
-                  backdrop={pick ? client.media.artwork.backdropFor(pick, CARD_MIN) : null}
-                  onSelect={openGenre}
-                />
-              );
-            })}
-          </Grid>
-        </FocusScroll>
+        <TopFade>
+          <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
+            <Grid min={CARD_MIN} gap={GAP}>
+              {genres.map((g, index) => {
+                const pick = showcases.get(g.slug);
+                return (
+                  <GenreCard
+                    autoFocus={index === 0}
+                    key={g.slug}
+                    genre={g}
+                    count={t('person.titleCount', { count: g.count })}
+                    backdrop={pick ? client.media.artwork.backdropFor(pick, CARD_MIN) : null}
+                    onSelect={openGenre}
+                  />
+                );
+              })}
+            </Grid>
+          </FocusScroll>
+        </TopFade>
       ) : (
         <Box flex center px={64}>
           <Text variant="leadTv" textAlign="center" maxW={640} color="textDim">

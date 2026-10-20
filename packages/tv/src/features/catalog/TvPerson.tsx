@@ -1,7 +1,7 @@
 import type { Metadata } from '@kromatv/client/media';
 import { creditsPerson, personInvolvement, posterColors, roleLabels } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Box, Text, useFocusNav } from '@kromatv/ui/kit';
+import { Box, Text, TopFade, useFocusNav } from '@kromatv/ui/kit';
 import { useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -82,7 +82,9 @@ export function TvPerson() {
       />
 
       {cards.length ? (
-        <PosterGrid cards={cards} />
+        <TopFade>
+          <PosterGrid cards={cards} />
+        </TopFade>
       ) : (
         <Box flex center px={64}>
           <Text style={EMPTY} color="textDim">

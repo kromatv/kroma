@@ -11,7 +11,7 @@ import {
   Text,
   typeSpec as textRoles,
   tintGradient,
-  TopFadeBand,
+  TopFade,
   useStyles,
   Veil,
 } from '@kromatv/ui/kit';
@@ -19,7 +19,7 @@ import type { ReactNode } from 'react';
 
 const VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 12%, transparent 68%)`;
 const VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 4%, transparent 60%)`;
-const FADE_FROM = 72;
+const FADE_FROM = 104;
 const VEIL = `${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`;
 
 /**
@@ -55,6 +55,18 @@ export function TvDetailScaffold({
   children: ReactNode;
 }>) {
   const s = useStyles(sDefinition);
+  const backdropLayers = (
+    <>
+      <Img
+        src={backdrop}
+        background={tintGradient(posterColors(id))}
+        position="50% 18%"
+        fill
+        opaque
+      />
+      <Veil ramp={VEIL} />
+    </>
+  );
 
   return (
     <Box fill overflow="hidden">
@@ -68,53 +80,45 @@ export function TvDetailScaffold({
       />
       <Veil ramp={VEIL} />
 
-      <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
-        <FocusSlot>
-          <Text variant="overlineTv" color="accentText">
-            {kind}
-          </Text>
-          <Text variant="hero" style={[s.title, s.titleGap]}>
-            {title}
-          </Text>
+      <TopFade style={s.scroll} inset={FADE_FROM} backdrop={backdropLayers}>
+        <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
+          <FocusSlot>
+            <Text variant="overlineTv" color="accentText">
+              {kind}
+            </Text>
+            <Text variant="hero" style={[s.title, s.titleGap]}>
+              {title}
+            </Text>
 
-          <Box row wrap align="center" gap={13} mb={18}>
-            {rating ? (
-              <>
-                <Text variant="strongTv" color="accentText">
-                  {`${rating.toFixed(1)}★`}
-                </Text>
-                <Text variant="labelTv" color="textDim">
-                  ·
-                </Text>
-              </>
+            <Box row wrap align="center" gap={13} mb={18}>
+              {rating ? (
+                <>
+                  <Text variant="strongTv" color="accentText">
+                    {`${rating.toFixed(1)}★`}
+                  </Text>
+                  <Text variant="labelTv" color="textDim">
+                    ·
+                  </Text>
+                </>
+              ) : null}
+              <Text variant="labelTv" color="textMuted">
+                {meta}
+              </Text>
+              {badge ? <Badge tone={qualityTone(badge)}>{badge}</Badge> : null}
+            </Box>
+
+            {overview ? (
+              <Text lines={3} variant="bodyTv" maxW={680} mb={26} color="text/82">
+                {overview}
+              </Text>
             ) : null}
-            <Text variant="labelTv" color="textMuted">
-              {meta}
-            </Text>
-            {badge ? <Badge tone={qualityTone(badge)}>{badge}</Badge> : null}
-          </Box>
 
-          {overview ? (
-            <Text lines={3} variant="bodyTv" maxW={680} mb={26} color="text/82">
-              {overview}
-            </Text>
-          ) : null}
+            {actions}
+          </FocusSlot>
 
-          {actions}
-        </FocusSlot>
-
-        {children}
-      </FocusScroll>
-      <TopFadeBand inset={FADE_FROM}>
-        <Img
-          src={backdrop}
-          background={tintGradient(posterColors(id))}
-          position="50% 18%"
-          fill
-          opaque
-        />
-        <Veil ramp={VEIL} />
-      </TopFadeBand>
+          {children}
+        </FocusScroll>
+      </TopFade>
     </Box>
   );
 }

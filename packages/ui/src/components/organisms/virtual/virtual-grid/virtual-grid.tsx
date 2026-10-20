@@ -8,7 +8,15 @@
 // runs the last tiles off the right edge.
 
 import { NavigatorNode, NavigatorView, type NodeHandle } from '@kromatv/spatial-nav/react';
-import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ReactElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Dimensions, type LayoutChangeEvent, View, type ViewStyle } from 'react-native';
 import { cellWidth, columnsFor } from '#ui/components/atoms/grid';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
@@ -18,6 +26,7 @@ import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { FocusReporter } from '#ui/lib/focus-report';
 import { usePerfSampler } from '#ui/lib/perf-provider';
+import { ScrolledReport } from '#ui/lib/scrolled-report';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { useTrailingRow } from '#ui/lib/trailing-row';
 import { GridRow } from './grid-row';
@@ -71,6 +80,7 @@ function VirtualGrid<T>({
   style,
   onEndReached,
   initialIndex,
+  onScrolledChange,
 }: Readonly<VirtualGridProps<T>>) {
   const clipStylesScoped = useStyles(clipStyles);
 
@@ -214,6 +224,12 @@ function VirtualGrid<T>({
   usePrefetchRows({ data, art, focusedRow, shown, metrics, columns: geometry.count, cell });
   const offset =
     fraction === null ? stripOffset(focusedRow, metrics) : freeOffset(fraction, metrics);
+  const scrolled = offset > 0;
+  const report = useContext(ScrolledReport);
+  const notify = onScrolledChange ?? report;
+  useEffect(() => {
+    notify?.(scrolled);
+  }, [scrolled, notify]);
   const mounted: ReactElement[] = [];
   for (let row = Math.max(shown.start, metrics.headerRows); row <= shown.end; row += 1) {
     mounted.push(
