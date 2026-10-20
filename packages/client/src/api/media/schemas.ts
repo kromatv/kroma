@@ -159,6 +159,7 @@ export const Health = z.object({
   libraries: z.number(),
   items: z.number(),
   shows: z.number(),
+  updateChannel: z.string().optional(),
 });
 export type Health = z.infer<typeof Health>;
 

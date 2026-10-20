@@ -1,21 +1,23 @@
-import { release } from 'virtual:kroma-releases';
 import { IconArrowUpRight, IconTag } from '@tabler/icons-react';
 import { formatMoment } from '#site/lib/day';
 import { useLang } from '#site/lib/i18n';
 import { m } from '#site/paraglide/messages';
+import { useDownloadChannel, useDownloadRelease } from '#site/components/download/channel';
 
 /**
  * Which release the buttons on this page hand over. Renders nothing when no
  * release was baked in, which off a production build means dev.
  */
 export function ReleaseSummary() {
+  const release = useDownloadRelease();
+  const channel = useDownloadChannel();
   const lang = useLang();
   if (!release) return null;
 
   return (
     <div className="mt-8">
       <p className="font-sans text-xs font-bold uppercase tracking-wider text-dim">
-        {m.download_release_eyebrow()}
+        {channel === 'canary' ? m.download_release_eyebrow_canary() : m.download_release_eyebrow()}
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
         <span className="inline-flex items-center gap-2.5 rounded-full border border-border bg-surface-1/60 py-1.5 pl-3 pr-4">
@@ -33,7 +35,7 @@ export function ReleaseSummary() {
           rel="noreferrer noopener"
           className="inline-flex items-center gap-1 font-medium text-accent-text transition-opacity hover:opacity-80"
         >
-          {m.download_release_notes()}
+          {channel === 'canary' ? m.download_release_notes_canary() : m.download_release_notes()}
           <IconArrowUpRight size={14} stroke={2} aria-hidden />
         </a>
       </div>

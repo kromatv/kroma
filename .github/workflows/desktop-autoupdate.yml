@@ -9,6 +9,10 @@ name: Desktop auto-update
 # that fails therefore leaves every app on the previous build instead of pointing
 # it at a 404 (which is what a delete-first ordering did for a day).
 #
+# The same build, dispatched by deploy.yml at the promoted commit with the
+# release's X.Y.Z, fills the rolling `desktop-stable` release instead. An app
+# reads the update channel of the server it is signed into and polls one feed.
+#
 # Path-filtered so unrelated commits (server, docs, other clients) don't trigger a
 # costly 3-OS build. Version is `<base>-<build>` (base from server/Cargo.toml, build
 # = minutes since 2020) so every run is a strictly-newer prerelease the updater picks
@@ -25,12 +29,27 @@ on:
       # The desktop frontend builds through @kromatv/bundler.
       - 'packages/bundler/**'
       - '.github/workflows/desktop-autoupdate.yml'
+  # deploy.yml dispatches the stable feed with the promoted commit and version.
   workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Feed to publish: canary (desktop-latest) or stable (desktop-stable).'
+        type: choice
+        options: [canary, stable]
+        default: canary
+      version:
+        description: 'Version for the stable feed (X.Y.Z). Ignored on canary.'
+        type: string
+        default: ''
+      ref:
+        description: 'Commit to build. Defaults to the dispatched ref.'
+        type: string
+        default: ''
 
-# One publish at a time; a newer push supersedes an in-flight build.
+# One publish per feed at a time; a newer push supersedes an in-flight canary.
 concurrency:
-  group: desktop-autoupdate
-  cancel-in-progress: true
+  group: desktop-autoupdate-${{ inputs.channel || 'canary' }}
+  cancel-in-progress: ${{ (inputs.channel || 'canary') == 'canary' }}
 
 jobs:
   version:
@@ -40,11 +59,14 @@ jobs:
     timeout-minutes: 5
     outputs:
       version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+      sha: ${{ steps.v.outputs.sha }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
           filter: blob:none
+          ref: ${{ inputs.ref || github.sha }}
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
@@ -57,9 +79,18 @@ jobs:
         env:
           BASE: ${{ steps.resolve.outputs.triplet }}
           BUILD: ${{ steps.resolve.outputs.build }}
+          CHANNEL: ${{ inputs.channel || 'canary' }}
+          STABLE: ${{ inputs.version }}
         run: |
-          echo "version=$BASE-$BUILD" >> "$GITHUB_OUTPUT"
-          echo "Desktop version: $BASE-$BUILD"
+          if [[ "$CHANNEL" == stable ]]; then
+            [[ "$STABLE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::stable needs an X.Y.Z version, got '$STABLE'"; exit 1; }
+            [[ -f clients/desktop/src-tauri/src/updater.rs ]] || { echo "::error::this commit's app still polls desktop-latest; promote a newer candidate"; exit 1; }
+            VERSION="$STABLE" TAG=desktop-stable
+          else
+            VERSION="$BASE-$BUILD" TAG=desktop-latest
+          fi
+          { echo "version=$VERSION"; echo "tag=$TAG"; echo "sha=$(git rev-parse HEAD)"; } >> "$GITHUB_OUTPUT"
+          echo "Desktop version: $VERSION on $TAG"
 
   create-release:
     needs: version
@@ -79,7 +110,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release delete desktop-latest-staging --cleanup-tag --yes || true
+          TAG: ${{ needs.version.outputs.tag }}
+        run: gh release delete "$TAG-staging" --cleanup-tag --yes || true
       - name: Create staging draft
         id: mk
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -89,12 +121,12 @@ jobs:
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: 'desktop-latest-staging',
+              tag_name: '${{ needs.version.outputs.tag }}-staging',
               name: 'KROMA desktop (auto-update)',
               body: `Rolling self-update build \`${{ needs.version.outputs.version }}\`.`,
               draft: true,
               prerelease: true,
-              target_commitish: context.sha,
+              target_commitish: '${{ needs.version.outputs.sha }}',
             });
             return data.id;
 
@@ -130,6 +162,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.version.outputs.sha }}
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
@@ -275,7 +309,7 @@ jobs:
           echo "patched latest.json: $(jq -rc '[.platforms | to_entries[] | select(.value.url == $u) | .key]' --arg u "$NEW_URL" latest.fixed.json) -> new asset"
 
   publish:
-    needs: [create-release, build]
+    needs: [version, create-release, build]
     permissions:
       contents: write # retire the old rolling release, publish the staged one
     runs-on: ubuntu-latest
@@ -288,7 +322,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release delete desktop-latest --cleanup-tag --yes || true
+          TAG: ${{ needs.version.outputs.tag }}
+        run: gh release delete "$TAG" --cleanup-tag --yes || true
       # Retag staging -> desktop-latest and publish, which is what mints the
       # tag and makes latest.json resolvable at the endpoint apps poll.
       - name: Publish the pre-release (serve latest.json)
@@ -299,7 +334,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: ${{ needs.create-release.outputs.release_id }},
-              tag_name: 'desktop-latest',
+              tag_name: '${{ needs.version.outputs.tag }}',
               draft: false,
               make_latest: 'false',
             });

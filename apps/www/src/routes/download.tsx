@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { AppPlatforms } from '#site/components/download/app-platforms';
+import { DownloadChannelProvider } from '#site/components/download/channel';
 import { Closing } from '#site/components/download/closing';
 import { DownloadHero } from '#site/components/download/hero';
 import { InstallStep } from '#site/components/download/install-step';
@@ -20,7 +21,7 @@ export const Route = createFileRoute('/download')({
 /** Shared with /fr/download, which renders this component under the French locale. */
 function Download() {
   return (
-    <>
+    <DownloadChannelProvider>
       <DownloadHero />
 
       <InstallStep
@@ -47,6 +48,6 @@ function Download() {
       </InstallStep>
 
       <Closing />
-    </>
+    </DownloadChannelProvider>
   );
 }

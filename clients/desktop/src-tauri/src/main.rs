@@ -16,6 +16,7 @@
 ))]
 #[allow(dead_code)]
 mod libmpv_shared;
+mod updater;
 
 // mpv binary IPC runtime (Linux): default backend, and the automatic fallback
 // when the in-process libmpv engine can't come up.
@@ -259,7 +260,8 @@ fn main() {
             webview_gpu::webview_boot_ok,
             video_hole::video_hole_set,
             app_quit,
-            app_relaunch
+            app_relaunch,
+            updater::update_install
         ]);
     }
     #[cfg(all(target_os = "macos", feature = "libmpv"))]
@@ -271,7 +273,8 @@ fn main() {
                 libmpv_mac::mpv_command,
                 libmpv_mac::set_now_playing,
                 app_quit,
-                app_relaunch
+                app_relaunch,
+                updater::update_install
             ]);
     }
     #[cfg(all(target_os = "windows", feature = "libmpv"))]
@@ -282,7 +285,8 @@ fn main() {
                 libmpv_win::mpv_load,
                 libmpv_win::mpv_command,
                 app_quit,
-                app_relaunch
+                app_relaunch,
+                updater::update_install
             ]);
     }
     // Remaining shells (macOS/Windows without libmpv) still need the app commands.
@@ -292,7 +296,11 @@ fn main() {
         all(target_os = "windows", feature = "libmpv")
     )))]
     {
-        builder = builder.invoke_handler(tauri::generate_handler![app_quit, app_relaunch]);
+        builder = builder.invoke_handler(tauri::generate_handler![
+            app_quit,
+            app_relaunch,
+            updater::update_install
+        ]);
     }
 
     // Self-update (all desktop OSes): checks the GitHub Release, verifies the

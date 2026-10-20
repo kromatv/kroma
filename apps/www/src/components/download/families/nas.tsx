@@ -1,4 +1,3 @@
-import { release } from 'virtual:kroma-releases';
 import { site } from '@kromatv/site-meta';
 import { IconInfoCircle, IconRefresh, IconServer, IconWorld } from '@tabler/icons-react';
 import { family } from '#site/components/download/families/meta';
@@ -7,8 +6,10 @@ import { PlatformFamily } from '#site/components/download/platform-family';
 import { Rich } from '#site/components/rich';
 import { downloadsFor } from '#site/lib/releases';
 import { m } from '#site/paraglide/messages';
+import { useDownloadRelease } from '#site/components/download/channel';
 
 export function NasFamily() {
+  const release = useDownloadRelease();
   return (
     <PlatformFamily
       meta={family('nas')}
