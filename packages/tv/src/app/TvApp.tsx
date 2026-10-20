@@ -146,7 +146,6 @@ export function TvApp({
     () => ({
       ...TV_KIT,
       ground: inheritedTheme ? undefined : ('dark' as const),
-      frostEnabled: false,
     }),
     [inheritedTheme],
   );
