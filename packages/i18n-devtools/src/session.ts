@@ -7,8 +7,8 @@ const MAX_CHARS = 512;
 const Session = z.object({
   open: z.boolean().default(false),
   editor: z.string().max(64).nullable().default(null),
-  x: z.number().finite().nullable().default(null),
-  y: z.number().finite().nullable().default(null),
+  x: z.number().nullable().default(null),
+  y: z.number().nullable().default(null),
 });
 
 export type DevtoolsSession = z.infer<typeof Session>;
