@@ -97,6 +97,7 @@ if [ "${SKIP_RUST:-}" != "1" ]; then
     -v "$CACHE/cargo":/root/.cargo/registry \
     -e KROMA_GIT_HASH="$GIT_HASH" \
     -e KROMA_VERSION="$VERSION" \
+    -e KROMA_BUILD="$BUILD" \
     "$RUST_IMAGE" cargo build --release --target "$TARGET"
 fi
 [ -f "$BIN" ] || { echo "musl binary missing: $BIN"; exit 1; }

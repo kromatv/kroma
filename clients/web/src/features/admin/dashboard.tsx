@@ -11,6 +11,7 @@ import { NowPlayingCard, StopStreamModal } from '#web/features/admin/dashboard-n
 import { PlaybackSection } from '#web/features/admin/dashboard-playback';
 import { TopViewersSection } from '#web/features/admin/dashboard-top-viewers';
 import { TranscodingSection } from '#web/features/admin/dashboard-transcoding';
+import { UpdateCallout } from '#web/features/admin/dashboard-update';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, useAdmin, usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
@@ -23,6 +24,7 @@ export function DashboardScreen() {
   const { user, client } = useAuth();
   const { serverInfo } = useAdmin();
   const canManageLibrary = !!user && hasPermission(user, 'library.manage');
+  const canManageSettings = !!user && hasPermission(user, 'settings.manage');
 
   const { data: sessionsData, reload: reloadSessions } = usePoll(
     ['admin', 'sessions'],
@@ -57,11 +59,10 @@ export function DashboardScreen() {
         </PageHeader.Actions>
       </PageHeader.Root>
 
-      {canManageLibrary ? (
-        <Box mt={24}>
-          <MissingCallout />
-        </Box>
-      ) : null}
+      <Box mt={24} gap={12}>
+        {canManageSettings ? <UpdateCallout /> : null}
+        {canManageLibrary ? <MissingCallout /> : null}
+      </Box>
 
       <Section.Root mt={28}>
         <Section.Header>

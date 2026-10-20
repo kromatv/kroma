@@ -80,6 +80,10 @@ pub async fn put_settings(
     if written.iter().any(|k| k == settings::stats::ENABLED_KEY) {
         settings::stats::ensure_identity(&state.settings, &state.db);
     }
+    if written.iter().any(|k| k == crate::services::updates::CHANNEL_KEY) {
+        let state = state.clone();
+        tokio::task::spawn_blocking(move || crate::services::updates::check(&state));
+    }
     state.events.publish(ServerEvent::SettingsUpdated);
     Ok(Json(json!({ "updated": written })).into_response())
 }

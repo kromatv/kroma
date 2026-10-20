@@ -23,6 +23,7 @@ mod stats;
 mod storage;
 pub mod store;
 mod transcodes;
+mod updates;
 mod users;
 
 use std::sync::Arc;
@@ -76,7 +77,8 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .merge(notifications::routes())
         .merge(store::routes())
         .merge(pipeline::routes())
-        .merge(backup::routes());
+        .merge(backup::routes())
+        .merge(updates::routes());
     router = router.merge(kroma_module_kernel::mount_admin(state.clone()));
     // Out-of-process modules with admin routes: `/api/admin/m/<id>/*` is
     // reverse-proxied to that module's sidecar. The mount is the module's id, so
