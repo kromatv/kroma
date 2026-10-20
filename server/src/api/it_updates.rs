@@ -119,6 +119,8 @@ async fn changing_the_channel_checks_the_new_one() {
     let body = checked.expect("a check ran after the channel changed");
     assert_eq!(body["channel"], json!("Canary"));
     assert!(body["error"].is_string());
+}
+
 #[tokio::test]
 async fn health_names_the_channel_a_desktop_app_should_follow() {
     let t = test_app();

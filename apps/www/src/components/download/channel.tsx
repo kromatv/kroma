@@ -20,14 +20,15 @@ const subscribe = (notify: () => void) => {
     globalThis.removeEventListener(CHANGED, notify);
   };
 };
-const clientChannel = () => channelFromSearch(globalThis.location.search);
+const clientChannel = (): DownloadChannel =>
+  canary.length > 0 ? channelFromSearch(globalThis.location.search) : 'stable';
 const serverChannel = (): DownloadChannel => 'stable';
 
 const choose = (next: DownloadChannel) => {
   const url = new URL(globalThis.location.href);
   if (next === 'canary') url.searchParams.set('channel', 'canary');
   else url.searchParams.delete('channel');
-  globalThis.history.replaceState(null, '', url);
+  globalThis.history.replaceState(globalThis.history.state, '', url);
   globalThis.dispatchEvent(new Event(CHANGED));
 };
 

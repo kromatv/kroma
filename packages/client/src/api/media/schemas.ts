@@ -159,8 +159,7 @@ export const Health = z.object({
   libraries: z.number(),
   items: z.number(),
   shows: z.number(),
-  /** The update channel the owner follows; absent on a server older than the setting. */
-  updateChannel: z.enum(['Stable', 'Canary']).optional(),
+  updateChannel: z.string().optional(),
 });
 export type Health = z.infer<typeof Health>;
 
