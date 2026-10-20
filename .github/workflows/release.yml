@@ -416,6 +416,8 @@ jobs:
       GH_REPO: ${{ github.repository }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
@@ -433,3 +435,17 @@ jobs:
             --triplet "${{ needs.version.outputs.triplet }}" \
             --version "${{ needs.version.outputs.canary }}" \
             "${files[@]}"
+      # What this push changed, drafted by Claude when the key is set and listed
+      # from the commit subjects otherwise. Only this push's commits, so the cost
+      # stays one short call per build. A note is never worth failing the
+      # channel over.
+      - name: Canary notes
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          since=()
+          if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then since=(--since "$BEFORE"); fi
+          bun run ci notes --canary canary-notes.md "${since[@]}"
+          gh release edit canary --notes-file canary-notes.md

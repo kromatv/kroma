@@ -24,6 +24,8 @@ pub struct Release {
 #[derive(Deserialize)]
 struct Meta {
     date: Option<String>,
+    #[serde(default)]
+    draft: bool,
 }
 
 /// Every folder under `releases/` at build time, parsed once.
@@ -32,9 +34,12 @@ pub fn embedded() -> &'static [Release] {
     RELEASES.get_or_init(|| assemble(parts::RELEASE_FILES))
 }
 
-/// Groups `(version, file name, contents)` triples into releases.
+/// Groups `(version, file name, contents)` triples into releases. A folder
+/// whose `release.json` says `"draft": true` was written by CI and nobody has
+/// read it yet, so it is left out.
 pub fn assemble(files: &[(&str, &str, &str)]) -> Vec<Release> {
     let mut by_version: BTreeMap<&str, Release> = BTreeMap::new();
+    let mut drafts = Vec::new();
     for &(version, name, text) in files {
         let release = by_version.entry(version).or_insert_with(|| Release {
             version: version.to_owned(),
@@ -42,10 +47,17 @@ pub fn assemble(files: &[(&str, &str, &str)]) -> Vec<Release> {
             notes: BTreeMap::new(),
         });
         if name == "release.json" {
-            release.date = serde_json::from_str::<Meta>(text).ok().and_then(|meta| meta.date);
+            let meta = serde_json::from_str::<Meta>(text).ok();
+            if meta.as_ref().is_some_and(|meta| meta.draft) {
+                drafts.push(version);
+            }
+            release.date = meta.and_then(|meta| meta.date);
         } else if let Some(locale) = name.strip_suffix(".md") {
             release.notes.insert(locale.to_owned(), ReleaseNotes::parse(text));
         }
+    }
+    for version in drafts {
+        by_version.remove(version);
     }
     by_version.into_values().collect()
 }
@@ -160,6 +172,19 @@ mod tests {
         let shown = view(&releases, "0.1.10", "en", true);
 
         assert_eq!(versions(&shown), vec!["0.1.10", "0.1.9"]);
+    }
+
+    #[test]
+    fn a_draft_nobody_has_read_yet_is_left_out() {
+        let releases = assemble(&[
+            ("0.1.10", "en.md", NOTES_EN),
+            ("0.1.11", "en.md", NOTES_EN),
+            ("0.1.11", "release.json", r#"{ "draft": true }"#),
+        ]);
+
+        let shown = view(&releases, "0.1.11", "en", true);
+
+        assert_eq!(versions(&shown), vec!["0.1.10"]);
     }
 
     #[test]

@@ -29,6 +29,22 @@ release's notes can land before the bump. Nothing opens on its own: the web app
 badges the sidebar link until the reader visits the history, and the television
 lists every release under About.
 
+## Drafts
+
+`gh workflow run release-notes.yml` drafts both files for the version main is
+heading for and opens a pull request with them. Claude writes the draft from
+this page, the skill and every PR since the last tag when the repository has an
+`ANTHROPIC_API_KEY` secret; without one, the draft is the commit subjects. A
+draft whose headings the server could not read falls back to the subjects too.
+
+The draft's `release.json` carries `"draft": true`, and the server leaves such a
+folder out. Rewrite the note with the skill, check the French against the
+catalogue, then delete the flag: that is what publishes it. `bun run ci notes`
+does the same on a laptop, and refuses to replace a folder a person wrote.
+
+Each canary build's release body is drafted the same way, from that push's
+commits alone.
+
 `release.json` carries the date, written when the release is cut:
 
 ```json

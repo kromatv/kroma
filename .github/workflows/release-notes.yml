@@ -1,0 +1,49 @@
+name: Release notes
+
+# Drafts releases/<version>/{en,fr}.md for the version main is heading for and
+# opens a pull request with them, marked `"draft": true` so the server leaves
+# them out until a person has read them. Claude writes the draft from the
+# release-notes skill, docs/release-notes.md and every PR since the last tag,
+# when ANTHROPIC_API_KEY is set; without it the draft is the commit subjects.
+#
+#   gh workflow run release-notes.yml
+#
+# Editing the draft and deleting `"draft": true` is what makes it a note.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to draft (X.Y.Z). Defaults to the computed next version.'
+        type: string
+        default: ''
+
+concurrency:
+  group: release-notes
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    name: Draft the notes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the draft branch
+      pull-requests: write # open its pull request
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - name: Draft and open the pull request
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          VERSION_INPUT: ${{ inputs.version }}
+        run: .github/scripts/draft-release-notes.sh
