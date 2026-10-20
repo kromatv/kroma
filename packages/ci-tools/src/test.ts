@@ -1,12 +1,13 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { $ } from 'bun';
 import { summary } from './actions';
 import { root } from './root';
-import { expectedBlobs, parseShard } from './shard';
+import { expectedBlobs, newestAttempts, parseShard } from './shard';
 
 const REPORTS = join(root, '.vitest-reports');
+const ATTEMPTS = join(root, '.vitest-attempts');
 const LCOV = join(root, 'coverage/lcov.info');
 const vitest = join(root, 'node_modules/.bin/vitest');
 
@@ -38,7 +39,16 @@ async function audit(): Promise<void> {
   await $`${vitest} run --project audit`.cwd(root);
 }
 
+function gatherAttempts(): void {
+  if (!existsSync(ATTEMPTS)) return;
+  mkdirSync(REPORTS, { recursive: true });
+  for (const artifact of newestAttempts(readdirSync(ATTEMPTS))) {
+    cpSync(join(ATTEMPTS, artifact), REPORTS, { recursive: true });
+  }
+}
+
 async function merge(total: number | undefined): Promise<void> {
+  gatherAttempts();
   if (total !== undefined) {
     const missing = expectedBlobs(total).filter((name) => !existsSync(join(REPORTS, name)));
     if (missing.length > 0) throw new Error(`missing shard report(s): ${missing.join(', ')}`);

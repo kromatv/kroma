@@ -110,6 +110,7 @@ function offline(message: string) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
 
@@ -209,7 +210,7 @@ describe('machineResponse', () => {
 
   it('falls back to the ambient environment when the request arrives with no bindings', async () => {
     const calls = upstreamServing(CATALOG);
-    vi.stubGlobal('process', { env: { GITHUB_REPO: 'ambient/fork' } });
+    vi.stubEnv('GITHUB_REPO', 'ambient/fork');
     const res = await machineResponse(req('/modules.json'), undefined, ctx());
     expect(calls[0]).toBe('https://github.com/ambient/fork/releases/download/modules/modules.json');
     expect(await res?.json()).toEqual(CATALOG);

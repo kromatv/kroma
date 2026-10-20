@@ -51,6 +51,9 @@ Unit tests run as four shards, each with coverage, and `test-report` merges
 the blobs into one `coverage/lcov.info` and one summary. The shards are not
 required checks; the merge is, so a shard that never ran cannot pass as a
 green run.
+Each shard uploads its blob as `vitest-blob-<shard>-attempt-<n>`, and the
+merge keeps the newest attempt of each shard, so re-running the failed jobs
+merges the rerun's report rather than the one that failed.
 
 Rust runs clippy and then every test under `cargo llvm-cov`, but only for the
 workspaces a change can reach. `lanes` reads the path dependencies between the
