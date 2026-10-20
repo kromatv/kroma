@@ -32,12 +32,14 @@ lists every release under About.
 ## Drafts
 
 `gh workflow run release-notes.yml` drafts both files for the version main is
-heading for and opens a pull request with them. Running it again leaves an
+heading for and pushes them as `docs/release-notes-<version>`. Actions may not
+open pull requests here, so the run summary links to the one-click compare page
+and carries the writer's notes for its body. Running it again leaves an
 existing draft branch alone, since it may hold your edits, unless `-f force=true`. Claude writes the draft from
 this page, the skill and every PR since the last tag. It runs on Claude Opus 5.5 at high
 effort, with both translation catalogs in the prompt so every label matches the
-app, and the pull request it opens lists what it left out and any pre-release
-check nobody did. CI reaches Claude through workload identity federation, with
+app, and the run summary lists what it left out and any pre-release check nobody
+did. CI reaches Claude through workload identity federation, with
 no stored key: the `kroma-notes` rule in the Claude Console accepts GitHub's
 OIDC token only from `release.yml` on a push and `release-notes.yml` on a
 dispatch, on `main` of `kromatv/kroma`, and its tokens act in the `kroma-ci`

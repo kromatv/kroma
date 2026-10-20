@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Draft releases/<version>/ off origin/main and open its pull request. An
-# existing draft branch is left alone, since a person may be editing it, unless
-# FORCE is true.
+# Draft releases/<version>/ off origin/main and push it as a branch. Actions
+# may not open pull requests in this repository, so the run summary carries the
+# link that opens one and the writer's review notes for its body. An existing
+# draft branch is left alone, since a person may be editing it, unless FORCE is
+# true.
 #
 # Inputs (env): GH_TOKEN, GH_REPO, VERSION_INPUT, FORCE, and the ANTHROPIC_*
 # federation variables (optional)
@@ -31,16 +33,12 @@ git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 git commit -qm "docs(releases): draft the $VERSION notes"
 git push -qf origin "$branch"
 
-body="$(mktemp)"
 {
-  echo "A draft of the $VERSION notes. Edit both files with the release-notes skill, then delete \`\"draft\": true\` from release.json so the server shows them."
+  echo "### Draft of the $VERSION notes"
+  echo
+  echo "Open the pull request: $GITHUB_SERVER_URL/$GH_REPO/compare/main...$branch?expand=1"
+  echo
+  echo "Edit both files with the release-notes skill, then delete \`\"draft\": true\` from release.json so the server shows them. Paste the notes below into the pull request body."
   echo
   cat "$review"
-} > "$body"
-
-pr="$(gh pr list --head "$branch" --json number --jq '.[].number')"
-if [[ -z "$pr" ]]; then
-  gh pr create --base main --head "$branch" --title "docs(releases): the $VERSION notes" --body-file "$body"
-else
-  gh pr edit "$pr" --body-file "$body"
-fi
+} >> "${GITHUB_STEP_SUMMARY:-/dev/stdout}"
