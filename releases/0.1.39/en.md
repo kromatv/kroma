@@ -1,3 +1,7 @@
+## Action required
+
+- Back up your server before updating, with **Export** in **Admin > Backup**. The update deletes plays nobody watched from the **Watch history**, and the previous version cannot undo it.
+
 ## New
 
 ### A suggestion when a film ends
@@ -5,6 +9,9 @@ On the web and on televisions, the player no longer sits frozen when a film ends
 
 ### The catalogue in each account's language
 Titles, synopses, genres and posters follow each account's **Interface language**. On one server, an English account sees Arrival where a French one sees Premier Contact.
+
+### Smoother on Samsung TVs
+On a Samsung The Frame, the home screen now draws 97% of its frames on time, up from 70%, and the **Movies** grid 90%, up from 34%. The Play/Pause key also works on the first press.
 
 ## Fixed
 
@@ -18,4 +25,4 @@ Titles, synopses, genres and posters follow each account's **Interface language*
 
 - Your server sends KROMA one anonymous report a day, unless you turn off **Anonymous usage statistics** in **Admin > General > Privacy**.
 - In **Admin > Users**, **Visible libraries** limits a member to the libraries you choose. They can no longer find or play titles from the others.
-- **Reset access**, in **Admin > Users**, creates a link for a member who forgot their password. Pass it on by hand or through your own SMTP server.
+- **Reset access**, in **Admin > Users**, creates a link for a member who forgot their password. Copy it yourself, or send it by SMTP or the kroma.tv relay.
