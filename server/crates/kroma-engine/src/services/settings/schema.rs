@@ -33,14 +33,14 @@ pub fn set_build_info(
     commit: impl Into<String>,
     built: impl Into<String>,
     target: impl Into<String>,
-    number: u64,
+    number: &str,
 ) {
     let _ = BUILD_INFO.set(Build {
         version: version.into(),
         commit: commit.into(),
         built: built.into(),
         target: target.into(),
-        number,
+        number: number.trim().parse().unwrap_or(0),
     });
 }
 

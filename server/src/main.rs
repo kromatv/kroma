@@ -18,6 +18,9 @@
 /// local build derives it from the newest release tag (see `build.rs`).
 pub const VERSION: &str = env!("KROMA_VERSION");
 
+/// The CI build number this binary carries, `0` for a local build.
+pub const BUILD: &str = env!("KROMA_BUILD");
+
 mod api;
 mod boot;
 mod tls;

@@ -8,6 +8,7 @@ const user = UserId.parse('u1');
 describe('the admin console endpoints', () => {
   it.each<Endpoint>([
     { name: 'server', call: (c) => c.admin.server(), method: 'GET', path: '/admin/server' },
+    { name: 'updates', call: (c) => c.admin.updates(), method: 'GET', path: '/admin/updates' },
     { name: 'status', call: (c) => c.admin.status(), method: 'GET', path: '/status' },
     { name: 'sessions', call: (c) => c.admin.sessions(), method: 'GET', path: '/admin/sessions' },
     {
