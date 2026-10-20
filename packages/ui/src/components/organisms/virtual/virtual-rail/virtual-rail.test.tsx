@@ -1,11 +1,19 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { VirtualRail } from './virtual-rail';
 
-afterEach(cleanup);
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+
+afterEach(() => {
+  act(() => vi.runOnlyPendingTimers());
+  cleanup();
+  vi.useRealTimers();
+});
 
 const DATA = Array.from({ length: 24 }, (_, i) => `Tile ${i}`);
 
