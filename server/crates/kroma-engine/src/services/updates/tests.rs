@@ -149,11 +149,74 @@ fn a_check_that_fails_keeps_the_last_answer_and_says_why() {
         .settings
         .set_internal(&state.db, STATUS_KEY, json!(stored))
         .unwrap();
-    std::env::set_var("KROMA_UPDATES_URL", "http://127.0.0.1:9");
 
     let shown = check(&state).unwrap();
 
     assert_eq!(shown.latest.map(|l| l.version).as_deref(), Some("999.0.0"));
     assert!(shown.available);
     assert!(shown.error.is_some());
+}
+
+fn feeds() -> String {
+    let (base, _) = crate::test_support::serve_json(|path| match path {
+        "/latest" => (
+            200,
+            json!({
+                "tag_name": "v999.0.0",
+                "html_url": "https://github.com/kromatv/kroma/releases/tag/v999.0.0",
+                "assets": [{ "name": "kroma-999.0.0.3600000-x86_64.spk" }],
+            }),
+        ),
+        "/tags/canary" => (
+            200,
+            json!({
+                "tag_name": "canary",
+                "html_url": "https://github.com/kromatv/kroma/releases/tag/canary",
+                "assets": [{ "name": "kroma-999.0.0.3600001-x86_64.spk" }],
+            }),
+        ),
+        _ => (404, json!({ "message": "Not Found" })),
+    });
+    base
+}
+
+#[test]
+fn a_check_reads_the_stable_feed_and_offers_what_it_found() {
+    let state = crate::test_support::test_state_with_releases(&feeds());
+
+    let shown = check(&state).unwrap();
+
+    assert_eq!(
+        shown.latest.as_ref().map(|l| l.version.as_str()),
+        Some("999.0.0")
+    );
+    assert_eq!(shown.latest.and_then(|l| l.build), Some(3_600_000));
+    assert!(shown.available);
+    assert!(shown.error.is_none());
+}
+
+#[test]
+fn a_check_on_canary_reads_the_rolling_release() {
+    let state = crate::test_support::test_state_with_releases(&feeds());
+    state.settings.set_patch(
+        &state.db,
+        [(CHANNEL_KEY.to_string(), json!("Canary"))].into(),
+    );
+
+    let shown = check(&state).unwrap();
+
+    assert_eq!(shown.channel, Channel::Canary);
+    assert_eq!(shown.latest.and_then(|l| l.build), Some(3_600_001));
+}
+
+#[test]
+fn a_feed_with_no_release_yet_offers_nothing() {
+    let (base, _) = crate::test_support::serve_json(|_| (404, json!({ "message": "Not Found" })));
+    let state = crate::test_support::test_state_with_releases(&base);
+
+    let shown = check(&state).unwrap();
+
+    assert!(shown.latest.is_none());
+    assert!(shown.error.is_none());
+    assert!(!shown.available);
 }

@@ -95,7 +95,8 @@ pub fn status(state: &SharedState) -> Status {
 /// the owner left while the request was out is dropped.
 pub fn check(state: &SharedState) -> Result<Status> {
     let asked = channel(&state.settings);
-    let fetched = fetch(asked);
+    let base = state.config.releases_url.as_deref().unwrap_or(RELEASES_URL);
+    let fetched = fetch(base, asked);
     if channel(&state.settings) != asked {
         return Ok(status(state));
     }
@@ -118,12 +119,12 @@ pub fn check(state: &SharedState) -> Result<Status> {
     Ok(status(state))
 }
 
-fn fetch(channel: Channel) -> Result<Option<Latest>> {
+fn fetch(base: &str, channel: Channel) -> Result<Option<Latest>> {
     let path = match channel {
         Channel::Stable => "latest",
         Channel::Canary => "tags/canary",
     };
-    let url = format!("{}/{path}", base_url().trim_end_matches('/'));
+    let url = format!("{}/{path}", base.trim_end_matches('/'));
     let res = kroma_http::Fetch::new()
         .max_time(15)
         .max_bytes(MAX_FEED_BYTES)
@@ -138,19 +139,6 @@ fn fetch(channel: Channel) -> Result<Option<Latest>> {
         Channel::Stable => feed::stable(release),
         Channel::Canary => feed::canary(release),
     })
-}
-
-#[cfg(debug_assertions)]
-fn base_url() -> String {
-    match std::env::var("KROMA_UPDATES_URL") {
-        Ok(url) if !url.trim().is_empty() => url.trim().to_string(),
-        _ => RELEASES_URL.to_string(),
-    }
-}
-
-#[cfg(not(debug_assertions))]
-fn base_url() -> String {
-    RELEASES_URL.to_string()
 }
 
 #[cfg(test)]

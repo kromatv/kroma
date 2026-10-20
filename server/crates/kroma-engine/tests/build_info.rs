@@ -28,9 +28,9 @@ fn the_console_reports_the_build_the_binary_handed_it_and_only_the_first_one() {
         "cafed00d",
         "2026-08-10",
         "x86_64-unknown-linux-gnu",
-        3_571_174,
+        "3571174",
     );
-    settings::set_build_info("0.0.0", "ffffffff", "1970-01-01", "aarch64-apple-darwin", 1);
+    settings::set_build_info("0.0.0", "ffffffff", "1970-01-01", "aarch64-apple-darwin", "1");
 
     let shown = version_row(&settings::groups("general", &store, &config, "en"));
     assert_eq!(shown, "9.9.9 (cafed00d · 2026-08-10)");
