@@ -144,7 +144,7 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
     if (covers.length < 2) return;
     const next = safeImageUrl(covers[(slide + 1) % covers.length]?.url ?? null);
     if (!next) return;
-    prefetchImage(next);
+    void prefetchImage(next);
   }, [slide, covers]);
 
   const [box, setBox] = useState({ width: 0, height: 0 });
