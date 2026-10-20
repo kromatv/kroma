@@ -49,6 +49,17 @@ pub struct TorrentStatus {
     pub lifetime_uploaded_bytes: u64,
 }
 
+impl TorrentStatus {
+    /// Running, with nothing downloaded and no peer ever seen. A torrent still
+    /// checking its files on disk reports the same zeros and is not stalled.
+    pub fn is_stalled_at_start(&self) -> bool {
+        self.state == TorrentState::Downloading
+            && self.progress <= 0.0
+            && self.peers == 0
+            && self.peers_seen == 0
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TorrentFileEntry {
     pub index: usize,
@@ -132,6 +143,42 @@ mod tests {
         fn remove(&self, _client_ref: &str, _delete_data: bool) -> anyhow::Result<()> {
             Ok(())
         }
+    }
+
+    fn status(state: TorrentState, progress: f64) -> TorrentStatus {
+        TorrentStatus {
+            client_ref: "ref".into(),
+            name: "n".into(),
+            info_hash: None,
+            progress,
+            state,
+            down_bps: 0,
+            up_bps: 0,
+            peers: 0,
+            peers_seen: 0,
+            size_bytes: 0,
+            save_path: None,
+            files: Vec::new(),
+            error: None,
+            lifetime_downloaded_bytes: 0,
+            lifetime_uploaded_bytes: 0,
+        }
+    }
+
+    #[test]
+    fn a_running_torrent_with_nothing_and_no_peer_is_stalled() {
+        assert!(status(TorrentState::Downloading, 0.0).is_stalled_at_start());
+    }
+
+    #[test]
+    fn a_torrent_still_checking_its_files_is_not_stalled() {
+        assert!(!status(TorrentState::Queued, 0.0).is_stalled_at_start());
+    }
+
+    #[test]
+    fn a_paused_or_started_torrent_is_not_stalled() {
+        assert!(!status(TorrentState::Paused, 0.0).is_stalled_at_start());
+        assert!(!status(TorrentState::Downloading, 0.1).is_stalled_at_start());
     }
 
     #[test]

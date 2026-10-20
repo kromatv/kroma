@@ -161,9 +161,7 @@ impl RqbitEngine {
             self.session().delete(id, false).await.ok();
             let opts = AddTorrentOptions {
                 output_folder,
-                // NOT overwrite: resume from whatever is already on disk (fastresume)
-                // instead of truncating it - a reseed must never reset progress.
-                overwrite: false,
+                overwrite: true,
                 initial_peers: Some(peers),
                 ..Default::default()
             };
