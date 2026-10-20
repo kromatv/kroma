@@ -30,9 +30,15 @@ export const octets = (contents: Buffer) => encode(TAG.octetString, contents);
 /** Explicit `[n]` tagging, which X.509 uses for its version and extensions. */
 export const context = (index: number, contents: Buffer) => encode(CLASS_CONTEXT | index, contents);
 
-/** Two's complement, with a leading zero when the top bit would read as negative. */
+/**
+ * Minimal two's complement: redundant leading zero bytes dropped, which DER
+ * forbids, and one zero added back when the top bit would read as negative.
+ */
 export function integer(value: Buffer | number): Buffer {
-  const bytes = typeof value === 'number' ? unsigned(value) : value;
+  const raw = typeof value === 'number' ? unsigned(value) : value;
+  let start = 0;
+  while (start < raw.length - 1 && raw[start] === 0) start++;
+  const bytes = raw.length === 0 ? Buffer.from([0]) : raw.subarray(start);
   const first = bytes[0] ?? 0;
   return encode(TAG.integer, first & 0x80 ? Buffer.concat([Buffer.from([0]), bytes]) : bytes);
 }
