@@ -33,7 +33,8 @@
     "@tauri-apps/plugin-process": "^2.3.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-native-web": "^0.21.2"
+    "react-native-web": "^0.21.2",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@kromatv/bundler": "workspace:*",

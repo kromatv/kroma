@@ -1,10 +1,9 @@
-import type { ChannelBuild } from '#site/lib/channels';
+import { site } from '@kromatv/site-meta';
+import { type ChannelBuild, ROLLING_TAG } from '#site/lib/channels';
 import type { SiteDownload, SiteRelease } from '#site/lib/releases';
 
 /** Which builds `/download` hands over: the newest release, or the newest of main. */
 export type DownloadChannel = 'stable' | 'canary';
-
-const CANARY_NOTES = 'https://github.com/kromatv/kroma/releases/tag/canary';
 
 /** The channel a `?channel=` query asks for; anything but `canary` is stable. */
 export const channelFromSearch = (search: string): DownloadChannel =>
@@ -28,9 +27,9 @@ export function canaryRelease(builds: readonly ChannelBuild[]): SiteRelease | nu
   }
   return {
     version: newest.version ?? 'canary',
-    tag: 'canary',
+    tag: ROLLING_TAG.canary,
     publishedAt: newest.builtAt,
-    notesUrl: CANARY_NOTES,
+    notesUrl: site.links.releases,
     downloads,
   };
 }
