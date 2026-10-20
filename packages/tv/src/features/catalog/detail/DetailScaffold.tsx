@@ -11,6 +11,7 @@ import {
   Text,
   typeSpec as textRoles,
   tintGradient,
+  TopFadeBand,
   useStyles,
   Veil,
 } from '@kromatv/ui/kit';
@@ -18,6 +19,7 @@ import type { ReactNode } from 'react';
 
 const VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 12%, transparent 68%)`;
 const VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 4%, transparent 60%)`;
+const FADE_FROM = 72;
 const VEIL = `${VEIL_VERTICAL}, ${VEIL_HORIZONTAL}`;
 
 /**
@@ -103,6 +105,16 @@ export function TvDetailScaffold({
 
         {children}
       </FocusScroll>
+      <TopFadeBand inset={FADE_FROM}>
+        <Img
+          src={backdrop}
+          background={tintGradient(posterColors(id))}
+          position="50% 18%"
+          fill
+          opaque
+        />
+        <Veil ramp={VEIL} />
+      </TopFadeBand>
     </Box>
   );
 }
