@@ -58,6 +58,7 @@ fn test_config(data_dir: PathBuf) -> Config {
         data_dir,
         tmdb_language: "en-US".into(),
         mail_relay_url: Some("http://127.0.0.1:1".into()),
+        releases_url: Some("http://127.0.0.1:1".into()),
         ..Default::default()
     }
 }
@@ -85,6 +86,12 @@ pub fn test_app_with_mail_relay(relay_url: &str) -> TestApp {
     build_app(None, &[], Some(relay_url))
 }
 
+/// Like [`test_app`] but reading releases from `releases_url`, a stub a test
+/// runs on a local port.
+pub fn test_app_with_releases(releases_url: &str) -> TestApp {
+    build_app_with(None, &[], None, Some(releases_url))
+}
+
 /// Like [`test_app`] but with a fake TMDB key, so handlers clear their
 /// `require_tmdb_key` gate. Only request *unknown* ids: no network fetch happens.
 pub fn test_app_with_tmdb() -> TestApp {
@@ -99,6 +106,15 @@ pub fn test_app_with_web(files: &[(&str, &str)]) -> TestApp {
 }
 
 fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)], relay_url: Option<&str>) -> TestApp {
+    build_app_with(tmdb_api_key, web, relay_url, None)
+}
+
+fn build_app_with(
+    tmdb_api_key: Option<&str>,
+    web: &[(&str, &str)],
+    relay_url: Option<&str>,
+    releases_url: Option<&str>,
+) -> TestApp {
     let tmp = unique_data_dir();
     let data_dir = tmp.path().to_path_buf();
     let db = db::init(&data_dir.join("kroma.db")).expect("init db");
@@ -116,6 +132,9 @@ fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)], relay_url: Option
     config.tmdb_api_key = tmdb_api_key.map(str::to_string);
     if let Some(url) = relay_url {
         config.mail_relay_url = Some(url.to_string());
+    }
+    if let Some(url) = releases_url {
+        config.releases_url = Some(url.to_string());
     }
     if !web.is_empty() {
         let web_dir = data_dir.join("web");

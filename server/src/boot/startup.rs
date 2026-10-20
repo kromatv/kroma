@@ -18,6 +18,7 @@ pub fn announce(config: &Config) -> bool {
         env!("KROMA_GIT_HASH"),
         env!("KROMA_BUILD_DATE"),
         env!("KROMA_BUILD_TARGET"),
+        crate::BUILD,
     );
     info!(
         host = %config.host,

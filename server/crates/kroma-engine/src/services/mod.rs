@@ -31,3 +31,4 @@ pub mod sections;
 pub mod settings;
 pub mod stats;
 pub mod subtitles;
+pub mod updates;

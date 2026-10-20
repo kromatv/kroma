@@ -29,6 +29,7 @@ fn test_config(data_dir: PathBuf) -> Config {
         port: 0,
         data_dir,
         tmdb_language: "en-US".into(),
+        releases_url: Some("http://127.0.0.1:1".into()),
         ..Default::default()
     }
 }
@@ -45,10 +46,20 @@ fn build_state_with_official_modules(
     tmdb_api_key: Option<&str>,
     official: Vec<String>,
 ) -> SharedState {
+    build_state_with(embedder, tmdb_api_key, official, |_| ())
+}
+
+fn build_state_with(
+    embedder: Point,
+    tmdb_api_key: Option<&str>,
+    official: Vec<String>,
+    adjust: impl FnOnce(&mut Config),
+) -> SharedState {
     let scratch = kroma_testing::temp_dir("engine-test");
     let db = db::init(&scratch.path().join("kroma.db")).expect("init db");
     let mut config = test_config(scratch.path().to_path_buf());
     config.tmdb_api_key = tmdb_api_key.map(str::to_string);
+    adjust(&mut config);
     let settings = Settings::load(&db);
     let wiring = crate::state::ModuleWiring {
         services: HashMap::new(),
@@ -409,6 +420,51 @@ fn write_json_reply(stream: &mut std::net::TcpStream, status: u16, reply: &serde
     let _ = stream.flush();
 }
 
+/// A local HTTP server answering every GET with `route(path)`, as JSON. Returns
+/// its base URL and every request target it received, query string included.
+pub(crate) fn serve_json(
+    route: impl Fn(&str) -> (u16, serde_json::Value) + Send + 'static,
+) -> (String, Arc<std::sync::Mutex<Vec<String>>>) {
+    use std::io::Write;
+
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
+    let port = listener.local_addr().unwrap().port();
+    let seen = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let log = Arc::clone(&seen);
+
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { break };
+            let Some(full) = read_request_target(&stream) else {
+                continue;
+            };
+            // "/movie/603?api_key=x" -> "/movie/603"
+            let path = full.split('?').next().unwrap_or("").to_string();
+            log.lock().unwrap().push(full);
+
+            let (status, body) = route(&path);
+            let payload = body.to_string();
+            let head = format!(
+                "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n",
+                payload.len()
+            );
+            let _ = stream.write_all(head.as_bytes());
+            let _ = stream.write_all(payload.as_bytes());
+            let _ = stream.flush();
+        }
+    });
+
+    (format!("http://127.0.0.1:{port}"), seen)
+}
+
+/// Like [`test_state`], but reading the release feed at `releases_url`.
+pub(crate) fn test_state_with_releases(releases_url: &str) -> SharedState {
+    let url = releases_url.to_string();
+    build_state_with(Point::absent("embedder"), None, Vec::new(), move |config| {
+        config.releases_url = Some(url);
+    })
+}
+
 /// A fake TMDB, for the services that go through it.
 ///
 /// The base is a `#[cfg(test)]` override on `infra::metadata::client`, so the
@@ -423,36 +479,7 @@ pub(crate) struct FakeTmdb {
 impl FakeTmdb {
     /// `route` maps a request path (e.g. `/movie/603`) to `(status, body)`.
     pub(crate) fn start(route: impl Fn(&str) -> (u16, serde_json::Value) + Send + 'static) -> Self {
-        use std::io::Write;
-
-        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
-        let port = listener.local_addr().unwrap().port();
-        let seen = Arc::new(std::sync::Mutex::new(Vec::new()));
-        let log = Arc::clone(&seen);
-
-        std::thread::spawn(move || {
-            for stream in listener.incoming() {
-                let Ok(mut stream) = stream else { break };
-                let Some(full) = read_request_target(&stream) else {
-                    continue;
-                };
-                // "/movie/603?api_key=x" -> "/movie/603"
-                let path = full.split('?').next().unwrap_or("").to_string();
-                log.lock().unwrap().push(full);
-
-                let (status, body) = route(&path);
-                let payload = body.to_string();
-                let head = format!(
-                    "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n",
-                    payload.len()
-                );
-                let _ = stream.write_all(head.as_bytes());
-                let _ = stream.write_all(payload.as_bytes());
-                let _ = stream.flush();
-            }
-        });
-
-        let base = format!("http://127.0.0.1:{port}");
+        let (base, seen) = serve_json(route);
         crate::infra::metadata::test_override::set(&base);
         Self { base, seen }
     }
