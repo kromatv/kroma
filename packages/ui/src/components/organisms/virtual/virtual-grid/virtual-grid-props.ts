@@ -45,4 +45,6 @@ export interface VirtualGridProps<T> {
   /** Opens the grid on this ROW (not item index) with focus, since the row is
    *  not mounted yet for `autoFocus` to reach. Read once, on mount. */
   initialIndex?: number;
+  /** Called when the grid leaves or returns to its first row. */
+  onScrolledChange?: (scrolled: boolean) => void;
 }

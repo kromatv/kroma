@@ -1,5 +1,14 @@
 import { useT } from '@kromatv/ui';
-import { Box, FocusScroll, Grid, PosterCard, styles, Text, useStyles } from '@kromatv/ui/kit';
+import {
+  Box,
+  FocusScroll,
+  Grid,
+  PosterCard,
+  styles,
+  Text,
+  TopFade,
+  useStyles,
+} from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 
 export interface SearchResult {
@@ -39,39 +48,41 @@ export function TvSearchResults({
   const emptyMessage = query.trim() ? t('search.noResults') : t('search.empty');
   const found = sections.filter((section) => section.hits.length > 0);
   return (
-    <FocusScroll style={s.scroll} offsetFromStart={80}>
-      {header}
-      <Box row wrap align="center" gap={14} mb={18}>
-        <Text variant="strongTv" color="textMuted">
-          {t('search.results')}
-        </Text>
-      </Box>
-      {found.length === 0 ? (
-        <Text variant="leadTv" pt={20} color="text/40">
-          {emptyMessage}
-        </Text>
-      ) : (
-        found.map((section) => (
-          <Box key={section.key} gap={14} mb={34}>
-            <Text variant="overlineTv" color="textDim">
-              {section.title}
-            </Text>
-            <Grid width={width} min={MIN_POSTER_W} gap={GAP}>
-              {section.hits.map((h) => (
-                <PosterCard
-                  key={h.id}
-                  title={h.title}
-                  art={h.poster}
-                  tint={h.colors}
-                  onPress={h.onOpen}
-                  onLongPress={h.onLongPress}
-                />
-              ))}
-            </Grid>
-          </Box>
-        ))
-      )}
-    </FocusScroll>
+    <TopFade style={s.scroll}>
+      <FocusScroll style={s.scroll} offsetFromStart={80}>
+        {header}
+        <Box row wrap align="center" gap={14} mb={18}>
+          <Text variant="strongTv" color="textMuted">
+            {t('search.results')}
+          </Text>
+        </Box>
+        {found.length === 0 ? (
+          <Text variant="leadTv" pt={20} color="text/40">
+            {emptyMessage}
+          </Text>
+        ) : (
+          found.map((section) => (
+            <Box key={section.key} gap={14} mb={34}>
+              <Text variant="overlineTv" color="textDim">
+                {section.title}
+              </Text>
+              <Grid width={width} min={MIN_POSTER_W} gap={GAP}>
+                {section.hits.map((h) => (
+                  <PosterCard
+                    key={h.id}
+                    title={h.title}
+                    art={h.poster}
+                    tint={h.colors}
+                    onPress={h.onOpen}
+                    onLongPress={h.onLongPress}
+                  />
+                ))}
+              </Grid>
+            </Box>
+          ))
+        )}
+      </FocusScroll>
+    </TopFade>
   );
 }
 

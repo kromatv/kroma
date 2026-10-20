@@ -9,6 +9,7 @@ import {
   RAIL_GAP,
   Rail,
   styles,
+  TopFade,
   typeSpec as textRoles,
   useFocusNav,
   useGrowingCount,
@@ -29,6 +30,8 @@ import { useTitleMenu } from '#tv/features/catalog/TitleMenu';
 const RAIL_LIMIT = 20;
 
 const ROW_CHUNK = 3;
+
+const NAV_BOTTOM = 104;
 
 // What one home tile occupies, so the row can be virtualised: a <MediaCard>
 // at its default 328 width, 16:9, plus the 24px gap after it.
@@ -233,34 +236,36 @@ export function TvHome() {
 
   return (
     <Box fill overflow="hidden">
-      <FocusScroll style={s.pageScroll} contentStyle={s.pageContent} offsetFromStart={120}>
-        {/* A permanent slot for the hero row: it arrives from the server after
+      <TopFade inset={NAV_BOTTOM}>
+        <FocusScroll style={s.pageScroll} contentStyle={s.pageContent} offsetFromStart={120}>
+          {/* A permanent slot for the hero row: it arrives from the server after
             the first rails have already mounted, and the navigator orders rows
             by the order they mount. */}
-        <FocusSlot>
-          <Hero
-            info={heroInfo}
-            onPlay={onPlay}
-            onSelectShow={onSelectShow}
-            onSelectEntry={onSelectEntry}
-          />
-        </FocusSlot>
+          <FocusSlot>
+            <Hero
+              info={heroInfo}
+              onPlay={onPlay}
+              onSelectShow={onSelectShow}
+              onSelectEntry={onSelectEntry}
+            />
+          </FocusSlot>
 
-        {/* Rails below the fold mount only once focus comes near them. Bench
+          {/* Rails below the fold mount only once focus comes near them. Bench
             (clients/tv-build/perf-bench.ts, TV-throttled CPU): 480 mounted
             controls run at 46fps/73ms frames, 128 runs clean. */}
-        {rows.slice(0, rowCount).map((row, index) => (
-          // oxlint-disable-next-line react/no-array-index-key -- the index IS the slot - see <FocusSlot>.
-          <FocusSlot key={index} onActive={nearLastRow(index) ? growRows : undefined}>
-            <Box mb={8} mt={18}>
-              <Rail.Root>
-                <Rail.Title style={s.rowTitle}>{row.title}</Rail.Title>
-                <Rail.List {...ROW_TILE}>{row.cards}</Rail.List>
-              </Rail.Root>
-            </Box>
-          </FocusSlot>
-        ))}
-      </FocusScroll>
+          {rows.slice(0, rowCount).map((row, index) => (
+            // oxlint-disable-next-line react/no-array-index-key -- the index IS the slot - see <FocusSlot>.
+            <FocusSlot key={index} onActive={nearLastRow(index) ? growRows : undefined}>
+              <Box mb={8} mt={18}>
+                <Rail.Root>
+                  <Rail.Title style={s.rowTitle}>{row.title}</Rail.Title>
+                  <Rail.List {...ROW_TILE}>{row.cards}</Rail.List>
+                </Rail.Root>
+              </Box>
+            </FocusSlot>
+          ))}
+        </FocusScroll>
+      </TopFade>
 
       {titleMenu.menu}
     </Box>

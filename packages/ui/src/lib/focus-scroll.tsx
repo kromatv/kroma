@@ -27,6 +27,7 @@ import { FocusLiftView } from '#ui/lib/focus-lift';
 import { usePointerDriving } from '#ui/lib/input-source';
 import { WEB } from '#ui/lib/platform';
 import { useReducedMotion } from '#ui/lib/reduced-motion';
+import { ScrolledReport } from '#ui/lib/scrolled-report';
 
 type Anchor = RefObject<View | null>;
 
@@ -141,6 +142,8 @@ interface FocusScrollProps {
    *  rest at the same height. `nearest` is a list: the page moves only as far
    *  as showing the row whole takes. */
   reveal?: Reveal;
+  /** Called when the page leaves or returns to its start. */
+  onScrolledChange?: (scrolled: boolean) => void;
 }
 
 function AxisScroll({
@@ -149,6 +152,7 @@ function AxisScroll({
   contentStyle,
   offsetFromStart = 0,
   reveal: mode = 'start',
+  onScrolledChange,
   horizontal,
   context: RevealContext,
 }: Readonly<
@@ -165,6 +169,7 @@ function AxisScroll({
   const inner = useRef<View>(null);
   const extent = useRef({ viewport: 0, content: 0 });
   const current = useRef(0);
+  const wasScrolled = useRef(false);
   const showing = useRef<Anchor | null>(null);
   const reduced = useReducedMotion();
 
@@ -233,6 +238,11 @@ function AxisScroll({
         onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
           const { x, y } = e.nativeEvent.contentOffset;
           current.current = horizontal ? x : y;
+          const scrolled = current.current > 1;
+          if (scrolled !== wasScrolled.current) {
+            wasScrolled.current = scrolled;
+            onScrolledChange?.(scrolled);
+          }
         }}
         onContentSizeChange={(width: number, height: number) => {
           extent.current.content = horizontal ? width : height;
@@ -252,7 +262,17 @@ function AxisScroll({
 }
 
 function FocusScroll(props: Readonly<FocusScrollProps>) {
-  return <AxisScroll {...props} horizontal={false} context={PageScrollContext} />;
+  const report = useContext(ScrolledReport);
+  return (
+    <ScrolledReport.Provider value={null}>
+      <AxisScroll
+        {...props}
+        onScrolledChange={props.onScrolledChange ?? report ?? undefined}
+        horizontal={false}
+        context={PageScrollContext}
+      />
+    </ScrolledReport.Provider>
+  );
 }
 
 /**
