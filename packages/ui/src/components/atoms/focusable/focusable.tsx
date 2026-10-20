@@ -24,10 +24,10 @@ import { useFocusEntry } from '#ui/lib/focus-entry';
 import { useFocusLift } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { useFocusReport } from '#ui/lib/focus-report';
-import { useRevealOnFocus } from '#ui/lib/focus-scroll';
+import { useRevealOnFocusBy } from '#ui/lib/focus-scroll';
 import { useFocusServices } from '#ui/lib/focus-services-context';
 import { useFocusScale } from '#ui/lib/focus-transition';
-import { useFocusVisible } from '#ui/lib/focus-visible';
+import { useFocusVisibleBy } from '#ui/lib/focus-visible';
 import { useHoverPassthrough } from '#ui/lib/hover-passthrough';
 import { useInputGate } from '#ui/lib/input-gate';
 import { useKeyPress } from '#ui/lib/key-press';
@@ -81,7 +81,7 @@ function Focusable<R extends AnySv = AnySv>({
   value,
   ref,
 }: Readonly<FocusableProps<R>>) {
-  const { probe } = useFocusServices();
+  const { probe, mirror, source } = useFocusServices();
   const { inputHeld, pressGuardActive } = useInputGate();
   const { markFocusSettled } = useFocusEntry();
   const perf = usePerfSampler();
@@ -90,7 +90,7 @@ function Focusable<R extends AnySv = AnySv>({
 
   const controlled = controlledFocus !== undefined;
   const focused = controlled ? controlledFocus : selfFocused;
-  const focusVisible = useFocusVisible(focused);
+  const focusVisible = useFocusVisibleBy(focused, source.pointerDriving);
   const scoped = useInsideFocusScope();
 
   const stateProps = useMemo<A11yState>(
@@ -104,7 +104,13 @@ function Focusable<R extends AnySv = AnySv>({
   const ringToken = typeof ring === 'string' ? ring : (scopedRing ?? 'focusLift');
   const showRing = ring !== false;
 
-  const webKeys = useKeyPress(!disabled && !inert && Boolean(onPress), role, pressRef, tabbable);
+  const webKeys = useKeyPress(
+    !disabled && !inert && Boolean(onPress),
+    role,
+    pressRef,
+    mirror,
+    tabbable,
+  );
 
   const lift = useFocusLift();
   const [hovered, setHovered] = useState(false);
@@ -135,7 +141,7 @@ function Focusable<R extends AnySv = AnySv>({
     },
     [passthrough, ref],
   );
-  const reveal = useRevealOnFocus(box);
+  const reveal = useRevealOnFocusBy(box, source.pointerDriving);
   const report = useFocusReport();
 
   const handleFocus = useCallback(() => {
@@ -279,6 +285,7 @@ function Focusable<R extends AnySv = AnySv>({
         handleFocus,
         handleBlur,
         setBox,
+        mirror,
         label,
         pressed: pointerPressed,
         pressedStyle: paintedPressed,

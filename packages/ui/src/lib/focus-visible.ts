@@ -22,7 +22,11 @@ import { usePointerDriving } from '#ui/lib/input-source';
  * would mean two different things depending on how it was reached.
  */
 export function useFocusVisible(focus: unknown): boolean {
-  const pointerDriving = usePointerDriving();
+  return useFocusVisibleBy(focus, usePointerDriving());
+}
+
+/** {@link useFocusVisible} for a caller that already holds the input source's `pointerDriving`. */
+export function useFocusVisibleBy(focus: unknown, pointerDriving: () => boolean): boolean {
   const held = focus !== false && focus != null;
   const [seen, setSeen] = useState(() => ({ focus, visible: !pointerDriving() }));
   const moved = seen.focus !== focus;
