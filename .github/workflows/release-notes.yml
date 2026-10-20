@@ -48,19 +48,12 @@ jobs:
           bun-version-file: .bun-version
           no-cache: true
       - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
-      - name: Fetch the GitHub OIDC token for Claude
-        continue-on-error: true
-        run: |
-          curl -sSf -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" \
-            | jq -r .value > "$RUNNER_TEMP/anthropic-oidc"
       - name: Draft and open the pull request
         env:
           ANTHROPIC_FEDERATION_RULE_ID: fdrl_01SKjkxdn6pfKsK4aQDajSRL
           ANTHROPIC_ORGANIZATION_ID: 41981912-0a73-4832-b434-743ff1b4a4a8
           ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01CV1EApwC5Lp2jSCRzyPpr8
           ANTHROPIC_WORKSPACE_ID: wrkspc_016CYAvvxkS4fuLX2KuZAUHk
-          ANTHROPIC_IDENTITY_TOKEN_FILE: ${{ runner.temp }}/anthropic-oidc
           VERSION_INPUT: ${{ inputs.version }}
           FORCE: ${{ inputs.force }}
         run: .github/scripts/draft-release-notes.sh

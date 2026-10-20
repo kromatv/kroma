@@ -436,14 +436,6 @@ jobs:
             --triplet "${{ needs.version.outputs.triplet }}" \
             --version "${{ needs.version.outputs.canary }}" \
             "${files[@]}"
-      # Claude is reached through workload identity federation (rule
-      # kroma-notes, workspace kroma-ci), so no API key is stored.
-      - name: Fetch the GitHub OIDC token for Claude
-        continue-on-error: true
-        run: |
-          curl -sSf -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" \
-            | jq -r .value > "$RUNNER_TEMP/anthropic-oidc"
       - name: Canary notes
         continue-on-error: true
         env:
@@ -451,7 +443,6 @@ jobs:
           ANTHROPIC_ORGANIZATION_ID: 41981912-0a73-4832-b434-743ff1b4a4a8
           ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01CV1EApwC5Lp2jSCRzyPpr8
           ANTHROPIC_WORKSPACE_ID: wrkspc_016CYAvvxkS4fuLX2KuZAUHk
-          ANTHROPIC_IDENTITY_TOKEN_FILE: ${{ runner.temp }}/anthropic-oidc
         run: |
           prev="$(gh release view canary --json body --jq .body | sed -nE 's/.*kroma-canary-commit: ([0-9a-f]{40}).*/\1/p' | tail -1)"
           since=()
