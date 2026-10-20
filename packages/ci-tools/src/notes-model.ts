@@ -9,7 +9,6 @@ import { CANARY_SYSTEM, type PullRequestBrief, releaseSystem, releaseTask } from
 import { newestWritten } from './release-folder';
 import { root } from './root';
 
-const MODEL = 'claude-opus-5-5';
 const MAX_BODY = 4000;
 const MAX_FILES = 40;
 const CATALOGS = 'packages/core/src/locales';
@@ -31,13 +30,24 @@ const Canary = z.object({ notes: z.string() });
 export type DraftedRelease = z.infer<typeof Drafted>;
 
 interface Call {
+  model: 'claude-opus-5-5' | 'claude-haiku-5-5';
   effort: 'low' | 'medium' | 'high';
   maxTokens: number;
   timeoutMs: number;
 }
 
-const RELEASE: Call = { effort: 'high', maxTokens: 32_000, timeoutMs: 20 * 60_000 };
-const CANARY: Call = { effort: 'low', maxTokens: 4_000, timeoutMs: 5 * 60_000 };
+const RELEASE: Call = {
+  model: 'claude-opus-5-5',
+  effort: 'high',
+  maxTokens: 32_000,
+  timeoutMs: 20 * 60_000,
+};
+const CANARY: Call = {
+  model: 'claude-haiku-5-5',
+  effort: 'low',
+  maxTokens: 4_000,
+  timeoutMs: 5 * 60_000,
+};
 
 const run = (cmd: string, args: string[]) =>
   execFileSync(cmd, args, { cwd: root, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
@@ -100,10 +110,11 @@ async function ask<T extends z.ZodType>(
   try {
     const response = await anthropic.beta.messages.parse(
       {
-        model: MODEL,
+        model: call.model,
         max_tokens: call.maxTokens,
-        betas: ['server-side-fallback-2026-07-01'],
-        fallbacks: 'default',
+        ...(call.model === 'claude-opus-5-5'
+          ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const }
+          : {}),
         output_config: { effort: call.effort, format: betaZodOutputFormat(schema) },
         system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
         messages: [{ role: 'user', content: task }],
