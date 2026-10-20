@@ -160,9 +160,7 @@ export function InstalledList({
   const t = useT();
   const all = modules ?? [];
   const updateById = new Map<string, string>(
-    (catalog?.modules ?? [])
-      .filter((m) => m.updateAvailable && m.compatible)
-      .map((m) => [m.id, m.version]),
+    (catalog?.modules ?? []).filter((m) => m.updateAvailable).map((m) => [m.id, m.version]),
   );
   const shown = all.filter((m) => matchesQuery(m, query));
   if (modules && all.length === 0) {

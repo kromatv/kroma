@@ -5,6 +5,7 @@ import { Row, Surface, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import type { AdminModule } from '#web/features/admin/module-api';
 import { HeaderIcon } from '#web/features/admin/module-detail-sections';
+import { useRefusalText } from '#web/features/admin/module-refusal';
 import { Pill } from '#web/features/admin/pill';
 
 export function IdentityCard({
@@ -58,7 +59,7 @@ export function Problems({
   failure,
   entry,
 }: Readonly<{ failure: string | null | undefined; entry: StoreModule | undefined }>) {
-  const incompatible = entry && !entry.compatible ? entry.reason : null;
+  const incompatible = useRefusalText(entry);
   return (
     <>
       {failure ? (

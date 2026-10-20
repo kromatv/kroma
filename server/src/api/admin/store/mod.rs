@@ -13,6 +13,7 @@ mod catalog;
 mod events;
 pub mod install;
 mod plan;
+mod refusal;
 mod registries;
 
 use std::sync::Arc;

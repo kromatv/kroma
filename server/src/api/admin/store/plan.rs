@@ -141,7 +141,7 @@ impl<'a> Planner<'a> {
             return None;
         }
         let entry = *self.by_id.get(id)?;
-        catalog::compat_verdict(entry).0.then_some(entry)
+        catalog::compat_verdict(entry).is_ok().then_some(entry)
     }
 
     /// The install dialog's opt-in rows: declared `optionalDependencies` targets,

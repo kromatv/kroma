@@ -15,26 +15,47 @@ use std::collections::BTreeMap;
 /// installed onto a host that cannot run it, and then fails somewhere else.
 pub const KNOWN_ENGINES: &[&str] = &["server"];
 
+/// Why a module's `engines` map refuses this build.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EngineRefusal {
+    /// The module requires an engine this build cannot check.
+    Unknown { engine: String },
+    /// The module requires `engine` within `range`, and this build is not.
+    Unsatisfied { engine: String, range: String },
+}
+
+impl std::fmt::Display for EngineRefusal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Unknown { engine } => write!(
+                f,
+                "requires an engine this server cannot check: {engine:?} (known: {})",
+                KNOWN_ENGINES.join(", "),
+            ),
+            Self::Unsatisfied { engine, range } => write!(f, "requires {engine} {range}"),
+        }
+    }
+}
+
 /// A module's `engines` map against what this build provides.
 ///
-/// `Err` carries the reason, phrased for an operator. An empty map is no
-/// constraint; a range that will not parse is (like every other range here)
-/// treated as no constraint rather than a refusal.
+/// An empty map is no constraint; a range that will not parse is (like every
+/// other range here) treated as no constraint rather than a refusal.
 pub fn engines_satisfied(
     engines: &BTreeMap<String, String>,
     server_version: &str,
-) -> Result<(), String> {
+) -> Result<(), EngineRefusal> {
     for (engine, range) in engines {
         if !KNOWN_ENGINES.contains(&engine.as_str()) {
-            return Err(format!(
-                "requires an engine this server cannot check: {engine:?} (known: {})",
-                KNOWN_ENGINES.join(", "),
-            ));
+            return Err(EngineRefusal::Unknown {
+                engine: engine.clone(),
+            });
         }
         if !version_satisfies(Some(range), server_version) {
-            return Err(format!(
-                "requires {engine} {range} (this server is {server_version})",
-            ));
+            return Err(EngineRefusal::Unsatisfied {
+                engine: engine.clone(),
+                range: range.clone(),
+            });
         }
     }
     Ok(())
@@ -105,13 +126,21 @@ mod tests {
         assert!(engines_satisfied(&engines(&[]), "0.1.0").is_ok());
 
         let err = engines_satisfied(&engines(&[("server", ">=0.9")]), "0.2.0").unwrap_err();
-        assert!(err.contains("requires server >=0.9"), "{err}");
-        assert!(err.contains("this server is 0.2.0"), "{err}");
+        assert_eq!(
+            err,
+            EngineRefusal::Unsatisfied {
+                engine: "server".into(),
+                range: ">=0.9".into()
+            }
+        );
+        assert_eq!(err.to_string(), "requires server >=0.9");
     }
 
     #[test]
     fn an_engine_this_build_cannot_check_is_refused_rather_than_ignored() {
-        let err = engines_satisfied(&engines(&[("ffmpeg", ">=6")]), "0.2.0").unwrap_err();
+        let err = engines_satisfied(&engines(&[("ffmpeg", ">=6")]), "0.2.0")
+            .unwrap_err()
+            .to_string();
         assert!(err.contains("cannot check"), "{err}");
         assert!(err.contains("ffmpeg"), "{err}");
         assert!(err.contains("known: server"), "{err}");

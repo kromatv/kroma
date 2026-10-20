@@ -238,7 +238,7 @@ pub async fn update_all(
         {
             outcome.failed.push(FailedUpdate {
                 id: id.to_string(),
-                error: reason,
+                error: format!("{reason} (this server is {SERVER_VERSION})"),
             });
             continue;
         }

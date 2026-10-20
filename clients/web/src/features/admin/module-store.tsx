@@ -23,6 +23,7 @@ import {
 import { useId } from 'react';
 import { Pressable } from 'react-native';
 import { matchesQuery } from '#web/features/admin/module-api';
+import { useRefusalText } from '#web/features/admin/module-refusal';
 import { type OpModule, opPct, PHASE_KEY, runningPct } from '#web/features/admin/module-ops';
 import { Image } from '#web/shared/ui';
 
@@ -63,10 +64,7 @@ function CardAction({
 }>) {
   const t = useT();
   if (op) return <OpProgress op={op} />;
-  if (!m.compatible) {
-    return <Badge tone="neutral">{t('admin.modulesIncompatible')}</Badge>;
-  }
-  if (m.installedVersion && m.updateAvailable) {
+  if (m.updateAvailable) {
     return (
       <Button variant="primary" size="sm" label={t('admin.modulesUpdate')} onPress={onUpdate} />
     );
@@ -80,6 +78,9 @@ function CardAction({
         </Text>
       </Row>
     );
+  }
+  if (!m.compatible) {
+    return <Badge tone="neutral">{t('admin.modulesIncompatible')}</Badge>;
   }
   return <Button variant="glass" size="sm" label={t('admin.modulesInstall')} onPress={onInstall} />;
 }
@@ -100,6 +101,8 @@ function StoreCard({
   const t = useT();
   const fmt = useFormat();
   const id = useId();
+  const refusal = useRefusalText(m);
+  const offered = !m.installedVersion || m.updateAvailable;
   return (
     <Focusable asChild ring="focusEdge" states={CARD_STATES} label={m.name}>
       <Surface
@@ -112,7 +115,7 @@ function StoreCard({
         row
         flex
         align="flex-start"
-        opacity={m.compatible ? 1 : 0.7}
+        opacity={m.compatible || m.updateBlocked ? 1 : 0.7}
       >
         <Pressable onPress={onOpen}>
           <Box
@@ -136,7 +139,7 @@ function StoreCard({
               <Text variant="meta" color="textDim">
                 v{m.installedVersion ?? m.version}
               </Text>
-              {m.size ? (
+              {m.size && offered ? (
                 <Text variant="meta" color="textDim">
                   · {fmt.bytes(m.size)}
                 </Text>
@@ -149,7 +152,7 @@ function StoreCard({
                   · {t('admin.modulesLibraryChip')}
                 </Text>
               )}
-              {m.compatible && m.installedVersion && m.updateAvailable && (
+              {m.updateAvailable && (
                 <Text variant="meta" color="accentText">
                   · {t('admin.modulesUpdateChip', { version: m.version })}
                 </Text>
@@ -160,11 +163,9 @@ function StoreCard({
                 {m.description}
               </Text>
             )}
-            {!m.compatible && m.reason && (
-              <Text variant="meta" color="danger" mt={4}>
-                {m.engines.server && m.reason.startsWith('requires server')
-                  ? t('admin.modulesNeedsServer', { range: m.engines.server })
-                  : m.reason}
+            {refusal && (
+              <Text variant="meta" color={m.updateBlocked ? 'textDim' : 'danger'} mt={4}>
+                {refusal}
               </Text>
             )}
           </Box>

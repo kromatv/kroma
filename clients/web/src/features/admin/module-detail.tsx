@@ -139,7 +139,7 @@ function moduleView(
     all,
     installed,
     entry,
-    update: !!entry && entry.updateAvailable && entry.compatible,
+    update: !!entry?.updateAvailable,
     restartable: installed?.enabled && installed.hasSidecar ? installed : null,
   };
 }

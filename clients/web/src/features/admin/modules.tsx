@@ -58,7 +58,7 @@ function ModulesInner() {
 
   const installed = modules ?? [];
   const updates = useMemo(
-    () => (catalog?.modules ?? []).filter((m) => m.updateAvailable && m.compatible),
+    () => (catalog?.modules ?? []).filter((m) => m.updateAvailable),
     [catalog],
   );
 

@@ -502,6 +502,9 @@ async fn store_catalog_enriches_a_reachable_registry() {
         .as_str()
         .unwrap_or_default()
         .contains("requires server >=999.0.0"));
+    assert_eq!(future["refusal"]["kind"], json!("engine"));
+    assert_eq!(future["refusal"]["range"], json!(">=999.0.0"));
+    assert_eq!(future["refusal"]["serverVersion"], body["serverVersion"]);
 
     let alien = by_id("tv.kroma.alien");
     assert_eq!(alien["compatible"], json!(false));
@@ -509,6 +512,7 @@ async fn store_catalog_enriches_a_reachable_registry() {
         alien["url"].is_null(),
         "no build for this platform -> no install URL"
     );
+    assert_eq!(alien["refusal"]["kind"], json!("platform"));
 }
 
 // An RFC 110 registry: a descriptor that fronts the one-request index beside it.
