@@ -10,30 +10,41 @@
 //
 // The order of the install is the other half. Relaunching before the download
 // has finished restarts into the OLD build, and the update then re-downloads on
-// every launch forever.
+// every launch forever. The install itself is the `update_install` command, so
+// a relaunch here only follows a command that answered a version.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const check = vi.hoisted(() => vi.fn(async () => null as unknown));
+const check = vi.hoisted(() =>
+  vi.fn(async (_cmd: string, _args: { channel: string }) => null as string | null),
+);
 const relaunch = vi.hoisted(() => vi.fn(async () => undefined));
-vi.mock('@tauri-apps/plugin-updater', () => ({ check }));
+const session = vi.hoisted(() => ({ current: null as { serverUrl?: string } | null }));
+vi.mock('@tauri-apps/api/core', () => ({ invoke: check }));
 vi.mock('@tauri-apps/plugin-process', () => ({ relaunch }));
+vi.mock('@kromatv/client/accounts', () => ({
+  createAccountStorage: () => ({ loadSession: () => session.current }),
+  normalizeServerUrl: (url: string) => url.replace(/\/+$/, ''),
+}));
 
 import { startUpdater } from './updater';
 
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
-function available(order: string[] = []) {
-  return {
-    version: '0.1.36',
-    downloadAndInstall: vi.fn(async () => {
-      order.push('install');
-    }),
-  };
-}
+const health = (updateChannel?: string) =>
+  JSON.stringify({
+    status: 'ok',
+    version: '0.1.40',
+    ffprobe: true,
+    libraries: 1,
+    items: 1,
+    shows: 1,
+    updateChannel,
+  });
 
 beforeEach(() => {
   vi.clearAllMocks();
+  session.current = null;
   check.mockResolvedValue(null);
   vi.useFakeTimers();
   vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -62,31 +73,58 @@ describe('on launch', () => {
   });
 });
 
-describe('when a newer build exists', () => {
-  it('installs it and then relaunches', async () => {
-    const order: string[] = [];
-    const update = available(order);
-    relaunch.mockImplementation(async () => {
-      order.push('relaunch');
-    });
-    check.mockResolvedValue(update);
+describe('the channel', () => {
+  it('follows stable for an app signed into no server', async () => {
+    startUpdater();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(check).toHaveBeenCalledWith('update_install', { channel: 'Stable' });
+  });
+
+  it('follows the channel of the server it is signed into', async () => {
+    session.current = { serverUrl: 'http://nas.local:4040/' };
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(health('Canary')));
 
     startUpdater();
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(update.downloadAndInstall).toHaveBeenCalledOnce();
-    // Relaunching first restarts into the OLD build, and the update then
-    // re-downloads on every launch forever.
-    expect(order).toEqual(['install', 'relaunch']);
+    expect(fetch).toHaveBeenCalledWith('http://nas.local:4040/api/health');
+    expect(check).toHaveBeenCalledWith('update_install', { channel: 'Canary' });
+  });
+
+  it('falls back to stable when the server cannot be reached', async () => {
+    session.current = { serverUrl: 'http://nas.local:4040' };
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
+
+    startUpdater();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(check).toHaveBeenCalledWith('update_install', { channel: 'Stable' });
+  });
+
+  it('falls back to stable for a server too old to say', async () => {
+    session.current = { serverUrl: 'http://nas.local:4040' };
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(health()));
+
+    startUpdater();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(check).toHaveBeenCalledWith('update_install', { channel: 'Stable' });
+  });
+});
+
+describe('when a newer build exists', () => {
+  it('relaunches once the install answered its version', async () => {
+    check.mockResolvedValue('0.1.40');
+
+    startUpdater();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(relaunch).toHaveBeenCalledOnce();
   });
 
   it('does not relaunch when the install fails', async () => {
-    check.mockResolvedValue({
-      version: '0.1.36',
-      downloadAndInstall: async () => {
-        throw new Error('disk full');
-      },
-    });
+    check.mockRejectedValue(new Error('disk full'));
     startUpdater();
     await vi.advanceTimersByTimeAsync(0);
     // Restarting after a half-written install is how a working app becomes a

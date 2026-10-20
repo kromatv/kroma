@@ -1,16 +1,17 @@
-import { release } from 'virtual:kroma-releases';
 import { IconBrandAndroid, IconBrandApple } from '@tabler/icons-react';
 import { family } from '#site/components/download/families/meta';
 import { docs, join } from '#site/components/download/links';
 import { PlatformFamily } from '#site/components/download/platform-family';
 import { downloadsFor } from '#site/lib/releases';
 import { m } from '#site/paraglide/messages';
+import { useDownloadRelease } from '#site/components/download/channel';
 
 /**
  * iOS has no file here: the release carries an App Store `.ipa`, which nobody
  * who downloads it can install.
  */
 export function MobileFamily() {
+  const release = useDownloadRelease();
   return (
     <PlatformFamily
       meta={family('mobile')}
