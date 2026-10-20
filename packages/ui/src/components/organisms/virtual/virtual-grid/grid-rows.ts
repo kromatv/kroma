@@ -104,14 +104,16 @@ export function freeOffset(fraction: number, metrics: RowMetrics): number {
   return from + (to - from) * (at - low);
 }
 
-/** The rows to mount: the page on screen plus `overscan` either side, so the
- *  row a press moves to already exists. The navigator can only reach a node
- *  that is registered. */
+/** The rows to mount around `focused`, sliding one row per press so a held D-pad mounts a row at a time. */
 export function rowWindow(focused: number, metrics: RowMetrics, overscan: number): RowWindow {
   const top = pageRow(focused, metrics);
+  const extra = Math.max(0, overscan - 1);
   return {
-    start: Math.max(0, top - overscan),
-    end: Math.min(metrics.count - 1, top + metrics.visible - 1 + overscan),
+    start: Math.max(0, Math.min(top, focused - metrics.visible + 1) - extra),
+    end: Math.min(
+      metrics.count - 1,
+      Math.max(top + metrics.visible - 1, focused + metrics.visible) + extra,
+    ),
   };
 }
 

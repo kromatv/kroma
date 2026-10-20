@@ -119,12 +119,16 @@ describe('freeOffset', () => {
 });
 
 describe('rowWindow', () => {
-  it('mounts the page on screen plus the overscan either side', () => {
-    expect(rowWindow(4, METRICS, 1)).toEqual({ start: 2, end: 6 });
+  it('mounts the page on screen and the page below the focus', () => {
+    expect(rowWindow(4, METRICS, 1)).toEqual({ start: 2, end: 7 });
   });
 
-  it('mounts the page alone when nothing is asked for either side', () => {
-    expect(rowWindow(4, METRICS, 0)).toEqual({ start: 3, end: 5 });
+  it('slides one row per press inside a page', () => {
+    expect(rowWindow(5, METRICS, 1)).toEqual({ start: 3, end: 8 });
+  });
+
+  it('reaches one row further each way per overscan row past the first', () => {
+    expect(rowWindow(4, METRICS, 2)).toEqual({ start: 1, end: 8 });
   });
 
   it('never starts before the first row', () => {
@@ -132,7 +136,7 @@ describe('rowWindow', () => {
   });
 
   it('never ends past the last row', () => {
-    expect(rowWindow(10, METRICS, 2)).toEqual({ start: 6, end: 10 });
+    expect(rowWindow(10, METRICS, 2)).toEqual({ start: 7, end: 10 });
   });
 });
 
@@ -150,6 +154,6 @@ describe('catchUpWindow', () => {
   });
 
   it('never reaches past either end of the list', () => {
-    expect(catchUpWindow(10, 10, METRICS, 2)).toEqual({ start: 6, end: 10 });
+    expect(catchUpWindow(10, 10, METRICS, 2)).toEqual({ start: 7, end: 10 });
   });
 });
