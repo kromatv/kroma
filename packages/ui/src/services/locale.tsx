@@ -13,7 +13,7 @@ import { useDeviceStore } from '#ui/lib/device-store';
 import { type KromaClient, saveLocalePref } from '@kromatv/client';
 import { deviceLocale, normalizeLocale } from '@kromatv/core';
 import type { Locale } from '@kromatv/i18n';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { I18nProvider } from './i18n';
 
 export interface LocaleProviderProps {
@@ -63,20 +63,26 @@ export function LocaleProvider({
 
   // On mount: hand the device locale to the client's Accept-Language, unless the
   // signed-in account's preference already applies (handled by the effect
-  // below). When the user is signed in but has no account-level language set,
-  // sync the detected locale to the server so server-rendered content
-  // (notifications, push) matches the UI.
+  // below).
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- mount-only; account changes are handled separately.
   useEffect(() => {
     if (accountLocale) return;
     const detected = deviceLocale(storage);
     applied.current = detected;
     client?.setLocale(detected);
-    if (onAccountChange) {
-      onAccountChange(detected);
-      client?.accounts.updateLanguage(detected).catch(() => {});
-    }
   }, []);
+
+  // A signed-in account with no language of its own takes the device's, so
+  // server-rendered content (notifications, push) matches the UI. Keyed on the
+  // sign-in rather than on mount: auth usually resolves after the first render.
+  const saveToAccount = useEffectEvent(() => {
+    onAccountChange?.(applied.current);
+    client?.accounts.updateLanguage(applied.current).catch(() => {});
+  });
+  const signedInWithoutLanguage = onAccountChange !== undefined && !accountLocale;
+  useEffect(() => {
+    if (signedInWithoutLanguage) saveToAccount();
+  }, [signedInWithoutLanguage]);
 
   // The signed-in account's preference is authoritative: adopt it whenever it
   // becomes known or changes (sign-in, profile switch, or an `me()` refresh that

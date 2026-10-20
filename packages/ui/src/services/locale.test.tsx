@@ -170,4 +170,39 @@ describe('LocaleProvider', () => {
     );
     expect(document.documentElement.lang).toBe('untouched');
   });
+
+  it('saves the device language to an account that signs in after the first render', () => {
+    saveLocalePref('en');
+    const client = fakeClient();
+    const onAccountChange = vi.fn();
+    const { rerender } = render(
+      <LocaleProvider client={client}>
+        <Probe />
+      </LocaleProvider>,
+    );
+
+    rerender(
+      <LocaleProvider client={client} onAccountChange={onAccountChange}>
+        <Probe />
+      </LocaleProvider>,
+    );
+
+    expect(onAccountChange).toHaveBeenCalledWith('en');
+    expect(client.accounts.updateLanguage).toHaveBeenCalledWith('en');
+  });
+
+  it('leaves an account that already has a language alone', () => {
+    saveLocalePref('en');
+    const client = fakeClient();
+    const onAccountChange = vi.fn();
+
+    render(
+      <LocaleProvider client={client} accountLanguage="fr" onAccountChange={onAccountChange}>
+        <Probe />
+      </LocaleProvider>,
+    );
+
+    expect(onAccountChange).not.toHaveBeenCalled();
+    expect(client.accounts.updateLanguage).not.toHaveBeenCalled();
+  });
 });
