@@ -102,6 +102,8 @@ export { FocusColumn, FocusRegion, FocusScope } from './lib/focus-scope';
 export type { FocusScrollProps } from './lib/focus-scroll';
 export { FocusLine, FocusRail, FocusScroll, FocusSlot } from './lib/focus-scroll';
 export { useFocusServices } from './lib/focus-services-context';
+export { FrostSource } from './lib/gl-frost/frost-source';
+export type { FrostSourceProps } from './lib/gl-frost/frost-source-types';
 export type { FocusNavHandlers } from './lib/focus-types';
 export { useFocusVisible } from './lib/focus-visible';
 export type {

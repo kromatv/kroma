@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { RING_ROOM } from '#ui/core/tokens';
 import { FocusLiftView } from '#ui/lib/focus-lift';
+import { useFrostGlide } from '#ui/lib/gl-frost/context';
 import { usePointerDriving } from '#ui/lib/input-source';
 import { WEB } from '#ui/lib/platform';
 import { useReducedMotion } from '#ui/lib/reduced-motion';
@@ -172,6 +173,7 @@ function AxisScroll({
   const wasScrolled = useRef(false);
   const showing = useRef<Anchor | null>(null);
   const reduced = useReducedMotion();
+  const frost = useFrostGlide();
 
   const reveal = useCallback(
     (anchor: Anchor) => {
@@ -206,6 +208,7 @@ function AxisScroll({
                 });
           if (mode === 'nearest' && offset === current.current) return;
           current.current = offset;
+          if (!reduced && frost?.glide(scroller.current, horizontal, offset)) return;
           scroller.current?.scrollTo(
             horizontal ? { x: offset, animated: !reduced } : { y: offset, animated: !reduced },
           );
@@ -214,7 +217,7 @@ function AxisScroll({
         () => {},
       );
     },
-    [horizontal, mode, offsetFromStart, reduced],
+    [frost, horizontal, mode, offsetFromStart, reduced],
   );
 
   const room = ringRoom(flat(style), flat(contentStyle), horizontal);

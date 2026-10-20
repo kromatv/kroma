@@ -20,6 +20,7 @@ import { ThemeHost } from './core/theme-host';
 import type { DeviceStore } from './lib/device-store';
 import type { ControlSize } from './lib/field-shell';
 import { createFocusServices } from './lib/focus-services';
+import { createFrostHost } from './lib/gl-frost/host';
 import { FocusServicesProvider, useFocusServicesParent } from './lib/focus-services-context';
 import type { ImageBackend } from './lib/image-backend';
 import { createInputGate, InputGateProvider, useInputGateParent } from './lib/input-gate';
@@ -46,9 +47,12 @@ export type FormFactor = 'tv' | 'phone' | 'browser';
 type EntryDefaults = Readonly<{ physicalKeyboard: boolean; size: ControlSize }>;
 
 const FORM_FACTOR: Readonly<
-  Record<FormFactor, { entry: EntryDefaults; surfaces: SurfacePresentation }>
+  Record<
+    FormFactor,
+    { entry: EntryDefaults; surfaces: SurfacePresentation; frostLayerOnly?: boolean }
+  >
 > = {
-  tv: { entry: { physicalKeyboard: false, size: 'tv' }, surfaces: 'auto' },
+  tv: { entry: { physicalKeyboard: false, size: 'tv' }, surfaces: 'auto', frostLayerOnly: true },
   phone: { entry: { physicalKeyboard: true, size: 'md' }, surfaces: 'dialog' },
   browser: { entry: { physicalKeyboard: true, size: 'sm' }, surfaces: 'auto' },
 };
@@ -59,6 +63,9 @@ export interface KitConfig<P extends FrostBackdropProps = FrostBackdropProps> {
   remote?: boolean;
   deviceStore?: DeviceStore | null;
   frostEnabled?: boolean;
+  /** Frost drawn only by a `<FrostSource>`'s layer: anywhere else a frosted
+   *  surface keeps its plain fill. Defaults to true for `tv`, false otherwise. */
+  frostLayerOnly?: boolean;
   entry?: Partial<EntryDefaults>;
   surfaces?: SurfacePresentation;
   ground?: ThemeMode;
@@ -99,6 +106,7 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
   const focus = config.remote === undefined ? (inheritedFocus ?? ownedFocus) : ownedFocus;
   const [menuKeys] = useState(createMenuKeys);
   const [scrollLock] = useState(createScrollLock);
+  const [frostHost] = useState(createFrostHost);
   const value = useMemo(() => {
     const preset = config.formFactor && FORM_FACTOR[config.formFactor];
     return {
@@ -108,10 +116,12 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
       entry: { ...parent.entry, ...preset?.entry, ...config.entry },
       surfaces: config.surfaces ?? preset?.surfaces ?? parent.surfaces,
       frostEnabled: config.frostEnabled ?? parent.frostEnabled,
+      frostLayerOnly: config.frostLayerOnly ?? preset?.frostLayerOnly ?? parent.frostLayerOnly,
       image: config.image ?? parent.image,
       frost: (config.frost ?? parent.frost) as ComponentType<FrostBackdropProps> | null,
+      frostHost: parent.frostHost ?? frostHost,
     };
-  }, [parent, config, scrollLock, menuKeys]);
+  }, [parent, config, scrollLock, menuKeys, frostHost]);
   return createElement(
     FocusServicesProvider,
     { value: focus },
