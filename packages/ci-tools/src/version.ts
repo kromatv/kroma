@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { setOutput } from './actions';
+import { heading } from './history';
 import { root } from './root';
 
 type Channel = 'stable' | 'candidate' | 'none';
@@ -23,7 +24,7 @@ export interface Context {
   refType: string | undefined;
   refName: string | undefined;
   input: string | undefined;
-  manifestVersion: string;
+  heading: string;
   now: Date;
 }
 
@@ -35,9 +36,9 @@ export const buildNumber = (now: Date) => Math.floor((now.getTime() - EPOCH_2020
 /**
  * The one version a run stamps on everything it builds, and the channel it
  * is for. A tag push is a stable release of that tag; a push to main builds
- * the version main is already on as a candidate, which `deploy.yml` promotes
- * byte for byte; a dispatch builds whatever it was asked for and publishes
- * nothing.
+ * the version it is heading for as a candidate, which `deploy.yml` promotes
+ * byte for byte; a dispatch builds whatever it was asked for, that same
+ * version by default, and publishes nothing.
  */
 export function resolveVersion(ctx: Context): Resolved {
   let version: string;
@@ -47,10 +48,10 @@ export function resolveVersion(ctx: Context): Resolved {
     version = ctx.refName.slice(1);
     channel = 'stable';
   } else if (ctx.event === 'push') {
-    version = ctx.manifestVersion;
+    version = ctx.heading;
     channel = 'candidate';
   } else {
-    version = ctx.input || ctx.manifestVersion;
+    version = ctx.input || ctx.heading;
     channel = 'none';
   }
   const triplet = version.split('-')[0] ?? version;
@@ -75,7 +76,7 @@ export function main(argv: string[]): void {
     refType: process.env.GITHUB_REF_TYPE,
     refName: process.env.GITHUB_REF_NAME,
     input: values.input,
-    manifestVersion: manifestVersion(),
+    heading: heading().version ?? manifestVersion(),
     now: new Date(),
   });
   for (const [key, value] of Object.entries(resolved)) setOutput(key, value);

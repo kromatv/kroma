@@ -18,12 +18,42 @@ fn main() {
 
     // `date -u` exists on the Linux/macOS build hosts; anything else falls back
     // to "unknown".
-    let date = output("date", &["-u", "+%Y-%m-%d %H:%M UTC"])
-        .unwrap_or_else(|| "unknown".to_owned());
+    let date =
+        output("date", &["-u", "+%Y-%m-%d %H:%M UTC"]).unwrap_or_else(|| "unknown".to_owned());
     println!("cargo:rustc-env=KROMA_BUILD_DATE={date}");
 
+    let version = from_env("KROMA_VERSION")
+        .or_else(after_last_release)
+        .unwrap_or_else(|| std::env::var("CARGO_PKG_VERSION").unwrap_or_default());
+    println!("cargo:rustc-env=KROMA_VERSION={version}");
+
     println!("cargo:rerun-if-env-changed=KROMA_GIT_HASH");
+    println!("cargo:rerun-if-env-changed=KROMA_VERSION");
     println!("cargo:rerun-if-changed=../.git/HEAD");
+    println!("cargo:rerun-if-changed=../.git/refs/tags");
+    println!("cargo:rerun-if-changed=../.git/packed-refs");
+}
+
+fn after_last_release() -> Option<String> {
+    let tag = output(
+        "git",
+        &[
+            "describe",
+            "--tags",
+            "--abbrev=0",
+            "--match",
+            "v[0-9]*.[0-9]*.[0-9]*",
+            "--exclude",
+            "v*-*",
+        ],
+    )?;
+    let mut parts = tag.strip_prefix('v')?.split('.').map(str::parse::<u64>);
+    let (major, minor, patch) = (
+        parts.next()?.ok()?,
+        parts.next()?.ok()?,
+        parts.next()?.ok()?,
+    );
+    Some(format!("{major}.{minor}.{}", patch + 1))
 }
 
 fn from_env(key: &str) -> Option<String> {

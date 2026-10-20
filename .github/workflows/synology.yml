@@ -50,9 +50,35 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+  version:
+    name: Resolve version
+    needs: changes
+    if: >-
+      always() && !cancelled()
+      && (github.event_name == 'workflow_dispatch'
+          || needs.changes.outputs.relevant == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          filter: blob:none
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - id: v
+        run: bun run ci version
+
   build:
     name: Build .spk
-    needs: changes
+    needs: [changes, version]
     permissions:
       contents: read
     # `always()` so the SKIPPED changes job (dispatch) still lets the dispatch
@@ -62,22 +88,13 @@ jobs:
     # for TV-only and docs commits.
     if: >-
       always() && !cancelled()
+      && needs.version.result == 'success'
       && (github.event_name == 'workflow_dispatch'
           || needs.changes.outputs.relevant == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      # Tag -> that version minus the leading `v`. main / dispatch -> empty, so
-      # build.sh derives it from server/Cargo.toml and stamps the canary build.
-      - id: ver
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=" >> "$GITHUB_OUTPUT"
-          fi
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
@@ -105,7 +122,7 @@ jobs:
 
       # build.sh: web SPA -> static musl kroma-server -> static ffmpeg -> .spk.
       - name: Build .spk
-        run: clients/synology/build.sh ${{ steps.ver.outputs.version }}
+        run: clients/synology/build.sh ${{ needs.version.outputs.version }}
 
       # The Docker musl build writes root-owned files into the cache + target;
       # hand them back so actions/cache can save (else it fails silently and
@@ -146,13 +163,14 @@ jobs:
   # The web SPA is arch-independent and reused from the .spk payload.
   arm64:
     name: Build arm64 payload
-    needs: changes
+    needs: [changes, version]
     permissions:
       contents: read
     # Same gate as `build` above: dispatch always, main pushes only on
     # relevant changes.
     if: >-
       always() && !cancelled()
+      && needs.version.result == 'success'
       && (github.event_name == 'workflow_dispatch'
           || needs.changes.outputs.relevant == 'true')
     runs-on: ubuntu-latest
@@ -197,6 +215,7 @@ jobs:
             -w /home/rust/repo/server \
             -v "$PWD/.cargo-registry":/root/.cargo/registry \
             -e KROMA_GIT_HASH="$(git rev-parse --short HEAD)" \
+            -e KROMA_VERSION="${{ needs.version.outputs.version }}" \
             "$RUST_IMAGE" \
             cargo build --release --locked --target "$TARGET"
 

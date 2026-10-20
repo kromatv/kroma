@@ -82,9 +82,20 @@ the Gradle home without writing a copy, and there is one Rust tree.
 
 ## release.yml: candidates and the canary channel
 
-Every push to `main` builds the whole fleet for the version `server/Cargo.toml`
-is on, as a **candidate** that publishes no Release. `deploy.yml` promotes a
-candidate's exact bytes behind the `production` environment approval.
+Every push to `main` builds the whole fleet for the version its commits make, as
+a **candidate** that publishes no Release. `ci version` takes the last `vX.Y.Z`
+tag and bumps it by the squash titles since: below 1.0 a breaking change (`!` or
+a `BREAKING CHANGE:` footer) bumps the minor and a `feat`, `fix` or `perf` the
+patch; from 1.0 on it is semver. Maintenance alone builds the last release's
+version again, which deploy then refuses to promote. Nothing is committed back
+after a release, so `server/Cargo.toml` is not the version: CI stamps
+`KROMA_VERSION` into the binary through `server/build.rs`, and a local build
+takes the newest release tag plus one patch. The candidate records the version
+it stamped as the `candidate-version` artifact, and `deploy.yml` promotes that
+version with the run's exact bytes, behind the `production` environment
+approval, and writes the Release body (`releases/<v>/en.md` unless it is still
+a draft, then `ci changelog`). `CHANGELOG.md` is written by hand after a
+release: `bun run ci changelog --version <v> --write`.
 `ci version` resolves one version, one `triplet`, and one `build` number
 (minutes since 2020) for the run; every store-bound package in the run carries
 that same number.

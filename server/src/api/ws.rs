@@ -122,7 +122,7 @@ async fn pump(mut socket: WebSocket, state: SharedState, who: Viewer) {
     let mut rx = state.events.subscribe();
 
     let Ok(hello) = serde_json::to_string(&ServerEvent::Hello {
-        version: env!("CARGO_PKG_VERSION"),
+        version: crate::VERSION,
     }) else {
         return;
     };

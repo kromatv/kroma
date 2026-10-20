@@ -71,7 +71,10 @@ cargo fmt                   # rustfmt is canonical; run before every PR
   documented in [`packages/ui/README.md`](packages/ui/README.md).
 - Keep the server's dependency graph **lean and Rust 1.81-friendly** (see the
   notes in [`server/Cargo.toml`](server/Cargo.toml)).
-- Write clear commit messages and describe the *why* in your PR.
+- Write clear commit messages and describe the *why* in your PR. The squash title
+  is a conventional commit and it sets the next version: `feat` and `fix` bump
+  it, `!` marks a breaking change, `chore`, `ci`, `docs`, `refactor` and `test`
+  bump nothing (see [`docs/ci.md`](docs/ci.md)).
 
 Custom lint rules live in [`packages/lint-rules`](packages/lint-rules/README.md).
 Use `bun run --cwd packages/lint-rules rules --json` for agent-readable guidance, or

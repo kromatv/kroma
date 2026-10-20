@@ -378,7 +378,7 @@ async fn store_platform_names_the_build_target_and_the_server_version() {
     assert_eq!(status, StatusCode::OK);
     let target = body["target"].as_str().expect("a target triple");
     assert!(target.contains('-'), "{target}");
-    assert_eq!(body["serverVersion"], json!(env!("CARGO_PKG_VERSION")));
+    assert_eq!(body["serverVersion"], json!(crate::VERSION));
 }
 
 #[tokio::test]

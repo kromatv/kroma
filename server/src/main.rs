@@ -14,6 +14,10 @@
 // one owns is unreachable in that build and only in that build.
 #![cfg_attr(feature = "hotpatch", allow(dead_code))]
 
+/// The version this binary reports everywhere: CI stamps `KROMA_VERSION`, and a
+/// local build derives it from the newest release tag (see `build.rs`).
+pub const VERSION: &str = env!("KROMA_VERSION");
+
 mod api;
 mod boot;
 mod tls;

@@ -16,7 +16,7 @@ use crate::model::{Permission, ReleasesView};
 use crate::services::releases;
 use crate::state::SharedState;
 
-const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
+const SERVER_VERSION: &str = crate::VERSION;
 
 pub fn routes() -> Router<SharedState> {
     Router::new()

@@ -19,8 +19,8 @@ releases/0.1.39/fr.md
 releases/0.1.39/release.json
 ```
 
-The version is the one `server/Cargo.toml` carries for the release. The range
-starts at the last `v[0-9]*` tag. Module and vendor tags are not server releases.
+The version is the one the commits since the last `v[0-9]*` tag make: `bun run ci
+changelog` prints it. The range starts at that tag. Module and vendor tags are not server releases.
 
 The server embeds every folder when it is built and serves the notes at
 `GET /api/releases`, in the reader's language, falling back to English. A release
@@ -35,12 +35,9 @@ lists every release under About.
 { "date": "2026-09-13" }
 ```
 
-GitHub does not read the folder. Once `deploy.yml` has promoted the release,
-replace the body GitHub generated:
-
-```bash
-gh release edit v0.1.39 -R kromatv/kroma --notes-file releases/0.1.39/en.md
-```
+`deploy.yml` builds the GitHub Release body from `en.md` as of the promoted
+commit, followed by an "All changes" list of every feature and fix since the last
+tag. Land the note before promoting; without one the body is the list alone.
 
 ## Shape
 
