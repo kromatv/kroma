@@ -1,25 +1,29 @@
 #!/usr/bin/env bash
-# Draft releases/<version>/ and open (or refresh) its pull request.
+# Draft releases/<version>/ off origin/main and open its pull request. An
+# existing draft branch is left alone, since a person may be editing it, unless
+# FORCE is true.
 #
-# Inputs (env): GH_TOKEN, GH_REPO, VERSION_INPUT (optional), ANTHROPIC_API_KEY (optional)
+# Inputs (env): GH_TOKEN, GH_REPO, VERSION_INPUT, FORCE, ANTHROPIC_API_KEY (optional)
 set -euo pipefail
+
+git fetch -q origin main
+git checkout -q --detach origin/main
 
 args=()
 [[ -n "${VERSION_INPUT:-}" ]] && args=(--version "$VERSION_INPUT")
-VERSION="$(GITHUB_OUTPUT='' bun packages/ci-tools/src/cli.ts changelog "${args[@]}" \
-  | sed -nE 's/^version=//p' | head -1)"
-[[ -n "$VERSION" ]] || { echo "::error::No version to draft."; exit 1; }
+out="$(GITHUB_OUTPUT='' bun packages/ci-tools/src/cli.ts notes "${args[@]}")"
+echo "$out"
+VERSION="$(sed -nE 's/^version=//p' <<<"$out" | head -1)"
+[[ -n "$VERSION" ]] || { echo "::error::No version was drafted."; exit 1; }
 
 branch="docs/release-notes-$VERSION"
-git checkout -q -B "$branch"
-bun packages/ci-tools/src/cli.ts notes --version "$VERSION"
-
-git add "releases/$VERSION"
-if git diff --cached --quiet; then
-  echo "releases/$VERSION is unchanged"
+if git ls-remote --exit-code --heads origin "$branch" >/dev/null && [[ "${FORCE:-false}" != true ]]; then
+  echo "::notice::$branch already exists and may hold edits; rerun with force to replace it."
   exit 0
 fi
 
+git checkout -q -B "$branch"
+git add "releases/$VERSION"
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 git commit -qm "docs(releases): draft the $VERSION notes"

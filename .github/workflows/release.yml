@@ -435,17 +435,13 @@ jobs:
             --triplet "${{ needs.version.outputs.triplet }}" \
             --version "${{ needs.version.outputs.canary }}" \
             "${files[@]}"
-      # What this push changed, drafted by Claude when the key is set and listed
-      # from the commit subjects otherwise. Only this push's commits, so the cost
-      # stays one short call per build. A note is never worth failing the
-      # channel over.
       - name: Canary notes
         continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          BEFORE: ${{ github.event.before }}
         run: |
+          prev="$(gh release view canary --json body --jq .body | sed -nE 's/.*kroma-canary-commit: ([0-9a-f]{40}).*/\1/p' | tail -1)"
           since=()
-          if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then since=(--since "$BEFORE"); fi
+          if [[ -n "$prev" ]] && git merge-base --is-ancestor "$prev" HEAD 2>/dev/null; then since=(--since "$prev"); fi
           bun run ci notes --canary canary-notes.md "${since[@]}"
           gh release edit canary --notes-file canary-notes.md

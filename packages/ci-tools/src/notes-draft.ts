@@ -20,15 +20,21 @@ const bullet = (c: Commit) => {
   return `- ${c.text}${pr}`;
 };
 
+function highlight(c: Commit): string[] {
+  return [`### ${c.text}`, '', c.pr ? `#${c.pr}` : c.sha.slice(0, 9), ''];
+}
+
 /**
  * A note made of the subjects alone, for when no model is reachable: every
- * feature under New and every fix under Fixed, in English in both files. It is
- * a starting point for a writer, never something to ship as it stands.
+ * feature as a highlight under New and every fix under Fixed, in English in
+ * both files. It is a starting point for a writer, never something to ship as
+ * it stands.
  */
 export function fallbackNote(commits: readonly Commit[], lang: Lang): string {
   const [, newHeading, fixedHeading] = HEADINGS[lang];
+  const features = commits.filter((c) => c.type === 'feat').flatMap(highlight);
   const lines = [
-    ...section(newHeading, commits.filter((c) => c.type === 'feat').map(bullet)),
+    ...(features.length === 0 ? [] : [newHeading, '', ...features]),
     ...section(fixedHeading, commits.filter(isFix).map(bullet)),
   ];
   return `${lines.join('\n').trimEnd()}\n`;
@@ -40,22 +46,34 @@ export function fallbackCanary(commits: readonly Commit[]): string {
   return lines.length === 0 ? 'Maintenance only.\n' : `${lines.join('\n')}\n`;
 }
 
+function looseUnderNew(lines: readonly string[], newHeading: string): boolean {
+  const start = lines.indexOf(newHeading);
+  if (start === -1) return false;
+  for (const line of lines.slice(start + 1)) {
+    if (line.startsWith('## ')) return false;
+    if (line.startsWith('### ')) return false;
+    if (line !== '') return true;
+  }
+  return false;
+}
+
 /**
- * Why a drafted note cannot be used, or null when it can: the server parses
- * the `##` headings, so an unknown one or one out of order would drop a section.
+ * Why a drafted note cannot be used, or null when it can. The server parses
+ * the `##` headings, so an unknown one or one out of order would drop a
+ * section, and it reads New only as `###` highlights, so text under New before
+ * the first one would be lost.
  */
 export function shapeProblem(note: string, lang: Lang): string | null {
   const allowed: readonly string[] = HEADINGS[lang];
-  const found = note
-    .split('\n')
-    .filter((line) => line.startsWith('## '))
-    .map((line) => line.trim());
+  const lines = note.split('\n').map((line) => line.trim());
+  const found = lines.filter((line) => line.startsWith('## '));
   if (found.length === 0) return 'no section';
   const unknown = found.find((heading) => !allowed.includes(heading));
   if (unknown) return `unknown heading '${unknown}'`;
   const order = found.map((heading) => allowed.indexOf(heading));
   if (order.some((index, i) => i > 0 && index <= (order[i - 1] ?? -1)))
     return 'headings out of order';
+  if (looseUnderNew(lines, HEADINGS[lang][1])) return 'text under New outside a highlight';
   return null;
 }
 

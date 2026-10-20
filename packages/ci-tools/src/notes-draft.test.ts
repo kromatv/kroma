@@ -6,7 +6,7 @@ const commits = (...subjects: string[]): Commit[] =>
   subjects.flatMap((subject) => parseCommit('sha', subject) ?? []);
 
 describe('fallbackNote', () => {
-  it('lists features under New and fixes under Fixed, in the language’s headings', () => {
+  it('makes features highlights under New and fixes lines under Fixed, in each language', () => {
     const range = commits(
       'feat(tv): settings pane (#296)',
       'fix: a cast reaches the TV (#285)',
@@ -14,7 +14,7 @@ describe('fallbackNote', () => {
     );
 
     expect(fallbackNote(range, 'en')).toBe(
-      '## New\n\n- settings pane (#296)\n\n## Fixed\n\n- a cast reaches the TV (#285)\n',
+      '## New\n\n### settings pane\n\n#296\n\n## Fixed\n\n- a cast reaches the TV (#285)\n',
     );
     expect(fallbackNote(range, 'fr')).toContain('## Nouveautés');
     expect(fallbackNote(range, 'fr')).toContain('## Corrections');
@@ -55,6 +55,16 @@ describe('shapeProblem', () => {
     expect(shapeProblem('## Corrections\n- a\n\n## Nouveautés\n- b\n', 'fr')).toBe(
       'headings out of order',
     );
+  });
+
+  it('refuses text under New that is not a highlight', () => {
+    expect(shapeProblem('## New\n\n- a bullet\n', 'en')).toBe('text under New outside a highlight');
+  });
+
+  it('accepts the fallback note it would write itself', () => {
+    const note = fallbackNote(commits('feat: a (#1)', 'fix: b (#2)'), 'fr');
+
+    expect(shapeProblem(note, 'fr')).toBeNull();
   });
 
   it('refuses a note with no section', () => {

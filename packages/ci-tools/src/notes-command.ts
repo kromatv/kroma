@@ -1,11 +1,9 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { z } from 'zod';
-import { summary } from './actions';
+import { setOutput, summary } from './actions';
 import { NOTES } from './canary-command';
-import { commitsSince, lastStable } from './history';
-import { nextVersion } from './next-version';
+import { commitOf, commitsSince, heading } from './history';
 import { draftCanary, draftRelease } from './notes-model';
 import {
   fallbackCanary,
@@ -14,20 +12,11 @@ import {
   type Lang,
   shapeProblem,
 } from './notes-draft';
+import { isHandWritten } from './release-folder';
 import { root } from './root';
 
-const Meta = z.object({ draft: z.boolean().optional() }).loose();
-
-function isHandWritten(folder: string): boolean {
-  const meta = join(folder, 'release.json');
-  if (!existsSync(join(folder, 'en.md'))) return false;
-  if (!existsSync(meta)) return true;
-  try {
-    return Meta.safeParse(JSON.parse(readFileSync(meta, 'utf8'))).data?.draft !== true;
-  } catch {
-    return true;
-  }
-}
+/** The marker the canary body ends with, naming the commit it was written for. */
+export const CANARY_MARKER = 'kroma-canary-commit';
 
 function usable(note: string | undefined, lang: Lang): string | null {
   if (!note) return null;
@@ -37,29 +26,35 @@ function usable(note: string | undefined, lang: Lang): string | null {
 }
 
 async function release(version: string | undefined, to: string, force: boolean): Promise<void> {
-  const last = lastStable(to, version);
-  const commits = commitsSince(last ? `v${last}` : null, to);
-  const target = version ?? (last ? nextVersion(last, commits) : null);
+  const { last, commits, version: next } = heading(to, version);
+  const target = version ?? (next !== last ? next : null);
   if (!target) throw new Error(`nothing releasable since v${last}`);
-  const folder = join(root, 'releases', target);
-  if (isHandWritten(folder) && !force) {
+  if (isHandWritten(target) && !force) {
     throw new Error(`releases/${target} is hand-written; pass --force to replace it`);
   }
   const drafted = await draftRelease(target, commits);
+  const folder = join(root, 'releases', target);
   mkdirSync(folder, { recursive: true });
+  const sources: string[] = [];
   for (const lang of ['en', 'fr'] as const) {
-    const note = usable(drafted?.[lang], lang) ?? fallbackNote(commits, lang);
-    writeFileSync(join(folder, `${lang}.md`), note);
+    const written = usable(drafted?.[lang], lang);
+    writeFileSync(join(folder, `${lang}.md`), written ?? fallbackNote(commits, lang));
+    sources.push(`${lang}.md ${written ? 'by the model' : 'from the subjects'}`);
   }
   writeFileSync(join(folder, 'release.json'), `${JSON.stringify({ draft: true }, null, 2)}\n`);
-  summary(`Drafted releases/${target} (${drafted ? 'written by the model' : 'subjects only'}).`);
+  setOutput('version', target);
+  summary(`Drafted releases/${target}: ${sources.join(', ')}.`);
 }
 
 async function canary(to: string, since: string | undefined, out: string): Promise<void> {
   const commits = commitsSince(since ?? `${to}~1`, to);
   const drafted = hasReleasable(commits) ? await draftCanary(commits) : null;
   const notes = (drafted ?? fallbackCanary(commits)).trimEnd();
-  writeFileSync(out, `${NOTES}\n\n## In the newest build\n\n${notes}\n`);
+  const sha = commitOf(to);
+  writeFileSync(
+    out,
+    `${NOTES}\n\n## In the newest build\n\n${notes}\n\n<!-- ${CANARY_MARKER}: ${sha} -->\n`,
+  );
   console.log(notes);
 }
 

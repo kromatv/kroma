@@ -1,10 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 import type { Commit } from './commits';
+import { newestWritten } from './release-folder';
 import { root } from './root';
 
 const MODEL = 'claude-opus-5-5';
@@ -27,35 +28,21 @@ function pullRequest(pr: number): string {
   }
 }
 
+function subject(c: Commit): string {
+  const scope = c.scope ? `(${c.scope})` : '';
+  return `${c.type}${scope}${c.breaking ? '!' : ''}: ${c.text}`;
+}
+
 function changes(commits: readonly Commit[]): string {
   return commits
-    .map((c) => {
-      const scope = c.scope ? `(${c.scope})` : '';
-      const head = `${c.type}${scope}${c.breaking ? '!' : ''}: ${c.text}`;
-      return c.pr ? `${head}\n${pullRequest(c.pr)}` : head;
-    })
+    .map((c) => (c.pr ? `${subject(c)}\n${pullRequest(c.pr)}` : subject(c)))
     .join('\n\n---\n\n');
 }
 
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
 
-const triplet = (v: string) => v.split('.').map(Number);
-const newer = (a: string, b: string) => {
-  const [x, y] = [triplet(a), triplet(b)];
-  for (let i = 0; i < 3; i++) if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) - (y[i] ?? 0);
-  return 0;
-};
-
 function previousNotes(): string[] {
-  const written = readdirSync(join(root, 'releases'))
-    .filter((v) => /^\d+\.\d+\.\d+$/.test(v))
-    .filter(
-      (v) =>
-        !existsSync(join(root, 'releases', v, 'release.json')) ||
-        !read(`releases/${v}/release.json`).includes('"draft": true'),
-    )
-    .sort(newer)
-    .at(-1);
+  const written = newestWritten();
   return written ? [read(`releases/${written}/en.md`), read(`releases/${written}/fr.md`)] : [];
 }
 
@@ -64,13 +51,28 @@ function client(): Anthropic | null {
 }
 
 async function ask<T extends z.ZodType>(
+  anthropic: Anthropic,
   system: string,
   task: string,
   schema: T,
   maxTokens: number,
 ): Promise<z.infer<T> | null> {
-  const anthropic = client();
-  if (!anthropic) return null;
+  try {
+    return await parse(anthropic, system, task, schema, maxTokens);
+  } catch (error) {
+    if (!(error instanceof Anthropic.AnthropicError)) throw error;
+    console.warn(`::warning::the model did not answer (${error.message}); using the plain list`);
+    return null;
+  }
+}
+
+async function parse<T extends z.ZodType>(
+  anthropic: Anthropic,
+  system: string,
+  task: string,
+  schema: T,
+  maxTokens: number,
+): Promise<z.infer<T> | null> {
   const response = await anthropic.beta.messages.parse({
     model: MODEL,
     max_tokens: maxTokens,
@@ -89,6 +91,8 @@ async function ask<T extends z.ZodType>(
 
 /** The English and French notes for `version`, or null when no model answered. */
 export function draftRelease(version: string, commits: readonly Commit[]) {
+  const anthropic = client();
+  if (!anthropic) return Promise.resolve(null);
   const system = [
     read('.claude/skills/release-notes/SKILL.md'),
     read('docs/release-notes.md'),
@@ -102,16 +106,22 @@ export function draftRelease(version: string, commits: readonly Commit[]) {
     '',
     changes(commits),
   ].join('\n');
-  return ask(system, task, Drafted, 16_000);
+  return ask(anthropic, system, task, Drafted, 16_000);
 }
 
-/** Three to five lines on what a tester of this canary build should look at. */
+/**
+ * Three to five lines on what a tester of this canary build should look at,
+ * from the reviewed squash titles alone: the body is published unread, so no
+ * PR body reaches it.
+ */
 export async function draftCanary(commits: readonly Commit[]): Promise<string | null> {
+  const anthropic = client();
+  if (!anthropic) return null;
   const system = [
     'You write the notes of a KROMA canary build: a rolling build of main that testers install.',
     'Three to five Markdown bullets, English, each naming what a tester can now try or check, in',
-    "the reader's words. Leave out CI, tooling and refactors nobody can see.",
+    "the reader's words. Leave out CI, tooling and refactors nobody can see. No links.",
   ].join(' ');
-  const answer = await ask(system, changes(commits), Canary, 2_000);
+  const answer = await ask(anthropic, system, commits.map(subject).join('\n'), Canary, 8_000);
   return answer?.notes ?? null;
 }

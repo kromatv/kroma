@@ -17,6 +17,10 @@ on:
         description: 'Version to draft (X.Y.Z). Defaults to the computed next version.'
         type: string
         default: ''
+      force:
+        description: 'Replace an existing draft branch, edits and all.'
+        type: boolean
+        default: false
 
 concurrency:
   group: release-notes
@@ -46,4 +50,5 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           VERSION_INPUT: ${{ inputs.version }}
+          FORCE: ${{ inputs.force }}
         run: .github/scripts/draft-release-notes.sh
