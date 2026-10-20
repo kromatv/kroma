@@ -15,14 +15,13 @@ import {
   shade,
   style,
   styles,
-  Text,
   useStyles,
 } from '@kromatv/ui/kit';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
 import { CastRemotes } from '#tv/features/cast/CastRemotes';
-import { KromaMark, useClock } from '#tv/shared/ui';
+import { KromaMark, WallClock } from '#tv/shared/ui';
 
 export type NavKey = 'home' | 'films' | 'series' | 'genres' | 'mylist' | 'search';
 
@@ -39,7 +38,6 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
 
   const nav = useNav();
   const t = useT();
-  const clock = useClock();
   const { user } = useAuth();
   const { client, online } = useConnection();
 
@@ -112,9 +110,7 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
           {/* Renders only while a phone or browser is driving this set. */}
           <CastRemotes />
           <ConnectionStatus online={online} label={t('connection.reconnecting')} />
-          <Text variant="labelTv" style={s.clock}>
-            {clock}
-          </Text>
+          <WallClock />
           {user ? (
             <Focusable
               onPress={() => nav.go('profileMenu')}
@@ -153,8 +149,4 @@ function ConnectionStatus({ online, label }: Readonly<{ online: boolean; label: 
 
 const sDefinition = styles({
   band: { w: '100%', align: 'center', justify: 'space-between' },
-  clock: {
-    fontVariant: ['tabular-nums'],
-    textShadow: '0 1px 4px rgba(0, 0, 0, 0.6)',
-  },
 });

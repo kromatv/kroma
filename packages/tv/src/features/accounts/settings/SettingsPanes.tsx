@@ -14,7 +14,7 @@ import {
 import { type ReactNode, useRef, useState } from 'react';
 import { groupAvailable } from '#tv/app/settings/groups';
 import { useNav } from '#tv/app/router';
-import { BeaconMark } from '#tv/shared/ui';
+import { BeaconMark, ScreenClock } from '#tv/shared/ui';
 import { PaneDetail } from './PaneDetail';
 import { PaneRow } from './PaneRow';
 import { type SettingsPane, paneId } from './panes';
@@ -108,6 +108,7 @@ export function SettingsPanes({ header, sections }: Readonly<SettingsPanesProps>
           </FocusColumn>
           {active ? <PaneDetail pane={active} entry={detail} visit={visit} /> : null}
         </FocusRegion>
+        <ScreenClock />
         <BeaconMark />
       </Box>
     </SettingsPopups>

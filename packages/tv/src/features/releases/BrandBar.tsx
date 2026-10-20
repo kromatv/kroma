@@ -1,27 +1,29 @@
-import { Box, styles, Text, useStyles } from '@kromatv/ui/kit';
-import { KromaMark, useClock } from '#tv/shared/ui';
+import { useT } from '@kromatv/ui';
+import type { ReactNode } from 'react';
+import { BackButton, Box } from '@kromatv/ui/kit';
+import { useNav } from '#tv/app/router';
+import { KromaMark, WallClock } from '#tv/shared/ui';
 
-const sDefinition = styles({ clock: { fontVariant: ['tabular-nums'] } });
-
-export function BrandBar() {
-  const s = useStyles(sDefinition);
-
-  const clock = useClock();
+export function BrandBar({ children }: Readonly<{ children?: ReactNode }>) {
+  const t = useT();
+  const nav = useNav();
   return (
     <Box
       absolute
       left={64}
       right={64}
-      top={44}
+      top={34}
       row
       align="center"
       justify="space-between"
-      pointerEvents="none"
+      pointerEvents="box-none"
     >
-      <KromaMark size={28} />
-      <Text variant="labelTv" style={s.clock}>
-        {clock}
-      </Text>
+      <Box row align="center" gap={16} flex>
+        {nav.canGoBack ? <BackButton onPress={nav.back} label={t('common.back')} /> : null}
+        <KromaMark size={28} />
+        {children}
+      </Box>
+      <WallClock />
     </Box>
   );
 }
