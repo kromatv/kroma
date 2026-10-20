@@ -2,6 +2,7 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { workerContext } from './worker-env';
 
 const PROBE = 'KROMA_SITE_KIT_PROBE';
+const AMBIENT = process.env;
 
 process.env[PROBE] = 'ambient';
 
@@ -10,6 +11,7 @@ afterAll(() => {
 });
 
 afterEach(() => {
+  process.env = AMBIENT;
   vi.unstubAllGlobals();
 });
 
@@ -54,15 +56,15 @@ describe('workerContext', () => {
 
   it('leaves out a binding the ambient environment reports as undefined', async () => {
     const fresh = await reloaded();
-    vi.stubGlobal('process', { env: { GITHUB_REPO: 'someone/fork', GITHUB_TOKEN: undefined } });
+    process.env = { GITHUB_REPO: 'someone/fork', GITHUB_TOKEN: undefined };
     const { env } = await fresh();
     expect(env).toEqual({ GITHUB_REPO: 'someone/fork' });
     expect('GITHUB_TOKEN' in env).toBe(false);
   });
 
-  it('stands in an empty environment when the host exposes none', async () => {
+  it('stands in an empty environment when the process carries none', async () => {
     const fresh = await reloaded();
-    vi.stubGlobal('process', {});
+    process.env = undefined as never;
     const { env, waitUntil } = await fresh();
     expect(env).toEqual({});
     expect(typeof waitUntil).toBe('function');

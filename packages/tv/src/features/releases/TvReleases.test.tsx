@@ -3,7 +3,7 @@
 import type { ReleasesView } from '@kromatv/client/releases';
 import { fakeClient } from '@kromatv/client/test';
 import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
-import { cleanup, fireEvent, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider, TvNavProvider } from '#tv/app/router';
 import { TvReleases } from '#tv/features/releases/TvReleases';
@@ -65,6 +65,7 @@ async function openHistory() {
     ),
   );
   await screen.findByText(POSTPLAY.body);
+  await waitFor(() => expect(document.activeElement).toBe(screen.getAllByRole('option')[0]));
   clearPressGuard();
 }
 
