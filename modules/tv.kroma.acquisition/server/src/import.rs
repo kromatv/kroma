@@ -14,6 +14,7 @@ use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::host::{HostStorage, LibraryFolders};
 
 mod content;
+mod ledger;
 mod naming;
 mod place;
 mod recycle;
@@ -23,6 +24,7 @@ mod subtitles;
 pub use recycle::empty_recycle_bin;
 
 use content::{largest, Content};
+use ledger::{until_it_lands, BUSY_BACKOFF};
 use naming::{episode_ctx, movie_ctx, resolve_meta, stem_of};
 use place::{ext_of, Placement};
 use replace::drop_replaced;
@@ -45,7 +47,9 @@ fn finalize_import<S: HostStorage>(state: &S, row: &DownloadRow, written: &[Stri
             episodes: row.episodes.as_deref(),
             request_id: row.request_id.as_deref(),
         };
-        if let Err(e) = on_download_imported(state, &imported) {
+        if let Err(e) = until_it_lands(&BUSY_BACKOFF, "post-import ledger update", || {
+            on_download_imported(state, &imported)
+        }) {
             tracing::warn!(download = %row.id, error = %format!("{e:#}"), "post-import ledger update failed");
         }
         record_file_tmdb(state, row.tmdb_id, written);
@@ -97,7 +101,13 @@ pub fn import_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<Im
                 ));
                 summary.imported += 1;
                 summary.files += paths.len();
-                crate::peers::downloads::mark_imported(state, &row.id, &paths, now_ms())?;
+                let marked = until_it_lands(&BUSY_BACKOFF, "mark imported", || {
+                    crate::peers::downloads::mark_imported(state, &row.id, &paths, now_ms())
+                });
+                if let Err(e) = marked {
+                    tracing::warn!(download = %row.id, error = %format!("{e:#}"), "could not mark the download imported");
+                    continue;
+                }
                 finalize_import(state, &row, &paths);
             }
             Err(e) => {
