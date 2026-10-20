@@ -1,5 +1,4 @@
-import type { MessageKey } from '@kromatv/i18n';
-import { memo, type ReactNode, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import {
@@ -7,33 +6,19 @@ import {
   CLUSTER_GAP,
   CONTROL_SIZE,
   isTransport,
-  type Px,
   ROW_GAP,
   scaler,
   TRANSPORT_GAP,
 } from '#ui/components/organisms/player/lib/metrics';
 import type { ControlId } from '#ui/components/organisms/player/lib/nav';
-import {
-  IconAudioTrack,
-  IconBack10,
-  IconCast,
-  IconFullscreen,
-  IconFullscreenExit,
-  IconFwd10,
-  IconGear,
-  IconNext,
-  IconPause,
-  IconPip,
-  IconPlay,
-  IconSubtitles,
-} from '#ui/components/organisms/player/parts/icons';
+import { IconPause, IconPlay } from '#ui/components/organisms/player/parts/icons';
 import { sv, useSv } from '#ui/core';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
 import { useFocusVisible } from '#ui/lib/focus-visible';
 import { useT } from '#ui/services/i18n';
+import { Circle, CircleControl } from './circle-control';
 import { VolumeControl, volumeGlyph } from './volume-control';
 
-const circleFill = sv({ base: { _focus: { bg: 'tint/22' } } });
 const playFill = sv({ base: { _focus: { bg: 'accentHover' } } });
 
 export interface ControlClusterProps {
@@ -57,81 +42,6 @@ export interface ControlClusterProps {
   onFocus: (id: ControlId) => void;
   onVolume: (v: number) => void;
 }
-
-// Controlled focus (state-driven, not platform/navigator focus; see
-// ../lib/virtual-focus.ts): `focused` is ALWAYS passed explicitly.
-
-function Circle({
-  id,
-  diameter,
-  focused,
-  label,
-  onActivate,
-  onFocus,
-  children,
-}: Readonly<{
-  id: ControlId;
-  diameter: number;
-  focused: boolean;
-  label: string;
-  onActivate: (id: ControlId) => void;
-  onFocus: (id: ControlId) => void;
-  children: ReactNode;
-}>) {
-  const circleFillScoped = useSv(circleFill);
-
-  const lit = useFocusVisible(focused);
-  const dress = useMemo(
-    () => [circleFillScoped(undefined, { focus: lit }).root, NO_OUTLINE],
-    [lit, circleFillScoped],
-  );
-  return (
-    <IconButton
-      variant="glass"
-      diameter={diameter}
-      focused={focused}
-      style={dress}
-      label={label}
-      onPress={() => onActivate(id)}
-      onHoverIn={() => onFocus(id)}
-      onFocus={() => onFocus(id)}
-    >
-      {children}
-    </IconButton>
-  );
-}
-
-interface GlyphState {
-  pipActive: boolean;
-  fullscreen: boolean;
-}
-
-// Every control except play and volume is the SAME circular button, differing
-// only in label and glyph: a table instead of eight near-identical JSX blocks.
-// `pip`/`fullscreen` glyphs depend on player state; every glyph draws at scale.
-const CIRCLES: Record<
-  Exclude<ControlId, 'play' | 'volume'>,
-  { label: MessageKey; glyph: (s: GlyphState, px: Px) => ReactNode }
-> = {
-  rewind: { label: 'player.back10', glyph: (_s, px) => <IconBack10 size={px(27)} /> },
-  forward: { label: 'player.fwd10', glyph: (_s, px) => <IconFwd10 size={px(27)} /> },
-  next: { label: 'player.nextEpisode', glyph: (_s, px) => <IconNext size={px(24)} /> },
-  subtitles: { label: 'player.subtitles', glyph: (_s, px) => <IconSubtitles size={px(25)} /> },
-  audio: { label: 'player.audioTrack', glyph: (_s, px) => <IconAudioTrack size={px(24)} /> },
-  settings: { label: 'player.settings', glyph: (_s, px) => <IconGear size={px(25)} /> },
-  cast: { label: 'cast.moveToTv', glyph: (_s, px) => <IconCast size={px(24)} /> },
-  pip: {
-    label: 'player.pip',
-    glyph: ({ pipActive }, px) => (
-      <IconPip size={px(23)} color={pipActive ? 'accent' : '#FFFFFF'} />
-    ),
-  },
-  fullscreen: {
-    label: 'player.fullscreen',
-    glyph: ({ fullscreen }, px) =>
-      fullscreen ? <IconFullscreenExit size={px(23)} /> : <IconFullscreen size={px(23)} />,
-  },
-};
 
 /**
  * The middle control row (§4): centered transport (rewind/play/forward) plus the
@@ -165,7 +75,6 @@ export const ControlCluster = memo(function ControlCluster({
   const transport = controls.filter(isTransport);
   const cluster = controls.filter((c) => !isTransport(c));
 
-  const glyphState: GlyphState = { pipActive, fullscreen };
   // Keyed on WHICH control holds the focus: the selection moves within the
   // cluster, so the modality has to be re-read on every move.
   const lit = useFocusVisible(focused);
@@ -233,19 +142,17 @@ export const ControlCluster = memo(function ControlCluster({
         />
       );
     }
-    const { label, glyph } = CIRCLES[id];
     return (
-      <Circle
+      <CircleControl
         key={id}
         id={id}
-        diameter={px(CONTROL_SIZE[id])}
         focused={on}
-        label={t(label)}
+        scale={scale}
+        pipActive={pipActive}
+        fullscreen={fullscreen}
         onActivate={onActivate}
         onFocus={onFocus}
-      >
-        {glyph(glyphState, px)}
-      </Circle>
+      />
     );
   };
 

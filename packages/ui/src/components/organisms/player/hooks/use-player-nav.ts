@@ -12,6 +12,7 @@ import { handleDpadKey, handleMediaKey } from '#ui/components/organisms/player/l
 import { nextTabStop } from '#ui/components/organisms/player/lib/tab-walk';
 import type { PlayerCloseReason } from '#ui/components/organisms/player/types';
 import type { RemoteKey } from '#ui/lib/remote-keys';
+import { useStableCallback } from '#ui/lib/stable-callback';
 
 const HIDE_MS = 3500;
 
@@ -159,7 +160,7 @@ export function usePlayerNav(
   const focusProgress = useCallback(() => setZone('progress'), []);
   const exit = useEffectEvent((reason: PlayerCloseReason) => actions.onExit(reason));
 
-  const activate = useEffectEvent((id: ControlId) => {
+  const activate = useStableCallback((id: ControlId) => {
     const a = actions;
     switch (id) {
       case 'rewind':
