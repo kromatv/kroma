@@ -12,9 +12,9 @@ use tracing::{info, warn};
 pub fn announce(config: &Config) -> bool {
     kroma_engine::process_started();
     // Only the binary knows the released version; the engine crate's own
-    // CARGO_PKG_VERSION is a stale 0.1.0.
+    // CARGO_PKG_VERSION is a stale 0.1.0, and a CI build stamps KROMA_VERSION.
     kroma_engine::services::settings::set_build_info(
-        env!("CARGO_PKG_VERSION"),
+        env!("KROMA_VERSION"),
         env!("KROMA_GIT_HASH"),
         env!("KROMA_BUILD_DATE"),
         env!("KROMA_BUILD_TARGET"),

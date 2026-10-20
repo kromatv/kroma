@@ -16,7 +16,7 @@ use crate::state::SharedState;
 /// The Rust target this server was built for: what a sidecar bundle must match.
 pub const BUILD_TARGET: &str = env!("KROMA_BUILD_TARGET");
 
-const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
+const SERVER_VERSION: &str = env!("KROMA_VERSION");
 
 /// One downloadable `.kmod` build. `target = None` means the bundle is
 /// platform-independent (a library module: manifest + FE only).

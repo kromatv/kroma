@@ -173,7 +173,7 @@ pub async fn server_info(
     Ok(Json(crate::api::dto::ServerInfo {
         name: crate::services::settings::server_name(&state.settings),
         hostname,
-        version: env!("CARGO_PKG_VERSION"),
+        version: env!("KROMA_VERSION"),
         uptime_sec: kroma_engine::process_started().elapsed().as_secs(),
         online: true,
         sessions: state.playback.list().len(),

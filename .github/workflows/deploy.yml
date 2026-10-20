@@ -3,8 +3,8 @@ name: Deploy
 # Promote an already-built candidate to a published Release.
 #
 # Nothing is COMPILED here. Every push to main runs "Build & Release", which
-# builds the full artifact fleet for whatever version server/Cargo.toml is on
-# and uploads it. This workflow takes one of those runs, waits for a human to
+# builds the full artifact fleet for the version its commits make and uploads
+# it. This workflow takes one of those runs, waits for a human to
 # approve it, and publishes those exact bytes under a tag.
 #
 # The point is that a version number is no longer spent by pressing the button.
@@ -12,6 +12,10 @@ name: Deploy
 # stale cache, a typo in a workflow - burned a version and needed a new one to
 # retry. Now: fix, push to main, main rebuilds the same version, promote when
 # the candidate is actually good.
+#
+# The Release body is releases/<version>/en.md when one was written, then every
+# feature and fix since the last tag. A pull request then records the release on
+# main: its CHANGELOG.md section and the server/Cargo.toml version.
 #
 # The approval is a GitHub Environment (`production`) with a required reviewer.
 # The job below sits in "Waiting" until it is approved from the run page, and a
@@ -62,6 +66,13 @@ jobs:
       RUN_ID: ${{ inputs.build_run_id }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
 
       - id: check
         name: The run is green, complete, and on main
@@ -81,6 +92,7 @@ jobs:
     permissions:
       actions: read # download the candidate's artifacts
       contents: write # create the tag + the Release
+      pull-requests: write # the CHANGELOG.md record of it
     timeout-minutes: 30
     env:
       GH_TOKEN: ${{ github.token }}
@@ -93,6 +105,14 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0 # full history for the release notes
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+
+      - name: Write the release notes
+        run: .github/scripts/release-notes.sh
 
       # `merge-multiple` flattens every per-platform artifact into one directory,
       # which is the shape the Release wants. Same call the canary publisher
@@ -116,6 +136,11 @@ jobs:
 
       - name: Tag the commit and publish
         run: .github/scripts/deploy-release.sh
+        env:
+          NOTES_FILE: release-notes.md
+
+      - name: Record the release on main
+        run: .github/scripts/record-release.sh
 
   # Shipping to testers is a DEPLOY act, not a build one - which is the whole
   # reason candidates do not do it. But moving publishing out of release.yml

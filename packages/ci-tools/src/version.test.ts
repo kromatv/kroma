@@ -9,12 +9,20 @@ const context = (over: Partial<Context>): Context => ({
   refName: 'main',
   input: undefined,
   manifestVersion: '0.1.39',
+  nextVersion: null,
   now: NOW,
   ...over,
 });
 
 describe('resolveVersion', () => {
-  it('builds a push to main as a candidate of the version main is on', () => {
+  it('builds a push to main as a candidate of the version its commits make', () => {
+    const resolved = resolveVersion(context({ nextVersion: '0.1.40' }));
+
+    expect(resolved).toMatchObject({ version: '0.1.40', triplet: '0.1.40', channel: 'candidate' });
+    expect(resolved.canary).toBe(`0.1.40-canary.${buildNumber(NOW)}`);
+  });
+
+  it('builds a push to main with nothing releasable as the version main is on', () => {
     const resolved = resolveVersion(context({}));
 
     expect(resolved.version).toBe('0.1.39');

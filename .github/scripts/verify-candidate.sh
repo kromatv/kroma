@@ -26,12 +26,11 @@ gate="$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/jobs" --paginate \
 [[ "$gate" = "success" ]] \
   || { echo "::error::Candidate gate on run $RUN_ID is '${gate:-missing}', not success. Not promotable."; exit 1; }
 
-# The version as of that commit, not as of main: the string is baked into every
-# artifact's filename and manifest.
-VERSION="$(gh api "repos/$GH_REPO/contents/server/Cargo.toml?ref=$SHA" \
-  --jq '.content' | base64 -d \
-  | sed -nE 's/^version[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' | head -1)"
-[[ -n "$VERSION" ]] || { echo "::error::Could not read a version from server/Cargo.toml at $SHA."; exit 1; }
+# The version that run stamped: what the commits up to that one make, the same
+# computation release.yml's version job ran, so it needs the full history.
+VERSION="$(GITHUB_OUTPUT='' bun packages/ci-tools/src/cli.ts changelog --to "$SHA" \
+  | sed -nE 's/^version=//p' | head -1)"
+[[ -n "$VERSION" ]] || { echo "::error::Could not compute a version at $SHA."; exit 1; }
 
 # Already released is a conflict only for a different commit: deploy-release.sh
 # reuses the tag and re-uploads with --clobber, so re-promoting the same one is
@@ -39,7 +38,7 @@ VERSION="$(gh api "repos/$GH_REPO/contents/server/Cargo.toml?ref=$SHA" \
 if released_sha=$(gh release view "v$VERSION" --json targetCommitish --jq '.targetCommitish' 2>/dev/null); then
   if [[ "$released_sha" != "$SHA" ]]; then
     echo "::error::v$VERSION is already released from $released_sha, not $SHA."
-    echo "Bump server/Cargo.toml on main before promoting a different commit."
+    echo "Promote the newer run, or land a feat or fix so main computes the next version."
     exit 1
   fi
   echo "note: v$VERSION is already released from this same commit; re-running."

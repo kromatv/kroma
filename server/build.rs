@@ -22,7 +22,12 @@ fn main() {
         .unwrap_or_else(|| "unknown".to_owned());
     println!("cargo:rustc-env=KROMA_BUILD_DATE={date}");
 
+    let version = from_env("KROMA_VERSION")
+        .unwrap_or_else(|| std::env::var("CARGO_PKG_VERSION").unwrap_or_default());
+    println!("cargo:rustc-env=KROMA_VERSION={version}");
+
     println!("cargo:rerun-if-env-changed=KROMA_GIT_HASH");
+    println!("cargo:rerun-if-env-changed=KROMA_VERSION");
     println!("cargo:rerun-if-changed=../.git/HEAD");
 }
 

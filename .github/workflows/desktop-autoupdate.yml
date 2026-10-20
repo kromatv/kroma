@@ -42,11 +42,21 @@ jobs:
       version: ${{ steps.v.outputs.version }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - id: resolve
+        run: bun run ci version
       - id: v
         shell: bash
+        env:
+          BASE: ${{ steps.resolve.outputs.triplet }}
+          BUILD: ${{ steps.resolve.outputs.build }}
         run: |
-          BASE="$(sed -nE 's/^version[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' server/Cargo.toml | head -1)"
-          BUILD=$(( ( $(date -u +%s) - 1577836800 ) / 60 ))
           echo "version=$BASE-$BUILD" >> "$GITHUB_OUTPUT"
           echo "Desktop version: $BASE-$BUILD"
 

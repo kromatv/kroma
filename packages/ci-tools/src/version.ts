@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { setOutput } from './actions';
+import { commitsSince, lastStable } from './history';
+import { nextVersion } from './next-version';
 import { root } from './root';
 
 type Channel = 'stable' | 'candidate' | 'none';
@@ -24,6 +26,8 @@ export interface Context {
   refName: string | undefined;
   input: string | undefined;
   manifestVersion: string;
+  /** What the commits since the last stable tag make, or null when none is releasable. */
+  nextVersion: string | null;
   now: Date;
 }
 
@@ -35,7 +39,7 @@ export const buildNumber = (now: Date) => Math.floor((now.getTime() - EPOCH_2020
 /**
  * The one version a run stamps on everything it builds, and the channel it
  * is for. A tag push is a stable release of that tag; a push to main builds
- * the version main is already on as a candidate, which `deploy.yml` promotes
+ * the version its commits make as a candidate, which `deploy.yml` promotes
  * byte for byte; a dispatch builds whatever it was asked for and publishes
  * nothing.
  */
@@ -47,7 +51,7 @@ export function resolveVersion(ctx: Context): Resolved {
     version = ctx.refName.slice(1);
     channel = 'stable';
   } else if (ctx.event === 'push') {
-    version = ctx.manifestVersion;
+    version = ctx.nextVersion ?? ctx.manifestVersion;
     channel = 'candidate';
   } else {
     version = ctx.input || ctx.manifestVersion;
@@ -65,6 +69,11 @@ function manifestVersion(): string {
   return version;
 }
 
+function computedNext(): string | null {
+  const last = lastStable();
+  return last ? nextVersion(last, commitsSince(`v${last}`)) : null;
+}
+
 export function main(argv: string[]): void {
   const { values } = parseArgs({
     args: argv,
@@ -76,6 +85,7 @@ export function main(argv: string[]): void {
     refName: process.env.GITHUB_REF_NAME,
     input: values.input,
     manifestVersion: manifestVersion(),
+    nextVersion: computedNext(),
     now: new Date(),
   });
   for (const [key, value] of Object.entries(resolved)) setOutput(key, value);

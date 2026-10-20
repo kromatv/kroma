@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 use crate::api::test_support::{get, seed_session, send, test_app, TestApp};
 use crate::model::Permission;
 
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("KROMA_VERSION");
 
 fn member(t: &TestApp) -> String {
     seed_session(&t.state, "ana@test.dev", "ana", &[Permission::Playback]).1
