@@ -437,7 +437,7 @@ jobs:
             --version "${{ needs.version.outputs.canary }}" \
             "${files[@]}"
       # Claude is reached through workload identity federation (rule
-      # kroma-ci-main: kromatv/kroma on main), so no API key is stored.
+      # kroma-notes, workspace kroma-ci), so no API key is stored.
       - name: Fetch the GitHub OIDC token for Claude
         continue-on-error: true
         run: |
@@ -447,10 +447,10 @@ jobs:
       - name: Canary notes
         continue-on-error: true
         env:
-          ANTHROPIC_FEDERATION_RULE_ID: fdrl_019kTyxxazFsC1PSqgZbJKtL
+          ANTHROPIC_FEDERATION_RULE_ID: fdrl_01SKjkxdn6pfKsK4aQDajSRL
           ANTHROPIC_ORGANIZATION_ID: 41981912-0a73-4832-b434-743ff1b4a4a8
           ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01CV1EApwC5Lp2jSCRzyPpr8
-          ANTHROPIC_WORKSPACE_ID: wrkspc_01AvYBXPEedL599MK93cz6mY
+          ANTHROPIC_WORKSPACE_ID: wrkspc_016CYAvvxkS4fuLX2KuZAUHk
           ANTHROPIC_IDENTITY_TOKEN_FILE: ${{ runner.temp }}/anthropic-oidc
         run: |
           prev="$(gh release view canary --json body --jq .body | sed -nE 's/.*kroma-canary-commit: ([0-9a-f]{40}).*/\1/p' | tail -1)"

@@ -25,7 +25,28 @@ function usable(note: string | undefined, lang: Lang): string | null {
   return problem ? null : `${note.trimEnd()}\n`;
 }
 
-async function release(version: string | undefined, to: string, force: boolean): Promise<void> {
+function reviewNote(drafted: { leftOut: string[]; blockers: string[] } | null): string {
+  if (!drafted) return 'Drafted from the commit subjects: no model answered.\n';
+  const list = (items: readonly string[]) =>
+    items.length ? items.map((i) => `- ${i}`) : ['- none'];
+  return [
+    '### Left out',
+    '',
+    ...list(drafted.leftOut),
+    '',
+    '### Checks a pull request asked for that nothing shows were done',
+    '',
+    ...list(drafted.blockers),
+    '',
+  ].join('\n');
+}
+
+async function release(
+  version: string | undefined,
+  to: string,
+  force: boolean,
+  review: string | undefined,
+): Promise<void> {
   const { last, commits, version: next } = heading(to, version);
   const target = version ?? (next !== last ? next : null);
   if (!target) throw new Error(`nothing releasable since v${last}`);
@@ -42,6 +63,7 @@ async function release(version: string | undefined, to: string, force: boolean):
     sources.push(`${lang}.md ${written ? 'by the model' : 'from the subjects'}`);
   }
   writeFileSync(join(folder, 'release.json'), `${JSON.stringify({ draft: true }, null, 2)}\n`);
+  if (review) writeFileSync(review, reviewNote(drafted));
   setOutput('version', target);
   summary(`Drafted releases/${target}: ${sources.join(', ')}.`);
 }
@@ -67,8 +89,9 @@ export async function main(argv: string[]): Promise<void> {
       canary: { type: 'string' },
       since: { type: 'string' },
       force: { type: 'boolean', default: false },
+      review: { type: 'string' },
     },
   });
   if (values.canary) return canary(values.to, values.since, values.canary);
-  return release(values.version, values.to, values.force);
+  return release(values.version, values.to, values.force, values.review);
 }

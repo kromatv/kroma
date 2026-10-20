@@ -12,7 +12,8 @@ git checkout -q --detach origin/main
 
 args=()
 [[ -n "${VERSION_INPUT:-}" ]] && args=(--version "$VERSION_INPUT")
-out="$(GITHUB_OUTPUT='' bun packages/ci-tools/src/cli.ts notes "${args[@]}")"
+review="$(mktemp)"
+out="$(GITHUB_OUTPUT='' bun packages/ci-tools/src/cli.ts notes --review "$review" "${args[@]}")"
 echo "$out"
 VERSION="$(sed -nE 's/^version=//p' <<<"$out" | head -1)"
 [[ -n "$VERSION" ]] || { echo "::error::No version was drafted."; exit 1; }
@@ -30,7 +31,16 @@ git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 git commit -qm "docs(releases): draft the $VERSION notes"
 git push -qf origin "$branch"
 
-if [[ -z "$(gh pr list --head "$branch" --json number --jq '.[].number')" ]]; then
-  gh pr create --base main --head "$branch" --title "docs(releases): the $VERSION notes" \
-    --body "A draft of the $VERSION notes. Edit both files with the release-notes skill, then delete \`\"draft\": true\` from release.json so the server shows them."
+body="$(mktemp)"
+{
+  echo "A draft of the $VERSION notes. Edit both files with the release-notes skill, then delete \`\"draft\": true\` from release.json so the server shows them."
+  echo
+  cat "$review"
+} > "$body"
+
+pr="$(gh pr list --head "$branch" --json number --jq '.[].number')"
+if [[ -z "$pr" ]]; then
+  gh pr create --base main --head "$branch" --title "docs(releases): the $VERSION notes" --body-file "$body"
+else
+  gh pr edit "$pr" --body-file "$body"
 fi

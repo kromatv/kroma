@@ -57,10 +57,10 @@ jobs:
             | jq -r .value > "$RUNNER_TEMP/anthropic-oidc"
       - name: Draft and open the pull request
         env:
-          ANTHROPIC_FEDERATION_RULE_ID: fdrl_019kTyxxazFsC1PSqgZbJKtL
+          ANTHROPIC_FEDERATION_RULE_ID: fdrl_01SKjkxdn6pfKsK4aQDajSRL
           ANTHROPIC_ORGANIZATION_ID: 41981912-0a73-4832-b434-743ff1b4a4a8
           ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01CV1EApwC5Lp2jSCRzyPpr8
-          ANTHROPIC_WORKSPACE_ID: wrkspc_01AvYBXPEedL599MK93cz6mY
+          ANTHROPIC_WORKSPACE_ID: wrkspc_016CYAvvxkS4fuLX2KuZAUHk
           ANTHROPIC_IDENTITY_TOKEN_FILE: ${{ runner.temp }}/anthropic-oidc
           VERSION_INPUT: ${{ inputs.version }}
           FORCE: ${{ inputs.force }}
