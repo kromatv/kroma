@@ -134,6 +134,25 @@ jobs:
         env:
           NOTES_FILE: release-notes.md
 
+  # The desktop apps on the stable channel self-update from desktop-stable,
+  # which needs the updater bundles the release build does not make. Its own
+  # job, so the dispatch right is all it holds.
+  desktop-stable:
+    name: Build the stable desktop feed
+    needs: [verify, publish]
+    if: ${{ !inputs.prerelease }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write # dispatch desktop-autoupdate.yml
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERSION: ${{ needs.verify.outputs.version }}
+      SHA: ${{ needs.verify.outputs.sha }}
+    steps:
+      - run: gh workflow run desktop-autoupdate.yml -f channel=stable -f version="$VERSION" -f ref="$SHA"
+
   # Shipping to testers is a DEPLOY act, not a build one - which is the whole
   # reason candidates do not do it. But moving publishing out of release.yml
   # left distribution on no path at all: the candidate skips it because it is

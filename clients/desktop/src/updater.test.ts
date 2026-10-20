@@ -14,27 +14,44 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const check = vi.hoisted(() => vi.fn(async () => null as unknown));
+const invoke = vi.hoisted(() =>
+  vi.fn(async (_cmd: string, _args: { channel: string }) => null as string | null),
+);
 const relaunch = vi.hoisted(() => vi.fn(async () => undefined));
-vi.mock('@tauri-apps/plugin-updater', () => ({ check }));
+const session = vi.hoisted(() => ({
+  current: null as { serverUrl?: string } | null,
+  servers: [] as { url: string }[],
+}));
+vi.mock('@tauri-apps/api/core', () => ({ invoke }));
 vi.mock('@tauri-apps/plugin-process', () => ({ relaunch }));
+vi.mock('@kromatv/client/accounts', () => ({
+  createAccountStorage: () => ({
+    loadSession: () => session.current,
+    loadServers: () => session.servers,
+  }),
+  normalizeServerUrl: (url: string) => url.replace(/\/+$/, ''),
+}));
 
 import { startUpdater } from './updater';
 
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
-function available(order: string[] = []) {
-  return {
-    version: '0.1.36',
-    downloadAndInstall: vi.fn(async () => {
-      order.push('install');
-    }),
-  };
-}
+const health = (updateChannel?: string) =>
+  JSON.stringify({
+    status: 'ok',
+    version: '0.1.40',
+    ffprobe: true,
+    libraries: 1,
+    items: 1,
+    shows: 1,
+    updateChannel,
+  });
 
 beforeEach(() => {
   vi.clearAllMocks();
-  check.mockResolvedValue(null);
+  session.current = null;
+  session.servers = [];
+  invoke.mockResolvedValue(null);
   vi.useFakeTimers();
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -51,42 +68,79 @@ describe('on launch', () => {
     await vi.advanceTimersByTimeAsync(0);
     // Six hours is longer than most sessions of a TV app; waiting for it means
     // most launches never update at all.
-    expect(check).toHaveBeenCalledOnce();
+    expect(invoke).toHaveBeenCalledOnce();
   });
 
   it('does nothing when the build is already current', async () => {
-    check.mockResolvedValue(null);
+    invoke.mockResolvedValue(null);
     startUpdater();
     await vi.advanceTimersByTimeAsync(0);
     expect(relaunch).not.toHaveBeenCalled();
   });
 });
 
-describe('when a newer build exists', () => {
-  it('installs it and then relaunches', async () => {
-    const order: string[] = [];
-    const update = available(order);
-    relaunch.mockImplementation(async () => {
-      order.push('relaunch');
-    });
-    check.mockResolvedValue(update);
+describe('the channel', () => {
+  it('follows stable for an app signed into no server', async () => {
+    startUpdater();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(invoke).toHaveBeenCalledWith('update_install', { channel: 'Stable' });
+  });
+
+  it('follows the channel of the server it is signed into', async () => {
+    session.current = { serverUrl: 'http://nas.local:4040/' };
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(health('Canary')));
 
     startUpdater();
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(update.downloadAndInstall).toHaveBeenCalledOnce();
-    // Relaunching first restarts into the OLD build, and the update then
-    // re-downloads on every launch forever.
-    expect(order).toEqual(['install', 'relaunch']);
+    expect(fetch).toHaveBeenCalledWith('http://nas.local:4040/api/health', expect.anything());
+    expect(invoke).toHaveBeenCalledWith('update_install', { channel: 'Canary' });
+  });
+
+  it('follows the server it last used while no profile is signed in', async () => {
+    session.servers = [{ url: 'http://nas.local:4040' }];
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(health('Canary')));
+
+    startUpdater();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(invoke).toHaveBeenCalledWith('update_install', { channel: 'Canary' });
+  });
+
+  it('falls back to stable when the server cannot be reached', async () => {
+    session.current = { serverUrl: 'http://nas.local:4040' };
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
+
+    startUpdater();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(invoke).toHaveBeenCalledWith('update_install', { channel: 'Stable' });
+  });
+
+  it('falls back to stable for a server too old to say', async () => {
+    session.current = { serverUrl: 'http://nas.local:4040' };
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(health()));
+
+    startUpdater();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(invoke).toHaveBeenCalledWith('update_install', { channel: 'Stable' });
+  });
+});
+
+describe('when a newer build exists', () => {
+  it('relaunches once the install answered its version', async () => {
+    invoke.mockResolvedValue('0.1.40');
+
+    startUpdater();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(relaunch).toHaveBeenCalledOnce();
   });
 
   it('does not relaunch when the install fails', async () => {
-    check.mockResolvedValue({
-      version: '0.1.36',
-      downloadAndInstall: async () => {
-        throw new Error('disk full');
-      },
-    });
+    invoke.mockRejectedValue(new Error('disk full'));
     startUpdater();
     await vi.advanceTimersByTimeAsync(0);
     // Restarting after a half-written install is how a working app becomes a
@@ -97,7 +151,7 @@ describe('when a newer build exists', () => {
 
 describe('when something goes wrong', () => {
   it('survives being offline', async () => {
-    check.mockRejectedValue(new Error('network error'));
+    invoke.mockRejectedValue(new Error('network error'));
     // Silent by design means nothing is shown - but an unhandled rejection is
     // not silent, it takes down what is on screen. An escaping rejection fails
     // this test rather than being reported anywhere a user would see it.
@@ -107,23 +161,23 @@ describe('when something goes wrong', () => {
   });
 
   it('survives a browser dev run with no Tauri context', async () => {
-    check.mockRejectedValue(new ReferenceError('__TAURI_INTERNALS__ is not defined'));
+    invoke.mockRejectedValue(new ReferenceError('__TAURI_INTERNALS__ is not defined'));
     startUpdater();
     await vi.advanceTimersByTimeAsync(0);
     expect(relaunch).not.toHaveBeenCalled();
   });
 
   it('keeps checking after a failure', async () => {
-    check.mockRejectedValueOnce(new Error('offline'));
+    invoke.mockRejectedValueOnce(new Error('offline'));
     startUpdater();
     await vi.advanceTimersByTimeAsync(0);
-    expect(check).toHaveBeenCalledOnce();
+    expect(invoke).toHaveBeenCalledOnce();
 
     // A machine that was offline at launch is usually online later; giving up
     // means it never updates again.
-    check.mockResolvedValue(null);
+    invoke.mockResolvedValue(null);
     await vi.advanceTimersByTimeAsync(CHECK_INTERVAL_MS);
-    expect(check).toHaveBeenCalledTimes(2);
+    expect(invoke).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -131,12 +185,12 @@ describe('while the app keeps running', () => {
   it('checks again every six hours', async () => {
     startUpdater();
     await vi.advanceTimersByTimeAsync(0);
-    expect(check).toHaveBeenCalledTimes(1);
+    expect(invoke).toHaveBeenCalledTimes(1);
 
     await vi.advanceTimersByTimeAsync(CHECK_INTERVAL_MS);
-    expect(check).toHaveBeenCalledTimes(2);
+    expect(invoke).toHaveBeenCalledTimes(2);
     await vi.advanceTimersByTimeAsync(CHECK_INTERVAL_MS);
-    expect(check).toHaveBeenCalledTimes(3);
+    expect(invoke).toHaveBeenCalledTimes(3);
   });
 
   it('does not check before the interval is up', async () => {
@@ -144,6 +198,6 @@ describe('while the app keeps running', () => {
     await vi.advanceTimersByTimeAsync(CHECK_INTERVAL_MS - 1000);
     // A TV box is left on for days; a tighter loop is a request per minute
     // against a release API for the entire time.
-    expect(check).toHaveBeenCalledOnce();
+    expect(invoke).toHaveBeenCalledOnce();
   });
 });

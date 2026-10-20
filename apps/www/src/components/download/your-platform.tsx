@@ -1,4 +1,3 @@
-import { release } from 'virtual:kroma-releases';
 import { IconArrowDown, IconDeviceLaptop } from '@tabler/icons-react';
 import { useMemo, useSyncExternalStore } from 'react';
 import { DownloadButton } from '#site/components/download/download-button';
@@ -6,6 +5,7 @@ import { fromDownload } from '#site/lib/build-file';
 import { guessPlatform } from '#site/lib/platform';
 import { downloadsFor } from '#site/lib/releases';
 import { m } from '#site/paraglide/messages';
+import { useDownloadRelease } from '#site/components/download/channel';
 
 const subscribeNever = () => () => undefined;
 const clientUserAgent = () => navigator.userAgent;
@@ -20,6 +20,7 @@ const serverUserAgent = () => '';
  * list below is the page's answer.
  */
 export function YourPlatform() {
+  const release = useDownloadRelease();
   const userAgent = useSyncExternalStore(subscribeNever, clientUserAgent, serverUserAgent);
   const guess = useMemo(() => (userAgent ? guessPlatform(userAgent) : null), [userAgent]);
 

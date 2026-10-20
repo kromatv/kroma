@@ -23,6 +23,8 @@ pub struct Health {
     #[serde(rename = "instanceId")]
     pub instance_id: String,
     pub version: &'static str,
+    #[serde(rename = "updateChannel", skip_serializing_if = "Option::is_none")]
+    pub update_channel: Option<crate::services::updates::Channel>,
     pub ffprobe: bool,
     pub libraries: usize,
     pub items: usize,

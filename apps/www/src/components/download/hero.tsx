@@ -1,5 +1,6 @@
 import { Container } from '#site/components/container';
 import { ArchiveLink } from '#site/components/download/archive-link';
+import { ChannelToggle } from '#site/components/download/channel';
 import { ReleaseSummary } from '#site/components/download/release-summary';
 import { YourPlatform } from '#site/components/download/your-platform';
 import { Rich } from '#site/components/rich';
@@ -20,6 +21,7 @@ export function DownloadHero() {
           <p className="mt-5 max-w-2xl text-pretty text-lg leading-relaxed text-muted">
             {m.download_hero_lede()}
           </p>
+          <ChannelToggle />
           <ReleaseSummary />
           <ArchiveLink />
           <YourPlatform />

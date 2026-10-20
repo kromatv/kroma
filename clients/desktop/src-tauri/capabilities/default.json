@@ -3,11 +3,5 @@
   "identifier": "default",
   "description": "KROMA Steam Deck: window control + event listening for the mpv bridge.",
   "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "core:event:default",
-    "core:window:default",
-    "updater:default",
-    "process:default"
-  ]
+  "permissions": ["core:default", "core:event:default", "core:window:default", "process:default"]
 }

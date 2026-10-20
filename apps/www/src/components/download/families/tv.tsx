@@ -1,4 +1,3 @@
-import { release } from 'virtual:kroma-releases';
 import {
   IconBrandAndroid,
   IconBrandApple,
@@ -12,8 +11,10 @@ import { docs, join } from '#site/components/download/links';
 import { PlatformFamily } from '#site/components/download/platform-family';
 import { downloadsFor } from '#site/lib/releases';
 import { m } from '#site/paraglide/messages';
+import { useDownloadRelease } from '#site/components/download/channel';
 
 export function TvFamily() {
+  const release = useDownloadRelease();
   return (
     <PlatformFamily
       meta={family('tv')}
