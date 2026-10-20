@@ -40,7 +40,7 @@ interface Call {
 const RELEASE: Call = {
   model: 'claude-opus-5-5',
   effort: 'high',
-  maxTokens: 32_000,
+  maxTokens: 64_000,
   timeoutMs: 20 * 60_000,
 };
 const CANARY: Call = {
@@ -145,7 +145,13 @@ async function ask<T extends z.ZodType>(
       },
       { timeout: call.timeoutMs },
     );
-    const response = await stream.finalMessage();
+    const response = await stream.finalMessage().catch((error: unknown) => {
+      const stop = stream.currentMessage?.stop_reason;
+      if (stop && stop !== 'end_turn') {
+        console.warn(`::warning::the model stopped on ${stop} before its answer was complete`);
+      }
+      throw error;
+    });
     if (response.stop_reason !== 'end_turn') {
       console.warn(`::warning::the model stopped on ${response.stop_reason}; using the plain list`);
       return null;
