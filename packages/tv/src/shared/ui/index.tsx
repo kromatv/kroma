@@ -3,5 +3,6 @@
 
 export { AUTH_BACKDROP, AuthScreen, BeaconMark, RADIAL_GROUND } from '#tv/shared/ui/AuthScreen';
 export { GATE_MARK, KromaMark, useClock } from '#tv/shared/ui/brand';
+export { ScreenClock, WallClock } from '#tv/shared/ui/clock';
 export { SearchKeyboard, UrlKeyboard } from '#tv/shared/ui/keyboard';
 export { artUrl, hostOf } from '#tv/shared/ui/util';

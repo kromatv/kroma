@@ -1,8 +1,6 @@
 import type { Release } from '@kromatv/client/releases';
 import { Box, Chip, Rail } from '@kromatv/ui/kit';
 
-const PICKER_X = 220;
-
 /** Focusing a version is what picks it. */
 export function VersionPicker({
   releases,
@@ -10,7 +8,7 @@ export function VersionPicker({
   onPick,
 }: Readonly<{ releases: readonly Release[]; picked: number; onPick: (at: number) => void }>) {
   return (
-    <Box absolute top={20} left={PICKER_X} right={PICKER_X}>
+    <Box flex>
       <Rail.Root gap={4} inset={0} grow={false}>
         {releases.map((release, at) => (
           <Chip

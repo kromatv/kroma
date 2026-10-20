@@ -78,6 +78,7 @@ export { classes } from './lib/classed';
 export type { Rect } from './lib/cover-rect';
 export { coverRect, parsePosition } from './lib/cover-rect';
 export { backdropBlur, bgPosition, bgSize, gradient, promote } from './lib/css';
+export { ScrollMask } from './lib/scroll-mask';
 export { TopFade } from './lib/top-fade';
 export { TopFadeBand } from './lib/top-fade-band';
 export { ARROW, HAND } from './lib/cursor';

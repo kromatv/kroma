@@ -22,6 +22,7 @@ import { useConnectionMaybe } from '#tv/app/providers/connection';
 import { useHandoffBeacon } from '#tv/app/providers/handoffBeacon';
 import { type TvChrome, useNav } from '#tv/app/router';
 import { ARTWORK_SCALE, useArtworkPref, useStoredPref } from '#tv/app/settings/store';
+import { ScreenClock } from '#tv/shared/ui/clock';
 
 // Wide enough to stay sharp on a 1080p panel under the veil, and the widest
 // rendition the server makes. The kit's own home backdrop asks for the same.
@@ -139,7 +140,7 @@ export function AuthScreen({ children }: Readonly<{ children: ReactNode }>) {
           still does not open the screen: entry belongs to whichever control
           carries `autoFocus`. */}
       {nav.canGoBack ? (
-        <Box absolute left={32} top={28} z={20}>
+        <Box absolute left={64} top={0} h={140} justify="center" z={20}>
           <BackButton onPress={nav.back} label={t('common.back')} />
         </Box>
       ) : null}
@@ -148,6 +149,7 @@ export function AuthScreen({ children }: Readonly<{ children: ReactNode }>) {
           {children}
         </FocusScroll>
       </TopFade>
+      <ScreenClock />
       <BeaconMark />
     </Box>
   );

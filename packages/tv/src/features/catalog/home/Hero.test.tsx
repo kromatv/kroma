@@ -20,7 +20,7 @@ const series = { id: 's1', title: 'Silo' } as unknown as Show;
 
 function mount(hero: SectionItem) {
   const calls = { onPlay: vi.fn(), onSelectShow: vi.fn(), onSelectEntry: vi.fn() };
-  render(onScreen(<Hero info={info(hero)} {...calls} />));
+  render(onScreen(<Hero info={info(hero)} maskInset={104} {...calls} />));
   return calls;
 }
 
