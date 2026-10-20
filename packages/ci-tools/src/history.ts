@@ -23,11 +23,16 @@ const git = (...args: string[]) => run('git', args);
  * own tag. Module and vendor tags never match. Throws on a shallow clone,
  * where no tag would be found for the wrong reason.
  */
-export function lastStable(to = 'HEAD', exclude?: string): string | null {
+export function lastStable(
+  to = 'HEAD',
+  exclude?: string,
+  prereleases: readonly string[] = [],
+): string | null {
   if (git('rev-parse', '--is-shallow-repository').trim() === 'true') {
     throw new Error('a shallow clone has no tags to count from; check out with fetch-depth: 0');
   }
-  const skip = exclude ? ['--exclude', `v${exclude}`] : [];
+  const skipped = [...(exclude ? [`v${exclude}`] : []), ...prereleases];
+  const skip = skipped.flatMap((tag) => ['--exclude', tag]);
   try {
     const tag = git(
       'describe',
@@ -45,6 +50,33 @@ export function lastStable(to = 'HEAD', exclude?: string): string | null {
     const stderr = error instanceof Error && 'stderr' in error ? String(error.stderr) : '';
     if (NO_TAG.test(stderr)) return null;
     throw error;
+  }
+}
+
+const TAG = /^v\d+\.\d+\.\d+$/;
+
+/**
+ * The `vX.Y.Z` tags whose GitHub Release is a prerelease: a canary of a
+ * version, not the version shipped, so the next release is still that one.
+ * Read through `gh`; without it (a laptop with no login) every tag counts, and
+ * the run says so.
+ */
+export function prereleaseTags(): string[] {
+  const repo = process.env.GITHUB_REPOSITORY ?? 'kromatv/kroma';
+  try {
+    return run('gh', [
+      'api',
+      `repos/${repo}/releases`,
+      '--paginate',
+      '--jq',
+      '.[] | select(.prerelease) | .tag_name',
+    ])
+      .split('\n')
+      .map((tag) => tag.trim())
+      .filter((tag) => TAG.test(tag));
+  } catch {
+    console.warn('::warning::the releases could not be read; a prerelease tag counts as a release');
+    return [];
   }
 }
 
@@ -76,7 +108,7 @@ export interface Heading {
  * candidate, the changelog and the notes.
  */
 export function heading(to = 'HEAD', exclude?: string): Heading {
-  const last = lastStable(to, exclude);
+  const last = lastStable(to, exclude, prereleaseTags());
   const commits = commitsSince(last ? `v${last}` : null, to);
   const version = last ? (nextVersion(last, commits) ?? last) : null;
   return { last, commits, version };

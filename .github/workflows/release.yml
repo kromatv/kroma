@@ -141,6 +141,7 @@ jobs:
         run: bun run ci version
         env:
           VERSION_INPUT: ${{ github.event.inputs.version }}
+          GH_TOKEN: ${{ github.token }}
       # deploy.yml promotes the version this run stamped, read back from here
       # rather than worked out again once other tags may exist.
       - name: Record the stamped version

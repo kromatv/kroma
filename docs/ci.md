@@ -84,18 +84,24 @@ the Gradle home without writing a copy, and there is one Rust tree.
 
 Every push to `main` builds the whole fleet for the version its commits make, as
 a **candidate** that publishes no Release. `ci version` takes the last `vX.Y.Z`
-tag and bumps it by the squash titles since: below 1.0 a breaking change (`!` or
-a `BREAKING CHANGE:` footer) bumps the minor and a `feat`, `fix` or `perf` the
-patch; from 1.0 on it is semver. Maintenance alone builds the last release's
-version again, which deploy then refuses to promote. Nothing is committed back
-after a release, so `server/Cargo.toml` is not the version: CI stamps
-`KROMA_VERSION` into the binary through `server/build.rs`, and a local build
-takes the newest release tag plus one patch. The candidate records the version
-it stamped as the `candidate-version` artifact, and `deploy.yml` promotes that
-version with the run's exact bytes, behind the `production` environment
-approval, and writes the Release body (`releases/<v>/en.md` unless it is still
-a draft, then `ci changelog`). `CHANGELOG.md` is written by hand after a
-release: `bun run ci changelog --version <v> --write`.
+tag whose GitHub Release is not a prerelease (a prerelease is a canary of the
+version it names, still to ship) and bumps it by the squash titles since: below
+1.0 a breaking change (`!` or a `BREAKING CHANGE:` footer) bumps the minor and a
+`feat`, `fix` or `perf` the patch; from 1.0 on it is semver. Maintenance alone
+builds the last release's version again, which deploy then refuses to promote.
+
+CI stamps that version into the server binary as `KROMA_VERSION` through
+`server/build.rs`. A local build cannot ask GitHub which tags are prereleases,
+so it reads `server/Cargo.toml`, which names the version main is heading for and
+moves by hand when a release ships. The candidate records the version it stamped
+as the `candidate-version` artifact, and `deploy.yml` promotes that version with
+the run's exact bytes, behind the `production` environment approval, and writes
+the Release body (`releases/<v>/en.md` unless it is still a draft, then `ci
+changelog`). A version whose tag already carries a prerelease on another commit
+is refused: release tags cannot move, so that prerelease and its tag are
+deleted first. `CHANGELOG.md` is written by hand after a release: `bun run ci
+changelog --version <v> --write`.
+
 `ci version` resolves one version, one `triplet`, and one `build` number
 (minutes since 2020) for the run; every store-bound package in the run carries
 that same number.
