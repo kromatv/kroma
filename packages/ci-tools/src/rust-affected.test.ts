@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { affected, type Graph, shards, workspaceOf } from './rust-affected';
+import { affected, type Graph, reachesEvery, shards, workspaceOf } from './rust-affected';
 
 const graph: Graph = {
   server: [],
@@ -18,8 +18,9 @@ describe('workspaceOf', () => {
   });
 
   it('sends the toolchain and the CI tools to every workspace, and docs to none', () => {
-    expect(workspaceOf('rust-toolchain.toml')).toBe('all');
-    expect(workspaceOf('packages/ci-tools/src/rust.ts')).toBe('all');
+    expect(reachesEvery('rust-toolchain.toml')).toBe(true);
+    expect(reachesEvery('packages/ci-tools/src/rust.ts')).toBe(true);
+    expect(reachesEvery('server/src/main.rs')).toBe(false);
     expect(workspaceOf('docs/ci.md')).toBeNull();
   });
 });

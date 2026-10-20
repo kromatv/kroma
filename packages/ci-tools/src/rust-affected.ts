@@ -17,13 +17,14 @@ const EVERY = [
 ];
 const MODULE = /^modules\/([^/]+)\//;
 
+/** Whether a changed file reaches every workspace: the toolchain, the CI workflow and the tools that run it. */
+export const reachesEvery = (file: string) => matchesAny(file, EVERY);
+
 /**
- * The workspace a changed file belongs to: `'all'` for the toolchain, the CI
- * workflow and the tools that run it, null for a file no Rust build reads. The
- * core catalogs are the server's, which embeds them.
+ * The workspace a changed file belongs to, or null for a file no Rust build
+ * reads. The core catalogs are the server's, which embeds them.
  */
-export function workspaceOf(file: string): string | 'all' | null {
-  if (matchesAny(file, EVERY)) return 'all';
+export function workspaceOf(file: string): string | null {
   if (file.startsWith('server/') || file.startsWith('packages/core/src/locales/')) return 'server';
   return MODULE.exec(file)?.[1] ?? null;
 }
@@ -38,9 +39,9 @@ export function affected(files: readonly string[] | 'all', graph: Graph): string
   const ids = Object.keys(graph);
   if (files === 'all') return ids;
   const hit = new Set<string>();
+  if (files.some(reachesEvery)) return ids;
   for (const file of files) {
     const ws = workspaceOf(file);
-    if (ws === 'all') return ids;
     if (ws !== null && ws in graph) hit.add(ws);
   }
   let grew = true;
