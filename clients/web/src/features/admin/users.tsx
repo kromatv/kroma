@@ -21,12 +21,9 @@ import { EditUserModal, InviteModal, PendingInvite } from '#web/features/admin/u
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 
-// Roles arrive already localized from the server (Accept-Language synced), so we
-// match both locale spellings to keep the accent color right regardless of UI lang.
-function roleStyle(role: string): { ink: ColorValue; bg: ColorValue } {
-  if (role === 'Propriétaire' || role === 'Owner')
-    return { ink: 'accentText', bg: 'accentWash/16' };
-  if (role === 'Restreint' || role === 'Restricted') return { ink: 'info', bg: 'info/14' };
+function roleStyle(role: AdminUser['role']): { ink: ColorValue; bg: ColorValue } {
+  if (role === 'admin.roleOwner') return { ink: 'accentText', bg: 'accentWash/16' };
+  if (role === 'admin.roleRestricted') return { ink: 'info', bg: 'info/14' };
   return { ink: 'success', bg: 'success/14' };
 }
 
@@ -137,7 +134,7 @@ function UsersPageInner() {
                 </Table.Cell>
                 <Table.Cell>
                   <Pill ink={rs.ink} bg={rs.bg}>
-                    {u.role}
+                    {t(u.role)}
                   </Pill>
                 </Table.Cell>
                 <Table.Cell>

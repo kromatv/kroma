@@ -191,7 +191,7 @@ pub fn groups(
             ),
             group(
                 "admin.preferences",
-                None,
+                Some("admin.preferencesDesc"),
                 vec![
                     row(
                         "watchAutoScan",

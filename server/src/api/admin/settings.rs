@@ -14,6 +14,7 @@ use crate::api::error::{json_error, lerr};
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
+use crate::i18n::ReqLocale;
 use crate::infra::events::ServerEvent;
 use crate::model::Permission;
 use crate::services::email::{self, RelayError};
@@ -42,15 +43,16 @@ pub async fn get_settings(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     Query(q): Query<SettingsQuery>,
+    ReqLocale(requested): ReqLocale,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
     let view = q.view.unwrap_or_else(|| "general".into());
-    let groups = settings::groups(
-        &view,
-        &state.settings,
-        &state.config,
-        super::user_locale(&user),
-    );
+    let locale = user
+        .language
+        .as_deref()
+        .and_then(crate::i18n::normalize)
+        .unwrap_or(requested);
+    let groups = settings::groups(&view, &state.settings, &state.config, locale);
     Ok(Json(crate::api::dto::SettingsView { view, groups }).into_response())
 }
 

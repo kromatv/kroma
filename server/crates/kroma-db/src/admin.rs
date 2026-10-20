@@ -187,8 +187,8 @@ mod tests {
         assert_eq!(admins.len(), 2);
         let owner_row = admins.iter().find(|u| u.id == owner.id).unwrap();
         let member_row = admins.iter().find(|u| u.id == member.id).unwrap();
-        assert_eq!(owner_row.role, "Propriétaire");
-        assert_eq!(member_row.role, "Membre");
+        assert_eq!(owner_row.role, "admin.roleOwner");
+        assert_eq!(member_row.role, "admin.roleMember");
         assert!(!owner_row.online);
         assert!(owner_row.last_seen.is_none());
 
