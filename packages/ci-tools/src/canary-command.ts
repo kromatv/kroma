@@ -11,7 +11,8 @@ const Assets = z.object({
   assets: z.array(z.object({ name: z.string().min(1), created_at: z.string() })).default([]),
 });
 
-const NOTES =
+/** The canary release's opening paragraph, above the notes of the newest build. */
+export const NOTES =
   'Rolling builds of `main`. Every file here was built by CI from a commit that passed the gates, and none of them is a release: the version in the name says which push it was. Stable releases are on the `vX.Y.Z` tags.';
 
 async function ensureRelease(tag: string): Promise<void> {
