@@ -34,8 +34,11 @@ lists every release under About.
 `gh workflow run release-notes.yml` drafts both files for the version main is
 heading for and opens a pull request with them. Running it again leaves an
 existing draft branch alone, since it may hold your edits, unless `-f force=true`. Claude writes the draft from
-this page, the skill and every PR since the last tag when the repository has an
-`ANTHROPIC_API_KEY` secret; without one, the draft is the commit subjects. A
+this page, the skill and every PR since the last tag. CI reaches Claude through
+workload identity federation, with no stored key: the `kroma-ci-main` rule in
+the Claude Console accepts GitHub's OIDC token from `kromatv/kroma` on `main`
+only. A run anywhere else, or one that cannot reach Claude, drafts from the
+commit subjects. On a laptop, `ANTHROPIC_API_KEY` does the same job. A
 draft whose headings the server could not read falls back to the subjects too.
 
 The draft's `release.json` carries `"draft": true`, and the server leaves such a

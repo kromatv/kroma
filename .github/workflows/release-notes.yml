@@ -4,7 +4,9 @@ name: Release notes
 # opens a pull request with them, marked `"draft": true` so the server leaves
 # them out until a person has read them. Claude writes the draft from the
 # release-notes skill, docs/release-notes.md and every PR since the last tag,
-# when ANTHROPIC_API_KEY is set; without it the draft is the commit subjects.
+# authenticated by workload identity federation, which only answers a run on
+# main; anywhere else, or when Claude cannot be reached, the draft is the
+# commit subjects.
 #
 #   gh workflow run release-notes.yml
 #
@@ -33,6 +35,7 @@ jobs:
     permissions:
       contents: write # push the draft branch
       pull-requests: write # open its pull request
+      id-token: write # federate to Claude
     timeout-minutes: 15
     env:
       GH_TOKEN: ${{ github.token }}
@@ -46,9 +49,19 @@ jobs:
           bun-version-file: .bun-version
           no-cache: true
       - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - name: Fetch the GitHub OIDC token for Claude
+        continue-on-error: true
+        run: |
+          curl -sSf -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" \
+            | jq -r .value > "$RUNNER_TEMP/anthropic-oidc"
       - name: Draft and open the pull request
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_FEDERATION_RULE_ID: fdrl_019kTyxxazFsC1PSqgZbJKtL
+          ANTHROPIC_ORGANIZATION_ID: 41981912-0a73-4832-b434-743ff1b4a4a8
+          ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01CV1EApwC5Lp2jSCRzyPpr8
+          ANTHROPIC_WORKSPACE_ID: wrkspc_01AvYBXPEedL599MK93cz6mY
+          ANTHROPIC_IDENTITY_TOKEN_FILE: ${{ runner.temp }}/anthropic-oidc
           VERSION_INPUT: ${{ inputs.version }}
           FORCE: ${{ inputs.force }}
         run: .github/scripts/draft-release-notes.sh

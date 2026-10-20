@@ -410,6 +410,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write # federate to Claude for the notes
     timeout-minutes: 15
     env:
       GH_TOKEN: ${{ github.token }}
@@ -435,10 +436,22 @@ jobs:
             --triplet "${{ needs.version.outputs.triplet }}" \
             --version "${{ needs.version.outputs.canary }}" \
             "${files[@]}"
+      # Claude is reached through workload identity federation (rule
+      # kroma-ci-main: kromatv/kroma on main), so no API key is stored.
+      - name: Fetch the GitHub OIDC token for Claude
+        continue-on-error: true
+        run: |
+          curl -sSf -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" \
+            | jq -r .value > "$RUNNER_TEMP/anthropic-oidc"
       - name: Canary notes
         continue-on-error: true
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_FEDERATION_RULE_ID: fdrl_019kTyxxazFsC1PSqgZbJKtL
+          ANTHROPIC_ORGANIZATION_ID: 41981912-0a73-4832-b434-743ff1b4a4a8
+          ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01CV1EApwC5Lp2jSCRzyPpr8
+          ANTHROPIC_WORKSPACE_ID: wrkspc_01AvYBXPEedL599MK93cz6mY
+          ANTHROPIC_IDENTITY_TOKEN_FILE: ${{ runner.temp }}/anthropic-oidc
         run: |
           prev="$(gh release view canary --json body --jq .body | sed -nE 's/.*kroma-canary-commit: ([0-9a-f]{40}).*/\1/p' | tail -1)"
           since=()

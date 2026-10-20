@@ -3,7 +3,8 @@
 # existing draft branch is left alone, since a person may be editing it, unless
 # FORCE is true.
 #
-# Inputs (env): GH_TOKEN, GH_REPO, VERSION_INPUT, FORCE, ANTHROPIC_API_KEY (optional)
+# Inputs (env): GH_TOKEN, GH_REPO, VERSION_INPUT, FORCE, and the ANTHROPIC_*
+# federation variables (optional)
 set -euo pipefail
 
 git fetch -q origin main

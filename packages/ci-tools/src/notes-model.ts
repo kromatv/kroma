@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
@@ -46,8 +46,13 @@ function previousNotes(): string[] {
   return written ? [read(`releases/${written}/en.md`), read(`releases/${written}/fr.md`)] : [];
 }
 
+const hasToken = (file: string | undefined) =>
+  !!file && existsSync(file) && statSync(file).size > 0;
+
 function client(): Anthropic | null {
-  return process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
+  const env = process.env;
+  const federated = env.ANTHROPIC_FEDERATION_RULE_ID && hasToken(env.ANTHROPIC_IDENTITY_TOKEN_FILE);
+  return env.ANTHROPIC_API_KEY || federated ? new Anthropic() : null;
 }
 
 async function ask<T extends z.ZodType>(
