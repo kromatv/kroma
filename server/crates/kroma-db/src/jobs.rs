@@ -1,9 +1,13 @@
 //! Persistence for the background job system: schedule overrides, run records
 //! and per-run log lines. All timestamps are epoch milliseconds.
 
+use rusqlite::OptionalExtension;
+
 use super::{params, Pool, Result, Row};
 
 use kroma_domain::{JobLog, JobRun};
+
+const INTERRUPTED: &str = "interrupted by server restart";
 
 const RUN_COLS: &str = "id,job_key,trigger_kind,status,started_at,finished_at,\
     progress_done,progress_total,error";
@@ -81,19 +85,66 @@ pub fn update_job_run_progress(pool: &Pool, id: &str, done: i64, total: i64) -> 
     Ok(())
 }
 
+/// A run as it was started, so its finish can be recorded even when the start
+/// row never landed.
+pub struct RunStart<'a> {
+    pub id: &'a str,
+    pub key: &'a str,
+    pub trigger: &'a str,
+    pub started_ms: i64,
+}
+
+/// Records a run's terminal status, inserting the row if its start was lost.
 pub fn finish_job_run(
     pool: &Pool,
-    id: &str,
+    run: &RunStart<'_>,
     status: &str,
     finished_ms: i64,
     error: Option<&str>,
 ) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
-        "UPDATE job_runs SET status=?2, finished_at=?3, error=?4 WHERE id=?1",
-        params![id, status, finished_ms, error],
+        "INSERT INTO job_runs (id, job_key, trigger_kind, status, started_at, finished_at, error) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) \
+         ON CONFLICT(id) DO UPDATE SET status=excluded.status, \
+           finished_at=excluded.finished_at, error=excluded.error",
+        params![
+            run.id,
+            run.key,
+            run.trigger,
+            status,
+            run.started_ms,
+            finished_ms,
+            error
+        ],
     )?;
     Ok(())
+}
+
+/// Whether `e` is SQLite saying another connection holds the lock, which a
+/// later attempt can get past.
+pub fn is_busy(e: &anyhow::Error) -> bool {
+    matches!(
+        e.downcast_ref::<rusqlite::Error>()
+            .and_then(rusqlite::Error::sqlite_error_code),
+        Some(rusqlite::ErrorCode::DatabaseBusy | rusqlite::ErrorCode::DatabaseLocked)
+    )
+}
+
+/// Whether the run of `key` before `run_id` also failed. A run a restart cut
+/// short does not count: it says nothing about the job.
+pub fn previous_run_failed(pool: &Pool, key: &str, run_id: &str) -> Result<bool> {
+    let conn = pool.get()?;
+    let status: Option<String> = conn
+        .query_row(
+            "SELECT status FROM job_runs WHERE job_key=?1 AND id<>?2 \
+               AND status<>'running' AND COALESCE(error,'')<>?3 \
+             ORDER BY started_at DESC LIMIT 1",
+            params![key, run_id, INTERRUPTED],
+            |r| r.get(0),
+        )
+        .optional()?;
+    Ok(status.as_deref() == Some("failed"))
 }
 
 /// Newest first.
@@ -142,9 +193,8 @@ pub fn reconcile_running_runs(pool: &Pool) -> Result<usize> {
         );
     }
     let n = conn.execute(
-        "UPDATE job_runs SET status='failed', finished_at=?1, \
-         error='interrupted by server restart' WHERE status='running'",
-        params![now],
+        "UPDATE job_runs SET status='failed', finished_at=?1, error=?2 WHERE status='running'",
+        params![now, INTERRUPTED],
     )?;
     Ok(n)
 }
@@ -198,72 +248,4 @@ pub fn list_job_logs(pool: &Pool, run_id: &str, limit: usize) -> Result<Vec<JobL
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::testing::TempPool;
-
-    fn pool() -> TempPool {
-        crate::testing::temp_pool("jobs")
-    }
-
-    #[test]
-    fn reconcile_flips_only_running_to_failed() {
-        let p = pool();
-        insert_job_run(&p, "r1", "cache.cleanup", "manual", 1).unwrap();
-        insert_job_run(&p, "r2", "cache.cleanup", "manual", 1).unwrap();
-        finish_job_run(&p, "r2", "success", 2, None).unwrap();
-
-        let n = reconcile_running_runs(&p).unwrap();
-        assert_eq!(n, 1);
-
-        let r1 = last_one(&p, "r1");
-        assert_eq!(r1.status, "failed");
-        assert!(r1.finished_at.is_some());
-        assert!(r1.error.unwrap().contains("restart"));
-        assert_eq!(last_one(&p, "r2").status, "success");
-    }
-
-    #[test]
-    fn the_last_run_is_the_newest_and_a_job_that_never_ran_has_none() {
-        let p = pool();
-        insert_job_run(&p, "r1", "library.scan", "manual", 10).unwrap();
-        insert_job_run(&p, "r2", "library.scan", "schedule", 20).unwrap();
-        assert_eq!(last_job_run(&p, "library.scan").unwrap().unwrap().id, "r2");
-        assert!(last_job_run(&p, "library.never-ran").unwrap().is_none());
-    }
-
-    #[test]
-    fn job_logs_keep_the_newest_window_but_read_oldest_first() {
-        let p = pool();
-        insert_job_run(&p, "r1", "library.scan", "manual", 1).unwrap();
-        for (ts, message) in [(1, "started"), (2, "halfway"), (3, "done")] {
-            insert_job_log(&p, "r1", ts, "info", message).unwrap();
-        }
-
-        let messages = |limit| {
-            list_job_logs(&p, "r1", limit)
-                .unwrap()
-                .into_iter()
-                .map(|l| l.message)
-                .collect::<Vec<_>>()
-        };
-        assert_eq!(messages(10), ["started", "halfway", "done"]);
-        assert_eq!(
-            messages(2),
-            ["halfway", "done"],
-            "a limit drops the OLDEST lines"
-        );
-        assert_eq!(list_job_logs(&p, "r1", 1).unwrap()[0].level, "info");
-        assert!(list_job_logs(&p, "another-run", 10).unwrap().is_empty());
-    }
-
-    fn last_one(p: &Pool, id: &str) -> JobRun {
-        let conn = p.get().unwrap();
-        conn.query_row(
-            &format!("SELECT {RUN_COLS} FROM job_runs WHERE id=?1"),
-            params![id],
-            row_to_run,
-        )
-        .unwrap()
-    }
-}
+mod tests;
