@@ -141,7 +141,7 @@ impl<'a> Planner<'a> {
             return None;
         }
         let entry = *self.by_id.get(id)?;
-        catalog::compat_verdict(entry).0.then_some(entry)
+        catalog::compat_verdict(entry).is_ok().then_some(entry)
     }
 
     /// The install dialog's opt-in rows: declared `optionalDependencies` targets,
@@ -521,7 +521,10 @@ mod tests {
             .unwrap_err()
             .to_string();
         assert!(err.contains("requires server >=999.0.0"), "{err}");
-        assert!(err.contains("this server is"), "{err}");
+        assert!(
+            err.contains(&format!("(this server is {SERVER_VERSION})")),
+            "{err}"
+        );
     }
 
     #[test]

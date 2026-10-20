@@ -4,6 +4,20 @@ import { ModuleId } from './ids';
 
 const DependencyMap = z.record(z.string(), z.string());
 
+/** Why this server cannot take a catalog entry, for the client to word. */
+export const StoreRefusal = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('schema'), built: z.number(), speaks: z.number() }),
+  z.object({ kind: z.literal('unknownEngine'), engine: z.string() }),
+  z.object({
+    kind: z.literal('engine'),
+    engine: z.string(),
+    range: z.string(),
+    serverVersion: z.string(),
+  }),
+  z.object({ kind: z.literal('platform'), target: z.string() }),
+]);
+export type StoreRefusal = z.infer<typeof StoreRefusal>;
+
 /** One catalog entry, enriched server-side (`GET /api/admin/store/catalog`):
  * the picked artifact for this platform, installed/update state, and the
  * compatibility verdict with its reason. */
@@ -25,8 +39,10 @@ export const StoreModule = z.object({
   sha256: z.string().nullish(),
   installedVersion: z.string().nullish(),
   updateAvailable: z.boolean(),
+  updateBlocked: z.boolean().default(false),
   compatible: z.boolean(),
   reason: z.string().nullish(),
+  refusal: StoreRefusal.nullish().catch(null),
   /** Name of the registry this entry came from. */
   source: z.string(),
 });

@@ -19,7 +19,12 @@ import {
   Tooltip,
   useStyles,
 } from '@kromatv/ui/kit';
-import { type AdminModule, type ModuleOrigin, matchesQuery } from '#web/features/admin/module-api';
+import {
+  type AdminModule,
+  canUpdate,
+  type ModuleOrigin,
+  matchesQuery,
+} from '#web/features/admin/module-api';
 import { useModuleToggle } from '#web/features/admin/module-data';
 import { Pill } from '#web/features/admin/pill';
 import { apiBase } from '#web/shared/lib/api';
@@ -160,9 +165,7 @@ export function InstalledList({
   const t = useT();
   const all = modules ?? [];
   const updateById = new Map<string, string>(
-    (catalog?.modules ?? [])
-      .filter((m) => m.updateAvailable && m.compatible)
-      .map((m) => [m.id, m.version]),
+    (catalog?.modules ?? []).filter(canUpdate).map((m) => [m.id, m.version]),
   );
   const shown = all.filter((m) => matchesQuery(m, query));
   if (modules && all.length === 0) {

@@ -9,7 +9,9 @@ mod event;
 mod manifest;
 mod registry;
 
-pub use compat::{engines_satisfied, is_newer, range_matches, version_satisfies, KNOWN_ENGINES};
+pub use compat::{
+    engines_satisfied, is_newer, range_matches, version_satisfies, EngineRefusal, KNOWN_ENGINES,
+};
 pub use embedded::EmbeddedModule;
 pub use event::ModuleEvent;
 /// `embedded_module!()` builds a module's `MODULE` const from the `module.json`

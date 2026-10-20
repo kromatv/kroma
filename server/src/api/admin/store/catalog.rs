@@ -11,6 +11,7 @@ use kroma_module_host::HostCtx;
 use kroma_module_supervisor::Supervisor;
 use serde_json::{json, Value};
 
+use super::refusal::Refusal;
 use crate::state::SharedState;
 
 /// The Rust target this server was built for: what a sidecar bundle must match.
@@ -258,31 +259,23 @@ fn point_rows(points: &[(String, Option<String>)]) -> Vec<Value> {
         .map(|(point, id)| json!({ "point": point, "id": id }))
         .collect()
 }
-pub fn compat_verdict(m: &CatalogModule) -> (bool, Option<String>) {
+pub fn compat_verdict(m: &CatalogModule) -> Result<(), Refusal> {
     // Refused at unpack anyway (see the supervisor's install gate); said here so
     // the Store never offers an install that cannot succeed.
     let speaks = u64::from(kroma_module_manifest::MODULE_SCHEMA_VERSION);
     if m.schema_version != speaks {
-        return (
-            false,
-            Some(format!(
-                "built for manifest schema v{} (this server speaks v{speaks}); it needs rebuilding",
-                m.schema_version,
-            )),
-        );
+        return Err(Refusal::Schema {
+            built: m.schema_version,
+            speaks,
+        });
     }
-    if let Err(reason) = kroma_module_manifest::engines_satisfied(&m.engines, SERVER_VERSION) {
-        return (false, Some(reason));
-    }
+    kroma_module_manifest::engines_satisfied(&m.engines, SERVER_VERSION).map_err(Refusal::from)?;
     if pick_artifact(m).is_none() {
-        return (
-            false,
-            Some(format!(
-                "no build for this server's platform ({BUILD_TARGET})"
-            )),
-        );
+        return Err(Refusal::Platform {
+            target: BUILD_TARGET.to_owned(),
+        });
     }
-    (true, None)
+    Ok(())
 }
 
 /// The `GET /api/admin/store/catalog` response, merged across every configured
@@ -300,8 +293,8 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
         .map(|(m, source)| {
             let artifact = pick_artifact(m);
             let installed_version = installed.get(&m.id);
-            let (compatible, reason) = compat_verdict(m);
-            let update_available = installed_version
+            let refusal = compat_verdict(m).err();
+            let newer = installed_version
                 .is_some_and(|current| kroma_module_manifest::is_newer(&m.version, current));
             json!({
                 "schemaVersion": m.schema_version,
@@ -321,9 +314,11 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
                 "size": artifact.and_then(|a| a.size),
                 "sha256": artifact.and_then(|a| a.sha256.clone()),
                 "installedVersion": installed_version,
-                "updateAvailable": update_available,
-                "compatible": compatible,
-                "reason": reason,
+                "updateAvailable": newer && refusal.is_none(),
+                "updateBlocked": newer && refusal.is_some(),
+                "compatible": refusal.is_none(),
+                "reason": refusal.as_ref().map(Refusal::reason),
+                "refusal": refusal,
                 "source": source,
             })
         })
@@ -538,8 +533,14 @@ mod tests {
         .unwrap();
         let m = parse_module(&old).unwrap();
         assert_eq!(m.schema_version, 0);
-        let (compatible, reason) = compat_verdict(&m);
-        assert!(!compatible);
-        assert!(reason.unwrap_or_default().contains("manifest schema v0"));
+        let refusal = compat_verdict(&m).unwrap_err();
+        assert_eq!(
+            refusal,
+            Refusal::Schema {
+                built: 0,
+                speaks: u64::from(kroma_module_manifest::MODULE_SCHEMA_VERSION)
+            }
+        );
+        assert!(refusal.reason().contains("manifest schema v0"));
     }
 }

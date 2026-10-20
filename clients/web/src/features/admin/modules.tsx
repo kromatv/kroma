@@ -23,7 +23,7 @@ import { useMemo, useRef, useState } from 'react';
 // sees; `display: none` has no React Native spelling.
 const sDefinition = styles({ hidden: { display: 'none' } });
 
-import { message } from '#web/features/admin/module-api';
+import { canUpdate, message } from '#web/features/admin/module-api';
 import { useModuleData } from '#web/features/admin/module-data';
 import { InstallModal } from '#web/features/admin/module-install';
 import { InstalledList } from '#web/features/admin/module-installed';
@@ -57,10 +57,7 @@ function ModulesInner() {
   const updating = useAsyncAction();
 
   const installed = modules ?? [];
-  const updates = useMemo(
-    () => (catalog?.modules ?? []).filter((m) => m.updateAvailable && m.compatible),
-    [catalog],
-  );
+  const updates = useMemo(() => (catalog?.modules ?? []).filter(canUpdate), [catalog]);
 
   const openDetail = (id: string) => void navigate({ to: '/admin/modules/$id', params: { id } });
 

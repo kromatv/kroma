@@ -7,10 +7,14 @@ const Manifest = z.object({ name: z.string() });
 const MAX_DEPTH = 20;
 
 /**
- * The checkout this run belongs to: found by walking up from where it was
- * started, because a compiled binary has no source path to count back from.
+ * The checkout a run started in `start` belongs to: found by walking up,
+ * because a compiled binary has no source path to count back from, and the
+ * checkout this source sits in when the walk finds none.
  */
-export const root = walkUp(process.cwd()) ?? fromSource();
+export const findRoot = (start: string): string => walkUp(start) ?? fromSource();
+
+/** The checkout this run belongs to. */
+export const root = findRoot(process.cwd());
 
 function fromSource(): string {
   return join(dirname(fileURLToPath(import.meta.url)), '../../..');
