@@ -1,6 +1,8 @@
-import { type ReactNode, useContext } from 'react';
+import { createContext, type ReactNode, useContext } from 'react';
 import { type StyleProp, StyleSheet, Text, type TextStyle } from 'react-native';
-import { unstable_TextAncestorContext as TextAncestorContext } from 'react-native-web';
+import * as ReactNativeWeb from 'react-native-web';
+
+const TextAncestorContext = ReactNativeWeb.unstable_TextAncestorContext ?? createContext(false);
 
 type Resolver = (styles: unknown) => [string, Record<string, unknown> | undefined];
 
