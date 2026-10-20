@@ -63,6 +63,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       version: ${{ steps.v.outputs.version }}
+      build: ${{ steps.v.outputs.build }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -123,6 +124,8 @@ jobs:
       # build.sh: web SPA -> static musl kroma-server -> static ffmpeg -> .spk.
       - name: Build .spk
         run: clients/synology/build.sh ${{ needs.version.outputs.version }}
+        env:
+          BUILD: ${{ needs.version.outputs.build }}
 
       # The Docker musl build writes root-owned files into the cache + target;
       # hand them back so actions/cache can save (else it fails silently and
@@ -216,6 +219,7 @@ jobs:
             -v "$PWD/.cargo-registry":/root/.cargo/registry \
             -e KROMA_GIT_HASH="$(git rev-parse --short HEAD)" \
             -e KROMA_VERSION="${{ needs.version.outputs.version }}" \
+            -e KROMA_BUILD="${{ needs.version.outputs.build }}" \
             "$RUST_IMAGE" \
             cargo build --release --locked --target "$TARGET"
 
