@@ -3,7 +3,12 @@ import { useT } from '@kromatv/ui';
 import { Box, Button, EmptyState, Skeleton, Surface } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { type AdminModule, message, UninstallConflictError } from '#web/features/admin/module-api';
+import {
+  type AdminModule,
+  canUpdate,
+  message,
+  UninstallConflictError,
+} from '#web/features/admin/module-api';
 
 import { useModuleData, useModuleToggle } from '#web/features/admin/module-data';
 import { ModuleActions, UninstallConfirm } from '#web/features/admin/module-detail-actions';
@@ -139,7 +144,7 @@ function moduleView(
     all,
     installed,
     entry,
-    update: !!entry?.updateAvailable,
+    update: canUpdate(entry),
     restartable: installed?.enabled && installed.hasSidecar ? installed : null,
   };
 }

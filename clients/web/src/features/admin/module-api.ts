@@ -9,6 +9,7 @@ import {
   ModuleRestartResult,
   StoreCatalog,
   StoreInstallReport,
+  type StoreModule,
   StorePlan,
   StoreRegistryPreview,
   StoreUninstallConflict,
@@ -58,6 +59,10 @@ export function matchesQuery(
   if (!q) return true;
   return [m.id, m.name, m.description ?? ''].some((s) => s.toLowerCase().includes(q));
 }
+
+/** The catalog offers a newer version of an installed module, and this server can take it. */
+export const canUpdate = (m: StoreModule | undefined): boolean =>
+  !!m && m.updateAvailable && m.compatible;
 
 export class UninstallConflictError extends Error {
   readonly dependents: string[];

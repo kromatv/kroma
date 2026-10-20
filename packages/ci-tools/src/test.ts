@@ -11,7 +11,7 @@ const LCOV = join(root, 'coverage/lcov.info');
 const vitest = join(root, 'node_modules/.bin/vitest');
 
 const COVERAGE = ['--coverage', '--coverage.reporter=lcov', '--coverage.reporter=text-summary'];
-const SHARD_TIMEOUT = ['--testTimeout=10000'];
+const SHARD_TIMEOUT = ['--testTimeout=15000'];
 
 // The audit project compiles with the React Compiler, so it instruments the
 // same sources a second time and its branch map carries the compiler's

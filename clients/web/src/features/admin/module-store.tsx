@@ -22,8 +22,8 @@ import {
 } from '@kromatv/ui/kit';
 import { useId } from 'react';
 import { Pressable } from 'react-native';
-import { matchesQuery } from '#web/features/admin/module-api';
-import { useRefusalText } from '#web/features/admin/module-refusal';
+import { canUpdate, matchesQuery } from '#web/features/admin/module-api';
+import { refusedAsInstalled, useRefusalText } from '#web/features/admin/module-refusal';
 import { type OpModule, opPct, PHASE_KEY, runningPct } from '#web/features/admin/module-ops';
 import { Image } from '#web/shared/ui';
 
@@ -64,12 +64,12 @@ function CardAction({
 }>) {
   const t = useT();
   if (op) return <OpProgress op={op} />;
-  if (m.updateAvailable) {
+  if (canUpdate(m)) {
     return (
       <Button variant="primary" size="sm" label={t('admin.modulesUpdate')} onPress={onUpdate} />
     );
   }
-  if (m.installedVersion) {
+  if (m.installedVersion && !refusedAsInstalled(m)) {
     return (
       <Row shrink={0} gap={4}>
         <Icon name="circle-check-filled" size={15} color="success" />
@@ -102,7 +102,8 @@ function StoreCard({
   const fmt = useFormat();
   const id = useId();
   const refusal = useRefusalText(m);
-  const offered = !m.installedVersion || m.updateAvailable;
+  const offered = m.compatible && (!m.installedVersion || m.updateAvailable);
+  const dimmed = !m.compatible && (!m.installedVersion || refusedAsInstalled(m));
   return (
     <Focusable asChild ring="focusEdge" states={CARD_STATES} label={m.name}>
       <Surface
@@ -115,7 +116,7 @@ function StoreCard({
         row
         flex
         align="flex-start"
-        opacity={m.compatible || m.updateBlocked ? 1 : 0.7}
+        opacity={dimmed ? 0.7 : 1}
       >
         <Pressable onPress={onOpen}>
           <Box
@@ -152,7 +153,7 @@ function StoreCard({
                   · {t('admin.modulesLibraryChip')}
                 </Text>
               )}
-              {m.updateAvailable && (
+              {canUpdate(m) && (
                 <Text variant="meta" color="accentText">
                   · {t('admin.modulesUpdateChip', { version: m.version })}
                 </Text>

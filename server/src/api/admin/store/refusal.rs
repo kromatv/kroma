@@ -23,29 +23,43 @@ pub enum Refusal {
     },
 }
 
-impl Refusal {
-    pub fn engine(refusal: EngineRefusal, server_version: &str) -> Self {
+impl From<EngineRefusal> for Refusal {
+    fn from(refusal: EngineRefusal) -> Self {
         match refusal {
             EngineRefusal::Unknown { engine } => Self::UnknownEngine { engine },
-            EngineRefusal::Unsatisfied { engine, range } => Self::Engine {
+            EngineRefusal::Unsatisfied {
                 engine,
                 range,
-                server_version: server_version.to_owned(),
+                server_version,
+            } => Self::Engine {
+                engine,
+                range,
+                server_version,
             },
         }
     }
+}
 
+impl Refusal {
     pub fn reason(&self) -> String {
         match self {
             Self::Schema { built, speaks } => format!(
                 "built for manifest schema v{built} (this server speaks v{speaks}); it needs rebuilding"
             ),
-            Self::UnknownEngine { engine } => {
-                EngineRefusal::Unknown { engine: engine.clone() }.to_string()
+            Self::UnknownEngine { engine } => EngineRefusal::Unknown {
+                engine: engine.clone(),
             }
-            Self::Engine { engine, range, server_version } => {
-                format!("requires {engine} {range} (this server is {server_version})")
+            .to_string(),
+            Self::Engine {
+                engine,
+                range,
+                server_version,
+            } => EngineRefusal::Unsatisfied {
+                engine: engine.clone(),
+                range: range.clone(),
+                server_version: server_version.clone(),
             }
+            .to_string(),
             Self::Platform { target } => format!("no build for this server's platform ({target})"),
         }
     }

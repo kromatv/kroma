@@ -5,7 +5,7 @@ import { Row, Surface, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import type { AdminModule } from '#web/features/admin/module-api';
 import { HeaderIcon } from '#web/features/admin/module-detail-sections';
-import { useRefusalText } from '#web/features/admin/module-refusal';
+import { readableRange, useRefusalText } from '#web/features/admin/module-refusal';
 import { Pill } from '#web/features/admin/pill';
 
 export function IdentityCard({
@@ -68,7 +68,7 @@ export function Problems({
         </Text>
       ) : null}
       {incompatible ? (
-        <Text variant="meta" color="danger">
+        <Text variant="meta" color={entry?.updateBlocked ? 'textDim' : 'danger'}>
           {incompatible}
         </Text>
       ) : null}
@@ -110,7 +110,7 @@ export function metaRowsFor(
   if (entry?.source) rows.push([t('admin.modulesSource'), entry.source]);
   const engines = entry?.engines ?? installed?.engines ?? {};
   for (const [engine, range] of Object.entries(engines)) {
-    rows.push([engine === 'server' ? t('admin.modulesMinServer') : engine, range]);
+    rows.push([engine === 'server' ? t('admin.modulesMinServer') : engine, readableRange(range)]);
   }
   if (entry?.target) rows.push([t('admin.modulesPlatform'), entry.target]);
   return rows;

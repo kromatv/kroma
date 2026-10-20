@@ -269,8 +269,7 @@ pub fn compat_verdict(m: &CatalogModule) -> Result<(), Refusal> {
             speaks,
         });
     }
-    kroma_module_manifest::engines_satisfied(&m.engines, SERVER_VERSION)
-        .map_err(|refusal| Refusal::engine(refusal, SERVER_VERSION))?;
+    kroma_module_manifest::engines_satisfied(&m.engines, SERVER_VERSION).map_err(Refusal::from)?;
     if pick_artifact(m).is_none() {
         return Err(Refusal::Platform {
             target: BUILD_TARGET.to_owned(),

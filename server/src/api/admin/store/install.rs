@@ -14,7 +14,7 @@ use serde_json::{json, Value};
 
 use super::catalog::{self, CatalogModule};
 use super::events::Op;
-use super::plan::{plan_brief, root_list, Planned, Planner, SERVER_VERSION};
+use super::plan::{plan_brief, root_list, Planned, Planner};
 use super::registries;
 use crate::state::SharedState;
 
@@ -207,6 +207,11 @@ fn stranded_dependents(
         .collect()
 }
 
+fn takes_update(entry: &CatalogModule, current: &str) -> bool {
+    kroma_module_manifest::is_newer(&entry.version, current)
+        && catalog::compat_verdict(entry).is_ok()
+}
+
 /// Update every runtime-installed module (or the `only` subset) to the newest
 /// compatible catalog version, off ONE catalog fetch. One `module.op.*` stream
 /// covers the whole batch. `Err` only when the catalog itself is unreachable.
@@ -230,16 +235,7 @@ pub async fn update_all(
             continue;
         }
         let Some(entry) = by_id.get(id) else { continue };
-        if !kroma_module_manifest::is_newer(&entry.version, cur) {
-            continue;
-        }
-        if let Err(reason) =
-            kroma_module_manifest::engines_satisfied(&entry.engines, SERVER_VERSION)
-        {
-            outcome.failed.push(FailedUpdate {
-                id: id.to_string(),
-                error: format!("{reason} (this server is {SERVER_VERSION})"),
-            });
+        if !takes_update(entry, cur) {
             continue;
         }
         let stranded = stranded_dependents(
@@ -320,8 +316,21 @@ pub async fn auto_update(state: &SharedState, sup: &Arc<Supervisor>) -> Vec<Upda
 
 #[cfg(test)]
 mod tests {
-    use super::stranded_dependents;
+    use super::{stranded_dependents, takes_update};
+    use crate::api::admin::store::catalog::{self, Artifact, CatalogModule};
     use kroma_module_manifest::{Dependency, ModuleManifest};
+
+    fn offered(version: &str) -> CatalogModule {
+        CatalogModule {
+            artifacts: vec![Artifact {
+                target: None,
+                url: "https://x/m.kmod".into(),
+                size: Some(10),
+                sha256: Some("00".into()),
+            }],
+            ..catalog::test_module("tv.kroma.torrents", version)
+        }
+    }
 
     fn module(id: &str, deps: &[(&str, Option<&str>)]) -> ModuleManifest {
         let mut m = ModuleManifest::new(id, id, "1.0.0");
@@ -339,7 +348,10 @@ mod tests {
     fn a_peer_moving_past_a_dependents_range_strands_it() {
         let installed = [
             module("tv.kroma.torrents", &[]),
-            module("tv.kroma.acquisition", &[("tv.kroma.torrents", Some("^0.3.0"))]),
+            module(
+                "tv.kroma.acquisition",
+                &[("tv.kroma.torrents", Some("^0.3.0"))],
+            ),
         ];
 
         let stranded = stranded_dependents(&installed, &|_| true, "tv.kroma.torrents", "0.6.6");
@@ -351,7 +363,10 @@ mod tests {
     fn a_floor_the_candidate_clears_strands_nobody() {
         let installed = [
             module("tv.kroma.torrents", &[]),
-            module("tv.kroma.acquisition", &[("tv.kroma.torrents", Some(">=0.3.0"))]),
+            module(
+                "tv.kroma.acquisition",
+                &[("tv.kroma.torrents", Some(">=0.3.0"))],
+            ),
         ];
 
         let stranded = stranded_dependents(&installed, &|_| true, "tv.kroma.torrents", "0.6.6");
@@ -363,7 +378,10 @@ mod tests {
     fn a_dependent_that_is_disabled_is_not_stranded() {
         let installed = [
             module("tv.kroma.torrents", &[]),
-            module("tv.kroma.acquisition", &[("tv.kroma.torrents", Some("^0.3.0"))]),
+            module(
+                "tv.kroma.acquisition",
+                &[("tv.kroma.torrents", Some("^0.3.0"))],
+            ),
         ];
 
         let stranded = stranded_dependents(&installed, &|_| false, "tv.kroma.torrents", "0.6.6");
@@ -381,5 +399,28 @@ mod tests {
         let stranded = stranded_dependents(&installed, &|_| true, "tv.kroma.torrents", "9.9.9");
 
         assert!(stranded.is_empty());
+    }
+
+    #[test]
+    fn a_newer_version_this_server_can_take_is_updated_to() {
+        assert!(takes_update(&offered("0.7.0"), "0.6.6"));
+    }
+
+    #[test]
+    fn a_newer_version_this_server_is_too_old_for_is_skipped() {
+        let mut blocked = offered("0.7.0");
+        blocked.engines.insert("server".into(), ">=999.0.0".into());
+
+        assert!(!takes_update(&blocked, "0.6.6"));
+    }
+
+    #[test]
+    fn a_newer_version_built_for_another_manifest_schema_is_skipped() {
+        let blocked = CatalogModule {
+            schema_version: 0,
+            ..offered("0.7.0")
+        };
+
+        assert!(!takes_update(&blocked, "0.6.6"));
     }
 }

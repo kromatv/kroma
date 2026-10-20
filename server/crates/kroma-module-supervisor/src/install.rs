@@ -37,12 +37,7 @@ impl Supervisor {
         // was built against.
         check_manifest_schema(&id, &manifest)?;
         kroma_module_manifest::engines_satisfied(&manifest.engines, &self.cfg.server_version)
-            .map_err(|reason| {
-                anyhow::anyhow!(
-                    "'{id}' {reason} (this server is {})",
-                    self.cfg.server_version
-                )
-            })?;
+            .map_err(|reason| anyhow::anyhow!("'{id}' {reason}"))?;
         Ok((id, manifest))
     }
 

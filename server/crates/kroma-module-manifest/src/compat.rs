@@ -20,8 +20,13 @@ pub const KNOWN_ENGINES: &[&str] = &["server"];
 pub enum EngineRefusal {
     /// The module requires an engine this build cannot check.
     Unknown { engine: String },
-    /// The module requires `engine` within `range`, and this build is not.
-    Unsatisfied { engine: String, range: String },
+    /// The module requires `engine` within `range`, and this build, at
+    /// `server_version`, is not.
+    Unsatisfied {
+        engine: String,
+        range: String,
+        server_version: String,
+    },
 }
 
 impl std::fmt::Display for EngineRefusal {
@@ -32,7 +37,14 @@ impl std::fmt::Display for EngineRefusal {
                 "requires an engine this server cannot check: {engine:?} (known: {})",
                 KNOWN_ENGINES.join(", "),
             ),
-            Self::Unsatisfied { engine, range } => write!(f, "requires {engine} {range}"),
+            Self::Unsatisfied {
+                engine,
+                range,
+                server_version,
+            } => write!(
+                f,
+                "requires {engine} {range} (this server is {server_version})"
+            ),
         }
     }
 }
@@ -55,6 +67,7 @@ pub fn engines_satisfied(
             return Err(EngineRefusal::Unsatisfied {
                 engine: engine.clone(),
                 range: range.clone(),
+                server_version: server_version.to_owned(),
             });
         }
     }
@@ -130,10 +143,14 @@ mod tests {
             err,
             EngineRefusal::Unsatisfied {
                 engine: "server".into(),
-                range: ">=0.9".into()
+                range: ">=0.9".into(),
+                server_version: "0.2.0".into(),
             }
         );
-        assert_eq!(err.to_string(), "requires server >=0.9");
+        assert_eq!(
+            err.to_string(),
+            "requires server >=0.9 (this server is 0.2.0)"
+        );
     }
 
     #[test]
