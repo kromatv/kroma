@@ -172,8 +172,6 @@ struct SearchReq {
     categories: Vec<u32>,
 }
 
-// The query as it crosses: this module's own `Query` also has a `Text` variant
-// the native engine uses internally, which no consumer builds.
 #[derive(Deserialize)]
 enum WireQuery {
     Movie {
@@ -192,6 +190,9 @@ enum WireQuery {
         tmdb_id: Option<u64>,
         title: String,
         season: u32,
+    },
+    Text {
+        query: String,
     },
 }
 
@@ -229,6 +230,7 @@ impl From<WireQuery> for Query {
                 title,
                 season,
             },
+            WireQuery::Text { query } => Query::Text { query },
         }
     }
 }
@@ -544,6 +546,23 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn an_empty_text_search_asks_for_the_latest_releases() {
+        let body = json!({
+            "indexer_id": "idx-1",
+            "query": { "Text": { "query": "" } },
+        });
+
+        let req: SearchReq = serde_json::from_value(body).unwrap();
+
+        assert_eq!(
+            Query::from(req.query),
+            Query::Text {
+                query: String::new()
+            }
+        );
     }
 
     #[test]
