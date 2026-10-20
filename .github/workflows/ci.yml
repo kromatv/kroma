@@ -39,6 +39,7 @@ jobs:
       android: ${{ steps.lanes.outputs.android }}
       desktop: ${{ steps.lanes.outputs.desktop }}
       rust: ${{ steps.lanes.outputs.rust }}
+      rust_shards: ${{ steps.lanes.outputs.rust_shards }}
       sonar: ${{ steps.sonar.outputs.run }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -310,18 +311,23 @@ jobs:
       - run: cargo check --all-targets --no-default-features
         working-directory: clients/desktop/src-tauri
 
-  # clippy, then every test under coverage, across the server workspace and
-  # each module's. One cache entry holds both: the check artifacts and the
-  # instrumented build live in one target dir, saved from main only (a copy
-  # per pull request is what used to evict every Rust cache in the repo).
-  rust:
-    name: Rust
+  # clippy, then every test under coverage, for the workspaces this change can
+  # reach (lanes works them out from the path dependencies between the server
+  # and each module's workspace), split into parallel jobs: the server on its
+  # own, the modules in groups. Each job keeps its own cache, saved from main
+  # only (a copy per pull request is what used to evict every Rust cache).
+  rust-shard:
+    name: Rust (${{ matrix.shard.name }})
     needs: lanes
     if: needs.lanes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.lanes.outputs.rust_shards) }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
@@ -338,16 +344,50 @@ jobs:
         with:
           workspaces: server
           cache-directories: ${{ github.workspace }}/target/kmod
-          shared-key: rust
+          shared-key: rust-${{ matrix.shard.name }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       # Non-blocking: the codebase uses a custom import grouping, not rustfmt's.
       - run: cargo fmt --check
+        if: matrix.shard.name == 'server'
         working-directory: server
         continue-on-error: true
       - run: bun run ci tools ffmpeg
-      - run: bun run ci rust clippy
-      - run: bun run ci rust test
+      - run: bun run ci rust clippy --only "${{ join(matrix.shard.workspaces, ',') }}"
+      - run: bun run ci rust test --only "${{ join(matrix.shard.workspaces, ',') }}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-rust-${{ strategy.job-index }}
+          path: server/lcov.info
+          retention-days: 1
+          if-no-files-found: error
+
+  # The required check: green when every Rust job is, with their coverage in
+  # one report for the scan. Skipped, like the jobs, when no Rust can be
+  # reached.
+  rust:
+    name: Rust
+    needs: [lanes, rust-shard]
+    if: always() && needs.lanes.outputs.rust == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - name: Every Rust job passed
+        env:
+          RESULT: ${{ needs.rust-shard.result }}
+        run: |
+          [[ "$RESULT" == success ]] || { echo "::error::a Rust job ended $RESULT"; exit 1; }
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: coverage-rust-*
+          path: parts
+      - name: One coverage report
+        run: |
+          mkdir -p server
+          find parts -name lcov.info -exec cat {} + > server/lcov.info
+          echo "$(grep -c '^SF:' server/lcov.info) files measured"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-rust

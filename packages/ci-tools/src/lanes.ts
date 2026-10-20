@@ -62,6 +62,7 @@ export const LANES = {
   },
   synology: {
     paths: [
+      '.github/workflows/synology.yml',
       'server/**',
       'modules/**',
       'clients/web/**',
@@ -80,8 +81,12 @@ export type LaneName = keyof typeof LANES;
 
 export const LANE_NAMES = Object.keys(LANES) as LaneName[];
 
-/** A change here rewires the pipeline itself, so every lane runs. */
-const PIPELINE = ['.github/workflows/**', '.github/scripts/**', 'packages/ci-tools/**'];
+/**
+ * A change here rewires this pipeline itself, so every lane runs. Another
+ * workflow, or a script only a release workflow calls, cannot change what CI
+ * checks, and reaches no lane on its own account.
+ */
+const PIPELINE = ['.github/workflows/ci.yml', 'packages/ci-tools/**'];
 
 type Verdict = Record<LaneName, boolean>;
 
