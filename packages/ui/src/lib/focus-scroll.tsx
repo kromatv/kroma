@@ -325,7 +325,11 @@ function FocusLine({
  * reveals its row (or the control when it is in none), the rail the control.
  */
 function useRevealOnFocus(self: Anchor): () => void {
-  const pointerDriving = usePointerDriving();
+  return useRevealOnFocusBy(self, usePointerDriving());
+}
+
+/** {@link useRevealOnFocus} for a caller that already holds the input source's `pointerDriving`. */
+function useRevealOnFocusBy(self: Anchor, pointerDriving: () => boolean): () => void {
   const page = useContext(PageScrollContext);
   const rail = useContext(RailScrollContext);
   const row = useContext(RowContext);
@@ -362,5 +366,6 @@ export {
   nearestOffset,
   pageOffset,
   useRevealOnFocus,
+  useRevealOnFocusBy,
   useRevealWhenFocused,
 };
