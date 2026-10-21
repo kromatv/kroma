@@ -10,14 +10,14 @@ use tokio::process::Command;
 // break the opaque BitTorrent TCP the bridge carries while HTTPS keeps working,
 // which looks like "VPN green but downloads dead". Bump only after verifying
 // peer flows (`cargo run -p kroma-torrent --example engine_probe --features rqbit`).
-const VERSION: &str = "v1.1.2";
+pub(crate) const VERSION: &str = "v1.1.2";
 const RELEASE: &str = "https://github.com/windtf/wireproxy/releases/download";
 
-fn cached_path(data_dir: &Path) -> PathBuf {
+pub(crate) fn cached_path(data_dir: &Path) -> PathBuf {
     data_dir.join("bin").join("wireproxy")
 }
 
-fn version_path(data_dir: &Path) -> PathBuf {
+pub(crate) fn version_path(data_dir: &Path) -> PathBuf {
     data_dir.join("bin").join("wireproxy.version")
 }
 
