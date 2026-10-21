@@ -80,7 +80,7 @@ filename), or when a decoder needs adding.
 Requires the Android NDK (built with 27.1.12297006).
 
 ```bash
-git clone --depth 1 -b 1.9.0 https://github.com/androidx/media.git media3
+git clone --depth 1 -b 1.9.1 https://github.com/androidx/media.git media3
 MODULE="$PWD/media3/libraries/decoder_ffmpeg/src/main"
 git clone --depth 1 -b release/6.0 https://git.ffmpeg.org/ffmpeg.git "$MODULE/jni/ffmpeg"
 

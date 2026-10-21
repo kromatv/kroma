@@ -9,7 +9,7 @@ const {
 const fs = require('node:fs');
 const path = require('node:path');
 
-const AAR = 'media3-decoder-ffmpeg-1.9.0.aar';
+const AAR = 'media3-decoder-ffmpeg-1.9.1.aar';
 const DEPENDENCY = `    implementation files("libs/${AAR}")`;
 const ANCHOR = 'dependencies {';
 
