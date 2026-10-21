@@ -24,7 +24,8 @@ export default defineConfig({
                 {
                   name: 'vendor',
                   test: (id: string) =>
-                    id.includes('/node_modules/') && !/hls\.js|shaka-player|table-core|react-table/.test(id),
+                    id.includes('/node_modules/') &&
+                    !/hls\.js|shaka-player|table-core|react-table/.test(id),
                   priority: 10,
                 },
               ],
