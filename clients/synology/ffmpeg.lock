@@ -1,5 +1,5 @@
-x86_64  https://github.com/kromatv/kroma/releases/download/vendor-ffmpeg-n8.1.3-20261020/ffmpeg-n8.1.3-18-g46d899d7a0-linux64-gpl-shared-8.1.tar.xz     1550d95f723911d1bd356dabfc1c1b6d26b1e7adaa36a5eda203f8e089d2bbd2
-aarch64 https://github.com/kromatv/kroma/releases/download/vendor-ffmpeg-n8.1.3-20261020/ffmpeg-n8.1.3-18-g46d899d7a0-linuxarm64-gpl-shared-8.1.tar.xz  1c89f01fe0cb339b1a39d35ec65eb66d92817e150ebe18ccc22f8168802d7726
+x86_64 https://github.com/kromatv/kroma/releases/download/vendor-ffmpeg-kroma-8.1.3-5da8d3e30992/ffmpeg-8.1.3-kroma-x86_64.tar.xz b0ef51d337cc730bf5c76bdfd149e2562c566253833249fe338a709829e84045
+aarch64 https://github.com/kromatv/kroma/releases/download/vendor-ffmpeg-kroma-8.1.3-5da8d3e30992/ffmpeg-8.1.3-kroma-aarch64.tar.xz 75dd221785534b05f71a420104b595417fc12bddedce100ab8c608dc36e4e58a
 x86_64-va https://github.com/kromatv/kroma/releases/download/vendor-libva-bookworm-20261021/libva2_2.17.0-1_amd64.deb e6acf0c4071c01df7c35d18a97768047294dc43d252caae9ccddc1e507456695
 x86_64-va https://github.com/kromatv/kroma/releases/download/vendor-libva-bookworm-20261021/libva-drm2_2.17.0-1_amd64.deb dc0a0cadbdc001df3d89855d8054aacb332a731f98c7741ce580492b0e01e605
 x86_64-va https://github.com/kromatv/kroma/releases/download/vendor-libva-bookworm-20261021/libdrm2_2.4.114-1%2Bb1_amd64.deb be18fb670797ba32da9628cf3e8acd83160d8db8c8dd842501dd8e401c3b5371

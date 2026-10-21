@@ -25,7 +25,14 @@ clients/synology/build.sh 0.1.0
 The script: builds the web SPA → cross-compiles `kroma-server` to
 `x86_64-unknown-linux-musl` in a Docker musl image → fetches the ffmpeg pinned in
 `ffmpeg.lock` (`fetch-ffmpeg.sh`) → assembles the `.spk`, its `package.tgz` packed
-with xz. Re-run faster with `SKIP_WEB=1` / `SKIP_RUST=1`.
+with xz.
+
+That ffmpeg is ours: `ffmpeg/` holds the recipe (only the codecs, formats and
+filters the server and its modules invoke), `.github/workflows/ffmpeg.yml` builds
+it for both arches in BtbN's builder image, runs `ffmpeg/check.sh` (the commands
+KROMA gives ffmpeg) against it, and publishes a `vendor-ffmpeg-kroma-*` release.
+Moving `ffmpeg.lock` onto a new one is a PR. A feature that needs a codec or a
+filter the recipe leaves out adds it to `configure.args` and a line to `check.sh`. Re-run faster with `SKIP_WEB=1` / `SKIP_RUST=1`.
 
 ## Install via the package source (recommended, auto-updates)
 
