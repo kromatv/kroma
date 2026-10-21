@@ -27,8 +27,7 @@ function useI18nValue(): I18nValue {
 
 function useSettled(): I18nValue {
   const value = useI18nValue();
-  const pending = value.i18n.pending(value.locale);
-  if (pending) use(pending);
+  use(value.i18n.ready(value.locale));
   return value;
 }
 
