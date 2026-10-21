@@ -177,6 +177,7 @@ pub fn import_portable(
     let result = restore_all(&mut conn, doc, reset);
     let _ = conn.execute_batch("PRAGMA foreign_keys = ON;");
     let mut summary = result?;
+    crate::schema::repair_restored(&conn);
     summary.extend(restore_modules(data_dir, doc, reset));
     Ok(summary)
 }

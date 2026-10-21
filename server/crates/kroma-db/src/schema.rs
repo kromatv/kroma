@@ -1,35 +1,55 @@
-//! Opening a database: the pool, the schema and the migrations that follow it.
+//! Opening a database: the pool, and the core schema's history on top of it.
 
 use std::path::Path;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use rusqlite::Connection;
 
-use kroma_sqlite::{open_with, Pool};
+use kroma_sqlite::{open_with, Pool, Schema};
 
 mod ddl;
+mod legacy;
 mod migrations;
+mod steps;
 mod titled_wanted;
 
 pub(crate) use ddl::{FILE_COLS, ITEM_COLS, SCHEMA};
 pub(crate) use migrations::MIGRATIONS;
 
+pub(crate) const BASELINE: &str = include_str!("schema/baseline.sql");
+
+pub(crate) const CORE: Schema = Schema {
+    name: "the core database",
+    baseline: BASELINE,
+    baseline_version: 1,
+    steps: steps::STEPS,
+    legacy: Some(legacy::adopt),
+};
+
 pub fn init(path: &Path) -> Result<Pool> {
     let pool = open_with(path, 8)?;
-    let conn = pool.get()?;
-    conn.execute_batch(SCHEMA)
-        .context("failed to apply schema")?;
-    migrate(&conn);
+    let mut conn = pool.get()?;
+    kroma_sqlite::migrate(&mut conn, &CORE, Some(path))?;
+    drop(conn);
     Ok(pool)
 }
 
-fn migrate(conn: &Connection) {
-    for sql in MIGRATIONS {
-        let _ = conn.execute(sql, []);
-    }
-    if let Err(e) = titled_wanted::apply(conn) {
-        tracing::error!("the wanted ledger could not move to one row per title: {e}");
-    }
+/// Re-derives what the legacy migrations used to fill in on every boot, for rows
+/// a restored backup wrote in an older shape.
+pub(crate) fn repair_restored(conn: &Connection) {
+    legacy::replay_data(conn);
 }
+
+/// A database as a release from before versioning left it: the legacy schema,
+/// and no schema version.
+#[cfg(test)]
+pub(crate) fn legacy_database(path: &Path) -> Pool {
+    let pool = open_with(path, 1).unwrap();
+    legacy::adopt(&pool.get().unwrap()).unwrap();
+    pool
+}
+
+#[cfg(test)]
+mod history;
 
 #[cfg(test)]
 mod tests {
@@ -126,7 +146,7 @@ mod tests {
     fn init_names_the_series_a_play_was_logged_without() {
         let dir = kroma_testing::temp_dir("schema-history-series");
         let path = dir.path().join("kroma.db");
-        let old = init(&path).unwrap();
+        let old = legacy_database(&path);
         old.get()
             .unwrap()
             .execute_batch(
@@ -168,7 +188,7 @@ mod tests {
     fn init_leaves_a_play_whose_title_has_left_the_catalog_blank() {
         let dir = kroma_testing::temp_dir("schema-history-gone");
         let path = dir.path().join("kroma.db");
-        let old = init(&path).unwrap();
+        let old = legacy_database(&path);
         old.get()
             .unwrap()
             .execute(
@@ -197,7 +217,7 @@ mod tests {
     fn init_repins_downloads_a_previous_release_marked_manual() {
         let dir = kroma_testing::temp_dir("schema-match-source");
         let path = dir.path().join("kroma.db");
-        let old = init(&path).unwrap();
+        let old = legacy_database(&path);
         old.get()
             .unwrap()
             .execute_batch(
@@ -205,7 +225,7 @@ mod tests {
                      magnet_or_url, grabbed_at, match_source) \
                  VALUES ('d1', 'embedded', '', 'movie', 603, 'R', 'm', 0, 'manual'), \
                         ('d2', 'embedded', '', 'movie', 0, 'R', 'm', 0, 'none'), \
-                        ('d3', 'embedded', '', 'movie', 42, 'R', 'm', 0, 'auto');",
+                        ('d3', 'embedded', '', 'movie', 42, 'R', 'm', 0, 'auto'); ",
             )
             .unwrap();
         drop(old);
@@ -229,5 +249,58 @@ mod tests {
                 Some("auto".to_string())
             ]
         );
+    }
+
+    #[test]
+    fn a_title_taken_off_monitoring_stays_off_after_a_restart() {
+        let dir = kroma_testing::temp_dir("schema-unmonitor");
+        let path = dir.path().join("kroma.db");
+        let pool = init(&path).unwrap();
+        pool.get()
+            .unwrap()
+            .execute_batch(
+                "INSERT INTO requests (id, kind, tmdb_id, title, status, created_at, updated_at) \
+                     VALUES ('r1', 'show', 42, 'Show', 'approved', 5, 6); \
+                 INSERT INTO wanted (id, request_id, kind, tmdb_id, title, season, episode, updated_at) \
+                     VALUES ('w1', 'r1', 'episode', 42, 'Show', 1, 1, 1); \
+                 INSERT INTO monitored (kind, tmdb_id, title, seasons, monitor_new_seasons, \
+                     added_at, updated_at) VALUES ('show', 42, 'Show', '[1]', 1, 5, 6);",
+            )
+            .unwrap();
+        crate::delete_monitored(&pool, kroma_domain::RequestKind::Show, 42).unwrap();
+        drop(pool);
+
+        let pool = init(&path).unwrap();
+
+        let monitored: i64 = pool
+            .get()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM monitored", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(monitored, 0);
+    }
+
+    #[test]
+    fn a_play_a_restored_backup_wrote_without_its_series_gets_it_back_at_once() {
+        let pool = crate::testing::temp_pool("schema-restore-repair");
+        let conn = pool.get().unwrap();
+        conn.execute_batch(
+            "INSERT INTO libraries (id,name,kind,path,added_at) \
+                 VALUES ('lib-tv','Series','tv','/media','2026-01-01');\
+             INSERT INTO shows (id,library,title,added_at) \
+                 VALUES ('hotd','lib-tv','House of the Dragon','2026-01-01');\
+             INSERT INTO items (id,kind,title,container,library,show_id,season,episode,added_at) \
+                 VALUES ('ep','episode','Salt and Sea','mkv','lib-tv','hotd',3,1,'2026-01-01');\
+             INSERT INTO play_history (id,user_id,username,item_id,kind,title,started_at,ended_at,watched_ms) \
+                 VALUES ('p1','u1','alice','ep','episode','Salt and Sea',0,100,1000);",
+        )
+        .unwrap();
+
+        repair_restored(&conn);
+
+        let series: Option<String> = conn
+            .query_row("SELECT show_title FROM play_history WHERE id = 'p1'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(series.as_deref(), Some("House of the Dragon"));
     }
 }
