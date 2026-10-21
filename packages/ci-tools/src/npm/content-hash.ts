@@ -39,13 +39,18 @@ function maskVersion(bytes: Uint8Array, version: string | undefined): Uint8Array
   return Buffer.from(text.replaceAll(version, '\0version\0'), 'latin1');
 }
 
+function byCodeUnit(a: string, b: string): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
 /** sha256 over every file's path and bytes in sorted path order. The package's
  *  own version is masked wherever it is stamped (manifests, vendored crates),
  *  and `package.json` is normalised, so a rebuild at another version hashes alike. */
 export function contentHash(files: PackageFiles): string {
   const version = stampedVersion(files);
   const hash = createHash('sha256');
-  for (const path of [...files.keys()].sort()) {
+  for (const path of [...files.keys()].sort(byCodeUnit)) {
     const raw = files.get(path) as Uint8Array;
     const bytes = maskVersion(path === 'package.json' ? normalisePackageJson(raw) : raw, version);
     hash.update(`${path}\0${bytes.length}\0`);

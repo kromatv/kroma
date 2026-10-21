@@ -28,7 +28,7 @@ export function readTarball(gzipped: Uint8Array): PackageFiles {
     const header = tar.subarray(offset, offset + BLOCK);
     if (header.every((byte) => byte === 0)) break;
     const size = Number.parseInt(text(header, 124, 12).trim() || '0', 8);
-    const type = String.fromCharCode(header[156] || 48);
+    const type = String.fromCodePoint(header[156] || 48);
     const body = tar.subarray(offset + BLOCK, offset + BLOCK + size);
     offset += BLOCK + Math.ceil(size / BLOCK) * BLOCK;
     if (type === 'x') override = paxPath(body);

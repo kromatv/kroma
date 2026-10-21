@@ -2,7 +2,7 @@ import { $ } from 'bun';
 import { z } from 'zod';
 import type { Registry } from './publish';
 
-const Tarball = z.string().url();
+const Tarball = z.url();
 
 export const npmRegistry: Registry = {
   async publishedTarball(name, tag) {
