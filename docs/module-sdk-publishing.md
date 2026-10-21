@@ -78,9 +78,9 @@ serde, tracing, time and walkdir. No `rusqlite`, so `cargo tree` on the SDK with
 ## The lane
 
 ```bash
-bun run ci sdk stage --version 0.1.40        # dist/sdk/kromatv-sdk-0.1.40.tgz
+bun run ci sdk stage --version 0.1.40        # dist/sdk/kromatv-sdk-<version>.tgz
 bun run ci sdk smoke                         # scaffold a module from it alone, install, check, build
-bun run ci npm publish dist/sdk/kromatv-sdk-0.1.40.tgz --tag canary --dry-run
+bun run ci npm publish dist/sdk/kromatv-sdk-<version>.tgz --tag canary --dry-run
 ```
 
 `release.yml` runs stage and smoke on every push and uploads the tarball as the
