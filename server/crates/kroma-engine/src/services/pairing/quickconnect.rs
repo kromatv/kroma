@@ -89,7 +89,7 @@ impl QuickConnectInner {
     /// [`MAX_WRONG_PER_USER`] wrong guesses inside the window.
     pub fn may_try(&self, user_id: &str) -> bool {
         let now = OffsetDateTime::now_utc().unix_timestamp();
-        let mut map = self.wrong.lock().unwrap();
+        let map = self.wrong.lock().unwrap();
         match map.get(user_id) {
             Some(w) if now - w.first < WRONG_WINDOW_SECS => w.count < MAX_WRONG_PER_USER,
             _ => true,
