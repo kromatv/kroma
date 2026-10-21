@@ -13,6 +13,9 @@ use crate::api::error::lerr;
 use crate::services::auth;
 
 const CEREMONY_TTL_SECS: i64 = 300;
+// A ceiling on live ceremonies, so an anonymous flood of authenticate/start
+// cannot grow the map without bound. Far above any real concurrent login count.
+const MAX_CEREMONIES: usize = 4096;
 
 pub(super) enum Ceremony {
     Register {
@@ -41,6 +44,19 @@ pub(super) fn stash(ceremony: Ceremony) -> String {
     if let Ok(mut m) = CEREMONIES.lock() {
         let n = now();
         m.retain(|_, e| e.expires > n);
+        // Past the ceiling, drop the soonest-to-expire entries. A started
+        // ceremony nobody finishes is worthless, so shedding the oldest costs a
+        // flood its slots before it costs a real login its own.
+        while m.len() >= MAX_CEREMONIES {
+            let Some(oldest) = m
+                .iter()
+                .min_by_key(|(_, e)| e.expires)
+                .map(|(k, _)| k.clone())
+            else {
+                break;
+            };
+            m.remove(&oldest);
+        }
         m.insert(
             id.clone(),
             Entry {
@@ -92,4 +108,30 @@ pub(super) fn parse_passkeys(blobs: &[String]) -> Vec<(String, Passkey)> {
         .filter_map(|j| serde_json::from_str::<Passkey>(j).ok())
         .map(|pk| (hex::encode(pk.cred_id()), pk))
         .collect()
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_ceremony_store_never_grows_past_its_ceiling() {
+        if let Ok(mut m) = CEREMONIES.lock() {
+            m.clear();
+        }
+        let webauthn = WebauthnBuilder::new("example.com", &Url::parse("https://example.com").unwrap())
+            .unwrap()
+            .rp_name("KROMA")
+            .build()
+            .unwrap();
+        let (_, auth) = webauthn.start_discoverable_authentication().unwrap();
+
+        for _ in 0..(MAX_CEREMONIES + 500) {
+            stash(Ceremony::Discover { auth: auth.clone() });
+        }
+
+        let len = CEREMONIES.lock().unwrap().len();
+        assert!(len <= MAX_CEREMONIES, "{len} live ceremonies");
+    }
 }
