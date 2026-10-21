@@ -238,7 +238,7 @@ mod tests {
     fn a_title_a_request_filled_a_ledger_for_becomes_monitored() {
         let dir = kroma_testing::temp_dir("titled-wanted-backfill");
         let path = dir.path().join("kroma.db");
-        let pool = init(&path).unwrap();
+        let pool = crate::schema::legacy_database(&path);
         let conn = pool.get().unwrap();
         conn.execute_batch(
             "INSERT INTO requests (id, kind, tmdb_id, title, status, created_at, updated_at)

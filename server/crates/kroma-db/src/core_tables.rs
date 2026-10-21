@@ -3,13 +3,20 @@
 use std::collections::BTreeSet;
 use std::sync::LazyLock;
 
-use crate::schema::{MIGRATIONS, SCHEMA};
+use kroma_sqlite::Run;
+
+use crate::schema::{BASELINE, CORE, MIGRATIONS, SCHEMA};
 
 static OWNED: LazyLock<BTreeSet<String>> = LazyLock::new(|| {
-    let schema = without_comments(SCHEMA);
-    schema
-        .split(';')
-        .filter_map(created_table)
+    let steps = CORE.steps.iter().filter_map(|step| match step.run {
+        Run::Sql(sql) => Some(sql),
+        Run::Code(_) => None,
+    });
+    [SCHEMA, BASELINE]
+        .into_iter()
+        .chain(steps)
+        .map(without_comments)
+        .flat_map(|sql| sql.split(';').filter_map(created_table).collect::<Vec<_>>())
         .chain(MIGRATIONS.iter().copied().filter_map(created_table))
         .collect()
 });
