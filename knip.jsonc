@@ -28,6 +28,10 @@
     "packages/core/src/locales/messages.d.ts",
     "**/*.gen.ts",
     "**/routeTree.gen.ts",
+    // Paraglide's runtime, compiled into the site at build time and gitignored.
+    "apps/www/src/paraglide/**",
+    // Scripts a Claude skill runs by path, never imported.
+    ".claude/skills/**",
   ],
 
   // Each of these is imported somewhere - knip cannot attribute it to the
