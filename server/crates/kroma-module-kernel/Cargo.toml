@@ -21,7 +21,6 @@ kroma-module-manifest = { workspace = true }
 kroma-module-supervisor = { workspace = true }
 
 axum = { workspace = true }
-serde_json = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]
