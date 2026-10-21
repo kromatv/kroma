@@ -1,7 +1,7 @@
 # RFC NNNN: the web client loads an API domain when it first calls it
 
-- Status: **DRAFT**
-- PR: #NNNN
+- Status: **REJECTED**
+- PR: #400
 - Affects: `packages/client` (`api/discover.web.ts`, `core/client.ts`, every
   `api/<domain>/client.ts`), `clients/web`
 
@@ -77,3 +77,13 @@ module through `provideShared`, which already loads on demand. Nothing on the wi
   oldest engines may handle dynamic `import()` badly. Decided when it is built, with the
   deep tier's compat guard as the judge.
 - The exact saving, to be measured on the built entry chunk once the first two domains move.
+
+## Outcome
+
+Built on `perf/lazy-client-domains` and measured, then dropped. The entry chunk went from
+421.6 to 418.9 KB gzipped, 2.7 KB rather than the 57 KB estimated: pages import their
+schemas and ids directly through `@kromatv/client/<domain>`, so the schemas stay on first
+paint and only each domain's `client.ts` left it. For that, every namespace gained a lazy
+stand-in, two domains a `urls.ts`, query keys a path tree, and a TV test a preload to wait
+out the first import. Not worth it. A real saving would have to move the pages' own schema
+imports, which is a different proposal.
