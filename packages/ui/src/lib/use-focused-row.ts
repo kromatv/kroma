@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import type { View } from 'react-native';
-import { useRevealWhenFocused } from './focus-scroll';
+import { useRevealWhenFocused } from './use-reveal-on-focus';
 import { useFocusMirror } from './use-focus-mirror';
 
 /** The host ref of a row whose focus is a prop rather than the platform's (a
