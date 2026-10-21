@@ -16,29 +16,34 @@ interface RemoteSpec {
 }
 
 /** What the host hands a runtime-loaded module, by the specifier its source
- *  imported. Loaded on demand: a page with no module installed pays nothing. */
+ *  imported. Loaded on demand: a page with no module installed pays nothing.
+ *  A workspace barrel goes through a one-line re-export in `scope/`: the app
+ *  imports these barrels statically, and a namespace `import()` of a module
+ *  the app also imports keeps every export of it alive in the app's own chunk,
+ *  which put the whole kit and the player on first paint. */
 const PROVIDERS: Record<SharedModule, () => Promise<unknown>> = {
   react: () => import('react'),
   'react/jsx-runtime': () => import('react/jsx-runtime'),
   'react/jsx-dev-runtime': () => import('react/jsx-dev-runtime'),
   'react-dom': () => import('react-dom'),
   'react-native': () => import('react-native'),
-  '@kromatv/module-sdk': () => import('@kromatv/module-sdk'),
-  '@kromatv/ui': () => import('@kromatv/ui'),
-  '@kromatv/ui/kit': () => import('@kromatv/ui/kit'),
-  '@kromatv/ui/tokens': () => import('@kromatv/ui/tokens'),
-  '@kromatv/core': () => import('@kromatv/core'),
-  '@kromatv/core/react': () => import('@kromatv/core/react'),
-  '@kromatv/client': () => import('@kromatv/client'),
-  '@kromatv/client/query': () => import('@kromatv/client/query'),
-  '@kromatv/i18n': () => import('@kromatv/i18n'),
-  '@kromatv/i18n/react': () => import('@kromatv/i18n/react'),
+  '@kromatv/module-sdk': () => import('#web/modules/scope/module-sdk'),
+  '@kromatv/ui': () => import('#web/modules/scope/ui'),
+  '@kromatv/ui/kit': () => import('#web/modules/scope/ui-kit'),
+  '@kromatv/ui/tokens': () => import('#web/modules/scope/ui-tokens'),
+  '@kromatv/core': () => import('#web/modules/scope/core'),
+  '@kromatv/core/react': () => import('#web/modules/scope/core-react'),
+  '@kromatv/client': () => import('#web/modules/scope/client'),
+  '@kromatv/client/query': () => import('#web/modules/scope/client-query'),
+  '@kromatv/i18n': () => import('#web/modules/scope/i18n'),
+  '@kromatv/i18n/react': () => import('#web/modules/scope/i18n-react'),
   '@tanstack/react-query': () => import('@tanstack/react-query'),
   '@tanstack/react-router': () => import('@tanstack/react-router'),
   'react-call': () => import('react-call'),
 };
 
-async function provideShared(): Promise<Record<string, unknown>> {
+/** Everything a runtime module imports from the host, keyed by specifier. */
+export async function provideShared(): Promise<Record<string, unknown>> {
   const loaded = await Promise.all(
     Object.entries(PROVIDERS).map(async ([key, load]) => [key, await load()] as const),
   );
