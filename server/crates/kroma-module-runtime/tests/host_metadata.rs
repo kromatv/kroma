@@ -5,8 +5,10 @@ use axum::extract::State;
 use axum::http::Uri;
 use axum::routing::get;
 use axum::{Json, Router};
-use kroma_module_wire::{EpisodeInfo, MatchCandidate};
 use kroma_module_host::HostCtx;
+use kroma_module_wire::{EpisodeInfo, MatchCandidate};
+
+mod support;
 
 #[derive(Clone, Default)]
 struct Asked(Arc<Mutex<Vec<String>>>);
@@ -55,33 +57,13 @@ async fn episodes(State(asked): State<Asked>, uri: Uri) -> Json<Vec<EpisodeInfo>
     Json(vec![winter_is_coming()])
 }
 
-fn free_port() -> u16 {
-    std::net::TcpListener::bind("127.0.0.1:0")
-        .expect("bind")
-        .local_addr()
-        .expect("addr")
-        .port()
-}
-
 fn start_core(asked: Asked) -> u16 {
-    let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
-    listener.set_nonblocking(true).expect("non-blocking");
-    let port = listener.local_addr().expect("addr").port();
-    std::thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("runtime");
-        rt.block_on(async move {
-            let listener = tokio::net::TcpListener::from_std(listener).expect("listener");
-            let app = Router::new()
-                .route("/api/_host/metadata-search", get(search))
-                .route("/api/_host/metadata-episodes", get(episodes))
-                .with_state(asked);
-            axum::serve(listener, app).await.expect("serve");
-        });
-    });
-    port
+    support::serve(
+        Router::new()
+            .route("/api/_host/metadata-search", get(search))
+            .route("/api/_host/metadata-episodes", get(episodes))
+            .with_state(asked),
+    )
 }
 
 #[test]
@@ -91,7 +73,7 @@ fn a_sidecar_asks_the_core_what_a_title_and_its_episodes_are_called() {
     let asked = Asked::default();
     let core = start_core(asked.clone());
     std::env::set_var("KROMA_MODULE_ID", "tv.kroma.metadata-test");
-    std::env::set_var("KROMA_MODULE_PORT", free_port().to_string());
+    std::env::set_var("KROMA_MODULE_PORT", support::free_port().to_string());
     std::env::set_var("KROMA_CORE_URL", format!("http://127.0.0.1:{core}/"));
     std::env::set_var("KROMA_HOST_TOKEN", "host-token");
     std::env::set_var("KROMA_DB_PATH", dir.join("core.db").display().to_string());

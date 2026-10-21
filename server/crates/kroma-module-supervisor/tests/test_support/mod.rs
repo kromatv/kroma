@@ -2,8 +2,12 @@
 
 use std::sync::Arc;
 
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
+use kroma_module_host::testing::StubHost;
 use kroma_module_host::{SettingReach, SettingReachOf};
 use kroma_module_supervisor::{Supervisor, SupervisorConfig};
+use tower::ServiceExt;
 
 /// The token every sidecar shares, which authenticates a caller without naming it.
 pub const FABRIC: &str = "fabric-host-token";
@@ -59,5 +63,28 @@ impl Modules {
         S: kroma_module_host::HostCtx + Clone + Send + Sync + 'static,
     {
         kroma_module_supervisor::host_router::<S>(self.supervisor.clone(), reach)
+    }
+
+    pub async fn get(
+        &self,
+        host: StubHost,
+        uri: &str,
+        token: Option<&str>,
+    ) -> (StatusCode, String) {
+        let mut req = Request::builder().method("GET").uri(uri);
+        if let Some(t) = token {
+            req = req.header("authorization", format!("Bearer {t}"));
+        }
+        let res = self
+            .router::<StubHost>(NOTHING_WITHHELD)
+            .with_state(host)
+            .oneshot(req.body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        let status = res.status();
+        let bytes = axum::body::to_bytes(res.into_body(), 64 * 1024)
+            .await
+            .unwrap();
+        (status, String::from_utf8(bytes.to_vec()).unwrap())
     }
 }

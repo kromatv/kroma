@@ -1,12 +1,10 @@
-use axum::body::Body;
-use axum::http::{Request, StatusCode};
+use axum::http::StatusCode;
 use kroma_domain::metadata::{EpisodeInfo, MatchCandidate};
 use kroma_module_host::testing::StubHost;
-use tower::ServiceExt;
 
 mod test_support;
 
-use test_support::{Modules, FABRIC, NOTHING_WITHHELD};
+use test_support::{Modules, FABRIC};
 
 fn dune() -> MatchCandidate {
     MatchCandidate {
@@ -33,21 +31,7 @@ fn winter_is_coming() -> EpisodeInfo {
 }
 
 async fn get(host: StubHost, uri: &str, token: Option<&str>) -> (StatusCode, String) {
-    let mut req = Request::builder().method("GET").uri(uri);
-    if let Some(t) = token {
-        req = req.header("authorization", format!("Bearer {t}"));
-    }
-    let res = Modules::new("host-metadata")
-        .router::<StubHost>(NOTHING_WITHHELD)
-        .with_state(host)
-        .oneshot(req.body(Body::empty()).unwrap())
-        .await
-        .unwrap();
-    let status = res.status();
-    let bytes = axum::body::to_bytes(res.into_body(), 64 * 1024)
-        .await
-        .unwrap();
-    (status, String::from_utf8(bytes.to_vec()).unwrap())
+    Modules::new("host-metadata").get(host, uri, token).await
 }
 
 #[tokio::test]
