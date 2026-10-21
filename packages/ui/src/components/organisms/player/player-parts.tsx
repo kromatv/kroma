@@ -27,7 +27,7 @@ import {
   UpNext,
 } from './player-settings';
 
-interface PlayerSlots {
+export interface PlayerSlots {
   media: ReactNode;
   actions: ReactNode;
   panel: ReactNode;
