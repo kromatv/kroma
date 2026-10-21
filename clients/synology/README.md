@@ -23,8 +23,9 @@ clients/synology/build.sh 0.1.0
 ```
 
 The script: builds the web SPA → cross-compiles `kroma-server` to
-`x86_64-unknown-linux-musl` in a Docker musl image → downloads a static ffmpeg →
-assembles the `.spk`. Re-run faster with `SKIP_WEB=1` / `SKIP_RUST=1`.
+`x86_64-unknown-linux-musl` in a Docker musl image → fetches the ffmpeg pinned in
+`ffmpeg.lock` (`fetch-ffmpeg.sh`) → assembles the `.spk`, its `package.tgz` packed
+with xz. Re-run faster with `SKIP_WEB=1` / `SKIP_RUST=1`.
 
 ## Install via the package source (recommended, auto-updates)
 
