@@ -6,6 +6,11 @@ rust-version.workspace = true
 description = "KROMA a self-hosted, direct-play media streaming server"
 license.workspace = true
 
+# Declared for their features, not their API: jobserver pins the tantivy
+# graph, openssl switches on `vendored` for webauthn-rs.
+[package.metadata.cargo-machete]
+ignored = ["jobserver", "openssl"]
+
 [[bin]]
 name = "kroma-server"
 path = "src/main.rs"
@@ -103,9 +108,9 @@ tracing-appender = "0.2"
 walkdir = "2"
 jwalk = "0.8"
 chacha20poly1305 = { version = "0.11", default-features = false, features = ["alloc"] }
-zip = { version = "8", default-features = false, features = ["deflate"] }
+zip = { version = "8", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 notify = "8"
-sysinfo = "0.39"
+sysinfo = { version = "0.39", default-features = false, features = ["system", "disk"] }
 # In-process JPEG "card" compositing (tiny-skia raster + fontdue glyphs), shared
 # by kroma-engine (storyboard/image) and the binary (api/card.rs).
 tiny-skia = "0.12"
@@ -216,7 +221,6 @@ time = { workspace = true }
 hex = { workspace = true }
 # A registry publishes checksums in Subresource-Integrity form (sha256-<base64>).
 base64 = { workspace = true }
-zip = { workspace = true }
 walkdir = { workspace = true }
 sysinfo = { workspace = true }
 # NB: kroma-torrent and kroma-acquisition are deliberately NOT deps of the binary.
@@ -244,9 +248,10 @@ dioxus-devtools = { version = "0.7", optional = true, features = ["serve"] }
 # Optional HTTPS listener with an auto-generated self-signed certificate (src/tls.rs).
 # `axum-server` terminates TLS with rustls while keeping axum's make-service +
 # SocketAddr connect-info; `rcgen` mints the self-signed cert (LAN SANs). Both
-# pin the `ring` rustls provider (no aws-lc C build, matches the musl policy);
-# we install it explicitly at boot since more than one provider is in the graph.
-axum-server = { version = "0.7", features = ["tls-rustls"] }
+# pin the `ring` rustls provider (no aws-lc C build, matches the musl policy):
+# axum-server's own `tls-rustls` would switch on rustls/aws-lc-rs, hence
+# `-no-provider`. We install ring explicitly at boot.
+axum-server = { version = "0.7", default-features = false, features = ["tls-rustls-no-provider"] }
 rcgen = { version = "0.13", default-features = false, features = ["ring", "pem"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
 # Cross-platform hostname for the certificate's DNS SANs (<host>, <host>.local).
