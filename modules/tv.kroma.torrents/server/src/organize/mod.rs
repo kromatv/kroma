@@ -4,97 +4,31 @@
 //! path, so renaming to a cleaner (still-parseable) name preserves watched
 //! state / progress / my-list.
 
+mod expected;
+mod files;
+mod sample;
+
 // The naming engine is the `kroma-naming` library, shared
 // with acquisition's import; re-exported here so this crate's own callers keep
 // using crate::organize::naming.
 pub use kroma_naming as naming;
 
+pub use sample::sample;
+
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Result;
 
 use kroma_module_sdk::db;
-use kroma_module_sdk::engine::model::{Kind, MediaFile, MediaItem, Show};
+use kroma_module_sdk::engine::model::{Kind, MediaItem};
 
-use crate::dtos::{OrganizeMove, OrganizePlan, OrganizeResult, SampleNames};
+use crate::dtos::{OrganizeMove, OrganizePlan, OrganizeResult};
 use kroma_module_sdk::host::HostStorage;
 
-use naming::{NameContext, NamingTemplates};
-
-// Proper display title + year per show id, preferring the enriched TMDB
-// metadata over the parsed folder name (so a rename produces "Breaking Bad",
-// not "breaking bad").
-fn show_info(shows: &[Show]) -> HashMap<String, (String, Option<u32>)> {
-    shows
-        .iter()
-        .map(|s| {
-            let title = s
-                .metadata
-                .as_ref()
-                .and_then(|m| m.title.clone())
-                .filter(|t| !t.trim().is_empty())
-                .unwrap_or_else(|| s.title.clone());
-            let year = s.year.or_else(|| {
-                s.metadata
-                    .as_ref()
-                    .and_then(|m| year_of(m.release_date.as_deref()))
-            });
-            (s.id.clone(), (title, year))
-        })
-        .collect()
-}
-
-fn year_of(date: Option<&str>) -> Option<u32> {
-    date.and_then(|d| d.get(..4)).and_then(|y| y.parse().ok())
-}
-
-/// Render one movie + one episode example for the live template preview.
-pub fn sample(tpl: &NamingTemplates) -> SampleNames {
-    let movie = NameContext {
-        title: "The Matrix".into(),
-        year: Some(1999),
-        resolution: Some("2160p".into()),
-        codec: Some("x265".into()),
-        source: Some("Bluray".into()),
-        release_group: Some("EVOLVE".into()),
-        edition: Some("IMAX".into()),
-        imdb_id: Some("tt0133093".into()),
-        tmdb_id: Some(603),
-        dynamic_range: Some("DV".into()),
-        video_bit_depth: Some(10),
-        audio_codec: Some("TrueHD".into()),
-        audio_channels: Some("5.1".into()),
-        audio_languages: vec!["EN".into(), "FR".into()],
-        subtitle_languages: vec!["FR".into()],
-        ..Default::default()
-    };
-    let episode = NameContext {
-        title: "Breaking Bad".into(),
-        year: Some(2008),
-        season: Some(1),
-        episode: Some(2),
-        episode_title: Some("Cat's in the Bag...".into()),
-        resolution: Some("1080p".into()),
-        codec: Some("x264".into()),
-        source: Some("WEBDL".into()),
-        release_group: Some("NTb".into()),
-        audio_codec: Some("EAC3".into()),
-        audio_channels: Some("5.1".into()),
-        audio_languages: vec!["EN".into()],
-        ..Default::default()
-    };
-    SampleNames {
-        movie: tpl
-            .movie_rel_path(&movie, "mkv")
-            .to_string_lossy()
-            .into_owned(),
-        episode: tpl
-            .episode_rel_path(&episode, "mkv")
-            .to_string_lossy()
-            .into_owned(),
-    }
-}
+use expected::{expected_rel, show_info};
+use files::{current_abs, library_root, move_file, prune_empty_dirs};
+use naming::NamingTemplates;
 
 // Everything both walks below read: templates, library roots, show titles and
 // the item list.
@@ -217,171 +151,4 @@ pub fn apply<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<Organize
         state.trigger_job("library.scan", "organize");
     }
     Ok(result)
-}
-
-// The naming context + display title for one library file, or `None` if it
-// can't be placed (loose video, missing episode numbers...).
-fn expected_rel(
-    tpl: &NamingTemplates,
-    item: &MediaItem,
-    file: &MediaFile,
-    shows_by_id: &HashMap<String, (String, Option<u32>)>,
-) -> Option<(PathBuf, String)> {
-    let abs = current_abs(file)?;
-    let ext = abs.extension()?.to_str()?.to_string();
-    let parsed = kroma_scene::parse_release_name(abs.file_stem()?.to_str()?);
-    // The quality + MediaInfo fields shared by movies and episodes: resolution/
-    // codec/streams from the probe, source/group/proper from the current name.
-    let base = quality_ctx(file, &parsed);
-    let (imdb_id, tmdb_id) = item_ids(item);
-
-    match item.kind {
-        Kind::Movie | Kind::Video => {
-            let title = movie_title(item);
-            let ctx = NameContext {
-                title: title.clone(),
-                year: item.year,
-                imdb_id,
-                tmdb_id,
-                ..base
-            };
-            Some((tpl.movie_rel_path(&ctx, &ext), title))
-        }
-        Kind::Episode => {
-            let (season, episode) = (item.season?, item.episode?);
-            // Proper show title + year from the enriched show, falling back to
-            // the episode item's own parsed show title.
-            let (show_title, year) = item
-                .show_id
-                .as_ref()
-                .and_then(|id| shows_by_id.get(id))
-                .cloned()
-                .or_else(|| item.show_title.clone().map(|t| (t, item.year)))?;
-            let ctx = NameContext {
-                title: show_title.clone(),
-                year,
-                season: Some(season),
-                episode: Some(episode),
-                episode_title: item.episode_title.clone(),
-                imdb_id,
-                tmdb_id,
-                ..base
-            };
-            Some((
-                tpl.episode_rel_path(&ctx, &ext),
-                format!("{show_title} S{season:02}E{episode:02}"),
-            ))
-        }
-    }
-}
-
-// Quality + MediaInfo naming context from a probed file, minus the
-// title/year/season/ids the caller fills per kind.
-fn quality_ctx(file: &MediaFile, parsed: &kroma_scene::ParsedRelease) -> NameContext {
-    let width = file.video.as_ref().and_then(|v| v.width).map(|w| w as i64);
-    let (_, _, source) = naming::quality_from_parsed(parsed);
-    let hdr = file.video.as_ref().is_some_and(|v| v.hdr);
-    let rep_audio = file.audio.as_ref().or_else(|| file.audio_tracks.first());
-    NameContext {
-        resolution: naming::resolution_from_width(width),
-        codec: naming::codec_label(file.video.as_ref().map(|v| v.codec.as_str())),
-        source,
-        proper: parsed.proper,
-        repack: parsed.repack,
-        release_group: parsed.group.clone(),
-        edition: file.edition.clone(),
-        dynamic_range: naming::dynamic_range(hdr || parsed.hdr, parsed.dolby_vision),
-        video_bit_depth: file.video.as_ref().and_then(|v| v.bit_depth),
-        audio_codec: naming::audio_codec_label(rep_audio.map(|a| a.codec.as_str())),
-        audio_channels: naming::audio_channels_label(rep_audio.and_then(|a| a.channels)),
-        audio_languages: naming::lang_list(
-            file.audio_tracks
-                .iter()
-                .filter_map(|a| a.language.as_deref()),
-        ),
-        subtitle_languages: naming::lang_list(
-            file.subtitles.iter().filter_map(|s| s.language.as_deref()),
-        ),
-        ..Default::default()
-    }
-}
-
-// IMDb + TMDB ids from the item's TMDB metadata, for `{ImdbId}` / `{TmdbId}`.
-fn item_ids(item: &MediaItem) -> (Option<String>, Option<u64>) {
-    match item.metadata.as_ref() {
-        Some(m) => (m.imdb_id.clone(), Some(m.tmdb_id)),
-        None => (None, None),
-    }
-}
-
-// Prefer the localized TMDB title, then the parsed item title.
-fn movie_title(item: &MediaItem) -> String {
-    item.metadata
-        .as_ref()
-        .and_then(|m| m.title.clone())
-        .filter(|t| !t.trim().is_empty())
-        .unwrap_or_else(|| item.title.clone())
-}
-
-fn current_abs(file: &MediaFile) -> Option<PathBuf> {
-    file.abs_path
-        .as_deref()
-        .filter(|p| !p.starts_with("demo://"))
-        .map(PathBuf::from)
-}
-
-// The library folder that contains `abs` (so a rename stays within the same
-// root / filesystem).
-fn library_root(
-    folders: &HashMap<String, Vec<PathBuf>>,
-    lib_id: &str,
-    abs: &Path,
-) -> Option<PathBuf> {
-    let roots = folders.get(lib_id)?;
-    roots
-        .iter()
-        .find(|root| abs.starts_with(root))
-        .cloned()
-        .or_else(|| roots.first().cloned())
-}
-
-// Rename in place, refusing to overwrite an existing different file.
-fn move_file(from: &Path, to: &Path) -> Result<()> {
-    if from == to {
-        return Ok(());
-    }
-    if to.exists() {
-        anyhow::bail!("target already exists: {}", to.display());
-    }
-    if let Some(parent) = to.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-    // Same filesystem: an atomic rename (keeps the inode). Cross-device: copy
-    // then remove the source.
-    match std::fs::rename(from, to) {
-        Ok(()) => Ok(()),
-        Err(_) => {
-            std::fs::copy(from, to)?;
-            std::fs::remove_file(from)?;
-            Ok(())
-        }
-    }
-}
-
-// Removes now-empty source directories up to (but not including) the library
-// root, so a rename doesn't leave orphan folders behind.
-fn prune_empty_dirs(dir: Option<&Path>, root: &Path) {
-    let mut cur = dir.map(Path::to_path_buf);
-    while let Some(d) = cur {
-        if d == root || !d.starts_with(root) {
-            break;
-        }
-        let empty = std::fs::read_dir(&d)
-            .map(|mut e| e.next().is_none())
-            .unwrap_or(false);
-        if !empty || std::fs::remove_dir(&d).is_err() {
-            break;
-        }
-        cur = d.parent().map(Path::to_path_buf);
-    }
 }
