@@ -4,7 +4,7 @@ import { useHeldSeek } from '@kromatv/core/react';
 import { useCast } from '@kromatv/ui';
 import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigation, useRouter } from 'expo-router';
+import { usePreventRemove, useRouter } from 'expo-router';
 import { VideoView, type VideoView as VideoViewRef } from 'expo-video';
 
 import { useEffect, useRef, useState } from 'react';
@@ -46,7 +46,6 @@ export function PlayerBody({
   // native player's business.
   const startAudio = localUri ? 0 : (preferredAudioIndex(audioTracksOf(item), prefs.audio) ?? 0);
   const engine = useHeldSeek(useKromaEngine(client, item, startSec, localUri, startAudio));
-  const navigation = useNavigation();
   const subs = useSubtitles(client, item, offline, prefs.subtitle);
   const tileFor = useStoryboard(client, item, !localUri, offline);
   // Which sheet view is open, or null: the gear opens the menu, the CC capsule
@@ -115,9 +114,12 @@ export function PlayerBody({
 
   // The screen leaving the stack for ANY reason (pop, replace, gesture) must
   // kill audio before the native dismissal even starts.
-  useEffect(() => {
-    return navigation.addListener('beforeRemove', () => engine.shutdown());
-  }, [navigation, engine]);
+  const [guarded, setGuarded] = useState(true);
+  usePreventRemove(guarded, ({ repeat }) => {
+    engine.shutdown();
+    setGuarded(false);
+    repeat();
+  });
 
   useEffect(() => {
     if (engine.endedNonce === 0 || navigatedRef.current) return;
