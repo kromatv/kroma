@@ -4,11 +4,13 @@
 
 use std::path::{Component, PathBuf};
 
-use axum::extract::{Path, State};
-use axum::http::{header, StatusCode};
+use axum::extract::{Path, Request, State};
+use axum::http::{header, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
+use tower::ServiceExt;
+use tower_http::services::ServeFile;
 
 use crate::state::SharedState;
 
@@ -20,6 +22,7 @@ pub fn asset_routes() -> Router<SharedState> {
 async fn serve_fe(
     State(state): State<SharedState>,
     Path((id, path)): Path<(String, String)>,
+    req: Request,
 ) -> Response {
     // Rebuild both id and path from Normal components so neither can escape the
     // module's fe dir.
@@ -43,19 +46,16 @@ async fn serve_fe(
         .join(id)
         .join("fe")
         .join(&rel);
-    match tokio::fs::read(&file).await {
-        Ok(bytes) => (
-            [
-                (header::CONTENT_TYPE, content_type_for(&rel)),
-                // remoteEntry.js is unhashed + refetched on each app load; assets are
-                // content-hashed. `no-cache` is safe for both (revalidate, not stale).
-                (header::CACHE_CONTROL, "no-cache"),
-            ],
-            bytes,
-        )
-            .into_response(),
-        Err(_) => StatusCode::NOT_FOUND.into_response(),
+    if !tokio::fs::metadata(&file).await.is_ok_and(|m| m.is_file()) {
+        return StatusCode::NOT_FOUND.into_response();
     }
+    let Ok(res) = ServeFile::new(&file).oneshot(req).await;
+    let mut res = res.into_response();
+    res.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static(content_type_for(&rel)),
+    );
+    res
 }
 
 // A plain path segment: rejects `.`, `..`, and separators to block traversal.

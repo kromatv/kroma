@@ -89,6 +89,8 @@ mod it_mail_relay;
 #[cfg(test)]
 mod it_media;
 #[cfg(test)]
+mod it_module_frontend;
+#[cfg(test)]
 mod it_media_bearer;
 #[cfg(test)]
 mod it_media_ticket;
