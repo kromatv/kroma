@@ -117,7 +117,7 @@ impl Registry {
         entry.playback = playback.map(trim_tracks);
         entry.last_seen = Instant::now();
         Some(if material {
-            StateChange::Row(entry.view())
+            StateChange::Row(Box::new(entry.view()))
         } else {
             match entry.playback.as_ref() {
                 Some(pb) => StateChange::Position {

@@ -21,7 +21,7 @@ fn deny_request_marks_denied_and_publishes() {
     let denied = deny_request(&host, "r1", "mod", Some("nope")).unwrap();
     assert_eq!(denied.status, RequestStatus::Denied);
     assert_eq!(status_of_req(&host, "r1"), RequestStatus::Denied);
-    assert!(host.published().len() >= 1);
+    assert!(!host.published().is_empty());
 }
 
 #[test]

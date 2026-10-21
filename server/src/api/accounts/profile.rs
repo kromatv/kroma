@@ -102,13 +102,10 @@ async fn apply_username(
     }
     let uid = user.id.clone();
     let n = name.clone();
-    if let Err(resp) = query(&state.db, move |pool| {
+    query(&state.db, move |pool| {
         db::set_user_username(&pool, &uid, &n)
     })
-    .await
-    {
-        return Err(resp);
-    }
+    .await?;
     user.username = name;
     Ok(())
 }

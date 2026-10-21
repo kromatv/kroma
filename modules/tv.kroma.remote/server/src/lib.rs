@@ -21,6 +21,8 @@
 //! that missed that window (SIGKILL, a crash) leaves an untracked `cloudflared`
 //! still serving the tunnel, so the next start sweeps for one before reconciling.
 
+#![allow(clippy::result_large_err)]
+
 use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::process::Stdio;
