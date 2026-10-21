@@ -23,7 +23,8 @@
 import type { DimensionValue, TextStyle, ViewStyle } from 'react-native';
 import type { Responsive } from '#ui/core/breakpoint';
 import { type ColorValue, color } from '#ui/core/color';
-import { type RingToken, radiusValue, type Theme } from '#ui/core/theme';
+import { radiusValue } from '#ui/core/radius-value';
+import type { RingToken, Theme } from '#ui/core/theme';
 import type { ShadowToken } from '#ui/core/tokens/effects';
 import { absoluteFill, type CornerValue } from '#ui/core/tokens/layout';
 

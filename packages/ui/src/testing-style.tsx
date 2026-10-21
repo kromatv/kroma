@@ -26,14 +26,9 @@ import {
   sharedStyle as resolveSharedStyle,
   type Styles,
 } from './core/styles';
-import {
-  themedCache as memoCache,
-  themed as memoTheme,
-  onPaper as paper,
-  radiusValue as radius,
-  scaledRadius as scaled,
-  groundShade as shade,
-} from './core/theme';
+import { groundShade as shade, onPaper as paper } from './core/ground-shade';
+import { radiusValue as radius, scaledRadius as scaled } from './core/radius-value';
+import { themedCache as memoCache, themed as memoTheme } from './core/theme';
 import {
   applyMode as applyGround,
   type ThemeMode,

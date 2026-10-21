@@ -32,16 +32,14 @@ export type { StyleScope } from './style-scope';
 export { DEFAULT_STYLE_SCOPE } from './style-scope';
 export { registered, resolveStyles, sharedStyle, style, styles, useStyles } from './styles';
 export type { RingToken, Theme, ThemeOverrides, ThemeTokens } from './theme';
+export { groundShade, onPaper } from './ground-shade';
+export { radiusValue, scaledRadius } from './radius-value';
 export {
   activeTheme,
   createTheme,
   createThemeRuntime,
-  groundShade,
   KROMA,
   KROMA_LIGHT,
-  onPaper,
-  radiusValue,
-  scaledRadius,
   themed,
   themedCache,
   themeVersion,
