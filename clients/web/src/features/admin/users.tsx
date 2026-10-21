@@ -21,7 +21,14 @@ import { EditUserModal, InviteModal, PendingInvite } from '#web/features/admin/u
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 
-function roleStyle(role: AdminUser['role']): { ink: ColorValue; bg: ColorValue } {
+const ROLES = ['admin.roleOwner', 'admin.roleMember', 'admin.roleRestricted'] as const;
+type Role = (typeof ROLES)[number];
+
+function roleKey(role: string): Role {
+  return ROLES.find((key) => key === role) ?? 'admin.roleMember';
+}
+
+function roleStyle(role: Role): { ink: ColorValue; bg: ColorValue } {
   if (role === 'admin.roleOwner') return { ink: 'accentText', bg: 'accentWash/16' };
   if (role === 'admin.roleRestricted') return { ink: 'info', bg: 'info/14' };
   return { ink: 'success', bg: 'success/14' };
@@ -105,7 +112,8 @@ function UsersPageInner() {
             <Table.Cell />
           </Table.Header>
           {users.map((u) => {
-            const rs = roleStyle(u.role);
+            const role = roleKey(u.role);
+            const rs = roleStyle(role);
             const access = accessLabel(u.libraries, t);
             return (
               <Table.Row key={u.id}>
@@ -134,7 +142,7 @@ function UsersPageInner() {
                 </Table.Cell>
                 <Table.Cell>
                   <Pill ink={rs.ink} bg={rs.bg}>
-                    {t(u.role)}
+                    {t(role)}
                   </Pill>
                 </Table.Cell>
                 <Table.Cell>
