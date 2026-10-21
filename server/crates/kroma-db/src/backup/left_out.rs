@@ -34,7 +34,7 @@ const SHORT_LIVED: &[&str] = &[
     "whisper_jobs",
 ];
 
-const THIS_MACHINE_ONLY: &[&str] = &["downloads", "metric_samples"];
+const THIS_MACHINE_ONLY: &[&str] = &["downloads", "metric_samples", "upgrade_tasks"];
 
 const LEFT_OUT: [&[&str]; 5] = [
     REBUILT_BY_A_SCAN,

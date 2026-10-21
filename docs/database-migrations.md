@@ -44,6 +44,20 @@ A step that has shipped is never edited. A fix is a new step.
 - **Long backfills** do not belong in a step: a step blocks the boot. Queue them
   as a job.
 
+### Work outside the database
+
+A transaction can take back a column, not a file that was moved. Work on the
+data directory (moving artwork, rewriting a cache, renaming a folder) is an
+upgrade task instead: an entry in `TASKS` in
+`kroma-engine/src/services/upgrade_tasks.rs`, with a name it keeps forever and
+a `run(&SharedState)` that is idempotent and can resume.
+
+Every task the `upgrade_tasks` ledger has not seen finish runs once, in order,
+in the background after boot. A failure is logged and recorded with its error,
+the next task still runs, and the failed one is tried again at the next boot.
+A task that needs the schema a step adds ships in the same release as the step:
+steps run before the server starts, tasks after.
+
 ## What the engine refuses
 
 - A database written by a newer KROMA (its version is above the last step). It
