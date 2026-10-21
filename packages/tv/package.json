@@ -32,7 +32,8 @@
     "@tabler/icons-react": "^3.46.0",
     "hls.js": "^1.7.0",
     "qrcode-generator": "^2.0.4",
-    "shaka-player": "^5.2.5"
+    "shaka-player": "^5.2.5",
+    "zod": "^4.5.4"
   },
   "peerDependencies": {
     "react": "^19.2.8",

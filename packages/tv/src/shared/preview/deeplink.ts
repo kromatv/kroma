@@ -1,5 +1,6 @@
 // Decoding the tile selection that launched or re-targeted the app.
 
+import { z } from 'zod';
 import { tizen } from '#tv/shared/preview/tizen';
 import type { DeepLink } from '#tv/shared/preview/types';
 
@@ -8,32 +9,28 @@ import type { DeepLink } from '#tv/shared/preview/types';
 const MAX_PAYLOAD_LEN = 8192;
 const MAX_ID_LEN = 128;
 
-function asDeepLink(value: unknown): DeepLink | null {
-  if (typeof value !== 'object' || value === null) return null;
-  if (!('type' in value) || !('id' in value)) return null;
-  const { type, id } = value;
-  if (type !== 'movie' && type !== 'show') return null;
-  if (typeof id !== 'string' || id.length === 0 || id.length > MAX_ID_LEN) return null;
-  return { type, id };
-}
+const Link = z.object({
+  type: z.enum(['movie', 'show']),
+  id: z.string().min(1).max(MAX_ID_LEN),
+});
 
 // Tizen delivers `action_data` either verbatim or wrapped as
 // `{"values": "<uri-encoded JSON>"}`; handle both.
+const Wrapped = z.object({ values: z.string() });
+
 function parsePayload(raw: string): DeepLink | null {
   if (raw.length > MAX_PAYLOAD_LEN) return null;
   try {
     const first: unknown = JSON.parse(raw);
-    const direct = asDeepLink(first);
-    if (direct) return direct;
-    const values =
-      typeof first === 'object' && first !== null && 'values' in first ? first.values : undefined;
-    if (typeof values === 'string') {
-      return asDeepLink(JSON.parse(decodeURIComponent(values)));
-    }
+    const direct = Link.safeParse(first);
+    if (direct.success) return direct.data;
+    const wrapped = Wrapped.safeParse(first);
+    if (!wrapped.success) return null;
+    const inner = Link.safeParse(JSON.parse(decodeURIComponent(wrapped.data.values)));
+    return inner.success ? inner.data : null;
   } catch {
-    /* ignore malformed payloads */
+    return null;
   }
-  return null;
 }
 
 /** Owns links delivered before this catalogue mounts. */
