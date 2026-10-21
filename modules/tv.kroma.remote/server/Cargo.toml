@@ -50,5 +50,7 @@ inherits = "release"
 panic = "abort"
 
 [profile.dev]
-# Keep backtraces, drop full DWARF. debug/deps was 81 GB with the default.
-debug = "line-tables-only"
+# No debug info. On macOS any level keeps every codegen unit's object file in
+# debug/deps, and they piled up past 20 GB a day. A panic still names its
+# file:line; backtrace frames name the function only.
+debug = false

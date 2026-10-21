@@ -291,14 +291,9 @@ codegen-units = 1
 strip = true
 
 [profile.dev]
-# Keep backtraces, drop full DWARF. debug/deps was 81 GB with the default.
-debug = "line-tables-only"
-
-# Dependencies carry no debug info at all. Only KROMA's own frames are ever read
-# in a backtrace, and the DWARF of ~470 third-party crates is what the linker
-# spends the dev loop on: dropping it took an edit under src/api from 30.1s to
-# 5.7s, and one under kroma-domain from 47.2s to 10.1s.
-[profile.dev.package."*"]
+# No debug info. On macOS any level keeps every codegen unit's object file in
+# debug/deps, and they piled up past 20 GB a day. A panic still names its
+# file:line; backtrace frames name the function only.
 debug = false
 
 # Build scripts and proc macros are RUN at build time and never shipped, so they
