@@ -59,6 +59,18 @@ pub async fn register(
         Err(resp) => return resp,
     };
 
+    if count > 0 {
+        let Some(token) = body.invite_token.clone().filter(|t| !t.trim().is_empty()) else {
+            return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteOnly");
+        };
+        let now = time::OffsetDateTime::now_utc().unix_timestamp();
+        match query(&state.db, move |pool| db::get_invite(&pool, token.trim())).await {
+            Ok(Some(invite)) if !invite.used && invite.expires_at > now => {}
+            Ok(_) => return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteInvalid"),
+            Err(resp) => return resp,
+        }
+    }
+
     // Reject a duplicate email before consuming any invite, or a retry spends the
     // single-use invite. `create_user`'s UNIQUE constraint is the atomic backstop.
     let email_check = email.clone();
