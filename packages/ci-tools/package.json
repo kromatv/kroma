@@ -19,11 +19,11 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.132.1",
-    "smol-toml": "^1.8.0",
-    "zod": "^4.5.4"
+    "smol-toml": "^1.9.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "bun-types": "^1.4.0",
+    "bun-types": "^1.4.3",
     "typescript": "^7.0.2"
   }
 }
