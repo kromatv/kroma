@@ -173,3 +173,30 @@ describe('types', () => {
     expectTypeOf<Parameters<typeof i18n.translate>[0]>().toEqualTypeOf<'en' | 'fr'>();
   });
 });
+
+describe('what a view suspends on', () => {
+  it('is the in-flight promise while a catalog is on its way', () => {
+    const { i18n, loads } = build();
+    i18n.warm('fr');
+
+    i18n.register('admin', loads);
+
+    expect(i18n.ready('fr')).toBe(i18n.pending('fr'));
+  });
+
+  it('is a promise already marked fulfilled once everything has landed', async () => {
+    const { i18n, loads } = build();
+    i18n.warm('fr');
+    i18n.register('admin', loads);
+
+    await i18n.ready('fr');
+
+    expect(i18n.ready('fr')).toMatchObject({ status: 'fulfilled' });
+  });
+
+  it('is already fulfilled for a locale nothing was asked of', () => {
+    const { i18n } = build();
+
+    expect(i18n.ready('en')).toMatchObject({ status: 'fulfilled' });
+  });
+});

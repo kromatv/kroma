@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { RequestId } from '@kromatv/client/requests';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 import { AdminHostProvider } from './admin/context';
@@ -63,6 +63,29 @@ function mount(registry: ModuleRegistry, enabled: { id: string; enabled?: boolea
 }
 
 describe('ModuleSlot', () => {
+  it('fills the slot from a module that registers after the slot first rendered', () => {
+    const registry = new ModuleRegistry();
+    mount(registry, [{ id: 'tv.kroma.acq', enabled: true }]);
+
+    act(() => {
+      registry.register(mod('tv.kroma.acq', 'acq'));
+    });
+
+    expect(screen.getByText('acq:Alien')).toBeTruthy();
+    expect(screen.queryByText('nothing')).toBeNull();
+  });
+
+  it('falls back again once the module that filled it unregisters', () => {
+    const registry = new ModuleRegistry().register(mod('tv.kroma.acq', 'acq'));
+    mount(registry, [{ id: 'tv.kroma.acq', enabled: true }]);
+
+    act(() => {
+      registry.unregister('tv.kroma.acq');
+    });
+
+    expect(screen.getByText('nothing')).toBeTruthy();
+  });
+
   it('renders what an enabled module contributes, with the page-supplied props', () => {
     const registry = new ModuleRegistry().register(mod('tv.kroma.acq', 'acq'));
     mount(registry, [{ id: 'tv.kroma.acq', enabled: true }]);
