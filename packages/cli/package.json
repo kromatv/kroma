@@ -43,7 +43,7 @@
     "@kromatv/module-sdk": "workspace:*",
     "@kromatv/registry": "workspace:*",
     "citty": "0.2.2",
-    "es-module-lexer": "^2.3.2",
+    "es-module-lexer": "^3.0.4",
     "hono": "^4.13.13",
     "magic-string": "^1.4.3",
     "smol-toml": "^1.9.1",
