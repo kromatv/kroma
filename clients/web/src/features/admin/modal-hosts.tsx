@@ -8,7 +8,8 @@ import { InstallModal } from '#web/features/admin/module-install';
 import { RegistriesDrawer } from '#web/features/admin/module-registries';
 import { PipelineDrawer } from '#web/features/admin/pipeline-drawer';
 import { ReportDrawer } from '#web/features/admin/report-drawer';
-import { EditUserModal, InviteModal } from '#web/features/admin/users-modals';
+import { EditUserModal } from '#web/features/admin/users-edit-modal';
+import { InviteModal } from '#web/features/admin/users-invite-modal';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal';
 
 export function AdminModalHosts() {
