@@ -1,6 +1,6 @@
 //! The long-running work started once the state exists: metadata probing, the
 //! search index, the reapers that reclaim sessions and transcodes, the job
-//! scheduler, and bringing the installed modules up.
+//! scheduler, the one-off upgrade tasks, and bringing the installed modules up.
 
 use kroma_engine::{infra, services, state};
 
@@ -28,6 +28,13 @@ pub async fn spawn(state: &state::SharedState) {
     state.cast.spawn_reaper(state.events.clone());
     state.metrics.spawn_sampler();
     state.jobs.clone().spawn_scheduler(state.clone());
+    let upgrading = state.clone();
+    tokio::task::spawn_blocking(move || {
+        let tasks = services::upgrade_tasks::TASKS;
+        if let Err(e) = services::upgrade_tasks::run_pending(&upgrading, tasks) {
+            tracing::warn!("the upgrade tasks could not run: {e:#}");
+        }
+    });
 
     kroma_module_kernel::apply_enabled_states(state).await;
 }

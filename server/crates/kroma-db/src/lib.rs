@@ -60,6 +60,7 @@ mod visibility;
 pub mod testing;
 pub mod tmdb_pin;
 pub mod translations;
+pub mod upgrade_tasks;
 mod vectors;
 
 pub use accounts::*;
