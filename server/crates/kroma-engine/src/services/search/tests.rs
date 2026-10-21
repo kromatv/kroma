@@ -1,5 +1,9 @@
-use super::*;
+use super::engine::SearchEngine;
+use super::hit::MAX_EPISODES_PER_SHOW;
+use super::index::normalize;
+use super::spawn_reindex;
 use crate::domain::metadata::CastMember;
+use crate::model::{Kind, MediaItem, Metadata, Show};
 
 fn meta(title: &str, overview: &str, genres: &[&str], cast: &[&str]) -> Metadata {
     Metadata {
@@ -510,7 +514,7 @@ fn a_rebuild_that_fails_keeps_the_index_that_was_working() {
         .unwrap();
 
     assert!(state.search.reindex_from_db(&state.db).is_err());
-    super::spawn_reindex(state.clone());
+    spawn_reindex(state.clone());
     std::thread::sleep(std::time::Duration::from_millis(50));
 
     assert_eq!(
