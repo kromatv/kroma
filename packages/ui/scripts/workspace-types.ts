@@ -52,7 +52,7 @@ function target(pkg: Bundled, subpath: string): string | undefined {
     const head = pattern.slice(0, star);
     const tail = pattern.slice(star + 1);
     if (key.startsWith(head) && key.endsWith(tail) && key.length >= pattern.length - 1) {
-      return to.replace('*', key.slice(head.length, key.length - tail.length));
+      return to.replaceAll('*', key.slice(head.length, key.length - tail.length));
     }
   }
   return undefined;
@@ -79,6 +79,6 @@ export function internalizeWorkspaceSpecifiers(distDir: string, bundled: Bundled
 
 export function workspaceSpecifiersIn(distDir: string): string[] {
   return declarations(distDir).filter((file) =>
-    new RegExp(`(?:from|import)\\s*\\(?\\s*['"]${SCOPE}`).test(readFileSync(file, 'utf8')),
+    new RegExp(String.raw`(?:from|import)\s*\(?\s*['"]${SCOPE}`).test(readFileSync(file, 'utf8')),
   );
 }
