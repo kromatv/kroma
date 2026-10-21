@@ -13,7 +13,10 @@ function asText(v: unknown): string {
   return JSON.stringify(v);
 }
 
-export function Control({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: unknown) => void }>) {
+export function Control({
+  row,
+  onChange,
+}: Readonly<{ row: SettingRow; onChange: (v: unknown) => void }>) {
   if (row.kind === 'toggle') {
     return <Switch checked={Boolean(row.value)} onCheckedChange={onChange} label={row.label} />;
   }
