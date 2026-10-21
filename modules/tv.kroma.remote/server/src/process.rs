@@ -129,7 +129,13 @@ mod tests {
     #[cfg(unix)]
     #[tokio::test]
     async fn reads_no_version_from_a_binary_that_fails() {
-        let version = binary_version("false").await;
+        let host = crate::test_support::host();
+        let bin = crate::test_support::install_script(
+            kroma_module_sdk::host::HostCtx::data_dir(&host),
+            "#!/bin/sh\necho cloudflared version 2024.1.0\nexit 1\n",
+        );
+
+        let version = binary_version(&bin.to_string_lossy()).await;
 
         assert_eq!(version, None);
     }
@@ -137,7 +143,13 @@ mod tests {
     #[cfg(unix)]
     #[tokio::test]
     async fn reads_no_version_from_a_binary_that_prints_nothing() {
-        let version = binary_version("true").await;
+        let host = crate::test_support::host();
+        let bin = crate::test_support::install_script(
+            kroma_module_sdk::host::HostCtx::data_dir(&host),
+            "#!/bin/sh\nexit 0\n",
+        );
+
+        let version = binary_version(&bin.to_string_lossy()).await;
 
         assert_eq!(version, None);
     }
