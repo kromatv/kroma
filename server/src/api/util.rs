@@ -96,13 +96,22 @@ fn forwarded_client<'a>(xff: &'a str, list: &[String]) -> Option<&'a str> {
 /// only from a peer worth believing (see [`trusted`]), and then only from the
 /// part of the chain a trusted hop wrote (see [`forwarded_client`]). Taking the
 /// leftmost entry outright would let anyone on the internet claim to be on your
-/// subnet.
+/// subnet. `CF-Connecting-IP` is only a fallback for a chain-less request: nginx
+/// and Caddy pass a caller's copy straight through, while Cloudflare's edge always
+/// appends to `X-Forwarded-For` as well.
 ///
 /// A proxy the server has NOT been told about is the other failure, and a quiet
 /// one: its header is discarded, every request arrives wearing the proxy's own
 /// address, and the server can no longer tell two clients apart at all.
 pub(crate) fn client_ip(headers: &HeaderMap, addr: &SocketAddr, list: &[String]) -> String {
     if trusted(addr.ip(), list) {
+        if let Some(client) = headers
+            .get("x-forwarded-for")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|xff| forwarded_client(xff, list))
+        {
+            return client.to_string();
+        }
         if let Some(cf) = headers
             .get("cf-connecting-ip")
             .and_then(|v| v.to_str().ok())
@@ -111,13 +120,6 @@ pub(crate) fn client_ip(headers: &HeaderMap, addr: &SocketAddr, list: &[String])
             if !cf.is_empty() {
                 return cf.to_string();
             }
-        }
-        if let Some(client) = headers
-            .get("x-forwarded-for")
-            .and_then(|v| v.to_str().ok())
-            .and_then(|xff| forwarded_client(xff, list))
-        {
-            return client.to_string();
         }
     }
     addr.ip().to_string()
@@ -204,15 +206,23 @@ mod tests {
     }
 
     #[test]
-    fn cloudflare_wins_because_it_sets_its_header_itself() {
+    fn the_chain_a_proxy_appended_wins_over_a_cloudflare_header_it_passed_through() {
         assert_eq!(
             ip_for(
                 LOOPBACK,
                 &[
-                    ("cf-connecting-ip", "198.51.100.4"),
-                    ("x-forwarded-for", "1.2.3.4, 5.6.7.8")
+                    ("cf-connecting-ip", "192.168.1.20"),
+                    ("x-forwarded-for", "203.0.113.7")
                 ]
             ),
+            "203.0.113.7"
+        );
+    }
+
+    #[test]
+    fn the_cloudflare_header_is_read_when_no_chain_came_with_it() {
+        assert_eq!(
+            ip_for(LOOPBACK, &[("cf-connecting-ip", "198.51.100.4")]),
             "198.51.100.4"
         );
     }
