@@ -27,6 +27,10 @@ serde_json = "1"
 tracing = "0.1"
 anyhow = "1"
 
+[dev-dependencies]
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
+tower = { version = "0.5", features = ["util"] }
+
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =
 # "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO
 # speed cost (opt-level stays 3). Safe for a sidecar: a panic aborts the module
