@@ -1,12 +1,15 @@
 import type { Invite } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
-import { Button, Icon, ListRow, Row, useStyles } from '@kromatv/ui/kit';
+import { Button, Icon, ListRow, Row, styles, useStyles } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
-import { usersStyles } from '#web/features/admin/users-styles';
+
+const sDefinition = styles({
+  dashed: { borderWidth: 1, borderColor: 'text/25', borderStyle: 'dashed' },
+});
 
 export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChange: () => void }>) {
-  const s = useStyles(usersStyles);
+  const s = useStyles(sDefinition);
 
   const t = useT();
   const { client } = useAuth();

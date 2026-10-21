@@ -12,6 +12,7 @@ import {
   ListRow,
   Row,
   resolveStyles,
+  styles,
   Text,
   useConfirm,
   useStyleScope,
@@ -22,9 +23,12 @@ import { createCallable } from 'react-call';
 import { LibraryVisibility } from '#web/features/admin/library-visibility';
 import { useAsyncAction } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
-import { usersStyles } from '#web/features/admin/users-styles';
 import { LinkResult } from '#web/features/admin/users-link-result';
 import { PermPicker, usePermissionSet } from '#web/features/admin/users-permissions';
+
+const sDefinition = styles({
+  code: { fontFamily: 'monospace', letterSpacing: 4 },
+});
 
 /** Edit a user (name, permissions, library visibility, email verification,
  * access recovery, with a guarded delete). Resolves `true` when the user was
@@ -212,7 +216,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
             <Text
               variant="heading"
               textAlign="center"
-              style={resolveStyles(usersStyles, scope).code}
+              style={resolveStyles(sDefinition, scope).code}
             >
               {reset.code}
             </Text>
