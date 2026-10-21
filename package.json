@@ -79,7 +79,7 @@
     "format": "oxfmt .",
     "lint": "oxlint --ignore-path .gitignore --deny-warnings .",
     "lint:sonar": "oxlint -c .oxlintrc.sonar.json --ignore-path .gitignore --deny-warnings .",
-    "check": "bun run lint && bun run lint:sonar && oxfmt --check .",
+    "check": "bun run --parallel --no-exit-on-error lint lint:sonar && oxfmt --check .",
     "deadcode": "bun x knip@5 --no-progress",
     "sonar:precheck": "git diff --name-only --diff-filter=ACMR origin/main...HEAD | bun packages/sonar-tools/src/precheck.ts",
     "sonar:lint": "bun packages/sonar-tools/src/config-lint.ts",
