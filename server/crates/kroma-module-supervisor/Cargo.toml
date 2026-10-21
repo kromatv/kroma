@@ -34,7 +34,7 @@ flate2 = { version = "1", default-features = false, features = ["rust_backend"] 
 # Pure-Rust zstd decoder for the (smaller) zstd `.kmod` bundles. Decompress-only +
 # no C, so the musl single binary keeps linking; install is one-shot so its
 # throughput doesn't matter.
-ruzstd = "0.7"
+ruzstd = "0.9"
 # Verify a downloaded .kmod against its catalog sha256 before installing.
 sha2 = { workspace = true }
 hex = { workspace = true }

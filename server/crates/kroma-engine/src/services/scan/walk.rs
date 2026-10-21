@@ -166,7 +166,7 @@ fn prepare_children(
             && e.path_is_symlink()
             && !first_descent(descended, &e.path())
         {
-            e.read_children_path = None;
+            e.read_children = None;
         }
     }
 }

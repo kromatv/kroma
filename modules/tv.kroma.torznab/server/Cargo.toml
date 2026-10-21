@@ -22,7 +22,7 @@ serde_json = "1"
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
-quick-xml = "0.41"
+quick-xml = "0.42"
 # The point's routes: this module mounts them itself, so it holds the axum it
 # needs rather than a shared contract crate holding it on everyone's behalf.
 axum = { version = "0.8", features = ["macros"] }

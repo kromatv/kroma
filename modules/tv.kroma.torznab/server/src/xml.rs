@@ -4,7 +4,7 @@
 
 use anyhow::{bail, Result};
 use quick_xml::events::{BytesEnd, BytesStart, Event};
-use quick_xml::{Decoder, Reader};
+use quick_xml::{Reader, XmlVersion};
 
 use crate::{Caps, Release};
 
@@ -14,14 +14,13 @@ pub fn parse_items(xml: &[u8]) -> Result<Vec<Release>> {
     // trim_text off so a field split across text + entity-ref + CDATA events keeps
     // its internal spacing; `apply_field` trims the accumulated value's ends.
     reader.config_mut().trim_text(false);
-    let decoder = reader.decoder();
 
     let mut out: Vec<Release> = Vec::new();
     let mut current: Option<Release> = None;
     // The simple text element being read inside an item, if any.
     let mut field: Option<&'static str> = None;
     // Accumulates the current field's text across Text / GeneralRef (entity) /
-    // CDATA events (quick-xml 0.41 splits entities out of text as GeneralRef),
+    // CDATA events (quick-xml splits entities out of text as GeneralRef),
     // flushed to `apply_field` when the element closes.
     let mut text = String::new();
     let mut buf = Vec::new();
@@ -29,13 +28,12 @@ pub fn parse_items(xml: &[u8]) -> Result<Vec<Release>> {
     loop {
         match reader.read_event_into(&mut buf)? {
             Event::Start(e) => field = handle_start(&e, &mut current, &mut text),
-            Event::Empty(e) => handle_empty(&e, decoder, &mut current)?,
-            // Text carries only literal text in 0.41 (no `&amp;` to unescape).
-            Event::Text(e) if field.is_some() => text.push_str(&e.decode()?),
+            Event::Empty(e) => handle_empty(&e, &mut current)?,
+            Event::Text(e) if field.is_some() => text.push_str(&e),
             // An entity reference inside a field (`&amp;`, `&#38;`, ...).
             Event::GeneralRef(r) if field.is_some() => text.push_str(&resolve_entity(&r)),
             Event::CData(e) if field.is_some() => {
-                text.push_str(&String::from_utf8_lossy(&e));
+                text.push_str(&e);
             }
             Event::End(e) => handle_end(&e, &mut current, &mut field, &mut text, &mut out),
             Event::Eof => break,
@@ -55,34 +53,34 @@ fn handle_start(
 ) -> Option<&'static str> {
     text.clear();
     match e.local_name().as_ref() {
-        b"item" => {
+        "item" => {
             *current = Some(Release::default());
             None
         }
-        b"title" if current.is_some() => Some("title"),
-        b"guid" if current.is_some() => Some("guid"),
-        b"link" if current.is_some() => Some("link"),
-        b"comments" if current.is_some() => Some("comments"),
-        b"size" if current.is_some() => Some("size"),
-        b"pubDate" if current.is_some() => Some("pubDate"),
+        "title" if current.is_some() => Some("title"),
+        "guid" if current.is_some() => Some("guid"),
+        "link" if current.is_some() => Some("link"),
+        "comments" if current.is_some() => Some("comments"),
+        "size" if current.is_some() => Some("size"),
+        "pubDate" if current.is_some() => Some("pubDate"),
         _ => None,
     }
 }
 
 // A self-closing `<... />` element: the torznab error doc, `<enclosure>`, or a
 // `<torznab:attr>` extension.
-fn handle_empty(e: &BytesStart, decoder: Decoder, current: &mut Option<Release>) -> Result<()> {
+fn handle_empty(e: &BytesStart, current: &mut Option<Release>) -> Result<()> {
     match e.local_name().as_ref() {
-        b"error" => read_error(e, decoder),
-        b"enclosure" => {
+        "error" => read_error(e),
+        "enclosure" => {
             if let Some(rel) = current.as_mut() {
-                read_enclosure(e, decoder, rel)?;
+                read_enclosure(e, rel)?;
             }
             Ok(())
         }
-        b"attr" => {
+        "attr" => {
             if let Some(rel) = current.as_mut() {
-                read_attr_el(e, decoder, rel)?;
+                read_attr_el(e, rel)?;
             }
             Ok(())
         }
@@ -91,14 +89,14 @@ fn handle_empty(e: &BytesStart, decoder: Decoder, current: &mut Option<Release>)
 }
 
 // A `<error code=.. description=.. />` document: always surfaced as `Err`.
-fn read_error(e: &BytesStart, decoder: Decoder) -> Result<()> {
+fn read_error(e: &BytesStart) -> Result<()> {
     let mut code = String::new();
     let mut description = String::new();
     for attr in e.attributes().flatten() {
-        let v = quick_xml::escape::unescape(&decoder.decode(&attr.value)?)?.into_owned();
+        let v = attr.normalized_value(XmlVersion::Implicit1_0)?.into_owned();
         match attr.key.local_name().as_ref() {
-            b"code" => code = v,
-            b"description" => description = v,
+            "code" => code = v,
+            "description" => description = v,
             _ => {}
         }
     }
@@ -106,10 +104,10 @@ fn read_error(e: &BytesStart, decoder: Decoder) -> Result<()> {
 }
 
 // `<enclosure url=.. />`: the `.torrent` link, if no link is set yet.
-fn read_enclosure(e: &BytesStart, decoder: Decoder, rel: &mut Release) -> Result<()> {
+fn read_enclosure(e: &BytesStart, rel: &mut Release) -> Result<()> {
     for attr in e.attributes().flatten() {
-        if attr.key.local_name().as_ref() == b"url" {
-            let url = quick_xml::escape::unescape(&decoder.decode(&attr.value)?)?.into_owned();
+        if attr.key.local_name().as_ref() == "url" {
+            let url = attr.normalized_value(XmlVersion::Implicit1_0)?.into_owned();
             if rel.link.is_none() {
                 rel.link = Some(url);
             }
@@ -119,13 +117,13 @@ fn read_enclosure(e: &BytesStart, decoder: Decoder, rel: &mut Release) -> Result
 }
 
 // `<torznab:attr name=.. value=.. />`: fold the extension into the release.
-fn read_attr_el(e: &BytesStart, decoder: Decoder, rel: &mut Release) -> Result<()> {
+fn read_attr_el(e: &BytesStart, rel: &mut Release) -> Result<()> {
     let (mut name, mut value) = (String::new(), String::new());
     for attr in e.attributes().flatten() {
-        let v = quick_xml::escape::unescape(&decoder.decode(&attr.value)?)?.into_owned();
+        let v = attr.normalized_value(XmlVersion::Implicit1_0)?.into_owned();
         match attr.key.local_name().as_ref() {
-            b"name" => name = v,
-            b"value" => value = v,
+            "name" => name = v,
+            "value" => value = v,
             _ => {}
         }
     }
@@ -147,7 +145,7 @@ fn handle_end(
         apply_field(rel, f, text);
     }
     text.clear();
-    if e.local_name().as_ref() == b"item" {
+    if e.local_name().as_ref() == "item" {
         if let Some(rel) = current.take() {
             if !rel.title.is_empty() {
                 out.push(rel);
@@ -160,13 +158,8 @@ fn handle_end(
 // to its text by rebuilding the escaped form and running the standard XML
 // unescaper (predefined entities + numeric refs). Unknown refs drop to empty.
 fn resolve_entity(r: &quick_xml::events::BytesRef) -> String {
-    r.decode()
-        .ok()
-        .and_then(|name| {
-            quick_xml::escape::unescape(&format!("&{name};"))
-                .ok()
-                .map(|c| c.into_owned())
-        })
+    quick_xml::escape::unescape(&format!("&{};", &**r))
+        .map(|c| c.into_owned())
         .unwrap_or_default()
 }
 
@@ -224,7 +217,6 @@ fn apply_attr(rel: &mut Release, name: &str, value: &str) {
 pub fn parse_caps(xml: &[u8]) -> Result<Caps> {
     let mut reader = Reader::from_reader(xml);
     reader.config_mut().trim_text(true);
-    let decoder = reader.decoder();
     let mut caps = Caps::default();
     let mut buf = Vec::new();
 
@@ -232,27 +224,26 @@ pub fn parse_caps(xml: &[u8]) -> Result<Caps> {
         let event = reader.read_event_into(&mut buf)?;
         match &event {
             Event::Start(e) | Event::Empty(e) => {
-                let name = e.local_name().as_ref().to_vec();
+                let name = e.local_name().as_ref().to_string();
                 let mut supported = String::new();
                 for attr in e.attributes().flatten() {
-                    let v =
-                        quick_xml::escape::unescape(&decoder.decode(&attr.value)?)?.into_owned();
+                    let v = attr.normalized_value(XmlVersion::Implicit1_0)?.into_owned();
                     match attr.key.local_name().as_ref() {
-                        b"supportedParams" => supported = v,
-                        b"title" if name == b"server" => caps.server_title = Some(v),
-                        b"code" if name == b"error" => {
+                        "supportedParams" => supported = v,
+                        "title" if name == "server" => caps.server_title = Some(v),
+                        "code" if name == "error" => {
                             bail!("torznab error {v}");
                         }
                         _ => {}
                     }
                 }
                 let has = |p: &str| supported.split(',').any(|s| s.trim() == p);
-                match name.as_slice() {
-                    b"movie-search" => {
+                match name.as_str() {
+                    "movie-search" => {
                         caps.search_tmdb = has("tmdbid");
                         caps.search_imdb = has("imdbid");
                     }
-                    b"tv-search" => {
+                    "tv-search" => {
                         caps.tv_search_tmdb = has("tmdbid");
                         caps.tv_search_season = has("season");
                     }

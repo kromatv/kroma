@@ -13,7 +13,7 @@ pub fn spawn_https_listener(
         std::net::SocketAddr,
     )>,
     app: &axum::Router,
-    handle: axum_server::Handle,
+    handle: axum_server::Handle<std::net::SocketAddr>,
 ) {
     let Some((_cert, rustls_config, https_socket)) = https else {
         return;
