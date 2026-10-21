@@ -18,7 +18,12 @@ import { formatTimecode } from '@kromatv/ui/intl';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import {
+  GestureDetector,
+  useCompetingGestures,
+  usePanGesture,
+  useTapGesture,
+} from 'react-native-gesture-handler';
 import { radius } from '#mobile/lib/theme';
 import type { StoryboardTile } from './useStoryboard';
 
@@ -56,29 +61,31 @@ export function ScrubBar({
 
   const toTime = (x: number) => Math.max(0, Math.min(dur, (x / width) * dur));
 
-  const pan = Gesture.Pan()
-    .runOnJS(true)
-    .activeOffsetX([-5, 5])
-    .onBegin((e) => {
+  const pan = usePanGesture({
+    runOnJS: true,
+    activeOffsetX: [-5, 5],
+    onBegin: (e) => {
       onScrubStart?.();
       setPreview(toTime(e.x));
-    })
-    .onUpdate((e) => setPreview(toTime(e.x)))
-    .onEnd((e) => {
+    },
+    onUpdate: (e) => setPreview(toTime(e.x)),
+    onDeactivate: (e) => {
       onSeek(toTime(e.x));
       setPreview(null);
-    })
-    .onFinalize(() => {
+    },
+    onFinalize: () => {
       setPreview(null);
       onScrubEnd?.();
-    });
-  const tap = Gesture.Tap()
-    .runOnJS(true)
-    .onEnd((e, ok) => {
-      if (ok) onSeek(toTime(e.x));
+    },
+  });
+  const tap = useTapGesture({
+    runOnJS: true,
+    onDeactivate: (e) => {
+      if (!e.canceled) onSeek(toTime(e.x));
       setPreview(null);
-    });
-  const gesture = Gesture.Race(pan, tap);
+    },
+  });
+  const gesture = useCompetingGestures(pan, tap);
 
   const paint = seekBar(scope.theme);
   const shown = preview ?? cur;
