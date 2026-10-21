@@ -54,27 +54,12 @@ async-trait = "0.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tracing = "0.1"
-quick-xml = "0.41"
-# Cardigann indexer engine (kroma-indexer): YAML definitions, HTML scraping with
-# CSS selectors, regex-driven field filters, and flexible date parsing. XPath
-# support (libxml, C) is feature-gated on the crate so the default musl build
-# stays pure-Rust.
-serde_yaml = "0.9"
-scraper = "0.27"
-regex = "1"
-chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
-libxml = "0.3"
-# Insertion-order-preserving map: Cardigann `fields` reference earlier fields
-# (`.Result.x`), so field order is load-bearing.
-indexmap = { version = "2", features = ["serde"] }
-# mDNS / DNS-SD advertising (kroma-mdns). Pure Rust.
-mdns-sd = "0.20"
 # Shared by kroma-primitives (and the binary). Unpinned now that the toolchain is
 # 1.96 (edition2024 is stable since 1.85, which >= 0.3.37 needs).
 time = { version = "0.3", features = ["formatting", "macros"] }
 sha2 = "0.10"
 hex = "0.4"
-base64 = "0.22"
+base64 = "0.23"
 # Embedded SQLite compiled from source. Shared by kroma-db + the binary.
 # `hooks` is what exposes `Connection::authorizer`, the per-connection scope a
 # module's core-database grant is enforced with (see kroma-db's `grant`).
@@ -106,9 +91,9 @@ tower-http = { version = "0.7", features = ["cors", "trace", "fs", "compression-
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 walkdir = "2"
-jwalk = "0.8"
+jwalk = "0.9"
 chacha20poly1305 = { version = "0.11", default-features = false, features = ["alloc"] }
-zip = { version = "8", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+zip = { version = "9", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 notify = "8"
 sysinfo = { version = "0.39", default-features = false, features = ["system", "disk"] }
 # In-process JPEG "card" compositing (tiny-skia raster + fontdue glyphs), shared
@@ -117,7 +102,7 @@ tiny-skia = "0.12"
 fontdue = "0.9"
 jpeg-encoder = "0.7"
 # In-RAM full-text search (services/search). default-features off drops mmap.
-tantivy = { version = "0.26", default-features = false, features = ["lz4-compression"] }
+tantivy = { version = "0.27", default-features = false, features = ["lz4-compression"] }
 rusty-chromaprint = "0.3.0"
 # uuid is no longer pinned down: webauthn-rs (passkeys) needs uuid >= 1.19.
 uuid = "1.19"
@@ -253,8 +238,8 @@ dioxus-devtools = { version = "0.7", optional = true, features = ["serve"] }
 # pin the `ring` rustls provider (no aws-lc C build, matches the musl policy):
 # axum-server's own `tls-rustls` would switch on rustls/aws-lc-rs, hence
 # `-no-provider`. We install ring explicitly at boot.
-axum-server = { version = "0.7", default-features = false, features = ["tls-rustls-no-provider"] }
-rcgen = { version = "0.13", default-features = false, features = ["ring", "pem"] }
+axum-server = { version = "0.8", default-features = false, features = ["tls-rustls-no-provider"] }
+rcgen = { version = "0.14", default-features = false, features = ["ring", "pem"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
 # Cross-platform hostname for the certificate's DNS SANs (<host>, <host>.local).
 hostname = "0.4"

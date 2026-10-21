@@ -56,7 +56,7 @@ workspaces, so `--workspace` from `server/` does not reach them (see below).
 frontends typed, clippy clean) and `bun run deadcode` (knip) are **not** wired
 into any workflow today. Run them by hand after touching a module.
 
-Rust is pinned by `rust-toolchain.toml` (1.96.1, with clippy + rustfmt); the
+Rust is pinned by `rust-toolchain.toml` (1.98.0, with clippy + rustfmt); the
 workspace `rust-version` floor is 1.88. `cargo fmt --check` is non-blocking: the
 codebase uses a custom import grouping, so do not reformat files wholesale.
 

@@ -83,7 +83,7 @@ fn read_zip_within(bytes: &[u8], mut budget: u64) -> Result<(BackupDoc, Assets)>
     let mut assets = Assets::new();
     for i in 0..za.len() {
         let mut entry = za.by_index(i)?;
-        let name = entry.name().to_string();
+        let name = entry.name()?.to_string();
         let packed = Folder::ALL.into_iter().find_map(|folder| {
             name.strip_prefix(folder.prefix())
                 .filter(|n| !n.is_empty())

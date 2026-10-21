@@ -171,7 +171,7 @@ fn sanitized_entry(raw: &std::path::Path) -> Option<PathBuf> {
 // dispatched by magic bytes.
 fn decompressed_tar(bytes: &[u8]) -> anyhow::Result<Cow<'_, [u8]>> {
     if bytes.starts_with(&[0x28, 0xb5, 0x2f, 0xfd]) {
-        let decoder = ruzstd::StreamingDecoder::new(bytes)?;
+        let decoder = ruzstd::decoding::StreamingDecoder::new(bytes)?;
         return Ok(Cow::Owned(read_bounded(decoder, MAX_TAR_BYTES)?));
     }
     if bytes.starts_with(&[0x1f, 0x8b]) {
