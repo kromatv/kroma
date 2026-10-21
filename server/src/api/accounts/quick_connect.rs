@@ -73,6 +73,11 @@ pub async fn quick_authorize(
 ) -> Response {
     let code = body.code.trim().to_string();
 
+    let uid = user.id.clone();
+    if !state.quickconnect.may_try(&uid) {
+        return lerr(loc, StatusCode::TOO_MANY_REQUESTS, "connect.tooManyAttempts");
+    }
+
     // PIN-verified: the approver is already signed in and vouches for the device.
     // That device isn't the caller, so its UA is unknown here (NULL) until use.
     let (token, access) =
@@ -97,6 +102,7 @@ pub async fn quick_authorize(
             }),
         )
         .await;
+        state.quickconnect.record_wrong(&uid);
         lerr(loc, StatusCode::NOT_FOUND, "connect.invalidCode")
     }
 }

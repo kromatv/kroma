@@ -35,6 +35,7 @@
   "connect.serverNotFoundHint": "Vérifiez que le serveur est démarré sur le réseau ({platform}), ou saisissez son adresse.",
   "connect.serverPlaceholder": "exemple.kroma.net",
   "connect.title": "Connecter un appareil",
+  "connect.tooManyAttempts": "Trop de tentatives. Patientez quelques minutes avant d'approuver un autre code.",
   "connect.tooManyPending": "Trop d'appareils attendent de se connecter. Réessayez dans un instant.",
   "connect.unreachable": "Aucun serveur ne répond à cette adresse",
   "connect.waitingApproval": "En attente d'approbation sur un autre appareil…",
