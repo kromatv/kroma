@@ -101,3 +101,50 @@ fn last_one(p: &Pool, id: &str) -> JobRun {
     )
     .unwrap()
 }
+
+fn busy() -> anyhow::Error {
+    rusqlite::Error::SqliteFailure(rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_BUSY), None)
+        .into()
+}
+
+#[test]
+fn a_busy_write_is_tried_again_until_it_lands() {
+    let mut attempts = 0;
+
+    let result = retry_busy(&[0, 0, 0], || {
+        attempts += 1;
+        if attempts < 3 {
+            Err(busy())
+        } else {
+            Ok(attempts)
+        }
+    });
+
+    assert_eq!(result.unwrap(), 3);
+}
+
+#[test]
+fn a_write_still_busy_after_every_delay_returns_its_error() {
+    let mut attempts = 0;
+
+    let result: anyhow::Result<()> = retry_busy(&[0, 0], || {
+        attempts += 1;
+        Err(busy())
+    });
+
+    assert!(is_busy(&result.unwrap_err()));
+    assert_eq!(attempts, 3);
+}
+
+#[test]
+fn any_other_failure_is_returned_at_once() {
+    let mut attempts = 0;
+
+    let result: anyhow::Result<()> = retry_busy(&[0, 0], || {
+        attempts += 1;
+        Err(anyhow::anyhow!("disk full"))
+    });
+
+    assert!(result.is_err());
+    assert_eq!(attempts, 1);
+}

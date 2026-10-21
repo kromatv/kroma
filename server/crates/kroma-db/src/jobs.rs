@@ -131,6 +131,22 @@ pub fn is_busy(e: &anyhow::Error) -> bool {
     )
 }
 
+/// Runs `f`, and runs it again after each delay in `delays_ms` for as long as
+/// it fails with [`is_busy`]. Any other error, or the busy error that outlasts
+/// the delays, is returned.
+pub fn retry_busy<T>(delays_ms: &[u64], mut f: impl FnMut() -> Result<T>) -> Result<T> {
+    let mut delays = delays_ms.iter();
+    loop {
+        match f() {
+            Err(e) if is_busy(&e) => match delays.next() {
+                Some(&ms) => std::thread::sleep(std::time::Duration::from_millis(ms)),
+                None => return Err(e),
+            },
+            done => return done,
+        }
+    }
+}
+
 /// Whether the run of `key` before `run_id` also failed. A run a restart cut
 /// short does not count: it says nothing about the job.
 pub fn previous_run_failed(pool: &Pool, key: &str, run_id: &str) -> Result<bool> {
