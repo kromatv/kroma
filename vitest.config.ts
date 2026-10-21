@@ -94,6 +94,7 @@ const nativeInclude = include.map((p) => p.replace('*.test.', '*.native.test.'))
 const auditInclude = [
   'packages/ui/audit/**/*.test.{ts,tsx}',
   'packages/react-audit/src/**/*.test.{ts,tsx}',
+  'packages/*/src/**/*.compiled.test.{ts,tsx}',
 ];
 
 export default defineConfig({

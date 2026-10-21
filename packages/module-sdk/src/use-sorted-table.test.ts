@@ -152,7 +152,7 @@ describe('useSortedTable', () => {
     );
 
     expect(result.current.table.getPageCount()).toBe(0);
-    expect(result.current.table.getState().pagination.pageIndex).toBe(0);
+    expect(result.current.table.state.pagination.pageIndex).toBe(0);
   });
 
   it('counts the pages the server reported rather than the rows in hand', () => {

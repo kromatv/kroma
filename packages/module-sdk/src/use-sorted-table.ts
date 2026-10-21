@@ -6,12 +6,15 @@
 import {
   type ColumnDef,
   functionalUpdate,
-  getCoreRowModel,
   type OnChangeFn,
   type PaginationState,
+  type RowData,
+  type ReactTable,
+  rowPaginationFeature,
+  rowSortingFeature,
   type SortingState,
-  type Table as TableInstance,
-  useReactTable,
+  tableFeatures,
+  useTable,
 } from '@tanstack/react-table';
 import { useCallback, useMemo } from 'react';
 
@@ -69,8 +72,12 @@ export interface SortedTableOptions<Row, Key extends string, Query extends Table
   rowId?: (row: Row) => string;
 }
 
-export interface SortedTable<Row> {
-  table: TableInstance<Row>;
+const features = tableFeatures({ rowSortingFeature, rowPaginationFeature });
+
+type SortedFeatures = typeof features;
+
+export interface SortedTable<Row extends RowData> {
+  table: ReactTable<SortedFeatures, Row>;
   headings: TableHeading[];
 }
 
@@ -87,17 +94,17 @@ function sortingOf(order: TableOrder): SortingState {
   return [{ id: order.sort, desc: order.dir === 'desc' }];
 }
 
-function sortable<Row, Key extends string>(
+function sortable<Row extends RowData, Key extends string>(
   column: SortedColumn<Row, Key>,
 ): column is SortableColumn<Row, Key> {
   return column.valueField !== undefined;
 }
 
-function idOf<Row, Key extends string>(column: SortedColumn<Row, Key>): string {
+function idOf<Row extends RowData, Key extends string>(column: SortedColumn<Row, Key>): string {
   return sortable(column) ? column.sortKey : column.id;
 }
 
-function orderOf<Row, Key extends string>(
+function orderOf<Row extends RowData, Key extends string>(
   sorting: SortingState,
   columns: readonly SortedColumn<Row, Key>[],
   fallback: TableOrder<Key>,
@@ -108,9 +115,9 @@ function orderOf<Row, Key extends string>(
   return { sort: known.sortKey, dir: first.desc ? 'desc' : 'asc' };
 }
 
-function definitionsOf<Row, Key extends string>(
+function definitionsOf<Row extends RowData, Key extends string>(
   columns: readonly SortedColumn<Row, Key>[],
-): ColumnDef<Row>[] {
+): ColumnDef<SortedFeatures, Row>[] {
   return columns.map((column) => {
     if (!sortable(column)) return { id: column.id, enableSorting: false };
     const field = column.valueField;
@@ -127,7 +134,11 @@ function definitionsOf<Row, Key extends string>(
  * new order asks for page 1 because page 4 of a different order is a different
  * list.
  */
-export function useSortedTable<Row, Key extends string, Query extends TableQuery<Key>>({
+export function useSortedTable<
+  Row extends RowData,
+  Key extends string,
+  Query extends TableQuery<Key>,
+>({
   columns,
   rows = NO_ROWS,
   page,
@@ -159,12 +170,11 @@ export function useSortedTable<Row, Key extends string, Query extends TableQuery
     [pagination, query, onQueryChange],
   );
 
-  // oxlint-disable-next-line react-compiler/incompatible-library -- TanStack's useReactTable is the table engine; the compiler skips this hook, which is what we want
-  const table = useReactTable({
+  const table = useTable<SortedFeatures, Row>({
+    features,
     data: rows,
     columns: definitions,
     getRowId: rowId,
-    getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
     manualPagination: true,
     enableSortingRemoval: false,

@@ -28,7 +28,7 @@
     "@kromatv/registry": "workspace:*",
     "@kromatv/ui": "workspace:*",
     "@tanstack/react-query": "^5.104.5",
-    "@tanstack/react-table": "^8.21.3"
+    "@tanstack/react-table": "^9.3.1"
   },
   "peerDependencies": {
     "react": "^19.3.0"

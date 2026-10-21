@@ -73,7 +73,7 @@ describe('<Callout>', () => {
       );
       const paint = getComputedStyle(block(container));
       cleanup();
-      return `${paint.backgroundColor}|${paint.borderColor}`;
+      return `${paint.backgroundColor}|${paint.borderTopColor}`;
     });
     expect(new Set(wells).size).toBe(TONES.length);
   });
