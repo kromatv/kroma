@@ -15,7 +15,7 @@ anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
-base64 = "0.22"
+base64 = { workspace = true }
 hkdf = "0.12"
 aes-gcm = "0.10"
 # `ecdh` for the message key agreement (RFC 8291), `ecdsa` for the VAPID JWT

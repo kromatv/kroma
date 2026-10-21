@@ -22,7 +22,7 @@ kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
 anyhow = "1"
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
-mdns-sd = "0.20"
+mdns-sd = "0.21"
 
 # `HostCtx` is typed in axum's Response/StatusCode, so a hand-rolled double
 # cannot be written from a crate that does not depend on axum. The shared

@@ -92,7 +92,7 @@ pub fn encrypt_with(
 
     let cipher = Aes128Gcm::new_from_slice(&cek).map_err(|_| anyhow::anyhow!("bad CEK length"))?;
     let ciphertext = cipher
-        .encrypt(Nonce::from_slice(&nonce), plaintext.as_ref())
+        .encrypt(&Nonce::from(nonce), plaintext.as_ref())
         .map_err(|_| anyhow::anyhow!("AES-128-GCM encryption failed"))?;
 
     // RFC 8188 §2.1 header, then the record.

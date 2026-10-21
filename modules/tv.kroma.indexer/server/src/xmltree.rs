@@ -3,7 +3,7 @@
 //! responses are parsed here instead. Namespaced tags keep their prefix verbatim.
 
 use quick_xml::events::Event;
-use quick_xml::Reader;
+use quick_xml::{Reader, XmlVersion};
 
 /// One XML element (text is flattened into child text nodes).
 #[derive(Debug)]
@@ -75,14 +75,14 @@ pub fn parse(body: &str) -> XmlEl {
     loop {
         match reader.read_event() {
             Ok(Event::Start(e)) => stack.push(XmlEl {
-                name: tag_name(e.name().as_ref()),
-                attrs: read_attrs(&e, &reader),
+                name: e.name().as_ref().to_owned(),
+                attrs: read_attrs(&e),
                 children: Vec::new(),
             }),
             Ok(Event::Empty(e)) => {
                 let el = XmlEl {
-                    name: tag_name(e.name().as_ref()),
-                    attrs: read_attrs(&e, &reader),
+                    name: e.name().as_ref().to_owned(),
+                    attrs: read_attrs(&e),
                     children: Vec::new(),
                 };
                 push_child(&mut stack, el);
@@ -94,9 +94,9 @@ pub fn parse(body: &str) -> XmlEl {
                 }
             }
             Ok(Event::Text(t)) => {
-                // quick-xml 0.41 emits entities as separate GeneralRef events, so
+                // quick-xml emits entities as separate GeneralRef events, so
                 // Text carries literal text only (nothing to unescape).
-                let s = t.decode().map(|c| c.into_owned()).unwrap_or_default();
+                let s = t.into_inner().into_owned();
                 if !s.trim().is_empty() {
                     push_text(&mut stack, s);
                 }
@@ -108,7 +108,7 @@ pub fn parse(body: &str) -> XmlEl {
                 }
             }
             Ok(Event::CData(t)) => {
-                let s = String::from_utf8_lossy(t.as_ref()).into_owned();
+                let s = t.into_inner().into_owned();
                 push_text(&mut stack, s);
             }
             Ok(Event::Eof) => break,
@@ -136,30 +136,19 @@ fn push_text(stack: &mut [XmlEl], s: String) {
     }
 }
 
-fn tag_name(raw: &[u8]) -> String {
-    String::from_utf8_lossy(raw).into_owned()
-}
-
 fn resolve_entity(r: &quick_xml::events::BytesRef) -> String {
-    r.decode()
-        .ok()
-        .and_then(|name| {
-            quick_xml::escape::unescape(&format!("&{name};"))
-                .ok()
-                .map(|c| c.into_owned())
-        })
+    quick_xml::escape::unescape(&format!("&{};", &**r))
+        .map(|c| c.into_owned())
         .unwrap_or_default()
 }
 
-fn read_attrs(e: &quick_xml::events::BytesStart, reader: &Reader<&[u8]>) -> Vec<(String, String)> {
-    let decoder = reader.decoder();
+fn read_attrs(e: &quick_xml::events::BytesStart) -> Vec<(String, String)> {
     let mut out = Vec::new();
     for a in e.attributes().flatten() {
-        let key = String::from_utf8_lossy(a.key.as_ref()).into_owned();
-        let val = decoder
-            .decode(&a.value)
-            .ok()
-            .and_then(|d| quick_xml::escape::unescape(&d).ok().map(|c| c.into_owned()))
+        let key = a.key.as_ref().to_owned();
+        let val = a
+            .normalized_value(XmlVersion::Implicit1_0)
+            .map(|c| c.into_owned())
             .unwrap_or_default();
         out.push((key, val));
     }

@@ -27,7 +27,7 @@ tracing = "0.1"
 anyhow = "1"
 
 [build-dependencies]
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 [dev-dependencies]
 # The shared HostCtx double and the scratch dir, through the SDK's `testing`
