@@ -24,7 +24,13 @@ where
 {
     match tokio::task::spawn_blocking(f).await {
         Ok(Ok(v)) => Ok(v),
-        Ok(Err(e)) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
+        Ok(Err(e)) => {
+            // The top-level message is the caller's to act on; the chain below
+            // it can name internal context (SQL, paths), so it goes to the log,
+            // not the response body.
+            tracing::debug!(error = %format!("{e:#}"), "service call failed");
+            Err(json_error(StatusCode::BAD_REQUEST, &format!("{e}")))
+        }
         Err(_) => Err(json_error(
             StatusCode::INTERNAL_SERVER_ERROR,
             "internal error",
