@@ -223,14 +223,15 @@ jobs:
         if: always()
         run: sudo chown -R "$(id -u):$(id -g)" server/target .cargo-registry || true
 
-      # The arch check is by inspection: an arm64 binary cannot run here.
+      # The arch check is by inspection, on the binary behind the wrapper: an
+      # arm64 binary cannot run here.
       - name: Stage the arm64 payload
         run: |
           set -euo pipefail
           mkdir -p payload/bin
           install -m755 "server/target/$TARGET/release/kroma-server" payload/bin/kroma-server
           clients/synology/fetch-ffmpeg.sh aarch64 payload/ffmpeg .ffmpeg-cache
-          file payload/ffmpeg/bin/ffmpeg | grep -qiE 'aarch64|arm' || { echo "ffmpeg is not an arm64 binary"; exit 1; }
+          file payload/ffmpeg/libexec/ffmpeg | grep -qiE 'aarch64|arm' || { echo "ffmpeg is not an arm64 binary"; exit 1; }
 
       - name: Upload arm64 payload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
