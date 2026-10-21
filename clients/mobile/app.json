@@ -36,11 +36,11 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "usesCleartextTraffic": true,
       "permissions": ["android.permission.NEARBY_WIFI_DEVICES", "android.permission.INTERNET"]
     },
     "plugins": [
       "expo-router",
+      "./plugins/with-cleartext-traffic",
       "@kesha-antonov/react-native-background-downloader",
       "./plugins/with-mmkv-pin",
       [
