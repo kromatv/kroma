@@ -87,11 +87,16 @@ the player's decoder refuses, say a 4K frame going to a 1080p-only decoder, and
 on a NAS one such stream will take the whole box.
 
 Every Intel Synology (DS918+, DS920+, DS423+, DS220+ …) has a QuickSync encoder
-that does the same job at a few percent CPU. The package now ships an ffmpeg
-built with VAAPI/QSV and joins the `videodriver` group at install, which are the
-two things that were missing: the previous static ffmpeg carried libx264 and no
-hardware encoder at all, so the silicon was unreachable however the NAS was
-configured.
+that does the same job at a few percent CPU. Reaching it takes three things, and
+the package carries all of them:
+
+- an ffmpeg built with VAAPI (`ffmpeg.lock`);
+- libva and Intel's i965 driver beside it (`ffmpeg/lib`, `ffmpeg/dri`, from
+  Debian bookworm, whose glibc is DSM 7's). The ffmpeg loads libva from the
+  host, and DSM has none: until the package shipped its own, every test encode
+  died on `libva-drm.so.2` and the box transcoded on the CPU;
+- the `videodriver` group, joined at install (`conf/privilege`), which is what
+  opens `/dev/dri/renderD128`.
 
 Check what your box settled on after an upgrade:
 

@@ -47,9 +47,16 @@ ARG TARGETARCH
 # The binaries find their libraries through RUNPATH $ORIGIN/../lib.
 COPY ${TARGETARCH}/ffmpeg /opt/ffmpeg
 # curl = TMDB lookups + artwork + the managed-cloudflared download;
-# ca-certificates for outbound TLS. openssl is vendored into the binary.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates \
+# ca-certificates for outbound TLS. openssl is vendored into the binary. On
+# amd64, Intel's iHD driver (from non-free, which has its encoders) covers the
+# Gen11+ iGPUs the payload's i965 driver does not.
+RUN set -- curl ca-certificates \
+    && if [ "$TARGETARCH" = amd64 ]; then \
+        sed -i 's/^Components: main$/Components: main non-free/' /etc/apt/sources.list.d/debian.sources; \
+        set -- "$@" intel-media-va-driver-non-free; \
+    fi \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends "$@" \
     && rm -rf /var/lib/apt/lists/*
 COPY web /app/web
 COPY ${TARGETARCH}/bin/kroma-server /usr/local/bin/kroma-server
@@ -57,6 +64,7 @@ COPY ${TARGETARCH}/bin/kroma-server /usr/local/bin/kroma-server
 # Defaults; override at runtime. Media dirs are intentionally unset (bind-mount +
 # KROMA_MEDIA_DIRS / KROMA_MOVIES_DIRS / KROMA_SERIES_DIRS).
 ENV PATH=/opt/ffmpeg/bin:$PATH \
+    LIBVA_DRIVERS_PATH=/opt/ffmpeg/dri:/usr/lib/x86_64-linux-gnu/dri \
     KROMA_HOST=0.0.0.0 \
     KROMA_PORT=4040 \
     KROMA_DATA_DIR=/data \
