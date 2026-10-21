@@ -74,7 +74,7 @@ const withIntentHandler: ConfigPlugin = (config) =>
 
     // The end of the AppDelegate class: the first closing brace at column 0
     // after the class opens.
-    const classStart = contents.indexOf('class AppDelegate: ExpoAppDelegate {');
+    const classStart = contents.search(/class AppDelegate: ExpoAppDelegate\b[^{]*\{/);
     const classEnd = classStart === -1 ? -1 : contents.indexOf('\n}\n', classStart);
     if (classEnd === -1) {
       throw new Error(
