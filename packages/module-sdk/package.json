@@ -31,10 +31,10 @@
     "@tanstack/react-table": "^8.21.3"
   },
   "peerDependencies": {
-    "react": "^19.2.8"
+    "react": "^19.3.0"
   },
   "devDependencies": {
-    "@types/react": "^19.2.18",
+    "@types/react": "^19.3.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.5"
   },

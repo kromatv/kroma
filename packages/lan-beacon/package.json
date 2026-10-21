@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "expo": "^57.0.30",
+    "expo": "^58.0.16",
     "@kromatv/core": "workspace:*"
   },
   "devDependencies": {

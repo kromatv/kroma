@@ -111,8 +111,8 @@
     "oxfmt": "0.74.0",
     "oxlint": "1.89.0",
     "playwright": "^1.64.1",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-native-web": "^0.21.2",
     "typescript": "^7.0.2",
     "vite": "8.3.5",
@@ -144,20 +144,18 @@
     "package.json - and prebuild dies. That is what broke both .ipa builds in v0.1.34."
   ],
   "overrides": {
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4",
-    "react-native": "npm:react-native-tvos@0.86.0-2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "react-native": "npm:react-native-tvos@0.88.0-0",
     "vite": "8.3.5"
   },
   "dependencies": {
-    "expo-modules-core": "~57.0.23",
-    "react-native": "npm:react-native-tvos@0.86.0-2"
+    "expo-modules-core": "~58.0.23",
+    "react-native": "npm:react-native-tvos@0.88.0-0"
   },
   "patchedDependencies": {
-    "react-native-svg@15.15.4": "patches/react-native-svg-rnsvg-utils-alias-resolution.patch",
-    "react-native-svg@15.15.5": "patches/react-native-svg-rnsvg-utils-alias-resolution.patch",
-    "@expo/require-utils@57.0.4": "patches/@expo%2Frequire-utils@57.0.4.patch",
-    "expo-video@57.0.2": "patches/expo-video@57.0.2.patch",
+    "react-native-svg@15.16.0": "patches/react-native-svg-rnsvg-utils-alias-resolution.patch",
+    "expo-video@58.0.12": "patches/expo-video@58.0.12.patch",
     "react-native-web@0.21.2": "patches/react-native-web@0.21.2.patch"
   },
   "//overrides": [

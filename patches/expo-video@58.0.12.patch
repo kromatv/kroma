@@ -1,8 +1,8 @@
 diff --git a/android/src/main/java/expo/modules/video/player/VideoPlayer.kt b/android/src/main/java/expo/modules/video/player/VideoPlayer.kt
-index 8bae522733a37b0125e6e808cf912098e3ad3f13..c1037be92272bc2f931002810ff8f55bbf34c5d8 100644
+index 7ccce96..3a42518 100644
 --- a/android/src/main/java/expo/modules/video/player/VideoPlayer.kt
 +++ b/android/src/main/java/expo/modules/video/player/VideoPlayer.kt
-@@ -63,6 +63,14 @@ class VideoPlayer(val context: Context, appContext: AppContext, source: VideoSou
+@@ -64,6 +64,14 @@ class VideoPlayer(val context: Context, appContext: AppContext, source: VideoSou
    private var renderersFactory = DefaultRenderersFactory(context)
      .forceEnableMediaCodecAsynchronousQueueing()
      .setEnableDecoderFallback(true)
@@ -18,10 +18,10 @@ index 8bae522733a37b0125e6e808cf912098e3ad3f13..c1037be92272bc2f931002810ff8f55b
    private val currentVideoViewRef = MutableWeakReference<VideoView?>(null) { new, old ->
      sendEvent(PlayerEvent.TargetViewChanged(new, old))
 diff --git a/expo-module.config.json b/expo-module.config.json
-index d9c4335a75a82a9a4938a2be7c36031bd924fb78..6d6ecae977a616274d83e4dcc14e8cfc20d9a320 100644
+index 6520c26..6d6ecae 100644
 --- a/expo-module.config.json
 +++ b/expo-module.config.json
-@@ -4,12 +4,6 @@
+@@ -4,11 +4,6 @@
      "modules": ["VideoModule"]
    },
    "android": {
@@ -29,7 +29,6 @@ index d9c4335a75a82a9a4938a2be7c36031bd924fb78..6d6ecae977a616274d83e4dcc14e8cfc
 -    "publication": {
 -      "groupId": "host.exp.exponent",
 -      "artifactId": "expo.modules.video",
--      "version": "57.0.2",
 -      "repository": "local-maven-repo"
 -    }
 +    "modules": ["expo.modules.video.VideoModule"]
