@@ -545,12 +545,17 @@ fn apply_module_migrations(
     modules: &[Box<dyn ServerModule<RemoteHost>>],
 ) -> anyhow::Result<()> {
     use kroma_module_host::HostStorage;
-    for module in modules {
-        let migrations = module.migrations();
-        if !migrations.is_empty() {
-            let conn = host.store().get()?;
-            kroma_sqlite::apply_migrations(&conn, migrations)?;
-        }
+    let owners: Vec<_> = modules
+        .iter()
+        .filter(|module| !module.migrations().is_empty())
+        .collect();
+    anyhow::ensure!(
+        owners.len() <= 1,
+        "one process holds one module database, and {} modules declare a schema",
+        owners.len()
+    );
+    for module in owners {
+        kroma_sqlite::migrate_store(host.store(), module.id(), module.migrations(), module.steps())?;
     }
     Ok(())
 }

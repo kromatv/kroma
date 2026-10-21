@@ -25,18 +25,26 @@ pub struct Step {
 
 /// A database's whole history: the shape a new file starts from, the version
 /// that shape stands for, and every step since.
-pub struct Schema {
+pub struct Schema<'a> {
     /// Names the database in an error, "the core database" or a module's id.
-    pub name: &'static str,
-    pub baseline: &'static str,
+    pub name: &'a str,
+    pub baseline: &'a str,
     pub baseline_version: u32,
-    pub steps: &'static [Step],
+    pub steps: &'a [Step],
     /// Brings a database written before versioning existed (tables present,
     /// `user_version` still 0) up to the baseline. `None` refuses such a file.
-    pub legacy: Option<fn(&Connection) -> Result<()>>,
+    pub legacy: Option<Legacy<'a>>,
 }
 
-impl Schema {
+/// How a [`Schema`] adopts a database from before versioning.
+pub enum Legacy<'a> {
+    /// Idempotent SQL, such as the `IF NOT EXISTS` batch a module ran on every
+    /// boot before it had steps.
+    Sql(&'a str),
+    Code(fn(&Connection) -> Result<()>),
+}
+
+impl Schema<'_> {
     /// The version a database holds once every step has run.
     pub fn latest(&self) -> u32 {
         self.baseline_version + self.steps.len() as u32
@@ -80,11 +88,12 @@ pub fn migrate(conn: &mut Connection, schema: &Schema, path: Option<&Path>) -> R
         snapshot(conn, path, found);
     }
     let from = if found == 0 {
-        let legacy = schema
-            .legacy
-            .with_context(|| format!("{} has tables but no schema version", schema.name))?;
-        legacy(conn)
-            .with_context(|| format!("{} could not adopt its legacy schema", schema.name))?;
+        let adopted = match &schema.legacy {
+            None => bail!("{} has tables but no schema version", schema.name),
+            Some(Legacy::Sql(sql)) => conn.execute_batch(sql).map_err(Into::into),
+            Some(Legacy::Code(code)) => code(conn),
+        };
+        adopted.with_context(|| format!("{} could not adopt its legacy schema", schema.name))?;
         conn.pragma_update(None, "user_version", schema.baseline_version)?;
         schema.baseline_version
     } else if found < schema.baseline_version {

@@ -4,8 +4,9 @@ The core database is versioned with `PRAGMA user_version`. A new file starts
 from a baseline, every change since is a numbered step, and a database that is
 already up to date costs one read of its file header at boot.
 
-The engine lives in `kroma-sqlite` (`migrate`, `Schema`, `Step`), so a module's
-own database can use it too. The core's history is in
+The engine lives in `kroma-sqlite` (`migrate`, `Schema`, `Step`). A module's own
+database takes the same steps through `ServerModule::steps()`; see
+[`modules/README.md`](../modules/README.md#changing-the-modules-own-schema). The core's history is in
 `server/crates/kroma-db/src/schema/`.
 
 | File | What it holds |

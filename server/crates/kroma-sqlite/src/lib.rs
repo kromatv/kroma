@@ -11,8 +11,8 @@ mod pool;
 pub mod testing;
 
 pub use grant::{init_scoped, Grant};
-pub use migrate::{migrate, user_version, Migrated, Run, Schema, Step, KEPT_SNAPSHOTS};
-pub use open::{apply_migrations, open, open_with};
+pub use migrate::{migrate, user_version, Legacy, Migrated, Run, Schema, Step, KEPT_SNAPSHOTS};
+pub use open::{apply_migrations, migrate_store, open, open_with};
 pub use pool::{Pool, PoolInner, PooledConn};
 
 /// The pragmas every pooled connection applies on open.
