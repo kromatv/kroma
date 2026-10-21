@@ -13,9 +13,10 @@ bun run kit:smoke                   # install the tarball outside the repo and b
 `release.yml`'s **Design system** job runs both on every push and uploads the
 tarball as the `kroma-ui` artifact. It publishes `X.Y.Z-canary.<build>` under
 the `canary` dist-tag from a push to `main`, and `X.Y.Z` under `latest` from a
-stable tag, on the same channel rules as the SDK and only when `NPM_TOKEN` is
-set. Without the secret the step is skipped rather than failed, and the tarball
-stays on the run for a hand publish.
+stable tag, on the same channel rules as the SDK. It publishes through
+`bun run ci npm publish`, with trusted publishing only and a canary only when
+the content hash changed; the setup, including the first version of the package
+by hand, is in `docs/module-sdk-publishing.md`.
 
 ## What the staged package is
 

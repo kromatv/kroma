@@ -78,13 +78,38 @@ serde, tracing, time and walkdir. No `rusqlite`, so `cargo tree` on the SDK with
 ## The lane
 
 ```bash
-bun run ci sdk stage --version 0.1.40        # dist/sdk/kromatv-sdk-0.1.40.tgz
+bun run ci sdk stage --version 0.1.40        # dist/sdk/kromatv-sdk-<version>.tgz
 bun run ci sdk smoke                         # scaffold a module from it alone, install, check, build
-bun run ci sdk publish --dry-run             # what `npm publish` would do
+bun run ci npm publish dist/sdk/kromatv-sdk-<version>.tgz --tag canary --dry-run
 ```
 
 `release.yml` runs stage and smoke on every push and uploads the tarball as the
 `kroma-sdk` artifact. It publishes `canary` when the candidate is a push to
-`main` and `latest` on a stable tag, and only when the `NPM_TOKEN` secret is
-set (publish rights on `@kromatv/sdk`): without it the step is skipped
-and the tarball stays on the run for a hand publish.
+`main` and `latest` on a stable tag, through `bun run ci npm publish`.
+
+## npm access: trusted publishing only
+
+There is no `NPM_TOKEN` anywhere. The jobs authenticate to npm with GitHub's
+OIDC token (`id-token: write`), which needs npm 11.5.1 or later: the jobs run
+Node 24 and fail early if `npm --version` is older.
+
+For each of `@kromatv/sdk` and `@kromatv/ui`, on npmjs.com open the package,
+then Settings, Trusted publisher, GitHub Actions, and enter organization
+`kromatv`, repository `kroma`, workflow filename `release.yml`, environment
+left empty.
+
+`@kromatv/ui` does not exist on npm yet, and a trusted publisher can only be
+attached to an existing package. Its first version is published by hand: stage
+it (`bun run kit:stage --version X.Y.Z`), then `npm login` and
+`npm publish packages/ui/dist/*.tgz --access public` from a machine with
+publish rights on the `@kromatv` scope. Attach the trusted publisher afterwards.
+
+## When a canary publishes
+
+A `canary` is published only when the package's content changed. The command
+fetches the tarball behind `<name>@canary`, hashes both, and skips the publish
+when the hashes match, saying so in the log and the run summary. The hash is a
+sha256 over every file's path and bytes in sorted path order, with
+`package.json` parsed, stripped of `version` and re-serialised with sorted keys,
+so the build-stamped version alone never makes a canary. A missing package or
+tag counts as nothing published. Any other tag always publishes.
