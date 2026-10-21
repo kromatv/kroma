@@ -21,13 +21,14 @@ LOG="${VAR}/kroma.log"
 DATA_DIR="${KROMA_DATA_DIR:-}"
 [ -n "${DATA_DIR}" ] || DATA_DIR="${VAR}/data"
 
-# VA-API finds its driver by scanning LIBVA_DRIVERS_PATH, and the bundled
-# ffmpeg carries no default that matches DSM's layout. Every directory a Synology
-# is known to keep one in is offered; libva ignores the ones that are not there.
-# Empty on a NAS with no driver at all, which is the same as not setting it.
+# VA-API finds its driver by scanning LIBVA_DRIVERS_PATH. The package carries
+# Intel's i965 driver, which covers every Intel Synology (Apollo Lake, Gemini
+# Lake), and offers it first; the directories a Synology is known to keep one in
+# follow, and libva ignores the ones that are not there.
 va_drivers_path() {
     _p=""
-    for d in /var/packages/synocli-videodriver/target/lib \
+    for d in "${TARGET}/ffmpeg/dri" \
+             /var/packages/synocli-videodriver/target/lib \
              /usr/lib/dri /usr/lib/x86_64-linux-gnu/dri; do
         [ -d "$d" ] && _p="${_p:+$_p:}$d"
     done
