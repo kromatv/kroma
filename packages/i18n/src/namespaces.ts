@@ -2,6 +2,11 @@ import type { CatalogOrLoader, NamespaceCatalogs } from './announce';
 import { namespaceOf } from './layout';
 import type { Catalog } from './types';
 
+const LANDED: Promise<void> = Object.assign(Promise.resolve(), {
+  status: 'fulfilled' as const,
+  value: undefined,
+});
+
 interface Entry {
   readonly sources: Map<string, CatalogOrLoader>;
   readonly loaded: Set<string>;
@@ -80,6 +85,14 @@ export class Namespaces {
     const all: Promise<void> = Promise.all(flying).then(forget, forget);
     this.pendingByLocale.set(locale, all);
     return all;
+  }
+
+  /** What a view suspends on for `locale`: the promise from {@link pending}
+   *  while catalogs are on their way, otherwise one already marked fulfilled.
+   *  React's `use()` reads a thenable whose `status` is `fulfilled` without
+   *  suspending, so a view can call it on every render, as `use()` requires. */
+  ready(locale: string): Promise<void> {
+    return this.pending(locale) ?? LANDED;
   }
 
   /** A key nothing answered in `locale`: fetch its namespace for that locale,

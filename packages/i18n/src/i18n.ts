@@ -40,6 +40,9 @@ export interface I18n<L extends string, M extends Catalog> {
   /** What is still being fetched for `locale`, to suspend on; `null` when
    *  everything needed has landed. */
   pending(locale: L): Promise<void> | null;
+  /** What a view suspends on for `locale`, never null: what {@link pending}
+   *  returns, or an already-settled promise `use()` reads without suspending. */
+  ready(locale: L): Promise<void>;
   /** A snapshot that changes whenever a scope is added or removed, or a
    *  locale's fetches have all landed. */
   version(): number;
@@ -143,6 +146,7 @@ export function createI18n<
     register: (namespace, announced) => namespaces.announce(namespace, announced, true),
     warm: (locale) => namespaces.warm(locale),
     pending: (locale) => namespaces.pending(locale),
+    ready: (locale) => namespaces.ready(locale),
     version: () => store.version() + overridesRevision(),
     subscribe: (listener) => {
       const stopStore = store.subscribe(listener);

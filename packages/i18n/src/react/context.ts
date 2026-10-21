@@ -25,14 +25,9 @@ function useI18nValue(): I18nValue {
   return value;
 }
 
-const SETTLED: Promise<void> = Object.assign(Promise.resolve(), {
-  status: 'fulfilled' as const,
-  value: undefined,
-});
-
 function useSettled(): I18nValue {
   const value = useI18nValue();
-  use(value.i18n.pending(value.locale) ?? SETTLED);
+  use(value.i18n.ready(value.locale));
   return value;
 }
 
