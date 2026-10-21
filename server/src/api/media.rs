@@ -207,7 +207,11 @@ pub async fn get_item(
 /// `POST /api/scan` → trigger a full library rescan. Routed through the tracked
 /// `library.scan` job so it shares the job manager's single-flight guard: no
 /// concurrent walk can race a watch-triggered run on the same DB.
-pub async fn rescan(State(state): State<SharedState>) -> Result<Response, Response> {
+pub async fn rescan(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    crate::api::admin::require(&user, crate::model::Permission::LibraryManage)?;
     use crate::services::jobs::{JobKey, TriggerError};
     match state
         .jobs
@@ -240,8 +244,10 @@ pub struct LogsQuery {
 /// `text/plain`. Reads the most-recently-modified file under `<data>/logs/`.
 pub async fn logs(
     State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
     Query(q): Query<LogsQuery>,
 ) -> Result<Response, Response> {
+    crate::api::admin::require_any_admin(&user)?;
     let dir = state.config.logs_dir();
     let tail = q.tail.unwrap_or(200).min(5000);
 
