@@ -12,6 +12,7 @@ const COMMANDS = {
   tools: async (args: string[]) => (await import('./tools')).main(args),
   sonar: async (args: string[]) => (await import('./sonar')).main(args),
   sdk: async (args: string[]) => (await import('./sdk-command')).main(args),
+  npm: async (args: string[]) => (await import('./npm-command')).main(args),
   embeds: async () => (await import('./embeds-command')).main(),
   schema: async (args: string[]) => (await import('./schema-command')).main(args),
 };
