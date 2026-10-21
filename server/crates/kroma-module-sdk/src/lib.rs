@@ -128,7 +128,8 @@ pub mod db {
     #[cfg(feature = "engine")]
     pub use kroma_db::*;
     pub use kroma_sqlite::{
-        apply_migrations, init_scoped, open, open_with, Grant, Pool, PoolInner, PooledConn,
+        apply_migrations, init_scoped, migrate_store, open, open_with, Grant, Pool, PoolInner,
+        PooledConn, Run, Step,
     };
     #[cfg(all(any(test, feature = "testing"), not(feature = "core")))]
     pub use kroma_sqlite::testing;

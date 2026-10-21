@@ -385,6 +385,30 @@ The capability gives a module TWO databases, and they are not interchangeable:
   no grant still gets the pool. It answers nothing, and says which table it
   refused.
 
+### Changing the module's own schema
+
+`migrations()` is the baseline: `IF NOT EXISTS` DDL that a new file is created
+from. Every later change is a step in `steps()`, applied once, in order, each in
+its own transaction, with the version kept in the file's `PRAGMA user_version`:
+
+```rust
+const STEPS: &[Step] = &[Step {
+    name: "0002_notes_pinned",
+    run: Run::Sql("ALTER TABLE notes ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0"),
+    rebuilds: false,
+}];
+
+fn steps(&self) -> &'static [Step] {
+    STEPS
+}
+```
+
+`Step` and `Run` come from `kroma_module_sdk::db`. A store written before the
+module had steps runs its baseline once more and then takes them. A step that
+has shipped is never edited, and a store a newer version of the module wrote is
+refused at startup instead of read with the wrong shape. The core database
+works the same way; see [`docs/database-migrations.md`](../docs/database-migrations.md).
+
 Two rules about a grant come from SQLite rather than from us, and both have bitten:
 a column named in a `WHERE` is reached as much as one that is projected, and a
 foreign key drags its other table in, so writing a child row reads the parent

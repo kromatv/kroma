@@ -4,7 +4,7 @@ use std::path::Path;
 use anyhow::Result;
 use rusqlite::Connection;
 
-use kroma_sqlite::{open_with, Pool, Schema};
+use kroma_sqlite::{open_with, Legacy, Pool, Schema};
 
 mod ddl;
 mod legacy;
@@ -17,12 +17,12 @@ pub(crate) use migrations::MIGRATIONS;
 
 pub(crate) const BASELINE: &str = include_str!("schema/baseline.sql");
 
-pub(crate) const CORE: Schema = Schema {
+pub(crate) const CORE: Schema<'static> = Schema {
     name: "the core database",
     baseline: BASELINE,
     baseline_version: 1,
     steps: steps::STEPS,
-    legacy: Some(legacy::adopt),
+    legacy: Some(Legacy::Code(legacy::adopt)),
 };
 
 pub fn init(path: &Path) -> Result<Pool> {
