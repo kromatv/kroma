@@ -42,7 +42,8 @@ const PROVIDERS: Record<SharedModule, () => Promise<unknown>> = {
   'react-call': () => import('react-call'),
 };
 
-async function provideShared(): Promise<Record<string, unknown>> {
+/** Everything a runtime module imports from the host, keyed by specifier. */
+export async function provideShared(): Promise<Record<string, unknown>> {
   const loaded = await Promise.all(
     Object.entries(PROVIDERS).map(async ([key, load]) => [key, await load()] as const),
   );

@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
+import { SHARED_MODULES } from '@kromatv/module-sdk';
 import { describe, expect, it } from 'vitest';
+import { provideShared } from './remotes';
 
 const SCOPES: Record<string, [() => Promise<object>, () => Promise<object>]> = {
   '@kromatv/ui': [() => import('./scope/ui'), () => import('@kromatv/ui')],
@@ -33,4 +35,16 @@ describe('the scope a runtime module receives', () => {
       }
     });
   }
+});
+
+describe('the shared map the host builds', () => {
+  it('provides every shared specifier, with the members of the real module', async () => {
+    const shared = await provideShared();
+
+    for (const specifier of SHARED_MODULES) {
+      expect(shared[specifier], specifier).toBeDefined();
+    }
+    const kit = await import('@kromatv/ui/kit');
+    expect(Reflect.get(Object(shared['@kromatv/ui/kit']), 'Box')).toBe(kit.Box);
+  });
 });
