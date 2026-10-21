@@ -25,7 +25,7 @@ fn build_svg(id: &str, title: &str) -> String {
 
     let safe_title = xml_escape(title);
     let initials = xml_escape(&initials_of(title));
-    let grad_id = format!("g{}", &id.chars().take(8).collect::<String>());
+    let grad_id = format!("g{}", id.chars().take(8).collect::<String>());
 
     format!(
         r##"<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600" role="img" aria-label="{title}">

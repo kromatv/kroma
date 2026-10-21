@@ -265,12 +265,9 @@ async fn cast_state(state: &SharedState, owner: &str, id: String, playback: Opti
     };
     match state.cast.set_state(&id, playback, item) {
         Some(StateChange::Row(row)) => {
-            state.events.publish_to(
-                owner,
-                ServerEvent::CastReceiverChanged {
-                    receiver: Box::new(row),
-                },
-            );
+            state
+                .events
+                .publish_to(owner, ServerEvent::CastReceiverChanged { receiver: row });
         }
         Some(StateChange::Position {
             position_ms,

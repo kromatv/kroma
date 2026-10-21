@@ -2,6 +2,8 @@
 //! directly, as an alternative to Torznab/Jackett/Prowlarr. Definitions are
 //! GPL and fetched at runtime by [`store`], not vendored into this repo.
 
+#![allow(clippy::result_large_err)]
+
 use serde::{Deserialize, Serialize};
 
 pub mod admin;

@@ -50,7 +50,7 @@ pub struct Hello {
 }
 
 pub enum StateChange {
-    Row(CastReceiver),
+    Row(Box<CastReceiver>),
     Position {
         position_ms: i64,
         duration_ms: Option<i64>,

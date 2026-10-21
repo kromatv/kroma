@@ -42,7 +42,7 @@ fn merge_show_request_widens_pending_seasons_without_materializing() {
     let updated = db::get_request(&conn, "r1").unwrap().unwrap();
     assert_eq!(updated.seasons, Some(vec![1, 2]));
     assert!(
-        host.published().len() >= 1,
+        !host.published().is_empty(),
         "a widened request publishes an update"
     );
 }

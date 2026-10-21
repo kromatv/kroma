@@ -1,5 +1,5 @@
-//! Smart Hub preview "cards": a 640×360 landscape tile composited from a backdrop
-//! + scrims + a category badge + the KROMA brand lockup + the title's logo
+//! Smart Hub preview "cards": a 640×360 landscape tile composited from a backdrop,
+//! scrims, a category badge, the KROMA brand lockup and the title's logo
 //! artwork, plus an optional resume progress bar. Encoded as JPEG.
 //!
 //! The title/meta line are shown by the carousel itself and deliberately not
@@ -256,7 +256,7 @@ fn text_width(font: &Font, text: &str, size: f32, tracking: f32) -> f32 {
 fn encode_jpeg(pm: &Pixmap) -> Vec<u8> {
     let data = pm.data();
     let mut rgb = Vec::with_capacity((pm.width() * pm.height() * 3) as usize);
-    for px in data.chunks_exact(4) {
+    for px in data.as_chunks::<4>().0 {
         rgb.extend_from_slice(&px[..3]);
     }
     let mut out = Vec::new();
