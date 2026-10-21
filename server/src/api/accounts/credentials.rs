@@ -155,6 +155,12 @@ pub struct LoginBody {
     pub password: String,
 }
 
+fn dummy_hash() -> &'static str {
+    static DUMMY: std::sync::LazyLock<String> =
+        std::sync::LazyLock::new(|| auth::hash_password("timing-equaliser-not-a-real-secret"));
+    &DUMMY
+}
+
 /// `POST /api/auth/login` → `{ token, user }`. Accepts email or username.
 /// Brute-force guarded per source IP (see [`loginguard`]): consecutive failures
 /// lock the IP out for an escalating cooldown, answered `429` with a `retryAfter`.
@@ -180,8 +186,11 @@ pub async fn login(
         Ok(v) => v,
         Err(resp) => return resp,
     };
-    // Same response whether the email is unknown or the password is wrong.
+    // Same response, and the same cost, whether the account is unknown or the
+    // password is wrong: verify against a fixed hash on the miss path so the
+    // reply time does not say which accounts exist.
     let Some((user, hash)) = found else {
+        let _ = auth::verify_password(&body.password, dummy_hash());
         return login_failed(&ip, loc);
     };
     if !auth::verify_password(&body.password, &hash) {
