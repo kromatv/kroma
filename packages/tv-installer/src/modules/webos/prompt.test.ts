@@ -3,13 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Television } from '../../television';
 import { askPassphrases } from './prompt';
 
-vi.mock('@clack/prompts', () => ({
-  isCancel: (value: unknown) => value === CANCELLED,
-  log: { info: vi.fn() },
-  password: vi.fn(),
-}));
-
-const CANCELLED = Symbol('cancelled');
+vi.mock('@clack/prompts', () => {
+  const CANCEL_SYMBOL = Symbol('cancelled');
+  return {
+    CANCEL_SYMBOL,
+    isCancel: (value: unknown) => value === CANCEL_SYMBOL,
+    log: { info: vi.fn() },
+    password: vi.fn(),
+  };
+});
 
 const set = (host: string, name: string): Television => ({
   host,
@@ -51,7 +53,7 @@ describe('askPassphrases', () => {
   });
 
   it('answers nothing at all when the question was cancelled', async () => {
-    vi.mocked(p.password).mockResolvedValue(CANCELLED);
+    vi.mocked(p.password).mockResolvedValue(p.CANCEL_SYMBOL);
 
     expect(await askPassphrases(sets)).toBeNull();
   });

@@ -39,15 +39,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clack/prompts": "1.7.0",
+    "@clack/prompts": "1.8.1",
     "@kromatv/module-sdk": "workspace:*",
     "@kromatv/registry": "workspace:*",
     "citty": "0.2.2",
     "es-module-lexer": "^2.3.2",
     "hono": "^4.13.13",
-    "magic-string": "^0.30.21",
+    "magic-string": "^1.4.3",
     "smol-toml": "^1.9.1",
-    "vite": "8.2.1",
+    "vite": "8.3.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {
