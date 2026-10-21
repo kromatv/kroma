@@ -104,6 +104,8 @@ mod tests {
         }
         assert_eq!(Bare.id(), "tv.kroma.bare");
         assert_eq!(Bare.migrations(), "");
+        #[cfg(feature = "storage")]
+        assert!(Bare.steps().is_empty());
         assert!(Bare
             .admin_routes(&Arc::new(testing::StubHost::new()))
             .is_none());
