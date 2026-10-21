@@ -59,9 +59,9 @@ function titleOf(id: string): string {
   return slug.charAt(0).toUpperCase() + slug.slice(1).replaceAll('-', ' ');
 }
 
-function answer<T>(value: T | symbol): T {
+function answer<T>(value: T): Exclude<T, symbol> {
   if (p.isCancel(value)) throw new Error('cancelled');
-  return value as T;
+  return value as Exclude<T, symbol>;
 }
 
 async function ask(options: CreateOptions, cwd: string): Promise<Answers> {
