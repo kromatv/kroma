@@ -80,5 +80,7 @@ function RowEnd({
   if (busy) return <Spinner size={18} thickness={2} />;
   if (outcome === 'done') return <Icon name="check" size={18} thickness={2.4} color="success" />;
   if (outcome) return <Icon name="alert-triangle" size={18} thickness={2.2} color="danger" />;
-  return <Badge tone="neutral">{device.check}</Badge>;
+  // A row that needs the check read off the television carries no check here,
+  // so there is nothing to show beside it.
+  return device.check ? <Badge tone="neutral">{device.check}</Badge> : null;
 }

@@ -102,8 +102,8 @@ pub struct AnnounceReply {
 }
 
 /// One waiting TV in `GET /api/handoff/devices`. `confirmRequired` is the
-/// phone's cue to ask for `check` rather than only show it: granting this row
-/// without it is refused.
+/// phone's cue to ask for the check read off the television; the list blanks
+/// `check` for such a row, and granting it without the check is refused.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NearbyDevice {
@@ -120,7 +120,14 @@ impl From<Nearby> for NearbyDevice {
             handle: row.handle,
             name: row.name,
             platform: row.platform,
-            check: row.check,
+            // A row that needs confirmation is placed by nobody, so its check
+            // must be read off the television. Returning it here would let the
+            // page that raised the beacon show it next to the row on the phone.
+            check: if row.confirm_required {
+                String::new()
+            } else {
+                row.check
+            },
             confirm_required: row.confirm_required,
         }
     }
