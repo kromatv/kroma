@@ -40,6 +40,7 @@ jobs:
       desktop: ${{ steps.lanes.outputs.desktop }}
       rust: ${{ steps.lanes.outputs.rust }}
       rust_shards: ${{ steps.lanes.outputs.rust_shards }}
+      sdk: ${{ steps.lanes.outputs.sdk }}
       sonar: ${{ steps.sonar.outputs.run }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -283,6 +284,28 @@ jobs:
   # --no-default-features leaves the in-process libmpv out: ubuntu-22.04's
   # libmpv is too old for the libmpv2 crate, and the Linux release ships the
   # binary engine anyway.
+  sdk:
+    name: SDK package
+    needs: lanes
+    if: needs.lanes.outputs.sdk == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: '22'
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+      - run: bun install --frozen-lockfile
+      - run: bun run ci sdk stage --version 0.0.0-ci.${{ github.run_number }}
+      - run: bun run ci sdk smoke
+
   desktop:
     name: Desktop shell (cargo check)
     needs: lanes
