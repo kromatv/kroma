@@ -104,6 +104,24 @@ if (el) createRoot(el).render(<App />);
 `,
 );
 
+writeFileSync(
+  join(app, 'src', 'public-types.ts'),
+  `import { REPORT_CATEGORIES, SORT_ICON, type ReportCategoryMeta } from '@kromatv/ui';
+import type { Translate } from '@kromatv/ui/i18n';
+
+type Expect<T extends true> = T;
+type Narrow<T> = string extends T ? false : true;
+
+export type Checks = [
+  Expect<Narrow<ReportCategoryMeta['key']>>,
+  Expect<Narrow<keyof typeof SORT_ICON>>,
+  Expect<Translate extends (...args: never[]) => string ? true : false>,
+];
+
+export const keys: readonly ReportCategoryMeta['key'][] = REPORT_CATEGORIES.map((c) => c.key);
+`,
+);
+
 const deps = [
   'react',
   'react-dom',
