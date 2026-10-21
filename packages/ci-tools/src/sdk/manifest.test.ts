@@ -86,7 +86,7 @@ describe('pathsFor', () => {
         ['client', CLIENT],
       ]),
     ).toEqual({
-      'react-native': ['./types/react-native/types/index.d.ts'],
+      'react-native': ['./types/react-native/types_DEPRECATED/index.d.ts'],
       'react-native/*': ['./types/react-native/*'],
       '@kromatv/ui': ['./types/ui/src/index.d.ts'],
       '@kromatv/ui/kit': ['./types/ui/src/kit.d.ts'],
