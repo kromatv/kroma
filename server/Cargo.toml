@@ -207,6 +207,8 @@ axum = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
 tower-http = { workspace = true }
+# `oneshot` a tower-http file service from inside a handler (api/plugin.rs).
+tower = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
@@ -281,10 +283,8 @@ openssl = { version = "0.10", features = ["vendored"] }
 uuid = { workspace = true, features = ["v5"] }
 
 # Integration tests for the HTTP API layer (src/api/*): drive the real axum
-# router in-process with `tower::ServiceExt::oneshot`. `tower` is a dev-only dep
-# (the binary itself only needs `tower-http`).
+# router in-process with `tower::ServiceExt::oneshot`.
 [dev-dependencies]
-tower = { workspace = true }
 tempfile = { workspace = true }
 # The scratch directory the TLS test writes its cert pair into.
 kroma-testing = { workspace = true }
