@@ -9,7 +9,8 @@ use crate::rows::row_to_user;
 use crate::{now_or_blank, Pool};
 
 /// `access_token` records the device credential this session was minted from,
-/// so the account's session list can flag the current device.
+/// so the account's session list can flag the current device. The user's
+/// expired sessions go in the same call, so renewing never piles them up.
 pub fn create_session(
     pool: &Pool,
     token: &str,
@@ -18,6 +19,10 @@ pub fn create_session(
     access_token: Option<&str>,
 ) -> Result<()> {
     let conn = pool.get()?;
+    conn.execute(
+        "DELETE FROM sessions WHERE user_id = ?1 AND expires_at <= ?2",
+        params![user_id, time::OffsetDateTime::now_utc().unix_timestamp()],
+    )?;
     conn.execute(
         "INSERT INTO sessions (token,user_id,created_at,expires_at,access_token) VALUES (?1,?2,?3,?4,?5)",
         params![token, user_id, now_or_blank(), expires_at, access_token],
@@ -129,6 +134,29 @@ mod tests {
 
         delete_session(&p, "sess-tok").unwrap();
         assert!(session_user(&p, "sess-tok").unwrap().is_none());
+    }
+
+    #[test]
+    fn a_new_session_takes_the_users_expired_ones_with_it() {
+        let p = pool();
+        let user = mk_user(&p, "a@b.c", "alice");
+        let other = mk_user(&p, "d@e.f", "dave");
+        create_session(&p, "expired", &user.id, 1, Some("dev")).unwrap();
+        create_session(&p, "live", &user.id, FUTURE, Some("dev")).unwrap();
+        create_session(&p, "theirs", &other.id, 1, None).unwrap();
+
+        create_session(&p, "renewed", &user.id, FUTURE, Some("dev")).unwrap();
+
+        let tokens: Vec<String> = p
+            .get()
+            .unwrap()
+            .prepare("SELECT token FROM sessions ORDER BY token")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap();
+        assert_eq!(tokens, ["live", "renewed", "theirs"]);
     }
 
     #[test]

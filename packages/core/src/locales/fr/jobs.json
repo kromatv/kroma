@@ -24,6 +24,8 @@
   "jobs.cronExpr": "Expression cron",
   "jobs.cronHint": "Format : minute heure jour mois jour-semaine. Ex : « 0 4 * * * » = chaque jour à 04:00. Vide = exécution manuelle uniquement.",
   "jobs.cronInvalid": "Expression cron invalide",
+  "jobs.database.tidy.desc": "Chaque nuit, supprime les connexions et les jetons d'appareil expirés ainsi que les traitements laissés par des fichiers supprimés, puis met à jour les statistiques qui guident SQLite dans le choix de ses index et réduit son journal d'écriture.",
+  "jobs.database.tidy.name": "Entretien de la base",
   "jobs.editSchedule": "Modifier la planification",
   "jobs.empty": "Aucune tâche enregistrée.",
   "jobs.history": "Historique",

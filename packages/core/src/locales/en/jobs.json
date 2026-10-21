@@ -24,6 +24,8 @@
   "jobs.cronExpr": "Cron expression",
   "jobs.cronHint": "Format: minute hour day month weekday. E.g. \"0 4 * * *\" = every day at 04:00. Empty = manual-only.",
   "jobs.cronInvalid": "Invalid cron expression",
+  "jobs.database.tidy.desc": "Every night, removes the sign-ins and device tokens that have expired and the processing tasks left behind by deleted files, then refreshes the statistics SQLite chooses its indexes by and trims its write-ahead log.",
+  "jobs.database.tidy.name": "Database tidy",
   "jobs.editSchedule": "Edit schedule",
   "jobs.empty": "No jobs registered.",
   "jobs.history": "History",
