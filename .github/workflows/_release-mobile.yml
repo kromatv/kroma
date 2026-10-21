@@ -479,13 +479,13 @@ jobs:
         run: .github/scripts/upload-to-testflight.sh
 
       - name: Upload to TestFlight
-        # See the Apple TV job: candidates build, they do not distribute.
+        # See the Apple TV job: a candidate from a push reaches the internal group.
         # `targets` says what to BUILD; it must not also mean "ship it".
         # A dispatch with targets=mobile, run to time the archive, pushed a
         # real build to TestFlight and burned a build number - distribution
         # was riding on a selector that only ever meant scope. It now needs
         # the explicit `distribute` input, so a build-only run stays one.
-        if: ${{ steps.signing.outputs.ready == 'true' && (inputs.channel == 'stable' || github.event.inputs.distribute == 'true') }}
+        if: ${{ steps.signing.outputs.ready == 'true' && (inputs.channel == 'stable' || (inputs.channel == 'candidate' && github.event_name == 'push') || github.event.inputs.distribute == 'true') }}
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
