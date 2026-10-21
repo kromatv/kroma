@@ -1831,6 +1831,7 @@ dependencies = [
  "p256",
  "rand_core 0.6.4",
  "rusty-chromaprint",
+ "semver",
  "serde",
  "serde_json",
  "sha2",

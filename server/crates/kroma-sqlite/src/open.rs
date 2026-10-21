@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::{Context, Result};
 use rusqlite::Connection;
 
-use crate::{Pool, PoolInner};
+use crate::{Legacy, Migrated, Pool, PoolInner, Schema, Step};
 
 /// A pool over `path` with the pragmas applied and NO schema.
 ///
@@ -54,3 +54,22 @@ pub fn apply_migrations(conn: &Connection, sql: &str) -> Result<()> {
     conn.execute_batch(sql)
         .context("failed to apply module schema")
 }
+
+/// Brings a module's own database to its last step. `baseline` is the module's
+/// `migrations()`: a new file is created from it, and a file from before the
+/// module had steps runs it once more (it is `IF NOT EXISTS` DDL) before taking
+/// them.
+pub fn migrate_store(store: &Pool, name: &str, baseline: &str, steps: &[Step]) -> Result<Migrated> {
+    let schema = Schema {
+        name,
+        baseline,
+        baseline_version: 1,
+        steps,
+        legacy: Some(Legacy::Sql(baseline)),
+    };
+    let mut conn = store.get()?;
+    crate::migrate(&mut conn, &schema, Some(store.path()))
+}
+
+#[cfg(test)]
+mod tests;

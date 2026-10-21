@@ -10,12 +10,12 @@ const ADD_PINNED: Step = Step {
     rebuilds: false,
 };
 
-const SCHEMA: Schema = Schema {
+const SCHEMA: Schema<'static> = Schema {
     name: "the test database",
     baseline: BASELINE,
     baseline_version: 1,
     steps: &[ADD_PINNED],
-    legacy: Some(adopt_legacy),
+    legacy: Some(Legacy::Code(adopt_legacy)),
 };
 
 fn adopt_legacy(conn: &Connection) -> Result<()> {

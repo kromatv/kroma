@@ -30,10 +30,17 @@ where
     // Matches its `module.json` and frontend package.
     fn id(&self) -> &'static str;
 
-    // SQL run at DB init, after the core schema. `IF NOT EXISTS` DDL only; runs
-    // on every boot.
+    // The baseline of the module's own database: what a new file is created
+    // with, and what a file from before `steps()` is brought up to.
     fn migrations(&self) -> &'static str {
         ""
+    }
+
+    // Every change to the module's database since `migrations()`, oldest first,
+    // each applied once. A step that has shipped is never edited.
+    #[cfg(feature = "storage")]
+    fn steps(&self) -> &'static [kroma_sqlite::Step] {
+        &[]
     }
 
     // Routes served under `/api/admin`. Mounted behind the module's enabled-gate
