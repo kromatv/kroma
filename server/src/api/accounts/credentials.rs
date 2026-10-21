@@ -34,10 +34,13 @@ pub struct RegisterBody {
 /// `POST /api/auth/register` → `{ token, user }`. The first account ever created is
 /// the owner, granted in the insert itself so that two registrations in flight
 /// against an empty server cannot both claim it; after that a valid `inviteToken`
-/// is required and grants its permissions.
+/// is required and grants its permissions. The owner can only be claimed from a
+/// loopback or private address, so a server exposed before first run is not
+/// handed to whoever reaches it first.
 pub async fn register(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     Json(body): Json<RegisterBody>,
 ) -> Response {
@@ -55,6 +58,18 @@ pub async fn register(
         Ok(n) => n,
         Err(resp) => return resp,
     };
+
+    if count > 0 {
+        let Some(token) = body.invite_token.clone().filter(|t| !t.trim().is_empty()) else {
+            return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteOnly");
+        };
+        let now = time::OffsetDateTime::now_utc().unix_timestamp();
+        match query(&state.db, move |pool| db::get_invite(&pool, token.trim())).await {
+            Ok(Some(invite)) if !invite.used && invite.expires_at > now => {}
+            Ok(_) => return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteInvalid"),
+            Err(resp) => return resp,
+        }
+    }
 
     // Reject a duplicate email before consuming any invite, or a retry spends the
     // single-use invite. `create_user`'s UNIQUE constraint is the atomic backstop.
@@ -83,6 +98,13 @@ pub async fn register(
     }
 
     if count == 0 {
+        let ip = client_ip(&headers, &addr, &state.config.trusted_proxies);
+        if !crate::services::playback::is_lan(
+            &ip,
+            &crate::services::settings::local_networks(&state.settings),
+        ) {
+            return lerr(loc, StatusCode::FORBIDDEN, "auth.firstRunLocalOnly");
+        }
         let hash = auth::hash_password(&body.password);
         let (owner_email, owner_username) = (email.clone(), username.clone());
         match query(&state.db, move |pool| {
@@ -133,6 +155,12 @@ pub struct LoginBody {
     pub password: String,
 }
 
+fn dummy_hash() -> &'static str {
+    static DUMMY: std::sync::LazyLock<String> =
+        std::sync::LazyLock::new(|| auth::hash_password("timing-equaliser-not-a-real-secret"));
+    &DUMMY
+}
+
 /// `POST /api/auth/login` → `{ token, user }`. Accepts email or username.
 /// Brute-force guarded per source IP (see [`loginguard`]): consecutive failures
 /// lock the IP out for an escalating cooldown, answered `429` with a `retryAfter`.
@@ -158,8 +186,11 @@ pub async fn login(
         Ok(v) => v,
         Err(resp) => return resp,
     };
-    // Same response whether the email is unknown or the password is wrong.
+    // Same response, and the same cost, whether the account is unknown or the
+    // password is wrong: verify against a fixed hash on the miss path so the
+    // reply time does not say which accounts exist.
     let Some((user, hash)) = found else {
+        let _ = auth::verify_password(&body.password, dummy_hash());
         return login_failed(&ip, loc);
     };
     if !auth::verify_password(&body.password, &hash) {

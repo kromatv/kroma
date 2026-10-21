@@ -140,7 +140,7 @@ fn relay_url(state: &SharedState) -> &str {
         .unwrap_or(crate::services::email::RELAY_URL)
 }
 
-fn require(user: &User, perm: Permission) -> Result<(), Response> {
+pub(crate) fn require(user: &User, perm: Permission) -> Result<(), Response> {
     if user.can(perm) {
         Ok(())
     } else {
@@ -153,7 +153,7 @@ fn require(user: &User, perm: Permission) -> Result<(), Response> {
 }
 
 // Any management capability unlocks the read-only dashboard panels.
-fn require_any_admin(user: &User) -> Result<(), Response> {
+pub(crate) fn require_any_admin(user: &User) -> Result<(), Response> {
     if user.is_any_admin() {
         Ok(())
     } else {

@@ -9,7 +9,7 @@ use axum::Router;
 use serde_json::json;
 use tokio::sync::Barrier;
 
-use crate::api::test_support::{send, test_app, TestApp};
+use crate::api::test_support::{raw, send, test_app, TestApp};
 use crate::model::Permission;
 
 // A fresh server: no accounts at all. `test_app` seeds an owner, so the very
@@ -107,4 +107,43 @@ async fn two_first_registrations_in_flight_leave_one_owner_and_one_refusal() {
 
     let (third, _) = register(&t.app, "carol@test.dev", "carol").await;
     assert_eq!(third, StatusCode::FORBIDDEN);
+}
+
+async fn register_from(
+    app: &Router,
+    client: &str,
+    email: &str,
+    username: &str,
+) -> (StatusCode, serde_json::Value) {
+    let (status, _, body) = raw(
+        app,
+        "POST",
+        "/api/auth/register",
+        None,
+        Some(json!({ "email": email, "username": username, "password": "s3cret12" })),
+        &[("x-forwarded-for", client)],
+    )
+    .await;
+    (status, body)
+}
+
+#[tokio::test]
+async fn a_public_address_cannot_claim_a_fresh_server() {
+    let t = test_app();
+    empty_of_accounts(&t);
+
+    let (status, _) = register_from(&t.app, "203.0.113.7", "intruder@test.dev", "intruder").await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert!(crate::db::list_users(&t.state.db).expect("the roster").is_empty());
+}
+
+#[tokio::test]
+async fn a_private_address_claims_a_fresh_server() {
+    let t = test_app();
+    empty_of_accounts(&t);
+
+    let (status, _) = register_from(&t.app, "192.168.1.20", "first@test.dev", "first").await;
+
+    assert_eq!(status, StatusCode::OK);
 }

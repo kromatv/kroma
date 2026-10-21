@@ -12,6 +12,7 @@ use axum::Json;
 
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
+use crate::api::visibility;
 use crate::db;
 use crate::i18n::{self, ReqLocale};
 use crate::model::Section;
@@ -55,10 +56,13 @@ fn reserve(in_flight: &mut HashSet<String>, id: &str) -> bool {
 /// nothing can generate, so a miss is terminal and empty.
 pub async fn ai_suggest(
     State(state): State<SharedState>,
-    AuthUser(_user): AuthUser,
+    AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
     Path(id): Path<String>,
 ) -> Response {
+    if !seed_visible(&state, &user, &id).await {
+        return section(locale, None, Vec::new());
+    }
     let lookup_id = id.clone();
     let result = query(&state.db, move |pool| {
         let Some(row) = db::get_suggestion(&pool, &lookup_id)? else {
@@ -77,7 +81,13 @@ pub async fn ai_suggest(
     .await;
 
     match result {
-        Ok(Cached::Ready(row, items)) => section(locale, pick_lang(&row.reasons, locale), items),
+        Ok(Cached::Ready(row, items)) => {
+            let items = items
+                .into_iter()
+                .filter_map(|entry| visibility::keep_section_item(&user, Some(entry)))
+                .collect();
+            section(locale, pick_lang(&row.reasons, locale), items)
+        }
         Ok(Cached::UnknownSeed) => section(locale, None, Vec::new()),
         Ok(Cached::Pending) if !crate::infra::llm::from_settings(&state.settings).available() => {
             section(locale, None, Vec::new())
@@ -88,6 +98,21 @@ pub async fn ai_suggest(
         }
         Err(resp) => resp,
     }
+}
+
+async fn seed_visible(state: &SharedState, user: &crate::model::User, id: &str) -> bool {
+    if user.sees_every_library() {
+        return true;
+    }
+    let seed = id.to_string();
+    let library = query(&state.db, move |pool| {
+        Ok(match db::item_library(&pool, &seed)? {
+            Some(library) => Some(library),
+            None => db::show_library(&pool, &seed)?,
+        })
+    })
+    .await;
+    matches!(library, Ok(Some(library)) if user.sees_library(&library))
 }
 
 enum Cached {

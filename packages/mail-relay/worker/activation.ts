@@ -1,7 +1,7 @@
 import { open, seal } from '@kromatv/relay-grant';
 import { z } from 'zod';
 import { budgetKey, type Counters } from './limits';
-import { Address, Origin } from './schemas';
+import { Address, isPrivateHost, Origin } from './schemas';
 
 /** An activation link lives as long as the server's own verification link. */
 export const PENDING_TTL_SECS = 7 * 24 * 60 * 60;
@@ -86,6 +86,16 @@ export class Marks {
   }
 
   async active(origin: string): Promise<boolean> {
+    // Every LAN's `kroma.local` (and every private address) is the same string
+    // on the shared relay, so one could never be proven and must never count as
+    // an active sender: otherwise anyone could register it with their own key
+    // and inherit a real server's activation. A relay sender needs a real
+    // public origin (Remote Access).
+    try {
+      if (isPrivateHost(new URL(origin).hostname)) return false;
+    } catch {
+      return false;
+    }
     return (await this.kv.get(`active:${await this.originKey(origin)}`)) !== null;
   }
 

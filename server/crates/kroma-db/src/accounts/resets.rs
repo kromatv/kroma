@@ -102,6 +102,21 @@ pub fn consume_reset(pool: &Pool, token: &str) -> Result<Option<String>> {
 }
 
 /// Record a wrong code. Returns the new attempt count.
+/// Atomically claim one guess against a reset, but only while it is below the
+/// cap. Returns the new count, or `None` when the token is already at the cap,
+/// so concurrent guesses cannot all pass a separate check before any is counted.
+pub fn reserve_reset_attempt(pool: &Pool, token: &str) -> Result<Option<i64>> {
+    let conn = pool.get()?;
+    conn.query_row(
+        "UPDATE credential_resets SET attempts = attempts + 1 \
+         WHERE token = ?1 AND attempts < ?2 RETURNING attempts",
+        params![token, MAX_RESET_ATTEMPTS],
+        |r| r.get(0),
+    )
+    .optional()
+    .map_err(Into::into)
+}
+
 pub fn bump_reset_attempts(pool: &Pool, token: &str) -> Result<i64> {
     let conn = pool.get()?;
     let attempts: i64 = conn.query_row(
@@ -161,6 +176,19 @@ mod tests {
             bump_reset_attempts(&p, "locked").unwrap();
         }
         assert!(consume_reset(&p, "locked").unwrap().is_none());
+    }
+
+    #[test]
+    fn reserving_stops_at_the_cap() {
+        let p = pool();
+        let owner = mk_user(&p, "o@b.c", "owner");
+        let user = mk_user(&p, "u@b.c", "user");
+        create_reset(&p, "tok", &user.id, "h", &owner.id, FUTURE).unwrap();
+
+        for n in 1..=MAX_RESET_ATTEMPTS {
+            assert_eq!(reserve_reset_attempt(&p, "tok").unwrap(), Some(n));
+        }
+        assert_eq!(reserve_reset_attempt(&p, "tok").unwrap(), None);
     }
 
     #[test]

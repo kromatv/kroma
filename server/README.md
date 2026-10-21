@@ -196,7 +196,9 @@ The proxy must also set the header the standard way, appending the peer it saw
 rather than replacing what the caller sent. nginx's
 `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for` does this, as do
 Caddy and Traefik by default. The server reads the rightmost entry, the only one
-the proxy itself vouched for.
+the proxy itself vouched for. `CF-Connecting-IP` is read only when no
+`X-Forwarded-For` arrived with it, since nginx and Caddy pass a caller's copy
+through untouched and Cloudflare always appends to the chain as well.
 
 ## Which browsers are answered
 

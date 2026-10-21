@@ -58,6 +58,14 @@ fn download(tvdb_id: u64, out: &Path) -> bool {
         .args([
             "-sf",
             "-L",
+            // A MITM on this plaintext archive could 30x-redirect the fetch at
+            // an internal host; keep redirects to web protocols, few, and short.
+            "--proto",
+            "=http,https",
+            "--proto-redir",
+            "=http,https",
+            "--max-redirs",
+            "2",
             "--max-time",
             "25",
             "--max-filesize",
@@ -71,7 +79,8 @@ fn download(tvdb_id: u64, out: &Path) -> bool {
     let ok = matches!(dl, Ok(s) if s.success())
         && std::fs::metadata(&tmp)
             .map(|m| m.len() >= MIN_BYTES)
-            .unwrap_or(false);
+            .unwrap_or(false)
+        && looks_like_audio(&tmp);
     if !ok {
         let _ = std::fs::remove_file(&tmp);
         return false;
@@ -85,6 +94,16 @@ fn download(tvdb_id: u64, out: &Path) -> bool {
     }
 }
 
+// The archive serves MP3s; a redirected body that is not one (an HTML error
+// page, or whatever an internal host returned to a redirected fetch) is not
+// stored and never reaches a client.
+fn looks_like_audio(path: &Path) -> bool {
+    let Ok(bytes) = std::fs::read(path) else {
+        return false;
+    };
+    bytes.starts_with(b"ID3") || bytes.starts_with(&[0xff, 0xfb]) || bytes.starts_with(&[0xff, 0xf3])
+}
+
 fn unique_tmp(out: &Path) -> PathBuf {
     let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
     let base = out
@@ -92,4 +111,21 @@ fn unique_tmp(out: &Path) -> PathBuf {
         .and_then(std::ffi::OsStr::to_str)
         .unwrap_or("theme.mp3");
     out.with_file_name(format!("{base}.{}.{seq}.tmp.mp3", std::process::id()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_mp3_shaped_bytes_pass_the_audio_check() {
+        let dir = kroma_testing::temp_dir("theme-magic");
+        let mp3 = dir.path().join("a.mp3");
+        std::fs::write(&mp3, b"ID3\x03\x00data").unwrap();
+        let html = dir.path().join("b.mp3");
+        std::fs::write(&html, b"<html>nope</html>").unwrap();
+
+        assert!(looks_like_audio(&mp3));
+        assert!(!looks_like_audio(&html));
+    }
 }

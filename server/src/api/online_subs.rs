@@ -12,6 +12,7 @@ use axum::Json;
 use serde::Serialize;
 
 use crate::api::error::json_error;
+use crate::api::extract::AuthUser;
 use crate::api::media_ticket::MediaViewer;
 use crate::api::util::query;
 use crate::api::visibility;
@@ -102,7 +103,14 @@ pub(super) fn transcriber_available(state: &SharedState) -> bool {
 }
 
 /// `GET /api/items/:id/subtitles/downloaded` → this item's generated subtitles.
-pub async fn list(State(state): State<SharedState>, Path(id): Path<String>) -> Response {
+pub async fn list(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+    Path(id): Path<String>,
+) -> Response {
+    if let Err(resp) = visibility::gate_item(&state, &user, &id).await {
+        return resp;
+    }
     let item = id.clone();
     match query(&state.db, move |pool| {
         let conn = pool.get()?;
@@ -124,12 +132,18 @@ pub async fn list(State(state): State<SharedState>, Path(id): Path<String>) -> R
 /// (DB row + cached WebVTT file).
 pub async fn delete_downloaded(
     State(state): State<SharedState>,
-    Path((_id, dl)): Path<(String, String)>,
+    AuthUser(user): AuthUser,
+    Path((id, dl)): Path<(String, String)>,
 ) -> Response {
+    if let Err(resp) = visibility::gate_item(&state, &user, &id).await {
+        return resp;
+    }
     let dl_id = dl.trim_end_matches(".vtt").to_string();
     let pool = state.db.clone();
     let path =
-        match tokio::task::spawn_blocking(move || db::delete_downloaded_sub(&pool, &dl_id)).await {
+        match tokio::task::spawn_blocking(move || db::delete_downloaded_sub(&pool, &id, &dl_id))
+            .await
+        {
             Ok(Ok(p)) => p,
             _ => {
                 return json_error(
@@ -159,7 +173,7 @@ pub async fn file(
     let dl_id = dl.trim_end_matches(".vtt").to_string();
     let sub = match query(&state.db, move |pool| {
         let conn = pool.get()?;
-        Ok(db::downloaded_sub(&conn, &dl_id)?)
+        Ok(db::downloaded_sub(&conn, &id, &dl_id)?)
     })
     .await
     {

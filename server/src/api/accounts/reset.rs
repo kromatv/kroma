@@ -117,15 +117,19 @@ pub async fn redeem_reset(
     if reset.used_at.is_some() || reset.expires_at <= now {
         return lerr(loc, StatusCode::BAD_REQUEST, "auth.resetInvalid");
     }
-    if reset.attempts >= db::MAX_RESET_ATTEMPTS {
-        return lerr(loc, StatusCode::BAD_REQUEST, "auth.resetLocked");
+    // Claim the attempt before the expensive verify, so a burst of concurrent
+    // guesses cannot all read the same sub-cap count and slip past together.
+    let reserve_token = body.token.trim().to_string();
+    match query(&state.db, move |pool| {
+        db::reserve_reset_attempt(&pool, &reserve_token)
+    })
+    .await
+    {
+        Ok(Some(_)) => {}
+        Ok(None) => return lerr(loc, StatusCode::BAD_REQUEST, "auth.resetLocked"),
+        Err(resp) => return resp,
     }
     if !auth::verify_password(&body.code, &reset.code_hash) {
-        let token = body.token.trim().to_string();
-        let _ = query(&state.db, move |pool| {
-            db::bump_reset_attempts(&pool, &token)
-        })
-        .await;
         return lerr(loc, StatusCode::BAD_REQUEST, "auth.resetInvalid");
     }
     let token = body.token.trim().to_string();

@@ -87,6 +87,8 @@ mod it_library_visibility;
 #[cfg(test)]
 mod it_mail_relay;
 #[cfg(test)]
+mod it_account_identifiers;
+#[cfg(test)]
 mod it_media;
 #[cfg(test)]
 mod it_module_frontend;
@@ -95,11 +97,15 @@ mod it_media_bearer;
 #[cfg(test)]
 mod it_media_ticket;
 #[cfg(test)]
+mod it_member_reach;
+#[cfg(test)]
 mod it_monitoring;
 #[cfg(test)]
 mod it_notification_images;
 #[cfg(test)]
 mod it_notifications;
+#[cfg(test)]
+mod it_online_subs;
 #[cfg(test)]
 mod it_passkeys;
 #[cfg(test)]
@@ -127,17 +133,20 @@ mod it_reset_faults;
 #[cfg(test)]
 mod it_stream_hls;
 #[cfg(test)]
+mod it_suggest;
+#[cfg(test)]
 mod it_updates;
 #[cfg(test)]
 mod it_verify_email;
 #[cfg(test)]
 mod test_support;
 
+use std::net::SocketAddr;
 use std::sync::Arc;
 
-use axum::extract::{Path, Request, State};
+use axum::extract::{ConnectInfo, Path, Request, State};
 use axum::http::StatusCode;
-use axum::middleware::{from_fn_with_state, Next};
+use axum::middleware::{from_fn, from_fn_with_state, Next};
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Router};
 use kroma_module_supervisor::Supervisor;
@@ -167,6 +176,20 @@ async fn require_session(State(state): State<SharedState>, req: Request, next: N
         next.run(req).await
     } else {
         json_error(StatusCode::UNAUTHORIZED, "authentication required")
+    }
+}
+
+// The host callback surface is for local sidecars only. A request from any
+// non-loopback peer is answered 404, so the surface is not advertised off-host.
+async fn host_loopback_only(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    req: Request,
+    next: Next,
+) -> Response {
+    if addr.ip().to_canonical().is_loopback() {
+        next.run(req).await
+    } else {
+        json_error(StatusCode::NOT_FOUND, "not found")
     }
 }
 
@@ -249,17 +272,23 @@ pub fn router(
 
     // The admin subtree self-gates per-handler (permission checks), so it lives
     // outside the blanket content layer.
+    // The sidecar callbacks always come from a module process on 127.0.0.1
+    // (KROMA_CORE_URL is loopback), so they are refused from any other peer:
+    // the shared host token is then the second line, not the only one.
+    let host = kroma_module_supervisor::host_router::<SharedState>(
+        supervisor.clone(),
+        kroma_module_host::SettingReachOf(crate::services::settings::reach_of_setting),
+    )
+    .merge(host_jobs::routes(supervisor.host_token().to_string()))
+    .merge(host_events::routes(
+        supervisor.host_token().to_string(),
+        subscriptions.clone(),
+    ))
+    .layer(from_fn(host_loopback_only));
+
     let api = public
         .merge(content)
-        .merge(kroma_module_supervisor::host_router::<SharedState>(
-            supervisor.clone(),
-            kroma_module_host::SettingReachOf(crate::services::settings::reach_of_setting),
-        ))
-        .merge(host_jobs::routes(supervisor.host_token().to_string()))
-        .merge(host_events::routes(
-            supervisor.host_token().to_string(),
-            subscriptions.clone(),
-        ))
+        .merge(host)
         .route("/module/{id}/{*rest}", axum::routing::any(module_proxy))
         .nest("/admin", admin::routes(state.clone()))
         .layer(Extension(supervisor));

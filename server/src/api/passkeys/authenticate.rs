@@ -6,7 +6,9 @@ use serde::Deserialize;
 use serde_json::json;
 use webauthn_rs::prelude::{DiscoverableKey, PublicKeyCredential, Uuid};
 
-use super::ceremony::{parse_passkeys, relying_party, stash, take, user_uuid, Ceremony};
+use super::ceremony::{
+    allowed_origins, parse_passkeys, relying_party, stash, take, user_uuid, Ceremony,
+};
 use crate::api::accounts::{device_hints, issue_tokens};
 use crate::api::error::lerr;
 use crate::api::util::query;
@@ -18,11 +20,11 @@ use crate::state::SharedState;
 /// identifier: the challenge allows any of this server's passkeys, and the
 /// browser lets the user pick which account to sign in as.
 pub async fn authenticate_start(
-    State(_state): State<SharedState>,
+    State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
     headers: HeaderMap,
 ) -> Response {
-    let webauthn = match relying_party(&headers, loc) {
+    let webauthn = match relying_party(&headers, loc, &allowed_origins(&state)) {
         Ok(w) => w,
         Err(resp) => return resp,
     };
@@ -57,7 +59,7 @@ pub async fn authenticate_finish(
     headers: HeaderMap,
     Json(body): Json<AuthFinishBody>,
 ) -> Response {
-    let webauthn = match relying_party(&headers, loc) {
+    let webauthn = match relying_party(&headers, loc, &allowed_origins(&state)) {
         Ok(w) => w,
         Err(resp) => return resp,
     };

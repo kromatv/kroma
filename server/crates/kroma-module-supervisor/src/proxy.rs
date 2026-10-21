@@ -9,7 +9,6 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use futures_util::TryStreamExt as _;
 
-const MAX_PROXY_BODY_BYTES: usize = 256 * 1024 * 1024;
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 // Bounds the gap between reads, not the length of the response: a whole-request
 // deadline would cap how long a module may stream an SSE feed that is supposed
@@ -51,14 +50,8 @@ fn is_hop_by_hop(name: &axum::http::HeaderName) -> bool {
 pub async fn proxy_to(port: u16, path_and_query: &str, req: Request) -> Response {
     let url = format!("http://127.0.0.1:{port}{path_and_query}");
     let (parts, body) = req.into_parts();
-    // Mounted outside the core session gate and buffered before the target
-    // module authenticates it, so an unbounded read is a pre-auth
-    // memory-exhaustion DoS.
-    let bytes = match axum::body::to_bytes(body, MAX_PROXY_BODY_BYTES).await {
-        Ok(b) => b,
-        Err(_) => return (StatusCode::PAYLOAD_TOO_LARGE, "body too large").into_response(),
-    };
-    let mut out = proxy_client().request(parts.method, &url).body(bytes);
+    let body = reqwest::Body::wrap_stream(body.into_data_stream());
+    let mut out = proxy_client().request(parts.method, &url).body(body);
     for (name, value) in &parts.headers {
         if !is_hop_by_hop(name) {
             out = out.header(name.as_str(), value.as_bytes());
@@ -85,4 +78,55 @@ pub async fn proxy_to(port: u16, path_and_query: &str, req: Request) -> Response
     builder
         .body(Body::from_stream(body))
         .unwrap_or_else(|_| (StatusCode::BAD_GATEWAY, "bad upstream response").into_response())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::extract::State;
+    use axum::routing::post;
+    use axum::Router;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+
+    async fn stub_counting_body() -> (u16, Arc<AtomicUsize>) {
+        let seen = Arc::new(AtomicUsize::new(0));
+        let app = Router::new()
+            .route(
+                "/echo",
+                post(|State(seen): State<Arc<AtomicUsize>>, body: Body| async move {
+                    let mut frames = body.into_data_stream();
+                    while let Some(Ok(chunk)) = futures_util::StreamExt::next(&mut frames).await {
+                        seen.fetch_add(chunk.len(), Ordering::SeqCst);
+                    }
+                    "ok"
+                }),
+            )
+            .with_state(seen.clone());
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        (port, seen)
+    }
+
+    #[tokio::test]
+    async fn a_body_far_larger_than_the_old_buffer_cap_is_streamed_through() {
+        let (port, seen) = stub_counting_body().await;
+        let chunks = 257 * 16;
+        let chunk = axum::body::Bytes::from(vec![b'x'; 64 * 1024]);
+        let stream = futures_util::stream::iter(
+            std::iter::repeat_n(chunk, chunks).map(Ok::<_, std::io::Error>),
+        );
+        let req = Request::builder()
+            .method("POST")
+            .body(Body::from_stream(stream))
+            .unwrap();
+
+        let resp = proxy_to(port, "/echo", req).await;
+
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert_eq!(seen.load(Ordering::SeqCst), chunks * 64 * 1024);
+    }
 }

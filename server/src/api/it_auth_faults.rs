@@ -56,10 +56,11 @@ async fn registration_refuses_when_the_accounts_are_uncountable() {
 #[tokio::test]
 async fn registration_refuses_when_the_duplicate_check_cannot_read_the_account() {
     let t = test_app();
+    invite(&t, "invite-unread");
     sql(&t, HIDE_PASSWORD_HASH);
 
     assert_eq!(
-        register(&t, "new@test.dev", None).await,
+        register(&t, "new@test.dev", Some("invite-unread")).await,
         StatusCode::INTERNAL_SERVER_ERROR
     );
 }
