@@ -936,6 +936,7 @@
         "hls.js": "^1.7.0",
         "qrcode-generator": "^2.0.4",
         "shaka-player": "^5.2.5",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@kromatv/client": "workspace:*",
