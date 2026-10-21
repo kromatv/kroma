@@ -4,17 +4,16 @@
 // `exports` point at JS and declarations.
 
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-function declarations(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((at) => {
-    const path = join(dir, at.name);
-    if (at.isDirectory()) return declarations(path);
-    return at.name.endsWith('.d.ts') ? [path] : [];
-  });
-}
+import {
+  bundledPackages,
+  declarations,
+  internalizeWorkspaceSpecifiers,
+  workspacePaths,
+  workspaceSpecifiersIn,
+} from './workspace-types.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pkgRoot = join(here, '..');
@@ -40,7 +39,36 @@ execFileSync(bun, ['x', 'vite', 'build', '--config', 'vite.lib.config.ts'], {
   stdio: 'inherit',
   env: { ...process.env, KROMA_UI_TARGET: 'native' },
 });
-run('x', 'tsc', '--project', 'tsconfig.dist.json');
+
+const source = JSON.parse(readFileSync(join(pkgRoot, 'package.json'), 'utf8'));
+const bundled = bundledPackages(join(pkgRoot, '..'), source.dependencies);
+const typesTmp = join(dist, '.types');
+const declarationConfig = join(pkgRoot, 'tsconfig.dist.workspace.json');
+writeFileSync(
+  declarationConfig,
+  JSON.stringify({
+    extends: './tsconfig.dist.json',
+    compilerOptions: {
+      rootDir: '..',
+      outDir: typesTmp,
+      paths: { '#ui/*': ['./src/*'], ...workspacePaths(bundled) },
+    },
+  }),
+);
+try {
+  run('x', 'tsc', '--project', declarationConfig);
+} finally {
+  rmSync(declarationConfig, { force: true });
+}
+cpSync(join(typesTmp, 'ui', 'src'), dist, { recursive: true });
+for (const { dir } of bundled) cpSync(join(typesTmp, dir), join(dist, dir), { recursive: true });
+rmSync(typesTmp, { recursive: true, force: true });
+rmSync(join(dist, 'workbench-config.d.ts'), { force: true });
+internalizeWorkspaceSpecifiers(dist, bundled);
+const unresolved = workspaceSpecifiersIn(dist);
+if (unresolved.length > 0) {
+  throw new Error(`declarations still name workspace packages: ${unresolved.join(', ')}`);
+}
 
 // The whole stylesheet as a file, because the `@import "@kromatv/ui/css"`
 // directive is expanded by a Vite plugin this package does not ship: a consumer
@@ -79,8 +107,6 @@ for (const file of declarations(dist)) {
   if (after !== before) writeFileSync(file, after);
 }
 
-const source = JSON.parse(readFileSync(join(pkgRoot, 'package.json'), 'utf8'));
-
 // A subpath ships as its built pair. `types` first: a consumer's `moduleResolution`
 // reads the condition order, and a `.d.ts` beside the `.js` is not enough on its own.
 // `react-native` before `default`, so Metro takes the native build and every
@@ -118,7 +144,9 @@ const manifest = {
   // The kit spells its own files `#ui/*`, and 166 of the emitted declarations
   // still say so. Node and TypeScript both read an `imports` map from the
   // package that declares it, so the specifier resolves inside the tarball.
-  imports: { '#ui/*': { types: './*.d.ts', default: './*.js' } },
+  imports: {
+    '#ui/*': { types: ['./*.d.ts', './*/index.d.ts'], default: './*.js' },
+  },
   dependencies: { zod: source.dependencies.zod },
   peerDependencies: {
     '@testing-library/react': '>=16',

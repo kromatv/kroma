@@ -57,6 +57,13 @@ is expanded by a Vite plugin that only exists in this repo. A consumer needs
 `globalThis`, which is the same two lines every browser target here already
 carries (`packages/bundler/src/rnw.ts`).
 
+The workspace packages the kit bundles (`client`, `core`, `i18n`, `spatial-nav`)
+ship their declarations beside their JS, and `stage` rewrites every
+`@kromatv/<name>` specifier in the emitted `.d.ts` files to a relative path,
+failing the stage if one is left. None of those names is on npm, so a bare one
+would resolve to `any` in a consumer. `kit:smoke` type checks a file of kit types
+that must not be `any`.
+
 ## What the staged package deliberately drops
 
 The brand intro's 4K master and its sting are 11 MB, and `<KromaIntro>` already
