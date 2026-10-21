@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { queryString } from '../../core/http';
-import { streamQuery } from './client';
+import { streamQuery } from './urls';
 
 const encoded = (declaration: Parameters<typeof streamQuery>[0]) =>
   queryString(streamQuery(declaration));

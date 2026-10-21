@@ -44,14 +44,16 @@ const PROVIDERS: Record<SharedModule, () => Promise<unknown>> = {
 
 /** Everything a runtime module imports from the host, keyed by specifier. */
 export async function provideShared(): Promise<Record<string, unknown>> {
+  const providers: [string, () => Promise<unknown>][] = [
+    ...Object.entries(PROVIDERS),
+    ...Object.entries(domainModules).map(
+      ([domain, load]) => [`@kromatv/client/${domain}`, load] as [string, () => Promise<unknown>],
+    ),
+  ];
   const loaded = await Promise.all(
-    Object.entries(PROVIDERS).map(async ([key, load]) => [key, await load()] as const),
+    providers.map(async ([key, load]) => [key, await load()] as const),
   );
-  const shared: Record<string, unknown> = Object.fromEntries(loaded);
-  for (const [domain, mod] of Object.entries(domainModules)) {
-    shared[`@kromatv/client/${domain}`] = mod;
-  }
-  return shared;
+  return Object.fromEntries(loaded);
 }
 
 async function discoverRemotes(client?: KromaClient): Promise<RemoteSpec[]> {

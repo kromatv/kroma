@@ -2,7 +2,7 @@ import type { RequestContext } from '../../core/http';
 import { artworkWidth } from './artwork-scale';
 import type { Metadata } from './credits';
 import type { ItemId, ShowId } from './ids';
-import type { MediaItem, Show } from './schemas';
+import type { Show } from './schemas';
 
 // A storyboard sheet and a generated subtitle are composed by the server and
 // handed over as relative paths, so they reach a player through here rather than
@@ -13,7 +13,7 @@ const withParam = (url: string, name: string, value: string) =>
   `${url}${url.includes('?') ? '&' : '?'}${name}=${value}`;
 
 /** Artwork URLs: resolving stored art against the server, at the size it is drawn. */
-export function artworkApi(ctx: RequestContext) {
+export function artworkUrls(ctx: RequestContext) {
   /** Resolve a metadata image URL against the server origin, at the size it will
    * actually be shown. Cached WebP art is a relative path (`/api/images/…`, sized
    * via `?w=`); TMDB fallbacks are absolute and handed back untouched. Pass the
@@ -55,19 +55,5 @@ export function artworkApi(ctx: RequestContext) {
     /** Plex-style theme song for a movie or show, or `null` when none resolved.
      * Only TV shows carry one (a cached `/api/themes/<tvdb>.mp3`). */
     themeFor: (x: { metadata?: Metadata | null }): string | null => resolve(x.metadata?.themeUrl),
-
-    /** Real poster bytes (cached TMDB art) for the OS "Now Playing" artwork;
-     * prefers a raster over the generated SVG placeholder, which NSImage cannot
-     * render. */
-    posterBlob: async (item: Pick<MediaItem, 'id' | 'metadata'>): Promise<Blob> => {
-      const raw = item.metadata?.posterUrl;
-      if (raw && /^https?:\/\//.test(raw)) {
-        const res = await ctx.external(raw);
-        if (!res.ok) throw new Error(`poster ${res.status}`);
-        return res.blob();
-      }
-      if (raw) return ctx.blob(raw.replace(/^\/api\b/, ''));
-      return ctx.blob('/items/:id/poster', { params: { id: item.id } });
-    },
   };
 }

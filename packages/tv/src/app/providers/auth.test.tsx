@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 
+import { createKromaClient } from '@kromatv/client';
 import { UserId } from '@kromatv/client/accounts';
 import { act, cleanup, render } from '@testing-library/react';
 import { useEffect } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from '#tv/app/providers/auth';
 import { ConnectionProvider } from '#tv/app/providers/connection';
 import { ContinueProvider } from '#tv/app/providers/continue';
@@ -154,6 +155,11 @@ function rememberSession() {
     JSON.stringify([{ url: SERVER, name: 'Salon', lastUsedAt: 1 }]),
   );
 }
+
+beforeAll(async () => {
+  const warm = createKromaClient({ baseUrl: SERVER });
+  await Promise.all((['accounts', 'media', 'playback'] as const).map(warm.preload));
+});
 
 beforeEach(() => {
   localStorage.clear();

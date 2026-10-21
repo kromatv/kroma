@@ -1,15 +1,16 @@
 import { queryOptions } from '@tanstack/react-query';
-import { domains } from '../api/discover';
+import { loadDomain } from '../api/discover';
 import type { Domains } from '../core/client';
 import { createRequestContext, type KromaClientOptions } from '../core/http';
+import { pathTree } from '../core/path-tree';
 import { assembleClient, type KromaClient, kromaClientParts } from '../kroma-client';
 
 type Read = (...args: never[]) => Promise<unknown>;
 
 /** The reads of one namespace, and its sub-namespaces, as query factories. A
  * URL builder answers a string rather than a promise and is left out here; the
- * walk below cannot tell one apart without calling it, so the runtime tree is a
- * superset of this type and the extra members are unreachable. */
+ * tree below names a path without knowing what is at its end, so the runtime tree
+ * is a superset of this type and the extra members are unreachable. */
 export type Queries<T> = {
   [K in keyof T as T[K] extends Read ? K : T[K] extends object ? K : never]: T[K] extends (
     ...args: infer A
@@ -34,28 +35,6 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 const keyOf = (baseUrl: string, path: readonly string[], args: readonly unknown[]) =>
   ['kroma', baseUrl, ...path, ...args] as const;
 
-function walk(
-  node: object,
-  path: readonly string[],
-  run: (path: readonly string[], args: readonly unknown[], signal: AbortSignal) => Promise<unknown>,
-  baseUrl: string,
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [name, member] of Object.entries(node)) {
-    const here = [...path, name];
-    if (typeof member === 'function') {
-      out[name] = (...args: unknown[]) =>
-        queryOptions({
-          queryKey: keyOf(baseUrl, here, args),
-          queryFn: ({ signal }: { signal: AbortSignal }) => run(here, args, signal),
-        });
-      continue;
-    }
-    if (isPlainObject(member)) out[name] = walk(member, here, run, baseUrl);
-  }
-  return out;
-}
-
 /**
  * A client that also carries every read as TanStack Query options.
  *
@@ -71,9 +50,9 @@ function walk(
 export function createQueryClient(options: KromaClientOptions): QueryClient {
   const { config, controls } = kromaClientParts(options);
   const client = assembleClient(config, controls);
-  const run = (path: readonly string[], args: readonly unknown[], signal: AbortSignal) => {
+  const run = async (path: readonly string[], args: readonly unknown[], signal: AbortSignal) => {
     const [domain = '', ...rest] = path;
-    const factory = domains[domain];
+    const factory = await loadDomain(domain);
     if (!factory) throw new Error(`no domain named ${domain}`);
     let node: unknown = factory(createRequestContext({ ...config, signal }));
     for (const step of rest) {
@@ -84,11 +63,14 @@ export function createQueryClient(options: KromaClientOptions): QueryClient {
     return (node as (...a: unknown[]) => Promise<unknown>)(...args);
   };
 
-  const query = walk(
-    Object.fromEntries(Object.keys(domains).map((name) => [name, client[name as keyof Domains]])),
+  const query = pathTree(
     [],
-    run,
-    config.baseUrl,
+    (path) =>
+      (...args) =>
+        queryOptions({
+          queryKey: keyOf(config.baseUrl, path, args),
+          queryFn: ({ signal }: { signal: AbortSignal }) => run(path, args, signal),
+        }),
   ) as Queries<Domains>;
 
   return Object.defineProperty(client, 'query', { value: query, enumerable: true }) as QueryClient;

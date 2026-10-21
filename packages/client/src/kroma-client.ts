@@ -1,5 +1,5 @@
-import { domains } from './api/discover';
-import { bindDomains, type Domains } from './core/client';
+import { bindEveryDomain } from './api/discover';
+import type { Domains } from './core/client';
 import {
   createRequestContext,
   type KromaClientOptions,
@@ -46,7 +46,12 @@ export interface ClientControls {
  * `client.admin.backup.export()`, `client.accounts.passkeys.list()`. Every
  * namespace is a table of endpoints over one shared transport, which owns the
  * bearer, the locale and the schema parse. */
-export type KromaClient = Domains & ClientControls;
+export type KromaClient = Domains &
+  ClientControls & {
+    /** Load a domain ahead of its first call, so a route's loader can overlap the
+     * import with its own chunk. Resolves at once where every domain is bound up front. */
+    preload(domain: keyof Domains): Promise<void>;
+  };
 
 /** The two halves a client is made of: the transport its domains fetch through,
  * and the members that are not a domain. Exported so `@kromatv/client/query` can
@@ -119,8 +124,11 @@ export function kromaClientParts(options: KromaClientOptions): {
  * spread: `hasAuth` and `sessionToken` are getters, and a spread would freeze
  * them at the value they had when the client was built. */
 export function assembleClient(config: TransportConfig, controls: ClientControls): KromaClient {
-  const client = bindDomains(createRequestContext(config), domains);
-  return Object.defineProperties(client, Object.getOwnPropertyDescriptors(controls)) as KromaClient;
+  const { domains, preload } = bindEveryDomain(createRequestContext(config));
+  return Object.defineProperties(domains, {
+    ...Object.getOwnPropertyDescriptors(controls),
+    preload: { value: preload, enumerable: true },
+  }) as KromaClient;
 }
 
 export function createKromaClient(options: KromaClientOptions): KromaClient {

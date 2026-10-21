@@ -1,5 +1,6 @@
 export * from './artwork-scale';
-export type { HlsMasterDeclaration } from './client';
+export type * from './client';
+export type { HlsMasterDeclaration } from './urls';
 export * from './credits';
 export * from './ids';
 export * from './schemas';

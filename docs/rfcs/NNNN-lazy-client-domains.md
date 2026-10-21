@@ -1,6 +1,6 @@
 # RFC NNNN: the web client loads an API domain when it first calls it
 
-- Status: **DRAFT**
+- Status: **ACCEPTED**
 - PR: #NNNN
 - Affects: `packages/client` (`api/discover.web.ts`, `core/client.ts`, every
   `api/<domain>/client.ts`), `clients/web`
@@ -72,8 +72,15 @@ module through `provideShared`, which already loads on demand. Nothing on the wi
 
 ## Unresolved
 
-- Whether `packages/tv`'s web shells (Tizen, webOS) take the lazy path too: their bundles
-  are local files, so an extra chunk costs a disk read, not a network round trip, and the
-  oldest engines may handle dynamic `import()` badly. Decided when it is built, with the
-  deep tier's compat guard as the judge.
-- The exact saving, to be measured on the built entry chunk once the first two domains move.
+- Whether `packages/tv`'s web shells (Tizen, webOS) take the lazy path too. They do: the
+  modern tier splits like the web client, and the legacy and deep tiers build with
+  `inlineDynamicImports`, so the stand-in's `import()` folds into the one classic file.
+  The compat guard passes the legacy bundle for Chromium 53 and the deep one for 47.
+- The exact saving, measured on `clients/web`'s entry chunk with `vite build --sourcemap`:
+  1351.2 KB raw and 421.6 KB gzipped before, 1336.5 KB and 418.9 KB after. The entry's
+  `packages/client/src/api/*` source drops from 187.3 KB to 111.8 KB, and every domain's
+  `client.ts` leaves it. Two things the estimate above missed. Each domain's `index.ts` did
+  `export * from './client'`, a static edge that kept every `client.ts` in the entry; it is
+  now `export type *`. And the schemas still in the entry (112 KB of source) stay because
+  pages import them directly, through `@kromatv/client/<domain>`, for ids and parses. Moving
+  those is per-page work this RFC does not cover.

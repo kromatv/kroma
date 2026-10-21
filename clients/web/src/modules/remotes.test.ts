@@ -5,7 +5,7 @@ const setSessionToken = remoteClient.setAuthToken;
 
 import { ModuleRegistry, SHARED_GLOBAL } from '@kromatv/module-sdk';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRuntimeRemotes, type RemoteLoaders } from './remotes';
+import { createRuntimeRemotes, provideShared, type RemoteLoaders } from './remotes';
 
 const WIN = { location: { origin: 'http://localhost:3000' } };
 
@@ -40,6 +40,16 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+describe('provideShared', () => {
+  it("hands a module the host's libraries and every client domain, by specifier", async () => {
+    const shared = await provideShared();
+
+    expect(shared).toHaveProperty('react');
+    expect(shared).toHaveProperty('@kromatv/ui');
+    expect(shared['@kromatv/client/media']).toHaveProperty('ItemId');
+  });
 });
 
 describe('isLoadedRemote / forgetRemote', () => {

@@ -1,4 +1,4 @@
-import { domains } from './api/discover';
+import { domainNames } from './api/discover';
 import type { Domains } from './core/client';
 import { createSessionScope } from './core/session';
 import { type ClientControls, createKromaClient, type KromaClient } from './kroma-client';
@@ -108,7 +108,7 @@ function stubbed(name: string, provided: object): object {
  * no cast at the call site. */
 export function fakeClient(parts: PartialClient = {}): KromaClient {
   const namespaces = Object.fromEntries(
-    Object.keys(domains).map((name) => [
+    domainNames.map((name) => [
       name,
       stubbed(name, (parts as Record<string, object | undefined>)[name] ?? {}),
     ]),
@@ -125,5 +125,7 @@ export function fakeClient(parts: PartialClient = {}): KromaClient {
     sessionToken: undefined,
     authHeaders: () => ({}),
   };
-  return Object.assign(namespaces as unknown as Domains, controls);
+  return Object.assign(namespaces as unknown as Domains, controls, {
+    preload: () => Promise.resolve(),
+  });
 }
