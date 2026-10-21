@@ -17,6 +17,7 @@ const COLUMNS: &[&str] = &[
     "last_search_at",
     "search_attempts",
     "next_search_at",
+    "vanished_at",
     "updated_at",
 ];
 
@@ -35,6 +36,7 @@ const TABLE: &str = "CREATE TABLE wanted_titled (
     last_search_at INTEGER,
     search_attempts INTEGER NOT NULL DEFAULT 0,
     next_search_at INTEGER,
+    vanished_at    INTEGER,
     updated_at     INTEGER NOT NULL)";
 
 const INDEXES: &str = "
@@ -202,6 +204,23 @@ mod tests {
 
         assert!(first.is_ok());
         assert!(second.is_err());
+    }
+
+    #[test]
+    fn the_first_boot_after_the_rebuild_already_knows_when_a_unit_vanished() {
+        let (_dir, path) = old_database("titled-wanted-vanished");
+
+        let pool = init(&path).unwrap();
+
+        let conn = pool.get().unwrap();
+        let columns: Vec<String> = conn
+            .prepare("SELECT name FROM pragma_table_info('wanted')")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert!(columns.iter().any(|c| c == "vanished_at"), "{columns:?}");
     }
 
     #[test]
