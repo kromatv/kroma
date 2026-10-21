@@ -18,6 +18,8 @@
 //! holding the SOCKS port, so [`Vpn::apply`] reaps one by pidfile on every pass,
 //! including the pass that finds no config at all.
 
+#![allow(clippy::result_large_err)]
+
 pub mod bandwidth;
 pub mod port;
 mod provision;

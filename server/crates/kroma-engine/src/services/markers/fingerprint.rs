@@ -99,8 +99,10 @@ fn decode_args(path: &Path, secs: u32, from_end: bool, sample_rate: u32) -> Vec<
 // past the end of the buffer.
 fn samples_from_pcm(bytes: &[u8]) -> Vec<i16> {
     bytes
-        .chunks_exact(2)
-        .map(|b| i16::from_le_bytes([b[0], b[1]]))
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|b| i16::from_le_bytes(*b))
         .collect()
 }
 

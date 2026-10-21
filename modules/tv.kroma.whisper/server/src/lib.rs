@@ -9,7 +9,9 @@ mod serve;
 pub use serve::whisper_routes;
 
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
+#[cfg(feature = "local")]
+use std::sync::atomic::Ordering;
 
 /// Transcribe audio track `track` of `input` to WebVTT. `model_spec` is a local
 /// dir or a HF repo id; `lang` forces the spoken language (ISO 639-1) instead of

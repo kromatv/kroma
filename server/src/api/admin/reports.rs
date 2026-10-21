@@ -65,9 +65,9 @@ fn counts_of(list: &[Report]) -> ReportCounts {
 // Unparseable enum filters match nothing: a client typo yields an empty
 // result, not the unfiltered list.
 fn filter_reports(all: Vec<Report>, params: &ListParams) -> Vec<Report> {
-    let status = params.status.as_deref().map(|s| ReportStatus::parse(s));
-    let category = params.category.as_deref().map(|s| ReportCategory::parse(s));
-    let kind = params.kind.as_deref().map(|s| ReportSubjectKind::parse(s));
+    let status = params.status.as_deref().map(ReportStatus::parse);
+    let category = params.category.as_deref().map(ReportCategory::parse);
+    let kind = params.kind.as_deref().map(ReportSubjectKind::parse);
     let needle = params
         .q
         .as_deref()
@@ -217,7 +217,7 @@ pub async fn remove(
     let loc = super::user_locale(&user);
     let id_for_query = id.clone();
     let deleted = query(&state.db, move |pool| {
-        db::delete_report(&pool, &id_for_query).map_err(Into::into)
+        db::delete_report(&pool, &id_for_query)
     })
     .await?;
     if !deleted {

@@ -55,7 +55,7 @@ pub async fn featured(
     let user_id = user.id.clone();
     match query(&state.db, move |pool| {
         Ok(sections::featured::pick(
-            &gen_state, &pool, &locale, &user_id,
+            &gen_state, &pool, locale, &user_id,
         ))
     })
     .await
