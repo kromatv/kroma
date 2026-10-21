@@ -27,8 +27,8 @@ const LABELS = ['Back', 'Home', 'Max', 'Content'];
 // that wear none over artwork answer with their focus scale.
 const lit = (): string[] => LABELS.filter((label) => wearsRing(screen.queryByLabelText(label)));
 
-function press(key: string) {
-  act(() => {
+async function press(key: string) {
+  await act(async () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
   });
 }
@@ -43,7 +43,7 @@ function Capture() {
 }
 
 describe('the browse top bar', () => {
-  it('reaches Back before the pill, however late the button arrives', () => {
+  it('reaches Back before the pill, however late the button arrives', async () => {
     // The bar as the outlet mounts it: once, above whichever screen is current.
     render(
       onScreen(
@@ -58,13 +58,13 @@ describe('the browse top bar', () => {
 
     // Home first, then a title: the bar does not remount, so this is where the
     // Back button arrives.
-    act(() => nav.go('movie', { item: { id: 'm1' } as never }));
+    await act(async () => nav.go('movie', { item: { id: 'm1' } as never }));
 
-    press('ArrowUp');
+    await press('ArrowUp');
     expect(lit()).toEqual(['Back']);
-    press('ArrowRight');
+    await press('ArrowRight');
     expect(lit()).toEqual(['Home']);
-    press('ArrowLeft');
+    await press('ArrowLeft');
     expect(lit()).toEqual(['Back']);
   });
 });
