@@ -184,7 +184,10 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
       if (!code.includes('import') && !code.includes('export')) return null;
       await init();
       const [imports, exports] = parse(code, file);
-      if (posix(file) === entry && !exports.some((e) => e.type !== 'reexport-all' && e.name === 'default')) {
+      if (
+        posix(file) === entry &&
+        !exports.some((e) => e.type !== 'reexport-all' && e.name === 'default')
+      ) {
         this.error(`${file}: the module entry must \`export default defineModule({ ... })\``);
       }
       const s = new MagicString(code);
@@ -195,7 +198,11 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
         if (!key) continue;
         const tmp = `__ks${count++}`;
         if (imp.type === 'dynamic') {
-          s.overwrite(imp.importStart, imp.importEnd, `Promise.resolve(${HELPER_FN}(${JSON.stringify(key)}))`);
+          s.overwrite(
+            imp.importStart,
+            imp.importEnd,
+            `Promise.resolve(${HELPER_FN}(${JSON.stringify(key)}))`,
+          );
           continue;
         }
         const statement = code.slice(imp.importStart, imp.importEnd);
