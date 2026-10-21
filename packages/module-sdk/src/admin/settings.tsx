@@ -3,53 +3,31 @@
 // Changes persist immediately (optimistic) via PUT /api/admin/settings. Shared
 // by the built-in settings pages AND the VPN / Acquisition module pages.
 
-import { apiErrorText, type KromaClient } from '@kromatv/client';
-import type { SettingGroup, SettingRow } from '@kromatv/client/admin';
+import type { SettingGroup } from '@kromatv/client/admin';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
   Box,
-  Button,
   CardSkeleton,
   Divider,
-  Field,
-  Focusable,
   PageHeader,
-  Select,
   Surface,
-  Switch,
-  styles,
   Text,
   useStableCallback,
-  useStyles,
 } from '@kromatv/ui/kit';
-import { memo, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAdminHost } from './context';
 import { Denied } from './denied';
 import { useCap } from './hooks';
 import { ModuleFailed, ModuleLoading } from './page-states';
+import { Row } from './row';
+import { applySetting } from './apply-setting';
 
 interface SettingsViewProps {
   view: string;
   titleKey: MessageKey;
   subtitleKey: MessageKey;
   embedded?: boolean;
-}
-
-// A `secret`/`password` row records only WHETHER it now holds a value, not the
-// value itself: the server never sends one back, and keeping it in state would
-// put a signing key in the React tree for the rest of the session.
-
-const sDefinition = styles({ minW: { minWidth: 0 }, desc: { mt: 3 }, saved: { mt: 4 } });
-function applySetting(groups: SettingGroup[], key: string, value: unknown): SettingGroup[] {
-  const applied = (r: SettingRow): SettingRow =>
-    r.kind === 'secret' || r.kind === 'password'
-      ? { ...r, value: '', configured: Boolean(value) }
-      : { ...r, value };
-  return groups.map((g) => ({
-    ...g,
-    rows: g.rows.map((r) => (r.key === key ? applied(r) : r)),
-  }));
 }
 
 export function SettingsView(props: Readonly<SettingsViewProps>) {
@@ -145,263 +123,5 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
         ))}
       </Box>
     </Box>
-  );
-}
-
-// Memoised: `applySetting` rebuilds every group and every row array on each
-// edit, so without this boundary one keystroke re-rendered every row on the
-// page rather than the one that changed.
-const Row = memo(function Row({
-  row,
-  onChange,
-}: Readonly<{ row: SettingRow; onChange: (key: string, v: unknown) => void }>) {
-  const s = useStyles(sDefinition);
-
-  const t = useT();
-  const change = (v: unknown) => onChange(row.key, v);
-  return (
-    <Box row align="center" justify="space-between" gap={20} px={22} py={16}>
-      <Box shrink={1} style={s.minW}>
-        <Text variant="label">{row.label}</Text>
-        {row.desc ? (
-          <Text variant="meta" color="textDim" style={s.desc}>
-            {row.desc}
-          </Text>
-        ) : null}
-        {!row.applied && row.kind !== 'value' ? (
-          <Text variant="overline" color="text/30" style={s.saved}>
-            {t('admin.prefSaved')}
-          </Text>
-        ) : null}
-      </Box>
-      <Control row={row} onChange={change} />
-    </Box>
-  );
-});
-
-// An object would otherwise stringify to "[object Object]".
-function asText(v: unknown): string {
-  if (v == null) return '';
-  if (typeof v === 'string') return v;
-  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-  return JSON.stringify(v);
-}
-
-function Control({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: unknown) => void }>) {
-  if (row.kind === 'toggle') {
-    return <Switch checked={Boolean(row.value)} onCheckedChange={onChange} label={row.label} />;
-  }
-  if (row.kind === 'select') {
-    return (
-      <SettingSelect
-        label={row.label}
-        value={asText(row.value)}
-        options={row.options ?? []}
-        onChange={onChange}
-      />
-    );
-  }
-  if (row.kind === 'text') {
-    return <EditableText label={row.label} value={asText(row.value)} onCommit={onChange} />;
-  }
-  if (row.kind === 'secret' || row.kind === 'password') {
-    return (
-      <SecretInput
-        configured={Boolean(row.configured)}
-        masked={row.kind === 'password'}
-        onCommit={onChange}
-      />
-    );
-  }
-  if (row.kind === 'action') {
-    return <ActionControl actionKey={row.key} />;
-  }
-  // value (read-only)
-  return (
-    <Box maxW={380}>
-      <Text variant="meta" color="text/60" textAlign="right">
-        {asText(row.value)}
-      </Text>
-    </Box>
-  );
-}
-
-/** Keeps the current value selectable even if it isn't in the list, so a
- * stored setting the schema no longer names still shows. */
-function SettingSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: Readonly<{
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (v: string) => void;
-}>) {
-  const all = value && !options.includes(value) ? [value, ...options] : options;
-  return (
-    <Select.Root label={label} value={value} onValueChange={onChange}>
-      <Select.Trigger />
-      {all.map((o) => (
-        <Select.Item key={o} value={o}>
-          {o}
-        </Select.Item>
-      ))}
-    </Select.Root>
-  );
-}
-
-// A write-only credential: starts empty every time, since the server never
-// sends a stored secret back, and blur commits only a non-empty value so
-// leaving the field alone can never wipe a working key by accident. Removing
-// one is the Clear button's job. `masked` picks the shape the credential
-// wants: one hidden line for a password, a wrapping box for a PEM key or a
-// service-account JSON.
-function SecretInput({
-  configured,
-  masked,
-  onCommit,
-}: Readonly<{ configured: boolean; masked: boolean; onCommit: (v: string) => void }>) {
-  const t = useT();
-  const [v, setV] = useState('');
-  const commit = () => {
-    if (!v.trim()) return;
-    onCommit(v);
-    setV('');
-  };
-  const placeholder = configured ? t('admin.secretReplace') : undefined;
-  return (
-    <Box align="flex-end" gap={6}>
-      <Field.Root
-        label={t(configured ? 'admin.secretReplace' : 'admin.secretUnset')}
-        hideLabel
-        value={v}
-        onValueChange={setV}
-      >
-        {masked ? (
-          <Field.Input
-            type="password"
-            autoComplete="off"
-            placeholder={placeholder}
-            minW={280}
-            onBlur={commit}
-          />
-        ) : (
-          <Field.Textarea rows={3} placeholder={placeholder} minW={280} onBlur={commit} />
-        )}
-      </Field.Root>
-      <Box row align="center" gap={10}>
-        <Text variant="overline" color={configured ? 'success' : 'text/30'}>
-          {configured ? t('admin.secretSet') : t('admin.secretUnset')}
-        </Text>
-        {configured ? (
-          // A Focusable, not a pressable Text: react-native-web wires Text
-          // onPress as click only, so Enter/Space on the tabbed control would
-          // do nothing.
-          <Focusable
-            label={t('admin.secretClear')}
-            onPress={() => {
-              setV('');
-              onCommit('');
-            }}
-          >
-            <Text variant="overline" color="text/40">
-              {t('admin.secretClear')}
-            </Text>
-          </Focusable>
-        ) : null}
-      </Box>
-    </Box>
-  );
-}
-
-// An `action` row's server call and strings, keyed by the row's `key`. Core
-// actions live here; a module page renders its own buttons rather than
-// registering here.
-type T = ReturnType<typeof useT>;
-interface ActionSpec {
-  label: MessageKey;
-  running: MessageKey;
-  failed: MessageKey;
-  run: (client: KromaClient) => Promise<{ sentTo: string; asked?: boolean }>;
-  ok: (t: T, r: { sentTo: string; asked?: boolean }) => string;
-}
-const ACTIONS: Record<string, ActionSpec> = {
-  smtpTest: {
-    label: 'admin.smtpTestRun',
-    running: 'admin.smtpTestSending',
-    failed: 'admin.smtpTestFailed',
-    run: (client) => client.admin.testSmtp(),
-    ok: (t, r) => t('admin.smtpTestOk', { email: r.sentTo }),
-  },
-  relayTest: {
-    label: 'admin.relayTestRun',
-    running: 'admin.relayTestSending',
-    failed: 'admin.relayTestFailed',
-    run: (client) => client.admin.testRelay(),
-    ok: (t, r) =>
-      r.asked
-        ? t('admin.relayTestAsked', { email: r.sentTo })
-        : t('admin.relayTestOk', { email: r.sentTo }),
-  },
-};
-
-function ActionControl({ actionKey }: Readonly<{ actionKey: string }>) {
-  const t = useT();
-  const { client } = useAdminHost();
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
-  const action = ACTIONS[actionKey];
-  if (!action) return null;
-  return (
-    <Box align="flex-end" gap={6} maxW={380}>
-      <Button
-        variant="glass"
-        size="sm"
-        icon="mail"
-        label={busy ? t(action.running) : t(action.label)}
-        loading={busy}
-        onPress={() => {
-          setBusy(true);
-          setResult(null);
-          action
-            .run(client)
-            .then((r) => setResult({ ok: true, text: action.ok(t, r) }))
-            .catch((e: unknown) =>
-              setResult({ ok: false, text: apiErrorText(e, t(action.failed)) }),
-            )
-            .finally(() => setBusy(false));
-        }}
-      />
-      {result ? (
-        <Text variant="overline" color={result.ok ? 'success' : 'danger'} textAlign="right">
-          {result.text}
-        </Text>
-      ) : null}
-    </Box>
-  );
-}
-
-function EditableText({
-  label,
-  value,
-  onCommit,
-}: Readonly<{ label: string; value: string; onCommit: (v: string) => void }>) {
-  const [v, setV] = useState(value);
-  const [seen, setSeen] = useState(value);
-  if (seen !== value) {
-    setSeen(value);
-    setV(value);
-  }
-  return (
-    <Field.Root label={label} hideLabel value={v} onValueChange={setV}>
-      <Field.Input
-        minW={200}
-        onBlur={() => {
-          if (v !== value) onCommit(v);
-        }}
-      />
-    </Field.Root>
   );
 }
