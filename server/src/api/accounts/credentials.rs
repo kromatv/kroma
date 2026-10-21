@@ -34,10 +34,13 @@ pub struct RegisterBody {
 /// `POST /api/auth/register` → `{ token, user }`. The first account ever created is
 /// the owner, granted in the insert itself so that two registrations in flight
 /// against an empty server cannot both claim it; after that a valid `inviteToken`
-/// is required and grants its permissions.
+/// is required and grants its permissions. The owner can only be claimed from a
+/// loopback or private address, so a server exposed before first run is not
+/// handed to whoever reaches it first.
 pub async fn register(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     Json(body): Json<RegisterBody>,
 ) -> Response {
@@ -83,6 +86,10 @@ pub async fn register(
     }
 
     if count == 0 {
+        let ip = client_ip(&headers, &addr, &state.config.trusted_proxies);
+        if !crate::services::playback::is_lan(&ip, &[]) {
+            return lerr(loc, StatusCode::FORBIDDEN, "auth.firstRunLocalOnly");
+        }
         let hash = auth::hash_password(&body.password);
         let (owner_email, owner_username) = (email.clone(), username.clone());
         match query(&state.db, move |pool| {
