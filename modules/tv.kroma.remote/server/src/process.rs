@@ -23,6 +23,19 @@ pub(crate) fn tunnel_command(bin: &str, token: &str) -> Command {
     cmd
 }
 
+pub(crate) async fn spawn_tunnel(bin: &str, token: &str) -> std::io::Result<tokio::process::Child> {
+    let mut busy = 0;
+    loop {
+        match tunnel_command(bin, token).spawn() {
+            Err(e) if e.kind() == std::io::ErrorKind::ExecutableFileBusy && busy < 10 => {
+                busy += 1;
+                tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            }
+            spawned => return spawned,
+        }
+    }
+}
+
 pub(crate) async fn drain<R: tokio::io::AsyncRead + Unpin>(me: Arc<RemoteAccess>, stream: R) {
     let mut lines = BufReader::new(stream).lines();
     while let Ok(Some(l)) = lines.next_line().await {
@@ -46,7 +59,7 @@ pub(crate) async fn binary_version(bin: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{binary_version, drain, tunnel_command, tunnel_needle};
+    use super::{binary_version, drain, spawn_tunnel, tunnel_command, tunnel_needle};
 
     const BIN: &str = "/opt/kroma/bin/cloudflared";
     const TOKEN: &str = "eyJhIjoiZmFrZS10dW5uZWwtdG9rZW4ifQ";
@@ -110,6 +123,26 @@ mod tests {
         let version = binary_version("/nowhere/cloudflared").await;
 
         assert_eq!(version, None);
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn spawns_a_tunnel_binary_that_was_still_open_for_writing_a_moment_ago() {
+        let host = crate::test_support::host();
+        let bin = crate::test_support::install_script(
+            kroma_module_sdk::host::HostCtx::data_dir(&host),
+            crate::test_support::RUNNING,
+        );
+        let writer = std::fs::OpenOptions::new().append(true).open(&bin).unwrap();
+        let release = std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            drop(writer);
+        });
+
+        let mut child = spawn_tunnel(&bin.to_string_lossy(), TOKEN).await.unwrap();
+
+        release.join().unwrap();
+        child.kill().await.unwrap();
     }
 
     #[cfg(unix)]

@@ -10,7 +10,7 @@ use kroma_module_sdk::host::HostCtx;
 use crate::access::RemoteAccess;
 #[cfg(unix)]
 use crate::process::tunnel_needle;
-use crate::process::{drain, tunnel_command};
+use crate::process::{drain, spawn_tunnel};
 
 const RECONCILE_SECS: u64 = 3;
 
@@ -125,8 +125,8 @@ impl RemoteAccess {
     // start/running state (the caller does).
     pub(crate) async fn spawn_child(self: &Arc<Self>, token: String) -> Result<Child, String> {
         let bin = self.ensure_binary().await?;
-        let mut child = tunnel_command(&bin, &token)
-            .spawn()
+        let mut child = spawn_tunnel(&bin, &token)
+            .await
             .map_err(|e| format!("failed to launch cloudflared ({bin}): {e}"))?;
         // Drain stdout + stderr into the log ring so the panel shows connection
         // progress ("Registered tunnel connection …") and any error.
