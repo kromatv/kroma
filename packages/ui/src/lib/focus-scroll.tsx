@@ -4,12 +4,10 @@
 import { NavigatorNode } from '@kromatv/spatial-nav/react';
 import {
   type Context,
-  createContext,
   type ReactNode,
   type RefObject,
   useCallback,
   useContext,
-  useEffect,
   useRef,
 } from 'react';
 import {
@@ -18,7 +16,6 @@ import {
   type NativeSyntheticEvent,
   ScrollView,
   type StyleProp,
-  StyleSheet,
   type View,
   type ViewStyle,
 } from 'react-native';
@@ -29,105 +26,15 @@ import { usePointerDriving } from '#ui/lib/input-source';
 import { WEB } from '#ui/lib/platform';
 import { useReducedMotion } from '#ui/lib/reduced-motion';
 import { ScrolledReport } from '#ui/lib/scrolled-report';
-
-type Anchor = RefObject<View | null>;
-
-const PageScrollContext = createContext<((anchor: Anchor) => void) | null>(null);
-
-const RowContext = createContext<Anchor | null>(null);
-
-const RailScrollContext = createContext<((anchor: Anchor) => void) | null>(null);
-
-// The tvos react-native fork's ViewStyle and mainline's are not assignable to
-// each other; flatten once, here.
-const flat = (style: StyleProp<ViewStyle>): ViewStyle | undefined =>
-  StyleSheet.flatten(style) as ViewStyle | undefined;
-
-const pad = (value: unknown): number => (typeof value === 'number' ? value : 0);
-
-/**
- * A scroll view clips at its own edges, and the ring of a focused control stands
- * outside the control - so a control flush with an edge loses that side of its
- * ring (the leftmost poster of a results grid, every time). The scroller reaches
- * RING_ROOM further out and its content is padded back in by the same amount:
- * the content lands exactly where it did, with room around it for a ring.
- *
- * A row reaches out on all four sides: its first tile IS flush with the start
- * edge, and nothing of the app's sits beside a row for the extra reach to show
- * through. A page only reaches out sideways - above and below it is the screen's
- * own chrome, and a hole in the clip there would show the scrolled-off rows
- * through it (see organisms/virtual/clip). A page's first row gets its room from
- * the top padding of its content instead.
- */
-function ringRoom(
-  style: ViewStyle | undefined,
-  content: ViewStyle | undefined,
-  horizontal: boolean,
-): { box: ViewStyle; content: ViewStyle } {
-  const c = content ?? {};
-  if (horizontal) {
-    return {
-      box: {
-        ...style,
-        marginTop: pad(style?.marginTop) - RING_ROOM,
-        marginBottom: pad(style?.marginBottom) - RING_ROOM,
-        marginLeft: pad(style?.marginLeft) - RING_ROOM,
-        marginRight: pad(style?.marginRight) - RING_ROOM,
-      },
-      content: {
-        ...c,
-        paddingTop: pad(c.paddingTop ?? c.paddingVertical ?? c.padding) + RING_ROOM,
-        paddingBottom: pad(c.paddingBottom ?? c.paddingVertical ?? c.padding) + RING_ROOM,
-        paddingLeft: pad(c.paddingLeft ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
-        paddingRight: pad(c.paddingRight ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
-      },
-    };
-  }
-  return {
-    box: {
-      ...style,
-      marginLeft: pad(style?.marginLeft) - RING_ROOM,
-      marginRight: pad(style?.marginRight) - RING_ROOM,
-    },
-    content: {
-      ...c,
-      paddingLeft: pad(c.paddingLeft ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
-      paddingRight: pad(c.paddingRight ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
-    },
-  };
-}
-
-interface PageMetrics {
-  top: number;
-  offsetFromStart: number;
-  viewport: number;
-  content: number;
-}
-
-function pageOffset({ top, offsetFromStart, viewport, content }: PageMetrics): number {
-  const last = Math.max(0, content - viewport);
-  return Math.min(Math.max(top - offsetFromStart, 0), last);
-}
-
-interface NearestMetrics {
-  top: number;
-  size: number;
-  current: number;
-  margin: number;
-  viewport: number;
-  content: number;
-}
-
-/** The offset that shows a row whole with `margin` to spare, moving the page
- *  only when the row is not already there. */
-function nearestOffset({ top, size, current, margin, viewport, content }: NearestMetrics): number {
-  const last = Math.max(0, content - viewport);
-  if (top - margin < current) return Math.min(Math.max(top - margin, 0), last);
-  if (top + size + margin > current + viewport) {
-    return Math.min(Math.max(top + size + margin - viewport, 0), last);
-  }
-  return current;
-}
+import { flat } from '#ui/lib/flat-style';
+import {
+  type Anchor,
+  PageScrollContext,
+  RailScrollContext,
+  RowContext,
+} from '#ui/lib/reveal-contexts';
+import { nearestOffset, pageOffset } from '#ui/lib/scroll-offsets';
+import { ringRoom } from '#ui/lib/scroll-ring-room';
 
 type Reveal = 'start' | 'nearest';
 
@@ -323,52 +230,5 @@ function FocusLine({
   );
 }
 
-/**
- * What a control uses to ask to be shown when it takes the focus: the page
- * reveals its row (or the control when it is in none), the rail the control.
- */
-function useRevealOnFocus(self: Anchor): () => void {
-  return useRevealOnFocusBy(self, usePointerDriving());
-}
-
-/** {@link useRevealOnFocus} for a caller that already holds the input source's `pointerDriving`. */
-function useRevealOnFocusBy(self: Anchor, pointerDriving: () => boolean): () => void {
-  const page = useContext(PageScrollContext);
-  const rail = useContext(RailScrollContext);
-  const row = useContext(RowContext);
-  return useCallback(() => {
-    // A focus the pointer produced reveals nothing: scrolling under a cursor
-    // that has not moved cascades into the page walking off on its own.
-    if (pointerDriving()) return;
-    rail?.(self);
-    page?.(row ?? self);
-  }, [page, rail, row, self, pointerDriving]);
-}
-
-/**
- * The anchor of a row whose focus is a prop rather than the navigator's (a
- * player panel's rows): the page reveals it the moment `focused` turns true.
- */
-function useRevealWhenFocused(focused: boolean): (view: View | null) => void {
-  const self = useRef<View>(null);
-  const reveal = useRevealOnFocus(self);
-  useEffect(() => {
-    if (focused) reveal();
-  }, [focused, reveal]);
-  return useCallback((view: View | null) => {
-    self.current = view;
-  }, []);
-}
-
-export type { Anchor, FocusScrollProps, NearestMetrics, PageMetrics, Reveal };
-export {
-  FocusLine,
-  FocusRail,
-  FocusScroll,
-  FocusSlot,
-  nearestOffset,
-  pageOffset,
-  useRevealOnFocus,
-  useRevealOnFocusBy,
-  useRevealWhenFocused,
-};
+export type { FocusScrollProps, Reveal };
+export { FocusLine, FocusRail, FocusScroll, FocusSlot };

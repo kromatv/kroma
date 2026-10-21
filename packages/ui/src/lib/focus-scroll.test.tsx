@@ -12,7 +12,8 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { wearsRing } from '#ui/testing';
 
 import { FocusRegion, FocusScope } from './focus-scope';
-import { FocusSlot, nearestOffset, pageOffset } from './focus-scroll';
+import { FocusSlot } from './focus-scroll';
+import { nearestOffset, pageOffset } from './scroll-offsets';
 
 const page = { viewport: 1080, content: 6480 };
 
