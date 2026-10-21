@@ -53,7 +53,7 @@ export { SurfaceRadiusProvider, useSurfaceRadius } from './parts/surface-radius'
 // The width the sheet draws a card at, so a host asks for artwork that size.
 export { UP_NEXT_ART_W } from './parts/up-next-card';
 export type { UpNextData, UpNextItem } from './parts/up-next-sheet';
-export type { PlayerRootProps } from './player';
+export type { PlayerRootProps } from './player-root';
 export { Player } from './player';
 export type { PlayerActionsProps, PlayerMediaProps, PlayerPanelProps } from './player-parts';
 export type {
