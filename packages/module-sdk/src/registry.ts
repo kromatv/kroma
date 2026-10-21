@@ -49,6 +49,8 @@ export class ModuleRegistry {
   private readonly modules = new Map<string, KromaModule>();
   private readonly setupDone = new Set<string>();
   private readonly disposers = new Map<string, () => void>();
+  private readonly listeners = new Set<() => void>();
+  private readonly slotCache = new Map<SlotName, ModuleSlotEntry[]>();
 
   /** The catalog sink is where a registering module's messages are published. The
    *  default drops them, so a registry is inert until a host wires one in and
@@ -61,6 +63,7 @@ export class ModuleRegistry {
     }
     this.modules.set(module.id, module);
     if (module.locales) this.disposers.set(module.id, this.catalogs(module.id, module.locales));
+    this.changed();
     return this;
   }
 
@@ -71,6 +74,19 @@ export class ModuleRegistry {
     this.setupDone.delete(id);
     this.disposers.get(id)?.();
     this.disposers.delete(id);
+    this.changed();
+  }
+
+  /** Calls `listener` after every register and unregister; returns the
+   *  unsubscribe. A bound property, so `useSyncExternalStore` sees one function. */
+  readonly subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  };
+
+  private changed(): void {
+    this.slotCache.clear();
+    for (const listener of this.listeners) listener();
   }
 
   has(id: string): boolean {
@@ -178,10 +194,14 @@ export class ModuleRegistry {
    *  caller decides whether a module is ENABLED: this registry only knows what
    *  was registered. */
   slotsFor(slot: SlotName): ModuleSlotEntry[] {
-    return this.order()
+    const cached = this.slotCache.get(slot);
+    if (cached) return cached;
+    const entries = this.order()
       .flatMap((m) => (m.slots ?? []).map((s) => ({ ...s, moduleId: m.id })))
       .filter((s) => s.slot === slot)
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    this.slotCache.set(slot, entries);
+    return entries;
   }
 
   settingsPanels(): ModulePanel[] {

@@ -10,7 +10,7 @@
 // The names and their props are declared once, in `./module`'s `SlotProps`, so
 // neither side can drift from the other.
 
-import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import { createContext, type ReactNode, useContext, useSyncExternalStore } from 'react';
 import { useModuleEnabledCheck } from './admin/engines';
 import type { SlotName, SlotProps } from './module';
 import type { ModuleRegistry, ModuleSlotEntry } from './registry';
@@ -28,10 +28,15 @@ export function ModuleSlotProvider({
   return <SlotRegistryContext.Provider value={registry}>{children}</SlotRegistryContext.Provider>;
 }
 
-/** What is registered for `slot`, before the enabled check. */
+const NO_ENTRIES: ModuleSlotEntry[] = [];
+const subscribeNever = () => () => {};
+
+/** What is registered for `slot`, before the enabled check. Follows the registry,
+ *  so a module that registers after the slot first rendered still fills it. */
 export function useSlotEntries(slot: SlotName): ModuleSlotEntry[] {
   const registry = useContext(SlotRegistryContext);
-  return useMemo(() => registry?.slotsFor(slot) ?? [], [registry, slot]);
+  const read = () => registry?.slotsFor(slot) ?? NO_ENTRIES;
+  return useSyncExternalStore(registry?.subscribe ?? subscribeNever, read, read);
 }
 
 type ModuleSlotProps<Name extends SlotName> = {
