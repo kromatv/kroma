@@ -1955,6 +1955,7 @@ name = "kroma-module-runtime"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum",
  "kroma-http",
  "kroma-module-host",
