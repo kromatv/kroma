@@ -33,3 +33,33 @@ async fn registration_without_an_invite_does_not_say_whether_an_email_exists() {
 
     assert_eq!(taken, free);
 }
+
+#[tokio::test]
+async fn an_email_cannot_be_set_to_another_users_username() {
+    let t = test_app();
+    seed_session_pw(
+        &t.state,
+        "bob@test.dev",
+        "bob@home",
+        "right-password",
+        &[Permission::Playback],
+    );
+    let (_, member) = seed_session_pw(
+        &t.state,
+        "eve@test.dev",
+        "eve",
+        "right-password",
+        &[Permission::Playback],
+    );
+
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me",
+        Some(&member),
+        Some(json!({ "email": "bob@home" })),
+    )
+    .await;
+
+    assert_eq!(status, axum::http::StatusCode::CONFLICT);
+}

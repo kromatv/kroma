@@ -129,6 +129,17 @@ async fn apply_email(
         Ok(_) => {}
         Err(resp) => return Err(resp),
     }
+    let check = email.clone();
+    let self_id = user.id.clone();
+    match query(&state.db, move |pool| {
+        db::username_taken(&pool, &check, Some(&self_id))
+    })
+    .await
+    {
+        Ok(true) => return Err(lerr(loc, StatusCode::CONFLICT, "auth.emailTaken")),
+        Ok(false) => {}
+        Err(resp) => return Err(resp),
+    }
     let uid = user.id.clone();
     let e = email.clone();
     if let Err(resp) = query(&state.db, move |pool| db::set_user_email(&pool, &uid, &e)).await {

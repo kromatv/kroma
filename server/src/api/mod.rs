@@ -87,7 +87,7 @@ mod it_library_visibility;
 #[cfg(test)]
 mod it_mail_relay;
 #[cfg(test)]
-mod it_register_invite;
+mod it_account_identifiers;
 #[cfg(test)]
 mod it_media;
 #[cfg(test)]
