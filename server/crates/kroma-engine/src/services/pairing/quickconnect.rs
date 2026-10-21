@@ -7,11 +7,13 @@
 //! phone on cellular) and what makes [`super::handoff`] the nicer road when both
 //! devices sit on the same network.
 
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use super::grants::{Filed, Granted, Grants, Orphaned, PollState};
 use crate::model::User;
 use crate::services::auth::random_u32;
+use time::OffsetDateTime;
 
 pub const CODE_TTL_SECS: i64 = 300;
 const CODE_DIGITS: u32 = 4;
@@ -19,9 +21,21 @@ const CODE_DIGITS: u32 = 4;
 // flood. It also keeps it sparse against the 10^CODE_DIGITS keyspace, so the
 // code-minting loop stays collision-free.
 const MAX_PENDING: usize = 256;
+// A signed-in user reads the four digits off one screen and types them into
+// another: a handful of tries covers a fat-finger, and anything past that is a
+// sweep of the 10^4 keyspace. Keyed by the approver, so it only ever throttles
+// the account doing the guessing, never a third party.
+const MAX_WRONG_PER_USER: u32 = 10;
+const WRONG_WINDOW_SECS: i64 = 300;
 
 pub struct QuickConnectInner {
     grants: Grants<()>,
+    wrong: Mutex<HashMap<String, WrongStreak>>,
+}
+
+struct WrongStreak {
+    count: u32,
+    first: i64,
 }
 
 pub type QuickConnect = Arc<QuickConnectInner>;
@@ -35,6 +49,7 @@ pub struct Initiated {
 pub fn new() -> QuickConnect {
     Arc::new(QuickConnectInner {
         grants: Grants::new(CODE_TTL_SECS, MAX_PENDING),
+        wrong: Mutex::new(HashMap::new()),
     })
 }
 
@@ -68,6 +83,33 @@ impl QuickConnectInner {
     /// Tokens of codes that lapsed, for the caller to delete.
     pub fn take_orphans(&self) -> Vec<Orphaned> {
         self.grants.take_orphans()
+    }
+
+    /// Whether `user_id` may try another code now, i.e. has not burned through
+    /// [`MAX_WRONG_PER_USER`] wrong guesses inside the window.
+    pub fn may_try(&self, user_id: &str) -> bool {
+        let now = OffsetDateTime::now_utc().unix_timestamp();
+        let map = self.wrong.lock().unwrap();
+        match map.get(user_id) {
+            Some(w) if now - w.first < WRONG_WINDOW_SECS => w.count < MAX_WRONG_PER_USER,
+            _ => true,
+        }
+    }
+
+    /// Record a wrong guess by `user_id`, starting or extending its window.
+    pub fn record_wrong(&self, user_id: &str) {
+        let now = OffsetDateTime::now_utc().unix_timestamp();
+        let mut map = self.wrong.lock().unwrap();
+        map.retain(|_, w| now - w.first < WRONG_WINDOW_SECS);
+        let w = map.entry(user_id.to_string()).or_insert(WrongStreak {
+            count: 0,
+            first: now,
+        });
+        if now - w.first >= WRONG_WINDOW_SECS {
+            w.count = 0;
+            w.first = now;
+        }
+        w.count += 1;
     }
 
     /// Approve a code for `user`, attaching a freshly-minted session `token` and
@@ -105,6 +147,19 @@ mod tests {
 
     fn user() -> User {
         crate::test_support::test_user("u1", vec![])
+    }
+
+    #[test]
+    fn a_user_is_cut_off_after_too_many_wrong_codes() {
+        let qc = new();
+        assert!(qc.may_try("u1"));
+        for _ in 0..MAX_WRONG_PER_USER {
+            assert!(qc.may_try("u1"));
+            qc.record_wrong("u1");
+        }
+        assert!(!qc.may_try("u1"), "the sweep is cut off");
+        // A different approver is untouched.
+        assert!(qc.may_try("u2"));
     }
 
     #[test]

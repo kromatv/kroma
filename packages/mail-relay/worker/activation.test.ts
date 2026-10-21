@@ -77,6 +77,14 @@ describe('the marks the relay keeps', () => {
     }
   });
 
+  it('never treats a private origin as an active sender', async () => {
+    const marks = new Marks(memoryCounters(), LIMIT_SECRET);
+    await marks.activate('https://kroma.local', OWNER);
+    expect(await marks.active('https://kroma.local')).toBe(false);
+    await marks.activate('http://192.168.1.10', OWNER);
+    expect(await marks.active('http://192.168.1.10')).toBe(false);
+  });
+
   it('take the activation away with the mailbox that gave it, and only that one', async () => {
     const marks = new Marks(memoryCounters(), LIMIT_SECRET);
     await marks.activate(ORIGIN, OWNER);

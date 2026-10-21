@@ -145,7 +145,7 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
             // The check string this television is printing on its own screen,
             // so a device that named itself after yours can be told from yours.
             // Shown, not asked for: see `start`.
-            trailing={state ? undefined : <Badge tone="neutral">{tv.check}</Badge>}
+            trailing={state || !tv.check ? undefined : <Badge tone="neutral">{tv.check}</Badge>}
             selected={false}
             // A granted beacon is spent: the server mints a new handle when that
             // television waits again, so this row will never be the one to tap.

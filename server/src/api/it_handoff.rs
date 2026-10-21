@@ -842,7 +842,10 @@ async fn a_shell_nobody_can_place_announces_and_the_row_asks_for_its_check() {
     )
     .await;
     assert_eq!(list[0]["confirmRequired"], true);
-    assert_eq!(list[0]["check"], beacon["check"]);
+    // The check must be read off the television, so the list never carries it
+    // for a row that asks for one: a page that raised the beacon cannot put it
+    // in front of the person approving from their phone.
+    assert_eq!(list[0]["check"], "");
 }
 
 #[tokio::test]

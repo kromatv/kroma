@@ -7,7 +7,8 @@ use serde_json::json;
 use webauthn_rs::prelude::{CredentialID, RegisterPublicKeyCredential};
 
 use super::ceremony::{
-    parse_passkeys, relying_party, require_discoverable, stash, take, user_uuid, Ceremony,
+    allowed_origins, parse_passkeys, relying_party, require_discoverable, stash, take, user_uuid,
+    Ceremony,
 };
 use crate::api::dto::PasskeyInfo;
 use crate::api::error::lerr;
@@ -25,7 +26,7 @@ pub async fn register_start(
     headers: HeaderMap,
     AuthUser(user): AuthUser,
 ) -> Response {
-    let webauthn = match relying_party(&headers, loc) {
+    let webauthn = match relying_party(&headers, loc, &allowed_origins(&state)) {
         Ok(w) => w,
         Err(resp) => return resp,
     };
@@ -77,7 +78,7 @@ pub async fn register_finish(
     AuthUser(user): AuthUser,
     Json(body): Json<RegisterFinishBody>,
 ) -> Response {
-    let webauthn = match relying_party(&headers, loc) {
+    let webauthn = match relying_party(&headers, loc, &allowed_origins(&state)) {
         Ok(w) => w,
         Err(resp) => return resp,
     };

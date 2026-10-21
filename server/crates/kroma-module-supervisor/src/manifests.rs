@@ -82,6 +82,7 @@ impl Supervisor {
 
     /// A runtime-installed module's packaged icon bytes, svg preferred over png.
     pub fn icon(&self, id: &str) -> Option<(&'static str, Vec<u8>)> {
+        super::install::validate_id(id).ok()?;
         let dir = self.dir(id);
         if let Ok(bytes) = std::fs::read(dir.join("icon.svg")) {
             return Some(("image/svg+xml", bytes));
@@ -283,5 +284,30 @@ mod tests {
         // ...and it is what would reach the sidecar.
         let back: kroma_db::Grant = serde_json::from_str(&grant_json(Some(&storage))).unwrap();
         assert_eq!(back.read, ["requests"]);
+    }
+
+    #[test]
+    fn an_icon_is_never_read_from_outside_the_modules_dir() {
+        let dir = kroma_testing::temp_dir("module-icon");
+        let modules = dir.path().join("modules");
+        std::fs::create_dir_all(modules.join("com.example.one")).unwrap();
+        std::fs::write(modules.join("com.example.one/icon.svg"), "<svg/>").unwrap();
+        std::fs::create_dir_all(dir.path().join("outside")).unwrap();
+        std::fs::write(dir.path().join("outside/icon.svg"), "<svg/>").unwrap();
+        let sup = Supervisor::new(SupervisorConfig {
+            modules_dir: modules,
+            core_url: "http://127.0.0.1:0".into(),
+            host_token: "fabric".into(),
+            db_path: dir.path().join("db.sqlite"),
+            data_dir: dir.path().to_path_buf(),
+            reserved_ids: Vec::new(),
+            server_version: "0.1.4".into(),
+            log_line: None,
+        });
+        let absolute = dir.path().join("outside").to_string_lossy().into_owned();
+
+        assert!(sup.icon("com.example.one").is_some());
+        assert!(sup.icon("../outside").is_none());
+        assert!(sup.icon(&absolute).is_none());
     }
 }

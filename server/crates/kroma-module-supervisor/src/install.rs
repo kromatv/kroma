@@ -133,7 +133,7 @@ impl Supervisor {
 }
 
 // A module id must be a safe directory name: it becomes `<modules>/<id>/`.
-fn validate_id(id: &str) -> anyhow::Result<()> {
+pub(crate) fn validate_id(id: &str) -> anyhow::Result<()> {
     let ok = !id.is_empty()
         && id.len() <= 128
         && id != "."

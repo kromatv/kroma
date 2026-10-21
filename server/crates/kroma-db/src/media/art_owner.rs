@@ -18,12 +18,16 @@ pub struct ArtOwner {
 
 pub fn art_owner(pool: &Pool, url: &str) -> Result<Option<ArtOwner>> {
     let conn = pool.get()?;
-    let quoted = format!("%\"{url}\"%");
+    let literal = url
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_");
+    let quoted = format!("%\"{literal}\"%");
     let show = |id: String| ArtOwner { kind: SHOW, id };
 
     if let Some(id) = conn
         .query_row(
-            "SELECT id FROM shows WHERE metadata LIKE ?1 LIMIT 1",
+            "SELECT id FROM shows WHERE metadata LIKE ?1 ESCAPE '\\' LIMIT 1",
             params![quoted],
             |r| r.get::<_, String>(0),
         )
@@ -33,7 +37,7 @@ pub fn art_owner(pool: &Pool, url: &str) -> Result<Option<ArtOwner>> {
     }
     if let Some((id, kind, show_id)) = conn
         .query_row(
-            "SELECT id, kind, show_id FROM items WHERE metadata LIKE ?1 LIMIT 1",
+            "SELECT id, kind, show_id FROM items WHERE metadata LIKE ?1 ESCAPE '\\' LIMIT 1",
             params![quoted],
             |r| {
                 Ok((
@@ -53,7 +57,7 @@ pub fn art_owner(pool: &Pool, url: &str) -> Result<Option<ArtOwner>> {
     if let Some((kind, id)) = conn
         .query_row(
             "SELECT subject_kind, subject_id FROM translations \
-             WHERE subject_kind IN ('item', 'show') AND data LIKE ?1 LIMIT 1",
+             WHERE subject_kind IN ('item', 'show') AND data LIKE ?1 ESCAPE '\\' LIMIT 1",
             params![quoted],
             |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
         )
@@ -64,7 +68,7 @@ pub fn art_owner(pool: &Pool, url: &str) -> Result<Option<ArtOwner>> {
     }
     if let Some(id) = conn
         .query_row(
-            "SELECT show_id FROM season_meta WHERE casts LIKE ?1 LIMIT 1",
+            "SELECT show_id FROM season_meta WHERE casts LIKE ?1 ESCAPE '\\' LIMIT 1",
             params![quoted],
             |r| r.get::<_, String>(0),
         )
@@ -226,5 +230,20 @@ mod tests {
         let p = seeded();
 
         assert_eq!(art_owner(&p, ART).unwrap(), None);
+    }
+
+    #[test]
+    fn a_wildcard_in_the_name_matches_nothing_but_itself() {
+        let p = seeded();
+        p.get()
+            .unwrap()
+            .execute(
+                "UPDATE shows SET metadata = ?1 WHERE id = 's1'",
+                params![meta_with(ART)],
+            )
+            .unwrap();
+
+        assert_eq!(art_owner(&p, "/api/images/________________.webp").unwrap(), None);
+        assert_eq!(art_owner(&p, "/api/images/feed%.webp").unwrap(), None);
     }
 }

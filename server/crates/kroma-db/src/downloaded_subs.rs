@@ -42,11 +42,15 @@ pub fn downloaded_subs_for_item(
     rows.collect()
 }
 
-pub fn downloaded_sub(conn: &Connection, id: &str) -> rusqlite::Result<Option<DownloadedSub>> {
+pub fn downloaded_sub(
+    conn: &Connection,
+    item_id: &str,
+    id: &str,
+) -> rusqlite::Result<Option<DownloadedSub>> {
     let mut stmt = conn.prepare(&format!(
-        "SELECT {COLS} FROM downloaded_subtitles WHERE id = ?1"
+        "SELECT {COLS} FROM downloaded_subtitles WHERE id = ?1 AND item_id = ?2"
     ))?;
-    let mut rows = stmt.query_map(params![id], from_row)?;
+    let mut rows = stmt.query_map(params![id, item_id], from_row)?;
     rows.next().transpose()
 }
 
@@ -62,19 +66,19 @@ pub fn insert_downloaded_sub(pool: &Pool, sub: &DownloadedSub) -> Result<()> {
 
 /// Returns the deleted row's file path so the caller can remove the cached
 /// WebVTT from disk.
-pub fn delete_downloaded_sub(pool: &Pool, id: &str) -> Result<Option<String>> {
+pub fn delete_downloaded_sub(pool: &Pool, item_id: &str, id: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     let path: Option<String> = conn
         .query_row(
-            "SELECT path FROM downloaded_subtitles WHERE id = ?1",
-            params![id],
+            "SELECT path FROM downloaded_subtitles WHERE id = ?1 AND item_id = ?2",
+            params![id, item_id],
             |r| r.get(0),
         )
         .optional()?;
     if path.is_some() {
         conn.execute(
-            "DELETE FROM downloaded_subtitles WHERE id = ?1",
-            params![id],
+            "DELETE FROM downloaded_subtitles WHERE id = ?1 AND item_id = ?2",
+            params![id, item_id],
         )?;
     }
     Ok(path)
@@ -120,16 +124,21 @@ mod tests {
         assert_eq!(subs.len(), 2);
         assert_eq!(subs[0].language.as_deref(), Some("fr"));
         assert_eq!(subs[0].provider, "whisper");
-        let one = downloaded_sub(&conn, "s1").unwrap().unwrap();
+        let one = downloaded_sub(&conn, "m1", "s1").unwrap().unwrap();
         assert_eq!(one.path, "/data/subs/s1.vtt");
-        assert!(downloaded_sub(&conn, "missing").unwrap().is_none());
+        assert!(downloaded_sub(&conn, "m1", "missing").unwrap().is_none());
+        assert!(downloaded_sub(&conn, "other", "s1").unwrap().is_none());
         drop(conn);
 
         assert_eq!(
-            delete_downloaded_sub(&p, "s1").unwrap().as_deref(),
+            delete_downloaded_sub(&p, "other", "s1").unwrap(),
+            None
+        );
+        assert_eq!(
+            delete_downloaded_sub(&p, "m1", "s1").unwrap().as_deref(),
             Some("/data/subs/s1.vtt")
         );
-        assert!(delete_downloaded_sub(&p, "s1").unwrap().is_none());
+        assert!(delete_downloaded_sub(&p, "m1", "s1").unwrap().is_none());
         let conn = p.get().unwrap();
         assert_eq!(downloaded_subs_for_item(&conn, "m1").unwrap().len(), 1);
     }

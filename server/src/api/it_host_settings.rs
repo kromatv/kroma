@@ -300,3 +300,27 @@ async fn a_key_no_declaration_names_is_withheld_in_both_directions() {
         "minted-by-nobody"
     );
 }
+
+#[tokio::test]
+async fn a_host_callback_from_off_host_is_refused() {
+    use axum::body::Body;
+    use axum::extract::ConnectInfo;
+    use axum::http::Request;
+    use tower::ServiceExt;
+
+    let t = test_app();
+
+    let mut req = Request::builder()
+        .method("GET")
+        .uri("/api/_host/setting?key=serverName&kind=str&default=")
+        .header("authorization", format!("Bearer {HOST_TOKEN}"))
+        .body(Body::empty())
+        .unwrap();
+    req.extensions_mut().insert(ConnectInfo(std::net::SocketAddr::from((
+        [203, 0, 113, 9],
+        50000,
+    ))));
+    let resp = t.app.clone().oneshot(req).await.unwrap();
+
+    assert_eq!(resp.status(), axum::http::StatusCode::NOT_FOUND);
+}
