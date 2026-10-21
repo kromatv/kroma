@@ -11,6 +11,7 @@ use webauthn_rs_proto::ResidentKeyRequirement;
 
 use crate::api::error::lerr;
 use crate::services::auth;
+use crate::state::SharedState;
 
 const CEREMONY_TTL_SECS: i64 = 300;
 // A ceiling on live ceremonies, so an anonymous flood of authenticate/start
@@ -79,19 +80,55 @@ pub(super) fn user_uuid(user_id: &str) -> Uuid {
     Uuid::new_v5(&Uuid::NAMESPACE_OID, user_id.as_bytes())
 }
 
-pub(super) fn relying_party(headers: &HeaderMap, loc: &str) -> Result<Webauthn, Response> {
+/// The origins a passkey assertion is accepted from. When the operator has set a
+/// canonical web URL (or a Remote Access URL), those are the only origins
+/// honoured, which stops another service sharing the host name on a different
+/// port from relaying an assertion for this server. Empty when neither is set:
+/// a fresh install then trusts the request origin, so passkeys work out of the
+/// box and a LAN-only server is not locked out.
+pub(super) fn allowed_origins(state: &SharedState) -> Vec<String> {
+    let trim = |s: String| s.trim().trim_end_matches('/').to_string();
+    let mut out = Vec::new();
+    if let Some(web) = state.config.web_url.clone() {
+        out.push(trim(web));
+    }
+    let remote = crate::services::settings::public_url(&state.settings);
+    if !remote.is_empty() {
+        out.push(trim(remote));
+    }
+    out.retain(|o| !o.is_empty());
+    out.dedup();
+    out
+}
+
+pub(super) fn relying_party(
+    headers: &HeaderMap,
+    loc: &str,
+    allowed: &[String],
+) -> Result<Webauthn, Response> {
     let origin = headers
         .get(axum::http::header::ORIGIN)
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| lerr(loc, StatusCode::BAD_REQUEST, "passkey.originMissing"))?;
+    // When the operator has pinned the origins, an assertion from anywhere else
+    // is refused before it is ever built into a ceremony.
+    if !allowed.is_empty() {
+        let seen = origin.trim().trim_end_matches('/');
+        if !allowed.iter().any(|o| o == seen) {
+            return Err(lerr(loc, StatusCode::BAD_REQUEST, "passkey.originInvalid"));
+        }
+    }
     let url = Url::parse(origin)
         .map_err(|_| lerr(loc, StatusCode::BAD_REQUEST, "passkey.originInvalid"))?;
     let rp_id = url
         .host_str()
         .ok_or_else(|| lerr(loc, StatusCode::BAD_REQUEST, "passkey.originInvalid"))?
         .to_string();
+    // `allow_any_port` is kept only when nothing is pinned: a pinned origin
+    // carries its own port, and matching it exactly is the point.
+    let any_port = allowed.is_empty();
     WebauthnBuilder::new(&rp_id, &url)
-        .and_then(|b| b.allow_any_port(true).rp_name("KROMA").build())
+        .and_then(|b| b.allow_any_port(any_port).rp_name("KROMA").build())
         .map_err(|_| lerr(loc, StatusCode::BAD_REQUEST, "passkey.originInvalid"))
 }
 
@@ -133,5 +170,29 @@ mod tests {
 
         let len = CEREMONIES.lock().unwrap().len();
         assert!(len <= MAX_CEREMONIES, "{len} live ceremonies");
+    }
+
+    fn headers_with_origin(origin: &str) -> HeaderMap {
+        let mut h = HeaderMap::new();
+        h.insert(
+            axum::http::header::ORIGIN,
+            axum::http::HeaderValue::from_str(origin).unwrap(),
+        );
+        h
+    }
+
+    #[test]
+    fn a_pinned_origin_is_the_only_one_accepted() {
+        let allowed = vec!["https://kroma.example".to_string()];
+
+        assert!(relying_party(&headers_with_origin("https://kroma.example"), "en", &allowed).is_ok());
+        // Same host, another port: the relay a sibling service could mount.
+        assert!(relying_party(&headers_with_origin("https://kroma.example:8443"), "en", &allowed).is_err());
+        assert!(relying_party(&headers_with_origin("https://evil.example"), "en", &allowed).is_err());
+    }
+
+    #[test]
+    fn with_nothing_pinned_the_request_origin_is_trusted() {
+        assert!(relying_party(&headers_with_origin("https://kroma.local:4040"), "en", &[]).is_ok());
     }
 }
