@@ -8,6 +8,7 @@ use crate::model::Category;
 use super::{JobContext, JobKey, JobManager, Trigger};
 
 mod cache_cleanup;
+mod database_tidy;
 mod library_missing;
 mod library_monitoring;
 mod library_scan;
@@ -41,6 +42,7 @@ pub struct Builtin {
 // compile-time duplicate-key guard below can read it.
 const JOBS: &[Builtin] = &[
     cache_cleanup::SPEC,
+    database_tidy::SPEC,
     reco_refresh::SPEC,
     reembed::SPEC,
     sections_personalize::SPEC,

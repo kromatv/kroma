@@ -59,6 +59,7 @@ mod visibility;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 pub mod tmdb_pin;
+pub mod housekeeping;
 pub mod translations;
 pub mod upgrade_tasks;
 mod vectors;
