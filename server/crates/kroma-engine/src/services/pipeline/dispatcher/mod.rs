@@ -30,6 +30,7 @@ use workers::process_batch;
 // Small enough that a cancel is observed promptly; large enough that the
 // per-batch DB round-trips are negligible next to the ffmpeg/TMDB work.
 const BATCH: usize = 32;
+const FINISH_RETRY_MS: [u64; 3] = [1_000, 5_000, 15_000];
 const PAUSE_POLL_S: u64 = 4;
 
 /// Drain one stage to completion (or cancellation).
@@ -137,7 +138,9 @@ fn drain_loop(stage: &Stage, ctx: &JobContext, total: usize) -> Result<()> {
             break;
         }
         let results = process_batch(stage, ctx, &batch);
-        db::pipeline::finish_batch(pool, stage.short, &results, now_ms())?;
+        db::retry_busy(&FINISH_RETRY_MS, || {
+            db::pipeline::finish_batch(pool, stage.short, &results, now_ms())
+        })?;
         processed += results.len();
         failed_seen += results.iter().filter(|r| r.error.is_some()).count();
         ctx.progress(processed.min(total), total);
