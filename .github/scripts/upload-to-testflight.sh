@@ -19,6 +19,10 @@
 # Missing credentials are a SKIP, not a failure: the .ipa is already built and
 # attached to the Release, and a beta-channel hiccup should not fail a release
 # that has otherwise gone out.
+#
+# A build App Store Connect already holds is a success too: every push to main
+# uploads its candidate for the internal testers, so the promote step usually
+# sends a build number Apple has seen (ITMS-4238, Redundant Binary Upload).
 set -euo pipefail
 
 MODE="${MODE:-upload}"
@@ -35,12 +39,19 @@ if [[ -n "${ASC_KEY_ID:-}" && -n "${ASC_ISSUER_ID:-}" && -n "${ASC_PRIVATE_KEY:-
   printf '%s' "$ASC_PRIVATE_KEY" \
     > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
   trap 'rm -rf "$HOME/.appstoreconnect"' EXIT
-  xcrun altool "$action" -f "$IPA" -t "$PLATFORM" \
-    --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+  auth=(--apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID")
 elif [[ -n "${APPLE_ID:-}" && -n "${APPLE_PASSWORD:-}" ]]; then
-  xcrun altool "$action" -f "$IPA" -t "$PLATFORM" -u "$APPLE_ID" -p "$APPLE_PASSWORD"
+  auth=(-u "$APPLE_ID" -p "$APPLE_PASSWORD")
 else
   echo "No App Store Connect credentials; $IPA is built and attached, $MODE skipped."
   exit 0
+fi
+log="$(mktemp)"
+if ! xcrun altool "$action" -f "$IPA" -t "$PLATFORM" "${auth[@]}" 2>&1 | tee "$log"; then
+  if [[ "$MODE" == upload ]] && grep -qE 'ITMS-4238|Redundant Binary Upload' "$log"; then
+    echo "App Store Connect already has $(basename "$IPA") ($PLATFORM); nothing to upload."
+    exit 0
+  fi
+  exit 1
 fi
 echo "altool $action ok: $(basename "$IPA") ($PLATFORM)"
