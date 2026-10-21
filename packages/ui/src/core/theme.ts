@@ -4,23 +4,9 @@
 // <Box> all check that version and re-resolve lazily on their next use, so a
 // switch costs one rebuild per recipe actually rendered, not an eager sweep.
 
-import { KROMA, KROMA_LIGHT, type Theme } from '#ui/core/theme-create';
-import { splitAlpha, withAlpha } from '#ui/core/tokens/colors';
-import {
-  CSS_COLORS,
-  CSS_FONTS,
-  CSS_RADIUS,
-  CSS_TYPE,
-  typeProperty,
-} from '#ui/core/tokens/css-palette';
-import { cssName, cssVar } from '#ui/core/tokens/css-var';
-import {
-  CIRCLE_RADIUS,
-  type CornerValue,
-  type Radius,
-  type RadiusToken,
-} from '#ui/core/tokens/layout';
-import { fontStack, type RoleStyle } from '#ui/core/tokens/typography';
+import { KROMA, type Theme } from '#ui/core/theme-create';
+import { collectSteps, restated, rulesOf } from '#ui/core/theme-restated';
+import { CSS_COLORS, CSS_FONTS, CSS_RADIUS, CSS_TYPE } from '#ui/core/tokens/css-palette';
 
 export * from '#ui/core/theme-create';
 
@@ -70,33 +56,8 @@ export function createThemeRuntime(initial: Theme = KROMA) {
     return found;
   }
 
-  // What a theme RESTATES: `paint` leaves an untouched token as its own property,
-  // so anything that is not a `var(...)` is a value this theme decided.
-  function restated(theme: Theme, doc: Document): readonly (readonly [string, string])[] {
-    const steps = stepsOf(doc);
-    const colors = Object.entries(theme.colors)
-      .filter(([, value]) => !value.startsWith('var('))
-      .flatMap(([token, value]) => [
-        [cssVar(token), value] as const,
-        ...derived(token, value, steps.get(cssName(token)) ?? []),
-      ]);
-    const shadows = Object.entries(theme.shadow)
-      .filter(([, value]) => !value.startsWith('var('))
-      .map(([token, value]) => [`--shadow-${token}`, value] as const);
-    const radii = Object.entries(theme.radius)
-      .filter((entry): entry is [string, number] => typeof entry[1] === 'number')
-      .map(([token, value]) => [`--radius-${token}`, `${value}px`] as const);
-    const fonts = Object.entries(theme.fonts)
-      .filter(([, value]) => !value.startsWith('var('))
-      .map(([token, value]) => [`--font-${token}`, fontStack(value)] as const);
-    const roles = Object.entries(theme.type)
-      .filter(([, style]) => typeof style.fontSize === 'number')
-      .flatMap(([role, style]) => roleProperties(role, style));
-    return [...colors, ...shadows, ...radii, ...fonts, ...roles];
-  }
-
   const block = (selector: string, theme: Theme | undefined, doc: Document): string => {
-    const rules = theme ? restated(theme, doc) : [];
+    const rules = theme ? restated(theme, stepsOf(doc)) : [];
     if (rules.length === 0) return '';
     const body = rules.map(([name, value]) => `${name}:${value}`).join(';');
     return `${selector}{${body}}`;
@@ -263,23 +224,6 @@ export function activeTheme(runtime?: ThemeRuntime): Theme {
 export function themeVersion(runtime?: ThemeRuntime): number {
   return runtime?.themeVersion() ?? 0;
 }
-export function onPaper(theme: Theme = KROMA): boolean {
-  return !CSS_COLORS && theme.colors.bg === KROMA_LIGHT.colors.bg;
-}
-export function groundShade(alpha: number, theme: Theme = KROMA): string {
-  return withAlpha(theme.colors.bg, alpha);
-}
-export function radiusValue(corner: CornerValue, side?: number, theme: Theme = KROMA): Radius {
-  if (typeof corner === 'number') return corner;
-  if (corner === 'circle') return side === undefined ? CIRCLE_RADIUS : side / 2;
-  const isToken = (value: string): value is RadiusToken => value in theme.radius;
-  return isToken(corner) ? theme.radius[corner] : corner;
-}
-export function scaledRadius(corner: CornerValue, factor: number, theme: Theme = KROMA): Radius {
-  const value = radiusValue(corner, undefined, theme);
-  if (typeof value === 'number') return Math.round(value * factor);
-  return factor === 1 ? value : `calc(${value} * ${factor})`;
-}
 export function themedCache<T>(
   limit: number,
   runtime?: ThemeRuntime,
@@ -313,64 +257,4 @@ export function themed<T>(
     values.set(key, { version, value });
     return value;
   };
-}
-
-// Consume each complete identifier once. Matching the prefix and suffix together
-// retries long hyphenated names at every nested `--kroma-` prefix.
-function collectSteps(css: string, found: Map<string, string[]>): void {
-  for (const match of css.matchAll(/--[a-z0-9_-]+/g)) {
-    const property = match[0];
-    if (!property.startsWith('--kroma-')) continue;
-    if (
-      !css
-        .slice(match.index + property.length)
-        .trimStart()
-        .startsWith(':')
-    )
-      continue;
-    const separator = property.lastIndexOf('-');
-    const name = property.slice('--kroma-'.length, separator);
-    const step = property.slice(separator + 1);
-    if (!name || !/^[a-z0-9-]+$/.test(name)) continue;
-    if (step !== 'opaque' && step !== 'alpha' && !/^\d+(?:_\d+)?$/.test(step)) continue;
-    const steps = found.get(name) ?? [];
-    if (!steps.includes(step)) steps.push(step);
-    found.set(name, steps);
-  }
-}
-
-// A cross-origin sheet answers `cssRules` with a SecurityError; it holds none of
-// ours, so it is skipped rather than read.
-function rulesOf(sheet: CSSStyleSheet): readonly CSSRule[] {
-  try {
-    return [...sheet.cssRules];
-  } catch {
-    return [];
-  }
-}
-
-function derived(token: string, value: string, steps: readonly string[]) {
-  const faded = splitAlpha(value);
-  return steps.map((step) => {
-    if (step === 'opaque') return [`${cssVar(token)}-opaque`, faded.color] as const;
-    if (step === 'alpha') return [`${cssVar(token)}-alpha`, String(faded.opacity)] as const;
-    const alpha = Number(step.replace('_', '.'));
-    return [cssVar(token, step), withAlpha(value, alpha / 100)] as const;
-  });
-}
-
-// A restated role, derived to px by the theme, under the properties every
-// untouched role already reads.
-function roleProperties(role: string, style: RoleStyle): (readonly [string, string])[] {
-  const family = style.fontFamily ?? '';
-  const out: (readonly [string, string])[] = [
-    [typeProperty(role, 'family'), family.startsWith('var(') ? family : fontStack(family)],
-    [typeProperty(role, 'weight'), String(style.fontWeight)],
-    [typeProperty(role, 'size'), `${style.fontSize}px`],
-    [typeProperty(role, 'line'), `${style.lineHeight}px`],
-  ];
-  if (style.letterSpacing !== undefined) {
-    out.push([typeProperty(role, 'spacing'), `${style.letterSpacing}px`]);
-  }
-  return out;
 }
