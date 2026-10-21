@@ -4,7 +4,10 @@
 # file), compiled in BtbN's builder image so it links the same prebuilt
 # libraries against the same old-glibc toolchain. Writes
 # <out>/ffmpeg-<version>-kroma-<arch>.tar.xz, laid out the way fetch-ffmpeg.sh
-# reads it: <dir>/bin/{ffmpeg,ffprobe}, <dir>/lib/*.so.N.
+# reads it: <dir>/bin/{ffmpeg,ffprobe}, <dir>/lib/*.so.N. On x86_64 the
+# tarball also carries libva, which ffmpeg loads from the host at runtime and
+# which a NAS does not have: built here too, so it is as recent as the headers
+# ffmpeg was compiled against and as old-glibc as the rest.
 # Usage: build.sh <x86_64|aarch64> <out-dir>
 set -euo pipefail
 
@@ -14,6 +17,9 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 VERSION="8.1.3"
 SOURCE="https://ffmpeg.org/releases/ffmpeg-$VERSION.tar.xz"
 SOURCE_SHA="7138d28c96d9d3e3af4ee3d8cad72741f8ffb40da90c1112235dea3ecd3178a3"
+LIBVA_VERSION="2.24.1"
+LIBVA_SOURCE="https://github.com/intel/libva/archive/refs/tags/$LIBVA_VERSION.tar.gz"
+LIBVA_SHA="0b4a3649ee8d683b9cce2ef094df4fb039d276c0cef7e49337c43d3b297b9f42"
 
 # Both images are x86_64 hosts: the aarch64 one cross-compiles.
 case "$ARCH" in
@@ -38,6 +44,10 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 curl -fsSL --show-error --retry 3 --proto '=https' "$SOURCE" -o "$WORK/ffmpeg.tar.xz"
 [[ "$(sha256 "$WORK/ffmpeg.tar.xz")" == "$SOURCE_SHA" ]] || { echo "ffmpeg source does not match its pin"; exit 1; }
+if [[ "$ARCH" == x86_64 ]]; then
+  curl -fsSL --show-error --retry 3 --proto '=https' "$LIBVA_SOURCE" -o "$WORK/libva.tar.gz"
+  [[ "$(sha256 "$WORK/libva.tar.gz")" == "$LIBVA_SHA" ]] || { echo "libva source does not match its pin"; exit 1; }
+fi
 grep -hv '^\s*$' "$HERE/configure.args" "$HERE/configure.$ARCH.args" > "$WORK/configure.args"
 
 NAME="ffmpeg-$VERSION-kroma-$ARCH"
@@ -64,11 +74,21 @@ cp /build/prefix/bin/ffmpeg /build/prefix/bin/ffprobe "/build/$NAME/bin/"
 for lib in /build/prefix/lib/lib*.so.*; do
   case "$lib" in *.so.[0-9] | *.so.[0-9][0-9]) cp -L "$lib" "/build/$NAME/lib/" ;; esac
 done
+if [[ -f /work/libva.tar.gz ]]; then
+  cd /build
+  python3 -c 'import sys, tarfile; tarfile.open(sys.argv[1]).extractall(".")' /work/libva.tar.gz
+  printf "[binaries]\nc = '%s'\nar = '%s'\npkg-config = 'pkg-config'\n[host_machine]\nsystem = 'linux'\ncpu_family = 'x86_64'\ncpu = 'x86_64'\nendian = 'little'\n" \
+    "$CC" "$AR" > /build/cross.txt
+  meson setup /build/libva-build "/build/libva-$LIBVA_VERSION" --cross-file /build/cross.txt \
+    --prefix=/build/libva --buildtype=release -Dwith_x11=no -Dwith_glx=no -Dwith_wayland=no -Denable_docs=false
+  ninja -C /build/libva-build install
+  cp -L /build/libva/lib/libva.so.2 /build/libva/lib/libva-drm.so.2 "/build/$NAME/lib/"
+fi
 "${CC%gcc}strip" "/build/$NAME/bin/"* "/build/$NAME/lib/"*
 tar -C /build -cf - "$NAME" | xz -T0 -9 > "/work/$NAME.tar.xz"
 SCRIPT
 
-docker run --rm --platform linux/amd64 -e VERSION="$VERSION" -e NAME="$NAME" -v "$WORK":/work "$IMAGE" bash /work/build.sh
+docker run --rm --platform linux/amd64 -e VERSION="$VERSION" -e NAME="$NAME" -e LIBVA_VERSION="$LIBVA_VERSION" -v "$WORK":/work "$IMAGE" bash /work/build.sh
 mkdir -p "$OUT"
 cp "$WORK/$NAME.tar.xz" "$OUT/"
 echo "$(sha256 "$OUT/$NAME.tar.xz")  $NAME.tar.xz"
