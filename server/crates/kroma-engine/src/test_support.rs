@@ -92,6 +92,13 @@ pub(crate) fn test_state_with_tmdb(key: &str) -> SharedState {
     build_state(Point::absent("embedder"), Some(key))
 }
 
+/// Like [`test_state_with_tmdb`], with background enrichment switched on.
+pub(crate) fn test_state_enriching(key: &str) -> SharedState {
+    build_state_with(Point::absent("embedder"), Some(key), Vec::new(), |config| {
+        config.tmdb_enrich = true;
+    })
+}
+
 /// Like [`test_state`], but with a point that answers.
 ///
 /// An absent point embeds to nothing and reports dim 0, which makes every
@@ -474,14 +481,38 @@ pub(crate) fn test_state_with_releases(releases_url: &str) -> SharedState {
 pub(crate) struct FakeTmdb {
     base: String,
     seen: Arc<std::sync::Mutex<Vec<String>>>,
+    gate: Option<std::sync::MutexGuard<'static, ()>>,
 }
+
+static SHARED_TMDB: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 impl FakeTmdb {
     /// `route` maps a request path (e.g. `/movie/603`) to `(status, body)`.
     pub(crate) fn start(route: impl Fn(&str) -> (u16, serde_json::Value) + Send + 'static) -> Self {
         let (base, seen) = serve_json(route);
         crate::infra::metadata::test_override::set(&base);
-        Self { base, seen }
+        Self {
+            base,
+            seen,
+            gate: None,
+        }
+    }
+
+    /// Like [`FakeTmdb::start`], but visible to threads the code under test
+    /// spawns. Holds a process-wide gate, so tests using it run one at a time.
+    pub(crate) fn start_shared(
+        route: impl Fn(&str) -> (u16, serde_json::Value) + Send + 'static,
+    ) -> Self {
+        let gate = SHARED_TMDB
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let (base, seen) = serve_json(route);
+        crate::infra::metadata::test_override::set_shared(Some(&base));
+        Self {
+            base,
+            seen,
+            gate: Some(gate),
+        }
     }
 
     /// Every request path this fake received, query string included.
@@ -497,6 +528,9 @@ impl FakeTmdb {
 
 impl Drop for FakeTmdb {
     fn drop(&mut self) {
+        if self.gate.is_some() {
+            crate::infra::metadata::test_override::set_shared(None);
+        }
         crate::infra::metadata::test_override::clear();
     }
 }

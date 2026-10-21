@@ -37,8 +37,21 @@ pub(crate) mod test_override {
         static BASE: RefCell<Option<String>> = const { RefCell::new(None) };
     }
 
+    static SHARED: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
+
     pub(crate) fn get() -> Option<String> {
-        BASE.with(|b| b.borrow().clone())
+        BASE.with(|b| b.borrow().clone()).or_else(|| {
+            SHARED
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone()
+        })
+    }
+
+    pub(crate) fn set_shared(base: Option<&str>) {
+        *SHARED
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = base.map(str::to_string);
     }
 
     pub(crate) fn set(base: &str) {
