@@ -31,9 +31,9 @@ export interface WebStyle {
   textUnderlineOffset?: number | string;
   objectFit?: Wide<'objectFit', 'cover' | 'contain' | 'fill' | 'none' | 'scale-down'>;
   objectPosition?: string;
-  backgroundImage?: string;
-  backgroundPosition?: string;
-  backgroundSize?: string;
+  backgroundImage?: Wide<'backgroundImage'>;
+  backgroundPosition?: Wide<'backgroundPosition'>;
+  backgroundSize?: Wide<'backgroundSize'>;
   maskImage?: string;
   WebkitMaskImage?: string;
   backdropFilter?: string;
@@ -94,7 +94,7 @@ export interface WebStyle {
   gridColumn?: string;
   columnGap?: number | string;
   rowGap?: number | string;
-  backgroundRepeat?: string;
+  backgroundRepeat?: Wide<'backgroundRepeat'>;
   outlineStyle?: Wide<'outlineStyle', 'none' | 'solid' | 'dashed' | 'dotted'>;
   outlineColor?: Exclude<ViewStyle['outlineColor'] | TextStyle['outlineColor'], undefined> | string;
   filter?: Exclude<ViewStyle['filter'], undefined> | string;
