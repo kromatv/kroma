@@ -28,7 +28,6 @@
     "@kromatv/registry": "workspace:*",
     "@kromatv/site-meta": "workspace:*",
     "@kromatv/ui": "workspace:*",
-    "@mdx-js/react": "^3.1.1",
     "@react-three/fiber": "^9.7.0",
     "@tabler/icons-react": "^3.46.0",
     "@tanstack/react-router": "^1.170.29",
