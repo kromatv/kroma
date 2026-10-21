@@ -1,7 +1,7 @@
 #!/bin/sh
 # DSM 7 service control for KROMA. One process: kroma-server serves the API,
 # streaming, AND the bundled web SPA on a single port. ffmpeg/ffprobe are taken
-# from the bundled static copies via PATH. Config (movies/series folders, port,
+# from the bundled ffmpeg/bin via PATH. Config (movies/series folders, port,
 # optional data folder) is written by the install wizard (postinst) to
 # var/kroma.conf.
 
@@ -21,7 +21,7 @@ LOG="${VAR}/kroma.log"
 DATA_DIR="${KROMA_DATA_DIR:-}"
 [ -n "${DATA_DIR}" ] || DATA_DIR="${VAR}/data"
 
-# VA-API finds its driver by scanning LIBVA_DRIVERS_PATH, and the bundled static
+# VA-API finds its driver by scanning LIBVA_DRIVERS_PATH, and the bundled
 # ffmpeg carries no default that matches DSM's layout. Every directory a Synology
 # is known to keep one in is offered; libva ignores the ones that are not there.
 # Empty on a NAS with no driver at all, which is the same as not setting it.
@@ -60,7 +60,7 @@ start_daemon() {
     # search nowhere, which is worse than leaving it its own default.
     _va="${LIBVA_DRIVERS_PATH:-$(va_drivers_path)}"
     [ -n "${_va}" ] && export LIBVA_DRIVERS_PATH="${_va}"
-    PATH="${TARGET}/ffmpeg:${PATH}" \
+    PATH="${TARGET}/ffmpeg/bin:${PATH}" \
     KROMA_PORT="${KROMA_PORT:-4040}" \
     KROMA_MOVIES_DIRS="${KROMA_MOVIES_DIRS}" \
     KROMA_SERIES_DIRS="${KROMA_SERIES_DIRS}" \

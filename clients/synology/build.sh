@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build a single self-contained KROMA Synology package (.spk) for x86_64 DSM 7:
-# kroma-server (also serving the web SPA) + static ffmpeg/ffprobe.
+# kroma-server (also serving the web SPA) + ffmpeg/ffprobe and the libraries they share.
 #
 # Usage:   clients/synology/build.sh [version]
 # Env:     RUST_IMAGE   musl cross image (default messense/rust-musl-cross:x86_64-musl)
@@ -42,16 +42,6 @@ TARGET="x86_64-unknown-linux-musl"
 # Digest-pinned: a moving tag swaps rustc underneath and invalidates every cached
 # build artifact (CI caches server/target across runs).
 RUST_IMAGE="${RUST_IMAGE:-messense/rust-musl-cross:x86_64-musl@sha256:ce75e9174325d4fbb3de85c309e2d7ca29f7500169bc4b5d2c611ff7e86d549a}"
-# Static ffmpeg/ffprobe, tried in order. BtbN's GPL build is the primary because
-# it is the one configured with `--enable-vaapi --enable-libvpl`: every DSM box
-# with an Intel iGPU (DS918+, DS920+, DS423+ …) has a QuickSync encoder, and the
-# johnvansickle build cannot reach it - it carries libx264 and no h264_vaapi,
-# h264_qsv or h264_nvenc at all, so a 4K→1080p downscale landed on the CPU on
-# every NAS this package has ever shipped to. johnvansickle stays as the fallback
-# (different machine, different network) so an outage still produces a package,
-# at the cost of hardware transcoding until the next build.
-FFMPEG_URL="${FFMPEG_URL:-https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz}"
-FFMPEG_FALLBACK_URL="${FFMPEG_FALLBACK_URL:-https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz}"
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # Read here and handed to the cross-build: inside the container git sees a
@@ -102,76 +92,39 @@ if [ "${SKIP_RUST:-}" != "1" ]; then
 fi
 [ -f "$BIN" ] || { echo "musl binary missing: $BIN"; exit 1; }
 
-FF="$CACHE/ffmpeg-amd64-static"
+# BtbN's GPL shared build, pinned in ffmpeg.lock and mirrored on our own
+# vendor release: it is the one configured with `--enable-vaapi --enable-libvpl`,
+# so a DSM box with an Intel iGPU (DS918+, DS920+, DS423+ ...) reaches its
+# QuickSync encoder, and ffmpeg and ffprobe share one set of libraries.
+FF="$WORK/ffmpeg"
+say "Fetching ffmpeg/ffprobe (ffmpeg.lock)"
+"$ROOT/clients/synology/fetch-ffmpeg.sh" x86_64 "$FF" "$CACHE/ffmpeg"
 
-# `--connect-timeout`: without it a host that accepts no connections is retried
-# five times at ~135 s each, so an outage burned 24 minutes and failed anyway.
-# `--retry-all-errors`: the primary intermittently answers a spurious 4xx.
-fetch_ffmpeg() {
-  curl -fSL --connect-timeout 20 --retry 3 --retry-delay 4 --retry-all-errors \
-    --proto '=https' --proto-redir '=https' "$1" -o "$2" \
-    && xz -t "$2" 2>/dev/null
-}
-
-# The cache is keyed by the URL it was filled from. Without this, changing the
-# source above would be silently ignored on every machine that already has a
-# populated cache - including the one that decides whether the release can
-# transcode on hardware.
-FF_STAMP="$FF/.source"
-if [ -x "$FF/ffmpeg" ] && [ "$(cat "$FF_STAMP" 2>/dev/null)" != "$FFMPEG_URL" ]; then
-  say "Cached ffmpeg came from a different source, refetching"
-  rm -rf "$FF"
-fi
-
-if [ ! -x "$FF/ffmpeg" ]; then
-  say "Fetching static ffmpeg/ffprobe"
-  if ! fetch_ffmpeg "$FFMPEG_URL" "$WORK/ff.tar.xz"; then
-    say "Primary ffmpeg source did not answer with an archive, trying the fallback"
-    fetch_ffmpeg "$FFMPEG_FALLBACK_URL" "$WORK/ff.tar.xz" \
-      || { echo "both ffmpeg sources failed"; exit 1; }
-  fi
-
-  # Extracted whole rather than with --strip-components: the primary puts the
-  # binaries at the root of its directory, BtbN puts them under `bin/`.
-  mkdir -p "$WORK/ffx" && tar xJf "$WORK/ff.tar.xz" -C "$WORK/ffx"
-  mkdir -p "$FF"
-  for tool in ffmpeg ffprobe; do
-    found="$(find "$WORK/ffx" -type f -name "$tool" -perm -u+x -print -quit)"
-    [ -n "$found" ] || { echo "$tool missing from the ffmpeg archive"; exit 1; }
-    install -m755 "$found" "$FF/$tool"
-  done
-
-  # The tarball URL is a moving "latest release" pointer, so there is no checksum
-  # to pin. Running it catches a truncated download, an HTML error page saved as a
-  # tarball, and an archive for the wrong architecture.
-  "$FF/ffmpeg" -version >/dev/null 2>&1 \
-    || { echo "downloaded ffmpeg does not run"; exit 1; }
-  printf '%s' "$FFMPEG_URL" > "$FF_STAMP"
-fi
-
-# Say out loud whether this package can transcode on an iGPU. Not fatal: the
-# fallback source produces a working, CPU-only package, and a release is worth
-# more than hardware transcoding. But it must never go unnoticed again.
-# The payload is a Linux binary, so only a Linux build host can be asked.
-if ! "$FF/ffmpeg" -version >/dev/null 2>&1; then
+# Whether this package can transcode on an iGPU. The pinned build has the encoders,
+# so losing them means ffmpeg.lock moved to one without: fatal, since a CPU-only
+# package would quietly put every 4K downscale on the NAS's CPU. The payload is
+# a Linux binary, so only a Linux build host can be asked.
+if ! "$FF/bin/ffmpeg" -version >/dev/null 2>&1; then
   say "Skipping the encoder check: the payload is a Linux binary and this host cannot run it"
-elif "$FF/ffmpeg" -hide_banner -encoders 2>/dev/null | grep -qE 'h264_(vaapi|qsv)'; then
+elif "$FF/bin/ffmpeg" -hide_banner -encoders 2>/dev/null | grep -qE 'h264_(vaapi|qsv)'; then
   say "ffmpeg carries the Intel hardware encoders (QuickSync/VAAPI)"
 else
-  say "WARNING: this ffmpeg has NO hardware H.264 encoder - every re-encode on the NAS will run on the CPU"
+  echo "this ffmpeg has no hardware H.264 encoder (h264_vaapi / h264_qsv)"
+  exit 1
 fi
 
 say "Staging payload"
 PAY="$WORK/payload"
-mkdir -p "$PAY/bin" "$PAY/web" "$PAY/ffmpeg"
+mkdir -p "$PAY/bin" "$PAY/web"
 install -m755 "$BIN" "$PAY/bin/kroma-server"
 cp -R "$ROOT/clients/web/dist/client/." "$PAY/web/"
-install -m755 "$FF/ffmpeg" "$PAY/ffmpeg/ffmpeg"
-install -m755 "$FF/ffprobe" "$PAY/ffmpeg/ffprobe"
+cp -R "$FF" "$PAY/ffmpeg"
 # Strip macOS xattrs so bsdtar doesn't embed SCHILY.xattr pax records that DSM's
 # busybox tar can reject. COPYFILE_DISABLE stops AppleDouble.
 xattr -cr "$PAY" 2>/dev/null || true
-( cd "$PAY" && COPYFILE_DISABLE=1 tar "${TAR_CLEAN[@]}" -czf "$WORK/package.tgz" . )
+# xz, as Synology's own pkgscripts-ng packs package.tgz (`tar cJf`): a quarter
+# smaller than gzip, for a 65 MiB decoder at -9e.
+( cd "$PAY" && COPYFILE_DISABLE=1 tar "${TAR_CLEAN[@]}" -cf - . ) | xz -9e -T0 > "$WORK/package.tgz"
 
 say "Assembling .spk"
 SPK="$WORK/spk"
@@ -181,7 +134,7 @@ chmod 755 "$SPK/scripts/"*
 cp "$WORK/package.tgz" "$SPK/package.tgz"
 # INFO extractsize is read in KB on DSM 6+; bytes made DSM believe the package
 # needed ~190 GB after extraction.
-EXT_SIZE="$(( $(gzip -dc "$WORK/package.tgz" | wc -c | tr -d ' ') / 1024 ))"
+EXT_SIZE="$(( $(xz -dc "$WORK/package.tgz" | wc -c | tr -d ' ') / 1024 ))"
 # Nightlies share one X.Y.Z, so BUILD is what orders them (see the note above).
 # Stamped ONCE: deploy.yml promotes a nightly .spk as-is into the stable Release,
 # which is the other reason there is only one shape to stamp.
