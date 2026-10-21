@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -181,6 +183,10 @@ async fn core_fallback(State(log): State<CoreLog>, uri: Uri, body: Bytes) -> imp
 }
 
 fn start_core(log: CoreLog) -> u16 {
+    serve(Router::new().fallback(core_fallback).with_state(log))
+}
+
+pub fn serve(app: Router) -> u16 {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
     listener.set_nonblocking(true).expect("non-blocking");
     let port = listener.local_addr().expect("addr").port();
@@ -191,14 +197,13 @@ fn start_core(log: CoreLog) -> u16 {
             .expect("runtime");
         rt.block_on(async move {
             let listener = tokio::net::TcpListener::from_std(listener).expect("listener");
-            let app = Router::new().fallback(core_fallback).with_state(log);
             axum::serve(listener, app).await.expect("serve");
         });
     });
     port
 }
 
-fn free_port() -> u16 {
+pub fn free_port() -> u16 {
     std::net::TcpListener::bind("127.0.0.1:0")
         .expect("bind")
         .local_addr()
