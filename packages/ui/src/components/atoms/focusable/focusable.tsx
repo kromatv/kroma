@@ -24,7 +24,7 @@ import { useFocusEntry } from '#ui/lib/focus-entry';
 import { useFocusLift } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { useFocusReport } from '#ui/lib/focus-report';
-import { useRevealOnFocusBy } from '#ui/lib/focus-scroll';
+import { useRevealOnFocusBy } from '#ui/lib/use-reveal-on-focus';
 import { useFocusServices } from '#ui/lib/focus-services-context';
 import { useFocusScale } from '#ui/lib/focus-transition';
 import { useFocusVisibleBy } from '#ui/lib/focus-visible';

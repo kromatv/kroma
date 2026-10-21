@@ -13,7 +13,7 @@ import { Text } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
 
 import { useStyles } from '#ui/core/styles';
-import { useRevealWhenFocused } from '#ui/lib/focus-scroll';
+import { useRevealWhenFocused } from '#ui/lib/use-reveal-on-focus';
 import { useT } from '#ui/services/i18n';
 
 const titleOf = (fontSize: number, scope: StyleScope) =>
