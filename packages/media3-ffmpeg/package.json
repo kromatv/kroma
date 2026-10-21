@@ -19,6 +19,6 @@
     "expo": "*"
   },
   "devDependencies": {
-    "expo": "~57.0.30"
+    "expo": "~58.0.16"
   }
 }

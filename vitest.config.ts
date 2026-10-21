@@ -41,6 +41,7 @@ const alias = [
   { find: /^react-native$/, replacement: 'react-native-web' },
   // Mirrors packages/bundler/src/rnw.ts.
   { find: /^@tabler\/icons-react-native$/, replacement: '@tabler/icons-react' },
+  { find: /^expo$/, replacement: 'expo-modules-core' },
   // workerd's own module. The stand-in throws exactly as the platform's absence
   // does unless a test names the ambient bindings on `globalThis.KROMA_WORKERD`.
   {

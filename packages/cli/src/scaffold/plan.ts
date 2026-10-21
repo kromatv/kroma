@@ -198,10 +198,10 @@ export function packageJsonFor(a: Answers, v: Versions): Record<string, unknown>
         : { [PUBLIC_NAME]: dep }),
       zod: '^4.5.4',
     },
-    peerDependencies: { react: '^19.2.8' },
+    peerDependencies: { react: '^19.3.0' },
     devDependencies: {
-      ...(a.inRepo ? {} : { react: '^19.2.8' }),
-      '@types/react': '^19.2.18',
+      ...(a.inRepo ? {} : { react: '^19.3.0' }),
+      '@types/react': '^19.3.0',
       typescript: '^7.0.2',
     },
   };

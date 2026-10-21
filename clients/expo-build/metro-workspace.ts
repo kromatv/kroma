@@ -64,7 +64,7 @@ function expoWorkspaceConfig(projectRoot, aliases = {}, ui = {}) {
   config.resolver.resolveRequest = (context, moduleName, platform) => {
     for (const [prefix, target] of Object.entries(pinned)) {
       if (moduleName === prefix || moduleName.startsWith(`${prefix}/`)) {
-        const rest = moduleName.slice(prefix.length);
+        const rest = exportedSubpath(target, moduleName.slice(prefix.length));
         return context.resolveRequest(context, path.join(target, rest), platform);
       }
     }
@@ -78,10 +78,23 @@ function expoWorkspaceConfig(projectRoot, aliases = {}, ui = {}) {
   return kromaUi.metro(config, { repoRoot: workspaceRoot, icons: ui.icons });
 }
 
+function exportedSubpath(target, rest) {
+  if (!rest) return rest;
+  let exportsMap;
+  try {
+    exportsMap = require(path.join(target, 'package.json')).exports;
+  } catch {
+    return rest;
+  }
+  const entry = exportsMap?.[`.${rest}`];
+  const file = typeof entry === 'string' ? entry : entry?.default;
+  return typeof file === 'string' ? file : rest;
+}
+
 function assertReactNativeMatches(projectRoot, reactNative) {
   const declared = require(path.join(projectRoot, 'package.json')).dependencies?.['react-native'];
   if (typeof declared !== 'string' || !declared.startsWith('npm:')) return;
-  // "npm:react-native-tvos@0.86.0-2" -> "react-native-tvos"
+  // "npm:react-native-tvos@0.88.0-0" -> "react-native-tvos"
   const expected = declared.slice(4).split('@').find(Boolean);
   const actual = require(path.join(reactNative, 'package.json')).name;
   if (actual === expected) return;
