@@ -182,27 +182,34 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
       const file = clean(id);
       if (id.startsWith('\0') || !SCRIPT.test(file)) return null;
       if (!code.includes('import') && !code.includes('export')) return null;
-      await init;
+      await init();
       const [imports, exports] = parse(code, file);
-      if (posix(file) === entry && !exports.some((e) => e.n === 'default')) {
+      if (
+        posix(file) === entry &&
+        !exports.some((e) => e.type !== 'reexport-all' && e.name === 'default')
+      ) {
         this.error(`${file}: the module entry must \`export default defineModule({ ... })\``);
       }
       const s = new MagicString(code);
       let count = 0;
       for (const imp of imports) {
-        if (!imp.n) continue;
-        const key = sharedKey(imp.n);
+        if (!imp.specifier) continue;
+        const key = sharedKey(imp.specifier);
         if (!key) continue;
         const tmp = `__ks${count++}`;
-        if (imp.d >= 0) {
-          s.overwrite(imp.ss, imp.se, `Promise.resolve(${HELPER_FN}(${JSON.stringify(key)}))`);
+        if (imp.type === 'dynamic') {
+          s.overwrite(
+            imp.importStart,
+            imp.importEnd,
+            `Promise.resolve(${HELPER_FN}(${JSON.stringify(key)}))`,
+          );
           continue;
         }
-        const statement = code.slice(imp.ss, imp.se);
+        const statement = code.slice(imp.importStart, imp.importEnd);
         const rewritten = statement.startsWith('export')
           ? rewriteReexport(statement, key, tmp)
           : rewriteImport(statement, key, tmp);
-        s.overwrite(imp.ss, imp.se, rewritten);
+        s.overwrite(imp.importStart, imp.importEnd, rewritten);
       }
       if (count === 0) return null;
       s.prepend(`import { ${HELPER_FN} } from ${JSON.stringify(HELPER)};\n`);
