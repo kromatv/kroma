@@ -8,9 +8,9 @@
 // exactly as the author wrote it, because a half-rewritten example is worse
 // than an honest one.
 
-import { head } from './head';
-import { matching } from './matching';
-import { substitute, tidy, type Pass } from './substitute';
+import { head } from './story-code-inline/head';
+import { matching } from './story-code-inline/matching';
+import { substitute, tidy, type Pass } from './story-code-inline/substitute';
 
 function body(rest: string): string | null {
   const text = rest.trim();
