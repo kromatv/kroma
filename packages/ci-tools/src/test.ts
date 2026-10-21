@@ -4,7 +4,7 @@ import { parseArgs } from 'node:util';
 import { $ } from 'bun';
 import { summary } from './actions';
 import { root } from './root';
-import { expectedBlobs, newestAttempts, parseShard } from './shard';
+import { blobName, expectedBlobs, newestAttempts, parseShard } from './shard';
 
 const REPORTS = join(root, '.vitest-reports');
 const ATTEMPTS = join(root, '.vitest-attempts');
@@ -29,7 +29,8 @@ async function codegen(): Promise<void> {
 async function shard(spec: string): Promise<void> {
   const { index, total } = parseShard(spec);
   await codegen();
-  await $`${vitest} run --reporter=default --reporter=blob --shard=${index}/${total} ${MEASURED} ${COVERAGE} ${SHARD_TIMEOUT}`.cwd(
+  const blob = `--outputFile.blob=${join(REPORTS, blobName({ index, total }))}`;
+  await $`${vitest} run --reporter=default --reporter=blob ${blob} --shard=${index}/${total} ${MEASURED} ${COVERAGE} ${SHARD_TIMEOUT}`.cwd(
     root,
   );
 }
@@ -54,7 +55,7 @@ async function merge(total: number | undefined): Promise<void> {
     if (missing.length > 0) throw new Error(`missing shard report(s): ${missing.join(', ')}`);
   }
   await codegen();
-  const run = await $`${vitest} run --merge-reports ${COVERAGE}`.cwd(root).nothrow();
+  const run = await $`${vitest} run --merge-reports=${REPORTS} ${COVERAGE}`.cwd(root).nothrow();
   const out = run.stdout.toString();
   if (run.exitCode !== 0) throw new Error(`vitest --merge-reports exited ${run.exitCode}`);
   if (!existsSync(LCOV)) throw new Error(`merge wrote no ${LCOV}`);

@@ -20,7 +20,7 @@ const render = (ui: ReactElement) =>
 afterEach(cleanup);
 
 const edge = (label: string) =>
-  getComputedStyle(screen.getByLabelText(label).parentElement as Element).borderColor;
+  getComputedStyle(screen.getByLabelText(label).parentElement as Element).borderTopColor;
 
 describe('Field.Root with no children', () => {
   it('renders the entry itself, named by the label', () => {
