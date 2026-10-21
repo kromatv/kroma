@@ -15,7 +15,8 @@ import {
   type Rule,
   type TextLayoutProps,
 } from '#ui/core/shorthands';
-import { KROMA, radiusValue, type Theme } from '#ui/core/theme';
+import { radiusValue } from '#ui/core/radius-value';
+import { KROMA, type Theme } from '#ui/core/theme';
 import type { FontToken, TypeRole } from '#ui/core/tokens';
 
 /**
