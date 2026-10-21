@@ -76,14 +76,15 @@ jobs:
           path: out
           merge-multiple: true
 
-      # One release per recipe: the tag carries the hash of the recipe files, so
-      # a rebuild of the same recipe replaces nothing a lock already points at.
+      # One release per recipe: the tag carries the hash of what decides the
+      # bytes (the build script and the configure lists, not check.sh), so a
+      # rebuild of the same recipe replaces nothing a lock already points at.
       - name: Release and print the lock lines
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          recipe="$(cat clients/synology/ffmpeg/* | sha256sum | cut -c1-12)"
+          recipe="$(cat clients/synology/ffmpeg/build.sh clients/synology/ffmpeg/configure*.args | sha256sum | cut -c1-12)"
           version="$(sed -n 's/^VERSION="\(.*\)"$/\1/p' clients/synology/ffmpeg/build.sh)"
           tag="vendor-ffmpeg-kroma-$version-$recipe"
           if gh release view "$tag" >/dev/null 2>&1; then

@@ -5,7 +5,18 @@
 # Usage: check.sh <bin-dir> <x86_64|aarch64>
 set -u
 F=$1; ARCH=$2; ok=0; bad=0
-run() { name=$1; shift; if "$@" >/tmp/out.log 2>&1; then ok=$((ok+1)); else bad=$((bad+1)); echo "FAIL $name"; tail -3 /tmp/out.log; fi; }
+run() {
+  name=$1
+  shift
+  if "$@" >/tmp/out.log 2>&1; then
+    ok=$((ok + 1))
+  else
+    bad=$((bad + 1))
+    echo "FAIL $name"
+    tail -3 /tmp/out.log
+  fi
+  return 0
+}
 cd /tmp
 run demo-mkv $F/ffmpeg -y -hide_banner -f lavfi -i testsrc2=s=1280x720:d=6 -f lavfi -i sine=d=6 -f srt -i /dev/null -c:v libx264 -preset ultrafast -g 25 -c:a aac -map 0 -map 1 demo.mkv
 printf '1\n00:00:00,500 --> 00:00:02,000\nHello\n' > s.srt
