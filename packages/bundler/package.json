@@ -50,17 +50,17 @@
     "@kromatv/ui": "workspace:*",
     "@mdx-js/mdx": "^3.1.1",
     "@mdx-js/rollup": "^3.1.1",
-    "@tanstack/react-start": "^1.168.46",
+    "@tanstack/react-start": "^1.169.3",
     "@types/babel__core": "^7.20.5",
-    "@vitejs/plugin-react": "^6.0.5",
-    "acorn": "^8.18.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "acorn": "^8.19.0",
     "acorn-jsx": "^5.3.2",
     "babel-plugin-polyfill-corejs3": "^1.0.0",
     "esbuild": "^0.28.2",
     "lightningcss": "^1.33.0",
     "oxc-transform-react": "0.154.0",
-    "postcss": "^8.5.26",
-    "postcss-custom-properties": "^15.0.1",
+    "postcss": "^8.5.31",
+    "postcss-custom-properties": "^15.0.4",
     "remark-gfm": "^4.0.1",
     "typescript": "^7.0.2",
     "@babel/preset-typescript": "^7.29.7"
@@ -69,8 +69,8 @@
     "vite": ">=6"
   },
   "devDependencies": {
-    "@types/node": "^22.20.1",
+    "@types/node": "^22.20.5",
     "vite": "^8.2.1",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.12"
   }
 }

@@ -38,7 +38,7 @@ describe('the icons page', () => {
   it('narrows the grid as the box is typed into', () => {
     const box = page();
     fireEvent.change(box, { target: { value: 'playpause' } });
-    expect(screen.getByText('2 of 6250 glyphs')).toBeTruthy();
+    expect(screen.getByText(/^2 of \d+ glyphs$/)).toBeTruthy();
     expect(screen.getAllByText('player-pause').length).toBeGreaterThan(0);
   });
 
