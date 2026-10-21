@@ -75,7 +75,7 @@ jobs:
       # re-runs every transform, because a fresh runner has no ~/.gradle at all.
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
-          gradle-version: '8.13'
+          gradle-version: '9.4.1'
           # Transforms (extracted AARs, instrumented jars) are derived from the
           # dependencies and come back in about a minute; as a cache entry they
           # were 0.6 GB per app, the largest single item in the repository's
