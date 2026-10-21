@@ -87,7 +87,10 @@ pub async fn register(
 
     if count == 0 {
         let ip = client_ip(&headers, &addr, &state.config.trusted_proxies);
-        if !crate::services::playback::is_lan(&ip, &[]) {
+        if !crate::services::playback::is_lan(
+            &ip,
+            &crate::services::settings::local_networks(&state.settings),
+        ) {
             return lerr(loc, StatusCode::FORBIDDEN, "auth.firstRunLocalOnly");
         }
         let hash = auth::hash_password(&body.password);
