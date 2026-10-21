@@ -1,0 +1,9 @@
+--enable-libdrm
+--enable-vaapi
+--enable-libvpl
+--enable-ffnvcodec
+--enable-cuda-llvm
+--enable-nvenc
+--enable-nvdec
+--enable-encoder=h264_vaapi,h264_qsv,h264_nvenc
+--enable-filter=scale_vaapi,scale_qsv,scale_cuda
