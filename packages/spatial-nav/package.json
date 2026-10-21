@@ -40,7 +40,7 @@
     "react-native": "npm:react-native-tvos@0.86.0-2",
     "react-native-web": "^0.21.2",
     "typescript": "^7.0.2",
-    "vite": "^8.2.1",
+    "vite": "^8.3.5",
     "vitest": "^4.1.12"
   },
   "files": [

@@ -57,13 +57,13 @@
     "rehype-slug": "^6.0.0",
     "remark-frontmatter": "^5.0.0",
     "remark-gfm": "^4.0.1",
-    "remark-mdx-frontmatter": "^5.2.0",
+    "remark-mdx-frontmatter": "^6.0.0",
     "shiki": "^4.5.0",
     "tailwindcss": "^4.3.3",
     "takumi-js": "^2.17.1",
     "topojson-client": "^3.1.0",
     "typescript": "^7.0.2",
-    "vite": "^8.2.1",
+    "vite": "^8.3.5",
     "world-atlas": "^2.0.2"
   }
 }
