@@ -13,7 +13,7 @@ The gap on Android is DTS, TrueHD, and E-AC3 on sets without the licence. Video 
 not the problem: H.264, HEVC, VP9 and AV1 are hardware on any modern Android TV SoC,
 and software-decoding video is not something a Chromecast-class device can do anyway.
 
-This package is one of two halves. The other is `patches/expo-video@57.0.2.patch`,
+This package is one of two halves. The other is `patches/expo-video@58.0.12.patch`,
 which sets `EXTENSION_RENDERER_MODE_ON`. `DefaultRenderersFactory` finds these
 decoders by reflection, but only when the mode is not `OFF`, and `OFF` is the
 default. Ship one without the other and nothing changes.
@@ -24,15 +24,15 @@ picks up what is left.
 
 ## The patch has two halves
 
-`patches/expo-video@57.0.2.patch` touches two files, and it is easy to see only one
+`patches/expo-video@58.0.12.patch` touches two files, and it is easy to see only one
 of them. The renderer mode in `VideoPlayer.kt` is the visible half. The other deletes
 `android.publication` from expo-video's `expo-module.config.json`, and without it the
 first half does nothing at all.
 
-Expo SDK 57 ships prebuilt Android binaries for its own modules. expo-video carries
+Expo SDK 58 ships prebuilt Android binaries for its own modules. expo-video carries
 
 ```
-local-maven-repo/host/exp/exponent/expo.modules.video/57.0.2/expo.modules.video-57.0.2.aar
+local-maven-repo/host/exp/exponent/expo.modules.video/58.0.12/expo.modules.video-58.0.12.aar
 ```
 
 and expo-autolinking prefers that publication over compiling `android/src`. The Gradle
@@ -80,7 +80,7 @@ filename), or when a decoder needs adding.
 Requires the Android NDK (built with 27.1.12297006).
 
 ```bash
-git clone --depth 1 -b 1.9.0 https://github.com/androidx/media.git media3
+git clone --depth 1 -b 1.9.1 https://github.com/androidx/media.git media3
 MODULE="$PWD/media3/libraries/decoder_ffmpeg/src/main"
 git clone --depth 1 -b release/6.0 https://git.ffmpeg.org/ffmpeg.git "$MODULE/jni/ffmpeg"
 

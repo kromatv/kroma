@@ -1,7 +1,8 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "expo/tsconfig.base.json",
   "compilerOptions": {
     "strict": true,
+    "customConditions": ["react-native", "react-native-legacy-deep-imports"],
     "allowImportingTsExtensions": true,
     "types": ["node", "react"],
     "paths": {
@@ -10,7 +11,7 @@
       "#ui/*": ["../../packages/ui/src/*"],
       "#tv/*": ["../../packages/tv/src/*"],
       "#web/*": ["../web/src/*"],
-      "react-native": ["./node_modules/react-native"]
+      "react-native": ["./node_modules/react-native/types_DEPRECATED/index.d.ts"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],

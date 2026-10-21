@@ -21,9 +21,15 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import {
+  GestureDetector,
+  useCompetingGestures,
+  useExclusiveGestures,
+  usePinchGesture,
+  useTapGesture,
+} from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
 import { useChromeReveal } from '#mobile/player/useChromeReveal';
@@ -190,21 +196,23 @@ export function PlayerChrome({
     setZoomNote(wantFill ? t('player.zoomFill') : t('player.zoomFit'));
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   });
-  const gestures = useMemo(() => {
-    const tap = Gesture.Tap()
-      .runOnJS(true)
-      .onEnd(() => onTap());
-    const doubleTap = Gesture.Tap()
-      .runOnJS(true)
-      .numberOfTaps(2)
-      .onEnd((e, ok) => {
-        if (ok) onDoubleTap(e.x);
-      });
-    const pinch = Gesture.Pinch()
-      .runOnJS(true)
-      .onEnd((e) => onPinch(e.scale));
-    return Gesture.Race(pinch, Gesture.Exclusive(doubleTap, tap));
-  }, [onTap, onDoubleTap, onPinch]);
+  const tap = useTapGesture({
+    runOnJS: true,
+    onDeactivate: () => onTap(),
+  });
+  const doubleTap = useTapGesture({
+    runOnJS: true,
+    numberOfTaps: 2,
+    onDeactivate: (e) => {
+      if (!e.canceled) onDoubleTap(e.x);
+    },
+  });
+  const pinch = usePinchGesture({
+    runOnJS: true,
+    onDeactivate: (e) => onPinch(e.scale),
+  });
+  const taps = useExclusiveGestures(doubleTap, tap);
+  const gestures = useCompetingGestures(pinch, taps);
 
   const { intro, inCredits } = markersAt(item, engine.cur);
   const lift = (visible ? 110 : 40) + insets.bottom;

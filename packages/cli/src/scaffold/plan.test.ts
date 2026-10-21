@@ -210,7 +210,7 @@ describe('packageJsonFor', () => {
     expect(pkg).toMatchObject({
       name: 'tv.acme.notes',
       dependencies: { '@kromatv/sdk': '^1.2.3' },
-      devDependencies: { react: '^19.2.8', '@types/react': '^19.2.18', typescript: '^7.0.2' },
+      devDependencies: { react: '^19.3.0', '@types/react': '^19.3.0', typescript: '^7.0.2' },
     });
     expect(pkg?.devDependencies).not.toHaveProperty('react-native');
     expect(pkg?.overrides).toBeUndefined();

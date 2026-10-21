@@ -1,14 +1,18 @@
 import { Box, radius as cornerRadius, NavPill, styles, useStyles } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
-// expo-router vendors react-navigation and does not re-export this type from its root.
-import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
+import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CastMiniBar } from '#mobile/components/cast/CastMiniBar';
 
 const GLYPH = 24;
 
-export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTabBarProps>) {
+export function PillTabBar({
+  state,
+  descriptors,
+  emitter,
+  navigateToTab,
+}: Readonly<BottomTabBarProps>) {
   const s = useStyles(sDefinition);
 
   const insets = useSafeAreaInsets();
@@ -33,12 +37,12 @@ export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTa
             const focused = state.index === index;
             const label = options.title ?? route.name;
             const onPress = () => {
-              const event = navigation.emit({
+              const event = emitter.emit({
                 type: 'tabPress',
                 target: route.key,
                 canPreventDefault: true,
               });
-              if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+              if (!focused && !event.defaultPrevented) navigateToTab(route.key);
             };
             return (
               <NavPill.Item
