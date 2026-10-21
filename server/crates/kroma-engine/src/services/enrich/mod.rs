@@ -10,3 +10,6 @@ mod process;
 mod run;
 
 pub use run::{enrich_one, maybe_spawn, run_tracked, EnrichSummary};
+
+#[cfg(test)]
+mod tests;
