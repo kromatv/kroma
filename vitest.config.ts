@@ -68,6 +68,7 @@ const environmentOptions = { jsdom: { url: 'http://localhost/' } };
 // Pure-logic unit tests run in the `node` environment (no DOM); a file that
 // needs one opts in with `// @vitest-environment jsdom`.
 const environment = 'node';
+const pool = 'threads';
 
 // @testing-library only auto-installs its unmount-after-each-test hook when
 // the runner exposes globals, which this project does not.
@@ -106,6 +107,7 @@ export default defineConfig({
         resolve: { alias, extensions: WEB_EXTENSIONS, dedupe },
         test: {
           name: 'web',
+          pool,
           environment,
           environmentOptions,
           setupFiles,
@@ -142,6 +144,7 @@ export default defineConfig({
         },
         test: {
           name: 'native',
+          pool,
           environment,
           environmentOptions,
           setupFiles,
@@ -154,6 +157,7 @@ export default defineConfig({
         resolve: { alias, extensions: WEB_EXTENSIONS, dedupe },
         test: {
           name: 'audit',
+          pool,
           environment: 'jsdom',
           environmentOptions,
           // The audit library FIRST: React reads the devtools hook it installs
