@@ -20,7 +20,7 @@ import {
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
-import { useRouter, useRouterState } from '@tanstack/react-router';
+import { type ErrorComponentProps, useRouter, useRouterState } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
 import { PAGE_RADIAL } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link';
@@ -147,7 +147,7 @@ const sDefinition = styles({
 
 /** Router `defaultErrorComponent`: a thrown error (loader/component). Picks the
  * variant from the error's status and offers a retry that re-runs the route. */
-export function RouteError({ error, reset }: Readonly<{ error: Error; reset: () => void }>) {
+export function RouteError({ error, reset }: Readonly<ErrorComponentProps>) {
   const router = useRouter();
   const href = useRouterState({ select: (s) => s.location.href });
   const kind = kindOf(error);
@@ -177,8 +177,8 @@ export function RouteError({ error, reset }: Readonly<{ error: Error; reset: () 
 
 // The stack when the throw carries one (a client-side crash), the composed
 // status line when it does not (an API 500 has no client stack worth reading).
-function traceOf(error: Error): string | null {
-  if (error.stack) return error.stack;
+function traceOf(error: unknown): string | null {
+  if (error instanceof Error && error.stack) return error.stack;
   if (error instanceof KromaApiError) return `${error.name}: ${error.message}`;
   return String(error) || null;
 }

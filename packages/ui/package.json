@@ -62,26 +62,25 @@
     "@kromatv/core": "workspace:*",
     "@kromatv/i18n": "workspace:*",
     "@kromatv/spatial-nav": "workspace:*",
-    "@tabler/icons-react": "^3.46.0",
-    "@tabler/icons-react-native": "^3.46.0",
+    "@tabler/icons-react": "^3.49.0",
+    "@tabler/icons-react-native": "^3.49.0",
     "react-native-svg": "^15.15.5",
-    "zod": "^4.5.4"
+    "zod": "^4.6.7"
   },
   "peerDependencies": {
     "react": ">=18",
     "react-dom": ">=18",
     "react-native": "*",
-    "expo": "^57.0.13",
-    "expo-image": "~57.0.3",
+    "expo": "^57.0.30",
+    "expo-image": "~57.0.5",
     "expo-video": "~57.0.2",
     "@testing-library/react": ">=16"
   },
   "devDependencies": {
-    "@kromatv/client": "workspace:*",
     "@kromatv/react-audit": "workspace:*",
     "@kromatv/workbench": "workspace:*",
-    "@tabler/icons": "^3.46.0",
-    "@types/node": "^22.20.1",
+    "@tabler/icons": "^3.49.0",
+    "@types/node": "^22.20.5",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "magic-string": "^0.30.21",

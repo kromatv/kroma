@@ -49,7 +49,10 @@ describe('kromaIconCatalog', () => {
   });
 
   it('keeps a numeric tag as a searchable token and drops the unusable ones', async () => {
+    written.json = JSON.stringify({ 'a-b-2': { category: 'Letters', tags: ['ab', 2, ''] } });
+
     const tags = (await catalog())['a-b-2']?.tags ?? [];
+
     expect(tags).toContain('2');
     expect(tags).not.toContain('');
   });

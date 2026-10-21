@@ -20,7 +20,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kromatv/core": "workspace:*",
     "@kromatv/tv": "workspace:*",
     "@kromatv/ui": "workspace:*",
     "react": "19.2.8",
@@ -29,10 +28,10 @@
   },
   "devDependencies": {
     "@kromatv/bundler": "workspace:*",
-    "@types/node": "^22.20.1",
+    "@types/node": "^22.20.5",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.5",
+    "@vitejs/plugin-react": "^6.1.2",
     "lightningcss": "^1.33.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.1"
