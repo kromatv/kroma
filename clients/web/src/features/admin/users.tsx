@@ -17,7 +17,9 @@ import {
 import { accessLabel } from '#web/features/admin/library-visibility';
 import { Pill, PillDot } from '#web/features/admin/pill';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
-import { EditUserModal, InviteModal, PendingInvite } from '#web/features/admin/users-modals';
+import { EditUserModal } from '#web/features/admin/users-edit-modal';
+import { InviteModal } from '#web/features/admin/users-invite-modal';
+import { PendingInvite } from '#web/features/admin/users-pending-invite';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 
