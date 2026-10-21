@@ -46,7 +46,16 @@ pub(crate) async fn drain<R: tokio::io::AsyncRead + Unpin>(me: Arc<RemoteAccess>
 // Returns the trimmed first line of `bin --version` on success, else `None`
 // (binary missing / not runnable). Used for the panel's "found" indicator.
 pub(crate) async fn binary_version(bin: &str) -> Option<String> {
-    let out = Command::new(bin).arg("--version").output().await.ok()?;
+    let mut busy = 0;
+    let out = loop {
+        match Command::new(bin).arg("--version").output().await {
+            Err(e) if e.kind() == std::io::ErrorKind::ExecutableFileBusy && busy < 10 => {
+                busy += 1;
+                tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            }
+            out => break out.ok()?,
+        }
+    };
     if !out.status.success() {
         return None;
     }
