@@ -46,6 +46,7 @@ run av1-decode-lib sh -c "$F/ffmpeg -hide_banner -decoders | grep -q libdav1d"
 if [ "$ARCH" = x86_64 ]; then
   run hw-encoders sh -c "$F/ffmpeg -hide_banner -encoders | grep -c 'h264_\(vaapi\|qsv\|nvenc\)' | grep -q 3"
   run hwaccels sh -c "$F/ffmpeg -hide_banner -hwaccels | grep -q vaapi"
+  run libva-api sh -c "grep -q vaMapBuffer2 $F/../lib/libva.so.2 && grep -q vaGetDisplayDRM $F/../lib/libva-drm.so.2"
 fi
 run no-network sh -c "! $F/ffmpeg -hide_banner -protocols | grep -qw https"
 echo "ok=$ok bad=$bad"
