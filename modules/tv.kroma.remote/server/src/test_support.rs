@@ -50,7 +50,7 @@ pub fn install_script(data_dir: &Path, body: &str) -> PathBuf {
     let path = provision::cached_path(data_dir);
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(&path, body).unwrap();
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
     path
 }
 
