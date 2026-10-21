@@ -39,7 +39,7 @@ const SDK: PackageJson = {
   dependencies: {
     '@kromatv/ui': 'workspace:*',
     '@tanstack/react-query': '^5',
-    '@tanstack/react-table': '^8',
+    '@tanstack/react-table': '^9',
   },
   peerDependencies: { react: '^19' },
 };
