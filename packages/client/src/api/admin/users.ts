@@ -17,7 +17,7 @@ export const AdminUser = User.pick({
 }).extend({
   permissions: z.array(Permission),
   libraries: z.array(LibraryId).nullable(),
-  role: z.enum(['admin.roleOwner', 'admin.roleMember', 'admin.roleRestricted']),
+  role: z.string(),
   lastSeen: z.string().nullish(),
   online: z.boolean(),
   emailVerified: z.boolean(),
