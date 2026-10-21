@@ -304,7 +304,7 @@ describe('ListRow', () => {
     );
     const row = getComputedStyle(rowOf(container, 'Sur la carte'));
 
-    expect(row.boxShadow).toBeFalsy();
+    expect(row.boxShadow).toBe('none');
     expect(row.backgroundColor).toBeTruthy();
     expect(row.borderTopLeftRadius).not.toBe('0px');
   });

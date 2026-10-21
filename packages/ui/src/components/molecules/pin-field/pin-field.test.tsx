@@ -81,10 +81,10 @@ describe('PinField', () => {
 
   it('paints the empty dots red once the code was refused', () => {
     const { container: plain } = render(<PinField maxLength={4} />);
-    const quiet = getComputedStyle(dots(plain)[0] as HTMLElement).borderColor;
+    const quiet = getComputedStyle(dots(plain)[0] as HTMLElement).borderTopColor;
 
     cleanup();
     const { container: refused } = render(<PinField maxLength={4} invalid />);
-    expect(getComputedStyle(dots(refused)[0] as HTMLElement).borderColor).not.toBe(quiet);
+    expect(getComputedStyle(dots(refused)[0] as HTMLElement).borderTopColor).not.toBe(quiet);
   });
 });
