@@ -96,14 +96,19 @@ fn recompute_item_representative(conn: &Connection, item_id: &str) -> Result<()>
 }
 
 pub(super) fn recompute_all_representatives(pool: &Pool) -> Result<()> {
-    let conn = pool.get()?;
-    let mut stmt = conn.prepare("SELECT DISTINCT item_id FROM files WHERE probed = 1")?;
-    let ids: Vec<String> = stmt
-        .query_map([], |r| r.get::<_, String>(0))?
-        .collect::<rusqlite::Result<Vec<_>>>()?;
-    for id in ids {
-        recompute_item_representative(&conn, &id)?;
-    }
+    pool.get()?.execute(
+        "UPDATE items AS i \
+            SET container = b.container, abs_path = b.abs_path, \
+                rel_path = b.rel_path, duration_ms = b.duration_ms \
+           FROM (SELECT item_id, abs_path, container, rel_path, duration_ms, \
+                        ROW_NUMBER() OVER (PARTITION BY item_id \
+                            ORDER BY v_width DESC NULLS LAST, id) AS rank \
+                   FROM files WHERE probed = 1 AND unreadable IS NULL) AS b \
+          WHERE b.item_id = i.id AND b.rank = 1 \
+            AND (i.container IS NOT b.container OR i.abs_path IS NOT b.abs_path \
+              OR i.rel_path IS NOT b.rel_path OR i.duration_ms IS NOT b.duration_ms)",
+        [],
+    )?;
     Ok(())
 }
 

@@ -24,38 +24,33 @@ impl DownloadManager {
         row: &db::DownloadRow,
         status: &crate::TorrentStatus,
     ) -> bool {
-        tracing::info!(
-            release = %row.release_title,
-            state = ?status.state,
-            progress = format!("{:.1}%", status.progress * 100.0),
-            peers = status.peers,
-            peers_seen = status.peers_seen,
-            down = format!("{}/s", human_bytes(status.down_bps)),
-            "download tick"
-        );
         let finished = status.progress >= 1.0
             || matches!(
                 status.state,
                 crate::TorrentState::Completed | crate::TorrentState::Seeding
             );
-        let new_status = if finished {
-            "completed"
-        } else {
-            match status.state {
-                crate::TorrentState::Paused => "paused",
-                crate::TorrentState::Queued => "queued",
-                // Error included: transient tracker/disk errors recover, so keep
-                // polling with the error visible.
-                _ => "downloading",
-            }
-        };
-        let _ = db::update_download_bytes(
-            self.core(),
-            &row.id,
-            status.lifetime_downloaded_bytes,
-            status.lifetime_uploaded_bytes,
-        );
-        if let Some(hash) = status.info_hash.as_deref() {
+        let new_status = ledger_status(status, finished);
+        let moved = progress_moved(row, status, new_status);
+        if moved || finished {
+            tracing::info!(
+                release = %row.release_title,
+                state = ?status.state,
+                progress = format!("{:.1}%", status.progress * 100.0),
+                peers = status.peers,
+                peers_seen = status.peers_seen,
+                down = format!("{}/s", human_bytes(status.down_bps)),
+                "download tick"
+            );
+        }
+        if bytes_moved(row, status) {
+            let _ = db::update_download_bytes(
+                self.core(),
+                &row.id,
+                status.lifetime_downloaded_bytes,
+                status.lifetime_uploaded_bytes,
+            );
+        }
+        if let (None, Some(hash)) = (row.info_hash.as_deref(), status.info_hash.as_deref()) {
             let _ = db::set_download_info_hash(self.core(), &row.id, hash);
         }
         if finished {
@@ -70,7 +65,7 @@ impl DownloadManager {
             );
             let _ = db::set_download_contents(self.store(), &row.id, &status.files);
             let _ = db::mark_download_completed(self.core(), &row.id, now_ms());
-        } else {
+        } else if moved {
             let _ = db::update_download_progress(
                 self.core(),
                 &row.id,
@@ -103,3 +98,31 @@ impl DownloadManager {
         false
     }
 }
+
+fn ledger_status(status: &crate::TorrentStatus, finished: bool) -> &'static str {
+    if finished {
+        return "completed";
+    }
+    match status.state {
+        crate::TorrentState::Paused => "paused",
+        crate::TorrentState::Queued => "queued",
+        // Error included: transient tracker/disk errors recover, so keep
+        // polling with the error visible.
+        _ => "downloading",
+    }
+}
+
+fn bytes_moved(row: &db::DownloadRow, status: &crate::TorrentStatus) -> bool {
+    row.lifetime_downloaded_bytes != status.lifetime_downloaded_bytes
+        || row.lifetime_uploaded_bytes != status.lifetime_uploaded_bytes
+}
+
+fn progress_moved(row: &db::DownloadRow, status: &crate::TorrentStatus, new_status: &str) -> bool {
+    row.status != new_status
+        || row.progress != status.progress
+        || row.error != status.error
+        || (status.save_path.is_some() && row.save_path != status.save_path)
+}
+
+#[cfg(test)]
+mod tests;
