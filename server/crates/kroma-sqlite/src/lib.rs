@@ -1,15 +1,17 @@
 //! A module's window onto SQLite: the WAL pool, the grant that scopes it to the
-//! core tables a manifest declares, and the migrations a module applies to its
-//! own file. The mechanism and nothing of the schema, so a sidecar links this
+//! core tables a manifest declares, and the versioned migrations every database
+//! takes, the core's and a module's own. The mechanism and nothing of the schema, so a sidecar links this
 //! and never `kroma-db`.
 
 mod grant;
+mod migrate;
 mod open;
 mod pool;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 
 pub use grant::{init_scoped, Grant};
+pub use migrate::{migrate, user_version, Migrated, Run, Schema, Step, KEPT_SNAPSHOTS};
 pub use open::{apply_migrations, open, open_with};
 pub use pool::{Pool, PoolInner, PooledConn};
 
