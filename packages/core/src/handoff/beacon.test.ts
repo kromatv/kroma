@@ -206,6 +206,35 @@ describe('a phone granting the account', () => {
     expect(client.handoff.poll).toHaveBeenCalledTimes(1);
     stop();
   });
+
+  it('hands on the media ticket the grant carried, so the first film plays', async () => {
+    const { client } = stubClient({
+      poll: vi.fn(async (): Promise<PairingStatus> => ({
+        status: 'authorized',
+        token: 'tok',
+        accessToken: 'acc',
+        mediaTicket: 'ticket',
+        user: USER,
+      })),
+    });
+    const onAuthenticated = vi.fn();
+
+    const { stop } = startHandoff({
+      client,
+      deviceId: DEVICE,
+      name: 'Apple TV',
+      platform: 'Apple TV',
+      onBeacon: () => undefined,
+      onAuthenticated,
+    });
+    await tick();
+    await tick(3000);
+
+    expect(onAuthenticated).toHaveBeenCalledWith(
+      expect.objectContaining({ mediaTicket: 'ticket' }),
+    );
+    stop();
+  });
 });
 
 describe('a beacon that lapsed', () => {
