@@ -21,6 +21,7 @@ export default function AppLayout() {
     >
       <Stack.Screen
         name="player/[id]"
+        dangerouslySingular
         options={{
           autoHideHomeIndicator: true,
           animation: 'fade',
