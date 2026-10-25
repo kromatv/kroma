@@ -63,7 +63,12 @@ export function TvQuickConnect() {
         if (cancelled) return;
         if (res.status === 'authorized') {
           clearTimers();
-          onAuthenticated({ token: res.token, accessToken: res.accessToken, user: res.user });
+          onAuthenticated({
+            token: res.token,
+            accessToken: res.accessToken,
+            mediaTicket: res.mediaTicket,
+            user: res.user,
+          });
           return;
         }
         if (res.status === 'expired') {
