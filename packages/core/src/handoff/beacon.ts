@@ -123,6 +123,7 @@ export function startHandoff(opts: HandoffLoopOptions): HandoffBeaconHandle {
         onAuthenticated({
           token: status.token,
           accessToken: status.accessToken,
+          mediaTicket: status.mediaTicket,
           user: status.user,
         });
         return;
