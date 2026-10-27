@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useRef } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
 
-const RAMP = 160;
+const RAMP = 80;
 
 function scrollerOf(node: HTMLElement): HTMLElement | null {
   for (let at = node.parentElement; at; at = at.parentElement) {
@@ -20,7 +20,7 @@ function paint(node: HTMLElement, scroller: HTMLElement, inset: number) {
   node.style.setProperty('-webkit-mask-image', mask);
 }
 
-/** Content inside a page scroller that dissolves to transparent as it scrolls up past `inset` below the scroller's top edge, over the next 160 px: a real mask, so whatever is truly behind it shows. Nothing on native, which has no mask. */
+/** Content inside a page scroller that dissolves to transparent as it scrolls up past `inset` below the scroller's top edge, over the next 80 px: a real mask, so whatever is truly behind it shows. Nothing on native, which has no mask. */
 export function ScrollMask({
   inset,
   style,
