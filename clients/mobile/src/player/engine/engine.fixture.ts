@@ -25,7 +25,7 @@ const native = (() => {
         player.playing = true;
       }),
       pause: vi.fn(),
-      replaceAsync: vi.fn(async (_source: unknown): Promise<void> => undefined),
+      replaceAsync: vi.fn((_source: unknown): Promise<void> => Promise.resolve()),
       addListener: (type: string, fn: Listener) => {
         let set = listeners.get(type);
         if (!set) {
@@ -99,15 +99,13 @@ export function open(startSec = 0) {
 export const player = () => P.box.current;
 
 export async function reachReady() {
-  await act(async () => {
-    player().emit('statusChange', { status: 'readyToPlay' });
-  });
+  await act(() => Promise.resolve(player().emit('statusChange', { status: 'readyToPlay' })));
 }
 
 export async function playFor(sec: number) {
-  await act(async () => {
-    player().emit('timeUpdate', { currentTime: sec, bufferedPosition: sec + 40 });
-  });
+  await act(() =>
+    Promise.resolve(player().emit('timeUpdate', { currentTime: sec, bufferedPosition: sec + 40 })),
+  );
 }
 
 export function useFixtureEngine(...args: Parameters<typeof useKromaEngine>) {
@@ -119,7 +117,7 @@ export function resetEngineFixture() {
   P.queue.length = 0;
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => ({ headers: { get: () => '900' } })),
+    vi.fn(() => Promise.resolve({ headers: { get: () => '900' } })),
   );
 }
 
