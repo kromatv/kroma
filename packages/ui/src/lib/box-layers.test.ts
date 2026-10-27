@@ -32,6 +32,26 @@ describe('splitBoxLayers', () => {
     expect(StyleSheet.flatten(face)).toEqual({ backgroundColor: 'red' });
   });
 
+  it('grows the face of a box pinned open by opposite insets', () => {
+    const { box, face } = splitBoxLayers({
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      borderRadius: 24,
+    });
+
+    expect(box).toEqual({ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 });
+    expect(StyleSheet.flatten(face)).toEqual({ borderRadius: 24, flexGrow: 1 });
+  });
+
+  it('does not grow the face of a box pinned by one inset per axis', () => {
+    const { face } = splitBoxLayers({ position: 'absolute', top: 12, left: 12, borderRadius: 8 });
+
+    expect(StyleSheet.flatten(face)).toEqual({ borderRadius: 8 });
+  });
+
   it('leaves a pure paint style whole, with no box', () => {
     const style = { backgroundColor: 'red', borderRadius: 8 };
     const layers = splitBoxLayers(style);
