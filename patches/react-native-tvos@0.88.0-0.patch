@@ -1,0 +1,12 @@
+diff --git a/React/Base/RCTTVRemoteSelectHandler.m b/React/Base/RCTTVRemoteSelectHandler.m
+index 8023963e8977ef3b9c9549e28bb9467e4a02ce25..b69472cad9803d3a2cd6286c20b3bffb651fd5c6 100644
+--- a/React/Base/RCTTVRemoteSelectHandler.m
++++ b/React/Base/RCTTVRemoteSelectHandler.m
+@@ -63,6 +63,7 @@
+   RCTTVRemoteSelectGestureRecognizer *longPressRecognizer = [[RCTTVRemoteSelectGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+   longPressRecognizer.allowedPressTypes = @[ @(UIPressTypeSelect) ];
+   longPressRecognizer.minimumPressDuration = 0.5;
++  longPressRecognizer.allowableMovement = CGFLOAT_MAX;
+   longPressRecognizer.delegate = self;
+ 
+   [self.view addGestureRecognizer:longPressRecognizer];
