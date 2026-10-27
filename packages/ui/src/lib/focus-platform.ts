@@ -32,6 +32,17 @@ const PlatformFocus = createContext<PlatformFocusHost | null>(null);
 /** Wrap a screen's children in this via <FocusScope>; never directly. */
 const PlatformFocusProvider = PlatformFocus.Provider;
 
+const PlatformHolds = createContext(false);
+
+/** Set by <FocusScope> while a platform chrome holds the television's focus. */
+const PlatformHoldsProvider = PlatformHolds.Provider;
+
+/** Whether the television's own focus engine holds the focus, so the
+ * navigator's ring must not draw: two rings on screen read as two focuses. */
+function usePlatformHoldsFocus(): boolean {
+  return useContext(PlatformHolds);
+}
+
 /**
  * Declared by a platform chrome drawn inside a scope. `owner` is who holds the
  * television's focus right now, null while no chrome is up. `onEdge` hears the
@@ -89,4 +100,10 @@ const ARROWS: Record<string, FocusDirection | undefined> = {
 };
 
 export type { FocusDirection, FocusOwner };
-export { PlatformFocusProvider, usePlatformFocus, usePlatformFocusHost };
+export {
+  PlatformFocusProvider,
+  PlatformHoldsProvider,
+  usePlatformFocus,
+  usePlatformFocusHost,
+  usePlatformHoldsFocus,
+};

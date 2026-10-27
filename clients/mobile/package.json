@@ -34,6 +34,7 @@
     "@kromatv/media3-ffmpeg": "workspace:*",
     "@kromatv/ui": "workspace:*",
     "@kromatv/workbench": "workspace:*",
+    "@react-native-masked-view/masked-view": "0.3.2",
     "@shopify/flash-list": "^2.3.3",
     "@tanstack/react-query": "^5.104.5",
     "expo": "~58.0.16",
