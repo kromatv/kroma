@@ -22,10 +22,9 @@ export interface PlayerKeysParams {
    *  level, rather than on the controller directly. */
   setVolume(level: number): void;
   intro?: { active: boolean; onSkip: () => void };
-  /** The resumed-at prompt while it is up. It takes Back (the keyboard's Escape)
-   *  and nothing else: unlike the skip pill it must not answer OK, or a film that
-   *  opened where it was left would restart on a press of play. */
-  resume?: { active: boolean; onDismiss: () => void };
+  /** The resume card while it is up. It holds the remote's focus, which opens on
+   *  the button that keeps watching. */
+  resume?: { active: boolean; onKey: (key: RemoteKey) => boolean };
   credits?: { active: boolean; onKey: (key: RemoteKey) => boolean };
   /** The end-of-film screen. While it is up there is no film left to drive, so
    *  it takes every key rather than getting first refusal on some. */
@@ -33,10 +32,7 @@ export interface PlayerKeysParams {
 }
 
 function overFilmKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): boolean {
-  if (p.resume?.active && key === 'Back') {
-    p.resume.onDismiss();
-    return true;
-  }
+  if (p.resume?.active && p.resume.onKey(key)) return true;
   if (p.intro?.active && key === 'Enter') {
     p.intro.onSkip();
     return true;
@@ -102,7 +98,7 @@ export function routeTab(p: Readonly<PlayerKeysParams>, backwards: boolean): voi
     if (!panel.onTab(backwards)) nav.closeOverlay();
     return;
   }
-  if (p.credits?.active) {
+  if (p.credits?.active || p.resume?.active) {
     routeRemoteKey(p, backwards ? 'Left' : 'Right');
     return;
   }

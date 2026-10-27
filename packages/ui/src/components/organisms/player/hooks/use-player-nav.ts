@@ -33,9 +33,6 @@ export interface PlayerNavActions {
   /** Hand this film to a TV. Only reachable when `flags.cast` is on, which the
    *  host sets while a receiver is live. */
   onCast?(): void;
-  /** The resumed-at prompt while it is up. Absent once it has gone, which is
-   *  also what takes its stop out of the chain. */
-  resume?: { onStartOver(): void; onFocus(): void };
   /** Leave the player, told why: OK on the back button, Back at the top level,
    *  or the Stop media key. */
   onExit(reason: PlayerCloseReason): void;
@@ -140,9 +137,6 @@ export function usePlayerNav(
     return clearHide;
   }, [playing, overlay, rearmHide, clearHide]);
 
-  const resumeShown = actions.resume != null;
-  if (!resumeShown && zone === 'resume') setZone('controls');
-
   const openOverlay = useCallback((o: Exclude<Overlay, null>) => {
     setOverlay(o);
     setRevealed(true);
@@ -226,7 +220,6 @@ export function usePlayerNav(
         control: controls[controlIndex] ?? null,
         drawnControls: controls,
         sheetHasItems: actions.sheetHasItems,
-        resumeShown: actions.resume != null,
       },
       backwards,
     );
@@ -237,7 +230,6 @@ export function usePlayerNav(
     }
     setZone(stop.zone);
     if (stop.zone === 'controls') setFocusedId(stop.control);
-    if (stop.zone === 'resume') actions.resume?.onFocus();
   });
 
   const focusedControl =

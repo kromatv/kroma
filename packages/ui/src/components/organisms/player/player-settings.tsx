@@ -84,6 +84,8 @@ interface PlayerResumeProps {
   /** The second playback opened on. Write the slot only where a film really did
    *  resume. */
   at: number;
+  /** The picture on the card, the art the host would show for this title. */
+  art?: string | null;
 }
 
 /** The prompt that says a film opened where it was left, and offers the way back

@@ -168,43 +168,42 @@ describe('routeRemoteKey once the film is over', () => {
   });
 });
 
-describe('routeRemoteKey while the resume prompt is up', () => {
-  function prompted(active = true) {
+describe('routeRemoteKey while the resume card is up', () => {
+  function prompted(active = true, takes = true) {
     const handleKey = vi.fn();
-    const onDismiss = vi.fn();
+    const onKey = vi.fn(() => takes);
     const params = {
       nav: nav({ handleKey, poke: vi.fn(), revealed: true, overlay: null }),
       panelRef: { current: null },
       locked: false,
-      resume: { active, onDismiss },
+      resume: { active, onKey },
     } as unknown as PlayerKeysParams;
-    return { params, handleKey, onDismiss };
+    return { params, handleKey, onKey };
   }
 
-  it('takes Back for itself rather than letting the player close', () => {
-    const { params, handleKey, onDismiss } = prompted();
-
-    routeRemoteKey(params, 'Back');
-
-    expect(onDismiss).toHaveBeenCalledOnce();
-    expect(handleKey).not.toHaveBeenCalled();
-  });
-
-  it('leaves OK alone, so a film that opened where it was left cannot restart', () => {
-    const { params, handleKey, onDismiss } = prompted();
+  it('offers the card every key first', () => {
+    const { params, handleKey, onKey } = prompted();
 
     routeRemoteKey(params, 'Enter');
 
-    expect(onDismiss).not.toHaveBeenCalled();
-    expect(handleKey).toHaveBeenCalledWith('Enter');
+    expect(onKey).toHaveBeenCalledWith('Enter');
+    expect(handleKey).not.toHaveBeenCalled();
+  });
+
+  it('hands the player a key the card did not take', () => {
+    const { params, handleKey } = prompted(true, false);
+
+    routeRemoteKey(params, 'Up');
+
+    expect(handleKey).toHaveBeenCalledWith('Up');
   });
 
   it('hands Back back to the player once it has gone', () => {
-    const { params, handleKey, onDismiss } = prompted(false);
+    const { params, handleKey, onKey } = prompted(false);
 
     routeRemoteKey(params, 'Back');
 
-    expect(onDismiss).not.toHaveBeenCalled();
+    expect(onKey).not.toHaveBeenCalled();
     expect(handleKey).toHaveBeenCalledWith('Back');
   });
 });

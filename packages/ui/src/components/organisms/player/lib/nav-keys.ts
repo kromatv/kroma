@@ -54,11 +54,6 @@ function handleMediaKey(key: RemoteKey, a: PlayerNavActions): boolean {
   }
 }
 
-function enterResume(ctx: DpadContext): void {
-  ctx.setZone('resume');
-  ctx.a.resume?.onFocus();
-}
-
 function dpadUp(ctx: DpadContext): void {
   const { a, zone, focused } = ctx;
   if (zone === 'controls') {
@@ -68,9 +63,6 @@ function dpadUp(ctx: DpadContext): void {
     }
     ctx.setZone('progress');
   } else if (zone === 'progress') {
-    if (a.resume) enterResume(ctx);
-    else ctx.setZone('back');
-  } else if (zone === 'resume') {
     ctx.setZone('back');
   } else {
     // Above the Back button there is nothing left to focus, so ▲ dismisses the
@@ -82,10 +74,7 @@ function dpadUp(ctx: DpadContext): void {
 
 function dpadDown(ctx: DpadContext): void {
   const { a, zone, focused } = ctx;
-  if (zone === 'back') {
-    if (a.resume) enterResume(ctx);
-    else ctx.setZone('progress');
-  } else if (zone === 'resume') ctx.setZone('progress');
+  if (zone === 'back') ctx.setZone('progress');
   else if (zone === 'progress') ctx.setZone('controls');
   else if (focused === 'volume') a.volumeNudge(-1);
   else ctx.openOverlay('sheet');
@@ -111,7 +100,6 @@ function handleDpadKey(key: RemoteKey, ctx: DpadContext): void {
       return;
     case 'Enter':
       if (zone === 'back') a.onExit('close');
-      else if (zone === 'resume') a.resume?.onStartOver();
       else if (zone === 'progress') a.togglePlay();
       else if (focused) ctx.activate(focused);
       return;

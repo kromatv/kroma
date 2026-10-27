@@ -1,24 +1,6 @@
 import { Box } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Img } from '#ui/components/atoms/img';
-import { clamp01 } from '#ui/components/atoms/progress';
-import { ProgressRing } from '#ui/components/atoms/progress-ring';
-import { Text } from '#ui/components/atoms/text';
 import { scaler } from '#ui/components/organisms/player/lib/metrics';
-import {
-  activeTheme,
-  type StyleScope,
-  scaledRadius,
-  sharedStyle,
-  styles,
-  sv,
-  useStyleScope,
-  useSv,
-  useTheme,
-} from '#ui/core';
-import { useStyles } from '#ui/core/styles';
-import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
-import { gradient } from '#ui/lib/css';
+import { CountdownCard } from '#ui/components/organisms/player/parts/countdown-card';
 import { useT } from '#ui/services/i18n';
 
 /**
@@ -47,28 +29,11 @@ export interface CreditsCardProps {
   onCancel: () => void;
 }
 
-// `maxW` (used below) keeps the card on screen at the design width: 392 + its
-// margin doesn't fit a phone browser, and an off-screen card takes Play with it.
-const CARD_WIDTH = 392;
-
-const ART_FILL = 'linear-gradient(135deg, rgba(244,182,66,0.16), rgba(20,18,22,0.96))';
-const VIGNETTE = 'radial-gradient(120% 120% at 50% 25%, transparent, rgba(0,0,0,0.5))';
-
-const cancelFill = sv({ base: { _focus: { bg: 'tint/16' } } });
-const playFill = sv({ base: { flex: 1, _focus: { bg: 'accentHover' } } });
-
 /**
  * Credits autoplay card (§11): a bottom-right card that surfaces during the
  * closing credits with the next episode, a draining amber countdown ring around
  * the seconds-left number, and a cancel escape.
- *
- * The ring is the shared <ProgressRing> rather than the design's conic-gradient:
- * a conic gradient is CSS-only, and an SVG arc is the same picture on every
- * platform.
  */
-
-const sizeOf = (fontSize: number, scope: StyleScope) =>
-  sharedStyle(`credits-card:size:${fontSize}`, { fontSize }, scope);
 export function CreditsCard({
   item,
   secondsLeft,
@@ -79,117 +44,26 @@ export function CreditsCard({
   onPlay,
   onCancel,
 }: Readonly<CreditsCardProps>) {
-  const cancelFillScoped = useSv(cancelFill);
-  const playFillScoped = useSv(playFill);
-
-  const scope = useStyleScope();
-
-  const s = useStyles(sDefinition);
-
   const t = useT();
-  const theme = useTheme();
   const px = scaler(scale);
-  const progress = total > 0 ? clamp01(secondsLeft / total) : 0;
-  const ring = px(54);
   return (
-    <Box
-      absolute
-      right={px(40)}
-      bottom={px(56)}
-      z={38}
-      w={px(CARD_WIDTH)}
-      maxW="100%"
-      radius={scaledRadius('2xl', scale, activeTheme(scope.theme))}
-      borderWidth={1}
-      border="white/12"
-      bg="playerSurface/90"
-      p={px(20)}
-    >
-      <Box
-        h={px(150)}
-        mb={px(16)}
-        radius={scaledRadius('lg', scale, activeTheme(scope.theme))}
-        overflow="hidden"
-      >
-        <Img src={item.posterUrl ?? null} background={ART_FILL} fill />
-        <Box fill style={[s.vignette, gradient(VIGNETTE)]} />
-        <Box absolute left={px(14)} bottom={px(14)} w={ring} h={ring} center>
-          <Box absolute>
-            <ProgressRing
-              value={progress}
-              size={ring}
-              thickness={px(6)}
-              track="rgba(255, 255, 255, 0.14)"
-              fill={theme.colors.accent}
-            />
-          </Box>
-          <Box w={px(42)} h={px(42)} center radius="circle" bg="playerSurface">
-            <Text style={[s.countdown, sizeOf(px(COUNTDOWN_SIZE), scope)]}>
-              {String(secondsLeft)}
-            </Text>
-          </Box>
-        </Box>
-      </Box>
-      <Text style={s.eyebrow} color="text/50">
-        {t('player.nextEpisode')}
-      </Text>
-      <Text lines={1} style={s.title}>
-        {item.title}
-      </Text>
-      {item.subtitle ? (
-        <Text style={s.subtitle} color="accentText">
-          {item.subtitle}
-        </Text>
-      ) : null}
-      {/* Controlled kit buttons (`focused` is ALWAYS passed) so neither becomes a
-          platform focus target; see ../lib/virtual-focus.ts. No hover handler:
-          the nav machine owns this card's focus. */}
-      <Box row gap={px(12)} mt={px(16)}>
-        <Button
-          variant="ghost"
-          size="sm"
-          focused={cancelFocused}
-          style={cancelFillScoped(undefined, { focus: cancelFocused }).root}
-          onPress={onCancel}
-          label={t('player.cancel')}
-        />
-        <Button
-          variant="primary"
-          size="sm"
-          icon="player-play-filled"
-          focused={playFocused}
-          onPress={onPlay}
-          label={t('player.playNow')}
-          style={playFillScoped(undefined, { focus: playFocused }).root}
-        />
-      </Box>
+    <Box absolute right={px(40)} bottom={px(56)} z={38} maxW="100%">
+      <CountdownCard
+        art={item.posterUrl}
+        eyebrow={t('player.nextEpisode')}
+        title={item.title}
+        subtitle={item.subtitle}
+        secondsLeft={secondsLeft}
+        total={total}
+        scale={scale}
+        secondary={{ label: t('player.cancel'), focused: cancelFocused, onPress: onCancel }}
+        primary={{
+          label: t('player.playNow'),
+          icon: 'player-play-filled',
+          focused: playFocused,
+          onPress: onPlay,
+        }}
+      />
     </Box>
   );
 }
-
-const COUNTDOWN_SIZE = 19;
-
-const sDefinition = styles({
-  vignette: { pointerEvents: 'none' },
-  countdown: {
-    font: 'ui',
-    fontWeight: '700',
-    color: 'white',
-    fontVariant: ['tabular-nums'],
-  },
-  eyebrow: {
-    font: 'ui',
-    fontSize: textRoles.overline.size,
-    fontWeight: '700',
-    letterSpacing: 1.76,
-    textTransform: 'uppercase',
-  },
-  title: {
-    mt: 4,
-    font: 'display',
-    fontSize: textSizes.controlTitle,
-    lineHeight: 23,
-    fontWeight: '700',
-  },
-  subtitle: { mt: 3, font: 'ui', fontSize: textRoles.meta.size, fontWeight: '600' },
-});
