@@ -24,7 +24,8 @@
         "UIBackgroundModes": ["remote-notification"]
       },
       "entitlements": {
-        "aps-environment": "production"
+        "aps-environment": "production",
+        "keychain-access-groups": ["$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)"]
       }
     },
     "android": {

@@ -9,6 +9,7 @@ import {
   subNote,
   subtitleLabel,
   subtitleRowLabel,
+  subtitleOptions,
 } from './trackOptions';
 import type { Subtitles } from './useSubtitles';
 
@@ -17,10 +18,15 @@ const NAMES: Record<string, string> = {
   'lang.fr-FR': 'Français (France)',
   'lang.en': 'Anglais',
   'player.subtitlesOff': 'Désactivés',
+  'player.subForced': 'Forcés',
+  'player.subAiBadge': 'IA',
   'player.subPreparing': 'Préparation',
   'error.subtitleUnavailable': 'Indisponible',
 };
-const t = ((key: string) => NAMES[key] ?? key) as ReturnType<typeof useT>;
+const t = ((key: string, params?: Record<string, unknown>) =>
+  key === 'player.subtitleTrack' ? `Piste ${params?.number}` : (NAMES[key] ?? key)) as ReturnType<
+  typeof useT
+>;
 
 const track = (fields: Partial<AudioTrack>): AudioTrack => ({
   index: 0,
@@ -90,6 +96,21 @@ describe('the audio picker over an offline download', () => {
     expect(options[0].label).toBe('Français VFF · 5.1 · EAC3');
   });
 
+  it('matches languages when AVPlayer returns the same tracks in another order', () => {
+    const local = [
+      { language: 'eng', label: 'English' },
+      { language: 'fra', label: 'French' },
+    ] as LocalAudioTrack[];
+    const options = audioOptions(
+      engine({ offline: true, localAudio: local }),
+      item([track({ language: 'fra', title: 'VFF' }), track({ index: 1, language: 'eng' })]),
+      t,
+    );
+    expect(options[0].label).toBe('Anglais · 5.1 · EAC3');
+    expect(options[1].label).toBe('VFF · 5.1 · EAC3');
+    expect(options[1].prefCode).toBe('fr-FR');
+  });
+
   it('reads the local label when the counts disagree, since the pairing is a guess', () => {
     const local = [{ language: 'fra', label: 'VF' }, { language: 'eng' }] as LocalAudioTrack[];
 
@@ -140,6 +161,23 @@ describe('a subtitle row', () => {
 
     expect(subtitleRowLabel(t, plain)).toBe('Anglais');
     expect(subtitleRowLabel(t, forTheDeaf)).toBe('Anglais · SDH');
+  });
+
+  it('names forced subtitles so a sparse track cannot look like the full dialogue', () => {
+    expect(subtitleRowLabel(t, { index: 0, language: 'fra', url: '', forced: true })).toBe(
+      'Français · Forcés',
+    );
+  });
+
+  it('keeps unnamed variants selectable with stable original track numbers', () => {
+    const options = subtitleOptions(t, [
+      { index: 1, language: 'fra', url: 'one' },
+      { index: 4, language: 'fra', url: 'two' },
+    ]);
+    expect(options.map((track) => track.label)).toEqual([
+      'Français · Piste 2',
+      'Français · Piste 5',
+    ]);
   });
 
   it('says a generated track was generated', () => {

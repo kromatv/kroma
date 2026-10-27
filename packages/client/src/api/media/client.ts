@@ -31,6 +31,7 @@ import { type HlsAudioFilter, StoryboardManifest } from './tracks';
  * is read as the 8-bit 4:2:0 profile. */
 export interface HlsMasterDeclaration {
   filter?: HlsAudioFilter;
+  subtitle?: string;
   copyCodecs?: string[];
   videoCodecs?: string[];
   maxFrame?: { width: number; height: number };
@@ -177,7 +178,11 @@ export default function mediaApi(ctx: RequestContext) {
           anchor: Math.max(0, Math.round(startSec)),
           audio: Math.max(0, Math.round(audio)),
         },
-        query: { ...streamQuery(forMode(mode, declaration)), ...ticket(ctx) },
+        query: {
+          ...streamQuery(forMode(mode, declaration)),
+          ...ticket(ctx),
+          subtitle: declaration.subtitle,
+        },
       });
     },
 

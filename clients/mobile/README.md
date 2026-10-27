@@ -9,7 +9,7 @@ types and i18n catalogs.
 ```sh
 bun install                    # repo root
 cd clients/mobile
-bun run start                  # Metro dev server (scan the QR with a dev build)
+bun run start --dev-client --lan # Metro + QR for an installed development build
 bun run ios                    # prebuild + compile + launch on the iOS simulator
 bun run android                # prebuild + compile + launch on an Android device/emulator
 ```
@@ -41,6 +41,10 @@ commands the chrome issues (transport, track, filter, rate, shutdown):
   retries once as AAC; then the error surfaces.
 - Subtitles are fetched as WebVTT and rendered as an overlay with the shared
   `parseVtt`/`activeCueText` from `@kromatv/core` (same as the TV client).
+  Selecting a streamed subtitle also exposes it as an HLS WebVTT rendition;
+  PiP selects that native rendition while the main player keeps the appearance
+  controls of the overlay. This requires the updated server. Offline sidecar
+  subtitles still use the overlay and do not appear in system PiP.
 - Resume + the admin playback heartbeat ride one interval
   (`src/player/heartbeat.ts`).
 
@@ -71,7 +75,17 @@ commands the chrome issues (transport, track, filter, rate, shutdown):
     that no screen can see.
 - Player: storyboard scrub previews, skip-intro + up-next from server markers,
   audio track / subtitle / speed / volume-filter sheet, double-tap seek.
-  RN `Modal`s inside the landscape-locked player MUST pass
+  Portrait keeps navigation and seeking outside the video, with current audio
+  and subtitle selections below it. Fullscreen expands the same video view;
+  physical phone rotation also switches presentation. Accelerometer posture
+  detection keeps manual fullscreen independent of the interface orientation.
+  Closing playback reapplies portrait after the native modal dismisses. Tablets
+  keep their current orientation. A root playback owner stops the previous
+  engine before a new one loads. Teardown cancels pending loads, detaches the
+  native source, and clears background playback and Now Playing. Background
+  playback pauses unless PiP actually starts. Errors preserve the server/native
+  reason, and Retry creates a fresh engine at the failed playback position.
+  RN `Modal`s inside the player MUST pass
   `supportedOrientations` or iOS throws `UIApplicationInvalidInterfaceOrientation`.
 - Servers + profiles (`src/lib/session/`): any number of saved servers, any
   number of remembered accounts each (device credentials in SecureStore), one
@@ -93,6 +107,23 @@ commands the chrome issues (transport, track, filter, rate, shutdown):
 Dev auto-login: put `EXPO_PUBLIC_KROMA_SERVER` and
 `EXPO_PUBLIC_KROMA_DEV_LOGIN=user:pass` in `.env.local` (gitignored) to boot
 straight into a session.
+
+## Download storage in system settings
+
+Android supports a custom `android:manageSpaceActivity` to open the app's
+Downloads screen from storage settings. This needs a native activity and Expo
+config plugin; it is not configured yet. See [Android's storage management
+activity documentation](https://developer.android.com/training/data-storage/app-specific#create-storage-management-activity).
+
+iOS can expose Documents to Files using `UIFileSharingEnabled` and
+`LSSupportsOpeningDocumentsInPlace`. These flags expose the whole Documents
+directory, including the current download manifest, so enabling them alone is
+not a finished storage integration. External deletions also need reconciliation
+on foreground. Apple documents deletion of some apps' documents in iPhone
+Storage, but this does not establish a public API guaranteeing a Netflix-style
+per-title list for KROMA's ordinary file downloads. See [Apple's File Provider
+guidance](https://developer.apple.com/documentation/fileprovider) and
+[iPhone storage documentation](https://support.apple.com/en-la/108429).
 
 ## Conventions
 

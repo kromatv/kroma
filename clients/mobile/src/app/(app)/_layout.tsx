@@ -1,6 +1,6 @@
 import { activeTheme, color, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 import { Redirect, Stack } from 'expo-router';
-import { PLAYER_ORIENTATION, UPRIGHT } from '#mobile/lib/orientation';
+import { lockUpright, PLAYER_ORIENTATION, UPRIGHT } from '#mobile/lib/orientation';
 import { useSession } from '#mobile/lib/session';
 
 /** Everything behind the auth gate: tabs, detail pages, the player. */
@@ -22,13 +22,16 @@ export default function AppLayout() {
       <Stack.Screen
         name="player/[id]"
         dangerouslySingular
+        listeners={{
+          transitionEnd: ({ data }) => {
+            if (data.closing) lockUpright();
+          },
+        }}
         options={{
           autoHideHomeIndicator: true,
           animation: 'fade',
           gestureEnabled: false,
           presentation: 'fullScreenModal',
-          // Per-screen orientation rotates during the transition rather than as a
-          // post-mount flip.
           orientation: PLAYER_ORIENTATION,
         }}
       />

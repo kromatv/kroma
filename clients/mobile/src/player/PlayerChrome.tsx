@@ -1,16 +1,7 @@
 // Pure presentation over the Engine; all playback logic lives in engine/.
 
 import type { MediaItem } from '@kromatv/client/media';
-import { audioTracksOf } from '@kromatv/core';
-import {
-  audioFilterLabels,
-  buildLeanStats,
-  type PlayerStats,
-  ResumePrompt,
-  StatsPanel,
-  type SubtitleAppearance,
-  useResumeNotice,
-} from '@kromatv/ui';
+import { ResumePrompt, StatsPanel, type SubtitleAppearance, useResumeNotice } from '@kromatv/ui';
 import {
   Box,
   radius as cornerRadius,
@@ -21,7 +12,7 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import {
   GestureDetector,
@@ -34,83 +25,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
 import { useChromeReveal } from '#mobile/player/useChromeReveal';
 import { ControlsLayer } from './chrome/ControlsLayer';
-import { BufferingSpinner, CueLine, SkipIntroButton, UpNextCard } from './chrome/overlays';
+import { PortraitControls } from './chrome/portrait-controls';
+import { usePhoneStats } from './use-phone-stats';
+import { CueLine, SkipIntroButton, UpNextCard } from './chrome/overlays';
 import type { Engine } from './engine';
 import type { SheetView } from './TrackSheet';
 import type { StoryboardTile } from './useStoryboard';
-
-function usePhoneStats(engine: Engine, item: MediaItem): () => PlayerStats {
-  const t = useT();
-  const filterLabels = audioFilterLabels(t);
-  let sourceMode = 'HLS';
-  if (engine.offline) sourceMode = 'Direct · local';
-  else if (engine.mode === 'direct') sourceMode = 'Direct';
-
-  // AVPlayer exposes no network counters to JS, so download speed is estimated
-  // from the buffered edge advancing, smoothed, with a seek's jump clamped.
-  const net = useRef({ at: 0, bufEnd: 0, ema: 0 });
-  const file = item.files.find((f) => f.id === item.defaultFileId) ?? item.files[0];
-  const avgBytesPerSec =
-    file?.size && item.durationMs ? file.size / (item.durationMs / 1000) : null;
-  const bandwidthMbps = (): number | null => {
-    if (engine.offline || avgBytesPerSec == null) return null;
-    const now = Date.now();
-    const prev = net.current;
-    if (prev.at === 0) {
-      net.current = { at: now, bufEnd: engine.buffered, ema: 0 };
-      return 0;
-    }
-    const dt = (now - prev.at) / 1000;
-    if (dt < 0.2) return prev.ema;
-    const gained = Math.min(Math.max(0, engine.buffered - prev.bufEnd), dt * 50);
-    const inst = ((gained / dt) * avgBytesPerSec * 8) / 1e6;
-    const ema = prev.ema === 0 ? inst : prev.ema * 0.6 + inst * 0.4;
-    net.current = { at: now, bufEnd: engine.buffered, ema };
-    return ema;
-  };
-
-  return () => {
-    const mbps = bandwidthMbps();
-    return buildLeanStats({
-      item,
-      cur: engine.cur,
-      dur: engine.dur,
-      bufEnd: engine.buffered,
-      audioTracks: engine.offline ? [] : audioTracksOf(item),
-      audioIndex: engine.audioIndex,
-      video: null,
-      mode: sourceMode,
-      t,
-      meters:
-        mbps == null
-          ? undefined
-          : [
-              {
-                key: 'bandwidth',
-                label: t('stats.bandwidth'),
-                value: mbps,
-                display: `${mbps.toFixed(2)} Mb/s`,
-              },
-            ],
-      extra: [
-        {
-          label: t('stats.speed'),
-          value: engine.rate === 1 ? t('player.normalSpeed') : `${engine.rate}×`,
-          group: t('stats.playback'),
-        },
-        ...(engine.offline
-          ? []
-          : [
-              {
-                label: t('player.audioFilters'),
-                value: filterLabels[engine.filter],
-                group: t('stats.playback'),
-              },
-            ]),
-      ],
-    });
-  };
-}
 
 function markersAt(item: MediaItem, sec: number) {
   const ms = sec * 1000;
@@ -139,6 +59,8 @@ export function PlayerChrome({
   onPlayNext,
   onPip,
   onCast,
+  compact = false,
+  onFullscreen,
 }: Readonly<{
   engine: Engine;
   item: MediaItem;
@@ -157,12 +79,16 @@ export function PlayerChrome({
   onPlayNext?(): void;
   onPip?(): void;
   onCast?(): void;
+  compact?: boolean;
+  onFullscreen?(): void;
 }>) {
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const insets = useSafeAreaInsets();
-  const { shown: visible, poke, toggle, hold } = useChromeReveal();
+  const safeInsets = useSafeAreaInsets();
+  const insets = compact ? { top: 0, right: 0, bottom: 0, left: 0 } : safeInsets;
+  const { shown, poke, toggle, hold } = useChromeReveal();
+  const visible = shown || engine.waiting;
 
   const stats = usePhoneStats(engine, item);
   const resume = useResumeNotice({
@@ -172,7 +98,10 @@ export function PlayerChrome({
     waiting: engine.waiting,
   });
 
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const window = useWindowDimensions();
+  const [bounds, setBounds] = useState({ width: 0, height: 0 });
+  const screenWidth = bounds.width || window.width;
+  const screenHeight = bounds.height || window.height;
   const [zoomNote, setZoomNote] = useState<string | null>(null);
   useEffect(() => {
     if (!zoomNote) return;
@@ -215,11 +144,20 @@ export function PlayerChrome({
   const gestures = useCompetingGestures(pinch, taps);
 
   const { intro, inCredits } = markersAt(item, engine.cur);
-  const lift = (visible ? 110 : 40) + insets.bottom;
-  const statsTop = (visible ? 64 : 12) + insets.top;
+  const controls = compact ? { lift: 16, top: 42 } : { lift: 110, top: 64 };
+  const lift = (visible ? controls.lift : 20) + insets.bottom;
+  const statsTop = (visible ? controls.top : 12) + insets.top;
 
   return (
-    <Box fill>
+    <Box
+      fill
+      onLayout={(event) => {
+        const { width, height } = event.nativeEvent.layout;
+        setBounds((current) =>
+          current.width === width && current.height === height ? current : { width, height },
+        );
+      }}
+    >
       {/* Tap layer sits BEHIND the controls: toggling visibility must not fire
           when a control is pressed. */}
       <GestureDetector gesture={gestures}>
@@ -244,8 +182,6 @@ export function PlayerChrome({
             maxHeight={screenHeight - statsTop - Math.max(insets.bottom, 12)}
           />
         ) : null}
-
-        {engine.waiting && !engine.failed && !visible ? <BufferingSpinner /> : null}
 
         {intro && !visible && !resume.shown ? (
           <SkipIntroButton
@@ -272,7 +208,8 @@ export function PlayerChrome({
           <UpNextCard next={next} onPlayNext={onPlayNext} bottom={40 + insets.bottom} />
         ) : null}
 
-        {visible ? (
+        {visible && compact ? <PortraitControls engine={engine} poke={poke} /> : null}
+        {visible && !compact ? (
           <ControlsLayer
             engine={engine}
             item={item}
@@ -286,6 +223,7 @@ export function PlayerChrome({
             onPlayNext={onPlayNext}
             onPip={onPip}
             onCast={onCast}
+            onFullscreen={onFullscreen}
           />
         ) : null}
       </Box>

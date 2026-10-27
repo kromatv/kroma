@@ -23,6 +23,8 @@ export interface SubView {
   url: string;
   label?: string;
   title?: string | null;
+  forced?: boolean;
+  nativeSource?: string;
   ai?: boolean;
 }
 
@@ -73,16 +75,26 @@ export function useSubtitles(
         language: sub.language,
         url: sub.path,
         label: sub.label,
+        title: sub.title,
+        forced: sub.forced,
         ai: sub.ai,
       }));
     }
     const embedded = item.subtitles
-      .map((s, index) => ({ index, language: s.language, title: s.title, codec: s.codec }))
+      .map((s, index) => ({
+        index,
+        language: s.language,
+        title: s.title,
+        forced: s.forced,
+        codec: s.codec,
+      }))
       .filter((s) => isTextSubtitle(s.codec))
       .map((s) => ({
         index: s.index,
         language: s.language,
         title: s.title,
+        forced: s.forced,
+        nativeSource: String(s.index),
         url: client.media.subtitleUrl(item.id, s.index),
       }));
     const gen: SubView[] = downloaded.map((d, i) => ({
@@ -91,6 +103,7 @@ export function useSubtitles(
       url: client.media.artwork.resolve(d.url) ?? d.url,
       label: d.label,
       ai: true,
+      nativeSource: `g:${d.id}`,
     }));
     return [...embedded, ...gen];
   }, [client, item, downloaded, offline]);
@@ -105,10 +118,13 @@ export function useSubtitles(
         language: track.language,
         url: track.url,
         generated: track.ai,
+        title: track.title,
+        forced: track.forced,
       })),
       preferredLanguage,
     );
-    if (hit != null) setActive(hit);
+    setActive(hit);
+    setLoaded(null);
   }
 
   useEffect(() => {

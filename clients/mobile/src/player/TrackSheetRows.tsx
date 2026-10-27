@@ -31,6 +31,8 @@ export function Row({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ selected, disabled: !!disabled }}
       style={({ pressed }) => [
         s.row,
         selected && s.rowOn,
@@ -38,8 +40,10 @@ export function Row({
         disabled && s.rowDisabled,
       ]}
     >
-      <Text style={[s.rowLabel, selected && s.rowLabelOn]}>{label}</Text>
-      {note ? <Text style={s.rowNote}>{note}</Text> : null}
+      <Box style={s.rowText}>
+        <Text style={[s.rowLabel, selected && s.rowLabelOn]}>{label}</Text>
+        {note ? <Text style={s.rowNote}>{note}</Text> : null}
+      </Box>
       {selected ? <Icon name="check" size={17} thickness={2.4} color={colors.accent} /> : null}
     </Pressable>
   );
@@ -144,6 +148,7 @@ const sDefinition = styles({
     px: spacing.md,
     radius: cornerRadius.mobile,
   },
+  rowText: { flex: true, minW: 0, py: 10, gap: 3 },
   rowOn: { bg: 'white/10' },
   rowDisabled: { opacity: 0.45 },
   rowLabel: { ...type.body, shrink: 1, color: 'textMuted' },
