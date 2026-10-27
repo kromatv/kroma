@@ -86,7 +86,7 @@ function VirtualRail<T>({
   // Everything below counts in PITCHES. Derived rather than state: a pitch cached
   // at layout goes stale when `itemWidth` changes without a resize, and an
   // off-grid offset is never corrected once it sits inside the margin window.
-  const pitch = width > 0 ? fitPitch(itemWidth, width) : itemWidth;
+  const pitch = scoped && width > 0 ? fitPitch(itemWidth, width) : itemWidth;
   const edge = edgeWidth(width);
 
   // Bounded by the data at render rather than here, because the data can arrive

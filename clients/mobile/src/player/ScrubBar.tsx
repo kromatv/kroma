@@ -41,6 +41,7 @@ export function ScrubBar({
   onScrubEnd,
   tileFor,
   markers,
+  compact = false,
 }: Readonly<{
   cur: number;
   dur: number;
@@ -50,6 +51,7 @@ export function ScrubBar({
   onScrubEnd?(): void;
   tileFor?: (abs: number) => StoryboardTile | null;
   markers?: number[];
+  compact?: boolean;
 }>) {
   const scope = useStyleScope();
   useThemeVersion();
@@ -92,7 +94,8 @@ export function ScrubBar({
   const playedFrac = dur > 0 ? Math.min(1, shown / dur) : 0;
   const bufFrac = dur > 0 ? Math.min(1, buffered / dur) : 0;
   const active = preview != null;
-  const knob = active ? KNOB_ACTIVE : KNOB;
+  const restingKnob = compact ? 10 : KNOB;
+  const knob = active ? KNOB_ACTIVE : restingKnob;
   const tile = active && tileFor ? tileFor(shown) : null;
   const thumbH = tile ? Math.round((THUMB_W / tile.tileW) * tile.tileH) : 0;
   const scale = tile ? THUMB_W / tile.tileW : 1;
@@ -101,7 +104,7 @@ export function ScrubBar({
   return (
     <GestureDetector gesture={gesture}>
       <Box
-        style={s.touch}
+        style={[s.touch, compact && s.compactTouch]}
         onLayout={(e) => {
           setWidth(e.nativeEvent.layout.width);
         }}
@@ -128,7 +131,7 @@ export function ScrubBar({
             </Box>
           </Box>
         ) : null}
-        <Box style={[s.track, { backgroundColor: paint.track }]}>
+        <Box style={[s.track, compact && s.compactTrack, { backgroundColor: paint.track }]}>
           <Box
             style={[s.buffered, { backgroundColor: paint.buffered, width: `${bufFrac * 100}%` }]}
           />
@@ -163,6 +166,8 @@ export function ScrubBar({
 
 const sDefinition = styles({
   touch: { justify: 'center', h: 40 },
+  compactTouch: { h: 28 },
+  compactTrack: { h: 3 },
   track: { h: BAR_H, radius: BAR_H / 2, overflow: 'hidden' },
   buffered: { absolute: true, top: 0, bottom: 0, left: 0, radius: BAR_H / 2 },
   played: { absolute: true, top: 0, bottom: 0, left: 0, radius: BAR_H / 2 },

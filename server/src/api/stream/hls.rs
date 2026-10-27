@@ -33,6 +33,12 @@ pub async fn hls_master(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
 ) -> Response {
+    if q.subtitle
+        .as_deref()
+        .is_some_and(|s| !super::native_subtitles::valid_source(s))
+    {
+        return json_error(StatusCode::BAD_REQUEST, "invalid subtitle source");
+    }
     let Some(mode) = StreamMode::parse(&mode) else {
         return json_error(StatusCode::BAD_REQUEST, "bad mode");
     };
@@ -50,14 +56,13 @@ pub async fn hls_master(
     let credential = q.ticket.credential();
     let effective = program.effective_mode(mode, audio, &q.decoders);
     if effective != mode {
-        return Redirect::temporary(&hls_master_path(
-            &item.id,
-            effective,
-            anchor,
-            audio,
-            &credential,
-        ))
-        .into_response();
+        let mut target = hls_master_path(&item.id, effective, anchor, audio, &credential);
+        if let Some(subtitle) = &q.subtitle {
+            target.push(if target.contains('?') { '&' } else { '?' });
+            target.push_str("subtitle=");
+            target.push_str(subtitle);
+        }
+        return Redirect::temporary(&target).into_response();
     }
     let Some(abs) = item.abs_path.clone() else {
         return json_error(StatusCode::NOT_FOUND, "no media file for item");
@@ -84,7 +89,12 @@ pub async fn hls_master(
         .master(&state.hls, &abs, session, &credential, sink)
         .await
     {
-        Some(resp) => resp,
+        Some(resp) => match q.subtitle.as_deref() {
+            Some(source) => {
+                super::native_subtitles::master(resp, &item.id, source, session, &credential)
+            }
+            None => resp,
+        },
         None => json_error(
             StatusCode::INTERNAL_SERVER_ERROR,
             "HLS remux unavailable (is ffmpeg installed?)",

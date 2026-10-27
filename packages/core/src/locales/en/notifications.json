@@ -4,6 +4,7 @@
   "notifications.action.review": "Review",
   "notifications.action.view": "View",
   "notifications.action.watch": "Watch",
+  "notifications.actions": "Notification actions",
   "notifications.category.downloads": "Downloads",
   "notifications.category.media": "New titles",
   "notifications.category.reports": "Problem reports",

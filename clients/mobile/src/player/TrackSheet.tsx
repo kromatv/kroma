@@ -22,7 +22,7 @@ import {
   qualityBadge,
   subNote,
   subtitleLabel,
-  subtitleRowLabel,
+  subtitleOptions,
 } from './trackOptions';
 import type { Subtitles } from './useSubtitles';
 
@@ -185,10 +185,10 @@ export function TrackSheet({
               done();
             }}
           />
-          {subs.tracks.map((track) => (
+          {subtitleOptions(t, subs.tracks).map((track) => (
             <Row
               key={track.index}
-              label={subtitleRowLabel(t, track)}
+              label={track.label}
               selected={subs.active === track.index}
               disabled={subs.failed.has(track.index)}
               // A first request can sit through a server-side extraction of the

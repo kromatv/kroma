@@ -6,9 +6,8 @@
 // in landscape (where the film is) slides in from the side rather than
 // letterboxing as a bottom sheet.
 //
-// The corner radius is set on the blur too: iOS's UIVisualEffectView ignores
-// the rounded clip of the view it sits in, so an unrounded blur pane would
-// poke out of the panel's rounded corners.
+// iOS blur needs a uniform native corner mask. Extending the docked edges
+// beyond a rectangular clip leaves only the exposed corners rounded.
 
 import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { BlurView } from 'expo-blur';
@@ -85,11 +84,22 @@ export function PlayerPanel({
               : [s.bottomPanel, { minHeight, paddingBottom: Math.max(insets.bottom, spacing.md) }],
           ]}
         >
-          <BlurView
-            tint="dark"
-            intensity={Platform.OS === 'ios' ? 60 : 0}
-            style={[StyleSheet.absoluteFill, corners, Platform.OS !== 'ios' && s.androidPanelBg]}
-          />
+          <Box pointerEvents="none" style={[StyleSheet.absoluteFill, s.blurBounds]}>
+            <Box
+              collapsable={false}
+              style={[s.blurClip, landscape ? s.extendRight : s.extendBottom]}
+            >
+              <BlurView
+                tint="dark"
+                intensity={Platform.OS === 'ios' ? 60 : 0}
+                style={[
+                  StyleSheet.absoluteFill,
+                  s.roundedBlur,
+                  Platform.OS !== 'ios' && s.androidPanelBg,
+                ]}
+              />
+            </Box>
+          </Box>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
             {children}
           </ScrollView>
@@ -100,10 +110,9 @@ export function PlayerPanel({
 }
 
 const sDefinition = styles({
-  overlayRow: { flex: true, row: true },
+  overlayRow: { flex: true, row: true, justify: 'flex-end' },
   overlayColumn: { flex: true, justify: 'flex-end', flexDirection: 'column' },
-  backdrop: { flex: true, bg: 'black/45' },
-  // Applied to the panel and to the blur inside it; see the file note above.
+  backdrop: { fill: true, bg: 'black/45' },
   leftCorners: {
     overflow: 'hidden',
     borderTopLeftRadius: radius.xl,
@@ -114,6 +123,11 @@ const sDefinition = styles({
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
   },
+  blurBounds: { overflow: 'hidden' },
+  blurClip: { fill: true, radius: radius.xl, overflow: 'hidden' },
+  roundedBlur: { radius: radius.xl, overflow: 'hidden' },
+  extendRight: { right: -radius.xl },
+  extendBottom: { bottom: -radius.xl },
   sidePanel: { h: '100%', pl: spacing.md },
   bottomPanel: { maxH: '70%', px: spacing.md, pt: spacing.sm },
   androidPanelBg: { bg: 'surface1/97' },

@@ -12,6 +12,8 @@ export interface OfflineSub {
   index: number;
   language: string | null;
   label?: string;
+  title?: string | null;
+  forced?: boolean;
   ai?: boolean;
   path: string;
 }

@@ -15,7 +15,6 @@ import {
   PersonCard,
   styles,
   Text,
-  typeSpec as textRoles,
   fontSizes as textSizes,
   tintGradient,
   useStyleScope,
@@ -175,7 +174,6 @@ const sDefinition = styles({
   context: { ...type.caption, color: 'accentText', fontWeight: '700' },
   heroTitle: {
     ...type.display,
-    fontSize: textRoles.headingTv.size,
     textShadowColor: 'bg/85',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 10,

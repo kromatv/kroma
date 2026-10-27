@@ -8,17 +8,13 @@
 
 import type { MediaItem } from '@kromatv/client/media';
 import { audioTracksOf, episodeTag } from '@kromatv/core';
-import { BACK_10_ICON, FWD_10_ICON } from '@kromatv/ui';
-import { formatTimecode } from '@kromatv/ui/intl';
 import {
   BackButton,
   Box,
   fonts,
-  Icon,
   IconButton,
   type IconName,
   SHADE,
-  Spinner,
   shade,
   styles,
   Text,
@@ -30,10 +26,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, View } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
-import { colors, spacing } from '#mobile/lib/theme';
+import { spacing } from '#mobile/lib/theme';
 import { useControlsHold } from '#mobile/player/chrome/useControlsHold';
 import type { Engine } from '#mobile/player/engine';
-import { ScrubBar } from '#mobile/player/ScrubBar';
+import { PlayerScrubRow } from './scrub-row';
+import { TransportControls } from './transport-controls';
 import type { SheetView } from '#mobile/player/TrackSheet';
 import type { StoryboardTile } from '#mobile/player/useStoryboard';
 
@@ -50,6 +47,7 @@ export function ControlsLayer({
   onPlayNext,
   onPip,
   onCast,
+  onFullscreen,
 }: Readonly<{
   engine: Engine;
   item: MediaItem;
@@ -63,6 +61,7 @@ export function ControlsLayer({
   onPlayNext?(): void;
   onPip?(): void;
   onCast?(): void;
+  onFullscreen?(): void;
 }>) {
   const s = useStyles(sDefinition);
 
@@ -95,7 +94,7 @@ export function ControlsLayer({
     >
       <Box style={s.scrim} pointerEvents="none" />
       <LinearGradient
-        colors={['rgba(0,0,0,0.65)', 'rgba(0,0,0,0)']}
+        colors={[shade(0.65), SHADE.transparent]}
         style={s.scrimTop}
         pointerEvents="none"
       />
@@ -130,46 +129,7 @@ export function ControlsLayer({
         </Box>
       </Box>
 
-      <Box style={s.centerRow} pointerEvents="box-none">
-        <IconButton
-          diameter={56}
-          icon={BACK_10_ICON}
-          glyph={28}
-          onPress={() => {
-            engine.skip(-10);
-            poke();
-          }}
-          label={t('player.back10')}
-        />
-        {/* Buffering lives IN the play button while controls are up: a second
-            spinner floating behind the cluster read as two half-drawn
-            controls fighting over the same centre. */}
-        <IconButton
-          diameter={72}
-          variant="primary"
-          onPress={() => {
-            engine.togglePlay();
-            poke();
-          }}
-          label={engine.playing ? t('player.pause') : t('player.play')}
-        >
-          {(() => {
-            if (engine.waiting) return <Spinner size={30} color={colors.accentInk} />;
-            const glyph = engine.playing ? 'player-pause-filled' : 'player-play-filled';
-            return <Icon name={glyph} size={engine.playing ? 30 : 32} color={colors.accentInk} />;
-          })()}
-        </IconButton>
-        <IconButton
-          diameter={56}
-          icon={FWD_10_ICON}
-          glyph={28}
-          onPress={() => {
-            engine.skip(10);
-            poke();
-          }}
-          label={t('player.fwd10')}
-        />
-      </Box>
+      <TransportControls engine={engine} poke={poke} compact={false} />
 
       <Box
         style={[
@@ -181,7 +141,13 @@ export function ControlsLayer({
           },
         ]}
       >
-        <ScrubRow engine={engine} onInteract={poke} hold={hold} tileFor={tileFor} item={item} />
+        <PlayerScrubRow
+          engine={engine}
+          onInteract={poke}
+          hold={hold}
+          tileFor={tileFor}
+          item={item}
+        />
         {/* Icon-only: labels ride on accessibility, not the row itself. */}
         <Box style={s.actionsRow}>
           <Box style={s.actionsGroup}>
@@ -228,6 +194,13 @@ export function ControlsLayer({
               />
             ) : null}
             <RowShortcut icon="settings" label={t('player.settings')} onPress={() => open()} />
+            {onFullscreen ? (
+              <RowShortcut
+                icon="minimize"
+                label={t('player.exitFullscreen')}
+                onPress={onFullscreen}
+              />
+            ) : null}
           </Box>
         </Box>
       </Box>
@@ -243,46 +216,6 @@ function RowShortcut({
   return <IconButton diameter={40} icon={icon} glyph={20} onPress={onPress} label={label} />;
 }
 
-function ScrubRow({
-  engine,
-  onInteract,
-  hold,
-  tileFor,
-  item,
-}: Readonly<{
-  engine: Engine;
-  onInteract(): void;
-  hold?: () => () => void;
-  tileFor?: (abs: number) => StoryboardTile | null;
-  item: MediaItem;
-}>) {
-  const s = useStyles(sDefinition);
-
-  const markers = (item.markers ?? []).map((m) => m.startMs / 1000);
-  const scrub = useControlsHold(hold);
-  return (
-    <Box>
-      <ScrubBar
-        cur={engine.cur}
-        dur={engine.dur}
-        buffered={engine.buffered}
-        tileFor={tileFor}
-        markers={markers}
-        onScrubStart={scrub.take}
-        onScrubEnd={scrub.give}
-        onSeek={(abs) => {
-          engine.seekTo(abs);
-          onInteract();
-        }}
-      />
-      <Box style={s.timeRow}>
-        <Text style={s.time}>{formatTimecode(engine.cur)}</Text>
-        <Text style={s.time}>{formatTimecode(engine.dur)}</Text>
-      </Box>
-    </Box>
-  );
-}
-
 const sDefinition = styles({
   scrim: { fill: true, bg: 'bg/22' },
   scrimTop: { absolute: true, top: 0, right: 0, left: 0, h: 120 },
@@ -296,10 +229,7 @@ const sDefinition = styles({
     fontWeight: '700',
   },
   subtitle: { mt: 1, color: 'text/60', fontSize: textSizes.caption, fontWeight: '500' },
-  centerRow: { flex: true, row: true, center: true, gap: 40 },
   bottomBar: { px: spacing.md },
   actionsRow: { row: true, between: true, align: 'center', mt: 10 },
   actionsGroup: { row: true, align: 'center', gap: 12 },
-  timeRow: { row: true, between: true, mt: 6 },
-  time: { color: 'text/50', fontSize: textSizes.caption, fontVariant: ['tabular-nums'] },
 });

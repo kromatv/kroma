@@ -2,6 +2,7 @@
 // mutable core the engine drives behind it.
 
 import type { AudioTrack, VideoPlayer } from 'expo-video';
+import type { PlaybackFailure } from '../playback-failure';
 
 // Deliberately NOT the kit's `AudioFilterMode`, and narrower than it: the phone
 // applies the filter through the server's remux, so it can only offer the modes the
@@ -22,6 +23,7 @@ export interface EngineState {
   waiting: boolean;
   ready: boolean;
   failed: boolean;
+  failure?: PlaybackFailure | null;
   endedNonce: number;
   mode: 'direct' | 'master';
   audioIndex: number;
@@ -51,6 +53,9 @@ export interface Engine extends EngineState {
  * handlers read and write it many times per second, and none of it may trigger
  * a render on its own. */
 export interface EngineCore {
+  active: boolean;
+  terminal: boolean;
+  sourceUri: string | null;
   mode: 'direct' | 'master';
   baseSec: number;
   elSec: number;
@@ -62,11 +67,12 @@ export interface EngineCore {
   audioIndex: number;
   filter: AudioFilterMode;
   loadId: number;
+  subtitle: string | null;
   // Guards the end-of-playback path against ExoPlayer's spurious ENDED.
   started: boolean;
 }
 
-/** Stable identity for a native audio track (`id` exists on Android only). */
+/** Stable identity for a native audio track, including same-language variants. */
 export function nativeTrackKey(t: AudioTrack): string {
   return t.id ?? `${t.language}|${t.label}`;
 }
@@ -82,7 +88,9 @@ export function nextLoadId(core: EngineCore): number {
 
 export function patchPlayer(
   player: VideoPlayer,
-  patch: Partial<Pick<VideoPlayer, 'muted' | 'currentTime' | 'audioTrack' | 'playbackRate'>>,
+  patch: Partial<
+    Pick<VideoPlayer, 'muted' | 'currentTime' | 'audioTrack' | 'subtitleTrack' | 'playbackRate'>
+  >,
 ): void {
   Object.assign(player, patch);
 }

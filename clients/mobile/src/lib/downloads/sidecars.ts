@@ -22,7 +22,7 @@ async function fetchSubs(client: KromaClient, item: MediaItem): Promise<OfflineS
     const path = mediaPath(item.id, `e${index}.vtt`);
     try {
       await FileSystem.downloadAsync(client.media.subtitleUrl(item.id, index), path);
-      subs.push({ index, language: sub.language, path });
+      subs.push({ index, language: sub.language, title: sub.title, forced: sub.forced, path });
     } catch {
       // Track unavailable offline.
     }

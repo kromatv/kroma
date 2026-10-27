@@ -30,6 +30,7 @@ import { usePushGrantRefresh, usePushLabels, usePushTaps } from '#mobile/lib/not
 import { lockUpright, UPRIGHT } from '#mobile/lib/orientation';
 import { SessionProvider, useSession } from '#mobile/lib/session';
 import { MOBILE, mobileTheme } from '#mobile/lib/theme';
+import { PlaybackOwnerProvider } from '#mobile/player/playback-owner';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -78,11 +79,14 @@ function makeQueryClient(): QueryClient {
 
 function Shell() {
   const { status, user, client } = useSession();
-  useEffect(lockUpright, []);
   // The gate and the player sit over artwork and keep the dark ground. Decided here
   // because one theme store means a subtree driving it from an effect remounts itself.
   const segments: string[] = useSegments();
-  const overArtwork = status !== 'signedIn' || segments.includes('player');
+  const inPlayer = segments.includes('player');
+  useEffect(() => {
+    if (!inPlayer) lockUpright();
+  }, [inPlayer]);
+  const overArtwork = status !== 'signedIn' || inPlayer;
   const ground = useTheme();
   const theme = overArtwork ? MOBILE : mobileTheme(ground);
   // One cache per signed-in account: switching users drops everything.
@@ -143,7 +147,9 @@ export default function RootLayout() {
   });
   return (
     <KitProvider config={kitConfig}>
-      <RootShell />
+      <PlaybackOwnerProvider>
+        <RootShell />
+      </PlaybackOwnerProvider>
     </KitProvider>
   );
 }
