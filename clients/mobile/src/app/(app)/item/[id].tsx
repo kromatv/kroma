@@ -61,7 +61,6 @@ function ItemMeta({ media }: Readonly<{ media: MediaItem }>) {
       {media.year ? <Text style={s.metaText}>{media.year}</Text> : null}
       {runtime ? <Text style={s.metaText}>{runtime}</Text> : null}
       {badge ? <MetaBadge>{badge}</MetaBadge> : null}
-      {media.video?.hdr ? <MetaBadge>HDR</MetaBadge> : null}
       {rating ? <Text style={s.rating}>★ {rating.toFixed(1)}</Text> : null}
     </>
   );
@@ -187,7 +186,7 @@ function ItemDetail({ id }: Readonly<{ id: ItemId }>) {
 
 const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
-  body: { gap: spacing.md, pt: spacing.md },
+  body: { gap: spacing.lg, pt: spacing.md },
   metaText: { ...type.caption, color: 'text', fontWeight: '600' },
   rating: { ...type.caption, color: 'accentText', fontWeight: '700' },
 });

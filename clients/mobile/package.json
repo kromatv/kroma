@@ -24,9 +24,9 @@
     "bundle:check": "bun ../expo-build/bundle-check.ts ."
   },
   "dependencies": {
-    "@kromatv/build-info": "workspace:*",
     "@gorhom/bottom-sheet": "^5.2.14",
     "@kesha-antonov/react-native-background-downloader": "^4.6.4",
+    "@kromatv/build-info": "workspace:*",
     "@kromatv/client": "workspace:*",
     "@kromatv/core": "workspace:*",
     "@kromatv/i18n": "workspace:*",
@@ -40,6 +40,7 @@
     "expo-blur": "~58.0.5",
     "expo-camera": "~58.0.11",
     "expo-constants": "~58.0.12",
+    "expo-dev-client": "~58.0.16",
     "expo-device": "~58.0.5",
     "expo-file-system": "~58.0.10",
     "expo-font": "~58.0.9",
@@ -55,6 +56,7 @@
     "expo-router": "~58.0.24",
     "expo-screen-orientation": "~58.0.3",
     "expo-secure-store": "~58.0.2",
+    "expo-sensors": "~58.0.4",
     "expo-splash-screen": "~58.0.10",
     "expo-status-bar": "~58.0.3",
     "expo-system-ui": "~58.0.6",

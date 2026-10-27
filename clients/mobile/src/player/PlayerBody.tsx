@@ -2,15 +2,11 @@ import type { MediaItem } from '@kromatv/client/media';
 import { audioTracksOf, langCode, preferredAudioIndex } from '@kromatv/core';
 import { useHeldSeek } from '@kromatv/core/react';
 import { useCast } from '@kromatv/ui';
-import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { usePreventRemove, useRouter } from 'expo-router';
-import { VideoView, type VideoView as VideoViewRef } from 'expo-video';
 
-import { useEffect, useRef, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { CastPanel } from '#mobile/components/cast/CastPanel';
-import { ErrorView } from '#mobile/components/ui';
 import type { DownloadEntry } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { useLangPrefs } from '#mobile/lib/langPrefs';
@@ -18,25 +14,35 @@ import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
 import { useKromaEngine } from '#mobile/player/engine';
 import { useHeartbeat } from '#mobile/player/heartbeat';
-import { PlayerChrome } from '#mobile/player/PlayerChrome';
+import { PlayerLayout } from '#mobile/player/player-layout';
+import { PlayerVideo, type PlayerVideoHandle } from '#mobile/player/player-video';
+import { PlayerDetails } from '#mobile/player/player-details';
+import { usePlayerPresentation } from '#mobile/player/use-player-presentation';
+import { PlayerStatusScreen } from '#mobile/player/player-status-screen';
 import { type SheetView, TrackSheet } from '#mobile/player/TrackSheet';
 import { useStoryboard } from '#mobile/player/useStoryboard';
 import { useSubAppearance } from '#mobile/player/useSubAppearance';
 import { useSubtitles } from '#mobile/player/useSubtitles';
+import { PortraitHeader } from './portrait-header';
+import { PortraitPlaybackStrip } from './portrait-playback-strip';
+import { audioOptions, subtitleLabel } from './trackOptions';
+import { playbackFailureCopy } from './playback-failure';
 
 export function PlayerBody({
   item,
   startSec,
   localUri,
   offline,
+  onRetry,
+  onPosition,
 }: Readonly<{
   item: MediaItem;
   startSec: number;
   localUri?: string;
   offline?: DownloadEntry;
+  onRetry(positionSec: number): void;
+  onPosition(positionSec: number): void;
 }>) {
-  const s = useStyles(sDefinition);
-
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -45,8 +51,15 @@ export function PlayerBody({
   // it (same as TV). Offline keeps the file's default: local ordinals are the
   // native player's business.
   const startAudio = localUri ? 0 : (preferredAudioIndex(audioTracksOf(item), prefs.audio) ?? 0);
-  const engine = useHeldSeek(useKromaEngine(client, item, startSec, localUri, startAudio));
   const subs = useSubtitles(client, item, offline, prefs.subtitle);
+  const subtitle = subs.tracks.find((track) => track.index === subs.active)?.nativeSource ?? null;
+  const engine = useHeldSeek(
+    useKromaEngine(client, item, startSec, localUri, startAudio, subtitle),
+  );
+  const presentation = usePlayerPresentation();
+  const rememberPosition = useEffectEvent(() => onPosition(engine.cur));
+  useEffect(() => () => rememberPosition(), []);
+  const video = useRef<PlayerVideoHandle>(null);
   const tileFor = useStoryboard(client, item, !localUri, offline);
   // Which sheet view is open, or null: the gear opens the menu, the CC capsule
   // jumps straight to subtitles.
@@ -73,11 +86,15 @@ export function PlayerBody({
   }, [subs.failed, t]);
   const subNotice = subs.loading ? t('player.subPreparing') : subFailedNote;
   const navigatedRef = useRef(false);
-  const viewRef = useRef<VideoViewRef>(null);
   const next = useQuery({
     ...client.query.playback.nextEpisode(item.id),
     enabled: !localUri && item.kind === 'episode',
     staleTime: 5 * 60_000,
+  });
+  const similar = useQuery({
+    ...client.query.media.similar(item.id),
+    enabled: !localUri && item.kind === 'movie',
+    staleTime: 10 * 60_000,
   });
 
   // Handing this film to a TV: the position travels with it, so the set picks
@@ -134,63 +151,94 @@ export function PlayerBody({
       .catch(() => goBack(router));
   }, [engine.endedNonce, engine, client, item.id, router]);
 
+  const exit = () => {
+    engine.shutdown();
+    goBack(router);
+  };
+  const playRelated = (related: MediaItem) => {
+    navigatedRef.current = true;
+    engine.shutdown();
+    router.replace(`/player/${related.id}` as never);
+  };
+
   if (terminated != null) {
-    return (
-      <ErrorView
-        message={terminated || t('player.stoppedDefault')}
-        retryLabel={t('player.back')}
-        onRetry={() => goBack(router)}
-      />
-    );
+    return <PlayerStatusScreen message={terminated || t('player.stoppedDefault')} onBack={exit} />;
   }
 
   if (engine.failed) {
     return (
-      <ErrorView
-        message={t('error.serverTitle')}
-        retryLabel={t('player.back')}
-        onRetry={() => goBack(router)}
+      <PlayerStatusScreen
+        {...playbackFailureCopy(engine.failure, t)}
+        detail={engine.failure?.detail}
+        onBack={exit}
+        onRetry={() => onRetry(engine.cur)}
       />
     );
   }
 
   return (
-    <Box style={s.stage}>
-      <VideoView
-        ref={viewRef}
-        player={engine.player}
-        style={StyleSheet.absoluteFill}
-        contentFit={fill ? 'cover' : 'contain'}
-        nativeControls={false}
-        allowsPictureInPicture
-        startsPictureInPictureAutomatically
-      />
-      <PlayerChrome
-        engine={engine}
-        item={item}
-        cue={subs.cueAt(engine.cur)}
-        appearance={appearance}
-        statsOn={statsOn}
-        onToggleStats={() => setStatsOn((v) => !v)}
-        fill={fill}
-        onZoom={setFill}
-        notice={subNotice}
-        resumedAt={startSec}
-        onBack={() => {
-          engine.shutdown();
-          goBack(router);
-        }}
-        onOpenSheet={(view) => setSheet(view ?? 'menu')}
-        onPip={() => viewRef.current?.startPictureInPicture()}
-        onCast={() => setCastOpen(true)}
-        tileFor={tileFor}
-        next={next.data ?? null}
-        onPlayNext={() => {
-          navigatedRef.current = true;
-          engine.shutdown();
-          if (next.data) router.replace(`/player/${next.data.id}` as never);
-        }}
-      />
+    <PlayerLayout
+      fullscreen={presentation.fullscreen}
+      header={
+        <PortraitHeader
+          onBack={exit}
+          onCast={() => setCastOpen(true)}
+          onSettings={() => setSheet('menu')}
+        />
+      }
+      transport={
+        <PortraitPlaybackStrip
+          engine={engine}
+          item={item}
+          tileFor={tileFor}
+          onFullscreen={presentation.toggle}
+        />
+      }
+      details={
+        <PlayerDetails
+          item={item}
+          audio={
+            audioOptions(engine, item, t).find((track) => track.index === engine.audioIndex)
+              ?.label ?? t('player.noAudioTracks')
+          }
+          subtitle={subtitleLabel(subs, t)}
+          rate={engine.rate}
+          next={next.data}
+          similar={similar.data ?? []}
+          onOpenSheet={setSheet}
+          onPip={() => video.current?.startPip()}
+          onPlay={playRelated}
+        />
+      }
+      video={
+        <PlayerVideo
+          ref={video}
+          engine={engine}
+          item={item}
+          cue={subs.cueAt(engine.cur)}
+          appearance={appearance}
+          statsOn={statsOn}
+          onToggleStats={() => setStatsOn((v) => !v)}
+          fill={fill}
+          onZoom={setFill}
+          notice={subNotice}
+          resumedAt={startSec}
+          onBack={presentation.fullscreen ? presentation.collapse : exit}
+          onOpenSheet={(view) => setSheet(view ?? 'menu')}
+          onCast={() => setCastOpen(true)}
+          nativeSubtitles={!!subtitle}
+          fullscreen={presentation.fullscreen}
+          onFullscreen={presentation.toggle}
+          tileFor={tileFor}
+          next={next.data ?? null}
+          onPlayNext={() => {
+            navigatedRef.current = true;
+            engine.shutdown();
+            if (next.data) router.replace(`/player/${next.data.id}` as never);
+          }}
+        />
+      }
+    >
       <CastPanel
         visible={castOpen}
         onClose={() => setCastOpen(false)}
@@ -218,10 +266,6 @@ export function PlayerBody({
         statsOn={statsOn}
         onToggleStats={() => setStatsOn((v) => !v)}
       />
-    </Box>
+    </PlayerLayout>
   );
 }
-
-const sDefinition = styles({
-  stage: { flex: true, bg: 'bg' },
-});

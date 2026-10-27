@@ -47,7 +47,9 @@ export const contentWidth = {
 } as const;
 
 /** Centered-column cap as a bare style, for style arrays on existing views. */
-export function boxed(max: number = contentWidth.form): ViewStyle {
+export function boxed(
+  max: number = contentWidth.form,
+): Pick<ViewStyle, 'width' | 'maxWidth' | 'alignSelf'> {
   return { width: '100%', maxWidth: max, alignSelf: 'center' };
 }
 

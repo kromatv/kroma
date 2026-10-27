@@ -26,6 +26,7 @@ mod download;
 mod external_subtitles;
 mod hls;
 mod hls_query;
+mod native_subtitles;
 
 use download::download_item;
 use external_subtitles::nth_beside;
@@ -60,6 +61,10 @@ pub fn routes() -> Router<SharedState> {
         .route("/items/{id}/storyboard", get(storyboard))
         .route("/items/{id}/storyboard.img", get(storyboard_image))
         .route("/items/{id}/subtitles/{track}", get(subtitles))
+        .route(
+            "/items/{id}/subtitles/{track}/{duration}/{file}",
+            get(native_subtitles::rendition),
+        )
 }
 
 /// Session-gated media routes: the download is a plain fetch, so it can carry a

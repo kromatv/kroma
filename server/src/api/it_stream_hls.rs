@@ -28,7 +28,10 @@ async fn a_4k_source_is_redirected_to_a_rung_the_declared_decoder_holds() {
     let (status, location) = location(&t, &master(&id, "copy", HD_ONLY)).await;
 
     assert_eq!(status, StatusCode::TEMPORARY_REDIRECT);
-    assert_eq!(location, format!("/api/items/{id}/hls/h264-1080-copy/0/0/index.m3u8"));
+    assert_eq!(
+        location,
+        format!("/api/items/{id}/hls/h264-1080-copy/0/0/index.m3u8")
+    );
 }
 
 #[tokio::test]
@@ -51,7 +54,10 @@ async fn both_axes_move_in_one_redirect() {
     let (status, location) = location(&t, &uri).await;
 
     assert_eq!(status, StatusCode::TEMPORARY_REDIRECT);
-    assert_eq!(location, format!("/api/items/{id}/hls/h264-1080-aac/0/0/index.m3u8"));
+    assert_eq!(
+        location,
+        format!("/api/items/{id}/hls/h264-1080-aac/0/0/index.m3u8")
+    );
 }
 
 #[tokio::test]
@@ -109,7 +115,15 @@ async fn a_file_ffmpeg_can_read_is_remuxed_into_a_playlist_the_player_opens() {
     let t = test_app();
     let id = seed_playable_item(&t.state, "Clip", &clip_bytes());
 
-    let (status, headers, _) = raw(&t.app, "GET", &master(&id, "copy", ""), Some(&t.token), None, &[]).await;
+    let (status, headers, _) = raw(
+        &t.app,
+        "GET",
+        &master(&id, "copy", ""),
+        Some(&t.token),
+        None,
+        &[],
+    )
+    .await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(
@@ -123,10 +137,25 @@ async fn a_file_ffmpeg_can_read_is_remuxed_into_a_playlist_the_player_opens() {
 async fn a_child_of_a_running_session_is_served_out_of_it() {
     let t = test_app();
     let id = seed_playable_item(&t.state, "Clip", &clip_bytes());
-    raw(&t.app, "GET", &master(&id, "copy", ""), Some(&t.token), None, &[]).await;
+    raw(
+        &t.app,
+        "GET",
+        &master(&id, "copy", ""),
+        Some(&t.token),
+        None,
+        &[],
+    )
+    .await;
 
-    let (status, headers, _) =
-        raw(&t.app, "GET", &child(&id, "copy", "init.mp4"), Some(&t.token), None, &[]).await;
+    let (status, headers, _) = raw(
+        &t.app,
+        "GET",
+        &child(&id, "copy", "init.mp4"),
+        Some(&t.token),
+        None,
+        &[],
+    )
+    .await;
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(headers.get("content-type").unwrap(), "video/mp4");
@@ -137,8 +166,15 @@ async fn a_child_of_a_session_nobody_started_is_not_found() {
     let t = test_app();
     let id = demo_item_id("The Matrix");
 
-    let (status, headers, _) =
-        raw(&t.app, "GET", &child(&id, "copy", "seg_00000.m4s"), Some(&t.token), None, &[]).await;
+    let (status, headers, _) = raw(
+        &t.app,
+        "GET",
+        &child(&id, "copy", "seg_00000.m4s"),
+        Some(&t.token),
+        None,
+        &[],
+    )
+    .await;
 
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(headers.get("cache-control").unwrap(), "no-store");
@@ -149,8 +185,15 @@ async fn a_child_asked_for_under_a_mode_nothing_parses_is_refused() {
     let t = test_app();
     let id = demo_item_id("The Matrix");
 
-    let (status, _, _) =
-        raw(&t.app, "GET", &child(&id, "h264-bogus", "init.mp4"), Some(&t.token), None, &[]).await;
+    let (status, _, _) = raw(
+        &t.app,
+        "GET",
+        &child(&id, "h264-bogus", "init.mp4"),
+        Some(&t.token),
+        None,
+        &[],
+    )
+    .await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
@@ -159,8 +202,51 @@ async fn a_child_asked_for_under_a_mode_nothing_parses_is_refused() {
 async fn a_child_of_an_item_the_viewer_cannot_reach_is_never_served() {
     let t = test_app();
 
-    let (status, _, _) =
-        raw(&t.app, "GET", &child("deadbeef", "copy", "init.mp4"), Some(&t.token), None, &[]).await;
+    let (status, _, _) = raw(
+        &t.app,
+        "GET",
+        &child("deadbeef", "copy", "init.mp4"),
+        Some(&t.token),
+        None,
+        &[],
+    )
+    .await;
 
     assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn a_codec_redirect_keeps_the_selected_native_subtitle() {
+    let t = test_app();
+    let id = demo_item_id("Blade Runner 2049");
+    let (status, location) = location(&t, &master(&id, "copy", "copy=aac&subtitle=2")).await;
+    assert_eq!(status, StatusCode::TEMPORARY_REDIRECT);
+    assert!(location.ends_with("/aac/0/0/index.m3u8?subtitle=2"));
+}
+
+#[tokio::test]
+async fn native_subtitles_wrap_the_media_playlist_without_losing_its_anchor() {
+    let t = test_app();
+    let id = seed_playable_item(&t.state, "Native Clip", &clip_bytes());
+    let (status, headers, _) = raw(
+        &t.app,
+        "GET",
+        &master(&id, "copy", "subtitle=0"),
+        Some(&t.token),
+        None,
+        &[],
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(headers.get("x-hls-start").unwrap(), "0.000");
+    let (_, playlist) = crate::api::test_support::text(
+        &t.app,
+        "GET",
+        &master(&id, "copy", "subtitle=0"),
+        Some(&t.token),
+        None,
+    )
+    .await;
+    assert!(playlist.contains("TYPE=SUBTITLES"), "{playlist}");
+    assert!(playlist.contains(&format!("/api/items/{id}/hls/copy/0/0/index.m3u8\n")));
 }

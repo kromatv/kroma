@@ -8,7 +8,6 @@ import {
   Button,
   radius as cornerRadius,
   Icon,
-  Spinner,
   styles,
   Text,
   typeSpec as textRoles,
@@ -18,7 +17,7 @@ import { Platform, Pressable, type TextStyle } from 'react-native';
 import { FadeImage } from '#mobile/components/FadeImage';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius } from '#mobile/lib/theme';
+import { radius } from '#mobile/lib/theme';
 
 // Phone scale; the shared appearance model's px are 10-foot numbers.
 const CUE_SIZE: Record<SubtitleAppearance['size'], number> = { sm: 13, md: 17, lg: 21, xl: 26 };
@@ -79,16 +78,6 @@ export function CueLine({
   );
 }
 
-export function BufferingSpinner() {
-  const s = useStyles(sDefinition);
-
-  return (
-    <Box style={s.centerOverlay} pointerEvents="none">
-      <Spinner size={40} color={colors.text} />
-    </Box>
-  );
-}
-
 export function SkipIntroButton({
   onPress,
   bottom,
@@ -139,7 +128,6 @@ export function UpNextCard({
 }
 
 const sDefinition = styles({
-  centerOverlay: { fill: true, center: true },
   cueBox: { absolute: true, right: 40, left: 40, align: 'center' },
   cueText: {
     px: 10,

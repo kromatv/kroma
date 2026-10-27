@@ -90,3 +90,65 @@ async fn an_index_naming_neither_a_track_nor_a_file_beside_one_is_not_found() {
 
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
+
+#[tokio::test]
+async fn native_subtitles_keep_the_ticket_and_source_clock() {
+    let t = test_app();
+    let item = seed_playable_item(&t.state, "Native", FILM);
+    beside(&t, "Native.fr.srt", CP1252_SRT);
+    let ticket = media_ticket_for(&t.state, &t.token);
+    let (_, body) = get(&t.app, &format!("/api/items/{item}"), Some(&t.token)).await;
+    let external = language_at(&body["subtitles"], "fr");
+    let base = format!("/api/items/{item}/subtitles/{external}/600");
+    let (status, playlist) = text(
+        &t.app,
+        "GET",
+        &format!("{base}/index.m3u8?t={ticket}"),
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(playlist.contains(&format!("cues.vtt?t={ticket}")));
+    let (status, cues) = text(
+        &t.app,
+        "GET",
+        &format!("{base}/cues.vtt?t={ticket}"),
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(cues.contains("X-TIMESTAMP-MAP=LOCAL:00:00:00.000,MPEGTS:0"));
+    assert!(cues.contains("Il était déjà là"));
+    let (status, _) = text(&t.app, "GET", &format!("{base}/cues.vtt"), None, None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn a_generated_native_track_is_scoped_to_its_item() {
+    let t = test_app();
+    let item = seed_playable_item(&t.state, "Generated", FILM);
+    let other = crate::api::test_support::demo_item_id("The Matrix");
+    let path = t.state.config.data_dir.join("native-generated.vtt");
+    std::fs::write(&path, "WEBVTT\n\n00:00:01.000 --> 00:00:03.000\nHello\n").unwrap();
+    crate::db::insert_downloaded_sub(
+        &t.state.db,
+        &crate::db::DownloadedSub {
+            id: "native_test".into(),
+            item_id: item.clone(),
+            language: Some("en".into()),
+            label: "English".into(),
+            provider: "whisper".into(),
+            path: path.to_string_lossy().into(),
+        },
+    )
+    .unwrap();
+    let ticket = media_ticket_for(&t.state, &t.token);
+    let uri = |id: &str| format!("/api/items/{id}/subtitles/g:native_test/600/cues.vtt?t={ticket}");
+    let (status, body) = text(&t.app, "GET", &uri(&item), None, None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.contains("Hello"));
+    let (status, _) = text(&t.app, "GET", &uri(&other), None, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}

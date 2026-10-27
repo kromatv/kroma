@@ -1,17 +1,26 @@
-// The player screen: full-screen expo-video surface + Kroma chrome. Locks
-// landscape on phones, keeps the screen awake, resumes from saved progress,
+// The player screen: portrait-first expo-video surface + Kroma chrome. Keeps
+// the screen awake, resumes from saved progress,
 // reports the playback heartbeat, and autoplays the next episode on end.
 
 import { ItemId } from '@kromatv/client/media';
 import { useQuery } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
-import { Redirect, useLocalSearchParams } from 'expo-router';
-import { ErrorView, Loading } from '#mobile/components/ui';
+import { useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  type ErrorBoundaryProps,
+  Redirect,
+  useIsFocused,
+  useLocalSearchParams,
+  useRouter,
+} from 'expo-router';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
-import { routeParam } from '#mobile/lib/nav';
+import { goBack, routeParam } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
 import { PlayerBody } from '#mobile/player/PlayerBody';
+import { PlayerStatusScreen } from '#mobile/player/player-status-screen';
+import { nativePlaybackFailure, playbackFailureCopy } from '#mobile/player/playback-failure';
 
 const RESUME_MIN_MS = 30_000;
 const RESUME_NEAR_END_RATIO = 0.95;
@@ -24,7 +33,30 @@ function resumeSec(positionMs: number | undefined, durationMs: number | null): n
 
 export default function PlayerRoute() {
   const id = routeParam(useLocalSearchParams<{ id?: string }>().id);
-  return id ? <PlayerScreen id={ItemId.parse(id)} /> : <Redirect href="/" />;
+  return id ? (
+    <SafeAreaProvider>
+      <PlayerScreen key={id} id={ItemId.parse(id)} />
+    </SafeAreaProvider>
+  ) : (
+    <Redirect href="/" />
+  );
+}
+
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  const t = useT();
+  const router = useRouter();
+  const failure = nativePlaybackFailure(error);
+  const copy = playbackFailureCopy(failure, t);
+  return (
+    <SafeAreaProvider>
+      <PlayerStatusScreen
+        {...copy}
+        detail={failure.detail}
+        onBack={() => goBack(router)}
+        onRetry={retry}
+      />
+    </SafeAreaProvider>
+  );
 }
 
 function PlayerScreen({ id }: Readonly<{ id: ItemId }>) {
@@ -34,6 +66,14 @@ function PlayerScreen({ id }: Readonly<{ id: ItemId }>) {
   const handedBack = start ? Number(start) : null;
   const t = useT();
   const client = useClient();
+  const router = useRouter();
+  const focused = useIsFocused();
+  const [lastPosition, setLastPosition] = useState<number | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const retryPlayback = (position: number) => {
+    setLastPosition(position);
+    setAttempt((value) => value + 1);
+  };
   useKeepAwake();
 
   const downloads = useDownloads();
@@ -47,39 +87,54 @@ function PlayerScreen({ id }: Readonly<{ id: ItemId }>) {
     retry: 0,
   });
 
+  if (!focused) return null;
+
   // A downloaded title plays from its on-device snapshot, network or not.
   if (offline) {
     return (
       <PlayerBody
-        key={offline.itemId}
+        key={`${offline.itemId}:${attempt}`}
         item={offline.item}
-        startSec={handedBack ?? resumeSec(progress.data?.positionMs, offline.item.durationMs)}
+        startSec={
+          lastPosition ??
+          handedBack ??
+          resumeSec(progress.data?.positionMs, offline.item.durationMs)
+        }
         localUri={offline.fileUri}
         offline={offline}
+        onRetry={retryPlayback}
+        onPosition={setLastPosition}
       />
     );
   }
 
-  if (item.isPending || progress.isPending) return <Loading label={t('common.loading')} />;
-  if (item.isError)
+  if (item.isError) {
+    const failure = nativePlaybackFailure(item.error);
     return (
-      <ErrorView
-        // Dev builds say WHAT failed; release keeps the friendly copy.
-        message={
-          __DEV__ && item.error instanceof Error
-            ? `${t('error.serverBody')}\n\n[dev] ${item.error.message}`
-            : t('error.serverBody')
-        }
-        retryLabel={t('error.retry')}
+      <PlayerStatusScreen
+        {...playbackFailureCopy(failure, t)}
+        detail={failure.detail}
+        onBack={() => goBack(router)}
         onRetry={() => item.refetch()}
       />
     );
+  }
+
+  if (item.isPending || progress.isPending) {
+    return (
+      <PlayerStatusScreen loading message={t('common.loading')} onBack={() => goBack(router)} />
+    );
+  }
 
   return (
     <PlayerBody
-      key={item.data.id}
+      key={`${item.data.id}:${attempt}`}
       item={item.data}
-      startSec={handedBack ?? resumeSec(progress.data?.positionMs, item.data.durationMs)}
+      startSec={
+        lastPosition ?? handedBack ?? resumeSec(progress.data?.positionMs, item.data.durationMs)
+      }
+      onRetry={retryPlayback}
+      onPosition={setLastPosition}
     />
   );
 }

@@ -7,10 +7,10 @@ import {
   type AudioFilterMode,
   type EngineCore,
   NATIVE_SEEK_AHEAD,
-  nextLoadId,
   patchCore,
   patchPlayer,
 } from './types';
+import { shutdownEngine } from './shutdown';
 
 export interface ControlDeps {
   player: VideoPlayer;
@@ -53,19 +53,7 @@ export function useEngineControls(deps: ControlDeps): Controls {
   // outlive both the unmount and the modal dismissal, so every exit path
   // (back button, up-next, beforeRemove, unmount) calls this to silence it.
   const shutdown = useCallback(() => {
-    nextLoadId(core);
-    try {
-      patchPlayer(player, { muted: true });
-      player.pause();
-    } catch {
-      // Player already released.
-    }
-    // Detach the source so the audio session drops, not just pauses. A
-    // released player throws SYNCHRONOUSLY here, so the call runs inside a
-    // promise chain: both failure modes become one rejection `.catch` swallows.
-    void Promise.resolve()
-      .then(() => player.replaceAsync(null))
-      .catch(() => undefined);
+    shutdownEngine(core, player);
   }, [player, core]);
 
   useEffect(() => {
@@ -76,6 +64,7 @@ export function useEngineControls(deps: ControlDeps): Controls {
 
   const seekTo = useCallback(
     (abs: number) => {
+      if (!core.active || core.terminal) return;
       const clamped = Math.max(0, Math.min(abs, dur > 0 ? dur - 1 : abs));
       if (core.mode === 'direct') {
         patchPlayer(player, { currentTime: clamped });
@@ -96,9 +85,10 @@ export function useEngineControls(deps: ControlDeps): Controls {
   );
 
   const togglePlay = useCallback(() => {
+    if (!core.active || core.terminal) return;
     if (player.playing) player.pause();
     else player.play();
-  }, [player]);
+  }, [player, core]);
 
   const skip = useCallback(
     (delta: number) => seekTo(core.baseSec + core.elSec + delta),
@@ -111,6 +101,7 @@ export function useEngineControls(deps: ControlDeps): Controls {
   // no reload at all.
   const setAudio = useCallback(
     (index: number) => {
+      if (!core.active || core.terminal) return;
       if (localUri) {
         const target = player.availableAudioTracks[index];
         if (!target) return;
@@ -131,11 +122,15 @@ export function useEngineControls(deps: ControlDeps): Controls {
   // it off returns to direct when the file is direct-playable.
   const setFilter = useCallback(
     (f: AudioFilterMode) => {
+      if (!core.active || core.terminal) return;
       if (localUri || f === core.filter) return;
       patchCore(core, { filter: f });
       setFilterState(f);
       patchCore(core, {
-        mode: f === 'off' && directPlayable && !core.fellBack ? 'direct' : 'master',
+        mode:
+          f === 'off' && directPlayable && !core.fellBack && core.audioIndex === 0 && !core.subtitle
+            ? 'direct'
+            : 'master',
       });
       void load(core.baseSec + core.elSec);
     },
@@ -144,10 +139,11 @@ export function useEngineControls(deps: ControlDeps): Controls {
 
   const setRate = useCallback(
     (r: number) => {
+      if (!core.active || core.terminal) return;
       patchPlayer(player, { playbackRate: r });
       setRateState(r);
     },
-    [player, setRateState],
+    [player, core, setRateState],
   );
 
   return { togglePlay, seekTo, skip, setAudio, setFilter, setRate, shutdown };

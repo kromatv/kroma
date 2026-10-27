@@ -4,6 +4,7 @@
   "notifications.action.review": "Examiner",
   "notifications.action.view": "Voir",
   "notifications.action.watch": "Regarder",
+  "notifications.actions": "Actions de la notification",
   "notifications.category.downloads": "Téléchargements",
   "notifications.category.media": "Nouveautés",
   "notifications.category.reports": "Signalements",

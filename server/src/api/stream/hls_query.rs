@@ -6,6 +6,12 @@ use axum::extract::{FromRequestParts, Query};
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
 use kroma_media::program::ClientDecoders;
+use serde::Deserialize;
+
+#[derive(Default, Deserialize)]
+struct SubtitleQuery {
+    subtitle: Option<String>,
+}
 
 use crate::api::media_ticket::TicketQuery;
 use crate::state::SharedState;
@@ -16,6 +22,7 @@ use crate::state::SharedState;
 pub struct HlsQuery {
     pub decoders: ClientDecoders,
     pub ticket: TicketQuery,
+    pub subtitle: Option<String>,
 }
 
 impl FromRequestParts<SharedState> for HlsQuery {
@@ -31,6 +38,13 @@ impl FromRequestParts<SharedState> for HlsQuery {
         let Query(ticket) = Query::<TicketQuery>::from_request_parts(parts, state)
             .await
             .map_err(IntoResponse::into_response)?;
-        Ok(HlsQuery { decoders, ticket })
+        let Query(subtitles) = Query::<SubtitleQuery>::from_request_parts(parts, state)
+            .await
+            .map_err(IntoResponse::into_response)?;
+        Ok(HlsQuery {
+            decoders,
+            ticket,
+            subtitle: subtitles.subtitle,
+        })
     }
 }
