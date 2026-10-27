@@ -12,6 +12,7 @@ import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { CardProgress } from '#ui/lib/card-progress';
+import { FocusTilt } from '#ui/lib/focus-tilt';
 
 /** The fill behind artwork, so a tile is never blank while the art loads. */
 
@@ -79,18 +80,22 @@ function MediaCard({
       focusScale={1.06}
       style={[frameOf(width, scope), tintFill(tint, scope)]}
     >
-      <Box w={width} aspect={16 / 9} radius="xl" overflow="hidden" dataSet={FADE_UNIT}>
-        <Img src={art} position="50% 28%" fill noCrossFade />
-        <ArtScrim radius={0} />
-        {watched ? <WatchedBadge /> : null}
-        <Box absolute left={18} right={18} bottom={16} gap={5}>
-          {overline ? <Text style={s.overline}>{overline}</Text> : null}
-          <Text style={s.title} lines={2}>
-            {title}
-          </Text>
-        </Box>
-        <CardProgress value={progress} />
-      </Box>
+      {({ focused }) => (
+        <FocusTilt active={focused}>
+          <Box w={width} aspect={16 / 9} radius="xl" overflow="hidden" dataSet={FADE_UNIT}>
+            <Img src={art} position="50% 28%" fill noCrossFade />
+            <ArtScrim radius={0} />
+            {watched ? <WatchedBadge /> : null}
+            <Box absolute left={18} right={18} bottom={16} gap={5}>
+              {overline ? <Text style={s.overline}>{overline}</Text> : null}
+              <Text style={s.title} lines={2}>
+                {title}
+              </Text>
+            </Box>
+            <CardProgress value={progress} />
+          </Box>
+        </FocusTilt>
+      )}
     </Focusable>
   );
 }

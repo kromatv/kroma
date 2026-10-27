@@ -13,6 +13,7 @@ import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { FADE_UNIT, tintFill } from '#ui/components/molecules/media-card';
 import { CardProgress } from '#ui/lib/card-progress';
+import { FocusTilt } from '#ui/lib/focus-tilt';
 import { gradient } from '#ui/lib/css';
 
 interface PosterCardProps {
@@ -67,31 +68,35 @@ function PosterCard({
       focusScale={1.05}
       style={[frameOf(width ?? '100%', scope), tintFill(tint, scope)]}
     >
-      <Box aspect={2 / 3} radius="xl" overflow="hidden" dataSet={FADE_UNIT}>
-        <Img src={art} fill noCrossFade />
-        {watched ? <WatchedBadge /> : null}
-        <Box
-          absolute
-          left={0}
-          right={0}
-          bottom={0}
-          px={14}
-          pt={48}
-          pb={12}
-          gap={3}
-          style={ramp.band}
-        >
-          {overline ? (
-            <Text style={s.overline} lines={1}>
-              {overline}
-            </Text>
-          ) : null}
-          <Text style={s.title} lines={2}>
-            {title}
-          </Text>
-        </Box>
-        <CardProgress value={progress} />
-      </Box>
+      {({ focused }) => (
+        <FocusTilt active={focused}>
+          <Box aspect={2 / 3} radius="xl" overflow="hidden" dataSet={FADE_UNIT}>
+            <Img src={art} fill noCrossFade />
+            {watched ? <WatchedBadge /> : null}
+            <Box
+              absolute
+              left={0}
+              right={0}
+              bottom={0}
+              px={14}
+              pt={48}
+              pb={12}
+              gap={3}
+              style={ramp.band}
+            >
+              {overline ? (
+                <Text style={s.overline} lines={1}>
+                  {overline}
+                </Text>
+              ) : null}
+              <Text style={s.title} lines={2}>
+                {title}
+              </Text>
+            </Box>
+            <CardProgress value={progress} />
+          </Box>
+        </FocusTilt>
+      )}
     </Focusable>
   );
 }
