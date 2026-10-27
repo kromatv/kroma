@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from 'react';
 import { type LayoutChangeEvent, type StyleProp, View, type ViewStyle } from 'react-native';
+import { FRAME_MASKS, FrameMask } from '#ui/lib/frame-mask';
 import { ScrolledReport } from '#ui/lib/scrolled-report';
 import { CONTENT_MASKS, TopFadeBand } from '#ui/lib/top-fade-band';
 
@@ -23,8 +24,12 @@ export function TopFade({
   const [top, setTop] = useState(0);
   return (
     <View style={style ?? FLEX} onLayout={(e: LayoutChangeEvent) => setTop(e.nativeEvent.layout.y)}>
-      <ScrolledReport.Provider value={setScrolled}>{children}</ScrolledReport.Provider>
-      {masked && CONTENT_MASKS ? null : (
+      <ScrolledReport.Provider value={setScrolled}>
+        <FrameMask inset={inset} active={scrolled}>
+          {children}
+        </FrameMask>
+      </ScrolledReport.Provider>
+      {FRAME_MASKS || (masked && CONTENT_MASKS) ? null : (
         <TopFadeBand inset={inset} active={scrolled} offset={top}>
           {backdrop}
         </TopFadeBand>
