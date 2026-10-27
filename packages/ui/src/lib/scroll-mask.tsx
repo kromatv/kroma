@@ -1,5 +1,5 @@
 import MaskedView from '@react-native-masked-view/masked-view';
-import { type ReactNode, useContext, useRef, useState } from 'react';
+import { type ReactNode, useContext, useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
   Animated,
   type LayoutChangeEvent,
@@ -15,6 +15,7 @@ const RAMP = 160;
 const MASKED = Platform.OS === 'ios';
 const PROBE: ViewStyle = { position: 'absolute', top: 0, left: 0, width: 0, height: 0 };
 const OPAQUE = '#000';
+const REMEASURE_MS = 120;
 
 interface Frame {
   top: number;
@@ -43,19 +44,43 @@ export function ScrollMask({
 }: Readonly<{ inset: number; style?: StyleProp<ViewStyle>; children: ReactNode }>) {
   const position = useContext(ScrollPositionContext);
   const probe = useRef<View>(null);
+  const height = useRef(0);
   const [frame, setFrame] = useState<Frame | null>(null);
-  if (!MASKED || !position) return <View style={style}>{children}</View>;
 
-  const measure = (e: LayoutChangeEvent) => {
-    const { height } = e.nativeEvent.layout;
-    const content = position.content.current;
+  const measure = () => {
+    const content = position?.content.current;
     if (!probe.current || !content) return;
     probe.current.measureLayout(
       content,
       (_left, top) =>
-        setFrame((was) => (was?.top === top && was.height === height ? was : { top, height })),
+        setFrame((was) =>
+          was?.top === top && was.height === height.current ? was : { top, height: height.current },
+        ),
       () => {},
     );
+  };
+  const remeasure = useEffectEvent(measure);
+
+  useEffect(() => {
+    if (!MASKED || !position) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const id = position.offset.addListener(() => {
+      timer ??= setTimeout(() => {
+        timer = null;
+        remeasure();
+      }, REMEASURE_MS);
+    });
+    return () => {
+      position.offset.removeListener(id);
+      if (timer) clearTimeout(timer);
+    };
+  }, [position]);
+
+  if (!MASKED || !position) return <View style={style}>{children}</View>;
+
+  const onLayout = (e: LayoutChangeEvent) => {
+    height.current = e.nativeEvent.layout.height;
+    measure();
   };
 
   const mask = frame ? (
@@ -72,7 +97,7 @@ export function ScrollMask({
   );
 
   return (
-    <MaskedView style={style} maskElement={mask} onLayout={measure}>
+    <MaskedView style={style} maskElement={mask} onLayout={onLayout}>
       <View ref={probe} style={PROBE} pointerEvents="none" />
       {children}
     </MaskedView>

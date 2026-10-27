@@ -41,6 +41,11 @@ import { ringRoom } from '#ui/lib/scroll-ring-room';
 
 type Reveal = 'start' | 'nearest';
 
+const leadOf = (content: ViewStyle | undefined): number => {
+  const value = content?.paddingTop ?? content?.paddingVertical ?? content?.padding;
+  return typeof value === 'number' ? value : 0;
+};
+
 interface FocusScrollProps {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -113,6 +118,8 @@ function AxisScroll({
                 })
               : pageOffset({
                   top: horizontal ? left : top,
+                  size: horizontal ? undefined : height,
+                  lead: horizontal ? undefined : leadOf(flat(contentStyle)),
                   // The reach above is padding on the content, so every item
                   // measures that much further in: without it here the row would
                   // scroll the room back out from under the first tile's ring.
@@ -131,7 +138,7 @@ function AxisScroll({
         () => {},
       );
     },
-    [frost, horizontal, mode, offsetFromStart, reduced],
+    [contentStyle, frost, horizontal, mode, offsetFromStart, reduced],
   );
 
   const room = ringRoom(flat(style), flat(contentStyle), horizontal);

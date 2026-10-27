@@ -172,6 +172,35 @@ describe('the TV remote', () => {
     expect(nav1.moves).toEqual(['hold', 'release']);
   });
 
+  it('repeats a held direction until the hold ends', async () => {
+    const { remote } = await load();
+    const nav1 = navigator();
+    renderHook(() => remote.useRemoteBridge());
+    vi.useFakeTimers();
+
+    press('longDown', 0);
+    act(() => vi.advanceTimersByTime(450));
+    press('longDown', 1);
+    act(() => vi.advanceTimersByTime(450));
+    vi.useRealTimers();
+
+    expect(nav1.moves).toEqual(['down', 'down', 'down', 'down']);
+  });
+
+  it('stops repeating when any other remote event arrives', async () => {
+    const { remote } = await load();
+    const nav1 = navigator();
+    renderHook(() => remote.useRemoteBridge());
+    vi.useFakeTimers();
+
+    press('longRight', 0);
+    press('select', 1);
+    act(() => vi.advanceTimersByTime(450));
+    vi.useRealTimers();
+
+    expect(nav1.moves).toEqual(['right', 'enter', 'release']);
+  });
+
   it('ignores a button the navigator has no direction for', async () => {
     const { remote } = await load();
     const nav1 = navigator();
