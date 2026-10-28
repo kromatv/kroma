@@ -201,6 +201,17 @@ into the candidate because the .msi's fourth version field stops at 65535,
 and the build number is past three million. The macOS canary also still lacks
 libmpv, since tauri-action packs its bundle before anything could be embedded.
 
+### A macOS build of a pull request
+
+`desktop-preview.yml` builds a pull request's dmg on demand: add the
+`preview:mac` label, and every push after rebuilds it until the label comes
+off. It is the release's macOS leg (libmpv embedded, the styled dmg, the
+launch check) stamped `<X.Y.Z>-pr.<number>`, without an updater bundle and
+publishing nothing. The dmg is a run artifact kept seven days, and one comment
+on the pull request links the newest. A pull request from this repository is
+signed and notarized; a fork's run has no secrets, so it gets an unsigned dmg
+and no comment. It reads the release build's Rust cache and never writes one.
+
 ## Caches and the 10 GB budget
 
 | entry | size | written by |

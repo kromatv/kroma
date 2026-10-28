@@ -297,16 +297,7 @@ jobs:
       # (tauri#15665) a Mesa 25 host.
       - name: Launch the app from the dmg (macOS)
         if: runner.os == 'macOS'
-        run: |
-          set -euo pipefail
-          DMG="$(find clients/desktop/src-tauri/target/release/bundle/dmg -name '*.dmg' | head -n1)"
-          MNT="$RUNNER_TEMP/smoke-dmg"
-          mkdir -p "$MNT"
-          hdiutil attach -readonly -nobrowse -noautoopen -mountpoint "$MNT" "$DMG" >/dev/null
-          trap 'hdiutil detach "$MNT" -quiet -force || true' EXIT
-          APP="$(find "$MNT" -maxdepth 1 -name '*.app' | head -n1)"
-          EXE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")"
-          bash clients/desktop/scripts/smoke-launch.sh "$APP/Contents/MacOS/$EXE"
+        run: bash clients/desktop/scripts/smoke-dmg-macos.sh "$(find clients/desktop/src-tauri/target/release/bundle/dmg -name '*.dmg' | head -n1)"
 
       - name: Launch the AppImage (Linux)
         if: runner.os == 'Linux'
