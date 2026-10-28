@@ -37,6 +37,7 @@ public class FocusCardView: ExpoView {
   private static let depth: CGFloat = 1 / 900
   private static let lightStrength: CGFloat = 0.2
   private static let lightTravel: CGFloat = 0.6
+  private static let depthLift: CGFloat = 1000
 
   private let lightClip = UIView()
   private let light = UIView()
@@ -45,6 +46,7 @@ public class FocusCardView: ExpoView {
   private var outline = CGRect.zero
   private weak var host: UIView?
   private var tiltEffect: UIMotionEffect?
+  private var restingDepth: CGFloat?
   var styleRadius: CGFloat = 0
   var faceIsHost = false
 
@@ -94,6 +96,10 @@ public class FocusCardView: ExpoView {
       self.lightClip.alpha = 1
     }
     shadow(on: true, of: control)
+    if restingDepth == nil {
+      restingDepth = control.layer.zPosition
+      control.layer.zPosition += Self.depthLift
+    }
   }
 
   private func release() {
@@ -102,6 +108,10 @@ public class FocusCardView: ExpoView {
       control.removeMotionEffect(tiltEffect)
       shadow(on: false, of: control)
     }
+    if let control = host, let restingDepth {
+      control.layer.zPosition = restingDepth
+    }
+    restingDepth = nil
     tiltEffect = nil
     UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) {
       self.lightClip.alpha = 0
