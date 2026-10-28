@@ -20,6 +20,7 @@ import type {
   WebKeys,
 } from './focusable-types';
 import { Painted, TouchPressable } from './touch-pressable';
+import { radiusOf, useFocusTarget } from '#ui/lib/focus-target';
 import { useMirroredFocus } from './use-mirrored-focus';
 
 function DisabledForm({
@@ -59,6 +60,8 @@ function DisabledForm({
   );
 }
 
+const IGNORE = () => {};
+
 function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   // Not `at.controlled &&`: an uncontrolled control on a browser target reports
   // its own DOM focus (the pressable forwards it), and a keyboard reaching it is
@@ -67,6 +70,8 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
   // sheet's `:focus-visible` rule drawing a square outline in its place.
   const lit = at.focusVisible;
   const ring = useFocusRing(at.ringToken);
+  const target = useFocusTarget(at.controlled && at.focused, radiusOf(at.style), 'host');
+  const remote = at.controlled && target.remoteSelects;
   const box = useControlledMirror(at.controlled && at.focused, at.setBox);
   // Hover goes UNDER the focus coats: a control the cursor is over and the
   // remote is on is a focused control, not a doubly-lit one.
@@ -90,25 +95,28 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
       a11yState={at.a11yState}
       base={base}
       pressedStyle={at.pressedStyle}
-      onPress={at.onPress}
-      onLongPress={at.onLongPress}
+      onPress={remote ? IGNORE : at.onPress}
+      onLongPress={remote ? undefined : at.onLongPress}
       onHoverIn={at.onHoverIn}
       onHoverOut={at.onHoverOut}
       onFocus={at.onFocus}
       onBlur={at.onBlur}
       hitSlop={at.hitSlop}
-      {...(at.controlled ? { unfocusable: true } : null)}
+      {...(at.controlled ? { unfocusable: !target.hostProps, hostProps: target.hostProps } : null)}
     >
-      {(pressed) =>
-        typeof at.children === 'function'
-          ? at.children({
-              focused: at.focused,
-              pressed,
-              hovered: at.hovered,
-              slots: at.resolve(pressed),
-            })
-          : at.children
-      }
+      {(pressed) => (
+        <>
+          {typeof at.children === 'function'
+            ? at.children({
+                focused: at.focused,
+                pressed,
+                hovered: at.hovered,
+                slots: at.resolve(pressed),
+              })
+            : at.children}
+          {at.controlled ? target.overlay : null}
+        </>
+      )}
     </TouchPressable>
   );
 }

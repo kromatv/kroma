@@ -18,6 +18,7 @@ import { style } from '#ui/core';
 import { useRemoteHostProps } from './focus-remote';
 import { FocusShield } from './focus-shield';
 import { flat } from './nav-style';
+import { NativeFocusProvider, useNativeFocusHost } from './native-focus';
 
 export interface FocusRootProps {
   children: ReactNode;
@@ -50,9 +51,12 @@ export function FocusRoot({
   // Android delivers keys to the focused VIEW rather than through a global
   // stream, so the key host below is also where they arrive. Empty elsewhere.
   const hostProps = useRemoteHostProps(bridge);
+  const native = useNativeFocusHost();
+  const free = !native.held;
   return (
     <NavigatorRoot active={active} onEdge={onEdge}>
-      {/* The one thing tvOS focuses, and the reason the remote is heard at all: a
+      <NativeFocusProvider value={native.host}>
+        {/* The one thing tvOS focuses, and the reason the remote is heard at all: a
           directional press reaches the app only when the app owns the focus, and
           with nothing focusable in the window the system keeps every key and
           `useTVEventHandler` never fires. This full-screen transparent host holds
@@ -66,23 +70,29 @@ export function FocusRoot({
           back. Gone too when this root carries no transport: Android delivers a
           press to whatever holds the platform focus, so a host that takes it
           without a handler above it is where the remote goes to die. */}
-      {/* Android hands a key to whichever view holds the PLATFORM focus, and
+        {/* Android hands a key to whichever view holds the PLATFORM focus, and
           `topKeyDown` BUBBLES. The focus walks off the host onto the navigator's
           own views as soon as one is focused, so a handler on the host alone
           hears the first press and nothing after it. This wrapper is their
           common ancestor, so it hears every press wherever the focus sits. It
           must be the ONLY node on the bubble path carrying them, or the first
           press arrives twice. Empty off Android. */}
-      <View style={FILL} {...hostProps}>
-        {keyHost && bridge ? (
-          <Pressable focusable isTVSelectable hasTVPreferredFocus style={KEY_HOST} />
-        ) : null}
-        <FocusShield shielded={keyHost} style={FILL}>
-          <NavigatorView direction="vertical" style={flat([FILL, style])}>
-            {children}
-          </NavigatorView>
-        </FocusShield>
-      </View>
+        <View style={FILL} {...hostProps}>
+          {keyHost && bridge ? (
+            <Pressable
+              focusable={free}
+              isTVSelectable={free}
+              hasTVPreferredFocus={free}
+              style={KEY_HOST}
+            />
+          ) : null}
+          <FocusShield shielded={keyHost} style={FILL}>
+            <NavigatorView direction="vertical" style={flat([FILL, style])}>
+              {children}
+            </NavigatorView>
+          </FocusShield>
+        </View>
+      </NativeFocusProvider>
     </NavigatorRoot>
   );
 }

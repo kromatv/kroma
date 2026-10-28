@@ -7,6 +7,7 @@ import type { ReactNode, Ref } from 'react';
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import type { splitBoxLayers } from './box-layers';
 import { GROUNDED, LIFTED } from './focus-lift';
+import { radiusOf, useFocusTarget } from './focus-target';
 
 /** What a navigator node needs to render a control, identical on every target. */
 export interface NavigatorItemHostProps {
@@ -48,6 +49,7 @@ export function NavigatorItemHost({
   painted,
   viewProps,
 }: Readonly<NavigatorItemHostProps>): ReactNode {
+  const target = useFocusTarget(focused, radiusOf(painted), 'child');
   return (
     <NavigatorItem
       ref={entry}
@@ -56,9 +58,19 @@ export function NavigatorItemHost({
       onFocus={onFocus}
       onBlur={onBlur}
       style={StyleSheet.flatten([layers?.box, focused ? LIFTED : GROUNDED]) as NavigatorStyle}
-      viewProps={viewProps as NavigatorItemProps['viewProps']}
+      viewProps={
+        {
+          ...viewProps,
+          ...target.hostProps,
+        } as NavigatorItemProps['viewProps']
+      }
     >
-      {(state) => renderFace(state.focused, painted)}
+      {(state) => (
+        <>
+          {renderFace(state.focused, painted)}
+          {target.overlay}
+        </>
+      )}
     </NavigatorItem>
   );
 }
