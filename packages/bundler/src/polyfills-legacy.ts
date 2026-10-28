@@ -15,7 +15,7 @@ import 'intersection-observer';
 
 if (!('BigInt' in window)) {
   Object.defineProperty(window, 'BigInt', {
-    value: (value: string | number) => Number(value),
+    value: Number,
     configurable: true,
     writable: true,
   });
