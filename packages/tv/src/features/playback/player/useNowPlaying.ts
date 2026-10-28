@@ -71,11 +71,11 @@ export interface NowPlayingInput {
   positionSec: number;
   playing: boolean;
   seekTo: (sec: number) => void;
-  togglePlay: () => void;
   seek: (deltaSec: number) => void;
   seekNonce: number;
 }
 
+const HOLD_DELAY_MS = 300;
 const HOLD_REPEAT_MS = 100;
 
 const REMOTE_KEY: Record<string, string> = {
@@ -90,9 +90,12 @@ function pressRemoteKey(key: string, repeat: boolean): void {
 }
 
 function useHeldKey(): { press(key: string): void; hold(key: string): void; release(): void } {
+  const delay = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const release = useCallback(() => {
+    if (delay.current) clearTimeout(delay.current);
     if (timer.current) clearInterval(timer.current);
+    delay.current = null;
     timer.current = null;
   }, []);
   useEffect(() => release, [release]);
@@ -102,7 +105,9 @@ function useHeldKey(): { press(key: string): void; hold(key: string): void; rele
       hold: (key) => {
         release();
         pressRemoteKey(key, false);
-        timer.current = setInterval(() => pressRemoteKey(key, true), HOLD_REPEAT_MS);
+        delay.current = setTimeout(() => {
+          timer.current = setInterval(() => pressRemoteKey(key, true), HOLD_REPEAT_MS);
+        }, HOLD_DELAY_MS);
       },
       release,
     }),
@@ -157,7 +162,6 @@ export function useNowPlaying({
   positionSec,
   playing,
   seekTo,
-  togglePlay,
   seek,
   seekNonce,
 }: NowPlayingInput): void {
@@ -204,7 +208,7 @@ export function useNowPlaying({
     else if (action.startsWith('hold:') && action.endsWith(':end')) held.release();
     else if (key && action.startsWith('hold:')) held.hold(key);
     else if (key) held.press(key);
-    else if (flips(action, playing)) togglePlay();
+    else if (flips(action, playing)) held.press('MediaPlayPause');
   });
 
   // On item change ONLY: resolve + rasterize the poster, then push the full info.

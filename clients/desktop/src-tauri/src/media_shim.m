@@ -32,7 +32,39 @@ static void kroma_bind_seek(MPRemoteCommand* cmd, const char* begin, const char*
     }];
 }
 
+// The keyboard's own rewind and fast-forward keys, while this app is in front.
+// Now Playing reports a held key as one tap; the raw system event carries the
+// key going down and coming up, which is what lets a hold become a fast seek.
+enum {
+    KROMA_KEY_NEXT = 17,
+    KROMA_KEY_PREVIOUS = 18,
+    KROMA_KEY_FAST = 19,
+    KROMA_KEY_REWIND = 20,
+    KROMA_MEDIA_KEY_SUBTYPE = 8,
+};
+
+static NSEvent* kroma_media_key_event(NSEvent* event) {
+    if ([event subtype] != KROMA_MEDIA_KEY_SUBTYPE) return event;
+    NSInteger data = [event data1];
+    int code = (int)((data & 0xFFFF0000) >> 16);
+    int state = (int)((data & 0xFF00) >> 8);
+    BOOL repeat = (data & 0x1) != 0;
+    BOOL forward = code == KROMA_KEY_FAST || code == KROMA_KEY_NEXT;
+    BOOL back = code == KROMA_KEY_REWIND || code == KROMA_KEY_PREVIOUS;
+    if (!forward && !back) return event;
+    if (state == 0xA && !repeat) {
+        kroma_media_key_pressed(forward ? "hold:forward:begin" : "hold:back:begin");
+    } else if (state == 0xB) {
+        kroma_media_key_pressed(forward ? "hold:forward:end" : "hold:back:end");
+    }
+    return nil;
+}
+
 void kroma_setup_media_keys(void) {
+    [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskSystemDefined
+                                          handler:^NSEvent*(NSEvent* event) {
+                                              return kroma_media_key_event(event);
+                                          }];
     MPRemoteCommandCenter* cc = [MPRemoteCommandCenter sharedCommandCenter];
     kroma_bind_command(cc.togglePlayPauseCommand, "playpause");
     kroma_bind_command(cc.playCommand, "play");

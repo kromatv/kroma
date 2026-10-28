@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 
-import { act } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { controlOrder } from '#ui/components/organisms/player/lib/nav';
 import { TV_FLAGS, WEB_FLAGS } from '#ui/components/organisms/player/types';
+import { usePlayerNav } from './use-player-nav';
 import { makeActions, nav } from './use-player-nav.fixture';
 
 beforeEach(() => vi.useFakeTimers());
@@ -121,6 +123,29 @@ describe('usePlayerNav auto-hide timer', () => {
     expect(result.current.revealed).toBe(false);
     act(() => result.current.poke());
     expect(result.current.revealed).toBe(true);
+  });
+
+  it('leaves a hidden chrome hidden when a key pauses the film', () => {
+    const actions = makeActions();
+    const order = controlOrder(WEB_FLAGS, false);
+    const view = renderHook(({ playing }) => usePlayerNav(playing, actions, order), {
+      initialProps: { playing: true },
+    });
+    act(() => vi.advanceTimersByTime(3500));
+
+    act(() => view.result.current.handleKey('PlayPause'));
+    view.rerender({ playing: false });
+
+    expect(view.result.current.revealed).toBe(false);
+  });
+
+  it('leaves a hidden chrome hidden on a seek key', () => {
+    const { result, key } = nav(WEB_FLAGS, true);
+    act(() => vi.advanceTimersByTime(3500));
+
+    key('FastForward');
+
+    expect(result.current.revealed).toBe(false);
   });
 
   it('stays revealed while paused (no hide timer)', () => {

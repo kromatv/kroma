@@ -93,7 +93,6 @@ function Focusable<R extends AnySv = AnySv>({
   const controlled = controlledFocus !== undefined;
   const dormant = usePlatformHoldsFocus();
   const focused = (controlled ? controlledFocus : selfFocused) && !dormant;
-  const focusVisible = useFocusVisibleBy(focused, source.focusHidden);
   const scoped = useInsideFocusScope();
 
   const stateProps = useMemo<A11yState>(
@@ -130,6 +129,8 @@ function Focusable<R extends AnySv = AnySv>({
     setHovered(false);
     setPointerPressed(false);
   }, []);
+  const keyedFocus = useFocusVisibleBy(focused, source.focusHidden);
+  const focusVisible = keyedFocus && (hovered || !source.pointerDriving());
 
   const animated = useFocusScale(focused || hovered, focusScale);
 
