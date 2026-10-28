@@ -6,6 +6,7 @@ const AT = new Date('2026-10-28T12:00:00Z');
 
 const bundles = [
   { name: 'mac/KROMA_0.1.40_aarch64.app.tar.gz', signature: 'mac-sig\n' },
+  { name: 'intel/KROMA_0.1.40_x64.app.tar.gz', signature: 'intel-sig' },
   { name: 'nsis/KROMA_0.1.40_x64-setup.exe', signature: 'nsis-sig' },
   { name: 'msi/KROMA_0.1.40_x64_en-US.msi', signature: 'msi-sig' },
   { name: 'appimage/KROMA_0.1.40_amd64.AppImage', signature: 'appimage-sig' },
@@ -16,6 +17,7 @@ describe('archOf and keysOf', () => {
   it('reads the CPU off every bundle tauri names', () => {
     expect(bundles.map((b) => archOf(b.name))).toEqual([
       'aarch64',
+      'x86_64',
       'x86_64',
       'x86_64',
       'x86_64',
@@ -57,6 +59,8 @@ describe('feed', () => {
     expect(Object.keys(latest.platforms).sort()).toEqual([
       'darwin-aarch64',
       'darwin-aarch64-app',
+      'darwin-x86_64',
+      'darwin-x86_64-app',
       'linux-x86_64',
       'linux-x86_64-appimage',
       'linux-x86_64-deb',
@@ -72,9 +76,11 @@ describe('feed', () => {
   });
 
   it('refuses a feed that would strand an OS', () => {
-    const withoutMac = bundles.filter((b) => !b.name.startsWith('mac/'));
+    const withoutMacs = bundles.filter((b) => !/^(mac|intel)\//.test(b.name));
 
-    expect(() => feed(withoutMac, '0.1.40', BASE, AT, '')).toThrow('no bundle for darwin-aarch64');
+    expect(() => feed(withoutMacs, '0.1.40', BASE, AT, '')).toThrow(
+      'no bundle for darwin-aarch64, darwin-x86_64',
+    );
   });
 
   it('refuses two bundles for one key and a file it does not know', () => {

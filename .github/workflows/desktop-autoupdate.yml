@@ -138,6 +138,10 @@ jobs:
           - os: macos-14
             bundles: app
             extra_args: '-- --no-default-features'
+          # The Intel Macs, from the last Intel image GitHub runs.
+          - os: macos-15-intel
+            bundles: app
+            extra_args: '-- --no-default-features'
           # Windows auto-update bundles libmpv (self-contained mpv-2.dll beside the exe).
           - os: windows-latest
             bundles: nsis

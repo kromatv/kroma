@@ -220,7 +220,7 @@ and no comment. It reads the release build's Rust cache and never writes one.
 |---|---|---|
 | `rust` (server + modules, instrumented) | ~1.0 GB | ci.yml on main |
 | `desktop-check` | ~0.4 GB | ci.yml on main |
-| `desktop-release` x3 OS | ~1.2 GB | _release-desktop.yml, desktop-autoupdate.yml |
+| `desktop-release` x4 (both Macs, Windows, Linux) | ~1.6 GB | _release-desktop.yml, desktop-autoupdate.yml |
 | `dd-tvnative-v1-*`, `dd-mobile-v1-*` | ~0.8 + 0.6 GB, one each | the Apple jobs, pruned to one |
 | `ios-tvnative-v3-*`, `ios-mobile-v3-*` | ~0.2 GB each | the Apple jobs, keyed by config hash |
 | Gradle dependencies + build cache, per app | ~0.9 GB each | the release Android jobs |

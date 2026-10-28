@@ -30,12 +30,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Apple Silicon .dmg (+ .app). Intel/universal would be a separate matrix
-          # entry (macos-13) - most Macs are arm64 now.
+          # Apple Silicon .dmg (+ .app).
           - os: macos-14
             label: 'macOS (.dmg)'
             bundles: app
             artifact: kroma-desktop-macos
+            updater_artifact: desktop-updater-macos
+            files: |
+              clients/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            updater: |
+              clients/desktop/src-tauri/target/release/bundle/updater/*.app.tar.gz
+              clients/desktop/src-tauri/target/release/bundle/updater/*.app.tar.gz.sig
+          # Intel .dmg, the same steps on the last Intel image GitHub runs
+          # (until about 2027). Homebrew's libmpv here is built for macOS 15,
+          # so that is this dmg's real floor: the Intel Macs from 2018 on.
+          - os: macos-15-intel
+            label: 'macOS Intel (.dmg)'
+            bundles: app
+            artifact: kroma-desktop-macos-intel
+            updater_artifact: desktop-updater-macos-intel
             files: |
               clients/desktop/src-tauri/target/release/bundle/dmg/*.dmg
             updater: |
@@ -46,6 +59,7 @@ jobs:
             label: 'Windows (.exe + .msi)'
             bundles: nsis,msi
             artifact: kroma-desktop-windows
+            updater_artifact: desktop-updater-windows
             files: |
               clients/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
               clients/desktop/src-tauri/target/release/bundle/msi/*.msi
@@ -58,6 +72,7 @@ jobs:
             label: 'Linux (.AppImage + .deb)'
             bundles: appimage,deb
             artifact: kroma-desktop-linux
+            updater_artifact: desktop-updater-linux
             files: |
               clients/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
               clients/desktop/src-tauri/target/release/bundle/deb/*.deb
@@ -348,7 +363,7 @@ jobs:
       - name: Upload updater artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: desktop-updater-${{ runner.os == 'macOS' && 'macos' || runner.os == 'Windows' && 'windows' || 'linux' }}
+          name: ${{ matrix.updater_artifact }}
           path: ${{ matrix.updater }}
           if-no-files-found: error
           retention-days: 30

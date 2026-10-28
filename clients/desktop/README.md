@@ -116,6 +116,13 @@ bun run tauri:build:mac        # -> src-tauri/target/release/bundle/macos/KROMA.
 bun run tauri:build:mac:dmg    # also the styled .dmg, headless (see below)
 ```
 
+CI builds two dmgs, the same steps on two runners: Apple silicon on `macos-14`
+and Intel on `macos-15-intel`, the last Intel image GitHub runs (until about
+2027). Each embeds the libmpv Homebrew installed on its runner, built for that
+runner's macOS, so the Intel dmg needs macOS 15 and the Apple silicon one
+macOS 14 in practice. Neither declares it: `LSMinimumSystemVersion` stays
+tauri's default.
+
 `tauri:build:mac` produces a normal `.app` (opaque window, traffic lights, resize,
 the KROMA icon) with no mpv process. The `.dmg` is never tauri's: its bundler skips
 the Finder styling whenever `CI=true`, so every installer, local or released, comes
