@@ -6,12 +6,13 @@ import { VideoView } from 'expo-video';
 import { type ReactNode, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import type { ExpoVideoEngine } from '#tv/features/playback/player/expoVideoEngine';
+import type { SurfaceProps } from '#tv/features/playback/player/playbackBackend';
 import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
 import type { VlcEngine } from '#tv/features/playback/player/vlcEngine';
 import { getVlcPlane } from '#tv/features/playback/player/vlcPlane';
 
 const CLIP = style({ overflow: 'hidden' });
-export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: string }>): ReactNode {
+export function PlayerSurface({ pb, title, pip }: Readonly<SurfaceProps>): ReactNode {
   // <VideoView> is backed by an AVPlayerLayer, which a rounded ancestor does
   // NOT clip; only clipping its own wrapper rounds the picture.
   const radius = useSurfaceRadius();
@@ -21,11 +22,13 @@ export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: str
   const engine = pb.engineRef.current as ExpoVideoEngine | null;
   const player = engine?.videoPlayer ?? null;
   if (!player) return null;
+  const { attach, onStart, onStop } = pip;
   return (
     <Animated.View style={[StyleSheet.absoluteFill, CLIP, { borderRadius: radius }]}>
       <VideoView
         // expo-video binds its AVPlayer at mount: a swapped player needs a new view.
         key={pb.surfaceNonce}
+        ref={attach}
         player={player}
         style={StyleSheet.absoluteFill}
         contentFit="contain"
@@ -38,6 +41,9 @@ export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: str
         // The platform's controls would answer the remote before our chrome.
         nativeControls={false}
         accessibilityLabel={title}
+        allowsPictureInPicture
+        onPictureInPictureStart={onStart}
+        onPictureInPictureStop={() => onStop(player.playing)}
       />
     </Animated.View>
   );

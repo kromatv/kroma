@@ -31,8 +31,31 @@ export interface CreateEngineArgs<P extends EnginePlan = EnginePlan> {
   listeners: EngineListeners;
 }
 
-/** One shell's playback: how it plans and builds an engine, and the surface the
- * engine draws on. */
+/** The picture-in-picture calls a surface's video view answers. */
+export interface PipHandle {
+  startPictureInPicture(): Promise<void>;
+  stopPictureInPicture(): Promise<void>;
+}
+
+/** What a surface wires its video view to: `attach` is its ref, and `onStop`
+ * says whether the film was still playing as the window closed, which is what
+ * tells a viewer who expanded it from one who dismissed it. */
+export interface PipBinding {
+  attach(view: PipHandle | null): void;
+  onStart(): void;
+  onStop(playing: boolean): void;
+}
+
+/** What a backend's surface is handed to draw. */
+export interface SurfaceProps {
+  pb: Playback;
+  title: string;
+  pip: PipBinding;
+}
+
+/** One shell's playback: how it plans and builds an engine, the surface the
+ * engine draws on, and whether that surface can hand its picture to the
+ * system's picture-in-picture window. */
 export interface PlaybackBackend<P extends EnginePlan = EnginePlan> {
   planEngine(
     item: MediaItem,
@@ -41,7 +64,8 @@ export interface PlaybackBackend<P extends EnginePlan = EnginePlan> {
     capabilities?: PlaybackCapabilities,
   ): P;
   createTvEngine(args: CreateEngineArgs<P>): TvEngine | null;
-  Surface: ComponentType<{ pb: Playback; title: string }>;
+  Surface: ComponentType<SurfaceProps>;
+  pictureInPicture(surface: Surface): boolean;
 }
 
 /** What a shell hands `TvApp` for playback: the player screen, already wired to

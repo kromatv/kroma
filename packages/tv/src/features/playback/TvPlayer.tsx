@@ -12,13 +12,16 @@ import {
 import { Box, Button, radius as cornerRadius, Icon, style, Text } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
-import { useClient, useNav, useParams } from '#tv/app/router';
+import { usePlayerSlot } from '#tv/app/playerDock';
+import { useClient } from '#tv/app/router';
 import { useCastTarget } from '#tv/features/cast/castBridge';
 import { revealNativeSurface } from '#tv/features/playback/player/nativeSurface';
 import { usePlaybackBackend } from '#tv/features/playback/player/playbackBackend';
 import { useNowPlaying } from '#tv/features/playback/player/useNowPlaying';
 import { useStoryboard } from '#tv/features/playback/player/useStoryboard';
 import { useTvController } from '#tv/features/playback/use-tv-controller';
+import { useDockedPlayer } from '#tv/features/playback/use-docked-player';
+import { useTvPip } from '#tv/features/playback/use-tv-pip';
 import { useTvUpNext } from '#tv/features/playback/use-tv-upnext';
 
 const PREVIEW_W = 256;
@@ -27,23 +30,29 @@ const BACK = style({ radius: cornerRadius.pill, mt: 8 });
 
 /**
  * The TV player: a thin wrapper adapting the native-plane engine to the
- * shared unified `<Player>`, with TV feature flags (no volume / PiP /
- * fullscreen). This handles the surface plane, "up next" autoplay, and the
- * OS now-playing widget; chrome + D-pad interaction live in the shared component.
+ * shared unified `<Player>`, with TV feature flags (no volume / fullscreen, and
+ * picture-in-picture where the surface has it). This handles the surface plane,
+ * "up next" autoplay, the dock behind a picture-in-picture window, and the OS
+ * now-playing widget; chrome + D-pad interaction live in the shared component.
  */
 export function TvPlayer() {
-  const nav = useNav();
-  const { item } = useParams('player');
+  const { item, docked } = usePlayerSlot();
+  const moves = useDockedPlayer(item, docked);
+  const pip = useTvPip(moves.onPipStart, moves.onPipStop);
   const client = useClient();
   const t = useT();
-  const { Surface } = usePlaybackBackend();
+  const { Surface, pictureInPicture } = usePlaybackBackend();
+  const { controller, pb, subtitleGen } = useTvController(client, item, pip);
   // Reveal-on-pointer only with a real desktop mouse: a TV remote emits
   // phantom pointermove that would pin the chrome open, so there the D-pad
   // drives reveal instead (see env.mousePointer).
   const { mousePointer } = useEnv();
-  const playerFlags = useMemo(() => ({ ...TV_FLAGS, pointer: mousePointer }), [mousePointer]);
+  const canPip = pictureInPicture(pb.surface);
+  const playerFlags = useMemo(
+    () => ({ ...TV_FLAGS, pointer: mousePointer, pip: canPip }),
+    [mousePointer, canPip],
+  );
 
-  const { controller, pb, subtitleGen } = useTvController(client, item);
   // Publish this player to the cast receiver, so a phone can drive it (and pick
   // up the position a cast "play" asked to start from).
   useCastTarget(item, controller);
@@ -77,14 +86,14 @@ export function TvPlayer() {
     if (advancedRef.current || !next) return;
     advancedRef.current = true;
     // swap, not push: Back returns to the show/detail you launched from.
-    nav.swap('player', { item: next });
-  }, [next, nav]);
+    moves.swap(next);
+  }, [next, moves]);
   const onPlayItem = useCallback(
     (i: UpNextItem) => {
       const full = up.byId.get(i.id);
-      if (full) nav.swap('player', { item: full });
+      if (full) moves.swap(full);
     },
-    [up.byId, nav],
+    [up.byId, moves],
   );
 
   const subtitle = playerSubtitle(item);
@@ -136,7 +145,13 @@ export function TvPlayer() {
   );
 
   return (
-    <Player.Root controller={controller} flags={playerFlags} title={item.title} onClose={nav.back}>
+    <Player.Root
+      controller={controller}
+      flags={playerFlags}
+      title={item.title}
+      active={!docked}
+      onClose={moves.leave}
+    >
       <Player.Title>{item.title}</Player.Title>
       {subtitle ? <Player.Subtitle>{subtitle}</Player.Subtitle> : null}
       <Player.Transport tileAt={tileAt} />
@@ -152,7 +167,7 @@ export function TvPlayer() {
         next={nextTitle}
         onPlay={next ? goNext : undefined}
       />
-      <Player.PostPlay item={up.postPlay} onHome={nav.home} />
+      <Player.PostPlay item={up.postPlay} onHome={moves.home} />
       {intro ? (
         <Player.SkipIntro active={introActive} onSkip={() => pb.seekTo(intro.endMs / 1000)} />
       ) : null}
@@ -166,7 +181,7 @@ export function TvPlayer() {
         />
       ) : null}
       <Player.Media>
-        <Surface pb={pb} title={item.title} />
+        <Surface pb={pb} title={item.title} pip={pip.binding} />
       </Player.Media>
       {pb.terminated != null ? (
         <Player.Panel>
@@ -181,7 +196,7 @@ export function TvPlayer() {
             <Button
               icon="chevron-left"
               label={t('player.back')}
-              onPress={nav.back}
+              onPress={moves.leave}
               style={BACK}
               autoFocus
             />

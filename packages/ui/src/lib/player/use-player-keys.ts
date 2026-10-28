@@ -63,6 +63,7 @@ function useOnePress(
 ): (key: RemoteKey, from: Transport) => void {
   const owner = useRef<Transport | null>(null);
   return useEffectEvent((key: RemoteKey, from: Transport) => {
+    if (params.active === false) return;
     if (owner.current === null) owner.current = from;
     if (owner.current !== from) return;
     routeRemoteKey(params, key);
@@ -79,7 +80,8 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   // Claim Menu while mounted: unclaimed, tvOS treats it as "leave the app"
   // instead of closing the player. A shared counter, since the screen
   // underneath also claims it.
-  useEffect(() => menuKeys.hold(), [menuKeys]);
+  const active = params.active !== false;
+  useEffect(() => (active ? menuKeys.hold() : undefined), [menuKeys, active]);
 
   const route = useOnePress(params);
 
@@ -105,13 +107,13 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   // either: on a phone the back button belongs to the navigator.
   const onBack = useEffectEvent(() => route('Back', 'host'));
   useEffect(() => {
-    if (Platform.OS !== 'android' || !Platform.isTV) return;
+    if (!active || Platform.OS !== 'android' || !Platform.isTV) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       onBack();
       return true;
     });
     return () => sub.remove();
-  }, []);
+  }, [active]);
 }
 
 export type { PlayerKeysParams };

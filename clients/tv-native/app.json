@@ -62,7 +62,7 @@
       "./plugins/with-top-shelf",
       "./plugins/with-tv-blur-link",
       "./plugins/with-conscrypt",
-      "expo-video",
+      ["expo-video", { "supportsPictureInPicture": true }],
       "@kromatv/media3-ffmpeg",
       "./plugins/with-cleartext-traffic"
     ],

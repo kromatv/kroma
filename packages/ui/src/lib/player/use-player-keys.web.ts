@@ -159,14 +159,16 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
     routeRemoteKey(params, remote);
   });
 
+  const active = params.active !== false;
   useEffect(() => {
+    if (!active) return;
     window.addEventListener('keydown', redeliverKey, true);
     window.addEventListener('keydown', onKeyDown, true);
     return () => {
       window.removeEventListener('keydown', redeliverKey, true);
       window.removeEventListener('keydown', onKeyDown, true);
     };
-  }, [redeliverKey]);
+  }, [redeliverKey, active]);
 }
 
 export type { PlayerKeysParams };

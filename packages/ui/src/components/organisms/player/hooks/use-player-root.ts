@@ -31,6 +31,7 @@ import { useVolumeFlash } from './use-volume-flash';
 interface UsePlayerRootArgs {
   controller: PlayerController;
   flags: PlayerFlags;
+  active?: boolean;
   onCast?: () => void;
   onClose: (details: PlayerCloseDetails) => void;
   children?: ReactNode;
@@ -54,6 +55,7 @@ const SKIP_REST = 56;
 function usePlayerRoot({
   controller,
   flags,
+  active,
   onCast,
   onClose,
   children,
@@ -162,6 +164,7 @@ function usePlayerRoot({
   const credits = ending.credits;
 
   usePlayerKeys({
+    active,
     nav,
     controller: c,
     flags,

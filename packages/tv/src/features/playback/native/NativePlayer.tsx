@@ -8,6 +8,7 @@
 import type { ReactNode } from 'react';
 import { createTvEngine, planEngine } from '#tv/features/playback/native/backend';
 import { PlayerSurface } from '#tv/features/playback/native/PlayerSurface';
+import { nativePictureInPicture } from '#tv/features/playback/native/pip';
 import {
   type PlaybackBackend,
   PlaybackBackendProvider,
@@ -15,7 +16,12 @@ import {
 } from '#tv/features/playback/player/playbackBackend';
 import { TvPlayer } from '#tv/features/playback/TvPlayer';
 
-const NATIVE_BACKEND: PlaybackBackend = { planEngine, createTvEngine, Surface: PlayerSurface };
+const NATIVE_BACKEND: PlaybackBackend = {
+  planEngine,
+  createTvEngine,
+  Surface: PlayerSurface,
+  pictureInPicture: nativePictureInPicture,
+};
 
 function NativePlayer(): ReactNode {
   return (

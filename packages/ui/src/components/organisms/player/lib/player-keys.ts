@@ -10,6 +10,7 @@ import type { PanelHandle } from './nav';
 import { TRANSPORT_KEYS } from './nav-keys';
 
 export interface PlayerKeysParams {
+  active?: boolean;
   nav: PlayerNav;
   controller: PlayerController;
   flags: PlayerFlags;
