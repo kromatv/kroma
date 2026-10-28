@@ -105,28 +105,15 @@ function AxisScroll({
       target.measureLayout(
         measuredAgainst,
         (left, top, width, height) => {
-          const { viewport, content } = extent.current;
-          const offset =
-            mode === 'nearest'
-              ? nearestOffset({
-                  top: horizontal ? left : top,
-                  size: horizontal ? width : height,
-                  current: current.current,
-                  margin: offsetFromStart + RING_ROOM,
-                  viewport,
-                  content,
-                })
-              : pageOffset({
-                  top: horizontal ? left : top,
-                  size: horizontal ? undefined : height,
-                  lead: horizontal ? undefined : leadOf(flat(contentStyle)),
-                  // The reach above is padding on the content, so every item
-                  // measures that much further in: without it here the row would
-                  // scroll the room back out from under the first tile's ring.
-                  offsetFromStart: horizontal ? offsetFromStart + RING_ROOM : offsetFromStart,
-                  viewport,
-                  content,
-                });
+          const offset = offsetFor({
+            mode,
+            horizontal,
+            box: { left, top, width, height },
+            current: current.current,
+            offsetFromStart,
+            contentStyle,
+            ...extent.current,
+          });
           if (mode === 'nearest' && offset === current.current) return;
           current.current = offset;
           if (!reduced && frost?.glide(scroller.current, horizontal, offset)) return;
@@ -186,6 +173,54 @@ function AxisScroll({
       </ScrollPositionContext.Provider>
     </RevealContext.Provider>
   );
+}
+
+interface OffsetRequest {
+  mode: Reveal;
+  horizontal: boolean;
+  box: { left: number; top: number; width: number; height: number };
+  current: number;
+  offsetFromStart: number;
+  contentStyle: StyleProp<ViewStyle>;
+  viewport: number;
+  content: number;
+}
+
+function offsetFor({
+  mode,
+  horizontal,
+  box,
+  current,
+  offsetFromStart,
+  contentStyle,
+  viewport,
+  content,
+}: OffsetRequest): number {
+  const top = horizontal ? box.left : box.top;
+  if (mode === 'nearest') {
+    return nearestOffset({
+      top,
+      size: horizontal ? box.width : box.height,
+      current,
+      margin: offsetFromStart + RING_ROOM,
+      viewport,
+      content,
+    });
+  }
+  if (horizontal) {
+    // The reach above is padding on the content, so every item measures that
+    // much further in: without it here the row would scroll the room back out
+    // from under the first tile's ring.
+    return pageOffset({ top, offsetFromStart: offsetFromStart + RING_ROOM, viewport, content });
+  }
+  return pageOffset({
+    top,
+    size: box.height,
+    lead: leadOf(flat(contentStyle)),
+    offsetFromStart,
+    viewport,
+    content,
+  });
 }
 
 function FocusScroll(props: Readonly<FocusScrollProps>) {
