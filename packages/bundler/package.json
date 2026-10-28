@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "@babel/core": "^7.29.7",
+    "@babel/plugin-transform-arrow-functions": "^7.29.7",
     "@babel/plugin-transform-classes": "^7.29.7",
     "@babel/preset-env": "^7.29.7",
     "@kromatv/build-info": "workspace:*",

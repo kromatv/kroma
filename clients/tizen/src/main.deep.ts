@@ -2,4 +2,5 @@
 // then the same app as the modern entry. dist/index.html picks the bundle at
 // runtime.
 import '@kromatv/bundler/polyfills-legacy';
+import './zod-jitless';
 import './main';
