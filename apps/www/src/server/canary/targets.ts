@@ -16,6 +16,7 @@ export const TARGET_IDS = [
   'androidtv',
   'android',
   'macos',
+  'macos-intel',
   'windows',
   'linux',
 ] as const;
@@ -38,6 +39,11 @@ export const TARGETS: Readonly<Record<TargetId, Target>> = {
   androidtv: { artifact: 'kroma-androidtv-apk', label: 'Android TV', contains: ['.apk'] },
   android: { artifact: 'kroma-mobile-apk', label: 'Android', contains: ['.apk'] },
   macos: { artifact: 'kroma-desktop-macos', label: 'macOS', contains: ['.dmg'] },
+  'macos-intel': {
+    artifact: 'kroma-desktop-macos-intel',
+    label: 'macOS Intel',
+    contains: ['.dmg'],
+  },
   windows: { artifact: 'kroma-desktop-windows', label: 'Windows', contains: ['.exe', '.msi'] },
   linux: { artifact: 'kroma-desktop-linux', label: 'Linux', contains: ['.AppImage', '.deb'] },
 };

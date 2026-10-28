@@ -102,8 +102,11 @@ pinned + sha256-verified by `scripts/fetch-mpv.sh`) as the `kroma-mpv` Tauri sid
 and is probed first at runtime, so SteamOS needs no mpv install; `KROMA_MPV` still
 overrides, and system mpv (Flatpak/pacman/PATH) remains the fallback.
 
-CI does this on every `v*` tag (`.github/workflows/release.yml`, job `desktop`) and
-attaches the AppImage to the GitHub Release.
+CI does this on every push to main (`.github/workflows/_release-desktop.yml`,
+called by `release.yml`), and launches what each OS ships before uploading it:
+the app from the mounted dmg, the AppImage under Xvfb, the app the NSIS
+installer put down. One that dies within 20 seconds (`scripts/smoke-launch.sh`)
+fails the build.
 
 ## Build on macOS (for local testing)
 
@@ -112,6 +115,13 @@ cd clients/desktop
 bun run tauri:build:mac        # -> src-tauri/target/release/bundle/macos/KROMA.app
 bun run tauri:build:mac:dmg    # also the styled .dmg, headless (see below)
 ```
+
+CI builds two dmgs, the same steps on two runners: Apple silicon on `macos-14`
+and Intel on `macos-15-intel`, the last Intel image GitHub runs (until about
+2027). Each embeds the libmpv Homebrew installed on its runner, built for that
+runner's macOS, so the Intel dmg needs macOS 15 and the Apple silicon one
+macOS 14 in practice. Neither declares it: `LSMinimumSystemVersion` stays
+tauri's default.
 
 `tauri:build:mac` produces a normal `.app` (opaque window, traffic lights, resize,
 the KROMA icon) with no mpv process. The `.dmg` is never tauri's: its bundler skips
@@ -139,6 +149,21 @@ throwaway venv (Python 3.10+).
 
 The script mounts the result and fails if the app, the Applications link, the
 background, the `.DS_Store` or the volume icon is missing.
+
+## Third-party notices
+
+The frontend build writes `dist/THIRD-PARTY-NOTICES.txt` (the
+`thirdPartyNotices` plugin in `@kromatv/bundler`): `licenses/native.txt`, the
+notice for mpv and FFmpeg written by hand, then every crate the Rust program
+links on the three desktop targets (read with `cargo metadata`), then every
+installed package the bundle actually carries, each with its license text.
+Each text appears once, under every package that ships it. The file is
+embedded in the app with the rest of `dist`, and the release attaches it as
+`KROMA-desktop-THIRD-PARTY-NOTICES.txt`.
+
+On a laptop without cargo the Rust section is left out with a warning; under
+CI that fails the build. Changing what is bundled under `src-tauri/bin` or
+into the macOS Frameworks means updating `licenses/native.txt` by hand.
 
 ## Install on the Steam Deck
 

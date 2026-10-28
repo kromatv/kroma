@@ -16,12 +16,7 @@ APP="${1:-$(find "$BUNDLE/macos" -maxdepth 1 -name '*.app' 2>/dev/null | head -n
 
 VERSION=$(sed -nE 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' \
   "$DESKTOP/src-tauri/tauri.conf.json" | head -1)
-case "$(uname -m)" in
-  arm64 | aarch64) ARCH=aarch64 ;;
-  x86_64) ARCH=x64 ;;
-  *) ARCH=$(uname -m) ;;
-esac
-DMG="${2:-$BUNDLE/dmg/KROMA_${VERSION:+${VERSION}_}${ARCH}.dmg}"
+DMG="${2:-$BUNDLE/dmg/$(bash "$DESKTOP/scripts/artifact-name-macos.sh").dmg}"
 
 WORK="$(mktemp -d)"
 MNT=""

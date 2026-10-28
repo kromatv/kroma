@@ -4,6 +4,7 @@ import {
   compareVersions,
   downloadsFor,
   megabytes,
+  missingTargets,
   toSiteRelease,
   toSiteReleases,
 } from './releases.ts';
@@ -200,5 +201,33 @@ describe('toSiteReleases', () => {
     const mixed = Feed.parse([{ tag_name: 'v0.1.5', html_url: 'not-a-url' }, bare('v0.1.6')]);
 
     expect(toSiteReleases(mixed).map((r) => r.version)).toEqual(['0.1.6']);
+  });
+});
+
+describe('missingTargets', () => {
+  const release = (tag: string, ...names: string[]) => ({
+    ...bare(tag),
+    assets: names.map((name) => asset(name)),
+  });
+
+  it('names a platform the newest release dropped', () => {
+    const releases = toSiteReleases(
+      Feed.parse([
+        release('v0.1.38', 'KROMA_0.1.38_amd64.deb'),
+        release('v0.1.39', 'KROMA_0.1.39_x64-setup.exe'),
+      ]),
+    );
+
+    expect(missingTargets(releases)).toEqual(['linux-deb']);
+  });
+
+  it('waits for the first release of a platform before asking every one for it', () => {
+    const releases = toSiteReleases(Feed.parse([release('v0.1.39', 'KROMA_0.1.39_aarch64.dmg')]));
+
+    expect(missingTargets(releases)).toEqual([]);
+  });
+
+  it('has nothing to ask of no release at all', () => {
+    expect(missingTargets([])).toEqual([]);
   });
 });

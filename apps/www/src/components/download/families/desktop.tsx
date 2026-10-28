@@ -24,7 +24,7 @@ export function DesktopFamily() {
         {
           icon: IconBrandApple,
           name: 'macOS',
-          downloads: downloadsFor(release, ['macos']),
+          downloads: downloadsFor(release, ['macos', 'macos-intel']),
         },
         {
           icon: IconBrandWindows,
