@@ -32,6 +32,7 @@
     "./standalone-script": "./src/standalone-script.ts",
     "./story-code": "./src/story-code.ts",
     "./tv-frame": "./src/tv-frame.ts",
+    "./third-party-notices": "./src/third-party-notices.ts",
     "./tv-shell-head": "./src/tv-shell-head.ts",
     "./workbench-stub": "./src/workbench-stub.tsx",
     "./react-compiler-transform": "./src/react-compiler-transform.cjs"
@@ -64,6 +65,7 @@
     "postcss-custom-properties": "^15.0.4",
     "remark-gfm": "^4.0.1",
     "typescript": "^7.0.2",
+    "zod": "^4.6.7",
     "@babel/preset-typescript": "^7.29.7"
   },
   "peerDependencies": {

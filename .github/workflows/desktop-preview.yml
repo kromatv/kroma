@@ -1,0 +1,128 @@
+name: Desktop preview
+
+# A macOS build of a pull request, on demand. Add the `preview:mac` label and
+# the pull request gets a dmg now and on every push after, until the label
+# comes off; a comment on the pull request links the newest one.
+#
+# It is the release's macOS leg (libmpv embedded, the styled dmg, the launch
+# check) without the release: no updater bundle, nothing published, a version
+# of `<X.Y.Z>-pr.<number>`. A pull request from this repository is signed and
+# notarized like a release. A fork's run has no secrets and gets an unsigned
+# dmg and no comment, which `pull_request` makes safe to build.
+
+on:
+  pull_request:
+    types: [labeled, synchronize, reopened]
+
+concurrency:
+  group: desktop-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    name: macOS preview
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'preview:mac')
+      && (github.event.action != 'labeled' || github.event.label.name == 'preview:mac')
+    runs-on: macos-14
+    permissions:
+      contents: read
+      pull-requests: write # the comment linking the dmg
+    timeout-minutes: 45
+    env:
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+
+      # The release build's entry, read and never written: a pull request's
+      # copy would only evict main's.
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: clients/desktop/src-tauri
+          shared-key: desktop-release
+          save-if: false
+
+      - run: bun install --frozen-lockfile
+
+      - name: Stamp the preview version
+        run: |
+          node -e "const f='clients/desktop/src-tauri/tauri.conf.json';const fs=require('fs');const j=JSON.parse(fs.readFileSync(f,'utf8'));j.version=j.version.replace(/[-+].*$/,'')+'-pr.'+process.env.PR;fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n')"
+
+      - run: brew install mpv dylibbundler
+
+      - name: Check macOS signing cert
+        id: macsign
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: .github/scripts/macos-check-signing-cert.sh
+
+      # No updater bundle, so no update key: a preview is never on a feed.
+      - name: Build .app
+        working-directory: clients/desktop
+        run: bun run tauri build --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Embed libmpv into the .app
+        run: |
+          set -euo pipefail
+          APP=$(find clients/desktop/src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.app' | head -n1)
+          bash clients/desktop/scripts/bundle-libmpv-macos.sh "$APP"
+
+      - name: Sign + notarize + package dmg
+        env:
+          SIGN: ${{ steps.macsign.outputs.sign }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: .github/scripts/macos-sign-and-package-dmg.sh
+
+      - name: Launch the app from the dmg
+        run: bash clients/desktop/scripts/smoke-dmg-macos.sh "$(find clients/desktop/src-tauri/target/release/bundle/dmg -name '*.dmg' | head -n1)"
+
+      - id: upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kroma-preview-pr${{ github.event.pull_request.number }}
+          path: clients/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: 7
+
+      # One comment per pull request, edited on every build.
+      - name: Link the dmg on the pull request
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          URL: ${{ steps.upload.outputs.artifact-url }}
+          SIGNED: ${{ steps.macsign.outputs.sign }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const marker = '<!-- kroma-desktop-preview -->';
+            const how = process.env.SIGNED === 'true'
+              ? 'signed with the Developer ID'
+              : 'unsigned: open it with right-click > Open';
+            const body = [
+              marker,
+              `**macOS preview** of ${process.env.SHA.slice(0, 7)}: [download the dmg](${process.env.URL}) (zipped, kept 7 days), ${how}.`,
+              '',
+              'Rebuilt on every push while the `preview:mac` label is on.',
+            ].join('\n');
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const mine = comments.find((c) => c.body?.startsWith(marker));
+            if (mine) await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
+            else await github.rest.issues.createComment({ owner, repo, issue_number, body });

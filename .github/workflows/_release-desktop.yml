@@ -30,31 +30,56 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Apple Silicon .dmg (+ .app). Intel/universal would be a separate matrix
-          # entry (macos-13) - most Macs are arm64 now.
+          # Apple Silicon .dmg (+ .app).
           - os: macos-14
             label: 'macOS (.dmg)'
             bundles: app
             artifact: kroma-desktop-macos
+            updater_artifact: desktop-updater-macos
             files: |
               clients/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            updater: |
+              clients/desktop/src-tauri/target/release/bundle/updater/*.app.tar.gz
+              clients/desktop/src-tauri/target/release/bundle/updater/*.app.tar.gz.sig
+          # Intel .dmg, the same steps on the last Intel image GitHub runs
+          # (until about 2027). Homebrew's libmpv here is built for macOS 15,
+          # so that is this dmg's real floor: the Intel Macs from 2018 on.
+          - os: macos-15-intel
+            label: 'macOS Intel (.dmg)'
+            bundles: app
+            artifact: kroma-desktop-macos-intel
+            updater_artifact: desktop-updater-macos-intel
+            files: |
+              clients/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            updater: |
+              clients/desktop/src-tauri/target/release/bundle/updater/*.app.tar.gz
+              clients/desktop/src-tauri/target/release/bundle/updater/*.app.tar.gz.sig
           # NSIS .exe installer + .msi.
           - os: windows-latest
             label: 'Windows (.exe + .msi)'
             bundles: nsis,msi
             artifact: kroma-desktop-windows
+            updater_artifact: desktop-updater-windows
             files: |
               clients/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
               clients/desktop/src-tauri/target/release/bundle/msi/*.msi
+            updater: |
+              clients/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe.sig
+              clients/desktop/src-tauri/target/release/bundle/msi/*.msi.sig
           # Steam Deck / Linux .AppImage. Ubuntu 22.04 = oldest base with WebKitGTK
           # 4.1 (Tauri v2's floor), keeping the AppImage's glibc low enough for SteamOS.
           - os: ubuntu-22.04
             label: 'Linux (.AppImage + .deb)'
             bundles: appimage,deb
             artifact: kroma-desktop-linux
+            updater_artifact: desktop-updater-linux
             files: |
               clients/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
               clients/desktop/src-tauri/target/release/bundle/deb/*.deb
+              clients/desktop/src-tauri/target/release/bundle/KROMA-desktop-THIRD-PARTY-NOTICES.txt
+            updater: |
+              clients/desktop/src-tauri/target/release/bundle/appimage/*.AppImage.sig
+              clients/desktop/src-tauri/target/release/bundle/deb/*.deb.sig
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write # attach assets to the Release
@@ -251,21 +276,95 @@ jobs:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
         run: .github/scripts/macos-sign-and-package-dmg.sh
 
+      # The updater's bundle, from the app the dmg carries: tauri's own
+      # tarball predates libmpv and the signature. deploy.yml serves it on the
+      # desktop-stable feed, so a stable update installs the promoted bytes.
+      - name: Updater bundle (macOS)
+        if: runner.os == 'macOS'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        run: |
+          set -euo pipefail
+          TARBALL="$(bash clients/desktop/scripts/updater-tarball-macos.sh)"
+          (cd clients/desktop && bun run tauri signer sign "$GITHUB_WORKSPACE/$TARBALL")
+
       # Tauri's default bundler sweeps the runner's wayland/glib/gstreamer libs
       # into the AppImage, which breaks it on Mesa 25+ hosts (SteamOS 3.7+,
       # Fedora 41+: "Could not create default EGL display: EGL_BAD_PARAMETER",
-      # no window) - tauri-apps/tauri#15665. Strip + repack. No .sig concern
-      # here: this workflow ships no updater artifacts (the desktop-latest
-      # channel does; its workflow re-signs after the same fix).
+      # no window) - tauri-apps/tauri#15665. Strip + repack, then sign again:
+      # the .sig tauri wrote is for the bytes before the repack.
       - name: Fix AppImage over-bundling (tauri#15665)
         if: runner.os == 'Linux'
-        run: bash clients/desktop/scripts/fix-appimage.sh clients/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          APPIMAGES=(clients/desktop/src-tauri/target/release/bundle/appimage/*.AppImage)
+          [ ${#APPIMAGES[@]} -eq 1 ] || { echo "expected exactly one AppImage, got: ${APPIMAGES[*]:-none}"; exit 1; }
+          bash clients/desktop/scripts/fix-appimage.sh "${APPIMAGES[0]}"
+          (cd clients/desktop && bun run tauri signer sign "$GITHUB_WORKSPACE/${APPIMAGES[0]}")
+
+      # The licenses of everything the app ships (the frontend build writes
+      # them, bundler/third-party-notices.ts), identical on every OS, so one
+      # leg attaches them to the Release.
+      - name: Name the third-party notices for the Release (Linux)
+        if: runner.os == 'Linux'
+        run: cp clients/desktop/dist/THIRD-PARTY-NOTICES.txt clients/desktop/src-tauri/target/release/bundle/KROMA-desktop-THIRD-PARTY-NOTICES.txt
+
+      # Launch what ships and fail if it dies within 20 seconds: a dylib left
+      # out of the bundle, a DLL the installer did not put down. Only on this
+      # runner's OS: the duplicate LC_RPATH needs macOS 26, the EGL abort
+      # (tauri#15665) a Mesa 25 host.
+      - name: Launch the app from the dmg (macOS)
+        if: runner.os == 'macOS'
+        run: bash clients/desktop/scripts/smoke-dmg-macos.sh "$(find clients/desktop/src-tauri/target/release/bundle/dmg -name '*.dmg' | head -n1)"
+
+      - name: Launch the AppImage (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          command -v xvfb-run >/dev/null || sudo apt-get install -y --no-install-recommends xvfb
+          APPIMAGE="$(find clients/desktop/src-tauri/target/release/bundle/appimage -name '*.AppImage' | head -n1)"
+          APPIMAGE_EXTRACT_AND_RUN=1 xvfb-run -a bash clients/desktop/scripts/smoke-launch.sh "$APPIMAGE"
+
+      - name: Install and launch the app (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem clients/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          $dir = Join-Path $env:RUNNER_TEMP 'kroma-smoke'
+          Start-Process -FilePath $installer.FullName -ArgumentList '/S', "/D=$dir" -Wait
+          $places = @($dir, (Join-Path $env:LOCALAPPDATA 'KROMA'), (Join-Path $env:ProgramFiles 'KROMA'))
+          $exe = $places | Where-Object { Test-Path $_ } | ForEach-Object { Get-ChildItem $_ -Filter *.exe } |
+            Where-Object { $_.Name -notlike 'uninstall*' } | Select-Object -First 1
+          if (-not $exe) { throw "the installer put no app in $($places -join ', ')" }
+          $app = Start-Process -FilePath $exe.FullName -PassThru
+          foreach ($second in 1..20) {
+            if ($app.HasExited) { throw "$($exe.Name) exited with $($app.ExitCode) after $second s" }
+            Start-Sleep -Seconds 1
+          }
+          Stop-Process -Id $app.Id -Force
+          Write-Host "$($exe.Name) stayed up 20 s"
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.files }}
+          if-no-files-found: error
+          retention-days: 30
+
+      # Not under kroma-*: deploy.yml attaches every kroma-* file to the
+      # Release, and the canary channel offers them for download. These are
+      # the stable feed's signatures and the macOS tarball, nothing to install.
+      - name: Upload updater artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ matrix.updater_artifact }}
+          path: ${{ matrix.updater }}
           if-no-files-found: error
           retention-days: 30
 

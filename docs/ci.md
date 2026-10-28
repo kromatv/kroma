@@ -28,12 +28,19 @@ lanes ─┬─ checks (typecheck + lint)                     code
        ├─ desktop (cargo check, Linux mpv path)         desktop
        ├─ rust (server) ┐                               rust
        ├─ rust (modules n) ┴─ rust (one lcov)           rust
-       └─ sonar ◄── test-report + rust                  SONAR_TOKEN present
+       ├─ sonar ◄── test-report + rust                  SONAR_TOKEN present
+       └─ required ◄── lanes + every job above but sonar
 ```
 
-Required checks on `main`: **Typecheck + lint**, **Unit tests**, **Rust**. A
-job whose lane is off is skipped, and a skipped job satisfies the gate: a
-docs-only pull request passes in a minute without building anything.
+The one required check on `main` is **Required** (`bun run ci required`). A
+job whose lane is off is skipped, and `required` passes a skip only then: a
+docs-only pull request passes in a minute without building anything, and a
+`lanes` that failed or was cancelled turns it red. That second half is why it
+exists. GitHub reports a skipped required check as a pass, so when the
+required checks were the jobs themselves, a failed `lanes` skipped all three
+and the pull request could merge with nothing run. Adding a job means adding
+it to `required`'s `needs` and to its `LANE_OF` map; branch protection stays
+as it is.
 
 `lanes` lists the changed files through the GitHub API (pull request files, or
 the push's compare) and matches them against `packages/ci-tools/src/lanes.ts`.
@@ -111,8 +118,10 @@ the run's exact bytes, behind the `production` environment approval, and writes
 the Release body (`releases/<v>/en.md` unless it is still a draft, then `ci
 changelog`). A version whose tag already carries a prerelease on another commit
 is refused: release tags cannot move, so that prerelease and its tag are
-deleted first. `CHANGELOG.md` is written by hand after a release: `bun run ci
-changelog --version <v> --write`.
+deleted first. The Release also carries `SHA256SUMS`, written from the bytes
+it attaches, so `sha256sum -c SHA256SUMS` checks a whole download folder.
+`CHANGELOG.md` is written by hand after a release: `bun run ci changelog
+--version <v> --write`.
 
 `ci version` resolves one version, one `triplet`, and one `build` number
 (minutes since 2020) for the run; every store-bound package in the run carries
@@ -169,13 +178,41 @@ the page offers **stable only**. The data is there (`canary` from
 needs a channel switch the way the archive already has one, and a "last
 canary, built N hours ago" line under each platform.
 
-`desktop-autoupdate.yml` builds the three desktop installers a second time per
-push (without libmpv on macOS) for the updater's `desktop-latest` tag. Folding
-it into the candidate's desktop build (produce the updater tarball and
-signature after the libmpv bundling and signing, write `latest.json` from the
-three artifacts) would drop three full Tauri builds per push and put the
-updater on the same bytes the canary offers. It needs a live run with the
-signing secrets to verify, which is why it is not part of this rebuild.
+### The desktop update feeds
+
+The installed desktop apps poll one of two feeds, by the channel of the server
+they are signed into.
+
+**`desktop-stable`** serves the promoted candidate's own bytes. The release
+build writes an update signature beside every installer (`createUpdaterArtifacts`)
+and uploads them as `desktop-updater-<os>`, apart from the `kroma-*` artifacts
+the Release attaches. On macOS the update bundle is packed from the app the
+dmg carries, after libmpv is embedded and the bundle signed and stapled; the
+AppImage is signed again after `fix-appimage.sh` repacks it. On a stable
+promotion, `deploy.yml` downloads the installers and their signatures, and
+`bun run ci desktop-feed publish` writes `latest.json` and swaps the release
+in (staged on `desktop-stable-staging`, so a failed upload leaves every app on
+the previous feed). Nothing is rebuilt on promotion, and a candidate without
+the `desktop-updater-*` artifacts is refused before the approval.
+
+**`desktop-latest`**, the canary feed, is still its own build:
+`desktop-autoupdate.yml` builds the three installers again per desktop-facing
+push. Each push needs a strictly newer version than the last, and the
+candidate is stamped with the release's X.Y.Z; a `-<build>` suffix cannot go
+into the candidate because the .msi's fourth version field stops at 65535,
+and the build number is past three million. The macOS canary also still lacks
+libmpv, since tauri-action packs its bundle before anything could be embedded.
+
+### A macOS build of a pull request
+
+`desktop-preview.yml` builds a pull request's dmg on demand: add the
+`preview:mac` label, and every push after rebuilds it until the label comes
+off. It is the release's macOS leg (libmpv embedded, the styled dmg, the
+launch check) stamped `<X.Y.Z>-pr.<number>`, without an updater bundle and
+publishing nothing. The dmg is a run artifact kept seven days, and one comment
+on the pull request links the newest. A pull request from this repository is
+signed and notarized; a fork's run has no secrets, so it gets an unsigned dmg
+and no comment. It reads the release build's Rust cache and never writes one.
 
 ## Caches and the 10 GB budget
 
@@ -183,7 +220,7 @@ signing secrets to verify, which is why it is not part of this rebuild.
 |---|---|---|
 | `rust` (server + modules, instrumented) | ~1.0 GB | ci.yml on main |
 | `desktop-check` | ~0.4 GB | ci.yml on main |
-| `desktop-release` x3 OS | ~1.2 GB | _release-desktop.yml, desktop-autoupdate.yml |
+| `desktop-release` x4 (both Macs, Windows, Linux) | ~1.6 GB | _release-desktop.yml, desktop-autoupdate.yml |
 | `dd-tvnative-v1-*`, `dd-mobile-v1-*` | ~0.8 + 0.6 GB, one each | the Apple jobs, pruned to one |
 | `ios-tvnative-v3-*`, `ios-mobile-v3-*` | ~0.2 GB each | the Apple jobs, keyed by config hash |
 | Gradle dependencies + build cache, per app | ~0.9 GB each | the release Android jobs |
@@ -226,9 +263,22 @@ ten-minute `rust` job. `gh cache list` shows what is there;
 
 The remaining 3 GB of Rust trees are the next step, and it leaves the quota
 entirely: `sccache` with an R2 bucket (S3-compatible, no egress fees) caches
-per object, is warm for pull requests too, and needs only an access key pair
-and the bucket name as repository secrets. Not done here because the bucket
-and its token have to be created in the Cloudflare dashboard.
+per object and is warm for pull requests too. The Rust test step is wired for
+it and stays off until the bucket exists (the `lanes` job reads the secret,
+the way it does Sonar's). To turn it on:
+
+1. Create an R2 bucket, with a lifecycle rule that deletes objects after
+   about 30 days: R2 never evicts on its own.
+2. Create an R2 API token with Object Read & Write on that bucket alone.
+3. Add four repository secrets: `SCCACHE_R2_BUCKET`, `SCCACHE_R2_ENDPOINT`
+   (`https://<account id>.r2.cloudflarestorage.com`),
+   `SCCACHE_R2_ACCESS_KEY_ID` and `SCCACHE_R2_SECRET_ACCESS_KEY`.
+
+The credentials reach the test step alone, never `bun install`. clippy does
+not go through sccache; its deps are check builds the test step would not
+share anyway. Each shard prints `sccache --show-stats`, which is where a hit
+rate shows. Once it is warm, the per-shard Rust cache entries are the next
+thing to retire.
 
 ## Bun
 

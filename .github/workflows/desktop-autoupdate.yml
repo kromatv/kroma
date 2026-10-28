@@ -9,9 +9,12 @@ name: Desktop auto-update
 # that fails therefore leaves every app on the previous build instead of pointing
 # it at a 404 (which is what a delete-first ordering did for a day).
 #
-# The same build, dispatched by deploy.yml at the promoted commit with the
-# release's X.Y.Z, fills the rolling `desktop-stable` release instead. An app
-# reads the update channel of the server it is signed into and polls one feed.
+# An app reads the update channel of the server it is signed into and polls
+# one feed. The stable one, `desktop-stable`, is not built here: deploy.yml
+# serves it from the promoted candidate's own installers. This feed stays a
+# build of its own because every push needs a strictly newer version, and the
+# candidate carries the release's X.Y.Z: a `-<build>` suffix cannot reach the
+# .msi, whose fourth version field stops at 65535.
 #
 # Path-filtered so unrelated commits (server, docs, other clients) don't trigger a
 # costly 3-OS build. Version is `<base>-<build>` (base from server/Cargo.toml, build
@@ -29,27 +32,17 @@ on:
       # The desktop frontend builds through @kromatv/bundler.
       - 'packages/bundler/**'
       - '.github/workflows/desktop-autoupdate.yml'
-  # deploy.yml dispatches the stable feed with the promoted commit and version.
   workflow_dispatch:
     inputs:
-      channel:
-        description: 'Feed to publish: canary (desktop-latest) or stable (desktop-stable).'
-        type: choice
-        options: [canary, stable]
-        default: canary
-      version:
-        description: 'Version for the stable feed (X.Y.Z). Ignored on canary.'
-        type: string
-        default: ''
       ref:
         description: 'Commit to build. Defaults to the dispatched ref.'
         type: string
         default: ''
 
-# One publish per feed at a time; a newer push supersedes an in-flight canary.
+# One publish at a time; a newer push supersedes an in-flight build.
 concurrency:
-  group: desktop-autoupdate-${{ inputs.channel || 'canary' }}
-  cancel-in-progress: ${{ (inputs.channel || 'canary') == 'canary' }}
+  group: desktop-autoupdate-canary
+  cancel-in-progress: true
 
 jobs:
   version:
@@ -81,16 +74,8 @@ jobs:
         env:
           BASE: ${{ steps.resolve.outputs.triplet }}
           BUILD: ${{ steps.resolve.outputs.build }}
-          CHANNEL: ${{ inputs.channel || 'canary' }}
-          STABLE: ${{ inputs.version }}
         run: |
-          if [[ "$CHANNEL" == stable ]]; then
-            [[ "$STABLE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::stable needs an X.Y.Z version, got '$STABLE'"; exit 1; }
-            [[ -f clients/desktop/src-tauri/src/updater.rs ]] || { echo "::error::this commit's app still polls desktop-latest; promote a newer candidate"; exit 1; }
-            VERSION="$STABLE" TAG=desktop-stable
-          else
-            VERSION="$BASE-$BUILD" TAG=desktop-latest
-          fi
+          VERSION="$BASE-$BUILD" TAG=desktop-latest
           { echo "version=$VERSION"; echo "tag=$TAG"; echo "sha=$(git rev-parse HEAD)"; } >> "$GITHUB_OUTPUT"
           echo "Desktop version: $VERSION on $TAG"
 
@@ -151,6 +136,10 @@ jobs:
           # The .app only: tauri's own dmg skips its Finder styling under CI
           # (--skip-jenkins), so the styled dmg is packaged after the build.
           - os: macos-14
+            bundles: app
+            extra_args: '-- --no-default-features'
+          # The Intel Macs, from the last Intel image GitHub runs.
+          - os: macos-15-intel
             bundles: app
             extra_args: '-- --no-default-features'
           # Windows auto-update bundles libmpv (self-contained mpv-2.dll beside the exe).

@@ -1,0 +1,31 @@
+Media libraries
+===============
+
+KROMA plays video through mpv and FFmpeg, which it ships beside the app:
+
+  macOS    libmpv and every library it links (FFmpeg, libass, libplacebo,
+           and their dependencies), copied from Homebrew into
+           KROMA.app/Contents/Frameworks.
+  Windows  libmpv-2.dll from shinchiro's mpv-winbuild-cmake, FFmpeg
+           linked into it.
+  Linux    the kroma-mpv program, pkgforge-dev's mpv AppImage.
+
+mpv and FFmpeg are free software under the GNU General Public License,
+version 2 or later. Some of the libraries they link are under the GNU Lesser
+General Public License, and some FFmpeg components under version 3 of either.
+Their source code:
+
+  mpv          https://github.com/mpv-player/mpv
+  FFmpeg       https://ffmpeg.org/download.html
+  Homebrew     https://github.com/Homebrew/homebrew-core (the mpv and ffmpeg
+               formulae name every library and the options they are built with)
+  Windows      https://github.com/shinchiro/mpv-winbuild-cmake
+  Linux        https://github.com/pkgforge-dev/mpv-AppImage
+
+The exact builds a release ships are pinned in
+https://github.com/kromatv/kroma/tree/main/clients/desktop/scripts
+(fetch-libmpv-windows.ps1, fetch-mpv.sh), and on macOS are the Homebrew
+versions current when the release was built.
+
+KROMA itself is free software under the GNU Affero General Public License,
+version 3 or later: https://github.com/kromatv/kroma
