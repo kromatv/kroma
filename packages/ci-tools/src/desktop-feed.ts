@@ -37,7 +37,12 @@ const ARCH: Readonly<Record<string, string>> = {
   x86_64: 'x86_64',
 };
 
-const REQUIRED_PLATFORMS = ['darwin-aarch64', 'windows-x86_64', 'linux-x86_64'] as const;
+const REQUIRED_PLATFORMS = [
+  'darwin-aarch64',
+  'darwin-x86_64',
+  'windows-x86_64',
+  'linux-x86_64',
+] as const;
 
 /** The CPU a bundle name says it is for, in the updater's spelling, or null. */
 export function archOf(name: string): string | null {

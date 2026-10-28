@@ -7,7 +7,8 @@ a store account or a paid certificate.
 ## Where to get the builds
 
 - **GitHub Releases** (a `vX.Y.Z` tag): every artifact is attached to one
-  release, `.spk` (Synology), `.dmg` (macOS), `-setup.exe` / `.msi` (Windows),
+  release, `.spk` (Synology), `.dmg` (macOS: `_aarch64` for Apple silicon,
+  `_x64` for Intel), `-setup.exe` / `.msi` (Windows),
   `.AppImage` / `.deb` (Linux / Steam Deck), `.ipk` (LG webOS),
   `.wgt` (Samsung Tizen), `.apk` (Android TV).
 - **Prebuilt from GitHub Actions** without tagging a release: see below.
@@ -25,7 +26,8 @@ packages as a tagged release, as run artifacts instead of release assets:
    (defaults to `server/Cargo.toml`).
 2. When the run is green, open it and scroll to **Artifacts**:
    `kroma-webos-ipk`, `kroma-tizen-wgt`, `kroma-androidtv-apk`,
-   `kroma-desktop-macos|windows|linux`, `kroma-synology-spk`, `kroma-web`.
+   `kroma-desktop-macos|macos-intel|windows|linux`, `kroma-synology-spk`,
+   `kroma-web`.
 3. Download the one you need. GitHub wraps every artifact in a **.zip**, so
    unzip it first: the installable file (`.ipk`, `.wgt`, `.apk`, `.dmg`, ...)
    is inside. Then follow the per-device steps below.
@@ -234,6 +236,11 @@ Notes:
   `adb uninstall tv.kroma.androidtv`.
 
 ## macOS `.dmg` (and removing the quarantine)
+
+There are two: `KROMA_<version>_aarch64.dmg` for a Mac with Apple silicon (M1
+and later), `KROMA_<version>_x64.dmg` for an Intel Mac. **Apple menu > About
+This Mac** says which: a "Chip" line names Apple silicon, a "Processor" line
+an Intel CPU. The Intel build needs macOS 15 Sequoia.
 
 The app is not notarized (no paid Apple developer account), so the **first**
 launch trips Gatekeeper: "KROMA is damaged / can't be opened". That is only the

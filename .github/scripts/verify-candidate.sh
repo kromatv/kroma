@@ -55,7 +55,7 @@ fi
 # update signatures, which a candidate built before them does not carry.
 if [[ "${PRERELEASE:-false}" != "true" ]]; then
   artifacts="$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID/artifacts" --paginate --jq '.artifacts[].name')"
-  for os in macos windows linux; do
+  for os in macos macos-intel windows linux; do
     grep -qx "desktop-updater-$os" <<<"$artifacts" \
       || { echo "::error::Run $RUN_ID has no desktop-updater-$os artifact; promote a newer candidate."; exit 1; }
   done

@@ -1,5 +1,5 @@
 import type { Asset, Release } from '#site/lib/release-feed';
-import { classify, TARGETS, type TargetId } from '#site/lib/release-targets';
+import { classify, TARGET_IDS, TARGETS, type TargetId } from '#site/lib/release-targets';
 
 export interface SiteDownload {
   target: TargetId;
@@ -70,6 +70,19 @@ export function toSiteReleases(feed: readonly Release[]): SiteRelease[] {
     .map(toSiteRelease)
     .filter((r): r is SiteRelease => r !== null)
     .sort((a, b) => compareVersions(b.version, a.version));
+}
+
+/**
+ * The platforms the newest release has no file for, among those any release
+ * has shipped. One that no release carries yet is new rather than missing, so
+ * the page can name a platform before the release that first ships it.
+ */
+export function missingTargets(releases: readonly SiteRelease[]): TargetId[] {
+  const [newest] = releases;
+  if (!newest) return [];
+  const shipped = new Set(releases.flatMap((r) => r.downloads.map((d) => d.target)));
+  const has = new Set(newest.downloads.map((d) => d.target));
+  return TARGET_IDS.filter((id) => shipped.has(id) && !has.has(id));
 }
 
 /** `0.1.9` before `0.1.38`, which a string comparison gets backwards. */

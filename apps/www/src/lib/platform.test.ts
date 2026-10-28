@@ -21,7 +21,10 @@ const UA = {
 
 describe('guessPlatform', () => {
   it('offers a computer the installer for its own system', () => {
-    expect(guessPlatform(UA.mac)).toMatchObject({ family: 'desktop', targets: ['macos'] });
+    expect(guessPlatform(UA.mac)).toMatchObject({
+      family: 'desktop',
+      targets: ['macos', 'macos-intel'],
+    });
     expect(guessPlatform(UA.windows)).toMatchObject({
       family: 'desktop',
       targets: ['windows-exe', 'windows-msi'],

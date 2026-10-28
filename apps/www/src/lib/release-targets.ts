@@ -24,6 +24,7 @@ export const TARGET_IDS = [
   'webos',
   'androidtv',
   'macos',
+  'macos-intel',
   'windows-exe',
   'windows-msi',
   'linux-appimage',
@@ -69,6 +70,13 @@ export const TARGETS: Readonly<Record<TargetId, Target>> = {
     ext: '.dmg',
     arch: 'Apple silicon',
     asset: /^KROMA_.+_aarch64\.dmg$/,
+    icon: IconBrandApple,
+  },
+  'macos-intel': {
+    label: 'macOS',
+    ext: '.dmg',
+    arch: 'Intel',
+    asset: /^KROMA_.+_x64\.dmg$/,
     icon: IconBrandApple,
   },
   'windows-exe': {
