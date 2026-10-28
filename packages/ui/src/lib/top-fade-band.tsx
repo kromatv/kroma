@@ -1,8 +1,8 @@
-import MaskedView from '@react-native-masked-view/masked-view';
 import { type ReactNode, useState } from 'react';
-import { type LayoutChangeEvent, Platform, View, type ViewStyle } from 'react-native';
+import { type LayoutChangeEvent, Platform, StyleSheet, View, type ViewStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { colors } from '#ui/core/tokens';
+import { StableMaskedView } from '#ui/lib/stable-masked-view';
 
 const RAMP = 80;
 const FILL: ViewStyle = {
@@ -67,7 +67,11 @@ export function TopFadeBand({
   return (
     <View style={FILL} onLayout={(e: LayoutChangeEvent) => setHeight(e.nativeEvent.layout.height)}>
       {height > 0 ? (
-        <MaskedView style={band} maskElement={<Ramp inset={inset} color="#000" />}>
+        <StableMaskedView
+          style={band}
+          contentStyle={StyleSheet.absoluteFill}
+          maskElement={<Ramp inset={inset} color="#000" />}
+        >
           <View
             style={{
               position: 'absolute',
@@ -80,7 +84,7 @@ export function TopFadeBand({
           >
             {children}
           </View>
-        </MaskedView>
+        </StableMaskedView>
       ) : null}
     </View>
   );

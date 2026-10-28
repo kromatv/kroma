@@ -1,7 +1,7 @@
-import MaskedView from '@react-native-masked-view/masked-view';
 import type { ReactNode } from 'react';
 import { Platform, View, type ViewStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { StableMaskedView } from '#ui/lib/stable-masked-view';
 
 /** Whether a page frame can mask what scrolls inside it: tvOS draws the mask on the GPU, Android would redraw the whole page through a bitmap. */
 export const FRAME_MASKS = Platform.OS === 'ios';
@@ -9,12 +9,8 @@ export const FRAME_MASKS = Platform.OS === 'ios';
 const RAMP = 80;
 const ROOM = 24;
 const SHOWN = '#000';
-const FRAME: ViewStyle = {
-  flex: 1,
-  minHeight: 0,
-  marginHorizontal: -ROOM,
-  paddingHorizontal: ROOM,
-};
+const FRAME: ViewStyle = { flex: 1, minHeight: 0, marginHorizontal: -ROOM };
+const CONTENT: ViewStyle = { flex: 1, minHeight: 0, paddingHorizontal: ROOM };
 const FILL: ViewStyle = { flex: 1, backgroundColor: SHOWN };
 
 function Ramp() {
@@ -48,8 +44,8 @@ export function FrameMask({
     <View style={FILL} />
   );
   return (
-    <MaskedView style={FRAME} maskElement={mask}>
+    <StableMaskedView style={FRAME} contentStyle={CONTENT} maskElement={mask}>
       {children}
-    </MaskedView>
+    </StableMaskedView>
   );
 }

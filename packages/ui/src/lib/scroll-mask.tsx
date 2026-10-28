@@ -1,4 +1,3 @@
-import MaskedView from '@react-native-masked-view/masked-view';
 import { type ReactNode, useContext, useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
   Animated,
@@ -9,7 +8,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { splitBoxLayers } from '#ui/lib/box-layers';
 import { ScrollPositionContext } from '#ui/lib/scroll-position';
+import { StableMaskedView } from '#ui/lib/stable-masked-view';
 
 const RAMP = 80;
 const MASKED = Platform.OS === 'ios';
@@ -78,6 +79,7 @@ export function ScrollMask({
 
   if (!MASKED || !position) return <View style={style}>{children}</View>;
 
+  const layers = splitBoxLayers(style);
   const onLayout = (e: LayoutChangeEvent) => {
     height.current = e.nativeEvent.layout.height;
     measure();
@@ -97,9 +99,14 @@ export function ScrollMask({
   );
 
   return (
-    <MaskedView style={style} maskElement={mask} onLayout={onLayout}>
+    <StableMaskedView
+      style={layers.box}
+      contentStyle={layers.face}
+      maskElement={mask}
+      onLayout={onLayout}
+    >
       <View ref={probe} style={PROBE} pointerEvents="none" />
       {children}
-    </MaskedView>
+    </StableMaskedView>
   );
 }
