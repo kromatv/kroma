@@ -102,8 +102,11 @@ pinned + sha256-verified by `scripts/fetch-mpv.sh`) as the `kroma-mpv` Tauri sid
 and is probed first at runtime, so SteamOS needs no mpv install; `KROMA_MPV` still
 overrides, and system mpv (Flatpak/pacman/PATH) remains the fallback.
 
-CI does this on every `v*` tag (`.github/workflows/release.yml`, job `desktop`) and
-attaches the AppImage to the GitHub Release.
+CI does this on every push to main (`.github/workflows/_release-desktop.yml`,
+called by `release.yml`), and launches what each OS ships before uploading it:
+the app from the mounted dmg, the AppImage under Xvfb, the app the NSIS
+installer put down. One that dies within 20 seconds (`scripts/smoke-launch.sh`)
+fails the build.
 
 ## Build on macOS (for local testing)
 

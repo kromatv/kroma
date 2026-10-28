@@ -291,6 +291,50 @@ jobs:
           bash clients/desktop/scripts/fix-appimage.sh "${APPIMAGES[0]}"
           (cd clients/desktop && bun run tauri signer sign "$GITHUB_WORKSPACE/${APPIMAGES[0]}")
 
+      # Launch what ships and fail if it dies within 20 seconds: a dylib left
+      # out of the bundle, a DLL the installer did not put down. Only on this
+      # runner's OS: the duplicate LC_RPATH needs macOS 26, the EGL abort
+      # (tauri#15665) a Mesa 25 host.
+      - name: Launch the app from the dmg (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          DMG="$(find clients/desktop/src-tauri/target/release/bundle/dmg -name '*.dmg' | head -n1)"
+          MNT="$RUNNER_TEMP/smoke-dmg"
+          mkdir -p "$MNT"
+          hdiutil attach -readonly -nobrowse -noautoopen -mountpoint "$MNT" "$DMG" >/dev/null
+          trap 'hdiutil detach "$MNT" -quiet -force || true' EXIT
+          APP="$(find "$MNT" -maxdepth 1 -name '*.app' | head -n1)"
+          EXE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")"
+          bash clients/desktop/scripts/smoke-launch.sh "$APP/Contents/MacOS/$EXE"
+
+      - name: Launch the AppImage (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          command -v xvfb-run >/dev/null || sudo apt-get install -y --no-install-recommends xvfb
+          APPIMAGE="$(find clients/desktop/src-tauri/target/release/bundle/appimage -name '*.AppImage' | head -n1)"
+          APPIMAGE_EXTRACT_AND_RUN=1 xvfb-run -a bash clients/desktop/scripts/smoke-launch.sh "$APPIMAGE"
+
+      - name: Install and launch the app (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem clients/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          $dir = Join-Path $env:RUNNER_TEMP 'kroma-smoke'
+          Start-Process -FilePath $installer.FullName -ArgumentList '/S', "/D=$dir" -Wait
+          $places = @($dir, (Join-Path $env:LOCALAPPDATA 'KROMA'), (Join-Path $env:ProgramFiles 'KROMA'))
+          $exe = $places | Where-Object { Test-Path $_ } | ForEach-Object { Get-ChildItem $_ -Filter *.exe } |
+            Where-Object { $_.Name -notlike 'uninstall*' } | Select-Object -First 1
+          if (-not $exe) { throw "the installer put no app in $($places -join ', ')" }
+          $app = Start-Process -FilePath $exe.FullName -PassThru
+          foreach ($second in 1..20) {
+            if ($app.HasExited) { throw "$($exe.Name) exited with $($app.ExitCode) after $second s" }
+            Start-Sleep -Seconds 1
+          }
+          Stop-Process -Id $app.Id -Force
+          Write-Host "$($exe.Name) stayed up 20 s"
+
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
