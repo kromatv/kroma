@@ -16,14 +16,21 @@ export const channelFromSearch = (search: string): DownloadChannel =>
  * without a file. Null when CI published nothing outside a release.
  */
 export function canaryRelease(builds: readonly ChannelBuild[]): SiteRelease | null {
-  const newest = builds[0];
+  const ordered = [...builds].sort((a, b) => Date.parse(b.builtAt) - Date.parse(a.builtAt));
+  const newest = ordered[0];
   if (!newest) return null;
   const seen = new Set<SiteDownload['target']>();
   const downloads: SiteDownload[] = [];
-  for (const build of builds) {
-    const fresh = build.downloads.filter((d) => !seen.has(d.target));
-    for (const d of fresh) downloads.push(d);
-    for (const d of build.downloads) seen.add(d.target);
+  const files = ordered
+    .flatMap((build) =>
+      build.downloads.map((file) => ({ file, at: Date.parse(file.builtAt ?? build.builtAt) })),
+    )
+    .sort((a, b) => b.at - a.at)
+    .map(({ file }) => file);
+  for (const file of files) {
+    if (seen.has(file.target)) continue;
+    seen.add(file.target);
+    downloads.push(file);
   }
   return {
     version: newest.version ?? 'canary',

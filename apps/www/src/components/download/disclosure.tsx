@@ -10,12 +10,12 @@ export interface DisclosureProps {
  *  Native `<details>`, so it opens before hydration and costs no JS. */
 export function Disclosure({ label, children }: Readonly<DisclosureProps>) {
   return (
-    <details className="group">
+    <details className="group/disclosure">
       <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 font-sans text-xs font-medium text-dim transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
         <IconChevronRight
           size={13}
           stroke={2}
-          className="transition-transform duration-200 ease-out group-open:rotate-90"
+          className="transition-transform duration-200 ease-out group-open/disclosure:rotate-90"
           aria-hidden
         />
         {label}

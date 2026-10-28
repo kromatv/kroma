@@ -1,4 +1,9 @@
-import { IconDeviceDesktop, IconDeviceMobile, IconDeviceTv, IconServer } from '@tabler/icons-react';
+import {
+  IconBrandDocker,
+  IconDeviceDesktop,
+  IconDeviceMobile,
+  IconDeviceTv,
+} from '@tabler/icons-react';
 import type { IconComponent } from '#site/components/download/icon';
 import { m } from '#site/paraglide/messages';
 
@@ -20,7 +25,7 @@ export const families = (): readonly FamilyMeta[] => [
   { id: 'tv', icon: IconDeviceTv, title: m.download_family_tv_title() },
   { id: 'desktop', icon: IconDeviceDesktop, title: m.download_family_desktop_title() },
   { id: 'mobile', icon: IconDeviceMobile, title: m.download_family_mobile_title() },
-  { id: 'nas', icon: IconServer, title: m.download_family_nas_title() },
+  { id: 'nas', icon: IconBrandDocker, title: m.download_family_nas_title() },
 ];
 
 /** One family's own row of the table. */
