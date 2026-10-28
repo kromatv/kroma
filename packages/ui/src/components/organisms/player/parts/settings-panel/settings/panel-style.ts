@@ -1,12 +1,6 @@
 /**
- * Shared style atoms for the settings sub-panels.
- *
- * Focus is state-driven: a row picks its `*On` / `*Off` style from a boolean,
- * never from CSS `:hover` or `:focus`.
- *
- * The `On` styles carry the lift as well as the ring, the same step <Focusable>
- * takes: the ring stands off the row and the row below it, drawn later, would
- * otherwise paint over that side of it.
+ * Shared style atoms for the settings sub-panels. A row is a <Focusable>, so its
+ * ring and lift are the kit's; {@link ROW_FOCUS} is the wash it adds.
  *
  * One live set rather than a constant per name: `styles()` re-resolves against
  * the active theme, so the focus ring and the inks follow a swap. A bag of
@@ -15,6 +9,12 @@
 
 import type { ViewStyle } from 'react-native';
 import { styles } from '#ui/core';
+
+/** The wash a focused panel row wears under the kit's ring. */
+export const ROW_FOCUS = { focus: { bg: 'tint/10' } } as const;
+
+/** The wash a focused value row wears under the kit's ring. */
+export const VALUE_ROW_FOCUS = { focus: { bg: 'tint/8' } } as const;
 
 const ROW_BASE = { w: '100%', row: true, align: 'center', radius: 'xl', px: 22, py: 18 } as const;
 

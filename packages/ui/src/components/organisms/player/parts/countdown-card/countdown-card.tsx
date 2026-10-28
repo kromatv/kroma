@@ -12,20 +12,20 @@ import {
   scaledRadius,
   sharedStyle,
   styles,
-  sv,
   useStyleScope,
-  useSv,
   useTheme,
 } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';
+import { FocusRegion, FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 
 export interface CountdownCardAction {
   label: string;
   icon?: IconName;
-  focused: boolean;
   onPress: () => void;
+  /** The remote landed on this button. */
+  onFocus?: () => void;
 }
 
 export interface CountdownCardProps {
@@ -39,6 +39,9 @@ export interface CountdownCardProps {
   secondary: CountdownCardAction;
   primary: CountdownCardAction;
   announce?: boolean;
+  /** Whether the card holds the remote: it opens on `primary` and the chrome
+   *  behind it waits, as behind a dialog. Default true. */
+  active?: boolean;
 }
 
 const CARD_WIDTH = 392;
@@ -47,14 +50,14 @@ const COUNTDOWN_SIZE = 19;
 const ART_FILL = 'linear-gradient(135deg, rgba(244,182,66,0.16), rgba(20,18,22,0.96))';
 const VIGNETTE = 'radial-gradient(120% 120% at 50% 25%, transparent, rgba(0,0,0,0.5))';
 
-const secondaryFill = sv({ base: { _focus: { bg: 'tint/16' } } });
-const primaryFill = sv({ base: { flex: 1, _focus: { bg: 'accentHover' } } });
+const SECONDARY_FOCUS = { focus: { bg: 'tint/16' } } as const;
+const PRIMARY_FOCUS = { focus: { bg: 'accentHover' } } as const;
 
 const sizeOf = (fontSize: number, scope: StyleScope) =>
   sharedStyle(`countdown-card:size:${fontSize}`, { fontSize }, scope);
 
 /** The player's bottom-right card: artwork with a draining ring, a title, and
- * two controlled buttons the player's own key routing drives. */
+ * two buttons the remote walks like any other. */
 export function CountdownCard({
   art,
   eyebrow,
@@ -66,9 +69,9 @@ export function CountdownCard({
   secondary,
   primary,
   announce = false,
+  active = true,
 }: Readonly<CountdownCardProps>) {
-  const secondaryFillScoped = useSv(secondaryFill);
-  const primaryFillScoped = useSv(primaryFill);
+  useLockFocusBehind(active);
   const scope = useStyleScope();
   const s = useStyles(sDefinition);
   const theme = useTheme();
@@ -119,32 +122,38 @@ export function CountdownCard({
           {subtitle}
         </Text>
       ) : null}
-      <Box row gap={px(12)} mt={px(16)}>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={secondary.icon}
-          focused={secondary.focused}
-          style={secondaryFillScoped(undefined, { focus: secondary.focused }).root}
-          onPress={secondary.onPress}
-          label={secondary.label}
-        />
-        <Button
-          variant="primary"
-          size="sm"
-          icon={primary.icon}
-          focused={primary.focused}
-          onPress={primary.onPress}
-          label={primary.label}
-          style={primaryFillScoped(undefined, { focus: primary.focused }).root}
-        />
-      </Box>
+      <FocusScope bridge={false} active={active} entryKey={active ? 'up' : 'down'}>
+        <FocusRegion style={[s.actions, { gap: px(12), marginTop: px(16) }]}>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={secondary.icon}
+            states={SECONDARY_FOCUS}
+            onPress={secondary.onPress}
+            onFocus={secondary.onFocus}
+            label={secondary.label}
+          />
+          <Button
+            variant="primary"
+            size="sm"
+            icon={primary.icon}
+            autoFocus
+            onPress={primary.onPress}
+            onFocus={primary.onFocus}
+            label={primary.label}
+            states={PRIMARY_FOCUS}
+            style={s.primary}
+          />
+        </FocusRegion>
+      </FocusScope>
     </Box>
   );
 }
 
 const sDefinition = styles({
   vignette: { pointerEvents: 'none' },
+  actions: { row: true },
+  primary: { flex: 1 },
   countdown: {
     font: 'ui',
     fontWeight: '700',

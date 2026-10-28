@@ -11,6 +11,7 @@ export function NavigatorItemHost({
   onBlur,
   onFocus,
   onLongSelect,
+  onKey,
   onSelect,
   painted,
   pointer,
@@ -23,6 +24,7 @@ export function NavigatorItemHost({
       ref={entry}
       onSelect={onSelect}
       onLongSelect={onLongSelect}
+      onKey={onKey}
       onFocus={onFocus}
       onBlur={onBlur}
       style={painted as NavigatorItemProps['style']}

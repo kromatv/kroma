@@ -25,27 +25,31 @@ public class FocusCardModule: Module {
 /// the thumb in perspective and a soft shadow settles under it, and a broad
 /// specular light slides against the tilt inside the control's own outline.
 /// The tilt and the light are system motion effects, so they follow the remote
-/// with no work on the JS thread. A large control tilts less, but never so
-/// little that the tilt reads as a slide, and a list row does not tilt at all,
-/// as on tvOS: it only lifts and catches the light.
+/// with no work on the JS thread. Only a card tilts, as on tvOS: a poster or a
+/// tile, less the larger it is but never so little that the tilt reads as a
+/// slide. A button or a list row only lifts and catches the light, and the
+/// shadow under any control is sized to it.
 public class FocusCardView: ExpoView {
   private static let tilt: CGFloat = 0.1
   private static let tiltReach: CGFloat = 320
   private static let minimumTilt: CGFloat = 0.045
-  private static let rowWidth: CGFloat = 500
+  private static let cardSide: CGFloat = 140
   private static let rowAspect: CGFloat = 3.5
+  private static let shadowRadius: CGFloat = 24
+  private static let shadowDrop: CGFloat = 18
   private static let depth: CGFloat = 1 / 900
   private static let lightStrength: CGFloat = 0.2
   private static let lightTravel: CGFloat = 0.6
+  private static let depthLift: CGFloat = 1000
 
   private let lightClip = UIView()
   private let light = UIView()
   private let glare = CAGradientLayer()
   private var holds = false
   private var outline = CGRect.zero
-  private var radius: CGFloat = 0
   private weak var host: UIView?
   private var tiltEffect: UIMotionEffect?
+  private var restingDepth: CGFloat?
   var styleRadius: CGFloat = 0
   var faceIsHost = false
 
@@ -95,6 +99,10 @@ public class FocusCardView: ExpoView {
       self.lightClip.alpha = 1
     }
     shadow(on: true, of: control)
+    if restingDepth == nil {
+      restingDepth = control.layer.zPosition
+      control.layer.zPosition += Self.depthLift
+    }
   }
 
   private func release() {
@@ -103,6 +111,10 @@ public class FocusCardView: ExpoView {
       control.removeMotionEffect(tiltEffect)
       shadow(on: false, of: control)
     }
+    if let control = host, let restingDepth {
+      control.layer.zPosition = restingDepth
+    }
+    restingDepth = nil
     tiltEffect = nil
     UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) {
       self.lightClip.alpha = 0
@@ -115,8 +127,9 @@ public class FocusCardView: ExpoView {
     light.motionEffects.forEach { light.removeMotionEffect($0) }
 
     let size = max(outline.width, outline.height)
-    let row = outline.width > Self.rowWidth && outline.width > outline.height * Self.rowAspect
-    let angle = row ? 0 : max(Self.minimumTilt, Self.tilt * min(1, Self.tiltReach / max(size, 1)))
+    let side = min(outline.width, outline.height)
+    let card = side >= Self.cardSide && outline.width <= outline.height * Self.rowAspect
+    let angle = card ? max(Self.minimumTilt, Self.tilt * min(1, Self.tiltReach / max(size, 1))) : 0
     var base = CATransform3DIdentity
     base.m34 = -Self.depth
     let x = UIInterpolatingMotionEffect(keyPath: "layer.transform", type: .tiltAlongHorizontalAxis)
@@ -144,10 +157,12 @@ public class FocusCardView: ExpoView {
   private func shadow(on: Bool, of control: UIView) {
     let layer = control.layer
     layer.shadowColor = UIColor.black.cgColor
-    layer.shadowPath = UIBezierPath(roundedRect: outline, cornerRadius: radius).cgPath
     ease(layer, "shadowOpacity", Float(on ? 0.45 : 0))
-    ease(layer, "shadowRadius", on ? 24 : 8)
-    ease(layer, "shadowOffset", NSValue(cgSize: CGSize(width: 0, height: on ? 18 : 4)))
+    let side = min(outline.width, outline.height)
+    let radius = min(Self.shadowRadius, side * 0.15)
+    let drop = min(Self.shadowDrop, side * 0.1)
+    ease(layer, "shadowRadius", on ? radius : radius / 3)
+    ease(layer, "shadowOffset", NSValue(cgSize: CGSize(width: 0, height: on ? drop : drop / 4)))
   }
 
   private func ease(_ target: CALayer, _ key: String, _ value: Any) {
@@ -180,7 +195,6 @@ public class FocusCardView: ExpoView {
       corner = inner.layer.cornerRadius
     }
     outline = rect
-    radius = corner
     let local = convert(rect, from: control)
     CATransaction.begin()
     CATransaction.setDisableActions(true)

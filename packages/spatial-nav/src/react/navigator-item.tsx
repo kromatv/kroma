@@ -1,3 +1,4 @@
+import type { Direction } from '@kromatv/spatial-nav';
 import type { ReactNode, Ref } from 'react';
 import {
   Platform,
@@ -34,6 +35,8 @@ interface NavigatorItemProps {
   onLongSelect?: () => void;
   onFocus?: () => void;
   onBlur?: () => void;
+  /** Answers a press while this item holds the focus, before the navigator moves; true keeps it. */
+  onKey?: (direction: Direction) => boolean;
   style?: StyleProp<ViewStyle>;
   /** Spread onto the inner view, after everything this component puts there,
    *  so a caller's own role, label or handlers win. */
@@ -53,6 +56,7 @@ function NavigatorItem({
   onLongSelect,
   onFocus,
   onBlur,
+  onKey,
   style,
   viewProps,
   ref,
@@ -65,6 +69,7 @@ function NavigatorItem({
       onLongSelect={onLongSelect}
       onFocus={onFocus}
       onBlur={onBlur}
+      onKey={onKey}
       ref={ref}
     >
       {(state) => (

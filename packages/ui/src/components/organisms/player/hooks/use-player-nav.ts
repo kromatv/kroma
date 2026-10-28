@@ -1,15 +1,8 @@
-import {
-  type SetStateAction,
-  useCallback,
-  useEffect,
-  useEffectEvent,
-  useRef,
-  useState,
-} from 'react';
+import type { Direction } from '@kromatv/spatial-nav';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-nudge';
-import type { ControlId, Overlay, Zone } from '#ui/components/organisms/player/lib/nav';
-import { handleDpadKey, handleMediaKey } from '#ui/components/organisms/player/lib/nav-keys';
-import { nextTabStop } from '#ui/components/organisms/player/lib/tab-walk';
+import type { ControlId, Overlay, Spot } from '#ui/components/organisms/player/lib/nav';
+import { handleMediaKey } from '#ui/components/organisms/player/lib/nav-keys';
 import type { PlayerCloseReason } from '#ui/components/organisms/player/types';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import { useStableCallback } from '#ui/lib/stable-callback';
@@ -19,7 +12,7 @@ const HIDE_MS = 3500;
 /** Actions the top-level machine invokes; the shell wires them to the controller. */
 export interface PlayerNavActions {
   togglePlay(): void;
-  /** Directional seek, -1 = back / +1 = forward, from the progress zone or the
+  /** Directional seek, -1 = back / +1 = forward, from the seek bar or the
    *  rewind/forward transport buttons. */
   seekNudge(dir: -1 | 1, press: SeekPress): void;
   onNext(): void;
@@ -40,15 +33,15 @@ export interface PlayerNavActions {
 
 export interface PlayerNav {
   revealed: boolean;
-  zone: Zone;
   overlay: Overlay;
   controls: readonly ControlId[];
-  /** The focused control id, or null when the progress zone / a panel is active. */
-  focusedControl: ControlId | null;
-  /** Route a logical key. The shell calls this after giving any open panel first
-   *  refusal. */
+  /** Where in the chrome the navigator's focus is, or null when it is elsewhere. */
+  spot: Spot | null;
+  /** The keys the navigator does not walk: the media keys and Back. */
   handleKey(key: RemoteKey): void;
-  walkChrome(backwards: boolean): void;
+  /** The chrome's answer to a press before the navigator moves (see `onKey`):
+   *  a hidden chrome comes back on the first press and keeps it. */
+  chromeKey(direction: Direction): boolean;
   /** Reveal the chrome + (re)arm the auto-hide timer (pointer move / any key). */
   poke(): void;
   /** Re-arm the auto-hide timer WITHOUT revealing the chrome. Used by immersive
@@ -56,25 +49,23 @@ export interface PlayerNav {
   rearmHide(): void;
   openOverlay(o: Exclude<Overlay, null>): void;
   closeOverlay(): void;
-  /** Run a control's action (shared by mouse click and D-pad OK). */
+  /** Run a control's action, whether OK or a click pressed it. */
   activate(id: ControlId): void;
-  /** Mouse focus helpers (hover moves focus, §15). */
-  focusControl(id: ControlId): void;
-  focusProgress(): void;
+  /** Where the navigator's focus landed in the chrome, reported by the part it landed on. */
+  focus(spot: Spot): void;
+  /** The part that held the focus lost it. */
+  blur(spot: Spot): void;
   /** Leave the player, told why, without going through the key chain. */
   exit(reason: PlayerCloseReason): void;
 }
 
 /**
- * The unified navigation state machine (§3): three-zone D-pad + pointer focus,
- * feature-flag-aware control stops, "▲ from the progress bar hides the UI", and
- * the auto-hiding chrome. It owns zone/overlay/focus; panels manage their own
- * internal focus (see useListFocus / useGridFocus) and the shell routes keys to
- * the open panel first.
+ * What the player decides about its chrome (§3): whether it is shown and for how
+ * long, which panel is open, what each control does, and what Back and the media
+ * keys mean. WHERE the focus is, and where a direction takes it, is the
+ * navigator's, as on every other screen; the chrome's parts report it here.
  *
- * `controls` must be exactly the row as drawn (see ../lib/metrics
- * `chromeMetrics`): the machine steps through only the controls on screen, so a
- * shed control never keeps a focus stop nobody can see.
+ * `controls` must be exactly the row as drawn (see ../lib/metrics `chromeMetrics`).
  */
 export function usePlayerNav(
   playing: boolean,
@@ -82,25 +73,8 @@ export function usePlayerNav(
   controls: readonly ControlId[],
 ): PlayerNav {
   const [revealed, setRevealed] = useState(true);
-  const [zone, setZone] = useState<Zone>('controls');
   const [overlay, setOverlay] = useState<Overlay>(null);
-  // Focus is a CONTROL, not a slot: the row can change under it (a flag flips,
-  // a control is shed), and the button the user was on should stay lit rather
-  // than jump to whatever slid into its old index.
-  const [focusedId, setFocusedId] = useState<ControlId>('play');
-  // ◀ ▶ still move by position: the D-pad steps an index, and this resolves it
-  // back to the control that index currently points at.
-  const controlIndex = Math.max(0, controls.indexOf(focusedId));
-  const setControlIndex = useCallback(
-    (update: SetStateAction<number>) => {
-      setFocusedId((id) => {
-        const from = Math.max(0, controls.indexOf(id));
-        const to = typeof update === 'function' ? update(from) : update;
-        return controls[Math.min(Math.max(0, to), controls.length - 1)] ?? id;
-      });
-    },
-    [controls],
-  );
+  const [spot, setSpot] = useState<Spot | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearHide = useCallback(() => {
@@ -117,17 +91,20 @@ export function usePlayerNav(
     hideTimer.current = setTimeout(() => setRevealed(false), HIDE_MS);
   }, [clearHide, playing, overlay]);
 
-  /** Re-arm the auto-hide timer WITHOUT revealing the chrome. Used by immersive
-   *  media shortcuts (seek/volume) so repeated arrow presses don't flash the UI. */
   const rearmHide = useCallback(() => {
     clearHide();
     if (!playing || overlay) return;
     hideTimer.current = setTimeout(() => setRevealed(false), HIDE_MS);
   }, [clearHide, playing, overlay]);
 
-  const [chromeKey, setChromeKey] = useState({ playing, overlay });
-  if (chromeKey.playing !== playing || chromeKey.overlay !== overlay) {
-    setChromeKey({ playing, overlay });
+  const hide = useCallback(() => {
+    clearHide();
+    setRevealed(false);
+  }, [clearHide]);
+
+  const [chromeKeyOf, setChromeKeyOf] = useState({ playing, overlay });
+  if (chromeKeyOf.playing !== playing || chromeKeyOf.overlay !== overlay) {
+    setChromeKeyOf({ playing, overlay });
     setRevealed(true);
   }
 
@@ -143,15 +120,8 @@ export function usePlayerNav(
   }, []);
   const closeOverlay = useCallback(() => setOverlay(null), []);
 
-  const focusControl = useCallback(
-    (id: ControlId) => {
-      if (!controls.includes(id)) return;
-      setZone('controls');
-      setFocusedId(id);
-    },
-    [controls],
-  );
-  const focusProgress = useCallback(() => setZone('progress'), []);
+  const focus = useCallback((at: Spot) => setSpot(at), []);
+  const blur = useCallback((at: Spot) => setSpot((was) => (was === at ? null : was)), []);
   const exit = useEffectEvent((reason: PlayerCloseReason) => actions.onExit(reason));
 
   const activate = useStableCallback((id: ControlId) => {
@@ -183,73 +153,51 @@ export function usePlayerNav(
   });
 
   const handleKey = useEffectEvent((key: RemoteKey) => {
-    if (handleMediaKey(key, actions)) return;
-
-    // While hidden, the first key just brings the chrome back (§3, §16), except Back.
-    if (!revealed) {
-      if (key === 'Back') actions.onExit('back');
-      else poke();
+    if (handleMediaKey(key, actions)) {
+      poke();
       return;
+    }
+    if (key !== 'Back') return;
+    if (overlay) {
+      closeOverlay();
+      return;
+    }
+    if (revealed) hide();
+    else actions.onExit('back');
+  });
+
+  const chromeKey = useEffectEvent((direction: Direction): boolean => {
+    if (!revealed) {
+      if (spot === 'skip') return false;
+      poke();
+      return true;
     }
     poke();
-
-    // An open panel had first refusal (shell); here we only close it on Back.
-    if (overlay) {
-      if (key === 'Back') closeOverlay();
-      return;
+    if (direction === 'up' && spot === 'back') {
+      hide();
+      return true;
     }
-
-    handleDpadKey(key, {
-      a: actions,
-      zone,
-      focused: controls[controlIndex],
-      controlsLen: controls.length,
-      setZone,
-      setControlIndex,
-      setRevealed,
-      clearHide,
-      openOverlay,
-      activate,
-    });
-  });
-
-  const walkChrome = useEffectEvent((backwards: boolean) => {
-    const stop = nextTabStop(
-      {
-        zone,
-        control: controls[controlIndex] ?? null,
-        drawnControls: controls,
-        sheetHasItems: actions.sheetHasItems,
-      },
-      backwards,
-    );
-    if (!stop) return;
-    if (stop.zone === 'sheet') {
-      openOverlay('sheet');
-      return;
+    if (direction === 'down' && spot !== null && controls.includes(spot as ControlId)) {
+      if (actions.sheetHasItems) openOverlay('sheet');
+      return true;
     }
-    setZone(stop.zone);
-    if (stop.zone === 'controls') setFocusedId(stop.control);
+    return false;
   });
-
-  const focusedControl =
-    !overlay && revealed && zone === 'controls' ? (controls[controlIndex] ?? null) : null;
 
   return {
     revealed,
-    zone,
     overlay,
     controls,
-    focusedControl,
+    spot,
     handleKey,
-    walkChrome,
+    chromeKey,
     poke,
     rearmHide,
     openOverlay,
     closeOverlay,
     activate,
-    focusControl,
-    focusProgress,
+    focus,
+    blur,
     exit,
   };
 }

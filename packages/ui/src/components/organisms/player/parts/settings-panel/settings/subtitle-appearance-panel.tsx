@@ -1,8 +1,6 @@
-import { type ReactNode, type Ref, useEffectEvent, useImperativeHandle } from 'react';
+import { type ReactNode, useEffectEvent } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
-import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import {
   SUB_COLORS,
   SUB_EDGES,
@@ -16,14 +14,13 @@ import {
 } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { useStyleScope } from '#ui/core';
 import { gradient } from '#ui/lib/css';
+import { FocusColumn } from '#ui/lib/focus-scope';
 import { useT } from '#ui/services/i18n';
 import { AppearanceRow, Choice, Meter, Seg, Swatches } from './subtitle-appearance-parts';
 
 interface SubtitleAppearancePanelProps {
   appearance: SubtitleAppearance;
   onAppearanceChange: (patch: Partial<SubtitleAppearance>) => void;
-  onBack: () => void;
-  ref?: Ref<PanelHandle>;
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -69,8 +66,6 @@ interface AppRow {
 export function SubtitleAppearancePanel({
   appearance,
   onAppearanceChange,
-  onBack,
-  ref,
 }: Readonly<SubtitleAppearancePanelProps>) {
   const scope = useStyleScope();
 
@@ -159,8 +154,6 @@ export function SubtitleAppearancePanel({
   // One effect event for the whole list: a closure per row would carry
   // `appearance`, which every nudge replaces.
   const nudge = useEffectEvent((i: number, dir: -1 | 1) => rows[i]?.nudge(dir));
-  const focus = useListFocus({ count: rows.length, onHorizontal: nudge, onBack });
-  useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
   return (
     <Box>
@@ -179,20 +172,13 @@ export function SubtitleAppearancePanel({
           <Text style={subtitleStyle(appearance, scope)}>{t('player.subPreview')}</Text>
         </Box>
       </Box>
-      <Box gap={10}>
+      <FocusColumn style={{ gap: 10 }}>
         {rows.map((r, i) => (
-          <AppearanceRow
-            key={r.key}
-            index={i}
-            label={r.label}
-            focused={focus.index === i}
-            onFocus={focus.setIndex}
-            onNudge={nudge}
-          >
+          <AppearanceRow key={r.key} index={i} label={r.label} autoFocus={i === 0} onNudge={nudge}>
             {r.control}
           </AppearanceRow>
         ))}
-      </Box>
+      </FocusColumn>
     </Box>
   );
 }

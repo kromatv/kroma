@@ -83,6 +83,7 @@ export class SpatialNavigator {
   handle(direction: Direction): boolean {
     if (direction === 'release') return this.release();
     if (this.locked) return false;
+    if (this.answered(direction)) return true;
     if (direction === 'hold') return this.longSelect();
     const move = moveOf(direction);
     if (move === null) return this.select();
@@ -95,6 +96,15 @@ export class SpatialNavigator {
     }
     this.owner.move(target);
     return true;
+  }
+
+  private answered(direction: Direction): boolean {
+    const focused = this.owner.focusedNode;
+    if (focused === null) return false;
+    for (const node of [focused, ...this.tree.ancestorsOf(focused)]) {
+      if (node.config.onKey?.(direction) === true) return true;
+    }
+    return false;
   }
 
   lock(): void {

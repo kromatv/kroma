@@ -12,7 +12,6 @@ export const story = defineStory({
     title: 'Blade Runner 2049',
     subtitle: '2017 · 2h 44m',
     warn: '',
-    backFocused: false,
   },
   render: ({ warn, ...props }) => (
     // The bar positions itself absolutely, so the story gives it a surface to
@@ -25,24 +24,21 @@ export const story = defineStory({
   ),
 });
 
-The player's own header: what is playing, a way out, and a warning pill when the stream is not what the viewer asked for (a transcode, a missing track). It sits under a scrim rather than a solid bar so the artwork behind it still reads. `backFocused` is passed in rather than owned here because the player's nav machine decides where focus rests. The chrome only draws it.
+The player's own header: what is playing, a way out, and a warning pill when the stream is not what the viewer asked for (a transcode, a missing track). It sits under a scrim rather than a solid bar so the artwork behind it still reads. Back is a stop on the app's navigator; `onBackFocus` / `onBackBlur` tell the player when the remote rests on it, so Up from there can put the chrome away.
 
 ```tsx
 <TopBar
   title={item.title}
   subtitle={episodeLabel}
   warn={transcoding ? t('player.transcodeWarning') : null}
-  backFocused={nav.zone === 'back'}
   onBack={leave}
+  onBackFocus={() => nav.focus('back')}
+  onBackBlur={() => nav.blur('back')}
 />
 ```
 
 <Scene name="Warning" args={{ warn: 'Transcoding: this device cannot direct-play HEVC' }}>
   The pill only appears when there is something to say about the stream.
-</Scene>
-
-<Scene name="Back focused" args={{ backFocused: true }}>
-  What the remote resting on the way out looks like.
 </Scene>
 
 <Do>

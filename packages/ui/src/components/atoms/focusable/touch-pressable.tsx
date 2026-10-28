@@ -83,7 +83,6 @@ function TouchPressable({
   onLayout,
   hitSlop,
   unfocusable = false,
-  hostProps,
   label,
   role = 'button',
   a11yState,
@@ -103,7 +102,6 @@ function TouchPressable({
   onLayout?: (event: LayoutChangeEvent) => void;
   hitSlop?: number | Insets;
   unfocusable?: boolean;
-  hostProps?: object | null;
   label?: string;
   role?: FocusRole;
   a11yState: A11yState;
@@ -117,7 +115,6 @@ function TouchPressable({
     <PressHost
       ref={boxRef}
       {...(unfocusable ? (UNFOCUSABLE as object) : (webKeys ?? null))}
-      {...hostProps}
       accessibilityRole={platformRole(role)}
       {...linkProps(href, role)}
       {...a11yState}

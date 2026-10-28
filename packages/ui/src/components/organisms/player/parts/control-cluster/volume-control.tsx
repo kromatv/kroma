@@ -7,6 +7,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { Focusable } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { useDragTrack } from '#ui/components/organisms/player/hooks/use-drag-track';
@@ -18,9 +19,7 @@ import { useStyles } from '#ui/core/styles';
 import { a11yValue } from '#ui/lib/a11y';
 import { suppressSelection } from '#ui/lib/drag-select';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
-import { useFocusVisible } from '#ui/lib/focus-visible';
 import { useStableCallback } from '#ui/lib/stable-callback';
-import { useFocusMirror } from '#ui/lib/use-focus-mirror';
 
 // The volume pill's wrapper isn't a kit atom (it holds a button AND a slider),
 // so its focus visuals live on the wrapper itself.
@@ -55,25 +54,27 @@ export function volumeGlyph(level: number, size: number): ReactNode {
 }
 
 export function VolumeControl({
-  focused,
   muted,
   volume,
   max,
   px,
   onFocus,
+  onBlur,
   onToggle,
   onVolume,
+  onNudge,
   label,
   muteLabel,
 }: Readonly<{
-  focused: boolean;
   muted: boolean;
   volume: number;
   max: number;
   px: Px;
   onFocus: () => void;
+  onBlur: () => void;
   onToggle: () => void;
   onVolume: (v: number) => void;
+  onNudge: (dir: -1 | 1) => void;
   label: string;
   muteLabel: string;
 }>) {
@@ -83,8 +84,6 @@ export function VolumeControl({
 
   const s = useStyles(sDefinition);
 
-  const lit = useFocusVisible(focused);
-  const mirror = useFocusMirror(focused);
   // Measured on the RAIL, not the row that holds it: the row has 20px of right
   // padding, so dividing a pointer offset by the row's width would put the level
   // a fifth past the cursor. The two share a left edge, so this still works.
@@ -137,102 +136,118 @@ export function VolumeControl({
   const thumb = px(13);
   return (
     <Frost>
-      <Box
-        row
-        align="center"
-        shrink={0}
-        h={size}
-        radius="pill"
-        overflow="hidden"
-        onPointerEnter={onFocus}
-        style={volumePillScoped(undefined, { focus: lit }).root}
+      <Focusable
+        ring={false}
+        label={label}
+        onPress={onToggle}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        onKey={(direction) => {
+          if (direction !== 'up' && direction !== 'down') return false;
+          onNudge(direction === 'up' ? 1 : -1);
+          return true;
+        }}
       >
-        {/* Controlled at `false`: the PILL carries the focus visuals for the whole
-          control, but the button must still opt out of platform focus. */}
-        <IconButton
-          variant="ghost"
-          diameter={size}
-          focused={false}
-          style={NO_OUTLINE}
-          label={muteLabel}
-          onPress={onToggle}
-          onFocus={onFocus}
-        >
-          {volIcon}
-        </IconButton>
-        <View
-          {...pan.panHandlers}
-          ref={mirror}
-          accessibilityRole="adjustable"
-          accessibilityLabel={label}
-          onFocus={onFocus}
-          {...a11yValue({ min: 0, max: Math.round(max * 100), now: percent, text: `${percent}%` })}
-          style={[railOf(size, px(VOLUME_RAIL), px(20), scope), NO_OUTLINE]}
-        >
+        {({ focused }) => (
           <Box
-            ref={trackRef}
-            onLayout={onTrackLayout}
-            style={s.inert}
-            h={px(6)}
-            w="100%"
+            row
+            align="center"
+            shrink={0}
+            h={size}
             radius="pill"
-            bg="white/22"
+            overflow="hidden"
+            style={volumePillScoped(undefined, { focus: focused }).root}
           >
-            {/* Fill width and thumb offset vary with volume, so they use `style`
+            {/* Controlled at `false`: the PILL carries the focus visuals for the whole
+          control, but the button must still opt out of platform focus. */}
+            <IconButton
+              variant="ghost"
+              diameter={size}
+              focused={false}
+              style={NO_OUTLINE}
+              label={muteLabel}
+              onPress={onToggle}
+            >
+              {volIcon}
+            </IconButton>
+            <View
+              {...pan.panHandlers}
+              accessibilityRole="adjustable"
+              accessibilityLabel={label}
+              {...a11yValue({
+                min: 0,
+                max: Math.round(max * 100),
+                now: percent,
+                text: `${percent}%`,
+              })}
+              style={[railOf(size, px(VOLUME_RAIL), px(20), scope), NO_OUTLINE]}
+            >
+              <Box
+                ref={trackRef}
+                onLayout={onTrackLayout}
+                style={s.inert}
+                h={px(6)}
+                w="100%"
+                radius="pill"
+                bg="white/22"
+              >
+                {/* Fill width and thumb offset vary with volume, so they use `style`
               (bypassing the shared cache) rather than `w`/`left`, which would
               mint a cache entry per level. */}
-            <Box
-              absolute
-              top={0}
-              bottom={0}
-              left={0}
-              radius="pill"
-              bg="accent"
-              style={{ width: `${sliderPos * 100}%` }}
-            />
-            {boosted ? (
-              <Box
-                absolute
-                top={0}
-                bottom={0}
-                radius="pill"
-                bg="accentBright"
-                style={{ left: `${unity * 100}%`, width: `${(sliderPos - unity) * 100}%` }}
-              />
-            ) : null}
-            {max > 1 ? (
-              <Box
-                absolute
-                top="50%"
-                w={px(6)}
-                h={px(6)}
-                radius="circle"
-                bg={boosted ? '#FFFFFF' : 'white/60'}
-                style={{
-                  left: `${unity * 100}%`,
-                  transform: [{ translateX: -px(3) }, { translateY: -px(3) }],
-                }}
-              />
-            ) : null}
-            <Box
-              absolute
-              top="50%"
-              w={thumb}
-              h={thumb}
-              radius="pill"
-              bg="white"
-              style={[
-                // Half its own size, so the handle stays centred on the level at
-                // whatever scale the row is drawn.
-                {
-                  left: `${sliderPos * 100}%`,
-                  transform: [{ translateX: -thumb / 2 }, { translateY: -thumb / 2 }],
-                },
-              ]}
-            />
+                <Box
+                  absolute
+                  top={0}
+                  bottom={0}
+                  left={0}
+                  radius="pill"
+                  bg="accent"
+                  style={{ width: `${sliderPos * 100}%` }}
+                />
+                {boosted ? (
+                  <Box
+                    absolute
+                    top={0}
+                    bottom={0}
+                    radius="pill"
+                    bg="accentBright"
+                    style={{ left: `${unity * 100}%`, width: `${(sliderPos - unity) * 100}%` }}
+                  />
+                ) : null}
+                {max > 1 ? (
+                  <Box
+                    absolute
+                    top="50%"
+                    w={px(6)}
+                    h={px(6)}
+                    radius="circle"
+                    bg={boosted ? '#FFFFFF' : 'white/60'}
+                    style={{
+                      left: `${unity * 100}%`,
+                      transform: [{ translateX: -px(3) }, { translateY: -px(3) }],
+                    }}
+                  />
+                ) : null}
+                <Box
+                  absolute
+                  top="50%"
+                  w={thumb}
+                  h={thumb}
+                  radius="pill"
+                  bg="white"
+                  style={[
+                    // Half its own size, so the handle stays centred on the level at
+                    // whatever scale the row is drawn.
+                    {
+                      left: `${sliderPos * 100}%`,
+                      transform: [{ translateX: -thumb / 2 }, { translateY: -thumb / 2 }],
+                    },
+                  ]}
+                />
+              </Box>
+            </View>
           </Box>
-        </View>
-      </Box>
+        )}
+      </Focusable>
     </Frost>
   );
 }

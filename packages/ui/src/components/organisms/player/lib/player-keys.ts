@@ -7,7 +7,6 @@ import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-n
 import type { PlayerController, PlayerFlags } from '#ui/components/organisms/player/types';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import type { PanelHandle } from './nav';
-import { TRANSPORT_KEYS } from './nav-keys';
 
 export interface PlayerKeysParams {
   active?: boolean;
@@ -22,32 +21,20 @@ export interface PlayerKeysParams {
   /** The keyboard's volume: ArrowUp / Down land here so the stage can echo the
    *  level, rather than on the controller directly. */
   setVolume(level: number): void;
-  intro?: { active: boolean; onSkip: () => void };
-  /** The resume card while it is up. It holds the remote's focus, which opens on
-   *  the button that keeps watching. */
-  resume?: { active: boolean; onKey: (key: RemoteKey) => boolean };
-  credits?: { active: boolean; onKey: (key: RemoteKey) => boolean };
-  /** The end-of-film screen. While it is up there is no film left to drive, so
-   *  it takes every key rather than getting first refusal on some. */
-  postPlay?: { active: boolean; onKey: (key: RemoteKey) => void };
-}
-
-function overFilmKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): boolean {
-  if (p.resume?.active && p.resume.onKey(key)) return true;
-  if (p.intro?.active && key === 'Enter') {
-    p.intro.onSkip();
-    return true;
-  }
-  return p.credits?.active === true && p.credits.onKey(key);
+  /** The over-film cards and the end screen: each is the navigator's while it
+   *  is up, and Back is the one key the player still answers for it. */
+  resume?: { active: boolean; onBack: () => void };
+  credits?: { active: boolean; onBack: () => void };
+  postPlay?: { active: boolean; onBack: () => void };
 }
 
 /**
- * Route one logical remote key (§3, §15). While locked only Back / OK get
- * through, and both mean "dismiss". The end-of-film screen takes everything.
- * Then the open panel, then the three things drawn over the film: the resume
- * prompt, the skip pill and the credits card. Only after those does a hidden
- * chrome reveal and swallow the key (§16), unless the key drives the film
- * itself, or is the Back that leaves.
+ * Route one logical remote key (§3, §15) that the navigator does not walk:
+ * directions and OK move and press the focused control like on any screen, so
+ * only Back and the media keys reach here. While locked only Back and OK get
+ * through, and both mean "dismiss". Back goes to whatever is in front: the end
+ * screen, an open panel (which may step back inside itself first), the resume
+ * card, the credits card, and only then the chrome.
  */
 export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): void {
   const { nav } = p;
@@ -56,57 +43,25 @@ export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): v
     return;
   }
   if (p.postPlay?.active) {
-    p.postPlay.onKey(key);
+    if (key === 'Back') p.postPlay.onBack();
     return;
   }
-  if (nav.overlay) {
-    nav.poke();
-    if (p.panelRef.current?.onKey(key)) return;
-    nav.handleKey(key); // an unhandled Back closes the panel
-    return;
-  }
-
-  if (overFilmKey(p, key)) return;
-  if (key === 'Back' && !nav.revealed) {
+  if (key !== 'Back') {
     nav.handleKey(key);
     return;
   }
-  if (!nav.revealed && !TRANSPORT_KEYS.has(key)) {
-    nav.poke();
-    return;
-  }
-  nav.poke();
-  nav.handleKey(key);
-}
-
-/**
- * Tab and Shift+Tab, which only a keyboard has.
- *
- * The chrome is NOT on the spatial navigator (it cannot be, since tvOS's own
- * focus engine would adopt it in parallel with this machine, see
- * lib/virtual-focus), and no single direction reaches the back button, the seek
- * bar, every control and the sheet in turn.
- */
-export function routeTab(p: Readonly<PlayerKeysParams>, backwards: boolean): void {
-  const { nav } = p;
   if (nav.overlay) {
-    const panel = p.panelRef.current;
-    if (!panel?.onTab) {
-      routeRemoteKey(p, backwards ? 'Up' : 'Down');
-      return;
-    }
-    nav.poke();
-    if (!panel.onTab(backwards)) nav.closeOverlay();
+    if (p.panelRef.current?.onKey(key)) return;
+    nav.handleKey(key);
     return;
   }
-  if (p.credits?.active || p.resume?.active) {
-    routeRemoteKey(p, backwards ? 'Left' : 'Right');
+  if (p.resume?.active) {
+    p.resume.onBack();
     return;
   }
-  if (!nav.revealed) {
-    nav.poke();
+  if (p.credits?.active) {
+    p.credits.onBack();
     return;
   }
-  nav.poke();
-  nav.walkChrome(backwards);
+  nav.handleKey(key);
 }

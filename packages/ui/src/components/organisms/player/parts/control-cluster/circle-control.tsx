@@ -1,5 +1,5 @@
 import type { MessageKey } from '@kromatv/i18n';
-import { memo, type ReactNode, useMemo } from 'react';
+import { memo, type ReactNode } from 'react';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { CONTROL_SIZE, type Px, scaler } from '#ui/components/organisms/player/lib/metrics';
 import type { ControlId } from '#ui/components/organisms/player/lib/nav';
@@ -15,49 +15,40 @@ import {
   IconPip,
   IconSubtitles,
 } from '#ui/components/organisms/player/parts/icons';
-import { sv, useSv } from '#ui/core';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
-import { useFocusVisible } from '#ui/lib/focus-visible';
 import { useT } from '#ui/services/i18n';
 
-const circleFill = sv({ base: { _focus: { bg: 'tint/22' } } });
+const CIRCLE_FOCUS = { focus: { bg: 'tint/22' } } as const;
 
 interface CircleProps {
   id: ControlId;
   diameter: number;
-  focused: boolean;
   label: string;
   onActivate: (id: ControlId) => void;
   onFocus: (id: ControlId) => void;
+  onBlur: (id: ControlId) => void;
   children: ReactNode;
 }
 
 export function Circle({
   id,
   diameter,
-  focused,
   label,
   onActivate,
   onFocus,
+  onBlur,
   children,
 }: Readonly<CircleProps>) {
-  const circleFillScoped = useSv(circleFill);
-
-  const lit = useFocusVisible(focused);
-  const dress = useMemo(
-    () => [circleFillScoped(undefined, { focus: lit }).root, NO_OUTLINE],
-    [lit, circleFillScoped],
-  );
   return (
     <IconButton
       variant="glass"
       diameter={diameter}
-      focused={focused}
-      style={dress}
+      style={NO_OUTLINE}
+      states={CIRCLE_FOCUS}
       label={label}
       onPress={() => onActivate(id)}
-      onHoverIn={() => onFocus(id)}
       onFocus={() => onFocus(id)}
+      onBlur={() => onBlur(id)}
     >
       {children}
     </IconButton>
@@ -97,22 +88,22 @@ const CIRCLES: Record<
 
 interface CircleControlProps {
   id: CircleId;
-  focused: boolean;
   scale: number;
   pipActive: boolean;
   fullscreen: boolean;
   onActivate: (id: ControlId) => void;
   onFocus: (id: ControlId) => void;
+  onBlur: (id: ControlId) => void;
 }
 
 export const CircleControl = memo(function CircleControl({
   id,
-  focused,
   scale,
   pipActive,
   fullscreen,
   onActivate,
   onFocus,
+  onBlur,
 }: Readonly<CircleControlProps>) {
   const t = useT();
   const px = scaler(scale);
@@ -121,10 +112,10 @@ export const CircleControl = memo(function CircleControl({
     <Circle
       id={id}
       diameter={px(CONTROL_SIZE[id])}
-      focused={focused}
       label={t(label)}
       onActivate={onActivate}
       onFocus={onFocus}
+      onBlur={onBlur}
     >
       {glyph({ pipActive, fullscreen }, px)}
     </Circle>

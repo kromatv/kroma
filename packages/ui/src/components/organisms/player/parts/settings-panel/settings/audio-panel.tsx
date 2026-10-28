@@ -1,12 +1,9 @@
 import { channelLabel, langName } from '@kromatv/core';
-import { type Ref, useImperativeHandle } from 'react';
-import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
-import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { useStyles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
 import type { PlayerAudioTrack } from '../../../media-types';
+import { FocusColumn } from '#ui/lib/focus-scope';
 import { panel } from './panel-style';
 import { SelectRow } from './select-row';
 
@@ -15,11 +12,10 @@ interface AudioPanelProps {
   current: number;
   onSelect: (index: number) => void;
   onBack: () => void;
-  ref?: Ref<PanelHandle>;
 }
 
 /** Audio-track picker (§5). */
-export function AudioPanel({ tracks, current, onSelect, onBack, ref }: Readonly<AudioPanelProps>) {
+export function AudioPanel({ tracks, current, onSelect, onBack }: Readonly<AudioPanelProps>) {
   const panelScoped = useStyles(panel);
 
   const t = useT();
@@ -30,15 +26,13 @@ export function AudioPanel({ tracks, current, onSelect, onBack, ref }: Readonly<
       onBack();
     }
   };
-  const focus = useListFocus({ count: tracks.length, onActivate: pick, onBack });
-  useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
   if (tracks.length === 0) {
     return <Text style={panelScoped.panelEmpty}>{t('player.noAudioTracks')}</Text>;
   }
 
   return (
-    <Box style={panelScoped.panelList}>
+    <FocusColumn style={panelScoped.panelList}>
       {tracks.map((a, i) => {
         const ch = channelLabel(a.channels);
         const codec = a.codec.toUpperCase();
@@ -49,12 +43,10 @@ export function AudioPanel({ tracks, current, onSelect, onBack, ref }: Readonly<
             label={a.title?.trim() || langName(t, a.language) || t('player.langUnknown')}
             sub={ch ? `${codec} · ${ch}` : codec}
             selected={a.index === current}
-            focused={focus.index === i}
             onActivate={pick}
-            onFocus={focus.setIndex}
           />
         );
       })}
-    </Box>
+    </FocusColumn>
   );
 }

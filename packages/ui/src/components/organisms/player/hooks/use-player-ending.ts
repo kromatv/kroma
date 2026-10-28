@@ -1,22 +1,16 @@
 import { useState } from 'react';
-import type { PostPlayFocus, PostPlayItem } from '#ui/components/organisms/player/parts/post-play';
+import type { PostPlayItem } from '#ui/components/organisms/player/parts/post-play';
 import type { UpNextItem } from '#ui/components/organisms/player/parts/up-next-sheet';
-import { handleCreditsKey, handlePostPlayKey } from '#ui/components/organisms/player/player-input';
 import type { PlayerController } from '#ui/components/organisms/player/types';
-import type { RemoteKey } from '#ui/lib/remote-keys';
 import type { PlayerMarker } from '../media-types';
 import { type CreditsState, usePlayerCredits } from './use-player-credits';
 import { usePlayerOutro } from './use-player-outro';
 
 export interface PlayerEnding {
   credits: CreditsState;
-  creditsFocus: 'play' | 'cancel';
-  onCreditsKey: (key: RemoteKey) => boolean;
   /** Whether the end screen has the stage, which it only ever takes with a film
    *  to offer on it. */
   over: boolean;
-  postPlayFocus: PostPlayFocus;
-  onPostPlayKey: (key: RemoteKey) => void;
   playOffer: () => void;
   goHome: () => void;
 }
@@ -52,15 +46,8 @@ export function usePlayerEnding(opts: {
     hasNext,
     onAdvance: () => onPlayNext?.(),
   });
-  const [creditsFocus, setCreditsFocus] = useState<'play' | 'cancel'>('play');
-  const [creditsShown, setCreditsShown] = useState(credits.show);
-  if (creditsShown !== credits.show) {
-    setCreditsShown(credits.show);
-    if (credits.show) setCreditsFocus('play');
-  }
 
   const [over, setOver] = useState(false);
-  const [postPlayFocus, setPostPlayFocus] = useState<PostPlayFocus>('play');
   const goHome = onGoHome ?? onLeave;
   const playOffer = () => {
     if (postPlay) onPlayItem?.({ id: postPlay.id, title: postPlay.title });
@@ -79,13 +66,7 @@ export function usePlayerEnding(opts: {
 
   return {
     credits,
-    creditsFocus,
-    onCreditsKey: (key) =>
-      handleCreditsKey(key, creditsFocus, setCreditsFocus, () => onPlayNext?.(), credits.cancel),
     over: over && postPlay != null,
-    postPlayFocus,
-    onPostPlayKey: (key) =>
-      handlePostPlayKey(key, postPlayFocus, setPostPlayFocus, playOffer, goHome),
     playOffer,
     goHome,
   };

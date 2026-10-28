@@ -15,7 +15,6 @@ function row(stage: number, flags = TV_FLAGS) {
   const { container } = render(
     <I18nProvider locale="en">
       <ControlCluster
-        focused={null}
         playing
         muted={false}
         volume={0.5}
@@ -24,7 +23,9 @@ function row(stage: number, flags = TV_FLAGS) {
         metrics={metrics}
         onActivate={vi.fn()}
         onFocus={vi.fn()}
+        onBlur={vi.fn()}
         onVolume={vi.fn()}
+        onVolumeNudge={vi.fn()}
       />
     </I18nProvider>,
   );

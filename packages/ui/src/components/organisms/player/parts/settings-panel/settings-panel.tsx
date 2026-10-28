@@ -7,19 +7,14 @@ import { type StyleScope, sharedStyle, style, styles, useStyleScope } from '#ui/
 // each view opens lives in settings/SubView, and the panel itself is what you
 // see here - the scrim, the surface, the title line, and where the keys go.
 //
-// Where the keys go is the only subtle part: the open sub-view owns them
-// (`PanelHandle`), the menu owns them otherwise, and in both cases the LIST is
-// the single thing that knows where the focus is. Its index -1 is the title
-// line's Back button (settings/../lib/panel-header), which is why this file
-// keeps no notion of focus of its own - two of those is what once lit a row and
-// the Back button at the same time.
+// The panel is a navigator of its own, opened over the chrome the way a dialog
+// opens over a screen: the remote walks its rows, and Back steps from a sub-view
+// to the menu and from the menu out (`PanelHandle`).
 
-import { type Ref, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { type Ref, useCallback, useImperativeHandle, useRef, useState } from 'react';
 import { Animated, Pressable } from 'react-native';
-import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import { PANEL_MAX, scaler } from '#ui/components/organisms/player/lib/metrics';
 import type { ControlId, PanelHandle } from '#ui/components/organisms/player/lib/nav';
-import { PanelHeaderProvider } from '#ui/components/organisms/player/lib/panel-header';
 import { playerStyle } from '#ui/components/organisms/player/lib/style';
 import type { SubtitleAppearance } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
@@ -27,6 +22,7 @@ import type { PlayerController } from '#ui/components/organisms/player/types';
 
 import { useStyles } from '#ui/core/styles';
 import { FocusScroll } from '#ui/lib/focus-scroll';
+import { FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { usePanelTravel } from '#ui/lib/player/panel-travel';
 import { useT } from '#ui/services/i18n';
 import type { PlayerReportCategory } from '../../media-types';
@@ -134,26 +130,20 @@ export function SettingsPanel({
     }),
   ];
 
-  const menuFocus = useListFocus({
-    count: entries.length,
-    onActivate: (i) => entries[i]?.activate(),
-    // Closes the panel directly rather than declining the key and trusting the
-    // shell: that fall-through never fired on Apple TV, leaving no way out.
-    onBack: onClose,
-  });
-
-  // Painted from what the open list reports, never decided here.
-  const [backFocused, setBackFocused] = useState(false);
-  const header = useMemo(() => ({ activate: backToMenu, report: setBackFocused }), [backToMenu]);
-
+  useLockFocusBehind(shown);
   const subRef = useRef<PanelHandle>(null);
   useImperativeHandle(
     ref,
     () => ({
-      onKey: (key) =>
-        view === 'menu' ? menuFocus.onKey(key) : (subRef.current?.onKey(key) ?? false),
+      onKey: (key) => {
+        if (key !== 'Back') return false;
+        if (subRef.current?.onKey(key)) return true;
+        if (view === 'menu') onClose();
+        else backToMenu();
+        return true;
+      },
     }),
-    [view, menuFocus.onKey],
+    [view, onClose, backToMenu],
   );
 
   return (
@@ -169,30 +159,23 @@ export function SettingsPanel({
         style={[veil.box, veilTo(width ?? '44%', scope), shown ? veil.live : veil.inert]}
       />
       <Animated.View style={[playerStyleScoped.panel, panelWidth(width ?? '44%', scope), travel]}>
-        <FocusScroll
-          style={SCROLL}
-          contentStyle={panelPad(px(58), px(56), scope)}
-          reveal="nearest"
-          offsetFromStart={px(12)}
-        >
-          <TitleBar
-            title={panelTitle(view, entries, t)}
-            back={view === 'menu' ? undefined : backToMenu}
-            backFocused={backFocused}
-            onClose={covers ? onClose : undefined}
-            px={px}
-          />
-
-          {view === 'menu' ? (
-            <MenuList
-              entries={entries}
-              moved={moved.length}
-              focused={menuFocus.index}
-              onFocus={menuFocus.hover}
+        <FocusScope bridge={false} active={shown} entryKey={view}>
+          <FocusScroll
+            style={SCROLL}
+            contentStyle={panelPad(px(58), px(56), scope)}
+            reveal="nearest"
+            offsetFromStart={px(12)}
+          >
+            <TitleBar
+              title={panelTitle(view, entries, t)}
+              back={view === 'menu' ? undefined : backToMenu}
+              onClose={covers ? onClose : undefined}
               px={px}
             />
-          ) : (
-            <PanelHeaderProvider value={header}>
+
+            {view === 'menu' ? (
+              <MenuList entries={entries} moved={moved.length} px={px} />
+            ) : (
               <SubView
                 ref={subRef}
                 view={view}
@@ -203,9 +186,9 @@ export function SettingsPanel({
                 onReport={onReport}
                 onBack={backToMenu}
               />
-            </PanelHeaderProvider>
-          )}
-        </FocusScroll>
+            )}
+          </FocusScroll>
+        </FocusScope>
       </Animated.View>
     </>
   );

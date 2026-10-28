@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
+import type { FocusHandle } from '#ui/components/atoms/focusable';
 import { GUTTER, scaler } from '#ui/components/organisms/player/lib/metrics';
 import { sv, useSv } from '#ui/core';
 import { useT } from '#ui/services/i18n';
@@ -11,14 +13,13 @@ const skipPill = sv({ base: { _focus: { border: 'accent' } } });
 
 /**
  * Skip-intro pill (§13): a bottom-right "Passer l'intro" button shown only
- * during the detected intro window. Focus is state-driven (`focused` is ALWAYS
- * passed, see ../lib/virtual-focus.ts): on focus the variant swaps from scrim to
- * primary, giving the design's "amber when focused" without a bespoke control.
- * Sits above the bottom chrome via `lift`, so the two never overlap.
+ * during the detected intro window. It takes the focus as it appears, so OK
+ * skips; on focus the variant swaps from scrim to primary, giving the design's
+ * "amber when focused" without a bespoke control. Sits above the bottom chrome
+ * via `lift`, so the two never overlap.
  */
 export interface SkipIntroButtonProps {
   visible: boolean;
-  focused: boolean;
   /** The chrome's scale (see ../lib/metrics). 1 on a television stage. */
   scale?: number;
   /**
@@ -29,16 +30,24 @@ export interface SkipIntroButtonProps {
    */
   lift: number;
   onSkip: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
 export function SkipIntroButton({
   visible,
-  focused,
   scale = 1,
   lift,
   onSkip,
+  onFocus,
+  onBlur,
 }: Readonly<SkipIntroButtonProps>) {
   const skipPillScoped = useSv(skipPill);
+  const [focused, setFocused] = useState(false);
+  const handle = useRef<FocusHandle>(null);
+  useEffect(() => {
+    if (visible) handle.current?.focus();
+  }, [visible]);
 
   const t = useT();
   const px = scaler(scale);
@@ -49,7 +58,15 @@ export function SkipIntroButton({
     <Box absolute bottom={lift} right={px(GUTTER)} z={30}>
       <Button
         variant={focused ? 'primary' : 'scrim'}
-        focused={focused}
+        focusHandle={handle}
+        onFocus={() => {
+          setFocused(true);
+          onFocus?.();
+        }}
+        onBlur={() => {
+          setFocused(false);
+          onBlur?.();
+        }}
         onPress={onSkip}
         label={t('player.skipIntro')}
         iconRight="chevron-right"

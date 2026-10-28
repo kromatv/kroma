@@ -2,9 +2,8 @@ import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
 // The panel's top line: where it is, the way back, and the way out.
 //
-// The Back button appears in a sub-view only, and is lit from the open list's
-// focus rather than from anything of its own (index -1 is this button - see
-// ../../lib/panel-header). The close X appears only when the panel COVERS the
+// The Back button appears in a sub-view only, above its list, where Up from the
+// first row reaches it like any control. The close X appears only when the panel COVERS the
 // stage, since then there is no scrim left to tap and a finger has no Back key.
 
 import { Box } from '#ui/components/atoms/box';
@@ -13,7 +12,6 @@ import { Text } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
 
 import { useStyles } from '#ui/core/styles';
-import { useRevealWhenFocused } from '#ui/lib/use-reveal-on-focus';
 import { useT } from '#ui/services/i18n';
 
 const titleOf = (fontSize: number, scope: StyleScope) =>
@@ -21,14 +19,12 @@ const titleOf = (fontSize: number, scope: StyleScope) =>
 export function TitleBar({
   title,
   back,
-  backFocused,
   onClose,
   px,
 }: Readonly<{
   title: string;
   /** Absent in the menu, which has nothing above it. */
   back?: () => void;
-  backFocused: boolean;
   /** Absent unless the panel covers the stage. */
   onClose?: () => void;
   px: (n: number) => number;
@@ -38,17 +34,10 @@ export function TitleBar({
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const anchor = useRevealWhenFocused(backFocused);
   return (
-    <Box ref={anchor} row align="center" gap={px(18)} mb={px(30)}>
+    <Box row align="center" gap={px(18)} mb={px(30)}>
       {back ? (
-        <BackButton
-          variant="glass"
-          diameter={px(46)}
-          focused={backFocused}
-          onPress={back}
-          label={t('player.back')}
-        />
+        <BackButton variant="glass" diameter={px(46)} onPress={back} label={t('player.back')} />
       ) : null}
       <Text lines={1} variant="h1" style={titleOf(px(38), scope)}>
         {title}

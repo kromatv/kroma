@@ -19,10 +19,8 @@ export const story = defineStory({
     rating: 8.1,
     overview:
       "Dans un Los Angeles noyé de pluie, un ancien policier traque quatre répliquants revenus sur Terre pour arracher à leur créateur les quelques années qu'il leur reste.",
-    focus: 'play',
   },
   controls: {
-    focus: { options: ['play', 'home'] },
     stageWidth: { min: 900, max: 1920, step: 20 },
     rating: { min: 0, max: 10, step: 0.1 },
   },
@@ -44,7 +42,7 @@ The screen a film ends on. It replaces the chrome rather than covering it: there
 
 It arrives rather than cutting in: the art fades up and the copy settles into it over 420ms, which is the same easing every other travel in the player uses.
 
-`focus` is the player's, not the screen's. Both buttons are controlled, because the chrome runs its own virtual focus and a second, real one would let a television's focus engine light a button this machine is not on.
+The two buttons are a scope on the app's navigator, opening on Play. While the screen is up it has the remote to itself, and Back leaves for home.
 
 `stageWidth` picks the type tier rather than scaling one: a stage 1600 wide or more is a television and takes the kit's 10-foot ladder, anything narrower is a desk and takes the desktop one. The layout does not otherwise change.
 
@@ -52,16 +50,11 @@ It arrives rather than cutting in: the art fades up and the copy settles into it
 <PostPlay
   item={offer}
   finished={title}
-  focus={postPlayFocus}
   stageWidth={stageSize.width}
   onPlay={playOffer}
   onHome={goHome}
 />
 ```
-
-<Scene name="Home focused" args={{ focus: 'home' }}>
-  The second action. Back reaches it from anywhere on this screen.
-</Scene>
 
 <Scene name="On a desk, not a television" args={{ stageWidth: 1280 }}>
   The same layout under the desktop type tier.

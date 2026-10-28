@@ -7,9 +7,6 @@ import { formatTimecode } from '#ui/lib/intl';
 import { useFadeRise } from '#ui/lib/use-fade-rise';
 import { useT } from '#ui/services/i18n';
 
-/** Which of the prompt's two buttons the remote is on. */
-export type ResumeFocus = 'resume' | 'restart';
-
 export interface ResumePromptProps {
   /** The second playback opened on, drawn as the timecode it reads. */
   at: number;
@@ -24,8 +21,9 @@ export interface ResumePromptProps {
   /** The window `secondsLeft` drains against. Defaults to the one
    *  `useResumeNotice` counts. */
   total?: number;
-  /** The button the remote is on; none where a pointer or a finger drives it. */
-  focus?: ResumeFocus | null;
+  /** The remote moved to starting over: the viewer is deciding, so the
+   *  countdown stops. */
+  onHold?: () => void;
   /** The chrome's scale (see ../../lib/metrics). 1 on a television stage. */
   scale?: number;
   /** How high it sits above the bottom edge, in real pixels (already scaled). */
@@ -44,7 +42,7 @@ export function ResumePrompt({
   shown,
   secondsLeft = null,
   total = RESUME_WINDOW,
-  focus = null,
+  onHold,
   scale = 1,
   lift,
   onResume,
@@ -74,16 +72,16 @@ export function ResumePrompt({
           total={total}
           scale={scale}
           announce
+          active={shown}
           secondary={{
             label: t('player.restart'),
             icon: 'rotate-clockwise-2',
-            focused: focus === 'restart',
             onPress: onStartOver,
+            onFocus: onHold,
           }}
           primary={{
             label: t('player.resume'),
             icon: 'player-play-filled',
-            focused: focus === 'resume',
             onPress: onResume,
           }}
         />

@@ -14,6 +14,7 @@ export interface NavigatorItemHostProps {
   entry: Ref<NodeHandle | null>;
   onSelect: () => void;
   onLongSelect: (() => void) | undefined;
+  onKey?: NavigatorItemProps['onKey'];
   onFocus: () => void;
   onBlur: () => void;
   painted: StyleProp<ViewStyle>[];
@@ -45,6 +46,7 @@ export function NavigatorItemHost({
   onBlur,
   onFocus,
   onLongSelect,
+  onKey,
   onSelect,
   painted,
   viewProps,
@@ -55,6 +57,7 @@ export function NavigatorItemHost({
       ref={entry}
       onSelect={onSelect}
       onLongSelect={onLongSelect}
+      onKey={onKey}
       onFocus={onFocus}
       onBlur={onBlur}
       style={StyleSheet.flatten([layers?.box, focused ? LIFTED : GROUNDED]) as NavigatorStyle}

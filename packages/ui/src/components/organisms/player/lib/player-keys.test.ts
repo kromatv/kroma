@@ -1,296 +1,161 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav';
 import type { RemoteKey } from '#ui/lib/remote-keys';
-import { type PlayerKeysParams, routeRemoteKey, routeTab } from './player-keys';
+import type { PanelHandle } from './nav';
+import { type PlayerKeysParams, routeRemoteKey } from './player-keys';
 
-const nav = (over: Partial<PlayerNav>): PlayerNav => over as PlayerNav;
+interface Setup {
+  locked?: boolean;
+  overlay?: PlayerNav['overlay'];
+  panel?: PanelHandle | null;
+  resume?: boolean;
+  credits?: boolean;
+  postPlay?: boolean;
+}
 
-describe('routeTab over the chrome', () => {
-  function chrome(over: Partial<PlayerNav> = {}) {
-    const walkChrome = vi.fn();
-    const handleKey = vi.fn();
-    const poke = vi.fn();
-    const params = {
-      nav: nav({ walkChrome, handleKey, poke, revealed: true, overlay: null, ...over }),
-      panelRef: { current: null },
-      locked: false,
-    } as unknown as PlayerKeysParams;
-    return { params, walkChrome, handleKey, poke };
-  }
-
-  it('walks the reading order rather than stepping a direction', () => {
-    const { params, walkChrome, handleKey } = chrome();
-
-    routeTab(params, false);
-    routeTab(params, true);
-
-    expect(walkChrome.mock.calls).toEqual([[false], [true]]);
-    expect(handleKey).not.toHaveBeenCalled();
-  });
-
-  it('spends the first press waking a hidden chrome, as every other key does', () => {
-    const { params, walkChrome, poke } = chrome({ revealed: false });
-
-    routeTab(params, false);
-
-    expect(walkChrome).not.toHaveBeenCalled();
-    expect(poke).toHaveBeenCalledOnce();
-  });
-});
-
-describe('routeTab inside a surface that took the keyboard', () => {
-  function surface(over: Partial<PlayerKeysParams>, navOver: Partial<PlayerNav> = {}) {
-    const onKey = vi.fn(() => true);
-    const walkChrome = vi.fn();
-    const params = {
-      nav: nav({
-        walkChrome,
-        handleKey: vi.fn(),
-        poke: vi.fn(),
-        closeOverlay: vi.fn(),
-        revealed: true,
-        ...navOver,
-      }),
-      panelRef: { current: { onKey } },
-      locked: false,
-      ...over,
-    } as unknown as PlayerKeysParams;
-    return { params, onKey, walkChrome };
-  }
-
-  it('hands a grid the whole press, so a line can turn the corner', () => {
-    const onTab = vi.fn(() => true);
-    const closeOverlay = vi.fn();
-    const { params } = surface({}, { overlay: 'sheet', closeOverlay });
-    params.panelRef.current = { onKey: vi.fn(() => true), onTab };
-
-    routeTab(params, false);
-    routeTab(params, true);
-
-    expect(onTab.mock.calls).toEqual([[false], [true]]);
-    expect(closeOverlay).not.toHaveBeenCalled();
-  });
-
-  it('closes a grid that hands the press back, so the walk leaves it', () => {
-    const closeOverlay = vi.fn();
-    const { params } = surface({}, { overlay: 'sheet', closeOverlay });
-    params.panelRef.current = { onKey: vi.fn(() => true), onTab: () => false };
-
-    routeTab(params, true);
-
-    expect(closeOverlay).toHaveBeenCalledOnce();
-  });
-
-  it('walks down a settings list, which is a column', () => {
-    const { params, onKey } = surface({}, { overlay: 'settings' });
-
-    routeTab(params, false);
-    routeTab(params, true);
-
-    expect(onKey.mock.calls).toEqual([['Down'], ['Up']]);
-  });
-
-  it('walks along the credits card, whose two buttons sit side by side', () => {
-    const credits = { active: true, onKey: vi.fn(() => true) };
-    const { params, walkChrome } = surface({ credits }, { overlay: null });
-
-    routeTab(params, false);
-
-    expect(credits.onKey).toHaveBeenCalledWith('Right');
-    expect(walkChrome).not.toHaveBeenCalled();
-  });
-});
+function route(setup: Setup = {}) {
+  const handleKey = vi.fn();
+  const exit = vi.fn();
+  const card = (active: boolean | undefined) =>
+    active === undefined ? undefined : { active, onBack: vi.fn() };
+  const params = {
+    nav: {
+      handleKey,
+      exit,
+      revealed: true,
+      overlay: setup.overlay ?? null,
+    } as unknown as PlayerNav,
+    panelRef: { current: setup.panel ?? null },
+    locked: setup.locked ?? false,
+    resume: card(setup.resume),
+    credits: card(setup.credits),
+    postPlay: card(setup.postPlay),
+  } as unknown as PlayerKeysParams;
+  const press = (key: RemoteKey) => routeRemoteKey(params, key);
+  return { params, press, handleKey, exit };
+}
 
 describe('routeRemoteKey while locked', () => {
-  function locked() {
-    const handleKey = vi.fn();
-    const poke = vi.fn();
-    const exit = vi.fn();
-    const params = {
-      nav: nav({ handleKey, poke, exit, revealed: true, overlay: null }),
-      panelRef: { current: null },
-      locked: true,
-    } as unknown as PlayerKeysParams;
-    return { params, handleKey, poke, exit };
-  }
-
   it.each<[string, 'Back' | 'Enter']>([
     ['Back', 'Back'],
     ['OK', 'Enter'],
   ])('leaves the player on %s', (_label, key) => {
-    const { params, exit, handleKey } = locked();
+    const { press, exit, handleKey } = route({ locked: true });
 
-    routeRemoteKey(params, key);
+    press(key);
 
     expect(exit).toHaveBeenCalledWith('back');
     expect(handleKey).not.toHaveBeenCalled();
   });
 
-  it('swallows every other key, chrome included', () => {
-    const { params, handleKey, poke, exit } = locked();
-    for (const key of ['Right', 'Down', 'PlayPause'] as const) routeRemoteKey(params, key);
+  it('swallows every other key', () => {
+    const { press, handleKey, exit } = route({ locked: true });
+
+    for (const key of ['Right', 'Down', 'PlayPause'] as const) press(key);
+
     expect(handleKey).not.toHaveBeenCalled();
-    expect(poke).not.toHaveBeenCalled();
     expect(exit).not.toHaveBeenCalled();
   });
 });
 
 describe('routeRemoteKey once the film is over', () => {
-  function over() {
-    const handleKey = vi.fn();
-    const poke = vi.fn();
-    const onKey = vi.fn();
-    const params = {
-      nav: nav({ handleKey, poke, revealed: true, overlay: null }),
-      panelRef: { current: null },
-      locked: false,
-      credits: { active: true, onKey: vi.fn(() => true) },
-      postPlay: { active: true, onKey },
-    } as unknown as PlayerKeysParams;
-    return { params, handleKey, poke, onKey };
-  }
+  it('hands Back to the end screen rather than the chrome', () => {
+    const { params, press, handleKey } = route({ postPlay: true, credits: true });
 
-  it('hands the end screen every key, and the chrome none of them', () => {
-    const { params, handleKey, poke, onKey } = over();
-    for (const key of ['Right', 'Enter', 'Back', 'PlayPause', 'Down'] as const) {
-      routeRemoteKey(params, key);
-    }
-    expect(onKey).toHaveBeenCalledTimes(5);
+    press('Back');
+
+    expect(params.postPlay?.onBack).toHaveBeenCalledOnce();
+    expect(params.credits?.onBack).not.toHaveBeenCalled();
     expect(handleKey).not.toHaveBeenCalled();
-    expect(poke).not.toHaveBeenCalled();
   });
 
-  it('outranks the credits card, which belongs to a film still running', () => {
-    const { params, onKey } = over();
-    routeRemoteKey(params, 'Enter');
-    expect(params.credits?.onKey).not.toHaveBeenCalled();
-    expect(onKey).toHaveBeenCalledWith('Enter');
+  it('keeps the media keys away from a film that has ended', () => {
+    const { press, handleKey } = route({ postPlay: true });
+
+    press('PlayPause');
+
+    expect(handleKey).not.toHaveBeenCalled();
   });
 });
 
-describe('routeRemoteKey while the resume card is up', () => {
-  function prompted(active = true, takes = true) {
-    const handleKey = vi.fn();
-    const onKey = vi.fn(() => takes);
-    const params = {
-      nav: nav({ handleKey, poke: vi.fn(), revealed: true, overlay: null }),
-      panelRef: { current: null },
-      locked: false,
-      resume: { active, onKey },
-    } as unknown as PlayerKeysParams;
-    return { params, handleKey, onKey };
-  }
+describe('routeRemoteKey with a panel open', () => {
+  it('lets the panel take Back first', () => {
+    const panel = { onKey: vi.fn(() => true) };
+    const { press, handleKey } = route({ overlay: 'settings', panel });
 
-  it('offers the card every key first', () => {
-    const { params, handleKey, onKey } = prompted();
+    press('Back');
 
-    routeRemoteKey(params, 'Enter');
-
-    expect(onKey).toHaveBeenCalledWith('Enter');
+    expect(panel.onKey).toHaveBeenCalledWith('Back');
     expect(handleKey).not.toHaveBeenCalled();
   });
 
-  it('hands the player a key the card did not take', () => {
-    const { params, handleKey } = prompted(true, false);
+  it('hands Back to the player when the panel lets it go', () => {
+    const panel = { onKey: vi.fn(() => false) };
+    const { press, handleKey } = route({ overlay: 'settings', panel });
 
-    routeRemoteKey(params, 'Up');
+    press('Back');
 
-    expect(handleKey).toHaveBeenCalledWith('Up');
-  });
-
-  it('hands Back back to the player once it has gone', () => {
-    const { params, handleKey, onKey } = prompted(false);
-
-    routeRemoteKey(params, 'Back');
-
-    expect(onKey).not.toHaveBeenCalled();
     expect(handleKey).toHaveBeenCalledWith('Back');
   });
-});
 
-describe('routeRemoteKey while the chrome is hidden', () => {
-  function hidden() {
-    const handleKey = vi.fn();
-    const poke = vi.fn();
-    const params = {
-      nav: nav({ handleKey, poke, revealed: false, overlay: null }),
-      panelRef: { current: null },
-      locked: false,
-    } as unknown as PlayerKeysParams;
-    return { params, handleKey, poke };
-  }
+  it('outranks a resume card behind it', () => {
+    const { params, press, handleKey } = route({ overlay: 'audio', resume: true });
 
-  it.each<[string, RemoteKey]>([
-    ['play/pause', 'PlayPause'],
-    ['play', 'Play'],
-    ['pause', 'Pause'],
-    ['rewind', 'Rewind'],
-    ['fast forward', 'FastForward'],
-    ['stop', 'Stop'],
-  ])('drives the film on %s, with no press spent waking the chrome', (_label, key) => {
-    const { params, handleKey } = hidden();
-
-    routeRemoteKey(params, key);
-
-    expect(handleKey).toHaveBeenCalledWith(key);
-  });
-
-  it('spends a d-pad press on revealing the chrome instead', () => {
-    const { params, handleKey, poke } = hidden();
-
-    routeRemoteKey(params, 'Right');
-
-    expect(handleKey).not.toHaveBeenCalled();
-    expect(poke).toHaveBeenCalledOnce();
-  });
-
-  it('hands Back straight to the player rather than bringing the chrome back', () => {
-    const { params, handleKey, poke } = hidden();
-
-    routeRemoteKey(params, 'Back');
+    press('Back');
 
     expect(handleKey).toHaveBeenCalledWith('Back');
-    expect(poke).not.toHaveBeenCalled();
+    expect(params.resume?.onBack).not.toHaveBeenCalled();
   });
 });
 
-describe('routeRemoteKey while the skip pill is up', () => {
-  function pilled(revealed: boolean) {
-    const handleKey = vi.fn();
-    const onSkip = vi.fn();
-    const params = {
-      nav: nav({ handleKey, poke: vi.fn(), revealed, overlay: null }),
-      panelRef: { current: null },
-      locked: false,
-      intro: { active: true, onSkip },
-    } as unknown as PlayerKeysParams;
-    return { params, handleKey, onSkip };
-  }
+describe('routeRemoteKey over the cards', () => {
+  it('dismisses the resume card on Back', () => {
+    const { params, press, handleKey } = route({ resume: true, credits: true });
 
-  it.each([true, false])('skips the intro on OK with the chrome shown: %s', (revealed) => {
-    const { params, handleKey, onSkip } = pilled(revealed);
+    press('Back');
 
-    routeRemoteKey(params, 'Enter');
-
-    expect(onSkip).toHaveBeenCalledOnce();
+    expect(params.resume?.onBack).toHaveBeenCalledOnce();
+    expect(params.credits?.onBack).not.toHaveBeenCalled();
     expect(handleKey).not.toHaveBeenCalled();
+  });
+
+  it('dismisses the credits card on Back', () => {
+    const { params, press, handleKey } = route({ credits: true });
+
+    press('Back');
+
+    expect(params.credits?.onBack).toHaveBeenCalledOnce();
+    expect(handleKey).not.toHaveBeenCalled();
+  });
+
+  it('hands Back to the player once the card has gone', () => {
+    const { params, press, handleKey } = route({ resume: false });
+
+    press('Back');
+
+    expect(params.resume?.onBack).not.toHaveBeenCalled();
+    expect(handleKey).toHaveBeenCalledWith('Back');
+  });
+
+  it('lets the media keys reach the film past a card', () => {
+    const { params, press, handleKey } = route({ resume: true });
+
+    press('PlayPause');
+
+    expect(handleKey).toHaveBeenCalledWith('PlayPause');
+    expect(params.resume?.onBack).not.toHaveBeenCalled();
   });
 });
 
-describe('routeRemoteKey while the credits card counts down', () => {
-  it('moves along the card with the chrome away, rather than waking it', () => {
-    const onKey = vi.fn(() => true);
-    const handleKey = vi.fn();
-    const params = {
-      nav: nav({ handleKey, poke: vi.fn(), revealed: false, overlay: null }),
-      panelRef: { current: null },
-      locked: false,
-      credits: { active: true, onKey },
-    } as unknown as PlayerKeysParams;
+describe('routeRemoteKey over the chrome', () => {
+  it.each<RemoteKey>(['PlayPause', 'Rewind', 'FastForward', 'Stop', 'Back'])(
+    'hands %s to the player',
+    (key) => {
+      const { press, handleKey } = route();
 
-    routeRemoteKey(params, 'Right');
+      press(key);
 
-    expect(onKey).toHaveBeenCalledWith('Right');
-    expect(handleKey).not.toHaveBeenCalled();
-  });
+      expect(handleKey).toHaveBeenCalledWith(key);
+    },
+  );
 });

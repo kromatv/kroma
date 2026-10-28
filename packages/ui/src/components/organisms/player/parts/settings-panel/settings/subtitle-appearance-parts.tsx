@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Pressable } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { Focusable } from '#ui/components/atoms/focusable';
+import { Icon } from '#ui/components/atoms/icon';
 import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { SUB_COLORS } from '#ui/components/organisms/player/lib/subtitle-appearance';
@@ -8,14 +10,13 @@ import { VIRTUAL_FOCUS } from '#ui/lib/player/virtual-focus';
 import { type StyleScope, sharedStyle, styles, useStyleScope, useTheme } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { a11yState } from '#ui/lib/a11y';
-import { useFocusedRow } from '#ui/lib/use-focused-row';
 import { useT } from '#ui/services/i18n';
-import { panel, rowStyle } from './panel-style';
+import { panel, VALUE_ROW_FOCUS } from './panel-style';
 
 /**
  * Presentational parts of the {@link SubtitleAppearancePanel}: the value row and
- * the four controls a row can carry. Focus is state-driven (§15): a `focused`
- * boolean draws the ring, never CSS :hover.
+ * the four controls a row can carry. A row is one control the remote walks:
+ * Left and Right step its value, the arrows do the same for a pointer.
  */
 
 const swatchRing = (selected: boolean, accent: string, scope: StyleScope) =>
@@ -29,60 +30,70 @@ const swatchRing = (selected: boolean, accent: string, scope: StyleScope) =>
 export function AppearanceRow({
   index,
   label,
-  focused,
-  onFocus,
+  autoFocus,
   onNudge,
   children,
 }: Readonly<{
   index: number;
   label: string;
-  focused: boolean;
-  onFocus: (index: number) => void;
+  autoFocus?: boolean;
   onNudge: (index: number, dir: -1 | 1) => void;
   children: ReactNode;
 }>) {
   const panelScoped = useStyles(panel);
 
   const t = useT();
-  const anchor = useFocusedRow(focused);
   return (
-    <Box
-      ref={anchor}
-      role="group"
-      accessibilityLabel={label}
-      onPointerEnter={() => onFocus(index)}
-      style={rowStyle(panelScoped.valueRow, panelScoped.valueRowOn, focused)}
+    <Focusable
+      // oxlint-disable-next-line jsx-a11y/aria-role -- React Native's vocabulary, not ARIA's - react-native-web renders `adjustable` as the ARIA `slider`.
+      role="adjustable"
+      label={label}
+      autoFocus={autoFocus}
+      onKey={(direction) => {
+        if (direction !== 'left' && direction !== 'right') return false;
+        onNudge(index, direction === 'left' ? -1 : 1);
+        return true;
+      }}
+      states={VALUE_ROW_FOCUS}
+      style={panelScoped.valueRow}
     >
-      <Box row align="center" between mb={11}>
-        <Text style={panelScoped.valueLabel}>{label}</Text>
-        <Box row align="center" gap={16}>
-          <Arrow
-            glyph="◀"
-            label={`${t('common.decrease')} ${label}`}
-            dim={!focused}
-            onPress={() => onNudge(index, -1)}
-          />
-          <Arrow
-            glyph="▶"
-            label={`${t('common.increase')} ${label}`}
-            dim={!focused}
-            onPress={() => onNudge(index, 1)}
-          />
-        </Box>
-      </Box>
-      {children}
-    </Box>
+      {({ focused }) => (
+        <>
+          <Box row align="center" between mb={11}>
+            <Text style={panelScoped.valueLabel}>{label}</Text>
+            <Box row align="center" gap={16}>
+              <Arrow
+                icon="chevron-left"
+                label={`${t('common.decrease')} ${label}`}
+                dim={!focused}
+                onPress={() => onNudge(index, -1)}
+              />
+              <Arrow
+                icon="chevron-right"
+                label={`${t('common.increase')} ${label}`}
+                dim={!focused}
+                onPress={() => onNudge(index, 1)}
+              />
+            </Box>
+          </Box>
+          {children}
+        </>
+      )}
+    </Focusable>
   );
 }
 
 function Arrow({
-  glyph,
+  icon,
   label,
   dim,
   onPress,
-}: Readonly<{ glyph: string; label: string; dim: boolean; onPress: () => void }>) {
-  const s = useStyles(sDefinition);
-
+}: Readonly<{
+  icon: 'chevron-left' | 'chevron-right';
+  label: string;
+  dim: boolean;
+  onPress: () => void;
+}>) {
   return (
     <Pressable
       {...VIRTUAL_FOCUS}
@@ -90,9 +101,7 @@ function Arrow({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Text style={[s.arrow, dim ? s.dim : s.full]} color="accentText">
-        {glyph}
-      </Text>
+      <Icon name={icon} size={24} thickness={2.2} color={dim ? 'textDim' : 'accentText'} />
     </Pressable>
   );
 }
@@ -203,9 +212,6 @@ export function Meter({ value }: Readonly<{ value: number }>) {
 }
 
 const sDefinition = styles({
-  dim: { opacity: 0.4 },
-  full: { opacity: 1 },
-  arrow: { px: 4, text: 'strongTv' },
   meterValue: {
     minW: 52,
     textAlign: 'right',

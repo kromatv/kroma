@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import {
@@ -12,17 +12,17 @@ import {
 } from '#ui/components/organisms/player/lib/metrics';
 import type { ControlId } from '#ui/components/organisms/player/lib/nav';
 import { IconPause, IconPlay } from '#ui/components/organisms/player/parts/icons';
-import { sv, useSv } from '#ui/core';
+import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
-import { useFocusVisible } from '#ui/lib/focus-visible';
+import { FocusRegion } from '#ui/lib/focus-scope';
 import { useT } from '#ui/services/i18n';
 import { Circle, CircleControl } from './circle-control';
 import { VolumeControl, volumeGlyph } from './volume-control';
 
-const playFill = sv({ base: { _focus: { bg: 'accentHover' } } });
+const PLAY_FOCUS = { focus: { bg: 'accentHover' } } as const;
 
 export interface ControlClusterProps {
-  focused: ControlId | null;
   playing: boolean;
   muted: boolean;
   volume: number;
@@ -38,9 +38,13 @@ export interface ControlClusterProps {
   metrics: ChromeMetrics;
   /** Run a control (mouse click shares this with D-pad OK). */
   onActivate: (id: ControlId) => void;
-  /** Hover moves focus (§15). */
+  /** The navigator's focus landed on a control. */
   onFocus: (id: ControlId) => void;
+  /** The navigator's focus left a control. */
+  onBlur: (id: ControlId) => void;
   onVolume: (v: number) => void;
+  /** Up or Down on the focused volume pill. */
+  onVolumeNudge: (dir: -1 | 1) => void;
 }
 
 /**
@@ -55,7 +59,6 @@ export interface ControlClusterProps {
  * ~4 Hz timeupdate re-renders the rest of the chrome makes.
  */
 export const ControlCluster = memo(function ControlCluster({
-  focused,
   playing,
   muted,
   volume,
@@ -65,9 +68,11 @@ export const ControlCluster = memo(function ControlCluster({
   metrics,
   onActivate,
   onFocus,
+  onBlur,
   onVolume,
+  onVolumeNudge,
 }: Readonly<ControlClusterProps>) {
-  const playFillScoped = useSv(playFill);
+  const s = useStyles(sDefinition);
 
   const t = useT();
   const { scale, controls, rail, clusterWidth } = metrics;
@@ -75,16 +80,7 @@ export const ControlCluster = memo(function ControlCluster({
   const transport = controls.filter(isTransport);
   const cluster = controls.filter((c) => !isTransport(c));
 
-  // Keyed on WHICH control holds the focus: the selection moves within the
-  // cluster, so the modality has to be re-read on every move.
-  const lit = useFocusVisible(focused);
-  const playDress = useMemo(
-    () => [playFillScoped(undefined, { focus: lit && focused === 'play' }).root, NO_OUTLINE],
-    [lit, focused, playFillScoped],
-  );
-
   const render = (id: ControlId) => {
-    const on = focused === id;
     // The two controls that are not a plain circle: play carries the accent fill
     // and its own play/pause glyph, volume owns a slider.
     if (id === 'play') {
@@ -93,12 +89,13 @@ export const ControlCluster = memo(function ControlCluster({
           key={id}
           variant="primary"
           diameter={px(CONTROL_SIZE.play)}
-          focused={on}
-          style={playDress}
+          autoFocus
+          style={NO_OUTLINE}
+          states={PLAY_FOCUS}
           label={playing ? t('player.pause') : t('player.play')}
           onPress={() => onActivate(id)}
-          onHoverIn={() => onFocus(id)}
           onFocus={() => onFocus(id)}
+          onBlur={() => onBlur(id)}
         >
           {playing ? (
             <IconPause size={px(33)} color="accentInk" />
@@ -117,10 +114,10 @@ export const ControlCluster = memo(function ControlCluster({
             key={id}
             id={id}
             diameter={px(CONTROL_SIZE.volume)}
-            focused={on}
             label={t('player.mute')}
             onActivate={onActivate}
             onFocus={onFocus}
+            onBlur={onBlur}
           >
             {volumeGlyph(muted ? 0 : volume, px(24))}
           </Circle>
@@ -129,14 +126,15 @@ export const ControlCluster = memo(function ControlCluster({
       return (
         <VolumeControl
           key={id}
-          focused={on}
           muted={muted}
           volume={volume}
           max={volumeMax}
           px={px}
           onFocus={() => onFocus(id)}
+          onBlur={() => onBlur(id)}
           onToggle={() => onActivate(id)}
           onVolume={onVolume}
+          onNudge={onVolumeNudge}
           label={t('player.volume')}
           muteLabel={t('player.mute')}
         />
@@ -146,18 +144,18 @@ export const ControlCluster = memo(function ControlCluster({
       <CircleControl
         key={id}
         id={id}
-        focused={on}
         scale={scale}
         pipActive={pipActive}
         fullscreen={fullscreen}
         onActivate={onActivate}
         onFocus={onFocus}
+        onBlur={onBlur}
       />
     );
   };
 
   return (
-    <Box row align="center" gap={px(ROW_GAP)} pt={px(4)}>
+    <FocusRegion style={[s.row, { gap: px(ROW_GAP), paddingTop: px(4) }]}>
       {/* The transport is centred by the two sides being the SAME width, not by
           the middle taking what is left: Yoga folds a min-width into the flex
           base, so a growing side box ends up its own minimum wider than a bare
@@ -171,6 +169,10 @@ export const ControlCluster = memo(function ControlCluster({
       <Box row align="center" justify="flex-end" gap={px(CLUSTER_GAP)} w={clusterWidth}>
         {cluster.map(render)}
       </Box>
-    </Box>
+    </FocusRegion>
   );
+});
+
+const sDefinition = styles({
+  row: { row: true, align: 'center' },
 });

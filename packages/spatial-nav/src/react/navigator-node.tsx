@@ -1,4 +1,4 @@
-import type { Orientation } from '@kromatv/spatial-nav';
+import type { Direction, Orientation } from '@kromatv/spatial-nav';
 import type { ReactNode, Ref } from 'react';
 import { useNavigatorHost } from './navigator-context';
 import { type NodeHandle, type NodeState, SpatialNode } from './spatial-node';
@@ -15,6 +15,8 @@ interface NavigatorNodeProps {
   index?: number;
   onActive?: () => void;
   onInactive?: () => void;
+  /** Answers a press while the focus is inside this node, before the navigator moves; true keeps it. */
+  onKey?: (direction: Direction) => boolean;
   ref?: Ref<NodeHandle>;
 }
 

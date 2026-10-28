@@ -42,7 +42,7 @@ function press(key: string) {
 
 const labelOf = () => document.activeElement?.getAttribute('aria-label') ?? '';
 
-const pillAroundFocus = () => document.activeElement?.parentElement;
+const pillInFocus = () => document.activeElement?.firstElementChild;
 
 function walkTo(name: RegExp) {
   for (let step = 0; step < 12 && !name.test(labelOf()); step++) press('Tab');
@@ -78,7 +78,7 @@ describe('the player chrome and the document focus', () => {
 
     expect(labelOf()).toBe('Volume');
     expect(wearsRing(document.activeElement)).toBe(false);
-    expect(wearsRing(pillAroundFocus())).toBe(true);
+    expect(wearsRing(pillInFocus())).toBe(true);
   });
 
   it('presses the focused control once when OK lands on it', () => {
