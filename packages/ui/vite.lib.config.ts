@@ -16,13 +16,14 @@ const nativeResolve = {
   extensions: ['.native.tsx', '.native.ts', '.tsx', '.ts', '.jsx', '.js', '.json', '.mjs'],
 };
 
-// A native host brings its own React Native, its own SVG renderer and its own
-// Expo media; the web build folds the first into react-native-web and never
-// reaches the other three.
+// A native host brings its own React Native, its own SVG renderer, its own
+// masked view and its own Expo media; the web build folds the first into
+// react-native-web and never reaches the others.
 const NATIVE_EXTERNAL = [
   /^react-native$/,
   /^react-native\//,
   'react-native-svg',
+  '@react-native-masked-view/masked-view',
   'expo-image',
   'expo-video',
   /^@tabler\/icons-react-native(?:\/|$)/,
