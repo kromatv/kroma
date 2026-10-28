@@ -21,15 +21,16 @@ export function TopFade({
   children: ReactNode;
 }>) {
   const [scrolled, setScrolled] = useState(false);
+  const selfMasked = masked && CONTENT_MASKS;
   const [top, setTop] = useState(0);
   return (
     <View style={style ?? FLEX} onLayout={(e: LayoutChangeEvent) => setTop(e.nativeEvent.layout.y)}>
       <ScrolledReport.Provider value={setScrolled}>
-        <FrameMask inset={inset} active={scrolled}>
+        <FrameMask inset={inset} active={scrolled && !selfMasked}>
           {children}
         </FrameMask>
       </ScrolledReport.Provider>
-      {FRAME_MASKS || (masked && CONTENT_MASKS) ? null : (
+      {FRAME_MASKS || selfMasked ? null : (
         <TopFadeBand inset={inset} active={scrolled} offset={top}>
           {backdrop}
         </TopFadeBand>

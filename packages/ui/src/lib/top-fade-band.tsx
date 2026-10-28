@@ -1,6 +1,6 @@
 import MaskedView from '@react-native-masked-view/masked-view';
 import { type ReactNode, useState } from 'react';
-import { type LayoutChangeEvent, View, type ViewStyle } from 'react-native';
+import { type LayoutChangeEvent, Platform, View, type ViewStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { colors } from '#ui/core/tokens';
 
@@ -37,7 +37,7 @@ function Ramp({ inset, color }: Readonly<{ inset: number; color: string }>) {
 }
 
 /** Whether page content can mask itself here (see `ScrollMask`), so a screen that does needs no band. */
-export const CONTENT_MASKS = false;
+export const CONTENT_MASKS = Platform.OS === 'ios';
 
 /** A copy of the backdrop over the top edge: while `active`, it hides scrolled content above `inset` and fades it back in over the next 80 px. `offset` is how far below the backdrop's origin the band's parent sits; no `children` fades to the ground colour. */
 export function TopFadeBand({
