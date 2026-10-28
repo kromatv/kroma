@@ -3,11 +3,11 @@ import { fitStage, MIN_STAGE_W, STAGE_H, STAGE_W } from './stage';
 
 describe('fitStage', () => {
   it('is the design canvas, untouched, on a 1080p television', () => {
-    expect(fitStage(STAGE_W, STAGE_H)).toEqual({ scale: 1, width: STAGE_W });
+    expect(fitStage(STAGE_W, STAGE_H)).toEqual({ scale: 1, width: STAGE_W, height: STAGE_H });
   });
 
   it('draws the design at 2x on a 4K panel rather than twice as many columns', () => {
-    expect(fitStage(3840, 2160)).toEqual({ scale: 2, width: STAGE_W });
+    expect(fitStage(3840, 2160)).toEqual({ scale: 2, width: STAGE_W, height: STAGE_H });
   });
 
   // The point of taking the scale from the height: the window's extra width
@@ -18,8 +18,12 @@ describe('fitStage', () => {
     expect(fit.width).toBe(2560);
   });
 
-  // The floor is the design width, so a window narrower than 16:9 loses size
-  // rather than canvas: the top bar has no column to drop.
+  it('hands a taller-than-16:9 window the extra height as canvas', () => {
+    const fit = fitStage(1280, 800);
+    expect(fit.width).toBe(MIN_STAGE_W);
+    expect(fit.height).toBe(1200);
+  });
+
   it('scales down rather than narrowing past the floor', () => {
     const fit = fitStage(1310, 790);
     expect(fit.width).toBe(MIN_STAGE_W);
@@ -32,7 +36,7 @@ describe('fitStage', () => {
     expect(fit.scale).toBeCloseTo(800 / MIN_STAGE_W, 6);
   });
 
-  it('never overflows the window, whatever its shape', () => {
+  it('fills the window, whatever its shape', () => {
     for (const [w, h] of [
       [1280, 800],
       [1366, 768],
@@ -43,12 +47,13 @@ describe('fitStage', () => {
       [640, 480],
     ] as Array<[number, number]>) {
       const fit = fitStage(w, h);
-      expect(fit.width * fit.scale).toBeLessThanOrEqual(w + 1);
-      expect(STAGE_H * fit.scale).toBeLessThanOrEqual(h + 1);
+      expect(Math.abs(fit.width * fit.scale - w)).toBeLessThanOrEqual(1);
+      expect(Math.abs(fit.height * fit.scale - h)).toBeLessThanOrEqual(1);
+      expect(fit.height).toBeGreaterThanOrEqual(STAGE_H);
     }
   });
 
   it('falls back to the design canvas for a window with no size yet', () => {
-    expect(fitStage(0, 0)).toEqual({ scale: 1, width: STAGE_W });
+    expect(fitStage(0, 0)).toEqual({ scale: 1, width: STAGE_W, height: STAGE_H });
   });
 });

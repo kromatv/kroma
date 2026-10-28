@@ -5,11 +5,11 @@ import { HighlightCard, HighlightMark } from '#tv/features/releases/HighlightCar
 import { ROW_ICON } from '#tv/features/releases/ReleaseRowList';
 import { type ReleaseRow, rowLabel } from '#tv/features/releases/releaseRows';
 
-const PANE = { left: 840, top: 190, width: 1016 };
+const PANE_MAX_W = 1016;
 
 export function ReleasePane({ row }: Readonly<{ row: ReleaseRow }>) {
   return (
-    <Box absolute left={PANE.left} top={PANE.top} w={PANE.width}>
+    <Box flex maxW={PANE_MAX_W}>
       {row.kind === 'highlight' ? (
         <HighlightPane highlight={row.highlight} />
       ) : (
@@ -22,11 +22,7 @@ export function ReleasePane({ row }: Readonly<{ row: ReleaseRow }>) {
 function HighlightPane({ highlight }: Readonly<{ highlight: Highlight }>) {
   return (
     <>
-      {highlight.image ? (
-        <HighlightCard highlight={highlight} width={PANE.width} />
-      ) : (
-        <HighlightMark />
-      )}
+      {highlight.image ? <HighlightCard highlight={highlight} /> : <HighlightMark />}
       <Text variant="headingTv" mt={28}>
         {highlight.title}
       </Text>

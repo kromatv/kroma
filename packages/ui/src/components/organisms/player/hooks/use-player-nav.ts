@@ -2,7 +2,7 @@ import type { Direction } from '@kromatv/spatial-nav';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-nudge';
 import type { ControlId, Overlay, Spot } from '#ui/components/organisms/player/lib/nav';
-import { handleMediaKey } from '#ui/components/organisms/player/lib/nav-keys';
+import { handleMediaKey, SEEK_KEYS } from '#ui/components/organisms/player/lib/nav-keys';
 import type { PlayerCloseReason } from '#ui/components/organisms/player/types';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import { useStableCallback } from '#ui/lib/stable-callback';
@@ -154,7 +154,8 @@ export function usePlayerNav(
 
   const handleKey = useEffectEvent((key: RemoteKey) => {
     if (handleMediaKey(key, actions)) {
-      poke();
+      if (!revealed && SEEK_KEYS.has(key)) rearmHide();
+      else poke();
       return;
     }
     if (key !== 'Back') return;

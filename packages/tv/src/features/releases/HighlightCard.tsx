@@ -5,12 +5,9 @@ const MARK = 96;
 const MARK_RADIUS = 28;
 const MARK_GLYPH = 44;
 
-export function HighlightCard({
-  highlight,
-  width,
-}: Readonly<{ highlight: Highlight; width: number }>) {
+export function HighlightCard({ highlight }: Readonly<{ highlight: Highlight }>) {
   return (
-    <Box w={width} aspect={16 / 9} radius="xl" shadow="pop">
+    <Box w="100%" aspect={16 / 9} radius="xl" shadow="pop">
       <Box fill center radius="xl" overflow="hidden" bg="surface1" border="border">
         {highlight.image ? (
           <Img src={highlight.image.url} alt={highlight.image.alt} radius="xl" fill />

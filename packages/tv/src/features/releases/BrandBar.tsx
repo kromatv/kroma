@@ -8,16 +8,7 @@ export function BrandBar({ children }: Readonly<{ children?: ReactNode }>) {
   const t = useT();
   const nav = useNav();
   return (
-    <Box
-      absolute
-      left={64}
-      right={64}
-      top={34}
-      row
-      align="center"
-      justify="space-between"
-      pointerEvents="box-none"
-    >
+    <Box row align="center" justify="space-between" px={64} pt={34}>
       <Box row align="center" gap={16} flex>
         {nav.canGoBack ? <BackButton onPress={nav.back} label={t('common.back')} /> : null}
         <KromaMark size={28} />

@@ -33,6 +33,11 @@ extern "C" {
         artwork: *const u8,
         artwork_len: usize,
     );
+    fn kroma_pip_available() -> i32;
+    /// Returns 0 on success. MUST run on the main thread.
+    fn kroma_pip_start(aspect: f64) -> i32;
+    /// MUST run on the main thread.
+    fn kroma_pip_stop();
 }
 
 static MEDIA_APP: Mutex<Option<AppHandle>> = Mutex::new(None);
@@ -71,6 +76,46 @@ pub extern "C" fn kroma_media_seek(position: f64) {
     if let Some(app) = guard.as_ref() {
         let _ = app.emit("media-seek", position);
     }
+}
+
+/// Called by the PiP shim as its window opens and closes; `playing` is whether
+/// the film was still playing, which tells an expanded window from a dismissed one.
+#[no_mangle]
+pub extern "C" fn kroma_pip_changed(active: i32, playing: i32) {
+    let guard = MEDIA_APP
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some(app) = guard.as_ref() {
+        let _ = app.emit(
+            "pip-changed",
+            serde_json::json!({ "active": active != 0, "playing": playing != 0 }),
+        );
+    }
+}
+
+/// Whether this Mac has a picture-in-picture window to hand the picture to.
+pub fn pip_available() -> bool {
+    // SAFETY: a read-only probe of the PIP framework and the shim's GL view.
+    unsafe { kroma_pip_available() != 0 }
+}
+
+/// Float the picture in the system's picture-in-picture window.
+#[tauri::command]
+pub fn pip_start(app: AppHandle, aspect: f64) {
+    let _ = app.run_on_main_thread(move || {
+        // SAFETY: on the main thread, as the shim requires.
+        let rc = unsafe { kroma_pip_start(aspect) };
+        if rc != 0 {
+            eprintln!("KROMA libmpv: picture-in-picture unavailable (rc={rc})");
+        }
+    });
+}
+
+/// Close the picture-in-picture window; the picture returns to the app window.
+#[tauri::command]
+pub fn pip_stop(app: AppHandle) {
+    // SAFETY: on the main thread, as the shim requires.
+    let _ = app.run_on_main_thread(|| unsafe { kroma_pip_stop() });
 }
 
 pub type MpvState = MpvSlot;

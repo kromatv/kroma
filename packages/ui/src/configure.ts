@@ -66,6 +66,9 @@ export interface KitConfig<P extends FrostBackdropProps = FrostBackdropProps> {
   /** Frost drawn only by a `<FrostSource>`'s layer: anywhere else a frosted
    *  surface keeps its plain fill. Defaults to true for `tv`, false otherwise. */
   frostLayerOnly?: boolean;
+  /** Light the focus ring on what the pointer focuses, as a desktop window
+   *  driven by a mouse wants. Default false: the ring follows keys only. */
+  pointerShowsFocus?: boolean;
   entry?: Partial<EntryDefaults>;
   surfaces?: SurfacePresentation;
   ground?: ThemeMode;
@@ -94,7 +97,9 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
   const parent = useKitSettings();
 
   const inheritedInput = useInputSourceParent();
-  const [ownedInput] = useState(createInputSource);
+  const [ownedInput] = useState(() =>
+    createInputSource({ pointerShowsFocus: config.pointerShowsFocus }),
+  );
   const input = inheritedInput ?? ownedInput;
   useEffect(() => input.retain(), [input]);
   const inheritedGate = useInputGateParent();

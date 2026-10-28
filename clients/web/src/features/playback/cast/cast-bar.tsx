@@ -5,7 +5,7 @@ import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 import type { CastNowPlaying } from '@kromatv/client/cast';
 import type { MediaItem } from '@kromatv/client/media';
-import { BACK_10_ICON, type Cast, FWD_10_ICON, useCast, useT } from '@kromatv/ui';
+import { SKIP_BACK_ICON, type Cast, SKIP_FORWARD_ICON, useCast, useT } from '@kromatv/ui';
 import { formatTimecode } from '@kromatv/ui/intl';
 import {
   Box,
@@ -129,7 +129,7 @@ function TransportKeys({
   return (
     <Row gap={4}>
       <Transport
-        icon={BACK_10_ICON}
+        icon={SKIP_BACK_ICON}
         label={t('player.back10')}
         onPress={() => void send({ type: 'skip', deltaMs: -SKIP_MS })}
       />
@@ -140,7 +140,7 @@ function TransportKeys({
         primary
       />
       <Transport
-        icon={FWD_10_ICON}
+        icon={SKIP_FORWARD_ICON}
         label={t('player.fwd10')}
         onPress={() => void send({ type: 'skip', deltaMs: SKIP_MS })}
       />

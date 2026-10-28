@@ -14,10 +14,10 @@ function glyph(name: IconName, defaultSize: number, defaultThickness?: number) {
 
 export const IconPlay = glyph('player-play-filled', 30);
 export const IconPause = glyph('player-pause-filled', 28);
-export const BACK_10_ICON: IconName = 'rewind-backward-10';
-export const FWD_10_ICON: IconName = 'rewind-forward-10';
-export const IconBack10 = glyph(BACK_10_ICON, 27, 1.8);
-export const IconFwd10 = glyph(FWD_10_ICON, 27, 1.8);
+export const SKIP_BACK_ICON: IconName = 'arrow-back-up';
+export const SKIP_FORWARD_ICON: IconName = 'arrow-forward-up';
+export const IconSkipBack = glyph(SKIP_BACK_ICON, 27, 1.8);
+export const IconSkipForward = glyph(SKIP_FORWARD_ICON, 27, 1.8);
 export const IconNext = glyph('player-track-next-filled', 24);
 export const IconVolHigh = glyph('volume', 22, 1.8);
 export const IconVolLow = glyph('volume-2', 22, 1.8);

@@ -106,6 +106,9 @@ export function TvPlayer() {
     positionSec: pb.cur,
     playing: pb.playing,
     seekTo: pb.seekTo,
+    togglePlay: pb.togglePlay,
+    seek: pb.seek,
+    seekNonce: pb.seekNonce,
   });
 
   // Intro window (episodes only).

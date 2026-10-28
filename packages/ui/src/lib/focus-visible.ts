@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePointerDriving } from '#ui/lib/input-source';
+import { useFocusHidden } from '#ui/lib/input-source';
 
 /**
  * Whether the current focus is one the viewer asked for, in the browser's
@@ -22,15 +22,15 @@ import { usePointerDriving } from '#ui/lib/input-source';
  * would mean two different things depending on how it was reached.
  */
 export function useFocusVisible(focus: unknown): boolean {
-  return useFocusVisibleBy(focus, usePointerDriving());
+  return useFocusVisibleBy(focus, useFocusHidden());
 }
 
-/** {@link useFocusVisible} for a caller that already holds the input source's `pointerDriving`. */
-export function useFocusVisibleBy(focus: unknown, pointerDriving: () => boolean): boolean {
+/** {@link useFocusVisible} for a caller that already holds the input source's `focusHidden`. */
+export function useFocusVisibleBy(focus: unknown, focusHidden: () => boolean): boolean {
   const held = focus !== false && focus != null;
-  const [seen, setSeen] = useState(() => ({ focus, visible: !pointerDriving() }));
+  const [seen, setSeen] = useState(() => ({ focus, visible: !focusHidden() }));
   const moved = seen.focus !== focus;
-  const visible = moved && held ? !pointerDriving() : seen.visible;
+  const visible = moved && held ? !focusHidden() : seen.visible;
   if (moved) setSeen({ focus, visible });
   return held && visible;
 }

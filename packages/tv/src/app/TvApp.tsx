@@ -23,7 +23,7 @@ import { GUARD } from '#tv/app/navPolicy';
 import { AuthProvider, useAuth } from '#tv/app/providers/auth';
 import { ConnectionProvider, useConnection } from '#tv/app/providers/connection';
 import { ContinueProvider } from '#tv/app/providers/continue';
-import { EnvProvider, type TvEnvOverrides } from '#tv/app/providers/env';
+import { computeEnv, EnvProvider, type TvEnvOverrides } from '#tv/app/providers/env';
 import { LocaleProvider } from '#tv/app/providers/locale';
 import { MyListProvider } from '#tv/app/providers/mylist';
 import { PlaybackCapabilitiesProvider } from '#tv/app/providers/playbackCapabilities';
@@ -146,8 +146,9 @@ export function TvApp({
     () => ({
       ...TV_KIT,
       ground: inheritedTheme ? undefined : ('dark' as const),
+      pointerShowsFocus: computeEnv(platform, capabilities).mousePointer,
     }),
-    [inheritedTheme],
+    [inheritedTheme, platform, capabilities],
   );
   const [enginePref] = useState(() => createEnginePref(storage));
   const [identity] = useState(() => createDeviceIdentity(storage));

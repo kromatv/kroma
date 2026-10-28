@@ -5,11 +5,11 @@ import { CONTROL_SIZE, type Px, scaler } from '#ui/components/organisms/player/l
 import type { ControlId } from '#ui/components/organisms/player/lib/nav';
 import {
   IconAudioTrack,
-  IconBack10,
+  IconSkipBack,
   IconCast,
   IconFullscreen,
   IconFullscreenExit,
-  IconFwd10,
+  IconSkipForward,
   IconGear,
   IconNext,
   IconPip,
@@ -66,8 +66,8 @@ const CIRCLES: Record<
   CircleId,
   { label: MessageKey; glyph: (s: GlyphState, px: Px) => ReactNode }
 > = {
-  rewind: { label: 'player.back10', glyph: (_s, px) => <IconBack10 size={px(27)} /> },
-  forward: { label: 'player.fwd10', glyph: (_s, px) => <IconFwd10 size={px(27)} /> },
+  rewind: { label: 'player.back10', glyph: (_s, px) => <IconSkipBack size={px(27)} /> },
+  forward: { label: 'player.fwd10', glyph: (_s, px) => <IconSkipForward size={px(27)} /> },
   next: { label: 'player.nextEpisode', glyph: (_s, px) => <IconNext size={px(24)} /> },
   subtitles: { label: 'player.subtitles', glyph: (_s, px) => <IconSubtitles size={px(25)} /> },
   audio: { label: 'player.audioTrack', glyph: (_s, px) => <IconAudioTrack size={px(24)} /> },

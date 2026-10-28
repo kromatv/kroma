@@ -19,6 +19,9 @@ interface DragTrack {
   /** A pointer's `locationX`, relative to the track, as an offset in canvas
    *  units. Null until the track has been measured. */
   offsetOf: (locationX: number) => number | null;
+  /** A pointer's `clientX`, in window coordinates, as an offset in canvas
+   *  units: what a hover reports, since it has no `locationX`. */
+  offsetAtClient: (clientX: number) => number | null;
 }
 
 /**
@@ -30,10 +33,12 @@ function useDragTrack(): DragTrack {
   const ref = useRef<View | null>(null);
   const canvas = useRef(0);
   const screen = useRef(0);
+  const left = useRef(0);
   const [width, setWidth] = useState(0);
 
   const measure = useCallback(() => {
-    ref.current?.measureInWindow((_x, _y, measured) => {
+    ref.current?.measureInWindow((x, _y, measured) => {
+      left.current = x;
       screen.current = measured;
     });
   }, []);
@@ -54,7 +59,12 @@ function useDragTrack(): DragTrack {
     return pointerToCanvas(locationX, screen.current, inCanvas);
   }, []);
 
-  return { ref, onLayout, measure, width, offsetOf };
+  const offsetAtClient = useCallback(
+    (clientX: number): number | null => offsetOf(clientX - left.current),
+    [offsetOf],
+  );
+
+  return { ref, onLayout, measure, width, offsetOf, offsetAtClient };
 }
 
 export type { DragTrack };
